@@ -1,0 +1,27 @@
+name: personal_projects
+services:
+  # 1. Banco de Dados Principal
+  postgres:
+    image: postgres:16-alpine
+    container_name: habitparty-db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # restart: unless-stopped
+
+  # 2. Redis (Para uso futuro - Descomente as linhas abaixo quando for usar)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: habitparty-cache
+  #   ports:
+  #     - "6379:6379"
+  #   restart: unless-stopped
+
+# Isso garante que seus dados não sumam se você desligar o Docker!
+volumes:
+  postgres_data:

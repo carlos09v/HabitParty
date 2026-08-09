@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: habitparty-api
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/${DB_NAME}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    # O "update" faz o Hibernate ler suas Entidades Java e criar as tabelasno banco automaticamente. (Ideal para desenvolvimento)
+    hibernate:
+      ddl-auto: update
+    show-sql: true # Mostra os comandos SELECT/INSERT no console do VS Code
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8080
