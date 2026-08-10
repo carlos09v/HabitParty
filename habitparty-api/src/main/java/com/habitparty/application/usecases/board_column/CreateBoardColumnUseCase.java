@@ -9,8 +9,8 @@ import com.habitparty.application.ports.BoardColumnRepository;
 import com.habitparty.application.ports.WorkspaceRepository;
 import com.habitparty.core.domain.entities.BoardColumn;
 import com.habitparty.core.domain.entities.Workspace;
-import com.habitparty.core.exceptions.BoardColumnLimitExceededException;
-import com.habitparty.core.exceptions.WorkspaceNotFoundExeption;
+import com.habitparty.core.exceptions.LimitExceededException;
+import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
 public class CreateBoardColumnUseCase {
@@ -25,14 +25,14 @@ public class CreateBoardColumnUseCase {
   public BoardColumn execute(CreateBoardColumnDTO dto, UUID userIdLogado) {
     // Verificar se o workspace existe.
     Workspace workspace = workspacePort.findById(dto.workspaceId())
-        .orElseThrow(() -> new WorkspaceNotFoundExeption("Workspace não encontrado!"));
+        .orElseThrow(() -> new ResourceNotFoundException("Workspace não encontrado!"));
 
     workspace.validateOwnership(userIdLogado);
 
     // Limite de Board Columns por Workspace no Plano Free
     int currentCount = boardColumnPort.countByWorkspaceId(dto.workspaceId());
     if (currentCount >= 6) {
-      throw new BoardColumnLimitExceededException(
+      throw new LimitExceededException(
           "Limite de 6 board columns por workspace atingido no plano gratuito.");
     }
 

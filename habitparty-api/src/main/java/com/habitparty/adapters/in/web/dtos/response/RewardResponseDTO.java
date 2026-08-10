@@ -1,0 +1,42 @@
+package com.habitparty.adapters.in.web.dtos.response;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
+
+import com.habitparty.core.domain.entities.Reward;
+import com.habitparty.core.domain.enums.RewardCategory;
+import com.habitparty.core.domain.enums.RewardPackageLevel;
+import com.habitparty.core.domain.enums.RewardType;
+
+public record RewardResponseDTO(
+    UUID id,
+    UUID userId,
+    String name,
+    int orderIndex,
+    String icon,
+    BigDecimal price,
+    List<String> tags,
+    RewardType type,
+    String description,
+    RewardCategory category,
+    RewardPackageLevel packageLevel,
+    Integer baseDurationMinutes
+) {
+  public static RewardResponseDTO fromDomain(Reward reward) {
+    return new RewardResponseDTO(
+      reward.getId(),
+        reward.getUserId(),
+        reward.getName(),
+        reward.getOrder_index(), // Verifique se no seu domínio o método é getOrderIndex()
+        reward.getIcon().orElse(null), // Desempacota o Optional!
+        reward.getPrice(),
+        reward.getTags(),
+        reward.getType(),
+        reward.getDescription().orElse(null),
+        reward.getCategory().orElse(null),
+        reward.getPackageLevel().orElse(null),
+        reward.getBaseDurationMinutes().orElse(null)
+    );
+  }
+}

@@ -37,8 +37,8 @@ public class BoardColumnAdapter implements BoardColumnRepository {
   }
 
   @Override
-  public int countByWorkspaceId(UUID id) {
-    return boardColumnRepository.countByWorkspace_Id(id);
+  public int countByWorkspaceId(UUID workspaceId) {
+    return boardColumnRepository.countByWorkspace_Id(workspaceId);
   }
 
   @Override

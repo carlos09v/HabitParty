@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.habitparty.application.ports.WorkspaceRepository;
 import com.habitparty.core.domain.entities.Workspace;
-import com.habitparty.core.exceptions.WorkspaceNotFoundExeption;
+import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
 public class DeleteWorkspaceUseCase {
@@ -19,7 +19,7 @@ public class DeleteWorkspaceUseCase {
     public void execute(UUID workspaceId, UUID userIdLogado) {
         // 1. Busca o Workspace e verifica se existe
         Workspace workspace = port.findById(workspaceId)
-                .orElseThrow(() -> new WorkspaceNotFoundExeption("Workspace não encontrado!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Workspace não encontrado!"));
 
         // 2. Verifica se o usuário logado é o dono desse workspace (Segurança)
         workspace.validateOwnership(userIdLogado);

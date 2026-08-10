@@ -8,13 +8,12 @@ import java.util.UUID;
 import org.hibernate.annotations.CreationTimestamp;
 
 import com.habitparty.core.domain.enums.UserGender;
+import com.habitparty.core.domain.enums.UserRole;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -31,9 +30,13 @@ import lombok.Setter;
 @AllArgsConstructor // Cria um construtor com todos os campos
 public class UserJpaEntity {
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
+  // @GeneratedValue(strategy = GenerationType.UUID) => O usecase que gera
   @Column(name = "user_id")
   private UUID id;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "role", nullable = false)
+  private UserRole role;
 
   @Column(nullable = false, length = 150, name = "full_name")
   private String fullName;

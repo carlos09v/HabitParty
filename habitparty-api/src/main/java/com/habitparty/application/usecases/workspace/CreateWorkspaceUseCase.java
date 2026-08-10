@@ -8,8 +8,8 @@ import com.habitparty.adapters.in.web.dtos.request.CreateWorkspaceDTO;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.ports.WorkspaceRepository;
 import com.habitparty.core.domain.entities.Workspace;
-import com.habitparty.core.exceptions.UserNotFoundException;
-import com.habitparty.core.exceptions.WorkspaceLimitExceededException;
+import com.habitparty.core.exceptions.LimitExceededException;
+import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
 public class CreateWorkspaceUseCase {
@@ -24,12 +24,12 @@ public class CreateWorkspaceUseCase {
   public Workspace execute(CreateWorkspaceDTO dto, UUID userIdLogado) {
     // Verificar se o user existe.
     userPort.findById(userIdLogado) // <-- Usa o ID confiável do Backend!
-      .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado!"));
+      .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado!"));
 
     // Limite de Workspaces do Plano Free
     int currentCount = workspacePort.countByUserId(userIdLogado);
     if (currentCount >= 2) {
-        throw new WorkspaceLimitExceededException("Limite de 2 workspaces atingido no plano gratuito.");
+        throw new LimitExceededException("Limite de 2 workspaces atingido no plano gratuito.");
     }
 
     // Liberado pra salvar no DB

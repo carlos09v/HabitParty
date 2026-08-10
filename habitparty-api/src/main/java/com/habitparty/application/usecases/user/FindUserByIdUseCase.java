@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.User;
-import com.habitparty.core.exceptions.UserNotFoundException;
+import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
 public class FindUserByIdUseCase {
@@ -22,7 +22,7 @@ public class FindUserByIdUseCase {
         
         // Verifica se existe:
         if (user.isEmpty()) {
-            throw new UserNotFoundException("Usuário não encontrado!"); 
+            throw new ResourceNotFoundException("Usuário não encontrado!"); 
         }
         
         return user.get();

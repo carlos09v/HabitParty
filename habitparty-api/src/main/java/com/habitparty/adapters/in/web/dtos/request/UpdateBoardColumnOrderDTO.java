@@ -4,7 +4,7 @@ import java.util.UUID;
 
 import jakarta.validation.constraints.NotNull;
 
-public record UpdateColumnOrderDTO(
+public record UpdateBoardColumnOrderDTO(
   @NotNull UUID board_column_id,
   @NotNull Integer newIndex
 

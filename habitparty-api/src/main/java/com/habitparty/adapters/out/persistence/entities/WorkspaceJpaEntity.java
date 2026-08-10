@@ -25,7 +25,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class WorkspaceJpaEntity {
   @Id
-  // @GeneratedValue(strategy = GenerationType.UUID) =? O dominio que irá gerar
+  // @GeneratedValue(strategy = GenerationType.UUID) =? O usecase que irá gerar
   @Column(name = "workspace_id")
   private UUID id;
 

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import com.habitparty.application.ports.BoardColumnRepository;
 import com.habitparty.application.ports.WorkspaceRepository;
 import com.habitparty.core.domain.entities.BoardColumn;
-import com.habitparty.core.exceptions.BoardColumnNotFoundException;
+import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 
 @Service
@@ -21,7 +21,7 @@ public class DeleteBoardColumnUseCase {
   public void execute(UUID boardColumnId, UUID userIdLogado) {
     // 1. Busca o Workspace e verifica se existe
     BoardColumn board_Column = port.findById(boardColumnId)
-        .orElseThrow(() -> new BoardColumnNotFoundException("Coluna não encontrada!"));
+        .orElseThrow(() -> new ResourceNotFoundException("Coluna não encontrada!"));
 
     board_Column.validateOwnership(userIdLogado);
 

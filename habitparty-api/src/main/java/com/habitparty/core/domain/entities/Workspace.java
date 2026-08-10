@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.UnauthorizedException;
 
 public class Workspace {
@@ -24,6 +25,14 @@ public class Workspace {
     if (!this.userId.equals(userIdLogado)) {
       throw new UnauthorizedException("Você não tem permissão!");
     }
+  }
+
+  // Método update
+  public void updateName(String newName) {
+    if (newName == null || newName.trim().isEmpty()) {
+      throw new DomainValidationException("O nome do Workspace não pode estar vazio.");
+    }
+    this.name = newName;
   }
 
   public List<BoardColumn> getColumns() {

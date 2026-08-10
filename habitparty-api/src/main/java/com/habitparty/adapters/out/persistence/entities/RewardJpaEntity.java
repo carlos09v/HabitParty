@@ -2,6 +2,7 @@ package com.habitparty.adapters.out.persistence.entities;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -10,13 +11,13 @@ import com.habitparty.core.domain.enums.RewardCategory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -34,7 +35,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class RewardJpaEntity {
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
+  // @GeneratedValue(strategy = GenerationType.UUID) => O usecase que irá gerar
   @Column(name = "reward_id")
   private UUID id;
 
@@ -58,8 +59,10 @@ public class RewardJpaEntity {
   @Column(nullable = false)
   private BigDecimal price;
 
-  @Column
-  private String tags;
+  @ElementCollection
+  @CollectionTable(name = "reward_tags", joinColumns = @JoinColumn(name = "reward_id"))
+  @Column(name = "tag")
+  private List<String> tags;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "reward_type", nullable = false)

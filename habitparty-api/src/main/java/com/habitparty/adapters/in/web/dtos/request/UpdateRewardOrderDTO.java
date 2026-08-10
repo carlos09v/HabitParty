@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 
 public record UpdateRewardOrderDTO(
     @NotNull UUID reward_id,
-    @NotNull Integer newIndex) {
+    @NotNull Integer newIndex
+) {
 
 }

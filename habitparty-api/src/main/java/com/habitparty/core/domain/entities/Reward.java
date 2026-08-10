@@ -1,6 +1,7 @@
 package com.habitparty.core.domain.entities;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -8,6 +9,7 @@ import java.util.UUID;
 import com.habitparty.core.domain.enums.RewardCategory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
+import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.UnauthorizedException;
 
 public class Reward {
@@ -18,7 +20,6 @@ public class Reward {
   private List<String> tags;
   private RewardType type;
   private int orderIndex;
-
 
   // Atributos opcionais (nullable)
   private String icon;
@@ -48,6 +49,67 @@ public class Reward {
     if (!this.userId.equals(userIdLogado)) {
       throw new UnauthorizedException("Você não tem permissão!");
     }
+  }
+
+  public void updateName(String newName) {
+    if (newName == null || newName.trim().isEmpty()) {
+      throw new DomainValidationException("O nome da recompensa não pode estar vazio.");
+    }
+    this.name = newName;
+  }
+
+  public void updateIcon(String newIcon) {
+    this.icon = newIcon;
+  }
+
+  public void updateDescription(String newDescription) {
+    this.description = newDescription;
+  }
+
+  public void updatePrice(BigDecimal newPrice) {
+    if (newPrice != null && newPrice.compareTo(BigDecimal.ZERO) < 0) {
+      throw new DomainValidationException("O preço não pode ser negativo.");
+    }
+    this.price = newPrice;
+  }
+
+  public void updateCategory(RewardCategory newCategory) {
+    this.category = newCategory;
+  }
+
+  public void updateTags(List<String> newTags) {
+    this.tags = newTags != null ? newTags : new ArrayList<>();
+  }
+
+  public void updateType(RewardType newType) {
+    if (newType == null) {
+      throw new DomainValidationException("O tipo da recompensa é obrigatório.");
+    }
+    this.type = newType;
+
+    // Regra de Consistência: Se mudou para qualquer coisa que NÃO seja CUPOM, o domínio apaga imediatamente os dados exclusivos de Cupom.
+    if (this.type != RewardType.TIME_BASED) {
+      this.packageLevel = null;
+      this.baseDurationMinutes = null;
+    }
+  }
+
+  public void updatePackageLevel(RewardPackageLevel newPackageLevel) {
+    // Se tentarem inserir um pacote e o tipo não for CUPOM, bloqueia!
+    if (newPackageLevel != null && this.type != RewardType.TIME_BASED) {
+      throw new DomainValidationException("Apenas recompensas do tipo CUPOM podem ter um Nível de Pacote.");
+    }
+
+    this.packageLevel = newPackageLevel;
+  }
+
+  public void updateBaseDurationMinutes(Integer newDuration) {
+    // Se tentarem inserir uma duração e o tipo não for CUPOM, bloqueia!
+    if (newDuration != null && this.type != RewardType.TIME_BASED) {
+      throw new DomainValidationException("Apenas recompensas do tipo CUPOM podem ter uma Duração Base.");
+    }
+
+    this.baseDurationMinutes = newDuration;
   }
 
   public UUID getId() {
@@ -98,11 +160,11 @@ public class Reward {
     this.type = type;
   }
 
-  public Integer getOrder_index() {
+  public int getOrder_index() {
     return orderIndex;
   }
 
-  public void setOrder_index(Integer order_index) {
+  public void setOrder_index(int order_index) {
     this.orderIndex = order_index;
   }
 

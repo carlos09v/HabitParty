@@ -12,6 +12,7 @@ public class UserMapper {
   public UserJpaEntity toEntity(User domain) {
     UserJpaEntity entity = new UserJpaEntity();
     entity.setId(domain.getId());
+    entity.setRole(domain.getRole());
     entity.setFullName(domain.getFullName());
     entity.setEmail(domain.getEmail());
     entity.setUsername(domain.getUsername());
@@ -34,6 +35,7 @@ public class UserMapper {
     // Obs: A ordem importa, precisa ser igual ao definido no Dominio.
     return new User(
         entity.getId(),
+        entity.getRole(),
         entity.getFullName(),
         entity.getUsername(),
         entity.getEmail(),

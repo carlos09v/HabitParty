@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.habitparty.application.ports.RewardRepository;
 import com.habitparty.core.domain.entities.Reward;
-import com.habitparty.core.exceptions.RewardNotFoundExeption;
+import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
 public class DeleteRewardUseCase {
@@ -18,7 +18,7 @@ public class DeleteRewardUseCase {
 
   public void execute(UUID rewardId, UUID userIdLogado) {
     Reward reward = port.findById(rewardId)
-        .orElseThrow(() -> new RewardNotFoundExeption("Recompensa não encontrada!"));
+        .orElseThrow(() -> new ResourceNotFoundException("Recompensa não encontrada!"));
 
     reward.validateOwnership(userIdLogado);
 

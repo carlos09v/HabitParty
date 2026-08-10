@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.Pattern;
 
 
 // O Record já cria os getters automaticamente por baixo dos panos!
@@ -25,7 +26,11 @@ public record CreateUserDTO(
     String email,
 
     @NotBlank
-    @Size(min = 8, max = 20, message = "A senha deve ter entre 8 e 20 caracteres")
+    @Size(min = 8, max = 64, message = "A senha deve ter entre 8 e 20 caracteres")
+    @Pattern(
+        regexp = "^(?=.*[A-Z])(?=.*[@$!%*?&#]).+$",
+        message = "A nova senha deve conter pelo menos uma letra maiúscula e um caractere especial"
+    )
     String password,
 
     @NotBlank(message = "O gênero é obrigatório")

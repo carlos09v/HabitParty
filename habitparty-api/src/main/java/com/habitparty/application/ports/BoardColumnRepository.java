@@ -21,6 +21,4 @@ public interface BoardColumnRepository {
   void reorderAll(List<BoardColumn> columns);
 
   int countByWorkspaceId(UUID workspaceId); // Contagem pra validação do limite de 6 board_columns por workspace (plano free)
-
-  // Falta o update
 }

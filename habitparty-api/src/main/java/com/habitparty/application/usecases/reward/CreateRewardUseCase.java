@@ -8,8 +8,8 @@ import com.habitparty.adapters.in.web.dtos.request.CreateRewardDTO;
 import com.habitparty.application.ports.RewardRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.Reward;
-import com.habitparty.core.exceptions.RewardLimitExceededException;
-import com.habitparty.core.exceptions.UserNotFoundException;
+import com.habitparty.core.exceptions.LimitExceededException;
+import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
 public class CreateRewardUseCase {
@@ -25,17 +25,17 @@ public class CreateRewardUseCase {
   public Reward execute(CreateRewardDTO dto, UUID userIdLogado) {
     // Verificar se o user existe.
     userPort.findById(userIdLogado) // <-- Usa o ID confiável do Backend!
-      .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado!"));
+      .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado!"));
 
     // Limite de Rewards por User no Plano Free
     int currentCount = port.countByUserId(userIdLogado);
     if (currentCount >= 25) {
-      throw new RewardLimitExceededException(
+      throw new LimitExceededException(
           "Limite de 25 recompensas por usuário atingido no plano gratuito.");
     }
 
     Reward newReward = new Reward(
-        UUID.randomUUID(), // O ID será gerado pelo banco
+        UUID.randomUUID(),
         userIdLogado,
         dto.name(),
         dto.price(),

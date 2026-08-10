@@ -3,6 +3,7 @@ package com.habitparty.core.domain.entities;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.UnauthorizedException;
 
 public class BoardColumn {
@@ -26,6 +27,18 @@ public class BoardColumn {
     if (!this.userId.equals(userIdLogado)) {
       throw new UnauthorizedException("Você não tem permissão!");
     }
+  }
+
+  // Métodos update
+  public void updateName(String newName) {
+    if (newName == null || newName.trim().isEmpty()) {
+      throw new DomainValidationException("O nome da coluna não pode estar vazio.");
+    }
+    this.name = newName;
+  }
+  public void updateIcon(String newIcon) {
+    // Regras...
+    this.icon = newIcon;
   }
 
   public UUID getId() {

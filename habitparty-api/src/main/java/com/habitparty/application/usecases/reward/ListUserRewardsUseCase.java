@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import com.habitparty.application.ports.RewardRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.Reward;
-import com.habitparty.core.exceptions.UserNotFoundException;
+import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
 public class ListUserRewardsUseCase {
@@ -22,7 +22,7 @@ public class ListUserRewardsUseCase {
 
   public List<Reward> execute(UUID userIdLogado) {
     userPort.findById(userIdLogado)
-      .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado!")); 
+      .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado!")); 
 
        return port.findAllByUserId(userIdLogado);
   }
