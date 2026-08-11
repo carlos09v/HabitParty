@@ -29,7 +29,7 @@ public class BoardColumn {
     }
   }
 
-  // Métodos update
+  // --- Updates ---
   public void updateName(String newName) {
     if (newName == null || newName.trim().isEmpty()) {
       throw new DomainValidationException("O nome da coluna não pode estar vazio.");
@@ -41,6 +41,7 @@ public class BoardColumn {
     this.icon = newIcon;
   }
 
+  // --- Getters and Setters ---
   public UUID getId() {
     return id;
   }

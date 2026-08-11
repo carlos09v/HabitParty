@@ -48,6 +48,12 @@ public class UserAdapter implements UserRepository {
   }
 
   @Override
+  public Optional<User> findByEmail(String email) {
+    return userRepository.findByEmail(email)
+        .map(userMapper::toDomain);
+  }
+
+  @Override
   public void deleteById(UUID id) {
     userRepository.deleteById(id);
   }

@@ -27,7 +27,7 @@ public class Workspace {
     }
   }
 
-  // Método update
+  // --- Updates... ---
   public void updateName(String newName) {
     if (newName == null || newName.trim().isEmpty()) {
       throw new DomainValidationException("O nome do Workspace não pode estar vazio.");
@@ -35,10 +35,12 @@ public class Workspace {
     this.name = newName;
   }
 
+  // --- Eager Loading ---
   public List<BoardColumn> getColumns() {
     return columns;
   }
 
+  // --- Getters and Setters ---
   public String getName() {
     return name;
   }

@@ -59,7 +59,6 @@ public class UserController {
     this.updateUserProfileUseCase = updateUserProfileUseCase;
   }
 
-
   @PostMapping
   public ResponseEntity<UserResponseDTO> createUser(@Valid @RequestBody CreateUserDTO requestDto) {
     // O @RequestBody pega o JSON que veio e transforma no DTO.

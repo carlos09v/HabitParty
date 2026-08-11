@@ -51,6 +51,7 @@ public class Reward {
     }
   }
 
+  // --- Updates ---
   public void updateName(String newName) {
     if (newName == null || newName.trim().isEmpty()) {
       throw new DomainValidationException("O nome da recompensa não pode estar vazio.");
@@ -111,6 +112,8 @@ public class Reward {
 
     this.baseDurationMinutes = newDuration;
   }
+
+  // --- Getters and Setters ---
 
   public UUID getId() {
     return id;
