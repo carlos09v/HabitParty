@@ -1,7 +1,10 @@
 package com.habitparty.adapters.out.persistence.entities;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
+
+import org.hibernate.annotations.CreationTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -40,4 +43,8 @@ public class RefreshTokenJpaEntity {
 
   @Column(nullable = false)
   private boolean revoked;
+
+  @Column(name = "created_at", nullable = false, updatable = false)
+  @CreationTimestamp
+  private LocalDateTime createdAt;
 }

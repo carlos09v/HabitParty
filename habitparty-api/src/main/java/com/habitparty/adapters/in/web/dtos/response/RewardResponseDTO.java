@@ -4,11 +4,13 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.habitparty.core.domain.entities.Reward;
 import com.habitparty.core.domain.enums.RewardCategory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
 
+@JsonInclude(JsonInclude.Include.NON_NULL) // <-- Esconde do JSON tudo que for 'null'
 public record RewardResponseDTO(
     UUID id,
     UUID userId,

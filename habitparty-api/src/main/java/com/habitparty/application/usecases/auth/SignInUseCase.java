@@ -18,27 +18,37 @@ import com.habitparty.core.exceptions.DomainValidationException;
 
 @Service
 public class SignInUseCase {
-  private final UserRepository userRepository;
-  private final PasswordHasherPort passwordHasher;
-  private final TokenPort tokenPort;
-  private final RefreshTokenRepository refreshTokenRepository;
-  
-  public SignInUseCase(UserRepository userRepository, PasswordHasherPort passwordHasher, TokenPort tokenPort,
-      RefreshTokenRepository refreshTokenRepository) {
-    this.userRepository = userRepository;
-    this.passwordHasher = passwordHasher;
-    this.tokenPort = tokenPort;
-    this.refreshTokenRepository = refreshTokenRepository;
-  }
+    private final UserRepository userRepository;
+    private final PasswordHasherPort passwordHasher;
+    private final TokenPort tokenPort;
+    private final RefreshTokenRepository refreshTokenRepository;
 
-  public SignInResponseDTO execute(SignInRequestDTO dto) {
+    public SignInUseCase(UserRepository userRepository, PasswordHasherPort passwordHasher, TokenPort tokenPort,
+            RefreshTokenRepository refreshTokenRepository) {
+        this.userRepository = userRepository;
+        this.passwordHasher = passwordHasher;
+        this.tokenPort = tokenPort;
+        this.refreshTokenRepository = refreshTokenRepository;
+    }
+
+    // Define o limite máximo de dispositivos na regra de negócio
+    private static final int MAX_ACTIVE_SESSIONS = 3;
+
+    public SignInResponseDTO execute(SignInRequestDTO dto) {
         // 1. Busca o usuário pelo e-mail
         User user = userRepository.findByEmail(dto.email())
-            .orElseThrow(() -> new DomainValidationException("E-mail ou senha incorretos."));
+                .orElseThrow(() -> new DomainValidationException("E-mail ou senha incorretos."));
 
         // 2. Verifica se a senha bate usando a porta do BCrypt
         if (!passwordHasher.matches(dto.password(), user.getPassword())) {
             throw new DomainValidationException("E-mail ou senha incorretos."); // Mesma mensagem por segurança!
+        }
+
+        // ANOVA REGRA DE LIMITAÇÃO:
+        int activeSessions = refreshTokenRepository.countActiveByUserId(user.getId());
+        // Se já bateu o limite (ou até passou), revoga a sessão mais velha!
+        if (activeSessions >= MAX_ACTIVE_SESSIONS) {
+            refreshTokenRepository.revokeOldestSession(user.getId());
         }
 
         // 3. Fabrica o Access Token (O crachá JWT curto de 2 horas)
@@ -47,11 +57,11 @@ public class SignInUseCase {
         // 4. Cria o Refresh Token (O passe longo de 7 dias)
         // Dica: O valor do RefreshToken não precisa ser um JWT, pode ser apenas uma string aleatória gigantesca e única.
         RefreshToken refreshToken = new RefreshToken(
-            UUID.randomUUID(),
-            user.getId(),
-            UUID.randomUUID().toString(), // String aleatória do token
-            Instant.now().plus(7, ChronoUnit.DAYS), // Expira em 7 dias
-            false // Não está revogado
+                UUID.randomUUID(),
+                user.getId(),
+                UUID.randomUUID().toString(), // String aleatória do token
+                Instant.now().plus(7, ChronoUnit.DAYS), // Expira em 7 dias
+                false // Não está revogado
         );
 
         // 5. Salva o Refresh Token no banco de dados

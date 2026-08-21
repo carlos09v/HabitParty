@@ -33,7 +33,7 @@ public record CreateUserDTO(
     )
     String password,
 
-    @NotBlank(message = "O gênero é obrigatório")
+    @NotNull(message = "O gênero é obrigatório")
     UserGender gender,
 
     @NotNull(message = "A data de nascimento é obrigatória")

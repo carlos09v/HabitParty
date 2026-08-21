@@ -31,12 +31,28 @@ public class SecurityConfig {
     http
         .csrf(csrf -> csrf.disable())
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Muito importante para REST
+        // TRATAR ERROS DE TOKEN ----
+        .exceptionHandling(ex -> ex
+            .authenticationEntryPoint((request, response, authException) -> {
+              response.setContentType("application/json;charset=UTF-8");
+              response.setStatus(401); // 401 Unauthorized é o correto para falta de token
+              response.getWriter()
+                  .write("{\"title\": \"Não Autorizado\", \"detail\": \"Token ausente, expirado ou inválido.\"}");
+            }))
+        // Bloqueio de Rotas
         .authorizeHttpRequests(auth -> auth
+            // --- ROTAS DO SWAGGER LIBERADAS ---
+            .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+
+            
+            // Suas outras rotas públicas
             .requestMatchers(HttpMethod.POST, "/users").permitAll()
-            .requestMatchers("/login").permitAll()
+            .requestMatchers("/error").permitAll()
+            .requestMatchers("/auth/**").permitAll() // Libera login, refresh, etc
+
             .requestMatchers(HttpMethod.GET, "/users").hasRole("ADMIN")
             .anyRequest().authenticated())
-        // AQUI ESTÁ A MÁGICA: Diz pro Spring rodar o nosso filtro antes do dele!
+        // ADiz pro Spring rodar o filtro antes do dele!
         .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();

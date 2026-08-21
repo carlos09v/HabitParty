@@ -1,11 +1,11 @@
 spring:
   application:
     name: habitparty-api
-  
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/${DB_NAME}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://localhost:5432/${DB_NAME:habitparty_db}
+    username: ${DB_USER:toscana}
+    password: ${DB_PASSWORD:productivity}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -24,4 +24,4 @@ server:
 api:
   security:
     token:
-      secret: ${JWT_SECRET}
+      secret: ${JWT_SECRET:XoQBsDVEUC2BJjKZuAevttXavU3VGzgnRB7SAmXBo8AfF}

@@ -1,6 +1,8 @@
 package com.habitparty.adapters.out.persistence;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
@@ -31,4 +33,23 @@ public class RefreshTokenRepositoryAdapter implements RefreshTokenRepository {
     return repository.findByToken(token)
         .map(mapper::toDomain);
   }
+
+  @Override
+  public int countActiveByUserId(UUID userId) {
+    return repository.countActiveTokensByUserId(userId);
+  }
+
+  @Override
+  public void revokeOldestSession(UUID userId) {
+    repository.findFirstByUser_IdAndRevokedFalseOrderByCreatedAtAsc(userId)
+        .ifPresent(oldestToken -> {
+          oldestToken.setRevoked(true);
+          repository.save(oldestToken);
+        });
+  }
+
+  @Override
+public void deleteObsoleteTokens(LocalDateTime dataLimite) {
+    repository.deleteObsoleteTokens(dataLimite);
+}
 }

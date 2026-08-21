@@ -67,6 +67,43 @@ O sistema foi desenhado visando escalabilidade, resiliência e boas práticas de
 *   **Infraestrutura e DevOps:** Docker Compose (orquestração local), SonarQube (SAST/Análise de qualidade) e GitHub Actions (CI/CD).
 *   **Frontend:** React configurado como PWA (Progressive Web App) para funcionamento offline e mobile-first.
 
+# 🚀 Como rodar o projeto
+
+### 1. Subindo o Banco de Dados (Docker)
+O projeto utiliza o Docker Compose para gerenciar o banco de dados PostgreSQL.
+
+*   **Para criar e rodar os containers em segundo plano (com build):**
+    ```bash
+    docker compose up -d --build
+    ```
+    *(O parâmetro `-d` roda em modo "detached" liberando o seu terminal, e o `--build` garante que qualquer alteração nas dependências/imagens seja aplicada).*
+
+*   **Para parar e remover os containers:**
+    ```bash
+    docker compose down
+    ```
+
+*   **Para parar, remover os containers E apagar os dados do banco (Reset total):**
+    ```bash
+    docker compose down -v
+    ```
+
+### 2. Rodando o Servidor Spring Boot
+Com o banco de dados rodando, você pode iniciar a API.
+
+*   **Via terminal (usando Maven):**
+    ```bash
+    ./mvnw spring-boot:run
+    ```
+    *(No Windows, use apenas `mvnw spring-boot:run` ou `mvn spring-boot:run` se tiver o Maven instalado globalmente).*
+
+*   **Via IDE (VS Code / IntelliJ):**
+    Basta localizar a classe principal do projeto (geralmente `HabitpartyApiApplication.java` ou similar) e clicar no botão **Run** ou **Debug**.
+
+---
+**Acessando a Documentação (Swagger):**
+Com o servidor no ar, acesse: `http://localhost:8080/swagger-ui.html`
+
 ## 🎯 Propósito do Projeto
 
 O HabitParty tem dois objetivos principais:

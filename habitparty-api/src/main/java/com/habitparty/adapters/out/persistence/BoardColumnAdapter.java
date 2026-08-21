@@ -67,4 +67,14 @@ public class BoardColumnAdapter implements BoardColumnRepository {
 
     boardColumnRepository.saveAll(entities);
   }
+
+  @Override
+  public void shiftColumnsDown(UUID workspaceId, int deletedIndex) {
+    boardColumnRepository.decrementOrderIndexForColumnsAfter(workspaceId, deletedIndex);
+  }
+
+  @Override
+  public int getMaxOrderIndex(UUID workspaceId) {
+    return boardColumnRepository.findMaxOrderIndexByWorkspaceId(workspaceId);
+  }
 }

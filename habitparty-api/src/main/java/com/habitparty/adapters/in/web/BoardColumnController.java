@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,7 +13,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -20,6 +20,7 @@ import com.habitparty.adapters.in.web.dtos.request.CreateBoardColumnDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateBoardColumnDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateBoardColumnOrderDTO;
 import com.habitparty.adapters.in.web.dtos.response.BoardColumnResponseDTO;
+import com.habitparty.adapters.out.persistence.entities.UserJpaEntity;
 import com.habitparty.application.usecases.board_column.CreateBoardColumnUseCase;
 import com.habitparty.application.usecases.board_column.DeleteBoardColumnUseCase;
 import com.habitparty.application.usecases.board_column.ListUserBoardColumnsUseCase;
@@ -53,9 +54,10 @@ public class BoardColumnController {
   @PostMapping
   public ResponseEntity<BoardColumnResponseDTO> createBoardColumn(
     @RequestBody @Valid CreateBoardColumnDTO requestDTO,
-    @RequestHeader("X-User-Id") UUID userIdLogado
+    @AuthenticationPrincipal UserJpaEntity usuarioLogado
   ) {
-    BoardColumn createdColumn = createBoardColumnUseCase.execute(requestDTO, userIdLogado);
+    UUID userId = usuarioLogado.getId();
+    BoardColumn createdColumn = createBoardColumnUseCase.execute(requestDTO, userId);
 
     return ResponseEntity.status(HttpStatus.CREATED).body(BoardColumnResponseDTO.fromDomain(createdColumn));
   }
@@ -63,9 +65,10 @@ public class BoardColumnController {
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteBoardColumn(
     @PathVariable UUID id,
-    @RequestHeader("X-User-Id") UUID userIdLogado
+    @AuthenticationPrincipal UserJpaEntity usuarioLogado
   ) {
-    deleteBoardColumnUseCase.execute(id, userIdLogado);
+    UUID userId = usuarioLogado.getId();
+    deleteBoardColumnUseCase.execute(id, userId);
 
     return ResponseEntity.noContent().build();
   }
@@ -73,10 +76,11 @@ public class BoardColumnController {
   @PutMapping("/workspace/{workspaceId}/reorder")
   public ResponseEntity<Void> updateOrderIndex(
     @PathVariable UUID workspaceId,
-    @RequestBody @Valid List<UpdateBoardColumnOrderDTO> newOrderList, // O Frontend manda a nova ordem no Body
-    @RequestHeader("X-User-Id") UUID userIdLogado
+    @RequestBody List<@Valid UpdateBoardColumnOrderDTO> newOrderList, // O Frontend manda a nova ordem no Body
+    @AuthenticationPrincipal UserJpaEntity usuarioLogado
   ) {
-    reorderBoardColumnUseCase.execute(workspaceId, newOrderList, userIdLogado);
+    UUID userId = usuarioLogado.getId();
+    reorderBoardColumnUseCase.execute(workspaceId, newOrderList, userId);
 
     return ResponseEntity.noContent().build();
   }
@@ -85,9 +89,10 @@ public class BoardColumnController {
   public ResponseEntity<BoardColumnResponseDTO> update(
     @PathVariable UUID boardColumnId,
     @RequestBody @Valid UpdateBoardColumnDTO dto,
-    @RequestHeader("X-User-Id") UUID userIdLogado
+    @AuthenticationPrincipal UserJpaEntity usuarioLogado
   ) {
-    BoardColumn updatedBoardColumn = updateBoardColumnUseCase.execute(boardColumnId, dto, userIdLogado);
+    UUID userId = usuarioLogado.getId();
+    BoardColumn updatedBoardColumn = updateBoardColumnUseCase.execute(boardColumnId, dto, userId);
 
     return ResponseEntity.ok(BoardColumnResponseDTO.fromDomain(updatedBoardColumn));
   }
@@ -95,10 +100,11 @@ public class BoardColumnController {
   @GetMapping("/workspace/{workspaceId}")
   public ResponseEntity<List<BoardColumnResponseDTO>> getColumnListByWorkspaceId(
       @PathVariable UUID workspaceId,
-      @RequestHeader("X-User-Id") UUID userIdLogado
+      @AuthenticationPrincipal UserJpaEntity usuarioLogado
   ) {
+    UUID userId = usuarioLogado.getId();
     // O UseCase deve receber o workspaceId para filtrar, e o userIdLogado para validar se o usuário é dono daquele workspace!
-    List<BoardColumn> columns = listUserBoardColumnsUseCase.execute(workspaceId, userIdLogado);
+    List<BoardColumn> columns = listUserBoardColumnsUseCase.execute(workspaceId, userId);
 
     List<BoardColumnResponseDTO> responseList = columns.stream()
         .map(BoardColumnResponseDTO::fromDomain)

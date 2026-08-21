@@ -2,6 +2,8 @@ package com.habitparty.application.usecases.user;
 
 import java.util.UUID;
 
+import org.springframework.stereotype.Service;
+
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserPasswordDTO;
 import com.habitparty.application.ports.PasswordHasherPort;
 import com.habitparty.application.ports.UserRepository;
@@ -9,6 +11,7 @@ import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
+@Service
 public class UpdateUserPasswordUseCase {
   private final UserRepository port;
   private final PasswordHasherPort passwordHasher;

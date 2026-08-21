@@ -1,6 +1,7 @@
 package com.habitparty.core.domain.enums;
 
 public enum RewardPackageLevel {
+  NONE("Nenhum"),
   BASIC("Básico"),
   PREMIUM("Premium"),
   PREMIUM_PLUS("Premium Plus");

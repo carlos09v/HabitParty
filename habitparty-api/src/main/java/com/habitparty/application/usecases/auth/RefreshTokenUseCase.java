@@ -1,5 +1,7 @@
 package com.habitparty.application.usecases.auth;
 
+import org.springframework.stereotype.Service;
+
 import com.habitparty.adapters.in.web.dtos.request.RefreshTokenRequestDTO;
 import com.habitparty.adapters.in.web.dtos.response.SignInResponseDTO;
 import com.habitparty.application.ports.RefreshTokenRepository;
@@ -10,6 +12,7 @@ import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
+@Service
 public class RefreshTokenUseCase {
   private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;

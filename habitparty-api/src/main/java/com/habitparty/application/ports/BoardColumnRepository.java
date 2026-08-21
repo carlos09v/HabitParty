@@ -21,4 +21,10 @@ public interface BoardColumnRepository {
   void reorderAll(List<BoardColumn> columns);
 
   int countByWorkspaceId(UUID workspaceId); // Contagem pra validação do limite de 6 board_columns por workspace (plano free)
+
+  // Ao deletar, reordena o index para não ficar um "buraco" na sequência
+  void shiftColumnsDown(UUID workspaceId, int deletedIndex);
+
+  // Para a criação da coluna gerar o index a partir do ultimo gerado
+  int getMaxOrderIndex(UUID workspaceId);
 }

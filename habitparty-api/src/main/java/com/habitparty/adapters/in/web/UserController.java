@@ -6,13 +6,13 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,6 +22,7 @@ import com.habitparty.adapters.in.web.dtos.request.CreateUserDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserPasswordDTO;
 import com.habitparty.adapters.in.web.dtos.response.UserResponseDTO;
+import com.habitparty.adapters.out.persistence.entities.UserJpaEntity;
 import com.habitparty.application.usecases.user.CreateUserUseCase;
 import com.habitparty.application.usecases.user.DeleteUserUseCase;
 import com.habitparty.application.usecases.user.FindAllUsersUseCase;
@@ -45,7 +46,7 @@ public class UserController {
   private final UpdateProfilePhotoUseCase updateProfilePhotoUseCase;
   private final UpdateUserPasswordUseCase updateUserPasswordUseCase;
   private final UpdateUserProfileUseCase updateUserProfileUseCase;
-  
+
   public UserController(CreateUserUseCase createUserUseCase, FindUserByIdUseCase findUserByIdUseCase,
       FindAllUsersUseCase findAllUsersUseCase, DeleteUserUseCase deleteUserUseCase,
       UpdateProfilePhotoUseCase updateProfilePhotoUseCase, UpdateUserPasswordUseCase updateUserPasswordUseCase,
@@ -73,8 +74,10 @@ public class UserController {
 
   @GetMapping("/me")
   public ResponseEntity<UserResponseDTO> getUserById(
-      @RequestHeader("X-User-Id") UUID userIdLogado) {
-    User user = findUserByIdUseCase.execute(userIdLogado);
+      @AuthenticationPrincipal UserJpaEntity usuarioLogado) {
+    // Pegamos o ID que estava dentro da entidade salva no Contexto de Segurança
+    UUID userId = usuarioLogado.getId();
+    User user = findUserByIdUseCase.execute(userId);
 
     UserResponseDTO response = UserResponseDTO.fromDomain(user);
 
@@ -97,8 +100,9 @@ public class UserController {
 
   @DeleteMapping("/me")
   public ResponseEntity<Void> deleteUser(
-      @RequestHeader("X-User-Id") UUID userIdLogado) {
-    deleteUserUseCase.execute(userIdLogado);
+      @AuthenticationPrincipal UserJpaEntity usuarioLogado) {
+    UUID userId = usuarioLogado.getId();
+    deleteUserUseCase.execute(userId);
 
     // Retorna Status 204 (No Content) - Deu certo, mas não tenho nada para te devolver
     return ResponseEntity.noContent().build();
@@ -106,30 +110,31 @@ public class UserController {
 
   @PatchMapping("/password")
   public ResponseEntity<Void> updatePassword(
-      @RequestHeader("X-User-Id") UUID userIdLogado,
-      @RequestBody @Valid UpdateUserPasswordDTO dto
-  ) {
-    updateUserPasswordUseCase.execute(userIdLogado, dto);
+      @AuthenticationPrincipal UserJpaEntity usuarioLogado,
+      @RequestBody @Valid UpdateUserPasswordDTO dto) {
+    UUID userId = usuarioLogado.getId();
+    updateUserPasswordUseCase.execute(userId, dto);
 
     return ResponseEntity.noContent().build();
   }
 
   @PutMapping
   public ResponseEntity<UserResponseDTO> update(
-    @RequestBody @Valid UpdateUserDTO dto,
-    @RequestHeader("X-User-Id") UUID userIdLogado
-  ) {
-    User updatedUser = updateUserProfileUseCase.execute(userIdLogado, dto);
+      @RequestBody @Valid UpdateUserDTO dto,
+      @AuthenticationPrincipal UserJpaEntity usuarioLogado) {
+    UUID userId = usuarioLogado.getId();
+    User updatedUser = updateUserProfileUseCase.execute(userId, dto);
 
     return ResponseEntity.ok(UserResponseDTO.fromDomain(updatedUser));
   }
 
   @PatchMapping(value = "/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<Void> updateProfilePhoto(
-      @RequestHeader("X-User-Id") UUID userIdLogado,
+      @AuthenticationPrincipal UserJpaEntity usuarioLogado,
       @RequestParam("file") MultipartFile photoFile // O Spring extrai o arquivo direto da requisição!
   ) {
-    updateProfilePhotoUseCase.execute(userIdLogado, photoFile);
+    UUID userId = usuarioLogado.getId();
+    updateProfilePhotoUseCase.execute(userId, photoFile);
 
     return ResponseEntity.noContent().build();
   }

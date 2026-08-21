@@ -20,13 +20,21 @@ public class DeleteBoardColumnUseCase {
 
   public void execute(UUID boardColumnId, UUID userIdLogado) {
     // 1. Busca o Workspace e verifica se existe
-    BoardColumn board_Column = port.findById(boardColumnId)
+    BoardColumn column = port.findById(boardColumnId)
         .orElseThrow(() -> new ResourceNotFoundException("Coluna não encontrada!"));
 
-    board_Column.validateOwnership(userIdLogado);
+    column.validateOwnership(userIdLogado);
 
-    // Pra depois: garantir que ao deletar isso, tambem delete Tasks
+    
+    // 3. Salva os valores antes de deletar
+    UUID workspaceId = column.getWorkspaceId();
+    int deletedIndex = column.getOrderIndex();
 
     port.deleteById(boardColumnId);
+
+    // Puxa as colunas restantes para fechar o "buraco"
+    port.shiftColumnsDown(workspaceId, deletedIndex);
+
+    // Pra depois: garantir que ao deletar isso, tambem delete Tasks
   }
 }

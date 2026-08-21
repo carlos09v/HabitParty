@@ -2,10 +2,13 @@ package com.habitparty.application.usecases.user;
 
 import java.util.UUID;
 
+import org.springframework.stereotype.Service;
+
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
+@Service
 public class AddUserXpUseCase {
   private final UserRepository port;
 

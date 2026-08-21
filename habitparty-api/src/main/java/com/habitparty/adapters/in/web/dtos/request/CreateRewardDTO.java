@@ -3,6 +3,8 @@ package com.habitparty.adapters.in.web.dtos.request;
 import java.math.BigDecimal;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.habitparty.core.domain.enums.RewardCategory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
@@ -27,6 +29,7 @@ public record CreateRewardDTO(
   @PositiveOrZero(message = "O preço não pode ser negativo")
   BigDecimal price,
 
+  @JsonSetter(nulls = Nulls.SKIP) // Isso diz: se vier nulo ou vazio de forma estranha, ignore
   RewardCategory category,
 
   List<String> tags,

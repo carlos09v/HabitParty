@@ -15,11 +15,11 @@ import com.habitparty.core.exceptions.ResourceNotFoundException;
 @Service
 public class CreateBoardColumnUseCase {
   private final WorkspaceRepository workspacePort;
-  private final BoardColumnRepository boardColumnPort;
+  private final BoardColumnRepository port;
 
-  public CreateBoardColumnUseCase(WorkspaceRepository workspacePort, BoardColumnRepository boardColumnPort) {
+  public CreateBoardColumnUseCase(WorkspaceRepository workspacePort, BoardColumnRepository port) {
     this.workspacePort = workspacePort;
-    this.boardColumnPort = boardColumnPort;
+    this.port = port;
   }
 
   public BoardColumn execute(CreateBoardColumnDTO dto, UUID userIdLogado) {
@@ -30,20 +30,26 @@ public class CreateBoardColumnUseCase {
     workspace.validateOwnership(userIdLogado);
 
     // Limite de Board Columns por Workspace no Plano Free
-    int currentCount = boardColumnPort.countByWorkspaceId(dto.workspaceId());
+    int currentCount = port.countByWorkspaceId(dto.workspaceId());
     if (currentCount >= 6) {
       throw new LimitExceededException(
           "Limite de 6 board columns por workspace atingido no plano gratuito.");
     }
+
+    // 1. Descobre qual é o maior índice atual desse quadro
+    int maxIndex = port.getMaxOrderIndex(dto.workspaceId());
+
+    // 2. Define o índice da nova coluna como o maior + 1
+    int newIndex = maxIndex + 1;
 
     BoardColumn newBoard_Column = new BoardColumn(
         UUID.randomUUID(),
         userIdLogado,
         dto.workspaceId(),
         dto.name(),
-        currentCount,
+        newIndex,
         dto.icon());
 
-    return boardColumnPort.save(newBoard_Column);
+    return port.save(newBoard_Column);
   }
 }

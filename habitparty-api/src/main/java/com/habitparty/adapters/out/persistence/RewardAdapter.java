@@ -67,4 +67,14 @@ public class RewardAdapter implements RewardRepository {
 
     rewardJpaRepository.saveAll(entities);
   }
+
+  @Override
+  public void shiftColumnsDown(UUID workspaceId, int deletedIndex) {
+    rewardJpaRepository.decrementOrderIndexForRewardsAfter(workspaceId, deletedIndex);
+  }
+
+  @Override
+  public int getMaxOrderIndex(UUID workspaceId) {
+    return rewardJpaRepository.findMaxOrderIndexByUserId(workspaceId);
+  }
 }

@@ -22,6 +22,11 @@ public class DeleteRewardUseCase {
 
     reward.validateOwnership(userIdLogado);
 
+    UUID userId = reward.getUserId();
+    int deletedIndex = reward.getOrder_index();
+
     port.deleteById(rewardId);
+
+    port.shiftColumnsDown(userId, deletedIndex);
   }
 }

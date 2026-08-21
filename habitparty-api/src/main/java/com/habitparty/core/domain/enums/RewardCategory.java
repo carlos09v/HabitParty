@@ -1,6 +1,7 @@
 package com.habitparty.core.domain.enums;
 
 public enum RewardCategory {
+    NONE("Nenhum"),
     ENTERTAINMENT("Entretenimento"),
     WELLNESS("Bem-estar"),
     SHOPPING("Compras"),

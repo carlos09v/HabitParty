@@ -1,6 +1,9 @@
 package com.habitparty.adapters.in.web;
 
+import java.util.UUID;
+
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -9,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.habitparty.adapters.in.web.dtos.request.RefreshTokenRequestDTO;
 import com.habitparty.adapters.in.web.dtos.request.SignInRequestDTO;
 import com.habitparty.adapters.in.web.dtos.response.SignInResponseDTO;
+import com.habitparty.adapters.out.persistence.entities.UserJpaEntity;
 import com.habitparty.application.usecases.auth.LogoutUseCase;
 import com.habitparty.application.usecases.auth.RefreshTokenUseCase;
 import com.habitparty.application.usecases.auth.SignInUseCase;
@@ -47,8 +51,11 @@ public class AuthController {
 
     // 3. Rota de Logout (Invalida o token longo no banco)
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestBody @Valid RefreshTokenRequestDTO dto) {
-        logoutUseCase.execute(dto);
+    public ResponseEntity<Void> logout(
+      @RequestBody @Valid RefreshTokenRequestDTO dto,
+      @AuthenticationPrincipal UserJpaEntity usuarioLogado) {
+        UUID userId = usuarioLogado.getId();
+        logoutUseCase.execute(dto, userId);
         return ResponseEntity.noContent().build(); // 204 No Content
     }
 }

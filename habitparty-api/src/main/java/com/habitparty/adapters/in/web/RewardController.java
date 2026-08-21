@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,6 +14,7 @@ import com.habitparty.adapters.in.web.dtos.request.CreateRewardDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateRewardDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateRewardOrderDTO;
 import com.habitparty.adapters.in.web.dtos.response.RewardResponseDTO;
+import com.habitparty.adapters.out.persistence.entities.UserJpaEntity;
 import com.habitparty.application.usecases.reward.CreateRewardUseCase;
 import com.habitparty.application.usecases.reward.DeleteRewardUseCase;
 import com.habitparty.application.usecases.reward.FindRewardByIdUseCase;
@@ -29,7 +31,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 
 
 @RestController
@@ -58,9 +59,10 @@ public class RewardController {
   @PostMapping
   public ResponseEntity<RewardResponseDTO> createReward(
     @RequestBody @Valid CreateRewardDTO requestDTO,
-    @RequestHeader("X-User-Id") UUID userIdLogado
+    @AuthenticationPrincipal UserJpaEntity usuarioLogado
   ) {
-    Reward createdReward = createRewardUseCase.execute(requestDTO, userIdLogado);
+    UUID userId = usuarioLogado.getId();
+    Reward createdReward = createRewardUseCase.execute(requestDTO, userId);
 
     return ResponseEntity.status(HttpStatus.CREATED).body(RewardResponseDTO.fromDomain(createdReward));
   }
@@ -68,19 +70,21 @@ public class RewardController {
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteReward(
     @PathVariable UUID id,
-    @RequestHeader("X-User-Id") UUID userIdLogado
+    @AuthenticationPrincipal UserJpaEntity usuarioLogado
   ) {
-    deleteRewardUseCase.execute(id, userIdLogado);
+    UUID userId = usuarioLogado.getId();
+    deleteRewardUseCase.execute(id, userId);
 
     return ResponseEntity.noContent().build();
   }
   
   @PutMapping("/reorder")
   public ResponseEntity<Void> updateOrderIndex(
-    @RequestBody @Valid List<UpdateRewardOrderDTO> newOrderList, // O Frontend manda a nova ordem no Body
-    @RequestHeader("X-User-Id") UUID userIdLogado
+    @RequestBody List<@Valid UpdateRewardOrderDTO> newOrderList, // O Frontend manda a nova ordem no Body
+    @AuthenticationPrincipal UserJpaEntity usuarioLogado
   ) {
-    reorderRewardUseCase.execute(newOrderList, userIdLogado);
+    UUID userId = usuarioLogado.getId();
+    reorderRewardUseCase.execute(newOrderList, userId);
 
     return ResponseEntity.noContent().build();
   }
@@ -89,18 +93,20 @@ public class RewardController {
   public ResponseEntity<RewardResponseDTO> update(
     @PathVariable UUID rewardId,
     @RequestBody @Valid UpdateRewardDTO dto,
-    @RequestHeader("X-User-Id") UUID userIdLogado
+    @AuthenticationPrincipal UserJpaEntity usuarioLogado
   ) {
-    Reward updatedReward = updateRewardUseCase.execute(rewardId, dto, userIdLogado);
+    UUID userId = usuarioLogado.getId();
+    Reward updatedReward = updateRewardUseCase.execute(rewardId, dto, userId);
 
     return ResponseEntity.ok(RewardResponseDTO.fromDomain(updatedReward));
   }
 
   @GetMapping
   public ResponseEntity<List<RewardResponseDTO>> getRewardListByUserId(
-      @RequestHeader("X-User-Id") UUID userIdLogado
+      @AuthenticationPrincipal UserJpaEntity usuarioLogado
   ) {
-    List<Reward> rewards = listUserRewardsUseCase.execute(userIdLogado);
+    UUID userId = usuarioLogado.getId();
+    List<Reward> rewards = listUserRewardsUseCase.execute(userId);
 
     List<RewardResponseDTO> responseList = rewards.stream()
         .map(RewardResponseDTO::fromDomain)

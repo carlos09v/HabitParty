@@ -2,18 +2,19 @@ package com.habitparty.adapters.out.persistence.entities;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import com.habitparty.core.domain.enums.RewardCategory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
 
-import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -59,10 +60,10 @@ public class RewardJpaEntity {
   @Column(nullable = false)
   private BigDecimal price;
 
-  @ElementCollection
-  @CollectionTable(name = "reward_tags", joinColumns = @JoinColumn(name = "reward_id"))
-  @Column(name = "tag")
-  private List<String> tags;
+  // Coluna nativa do Postegre chamada Array (text[])
+  @JdbcTypeCode(SqlTypes.ARRAY)
+  @Column(name = "tags", columnDefinition = "text[]")
+  private List<String> tags = new ArrayList<>();
 
   @Enumerated(EnumType.STRING)
   @Column(name = "reward_type", nullable = false)

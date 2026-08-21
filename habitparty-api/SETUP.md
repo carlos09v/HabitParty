@@ -1,7 +1,7 @@
 # Setup e Ferramentas - HabitParty
 Este documento detalha o processo de inicialização do projeto backend e as configurações das ferramentas de Inteligência Artificial para agilizar o desenvolvimento utilizando a Arquitetura Hexagonal.
 
-## 1. Tutorial de Setup: Spring Initializr com Maven no VS Code
+## Tutorial de Setup: Spring Initializr com Maven no VS Code
 0. Instale a extensão `Spring Initializr Java Support`
 1. Pressione Ctrl + Shift + P e digite/selecione `Spring Initializr: Create a Maven Project.`
 2. Spring Boot Version: Escolha a versão mais recente que contenha apenas números (ex: 3.3.0 ou superior). Nunca escolha as que terminam em (SNAPSHOT) ou (M1/RC1), pois são versões de teste.
@@ -15,7 +15,7 @@ Este documento detalha o processo de inicialização do projeto backend e as con
 - Spring Web (Para criar os Controllers REST).
 - Spring Data JPA (Para a comunicação abstrata com o banco de dados).
 
-## 2. Automação de Código: Skills de Inteligência Artificial
+## Automação de Código: Skills de Inteligência Artificial
 Para garantir a consistência da Arquitetura Hexagonal, utilizamos três skills atômicas no assistente de IA. Configure-as no seu editor utilizando as instruções abaixo.
 
 ### 2.1. Skill: /create-core

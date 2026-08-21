@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.habitparty.adapters.in.web.dtos.request.CreateWorkspaceDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateWorkspaceDTO;
 import com.habitparty.adapters.in.web.dtos.response.WorkspaceResponseDTO;
+import com.habitparty.adapters.out.persistence.entities.UserJpaEntity;
 import com.habitparty.application.usecases.workspace.CreateWorkspaceUseCase;
 import com.habitparty.application.usecases.workspace.DeleteWorkspaceUseCase;
 import com.habitparty.application.usecases.workspace.ListUserWorkspacesUseCase;
@@ -19,12 +20,12 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @RestController
@@ -47,8 +48,9 @@ public class WorkspaceController {
   @PostMapping
   public ResponseEntity<WorkspaceResponseDTO> createWorkspace(
       @RequestBody @Valid CreateWorkspaceDTO requestDTO,
-      @RequestHeader("X-User-Id") UUID userIdLogado) {
-    Workspace createdWorkspace = createWorkspaceUseCase.execute(requestDTO, userIdLogado);
+      @AuthenticationPrincipal UserJpaEntity usuarioLogado) {
+    UUID userId = usuarioLogado.getId();
+    Workspace createdWorkspace = createWorkspaceUseCase.execute(requestDTO, userId);
 
     return ResponseEntity.status(HttpStatus.CREATED).body(WorkspaceResponseDTO.fromDomain(createdWorkspace));
   }
@@ -56,17 +58,19 @@ public class WorkspaceController {
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteWorkspace(
       @PathVariable UUID id,
-      @RequestHeader("X-User-Id") UUID userIdLogado) {
-    deleteWorkspaceUseCase.execute(id, userIdLogado);
+      @AuthenticationPrincipal UserJpaEntity usuarioLogado) {
+    UUID userId = usuarioLogado.getId();
+    deleteWorkspaceUseCase.execute(id, userId);
 
     return ResponseEntity.noContent().build();
   }
 
   @GetMapping()
   public ResponseEntity<List<WorkspaceResponseDTO>> getWorkspaceListByUserId(
-      @RequestHeader("X-User-Id") UUID userIdLogado // Identidade segura
+      @AuthenticationPrincipal UserJpaEntity usuarioLogado
   ) {
-    List<Workspace> workspaces = listUserWorkspacesUseCase.execute(userIdLogado);
+    UUID userId = usuarioLogado.getId();
+    List<Workspace> workspaces = listUserWorkspacesUseCase.execute(userId);
 
     List<WorkspaceResponseDTO> responseList = workspaces.stream()
         .map(WorkspaceResponseDTO::fromDomain)
@@ -79,9 +83,9 @@ public class WorkspaceController {
   public ResponseEntity<WorkspaceResponseDTO> update(
       @PathVariable UUID workspaceId,
       @Valid @RequestBody UpdateWorkspaceDTO dto,
-      @RequestHeader("X-User-Id") UUID userIdLogado
-  ) {
-    Workspace updatedWorkspace = updateWorkspaceUseCase.execute(workspaceId, dto, userIdLogado);
+      @AuthenticationPrincipal UserJpaEntity usuarioLogado) {
+    UUID userId = usuarioLogado.getId();
+    Workspace updatedWorkspace = updateWorkspaceUseCase.execute(workspaceId, dto, userId);
 
     // Converte a entidade de domínio atualizada de volta para DTO antes de devolver ao cliente
     return ResponseEntity.ok(WorkspaceResponseDTO.fromDomain(updatedWorkspace));

@@ -1,9 +1,11 @@
 package com.habitparty.adapters.out.persistence;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
 
 import com.habitparty.application.ports.PasswordHasherPort;
 
+@Component
 public class BcryptPasswordHasherAdapter implements PasswordHasherPort {
   private final PasswordEncoder passwordEncoder;
 

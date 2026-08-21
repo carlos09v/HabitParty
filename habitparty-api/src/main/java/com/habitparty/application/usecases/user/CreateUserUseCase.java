@@ -4,12 +4,15 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.springframework.stereotype.Service;
+
 import com.habitparty.adapters.in.web.dtos.request.CreateUserDTO;
 import com.habitparty.application.ports.PasswordHasherPort;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.enums.UserRole;
 
+@Service
 public class CreateUserUseCase {
   private final UserRepository port;
   private final PasswordHasherPort passwordHasher;
