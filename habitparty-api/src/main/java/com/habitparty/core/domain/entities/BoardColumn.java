@@ -3,24 +3,26 @@ package com.habitparty.core.domain.entities;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.UnauthorizedException;
 
 public class BoardColumn {
   private UUID id;
-  private UUID userId; // Chave estrangeira
-  private UUID workspaceId; // Chave estrangeira
+  private UUID userId; // FK
+  private UUID workspaceId; // FK
   private String name;
   private int orderIndex;
   private String icon;
+  private boolean isVisible; // Mochila de Columns
 
-  public BoardColumn(UUID id, UUID userId, UUID workspaceId, String name, int orderIndex, String icon) {
+  public BoardColumn(UUID id, UUID userId, UUID workspaceId, String name, int orderIndex, String icon,
+      boolean isVisible) {
     this.id = id;
     this.userId = userId;
     this.workspaceId = workspaceId;
     this.name = name;
     this.orderIndex = orderIndex;
     this.icon = icon;
+    this.isVisible = isVisible;
   }
 
   public void validateOwnership(UUID userIdLogado) {
@@ -29,16 +31,23 @@ public class BoardColumn {
     }
   }
 
-  // --- Updates ---
-  public void updateName(String newName) {
-    if (newName == null || newName.trim().isEmpty()) {
-      throw new DomainValidationException("O nome da coluna não pode estar vazio.");
-    }
-    this.name = newName;
+  // Quando o usuário quiser guardar a lista na mochila, você chama esse método:
+  public void hide() {
+    this.isVisible = false;
   }
-  public void updateIcon(String newIcon) {
-    // Regras...
-    this.icon = newIcon;
+
+  // Quando quiser trazer de volta pra tela:
+  public void show() {
+    this.isVisible = true;
+  }
+
+  public void updateDetails(String newName, String newIcon) {
+      if (newName != null && !newName.trim().isEmpty()) {
+          this.name = newName;
+      }
+      if (newIcon != null && !newIcon.trim().isEmpty()) {
+          this.icon = newIcon;
+      }
   }
 
   // --- Getters and Setters ---
@@ -88,5 +97,13 @@ public class BoardColumn {
 
   public void setOrderIndex(int order_index) {
     this.orderIndex = order_index;
+  }
+
+  public boolean isVisible() {
+    return isVisible;
+  }
+
+  public void setVisible(boolean isVisible) {
+    this.isVisible = isVisible;
   }
 }

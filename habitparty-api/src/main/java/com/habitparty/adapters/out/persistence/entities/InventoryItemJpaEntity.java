@@ -1,11 +1,13 @@
 package com.habitparty.adapters.out.persistence.entities;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import org.hibernate.annotations.CreationTimestamp;
 
 import com.habitparty.core.domain.enums.InventoryItemStatus;
+import com.habitparty.core.domain.enums.RewardPackageLevel;
+import com.habitparty.core.domain.enums.RewardType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -40,6 +42,25 @@ public class InventoryItemJpaEntity {
   @Column(name = "reward_id", nullable = false)
   private UUID rewardId;
 
+  // === SNAPSHOTS ===
+  @Column(name = "name_snapshot", nullable = false)
+  private String nameSnapshot;
+
+  @Column(name = "icon_snapshot")
+  private String iconSnapshot; // Ícones geralmente podem ser nulos
+
+  @Column(name = "price_snapshot", nullable = false)
+  private BigDecimal priceSnapshot;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "package_level_snapshot")
+  private RewardPackageLevel packageLevelSnapshot;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "reward_type_snapshot", nullable = false)
+  private RewardType rewardTypeSnapshot;
+  // =================
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private InventoryItemStatus status;
@@ -50,7 +71,7 @@ public class InventoryItemJpaEntity {
   @Column(name = "remaining_minutes")
   private Integer remainingMinutes;
 
-  @CreationTimestamp
+  // @CreationTimestamp => O usecase irá gerar
   @Column(name = "acquired_at", nullable = false, updatable = false)
   private LocalDateTime acquiredAt;
 }

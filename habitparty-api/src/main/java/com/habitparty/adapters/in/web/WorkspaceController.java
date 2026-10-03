@@ -9,6 +9,7 @@ import com.habitparty.adapters.in.web.dtos.response.WorkspaceResponseDTO;
 import com.habitparty.adapters.out.persistence.entities.UserJpaEntity;
 import com.habitparty.application.usecases.workspace.CreateWorkspaceUseCase;
 import com.habitparty.application.usecases.workspace.DeleteWorkspaceUseCase;
+import com.habitparty.application.usecases.workspace.GetFullKanbanBoardUseCase;
 import com.habitparty.application.usecases.workspace.ListUserWorkspacesUseCase;
 import com.habitparty.application.usecases.workspace.UpdateWorkspaceUseCase;
 import com.habitparty.core.domain.entities.Workspace;
@@ -35,14 +36,16 @@ public class WorkspaceController {
   private final DeleteWorkspaceUseCase deleteWorkspaceUseCase;
   private final ListUserWorkspacesUseCase listUserWorkspacesUseCase;
   private final UpdateWorkspaceUseCase updateWorkspaceUseCase;
+  private final GetFullKanbanBoardUseCase getFullKanbanBoardUseCase;
 
   public WorkspaceController(CreateWorkspaceUseCase createWorkspaceUseCase,
       DeleteWorkspaceUseCase deleteWorkspaceUseCase, ListUserWorkspacesUseCase listUserWorkspacesUseCase,
-      UpdateWorkspaceUseCase updateWorkspaceUseCase) {
+      UpdateWorkspaceUseCase updateWorkspaceUseCase, GetFullKanbanBoardUseCase getFullKanbanBoardUseCase) {
     this.createWorkspaceUseCase = createWorkspaceUseCase;
     this.deleteWorkspaceUseCase = deleteWorkspaceUseCase;
     this.listUserWorkspacesUseCase = listUserWorkspacesUseCase;
     this.updateWorkspaceUseCase = updateWorkspaceUseCase;
+    this.getFullKanbanBoardUseCase = getFullKanbanBoardUseCase;
   }
 
   @PostMapping
@@ -89,5 +92,19 @@ public class WorkspaceController {
 
     // Converte a entidade de domínio atualizada de volta para DTO antes de devolver ao cliente
     return ResponseEntity.ok(WorkspaceResponseDTO.fromDomain(updatedWorkspace));
+  }
+
+  // Rota específica para carregar a tela do quadro (Kanban)
+  @GetMapping("/{workspaceId}/kanban")
+  public ResponseEntity<WorkspaceResponseDTO> getFullKanbanBoard(
+      @PathVariable UUID workspaceId,
+      @AuthenticationPrincipal UserJpaEntity usuarioLogado
+  ) {
+    UUID userId = usuarioLogado.getId();
+    
+    // O Caso de Uso já devolve o DTO Gigante montadinho!
+    WorkspaceResponseDTO kanbanBoard = getFullKanbanBoardUseCase.execute(workspaceId, userId);
+
+    return ResponseEntity.ok(kanbanBoard);
   }
 }

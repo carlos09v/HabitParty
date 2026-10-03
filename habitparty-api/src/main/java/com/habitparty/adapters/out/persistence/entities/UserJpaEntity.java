@@ -38,6 +38,9 @@ public class UserJpaEntity {
   @Column(name = "role", nullable = false)
   private UserRole role;
 
+  @Column(name = "is_premium", nullable = false)
+  private boolean isPremium;
+
   @Column(nullable = false, length = 150, name = "full_name")
   private String fullName;
 

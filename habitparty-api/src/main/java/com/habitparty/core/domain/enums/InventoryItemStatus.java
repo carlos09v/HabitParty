@@ -2,7 +2,9 @@ package com.habitparty.core.domain.enums;
 
 public enum InventoryItemStatus {
     AVAILABLE("Disponível"),      // Item comprado, pronto para ser usado
-    IN_FOCUS("No Focus");       // Item atrelado ao FocusRecord
+    CONSUMED("Usado"),      // Item não visível na mochila, apenas para registro no transaction
+    IN_FOCUS("No Focus"),       // Item atrelado ao FocusRecord
+    DISCARDED("Descartado"); // Item não visível na mochila, apenas para registro no transaction
 
     private final String description;
 

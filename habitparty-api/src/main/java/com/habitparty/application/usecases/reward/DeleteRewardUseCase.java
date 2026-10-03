@@ -5,7 +5,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.habitparty.application.ports.RewardRepository;
-import com.habitparty.core.domain.entities.Reward;
+import com.habitparty.core.domain.entities.reward.Reward;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
@@ -22,11 +22,6 @@ public class DeleteRewardUseCase {
 
     reward.validateOwnership(userIdLogado);
 
-    UUID userId = reward.getUserId();
-    int deletedIndex = reward.getOrder_index();
-
     port.deleteById(rewardId);
-
-    port.shiftColumnsDown(userId, deletedIndex);
   }
 }

@@ -11,15 +11,22 @@ public record WorkspaceResponseDTO(
     String name,
     List<BoardColumnResponseDTO> columns // Traz todas as colunas -> prática do (Aninhamento / Eager Loading) que é o carregamento incial de tudo que precisa (1 get grande) e não 3 gets (workspace, boardColumn e tasks)
 ) {
+  // 1. Usado para o Menu Lateral (Sidebar) - Devolve as colunas vazias
   public static WorkspaceResponseDTO fromDomain(Workspace workspace) {
     return new WorkspaceResponseDTO(
         workspace.getId(),
         workspace.getUserId(),
         workspace.getName(),
-        // Pega a lista do domínio, converte cada item para DTO e junta tudo!
-        workspace.getColumns() != null
-            ? workspace.getColumns().stream().map(BoardColumnResponseDTO::fromDomain).toList()
-            : List.of() // Retorna uma lista vazia caso o Domínio ainda não tenha colunas
+        List.of() // Lista vazia para não pesar o JSON
     );
+  }
+
+  // 2. Usado no GET Grandão - Recebe as colunas já processadas!
+  public static WorkspaceResponseDTO fromDomain(Workspace workspace, List<BoardColumnResponseDTO> columns) {
+    return new WorkspaceResponseDTO(
+        workspace.getId(),
+        workspace.getUserId(),
+        workspace.getName(),
+        columns);
   }
 }

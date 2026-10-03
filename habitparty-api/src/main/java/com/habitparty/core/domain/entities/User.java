@@ -15,6 +15,7 @@ import com.habitparty.core.exceptions.DomainValidationException;
 public class User {
   private UUID id;
   private UserRole role;
+  private boolean isPremium;
   private String fullName;
   private String username;
   private String email;
@@ -31,13 +32,15 @@ public class User {
   // Tudo definido aqui deve ir pra Entity!
 
   // Construtor no Java
-  public User(UUID id, UserRole role, String fullName, String username, String email, String password,
+  public User(UUID id, UserRole role, boolean isPremium, String fullName, String username, String email,
+      String password,
       BigDecimal currentCoins,
       BigDecimal totalGoldEarned,
       LocalDate birthday, String profilePhotoUrl, UserGender gender, int totalXp, int currentStreak, int highestStreak,
       LocalDateTime createdAt) {
     this.id = id;
     this.role = role != null ? role : UserRole.USER;
+    this.isPremium = isPremium;
     this.fullName = fullName;
     this.username = username;
     this.email = email;
@@ -103,6 +106,38 @@ public class User {
     return nextLevel.getMinXpRequired() - this.totalXp;
   }
 
+  public void removeXp(int xpToRemove) {
+    if (xpToRemove <= 0) {
+      throw new DomainValidationException("O XP a ser removido deve ser maior que zero.");
+    }
+
+    // Subtrai o XP, mas o Math.max garante que nunca fique menor que 0
+    this.totalXp = Math.max(0, this.totalXp - xpToRemove);
+
+    // Graças ao método getCurrentLevel(), se o XP cair muito, o usuário perde o nível automaticamente na próxima vez que a tela carregar!
+  }
+
+  // Modo Hardcore
+  public void applyPenalty(BigDecimal penaltyAmount, int xpPenalty) {
+    // 1. Aplica a multa em moedas usando o seu método já existente (que não deixa ficar negativo)
+    if (penaltyAmount != null) {
+      this.removeCoins(penaltyAmount);
+    }
+
+    // 2. Aplica a multa em XP com a trava anti-rebaixamento
+    if (xpPenalty > 0) {
+      // Descobre qual é o XP mínimo para o usuário continuar no nível atual
+      int minXpForCurrentLevel = this.getCurrentLevel().getMinXpRequired();
+
+      // Calcula como ficaria o XP após a multa
+      int xpAfterPenalty = this.totalXp - xpPenalty;
+
+      // O Math.max agora compara com o XP mínimo do nível atual, e não com zero!
+      // Assim, ele nunca cai para o nível de baixo. O pior que acontece é ficar com 0% da barra atual.
+      this.totalXp = Math.max(minXpForCurrentLevel, xpAfterPenalty);
+    }
+  }
+
   // --- LÓGICA DE OFENSIVA (STREAK) ---
   public void incrementStreak() {
     this.currentStreak += 1;
@@ -116,6 +151,26 @@ public class User {
   public void resetStreak() {
     // Essa é a penalidade por ficar 1 dia sem completar tarefas
     this.currentStreak = 0;
+  }
+
+  // Ao completar task
+  public void addCoins(BigDecimal amount) {
+    if (amount != null && amount.compareTo(BigDecimal.ZERO) > 0) {
+      this.currentCoins = this.currentCoins.add(amount);
+      this.totalGoldEarned = this.totalGoldEarned.add(amount);
+    }
+  }
+
+  public void removeCoins(BigDecimal penaltyAmount) {
+    if (penaltyAmount != null && penaltyAmount.compareTo(BigDecimal.ZERO) > 0) {
+      this.currentCoins = this.currentCoins.subtract(penaltyAmount);
+      
+      // Multas não lançam exceção, apenas garantem que a conta não fique negativa
+      // (Se o usuário tinha $ 1,00 e a multa era $ 5,00, ele fica com R$ 0,00 e a vida segue)
+      if (this.currentCoins.compareTo(BigDecimal.ZERO) < 0) {
+        this.currentCoins = BigDecimal.ZERO;
+      }
+    }
   }
 
   // Compra do Reward
@@ -134,6 +189,10 @@ public class User {
   }
 
   // --- ATUALIZAÇÃO DE PERFIL ---
+  public void upgradeToPremium() {
+    this.isPremium = true;
+  }
+
   public void updateProfile(String fullName, LocalDate birthday, UserGender gender) {
     if (fullName == null || fullName.trim().isEmpty()) {
       throw new DomainValidationException("O nome não pode estar vazio.");
@@ -176,6 +235,14 @@ public class User {
 
   public void setRole(UserRole role) {
     this.role = role;
+  }
+
+  public boolean isPremium() {
+    return isPremium;
+  }
+
+  public void setPremium(boolean isPremium) {
+    this.isPremium = isPremium;
   }
 
   public String getFullName() {
@@ -281,5 +348,4 @@ public class User {
   public void setHighestStreak(int highestStreak) {
     this.highestStreak = highestStreak;
   }
-
 }

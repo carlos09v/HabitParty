@@ -20,6 +20,7 @@ import com.habitparty.adapters.in.web.dtos.request.CreateBoardColumnDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateBoardColumnDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateBoardColumnOrderDTO;
 import com.habitparty.adapters.in.web.dtos.response.BoardColumnResponseDTO;
+import com.habitparty.adapters.in.web.dtos.response.BoardColumnSummaryDTO;
 import com.habitparty.adapters.out.persistence.entities.UserJpaEntity;
 import com.habitparty.application.usecases.board_column.CreateBoardColumnUseCase;
 import com.habitparty.application.usecases.board_column.DeleteBoardColumnUseCase;
@@ -38,7 +39,7 @@ public class BoardColumnController {
   private final DeleteBoardColumnUseCase deleteBoardColumnUseCase;
   private final ReorderBoardColumnUseCase reorderBoardColumnUseCase;
   private final UpdateBoardColumnUseCase updateBoardColumnUseCase;  
-  private final ListUserBoardColumnsUseCase listUserBoardColumnsUseCase;  
+  private final ListUserBoardColumnsUseCase listUserBoardColumnsUseCase;
 
   public BoardColumnController(CreateBoardColumnUseCase createBoardColumnUseCase,
       DeleteBoardColumnUseCase deleteBoardColumnUseCase, ReorderBoardColumnUseCase reorderBoardColumnUseCase,
@@ -49,7 +50,6 @@ public class BoardColumnController {
     this.updateBoardColumnUseCase = updateBoardColumnUseCase;
     this.listUserBoardColumnsUseCase = listUserBoardColumnsUseCase;
   }
-
 
   @PostMapping
   public ResponseEntity<BoardColumnResponseDTO> createBoardColumn(
@@ -92,23 +92,22 @@ public class BoardColumnController {
     @AuthenticationPrincipal UserJpaEntity usuarioLogado
   ) {
     UUID userId = usuarioLogado.getId();
-    BoardColumn updatedBoardColumn = updateBoardColumnUseCase.execute(boardColumnId, dto, userId);
+    
+    BoardColumnResponseDTO responseDTO = updateBoardColumnUseCase.execute(boardColumnId, dto, userId);
 
-    return ResponseEntity.ok(BoardColumnResponseDTO.fromDomain(updatedBoardColumn));
+    return ResponseEntity.ok(responseDTO);
   }
 
   @GetMapping("/workspace/{workspaceId}")
-  public ResponseEntity<List<BoardColumnResponseDTO>> getColumnListByWorkspaceId(
+  public ResponseEntity<List<BoardColumnSummaryDTO>> getColumnListByWorkspaceId(
       @PathVariable UUID workspaceId,
       @AuthenticationPrincipal UserJpaEntity usuarioLogado
   ) {
-    UUID userId = usuarioLogado.getId();
-    // O UseCase deve receber o workspaceId para filtrar, e o userIdLogado para validar se o usuário é dono daquele workspace!
-    List<BoardColumn> columns = listUserBoardColumnsUseCase.execute(workspaceId, userId);
-
-    List<BoardColumnResponseDTO> responseList = columns.stream()
-        .map(BoardColumnResponseDTO::fromDomain)
-        .toList();
+    
+    List<BoardColumnSummaryDTO> responseList = listUserBoardColumnsUseCase.execute(
+        workspaceId, 
+        usuarioLogado.getId()
+    );
 
     return ResponseEntity.ok(responseList);
   }

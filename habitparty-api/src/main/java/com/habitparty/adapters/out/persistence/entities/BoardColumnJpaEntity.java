@@ -36,6 +36,9 @@ public class BoardColumnJpaEntity {
   @JoinColumn(name = "workspace_id", nullable = false)
   private WorkspaceJpaEntity workspace;
 
+  @Column(name = "is_visible", nullable = false)
+  private boolean isVisible;
+
   @Column(nullable = false, length = 12)
   private String name;
 

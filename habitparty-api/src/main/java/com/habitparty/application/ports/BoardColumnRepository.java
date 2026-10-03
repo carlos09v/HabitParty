@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.habitparty.adapters.in.web.dtos.response.BoardColumnSummaryDTO;
 import com.habitparty.core.domain.entities.BoardColumn;
 
 public interface BoardColumnRepository {
@@ -20,11 +21,16 @@ public interface BoardColumnRepository {
   // Útil para o ReorderColumnsUseCase atualizar várias de uma vez:
   void reorderAll(List<BoardColumn> columns);
 
-  int countByWorkspaceId(UUID workspaceId); // Contagem pra validação do limite de 6 board_columns por workspace (plano free)
+  int countByWorkspaceId(UUID workspaceId); // Contagem pra validação do limite de 4 board_columns por workspace (plano free)
+
+  // Retorna apenas as listas visíveis, ordenadas para a tela!
+  List<BoardColumn> findVisibleByWorkspaceId(UUID workspaceId);
 
   // Ao deletar, reordena o index para não ficar um "buraco" na sequência
   void shiftColumnsDown(UUID workspaceId, int deletedIndex);
 
   // Para a criação da coluna gerar o index a partir do ultimo gerado
   int getMaxOrderIndex(UUID workspaceId);
+
+  List<BoardColumnSummaryDTO> getColumnSummaries(UUID workspaceId);
 }

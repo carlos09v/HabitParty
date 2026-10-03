@@ -10,7 +10,7 @@ import com.habitparty.adapters.out.persistence.entities.RewardJpaEntity;
 import com.habitparty.adapters.out.persistence.mappers.RewardMapper;
 import com.habitparty.adapters.out.persistence.repository.RewardJpaRepository;
 import com.habitparty.application.ports.RewardRepository;
-import com.habitparty.core.domain.entities.Reward;
+import com.habitparty.core.domain.entities.reward.Reward;
 
 @Component
 public class RewardAdapter implements RewardRepository {
@@ -58,19 +58,18 @@ public class RewardAdapter implements RewardRepository {
     return rewardJpaRepository.countByUser_Id(userId);
   }
 
-  @Override
-  public void reorderAll(List<Reward> rewards) {
-    // 1. Recebe o Domínio puro, converte cada item da lista para Entidade JPA
-    List<RewardJpaEntity> entities = rewards.stream()
-        .map(domain -> rewardMapper.toEntity(domain))
-        .toList();
+  public List<Reward> saveAll(List<Reward> rewards) {
+      List<RewardJpaEntity> entities = rewards.stream()
+          .map(rewardMapper::toEntity)
+          .toList();
 
-    rewardJpaRepository.saveAll(entities);
-  }
+      // SALVA NO BANCO DE DADOS EM LOTE
+      List<RewardJpaEntity> savedEntities = rewardJpaRepository.saveAll(entities);
 
-  @Override
-  public void shiftColumnsDown(UUID workspaceId, int deletedIndex) {
-    rewardJpaRepository.decrementOrderIndexForRewardsAfter(workspaceId, deletedIndex);
+      // Converte as entidades salvas de volta para o Domínio
+      return savedEntities.stream()
+          .map(rewardMapper::toDomain)
+          .toList();
   }
 
   @Override

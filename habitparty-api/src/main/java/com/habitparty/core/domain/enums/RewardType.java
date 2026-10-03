@@ -2,7 +2,8 @@ package com.habitparty.core.domain.enums;
 
 public enum RewardType {
   SINGLE_USE("Uso único"),
-  TIME_BASED("Cupom");
+  TIME_BASED("Cupom"),
+  MISTERY_BOX("Caixa Misteriosa");
 
   private final String description;
 

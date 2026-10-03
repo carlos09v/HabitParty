@@ -5,9 +5,9 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
+import com.habitparty.adapters.in.web.dtos.response.BoardColumnSummaryDTO;
 import com.habitparty.application.ports.BoardColumnRepository;
 import com.habitparty.application.ports.WorkspaceRepository;
-import com.habitparty.core.domain.entities.BoardColumn;
 import com.habitparty.core.domain.entities.Workspace;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
@@ -22,13 +22,13 @@ public class ListUserBoardColumnsUseCase {
     this.port = port;
   }
 
-  public List<BoardColumn> execute(UUID workspaceId, UUID userIdLogado) {
+  public List<BoardColumnSummaryDTO> execute(UUID workspaceId, UUID userIdLogado) {
     // Verificar se o workspace existe.
     Workspace workspace = workspacePort.findById(workspaceId)
         .orElseThrow(() -> new ResourceNotFoundException("Workspace não encontrado!"));
 
     workspace.validateOwnership(userIdLogado);
 
-    return port.findAllByWorkspaceId(workspaceId);
+    return port.getColumnSummaries(workspaceId);
   }
 }

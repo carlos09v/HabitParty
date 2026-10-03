@@ -1,10 +1,13 @@
 package com.habitparty.core.domain.enums;
 
 public enum TransactionType {
-  EARNED("Ganho"), // Tasks
-  SPENT("Gasto"), // Rewards
-  MANUAL_ADJUSTMENT("Ajuste Manual"),
-  ITEM_CONSUMED("Item usado"); // Inventory_Item
+  REWARD_BOUGHT("Gasto da loja"), // Reward
+  TASK_COMPLETED("Ganho na task"), // Tasks
+  TASK_FAILED("Falha na task"),
+  BAD_HABIT_PENALTY("Penalidade de Hábito Negativo"),
+  ITEM_CONSUMED("Item Consumido"), // Filtro de Mochila
+  ITEM_DISCARDED("Item Descartado"), // Filtro de Mochila
+  MANUAL_ADJUSTMENT("Ajuste Manual"); // Filtro de Admin
 
   private final String description;
 

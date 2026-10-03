@@ -30,6 +30,7 @@ public class CreateUserUseCase {
     User newUser = new User(
         UUID.randomUUID(), // O sistema gera o ID e não o DB
         UserRole.USER,
+        false, // Todo user nasce Free
         dto.fullName(), // Vem do DTO
         dto.username(), // Vem do DTO
         dto.email(), // Vem do DTO

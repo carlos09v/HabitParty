@@ -4,7 +4,8 @@ public enum RewardPackageLevel {
   NONE("Nenhum"),
   BASIC("Básico"),
   PREMIUM("Premium"),
-  PREMIUM_PLUS("Premium Plus");
+  EPIC("Épico"),
+  LEGENDARY("Lendário");
 
   private final String description;
 

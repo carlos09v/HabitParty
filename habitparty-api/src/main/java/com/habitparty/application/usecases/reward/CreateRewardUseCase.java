@@ -7,11 +7,12 @@ import org.springframework.stereotype.Service;
 import com.habitparty.adapters.in.web.dtos.request.CreateRewardDTO;
 import com.habitparty.application.ports.RewardRepository;
 import com.habitparty.application.ports.UserRepository;
-import com.habitparty.core.domain.entities.Reward;
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.domain.entities.reward.Reward;
 import com.habitparty.core.domain.enums.RewardCategory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
+import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.LimitExceededException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
@@ -57,10 +58,16 @@ public class CreateRewardUseCase {
         
     } else if (dto.type() == RewardType.TIME_BASED) {
         if (durationFinal == null || durationFinal <= 0) {
-            durationFinal = 30;
+            durationFinal = 30; // Tempo padrão
         }
         if (packageFinal == null) {
             packageFinal = RewardPackageLevel.NONE;
+        }
+    } else if (dto.type() == RewardType.MISTERY_BOX) {
+        durationFinal = null; // A caixa em si não tem tempo, o prêmio sorteado é que terá
+        
+        if (packageFinal == null || packageFinal == RewardPackageLevel.NONE) {
+            throw new DomainValidationException("Precisa ter um nível de pacote selecionado!");
         }
     }
 

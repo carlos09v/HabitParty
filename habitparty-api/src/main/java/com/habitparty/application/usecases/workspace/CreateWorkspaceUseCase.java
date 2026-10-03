@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import com.habitparty.adapters.in.web.dtos.request.CreateWorkspaceDTO;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.ports.WorkspaceRepository;
+import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.Workspace;
 import com.habitparty.core.exceptions.LimitExceededException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
@@ -23,13 +24,18 @@ public class CreateWorkspaceUseCase {
 
   public Workspace execute(CreateWorkspaceDTO dto, UUID userIdLogado) {
     // Verificar se o user existe.
-    userPort.findById(userIdLogado) // <-- Usa o ID confiável do Backend!
+    User user = userPort.findById(userIdLogado) // <-- Usa o ID confiável do Backend!
       .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado!"));
 
-    // Limite de Workspaces do Plano Free
+    // 2. Limite dinâmico: 4 para Premium, 2 para Free
+    int limit = user.isPremium() ? 4 : 2;
     int currentCount = workspacePort.countByUserId(userIdLogado);
-    if (currentCount >= 2) {
-        throw new LimitExceededException("Limite de 2 workspaces atingido no plano gratuito.");
+    
+    if (currentCount >= limit) {
+        throw new LimitExceededException(
+            "Limite de " + limit + " ambientes atingido. " +
+            (user.isPremium() ? "Você atingiu o teto máximo do aplicativo." : "Assine o plano Premium para criar até 4 ambientes!")
+        );
     }
 
     // Liberado pra salvar no DB

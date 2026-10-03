@@ -3,9 +3,9 @@ spring:
     name: habitparty-api
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/${DB_NAME:habitparty_db}
-    username: ${DB_USER:toscana}
-    password: ${DB_PASSWORD:productivity}
+    url: jdbc:postgresql://localhost:5432/${DB_NAME}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -24,4 +24,8 @@ server:
 api:
   security:
     token:
-      secret: ${JWT_SECRET:XoQBsDVEUC2BJjKZuAevttXavU3VGzgnRB7SAmXBo8AfF}
+      secret: ${JWT_SECRET}
+      # https://randomkeygen.com/ ou `openssl rand -base64 32` (no terminal)
+      
+      
+      

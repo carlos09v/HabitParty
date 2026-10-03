@@ -4,9 +4,12 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.domain.enums.UserRole;
 
 public record UserResponseDTO(
         UUID id,
+        boolean isPremium,
+        UserRole role,
         String fullName,
         String username,
         String email,
@@ -28,6 +31,8 @@ public record UserResponseDTO(
         // Obs: dados sensíveis são omitidos (como a password)
         return new UserResponseDTO(
                 user.getId(),
+                user.isPremium(),
+                user.getRole(),
                 user.getFullName(),
                 user.getUsername(),
                 user.getEmail(),

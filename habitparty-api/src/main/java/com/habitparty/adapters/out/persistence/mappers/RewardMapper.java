@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 import com.habitparty.adapters.out.persistence.entities.RewardJpaEntity;
 import com.habitparty.adapters.out.persistence.entities.UserJpaEntity;
-import com.habitparty.core.domain.entities.Reward;
+import com.habitparty.core.domain.entities.reward.Reward;
 
 @Component
 public class RewardMapper {
@@ -48,7 +48,7 @@ public class RewardMapper {
         entity.getIcon(),
         entity.getDescription(),
         entity.getCategory(),
-        entity.getBaseDurationMinutes(), // Ordem corrigida (vem antes)
+        entity.getBaseDurationMinutes(),
         entity.getPackageLevel()
     );
   }

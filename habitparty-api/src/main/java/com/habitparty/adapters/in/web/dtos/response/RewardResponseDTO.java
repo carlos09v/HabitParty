@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.habitparty.core.domain.entities.Reward;
+import com.habitparty.core.domain.entities.reward.Reward;
 import com.habitparty.core.domain.enums.RewardCategory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
@@ -30,8 +30,8 @@ public record RewardResponseDTO(
       reward.getId(),
         reward.getUserId(),
         reward.getName(),
-        reward.getOrder_index(), // Verifique se no seu domínio o método é getOrderIndex()
-        reward.getIcon().orElse(null), // Desempacota o Optional!
+        reward.getOrder_index(),
+        reward.getIcon().orElse(null),
         reward.getPrice(),
         reward.getTags(),
         reward.getType(),

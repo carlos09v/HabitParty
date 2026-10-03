@@ -6,19 +6,22 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
+import com.habitparty.adapters.in.web.dtos.response.BoardColumnSummaryDTO;
 import com.habitparty.adapters.out.persistence.entities.BoardColumnJpaEntity;
 import com.habitparty.adapters.out.persistence.mappers.BoardColumnMapper;
 import com.habitparty.adapters.out.persistence.repository.BoardColumnJpaRepository;
+import com.habitparty.adapters.out.persistence.repository.BoardColumnJpaRepository.BoardColumnSummaryProjection;
 import com.habitparty.application.ports.BoardColumnRepository;
 import com.habitparty.core.domain.entities.BoardColumn;
+import com.habitparty.core.domain.enums.task.TaskStatus;
 
 @Component
 public class BoardColumnAdapter implements BoardColumnRepository {
-  private final BoardColumnJpaRepository boardColumnRepository;
+  private final BoardColumnJpaRepository repository;
   private final BoardColumnMapper boardColumnMapper;
 
-  public BoardColumnAdapter(BoardColumnJpaRepository boardColumnJpaRepository, BoardColumnMapper boardColumnMapper) {
-    this.boardColumnRepository = boardColumnJpaRepository;
+  public BoardColumnAdapter(BoardColumnJpaRepository repository, BoardColumnMapper boardColumnMapper) {
+    this.repository = repository;
     this.boardColumnMapper = boardColumnMapper;
   }
 
@@ -26,35 +29,65 @@ public class BoardColumnAdapter implements BoardColumnRepository {
   public BoardColumn save(BoardColumn board_Column) {
     BoardColumnJpaEntity entity = boardColumnMapper.toEntity(board_Column);
 
-    BoardColumnJpaEntity savedEntity = boardColumnRepository.save(entity);
+    BoardColumnJpaEntity savedEntity = repository.save(entity);
 
     return boardColumnMapper.toDomain(savedEntity);
   }
 
   @Override
+  public List<BoardColumnSummaryDTO> getColumnSummaries(UUID workspaceId) {
+    // Busca a projeção no banco (passando o enum de COMPLETED para a query)
+    List<BoardColumnSummaryProjection> projections = repository.findSummaryByWorkspaceId(
+        workspaceId,
+        TaskStatus.COMPLETED);
+
+    // Converte a Projeção nativa do Spring para o seu DTO limpo
+    return projections.stream()
+        .map(p -> new BoardColumnSummaryDTO(
+            p.getId(),
+            p.getName(),
+            p.getIcon(),
+            p.getOrderIndex(),
+            p.getTotalTasks() != null ? p.getTotalTasks() : 0L,
+            p.getCompletedTasks() != null ? p.getCompletedTasks() : 0L))
+        .toList();
+  }
+
+  @Override
   public void deleteById(UUID id) {
-    boardColumnRepository.deleteById(id);
+    repository.deleteById(id);
   }
 
   @Override
   public int countByWorkspaceId(UUID workspaceId) {
-    return boardColumnRepository.countByWorkspace_Id(workspaceId);
+    return repository.countByWorkspace_Id(workspaceId);
   }
 
   @Override
   public Optional<BoardColumn> findById(UUID id) {
-    return boardColumnRepository.findById(id)
+    return repository.findById(id)
         .map(entity -> boardColumnMapper.toDomain(entity));
   }
 
   @Override
   public List<BoardColumn> findAllByWorkspaceId(UUID workspaceId) {
     // 1. O JpaRepository vai no banco e traz a lista de entidades
-    List<BoardColumnJpaEntity> entities = boardColumnRepository.findByWorkspace_Id(workspaceId);
+    List<BoardColumnJpaEntity> entities = repository.findByWorkspace_Id(workspaceId);
 
     // 2. Converte a lista de entidades JPA para lista de Domínio
     return entities.stream()
         .map(entity -> boardColumnMapper.toDomain(entity))
+        .toList();
+  }
+
+  @Override
+  public List<BoardColumn> findVisibleByWorkspaceId(UUID workspaceId) {
+
+    List<BoardColumnJpaEntity> entities = repository
+        .findByWorkspaceIdAndIsVisibleTrueOrderByOrderIndexAsc(workspaceId);
+
+    return entities.stream()
+        .map(boardColumnMapper::toDomain) // Seu mapper já converte de JPA para Domínio
         .toList();
   }
 
@@ -65,16 +98,16 @@ public class BoardColumnAdapter implements BoardColumnRepository {
         .map(domain -> boardColumnMapper.toEntity(domain))
         .toList();
 
-    boardColumnRepository.saveAll(entities);
+    repository.saveAll(entities);
   }
 
   @Override
   public void shiftColumnsDown(UUID workspaceId, int deletedIndex) {
-    boardColumnRepository.decrementOrderIndexForColumnsAfter(workspaceId, deletedIndex);
+    repository.decrementOrderIndexForColumnsAfter(workspaceId, deletedIndex);
   }
 
   @Override
   public int getMaxOrderIndex(UUID workspaceId) {
-    return boardColumnRepository.findMaxOrderIndexByWorkspaceId(workspaceId);
+    return repository.findMaxOrderIndexByWorkspaceId(workspaceId);
   }
 }

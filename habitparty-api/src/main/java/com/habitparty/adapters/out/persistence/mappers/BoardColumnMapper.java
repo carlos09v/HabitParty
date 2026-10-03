@@ -23,6 +23,7 @@ public class BoardColumnMapper {
     entity.setId(domain.getId());
     entity.setUser(userReference);
     entity.setWorkspace(workspaceReference);
+    entity.setVisible(domain.isVisible());
     entity.setName(domain.getName());
     entity.setIcon(domain.getIcon().orElse(null));
     entity.setOrderIndex(domain.getOrderIndex());
@@ -37,6 +38,7 @@ public class BoardColumnMapper {
         entity.getWorkspace().getId(),
         entity.getName(),
         entity.getOrderIndex(),
-        entity.getIcon());
+        entity.getIcon(),
+        entity.isVisible());
   }
 }

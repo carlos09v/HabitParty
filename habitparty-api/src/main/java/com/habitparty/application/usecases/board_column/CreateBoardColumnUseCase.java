@@ -6,8 +6,10 @@ import org.springframework.stereotype.Service;
 
 import com.habitparty.adapters.in.web.dtos.request.CreateBoardColumnDTO;
 import com.habitparty.application.ports.BoardColumnRepository;
+import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.ports.WorkspaceRepository;
 import com.habitparty.core.domain.entities.BoardColumn;
+import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.Workspace;
 import com.habitparty.core.exceptions.LimitExceededException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
@@ -15,41 +17,55 @@ import com.habitparty.core.exceptions.ResourceNotFoundException;
 @Service
 public class CreateBoardColumnUseCase {
   private final WorkspaceRepository workspacePort;
+  private final UserRepository userPort;
   private final BoardColumnRepository port;
 
-  public CreateBoardColumnUseCase(WorkspaceRepository workspacePort, BoardColumnRepository port) {
+  public CreateBoardColumnUseCase(WorkspaceRepository workspacePort, BoardColumnRepository port, UserRepository userPort) {
     this.workspacePort = workspacePort;
     this.port = port;
+    this.userPort = userPort;
   }
 
   public BoardColumn execute(CreateBoardColumnDTO dto, UUID userIdLogado) {
-    // Verificar se o workspace existe.
+   // Verificar se o workspace existe e validar posse
     Workspace workspace = workspacePort.findById(dto.workspaceId())
         .orElseThrow(() -> new ResourceNotFoundException("Workspace não encontrado!"));
-
     workspace.validateOwnership(userIdLogado);
 
-    // Limite de Board Columns por Workspace no Plano Free
+    // Buscar o usuário para verificar o plano (Free ou Premium)
+    User user = userPort.findById(userIdLogado)
+        .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado!"));
+
+    // Define o limite absoluto: 6 para Premium, 4 para Free
+    int limit = user.isPremium() ? 6 : 4;
+    
+    // Conta TODAS as listas criadas, visíveis ou não
     int currentCount = port.countByWorkspaceId(dto.workspaceId());
-    if (currentCount >= 6) {
-      throw new LimitExceededException(
-          "Limite de 6 board columns por workspace atingido no plano gratuito.");
+    
+    if (currentCount >= limit) {
+        throw new LimitExceededException(
+            "Limite de " + limit + " listas por ambiente atingido. " +
+            (user.isPremium() ? "Você já atingiu o teto máximo." : "Assine o plano Premium para criar até 6 listas!")
+        );
     }
 
-    // 1. Descobre qual é o maior índice atual desse quadro
+    // Descobre qual é o maior índice atual desse quadro
     int maxIndex = port.getMaxOrderIndex(dto.workspaceId());
-
-    // 2. Define o índice da nova coluna como o maior + 1
     int newIndex = maxIndex + 1;
 
-    BoardColumn newBoard_Column = new BoardColumn(
+    // LÓGICA DE UX: Se já existem 4 ou mais listas, a nova vai direto pra mochila (false)
+    boolean isDefaultVisible = currentCount < 4;
+
+    BoardColumn newBoardColumn = new BoardColumn(
         UUID.randomUUID(),
         userIdLogado,
         dto.workspaceId(),
         dto.name(),
         newIndex,
-        dto.icon());
+        dto.icon(),
+        isDefaultVisible
+    );
 
-    return port.save(newBoard_Column);
+    return port.save(newBoardColumn);
   }
 }

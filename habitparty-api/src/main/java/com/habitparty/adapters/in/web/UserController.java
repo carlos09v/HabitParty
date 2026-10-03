@@ -37,8 +37,6 @@ import jakarta.validation.Valid;
 @RestController // 1. Avisa o Spring que essa classe vai responder para a Web (JSON)
 @RequestMapping("/users") // 2. Define a rota base. Tudo aqui vai começar com "http://localhost:8080/users"
 public class UserController {
-  // 3. O Controller injeta apenas os CASOS DE USO.
-  // Ele não sabe o que é Adapter, Repository ou Banco de Dados.
   private final CreateUserUseCase createUserUseCase;
   private final FindUserByIdUseCase findUserByIdUseCase;
   private final FindAllUsersUseCase findAllUsersUseCase;
@@ -60,6 +58,7 @@ public class UserController {
     this.updateUserProfileUseCase = updateUserProfileUseCase;
   }
 
+  // Toda rota GET esta protegida com RBAC verificando se possui role de ADMIN no accessToken
   @PostMapping
   public ResponseEntity<UserResponseDTO> createUser(@Valid @RequestBody CreateUserDTO requestDto) {
     // O @RequestBody pega o JSON que veio e transforma no DTO.
@@ -85,7 +84,6 @@ public class UserController {
     return ResponseEntity.ok(response);
   }
 
-  // É necessario implementar o RBCA para proteger rotas como essa...
   @GetMapping
   public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
     List<User> users = findAllUsersUseCase.execute();

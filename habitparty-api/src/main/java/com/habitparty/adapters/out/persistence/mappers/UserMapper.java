@@ -13,6 +13,7 @@ public class UserMapper {
     UserJpaEntity entity = new UserJpaEntity();
     entity.setId(domain.getId());
     entity.setRole(domain.getRole());
+    entity.setPremium(domain.isPremium());
     entity.setFullName(domain.getFullName());
     entity.setEmail(domain.getEmail());
     entity.setUsername(domain.getUsername());
@@ -36,6 +37,7 @@ public class UserMapper {
     return new User(
         entity.getId(),
         entity.getRole(),
+        entity.isPremium(),
         entity.getFullName(),
         entity.getUsername(),
         entity.getEmail(),
