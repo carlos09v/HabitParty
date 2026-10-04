@@ -1,6 +1,7 @@
 package com.habitparty.application.usecases.auth;
 
 import java.time.Instant;
+import org.springframework.transaction.annotation.Transactional;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
@@ -17,6 +18,7 @@ import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.exceptions.DomainValidationException;
 
 @Service
+@Transactional
 public class SignInUseCase {
     private final UserRepository userRepository;
     private final PasswordHasherPort passwordHasher;

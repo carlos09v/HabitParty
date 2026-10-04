@@ -1,6 +1,7 @@
 package com.habitparty.application.usecases.workspace;
 
 import java.util.UUID;
+import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.stereotype.Service;
 
@@ -13,6 +14,7 @@ import com.habitparty.core.exceptions.LimitExceededException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
+@Transactional
 public class CreateWorkspaceUseCase {
   private final WorkspaceRepository workspacePort;
   private final UserRepository userPort;

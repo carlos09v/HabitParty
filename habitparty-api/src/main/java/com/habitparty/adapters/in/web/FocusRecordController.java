@@ -5,83 +5,63 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.habitparty.adapters.in.web.api.FocusRecordApi;
 import com.habitparty.adapters.in.web.dtos.request.CreateFocusRecordDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateFocusRecordDTO;
 import com.habitparty.adapters.in.web.dtos.response.FocusRecordResponseDTO;
-import com.habitparty.adapters.out.persistence.entities.UserJpaEntity;
 import com.habitparty.application.usecases.focus.CreateFocusRecordUseCase;
 import com.habitparty.application.usecases.focus.DeleteFocusRecordUseCase;
 import com.habitparty.application.usecases.focus.GetFocusRecordsByActivityUseCase;
 import com.habitparty.application.usecases.focus.UpdateFocusRecordUseCase;
+import com.habitparty.infrastructure.security.AuthenticatedUser;
 
-import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 @RestController
-@RequestMapping("/focus-records")
-public class FocusRecordController {
+public class FocusRecordController implements FocusRecordApi {
   private final CreateFocusRecordUseCase createUseCase;
   private final UpdateFocusRecordUseCase updateUseCase;
   private final DeleteFocusRecordUseCase deleteUseCase;
   private final GetFocusRecordsByActivityUseCase getByActivityUseCase;
 
-  public FocusRecordController(
-      CreateFocusRecordUseCase createUseCase,
-      UpdateFocusRecordUseCase updateUseCase,
-      DeleteFocusRecordUseCase deleteUseCase,
-      GetFocusRecordsByActivityUseCase getByActivityUseCase) {
-    this.createUseCase = createUseCase;
-    this.updateUseCase = updateUseCase;
-    this.deleteUseCase = deleteUseCase;
-    this.getByActivityUseCase = getByActivityUseCase;
-  }
-
-  // Carregamento Sob Demanda: Retorna o histórico paginado apenas quando o usuário abre o painel da atividade
-  @GetMapping("/activity/{activityId}")
+  @Override
   public ResponseEntity<Page<FocusRecordResponseDTO>> getByActivity(
-      @PathVariable UUID activityId,
-      @RequestParam(defaultValue = "0") int page,
-      @AuthenticationPrincipal UserJpaEntity usuarioLogado) {
+      UUID activityId,
+      int page,
+      AuthenticatedUser usuarioLogado) {
 
-    Page<FocusRecordResponseDTO> response = getByActivityUseCase.execute(usuarioLogado.getId(), activityId, page);
+    Page<FocusRecordResponseDTO> response = getByActivityUseCase.execute(usuarioLogado.id(), activityId, page);
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping
+  @Override
   public ResponseEntity<FocusRecordResponseDTO> create(
-      @RequestBody @Valid CreateFocusRecordDTO request,
-      @AuthenticationPrincipal UserJpaEntity usuarioLogado) {
+      CreateFocusRecordDTO request,
+      AuthenticatedUser usuarioLogado) {
 
-    FocusRecordResponseDTO response = createUseCase.execute(usuarioLogado.getId(), request);
+    FocusRecordResponseDTO response = createUseCase.execute(usuarioLogado.id(), request);
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
 
-  @PutMapping("/{recordId}")
+  @Override
   public ResponseEntity<FocusRecordResponseDTO> update(
-      @PathVariable UUID recordId,
-      @RequestBody @Valid UpdateFocusRecordDTO request,
-      @AuthenticationPrincipal UserJpaEntity usuarioLogado) {
+      UUID recordId,
+      UpdateFocusRecordDTO request,
+      AuthenticatedUser usuarioLogado) {
 
-    FocusRecordResponseDTO response = updateUseCase.execute(usuarioLogado.getId(), recordId, request);
+    FocusRecordResponseDTO response = updateUseCase.execute(usuarioLogado.id(), recordId, request);
     return ResponseEntity.ok(response);
   }
 
-  @DeleteMapping("/{recordId}")
+  @Override
   public ResponseEntity<Void> delete(
-      @PathVariable UUID recordId,
-      @AuthenticationPrincipal UserJpaEntity usuarioLogado) {
+      UUID recordId,
+      AuthenticatedUser usuarioLogado) {
 
-    deleteUseCase.execute(usuarioLogado.getId(), recordId);
+    deleteUseCase.execute(usuarioLogado.id(), recordId);
     return ResponseEntity.noContent().build();
   }
 }

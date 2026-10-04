@@ -1,6 +1,7 @@
 package com.habitparty.application.usecases.task;
 
 import java.util.UUID;
+import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.stereotype.Service;
 
@@ -9,6 +10,7 @@ import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
+@Transactional
 public class DeleteTaskUseCase {
   private final TaskRepository taskPort;
 

@@ -1,6 +1,7 @@
 package com.habitparty.application.usecases.user;
 
 import java.math.BigDecimal;
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -13,6 +14,7 @@ import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.enums.UserRole;
 
 @Service
+@Transactional
 public class CreateUserUseCase {
   private final UserRepository port;
   private final PasswordHasherPort passwordHasher;

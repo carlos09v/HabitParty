@@ -1,6 +1,7 @@
 package com.habitparty.application.usecases.task;
 
 import java.time.LocalDateTime;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import com.habitparty.core.domain.entities.task.Todo;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service 
+@Transactional
 public class UpdateTaskUseCase {
   private final TaskRepository port;
 

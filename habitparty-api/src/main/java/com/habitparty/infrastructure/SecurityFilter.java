@@ -11,6 +11,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.habitparty.adapters.out.persistence.JwtAdapter;
 import com.habitparty.adapters.out.persistence.repository.UserJpaRepository;
+import com.habitparty.infrastructure.security.AuthenticatedUser;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -42,8 +43,10 @@ public class SecurityFilter extends OncePerRequestFilter {
 
         // Transforma o cargo do Enum em algo que o Spring Security entenda (ROLE_ADMIN)
         var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + userEntity.getRole().name()));
+        
+        var authUser = new AuthenticatedUser(userEntity.getId(), userEntity.getRole().name());
 
-        var authentication = new UsernamePasswordAuthenticationToken(userEntity, null, authorities);
+        var authentication = new UsernamePasswordAuthenticationToken(authUser, null, authorities);
         SecurityContextHolder.getContext().setAuthentication(authentication);
       }
     }

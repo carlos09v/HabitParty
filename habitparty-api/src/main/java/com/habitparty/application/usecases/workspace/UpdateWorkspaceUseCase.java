@@ -1,6 +1,7 @@
 package com.habitparty.application.usecases.workspace;
 
 import java.util.UUID;
+import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.stereotype.Service;
 
@@ -10,6 +11,7 @@ import com.habitparty.core.domain.entities.Workspace;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
+@Transactional
 public class UpdateWorkspaceUseCase  {
   private final WorkspaceRepository port;
 

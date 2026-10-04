@@ -1,78 +1,59 @@
 package com.habitparty.adapters.in.web;
 
-import org.springframework.web.bind.annotation.RequestMapping;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.habitparty.adapters.in.web.api.WorkspaceApi;
 import com.habitparty.adapters.in.web.dtos.request.CreateWorkspaceDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateWorkspaceDTO;
 import com.habitparty.adapters.in.web.dtos.response.WorkspaceResponseDTO;
-import com.habitparty.adapters.out.persistence.entities.UserJpaEntity;
 import com.habitparty.application.usecases.workspace.CreateWorkspaceUseCase;
 import com.habitparty.application.usecases.workspace.DeleteWorkspaceUseCase;
 import com.habitparty.application.usecases.workspace.GetFullKanbanBoardUseCase;
 import com.habitparty.application.usecases.workspace.ListUserWorkspacesUseCase;
 import com.habitparty.application.usecases.workspace.UpdateWorkspaceUseCase;
 import com.habitparty.core.domain.entities.Workspace;
+import com.habitparty.infrastructure.security.AuthenticatedUser;
 
-import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
-import java.util.List;
-import java.util.UUID;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.GetMapping;
-
+@RequiredArgsConstructor
 @RestController
-@RequestMapping("/workspaces")
-public class WorkspaceController {
+public class WorkspaceController implements WorkspaceApi {
   private final CreateWorkspaceUseCase createWorkspaceUseCase;
   private final DeleteWorkspaceUseCase deleteWorkspaceUseCase;
   private final ListUserWorkspacesUseCase listUserWorkspacesUseCase;
   private final UpdateWorkspaceUseCase updateWorkspaceUseCase;
   private final GetFullKanbanBoardUseCase getFullKanbanBoardUseCase;
 
-  public WorkspaceController(CreateWorkspaceUseCase createWorkspaceUseCase,
-      DeleteWorkspaceUseCase deleteWorkspaceUseCase, ListUserWorkspacesUseCase listUserWorkspacesUseCase,
-      UpdateWorkspaceUseCase updateWorkspaceUseCase, GetFullKanbanBoardUseCase getFullKanbanBoardUseCase) {
-    this.createWorkspaceUseCase = createWorkspaceUseCase;
-    this.deleteWorkspaceUseCase = deleteWorkspaceUseCase;
-    this.listUserWorkspacesUseCase = listUserWorkspacesUseCase;
-    this.updateWorkspaceUseCase = updateWorkspaceUseCase;
-    this.getFullKanbanBoardUseCase = getFullKanbanBoardUseCase;
-  }
-
-  @PostMapping
+  @Override
   public ResponseEntity<WorkspaceResponseDTO> createWorkspace(
-      @RequestBody @Valid CreateWorkspaceDTO requestDTO,
-      @AuthenticationPrincipal UserJpaEntity usuarioLogado) {
-    UUID userId = usuarioLogado.getId();
+      CreateWorkspaceDTO requestDTO,
+      AuthenticatedUser usuarioLogado) {
+    UUID userId = usuarioLogado.id();
     Workspace createdWorkspace = createWorkspaceUseCase.execute(requestDTO, userId);
 
     return ResponseEntity.status(HttpStatus.CREATED).body(WorkspaceResponseDTO.fromDomain(createdWorkspace));
   }
 
-  @DeleteMapping("/{id}")
+  @Override
   public ResponseEntity<Void> deleteWorkspace(
-      @PathVariable UUID id,
-      @AuthenticationPrincipal UserJpaEntity usuarioLogado) {
-    UUID userId = usuarioLogado.getId();
+      UUID id,
+      AuthenticatedUser usuarioLogado) {
+    UUID userId = usuarioLogado.id();
     deleteWorkspaceUseCase.execute(id, userId);
 
     return ResponseEntity.noContent().build();
   }
 
-  @GetMapping()
+  @Override
   public ResponseEntity<List<WorkspaceResponseDTO>> getWorkspaceListByUserId(
-      @AuthenticationPrincipal UserJpaEntity usuarioLogado
-  ) {
-    UUID userId = usuarioLogado.getId();
+      AuthenticatedUser usuarioLogado) {
+    UUID userId = usuarioLogado.id();
     List<Workspace> workspaces = listUserWorkspacesUseCase.execute(userId);
 
     List<WorkspaceResponseDTO> responseList = workspaces.stream()
@@ -82,27 +63,22 @@ public class WorkspaceController {
     return ResponseEntity.ok(responseList);
   }
 
-  @PutMapping("/{workspaceId}")
+  @Override
   public ResponseEntity<WorkspaceResponseDTO> update(
-      @PathVariable UUID workspaceId,
-      @Valid @RequestBody UpdateWorkspaceDTO dto,
-      @AuthenticationPrincipal UserJpaEntity usuarioLogado) {
-    UUID userId = usuarioLogado.getId();
+      UUID workspaceId,
+      UpdateWorkspaceDTO dto,
+      AuthenticatedUser usuarioLogado) {
+    UUID userId = usuarioLogado.id();
     Workspace updatedWorkspace = updateWorkspaceUseCase.execute(workspaceId, dto, userId);
 
-    // Converte a entidade de domínio atualizada de volta para DTO antes de devolver ao cliente
     return ResponseEntity.ok(WorkspaceResponseDTO.fromDomain(updatedWorkspace));
   }
 
-  // Rota específica para carregar a tela do quadro (Kanban)
-  @GetMapping("/{workspaceId}/kanban")
+  @Override
   public ResponseEntity<WorkspaceResponseDTO> getFullKanbanBoard(
-      @PathVariable UUID workspaceId,
-      @AuthenticationPrincipal UserJpaEntity usuarioLogado
-  ) {
-    UUID userId = usuarioLogado.getId();
-    
-    // O Caso de Uso já devolve o DTO Gigante montadinho!
+      UUID workspaceId,
+      AuthenticatedUser usuarioLogado) {
+    UUID userId = usuarioLogado.id();
     WorkspaceResponseDTO kanbanBoard = getFullKanbanBoardUseCase.execute(workspaceId, userId);
 
     return ResponseEntity.ok(kanbanBoard);

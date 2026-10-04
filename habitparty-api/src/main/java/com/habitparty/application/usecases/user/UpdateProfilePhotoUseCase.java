@@ -1,6 +1,7 @@
 package com.habitparty.application.usecases.user;
 
 import java.util.UUID;
+import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -11,6 +12,7 @@ import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
+@Transactional
 public class UpdateProfilePhotoUseCase {
   private final UserRepository port;
   private final StoragePort storagePort;

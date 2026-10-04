@@ -1,6 +1,7 @@
 package com.habitparty.application.usecases.reward;
 
 import java.util.UUID;
+import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,7 @@ import com.habitparty.core.exceptions.LimitExceededException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
+@Transactional
 public class CreateRewardUseCase {
   private final RewardRepository port;
   private final UserRepository userPort;

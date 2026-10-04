@@ -1,8 +1,14 @@
 package com.habitparty.adapters.in.web;
 
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.habitparty.adapters.in.web.api.InventoryItemApi;
 import com.habitparty.adapters.in.web.dtos.request.UpdateInventoryOrderDTO;
 import com.habitparty.adapters.in.web.dtos.response.InventoryItemResponseDTO;
-import com.habitparty.adapters.out.persistence.entities.UserJpaEntity;
 import com.habitparty.application.usecases.inventory_Item.ConsumeInventoryItemUseCase;
 import com.habitparty.application.usecases.inventory_Item.DiscardInventoryItemUseCase;
 import com.habitparty.application.usecases.inventory_Item.ListUserInventoryUseCase;
@@ -10,18 +16,13 @@ import com.habitparty.application.usecases.inventory_Item.ReorderInventoryItemUs
 import com.habitparty.application.usecases.inventory_Item.ReturnItemToBagUseCase;
 import com.habitparty.application.usecases.inventory_Item.SendItemToFocusUseCase;
 import com.habitparty.core.domain.entities.InventoryItem;
+import com.habitparty.infrastructure.security.AuthenticatedUser;
 
-import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import lombok.RequiredArgsConstructor;
 
-import java.util.List;
-import java.util.UUID;
-
+@RequiredArgsConstructor
 @RestController
-@RequestMapping("/inventory")
-public class InventoryItemController {
+public class InventoryItemController implements InventoryItemApi {
     private final ListUserInventoryUseCase listUseCase;
     private final ReorderInventoryItemUseCase reorderUseCase;
     private final ConsumeInventoryItemUseCase consumeUseCase;
@@ -29,27 +30,11 @@ public class InventoryItemController {
     private final SendItemToFocusUseCase sendItemFocusUseCase;
     private final ReturnItemToBagUseCase returnItemBagUseCase;
 
-    public InventoryItemController(
-            ListUserInventoryUseCase listUseCase,
-            ReorderInventoryItemUseCase reorderUseCase,
-            ConsumeInventoryItemUseCase consumeUseCase,
-            DiscardInventoryItemUseCase discardUseCase,SendItemToFocusUseCase sendItemFocusUseCase, ReturnItemToBagUseCase returnItemBagUseCase) {
-        this.listUseCase = listUseCase;
-        this.reorderUseCase = reorderUseCase;
-        this.consumeUseCase = consumeUseCase;
-        this.discardUseCase = discardUseCase;
-        this.sendItemFocusUseCase = sendItemFocusUseCase;
-        this.returnItemBagUseCase = returnItemBagUseCase;
-    }
-
-    @GetMapping
+    @Override
     public ResponseEntity<List<InventoryItemResponseDTO>> getMyInventory(
-            @RequestParam(required = false) String status, // Pega o parâmetro da URL
-            @AuthenticationPrincipal UserJpaEntity usuarioLogado) {
-        
-        UUID userId = usuarioLogado.getId();
-
-        // Passa o status opcional para o UseCase
+            String status,
+            AuthenticatedUser usuarioLogado) {
+        UUID userId = usuarioLogado.id();
         List<InventoryItem> domainList = listUseCase.execute(userId, status);
         
         List<InventoryItemResponseDTO> response = domainList.stream()
@@ -59,52 +44,49 @@ public class InventoryItemController {
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/reorder")
+    @Override
     public ResponseEntity<Void> reorderInventory(
-            @RequestBody @Valid List<UpdateInventoryOrderDTO> orderList,
-            @AuthenticationPrincipal UserJpaEntity usuarioLogado) {
-        UUID userId = usuarioLogado.getId();
-
+            List<UpdateInventoryOrderDTO> orderList,
+            AuthenticatedUser usuarioLogado) {
+        UUID userId = usuarioLogado.id();
         reorderUseCase.execute(orderList, userId);
 
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{itemId}/consume")
+    @Override
     public ResponseEntity<Void> consumeItem(
-            @PathVariable UUID itemId,
-            @AuthenticationPrincipal UserJpaEntity usuarioLogado) {
-        UUID userId = usuarioLogado.getId();
-
+            UUID itemId,
+            AuthenticatedUser usuarioLogado) {
+        UUID userId = usuarioLogado.id();
         consumeUseCase.execute(itemId, userId);
 
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{itemId}/discard")
+    @Override
     public ResponseEntity<Void> discardItem(
-            @PathVariable UUID itemId,
-            @AuthenticationPrincipal UserJpaEntity usuarioLogado) {
-        UUID userId = usuarioLogado.getId();
-
+            UUID itemId,
+            AuthenticatedUser usuarioLogado) {
+        UUID userId = usuarioLogado.id();
         discardUseCase.execute(itemId, userId);
 
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{itemId}/send-to-focus")
+    @Override
     public ResponseEntity<Void> sendToFocus(
-            @PathVariable UUID itemId,
-            @AuthenticationPrincipal UserJpaEntity usuarioLogado) {
-        sendItemFocusUseCase.execute(itemId, usuarioLogado.getId());
+            UUID itemId,
+            AuthenticatedUser usuarioLogado) {
+        sendItemFocusUseCase.execute(itemId, usuarioLogado.id());
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{itemId}/return-to-backpack")
+    @Override
     public ResponseEntity<Void> returnToBackpack(
-            @PathVariable UUID itemId,
-            @AuthenticationPrincipal UserJpaEntity usuarioLogado) {
-        returnItemBagUseCase.execute(itemId, usuarioLogado.getId());
+            UUID itemId,
+            AuthenticatedUser usuarioLogado) {
+        returnItemBagUseCase.execute(itemId, usuarioLogado.id());
         return ResponseEntity.noContent().build();
     }
 }

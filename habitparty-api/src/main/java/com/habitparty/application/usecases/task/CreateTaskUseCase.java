@@ -1,6 +1,7 @@
 package com.habitparty.application.usecases.task;
 
 import java.time.LocalDateTime;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,6 +23,7 @@ import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
+@Transactional
 public class CreateTaskUseCase {
   private final TaskRepository taskPort;
     private final BoardColumnRepository boardColumnPort;

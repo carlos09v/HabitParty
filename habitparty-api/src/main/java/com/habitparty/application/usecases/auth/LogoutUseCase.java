@@ -1,6 +1,7 @@
 package com.habitparty.application.usecases.auth;
 
 import java.util.UUID;
+import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.stereotype.Service;
 
@@ -9,6 +10,7 @@ import com.habitparty.application.ports.RefreshTokenRepository;
 import com.habitparty.core.exceptions.DomainValidationException;
 
 @Service
+@Transactional
 public class LogoutUseCase {
   private final RefreshTokenRepository refreshTokenRepository;
 

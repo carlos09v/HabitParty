@@ -1,6 +1,7 @@
 package com.habitparty.application.usecases.focus;
 
 import java.util.UUID;
+import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.stereotype.Service;
 
@@ -14,6 +15,7 @@ import com.habitparty.core.exceptions.LimitExceededException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
+@Transactional
 public class CreateFocusActivityUseCase {
   private final FocusActivityRepository port;
   private final UserRepository userPort;

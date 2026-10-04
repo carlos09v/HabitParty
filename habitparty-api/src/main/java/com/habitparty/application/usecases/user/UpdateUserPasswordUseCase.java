@@ -1,6 +1,7 @@
 package com.habitparty.application.usecases.user;
 
 import java.util.UUID;
+import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,7 @@ import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
+@Transactional
 public class UpdateUserPasswordUseCase {
   private final UserRepository port;
   private final PasswordHasherPort passwordHasher;

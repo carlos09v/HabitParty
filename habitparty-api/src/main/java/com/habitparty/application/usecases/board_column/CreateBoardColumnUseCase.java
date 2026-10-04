@@ -1,6 +1,7 @@
 package com.habitparty.application.usecases.board_column;
 
 import java.util.UUID;
+import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.stereotype.Service;
 
@@ -15,6 +16,7 @@ import com.habitparty.core.exceptions.LimitExceededException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
+@Transactional
 public class CreateBoardColumnUseCase {
   private final WorkspaceRepository workspacePort;
   private final UserRepository userPort;

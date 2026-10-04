@@ -1,6 +1,7 @@
 package com.habitparty.application.usecases.reward;
 
 import java.util.UUID;
+import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.stereotype.Service;
 
@@ -11,6 +12,7 @@ import com.habitparty.core.domain.entities.reward.Reward;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
+@Transactional
 public class UpdateRewardUseCase {
   private final RewardRepository port;
 

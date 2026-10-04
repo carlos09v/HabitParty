@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+@theme {
+  /* ==========================================
+     CORES (Mapeadas do Figma para o Tailwind)
+     ========================================== */
+
+  /* Marca (Roxo) */
+  --color-primary: rgb(124 58 237);
+  --color-primary-dark: rgb(73 22 166);
+  --color-primary-light: rgb(168 99 255);
+
+  /* Fundo Principal do App */
+  --color-background: rgb(33 4 89); /* Seu decorativa-roxo-fundo */
+
+  /* Superfícies (inputs, botões secundários, cards e popovers - Figma) */
+  --color-surface: rgb(51 24 102); /* #331866 - inputs, filtros, botões */
+  --color-surface-hover: rgb(61 29 122); /* #3D1D7A */
+  --color-card: rgb(55 29 106); /* #371D6A - cards de tarefas */
+  --color-card-hover: rgb(63 33 120); /* #3F2178 */
+  --color-popover: rgb(37 18 75); /* #25124B - dropdowns / menus */
+
+  /* Gamificação e Destaques */
+  --color-gold: rgb(237 229 57); /* Seu secundaria-amarelo */
+  --color-gold-hover: rgb(213 206 51);
+  --color-gold-pressed: rgb(190 183 46);
+  --color-magenta: rgb(237 43 229);
+  --color-blue: rgb(64 57 237);
+
+  /* Funcionais (XP, Alertas, Erros) */
+  --color-warning-100: rgb(254 243 198);
+  --color-warning-500: rgb(254 154 0);
+  --color-warning-hover: rgb(255 175 46);
+  --color-danger-100: rgb(255 226 226);
+  --color-danger-500: rgb(251 44 54);
+  --color-danger-hover: rgb(255 77 85);
+  --color-success-100: rgb(220 252 231);
+  --color-success-500: rgb(0 201 80);
+  --color-success-hover: rgb(34 226 110);
+  --color-info: rgb(0 194 255);
+  --color-info-hover: rgb(56 209 255);
+  --color-blue-hover: rgb(91 84 246);
+
+  /* Escala Neutra (Textos, Bordas de Vidro) */
+  --color-neutral-900: rgb(27 24 36);
+  --color-neutral-500: rgb(123 115 141);
+  --color-neutral-300: rgb(212 207 223);
+  --color-neutral-100: rgb(244 242 248);
+  --color-neutral-50: rgb(249 248 252);
+
+  /* ==========================================
+     TIPOGRAFIA (Tamanhos Base - Bold & Regular)
+     ========================================== */
+  --text-headline-g: 47px;
+  --text-headline-g-regular: 40px;
+  --text-headline-m: 39px;
+  --text-headline-m-regular: 33px;
+  --text-headline-s: 33px;
+  --text-headline-s-regular: 28px;
+
+  --text-subtitle-g: 27px;
+  --text-subtitle-g-regular: 23px;
+  --text-subtitle-m: 23px;
+  --text-subtitle-m-regular: 19px;
+  --text-subtitle-s: 19px;
+
+  --text-body-m: 16px;
+  --text-body-s: 13px;
+
+  --text-label-g: 11px;
+  --text-label-m: 9px;
+
+  /* Peso de fonte padrão do seu design (Medium) */
+  --font-weight-normal: 500;
+  --font-sans: var(--font-plus-jakarta), sans-serif;
+}
+
+/* ==========================================
+   ESTILOS GLOBAIS (Base do HTML)
+   ========================================== */
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(
+      --color-neutral-50
+    ); /* Texto padrão claro para contrastar com fundo escuro */
+    font-weight: var(--font-weight-normal);
+  }
+}
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(123, 115, 141, 0.3);
+    border-radius: 9999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(237, 229, 57, 0.5);
+  }
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(123, 115, 141, 0.3) transparent;
+  }
+}
