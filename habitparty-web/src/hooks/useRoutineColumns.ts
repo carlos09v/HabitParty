@@ -8,11 +8,17 @@ import type { BoardColumn } from "@/types/task";
  * Estado do quadro de rotina: colunas + quais estão visíveis.
  * Até `MAX_VISIBLE_COLUMNS` ocupam a tela; o restante fica no menu "Listas".
  */
-export function useRoutineColumns(initialColumns: BoardColumn[]) {
+export function useRoutineColumns(
+  initialColumns: BoardColumn[],
+  isPremium = false,
+) {
   const [columns, setColumns] = useState<BoardColumn[]>(initialColumns);
   const [visibleColumnIds, setVisibleColumnIds] = useState<string[]>(() =>
     initialColumns.slice(0, MAX_VISIBLE_COLUMNS).map((c) => c.id),
   );
+
+  const maxColumns = isPremium ? MAX_COLUMNS_PREMIUM : MAX_VISIBLE_COLUMNS;
+  const canCreateColumn = columns.length < maxColumns;
 
   const toggleColumnVisibility = (columnId: string) => {
     setVisibleColumnIds((prev) => {
@@ -26,8 +32,6 @@ export function useRoutineColumns(initialColumns: BoardColumn[]) {
         : [...prev.slice(0, MAX_VISIBLE_COLUMNS - 1), columnId];
     });
   };
-
-  const canCreateColumn = columns.length < MAX_COLUMNS_PREMIUM;
 
   const createColumn = () => {
     if (!canCreateColumn) return;
@@ -55,5 +59,6 @@ export function useRoutineColumns(initialColumns: BoardColumn[]) {
     toggleColumnVisibility,
     createColumn,
     canCreateColumn,
+    maxColumns,
   };
 }

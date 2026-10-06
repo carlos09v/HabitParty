@@ -1,21 +1,13 @@
-import Link from "next/link";
 import {
   BookOpen,
-  GraduationCap,
+  ChevronRight,
   Code2,
   Gamepad2,
-  ChevronRight,
+  GraduationCap,
   Plus,
 } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/utils";
-
-interface ActivityItem {
-  id: string;
-  title: string;
-  timeSpent: string;
-  icon: typeof BookOpen;
-  href: string;
-}
 
 const DEFAULT_ACTIVITIES: ActivityItem[] = [
   {
@@ -48,7 +40,11 @@ const DEFAULT_ACTIVITIES: ActivityItem[] = [
   },
 ];
 
+import { useCompactMode } from "@/hooks/useCompactMode";
+import type { ActivityItem } from "@/types/dashboard";
+
 export function ActivitiesWidget() {
+  const { isCompact } = useCompactMode();
   return (
     <div className="flex flex-col gap-2.5 w-full">
       {/* Header */}
@@ -56,7 +52,7 @@ export function ActivitiesWidget() {
         <h4 className="text-subtitle-s font-bold text-neutral-100">
           Atividades
         </h4>
-        <span className="text-[12px] font-semibold text-neutral-300">4/5</span>
+        <span className="text-xs font-semibold text-neutral-300">4/5</span>
       </div>
 
       {/* Lista de Atividades (Links com tempo registrado + Botão Adicionar) */}
@@ -68,21 +64,32 @@ export function ActivitiesWidget() {
               key={act.id}
               href={act.href}
               className={cn(
-                "group flex items-center justify-between p-2 rounded-lg border transition-all",
+                "group flex items-center justify-between rounded-lg border transition-all",
+                isCompact ? "p-1.5" : "p-2",
                 "bg-primary-dark/20 border-primary/30 hover:bg-primary-dark/40 hover:border-primary-light/50",
               )}
             >
-              <div className="flex items-center gap-2 min-w-0">
+              <div
+                className={cn(
+                  "flex items-center min-w-0",
+                  isCompact ? "gap-1.5" : "gap-2",
+                )}
+              >
                 <div className="p-1 rounded bg-primary-dark/40 text-neutral-300 group-hover:text-gold transition-colors shrink-0">
-                  <Icon size={15} />
+                  <Icon size={isCompact ? 13 : 15} />
                 </div>
-                <span className="text-body-s font-medium text-neutral-100 truncate">
+                <span
+                  className={cn(
+                    "font-medium text-neutral-100 truncate",
+                    isCompact ? "text-xs" : "text-body-s",
+                  )}
+                >
                   {act.title}
                 </span>
               </div>
 
               <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                <span className="text-[12px] font-bold text-neutral-200 group-hover:text-gold transition-colors">
+                <span className="text-xs font-bold text-neutral-200 group-hover:text-gold transition-colors">
                   {act.timeSpent}
                 </span>
                 <ChevronRight
@@ -98,7 +105,8 @@ export function ActivitiesWidget() {
         <button
           type="button"
           className={cn(
-            "flex items-center justify-center gap-2 p-1.5 rounded-lg border-2 border-dashed transition-all cursor-pointer group",
+            "flex items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-all cursor-pointer group",
+            isCompact ? "py-1" : "p-1.5",
             "border-primary-light/40 bg-primary-dark/15 text-primary-light hover:border-gold hover:text-gold hover:bg-primary-dark/30 hover:shadow-[0_0_10px_rgba(237,229,57,0.2)]",
           )}
         >
@@ -106,7 +114,14 @@ export function ActivitiesWidget() {
             size={14}
             className="group-hover:scale-110 transition-transform"
           />
-          <span className="text-[12px] font-semibold">Adicionar</span>
+          <span
+            className={cn(
+              "font-semibold",
+              isCompact ? "text-label-g" : "text-xs",
+            )}
+          >
+            Adicionar
+          </span>
         </button>
       </div>
     </div>

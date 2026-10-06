@@ -1,28 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import Image from "next/image";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import type { WelcomeCardProps } from "@/types/ui";
 import { cn } from "@/utils";
-
-interface WelcomeCardStat {
-  label: string;
-  value: string;
-}
-
-interface WelcomeCardProps {
-  title: string;
-  subtitle?: string;
-  bullets: string[];
-  imageSrc?: string;
-  stats?: WelcomeCardStat[];
-  isExpanded?: boolean;
-  onToggle?: (expanded: boolean) => void;
-  compact?: boolean;
-  className?: string;
-  imageWidth?: number;
-  imageHeight?: number;
-}
 
 export function WelcomeCard({
   title,
@@ -36,15 +18,39 @@ export function WelcomeCard({
   className,
   imageWidth,
   imageHeight,
+  storageKey,
 }: WelcomeCardProps) {
-  // Estado que controla se o card está aberto ou encolhido
   const [internalExpanded, setInternalExpanded] = useState(true);
+
+  // Carrega estado salvo do localStorage se storageKey estiver configurada
+  useEffect(() => {
+    if (storageKey) {
+      try {
+        const saved = localStorage.getItem(`habitparty_welcome_${storageKey}`);
+        if (saved !== null) {
+          const isVal = saved === "true";
+          setInternalExpanded(isVal);
+          onToggle?.(isVal);
+        }
+      } catch {
+        // localStorage indisponível ou em modo anônimo restrito
+      }
+    }
+  }, [storageKey, onToggle]);
 
   const isExpanded =
     externalIsExpanded !== undefined ? externalIsExpanded : internalExpanded;
 
   const handleToggle = () => {
     const next = !isExpanded;
+    if (storageKey) {
+      try {
+        localStorage.setItem(`habitparty_welcome_${storageKey}`, String(next));
+      } catch {
+        // ignore
+      }
+    }
+
     if (onToggle) {
       onToggle(next);
     } else {
@@ -52,143 +58,147 @@ export function WelcomeCard({
     }
   };
 
-  if (compact) {
-    return (
-      <div
-        className={cn(
-          "bg-primary-dark/30 border border-primary/40 rounded-xl p-3.5 shadow-[0_0_15px_rgba(124,58,237,0.12)] relative overflow-hidden flex flex-col transition-all max-w-3xl",
-          className,
-        )}
+  return (
+    <section
+      className={cn(
+        "w-full bg-primary-dark/30 border border-primary/35 shadow-[0_0_15px_rgba(124,58,237,0.12)] relative overflow-hidden transition-all duration-300",
+        compact ? "rounded-xl p-3 sm:p-3.5" : "rounded-2xl p-4 sm:px-6 sm:py-5",
+        className,
+      )}
+      aria-label={`Boas-vindas: ${title}`}
+    >
+      {/* Header com Toggle e Smart Summary Bar quando colapsado */}
+      <button
+        type="button"
+        className="w-full text-left bg-transparent border-none p-0 flex items-center justify-between gap-3 cursor-pointer z-20 group select-none focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-lg"
+        onClick={handleToggle}
+        aria-expanded={isExpanded}
       >
-        {/* Header compacto */}
-        <div
-          className="flex items-center gap-2.5 cursor-pointer z-20 w-fit group select-none"
-          onClick={handleToggle}
-        >
-          <div className="text-neutral-400 group-hover:text-gold transition-colors">
-            {isExpanded ? (
-              <ChevronDown size={20} />
-            ) : (
-              <ChevronRight size={20} />
+        {/* Esquerda: Chevron animado + Título + Preview de subtítulo quando encolhido */}
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+          <div
+            className={cn(
+              "text-neutral-400 group-hover:text-gold transition-transform duration-300 shrink-0 flex items-center justify-center",
+              !isExpanded && "-rotate-90",
             )}
+            aria-hidden="true"
+          >
+            <ChevronDown size={compact ? 18 : 22} />
           </div>
-          <h2 className="text-subtitle-m font-bold text-neutral-50 group-hover:text-gold transition-colors">
+
+          <h2
+            className={cn(
+              "font-bold text-neutral-50 group-hover:text-gold transition-colors truncate shrink-0",
+              compact ? "text-base sm:text-lg" : "text-lg sm:text-2xl",
+            )}
+          >
             {title}
           </h2>
+
+          {/* Resumo inteligente em linha exibido apenas quando colapsado */}
+          {!isExpanded && subtitle && (
+            <span className="text-body-s text-neutral-300 font-normal truncate hidden sm:inline-block max-w-md">
+              — {subtitle}
+            </span>
+          )}
         </div>
 
-        {/* Conteúdo compacto */}
-        {isExpanded && (
-          <div className="flex items-center justify-between gap-6 z-10 mt-2 pl-7 animate-in fade-in duration-300">
-            {/* Texto e Bullets */}
-            <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+        {/* Direita: Preview de métricas (quando colapsado) + Indicador textual [Expandir / Recolher] */}
+        <div className="flex items-center gap-2.5 shrink-0 ml-2">
+          {!isExpanded && stats && stats.length > 0 && (
+            <div className="hidden md:flex items-center gap-1.5">
+              {stats.map((stat) => (
+                <span
+                  key={stat.label}
+                  className="text-xs font-semibold px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-neutral-200"
+                >
+                  {stat.value}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <span className="text-xs font-semibold text-neutral-400 group-hover:text-gold transition-colors flex items-center gap-1">
+            {isExpanded ? "Recolher" : "Expandir"}
+          </span>
+        </div>
+      </button>
+
+      {/* Conteúdo Expansível com Transição Suave via Grid CSS */}
+      <div
+        className={cn(
+          "grid transition-all duration-300 ease-in-out",
+          isExpanded
+            ? "grid-rows-[1fr] opacity-100 mt-3 sm:mt-4"
+            : "grid-rows-[0fr] opacity-0 mt-0 pointer-events-none",
+        )}
+      >
+        <div className="overflow-hidden">
+          <div className="flex flex-col lg:flex-row items-start justify-between gap-6 z-10">
+            {/* Coluna 1: Subtítulo e Marcadores */}
+            <div className="flex flex-col gap-2 max-w-2xl flex-1 min-w-0">
               {subtitle && (
-                <p className="text-body-s text-gold font-medium">{subtitle}</p>
+                <p
+                  className={cn(
+                    "text-gold font-medium leading-snug",
+                    compact ? "text-body-s" : "text-body-s sm:text-body-m",
+                  )}
+                >
+                  {subtitle}
+                </p>
               )}
-              <ul className="flex flex-col gap-1 text-[13px] text-neutral-300 list-disc list-inside">
-                {bullets.map((bullet, idx) => (
-                  <li key={idx} className="leading-relaxed">
+
+              <ul className="flex flex-col gap-1.5 text-body-s text-neutral-300 list-disc list-inside">
+                {bullets.map((bullet) => (
+                  <li key={bullet} className="leading-relaxed">
                     {bullet}
                   </li>
                 ))}
               </ul>
             </div>
 
-            {/* Imagem compacta e proporcional */}
+            {/* Coluna 2: Mini-cards de métricas de gamificação (se fornecidos, ex: Dashboard) */}
+            {stats && stats.length > 0 && (
+              <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+                {stats.map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="flex flex-col gap-0.5 px-3 py-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs min-w-[120px]"
+                  >
+                    <span className="text-label-g text-neutral-400 font-medium">
+                      {stat.label}
+                    </span>
+                    <span className="text-body-s font-bold text-neutral-100">
+                      {stat.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Coluna 3: Ilustração SVG proporcional e padronizada */}
             {imageSrc && (
-              <div className="shrink-0 flex items-center justify-center pr-2">
+              <div
+                className={cn(
+                  "shrink-0 flex items-center justify-center self-center lg:self-end",
+                  compact
+                    ? "w-28 h-20 sm:w-36 sm:h-24"
+                    : "w-36 h-24 sm:w-48 sm:h-32 xl:w-56 xl:h-36",
+                )}
+              >
                 <Image
                   src={imageSrc}
-                  alt="Ilustração da rotina"
-                  width={imageWidth || 136}
-                  height={imageHeight || 93}
+                  alt={`Ilustração: ${title}`}
+                  width={imageWidth || (compact ? 136 : 220)}
+                  height={imageHeight || (compact ? 90 : 140)}
                   priority
-                  className="object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)]"
+                  className="object-contain max-h-full drop-shadow-[0_8px_16px_rgba(0,0,0,0.3)]"
                 />
               </div>
             )}
           </div>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={cn(
-        "bg-primary-dark/30 border border-primary/40 rounded-2xl px-8 py-5 shadow-[0_0_15px_rgba(124,58,237,0.15)] relative overflow-hidden flex flex-col transition-all",
-        className,
-      )}
-    >
-      {/* Header com Toggle (Ícone + Título clicáveis) */}
-      <div
-        className="flex items-center gap-3 cursor-pointer z-20 w-fit group select-none"
-        onClick={handleToggle}
-      >
-        <div className="text-neutral-400 group-hover:text-gold transition-colors">
-          {isExpanded ? <ChevronDown size={24} /> : <ChevronRight size={24} />}
         </div>
-        <h2 className="text-headline-m font-bold text-neutral-50 group-hover:text-gold transition-colors">
-          {title}
-        </h2>
       </div>
-
-      {/* Conteúdo Expansível */}
-      {isExpanded && (
-        <div className="flex flex-col xl:flex-row items-start justify-between gap-6 z-10 mt-3.5 pr-0 xl:pr-[280px] animate-in fade-in duration-300">
-          {/* Coluna 1: Motivação e Instruções */}
-          <div className="flex flex-col gap-2 max-w-xl">
-            {subtitle && (
-              <p className="text-body-m text-gold font-medium">{subtitle}</p>
-            )}
-
-            <ul className="flex flex-col gap-1.5 text-body-s text-neutral-300 list-disc list-inside">
-              {bullets.map((bullet, idx) => (
-                <li key={idx} className="leading-relaxed">
-                  {bullet}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Coluna 2: Mini-cards de gamificação rápida (somente se fornecidos, ex: Dashboard) */}
-          {stats && stats.length > 0 && (
-            <div className="flex items-center gap-3 flex-wrap">
-              {stats.map((stat, idx) => (
-                <div
-                  key={idx}
-                  className="flex flex-col gap-0.5 px-3 py-2 rounded-xl bg-white/4 border border-white/8 backdrop-blur-xs min-w-[130px]"
-                >
-                  <span className="text-[11px] text-neutral-400 font-medium">
-                    {stat.label}
-                  </span>
-                  <span className="text-body-s font-bold text-neutral-100">
-                    {stat.value}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Ilustração SVG em escala ampliada e proporcional ao desktop 1920 */}
-          <div className="hidden xl:flex absolute right-6 bottom-0 z-10 w-[270px] h-[180px] items-end justify-end pointer-events-none">
-            {imageSrc ? (
-              <Image
-                src={imageSrc}
-                alt="Ilustração do avatar"
-                width={imageWidth || 270}
-                height={imageHeight || 180}
-                priority
-                className="object-contain object-bottom drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)]"
-              />
-            ) : (
-              <div className="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center text-neutral-500 text-label-m">
-                Imagem
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+    </section>
   );
 }

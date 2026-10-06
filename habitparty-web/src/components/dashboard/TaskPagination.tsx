@@ -1,15 +1,10 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCompactMode } from "@/hooks/useCompactMode";
+import type { TaskPaginationProps } from "@/types/task";
 import { cn } from "@/utils";
-
-interface TaskPaginationProps {
-  currentPage: number;
-  totalPages: number;
-  totalItems: number;
-  itemsPerPage: number;
-}
 
 export function TaskPagination({
   currentPage,
@@ -17,6 +12,7 @@ export function TaskPagination({
   totalItems,
   itemsPerPage,
 }: TaskPaginationProps) {
+  const { isCompact } = useCompactMode();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -34,7 +30,13 @@ export function TaskPagination({
   if (totalPages <= 1) return null;
 
   return (
-    <nav className="flex items-center justify-between gap-4 py-3 px-2 border-t border-white/10 text-sm" aria-label="Paginação de tarefas">
+    <nav
+      className={cn(
+        "flex items-center justify-between gap-4 border-t border-white/10 text-sm",
+        isCompact ? "py-1.5 px-2" : "py-3 px-2",
+      )}
+      aria-label="Paginação de tarefas"
+    >
       {/* Contagem de itens */}
       <span className="text-xs text-neutral-400" aria-live="polite">
         Mostrando{" "}
@@ -51,9 +53,12 @@ export function TaskPagination({
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
           aria-label="Página anterior"
-          className="p-1.5 rounded-lg border border-white/20 bg-surface text-neutral-300 hover:bg-surface-hover hover:text-neutral-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-gold"
+          className={cn(
+            "rounded-lg border border-white/20 bg-surface text-neutral-300 hover:bg-surface-hover hover:text-neutral-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-gold",
+            isCompact ? "p-1" : "p-1.5",
+          )}
         >
-          <ChevronLeft size={16} aria-hidden="true" />
+          <ChevronLeft size={isCompact ? 14 : 16} aria-hidden="true" />
         </button>
 
         {Array.from({ length: totalPages }).map((_, i) => {
@@ -67,7 +72,8 @@ export function TaskPagination({
               aria-current={isActive ? "page" : undefined}
               aria-label={`Página ${page}`}
               className={cn(
-                "min-w-8 h-8 px-2 rounded-lg text-xs font-bold transition-all focus:outline-none focus:ring-2 focus:ring-gold focus:ring-offset-1 focus:ring-offset-background",
+                "px-2 rounded-lg font-bold transition-all focus:outline-none focus:ring-2 focus:ring-gold focus:ring-offset-1 focus:ring-offset-background",
+                isCompact ? "min-w-7 h-7 text-label-g" : "min-w-8 h-8 text-xs",
                 isActive
                   ? "bg-gold text-neutral-900 shadow-sm"
                   : "border border-white/20 bg-surface text-neutral-300 hover:bg-surface-hover hover:text-neutral-100",
@@ -83,9 +89,12 @@ export function TaskPagination({
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
           aria-label="Próxima página"
-          className="p-1.5 rounded-lg border border-white/20 bg-surface text-neutral-300 hover:bg-surface-hover hover:text-neutral-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-gold"
+          className={cn(
+            "rounded-lg border border-white/20 bg-surface text-neutral-300 hover:bg-surface-hover hover:text-neutral-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-gold",
+            isCompact ? "p-1" : "p-1.5",
+          )}
         >
-          <ChevronRight size={16} aria-hidden="true" />
+          <ChevronRight size={isCompact ? 14 : 16} aria-hidden="true" />
         </button>
       </div>
     </nav>

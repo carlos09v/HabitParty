@@ -1,10 +1,37 @@
-import { ReactNode } from "react";
-import { Sidebar } from "../../components/layout/Sidebar";
+import { cookies } from "next/headers";
+import type { ReactNode } from "react";
+import { serverApi } from "@/api/server";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { StoreInitializer } from "@/components/layout/StoreInitializer";
+import { getCompactMode } from "@/utils/cookies";
 
-export default function AppLayout({ children }: { children: ReactNode }) {
+export default async function AppLayout({ children }: { children: ReactNode }) {
+  const isCompact = await getCompactMode();
+  const cookieStore = await cookies();
+
+  const { data: workspaces } = await serverApi.GET("/workspaces", {
+    next: { tags: ["workspaces"] },
+  });
+
+  const cookieWorkspaceId = cookieStore.get("activeWorkspaceId")?.value;
+  let activeWorkspaceId: string | null = null;
+
+  if (workspaces && workspaces.length > 0) {
+    const isValid = workspaces.some((w) => w.id === cookieWorkspaceId);
+    activeWorkspaceId =
+      isValid && cookieWorkspaceId
+        ? cookieWorkspaceId
+        : workspaces[0].id || null;
+  }
+
   return (
     // Container principal: h-screen overflow-hidden impede rolagem na janela toda
     <div className="relative h-screen flex overflow-hidden">
+      <StoreInitializer
+        compactMode={isCompact}
+        workspaces={workspaces || []}
+        activeWorkspaceId={activeWorkspaceId}
+      />
       {/* 
         =========================================
         ORBES DE LUZ (Fundo Desfocado - Fiel ao Figma)

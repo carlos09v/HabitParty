@@ -1,12 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Task } from "@/types/task";
-
-interface UseTaskProgressOptions {
-  onToggle?: (taskId: string, completed: boolean) => void;
-  onHabitChange?: (taskId: string, delta: number) => void;
-}
+import type { Task, UseTaskProgressOptions } from "@/types/task";
 
 /**
  * Estado local de progresso de uma tarefa:
@@ -33,12 +28,14 @@ export function useTaskProgress(
     onHabitChange?.(task.id, delta);
   };
 
+  const isHabit = (task.type || "").toLowerCase() === "habit";
+
   return {
     completed,
     habitScore,
     toggleCompleted,
     changeHabit,
     /** Afazeres/Diárias concluídos ficam esmaecidos e riscados. */
-    isDone: completed && task.type !== "habit",
+    isDone: completed && !isHabit,
   };
 }

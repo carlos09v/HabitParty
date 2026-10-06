@@ -1,19 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
   ChevronsUpDown,
 } from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/utils";
-
-interface DayItem {
-  shortName: string;
-  dayNumber: number;
-  hasActivity?: boolean;
-}
 
 const DEFAULT_DAYS: DayItem[] = [
   { shortName: "Seg", dayNumber: 17, hasActivity: false },
@@ -25,7 +19,11 @@ const DEFAULT_DAYS: DayItem[] = [
   { shortName: "Dom", dayNumber: 23, hasActivity: false },
 ];
 
+import { useCompactMode } from "@/hooks/useCompactMode";
+import type { DayItem } from "@/types/dashboard";
+
 export function WeeklyCalendar() {
+  const { isCompact } = useCompactMode();
   const [selectedDay, setSelectedDay] = useState(19);
 
   return (
@@ -39,10 +37,13 @@ export function WeeklyCalendar() {
         {/* Dropdown de parâmetro */}
         <button
           type="button"
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/8 border border-white/15 text-body-s text-neutral-100 hover:bg-white/12 transition-colors"
+          className={cn(
+            "flex items-center gap-1.5 rounded-md bg-white/8 border border-white/15 text-neutral-100 hover:bg-white/12 transition-colors",
+            isCompact ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-body-s",
+          )}
         >
           <CalendarIcon size={14} className="text-neutral-300" />
-          <span className="text-[12px]">Dia específico</span>
+          <span className="text-xs">Dia específico</span>
           <ChevronsUpDown size={12} className="text-neutral-400" />
         </button>
       </div>
@@ -66,7 +67,8 @@ export function WeeklyCalendar() {
                 type="button"
                 onClick={() => setSelectedDay(day.dayNumber)}
                 className={cn(
-                  "flex flex-col items-center justify-between py-1.5 px-1 rounded-lg transition-all flex-1 min-w-0 h-14",
+                  "flex flex-col items-center justify-between rounded-lg transition-all flex-1 min-w-0",
+                  isCompact ? "h-11 py-1 px-0.5" : "h-14 py-1.5 px-1",
                   isSelected
                     ? "bg-gold text-neutral-900 font-bold shadow-md"
                     : "text-neutral-100 hover:bg-white/6 border border-transparent hover:border-white/10",
@@ -74,7 +76,7 @@ export function WeeklyCalendar() {
               >
                 <span
                   className={cn(
-                    "text-[11px] font-medium leading-none",
+                    "text-label-g font-medium leading-none",
                     isSelected
                       ? "text-neutral-900 font-semibold"
                       : "text-neutral-400",
@@ -85,7 +87,8 @@ export function WeeklyCalendar() {
 
                 <span
                   className={cn(
-                    "text-body-m font-bold leading-none my-auto",
+                    "font-bold leading-none my-auto",
+                    isCompact ? "text-sm" : "text-body-m",
                     isSelected ? "text-neutral-900" : "text-neutral-100",
                   )}
                 >

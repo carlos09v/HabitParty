@@ -11,7 +11,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { type Dispatch, type SetStateAction, useState } from "react";
+import { type Dispatch, type SetStateAction, useRef, useState } from "react";
 import type { BoardColumn, Task } from "@/types/task";
 
 type SetColumns = Dispatch<SetStateAction<BoardColumn[]>>;
@@ -88,11 +88,52 @@ function reorderTasks(
   return cols.map((c) => (c.id === col.id ? { ...c, tasks } : c));
 }
 
+export interface UseRoutineBoardDndOptions {
+  columns?: BoardColumn[];
+  setColumns: SetColumns;
+  onTaskMove?: (
+    taskId: string,
+    targetColumnId: string,
+    newOrderIndex: number,
+    allTargetTasks?: Task[],
+  ) => void;
+  onColumnReorder?: (reorderedColumns: BoardColumn[]) => void;
+}
+
 /**
  * Toda a lógica de drag-and-drop (@dnd-kit) do quadro de rotina:
- * reordenar colunas, reordenar tarefas e mover tarefas entre colunas.
+ * reordenar colunas, reordenar tarefas e mover tarefas entre colunas com callbacks de persistência.
  */
-export function useRoutineBoardDnd(setColumns: SetColumns) {
+export function useRoutineBoardDnd(
+  setColumnsOrOptions: SetColumns | UseRoutineBoardDndOptions,
+  legacyOnTaskMove?: (
+    taskId: string,
+    targetColumnId: string,
+    newOrderIndex: number,
+  ) => void,
+  legacyOnColumnReorder?: (reorderedColumns: BoardColumn[]) => void,
+) {
+  const isOptionsObject =
+    typeof setColumnsOrOptions === "object" &&
+    "setColumns" in setColumnsOrOptions;
+  const setColumns = isOptionsObject
+    ? setColumnsOrOptions.setColumns
+    : setColumnsOrOptions;
+  const onTaskMove = isOptionsObject
+    ? setColumnsOrOptions.onTaskMove
+    : legacyOnTaskMove;
+  const onColumnReorder = isOptionsObject
+    ? setColumnsOrOptions.onColumnReorder
+    : legacyOnColumnReorder;
+  const initialColumns = isOptionsObject
+    ? setColumnsOrOptions.columns || []
+    : [];
+
+  const columnsRef = useRef<BoardColumn[]>(initialColumns);
+  if (isOptionsObject && setColumnsOrOptions.columns) {
+    columnsRef.current = setColumnsOrOptions.columns;
+  }
+
   const [activeColumn, setActiveColumn] = useState<BoardColumn | null>(null);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
@@ -114,21 +155,50 @@ export function useRoutineBoardDnd(setColumns: SetColumns) {
     if (active.data.current?.type !== "Task") return;
 
     const isOverTask = over.data.current?.type === "Task";
-    setColumns((prev) =>
-      moveTaskAcrossColumns(prev, active.id, over.id, isOverTask),
-    );
+    setColumns((prev) => {
+      const next = moveTaskAcrossColumns(prev, active.id, over.id, isOverTask);
+      columnsRef.current = next;
+      return next;
+    });
   };
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     setActiveColumn(null);
     setActiveTask(null);
-    if (!over || active.id === over.id) return;
+    if (!over) return;
 
+    const currentCols = columnsRef.current;
     const type = active.data.current?.type;
+
     if (type === "Column") {
-      setColumns((prev) => reorderColumns(prev, active.id, over.id));
+      if (active.id !== over.id) {
+        const next = reorderColumns(currentCols, active.id, over.id);
+        columnsRef.current = next;
+        setColumns(next);
+        onColumnReorder?.(next);
+      }
     } else if (type === "Task") {
-      setColumns((prev) => reorderTasks(prev, active.id, over.id));
+      const next =
+        active.id !== over.id
+          ? reorderTasks(currentCols, active.id, over.id)
+          : currentCols;
+
+      columnsRef.current = next;
+      setColumns(next);
+
+      // Notifica callback de persistência FORA da função de atualização de estado do React
+      const targetCol = next.find((c) =>
+        c.tasks.some((t) => t.id === active.id),
+      );
+      if (targetCol) {
+        const newIndex = targetCol.tasks.findIndex((t) => t.id === active.id);
+        onTaskMove?.(
+          String(active.id),
+          targetCol.id,
+          newIndex,
+          targetCol.tasks,
+        );
+      }
     }
   };
 

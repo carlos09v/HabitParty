@@ -4,23 +4,13 @@ import {
   LayoutDashboard,
   LifeBuoy,
   ListTodo,
-  type LucideIcon,
   Settings,
   Store,
   Timer,
 } from "lucide-react";
+import type { NavItem, NavSection } from "@/types/navigation";
 
-export interface NavItem {
-  label: string;
-  href: string;
-  icon: LucideIcon;
-}
-
-export interface NavSection {
-  /** Título da categoria (omitido para seções sem cabeçalho). */
-  title?: string;
-  items: NavItem[];
-}
+export type { NavItem, NavSection };
 
 export const NAV_SECTIONS: NavSection[] = [
   { items: [{ label: "Painel", href: "/dashboard", icon: LayoutDashboard }] },

@@ -62,8 +62,10 @@ public class Reward {
       this.description = newDescription;
     }
 
-    if (newPrice != null && newPrice.compareTo(BigDecimal.ZERO) < 0) {
-      // Regra de negócio extra: não pode custar negativo
+    if (newPrice != null) {
+      if (newPrice.compareTo(BigDecimal.ZERO) < 0) {
+        throw new DomainValidationException("O preço não pode ser negativo.");
+      }
       this.price = newPrice;
     }
 
@@ -83,17 +85,23 @@ public class Reward {
       this.type = newType;
     }
 
-    if (this.type != RewardType.TIME_BASED) {
-      // Se mudou para qualquer coisa que NÃO seja CUPOM (ou se já não era), apaga os dados exclusivos, ignorando o que veio no payload.
+    if (this.type == RewardType.SINGLE_USE) {
       this.packageLevel = null;
       this.baseDurationMinutes = null;
-    } else {
-      // Se for CUPOM, aceita a atualização dos dados específicos
+    } else if (this.type == RewardType.TIME_BASED) {
       if (newPackageLevel != null) {
         this.packageLevel = newPackageLevel;
       }
       if (newBaseDurationMinutes != null) {
         this.baseDurationMinutes = newBaseDurationMinutes;
+      }
+    } else if (this.type == RewardType.MISTERY_BOX) {
+      this.baseDurationMinutes = null;
+      if (newPackageLevel != null) {
+        if (newPackageLevel == RewardPackageLevel.NONE) {
+          throw new DomainValidationException("Precisa ter um nível de pacote selecionado!");
+        }
+        this.packageLevel = newPackageLevel;
       }
     }
   }

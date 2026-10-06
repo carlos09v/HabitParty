@@ -1,12 +1,40 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { MOCK_REWARDS } from "@/mocks/rewards";
-import type { Reward } from "@/types/reward";
-import { AddRewardCard, RewardCard } from "./RewardCard";
-import { type RewardFilterState, RewardFilters } from "./RewardFilters";
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { restrictToWindowEdges } from "@dnd-kit/modifiers";
+import {
+  rectSortingStrategy,
+  SortableContext,
+  sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
+import { Pencil, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { deleteReward, reorderRewards } from "@/actions/rewardActions";
+import { ContextMenu } from "@/components/ui/ContextMenu";
+import { FilterBar } from "@/components/ui/FilterBar";
+import { ItemRow, ItemRowHeader } from "@/components/ui/ItemRow";
+import { WelcomeCard } from "@/components/ui/WelcomeCard";
+import {
+  REWARD_CATEGORY_OPTIONS,
+  REWARD_PACKAGE_OPTIONS,
+  REWARD_TAG_OPTIONS,
+  REWARD_TYPE_OPTIONS,
+} from "@/constants/reward";
+import { useViewMode } from "@/hooks/useViewMode";
+import { useRewardStore } from "@/store/rewardStore";
+import type { Reward, RewardFilterState } from "@/types/reward";
 import { cn } from "@/utils";
-import { REWARD_TYPE_META } from "@/constants/reward";
+import { AddRewardCard, RewardCard } from "./RewardCard";
+import { RewardFormModal } from "./RewardFormModal";
 
 const INITIAL_FILTERS: RewardFilterState = {
   search: "",
@@ -17,9 +45,50 @@ const INITIAL_FILTERS: RewardFilterState = {
   viewMode: "card",
 };
 
-export function RewardsContainer() {
+export function RewardsContainer({
+  isCompact = false,
+  initialRewards,
+}: {
+  isCompact?: boolean;
+  initialRewards: Reward[];
+}) {
+  const [viewMode, setViewMode] = useViewMode("rewards", "card");
   const [filters, setFilters] = useState<RewardFilterState>(INITIAL_FILTERS);
-  const [rewards, setRewards] = useState<Reward[]>(MOCK_REWARDS);
+
+  // Context Menu state
+  const [contextMenu, setContextMenu] = useState<{
+    isOpen: boolean;
+    position: { x: number; y: number };
+    reward: Reward | null;
+  }>({
+    isOpen: false,
+    position: { x: 0, y: 0 },
+    reward: null,
+  });
+
+  // Modals state
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [editingReward, setEditingReward] = useState<Reward | null>(null);
+
+  const {
+    items: rewards,
+    setInitialData,
+    reorderItems,
+    rollback,
+    commitReorder,
+    deleteRewardItem,
+  } = useRewardStore();
+
+  useEffect(() => {
+    setInitialData(initialRewards);
+  }, [initialRewards, setInitialData]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
   const handleFilterChange = (newFilters: Partial<RewardFilterState>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
@@ -36,22 +105,52 @@ export function RewardsContainer() {
   };
 
   const handleAddProduct = () => {
-    const title = prompt("Digite o nome da nova recompensa:");
-    if (!title) return;
+    setEditingReward(null);
+    setIsFormModalOpen(true);
+  };
 
-    const newReward: Reward = {
-      id: `rew-${Date.now()}`,
-      title,
-      description: "Nova recompensa personalizada",
-      type: "TimeBased",
-      packageLevel: "Básico",
-      category: "Entretenimento",
-      duration: "30min",
-      price: 25,
-      iconName: "joystick",
-    };
+  const handleContextMenu = (e: React.MouseEvent, reward: Reward) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      isOpen: true,
+      position: { x: e.clientX, y: e.clientY },
+      reward,
+    });
+  };
 
-    setRewards((prev) => [...prev, newReward]);
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = rewards.findIndex((i) => i.id === active.id);
+      const newIndex = rewards.findIndex((i) => i.id === over.id);
+
+      reorderItems(oldIndex, newIndex);
+
+      try {
+        const reordered = Array.from(rewards);
+        const [movedItem] = reordered.splice(oldIndex, 1);
+        reordered.splice(newIndex, 0, movedItem);
+
+        const updates = reordered.map((r, index) => ({
+          id: r.id,
+          newIndex: index,
+        }));
+
+        const result = await reorderRewards(updates);
+
+        if (!result.success) {
+          rollback();
+          toast.error(result.error || "Erro ao reordenar item.");
+        } else {
+          commitReorder();
+        }
+      } catch (_error) {
+        rollback();
+        toast.error("Erro de comunicação com o servidor.");
+      }
+    }
   };
 
   const filteredRewards = useMemo(() => {
@@ -65,93 +164,175 @@ export function RewardsContainer() {
       }
       if (filters.type && r.type !== filters.type) return false;
       if (filters.category && r.category !== filters.category) return false;
-      if (filters.packageLevel && r.packageLevel !== filters.packageLevel) return false;
+      if (filters.packageLevel && r.packageLevel !== filters.packageLevel)
+        return false;
       return true;
     });
   }, [rewards, filters]);
 
   return (
-    <section className="flex flex-col gap-6 w-full h-full pb-10">
-      <RewardFilters
-        filters={filters}
-        onChange={handleFilterChange}
-        onClear={handleClearFilters}
+    <>
+      <WelcomeCard
+        compact={isCompact}
+        title="Colete sua recompensa!"
+        subtitle="Gerencie sua Vitrine e troque suas moedas."
+        bullets={[
+          "Escolha entre itens de Uso Único ou Cupom!",
+          "Gerencie sua Vitrine com produtos de sua escolha.",
+          "Todo produto comprado irá para a Mochila.",
+        ]}
+        imageSrc="/assets/undraw/reward/undraw_gift-card_sfy8 1.svg"
+        imageWidth={isCompact ? 130 : 162}
+        imageHeight={isCompact ? 70 : 87}
+        storageKey="rewards"
+        className="mb-4 sm:mb-6"
       />
 
-      {filters.viewMode === "card" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full pb-8">
-          {filteredRewards.map((reward) => (
-            <RewardCard key={reward.id} reward={reward} onBuy={handleBuy} />
-          ))}
-          <AddRewardCard onClick={handleAddProduct} viewMode="card" />
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3 w-full pb-8" role="list">
-          {filteredRewards.map((reward) => {
-            const typeMeta = REWARD_TYPE_META[reward.type];
+      <section className="flex flex-col gap-6 w-full h-full pb-10">
+        <FilterBar
+          search={{
+            value: filters.search,
+            onChange: (v) => handleFilterChange({ search: v }),
+          }}
+          viewMode={{
+            value: viewMode,
+            onChange: setViewMode,
+          }}
+          dropdownFilters={[
+            {
+              id: "type",
+              label: "Tipo",
+              options: REWARD_TYPE_OPTIONS,
+              value: filters.type,
+            },
+            {
+              id: "category",
+              label: "Categorias",
+              options: REWARD_CATEGORY_OPTIONS,
+              value: filters.category,
+            },
+            {
+              id: "tag",
+              label: "Tags",
+              options: REWARD_TAG_OPTIONS,
+              value: filters.tag,
+            },
+            {
+              id: "packageLevel",
+              label: "Pacote",
+              options: REWARD_PACKAGE_OPTIONS,
+              value: filters.packageLevel,
+            },
+          ]}
+          onDropdownChange={(id, value) => handleFilterChange({ [id]: value })}
+          onClearDropdowns={handleClearFilters}
+        />
 
-            return (
-              <article
-                key={reward.id}
-                role="listitem"
-                className="grid grid-cols-1 md:grid-cols-[minmax(0,2.5fr)_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-4 px-5 py-4 rounded-xl bg-surface border border-white/20 hover:border-gold/50 transition-all shadow-sm"
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+          modifiers={[restrictToWindowEdges]}
+        >
+          <SortableContext
+            items={filteredRewards.map((r) => r.id)}
+            strategy={rectSortingStrategy}
+          >
+            {viewMode === "card" ? (
+              <div
+                className={cn(
+                  "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 transition-all duration-200 w-full pb-8",
+                  isCompact
+                    ? "lg:grid-cols-4 xl:grid-cols-5 gap-3.5"
+                    : "lg:grid-cols-3 xl:grid-cols-4 gap-5",
+                )}
               >
-                {/* Coluna 1: Título e Descrição */}
-                <div className="flex flex-col min-w-0">
-                  <h4 className="text-base font-bold text-neutral-100 truncate">
-                    {reward.title}
-                  </h4>
-                  <p className="text-sm text-neutral-400 truncate mt-1">
-                    {reward.description}
-                  </p>
-                </div>
+                {filteredRewards.map((reward) => (
+                  <RewardCard
+                    key={reward.id}
+                    reward={reward}
+                    onBuy={handleBuy}
+                    onContextMenu={handleContextMenu}
+                  />
+                ))}
+                <AddRewardCard onClick={handleAddProduct} viewMode="card" />
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2.5 w-full pb-8">
+                {/* Cabeçalho da Lista */}
+                <ItemRowHeader isCompact={isCompact} mode="reward" />
 
-                {/* Coluna 2: Tipo de Recompensa */}
-                <div className="flex items-center">
-                  <span
-                    className={cn(
-                      "text-xs font-bold px-3 py-1.5 rounded-md border truncate",
-                      typeMeta?.color || "text-neutral-200 bg-white/10 border-white/20"
-                    )}
-                  >
-                    {typeMeta?.label || reward.type}
-                  </span>
-                </div>
+                <ul className="flex flex-col gap-2 w-full">
+                  {filteredRewards.map((reward) => (
+                    <ItemRow
+                      key={reward.id}
+                      id={reward.id}
+                      title={reward.title}
+                      description={reward.description}
+                      type={reward.type}
+                      packageLevel={reward.packageLevel}
+                      category={reward.category}
+                      iconName={reward.iconName}
+                      baseDurationMinutes={reward.baseDurationMinutes}
+                      price={reward.price}
+                      actionLabel="Comprar"
+                      onAction={() => handleBuy(reward)}
+                      onContextMenu={(e) => handleContextMenu(e, reward)}
+                      isCompact={isCompact}
+                      dragData={{ type: "Reward", reward }}
+                    />
+                  ))}
+                  <AddRewardCard onClick={handleAddProduct} viewMode="list" />
+                </ul>
+              </div>
+            )}
+          </SortableContext>
+        </DndContext>
+      </section>
 
-                {/* Coluna 3: Categoria */}
-                <div className="flex items-center">
-                  <span className="text-xs font-medium px-3 py-1.5 rounded-md text-neutral-300 bg-white/10 border border-white/10 truncate">
-                    {reward.category}
-                  </span>
-                </div>
+      {/* Context Menu flutuante */}
+      <ContextMenu
+        isOpen={contextMenu.isOpen}
+        position={contextMenu.position}
+        onClose={() => setContextMenu((prev) => ({ ...prev, isOpen: false }))}
+        items={[
+          {
+            label: "Editar",
+            icon: <Pencil size={14} />,
+            onClick: () => {
+              if (contextMenu.reward) {
+                setEditingReward(contextMenu.reward);
+                setIsFormModalOpen(true);
+              }
+            },
+          },
+          {
+            label: "Excluir",
+            icon: <Trash2 size={14} />,
+            variant: "destructive",
+            onClick: async () => {
+              if (contextMenu.reward) {
+                const target = contextMenu.reward;
+                deleteRewardItem(target.id);
+                toast.success(
+                  `Recompensa "${target.title}" excluída com sucesso!`,
+                );
+                await deleteReward(target.id);
+              }
+            },
+          },
+        ]}
+      />
 
-                {/* Coluna 4: Preço e Botão */}
-                <div className="flex items-center justify-end gap-5 shrink-0">
-                  <div className="flex items-center gap-2" aria-label={`Preço: ${reward.price} moedas`}>
-                    <div className="w-5 h-5 rounded-full bg-gold border border-orange-500 flex items-center justify-center shrink-0 shadow-sm">
-                      <span className="text-[10px] text-neutral-900 font-bold">H</span>
-                    </div>
-                    <span className="text-base font-bold text-neutral-100">
-                      {reward.price}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleBuy(reward)}
-                    aria-label={`Comprar ${reward.title}`}
-                    className="px-4 py-2 rounded-lg bg-warning-500 hover:bg-warning-400 focus:outline-none focus:ring-2 focus:ring-warning-300 active:scale-95 text-neutral-900 font-bold text-sm transition-all cursor-pointer shadow-sm"
-                  >
-                    Comprar
-                  </button>
-                </div>
-              </article>
-            );
-          })}
-
-          <AddRewardCard onClick={handleAddProduct} viewMode="list" />
-        </div>
-      )}
-    </section>
+      {/* Modal de Formulário (Criação / Edição de Recompensa) */}
+      <RewardFormModal
+        isOpen={isFormModalOpen}
+        rewardToEdit={editingReward}
+        onClose={() => {
+          setIsFormModalOpen(false);
+          setEditingReward(null);
+        }}
+      />
+    </>
   );
 }

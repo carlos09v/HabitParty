@@ -69,6 +69,18 @@
 
   --text-label-g: 11px;
   --text-label-m: 9px;
+  --text-label-s: 8px;
+  --text-tiny: 10px;
+  --text-xs: 12px;
+
+  /* Sombras Semânticas (Glows e Cards) */
+  --shadow-glow-gold: 0 0 15px rgba(237, 229, 57, 0.3);
+  --shadow-glow-gold-md: 0 0 12px rgba(237, 229, 57, 0.25);
+  --shadow-glow-gold-sm: 0 0 10px rgba(237, 229, 57, 0.15);
+  --shadow-glow-gold-xs: 0 0 6px rgba(237, 229, 57, 0.4);
+  --shadow-card-deep: 0 15px 30px rgba(0, 0, 0, 0.5);
+  --shadow-card-active: 0 12px 24px rgba(0, 0, 0, 0.45);
+  --shadow-popover-dark: 0 12px 28px rgba(0, 0, 0, 0.6);
 
   /* Peso de fonte padrão do seu design (Medium) */
   --font-weight-normal: 500;

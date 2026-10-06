@@ -1,13 +1,9 @@
 "use client";
 
-import { InputHTMLAttributes, ReactNode, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+import type { InputProps } from "@/types/ui";
 import { cn } from "@/utils";
-
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
-  label: string;
-  icon?: ReactNode; // Ícone opcional
-}
 
 export function Input({
   label,
@@ -16,6 +12,7 @@ export function Input({
   icon,
   type = "text",
   onChange,
+  compact = false,
   ...props
 }: InputProps) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -35,7 +32,10 @@ export function Input({
 
   return (
     <div className="flex flex-col gap-2 w-full">
-      <label htmlFor={id} className="text-body-s text-neutral-100">
+      <label
+        htmlFor={id}
+        className={cn("text-neutral-100", compact ? "text-xs" : "text-body-s")}
+      >
         {label}
       </label>
       <div className="relative flex items-center  transition-colors">
@@ -54,7 +54,8 @@ export function Input({
           type={finalType}
           onChange={handleChange}
           className={cn(
-            "w-full py-3 rounded-lg text-body-m text-neutral-50 outline-none transition-all",
+            "w-full rounded-lg text-neutral-50 outline-none transition-all",
+            compact ? "py-2 text-xs" : "py-3 text-body-m",
             "bg-primary-dark/20 border border-primary/30",
             "focus:border-primary-light focus:bg-primary-dark/30 focus:shadow-[0_0_8px_rgba(168,99,255,0.3)]",
             "placeholder:text-neutral-400",

@@ -1,12 +1,56 @@
-import type { PackageLevel, RewardType, RewardCategory } from "@/types/reward";
+import {
+  BookOpen,
+  Clapperboard,
+  Coffee,
+  Gamepad2,
+  Gift,
+  type LucideIcon,
+  Music,
+  Package,
+  Pizza,
+  Sparkles,
+  Trophy,
+} from "lucide-react";
+import type { PackageLevel } from "@/types/reward";
+import type { IconOption, SelectOption } from "@/types/ui";
 
-export interface SelectOption {
-  label: string;
-  value: string;
+export type RewardIconOption = IconOption;
+
+export const REWARD_ICONS: readonly IconOption[] = [
+  { id: "gamepad", label: "Jogos", icon: Gamepad2 },
+  { id: "gift", label: "Mimo", icon: Gift },
+  { id: "coffee", label: "Café", icon: Coffee },
+  { id: "clapperboard", label: "Filmes", icon: Clapperboard },
+  { id: "book", label: "Livro", icon: BookOpen },
+  { id: "music", label: "Música", icon: Music },
+  { id: "pizza", label: "Comida", icon: Pizza },
+  { id: "sparkles", label: "Especial", icon: Sparkles },
+  { id: "trophy", label: "Troféu", icon: Trophy },
+  { id: "mystery_box", label: "Surpresa", icon: Package },
+] as const;
+
+export function getRewardIcon(
+  iconId?: string | null,
+  rewardType?: string | null,
+): LucideIcon {
+  if (iconId) {
+    const normalized = iconId.trim().toLowerCase();
+    if (normalized === "joystick") return Gamepad2;
+    const found = REWARD_ICONS.find(
+      (item) => item.id.toLowerCase() === normalized,
+    );
+    if (found) return found.icon;
+  }
+  if (rewardType === "MysteryBox" || rewardType === "MISTERY_BOX") {
+    return Gift;
+  }
+  return Gamepad2;
 }
 
+export type { SelectOption };
+
 export const REWARD_TYPE_META: Record<
-  RewardType,
+  string,
   { label: string; color: string }
 > = {
   SingleUse: {
@@ -23,7 +67,8 @@ export const REWARD_TYPE_META: Record<
   },
 };
 
-export const PACKAGE_LEVEL_COLOR: Record<PackageLevel, string> = {
+export const PACKAGE_LEVEL_COLOR: Partial<Record<string, string>> = {
+  Nenhum: "text-neutral-400 bg-white/5 border-white/10",
   Básico: "text-success-500 bg-success-500/15 border-success-500/30",
   Premium: "text-info bg-info/15 border-info/30",
   Épico: "text-magenta bg-magenta/15 border-magenta/30",
@@ -38,7 +83,8 @@ export const REWARD_TYPE_OPTIONS: SelectOption[] = [
   })),
 ];
 
-export const CATEGORY_LABELS: Record<RewardCategory, string> = {
+export const CATEGORY_LABELS: Partial<Record<string, string>> = {
+  Nenhum: "Nenhum",
   Entretenimento: "Entretenimento",
   "Bem-estar": "Bem-estar",
   Compras: "Compras",
