@@ -83,14 +83,16 @@ export function CreateTaskModal({
               )}
             </div>
 
-            {/* MODO HARDCORE (Switch Toggle posicionado no fim) */}
-            <div className="pt-2 border-t border-white/5">
-              <HardcoreModeToggle
-                isHardcore={form.isHardcore}
-                onChange={form.setIsHardcore}
-                disabled={form.isPending}
-              />
-            </div>
+            {/* MODO HARDCORE (Switch Toggle posicionado no fim - apenas para Hábitos e Diárias) */}
+            {form.taskType !== "TODO" && (
+              <div className="pt-2 border-t border-white/5">
+                <HardcoreModeToggle
+                  isHardcore={form.isHardcore}
+                  onChange={form.setIsHardcore}
+                  disabled={form.isPending}
+                />
+              </div>
+            )}
           </div>
         </div>
 

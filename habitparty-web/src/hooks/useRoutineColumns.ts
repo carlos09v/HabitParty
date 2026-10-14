@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { MAX_COLUMNS_PREMIUM, MAX_VISIBLE_COLUMNS } from "@/constants/routine";
 import type { BoardColumn } from "@/types/task";
 
@@ -17,10 +17,17 @@ export function useRoutineColumns(
     initialColumns.slice(0, MAX_VISIBLE_COLUMNS).map((c) => c.id),
   );
 
+  useEffect(() => {
+    setColumns(initialColumns);
+    setVisibleColumnIds(
+      initialColumns.slice(0, MAX_VISIBLE_COLUMNS).map((c) => c.id),
+    );
+  }, [initialColumns]);
+
   const maxColumns = isPremium ? MAX_COLUMNS_PREMIUM : MAX_VISIBLE_COLUMNS;
   const canCreateColumn = columns.length < maxColumns;
 
-  const toggleColumnVisibility = (columnId: string) => {
+  const toggleColumnVisibility = useCallback((columnId: string) => {
     setVisibleColumnIds((prev) => {
       if (prev.includes(columnId)) {
         // Mantém ao menos uma coluna visível
@@ -31,9 +38,9 @@ export function useRoutineColumns(
         ? [...prev, columnId]
         : [...prev.slice(0, MAX_VISIBLE_COLUMNS - 1), columnId];
     });
-  };
+  }, []);
 
-  const createColumn = () => {
+  const createColumn = useCallback(() => {
     if (!canCreateColumn) return;
 
     const id = `col-${crypto.randomUUID()}`;
@@ -47,16 +54,26 @@ export function useRoutineColumns(
       },
     ]);
 
-    if (visibleColumnIds.length < MAX_VISIBLE_COLUMNS) {
-      setVisibleColumnIds((prev) => [...prev, id]);
-    }
-  };
+    setVisibleColumnIds((prev) =>
+      prev.length < MAX_VISIBLE_COLUMNS ? [...prev, id] : prev,
+    );
+  }, [canCreateColumn]);
+
+  const ensureColumnVisible = useCallback((columnId: string) => {
+    setVisibleColumnIds((prev) => {
+      if (prev.includes(columnId)) return prev;
+      return prev.length < MAX_VISIBLE_COLUMNS
+        ? [...prev, columnId]
+        : [...prev.slice(0, MAX_VISIBLE_COLUMNS - 1), columnId];
+    });
+  }, []);
 
   return {
     columns,
     setColumns,
     visibleColumnIds,
     toggleColumnVisibility,
+    ensureColumnVisible,
     createColumn,
     canCreateColumn,
     maxColumns,

@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  ChevronsUpDown,
-  Loader2,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { ChevronsUpDown, Loader2, Plus, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import {
@@ -69,7 +64,9 @@ export function WorkspaceSwitcher({
     if (typeof document !== "undefined") {
       document.cookie = `activeWorkspaceId=${id}; path=/; max-age=31536000; SameSite=Lax`;
     }
-    const params = new URLSearchParams(searchParams ? searchParams.toString() : "");
+    const params = new URLSearchParams(
+      searchParams ? searchParams.toString() : "",
+    );
     params.set("workspaceId", id);
     router.push(`?${params.toString()}`);
   };

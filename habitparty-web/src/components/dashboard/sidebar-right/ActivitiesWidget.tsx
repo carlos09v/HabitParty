@@ -1,50 +1,17 @@
-import {
-  BookOpen,
-  ChevronRight,
-  Code2,
-  Gamepad2,
-  GraduationCap,
-  Plus,
-} from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
+import { DEFAULT_ACTIVITIES } from "@/constants/dashboard";
 import { cn } from "@/utils";
 
-const DEFAULT_ACTIVITIES: ActivityItem[] = [
-  {
-    id: "1",
-    title: "Leitura (Books, Kindle)",
-    timeSpent: "1h32min",
-    icon: BookOpen,
-    href: "/focus?activity=reading",
-  },
-  {
-    id: "2",
-    title: "Studying (Anki, Class)",
-    timeSpent: "45min",
-    icon: GraduationCap,
-    href: "/focus?activity=studying",
-  },
-  {
-    id: "3",
-    title: "Developing / Coding",
-    timeSpent: "2h15min",
-    icon: Code2,
-    href: "/focus?activity=coding",
-  },
-  {
-    id: "4",
-    title: "Entertainment",
-    timeSpent: "30min",
-    icon: Gamepad2,
-    href: "/focus?activity=entertainment",
-  },
-];
+interface ActivitiesWidgetProps {
+  isCompact?: boolean;
+}
 
-import { useCompactMode } from "@/hooks/useCompactMode";
-import type { ActivityItem } from "@/types/dashboard";
-
-export function ActivitiesWidget() {
-  const { isCompact } = useCompactMode();
+/**
+ * Widget de Registro e Acesso Rápido a Atividades de Foco.
+ * Server Component: renderiza estaticamente com links sem carregar estado desnecessário no client.
+ */
+export function ActivitiesWidget({ isCompact = false }: ActivitiesWidgetProps) {
   return (
     <div className="flex flex-col gap-2.5 w-full">
       {/* Header */}
@@ -52,10 +19,12 @@ export function ActivitiesWidget() {
         <h4 className="text-subtitle-s font-bold text-neutral-100">
           Atividades
         </h4>
-        <span className="text-xs font-semibold text-neutral-300">4/5</span>
+        <span className="text-xs font-semibold text-neutral-300">
+          {DEFAULT_ACTIVITIES.length}/5
+        </span>
       </div>
 
-      {/* Lista de Atividades (Links com tempo registrado + Botão Adicionar) */}
+      {/* Lista de Atividades */}
       <div className="flex flex-col gap-1.5 w-full">
         {DEFAULT_ACTIVITIES.map((act) => {
           const Icon = act.icon;
@@ -101,13 +70,13 @@ export function ActivitiesWidget() {
           );
         })}
 
-        {/* Card de Adicionar Atividade (quando quantidade < 5) */}
+        {/* Card de Adicionar Atividade */}
         <button
           type="button"
           className={cn(
             "flex items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-all cursor-pointer group",
             isCompact ? "py-1" : "p-1.5",
-            "border-primary-light/40 bg-primary-dark/15 text-primary-light hover:border-gold hover:text-gold hover:bg-primary-dark/30 hover:shadow-[0_0_10px_rgba(237,229,57,0.2)]",
+            "border-primary-light/40 bg-primary-dark/15 text-primary-light hover:border-gold hover:text-gold hover:bg-primary-dark/30 hover:shadow-glow-gold-sm",
           )}
         >
           <Plus

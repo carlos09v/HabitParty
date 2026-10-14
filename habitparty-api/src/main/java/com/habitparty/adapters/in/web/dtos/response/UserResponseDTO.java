@@ -1,9 +1,11 @@
 package com.habitparty.adapters.in.web.dtos.response;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.domain.enums.UserGender;
 import com.habitparty.core.domain.enums.UserRole;
 
 public record UserResponseDTO(
@@ -12,8 +14,10 @@ public record UserResponseDTO(
         UserRole role,
         String fullName,
         String username,
+        UserGender gender,
         String email,
         String profilePhotoUrl,
+        LocalDate birthday,
 
         // Atributos Derivados (Calculados no Domínio)
         int age,
@@ -35,8 +39,10 @@ public record UserResponseDTO(
                 user.getRole(),
                 user.getFullName(),
                 user.getUsername(),
+                user.getGender(),
                 user.getEmail(),
                 user.getProfilePhotoUrl().orElse(null), // Se você usou Optional no getter
+                user.getBirthday(),
 
                 user.getAge(), // A mágica da Idade!
                 user.getCurrentLevel().getTitle(), // A mágica do Nível!

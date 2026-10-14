@@ -1,23 +1,18 @@
 "use client";
 
-import {
-  closestCenter,
-  DndContext,
-  type DragEndEvent,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
+import { closestCenter, DndContext } from "@dnd-kit/core";
 import { restrictToWindowEdges } from "@dnd-kit/modifiers";
 import {
   rectSortingStrategy,
   SortableContext,
-  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { reorderInventory } from "@/actions/inventoryActions";
+import {
+  consumeInventoryItem,
+  reorderInventory,
+} from "@/actions/inventoryActions";
 import { InventoryCard } from "@/components/inventory/InventoryCard";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { ItemRow, ItemRowHeader } from "@/components/ui/ItemRow";
@@ -28,10 +23,11 @@ import {
   REWARD_TAG_OPTIONS,
   REWARD_TYPE_OPTIONS,
 } from "@/constants/reward";
-import { useViewMode } from "@/hooks/useViewMode";
-import { useInventoryStore } from "@/store/inventoryStore";
-import type { InventoryFilterState, InventoryItem } from "@/types/inventory";
+import { useItemCatalogFilters } from "@/hooks/useItemCatalogFilters";
+import { useReorderableList } from "@/hooks/useReorderableList";
+import type { InventoryItem } from "@/types/inventory";
 import { cn } from "@/utils";
+import { soundEffects } from "@/utils/soundEffects";
 
 export function InventoryContainer({
   initialItems,
@@ -40,35 +36,27 @@ export function InventoryContainer({
   initialItems: InventoryItem[];
   isCompact?: boolean;
 }) {
-  const [viewMode, setViewMode] = useViewMode("inventory", "card");
-  const [filters, setFilters] = useState<InventoryFilterState>({
-    search: "",
-    type: "",
-    category: "",
-    tag: "",
-    packageLevel: "",
-    viewMode: "card",
-  });
-
   const {
-    items,
-    setInitialData,
-    reorderItems,
-    rollback,
-    commitReorder,
-    consumeItem,
-  } = useInventoryStore();
+    viewMode,
+    setViewMode,
+    filters,
+    isFiltering,
+    handleFilterChange,
+    handleClearFilters,
+  } = useItemCatalogFilters("inventory");
 
-  useEffect(() => {
-    setInitialData(initialItems);
-  }, [initialItems, setInitialData]);
+  const { items, setItems, sensors, handleDragEnd } =
+    useReorderableList<InventoryItem>({
+      initialItems,
+      onReorderServerAction: async (updates) => {
+        return reorderInventory(
+          updates.map((u) => ({ itemId: u.id, newIndex: u.newIndex })),
+        );
+      },
+      isFiltering,
+    });
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
+  const [isUsing, setIsUsing] = useState(false);
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
@@ -93,42 +81,28 @@ export function InventoryContainer({
     });
   }, [items, filters]);
 
-  const handleUseItem = (item: InventoryItem) => {
-    consumeItem(item.id);
-    console.log(`Usou item: ${item.reward.title}`);
-  };
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      const oldIndex = items.findIndex((i) => i.id === active.id);
-      const newIndex = items.findIndex((i) => i.id === over.id);
-
-      reorderItems(oldIndex, newIndex);
-
-      try {
-        const reordered = Array.from(items);
-        const [movedItem] = reordered.splice(oldIndex, 1);
-        reordered.splice(newIndex, 0, movedItem);
-
-        const updates = reordered.map((i, index) => ({
-          itemId: i.id,
-          newIndex: index,
-        }));
-
-        const result = await reorderInventory(updates);
-
-        if (!result.success) {
-          rollback();
-          toast.error(result.error || "Erro ao reordenar item.");
-        } else {
-          commitReorder();
-        }
-      } catch (_error) {
-        rollback();
-        toast.error("Erro de comunicação com o servidor.");
+  const handleUseItem = async (item: InventoryItem) => {
+    if (isUsing) return;
+    setIsUsing(true);
+    try {
+      const res = await consumeInventoryItem(item.id);
+      if (!res.success) {
+        toast.error(res.error || "Erro ao usar item.");
+        return;
       }
+      setItems((prev) =>
+        prev
+          .map((i) =>
+            i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i,
+          )
+          .filter((i) => i.quantity > 0),
+      );
+      soundEffects.playTaskCompleteSound();
+      toast.success(`Você usou "${item.reward.title}"!`);
+    } catch (_error) {
+      toast.error("Erro de comunicação com o servidor.");
+    } finally {
+      setIsUsing(false);
     }
   };
 
@@ -153,12 +127,8 @@ export function InventoryContainer({
       <section className="flex flex-col gap-4 sm:gap-6 w-full h-full pb-10">
         <FilterBar
           search={{
-            value: filters.search || "",
-            onChange: (v) =>
-              setFilters((prev: InventoryFilterState) => ({
-                ...prev,
-                search: v,
-              })),
+            value: filters.search,
+            onChange: (v) => handleFilterChange({ search: v }),
           }}
           viewMode={{
             value: viewMode,
@@ -169,43 +139,29 @@ export function InventoryContainer({
               id: "type",
               label: "Tipo",
               options: REWARD_TYPE_OPTIONS,
-              value: filters.type || "",
+              value: filters.type,
             },
             {
               id: "category",
               label: "Categorias",
               options: REWARD_CATEGORY_OPTIONS,
-              value: filters.category || "",
+              value: filters.category,
             },
             {
               id: "tag",
               label: "Tags",
               options: REWARD_TAG_OPTIONS,
-              value: filters.tag || "",
+              value: filters.tag,
             },
             {
               id: "packageLevel",
               label: "Pacote",
               options: REWARD_PACKAGE_OPTIONS,
-              value: filters.packageLevel || "",
+              value: filters.packageLevel,
             },
           ]}
-          onDropdownChange={(id, value) =>
-            setFilters((prev: InventoryFilterState) => ({
-              ...prev,
-              [id]: value,
-            }))
-          }
-          onClearDropdowns={() =>
-            setFilters((prev: InventoryFilterState) => ({
-              ...prev,
-              search: "",
-              type: "",
-              category: "",
-              tag: "",
-              packageLevel: "",
-            }))
-          }
+          onDropdownChange={(id, value) => handleFilterChange({ [id]: value })}
+          onClearDropdowns={handleClearFilters}
         />
 
         {filteredItems.length === 0 ? (
@@ -214,6 +170,7 @@ export function InventoryContainer({
           </div>
         ) : (
           <DndContext
+            id="inventory-dnd-context"
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
@@ -221,7 +178,11 @@ export function InventoryContainer({
           >
             <SortableContext
               items={filteredItems.map((i) => i.id)}
-              strategy={rectSortingStrategy}
+              strategy={
+                viewMode === "card"
+                  ? rectSortingStrategy
+                  : verticalListSortingStrategy
+              }
             >
               {viewMode === "card" ? (
                 <div
@@ -237,6 +198,7 @@ export function InventoryContainer({
                       key={item.id}
                       item={item}
                       onUse={handleUseItem}
+                      isCompact={isCompact}
                     />
                   ))}
                 </div>

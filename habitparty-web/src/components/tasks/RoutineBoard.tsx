@@ -18,12 +18,16 @@ export function RoutineBoard({
   setColumns,
   visibleColumnIds,
   maxColumns,
+  selectedColumnId,
   onAddColumn,
   onAddTaskToColumn,
   onOpenDetails,
   onContextMenu,
+  onOpenColumnMenu,
   onTaskMove,
   onColumnReorder,
+  onToggleComplete,
+  onHabitChange,
 }: RoutineBoardProps) {
   const { isCompact } = useCompactMode();
   const { sensors, activeColumn, activeTask, handlers } = useRoutineBoardDnd({
@@ -59,8 +63,8 @@ export function RoutineBoard({
       {/* Grid de até 4 colunas ocupando a tela toda */}
       <div
         className={cn(
-          "w-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 min-w-0 transition-all duration-200",
-          isCompact ? "gap-3.5 pb-3 pt-1" : "gap-6 pb-6 pt-2",
+          "w-full h-full min-h-0 flex-1 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 min-w-0 items-stretch transition-all duration-200",
+          isCompact ? "gap-3.5 pb-2 pt-1" : "gap-6 pb-4 pt-2",
         )}
       >
         <SortableContext
@@ -72,9 +76,13 @@ export function RoutineBoard({
               key={column.id}
               column={column}
               columnIndex={idx}
+              isSelected={selectedColumnId === column.id}
               onAddTaskToColumn={onAddTaskToColumn}
               onOpenDetails={onOpenDetails}
               onContextMenu={onContextMenu}
+              onOpenColumnMenu={onOpenColumnMenu}
+              onToggleComplete={onToggleComplete}
+              onHabitChange={onHabitChange}
             />
           ))}
         </SortableContext>
@@ -86,7 +94,7 @@ export function RoutineBoard({
             onClick={onAddColumn}
             aria-label="Criar nova coluna"
             className={cn(
-              "w-full h-full rounded-xl border-2 border-dashed flex flex-col items-center justify-center transition-all cursor-pointer group",
+              "w-full h-full min-h-0 rounded-xl border-2 border-dashed flex flex-col items-center justify-center transition-all cursor-pointer group",
               isCompact ? "min-h-48 gap-2" : "min-h-64 gap-3",
               "border-white/20 bg-transparent text-neutral-400",
               "hover:border-gold hover:text-gold hover:bg-white/5 hover:shadow-sm focus:outline-none",

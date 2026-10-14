@@ -58,6 +58,7 @@ export interface RewardCardProps {
   reward: Reward;
   onBuy?: (reward: Reward) => void;
   onContextMenu?: (e: React.MouseEvent, reward: Reward) => void;
+  isCompact?: boolean;
 }
 
 export interface AddRewardCardProps {

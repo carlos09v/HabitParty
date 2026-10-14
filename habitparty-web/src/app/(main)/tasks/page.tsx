@@ -55,6 +55,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
   return (
     <Suspense fallback={null}>
       <TasksBoardContainer
+        key={activeWorkspace.id}
         initialColumns={initialColumns}
         initialOpenCreateColumn={shouldOpenCreateColumn}
       />

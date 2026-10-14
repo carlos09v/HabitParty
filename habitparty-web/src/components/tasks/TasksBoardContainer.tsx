@@ -1,186 +1,117 @@
 "use client";
 
-import { Pencil, Trash2 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
-import { toast } from "sonner";
-import { updateBoardColumnOrderAction } from "@/actions/boardColumnActions";
-import {
-  changeTaskStatus,
-  completeTask,
-  deleteTask,
-  moveTasks,
-} from "@/actions/taskActions";
+import { Copy, Pencil, Trash2 } from "lucide-react";
+import { useMemo } from "react";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { CreateBoardColumnModal } from "@/components/tasks/CreateBoardColumnModal";
 import { CreateTaskModal } from "@/components/tasks/CreateTaskModal";
+import { DeleteBoardColumnModal } from "@/components/tasks/DeleteBoardColumnModal";
 import { RoutineBoard } from "@/components/tasks/RoutineBoard";
 import { RoutineFilters } from "@/components/tasks/RoutineFilters";
 import { TaskDetailsPopover } from "@/components/tasks/TaskDetailsPopover";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
-import {
-  DEFAULT_BOARD_FILTERS,
-  normalizeTaskDifficulty,
-  normalizeTaskType,
-} from "@/constants/task";
+import { useBoardFilters } from "@/hooks/useBoardFilters";
+import { useBoardModals } from "@/hooks/useBoardModals";
+import { useBoardTaskActions } from "@/hooks/useBoardTaskActions";
 import { useCompactMode } from "@/hooks/useCompactMode";
 import { useRoutineColumns } from "@/hooks/useRoutineColumns";
 import { useUserStore } from "@/store/userStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
-import type {
-  BoardColumn,
-  BoardFilterState,
-  ColumnSummary,
-  Task,
-  UpdateTaskOrderDTO,
-} from "@/types/task";
+import type { BoardColumn, ColumnSummary } from "@/types/task";
 import { cn } from "@/utils";
 
+interface TasksBoardContainerProps {
+  initialColumns: BoardColumn[];
+  initialOpenCreateColumn?: boolean;
+}
+
+/**
+ * Container Orquestrador do Quadro Kanban de Rotinas.
+ * Refatorado e desacoplado: consome hooks especializados para estado de colunas,
+ * filtros, modais/menus e ações assíncronas de tarefas.
+ */
 export function TasksBoardContainer({
   initialColumns,
   initialOpenCreateColumn = false,
-}: {
-  initialColumns: BoardColumn[];
-  initialOpenCreateColumn?: boolean;
-}) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+}: TasksBoardContainerProps) {
   const is_Premium = useUserStore((state) => state.is_Premium);
   const activeWorkspaceId = useWorkspaceStore(
     (state) => state.activeWorkspaceId,
   );
   const { isCompact } = useCompactMode();
-  const [, startTransition] = useTransition();
 
-  const [isCreateColumnOpen, setIsCreateColumnOpen] = useState(
-    initialOpenCreateColumn,
-  );
-
-  useEffect(() => {
-    if (
-      initialOpenCreateColumn ||
-      searchParams.get("createColumn") === "true"
-    ) {
-      setIsCreateColumnOpen(true);
-    }
-  }, [initialOpenCreateColumn, searchParams]);
-  const [taskModalState, setTaskModalState] = useState<{
-    isOpen: boolean;
-    columnId?: string;
-    taskToEdit?: Task | null;
-  }>({ isOpen: false, taskToEdit: null });
-
-  const [selectedTaskDetails, setSelectedTaskDetails] = useState<{
-    task: Task;
-    columnId: string;
-    anchorRect?: DOMRect | null;
-  } | null>(null);
-
-  // Estado dos filtros e busca
-  const [searchQuery, setSearchQuery] = useState("");
-  const [focusMode, setFocusMode] = useState(false);
-  const [filters, setFilters] = useState<BoardFilterState>(
-    DEFAULT_BOARD_FILTERS,
-  );
-
-  // Context Menu state (botão direito na tarefa)
-  const [contextMenu, setContextMenu] = useState<{
-    isOpen: boolean;
-    position: { x: number; y: number };
-    task: Task | null;
-    columnId: string | null;
-  }>({
-    isOpen: false,
-    position: { x: 0, y: 0 },
-    task: null,
-    columnId: null,
-  });
-
+  // 1. Hook de Colunas e Visibilidade
   const {
     columns,
     setColumns,
     visibleColumnIds,
     toggleColumnVisibility,
+    ensureColumnVisible,
     canCreateColumn,
     maxColumns,
   } = useRoutineColumns(initialColumns, is_Premium);
 
-  // Lista de tags únicas presentes nas tarefas atuais para o filtro
-  const availableTags = useMemo(() => {
-    const tagSet = new Set<string>();
-    for (const col of columns) {
-      for (const task of col.tasks) {
-        if (task.tags && Array.isArray(task.tags)) {
-          for (const t of task.tags) {
-            if (t?.trim()) tagSet.add(t.trim());
-          }
-        }
-      }
-    }
-    return Array.from(tagSet);
-  }, [columns]);
+  // 2. Hook de Modais e Menus de Contexto
+  const {
+    columnModalState,
+    setColumnModalState,
+    closeColumnModal,
+    taskModalState,
+    setTaskModalState,
+    selectedTaskDetails,
+    setSelectedTaskDetails,
+    contextMenu,
+    setContextMenu,
+    columnContextMenu,
+    setColumnContextMenu,
+    columnToDelete,
+    setColumnToDelete,
+    selectedColumnId,
+    handleOpenTaskContextMenu,
+    handleOpenColumnContextMenu,
+  } = useBoardModals({
+    initialOpenCreateColumn,
+    ensureColumnVisible,
+  });
 
-  // Colunas com tarefas filtradas aplicadas em memória
-  const filteredColumns = useMemo(() => {
-    const hasFilter =
-      searchQuery.trim() !== "" ||
-      focusMode ||
-      filters.taskType !== "all" ||
-      filters.difficulty !== "all" ||
-      filters.status !== "all" ||
-      filters.tag !== null;
+  // 3. Hook de Filtros e Busca em Memória
+  const {
+    searchQuery,
+    setSearchQuery,
+    focusMode,
+    setFocusMode,
+    filters,
+    setFilters,
+    availableTags,
+    filteredColumns,
+  } = useBoardFilters(columns);
 
-    if (!hasFilter) return columns;
-
-    const q = searchQuery.toLowerCase().trim();
-
-    return columns.map((col) => ({
-      ...col,
-      tasks: col.tasks.filter((task) => {
-        // 1. Busca textual
-        if (q) {
-          const matchesTitle = task.title.toLowerCase().includes(q);
-          const matchesDesc = (task.description || "")
-            .toLowerCase()
-            .includes(q);
-          if (!matchesTitle && !matchesDesc) return false;
-        }
-
-        const resolvedType = normalizeTaskType(task);
-
-        // 2. Modo Foco: oculta tarefas concluídas (exceto hábitos)
-        if (focusMode && task.completed && resolvedType !== "habit") {
-          return false;
-        }
-
-        // 3. Filtro por Tipo de Tarefa
-        if (filters.taskType !== "all") {
-          if (resolvedType.toUpperCase() !== filters.taskType) return false;
-        }
-
-        // 4. Filtro por Dificuldade
-        if (filters.difficulty !== "all") {
-          const normalizedTDiff = normalizeTaskDifficulty(task.difficulty);
-          if (normalizedTDiff !== filters.difficulty) return false;
-        }
-
-        // 5. Filtro por Status
-        if (filters.status === "completed" && !task.completed) return false;
-        if (filters.status === "pending" && task.completed) return false;
-
-        // 6. Filtro por Tag
-        if (filters.tag) {
-          const hasTag =
-            task.tags?.includes(filters.tag) ||
-            (task.category && task.category === filters.tag);
-          if (!hasTag) return false;
-        }
-
-        return true;
-      }),
-    }));
-  }, [columns, searchQuery, focusMode, filters]);
+  // 4. Hook de Ações e Mutações de Tarefas/Colunas
+  const {
+    handleColumnSaved,
+    handleDeleteColumn,
+    isDeletingColumn,
+    handleDuplicateTask,
+    handleTaskSaved,
+    handleDeleteTask,
+    handleTaskMove,
+    handleColumnReorder,
+    handleTaskDetailsUpdate,
+    handleToggleComplete,
+    handleHabitChange,
+  } = useBoardTaskActions({
+    columns,
+    setColumns,
+    activeWorkspaceId,
+    visibleColumnIds,
+    toggleColumnVisibility,
+    onTaskUpdatedInDetails: (updated) => {
+      setSelectedTaskDetails((prev) =>
+        prev ? { ...prev, task: updated } : null,
+      );
+    },
+  });
 
   const columnsList: ColumnSummary[] = useMemo(
     () =>
@@ -191,125 +122,6 @@ export function TasksBoardContainer({
       })),
     [columns],
   );
-
-  const handleColumnCreated = (newCol: BoardColumn) => {
-    setColumns((prev) => [...prev, newCol]);
-    if (visibleColumnIds.length < 4) {
-      toggleColumnVisibility(newCol.id);
-    }
-  };
-
-  const handleTaskSaved = (savedTask: Task, targetColumnId: string) => {
-    setColumns((prev) =>
-      prev.map((col) => {
-        const existsInThisCol = col.tasks.some((t) => t.id === savedTask.id);
-
-        if (col.id === targetColumnId) {
-          if (existsInThisCol) {
-            return {
-              ...col,
-              tasks: col.tasks.map((t) =>
-                t.id === savedTask.id ? savedTask : t,
-              ),
-            };
-          }
-          return { ...col, tasks: [...col.tasks, savedTask] };
-        }
-
-        if (existsInThisCol) {
-          return {
-            ...col,
-            tasks: col.tasks.filter((t) => t.id !== savedTask.id),
-          };
-        }
-
-        return col;
-      }),
-    );
-  };
-
-  const handleContextMenu = (
-    e: React.MouseEvent,
-    task: Task,
-    columnId: string,
-  ) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenu({
-      isOpen: true,
-      position: { x: e.clientX, y: e.clientY },
-      task,
-      columnId,
-    });
-  };
-
-  const handleDeleteTask = async (task: Task, targetColumnId: string) => {
-    setColumns((prev) =>
-      prev.map((col) =>
-        col.id === targetColumnId
-          ? { ...col, tasks: col.tasks.filter((t) => t.id !== task.id) }
-          : col,
-      ),
-    );
-    toast.success(`Tarefa "${task.title}" excluída com sucesso!`);
-
-    const res = await deleteTask(task.id);
-    if (!res.success) {
-      toast.error(res.error || "Erro ao excluir tarefa no servidor.");
-    }
-  };
-
-  // Persistência ao mover / reordenar tarefa entre colunas
-  const handleTaskMove = (
-    _taskId: string,
-    targetColumnId: string,
-    _newIndex: number,
-    allTargetTasks?: Task[],
-  ) => {
-    const tasksToUpdate =
-      allTargetTasks ||
-      columns.find((c) => c.id === targetColumnId)?.tasks ||
-      [];
-
-    const updates: UpdateTaskOrderDTO[] = tasksToUpdate.map((t, idx) => ({
-      taskId: t.id,
-      boardColumnId: targetColumnId,
-      newOrderIndex: idx,
-    }));
-
-    if (updates.length > 0) {
-      startTransition(async () => {
-        const res = await moveTasks(updates);
-        if (!res.success) {
-          toast.error(
-            res.error || "Erro ao salvar nova posição da tarefa no servidor.",
-          );
-        }
-      });
-    }
-  };
-
-  // Persistência ao reordenar colunas
-  const handleColumnReorder = (reorderedColumns: BoardColumn[]) => {
-    if (!activeWorkspaceId) return;
-
-    const payload = reorderedColumns.map((c, idx) => ({
-      board_column_id: c.id,
-      newIndex: idx,
-    }));
-
-    startTransition(async () => {
-      const res = await updateBoardColumnOrderAction(
-        activeWorkspaceId,
-        payload,
-      );
-      if (!res.success) {
-        toast.error(
-          res.error || "Erro ao salvar ordem das colunas no servidor.",
-        );
-      }
-    });
-  };
 
   return (
     <PageWrapper noScroll isCompact={isCompact}>
@@ -327,40 +139,44 @@ export function TasksBoardContainer({
         imageWidth={isCompact ? 115 : 136}
         imageHeight={isCompact ? 75 : 93}
         className={cn(
-          "rounded-xl border border-primary/30 bg-primary-dark/20 shrink-0 transition-all mb-2",
+          "rounded-xl border border-primary/30 bg-primary-dark/20 shrink-0 transition-all",
           isCompact ? "p-3 max-w-xl" : "p-4 sm:p-5 max-w-2xl",
         )}
       />
 
-      {/* Barra de Filtros com Popover Completo, Busca e Modo Foco */}
-      <RoutineFilters
-        search={searchQuery}
-        onSearch={setSearchQuery}
-        filters={filters}
-        onFilterChange={setFilters}
-        focusMode={focusMode}
-        onToggleFocusMode={() => setFocusMode((prev) => !prev)}
-        availableTags={availableTags}
-        columnsCount={columns.length}
-        maxColumns={maxColumns}
-        isPremium={is_Premium}
-        canCreateColumn={canCreateColumn}
-        columnsList={columnsList}
-        visibleColumnIds={visibleColumnIds}
-        onToggleColumnVisibility={toggleColumnVisibility}
-        onOpenCreateColumn={() => setIsCreateColumnOpen(true)}
-        onOpenCreateTask={() =>
-          setTaskModalState({
-            isOpen: true,
-            columnId: columns[0]?.id,
-            taskToEdit: null,
-          })
-        }
-      />
+      {/* Barra de Filtros com Popover, Busca e Modo Foco */}
+      <div className="shrink-0">
+        <RoutineFilters
+          search={searchQuery}
+          onSearch={setSearchQuery}
+          filters={filters}
+          onFilterChange={setFilters}
+          focusMode={focusMode}
+          onToggleFocusMode={() => setFocusMode((prev) => !prev)}
+          availableTags={availableTags}
+          columnsCount={columns.length}
+          maxColumns={maxColumns}
+          isPremium={is_Premium}
+          canCreateColumn={canCreateColumn}
+          columnsList={columnsList}
+          visibleColumnIds={visibleColumnIds}
+          onToggleColumnVisibility={toggleColumnVisibility}
+          onOpenCreateColumn={() =>
+            setColumnModalState({ isOpen: true, columnToEdit: null })
+          }
+          onOpenCreateTask={() =>
+            setTaskModalState({
+              isOpen: true,
+              columnId: columns[0]?.id,
+              taskToEdit: null,
+            })
+          }
+        />
+      </div>
 
-      {/* Quadro Kanban Responsivo */}
+      {/* Quadro Kanban */}
       <section
-        className="flex-1 min-w-0 flex flex-col"
+        className="flex-1 min-h-0 min-w-0 flex flex-col"
         aria-label="Quadro de rotinas"
       >
         <RoutineBoard
@@ -368,7 +184,10 @@ export function TasksBoardContainer({
           setColumns={setColumns}
           visibleColumnIds={visibleColumnIds}
           maxColumns={maxColumns}
-          onAddColumn={() => setIsCreateColumnOpen(true)}
+          selectedColumnId={selectedColumnId}
+          onAddColumn={() =>
+            setColumnModalState({ isOpen: true, columnToEdit: null })
+          }
           onAddTaskToColumn={(colId) =>
             setTaskModalState({
               isOpen: true,
@@ -379,13 +198,16 @@ export function TasksBoardContainer({
           onOpenDetails={(task, columnId, anchorRect) =>
             setSelectedTaskDetails({ task, columnId, anchorRect })
           }
-          onContextMenu={handleContextMenu}
+          onContextMenu={handleOpenTaskContextMenu}
+          onOpenColumnMenu={handleOpenColumnContextMenu}
           onTaskMove={handleTaskMove}
           onColumnReorder={handleColumnReorder}
+          onToggleComplete={handleToggleComplete}
+          onHabitChange={handleHabitChange}
         />
       </section>
 
-      {/* Context Menu ao clicar com botão direito na tarefa */}
+      {/* Menu de Contexto da Tarefa (botão direito) */}
       <ContextMenu
         isOpen={contextMenu.isOpen}
         position={contextMenu.position}
@@ -405,6 +227,15 @@ export function TasksBoardContainer({
             },
           },
           {
+            label: "Duplicar",
+            icon: <Copy size={14} />,
+            onClick: () => {
+              if (contextMenu.task && contextMenu.columnId) {
+                handleDuplicateTask(contextMenu.task, contextMenu.columnId);
+              }
+            },
+          },
+          {
             label: "Excluir",
             icon: <Trash2 size={14} />,
             variant: "destructive",
@@ -417,19 +248,63 @@ export function TasksBoardContainer({
         ]}
       />
 
-      {/* Modal: Criar Coluna */}
-      <CreateBoardColumnModal
-        isOpen={isCreateColumnOpen}
+      {/* Menu de Contexto da Coluna (3 pontos) */}
+      <ContextMenu
+        isOpen={columnContextMenu.isOpen}
+        position={columnContextMenu.position}
+        onClose={() =>
+          setColumnContextMenu((prev) => ({ ...prev, isOpen: false }))
+        }
+        items={[
+          {
+            label: "Editar",
+            icon: <Pencil size={14} />,
+            onClick: () => {
+              if (columnContextMenu.column) {
+                setColumnModalState({
+                  isOpen: true,
+                  columnToEdit: columnContextMenu.column,
+                });
+              }
+            },
+          },
+          {
+            label: "Excluir",
+            icon: <Trash2 size={14} />,
+            variant: "destructive",
+            onClick: () => {
+              if (columnContextMenu.column) {
+                setColumnToDelete(columnContextMenu.column);
+              }
+            },
+          },
+        ]}
+      />
+
+      {/* Modal: Excluir Coluna */}
+      <DeleteBoardColumnModal
+        isOpen={Boolean(columnToDelete)}
+        columnName={columnToDelete?.title || ""}
+        isLoading={isDeletingColumn}
         onClose={() => {
-          setIsCreateColumnOpen(false);
-          if (searchParams.get("createColumn") === "true") {
-            const nextParams = new URLSearchParams(searchParams.toString());
-            nextParams.delete("createColumn");
-            const qs = nextParams.toString();
-            router.replace(qs ? `/tasks?${qs}` : "/tasks", { scroll: false });
+          if (!isDeletingColumn) setColumnToDelete(null);
+        }}
+        onConfirm={async () => {
+          if (columnToDelete) {
+            const success = await handleDeleteColumn(columnToDelete);
+            if (success) {
+              setColumnToDelete(null);
+            }
           }
         }}
-        onSuccess={handleColumnCreated}
+      />
+
+      {/* Modal: Criar / Editar Coluna */}
+      <CreateBoardColumnModal
+        isOpen={columnModalState.isOpen}
+        columnToEdit={columnModalState.columnToEdit}
+        onClose={closeColumnModal}
+        onSuccess={handleColumnSaved}
       />
 
       {/* Modal: Criar / Editar Tarefa */}
@@ -442,7 +317,7 @@ export function TasksBoardContainer({
         onSuccess={handleTaskSaved}
       />
 
-      {/* Popover Lateral: Detalhes Rápidos da Tarefa (ao clicar na tarefa com botão esquerdo) */}
+      {/* Popover Lateral: Detalhes Rápidos da Tarefa */}
       <TaskDetailsPopover
         isOpen={!!selectedTaskDetails}
         onClose={() => setSelectedTaskDetails(null)}
@@ -451,19 +326,7 @@ export function TasksBoardContainer({
           columns.find((c) => c.id === selectedTaskDetails?.columnId)?.title
         }
         anchorRect={selectedTaskDetails?.anchorRect}
-        onTaskUpdate={(updatedTask) => {
-          setSelectedTaskDetails((prev) =>
-            prev ? { ...prev, task: updatedTask } : null,
-          );
-          setColumns((prev) =>
-            prev.map((col) => ({
-              ...col,
-              tasks: col.tasks.map((t) =>
-                t.id === updatedTask.id ? updatedTask : t,
-              ),
-            })),
-          );
-        }}
+        onTaskUpdate={handleTaskDetailsUpdate}
         onDelete={(_taskId) => {
           if (selectedTaskDetails) {
             handleDeleteTask(
@@ -473,23 +336,7 @@ export function TasksBoardContainer({
             setSelectedTaskDetails(null);
           }
         }}
-        onToggleComplete={(taskId, completed) => {
-          setColumns((prev) =>
-            prev.map((col) => ({
-              ...col,
-              tasks: col.tasks.map((t) =>
-                t.id === taskId ? { ...t, completed } : t,
-              ),
-            })),
-          );
-          startTransition(async () => {
-            if (completed) {
-              await completeTask(taskId);
-            } else {
-              await changeTaskStatus(taskId, "PENDING");
-            }
-          });
-        }}
+        onToggleComplete={handleToggleComplete}
       />
     </PageWrapper>
   );

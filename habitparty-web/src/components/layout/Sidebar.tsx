@@ -1,11 +1,19 @@
 import { Bell, LogOut } from "lucide-react";
 import Image from "next/image";
 import { signOut } from "@/actions/auth";
+import type { components } from "@/api/schema";
 import { NAV_FOOTER, NAV_SECTIONS } from "@/constants/navigation";
 import { SidebarLink } from "./SidebarLink";
+import { SidebarUserProfile } from "./SidebarUserProfile";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 
-export function Sidebar() {
+type User = components["schemas"]["UserResponseDTO"];
+
+interface SidebarProps {
+  user?: User | null;
+}
+
+export function Sidebar({ user }: SidebarProps) {
   return (
     <aside
       className="w-60 shrink-0 h-screen border-r border-primary/30 bg-background/80 backdrop-blur-xl flex flex-col relative z-20"
@@ -115,46 +123,7 @@ export function Sidebar() {
       </nav>
 
       {/* FOOTER */}
-      <footer className="p-3.5 border-t border-primary/30 bg-primary-dark/20 z-10">
-        <div className="flex items-center gap-2.5 mb-2">
-          <div
-            className="w-8 h-8 rounded-full bg-neutral-300 border-2 border-neutral-50 shrink-0"
-            aria-hidden="true"
-          ></div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-body-s font-bold text-neutral-50 truncate">
-              Carlos Vinicius
-            </span>
-            <span className="text-tiny text-neutral-300 truncate">
-              Nível 5 - Novato
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between gap-2 mt-2">
-          <div className="flex-1 min-w-0">
-            <div
-              className="h-1.5 w-full bg-neutral-900 rounded-full overflow-hidden"
-              role="progressbar"
-              aria-valuenow={12}
-              aria-valuemin={0}
-              aria-valuemax={1200}
-            >
-              <div className="h-full bg-gold w-[10%] rounded-full"></div>
-            </div>
-            <p className="text-tiny text-neutral-300 text-center mt-0.5">
-              (12/1200)
-            </p>
-          </div>
-
-          <div className="flex items-center gap-1 shrink-0" title="26 moedas">
-            <div className="w-3.5 h-3.5 rounded-full bg-gold border border-orange-500 flex items-center justify-center shadow-sm">
-              <span className="text-[7px] text-neutral-900 font-bold">H</span>
-            </div>
-            <span className="text-body-s font-bold text-neutral-50">26</span>
-          </div>
-        </div>
-      </footer>
+      <SidebarUserProfile initialUser={user} />
     </aside>
   );
 }

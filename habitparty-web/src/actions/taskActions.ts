@@ -98,6 +98,8 @@ export async function changeTaskStatus(
   }
 
   updateTag("tasks");
+  updateTag("user");
+  updateTag("transactions");
   return { success: true, data };
 }
 

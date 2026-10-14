@@ -9,7 +9,9 @@ import {
   Package,
   Pizza,
   Sparkles,
+  Ticket,
   Trophy,
+  Zap,
 } from "lucide-react";
 import type { PackageLevel } from "@/types/reward";
 import type { IconOption, SelectOption } from "@/types/ui";
@@ -49,21 +51,27 @@ export function getRewardIcon(
 
 export type { SelectOption };
 
-export const REWARD_TYPE_META: Record<
-  string,
-  { label: string; color: string }
-> = {
+export interface RewardTypeMeta {
+  label: string;
+  color: string;
+  icon: LucideIcon;
+}
+
+export const REWARD_TYPE_META: Record<string, RewardTypeMeta> = {
   SingleUse: {
     label: "Uso Único",
-    color: "text-neutral-200 bg-white/10 border-white/20",
+    color: "text-purple-300 bg-purple-500/15 border-purple-500/25",
+    icon: Zap,
   },
   TimeBased: {
     label: "Cupom",
-    color: "text-success-500 bg-success-500/15 border-success-500/30",
+    color: "text-emerald-300 bg-emerald-500/15 border-emerald-500/25",
+    icon: Ticket,
   },
   MysteryBox: {
     label: "Caixa Misteriosa",
-    color: "text-orange-400 bg-orange-500/15 border-orange-500/30",
+    color: "text-amber-300 bg-amber-500/15 border-amber-500/25",
+    icon: Sparkles,
   },
 };
 
@@ -73,6 +81,23 @@ export const PACKAGE_LEVEL_COLOR: Partial<Record<string, string>> = {
   Premium: "text-info bg-info/15 border-info/30",
   Épico: "text-magenta bg-magenta/15 border-magenta/30",
   Lendário: "text-gold bg-gold/15 border-gold/30",
+};
+
+export const PACKAGE_LEVEL_GLOW: Partial<Record<string, string>> = {
+  Básico: "border-success-500/30 group-hover:border-success-500/50",
+  Premium: "border-info/30 group-hover:border-info/50",
+  Épico: "border-magenta/30 group-hover:border-magenta/50",
+  Lendário: "border-gold/40 group-hover:border-gold/70 shadow-glow-gold-xs",
+};
+
+export const PACKAGE_LEVEL_ICON_THEME: Partial<Record<string, string>> = {
+  Básico:
+    "bg-success-500/15 border-success-500/30 text-success-400 group-hover:border-success-500/50",
+  Premium: "bg-info/15 border-info/30 text-info group-hover:border-info/50",
+  Épico:
+    "bg-magenta/15 border-magenta/30 text-magenta group-hover:border-magenta/50",
+  Lendário:
+    "bg-gold/15 border-gold/40 text-gold group-hover:border-gold/60 shadow-glow-gold-xs",
 };
 
 export const REWARD_TYPE_OPTIONS: SelectOption[] = [

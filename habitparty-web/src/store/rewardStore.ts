@@ -36,7 +36,7 @@ export const useRewardStore = create<RewardState>((set) => ({
 
   addReward: (reward) =>
     set((state) => {
-      const newItems = [...state.items, reward];
+      const newItems = [reward, ...state.items];
       return { items: newItems, backupItems: newItems };
     }),
 

@@ -20,6 +20,7 @@ export type TaskType =
   | NonNullable<CreateTaskDTO["taskType"]>;
 export type BoardColumnResponseDTO =
   components["schemas"]["BoardColumnResponseDTO"];
+export type ChecklistItem = components["schemas"]["ChecklistItemResponseDTO"];
 
 // 2. Model UI (Entidade estendida com os estados locais do Componente)
 export interface DashboardTask extends DashboardTaskDTO {
@@ -87,11 +88,30 @@ export interface TaskRowProps {
   onHabitChange?: (id: string, delta: number) => void;
 }
 
+export interface DashboardAdvancedFilters {
+  taskType: "all" | "HABIT" | "DAILY" | "TODO";
+  columnId: string;
+  difficulty: "all" | "TRIVIAL" | "EASY" | "MEDIUM" | "HARD";
+  hideCompleted: boolean;
+  sortBy: "default" | "dueDate" | "difficulty" | "priority" | "reward";
+}
+
+export const DEFAULT_DASHBOARD_ADVANCED_FILTERS: DashboardAdvancedFilters = {
+  taskType: "all",
+  columnId: "all",
+  difficulty: "all",
+  hideCompleted: false,
+  sortBy: "default",
+};
+
 export interface TaskTableProps {
   tasks: Task[];
   itemsPerPage?: number;
   currentPage?: number;
   activeFilter?: TaskFilterType;
+  onToggle?: (id: string, completed: boolean) => void;
+  onHabitChange?: (id: string, delta: number) => void;
+  selectedDate?: string | null;
 }
 
 export interface TaskFiltersProps {
@@ -99,6 +119,11 @@ export interface TaskFiltersProps {
   onFilterChange?: (filter: TaskFilterType) => void;
   showCompleted?: boolean;
   onToggleShowCompleted?: () => void;
+  selectedDate?: string | null;
+  onClearDate?: () => void;
+  columns?: components["schemas"]["BoardColumnSummaryDTO"][];
+  advancedFilters?: DashboardAdvancedFilters;
+  onAdvancedFiltersChange?: (filters: DashboardAdvancedFilters) => void;
 }
 
 export interface TaskPaginationProps {
@@ -106,6 +131,7 @@ export interface TaskPaginationProps {
   totalPages: number;
   totalItems: number;
   itemsPerPage: number;
+  itemLabel?: string;
 }
 
 export interface TaskDetailsPopoverProps {
@@ -146,6 +172,7 @@ export interface RoutineBoardProps {
   setColumns: Dispatch<SetStateAction<BoardColumn[]>>;
   visibleColumnIds: string[];
   maxColumns?: number;
+  selectedColumnId?: string | null;
   onAddColumn?: () => void;
   onAddTaskToColumn?: (columnId: string) => void;
   onOpenDetails?: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
@@ -156,14 +183,21 @@ export interface RoutineBoardProps {
     newIndex: number,
   ) => void;
   onColumnReorder?: (reorderedColumns: BoardColumn[]) => void;
+  onOpenColumnMenu?: (e: React.MouseEvent, column: BoardColumn) => void;
+  onToggleComplete?: (taskId: string, completed: boolean) => void;
+  onHabitChange?: (taskId: string, delta: number) => void;
 }
 
 export interface RoutineColumnProps {
   column: BoardColumn;
   columnIndex: number;
+  isSelected?: boolean;
   onAddTaskToColumn?: (columnId: string) => void;
   onOpenDetails?: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
   onContextMenu?: (e: React.MouseEvent, task: Task, columnId: string) => void;
+  onOpenColumnMenu?: (e: React.MouseEvent, column: BoardColumn) => void;
+  onToggleComplete?: (taskId: string, completed: boolean) => void;
+  onHabitChange?: (taskId: string, delta: number) => void;
   isOverlay?: boolean;
 }
 

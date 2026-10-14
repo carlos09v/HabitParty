@@ -34,7 +34,7 @@ export function ViewModeSelector({
           "rounded-[6px] transition-all cursor-pointer flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-gold/50",
           isCompact ? "p-1" : "p-1.5",
           activeMode === "card"
-            ? "bg-background border border-gold/50 text-gold shadow-xs"
+            ? "bg-background border border-gold/50 text-white shadow-xs"
             : "border border-transparent text-neutral-400 hover:text-neutral-200 hover:bg-white/5",
         )}
       >
@@ -50,7 +50,7 @@ export function ViewModeSelector({
           "rounded-[6px] transition-all cursor-pointer flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-gold/50",
           isCompact ? "p-1" : "p-1.5",
           activeMode === "list"
-            ? "bg-background border border-gold/50 text-gold shadow-xs"
+            ? "bg-background border border-gold/50 text-white shadow-xs"
             : "border border-transparent text-neutral-400 hover:text-neutral-200 hover:bg-white/5",
         )}
       >

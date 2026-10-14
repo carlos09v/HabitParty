@@ -8,7 +8,6 @@ import { cn } from "@/utils";
 export { type ContextMenuItem, type ContextMenuProps };
 
 export function ContextMenu({
-
   isOpen,
   position,
   onClose,

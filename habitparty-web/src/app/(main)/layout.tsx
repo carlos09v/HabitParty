@@ -9,9 +9,14 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const isCompact = await getCompactMode();
   const cookieStore = await cookies();
 
-  const { data: workspaces } = await serverApi.GET("/workspaces", {
-    next: { tags: ["workspaces"] },
-  });
+  const [{ data: workspaces }, { data: user }] = await Promise.all([
+    serverApi.GET("/workspaces", {
+      next: { tags: ["workspaces"] },
+    }),
+    serverApi.GET("/users/me", {
+      next: { tags: ["user"] },
+    }),
+  ]);
 
   const cookieWorkspaceId = cookieStore.get("activeWorkspaceId")?.value;
   let activeWorkspaceId: string | null = null;
@@ -31,6 +36,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         compactMode={isCompact}
         workspaces={workspaces || []}
         activeWorkspaceId={activeWorkspaceId}
+        user={user || null}
       />
       {/* 
         =========================================
@@ -38,15 +44,15 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         ========================================= 
       */}
       {/* Bola Superior (Magenta) */}
-      <div className="absolute top-[5%] left-[30%] w-125 h-125 rounded-full bg-magenta opacity-15 blur-[300px] pointer-events-none z-0" />
+      <div className="absolute top-[5%] left-[30%] w-[500px] h-[500px] rounded-full bg-magenta opacity-15 blur-[300px] pointer-events-none z-0" />
 
       {/* Bola Inferior Esquerda (Azul) */}
-      <div className="absolute bottom-[-10%] left-[10%] w-150 h-150 rounded-full bg-blue opacity-15 blur-[300px] pointer-events-none z-0" />
+      <div className="absolute bottom-[-10%] left-[10%] w-[600px] h-[600px] rounded-full bg-blue opacity-15 blur-[300px] pointer-events-none z-0" />
 
       {/* Bola Inferior Direita (Magenta) */}
-      <div className="absolute bottom-[5%] right-[5%] w-150 h-150 rounded-full bg-magenta opacity-15 blur-[300px] pointer-events-none z-0" />
+      <div className="absolute bottom-[5%] right-[5%] w-[600px] h-[600px] rounded-full bg-magenta opacity-15 blur-[300px] pointer-events-none z-0" />
 
-      <Sidebar />
+      <Sidebar user={user || null} />
 
       {/* 
         =========================================

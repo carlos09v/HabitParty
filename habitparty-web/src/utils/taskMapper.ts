@@ -1,4 +1,8 @@
-import { normalizeTaskDifficulty, normalizeTaskType } from "@/constants/task";
+import {
+  calculateTaskReward,
+  normalizeTaskDifficulty,
+  normalizeTaskType,
+} from "@/constants/task";
 import type {
   BoardColumn,
   BoardColumnResponseDTO,
@@ -51,6 +55,15 @@ export function mapTaskResponseToTask(
 
   const tags = taskDto.tags || [];
 
+  const reward = calculateTaskReward({
+    taskType: taskDto.taskType,
+    difficulty: taskDto.difficulty,
+    importanceType: taskDto.importanceType,
+    currentStreak: taskDto.currentStreak,
+    repeatType: taskDto.repeatType,
+    resetCounter: taskDto.resetCounter,
+  });
+
   return {
     id: taskDto.id || "",
     title: taskDto.name || "",
@@ -61,14 +74,17 @@ export function mapTaskResponseToTask(
     type: (taskDto.taskType?.toLowerCase() as TaskType) || "todo",
     difficulty: normalizedDifficulty,
     importance: normalizedImportance,
-    rewardXp: 10,
-    rewardGold: 1.5,
+    rewardXp: reward.xp,
+    rewardGold: reward.gold,
     completed: taskDto.status === "COMPLETED",
     streak:
       (taskDto.taskType?.toLowerCase() as TaskType) === "todo"
         ? undefined
         : (taskDto.currentStreak ?? 0),
-    positiveCount: 0,
+    positiveCount:
+      (taskDto.taskType?.toLowerCase() as TaskType) === "habit"
+        ? (taskDto.currentStreak ?? 0)
+        : 0,
     negativeCount: 0,
     dueDate: taskDto.dueDate,
     habitType: taskDto.habitType,
@@ -109,6 +125,10 @@ export function mapWorkspaceToBoardColumns(
  */
 export function mapDashboardTaskToTask(dto: DashboardTaskDTO): Task {
   const taskType = (dto.taskType?.toLowerCase() as TaskType) || "todo";
+  const reward = calculateTaskReward({
+    taskType: dto.taskType,
+  });
+
   return {
     id: dto.id || "",
     title: dto.name || "",
@@ -119,8 +139,8 @@ export function mapDashboardTaskToTask(dto: DashboardTaskDTO): Task {
     daysOfWeek: dto.daysOfWeek,
     isHardcoreModeEnabled: dto.isHardcoreModeEnabled,
     completed: false,
-    rewardXp: 10,
-    rewardGold: 1.5,
+    rewardXp: reward.xp,
+    rewardGold: reward.gold,
   };
 }
 
@@ -159,14 +179,19 @@ export function buildUpdateTaskPayload(
     }),
     ...(isDaily && {
       startDate: merged.startDate || undefined,
-      repeatType: merged.repeatType || "DAILY",
+      repeatType:
+        merged.daysOfWeek && merged.daysOfWeek.length < 7
+          ? "WEEKLY"
+          : merged.repeatType || "DAILY",
       repeatEvery: merged.repeatEvery || 1,
       daysOfWeek: merged.daysOfWeek || [
+        "SUNDAY",
         "MONDAY",
         "TUESDAY",
         "WEDNESDAY",
         "THURSDAY",
         "FRIDAY",
+        "SATURDAY",
       ],
     }),
     ...(!isHabit &&

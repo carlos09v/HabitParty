@@ -1,13 +1,13 @@
+import { cookies } from "next/headers";
 import { Suspense } from "react";
+import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
 import { DashboardMain } from "@/components/dashboard/DashboardMain";
 import { DashboardSidebarRight } from "@/components/dashboard/DashboardSidebarRight";
 import { Loading } from "@/components/ui/Loading";
-import type { components } from "@/api/schema";
-import type { DashboardTaskDTO, Task } from "@/types/task";
+import type { Task } from "@/types/task";
 import { getCompactMode } from "@/utils/cookies";
-import { cookies } from "next/headers";
-
+import { calculateWeeklyTaskEarnings } from "@/utils/economy";
 import { mapDashboardTaskToTask } from "@/utils/taskMapper";
 
 type ColumnSummary = components["schemas"]["BoardColumnSummaryDTO"];
@@ -16,6 +16,11 @@ type PageProps = {
   searchParams: Promise<{ workspaceId?: string }>;
 };
 
+/**
+ * Página Principal do Dashboard (Server Component).
+ * Orquestra a busca dos dados do workspace ativo, colunas, tarefas,
+ * dados do usuário e histórico financeiro para a sidebar direita.
+ */
 export default async function DashboardPage({ searchParams }: PageProps) {
   const isCompact = await getCompactMode();
   const resolvedSearchParams = await searchParams;
@@ -29,7 +34,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   if (!workspaces || workspaces.length === 0) {
     return (
       <div className="flex h-screen w-full overflow-hidden items-center justify-center">
-        <p className="text-neutral-400">Nenhum workspace encontrado. Crie um para começar.</p>
+        <p className="text-neutral-400">
+          Nenhum workspace encontrado. Crie um para começar.
+        </p>
       </div>
     );
   }
@@ -46,25 +53,44 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   let initialTasks: Task[] = [];
   let initialColumns: ColumnSummary[] = [];
 
-  if (activeWorkspaceId) {
-    const [tasksRes, columnsRes] = await Promise.all([
-      serverApi.GET("/tasks/workspace/{workspaceId}/dashboard", {
-        params: { path: { workspaceId: activeWorkspaceId } },
-        next: { tags: ["dashboard-tasks"] },
-      }),
-      serverApi.GET("/board_columns/workspace/{workspaceId}", {
-        params: { path: { workspaceId: activeWorkspaceId } },
-        next: { tags: ["dashboard-columns"] },
-      }),
-    ]);
+  const [tasksRes, columnsRes, userRes, transactionsRes] = await Promise.all([
+    activeWorkspaceId
+      ? serverApi.GET("/tasks/workspace/{workspaceId}/dashboard", {
+          params: { path: { workspaceId: activeWorkspaceId } },
+          next: { tags: ["dashboard-tasks"] },
+        })
+      : Promise.resolve({ data: null }),
+    activeWorkspaceId
+      ? serverApi.GET("/board_columns/workspace/{workspaceId}", {
+          params: { path: { workspaceId: activeWorkspaceId } },
+          next: { tags: ["dashboard-columns"] },
+        })
+      : Promise.resolve({ data: null }),
+    serverApi.GET("/users/me", {
+      next: { tags: ["user"] },
+    }),
+    serverApi.GET("/transactions", {
+      params: {
+        query: {
+          tab: "TASKS",
+          size: 16,
+        },
+      },
+      next: { tags: ["transactions"] },
+    }),
+  ]);
 
-    if (tasksRes.data?.content) {
-      initialTasks = tasksRes.data.content.map(mapDashboardTaskToTask);
-    }
-    if (columnsRes.data) {
-      initialColumns = columnsRes.data;
-    }
+  if (tasksRes.data?.content) {
+    initialTasks = tasksRes.data.content.map(mapDashboardTaskToTask);
   }
+  if (columnsRes.data) {
+    initialColumns = columnsRes.data;
+  }
+
+  const userBalance = userRes.data?.currentCoins ?? 0;
+  const transactions = transactionsRes.data?.content || [];
+  const { bars, currentWeekEarnings } =
+    calculateWeeklyTaskEarnings(transactions);
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
@@ -75,16 +101,24 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           </div>
         }
       >
-        <DashboardMain 
-          isCompact={isCompact} 
+        <DashboardMain
+          isCompact={isCompact}
           initialTasks={initialTasks}
           workspaces={workspaces}
           activeWorkspaceId={activeWorkspaceId}
           initialColumns={initialColumns}
+          transactions={transactions}
         />
       </Suspense>
 
-      <DashboardSidebarRight />
+      <DashboardSidebarRight
+        isCompact={isCompact}
+        balance={userBalance}
+        weeklyEarnings={currentWeekEarnings}
+        bars={bars}
+        transactions={transactions}
+        tasks={initialTasks}
+      />
     </div>
   );
 }

@@ -2,10 +2,19 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { addChecklistItemAction } from "@/actions/checklistActions";
+import {
+  addChecklistItemAction,
+  deleteChecklistItemAction,
+  toggleChecklistItemAction,
+} from "@/actions/checklistActions";
 import { createTask, updateTask } from "@/actions/taskActions";
-import { normalizeTaskDifficulty } from "@/constants/task";
+import {
+  ALL_WEEK_DAYS,
+  calculateTaskReward,
+  normalizeTaskDifficulty,
+} from "@/constants/task";
 import type {
+  ChecklistItem,
   CreateTaskDTO,
   DailyDaysOfWeek,
   DailyRepeatTypeOption,
@@ -68,19 +77,21 @@ export function useCreateTaskForm({
   const [startDate, setStartDate] = useState("");
   const [repeatType, setRepeatType] = useState<DailyRepeatTypeOption>("DAILY");
   const [repeatEvery, setRepeatEvery] = useState(1);
-  const [selectedDays, setSelectedDays] = useState<DailyDaysOfWeek[]>([
-    "MONDAY",
-    "TUESDAY",
-    "WEDNESDAY",
-    "THURSDAY",
-    "FRIDAY",
-  ]);
+  const [selectedDays, setSelectedDays] =
+    useState<DailyDaysOfWeek[]>(ALL_WEEK_DAYS);
 
-  // Checklist de subtarefas rascunhadas
-  const [checklist, setChecklist] = useState<string[]>([]);
+  // Checklist de subtarefas
+  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [newChecklistText, setNewChecklistText] = useState("");
 
   const nameInputRef = useRef<HTMLInputElement>(null);
+
+  const handleTaskTypeChange = (type: TaskTypeOption) => {
+    setTaskType(type);
+    if (type === "TODO") {
+      setIsHardcore(false);
+    }
+  };
 
   // Reset e inicialização ao abrir o modal
   useEffect(() => {
@@ -107,7 +118,11 @@ export function useCreateTaskForm({
               ? taskToEdit.category
               : "",
         );
-        setIsHardcore(taskToEdit.isHardcoreModeEnabled ?? false);
+        setIsHardcore(
+          mappedType === "TODO"
+            ? false
+            : (taskToEdit.isHardcoreModeEnabled ?? false),
+        );
         setHabitType(taskToEdit.habitType || "POSITIVE");
         setResetCounter(taskToEdit.resetCounter || "DAILY");
         setImportanceType(
@@ -126,15 +141,15 @@ export function useCreateTaskForm({
         setRepeatType(taskToEdit.repeatType || "DAILY");
         setRepeatEvery(taskToEdit.repeatEvery || 1);
         setSelectedDays(
-          taskToEdit.daysOfWeek || [
-            "MONDAY",
-            "TUESDAY",
-            "WEDNESDAY",
-            "THURSDAY",
-            "FRIDAY",
-          ],
+          taskToEdit.daysOfWeek && taskToEdit.daysOfWeek.length > 0
+            ? taskToEdit.daysOfWeek
+            : ALL_WEEK_DAYS,
         );
-        setChecklist([]);
+        setChecklist(
+          taskToEdit.checklist
+            ? taskToEdit.checklist.map((item) => ({ ...item }))
+            : [],
+        );
         setNewChecklistText("");
       } else {
         setColumnId(defaultColumnId || columns[0]?.id || "");
@@ -152,13 +167,7 @@ export function useCreateTaskForm({
         setStartDate(new Date().toISOString().split("T")[0]);
         setRepeatType("DAILY");
         setRepeatEvery(1);
-        setSelectedDays([
-          "MONDAY",
-          "TUESDAY",
-          "WEDNESDAY",
-          "THURSDAY",
-          "FRIDAY",
-        ]);
+        setSelectedDays(ALL_WEEK_DAYS);
         setChecklist([]);
         setNewChecklistText("");
       }
@@ -171,14 +180,98 @@ export function useCreateTaskForm({
 
   const handleAddChecklistItem = () => {
     const trimmed = newChecklistText.trim();
-    if (trimmed) {
-      setChecklist((prev) => [...prev, trimmed]);
+    if (!trimmed) return;
+
+    if (isEditing && taskToEdit) {
+      const tempId = `temp-${Date.now()}`;
+      const optimisticItem: ChecklistItem = {
+        id: tempId,
+        name: trimmed,
+        isCompleted: false,
+      };
+      setChecklist((prev) => [...prev, optimisticItem]);
+      setNewChecklistText("");
+
+      startTransition(async () => {
+        const res = await addChecklistItemAction(taskToEdit.id, {
+          name: trimmed,
+        });
+        if (!res.success) {
+          toast.error(res.error || "Erro ao adicionar item ao checklist.");
+          setChecklist((prev) => prev.filter((i) => i.id !== tempId));
+        } else if (res.data) {
+          setChecklist((prev) =>
+            prev.map((i) =>
+              i.id === tempId ? (res.data as ChecklistItem) : i,
+            ),
+          );
+        }
+      });
+    } else {
+      setChecklist((prev) => [
+        ...prev,
+        { id: `temp-${Date.now()}`, name: trimmed, isCompleted: false },
+      ]);
       setNewChecklistText("");
     }
   };
 
   const handleRemoveChecklistItem = (index: number) => {
-    setChecklist((prev) => prev.filter((_, i) => i !== index));
+    const target = checklist[index];
+    if (!target) return;
+
+    if (
+      isEditing &&
+      taskToEdit &&
+      target.id &&
+      !target.id.startsWith("temp-")
+    ) {
+      setChecklist((prev) => prev.filter((_, i) => i !== index));
+      startTransition(async () => {
+        const res = await deleteChecklistItemAction(target.id!);
+        if (!res.success) {
+          toast.error(res.error || "Erro ao remover item do checklist.");
+          setChecklist((prev) => {
+            const copy = [...prev];
+            copy.splice(index, 0, target);
+            return copy;
+          });
+        }
+      });
+    } else {
+      setChecklist((prev) => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleToggleChecklistItem = (index: number) => {
+    const target = checklist[index];
+    if (!target) return;
+
+    const nextCompleted = !target.isCompleted;
+    setChecklist((prev) =>
+      prev.map((item, i) =>
+        i === index ? { ...item, isCompleted: nextCompleted } : item,
+      ),
+    );
+
+    if (
+      isEditing &&
+      taskToEdit &&
+      target.id &&
+      !target.id.startsWith("temp-")
+    ) {
+      startTransition(async () => {
+        const res = await toggleChecklistItemAction(target.id!);
+        if (!res.success) {
+          toast.error(res.error || "Erro ao atualizar item do checklist.");
+          setChecklist((prev) =>
+            prev.map((item, i) =>
+              i === index ? { ...item, isCompleted: !nextCompleted } : item,
+            ),
+          );
+        }
+      });
+    }
   };
 
   const toggleDayOfWeek = (day: DailyDaysOfWeek) => {
@@ -256,6 +349,15 @@ export function useCreateTaskForm({
           return;
         }
 
+        const calculatedRewards = calculateTaskReward({
+          taskType,
+          difficulty,
+          importanceType,
+          resetCounter,
+          repeatType: effectiveRepeatType,
+          currentStreak: taskToEdit.streak ?? 0,
+        });
+
         const updatedTask: Task = {
           ...taskToEdit,
           title: trimmedName,
@@ -270,6 +372,8 @@ export function useCreateTaskForm({
           importanceType,
           habitType,
           resetCounter,
+          rewardXp: calculatedRewards.xp,
+          rewardGold: calculatedRewards.gold,
           dueDate: dueDate || undefined,
           columnId: columnId,
           daysOfWeek: taskType === "DAILY" ? selectedDays : undefined,
@@ -277,6 +381,7 @@ export function useCreateTaskForm({
           repeatEvery: taskType === "DAILY" ? repeatEvery : undefined,
           startDate: taskType === "DAILY" ? startDate : undefined,
           isHardcoreModeEnabled: isHardcore,
+          checklist: checklist,
         };
 
         toast.success("Tarefa atualizada com sucesso!");
@@ -325,10 +430,21 @@ export function useCreateTaskForm({
 
       // Se houver itens de checklist, adiciona-os sequencialmente
       if (createdTaskId && checklist.length > 0) {
-        for (const itemText of checklist) {
-          await addChecklistItemAction(createdTaskId, { name: itemText });
+        for (const item of checklist) {
+          if (item.name) {
+            await addChecklistItemAction(createdTaskId, { name: item.name });
+          }
         }
       }
+
+      const calculatedRewards = calculateTaskReward({
+        taskType,
+        difficulty,
+        importanceType,
+        resetCounter,
+        repeatType: effectiveRepeatType,
+        currentStreak: 0,
+      });
 
       // Mapeia para a entidade local Task da UI
       const mappedTask: Task = {
@@ -343,8 +459,8 @@ export function useCreateTaskForm({
         importanceType,
         habitType,
         resetCounter,
-        rewardXp: 10,
-        rewardGold: 1.5,
+        rewardXp: calculatedRewards.xp,
+        rewardGold: calculatedRewards.gold,
         completed: false,
         streak: 0,
         positiveCount: 0,
@@ -357,6 +473,7 @@ export function useCreateTaskForm({
         repeatEvery: taskType === "DAILY" ? repeatEvery : undefined,
         startDate: taskType === "DAILY" ? startDate : undefined,
         isHardcoreModeEnabled: isHardcore,
+        checklist: checklist,
       };
 
       toast.success("Tarefa criada com sucesso!");
@@ -369,7 +486,7 @@ export function useCreateTaskForm({
     isPending,
     isEditing,
     taskType,
-    setTaskType,
+    setTaskType: handleTaskTypeChange,
     columnId,
     setColumnId,
     name,
@@ -408,6 +525,7 @@ export function useCreateTaskForm({
     nameInputRef,
     handleAddChecklistItem,
     handleRemoveChecklistItem,
+    handleToggleChecklistItem,
     handleSubmit,
   };
 }

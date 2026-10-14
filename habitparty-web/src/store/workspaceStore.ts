@@ -13,6 +13,7 @@ interface WorkspaceState {
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   workspaces: [],
   activeWorkspaceId: null,
-  init: ({ workspaces, activeWorkspaceId }) => set({ workspaces, activeWorkspaceId }),
+  init: ({ workspaces, activeWorkspaceId }) =>
+    set({ workspaces, activeWorkspaceId }),
   setActiveWorkspaceId: (id) => set({ activeWorkspaceId: id }),
 }));

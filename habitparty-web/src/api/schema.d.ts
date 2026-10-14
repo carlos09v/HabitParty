@@ -1032,8 +1032,12 @@ export interface components {
       role?: "USER" | "ADMIN";
       fullName?: string;
       username?: string;
+      /** @enum {string} */
+      gender?: "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_TO_SAY";
       email?: string;
       profilePhotoUrl?: string;
+      /** Format: date */
+      birthday?: string;
       /** Format: int32 */
       age?: number;
       currentLevelTitle?: string;

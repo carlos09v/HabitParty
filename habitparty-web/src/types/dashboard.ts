@@ -8,8 +8,18 @@ export interface ActivityItem {
   href: string;
 }
 
+export interface EconomyBarData {
+  label: string;
+  periodLabel?: string;
+  gold: number;
+  heightPercent: number;
+  isHighlight: boolean;
+}
+
 export interface EconomyWidgetProps {
   balance?: number;
+  weeklyEarnings?: number;
+  bars?: EconomyBarData[];
 }
 
 export interface PartyMember {

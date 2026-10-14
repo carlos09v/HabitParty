@@ -4,6 +4,7 @@ import { updateTag } from "next/cache";
 import type { components } from "@/api/schema";
 import serverApi from "@/api/server";
 import type { ActionState } from "./types";
+import { getErrorMessage } from "./types";
 
 type CreateRewardDTO = components["schemas"]["CreateRewardDTO"];
 type UpdateRewardDTO = components["schemas"]["UpdateRewardDTO"];
@@ -17,10 +18,9 @@ export async function createReward(
   });
 
   if (error) {
-    const backendMessage = (error as any)?.message;
     return {
       success: false,
-      error: backendMessage || "Falha ao criar recompensa.",
+      error: getErrorMessage(error, "Falha ao criar recompensa."),
     };
   }
 
@@ -38,10 +38,9 @@ export async function updateReward(
   });
 
   if (error) {
-    const backendMessage = (error as any)?.message;
     return {
       success: false,
-      error: backendMessage || "Falha ao atualizar recompensa.",
+      error: getErrorMessage(error, "Falha ao atualizar recompensa."),
     };
   }
 
@@ -55,10 +54,9 @@ export async function deleteReward(rewardId: string): Promise<ActionState> {
   });
 
   if (error) {
-    const backendMessage = (error as any)?.message;
     return {
       success: false,
-      error: backendMessage || "Falha ao excluir recompensa.",
+      error: getErrorMessage(error, "Falha ao excluir recompensa."),
     };
   }
 
@@ -74,13 +72,30 @@ export async function reorderRewards(
   });
 
   if (error) {
-    const backendMessage = (error as any)?.message;
     return {
       success: false,
-      error: backendMessage || "Falha ao reordenar recompensas.",
+      error: getErrorMessage(error, "Falha ao reordenar recompensas."),
     };
   }
 
   updateTag("rewards");
+  return { success: true, data };
+}
+
+export async function redeemReward(rewardId: string): Promise<ActionState> {
+  const { data, error } = await serverApi.POST("/rewards/{rewardId}/redeem", {
+    params: { path: { rewardId } },
+  });
+
+  if (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Falha ao resgatar recompensa."),
+    };
+  }
+
+  updateTag("rewards");
+  updateTag("inventory");
+  updateTag("transactions");
   return { success: true, data };
 }

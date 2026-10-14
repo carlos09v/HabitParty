@@ -40,6 +40,7 @@ export interface InventoryCardProps {
   item: InventoryItem;
   onUse?: (item: InventoryItem) => void;
   onEquip?: (item: InventoryItem) => void;
+  isCompact?: boolean;
 }
 
 export interface InventoryFilterState {
@@ -48,5 +49,5 @@ export interface InventoryFilterState {
   category: string;
   tag: string;
   packageLevel: string;
-  viewMode: "grid" | "list" | "card";
+  viewMode: "card" | "list";
 }

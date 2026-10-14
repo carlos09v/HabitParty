@@ -1,24 +1,21 @@
 "use client";
 
-import {
-  closestCenter,
-  DndContext,
-  type DragEndEvent,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
+import { closestCenter, DndContext } from "@dnd-kit/core";
 import { restrictToWindowEdges } from "@dnd-kit/modifiers";
 import {
   rectSortingStrategy,
   SortableContext,
-  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { Pencil, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { deleteReward, reorderRewards } from "@/actions/rewardActions";
+import {
+  deleteReward,
+  redeemReward,
+  reorderRewards,
+} from "@/actions/rewardActions";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { ItemRow, ItemRowHeader } from "@/components/ui/ItemRow";
@@ -29,21 +26,21 @@ import {
   REWARD_TAG_OPTIONS,
   REWARD_TYPE_OPTIONS,
 } from "@/constants/reward";
-import { useViewMode } from "@/hooks/useViewMode";
-import { useRewardStore } from "@/store/rewardStore";
-import type { Reward, RewardFilterState } from "@/types/reward";
+import { useItemCatalogFilters } from "@/hooks/useItemCatalogFilters";
+import { useReorderableList } from "@/hooks/useReorderableList";
+import { useUserStore } from "@/store/userStore";
+import type { Reward } from "@/types/reward";
 import { cn } from "@/utils";
+import { soundEffects } from "@/utils/soundEffects";
 import { AddRewardCard, RewardCard } from "./RewardCard";
-import { RewardFormModal } from "./RewardFormModal";
 
-const INITIAL_FILTERS: RewardFilterState = {
-  search: "",
-  type: "",
-  category: "",
-  tag: "",
-  packageLevel: "",
-  viewMode: "card",
-};
+const RewardFormModal = dynamic(
+  () =>
+    import("./RewardFormModal").then((mod) => ({
+      default: mod.RewardFormModal,
+    })),
+  { ssr: false },
+);
 
 export function RewardsContainer({
   isCompact = false,
@@ -52,10 +49,26 @@ export function RewardsContainer({
   isCompact?: boolean;
   initialRewards: Reward[];
 }) {
-  const [viewMode, setViewMode] = useViewMode("rewards", "card");
-  const [filters, setFilters] = useState<RewardFilterState>(INITIAL_FILTERS);
+  const {
+    viewMode,
+    setViewMode,
+    filters,
+    isFiltering,
+    handleFilterChange,
+    handleClearFilters,
+  } = useItemCatalogFilters("rewards");
 
-  // Context Menu state
+  const {
+    items: rewards,
+    setItems: setRewards,
+    sensors,
+    handleDragEnd,
+  } = useReorderableList<Reward>({
+    initialItems: initialRewards,
+    onReorderServerAction: reorderRewards,
+    isFiltering,
+  });
+
   const [contextMenu, setContextMenu] = useState<{
     isOpen: boolean;
     position: { x: number; y: number };
@@ -66,42 +79,47 @@ export function RewardsContainer({
     reward: null,
   });
 
-  // Modals state
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingReward, setEditingReward] = useState<Reward | null>(null);
 
-  const {
-    items: rewards,
-    setInitialData,
-    reorderItems,
-    rollback,
-    commitReorder,
-    deleteRewardItem,
-  } = useRewardStore();
+  const { user, updateUserPartial } = useUserStore();
+  const [isRedeeming, setIsRedeeming] = useState(false);
 
-  useEffect(() => {
-    setInitialData(initialRewards);
-  }, [initialRewards, setInitialData]);
+  const handleBuy = async (reward: Reward) => {
+    if (isRedeeming) return;
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
+    if (
+      user &&
+      typeof user.currentCoins === "number" &&
+      user.currentCoins < reward.price
+    ) {
+      toast.error("Moedas insuficientes para resgatar este item!");
+      return;
+    }
 
-  const handleFilterChange = (newFilters: Partial<RewardFilterState>) => {
-    setFilters((prev) => ({ ...prev, ...newFilters }));
-  };
+    setIsRedeeming(true);
+    try {
+      const res = await redeemReward(reward.id);
+      if (!res.success) {
+        toast.error(res.error || "Erro ao resgatar recompensa.");
+        return;
+      }
 
-  const handleClearFilters = () => {
-    setFilters((prev) => ({ ...INITIAL_FILTERS, viewMode: prev.viewMode }));
-  };
+      if (user && typeof user.currentCoins === "number") {
+        updateUserPartial({
+          currentCoins: Math.max(0, user.currentCoins - reward.price),
+        });
+      }
 
-  const handleBuy = (reward: Reward) => {
-    alert(
-      `Você comprou "${reward.title}" por ${reward.price} moedas! O item foi enviado para a sua Mochila.`,
-    );
+      soundEffects.playBuySound();
+      toast.success(
+        `Você comprou "${reward.title}"! O item foi enviado para a sua Mochila.`,
+      );
+    } catch (_error) {
+      toast.error("Erro de comunicação com o servidor.");
+    } finally {
+      setIsRedeeming(false);
+    }
   };
 
   const handleAddProduct = () => {
@@ -119,38 +137,20 @@ export function RewardsContainer({
     });
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      const oldIndex = rewards.findIndex((i) => i.id === active.id);
-      const newIndex = rewards.findIndex((i) => i.id === over.id);
-
-      reorderItems(oldIndex, newIndex);
-
-      try {
-        const reordered = Array.from(rewards);
-        const [movedItem] = reordered.splice(oldIndex, 1);
-        reordered.splice(newIndex, 0, movedItem);
-
-        const updates = reordered.map((r, index) => ({
-          id: r.id,
-          newIndex: index,
-        }));
-
-        const result = await reorderRewards(updates);
-
-        if (!result.success) {
-          rollback();
-          toast.error(result.error || "Erro ao reordenar item.");
-        } else {
-          commitReorder();
-        }
-      } catch (_error) {
-        rollback();
-        toast.error("Erro de comunicação com o servidor.");
+  const handleRewardSuccess = (savedReward: Reward) => {
+    setRewards((prev) => {
+      const exists = prev.some((r) => r.id === savedReward.id);
+      if (exists) {
+        return prev.map((r) => (r.id === savedReward.id ? savedReward : r));
       }
-    }
+      return [savedReward, ...prev];
+    });
+  };
+
+  const handleDelete = async (target: Reward) => {
+    setRewards((prev) => prev.filter((r) => r.id !== target.id));
+    toast.success(`Recompensa "${target.title}" excluída com sucesso!`);
+    await deleteReward(target.id);
   };
 
   const filteredRewards = useMemo(() => {
@@ -229,6 +229,7 @@ export function RewardsContainer({
         />
 
         <DndContext
+          id="rewards-dnd-context"
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
@@ -236,7 +237,11 @@ export function RewardsContainer({
         >
           <SortableContext
             items={filteredRewards.map((r) => r.id)}
-            strategy={rectSortingStrategy}
+            strategy={
+              viewMode === "card"
+                ? rectSortingStrategy
+                : verticalListSortingStrategy
+            }
           >
             {viewMode === "card" ? (
               <div
@@ -253,35 +258,46 @@ export function RewardsContainer({
                     reward={reward}
                     onBuy={handleBuy}
                     onContextMenu={handleContextMenu}
+                    isCompact={isCompact}
                   />
                 ))}
                 <AddRewardCard onClick={handleAddProduct} viewMode="card" />
               </div>
             ) : (
               <div className="flex flex-col gap-2.5 w-full pb-8">
-                {/* Cabeçalho da Lista */}
                 <ItemRowHeader isCompact={isCompact} mode="reward" />
 
                 <ul className="flex flex-col gap-2 w-full">
-                  {filteredRewards.map((reward) => (
-                    <ItemRow
-                      key={reward.id}
-                      id={reward.id}
-                      title={reward.title}
-                      description={reward.description}
-                      type={reward.type}
-                      packageLevel={reward.packageLevel}
-                      category={reward.category}
-                      iconName={reward.iconName}
-                      baseDurationMinutes={reward.baseDurationMinutes}
-                      price={reward.price}
-                      actionLabel="Comprar"
-                      onAction={() => handleBuy(reward)}
-                      onContextMenu={(e) => handleContextMenu(e, reward)}
-                      isCompact={isCompact}
-                      dragData={{ type: "Reward", reward }}
-                    />
-                  ))}
+                  {filteredRewards.map((reward) => {
+                    const canAfford =
+                      typeof user?.currentCoins === "number"
+                        ? user.currentCoins >= reward.price
+                        : true;
+
+                    return (
+                      <ItemRow
+                        key={reward.id}
+                        id={reward.id}
+                        title={reward.title}
+                        description={reward.description}
+                        type={reward.type}
+                        packageLevel={reward.packageLevel}
+                        category={reward.category}
+                        iconName={reward.iconName}
+                        baseDurationMinutes={reward.baseDurationMinutes}
+                        price={reward.price}
+                        disabled={!canAfford}
+                        disabledTitle={
+                          !canAfford ? "Moedas insuficientes" : undefined
+                        }
+                        actionLabel="Comprar"
+                        onAction={() => handleBuy(reward)}
+                        onContextMenu={(e) => handleContextMenu(e, reward)}
+                        isCompact={isCompact}
+                        dragData={{ type: "Reward", reward }}
+                      />
+                    );
+                  })}
                   <AddRewardCard onClick={handleAddProduct} viewMode="list" />
                 </ul>
               </div>
@@ -312,27 +328,25 @@ export function RewardsContainer({
             variant: "destructive",
             onClick: async () => {
               if (contextMenu.reward) {
-                const target = contextMenu.reward;
-                deleteRewardItem(target.id);
-                toast.success(
-                  `Recompensa "${target.title}" excluída com sucesso!`,
-                );
-                await deleteReward(target.id);
+                await handleDelete(contextMenu.reward);
               }
             },
           },
         ]}
       />
 
-      {/* Modal de Formulário (Criação / Edição de Recompensa) */}
-      <RewardFormModal
-        isOpen={isFormModalOpen}
-        rewardToEdit={editingReward}
-        onClose={() => {
-          setIsFormModalOpen(false);
-          setEditingReward(null);
-        }}
-      />
+      {/* Modal de Formulário (Criação / Edição de Recompensa com Lazy Loading) */}
+      {isFormModalOpen && (
+        <RewardFormModal
+          isOpen={isFormModalOpen}
+          rewardToEdit={editingReward}
+          onSuccess={handleRewardSuccess}
+          onClose={() => {
+            setIsFormModalOpen(false);
+            setEditingReward(null);
+          }}
+        />
+      )}
     </>
   );
 }

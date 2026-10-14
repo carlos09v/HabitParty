@@ -1,9 +1,6 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
-import { toast } from "sonner";
-import { createReward, updateReward } from "@/actions/rewardActions";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { IconPicker } from "@/components/ui/IconPicker";
 import {
@@ -12,7 +9,7 @@ import {
   REWARD_ICONS,
   REWARD_TYPE_META,
 } from "@/constants/reward";
-import { useRewardStore } from "@/store/rewardStore";
+import { useRewardForm } from "@/hooks/useRewardForm";
 import type {
   PackageLevel,
   Reward,
@@ -37,219 +34,32 @@ export function RewardFormModal({
   rewardToEdit,
   onSuccess,
 }: RewardFormModalProps) {
-  const isEditing = !!rewardToEdit;
-  const [isPending, startTransition] = useTransition();
-
-  const { addReward, updateRewardItem } = useRewardStore();
-
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [price, setPrice] = useState<string>("10");
-  const [type, setType] = useState<RewardType>("SingleUse");
-  const [category, setCategory] = useState<RewardCategory>("Nenhum");
-  const [packageLevel, setPackageLevel] = useState<PackageLevel>("Nenhum");
-  const [baseDurationMinutes, setBaseDurationMinutes] = useState<number>(30);
-  const [selectedIcon, setSelectedIcon] = useState<string>("gamepad");
-
-  // Sync form state when opening or when rewardToEdit changes
-  useEffect(() => {
-    if (isOpen) {
-      if (rewardToEdit) {
-        setTitle(rewardToEdit.title || "");
-        setDescription(rewardToEdit.description || "");
-        setPrice(
-          rewardToEdit.price !== undefined ? String(rewardToEdit.price) : "10",
-        );
-        setType((rewardToEdit.type as RewardType) || "SingleUse");
-        setCategory((rewardToEdit.category as RewardCategory) || "Nenhum");
-        setPackageLevel(
-          (rewardToEdit.packageLevel as PackageLevel) || "Nenhum",
-        );
-        setBaseDurationMinutes(rewardToEdit.baseDurationMinutes ?? 30);
-        setSelectedIcon(
-          rewardToEdit.icon ||
-            (rewardToEdit.iconName as string) ||
-            (rewardToEdit.type === "MysteryBox" ? "mystery_box" : "gamepad"),
-        );
-      } else {
-        // Reset defaults for creation
-        setTitle("");
-        setDescription("");
-        setPrice("10");
-        setType("SingleUse");
-        setCategory("Nenhum");
-        setPackageLevel("Nenhum");
-        setBaseDurationMinutes(30);
-        setSelectedIcon("gamepad");
-      }
-    }
-  }, [isOpen, rewardToEdit]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!title.trim()) {
-      toast.error("O título da recompensa é obrigatório.");
-      return;
-    }
-
-    const numericPrice = parseFloat(price.replace(",", "."));
-
-    if (Number.isNaN(numericPrice) || numericPrice <= 0) {
-      toast.error("O preço deve ser um valor válido maior que zero.");
-      return;
-    }
-
-    if (
-      type === "MysteryBox" &&
-      (packageLevel === "Nenhum" || packageLevel === "NONE")
-    ) {
-      toast.error(
-        "Caixa Misteriosa precisa de um nível de pacote selecionado.",
-      );
-      return;
-    }
-
-    startTransition(async () => {
-      // Map frontend enum to backend schema
-      const backendType =
-        type === "SingleUse"
-          ? "SINGLE_USE"
-          : type === "TimeBased"
-            ? "TIME_BASED"
-            : "MISTERY_BOX";
-
-      const backendCategory =
-        category === "Nenhum" || category === "NONE"
-          ? "NONE"
-          : category === "Entretenimento"
-            ? "ENTERTAINMENT"
-            : category === "Bem-estar"
-              ? "WELLNESS"
-              : category === "Compras"
-                ? "SHOPPING"
-                : category === "Desenvolvimento"
-                  ? "DEVELOPMENT"
-                  : category === "Sorte"
-                    ? "LUCK"
-                    : "HOBBIES";
-
-      const backendPackageLevel =
-        type === "SingleUse"
-          ? undefined
-          : packageLevel === "Nenhum" || packageLevel === "NONE"
-            ? "NONE"
-            : packageLevel === "Básico"
-              ? "BASIC"
-              : packageLevel === "Premium"
-                ? "PREMIUM"
-                : packageLevel === "Épico"
-                  ? "EPIC"
-                  : "LEGENDARY";
-
-      if (isEditing && rewardToEdit) {
-        // Modo Edição
-        const result = await updateReward(rewardToEdit.id, {
-          name: title.trim(),
-          description: description.trim(),
-          price: numericPrice,
-          type: backendType,
-          category: backendCategory,
-          packageLevel: backendPackageLevel,
-          icon: selectedIcon,
-          baseDurationMinutes:
-            type === "TimeBased" ? Number(baseDurationMinutes) : undefined,
-        });
-
-        if (result.success) {
-          const updatedReward: Reward = {
-            ...rewardToEdit,
-            title: title.trim(),
-            description: description.trim(),
-            price: numericPrice,
-            type,
-            category,
-            packageLevel: type === "SingleUse" ? undefined : packageLevel,
-            icon: selectedIcon,
-            iconName: selectedIcon,
-            baseDurationMinutes:
-              type === "TimeBased" ? Number(baseDurationMinutes) : undefined,
-          };
-          updateRewardItem(rewardToEdit.id, updatedReward);
-          toast.success("Recompensa atualizada com sucesso!");
-          onSuccess?.(updatedReward);
-          onClose();
-        } else {
-          // Fallback gracioso para a store local se o backend falhar/offline
-          const updatedReward: Reward = {
-            ...rewardToEdit,
-            title: title.trim(),
-            description: description.trim(),
-            price: numericPrice,
-            type,
-            category,
-            packageLevel: type === "SingleUse" ? undefined : packageLevel,
-            icon: selectedIcon,
-            iconName: selectedIcon,
-            baseDurationMinutes:
-              type === "TimeBased" ? Number(baseDurationMinutes) : undefined,
-          };
-          updateRewardItem(rewardToEdit.id, updatedReward);
-          toast.success("Recompensa atualizada localmente!");
-          onSuccess?.(updatedReward);
-          onClose();
-        }
-      } else {
-        // Modo Criação
-        const result = await createReward({
-          name: title.trim(),
-          description: description.trim(),
-          price: numericPrice,
-          type: backendType,
-          category: backendCategory,
-          packageLevel: backendPackageLevel,
-          icon: selectedIcon,
-          baseDurationMinutes:
-            type === "TimeBased" ? Number(baseDurationMinutes) : undefined,
-        });
-
-        const createdId =
-          result.success &&
-          result.data &&
-          typeof result.data === "object" &&
-          "id" in result.data
-            ? String((result.data as { id: string }).id)
-            : `rew-${Date.now()}`;
-
-        const newReward: Reward = {
-          id: createdId,
-          title: title.trim(),
-          description: description.trim(),
-          price: numericPrice,
-          type,
-          category,
-          packageLevel: type === "SingleUse" ? undefined : packageLevel,
-          duration:
-            type === "TimeBased" ? `${baseDurationMinutes}min` : undefined,
-          baseDurationMinutes:
-            type === "TimeBased" ? Number(baseDurationMinutes) : undefined,
-          icon: selectedIcon,
-          iconName: selectedIcon,
-        };
-
-        addReward(newReward);
-
-        if (result.success) {
-          toast.success("Recompensa criada com sucesso!");
-        } else {
-          toast.success("Recompensa criada localmente!");
-        }
-
-        onSuccess?.(newReward);
-        onClose();
-      }
-    });
-  };
+  const {
+    isEditing,
+    isPending,
+    title,
+    setTitle,
+    description,
+    setDescription,
+    price,
+    setPrice,
+    type,
+    setType,
+    category,
+    setCategory,
+    packageLevel,
+    setPackageLevel,
+    baseDurationMinutes,
+    setBaseDurationMinutes,
+    selectedIcon,
+    setSelectedIcon,
+    handleSubmit,
+  } = useRewardForm({
+    isOpen,
+    rewardToEdit,
+    onSuccess,
+    onClose,
+  });
 
   return (
     <BaseModal
@@ -353,7 +163,7 @@ export function RewardFormModal({
                 <option
                   key={cat}
                   value={cat}
-                  className="bg-[#1a0f35] text-neutral-100"
+                  className="bg-popover text-neutral-100"
                 >
                   {cat}
                 </option>
@@ -383,7 +193,7 @@ export function RewardFormModal({
                 <option
                   key={t}
                   value={t}
-                  className="bg-[#1a0f35] text-neutral-100"
+                  className="bg-popover text-neutral-100"
                 >
                   {REWARD_TYPE_META[t]?.label || t}
                 </option>
@@ -415,7 +225,7 @@ export function RewardFormModal({
                 <option
                   key={level}
                   value={level}
-                  className="bg-[#1a0f35] text-neutral-100"
+                  className="bg-popover text-neutral-100"
                 >
                   {level}
                 </option>
@@ -440,9 +250,12 @@ export function RewardFormModal({
               max={1440}
               step={5}
               value={baseDurationMinutes}
-              onChange={(e) =>
-                setBaseDurationMinutes(Math.max(5, Number(e.target.value)))
-              }
+              onChange={(e) => setBaseDurationMinutes(e.target.value)}
+              onBlur={() => {
+                if (!baseDurationMinutes || Number(baseDurationMinutes) < 5) {
+                  setBaseDurationMinutes("5");
+                }
+              }}
               className="w-full bg-background/50 border border-primary/40 rounded-lg px-3 py-2 text-neutral-50 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s"
               disabled={isPending}
             />

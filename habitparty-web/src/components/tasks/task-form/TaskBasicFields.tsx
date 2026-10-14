@@ -58,7 +58,7 @@ export function TaskBasicFields({ form, columns }: TaskBasicFieldsProps) {
               <option
                 key={col.id}
                 value={col.id}
-                className="bg-[#1a0f35] text-neutral-100"
+                className="bg-surface text-neutral-100"
               >
                 {col.title}
               </option>
@@ -163,7 +163,7 @@ export function TaskBasicFields({ form, columns }: TaskBasicFieldsProps) {
                 className="w-full appearance-none bg-background/50 border border-primary/40 rounded-lg pl-3 pr-9 py-2 text-neutral-50 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s cursor-pointer"
               >
                 {TASK_DIFFICULTY_OPTIONS.map((opt) => (
-                  <option key={opt.id} value={opt.id} className="bg-[#1a0f35]">
+                  <option key={opt.id} value={opt.id} className="bg-surface">
                     {opt.label}
                   </option>
                 ))}
@@ -197,7 +197,7 @@ export function TaskBasicFields({ form, columns }: TaskBasicFieldsProps) {
                     <option
                       key={prio.id}
                       value={prio.id}
-                      className="bg-[#1a0f35]"
+                      className="bg-surface"
                     >
                       {prio.label}
                     </option>

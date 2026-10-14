@@ -114,6 +114,17 @@ export const WEEK_DAYS: readonly {
   { enumValue: "SATURDAY", shortLabel: "S", fullName: "Sábado" },
 ] as const;
 
+/** Lista completa dos 7 dias da semana no formato de enum do backend. */
+export const ALL_WEEK_DAYS: DailyDaysOfWeek[] = WEEK_DAYS.map(
+  (d) => d.enumValue,
+);
+
+/** Recompensas padrão concedidas para tarefas diárias e afazeres. */
+export const DEFAULT_TASK_REWARDS = {
+  xp: 10,
+  gold: 1.5,
+} as const;
+
 /**
  * Retorna a classe de borda lateral esquerda (cor da dificuldade/importância).
  * Hábito usa `importance`; Diária e Afazer usam `difficulty`.
@@ -263,6 +274,112 @@ export function normalizeTaskDifficulty(
   if (upper === "MEDIUM" || upper === "NORMAL") return "MEDIUM";
   if (upper === "HARD" || upper === "HIGH") return "HARD";
   return "MEDIUM";
+}
+
+/** Recompensas base por Dificuldade (ToDo e Daily) alinhadas com o backend. */
+export const DIFFICULTY_REWARDS = {
+  TRIVIAL: { xp: 2, gold: 0.25 },
+  EASY: { xp: 5, gold: 0.75 },
+  MEDIUM: { xp: 15, gold: 2.5 },
+  HARD: { xp: 30, gold: 5.0 },
+} as const;
+
+/** Recompensas base por Importância (Habit) alinhadas com o backend. */
+export const HABIT_IMPORTANCE_REWARDS = {
+  LOW: { xp: 5, gold: 0.75 },
+  NORMAL: { xp: 10, gold: 1.75 },
+  HIGH: { xp: 25, gold: 3.75 },
+} as const;
+
+/**
+ * Calcula os ganhos de XP e Gold de uma tarefa de acordo com seu tipo,
+ * dificuldade ou importância, e decaimento por ofensiva (streak).
+ */
+export function calculateTaskReward(task: {
+  type?: string;
+  taskType?: string;
+  difficulty?: string;
+  importance?: string;
+  importanceType?: string;
+  streak?: number;
+  currentStreak?: number;
+  repeatType?: string;
+  resetCounter?: string;
+}): { xp: number; gold: number } {
+  const normalizedType = normalizeTaskType(task);
+  const streak = task.currentStreak ?? task.streak ?? 0;
+
+  if (normalizedType === "habit") {
+    const rawImportance = (
+      task.importanceType ||
+      task.importance ||
+      "NORMAL"
+    ).toUpperCase();
+    const impKey =
+      rawImportance === "LOW" || rawImportance === "HIGH"
+        ? rawImportance
+        : "NORMAL";
+    const base = HABIT_IMPORTANCE_REWARDS[impKey];
+
+    const resetCounter = (task.resetCounter || "DAILY").toUpperCase();
+    const habitFormedThreshold =
+      resetCounter === "WEEKLY" ? 8 : resetCounter === "MONTHLY" ? 6 : 21;
+    const adaptationThreshold = Math.floor(habitFormedThreshold / 3);
+
+    let multiplier = 1.0;
+    if (streak >= habitFormedThreshold) {
+      multiplier = 0.5;
+    } else if (streak >= adaptationThreshold) {
+      multiplier = 0.75;
+    }
+
+    const finalXp = Math.max(1, Math.floor(base.xp * multiplier));
+    const finalGold = Math.max(
+      0.01,
+      Math.round(base.gold * multiplier * 100) / 100,
+    );
+    return { xp: finalXp, gold: finalGold };
+  }
+
+  // ToDo ou Daily usam Dificuldade
+  const rawDifficulty = normalizeTaskDifficulty(task.difficulty);
+  const diffKey =
+    rawDifficulty === "TRIVIAL" ||
+    rawDifficulty === "EASY" ||
+    rawDifficulty === "HARD"
+      ? rawDifficulty
+      : "MEDIUM";
+  const base = DIFFICULTY_REWARDS[diffKey];
+
+  if (normalizedType === "daily") {
+    const repeatType = (task.repeatType || "DAILY").toUpperCase();
+    const daysToForm =
+      repeatType === "WEEKLY"
+        ? 8
+        : repeatType === "MONTHLY"
+          ? 6
+          : repeatType === "YEARLY"
+            ? 3
+            : 21;
+    const adaptationThreshold = Math.max(1, Math.floor(daysToForm / 3));
+
+    let multiplier = 1.0;
+    if (streak >= daysToForm) {
+      multiplier = 0.5;
+    } else if (streak >= adaptationThreshold) {
+      multiplier = 0.75;
+    }
+
+    const finalXp = Math.max(1, Math.floor(base.xp * multiplier));
+    const finalGold = Math.max(
+      0.01,
+      Math.round(base.gold * multiplier * 100) / 100,
+    );
+    return { xp: finalXp, gold: finalGold };
+  }
+
+  // To-Do: sem decaimento de streak
+  return { xp: base.xp, gold: base.gold };
 }
 
 /** Estado de filtros padrão do quadro Kanban. */

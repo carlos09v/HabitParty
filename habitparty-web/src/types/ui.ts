@@ -11,17 +11,29 @@ export interface ListCardProps {
   compact?: boolean;
   title: string;
   count?: string;
+  subtitle?: string;
   icon?: ReactNode;
   isAdd?: boolean;
+  disabled?: boolean;
   onClick?: () => void;
   className?: string;
 }
 
+export type SelectItem = string | SelectOption;
+
 export interface SelectProps {
   compact?: boolean;
   label: string;
-  options: string[];
-  placeholder: string;
+  options: readonly SelectItem[] | SelectItem[];
+  placeholder?: string;
+  value?: string;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+  name?: string;
+  id?: string;
+  disabled?: boolean;
+  required?: boolean;
+  className?: string;
 }
 
 export interface WelcomeCardStat {

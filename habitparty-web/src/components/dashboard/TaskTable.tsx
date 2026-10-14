@@ -36,26 +36,57 @@ const EMPTY_MESSAGES: Partial<
   },
 };
 
+interface Props extends TaskTableComponentProps {
+  isCompact?: boolean;
+}
+
 export function TaskTable({
   itemsPerPage = 3,
   currentPage = 1,
   tasks,
   activeFilter = "today",
-}: TaskTableComponentProps) {
+  onToggle,
+  onHabitChange,
+  selectedDate,
+  isCompact: propIsCompact,
+}: Props) {
   const totalItems = tasks.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedTasks = tasks.slice(startIndex, startIndex + itemsPerPage);
 
-  const { isCompact } = useCompactMode();
+  const { isCompact: hookIsCompact } = useCompactMode();
+  const isCompact = propIsCompact ?? hookIsCompact;
+
+  const formattedDate = (() => {
+    if (!selectedDate) return null;
+    try {
+      const [y, m, d] = selectedDate.split("-").map(Number);
+      const dateObj = new Date(y, (m || 1) - 1, d || 1);
+      return dateObj.toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+      });
+    } catch {
+      return selectedDate;
+    }
+  })();
 
   const fallbackEmpty = {
     title: "Nenhuma tarefa encontrada",
     description: "Não encontramos tarefas para o filtro selecionado.",
     icon: CalendarCheck,
   };
-  const emptyMeta = EMPTY_MESSAGES[activeFilter] || fallbackEmpty;
+
+  const emptyMeta = selectedDate
+    ? {
+        title: "Tudo limpo nesta data! 🎉",
+        description: `Não há tarefas agendadas para o dia ${formattedDate}.`,
+        icon: CalendarCheck,
+      }
+    : EMPTY_MESSAGES[activeFilter] || fallbackEmpty;
+
   const EmptyIcon = emptyMeta.icon;
 
   return (
@@ -86,7 +117,7 @@ export function TaskTable({
             isCompact ? "py-8 px-4 gap-2.5" : "py-12 px-6 gap-3.5",
           )}
         >
-          <div className="w-12 h-12 rounded-full bg-primary/25 border border-primary/40 flex items-center justify-center text-gold shadow-sm">
+          <div className="w-12 h-12 rounded-full bg-primary/25 border border-primary/40 flex items-center justify-center text-gold shadow-xs">
             <EmptyIcon size={24} aria-hidden="true" />
           </div>
           <div className="flex flex-col gap-1">
@@ -99,10 +130,14 @@ export function TaskTable({
           </div>
         </div>
       ) : (
-        <ul className="flex flex-col gap-2 w-full">
+        <ul className="flex flex-col gap-2 w-full p-0 m-0 list-none">
           {paginatedTasks.map((task) => (
-            <li key={task.id}>
-              <TaskRow task={task} />
+            <li key={task.id} className="list-none">
+              <TaskRow
+                task={task}
+                onToggle={onToggle}
+                onHabitChange={onHabitChange}
+              />
             </li>
           ))}
         </ul>

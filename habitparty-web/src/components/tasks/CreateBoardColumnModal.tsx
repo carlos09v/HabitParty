@@ -3,7 +3,10 @@
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { createBoardColumnAction } from "@/actions/boardColumnActions";
+import {
+  createBoardColumnAction,
+  updateBoardColumnAction,
+} from "@/actions/boardColumnActions";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { IconPicker } from "@/components/ui/IconPicker";
 import { COLUMN_ICONS } from "@/constants/routine";
@@ -13,14 +16,17 @@ import type { BoardColumn } from "@/types/task";
 interface CreateBoardColumnModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: (column: BoardColumn) => void;
+  columnToEdit?: BoardColumn | null;
+  onSuccess?: (column: BoardColumn, isEdit?: boolean) => void;
 }
 
 export function CreateBoardColumnModal({
   isOpen,
   onClose,
+  columnToEdit,
   onSuccess,
 }: CreateBoardColumnModalProps) {
+  const isEditing = Boolean(columnToEdit);
   const [name, setName] = useState("");
   const [selectedIcon, setSelectedIcon] = useState("sun");
   const [isPending, startTransition] = useTransition();
@@ -32,13 +38,18 @@ export function CreateBoardColumnModal({
 
   useEffect(() => {
     if (isOpen) {
-      setName("");
-      setSelectedIcon("sun");
+      if (columnToEdit) {
+        setName(columnToEdit.title || "");
+        setSelectedIcon(columnToEdit.icon || "sun");
+      } else {
+        setName("");
+        setSelectedIcon("sun");
+      }
       setTimeout(() => {
         inputRef.current?.focus();
       }, 50);
     }
-  }, [isOpen]);
+  }, [isOpen, columnToEdit]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,12 +60,36 @@ export function CreateBoardColumnModal({
       return;
     }
 
-    if (!activeWorkspaceId) {
+    if (!isEditing && !activeWorkspaceId) {
       toast.error("Nenhum workspace ativo selecionado.");
       return;
     }
 
     startTransition(async () => {
+      if (isEditing && columnToEdit) {
+        const response = await updateBoardColumnAction(columnToEdit.id, {
+          name: trimmedName,
+          icon: selectedIcon,
+        });
+
+        if (!response.success) {
+          toast.error(response.error || "Erro ao atualizar coluna.");
+          return;
+        }
+
+        toast.success("Coluna atualizada com sucesso!");
+        const updatedCol: BoardColumn = {
+          ...columnToEdit,
+          title: response.data.name || trimmedName,
+          icon: response.data.icon || selectedIcon,
+        };
+        onSuccess?.(updatedCol, true);
+        onClose();
+        return;
+      }
+
+      if (!activeWorkspaceId) return;
+
       const response = await createBoardColumnAction({
         workspaceId: activeWorkspaceId,
         name: trimmedName,
@@ -74,7 +109,7 @@ export function CreateBoardColumnModal({
         icon: response.data.icon || selectedIcon,
         tasks: [],
       };
-      onSuccess?.(newCol);
+      onSuccess?.(newCol, false);
       onClose();
     });
   };
@@ -83,8 +118,12 @@ export function CreateBoardColumnModal({
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Nova Coluna"
-      description="Crie uma nova lista para categorizar suas tarefas e hábitos no quadro."
+      title={isEditing ? "Editar Coluna" : "Nova Coluna"}
+      description={
+        isEditing
+          ? "Altere o nome e o ícone desta lista no quadro."
+          : "Crie uma nova lista para categorizar suas tarefas e hábitos no quadro."
+      }
       maxWidth="max-w-md"
       preventClose={isPending}
     >
@@ -142,10 +181,10 @@ export function CreateBoardColumnModal({
             {isPending ? (
               <>
                 <Loader2 size={16} className="animate-spin" />
-                <span>Criando...</span>
+                <span>{isEditing ? "Salvando..." : "Criando..."}</span>
               </>
             ) : (
-              <span>Criar Coluna</span>
+              <span>{isEditing ? "Salvar Alterações" : "Criar Coluna"}</span>
             )}
           </button>
         </div>

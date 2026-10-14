@@ -6,7 +6,6 @@ import {
   Circle,
   Compass,
   GraduationCap,
-  Loader2,
   Sparkles,
   Star,
 } from "lucide-react";
@@ -15,6 +14,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { setFirstStepPreferencesAction } from "@/actions/ui";
 import { createWorkspaceAction } from "@/actions/workspaceActions";
+import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/utils";
 
@@ -276,18 +276,13 @@ export default function FirstStepPage() {
 
         {/* Botão de Finalização */}
         <div className="flex flex-col gap-3 mt-1">
-          <button
-            type="submit"
-            disabled={isPending || (wantWorkspace && !workspaceName.trim())}
-            className="w-full py-3.5 rounded-lg border-2 border-gold/50 text-base text-neutral-50 font-bold bg-neutral-900/60 hover:bg-neutral-900/80 hover:border-gold hover:shadow-[0_0_15px_rgba(237,229,57,0.25)] transition-all cursor-pointer flex items-center justify-center gap-2 outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed"
+          <AuthSubmitButton
+            isPending={isPending}
+            disabled={wantWorkspace && !workspaceName.trim()}
+            loadingText="Configurando sua jornada..."
           >
-            {isPending && <Loader2 size={18} className="animate-spin" />}
-            {isPending
-              ? "Configurando sua jornada..."
-              : wantWorkspace
-                ? "Criar Ambiente e Começar"
-                : "Concluir e Começar"}
-          </button>
+            {wantWorkspace ? "Criar Ambiente e Começar" : "Concluir e Começar"}
+          </AuthSubmitButton>
 
           {wantWorkspace && (
             <button

@@ -11,6 +11,7 @@ export function TaskPagination({
   totalPages,
   totalItems,
   itemsPerPage,
+  itemLabel = "tarefas",
 }: TaskPaginationProps) {
   const { isCompact } = useCompactMode();
   const router = useRouter();
@@ -35,7 +36,7 @@ export function TaskPagination({
         "flex items-center justify-between gap-4 border-t border-white/10 text-sm",
         isCompact ? "py-1.5 px-2" : "py-3 px-2",
       )}
-      aria-label="Paginação de tarefas"
+      aria-label={`Paginação de ${itemLabel}`}
     >
       {/* Contagem de itens */}
       <span className="text-xs text-neutral-400" aria-live="polite">
@@ -43,7 +44,8 @@ export function TaskPagination({
         <strong className="text-neutral-100">
           {startItem}-{endItem}
         </strong>{" "}
-        de <strong className="text-neutral-100">{totalItems}</strong> tarefas
+        de <strong className="text-neutral-100">{totalItems}</strong>{" "}
+        {itemLabel}
       </span>
 
       {/* Controles da paginação */}

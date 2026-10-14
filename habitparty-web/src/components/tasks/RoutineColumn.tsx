@@ -4,8 +4,8 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Plus } from "lucide-react";
-import { memo, useMemo } from "react";
+import { MoreVertical, Plus } from "lucide-react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import { getColumnIcon } from "@/constants/routine";
 import { useCompactMode } from "@/hooks/useCompactMode";
 import type { RoutineColumnProps } from "@/types/task";
@@ -15,13 +15,19 @@ import { RoutineTaskCard } from "./RoutineTaskCard";
 export const RoutineColumn = memo(function RoutineColumn({
   column,
   columnIndex: _columnIndex,
+  isSelected = false,
   onAddTaskToColumn,
   onOpenDetails,
   onContextMenu,
+  onOpenColumnMenu,
+  onToggleComplete,
+  onHabitChange,
   isOverlay = false,
 }: RoutineColumnProps) {
   const { isCompact } = useCompactMode();
   const ColumnIcon = getColumnIcon(column.icon);
+  const columnRef = useRef<HTMLDivElement | null>(null);
+
   const {
     attributes,
     listeners,
@@ -38,6 +44,21 @@ export const RoutineColumn = memo(function RoutineColumn({
     disabled: isOverlay,
   });
 
+  const setCombinedRef = (node: HTMLDivElement | null) => {
+    setNodeRef(node);
+    columnRef.current = node;
+  };
+
+  useEffect(() => {
+    if (isSelected && columnRef.current) {
+      columnRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center",
+      });
+    }
+  }, [isSelected]);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -47,10 +68,12 @@ export const RoutineColumn = memo(function RoutineColumn({
 
   return (
     <div
-      ref={setNodeRef}
+      ref={setCombinedRef}
+      data-column-id={column.id}
       style={style}
       className={cn(
-        "flex flex-col w-full h-full shrink-0 transition-all duration-200 select-none bg-transparent border-none",
+        "flex flex-col w-full h-full min-h-0 shrink-0 transition-all duration-300 select-none bg-transparent rounded-2xl",
+        isSelected && "ring-2 ring-gold/90 shadow-glow-gold bg-gold/[0.03]",
         isDragging && "opacity-30 border-dashed border-primary-light scale-98",
         isOverlay &&
           "shadow-card-deep border-gold/70 bg-primary-dark/60 scale-102 rotate-1 z-50",
@@ -61,7 +84,7 @@ export const RoutineColumn = memo(function RoutineColumn({
         {...attributes}
         {...listeners}
         className={cn(
-          "flex items-center justify-between cursor-grab active:cursor-grabbing group/header touch-none transition-all",
+          "flex items-center justify-between cursor-grab active:cursor-grabbing group/header touch-none transition-all shrink-0",
           isCompact ? "p-2.5 mb-1" : "p-3.5 mb-2",
         )}
       >
@@ -94,18 +117,30 @@ export const RoutineColumn = memo(function RoutineColumn({
           </span>
         </div>
 
-        <div className="text-neutral-500 group-hover/header:text-neutral-300 p-0.5 rounded hover:bg-white/6 transition-colors">
-          <GripVertical size={isCompact ? 14 : 16} />
+        <div className="flex items-center shrink-0">
+          <button
+            type="button"
+            aria-label={`Opções da coluna ${column.title}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenColumnMenu?.(e, column);
+            }}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+            }}
+            className="text-neutral-500 hover:text-gold p-1 rounded hover:bg-white/10 transition-colors cursor-pointer"
+            title="Opções da coluna"
+          >
+            <MoreVertical size={isCompact ? 14 : 16} />
+          </button>
         </div>
       </div>
 
       {/* ÁREA DE TAREFAS (Sortable vertical com dnd-kit) */}
       <div
         className={cn(
-          "flex flex-col flex-1 overflow-y-auto custom-scrollbar transition-all",
-          isCompact
-            ? "gap-2 p-1.5 min-h-36 max-h-[calc(100vh-270px)]"
-            : "gap-2.5 p-3 min-h-40 max-h-[calc(100vh-340px)]",
+          "flex flex-col flex-1 min-h-0 overflow-y-auto custom-scrollbar transition-all",
+          isCompact ? "gap-2 p-1.5" : "gap-2.5 p-3",
         )}
       >
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
@@ -126,6 +161,8 @@ export const RoutineColumn = memo(function RoutineColumn({
                 columnId={column.id}
                 onOpenDetails={onOpenDetails}
                 onContextMenu={onContextMenu}
+                onToggleCompleted={onToggleComplete}
+                onHabitChange={onHabitChange}
               />
             ))
           )}
@@ -133,7 +170,7 @@ export const RoutineColumn = memo(function RoutineColumn({
       </div>
 
       {/* BOTÃO INFERIOR DE ADICIONAR TAREFA RÁPIDA */}
-      <div className={isCompact ? "p-1.5 pt-0" : "p-2.5 pt-0"}>
+      <div className={cn("shrink-0", isCompact ? "p-1.5 pt-0" : "p-2.5 pt-0")}>
         <button
           type="button"
           onClick={() => onAddTaskToColumn?.(column.id)}
