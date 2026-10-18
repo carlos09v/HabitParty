@@ -28,7 +28,7 @@ public class InventoryItemMapper {
         // Dados de estado
         entity.setStatus(domain.getStatus());
         entity.setOrderIndex(domain.getOrderIndex());
-        entity.setRemainingMinutes(domain.getRemainingMinutes().orElse(null));
+        entity.setRemainingSeconds(domain.getRemainingSeconds().orElse(null));
         entity.setAcquiredAt(domain.getAcquiredAt());
 
         return entity;
@@ -46,7 +46,7 @@ public class InventoryItemMapper {
             entity.getOrderIndex(),
             entity.getIconSnapshot(),
             entity.getPackageLevelSnapshot(),
-            entity.getRemainingMinutes(),
+            entity.getRemainingSeconds(),
             entity.getAcquiredAt()
         );
     }

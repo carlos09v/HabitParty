@@ -1,5 +1,6 @@
 package com.habitparty.adapters.in.web.dtos.response;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -18,7 +19,9 @@ public record FocusRecordResponseDTO(
     LocalDateTime endTime,
     FocusRecordType recordType,
     Integer completedPomos,
-    int durationMinutes) {
+    int durationMinutes,
+    Integer xpEarned,
+    BigDecimal coinsEarned) {
   public static FocusRecordResponseDTO fromDomain(FocusRecord record) {
     return new FocusRecordResponseDTO(
         record.getId(),
@@ -30,6 +33,8 @@ public record FocusRecordResponseDTO(
         record.getEndTime(),
         record.getRecordType().orElse(null),
         record.getCompletedPomos().orElse(null),
-        record.getDurationMinutes());
+        record.getDurationMinutes(),
+        record.getXpEarned().orElse(0),
+        record.getCoinsEarned().orElse(BigDecimal.ZERO));
   }
 }

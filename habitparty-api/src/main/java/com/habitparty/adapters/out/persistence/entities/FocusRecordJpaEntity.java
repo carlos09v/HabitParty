@@ -1,5 +1,6 @@
 package com.habitparty.adapters.out.persistence.entities;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -54,4 +55,10 @@ public class FocusRecordJpaEntity {
 
   @Column(name = "duration_minutes", nullable = false)
   private int durationMinutes;
+
+  @Column(name = "xp_earned")
+  private Integer xpEarned;
+
+  @Column(name = "coins_earned")
+  private BigDecimal coinsEarned;
 }

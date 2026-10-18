@@ -5,9 +5,11 @@ import { type FormEvent, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { updateUserPasswordAction } from "@/actions/userActions";
 import { Input } from "@/components/ui/Input";
-import { validatePasswordRequirements } from "@/constants/settings";
-import type { ProfileCardBaseProps } from "@/types/user";
+import type { ProfileCardBaseProps } from "@/types/settings";
 import { cn } from "@/utils";
+import { validatePasswordRequirements } from "@/utils/validators";
+
+import { SettingsCard } from "./SettingsCard";
 
 export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -66,131 +68,122 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className={cn(
-        "rounded-2xl border border-primary/25 bg-surface/30 backdrop-blur-md flex flex-col gap-5 transition-all",
-        isCompact ? "p-4 sm:p-5" : "p-6",
-      )}
+    <SettingsCard
+      title="Segurança & Senha"
+      description="Mantenha sua conta protegida atualizando sua senha periodicamente."
+      icon={<KeyRound size={18} className="text-gold" />}
+      isCompact={isCompact}
     >
-      <div className="flex flex-col gap-1 border-b border-white/10 pb-4">
-        <h3 className="text-body-l font-bold text-neutral-50 flex items-center gap-2">
-          <KeyRound size={18} className="text-gold" />
-          Segurança & Senha
-        </h3>
-        <p className="text-body-s text-neutral-400">
-          Mantenha sua conta protegida atualizando sua senha periodicamente.
-        </p>
-      </div>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <div className="flex flex-col gap-4 max-w-xl">
+          <Input
+            id="currentPassword"
+            type="password"
+            label="Senha Atual"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            placeholder="Digite sua senha atual"
+            compact={isCompact}
+            icon={<Lock size={18} />}
+            required
+          />
 
-      <div className="flex flex-col gap-4 max-w-xl">
-        <Input
-          id="currentPassword"
-          type="password"
-          label="Senha Atual"
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-          placeholder="Digite sua senha atual"
-          compact={isCompact}
-          icon={<Lock size={18} />}
-          required
-        />
+          <Input
+            id="newPassword"
+            type="password"
+            label="Nova Senha"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="Digite a nova senha"
+            compact={isCompact}
+            icon={<Lock size={18} />}
+            required
+          />
 
-        <Input
-          id="newPassword"
-          type="password"
-          label="Nova Senha"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          placeholder="Digite a nova senha"
-          compact={isCompact}
-          icon={<Lock size={18} />}
-          required
-        />
-
-        {/* Indicador de requisitos */}
-        <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-white/5 border border-white/10 text-xs">
-          <span className="font-semibold text-neutral-300">
-            Requisitos da senha:
-          </span>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-1">
-            <span
-              className={cn(
-                "flex items-center gap-1.5 transition-colors",
-                hasMinLength
-                  ? "text-green-400 font-medium"
-                  : "text-neutral-400",
-              )}
-            >
-              {hasMinLength ? <Check size={14} /> : <X size={14} />}
-              Mínimo de 8 caracteres
+          {/* Indicador de requisitos */}
+          <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-surface/60 border border-primary/20 text-xs">
+            <span className="font-semibold text-neutral-300">
+              Requisitos da senha:
             </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-1">
+              <span
+                className={cn(
+                  "flex items-center gap-1.5 transition-colors",
+                  hasMinLength
+                    ? "text-emerald-400 font-medium"
+                    : "text-neutral-400",
+                )}
+              >
+                {hasMinLength ? <Check size={14} /> : <X size={14} />}
+                Mínimo de 8 caracteres
+              </span>
 
-            <span
-              className={cn(
-                "flex items-center gap-1.5 transition-colors",
-                hasUpperCase
-                  ? "text-green-400 font-medium"
-                  : "text-neutral-400",
-              )}
-            >
-              {hasUpperCase ? <Check size={14} /> : <X size={14} />}1 letra
-              maiúscula
-            </span>
+              <span
+                className={cn(
+                  "flex items-center gap-1.5 transition-colors",
+                  hasUpperCase
+                    ? "text-emerald-400 font-medium"
+                    : "text-neutral-400",
+                )}
+              >
+                {hasUpperCase ? <Check size={14} /> : <X size={14} />}1 letra
+                maiúscula
+              </span>
 
-            <span
-              className={cn(
-                "flex items-center gap-1.5 transition-colors",
-                hasSpecialChar
-                  ? "text-green-400 font-medium"
-                  : "text-neutral-400",
-              )}
-            >
-              {hasSpecialChar ? <Check size={14} /> : <X size={14} />}1
-              caractere especial (@$!%*?&#)
-            </span>
+              <span
+                className={cn(
+                  "flex items-center gap-1.5 transition-colors",
+                  hasSpecialChar
+                    ? "text-emerald-400 font-medium"
+                    : "text-neutral-400",
+                )}
+              >
+                {hasSpecialChar ? <Check size={14} /> : <X size={14} />}1
+                caractere especial (@$!%*?&#)
+              </span>
 
-            <span
-              className={cn(
-                "flex items-center gap-1.5 transition-colors",
-                passwordsMatch
-                  ? "text-green-400 font-medium"
-                  : "text-neutral-400",
-              )}
-            >
-              {passwordsMatch ? <Check size={14} /> : <X size={14} />}
-              Senhas coincidem
-            </span>
+              <span
+                className={cn(
+                  "flex items-center gap-1.5 transition-colors",
+                  passwordsMatch
+                    ? "text-emerald-400 font-medium"
+                    : "text-neutral-400",
+                )}
+              >
+                {passwordsMatch ? <Check size={14} /> : <X size={14} />}
+                Senhas coincidem
+              </span>
+            </div>
           </div>
+
+          <Input
+            id="confirmPassword"
+            type="password"
+            label="Confirmar Nova Senha"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Confirme a nova senha"
+            compact={isCompact}
+            icon={<Lock size={18} />}
+            required
+          />
         </div>
 
-        <Input
-          id="confirmPassword"
-          type="password"
-          label="Confirmar Nova Senha"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          placeholder="Confirme a nova senha"
-          compact={isCompact}
-          icon={<Lock size={18} />}
-          required
-        />
-      </div>
-
-      <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
-        <button
-          type="submit"
-          disabled={isPending || !canSubmit}
-          className={cn(
-            "rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md",
-            "bg-gold text-neutral-900 hover:bg-gold-hover active:bg-gold-pressed",
-            "disabled:opacity-40 disabled:cursor-not-allowed",
-            isCompact ? "px-4 py-2 text-xs" : "px-6 py-2.5 text-sm",
-          )}
-        >
-          {isPending ? "Alterando..." : "Alterar Senha"}
-        </button>
-      </div>
-    </form>
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-primary/20">
+          <button
+            type="submit"
+            disabled={isPending || !canSubmit}
+            className={cn(
+              "rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md",
+              "bg-gold text-neutral-900 hover:bg-gold-hover active:bg-gold-pressed",
+              "disabled:opacity-40 disabled:cursor-not-allowed",
+              isCompact ? "px-4 py-2 text-xs" : "px-6 py-2.5 text-sm",
+            )}
+          >
+            {isPending ? "Alterando..." : "Alterar Senha"}
+          </button>
+        </div>
+      </form>
+    </SettingsCard>
   );
 }

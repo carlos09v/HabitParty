@@ -30,4 +30,13 @@ public class TodoJpaEntity extends TaskJpaEntity {
 
   @Column(name = "completed_at")
   private LocalDateTime completedAt;
+
+  @Column(name = "is_penalty_applied", nullable = false, columnDefinition = "boolean default false")
+  private boolean isPenaltyApplied = false;
+
+  @Column(name = "send_email_reminder", nullable = false, columnDefinition = "boolean default false")
+  private boolean sendEmailReminder = false;
+
+  @Column(name = "email_reminder_sent", nullable = false, columnDefinition = "boolean default false")
+  private boolean emailReminderSent = false;
 }

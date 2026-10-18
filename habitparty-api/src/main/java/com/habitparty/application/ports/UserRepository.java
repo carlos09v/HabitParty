@@ -12,6 +12,9 @@ public interface UserRepository {
   Optional<User> findById(UUID id);
   List<User> findAll();
   Optional<User> findByEmail(String email); // Para o LoginUseCase
+  Optional<User> findByUsername(String username);
+  Optional<User> findByStripeCustomerId(String stripeCustomerId);
+  long countFounders();
 }
 
 

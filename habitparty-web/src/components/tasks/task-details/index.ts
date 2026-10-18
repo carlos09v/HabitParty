@@ -5,4 +5,3 @@ export * from "./TaskDetailsFooter";
 export * from "./TaskDetailsHeader";
 export * from "./TaskDetailsTags";
 export * from "./TaskPriorityPicker";
-export * from "./useTaskDetailsPosition";

@@ -27,10 +27,19 @@ export function TaskDetailsChecklist({
   onToggleItem,
   onDeleteItem,
 }: TaskDetailsChecklistProps) {
+  const completedCount = checklist.filter((i) => i.isCompleted).length;
+
   return (
-    <>
-      <div className="h-px w-full bg-white/8 my-0.5" />
-      <div className="flex flex-col gap-1.5 max-h-36 overflow-y-auto custom-scrollbar pr-0.5">
+    <div className="flex flex-col gap-2 pt-1 border-t border-white/8">
+      <div className="flex items-center justify-between text-tiny font-bold text-neutral-400 uppercase tracking-wider">
+        <span>Subtarefas</span>
+        {checklist.length > 0 && (
+          <span className="text-neutral-400 font-medium">
+            {completedCount}/{checklist.length}
+          </span>
+        )}
+      </div>
+      <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-0.5">
         {checklist.map((item) => (
           <div
             key={item.id}
@@ -109,6 +118,6 @@ export function TaskDetailsChecklist({
           </button>
         )}
       </div>
-    </>
+    </div>
   );
 }

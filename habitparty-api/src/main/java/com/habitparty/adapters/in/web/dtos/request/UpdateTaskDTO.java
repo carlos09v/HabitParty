@@ -33,7 +33,8 @@ public record UpdateTaskDTO(
 
                 @Size(max = 5000, message = "A descrição deve ter até 5000 caracteres.") String description,
                 TaskPriority priority,
-                List<String> tags,
+                @Size(max = 5, message = "Uma tarefa pode ter no máximo 5 tags.")
+                List<@Size(max = 25, message = "Cada tag deve ter até 25 caracteres.") String> tags,
                 TaskDifficulty difficulty,
                 boolean isHardcoreModeEnabled,
                 LocalDate dueDate,
@@ -52,6 +53,7 @@ public record UpdateTaskDTO(
 
                 // Todo
                 TodoReminderType reminderType,
-                LocalDateTime customReminderAt) {
+                LocalDateTime customReminderAt,
+                Boolean sendEmailReminder) {
 
 }

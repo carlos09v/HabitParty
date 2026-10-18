@@ -5,13 +5,11 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.habitparty.adapters.in.web.dtos.response.BoardColumnResponseDTO;
-import com.habitparty.adapters.in.web.dtos.response.TaskResponseDTO;
-import com.habitparty.adapters.in.web.dtos.response.WorkspaceResponseDTO;
 import com.habitparty.application.ports.BoardColumnRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.WorkspaceRepository;
 import com.habitparty.core.domain.entities.BoardColumn;
+import com.habitparty.core.domain.entities.KanbanBoard;
 import com.habitparty.core.domain.entities.Workspace;
 import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
@@ -29,7 +27,7 @@ public class GetFullKanbanBoardUseCase {
     this.taskRepository = taskRepository;
   }
 
-  public WorkspaceResponseDTO execute(UUID workspaceId, UUID userIdLogado) {
+  public KanbanBoard execute(UUID workspaceId, UUID userIdLogado) {
     Workspace workspace = port.findById(workspaceId)
         .orElseThrow(() -> new ResourceNotFoundException("Workspace não encontrado!"));
     workspace.validateOwnership(userIdLogado);
@@ -37,23 +35,18 @@ public class GetFullKanbanBoardUseCase {
     // 2. Pega as Colunas Visíveis daquele Workspace
     List<BoardColumn> columns = columnRepository.findVisibleByWorkspaceId(workspaceId);
 
-    // 3. Para cada coluna, busca as Tasks e monta o DTO aninhado
-    List<BoardColumnResponseDTO> columnDTOs = columns.stream().map(column -> {
+    // 3. Busca todas as tarefas das colunas em uma única consulta em lote (elimina N+1)
+    List<UUID> columnIds = columns.stream().map(BoardColumn::getId).toList();
+    List<Task> allTasks = taskRepository.findByBoardColumnIdInOrderByOrderIndexAsc(columnIds);
+    java.util.Map<UUID, List<Task>> tasksByColumn = allTasks.stream()
+        .collect(java.util.stream.Collectors.groupingBy(Task::getBoardColumnId));
 
-      // Busca as tarefas da coluna X
-      List<Task> tasks = taskRepository.findByBoardColumnIdOrderByOrderIndexAsc(column.getId());
-      List<TaskResponseDTO> taskDTOs = tasks.stream().map(TaskResponseDTO::fromDomain).toList();
-
-      return BoardColumnResponseDTO.fromDomain(column, taskDTOs);
-
+    // 4. Monta as colunas do Kanban com as tarefas já agrupadas em memória
+    List<KanbanBoard.KanbanColumn> kanbanColumns = columns.stream().map(column -> {
+      List<Task> tasks = tasksByColumn.getOrDefault(column.getId(), List.of());
+      return new KanbanBoard.KanbanColumn(column, tasks);
     }).toList();
 
-    // 4. Monta o grande DTO final para o Front-end
-    return new WorkspaceResponseDTO(
-        workspace.getId(),
-        workspace.getUserId(),
-        workspace.getName(),
-        columnDTOs // Injeta as colunas já com as tarefas dentro!
-    );
+    return new KanbanBoard(workspace, kanbanColumns);
   }
 }

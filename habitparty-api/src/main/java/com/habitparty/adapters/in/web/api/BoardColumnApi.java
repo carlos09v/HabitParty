@@ -12,7 +12,7 @@ import com.habitparty.adapters.in.web.dtos.request.CreateBoardColumnDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateBoardColumnDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateBoardColumnOrderDTO;
 import com.habitparty.adapters.in.web.dtos.response.BoardColumnResponseDTO;
-import com.habitparty.adapters.in.web.dtos.response.BoardColumnSummaryDTO;
+import com.habitparty.application.ports.projections.BoardColumnSummaryDTO;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
 import io.swagger.v3.oas.annotations.Operation;

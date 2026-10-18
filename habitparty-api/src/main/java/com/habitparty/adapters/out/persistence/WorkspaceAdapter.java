@@ -48,8 +48,8 @@ public class WorkspaceAdapter implements WorkspaceRepository {
 
   @Override
   public List<Workspace> findAllByUserId(UUID userId) {
-    // Busca no banco as entidades JPA sujas
-    List<WorkspaceJpaEntity> entities = workspaceRepository.findByUser_Id(userId);
+    // Busca no banco as entidades JPA ordenadas por criação
+    List<WorkspaceJpaEntity> entities = workspaceRepository.findByUser_IdOrderByCreatedAtAsc(userId);
 
     // Transforma a lista de entidades JPA em uma lista de Domínio
     return entities.stream()

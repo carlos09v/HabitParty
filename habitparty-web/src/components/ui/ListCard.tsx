@@ -10,12 +10,14 @@ export function ListCard({
   disabled,
   compact,
   onClick,
+  onContextMenu,
   className,
 }: ListCardProps) {
   return (
     <button
       type="button"
       onClick={disabled ? undefined : onClick}
+      onContextMenu={disabled ? undefined : onContextMenu}
       disabled={disabled}
       aria-disabled={disabled}
       className={cn(

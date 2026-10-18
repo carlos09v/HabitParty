@@ -1,25 +1,37 @@
+"use client";
+
 import { History as HistoryIcon } from "lucide-react";
-import type { HistoryTableProps } from "@/types/history";
+import { useState } from "react";
+import { HISTORY_GRID_COLS } from "@/constants/history";
+import type {
+  HistoryTableProps,
+  TransactionHistoryResponseDTO,
+} from "@/types/history";
 import { cn } from "@/utils";
 import { HistoryRow } from "./HistoryRow";
+import { TransactionDetailModal } from "./TransactionDetailModal";
 
 export function HistoryTable({
   transactions,
   isCompact = false,
   onDelete,
+  taskTypeMap,
 }: HistoryTableProps) {
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<TransactionHistoryResponseDTO | null>(null);
+
   return (
     <section
       className="flex flex-col gap-2.5 w-full"
       aria-label="Extrato de transações"
     >
-      {/* WRAPPER COM ROLAGEM HORIZONTAL PARA MOBILE */}
-      <div className="w-full overflow-x-auto pb-1">
-        <div className="min-w-[760px] flex flex-col gap-2">
-          {/* CABEÇALHO DA TABELA */}
+      {/* WRAPPER COM ROLAGEM HORIZONTAL PARA DESKTOP/TABLET QUANDO NECESSÁRIO */}
+      <div className="w-full overflow-x-visible md:overflow-x-auto pb-1">
+        <div className="min-w-0 md:min-w-[760px] flex flex-col gap-2">
+          {/* CABEÇALHO DA TABELA (Apenas desktop/tablet) */}
           <div
             className={cn(
-              "grid grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1.4fr)_90px_80px_125px_36px] items-center text-xs font-semibold text-neutral-400 select-none",
+              `hidden md:grid md:${HISTORY_GRID_COLS} items-center text-xs font-semibold text-neutral-400 select-none`,
               isCompact ? "gap-2.5 px-3 py-1.5" : "gap-3.5 px-4 py-2",
             )}
             aria-hidden="true"
@@ -61,13 +73,23 @@ export function HistoryTable({
                   key={tx.id || `${tx.createdAt}-${tx.name}`}
                   transaction={tx}
                   isCompact={isCompact}
+                  onClick={() => setSelectedTransaction(tx)}
                   onDelete={onDelete}
+                  taskTypeMap={taskTypeMap}
                 />
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {/* MODAL DETALHADO DA TRANSAÇÃO SELECIONADA */}
+      <TransactionDetailModal
+        isOpen={Boolean(selectedTransaction)}
+        onClose={() => setSelectedTransaction(null)}
+        transaction={selectedTransaction}
+        onDelete={onDelete}
+      />
     </section>
   );
 }

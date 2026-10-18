@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant light (&:where(.light, .light *));
+
 @theme {
   /* ==========================================
      CORES (Mapeadas do Figma para o Tailwind)
+     Valores padrão (Tema Escuro Cósmico)
      ========================================== */
 
   /* Marca (Roxo) */
@@ -24,6 +28,11 @@
   --color-gold: rgb(237 229 57); /* Seu secundaria-amarelo */
   --color-gold-hover: rgb(213 206 51);
   --color-gold-pressed: rgb(190 183 46);
+  --color-gold-warm: rgb(
+    245 197 24
+  ); /* Dourado nobre aquecido para botões CTA (#F5C518) */
+  --color-gold-warm-hover: rgb(227 180 14);
+  --color-gold-warm-pressed: rgb(204 160 8);
   --color-magenta: rgb(237 43 229);
   --color-blue: rgb(64 57 237);
 
@@ -41,10 +50,15 @@
   --color-info-hover: rgb(56 209 255);
   --color-blue-hover: rgb(91 84 246);
 
-  /* Escala Neutra (Textos, Bordas de Vidro) */
+  /* Escala Neutra Contextual */
   --color-neutral-900: rgb(27 24 36);
+  --color-neutral-800: rgb(44 39 55);
+  --color-neutral-700: rgb(60 55 74);
+  --color-neutral-600: rgb(90 83 107);
   --color-neutral-500: rgb(123 115 141);
+  --color-neutral-400: rgb(162 153 181);
   --color-neutral-300: rgb(212 207 223);
+  --color-neutral-200: rgb(228 224 237);
   --color-neutral-100: rgb(244 242 248);
   --color-neutral-50: rgb(249 248 252);
 
@@ -88,17 +102,328 @@
   --font-sans: var(--font-plus-jakarta), sans-serif;
 }
 
+/* ========================================================
+   TEMA CLARO (Sobrescrita de Variáveis e Contraste)
+   ======================================================== */
+html.light {
+  /* Fundo e Superfícies (Off-white / Lavanda Perolada) */
+  --color-background: rgb(248 247 252);
+  --color-surface: rgb(241 238 249);
+  --color-surface-hover: rgb(233 229 243);
+  --color-card: rgb(255 255 255);
+  --color-card-hover: rgb(250 249 254);
+  --color-popover: rgb(255 255 255);
+
+  /* Marca no Tema Claro (Primary-light escurecida para contraste WCAG AA no branco) */
+  --color-primary: rgb(124 58 237);
+  --color-primary-dark: rgb(109 40 217);
+  --color-primary-light: rgb(109 40 217);
+
+  /* Gamificação adaptada com ouro vibrante e gamificado */
+  --color-gold: rgb(234 168 8); /* Âmbar Dourado quente e vibrante */
+  --color-gold-hover: rgb(217 145 6);
+  --color-gold-pressed: rgb(180 115 5);
+  --color-gold-warm: rgb(234 168 8);
+  --color-gold-warm-hover: rgb(217 145 6);
+  --color-gold-warm-pressed: rgb(180 115 5);
+  --color-magenta: rgb(170 24 186); /* Magenta/fuchsia profundo e nítido */
+  --color-blue: rgb(79 70 229);
+
+  /* Funcionais adaptados para fundo claro (elimina a queimação visual de neons) */
+  --color-info: rgb(2 132 199); /* Sky-600 contrastante (4.8:1) */
+  --color-info-hover: rgb(3 105 161);
+  --color-success-100: rgb(220 252 231);
+  --color-success-500: rgb(22 163 74); /* Green-600 contrastante (4.8:1) */
+  --color-success-hover: rgb(21 128 61);
+  --color-warning-100: rgb(254 243 198);
+  --color-warning-500: rgb(217 119 6); /* Amber-600 contrastante */
+  --color-warning-hover: rgb(180 83 9);
+  --color-danger-100: rgb(254 226 226);
+  --color-danger-500: rgb(220 38 38); /* Red-600 contrastante */
+  --color-danger-hover: rgb(185 28 28);
+  --color-blue-hover: rgb(67 56 202);
+
+  /* Inversão da escala neutra para manter hierarquia tipográfica */
+  --color-neutral-50: rgb(24 20 35); /* Títulos principais (alto contraste) */
+  --color-neutral-100: rgb(35 29 49); /* Títulos secundários / Ênfase */
+  --color-neutral-200: rgb(58 50 78); /* Subtítulos */
+  --color-neutral-300: rgb(85 75 107); /* Corpo de texto secundário */
+  --color-neutral-400: rgb(118 108 140); /* Labels e badges */
+  --color-neutral-500: rgb(148 139 168); /* Placeholders e bordas inativas */
+  --color-neutral-600: rgb(200 193 216); /* Bordas médias */
+  --color-neutral-700: rgb(228 224 237); /* Bordas sutis e divisores */
+  --color-neutral-800: rgb(241 238 249); /* Superfície sutil clara */
+  --color-neutral-900: rgb(24 20 35);
+
+  /* Sombras limpas e elegantes para fundo claro */
+  --shadow-glow-gold: 0 0 15px rgba(234, 168, 8, 0.28);
+  --shadow-glow-gold-md: 0 0 12px rgba(234, 168, 8, 0.24);
+  --shadow-glow-gold-sm: 0 0 10px rgba(234, 168, 8, 0.18);
+  --shadow-glow-gold-xs: 0 0 6px rgba(234, 168, 8, 0.35);
+  --shadow-glow-magenta: 0 0 10px rgba(170, 24, 186, 0.25);
+  --shadow-card-deep:
+    0 10px 25px -5px rgba(33, 4, 89, 0.08),
+    0 8px 10px -6px rgba(33, 4, 89, 0.04);
+  --shadow-card-active:
+    0 14px 28px -4px rgba(33, 4, 89, 0.12),
+    0 10px 10px -5px rgba(33, 4, 89, 0.04);
+  --shadow-popover-dark:
+    0 15px 35px -5px rgba(33, 4, 89, 0.14), 0 0 0 1px rgba(33, 4, 89, 0.06);
+}
+
 /* ==========================================
    ESTILOS GLOBAIS (Base do HTML)
    ========================================== */
 @layer base {
   body {
     background-color: var(--color-background);
-    color: var(
-      --color-neutral-50
-    ); /* Texto padrão claro para contrastar com fundo escuro */
+    color: var(--color-neutral-50);
     font-weight: var(--font-weight-normal);
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
   }
+}
+
+/* ========================================================
+   ADAPTAÇÃO DE UTILITÁRIOS PARA TEMA CLARO
+   Garante contraste perfeito para elementos existentes
+   ======================================================== */
+
+/* Ouro tipográfico acessível e contrastante no tema claro */
+html.light .text-gold {
+  color: rgb(
+    180 83 9
+  ) !important; /* Amber-700 #B45309 - Contraste WCAG AAA contra branco */
+}
+html.light .hover\:text-gold:hover {
+  color: rgb(180 83 9) !important;
+}
+
+/* Adaptação de cores neons de utilitários Tailwind (300/400) para fundo claro */
+html.light .text-emerald-400,
+html.light .text-emerald-300 {
+  color: rgb(22 163 74) !important; /* Green-600 #16A34A */
+}
+html.light .text-red-400,
+html.light .text-red-300 {
+  color: rgb(220 38 38) !important; /* Red-600 #DC2626 */
+}
+html.light .text-amber-400,
+html.light .text-amber-300 {
+  color: rgb(180 83 9) !important; /* Amber-700 #B45309 */
+}
+html.light .text-rose-400 {
+  color: rgb(225 29 72) !important; /* Rose-600 */
+}
+html.light .text-orange-400 {
+  color: rgb(194 65 12) !important; /* Orange-700 */
+}
+html.light .text-cyan-300 {
+  color: rgb(2 132 199) !important;
+}
+html.light .text-purple-300 {
+  color: rgb(124 58 237) !important;
+}
+
+/* Evita que texto desapareça no hover sobre fundos claros */
+html.light .hover\:text-white:hover {
+  color: var(--color-neutral-50) !important;
+}
+
+/* Estados hover de opacidades brancas transformados em destaque suave */
+html.light .hover\:bg-white\/5:hover,
+html.light .hover\:bg-white\/8:hover,
+html.light .hover\:bg-white\/10:hover,
+html.light .hover\:bg-white\/15:hover {
+  background-color: rgba(33, 4, 89, 0.08) !important;
+}
+html.light .hover\:bg-surface-hover:hover {
+  background-color: rgb(233 229 243) !important;
+}
+
+/* Preserva texto claro em balões/tooltips e popovers que permanecem propositalmente escuros */
+html.light .bg-neutral-900,
+html.light .bg-neutral-900\/95,
+html.light .bg-neutral-900\/90 {
+  background-color: rgb(27 24 36) !important;
+}
+html.light .bg-neutral-900 .text-neutral-50,
+html.light .bg-neutral-900 .text-neutral-100,
+html.light .bg-neutral-900 .text-neutral-200,
+html.light .bg-neutral-900 .text-neutral-300,
+html.light .bg-neutral-900\/95 .text-neutral-50,
+html.light .bg-neutral-900\/95 .text-neutral-100,
+html.light .bg-neutral-900\/95 .text-neutral-200,
+html.light .bg-neutral-900\/95 .text-neutral-300 {
+  color: rgb(249 248 252) !important;
+}
+html.light .bg-neutral-900 .text-neutral-400,
+html.light .bg-neutral-900\/95 .text-neutral-400 {
+  color: rgb(162 153 181) !important;
+}
+
+/* Bordas e fundos brancos sutis adaptados para fundo claro */
+html.light .border-white\/5,
+html.light .border-white\/6,
+html.light .border-white\/8,
+html.light .border-white\/10,
+html.light .border-white\/15,
+html.light .border-white\/20,
+html.light .border-white\/25,
+html.light .border-white\/30 {
+  border-color: rgba(33, 4, 89, 0.09) !important;
+}
+
+html.light .bg-white\/3,
+html.light .bg-white\/4,
+html.light .bg-white\/5,
+html.light .bg-white\/6,
+html.light .bg-white\/8 {
+  background-color: rgba(33, 4, 89, 0.035) !important;
+}
+
+html.light .bg-white\/10,
+html.light .bg-white\/15,
+html.light .bg-white\/20 {
+  background-color: rgba(33, 4, 89, 0.065) !important;
+}
+
+/* Neutralização de superfícies que usavam roxo escuro (primary-dark) */
+html.light .bg-primary-dark\/15,
+html.light .bg-primary-dark\/20,
+html.light .bg-primary-dark\/25,
+html.light .bg-primary-dark\/30,
+html.light .bg-primary-dark\/35,
+html.light .bg-primary-dark\/40 {
+  background-color: #ffffff !important;
+  box-shadow:
+    0 1px 3px 0 rgba(33, 4, 89, 0.04),
+    0 1px 2px -1px rgba(33, 4, 89, 0.04);
+}
+
+/* Hover de cards e linhas no tema claro */
+html.light .hover\:bg-primary-dark\/30:hover,
+html.light .hover\:bg-primary-dark\/35:hover,
+html.light .hover\:bg-primary-dark\/40:hover {
+  background-color: rgb(250 249 254) !important;
+}
+
+/* Destaque de itens ativos / selecionados no tema claro */
+html.light .bg-primary-dark\/50,
+html.light .bg-primary-dark\/60 {
+  background-color: rgba(124, 58, 237, 0.09) !important;
+}
+
+/* Bordas primárias suavizadas no tema claro */
+html.light .border-primary\/15,
+html.light .border-primary\/20,
+html.light .border-primary\/25,
+html.light .border-primary\/30,
+html.light .border-primary\/35,
+html.light .border-primary\/40,
+html.light .border-primary\/45,
+html.light .border-primary\/50 {
+  border-color: rgba(124, 58, 237, 0.12) !important;
+}
+
+html.light .border-primary-light\/30,
+html.light .border-primary-light\/40,
+html.light .border-primary-light\/50 {
+  border-color: rgba(124, 58, 237, 0.22) !important;
+}
+
+html.light .hover\:border-y-primary-light\/40:hover,
+html.light .hover\:border-r-primary-light\/40:hover,
+html.light .hover\:border-primary-light:hover {
+  border-color: rgba(124, 58, 237, 0.3) !important;
+}
+
+/* Diferenciação de camadas na barra lateral direita do Dashboard */
+html.light aside[aria-label="Painel de Resumo e Calendário"] {
+  background-color: #ffffff !important;
+  border-left-color: rgba(124, 58, 237, 0.12) !important;
+}
+html.light
+  aside[aria-label="Painel de Resumo e Calendário"]
+  .bg-primary-dark\/20,
+html.light aside[aria-label="Painel de Resumo e Calendário"] .bg-white\/5 {
+  background-color: rgb(248 247 252) !important;
+  border-color: rgba(124, 58, 237, 0.12) !important;
+}
+
+/* Suavização do gradiente do Daily Briefing no tema claro */
+html.light .from-primary-dark\/40 {
+  --tw-gradient-from: rgba(124, 58, 237, 0.08) !important;
+}
+html.light .via-surface\/60 {
+  --tw-gradient-via: rgba(241, 238, 249, 0.8) !important;
+}
+html.light .to-primary-dark\/25 {
+  --tw-gradient-to: rgba(124, 58, 237, 0.04) !important;
+}
+
+/* Timer de Foco: remove sombra pesada preta e ajusta badge de descanso */
+html.light .drop-shadow-\[0_4px_16px_rgba\(0\,0\,0\,0\.6\)\] {
+  filter: drop-shadow(0 2px 8px rgba(124, 58, 237, 0.15)) !important;
+}
+html.light .bg-emerald-950\/70 {
+  background-color: rgba(22, 163, 74, 0.12) !important;
+  border-color: rgba(22, 163, 74, 0.3) !important;
+  color: rgb(21 128 61) !important;
+}
+
+/* Orbes cósmicos de fundo com opacidade sutil no tema claro */
+html.light .cosmic-orb {
+  opacity: 0.06 !important;
+}
+
+/* Confetes na Sidebar com opacidade reduzida no tema claro */
+html.light div[style*="Confetti.svg"] {
+  opacity: 0.15 !important;
+}
+
+/* Dropdowns e selects no tema claro */
+html.light select option {
+  background-color: #ffffff !important;
+  color: rgb(24 20 35) !important;
+}
+
+/* Hover nos botões de perigo e decremento no tema claro */
+html.light .hover\:bg-danger-500:hover,
+html.light .hover\:bg-red-600:hover {
+  color: #ffffff !important;
+}
+html.light .hover\:text-neutral-100:hover {
+  color: #ffffff !important;
+}
+
+/* Proteções contra escurecimento e contraste de utilitários neutros no tema claro */
+html.light .hover\:bg-neutral-50:hover {
+  background-color: var(--color-surface-hover) !important;
+}
+
+html.light .bg-neutral-100 {
+  background-color: var(--color-surface) !important;
+}
+
+html.light .hover\:bg-neutral-100:hover,
+html.light .hover\:bg-neutral-200:hover {
+  background-color: var(--color-surface-hover) !important;
+}
+
+html.light .text-neutral-600,
+html.light .text-neutral-700 {
+  color: var(--color-neutral-300) !important;
+}
+
+html.light .text-neutral-800 {
+  color: var(--color-neutral-100) !important;
+}
+
+html.light .border-neutral-200,
+html.light .border-neutral-300 {
+  border-color: var(--color-neutral-700) !important;
 }
 
 @layer utilities {
@@ -120,4 +445,169 @@
     scrollbar-width: thin;
     scrollbar-color: rgba(123, 115, 141, 0.3) transparent;
   }
+
+  html.light .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(33, 4, 89, 0.15);
+  }
+  html.light .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(217, 119, 6, 0.4);
+  }
+  html.light .custom-scrollbar {
+    scrollbar-color: rgba(33, 4, 89, 0.15) transparent;
+  }
+
+  /* Borda sutil com gradiente para o Workspace Switcher */
+  .border-gradient-switcher {
+    position: relative;
+    background: linear-gradient(
+      to right,
+      rgba(124, 58, 237, 0.3),
+      rgba(33, 4, 89, 0.6)
+    );
+  }
+
+  .border-gradient-switcher::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      to right,
+      rgba(168, 99, 255, 0.6),
+      rgba(124, 58, 237, 0.25)
+    );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    transition: background 0.2s ease;
+  }
+
+  .border-gradient-switcher:hover::before {
+    background: linear-gradient(
+      to right,
+      rgba(168, 99, 255, 0.85),
+      rgba(124, 58, 237, 0.45)
+    );
+  }
+
+  html.light .border-gradient-switcher {
+    background: linear-gradient(
+      to right,
+      rgba(124, 58, 237, 0.08),
+      rgba(255, 255, 255, 0.85)
+    );
+  }
+
+  html.light .border-gradient-switcher::before {
+    background: linear-gradient(
+      to right,
+      rgba(124, 58, 237, 0.35),
+      rgba(124, 58, 237, 0.15)
+    );
+  }
+
+  html.light .border-gradient-switcher:hover::before {
+    background: linear-gradient(
+      to right,
+      rgba(124, 58, 237, 0.55),
+      rgba(124, 58, 237, 0.25)
+    );
+  }
+}
+
+/* ========================================================
+   MOLDURAS ANIMADAS DE AVATAR (PREMIUM)
+   ======================================================== */
+@keyframes frame-spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes frame-pulse-glow {
+  0%,
+  100% {
+    opacity: 0.85;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(1.25);
+  }
+}
+
+.animate-frame-spin {
+  animation: frame-spin-slow 6s linear infinite;
+}
+
+.animate-frame-pulse {
+  animation: frame-pulse-glow 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-frame-spin,
+  .animate-frame-pulse {
+    animation: none !important;
+  }
+}
+
+.frame-cosmic-gold {
+  background: conic-gradient(
+    from 0deg,
+    #ede539 0%,
+    #f59e0b 25%,
+    #ffffff 50%,
+    #ede539 75%,
+    #f59e0b 100%
+  );
+}
+
+.frame-cyber-neon {
+  background: conic-gradient(
+    from 0deg,
+    #00c2ff 0%,
+    #ed2be5 30%,
+    #a855f7 60%,
+    #00c2ff 100%
+  );
+}
+
+.frame-fire-phoenix {
+  background: conic-gradient(
+    from 0deg,
+    #fb2c36 0%,
+    #fe9a00 35%,
+    #ede539 55%,
+    #ef4444 80%,
+    #fb2c36 100%
+  );
+}
+
+.frame-emerald-mystic {
+  background: conic-gradient(
+    from 0deg,
+    #00c950 0%,
+    #22e26e 35%,
+    #a7f3d0 55%,
+    #059669 80%,
+    #00c950 100%
+  );
+}
+
+.frame-amethyst-void {
+  background: conic-gradient(
+    from 0deg,
+    #7c3aed 0%,
+    #ed2be5 35%,
+    #c084fc 60%,
+    #4916a6 85%,
+    #7c3aed 100%
+  );
 }

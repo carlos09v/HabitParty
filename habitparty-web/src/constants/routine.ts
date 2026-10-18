@@ -3,13 +3,20 @@ import {
   Briefcase,
   CheckSquare,
   Coffee,
+  Crown,
   Dumbbell,
   Flame,
+  Gem,
   type LucideIcon,
   Moon,
+  Shield,
   Sparkles,
   Sun,
+  Swords,
   Target,
+  Trophy,
+  Wand2,
+  Zap,
 } from "lucide-react";
 
 import type { IconOption } from "@/types/ui";
@@ -24,6 +31,7 @@ export type ColumnIconOption = IconOption;
 
 /** Ícones pré-configurados para seleção de listas/colunas. */
 export const COLUMN_ICONS: readonly IconOption[] = [
+  // Ícones Gratuitos Base
   { id: "sun", label: "Manhã", icon: Sun },
   { id: "moon", label: "Noite", icon: Moon },
   { id: "flame", label: "Foco", icon: Flame },
@@ -34,6 +42,15 @@ export const COLUMN_ICONS: readonly IconOption[] = [
   { id: "sparkles", label: "Hábitos", icon: Sparkles },
   { id: "coffee", label: "Pausa", icon: Coffee },
   { id: "check", label: "Geral", icon: CheckSquare },
+
+  // Ícones Exclusivos VIP Premium
+  { id: "crown", label: "Realeza VIP", icon: Crown, isPremium: true },
+  { id: "swords", label: "Quests VIP", icon: Swords, isPremium: true },
+  { id: "trophy", label: "Metas VIP", icon: Trophy, isPremium: true },
+  { id: "shield", label: "Defesa", icon: Shield, isPremium: true },
+  { id: "wand", label: "Projetos", icon: Wand2, isPremium: true },
+  { id: "zap", label: "Sprint", icon: Zap, isPremium: true },
+  { id: "gem", label: "Tesouros", icon: Gem, isPremium: true },
 ] as const;
 
 /** Retorna o ícone Lucide correspondente ao ID da coluna, com fallback para Sun. */
@@ -48,13 +65,7 @@ export function getColumnIcon(iconId?: string | null): LucideIcon {
   return Sun;
 }
 
-/** Opções de filtro por Tipo de Tarefa no quadro Kanban. */
-export const TASK_TYPE_FILTER_OPTIONS = [
-  { id: "all", label: "Todos" },
-  { id: "HABIT", label: "Hábitos" },
-  { id: "DAILY", label: "Diárias" },
-  { id: "TODO", label: "Afazeres" },
-] as const;
+export { TASK_TYPE_FILTER_OPTIONS } from "@/constants/task";
 
 /** Opções de filtro por Status no quadro Kanban. */
 export const STATUS_FILTER_OPTIONS = [
@@ -62,3 +73,64 @@ export const STATUS_FILTER_OPTIONS = [
   { id: "pending", label: "Pendentes" },
   { id: "completed", label: "Concluídas" },
 ] as const;
+
+/** Mapeamento de palavras-chave para sugestão automática de ícone de coluna. */
+export const COLUMN_ICON_KEYWORD_MAP: Readonly<Record<string, string>> = {
+  manha: "sun",
+  matutina: "sun",
+  dia: "sun",
+  acordar: "sun",
+  noite: "moon",
+  noturna: "moon",
+  dormir: "moon",
+  sono: "moon",
+  foco: "flame",
+  urgente: "flame",
+  prioridade: "flame",
+  meta: "target",
+  metas: "target",
+  objetivo: "target",
+  alvo: "target",
+  treino: "dumbbell",
+  academia: "dumbbell",
+  exercicio: "dumbbell",
+  fitness: "dumbbell",
+  saude: "dumbbell",
+  esporte: "dumbbell",
+  estudo: "book",
+  estudos: "book",
+  livro: "book",
+  leitura: "book",
+  faculdade: "book",
+  curso: "book",
+  trabalho: "briefcase",
+  work: "briefcase",
+  projeto: "briefcase",
+  tarefa: "check",
+  geral: "check",
+  todo: "check",
+  afazeres: "check",
+  habito: "sparkles",
+  habitos: "sparkles",
+  rotina: "sparkles",
+  pausa: "coffee",
+  cafe: "coffee",
+  descanso: "coffee",
+  intervalo: "coffee",
+};
+
+/** Sugere automaticamente o ícone com base nas palavras do nome da coluna. */
+export function inferColumnIcon(name: string): string | null {
+  if (!name.trim()) return null;
+  const normalized = name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  for (const [keyword, iconId] of Object.entries(COLUMN_ICON_KEYWORD_MAP)) {
+    if (normalized.includes(keyword)) {
+      return iconId;
+    }
+  }
+  return null;
+}

@@ -27,7 +27,7 @@ export default function SignUpPage() {
         Já tem uma conta?{" "}
         <Link
           href="/signIn"
-          className="text-gold font-bold hover:underline transition-colors outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded"
+          className="text-gold font-bold hover:underline transition-colors outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded px-1"
         >
           Entre
         </Link>

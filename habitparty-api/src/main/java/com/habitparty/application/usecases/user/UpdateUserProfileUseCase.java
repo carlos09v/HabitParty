@@ -5,7 +5,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.stereotype.Service;
 
-import com.habitparty.adapters.in.web.dtos.request.UpdateUserDTO;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
@@ -19,14 +18,14 @@ public class UpdateUserProfileUseCase {
     this.port = port;
   }
 
-  public User execute(UUID userIdLogado, UpdateUserDTO dto) {
+  public User execute(UUID userIdLogado, UpdateUserProfileCommand command) {
     User user = port.findById(userIdLogado)
         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
 
     user.updateProfile(
-        dto.fullName() != null ? dto.fullName() : user.getFullName(),
-        dto.birthday() != null ? dto.birthday() : user.getBirthday(),
-        dto.gender() != null ? dto.gender() : user.getGender()
+        command.fullName() != null ? command.fullName() : user.getFullName(),
+        command.birthday() != null ? command.birthday() : user.getBirthday(),
+        command.gender() != null ? command.gender() : user.getGender()
     );
 
     return port.save(user);

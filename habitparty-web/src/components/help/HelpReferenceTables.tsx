@@ -1,4 +1,4 @@
-import { BookOpen, Coins, Flame, Sparkles, Trophy } from "lucide-react";
+import { BookOpen, Coins, Flame, Sparkles, Timer, Trophy } from "lucide-react";
 import { HelpReferenceTable } from "@/components/help/HelpReferenceTable";
 import { HELP_TABLES } from "@/constants/help";
 
@@ -12,7 +12,7 @@ export function HelpReferenceTables() {
         </h2>
       </div>
 
-      {/* 1. Dificuldades */}
+      {/* 1. Dificuldades (Tarefas) */}
       <HelpReferenceTable
         entry={HELP_TABLES.difficulties}
         icon={<Coins className="text-gold" size={18} />}
@@ -28,7 +28,15 @@ export function HelpReferenceTables() {
         highlightColorClass="text-gold"
       />
 
-      {/* 3. Caixas Misteriosas */}
+      {/* 3. Ferramentas de Foco (Pomodoro & Cronômetro) */}
+      <HelpReferenceTable
+        entry={HELP_TABLES.focusRewards}
+        icon={<Timer className="text-primary-light" size={18} />}
+        highlightColumnIndex={2}
+        highlightColorClass="text-gold"
+      />
+
+      {/* 4. Caixas Misteriosas */}
       <HelpReferenceTable
         entry={HELP_TABLES.mysteryBoxes}
         icon={<Sparkles className="text-magenta" size={18} />}
@@ -36,7 +44,7 @@ export function HelpReferenceTables() {
         highlightColorClass="text-gold"
       />
 
-      {/* 4. Níveis de Usuário */}
+      {/* 5. Níveis de Usuário */}
       <HelpReferenceTable
         entry={HELP_TABLES.userLevels}
         icon={<Trophy className="text-gold" size={18} />}

@@ -3,13 +3,9 @@
 import { useMemo, useState } from "react";
 import { useViewMode } from "@/hooks/useViewMode";
 
-export interface ItemCatalogFilterState {
-  search: string;
-  type: string;
-  category: string;
-  tag: string;
-  packageLevel: string;
-}
+import type { ItemCatalogFilterState } from "@/types/ui";
+
+export type { ItemCatalogFilterState };
 
 const DEFAULT_FILTERS: ItemCatalogFilterState = {
   search: "",
@@ -17,6 +13,8 @@ const DEFAULT_FILTERS: ItemCatalogFilterState = {
   category: "",
   tag: "",
   packageLevel: "",
+  status: "",
+  sortBy: "",
 };
 
 export function useItemCatalogFilters(storageKey: "rewards" | "inventory") {
@@ -38,7 +36,9 @@ export function useItemCatalogFilters(storageKey: "rewards" | "inventory") {
         filters.type ||
         filters.category ||
         filters.tag ||
-        filters.packageLevel,
+        filters.packageLevel ||
+        filters.status ||
+        filters.sortBy,
     );
   }, [filters]);
 

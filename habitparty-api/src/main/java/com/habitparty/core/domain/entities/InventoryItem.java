@@ -25,11 +25,11 @@ public class InventoryItem {
   // Atributos opcionais (nullable)
   private String iconSnapshot;
   private RewardPackageLevel packageLevelSnapshot;
-  private Integer remainingMinutes; // Terá o valor do baseDurationMinutes como default
+  private Integer remainingSeconds;
 
   public InventoryItem(UUID id, UUID userId, UUID rewardId, String nameSnapshot, BigDecimal priceSnapshot,
       RewardType rewardTypeSnapshot, InventoryItemStatus status, int orderIndex,
-      String iconSnapshot, RewardPackageLevel packageLevelSnapshot, Integer remainingMinutes,
+      String iconSnapshot, RewardPackageLevel packageLevelSnapshot, Integer remainingSeconds,
       LocalDateTime acquiredAt) {
     this.id = id;
     this.userId = userId;
@@ -42,7 +42,7 @@ public class InventoryItem {
     this.acquiredAt = acquiredAt;
     this.iconSnapshot = iconSnapshot;
     this.packageLevelSnapshot = packageLevelSnapshot;
-    this.remainingMinutes = remainingMinutes;
+    this.remainingSeconds = remainingSeconds;
   }
 
   public void validateOwnership(UUID userIdLogado) {
@@ -75,13 +75,21 @@ public class InventoryItem {
   }
 
   // O tempo é descontado, mas o item NÃO SOME SOZINHO se zerar.
-  public void deductTime(int minutesSpent) {
+  public void deductSeconds(int secondsSpent) {
     if (this.status != InventoryItemStatus.IN_FOCUS) {
       throw new IllegalStateException("O tempo só pode ser descontado de itens em foco.");
     }
 
+    if (this.remainingSeconds == null) {
+      return;
+    }
+
     // Garante que não fique negativo, parando no 0
-    this.remainingMinutes = Math.max(0, this.remainingMinutes - minutesSpent);
+    this.remainingSeconds = Math.max(0, this.remainingSeconds - secondsSpent);
+  }
+
+  public void deductTime(int minutesSpent) {
+    deductSeconds(minutesSpent * 60);
   }
 
   public void refundTime(int minutesToRefund) {
@@ -90,11 +98,11 @@ public class InventoryItem {
     }
 
     // Verifica se é um item baseado em tempo (null pointer safe)
-    if (this.remainingMinutes != null) {
-      this.remainingMinutes += minutesToRefund;
+    if (this.remainingSeconds != null) {
+      this.remainingSeconds += minutesToRefund * 60;
 
       // Se o item estava esgotado, ele "ressuscita" e volta para a mochila
-      if (this.status == InventoryItemStatus.CONSUMED && this.remainingMinutes > 0) {
+      if (this.status == InventoryItemStatus.CONSUMED && this.remainingSeconds > 0) {
         this.status = InventoryItemStatus.AVAILABLE;
       }
     }
@@ -106,9 +114,12 @@ public class InventoryItem {
       throw new IllegalStateException("Este item não pode ser consumido no estado atual.");
     }
 
-    // Se o item está no foco e é baseado em tempo, barra o consumo se ainda houver saldo
-    if (this.status == InventoryItemStatus.IN_FOCUS && this.remainingMinutes != null && this.remainingMinutes > 0) {
-      throw new DomainValidationException("Você precisa gastar todo o tempo do item no timer antes de concluí-lo.");
+    // Se o item está no foco e é baseado em tempo, barra o consumo se ainda houver saldo significativo
+    if (this.status == InventoryItemStatus.IN_FOCUS) {
+      if (this.remainingSeconds != null && this.remainingSeconds > 1) {
+        throw new DomainValidationException("Você precisa gastar todo o tempo do item no timer antes de concluí-lo.");
+      }
+      this.remainingSeconds = 0;
     }
 
     // Muda o status e ele desaparece permanentemente do Foco e da Mochila
@@ -164,11 +175,21 @@ public class InventoryItem {
   }
 
   public Optional<Integer> getRemainingMinutes() {
-    return Optional.ofNullable(remainingMinutes);
+    return remainingSeconds != null
+        ? Optional.of((int) Math.ceil(remainingSeconds / 60.0))
+        : Optional.empty();
   }
 
   public void setRemainingMinutes(Integer remainingMinutes) {
-    this.remainingMinutes = remainingMinutes;
+    this.remainingSeconds = remainingMinutes != null ? remainingMinutes * 60 : null;
+  }
+
+  public Optional<Integer> getRemainingSeconds() {
+    return Optional.ofNullable(remainingSeconds);
+  }
+
+  public void setRemainingSeconds(Integer remainingSeconds) {
+    this.remainingSeconds = remainingSeconds;
   }
 
   public LocalDateTime getAcquiredAt() {

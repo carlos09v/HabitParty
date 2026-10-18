@@ -1,9 +1,11 @@
 package com.habitparty.adapters.out.persistence.mappers;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.habitparty.adapters.out.persistence.entities.ChecklistItemJpaEntity;
 import com.habitparty.adapters.out.persistence.entities.DailyJpaEntity;
 import com.habitparty.adapters.out.persistence.entities.HabitJpaEntity;
 import com.habitparty.adapters.out.persistence.entities.TaskJpaEntity;
@@ -32,7 +34,8 @@ public class TaskMapper {
                 h.getId(), h.getBoardColumnId(), h.getUserId(), h.getName(), h.getDescription(),
                 h.getOrderIndex(), h.getPriority(), h.getTags(), h.getDifficulty(),
                 h.getStatus(), h.getTaskType(), h.isHardcoreModeEnabled(), h.getDueDate(), h.getCreatedAt(), checklist,
-                h.getCurrentStreak(), h.getHabitType(), h.getResetCounter(), h.getImportanceType(), h.getLastCompletedAt()
+                h.getCurrentStreak(), h.getHabitType(), h.getResetCounter(), h.getImportanceType(), h.getLastCompletedAt(),
+                h.getPositiveCount(), h.getNegativeCount()
             );
         } 
         else if (entity instanceof DailyJpaEntity d) {
@@ -48,7 +51,9 @@ public class TaskMapper {
             return new Todo(
                 t.getId(), t.getBoardColumnId(), t.getUserId(), t.getName(), t.getDescription(),
                 t.getOrderIndex(), t.getPriority(), t.getTags(), t.getDifficulty(),
-                t.getStatus(), t.getTaskType(), t.isHardcoreModeEnabled(), t.getDueDate(), t.getCreatedAt(), checklist, t.getReminderType(), t.getReminderAt(), t.getCompletedAt()
+                t.getStatus(), t.getTaskType(), t.isHardcoreModeEnabled(), t.getDueDate(), t.getCreatedAt(), checklist,
+                t.getReminderType(), t.getReminderAt(), t.getCompletedAt(), t.isPenaltyApplied(),
+                t.isSendEmailReminder(), t.isEmailReminderSent()
             );
         }
 
@@ -65,6 +70,8 @@ public class TaskMapper {
             habitEntity.setResetCounter(h.getResetCounter());
             habitEntity.setImportanceType(h.getImportanceType());
             habitEntity.setLastCompletedAt(h.getLastCompletedAt());
+            habitEntity.setPositiveCount(h.getPositiveCount());
+            habitEntity.setNegativeCount(h.getNegativeCount());
             entity = habitEntity;
         } 
         else if (domain instanceof Daily d) {
@@ -83,6 +90,9 @@ public class TaskMapper {
             todoEntity.setReminderType(t.getReminderType());
             todoEntity.setReminderAt(t.getReminderAt().orElse(null));
             todoEntity.setCompletedAt(t.getCompletedAt());
+            todoEntity.setPenaltyApplied(t.isPenaltyApplied());
+            todoEntity.setSendEmailReminder(t.isSendEmailReminder());
+            todoEntity.setEmailReminderSent(t.isEmailReminderSent());
             entity = todoEntity;
         } 
         else {
@@ -104,6 +114,13 @@ public class TaskMapper {
         entity.setHardcoreModeEnabled(domain.isHardcoreModeEnabled());
         entity.setDueDate(domain.getDueDate().orElse(null));
         entity.setCreatedAt(domain.getCreatedAt());
+
+        if (domain.getChecklist() != null && !domain.getChecklist().isEmpty()) {
+            List<ChecklistItemJpaEntity> checklistEntities = domain.getChecklist().stream()
+                .map(item -> checklistMapper.toEntity(item, entity))
+                .toList();
+            entity.setChecklist(new ArrayList<>(checklistEntities));
+        }
 
         return entity;
     }

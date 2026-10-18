@@ -158,4 +158,41 @@ public class GlobalExceptionHandler {
         ErrorResponseDTO error = new ErrorResponseDTO("Erro de Validação", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
+
+    // Falhas de integração ou comunicação com gateway de pagamento -> 502 (Bad Gateway)
+    @ExceptionHandler(com.habitparty.core.exceptions.PaymentProcessingException.class)
+    public ResponseEntity<ErrorResponseDTO> handlePaymentProcessing(com.habitparty.core.exceptions.PaymentProcessingException ex) {
+        ErrorResponseDTO error = new ErrorResponseDTO("Erro de Pagamento", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(error);
+    }
+
+    // Acesso negado pelo Spring Security -> 403 (Forbidden)
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ErrorResponseDTO> handleAccessDenied(org.springframework.security.access.AccessDeniedException ex) {
+        ErrorResponseDTO error = new ErrorResponseDTO("Acesso Negado", "Você não tem permissão para acessar este recurso.");
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    // Violação de constraints de validação (parâmetros, queries, etc.) -> 400 (Bad Request)
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponseDTO> handleConstraintViolation(jakarta.validation.ConstraintViolationException ex) {
+        ErrorResponseDTO error = new ErrorResponseDTO("Erro de Validação de Dados", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    // Método HTTP não suportado no endpoint -> 405 (Method Not Allowed)
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponseDTO> handleMethodNotSupported(org.springframework.web.HttpRequestMethodNotSupportedException ex) {
+        ErrorResponseDTO error = new ErrorResponseDTO("Método Não Permitido", "Método HTTP " + ex.getMethod() + " não suportado para este endpoint.");
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(error);
+    }
+
+    // Fallback global para exceções não tratadas -> 500 (Internal Server Error)
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponseDTO> handleGenericException(Exception ex) {
+        org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class)
+                .error("Erro inesperado não tratado: ", ex);
+        ErrorResponseDTO error = new ErrorResponseDTO("Erro Interno", "Ocorreu um erro interno inesperado no servidor.");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
 }

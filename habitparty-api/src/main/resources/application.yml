@@ -3,7 +3,7 @@ spring:
     name: habitparty-api
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/${DB_NAME}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME}}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
@@ -26,6 +26,32 @@ api:
     token:
       secret: ${JWT_SECRET}
       # https://randomkeygen.com/ ou `openssl rand -base64 32` (no terminal)
-      
-      
-      
+
+stripe:
+  api:
+    key: ${STRIPE_API_KEY:}
+  webhook:
+    secret: ${STRIPE_WEBHOOK_SECRET:}
+  success:
+    url: ${APP_FRONTEND_URL:http://localhost:3000}/dashboard?payment=success
+  cancel:
+    url: ${APP_FRONTEND_URL:http://localhost:3000}/dashboard?payment=cancel
+  prices:
+    monthly: ${STRIPE_MONTHLY_PRICE_ID:${STRIPE_PRICE_MONTHLY_ID:}}
+    annual: ${STRIPE_ANNUAL_PRICE_ID:${STRIPE_PRICE_ANNUAL_ID:}}
+    founder-annual: ${STRIPE_FOUNDER_ANNUAL_PRICE_ID:${STRIPE_PRICE_FOUNDER_ANNUAL_ID:}}
+
+google:
+  client:
+    id: ${GOOGLE_CLIENT_ID:}
+    secret: ${GOOGLE_CLIENT_SECRET:}
+    redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:3000/auth/callback}
+
+resend:
+  api:
+    key: ${RESEND_API_KEY:}
+    from: ${RESEND_FROM_EMAIL:HabitParty <onboarding@resend.dev>}
+
+app:
+  frontend-url: ${APP_FRONTEND_URL:http://localhost:3000}
+

@@ -2,32 +2,51 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
-import {
-  type DashboardAdvancedFilters,
-  DEFAULT_DASHBOARD_ADVANCED_FILTERS,
-  type Task,
-  type TaskFilterType,
-} from "@/types/task";
-
-const WEEKDAY_NAMES = [
-  "SUNDAY",
-  "MONDAY",
-  "TUESDAY",
-  "WEDNESDAY",
-  "THURSDAY",
-  "FRIDAY",
-  "SATURDAY",
-] as const;
+import { DEFAULT_DASHBOARD_ADVANCED_FILTERS } from "@/constants/dashboard";
+import { ALL_WEEK_DAYS, normalizeTaskType } from "@/constants/task";
+import type { DashboardAdvancedFilters } from "@/types/dashboard";
+import type { Task, TaskFilterType } from "@/types/task";
 
 export function useDashboardTaskFilters(tasks: Task[]) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [activeFilter, setActiveFilter] = useState<TaskFilterType>("today");
+  const urlFilterParam = searchParams.get("filter");
+  const initialFilter: TaskFilterType =
+    urlFilterParam === "today" ||
+    urlFilterParam === "next7days" ||
+    urlFilterParam === "this_month" ||
+    urlFilterParam === "overdue" ||
+    urlFilterParam === "nodate"
+      ? (urlFilterParam as TaskFilterType)
+      : "today";
+
+  const [activeFilter, setActiveFilterState] =
+    useState<TaskFilterType>(initialFilter);
   const [advancedFilters, setAdvancedFilters] =
     useState<DashboardAdvancedFilters>(DEFAULT_DASHBOARD_ADVANCED_FILTERS);
 
   const selectedDate = searchParams.get("date");
+  const effectiveFilter =
+    urlFilterParam === "today" ||
+    urlFilterParam === "next7days" ||
+    urlFilterParam === "this_month" ||
+    urlFilterParam === "overdue" ||
+    urlFilterParam === "nodate"
+      ? (urlFilterParam as TaskFilterType)
+      : activeFilter;
+
+  const setActiveFilter = useCallback(
+    (newFilter: TaskFilterType) => {
+      setActiveFilterState(newFilter);
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("date");
+      params.set("filter", newFilter);
+      params.set("page", "1");
+      router.push(`?${params.toString()}`, { scroll: false });
+    },
+    [router, searchParams],
+  );
 
   const handleClearDate = useCallback(() => {
     const params = new URLSearchParams(searchParams.toString());
@@ -46,13 +65,20 @@ export function useDashboardTaskFilters(tasks: Task[]) {
 
     // 1. Filtro Temporal
     let result = tasks.filter((task) => {
+      const type = normalizeTaskType(task);
+      const isDaily = type === "daily";
+      const isHabit = type === "habit";
+
       if (selectedDate) {
-        if (task.dueDate === selectedDate) return true;
-        const type = (task.type || "").toLowerCase();
-        if (type === "daily") {
+        if (
+          task.dueDate === selectedDate ||
+          task.dueDate?.startsWith(selectedDate)
+        )
+          return true;
+        if (isDaily) {
           const [y, m, d] = selectedDate.split("-").map(Number);
           const targetDate = new Date(y, (m || 1) - 1, d || 1);
-          const targetDayName = WEEKDAY_NAMES[targetDate.getDay()];
+          const targetDayName = ALL_WEEK_DAYS[targetDate.getDay()];
           return (
             !task.daysOfWeek ||
             task.daysOfWeek.length === 0 ||
@@ -63,10 +89,23 @@ export function useDashboardTaskFilters(tasks: Task[]) {
       }
 
       if (!task.dueDate) {
-        return activeFilter === "nodate";
+        if (effectiveFilter === "nodate") return true;
+        if (effectiveFilter === "today") {
+          if (isHabit) return true;
+          if (isDaily) {
+            const todayDayName = ALL_WEEK_DAYS[today.getDay()];
+            return (
+              !task.daysOfWeek ||
+              task.daysOfWeek.length === 0 ||
+              task.daysOfWeek.includes(todayDayName)
+            );
+          }
+        }
+        return false;
       }
 
-      const [year, month, day] = task.dueDate.split("-").map(Number);
+      const datePart = task.dueDate.split("T")[0];
+      const [year, month, day] = datePart.split("-").map(Number);
       const taskDate = new Date(year, (month || 1) - 1, day || 1);
       taskDate.setHours(0, 0, 0, 0);
 
@@ -75,12 +114,24 @@ export function useDashboardTaskFilters(tasks: Task[]) {
       const isWithin7Days =
         taskDate.getTime() >= today.getTime() &&
         taskDate.getTime() <= next7Days.getTime();
+      const isThisMonth =
+        taskDate.getFullYear() === today.getFullYear() &&
+        taskDate.getMonth() === today.getMonth();
 
-      switch (activeFilter) {
+      switch (effectiveFilter) {
         case "today":
-          return isToday;
+          return (
+            isToday ||
+            isHabit ||
+            (isDaily &&
+              (!task.daysOfWeek ||
+                task.daysOfWeek.length === 0 ||
+                task.daysOfWeek.includes(ALL_WEEK_DAYS[today.getDay()])))
+          );
         case "next7days":
-          return isWithin7Days;
+          return isWithin7Days || isDaily || isHabit;
+        case "this_month":
+          return isThisMonth || isDaily || isHabit;
         case "overdue":
           return isPast && !task.completed;
         case "nodate":
@@ -98,7 +149,11 @@ export function useDashboardTaskFilters(tasks: Task[]) {
     }
 
     if (advancedFilters.columnId !== "all") {
-      result = result.filter((t) => t.columnId === advancedFilters.columnId);
+      result = result.filter(
+        (t) =>
+          t.columnId === advancedFilters.columnId ||
+          t.category === advancedFilters.columnId,
+      );
     }
 
     if (advancedFilters.difficulty !== "all") {
@@ -151,10 +206,10 @@ export function useDashboardTaskFilters(tasks: Task[]) {
     }
 
     return result;
-  }, [tasks, selectedDate, activeFilter, advancedFilters]);
+  }, [tasks, selectedDate, effectiveFilter, advancedFilters]);
 
   return {
-    activeFilter,
+    activeFilter: effectiveFilter,
     setActiveFilter,
     selectedDate,
     handleClearDate,

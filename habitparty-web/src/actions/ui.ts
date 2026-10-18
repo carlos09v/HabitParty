@@ -12,6 +12,16 @@ export async function setCompactModeCookie(compact: boolean) {
   revalidatePath("/", "layout");
 }
 
+export async function setThemeCookie(theme: "light" | "dark") {
+  const cookieStore = await cookies();
+  cookieStore.set("theme", theme, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365, // 1 year
+    sameSite: "lax",
+  });
+  revalidatePath("/", "layout");
+}
+
 export async function setFirstStepPreferencesAction(
   usageMode: string,
   workspaceId?: string,

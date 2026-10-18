@@ -1,11 +1,13 @@
 import {
-  calculateTaskReward,
+  ALL_WEEK_DAYS,
+  MAX_TAG_LENGTH,
   normalizeTaskDifficulty,
   normalizeTaskType,
 } from "@/constants/task";
 import type {
   BoardColumn,
   BoardColumnResponseDTO,
+  CreateTaskDTO,
   DashboardTaskDTO,
   HabitImportance,
   HabitImportanceOption,
@@ -13,9 +15,11 @@ import type {
   TaskPriorityOption,
   TaskResponseDTO,
   TaskType,
+  TaskTypeOption,
   UpdateTaskDTO,
 } from "@/types/task";
 import type { WorkspaceResponseDTO } from "@/types/workspace";
+import { calculateTaskReward } from "./economy";
 
 const IMPORTANCE_MAP: Record<string, HabitImportance> = {
   LOW: "low",
@@ -62,6 +66,10 @@ export function mapTaskResponseToTask(
     currentStreak: taskDto.currentStreak,
     repeatType: taskDto.repeatType,
     resetCounter: taskDto.resetCounter,
+    isHardcoreModeEnabled: taskDto.isHardcoreModeEnabled,
+    dueDate: taskDto.dueDate,
+    isPenaltyApplied: (taskDto as { isPenaltyApplied?: boolean })
+      .isPenaltyApplied,
   });
 
   return {
@@ -83,9 +91,12 @@ export function mapTaskResponseToTask(
         : (taskDto.currentStreak ?? 0),
     positiveCount:
       (taskDto.taskType?.toLowerCase() as TaskType) === "habit"
-        ? (taskDto.currentStreak ?? 0)
+        ? (taskDto.positiveCount ?? 0)
         : 0,
-    negativeCount: 0,
+    negativeCount:
+      (taskDto.taskType?.toLowerCase() as TaskType) === "habit"
+        ? (taskDto.negativeCount ?? 0)
+        : 0,
     dueDate: taskDto.dueDate,
     habitType: taskDto.habitType,
     resetCounter: taskDto.resetCounter,
@@ -94,9 +105,16 @@ export function mapTaskResponseToTask(
     repeatType: taskDto.repeatType,
     repeatEvery: taskDto.repeatEvery,
     daysOfWeek: taskDto.daysOfWeek,
+    monthlyOption: taskDto.monthlyOption,
     priority: taskDto.priority,
     reminderType: taskDto.reminderType,
+    sendEmailReminder: (taskDto as { sendEmailReminder?: boolean })
+      .sendEmailReminder,
+    emailReminderSent: (taskDto as { emailReminderSent?: boolean })
+      .emailReminderSent,
     isHardcoreModeEnabled: taskDto.isHardcoreModeEnabled,
+    isPenaltyApplied: (taskDto as { isPenaltyApplied?: boolean })
+      .isPenaltyApplied,
     columnId: columnId,
     order: taskDto.orderIndex || 0,
     checklist: taskDto.checklist || [],
@@ -123,16 +141,28 @@ export function mapWorkspaceToBoardColumns(
 /**
  * Mapeia o DTO de tarefas do Dashboard para o modelo Task da UI.
  */
-export function mapDashboardTaskToTask(dto: DashboardTaskDTO): Task {
+export function mapDashboardTaskToTask(
+  dto: DashboardTaskDTO,
+  columnNameToId?: Map<string, string>,
+): Task {
   const taskType = (dto.taskType?.toLowerCase() as TaskType) || "todo";
   const reward = calculateTaskReward({
     taskType: dto.taskType,
+    isHardcoreModeEnabled: dto.isHardcoreModeEnabled,
+    dueDate: dto.dueDate,
+    isPenaltyApplied: (dto as { isPenaltyApplied?: boolean })?.isPenaltyApplied,
   });
+
+  const columnId =
+    dto.columnName && columnNameToId
+      ? columnNameToId.get(dto.columnName)
+      : undefined;
 
   return {
     id: dto.id || "",
     title: dto.name || "",
     type: taskType,
+    columnId,
     category: dto.columnName || undefined,
     tags: dto.columnName ? [dto.columnName] : [],
     dueDate: dto.dueDate,
@@ -179,26 +209,268 @@ export function buildUpdateTaskPayload(
     }),
     ...(isDaily && {
       startDate: merged.startDate || undefined,
-      repeatType:
-        merged.daysOfWeek && merged.daysOfWeek.length < 7
-          ? "WEEKLY"
-          : merged.repeatType || "DAILY",
+      repeatType: merged.repeatType || "DAILY",
       repeatEvery: merged.repeatEvery || 1,
-      daysOfWeek: merged.daysOfWeek || [
-        "SUNDAY",
-        "MONDAY",
-        "TUESDAY",
-        "WEDNESDAY",
-        "THURSDAY",
-        "FRIDAY",
-        "SATURDAY",
-      ],
+      ...(merged.repeatType === "WEEKLY" && {
+        daysOfWeek:
+          merged.daysOfWeek && merged.daysOfWeek.length > 0
+            ? merged.daysOfWeek
+            : [...ALL_WEEK_DAYS],
+      }),
+      ...(merged.repeatType === "MONTHLY" && {
+        monthlyOption: merged.monthlyOption || "DAY_OF_THE_MONTH",
+      }),
     }),
     ...(!isHabit &&
       !isDaily && {
         reminderType: merged.reminderType || "NONE",
+        sendEmailReminder: Boolean(merged.sendEmailReminder),
       }),
   };
 
   return payload;
+}
+
+/**
+ * Constrói o CreateTaskDTO a partir de uma entidade Task existente (ex: para duplicação ou conversão).
+ */
+export function buildCreateTaskPayloadFromTask(task: Task): CreateTaskDTO {
+  const resolvedType = normalizeTaskType(task);
+  const isHabit = resolvedType === "habit";
+  const isDaily = resolvedType === "daily";
+  const isTodo = resolvedType === "todo";
+
+  return {
+    name: task.title,
+    description: task.description?.trim() || undefined,
+    taskType: (resolvedType.toUpperCase() as TaskTypeOption) || "TODO",
+    isHardcoreModeEnabled: Boolean(task.isHardcoreModeEnabled),
+    tags: task.tags && task.tags.length > 0 ? task.tags : undefined,
+    difficulty: normalizeTaskDifficulty(task.difficulty),
+    ...(isHabit && {
+      habitType: task.habitType || "POSITIVE",
+      resetCounter: task.resetCounter || "DAILY",
+      importanceType: task.importanceType || "NORMAL",
+    }),
+    ...(isDaily && {
+      startDate: task.startDate || undefined,
+      repeatType: task.repeatType || "DAILY",
+      repeatEvery: task.repeatEvery || 1,
+      ...(task.repeatType === "WEEKLY" && {
+        daysOfWeek:
+          task.daysOfWeek && task.daysOfWeek.length > 0
+            ? task.daysOfWeek
+            : [...ALL_WEEK_DAYS],
+      }),
+      ...(task.repeatType === "MONTHLY" && {
+        monthlyOption: task.monthlyOption || "DAY_OF_THE_MONTH",
+      }),
+    }),
+    ...(isTodo && {
+      priority: (task.priority as TaskPriorityOption) || "MEDIUM",
+      dueDate: task.dueDate || undefined,
+      reminderType: task.reminderType || "NONE",
+      sendEmailReminder: Boolean(task.sendEmailReminder),
+    }),
+  };
+}
+
+/**
+ * Mescla colunas completas do kanban com o resumo de todas as colunas do workspace,
+ * garantindo que mesmo colunas que o backend marcou temporariamente como ocultas (isVisible = false)
+ * sejam preservadas no quadro e possam ser exibidas pelo usuário.
+ */
+export function mergeWorkspaceColumns(
+  kanbanColumns: BoardColumn[],
+  allColumnsSummary?:
+    | {
+        id?: string;
+        name?: string;
+        icon?: string;
+        orderIndex?: number;
+      }[]
+    | null,
+): BoardColumn[] {
+  if (!allColumnsSummary || allColumnsSummary.length === 0) {
+    return kanbanColumns;
+  }
+
+  const existingIds = new Set(kanbanColumns.map((col) => col.id));
+  const merged: BoardColumn[] = [...kanbanColumns];
+
+  for (const summary of allColumnsSummary) {
+    if (summary.id && !existingIds.has(summary.id)) {
+      merged.push({
+        id: summary.id,
+        title: summary.name || "Lista",
+        icon: summary.icon || "sun",
+        order: summary.orderIndex ?? merged.length,
+        tasks: [],
+      });
+      existingIds.add(summary.id);
+    }
+  }
+
+  return merged.sort((a, b) => a.order - b.order);
+}
+
+/**
+ * Calcula o próximo estado de contadores e ofensiva de um hábito ao receber um incremento ou decremento.
+ */
+export function computeOptimisticHabitDelta(
+  task: Task,
+  delta: number,
+): Pick<Task, "positiveCount" | "negativeCount" | "streak" | "completed"> {
+  const currentPositive = task.positiveCount ?? 0;
+  const nextPositive = delta > 0 ? currentPositive + delta : currentPositive;
+  const nextNegative =
+    delta < 0
+      ? (task.negativeCount ?? 0) + Math.abs(delta)
+      : (task.negativeCount ?? 0);
+  // Ofensiva (streak) só sobe 1 vez no primeiro clique positivo do dia
+  const nextStreak =
+    delta > 0 && currentPositive === 0
+      ? (task.streak ?? 0) + 1
+      : (task.streak ?? 0);
+
+  return {
+    positiveCount: nextPositive,
+    negativeCount: nextNegative,
+    streak: nextStreak,
+    completed: true,
+  };
+}
+
+/**
+ * Realiza o parsing e sanitização de tags separadas por vírgula, limitando o tamanho
+ * individual e deduplicando sem distinção entre maiúsculas e minúsculas.
+ */
+export function parseTaskTags(tagsInput: string): string[] {
+  if (!tagsInput || !tagsInput.trim()) return [];
+
+  const rawTags = tagsInput
+    .split(",")
+    .map((t) => t.trim().slice(0, MAX_TAG_LENGTH))
+    .filter(Boolean);
+
+  return Array.from(new Map(rawTags.map((t) => [t.toLowerCase(), t])).values());
+}
+
+/**
+ * Constrói de forma unificada o payload de criação e a entidade otimista de Task
+ * para o Quick Create (Kanban inline e atalhos rápidos).
+ */
+export function buildQuickCreateTaskPayload(
+  title: string,
+  targetColumnId: string,
+  taskType: TaskTypeOption = "TODO",
+  extraPayload?: Partial<CreateTaskDTO>,
+  tempId = `temp-${Date.now()}`,
+): { payload: CreateTaskDTO; optimisticTask: Task } {
+  const effectiveType = (taskType.toUpperCase() as TaskTypeOption) || "TODO";
+
+  if (effectiveType === "HABIT") {
+    const habitType = extraPayload?.habitType || "POSITIVE";
+    const resetCounter = extraPayload?.resetCounter || "DAILY";
+    const importanceType = extraPayload?.importanceType || "NORMAL";
+
+    return {
+      payload: {
+        name: title,
+        taskType: "HABIT",
+        habitType,
+        resetCounter,
+        importanceType,
+        priority: "MEDIUM",
+        difficulty: "EASY",
+        isHardcoreModeEnabled: false,
+      },
+      optimisticTask: {
+        id: tempId,
+        title,
+        columnId: targetColumnId,
+        completed: false,
+        streak: 0,
+        positiveCount: 0,
+        negativeCount: 0,
+        type: "HABIT",
+        habitType,
+        resetCounter,
+        importanceType,
+        priority: "MEDIUM",
+        difficulty: "EASY",
+        isHardcoreModeEnabled: false,
+        order: 0,
+      },
+    };
+  }
+
+  if (effectiveType === "DAILY") {
+    const startDate =
+      extraPayload?.startDate || new Date().toISOString().split("T")[0];
+    const repeatType = extraPayload?.repeatType || "DAILY";
+    const repeatEvery = extraPayload?.repeatEvery || 1;
+    const daysOfWeek = extraPayload?.daysOfWeek || ALL_WEEK_DAYS;
+    const monthlyOption = extraPayload?.monthlyOption || "DAY_OF_THE_MONTH";
+
+    return {
+      payload: {
+        name: title,
+        taskType: "DAILY",
+        startDate,
+        repeatType,
+        repeatEvery,
+        ...(repeatType === "WEEKLY" && { daysOfWeek }),
+        ...(repeatType === "MONTHLY" && { monthlyOption }),
+        priority: "MEDIUM",
+        difficulty: "MEDIUM",
+        isHardcoreModeEnabled: false,
+      },
+      optimisticTask: {
+        id: tempId,
+        title,
+        columnId: targetColumnId,
+        completed: false,
+        streak: 0,
+        positiveCount: 0,
+        negativeCount: 0,
+        type: "DAILY",
+        startDate,
+        repeatType,
+        repeatEvery,
+        daysOfWeek: repeatType === "WEEKLY" ? daysOfWeek : undefined,
+        monthlyOption: repeatType === "MONTHLY" ? monthlyOption : undefined,
+        priority: "MEDIUM",
+        difficulty: "MEDIUM",
+        isHardcoreModeEnabled: false,
+        order: 0,
+      },
+    };
+  }
+
+  return {
+    payload: {
+      name: title,
+      taskType: "TODO",
+      priority: "MEDIUM",
+      difficulty: "MEDIUM",
+      isHardcoreModeEnabled: false,
+      reminderType: "NONE",
+    },
+    optimisticTask: {
+      id: tempId,
+      title,
+      columnId: targetColumnId,
+      completed: false,
+      streak: 0,
+      positiveCount: 0,
+      negativeCount: 0,
+      type: "TODO",
+      priority: "MEDIUM",
+      difficulty: "MEDIUM",
+      isHardcoreModeEnabled: false,
+      reminderType: "NONE",
+      order: 0,
+    },
+  };
 }

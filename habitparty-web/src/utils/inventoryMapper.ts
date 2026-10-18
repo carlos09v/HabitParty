@@ -18,12 +18,29 @@ export function mapAndGroupInventory(
   const grouped = new Map<string, InventoryItem>();
 
   for (const dto of items) {
-    if (dto.status !== "AVAILABLE") continue;
+    if (dto.status !== "AVAILABLE" && dto.status !== "IN_FOCUS") continue;
 
     const rewardId = dto.rewardId || dto.inventoryItemId || "unknown";
+    const statusKey = dto.status || "AVAILABLE";
 
-    if (grouped.has(rewardId)) {
-      const existing = grouped.get(rewardId);
+    const isCoupon =
+      dto.rewardType === "TIME_BASED" ||
+      (dto.remainingSeconds !== undefined && dto.remainingSeconds !== null);
+
+    // Cupons com tempos restantes diferentes NÃO devem ser agrupados juntos
+    const remKey =
+      isCoupon &&
+      dto.remainingSeconds !== undefined &&
+      dto.remainingSeconds !== null
+        ? `_rem_${dto.remainingSeconds}`
+        : isCoupon
+          ? "_rem_full"
+          : "";
+
+    const groupKey = `${rewardId}_${statusKey}${remKey}`;
+
+    if (grouped.has(groupKey)) {
+      const existing = grouped.get(groupKey);
       if (existing) {
         existing.quantity += 1;
       }
@@ -38,13 +55,16 @@ export function mapAndGroupInventory(
         dto.rewardIcon ||
         (rawType === "MISTERY_BOX" ? "mystery_box" : "gamepad");
 
-      grouped.set(rewardId, {
+      grouped.set(groupKey, {
         id: dto.inventoryItemId || rewardId,
+        inventoryItemId: dto.inventoryItemId,
         name: dto.rewardName || "",
         description: "",
         itemType: dto.rewardType || "Consumable",
+        status: dto.status,
         quantity: 1,
         acquiredAt: new Date().toISOString(),
+        remainingSeconds: dto.remainingSeconds,
         reward: {
           id: rewardId,
           title: dto.rewardName || "",
@@ -52,7 +72,10 @@ export function mapAndGroupInventory(
           type: mappedType,
           category: "Entretenimento",
           price: dto.rewardPrice || 0,
-          baseDurationMinutes: dto.remainingMinutes,
+          baseDurationMinutes:
+            dto.remainingSeconds !== undefined && dto.remainingSeconds !== null
+              ? Math.max(1, Math.ceil(dto.remainingSeconds / 60))
+              : undefined,
           iconName,
           icon: iconName,
           packageLevel,

@@ -8,8 +8,8 @@ import {
   updateBoardColumnAction,
 } from "@/actions/boardColumnActions";
 import { BaseModal } from "@/components/ui/BaseModal";
-import { IconPicker } from "@/components/ui/IconPicker";
-import { COLUMN_ICONS } from "@/constants/routine";
+import { IconPickerPopover } from "@/components/ui/IconPickerPopover";
+import { COLUMN_ICONS, inferColumnIcon } from "@/constants/routine";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import type { BoardColumn } from "@/types/task";
 
@@ -29,6 +29,7 @@ export function CreateBoardColumnModal({
   const isEditing = Boolean(columnToEdit);
   const [name, setName] = useState("");
   const [selectedIcon, setSelectedIcon] = useState("sun");
+  const [hasManuallyChangedIcon, setHasManuallyChangedIcon] = useState(false);
   const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -41,15 +42,30 @@ export function CreateBoardColumnModal({
       if (columnToEdit) {
         setName(columnToEdit.title || "");
         setSelectedIcon(columnToEdit.icon || "sun");
+        setHasManuallyChangedIcon(true);
       } else {
         setName("");
         setSelectedIcon("sun");
+        setHasManuallyChangedIcon(false);
       }
       setTimeout(() => {
         inputRef.current?.focus();
       }, 50);
     }
   }, [isOpen, columnToEdit]);
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = e.target.value;
+    setName(newName);
+
+    // Sugere automaticamente o ícone com base nas palavras digitadas (ex: estudos -> book, treino -> dumbbell)
+    if (!hasManuallyChangedIcon && !isEditing) {
+      const suggestedIcon = inferColumnIcon(newName);
+      if (suggestedIcon) {
+        setSelectedIcon(suggestedIcon);
+      }
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,7 +144,7 @@ export function CreateBoardColumnModal({
       preventClose={isPending}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        {/* Nome da Coluna */}
+        {/* Nome da Coluna e Ícone Integrados */}
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="columnName"
@@ -136,31 +152,34 @@ export function CreateBoardColumnModal({
           >
             Nome da Lista <span className="text-gold">*</span>
           </label>
-          <input
-            ref={inputRef}
-            id="columnName"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Ex: Rotina Matinal, Estudos, Trabalho..."
-            className="w-full bg-background/50 border border-primary/40 rounded-lg px-3 py-2.5 text-neutral-50 placeholder:text-neutral-500 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s"
-            required
-            maxLength={35}
-            disabled={isPending}
-          />
-        </div>
-
-        {/* Escolha do Ícone */}
-        <div className="flex flex-col gap-2">
-          <span className="text-body-s text-neutral-300 font-medium">
-            Ícone da Coluna
+          <div className="flex items-center gap-2">
+            <IconPickerPopover
+              options={COLUMN_ICONS}
+              value={selectedIcon}
+              onChange={(iconId) => {
+                setSelectedIcon(iconId);
+                setHasManuallyChangedIcon(true);
+              }}
+              disabled={isPending}
+              title="Ícone da Lista"
+            />
+            <input
+              ref={inputRef}
+              id="columnName"
+              type="text"
+              value={name}
+              onChange={handleNameChange}
+              placeholder="Ex: Rotina Matinal, Estudos, Trabalho..."
+              className="w-full bg-background/50 border border-primary/40 rounded-lg px-3 py-2 text-neutral-50 placeholder:text-neutral-500 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s h-[42px]"
+              required
+              maxLength={35}
+              disabled={isPending}
+            />
+          </div>
+          <span className="text-label-g text-neutral-400">
+            Clique no ícone para personalizar ou digite o nome para sugestão
+            automática.
           </span>
-          <IconPicker
-            options={COLUMN_ICONS}
-            value={selectedIcon}
-            onChange={setSelectedIcon}
-            disabled={isPending}
-          />
         </div>
 
         {/* Rodapé com botões de ação */}

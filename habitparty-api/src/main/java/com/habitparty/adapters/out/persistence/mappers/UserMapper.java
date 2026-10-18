@@ -14,6 +14,11 @@ public class UserMapper {
     entity.setId(domain.getId());
     entity.setRole(domain.getRole());
     entity.setPremium(domain.isPremium());
+    entity.setFounder(domain.isFounder());
+    entity.setStripeCustomerId(domain.getStripeCustomerId());
+    entity.setStripeSubscriptionId(domain.getStripeSubscriptionId());
+    entity.setSubscriptionStatus(domain.getSubscriptionStatus());
+    entity.setSubscriptionEndsAt(domain.getSubscriptionEndsAt());
     entity.setFullName(domain.getFullName());
     entity.setEmail(domain.getEmail());
     entity.setUsername(domain.getUsername());
@@ -33,11 +38,15 @@ public class UserMapper {
 
   // 2. Traduz do Banco para o Domínio (Para buscar e devolver ao Caso de Uso)
   public User toDomain(UserJpaEntity entity) {
-    // Obs: A ordem importa, precisa ser igual ao definido no Dominio.
     return new User(
         entity.getId(),
         entity.getRole(),
         entity.isPremium(),
+        entity.isFounder(),
+        entity.getStripeCustomerId(),
+        entity.getStripeSubscriptionId(),
+        entity.getSubscriptionStatus(),
+        entity.getSubscriptionEndsAt(),
         entity.getFullName(),
         entity.getUsername(),
         entity.getEmail(),

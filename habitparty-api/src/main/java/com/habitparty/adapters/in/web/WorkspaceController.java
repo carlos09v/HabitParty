@@ -35,7 +35,8 @@ public class WorkspaceController implements WorkspaceApi {
       CreateWorkspaceDTO requestDTO,
       AuthenticatedUser usuarioLogado) {
     UUID userId = usuarioLogado.id();
-    Workspace createdWorkspace = createWorkspaceUseCase.execute(requestDTO, userId);
+    var command = new com.habitparty.application.usecases.workspace.CreateWorkspaceCommand(requestDTO.name());
+    Workspace createdWorkspace = createWorkspaceUseCase.execute(command, userId);
 
     return ResponseEntity.status(HttpStatus.CREATED).body(WorkspaceResponseDTO.fromDomain(createdWorkspace));
   }
@@ -69,7 +70,8 @@ public class WorkspaceController implements WorkspaceApi {
       UpdateWorkspaceDTO dto,
       AuthenticatedUser usuarioLogado) {
     UUID userId = usuarioLogado.id();
-    Workspace updatedWorkspace = updateWorkspaceUseCase.execute(workspaceId, dto, userId);
+    var command = new com.habitparty.application.usecases.workspace.UpdateWorkspaceCommand(dto.name());
+    Workspace updatedWorkspace = updateWorkspaceUseCase.execute(workspaceId, command, userId);
 
     return ResponseEntity.ok(WorkspaceResponseDTO.fromDomain(updatedWorkspace));
   }
@@ -79,8 +81,7 @@ public class WorkspaceController implements WorkspaceApi {
       UUID workspaceId,
       AuthenticatedUser usuarioLogado) {
     UUID userId = usuarioLogado.id();
-    WorkspaceResponseDTO kanbanBoard = getFullKanbanBoardUseCase.execute(workspaceId, userId);
-
-    return ResponseEntity.ok(kanbanBoard);
+    var kanbanBoard = getFullKanbanBoardUseCase.execute(workspaceId, userId);
+    return ResponseEntity.ok(WorkspaceResponseDTO.fromKanbanBoard(kanbanBoard));
   }
 }

@@ -4,7 +4,6 @@ import { HelpFaqSection } from "@/components/help/HelpFaqSection";
 import { HelpProductivityCycle } from "@/components/help/HelpProductivityCycle";
 import { HelpReferenceTables } from "@/components/help/HelpReferenceTables";
 import { PageWrapper } from "@/components/layout/PageWrapper";
-import { WelcomeCard } from "@/components/ui/WelcomeCard";
 import { getCompactMode } from "@/utils/cookies";
 
 export const metadata: Metadata = {
@@ -34,20 +33,6 @@ export default async function HelpPage() {
             </p>
           </div>
         </header>
-
-        {/* WELCOME CARD DO GUIA */}
-        <WelcomeCard
-          compact={isCompact}
-          title="Manual do Aventureiro"
-          subtitle="Entenda as engrenagens de produtividade e gamificação do sistema."
-          bullets={[
-            "O esforço real em tarefas converte-se em moedas de ouro (🪙) e XP vitalício.",
-            "Hábitos sofrem decaimento de recompensa conforme o streak cresce para estimular novos desafios.",
-            "Recompensas compradas na loja ficam seguras na mochila até você resgatá-las sem culpa no mundo real.",
-          ]}
-          imageSrc="/assets/undraw/undraw_questions_re_1fy7 1.svg"
-          storageKey="help_manual"
-        />
 
         {/* CICLO DE PRODUTIVIDADE (Server Component) */}
         <HelpProductivityCycle />

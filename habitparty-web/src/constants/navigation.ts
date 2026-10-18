@@ -1,11 +1,11 @@
 import {
   Backpack,
+  Gift,
   History,
   LayoutDashboard,
   LifeBuoy,
   ListTodo,
   Settings,
-  Store,
   Timer,
 } from "lucide-react";
 import type { NavItem, NavSection } from "@/types/navigation";
@@ -13,25 +13,27 @@ import type { NavItem, NavSection } from "@/types/navigation";
 export type { NavItem, NavSection };
 
 export const NAV_SECTIONS: NavSection[] = [
-  { items: [{ label: "Painel", href: "/dashboard", icon: LayoutDashboard }] },
+  {
+    items: [{ label: "Painel", href: "/dashboard", icon: LayoutDashboard }],
+  },
   {
     title: "Atividade",
     items: [
-      { label: "Listas", href: "/tasks", icon: ListTodo },
+      { label: "Tarefas", href: "/tasks", icon: ListTodo },
       { label: "Foco", href: "/focus", icon: Timer },
     ],
   },
   {
     title: "Recompensa",
     items: [
-      { label: "Loja", href: "/rewards", icon: Store },
+      { label: "Recompensas", href: "/rewards", icon: Gift },
       { label: "Mochila", href: "/inventory", icon: Backpack },
     ],
   },
 ];
 
 export const NAV_FOOTER: NavItem[] = [
-  { label: "Ajuda", href: "/help", icon: LifeBuoy },
   { label: "Histórico", href: "/history", icon: History },
-  { label: "Configuração", href: "/settings", icon: Settings },
+  { label: "Configurações", href: "/settings", icon: Settings },
+  { label: "Ajuda", href: "/help", icon: LifeBuoy },
 ];

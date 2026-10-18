@@ -58,10 +58,10 @@ export function CreateWorkspaceModal({
             type="text"
             value={workspaceName}
             onChange={(e) => setWorkspaceName(e.target.value)}
-            placeholder="Ex: Trabalho, Casa..."
+            placeholder="Ex: Trabalho, Estudos..."
             className="w-full bg-background/50 border border-primary/40 rounded-lg px-3 py-2 text-neutral-50 placeholder:text-neutral-500 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors"
             required
-            maxLength={30}
+            maxLength={12}
           />
         </div>
 

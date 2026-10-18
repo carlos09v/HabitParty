@@ -17,49 +17,6 @@ export type {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 /**
- * Consulta o histórico paginado de transações do usuário logado
- */
-export async function getTransactionsAction(params?: {
-  tab?: string;
-  page?: number;
-  size?: number;
-}): Promise<ActionState<PageTransactionHistoryResponseDTO>> {
-  try {
-    const { data, error } = await serverApi.GET("/transactions", {
-      params: {
-        query: {
-          tab: params?.tab || undefined,
-          page: params?.page ?? 0,
-          size: params?.size ?? 8,
-        },
-      },
-      next: { tags: ["transactions"] },
-    });
-
-    if (error || !data) {
-      return {
-        success: false,
-        error: getErrorMessage(
-          error,
-          "Não foi possível carregar o histórico de transações.",
-        ),
-      };
-    }
-
-    return {
-      success: true,
-      data: data as PageTransactionHistoryResponseDTO,
-    };
-  } catch (err) {
-    console.error("[HistoryAction:Get]", err);
-    return {
-      success: false,
-      error: "Erro de comunicação ao buscar extrato.",
-    };
-  }
-}
-
-/**
  * Exporta o extrato de transações em formato CSV
  */
 export async function exportTransactionsCsvAction(): Promise<

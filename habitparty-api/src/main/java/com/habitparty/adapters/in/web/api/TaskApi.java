@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import com.habitparty.adapters.in.web.dtos.request.CreateTaskDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateTaskDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateTaskOrderDTO;
-import com.habitparty.adapters.in.web.dtos.response.DashboardTaskDTO;
+import com.habitparty.application.ports.projections.DashboardTaskDTO;
 import com.habitparty.adapters.in.web.dtos.response.TaskResponseDTO;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 import com.habitparty.core.domain.enums.task.TaskStatus;
@@ -72,4 +72,11 @@ public interface TaskApi {
         @PathVariable UUID taskId,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser userIdLogado,
         @RequestParam TaskStatus newStatus);
+
+    @Operation(summary = "Registrar Pontuação de Hábito", description = "Registra a repetição positiva (+1) ou negativa (-1) de um hábito, calculando recompensas ou penalidades.")
+    @PostMapping("/{taskId}/score")
+    ResponseEntity<TaskResponseDTO> recordHabitScore(
+        @PathVariable UUID taskId,
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser userIdLogado,
+        @RequestParam(defaultValue = "1") int delta);
 }

@@ -6,7 +6,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import com.habitparty.adapters.in.web.dtos.request.ForgotPasswordRequestDTO;
+import com.habitparty.adapters.in.web.dtos.request.GoogleSignInRequestDTO;
 import com.habitparty.adapters.in.web.dtos.request.RefreshTokenRequestDTO;
+import com.habitparty.adapters.in.web.dtos.request.ResetPasswordRequestDTO;
 import com.habitparty.adapters.in.web.dtos.request.SignInRequestDTO;
 import com.habitparty.adapters.in.web.dtos.response.SignInResponseDTO;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
@@ -34,4 +37,16 @@ public interface AuthApi {
         @RequestBody @Valid RefreshTokenRequestDTO dto,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
+
+    @Operation(summary = "Solicitar Recuperação de Senha", description = "Envia um e-mail com link e token temporário para redefinir a senha.")
+    @PostMapping("/forgot-password")
+    ResponseEntity<Void> forgotPassword(@RequestBody @Valid ForgotPasswordRequestDTO dto);
+
+    @Operation(summary = "Redefinir Senha", description = "Redefine a senha do usuário utilizando um token de recuperação válido.")
+    @PostMapping("/reset-password")
+    ResponseEntity<Void> resetPassword(@RequestBody @Valid ResetPasswordRequestDTO dto);
+
+    @Operation(summary = "Login com Google", description = "Autentica ou cadastra o usuário via Google OAuth 2.0 através do código retornado pelo consentimento.")
+    @PostMapping("/google")
+    ResponseEntity<SignInResponseDTO> googleSignIn(@RequestBody @Valid GoogleSignInRequestDTO dto);
 }

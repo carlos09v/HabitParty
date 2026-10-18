@@ -1,16 +1,48 @@
-import { MonitorSmartphone, UserCircle } from "lucide-react";
+import { Eye, MonitorSmartphone, Palette, Sparkles } from "lucide-react";
 import { serverApi } from "@/api/server";
 import { PageWrapper } from "@/components/layout/PageWrapper";
+import { AvatarFrameSettings } from "@/components/settings/AvatarFrameSettings";
 import { ChangePasswordCard } from "@/components/settings/ChangePasswordCard";
 import { CompactModeSettings } from "@/components/settings/CompactModeSettings";
 import { DangerZoneCard } from "@/components/settings/DangerZoneCard";
 import { ProfileForm } from "@/components/settings/ProfileForm";
 import { ProfileHeaderCard } from "@/components/settings/ProfileHeaderCard";
-import { cn } from "@/utils";
+import { SettingsCard } from "@/components/settings/SettingsCard";
+import { SettingsNavTabs } from "@/components/settings/SettingsNavTabs";
+import { SoundNotificationSettings } from "@/components/settings/SoundNotificationSettings";
+import { SubscriptionSettingsCard } from "@/components/settings/SubscriptionSettingsCard";
+import { ThemeSettings } from "@/components/settings/ThemeSettings";
+import { WelcomeCardsSettings } from "@/components/settings/WelcomeCardsSettings";
+import type { SettingsTabId } from "@/types/settings";
 import { getCompactMode } from "@/utils/cookies";
 
-export default async function SettingsPage() {
+export const metadata = {
+  title: "Configurações | HabitParty",
+  description:
+    "Gerencie seus dados de perfil, preferências da conta e interface no HabitParty.",
+};
+
+type SettingsPageProps = {
+  searchParams: Promise<{ tab?: string }>;
+};
+
+export default async function SettingsPage({
+  searchParams,
+}: SettingsPageProps) {
   const isCompact = await getCompactMode();
+  const resolvedParams = await searchParams;
+
+  const validTabs: SettingsTabId[] = [
+    "profile",
+    "appearance",
+    "audio",
+    "security",
+  ];
+  const activeTab: SettingsTabId = validTabs.includes(
+    resolvedParams.tab as SettingsTabId,
+  )
+    ? (resolvedParams.tab as SettingsTabId)
+    : "profile";
 
   const { data: user } = await serverApi.GET("/users/me", {
     next: { tags: ["user"] },
@@ -18,78 +50,102 @@ export default async function SettingsPage() {
 
   return (
     <PageWrapper isCompact={isCompact}>
-      <div className="flex flex-col gap-8 w-full max-w-4xl mx-auto pb-16">
+      <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto pb-16">
         {/* HEADER */}
-        <header className="flex items-end justify-between border-b border-primary/20 pb-4">
-          <div>
-            <h1 className="text-headline-s font-bold text-neutral-50 drop-shadow-md">
-              Configurações
-            </h1>
-            <p className="text-body-m text-neutral-300 mt-1">
-              Gerencie seus dados de perfil, preferências da conta e interface
-              no HabitParty.
-            </p>
-          </div>
+        <header className="flex flex-col gap-1 border-b border-primary/20 pb-4">
+          <h1 className="text-headline-s font-bold text-neutral-50 drop-shadow-md">
+            Configurações
+          </h1>
+          <p className="text-body-m text-neutral-300">
+            Gerencie seus dados de perfil, preferências da conta e interface no
+            HabitParty.
+          </p>
         </header>
 
-        {/* ==================================================== */}
-        {/* SEÇÃO 1: PERFIL DO USUÁRIO (NO TOPO)                  */}
-        {/* ==================================================== */}
-        <section className="flex flex-col gap-5">
-          <div className="flex items-center gap-2">
-            <UserCircle className="text-gold" size={24} />
-            <h2 className="text-headline-m font-bold text-neutral-100">
-              Perfil do Usuário
-            </h2>
-          </div>
+        {/* NAVEGAÇÃO DE ABAS */}
+        <SettingsNavTabs activeTab={activeTab} isCompact={isCompact} />
 
-          {/* Cartão de Identidade & Foto */}
-          <ProfileHeaderCard initialUser={user || null} isCompact={isCompact} />
+        {/* CONTEÚDO DA ABA ATIVA */}
+        <div className="flex flex-col gap-6 mt-1">
+          {/* ABA 1: PERFIL */}
+          {activeTab === "profile" && (
+            <>
+              {/* Cartão de Identidade & Foto */}
+              <ProfileHeaderCard
+                initialUser={user || null}
+                isCompact={isCompact}
+              />
 
-          {/* Formulário de Dados Pessoais */}
-          <ProfileForm initialUser={user || null} isCompact={isCompact} />
+              {/* Status de Plano & Assinatura (Gerenciar/Cancelar Cartão ou Evoluir) */}
+              <SubscriptionSettingsCard isCompact={isCompact} />
 
-          {/* Formulário de Alteração de Senha */}
-          <ChangePasswordCard isCompact={isCompact} />
-        </section>
+              {/* Molduras Animadas de Avatar */}
+              <SettingsCard
+                title="Moldura do Avatar"
+                description="Personalize o anel de energia e luz cósmica ao redor da sua foto de perfil."
+                icon={<Sparkles size={18} className="text-gold" />}
+                isCompact={isCompact}
+              >
+                <AvatarFrameSettings isCompact={isCompact} />
+              </SettingsCard>
 
-        {/* ==================================================== */}
-        {/* SEÇÃO 2: USABILIDADE & INTERFACE                     */}
-        {/* ==================================================== */}
-        <section className="flex flex-col gap-4 pt-4 border-t border-primary/20">
-          <div className="flex items-center gap-2">
-            <MonitorSmartphone className="text-gold" size={24} />
-            <h2 className="text-headline-m font-bold text-neutral-100">
-              Usabilidade & Interface
-            </h2>
-          </div>
+              {/* Formulário de Dados Pessoais (com SettingsCard integrado) */}
+              <ProfileForm initialUser={user || null} isCompact={isCompact} />
+            </>
+          )}
 
-          <div
-            className={cn(
-              "bg-surface/30 border border-primary/20 rounded-2xl flex flex-col gap-5 backdrop-blur-md",
-              isCompact ? "p-4 sm:p-5" : "p-6",
-            )}
-          >
-            <div className="flex flex-col gap-1.5">
-              <h3 className="text-body-l font-bold text-neutral-50">
-                Densidade da Interface
-              </h3>
-              <p className="text-body-s text-neutral-400">
-                Personalize o espaçamento e o tamanho visual dos cartões, listas
-                e calendários.
-              </p>
-            </div>
+          {/* ABA 2: APARÊNCIA */}
+          {activeTab === "appearance" && (
+            <>
+              {/* TEMA DA INTERFACE */}
+              <SettingsCard
+                title="Aparência & Tema"
+                description="Alterne entre o tema escuro cósmico tradicional e o novo tema claro iluminado."
+                icon={<Palette size={18} className="text-gold" />}
+                isCompact={isCompact}
+                className="hidden"
+              >
+                <ThemeSettings isCompact={isCompact} />
+              </SettingsCard>
 
-            <CompactModeSettings />
-          </div>
-        </section>
+              {/* DENSIDADE DA INTERFACE */}
+              <SettingsCard
+                title="Densidade da Interface"
+                description="Personalize o espaçamento e o tamanho visual dos cartões, listas e calendários."
+                icon={<MonitorSmartphone size={18} className="text-gold" />}
+                isCompact={isCompact}
+              >
+                <CompactModeSettings isCompact={isCompact} />
+              </SettingsCard>
 
-        {/* ==================================================== */}
-        {/* SEÇÃO 3: ZONA DE PERIGO (DEPOIS DE USABILIDADE)      */}
-        {/* ==================================================== */}
-        <section className="flex flex-col gap-4 pt-4 border-t border-red-500/20">
-          <DangerZoneCard isCompact={isCompact} />
-        </section>
+              {/* CARDS DE BOAS-VINDAS */}
+              <SettingsCard
+                title="Cards de Boas-Vindas"
+                description="Personalize a visibilidade dos cards informativos no topo de cada página. Reative os cards que foram ocultados para que voltem a aparecer."
+                icon={<Eye size={18} className="text-gold" />}
+                isCompact={isCompact}
+              >
+                <WelcomeCardsSettings isCompact={isCompact} />
+              </SettingsCard>
+            </>
+          )}
+
+          {/* ABA 3: ÁUDIO & NOTIFICAÇÕES */}
+          {activeTab === "audio" && (
+            <SoundNotificationSettings isCompact={isCompact} />
+          )}
+
+          {/* ABA 4: SEGURANÇA */}
+          {activeTab === "security" && (
+            <>
+              {/* Formulário de Alteração de Senha */}
+              <ChangePasswordCard isCompact={isCompact} />
+
+              {/* Zona de Perigo / Exclusão de Conta */}
+              <DangerZoneCard isCompact={isCompact} />
+            </>
+          )}
+        </div>
       </div>
     </PageWrapper>
   );

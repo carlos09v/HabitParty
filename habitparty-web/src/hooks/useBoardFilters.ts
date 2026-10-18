@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import {
   DEFAULT_BOARD_FILTERS,
   normalizeTaskDifficulty,
@@ -10,9 +10,11 @@ import type { BoardColumn, BoardFilterState } from "@/types/task";
 
 /**
  * Hook dedicado ao controle de busca, filtros de tags, tipos, dificuldade, status e Modo Foco no Kanban.
+ * Utiliza useDeferredValue para garantir digitação suave a 60/120fps sem travar o thread principal.
  */
 export function useBoardFilters(columns: BoardColumn[]) {
   const [searchQuery, setSearchQuery] = useState("");
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   const [focusMode, setFocusMode] = useState(false);
   const [filters, setFilters] = useState<BoardFilterState>(
     DEFAULT_BOARD_FILTERS,
@@ -36,16 +38,17 @@ export function useBoardFilters(columns: BoardColumn[]) {
   // Colunas com tarefas filtradas aplicadas em memória
   const filteredColumns = useMemo(() => {
     const hasFilter =
-      searchQuery.trim() !== "" ||
+      deferredSearchQuery.trim() !== "" ||
       focusMode ||
       filters.taskType !== "all" ||
       filters.difficulty !== "all" ||
+      filters.priority !== "all" ||
       filters.status !== "all" ||
       filters.tag !== null;
 
     if (!hasFilter) return columns;
 
-    const q = searchQuery.toLowerCase().trim();
+    const q = deferredSearchQuery.toLowerCase().trim();
 
     return columns.map((col) => ({
       ...col,
@@ -77,7 +80,14 @@ export function useBoardFilters(columns: BoardColumn[]) {
           if (normalizedTDiff !== filters.difficulty) return false;
         }
 
-        // 5. Filtro por Status
+        // 5. Filtro por Prioridade
+        if (filters.priority !== "all") {
+          const taskPriority = (task.priority || "NONE").toUpperCase();
+          const filterPriority = filters.priority.toUpperCase();
+          if (taskPriority !== filterPriority) return false;
+        }
+
+        // 6. Filtro por Status
         if (filters.status === "completed" && !task.completed) return false;
         if (filters.status === "pending" && task.completed) return false;
 
@@ -92,7 +102,7 @@ export function useBoardFilters(columns: BoardColumn[]) {
         return true;
       }),
     }));
-  }, [columns, searchQuery, focusMode, filters]);
+  }, [columns, deferredSearchQuery, focusMode, filters]);
 
   return {
     searchQuery,

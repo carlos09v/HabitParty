@@ -7,7 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import com.habitparty.adapters.in.web.dtos.response.DashboardTaskDTO;
+import com.habitparty.application.ports.projections.DashboardTaskDTO;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.WorkspaceRepository;
 import com.habitparty.core.domain.entities.Workspace;

@@ -84,7 +84,7 @@ public class TaskJpaEntity {
   @Column(name = "created_at", nullable = false)
   private LocalDateTime createdAt;
 
-  // A ligação forte com o Checklist!
-  @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+  // Ligação com o Checklist (cascade REMOVE para que deletar a Task apague os itens em cascata)
+  @OneToMany(mappedBy = "task", cascade = CascadeType.REMOVE)
   private List<ChecklistItemJpaEntity> checklist = new ArrayList<>();
 }

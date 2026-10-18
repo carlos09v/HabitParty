@@ -7,22 +7,33 @@ interface TaskRewardBadgesProps {
   task: Task;
   isCompact?: boolean;
   showStreak?: boolean;
+  showRewards?: boolean;
   className?: string;
 }
 
 /**
  * Exibe as recompensas (XP, Ouro) e Streak com regra centralizada.
- * Regra: Ícone de streak (chama) NUNCA é exibido em Afazeres (To-Do).
+ * Regra: Ícone de streak (chama 🔥) é exibido em Tarefas Diárias (Daily) e Hábitos (Habit) com streak ativo (> 0).
+ * Afazeres (To-Do) possuem prazo e não possuem streak.
+ * Recompensas numéricas de Gold/XP são opcionais (default false no card, para evitar poluição visual).
  */
 export function TaskRewardBadges({
   task,
   isCompact = false,
   showStreak = true,
+  showRewards = false,
   className,
 }: TaskRewardBadgesProps) {
   const isTodo = normalizeTaskType(task) === "todo";
   const hasStreak =
     showStreak && !isTodo && typeof task.streak === "number" && task.streak > 0;
+  const hasRewards =
+    showRewards &&
+    (task.rewardXp !== undefined || task.rewardGold !== undefined);
+
+  if (!hasStreak && !hasRewards) {
+    return null;
+  }
 
   return (
     <div
@@ -32,7 +43,7 @@ export function TaskRewardBadges({
         className,
       )}
     >
-      {/* Streak (Chama) */}
+      {/* Streak (Chama - Exibido para Diárias e Hábitos) */}
       {hasStreak && (
         <span
           className="flex items-center gap-0.5 text-warning-500 font-bold"
@@ -42,12 +53,12 @@ export function TaskRewardBadges({
             size={isCompact ? 9 : 11}
             className="fill-warning-500 text-warning-500 shrink-0"
           />
-          {task.streak}
+          <span>{task.streak}d</span>
         </span>
       )}
 
-      {/* XP */}
-      {task.rewardXp !== undefined && (
+      {/* XP (apenas se showRewards estiver habilitado) */}
+      {showRewards && task.rewardXp !== undefined && (
         <span
           className="flex items-center gap-0.5 text-magenta font-medium"
           title={`Recompensa: +${task.rewardXp} XP`}
@@ -58,8 +69,8 @@ export function TaskRewardBadges({
         </span>
       )}
 
-      {/* Ouro */}
-      {task.rewardGold !== undefined && (
+      {/* Ouro (apenas se showRewards estiver habilitado) */}
+      {showRewards && task.rewardGold !== undefined && (
         <span
           className="flex items-center gap-0.5 text-gold font-medium"
           title={`Recompensa: +${task.rewardGold} Ouro`}

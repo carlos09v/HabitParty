@@ -3,13 +3,14 @@ package com.habitparty.adapters.in.web.dtos.response;
 import java.util.List;
 import java.util.UUID;
 
+import com.habitparty.core.domain.entities.KanbanBoard;
 import com.habitparty.core.domain.entities.Workspace;
 
 public record WorkspaceResponseDTO(
     UUID id,
     UUID userId,
     String name,
-    List<BoardColumnResponseDTO> columns // Traz todas as colunas -> prática do (Aninhamento / Eager Loading) que é o carregamento incial de tudo que precisa (1 get grande) e não 3 gets (workspace, boardColumn e tasks)
+    List<BoardColumnResponseDTO> columns
 ) {
   // 1. Usado para o Menu Lateral (Sidebar) - Devolve as colunas vazias
   public static WorkspaceResponseDTO fromDomain(Workspace workspace) {
@@ -17,7 +18,7 @@ public record WorkspaceResponseDTO(
         workspace.getId(),
         workspace.getUserId(),
         workspace.getName(),
-        List.of() // Lista vazia para não pesar o JSON
+        List.of()
     );
   }
 
@@ -28,5 +29,22 @@ public record WorkspaceResponseDTO(
         workspace.getUserId(),
         workspace.getName(),
         columns);
+  }
+
+  // 3. Mapeia a partir do Aggregate/Record KanbanBoard puro de domínio
+  public static WorkspaceResponseDTO fromKanbanBoard(KanbanBoard board) {
+    List<BoardColumnResponseDTO> columnDTOs = board.columns().stream()
+        .map(col -> BoardColumnResponseDTO.fromDomain(
+            col.column(),
+            col.tasks().stream().map(TaskResponseDTO::fromDomain).toList()
+        ))
+        .toList();
+
+    return new WorkspaceResponseDTO(
+        board.workspace().getId(),
+        board.workspace().getUserId(),
+        board.workspace().getName(),
+        columnDTOs
+    );
   }
 }

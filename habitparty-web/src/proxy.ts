@@ -1,7 +1,13 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-const AUTH_ROUTES = ["/signIn", "/signUp"];
+const AUTH_ROUTES = [
+  "/signIn",
+  "/signUp",
+  "/forgot-password",
+  "/reset-password",
+  "/auth/callback",
+];
 const ACCESS_COOKIE_NAME = "habitparty_token";
 const REFRESH_COOKIE_NAME = "habitparty_refresh_token";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -9,12 +15,12 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Lendo o cookie de forma síncrona
+  // 1. Lendo os cookies de autenticação
   let token = request.cookies.get(ACCESS_COOKIE_NAME)?.value;
   const refreshToken = request.cookies.get(REFRESH_COOKIE_NAME)?.value;
   let responseToPass: NextResponse | null = null;
 
-  // 1. Silent Refresh: se o access token expirou/sumiu, mas temos o refresh token
+  // 2. Silent Refresh: se o access token expirou/sumiu, mas temos o refresh token
   if (!token && refreshToken) {
     try {
       const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
@@ -31,7 +37,7 @@ export async function proxy(request: NextRequest) {
         if (newToken) {
           token = newToken;
 
-          // Atualiza os headers da requisição interna para que os Server Components (page.tsx)
+          // Atualiza os headers da requisição interna para que os Server Components
           // já recebam o cookie atualizado nesta mesma renderização
           const requestHeaders = new Headers(request.headers);
           requestHeaders.set(
@@ -63,7 +69,7 @@ export async function proxy(request: NextRequest) {
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
             path: "/",
-            maxAge: 60 * 60, // 1 hora
+            maxAge: 60 * 60 * 2, // 2 horas
           });
         }
       }
@@ -75,39 +81,41 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  const isCallbackRoute = pathname.startsWith("/auth/callback");
   const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
   const isRootRoute = pathname === "/";
 
-  // 2. Se o usuário estiver acessando as telas de login/cadastro ou a raiz
-  if (isAuthRoute || isRootRoute) {
-    if (token) {
-      // Usuário autenticado não deve ver login nem a home deslogada
-      const redirectResponse = NextResponse.redirect(
-        new URL("/dashboard", request.url),
-      );
+  // 3. Usuário autenticado acessando tela de login/cadastro ou a raiz -> vai pro Dashboard
+  if (token && ((isAuthRoute && !isCallbackRoute) || isRootRoute)) {
+    const redirectResponse = NextResponse.redirect(
+      new URL("/dashboard", request.url),
+    );
 
-      if (responseToPass) {
-        const newCookie = responseToPass.cookies.get(ACCESS_COOKIE_NAME);
-        if (newCookie) redirectResponse.cookies.set(newCookie);
-      }
-      return redirectResponse;
+    if (responseToPass) {
+      const newCookie = responseToPass.cookies.get(ACCESS_COOKIE_NAME);
+      if (newCookie) redirectResponse.cookies.set(newCookie);
     }
+    return redirectResponse;
+  }
 
-    if (isRootRoute && !token) {
-      return NextResponse.redirect(new URL("/signIn", request.url));
-    }
-
+  // 4. Visitante acessando a raiz (Landing Page) ou telas de login/cadastro -> permite visualização
+  if (isRootRoute || isAuthRoute) {
     return responseToPass || NextResponse.next();
   }
 
-  // Rota de Onboarding / First Step: acessível para configuração inicial
+  // 5. Rota de Onboarding / First Step: acessível para configuração inicial
   if (pathname.startsWith("/firstStep")) {
     return responseToPass || NextResponse.next();
   }
 
-  // 3. Proteção das rotas privadas
+  // 6. Proteção das rotas privadas: se não tiver token, redireciona para login
   if (!token) {
-    return NextResponse.redirect(new URL("/signIn", request.url));
+    const signInUrl = new URL("/signIn", request.url);
+    // Guarda a URL de origem para redirecionar após o login se desejado
+    if (pathname !== "/dashboard") {
+      signInUrl.searchParams.set("returnTo", pathname);
+    }
+    return NextResponse.redirect(signInUrl);
   }
 
   return responseToPass || NextResponse.next();

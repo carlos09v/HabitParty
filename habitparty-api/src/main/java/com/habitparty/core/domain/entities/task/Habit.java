@@ -21,6 +21,8 @@ public class Habit extends Task {
   private HabitResetCounter resetCounter;
   private HabitImportanceType importanceType;
   private LocalDateTime lastCompletedAt;
+  private int positiveCount;
+  private int negativeCount;
 
   public Habit(// --- Campos da Base (Task) ---
       UUID id, UUID boardColumnId, UUID userId, String name,
@@ -33,6 +35,23 @@ public class Habit extends Task {
       int currentStreak, HabitType habitType,
       HabitResetCounter resetCounter, HabitImportanceType importanceType,
       LocalDateTime lastCompletedAt) {
+    this(id, boardColumnId, userId, name, description, orderIndex, priority,
+        tags, difficulty, status, taskType, isHardcoreModeEnabled, dueDate,
+        createdAt, checklist, currentStreak, habitType, resetCounter,
+        importanceType, lastCompletedAt, 0, 0);
+  }
+
+  public Habit(// --- Campos da Base (Task) ---
+      UUID id, UUID boardColumnId, UUID userId, String name,
+      String description, int orderIndex, TaskPriority priority,
+      List<String> tags, TaskDifficulty difficulty, TaskStatus status,
+      TaskType taskType, boolean isHardcoreModeEnabled, LocalDate dueDate,
+      LocalDateTime createdAt, List<ChecklistItem> checklist,
+
+      // --- Campos Específicos (Habit) ---
+      int currentStreak, HabitType habitType,
+      HabitResetCounter resetCounter, HabitImportanceType importanceType,
+      LocalDateTime lastCompletedAt, int positiveCount, int negativeCount) {
 
     // O super envia os dados básicos lá pra cima para a classe abstrata cuidar
     super(id, boardColumnId, userId, name, description, orderIndex, priority,
@@ -52,6 +71,8 @@ public class Habit extends Task {
     this.resetCounter = resetCounter;
     this.importanceType = importanceType;
     this.lastCompletedAt = lastCompletedAt;
+    this.positiveCount = positiveCount;
+    this.negativeCount = negativeCount;
   }
 
   public void updateHabitDetails(HabitType habitType, HabitResetCounter resetCounter,
@@ -109,8 +130,82 @@ public class Habit extends Task {
 
   @Override
   public void registerCompletion() {
-    this.lastCompletedAt = LocalDateTime.now();
-    this.currentStreak++;
+    registerCompletion(LocalDateTime.now());
+  }
+
+  public void registerCompletion(LocalDateTime completionTime) {
+    if (completionTime == null) {
+      completionTime = LocalDateTime.now();
+    }
+
+    this.positiveCount++;
+
+    if (this.lastCompletedAt == null) {
+      this.currentStreak = Math.max(1, this.currentStreak + 1);
+      this.lastCompletedAt = completionTime;
+      return;
+    }
+
+    LocalDate lastDate = this.lastCompletedAt.toLocalDate();
+    LocalDate currentDate = completionTime.toLocalDate();
+
+    switch (this.resetCounter) {
+      case DAILY -> {
+        if (lastDate.isEqual(currentDate)) {
+          // Já registrado hoje: streak diário não sobe novamente
+          this.lastCompletedAt = completionTime;
+          return;
+        } else if (lastDate.isEqual(currentDate.minusDays(1))) {
+          // Dia consecutivo: incrementa ofensiva
+          this.currentStreak++;
+        } else {
+          // Intervalo maior que 1 dia: recomeça streak
+          this.currentStreak = 1;
+        }
+      }
+      case WEEKLY -> {
+        java.time.temporal.WeekFields weekFields = java.time.temporal.WeekFields.ISO;
+        int lastWeek = lastDate.get(weekFields.weekOfWeekBasedYear());
+        int currentWeek = currentDate.get(weekFields.weekOfWeekBasedYear());
+        int lastYear = lastDate.get(weekFields.weekBasedYear());
+        int currentYear = currentDate.get(weekFields.weekBasedYear());
+
+        if (lastYear == currentYear && lastWeek == currentWeek) {
+          this.lastCompletedAt = completionTime;
+          return;
+        } else if ((lastYear == currentYear && currentWeek == lastWeek + 1)
+            || (currentYear == lastYear + 1 && lastWeek >= 52 && currentWeek == 1)) {
+          this.currentStreak++;
+        } else {
+          this.currentStreak = 1;
+        }
+      }
+      case MONTHLY -> {
+        java.time.Period period = java.time.Period.between(
+            lastDate.withDayOfMonth(1), currentDate.withDayOfMonth(1));
+        int monthsBetween = period.getYears() * 12 + period.getMonths();
+
+        if (monthsBetween == 0) {
+          this.lastCompletedAt = completionTime;
+          return;
+        } else if (monthsBetween == 1) {
+          this.currentStreak++;
+        } else {
+          this.currentStreak = 1;
+        }
+      }
+    }
+
+    this.lastCompletedAt = completionTime;
+  }
+
+  public void resetCycleCounts() {
+    this.positiveCount = 0;
+    this.negativeCount = 0;
+  }
+
+  public void registerNegative() {
+    this.negativeCount++;
   }
 
   // Método de Domínio para falhas
@@ -137,5 +232,13 @@ public class Habit extends Task {
 
   public LocalDateTime getLastCompletedAt() {
     return lastCompletedAt;
+  }
+
+  public int getPositiveCount() {
+    return positiveCount;
+  }
+
+  public int getNegativeCount() {
+    return negativeCount;
   }
 }

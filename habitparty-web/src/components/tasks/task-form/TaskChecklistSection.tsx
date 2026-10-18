@@ -20,8 +20,8 @@ export function TaskChecklistSection({ form }: TaskChecklistSectionProps) {
   } = form;
 
   return (
-    <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-2 pt-2 border-t border-white/10 flex-1 min-h-0 overflow-hidden">
+      <div className="flex items-center justify-between shrink-0">
         <span className="text-body-s text-neutral-300 font-medium flex items-center gap-1.5">
           <CheckSquare size={15} className="text-gold" />
           <span>Checklist / Subtarefas</span>
@@ -32,7 +32,7 @@ export function TaskChecklistSection({ form }: TaskChecklistSectionProps) {
       </div>
 
       {/* Input para adicionar item */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 shrink-0">
         <input
           type="text"
           value={newChecklistText}
@@ -51,7 +51,7 @@ export function TaskChecklistSection({ form }: TaskChecklistSectionProps) {
           type="button"
           onClick={handleAddChecklistItem}
           disabled={!newChecklistText.trim() || isPending}
-          className="px-3 py-1.5 bg-primary hover:bg-primary-dark text-neutral-50 rounded-lg text-body-s font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+          className="px-3 py-1.5 bg-primary hover:bg-primary-dark text-neutral-50 rounded-lg text-body-s font-semibold transition-colors disabled:opacity-50 cursor-pointer shrink-0"
         >
           Adicionar
         </button>
@@ -59,7 +59,7 @@ export function TaskChecklistSection({ form }: TaskChecklistSectionProps) {
 
       {/* Lista de itens do checklist */}
       {checklist.length > 0 && (
-        <ul className="flex flex-col gap-1.5 max-h-32 overflow-y-auto custom-scrollbar mt-1">
+        <ul className="flex flex-col gap-1.5 overflow-y-auto custom-scrollbar mt-1 flex-1 min-h-0 max-h-48 md:max-h-none pr-1">
           {checklist.map((item, idx) => (
             <li
               key={item.id || `item-${idx}-${item.name}`}
@@ -99,7 +99,7 @@ export function TaskChecklistSection({ form }: TaskChecklistSectionProps) {
                 type="button"
                 onClick={() => handleRemoveChecklistItem(idx)}
                 disabled={isPending}
-                className="text-white/70 hover:text-danger-500 p-1 rounded transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+                className="text-neutral-400 hover:text-danger-500 p-1 rounded transition-colors cursor-pointer disabled:opacity-50 shrink-0"
                 aria-label={`Remover item ${item.name}`}
               >
                 <Trash2 size={14} />

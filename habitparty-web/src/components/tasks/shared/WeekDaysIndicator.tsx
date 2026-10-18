@@ -36,7 +36,7 @@ export function WeekDaysIndicator({
             title={`${day.fullName}${isToday ? " (Hoje)" : ""}: ${isActive ? "Ativo" : "Inativo"}`}
             className={cn(
               "rounded-full flex items-center justify-center font-bold transition-all",
-              isCompact ? "w-4 h-4 text-[8px]" : "w-4.5 h-4.5 text-[9px]",
+              isCompact ? "w-4 h-4 text-label-s" : "w-4.5 h-4.5 text-label-m",
               isActive &&
                 isToday &&
                 "bg-magenta text-white shadow-glow-magenta font-extrabold ring-1 ring-white/40",

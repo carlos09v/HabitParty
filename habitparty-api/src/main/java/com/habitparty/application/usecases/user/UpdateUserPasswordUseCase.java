@@ -5,7 +5,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.stereotype.Service;
 
-import com.habitparty.adapters.in.web.dtos.request.UpdateUserPasswordDTO;
 import com.habitparty.application.ports.PasswordHasherPort;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.User;
@@ -23,17 +22,17 @@ public class UpdateUserPasswordUseCase {
     this.passwordHasher = passwordHasher;
   }
 
-  public void execute(UUID userId, UpdateUserPasswordDTO dto) {
+  public void execute(UUID userId, String currentPassword, String newPassword) {
     User user = port.findById(userId)
         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
 
     // 1. Verifica se a senha atual informada bate com o hash do banco
-    if (!passwordHasher.matches(dto.currentPassword(), user.getPassword())) {
+    if (!passwordHasher.matches(currentPassword, user.getPassword())) {
       throw new DomainValidationException("A senha atual está incorreta.");
     }
 
     // 2. Cria o Hash da nova senha
-    String newHash = passwordHasher.encode(dto.newPassword());
+    String newHash = passwordHasher.encode(newPassword);
 
     // 3. Atualiza no domínio e salva
     user.updatePassword(newHash);

@@ -13,12 +13,14 @@ import com.habitparty.adapters.in.web.dtos.request.CreateUserDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserPasswordDTO;
 import com.habitparty.adapters.in.web.dtos.response.UserResponseDTO;
+import com.habitparty.application.usecases.user.CreateUserCommand;
 import com.habitparty.application.usecases.user.CreateUserUseCase;
 import com.habitparty.application.usecases.user.DeleteUserUseCase;
 import com.habitparty.application.usecases.user.FindAllUsersUseCase;
 import com.habitparty.application.usecases.user.FindUserByIdUseCase;
 import com.habitparty.application.usecases.user.UpdateProfilePhotoUseCase;
 import com.habitparty.application.usecases.user.UpdateUserPasswordUseCase;
+import com.habitparty.application.usecases.user.UpdateUserProfileCommand;
 import com.habitparty.application.usecases.user.UpdateUserProfileUseCase;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
@@ -38,7 +40,15 @@ public class UserController implements UserApi {
 
   @Override
   public ResponseEntity<UserResponseDTO> createUser(CreateUserDTO requestDto) {
-    User createdUser = createUserUseCase.execute(requestDto);
+    var command = new CreateUserCommand(
+        requestDto.fullName(),
+        requestDto.username(),
+        requestDto.email(),
+        requestDto.password(),
+        requestDto.gender(),
+        requestDto.birthday()
+    );
+    User createdUser = createUserUseCase.execute(command);
     UserResponseDTO response = UserResponseDTO.fromDomain(createdUser);
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
@@ -72,7 +82,7 @@ public class UserController implements UserApi {
       AuthenticatedUser usuarioLogado,
       UpdateUserPasswordDTO dto) {
     UUID userId = usuarioLogado.id();
-    updateUserPasswordUseCase.execute(userId, dto);
+    updateUserPasswordUseCase.execute(userId, dto.currentPassword(), dto.newPassword());
     return ResponseEntity.noContent().build();
   }
 
@@ -81,7 +91,8 @@ public class UserController implements UserApi {
       UpdateUserDTO dto,
       AuthenticatedUser usuarioLogado) {
     UUID userId = usuarioLogado.id();
-    User updatedUser = updateUserProfileUseCase.execute(userId, dto);
+    var command = new UpdateUserProfileCommand(dto.fullName(), dto.birthday(), dto.gender());
+    User updatedUser = updateUserProfileUseCase.execute(userId, command);
     return ResponseEntity.ok(UserResponseDTO.fromDomain(updatedUser));
   }
 
@@ -90,7 +101,11 @@ public class UserController implements UserApi {
       AuthenticatedUser usuarioLogado,
       MultipartFile photoFile) {
     UUID userId = usuarioLogado.id();
-    updateProfilePhotoUseCase.execute(userId, photoFile);
+    try {
+      updateProfilePhotoUseCase.execute(userId, photoFile.getInputStream(), photoFile.getOriginalFilename(), photoFile.getSize());
+    } catch (java.io.IOException e) {
+      throw new RuntimeException("Falha ao processar arquivo para upload.", e);
+    }
     return ResponseEntity.noContent().build();
   }
 }

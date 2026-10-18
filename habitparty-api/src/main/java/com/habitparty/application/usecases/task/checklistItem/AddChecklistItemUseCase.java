@@ -4,7 +4,6 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.habitparty.adapters.in.web.dtos.response.ChecklistItemResponseDTO;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.core.domain.entities.task.ChecklistItem;
 import com.habitparty.core.domain.entities.task.Task;
@@ -18,7 +17,7 @@ public class AddChecklistItemUseCase {
     this.taskPort = taskPort;
   }
 
-  public ChecklistItemResponseDTO execute(UUID taskId, UUID userIdLogado, String itemName) {
+  public ChecklistItem execute(UUID taskId, UUID userIdLogado, String itemName) {
     Task task = taskPort.findById(taskId)
         .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada."));
     task.validateOwnership(userIdLogado);
@@ -28,12 +27,9 @@ public class AddChecklistItemUseCase {
         taskId,
         userIdLogado,
         itemName,
-        false // isCompleted começa sempre como false
+        false
     );
 
-    // Salva no banco (O Adapter usa o Proxy para salvar direto, sem recarregar a Task)
-    ChecklistItem savedItem = taskPort.saveChecklistItem(newItem);
-
-    return ChecklistItemResponseDTO.fromDomain(savedItem);
+    return taskPort.saveChecklistItem(newItem);
   }
 }

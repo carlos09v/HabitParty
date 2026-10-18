@@ -5,7 +5,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.stereotype.Service;
 
-import com.habitparty.adapters.in.web.dtos.request.CreateWorkspaceDTO;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.ports.WorkspaceRepository;
 import com.habitparty.core.domain.entities.User;
@@ -24,9 +23,13 @@ public class CreateWorkspaceUseCase {
     this.userPort = userPort;
   }
 
-  public Workspace execute(CreateWorkspaceDTO dto, UUID userIdLogado) {
+  public Workspace execute(CreateWorkspaceCommand command, UUID userIdLogado) {
+    return execute(userIdLogado, command.name());
+  }
+
+  public Workspace execute(UUID userIdLogado, String name) {
     // Verificar se o user existe.
-    User user = userPort.findById(userIdLogado) // <-- Usa o ID confiável do Backend!
+    User user = userPort.findById(userIdLogado)
       .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado!"));
 
     // 2. Limite dinâmico: 4 para Premium, 2 para Free
@@ -44,7 +47,7 @@ public class CreateWorkspaceUseCase {
     Workspace newWorkspace = new Workspace(
       UUID.randomUUID(),
       userIdLogado,
-      dto.name()
+      name
     );
 
     return workspacePort.save(newWorkspace);

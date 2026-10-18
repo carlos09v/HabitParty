@@ -1,12 +1,10 @@
 package com.habitparty.application.usecases.reward;
 
 import java.util.UUID;
-import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.habitparty.adapters.in.web.dtos.request.UpdateRewardDTO;
-import com.habitparty.adapters.in.web.dtos.response.RewardResponseDTO;
 import com.habitparty.application.ports.RewardRepository;
 import com.habitparty.core.domain.entities.reward.Reward;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
@@ -20,18 +18,16 @@ public class UpdateRewardUseCase {
     this.port = port;
   }
 
-  public RewardResponseDTO execute(UUID rewardId, UpdateRewardDTO dto, UUID userIdLogado) {
+  public Reward execute(UUID rewardId, UpdateRewardCommand command, UUID userIdLogado) {
     Reward reward = port.findById(rewardId)
         .orElseThrow(() -> new ResourceNotFoundException("Recompensa não encontrada!"));
     reward.validateOwnership(userIdLogado);
 
     reward.updateDetails(
-        dto.name(), dto.description(), dto.price(), dto.icon(),
-        dto.category(), dto.tags(), dto.type(),
-        dto.packageLevel(), dto.baseDurationMinutes());
+        command.name(), command.description(), command.price(), command.icon(),
+        command.category(), command.tags(), command.type(),
+        command.packageLevel(), command.baseDurationMinutes());
 
-    Reward savedReward = port.save(reward);
-
-    return RewardResponseDTO.fromDomain(savedReward);
+    return port.save(reward);
   }
 }

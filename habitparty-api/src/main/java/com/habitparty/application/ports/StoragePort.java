@@ -1,8 +1,7 @@
 package com.habitparty.application.ports;
 
-import org.springframework.web.multipart.MultipartFile;
+import java.io.InputStream;
 
 public interface StoragePort {
-    // Recebe o arquivo e devolve a URL pública da imagem salva
-    String uploadFile(MultipartFile file); 
+  String uploadFile(InputStream contentStream, String originalFilename, long size);
 }

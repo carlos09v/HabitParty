@@ -1,22 +1,25 @@
 "use client";
 
 import { Calendar, FilterX, SlidersHorizontal, X } from "lucide-react";
-import { useMemo, useState } from "react";
-import { useCompactMode } from "@/hooks/useCompactMode";
+import { useMemo, useRef, useState } from "react";
+import { Select } from "@/components/ui/Select";
+import { Switch } from "@/components/ui/Switch";
 import {
-  type DashboardAdvancedFilters,
+  DASHBOARD_TASK_FILTERS,
   DEFAULT_DASHBOARD_ADVANCED_FILTERS,
-  type TaskFiltersProps,
-  type TaskFilterType,
-} from "@/types/task";
+  TASK_DIFFICULTY_FILTER_OPTIONS,
+  TASK_SORT_FILTER_OPTIONS,
+  TASK_TYPE_FILTER_OPTIONS,
+} from "@/constants/dashboard";
+import { useClickOutside } from "@/hooks/useClickOutside";
+import { useCompactMode } from "@/hooks/useCompactMode";
+import type {
+  DashboardAdvancedFilters,
+  TaskFiltersProps,
+} from "@/types/dashboard";
+import type { TaskFilterType } from "@/types/task";
 import { cn } from "@/utils";
-
-const FILTERS: readonly { id: TaskFilterType; label: string }[] = [
-  { id: "today", label: "Hoje" },
-  { id: "next7days", label: "Próximos 7 dias..." },
-  { id: "nodate", label: "Sem prazo" },
-  { id: "overdue", label: "Atrasado" },
-] as const;
+import { formatShortDate } from "@/utils/date";
 
 interface Props extends TaskFiltersProps {
   isCompact?: boolean;
@@ -35,6 +38,12 @@ export function TaskFilters({
   const { isCompact: hookIsCompact } = useCompactMode();
   const isCompact = propIsCompact ?? hookIsCompact;
   const [showPopover, setShowPopover] = useState(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useClickOutside(popoverRef, () => setShowPopover(false), {
+    enabled: showPopover,
+    onEscape: () => setShowPopover(false),
+  });
 
   const activeFiltersCount = useMemo(() => {
     return (
@@ -48,17 +57,20 @@ export function TaskFilters({
 
   const formattedDateLabel = useMemo(() => {
     if (!selectedDate) return null;
-    try {
-      const [y, m, d] = selectedDate.split("-").map(Number);
-      const dateObj = new Date(y, (m || 1) - 1, d || 1);
-      return dateObj.toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "short",
-      });
-    } catch {
-      return selectedDate;
-    }
+    return formatShortDate(selectedDate, { monthFormat: "short" });
   }, [selectedDate]);
+
+  const columnOptions = useMemo(() => {
+    const opts = [{ value: "all", label: "Todas as listas" }];
+    if (columns) {
+      for (const c of columns) {
+        if (c.id) {
+          opts.push({ value: c.id, label: c.name || "Sem título" });
+        }
+      }
+    }
+    return opts;
+  }, [columns]);
 
   const handleSelectStandardFilter = (id: TaskFilterType) => {
     if (selectedDate && onClearDate) {
@@ -101,7 +113,7 @@ export function TaskFilters({
           </button>
         )}
 
-        {FILTERS.map((f) => {
+        {DASHBOARD_TASK_FILTERS.map((f) => {
           const isSelected = !selectedDate && activeFilter === f.id;
           return (
             <button
@@ -127,7 +139,7 @@ export function TaskFilters({
       </div>
 
       {/* Botão de opções e filtros avançados com Popover */}
-      <div className="relative shrink-0">
+      <div ref={popoverRef} className="relative shrink-0">
         <button
           type="button"
           onClick={() => setShowPopover(!showPopover)}
@@ -156,196 +168,109 @@ export function TaskFilters({
 
         {/* Popover de Filtros Avançados */}
         {showPopover && (
-          <>
-            <button
-              type="button"
-              aria-label="Fechar filtros avançados"
-              className="fixed inset-0 z-40 cursor-default bg-transparent border-none p-0 m-0"
-              onClick={() => setShowPopover(false)}
+          <div className="absolute right-0 top-full mt-2 w-72 sm:w-80 rounded-xl bg-popover/95 border border-primary/40 p-4 shadow-xl z-50 animate-in fade-in zoom-in-95 backdrop-blur-md flex flex-col gap-3">
+            {/* Cabeçalho do Popover */}
+            <div className="flex items-center justify-between pb-2 border-b border-white/10">
+              <span className="text-xs font-bold text-neutral-100 flex items-center gap-1.5">
+                <SlidersHorizontal size={13} className="text-gold" />
+                Filtros Avançados
+              </span>
+              {activeFiltersCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleResetAdvanced}
+                  className="flex items-center gap-1 text-tiny text-neutral-400 hover:text-danger-500 font-semibold transition-colors cursor-pointer"
+                >
+                  <FilterX size={12} />
+                  <span>Limpar</span>
+                </button>
+              )}
+            </div>
+
+            {/* Filtro por Tipo de Tarefa */}
+            <Select
+              id="filter-task-type"
+              label="Tipo de Tarefa"
+              compact
+              value={advancedFilters.taskType}
+              onChange={(val) =>
+                onAdvancedFiltersChange?.({
+                  ...advancedFilters,
+                  taskType: val as DashboardAdvancedFilters["taskType"],
+                })
+              }
+              options={TASK_TYPE_FILTER_OPTIONS}
             />
 
-            <div className="absolute right-0 top-full mt-2 w-72 sm:w-80 rounded-xl bg-neutral-900/95 border border-primary/40 p-4 shadow-xl z-50 animate-in fade-in zoom-in-95 backdrop-blur-md flex flex-col gap-3">
-              {/* Cabeçalho do Popover */}
-              <div className="flex items-center justify-between pb-2 border-b border-white/10">
-                <span className="text-xs font-bold text-neutral-100 flex items-center gap-1.5">
-                  <SlidersHorizontal size={13} className="text-gold" />
-                  Filtros Avançados
-                </span>
-                {activeFiltersCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleResetAdvanced}
-                    className="flex items-center gap-1 text-tiny text-neutral-400 hover:text-danger-500 font-semibold transition-colors cursor-pointer"
-                  >
-                    <FilterX size={12} />
-                    <span>Limpar</span>
-                  </button>
-                )}
-              </div>
+            {/* Filtro por Lista / Coluna */}
+            {columns && columns.length > 0 && (
+              <Select
+                id="filter-column"
+                label="Lista / Categoria"
+                compact
+                value={advancedFilters.columnId}
+                onChange={(val) =>
+                  onAdvancedFiltersChange?.({
+                    ...advancedFilters,
+                    columnId: val,
+                  })
+                }
+                options={columnOptions}
+              />
+            )}
 
-              {/* Filtro por Tipo de Tarefa */}
-              <div className="flex flex-col gap-1">
-                <label
-                  htmlFor="filter-task-type"
-                  className="text-tiny text-neutral-400 font-medium"
-                >
-                  Tipo de Tarefa
-                </label>
-                <select
-                  id="filter-task-type"
-                  value={advancedFilters.taskType}
-                  onChange={(e) =>
-                    onAdvancedFiltersChange?.({
-                      ...advancedFilters,
-                      taskType: e.target
-                        .value as DashboardAdvancedFilters["taskType"],
-                    })
-                  }
-                  className="rounded-lg bg-white/5 border border-white/10 text-neutral-100 text-xs px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-gold/50 cursor-pointer"
-                >
-                  <option value="all" className="bg-neutral-900">
-                    Todos os tipos
-                  </option>
-                  <option value="HABIT" className="bg-neutral-900">
-                    Hábitos
-                  </option>
-                  <option value="DAILY" className="bg-neutral-900">
-                    Diárias
-                  </option>
-                  <option value="TODO" className="bg-neutral-900">
-                    Afazeres
-                  </option>
-                </select>
-              </div>
+            {/* Filtro por Dificuldade */}
+            <Select
+              id="filter-difficulty"
+              label="Dificuldade"
+              compact
+              value={advancedFilters.difficulty}
+              onChange={(val) =>
+                onAdvancedFiltersChange?.({
+                  ...advancedFilters,
+                  difficulty: val as DashboardAdvancedFilters["difficulty"],
+                })
+              }
+              options={TASK_DIFFICULTY_FILTER_OPTIONS}
+            />
 
-              {/* Filtro por Lista / Coluna */}
-              {columns && columns.length > 0 && (
-                <div className="flex flex-col gap-1">
-                  <label
-                    htmlFor="filter-column"
-                    className="text-tiny text-neutral-400 font-medium"
-                  >
-                    Lista / Categoria
-                  </label>
-                  <select
-                    id="filter-column"
-                    value={advancedFilters.columnId}
-                    onChange={(e) =>
-                      onAdvancedFiltersChange?.({
-                        ...advancedFilters,
-                        columnId: e.target.value,
-                      })
-                    }
-                    className="rounded-lg bg-white/5 border border-white/10 text-neutral-100 text-xs px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-gold/50 cursor-pointer"
-                  >
-                    <option value="all" className="bg-neutral-900">
-                      Todas as listas
-                    </option>
-                    {columns.map((c) => (
-                      <option
-                        key={c.id}
-                        value={c.id}
-                        className="bg-neutral-900"
-                      >
-                        {c.name || "Sem título"}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+            {/* Ordenação */}
+            <Select
+              id="filter-sort"
+              label="Ordenar por"
+              compact
+              value={advancedFilters.sortBy}
+              onChange={(val) =>
+                onAdvancedFiltersChange?.({
+                  ...advancedFilters,
+                  sortBy: val as DashboardAdvancedFilters["sortBy"],
+                })
+              }
+              options={TASK_SORT_FILTER_OPTIONS}
+            />
 
-              {/* Filtro por Dificuldade */}
-              <div className="flex flex-col gap-1">
-                <label
-                  htmlFor="filter-difficulty"
-                  className="text-tiny text-neutral-400 font-medium"
-                >
-                  Dificuldade
-                </label>
-                <select
-                  id="filter-difficulty"
-                  value={advancedFilters.difficulty}
-                  onChange={(e) =>
-                    onAdvancedFiltersChange?.({
-                      ...advancedFilters,
-                      difficulty: e.target
-                        .value as DashboardAdvancedFilters["difficulty"],
-                    })
-                  }
-                  className="rounded-lg bg-white/5 border border-white/10 text-neutral-100 text-xs px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-gold/50 cursor-pointer"
-                >
-                  <option value="all" className="bg-neutral-900">
-                    Todas as dificuldades
-                  </option>
-                  <option value="TRIVIAL" className="bg-neutral-900">
-                    Trivial
-                  </option>
-                  <option value="EASY" className="bg-neutral-900">
-                    Fácil
-                  </option>
-                  <option value="MEDIUM" className="bg-neutral-900">
-                    Médio
-                  </option>
-                  <option value="HARD" className="bg-neutral-900">
-                    Difícil
-                  </option>
-                </select>
-              </div>
-
-              {/* Ordenação */}
-              <div className="flex flex-col gap-1">
-                <label
-                  htmlFor="filter-sort"
-                  className="text-tiny text-neutral-400 font-medium"
-                >
-                  Ordenar por
-                </label>
-                <select
-                  id="filter-sort"
-                  value={advancedFilters.sortBy}
-                  onChange={(e) =>
-                    onAdvancedFiltersChange?.({
-                      ...advancedFilters,
-                      sortBy: e.target
-                        .value as DashboardAdvancedFilters["sortBy"],
-                    })
-                  }
-                  className="rounded-lg bg-white/5 border border-white/10 text-neutral-100 text-xs px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-gold/50 cursor-pointer"
-                >
-                  <option value="default" className="bg-neutral-900">
-                    Padrão (Data / Prazo)
-                  </option>
-                  <option value="difficulty" className="bg-neutral-900">
-                    Dificuldade (Maior primeiro)
-                  </option>
-                  <option value="priority" className="bg-neutral-900">
-                    Prioridade (Alta primeiro)
-                  </option>
-                  <option value="reward" className="bg-neutral-900">
-                    Maior Recompensa (XP/Gold)
-                  </option>
-                </select>
-              </div>
-
-              {/* Toggle Ocultar Concluídas */}
-              <label className="flex items-center justify-between pt-1 cursor-pointer select-none border-t border-white/10">
-                <span className="text-xs text-neutral-200 font-medium">
-                  Ocultar tarefas concluídas
-                </span>
-                <input
-                  type="checkbox"
-                  checked={advancedFilters.hideCompleted}
-                  onChange={(e) =>
-                    onAdvancedFiltersChange?.({
-                      ...advancedFilters,
-                      hideCompleted: e.target.checked,
-                    })
-                  }
-                  className="rounded border-white/20 bg-white/5 text-gold focus:ring-gold/50 h-4 w-4 cursor-pointer"
-                />
+            {/* Toggle Ocultar Concluídas */}
+            <div className="flex items-center justify-between pt-2 border-t border-white/10 group">
+              <label
+                htmlFor="filter-hide-completed"
+                className="text-xs text-neutral-200 group-hover:text-gold transition-colors font-medium cursor-pointer select-none"
+              >
+                Ocultar tarefas concluídas
               </label>
+              <Switch
+                id="filter-hide-completed"
+                size="sm"
+                checked={advancedFilters.hideCompleted}
+                onCheckedChange={(checked) =>
+                  onAdvancedFiltersChange?.({
+                    ...advancedFilters,
+                    hideCompleted: checked,
+                  })
+                }
+                aria-label="Ocultar tarefas concluídas"
+              />
             </div>
-          </>
+          </div>
         )}
       </div>
     </nav>

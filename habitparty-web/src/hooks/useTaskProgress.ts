@@ -1,30 +1,27 @@
-"use client";
-
-import { useState } from "react";
-import type { Task, UseTaskProgressOptions } from "@/types/task";
+import type { Task } from "@/types/task";
+import type { UseTaskProgressOptions } from "@/types/task-ui";
 
 /**
- * Estado local de progresso de uma tarefa:
+ * Estado e ações de progresso de uma tarefa:
  * - `completed` para Diárias/Afazeres (checkbox)
  * - `habitScore` (+/-) para Hábitos
+ *
+ * Utiliza o estado derivado diretamente da prop `task` para garantir sincronização
+ * instantânea sem efeitos colaterais de re-render ou loops de atualização no React.
  */
 export function useTaskProgress(
   task: Task,
   { onToggle, onHabitChange }: UseTaskProgressOptions = {},
 ) {
-  const [completed, setCompleted] = useState(task.completed);
-  const [habitScore, setHabitScore] = useState(
-    (task.positiveCount ?? 0) - (task.negativeCount ?? 0),
-  );
+  const completed = Boolean(task.completed);
+  const habitScore = (task.positiveCount ?? 0) - (task.negativeCount ?? 0);
 
   const toggleCompleted = () => {
     const next = !completed;
-    setCompleted(next);
     onToggle?.(task.id, next);
   };
 
   const changeHabit = (delta: number) => {
-    setHabitScore((prev) => prev + delta);
     onHabitChange?.(task.id, delta);
   };
 

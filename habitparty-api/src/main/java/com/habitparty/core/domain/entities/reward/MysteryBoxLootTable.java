@@ -7,10 +7,10 @@ import com.habitparty.core.domain.enums.RewardPackageLevel;
 public class MysteryBoxLootTable {
     // Método estático para ser chamado direto, sem precisar instanciar a classe
     public static MysteryBoxResult roll(RewardPackageLevel level) {
-        
+        RewardPackageLevel safeLevel = level != null ? level : RewardPackageLevel.BASIC;
         int roll = ThreadLocalRandom.current().nextInt(1, 101);
 
-        return switch (level) {
+        return switch (safeLevel) {
             case BASIC -> {
                 if (roll <= 60) yield new MysteryBoxResult("Pausa Curta", "coffee", null);
                 if (roll <= 90) yield new MysteryBoxResult("Prática de Violão", "music", 30);

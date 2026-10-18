@@ -1,5 +1,7 @@
 package com.habitparty.core.domain.entities.focus;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -19,13 +21,22 @@ public class FocusRecord {
   private final LocalDateTime endTime;
   private final int durationMinutes;
 
-  // NOVOS CAMPOS: Snapshot da execução
   private final FocusRecordType recordType;
   private final Integer completedPomos;
+
+  private final Integer xpEarned;
+  private final BigDecimal coinsEarned;
 
   public FocusRecord(UUID id, UUID userId, UUID focusActivityId, UUID inventoryItemId, String notes,
       LocalDateTime startTime, LocalDateTime endTime, FocusRecordType recordType,
       Integer completedPomos) {
+    this(id, userId, focusActivityId, inventoryItemId, notes, startTime, endTime, recordType, completedPomos, 0,
+        BigDecimal.ZERO);
+  }
+
+  public FocusRecord(UUID id, UUID userId, UUID focusActivityId, UUID inventoryItemId, String notes,
+      LocalDateTime startTime, LocalDateTime endTime, FocusRecordType recordType,
+      Integer completedPomos, Integer xpEarned, BigDecimal coinsEarned) {
     // 1. Validações Básicas
     if (userId == null) {
       throw new DomainValidationException("O ID do usuário é obrigatório.");
@@ -54,7 +65,7 @@ public class FocusRecord {
       }
       this.completedPomos = completedPomos;
     } else {
-      this.completedPomos = null; // Se for Stopwatch (ou uso de inventário), ignora a quantidade de pomos
+      this.completedPomos = null;
     }
 
     this.id = id != null ? id : UUID.randomUUID();
@@ -67,6 +78,9 @@ public class FocusRecord {
     this.recordType = recordType;
 
     this.durationMinutes = (int) Duration.between(startTime, endTime).toMinutes();
+    this.xpEarned = xpEarned != null ? Math.max(0, xpEarned) : 0;
+    this.coinsEarned = coinsEarned != null ? coinsEarned.setScale(2, RoundingMode.HALF_UP)
+        : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
   }
 
   public void validateOwnership(UUID userIdLogado) {
@@ -75,8 +89,6 @@ public class FocusRecord {
     }
   }
 
-  // Registros de tempo costumam ser IMUTÁVEIS (como um log financeiro).
-  // A única coisa que faz sentido editar depois de salvo é a anotação (notes).
   public void updateNotes(String newNotes) {
     this.notes = newNotes;
   }
@@ -114,11 +126,19 @@ public class FocusRecord {
     return durationMinutes;
   }
 
-  public Optional<FocusRecordType> getRecordType() { 
-        return Optional.ofNullable(recordType); 
-    }
+  public Optional<FocusRecordType> getRecordType() {
+    return Optional.ofNullable(recordType);
+  }
 
   public Optional<Integer> getCompletedPomos() {
     return Optional.ofNullable(completedPomos);
+  }
+
+  public Optional<Integer> getXpEarned() {
+    return Optional.ofNullable(xpEarned);
+  }
+
+  public Optional<BigDecimal> getCoinsEarned() {
+    return Optional.ofNullable(coinsEarned);
   }
 }

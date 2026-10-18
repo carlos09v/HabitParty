@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.habitparty.adapters.in.web.dtos.request.RedeemRewardRequestDTO;
 import com.habitparty.application.ports.InventoryItemRepository;
 import com.habitparty.application.ports.RewardRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
@@ -41,14 +40,23 @@ public class RedeemRewardUseCase {
   }
 
   @Transactional
-  public void execute(RedeemRewardRequestDTO dto, UUID userIdLogado) {
+  public void execute(UUID rewardId, UUID userIdLogado) {
     // 1. Busca a Recompensa
-    Reward reward = port.findById(dto.rewardId())
+    Reward reward = port.findById(rewardId)
         .orElseThrow(() -> new ResourceNotFoundException("Recompensa não encontrada."));
 
     // 2. Busca o Usuário
     User user = userPort.findById(userIdLogado)
         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+
+    // Limite de itens no inventário (20 Free / 100 Premium)
+    int maxItems = user.isPremium() ? 100 : 20;
+    int totalItems = inventoryItemRepositoryPort.countByUserId(userIdLogado);
+    if (totalItems >= maxItems) {
+      throw new LimitExceededException(user.isPremium()
+          ? "Sua mochila está lotada com 100 itens! Consuma alguns antes de comprar mais."
+          : "Sua mochila atingiu o limite de 20 itens do plano gratuito! Consuma alguns itens ou assine o Premium para expandir para 100 itens.");
+    }
 
     // 3. Regra de Negócio: Desconta o dinheiro usando BigDecimal
     user.spendMoney(reward.getPrice());
@@ -56,12 +64,6 @@ public class RedeemRewardUseCase {
     // 4. Calcula o novo índice da mochila
     int maxIndex = inventoryItemRepositoryPort.getMaxOrderIndex(userIdLogado);
     int newIndex = maxIndex + 1;
-
-    // Limite de itens no inventário
-    int totalItems = inventoryItemRepositoryPort.countByUserId(userIdLogado);
-    if (totalItems >= 100) { // Um limite alto o suficiente para jogadores normais nunca baterem
-      throw new LimitExceededException("Sua mochila está lotada! Consuma alguns itens antes de comprar mais.");
-    }
 
     // === INÍCIO DA LÓGICA DOS SNAPSHOTS ===
     String finalName = reward.getName();
@@ -71,15 +73,14 @@ public class RedeemRewardUseCase {
     RewardPackageLevel finalPackageLevel = reward.getPackageLevel().orElse(null);
 
     if (reward.getType() == RewardType.MISTERY_BOX) {
-      // Roda o sorteio baseado no pacote!
-      MysteryBoxResult result = MysteryBoxLootTable.roll(finalPackageLevel);
-      finalName = result.name();
-      finalIcon = result.icon();
-      finalMinutes = result.minutes();
-
-      // Se o prêmio sorteado tem minutos, o item na mochila é TIME_BASED.
-      // Se não tem (minutos é null), o item é SINGLE_USE.
-      finalType = (finalMinutes != null && finalMinutes > 0) ? RewardType.TIME_BASED : RewardType.SINGLE_USE;
+      finalType = RewardType.MISTERY_BOX;
+      finalMinutes = null;
+      if (finalIcon == null || finalIcon.isBlank()) {
+        finalIcon = "mystery_box";
+      }
+      if (finalPackageLevel == null) {
+        finalPackageLevel = RewardPackageLevel.BASIC;
+      }
     }
 
     // 5. Cria o item copiando os Snapshots
@@ -94,7 +95,7 @@ public class RedeemRewardUseCase {
         newIndex,
         finalIcon,
         finalPackageLevel,
-        finalMinutes,
+        finalMinutes != null ? finalMinutes * 60 : null,
         LocalDateTime.now()); // acquiredAt puro no domínio
 
     // 6. Salva usando as portas corretas

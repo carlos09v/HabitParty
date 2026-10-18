@@ -1,6 +1,7 @@
 import type {
   BoardFilterState,
   DailyDaysOfWeek,
+  DailyRepeatMonthlyOption,
   DailyRepeatTypeOption,
   HabitImportanceOption,
   HabitTypeOption,
@@ -14,11 +15,11 @@ import type {
 export const HABIT_IMPORTANCE_BORDER: Record<string, string> = {
   LOW: "border-l-info hover:border-l-info-hover", // Azul claro
   NORMAL: "border-l-success-500 hover:border-l-success-hover", // Verde
-  HIGH: "border-l-danger-500 hover:border-l-danger-hover", // Vermelho
+  HIGH: "border-l-purple-500 hover:border-l-purple-400", // Roxo Épico (diferenciado de atraso)
   // Aliases minúsculos para compatibilidade
   low: "border-l-info hover:border-l-info-hover",
   normal: "border-l-success-500 hover:border-l-success-hover",
-  high: "border-l-danger-500 hover:border-l-danger-hover",
+  high: "border-l-purple-500 hover:border-l-purple-400",
 };
 
 /** Borda esquerda de Diárias e Afazeres baseada na Dificuldade. */
@@ -26,15 +27,15 @@ export const DIFFICULTY_BORDER: Record<string, string> = {
   TRIVIAL: "border-l-info hover:border-l-info-hover", // Azul claro
   EASY: "border-l-success-500 hover:border-l-success-hover", // Verde
   MEDIUM: "border-l-warning-500 hover:border-l-warning-hover", // Laranja / Amarelo
-  HARD: "border-l-danger-500 hover:border-l-danger-hover", // Vermelho
+  HARD: "border-l-purple-500 hover:border-l-purple-400", // Roxo Épico (diferenciado de atraso)
   // Aliases minúsculos e antigos para compatibilidade com Dashboard e forms
   trivial: "border-l-info hover:border-l-info-hover",
   low: "border-l-success-500 hover:border-l-success-hover",
   easy: "border-l-success-500 hover:border-l-success-hover",
   normal: "border-l-warning-500 hover:border-l-warning-hover",
   medium: "border-l-warning-500 hover:border-l-warning-hover",
-  high: "border-l-danger-500 hover:border-l-danger-hover",
-  hard: "border-l-danger-500 hover:border-l-danger-hover",
+  high: "border-l-purple-500 hover:border-l-purple-400",
+  hard: "border-l-purple-500 hover:border-l-purple-400",
 };
 
 /** Rótulo e cor (alto contraste no fundo roxo) de cada tipo de tarefa. */
@@ -53,6 +54,47 @@ export const TASK_TYPE_META: Record<string, { label: string; color: string }> =
     },
     todo: { label: "Afazer", color: "text-gold bg-gold/15 border-gold/40" },
   };
+
+/** Opções de filtro por Tipo de Tarefa (compatíveis com id e value para Select e botões). */
+export const TASK_TYPE_FILTER_OPTIONS = [
+  { id: "all", value: "all", label: "Todos os tipos" },
+  { id: "HABIT", value: "HABIT", label: "Hábitos" },
+  { id: "DAILY", value: "DAILY", label: "Diárias" },
+  { id: "TODO", value: "TODO", label: "Afazeres" },
+] as const;
+
+/** Acentos visuais no card (borda superior temática, tint sutil de fundo e glow) para diferenciação imediata. */
+export const TASK_TYPE_ACCENTS: Record<
+  string,
+  {
+    borderTop: string;
+    borderLeft: string;
+    bgTint: string;
+    accentColor: string;
+  }
+> = {
+  habit: {
+    borderTop: "border-t-2 border-t-info/70",
+    borderLeft: "border-l-4 border-l-info/80",
+    bgTint:
+      "bg-gradient-to-b from-info/6 via-primary-dark/20 to-primary-dark/20 hover:from-info/10",
+    accentColor: "text-info",
+  },
+  daily: {
+    borderTop: "border-t-2 border-t-magenta/70",
+    borderLeft: "border-l-4 border-l-magenta/80",
+    bgTint:
+      "bg-gradient-to-b from-magenta/6 via-primary-dark/20 to-primary-dark/20 hover:from-magenta/10",
+    accentColor: "text-magenta",
+  },
+  todo: {
+    borderTop: "border-t-2 border-t-gold/70",
+    borderLeft: "border-l-4 border-l-gold/80",
+    bgTint:
+      "bg-gradient-to-b from-gold/6 via-primary-dark/20 to-primary-dark/20 hover:from-gold/10",
+    accentColor: "text-gold",
+  },
+};
 
 /** Normaliza com segurança o tipo da tarefa para "habit" | "daily" | "todo". */
 export function normalizeTaskType(
@@ -205,6 +247,53 @@ export const TODO_PRIORITY_OPTIONS: readonly {
   { id: "HIGH", label: "Alta" },
 ] as const;
 
+/** Metadados e cores de dificuldade de tarefas (Diárias e Afazeres). */
+export const TASK_DIFFICULTY_META: Record<
+  string,
+  { label: string; color: string; badgeColor: string }
+> = {
+  TRIVIAL: {
+    label: "Trivial",
+    color: "text-info",
+    badgeColor: "text-info bg-info/15 border-info/40",
+  },
+  trivial: {
+    label: "Trivial",
+    color: "text-info",
+    badgeColor: "text-info bg-info/15 border-info/40",
+  },
+  EASY: {
+    label: "Fácil",
+    color: "text-success-500",
+    badgeColor: "text-success-500 bg-success-500/20 border-success-500/40",
+  },
+  easy: {
+    label: "Fácil",
+    color: "text-success-500",
+    badgeColor: "text-success-500 bg-success-500/20 border-success-500/40",
+  },
+  MEDIUM: {
+    label: "Médio",
+    color: "text-warning-500",
+    badgeColor: "text-warning-500 bg-warning-500/20 border-warning-500/40",
+  },
+  medium: {
+    label: "Médio",
+    color: "text-warning-500",
+    badgeColor: "text-warning-500 bg-warning-500/20 border-warning-500/40",
+  },
+  HARD: {
+    label: "Difícil",
+    color: "text-purple-400",
+    badgeColor: "text-purple-300 bg-purple-500/20 border-purple-500/40",
+  },
+  hard: {
+    label: "Difícil",
+    color: "text-purple-400",
+    badgeColor: "text-purple-300 bg-purple-500/20 border-purple-500/40",
+  },
+};
+
 /** Metadados e cores de prioridade de tarefas. */
 export const TASK_PRIORITY_META: Record<
   string,
@@ -291,101 +380,11 @@ export const HABIT_IMPORTANCE_REWARDS = {
   HIGH: { xp: 25, gold: 3.75 },
 } as const;
 
-/**
- * Calcula os ganhos de XP e Gold de uma tarefa de acordo com seu tipo,
- * dificuldade ou importância, e decaimento por ofensiva (streak).
- */
-export function calculateTaskReward(task: {
-  type?: string;
-  taskType?: string;
-  difficulty?: string;
-  importance?: string;
-  importanceType?: string;
-  streak?: number;
-  currentStreak?: number;
-  repeatType?: string;
-  resetCounter?: string;
-}): { xp: number; gold: number } {
-  const normalizedType = normalizeTaskType(task);
-  const streak = task.currentStreak ?? task.streak ?? 0;
-
-  if (normalizedType === "habit") {
-    const rawImportance = (
-      task.importanceType ||
-      task.importance ||
-      "NORMAL"
-    ).toUpperCase();
-    const impKey =
-      rawImportance === "LOW" || rawImportance === "HIGH"
-        ? rawImportance
-        : "NORMAL";
-    const base = HABIT_IMPORTANCE_REWARDS[impKey];
-
-    const resetCounter = (task.resetCounter || "DAILY").toUpperCase();
-    const habitFormedThreshold =
-      resetCounter === "WEEKLY" ? 8 : resetCounter === "MONTHLY" ? 6 : 21;
-    const adaptationThreshold = Math.floor(habitFormedThreshold / 3);
-
-    let multiplier = 1.0;
-    if (streak >= habitFormedThreshold) {
-      multiplier = 0.5;
-    } else if (streak >= adaptationThreshold) {
-      multiplier = 0.75;
-    }
-
-    const finalXp = Math.max(1, Math.floor(base.xp * multiplier));
-    const finalGold = Math.max(
-      0.01,
-      Math.round(base.gold * multiplier * 100) / 100,
-    );
-    return { xp: finalXp, gold: finalGold };
-  }
-
-  // ToDo ou Daily usam Dificuldade
-  const rawDifficulty = normalizeTaskDifficulty(task.difficulty);
-  const diffKey =
-    rawDifficulty === "TRIVIAL" ||
-    rawDifficulty === "EASY" ||
-    rawDifficulty === "HARD"
-      ? rawDifficulty
-      : "MEDIUM";
-  const base = DIFFICULTY_REWARDS[diffKey];
-
-  if (normalizedType === "daily") {
-    const repeatType = (task.repeatType || "DAILY").toUpperCase();
-    const daysToForm =
-      repeatType === "WEEKLY"
-        ? 8
-        : repeatType === "MONTHLY"
-          ? 6
-          : repeatType === "YEARLY"
-            ? 3
-            : 21;
-    const adaptationThreshold = Math.max(1, Math.floor(daysToForm / 3));
-
-    let multiplier = 1.0;
-    if (streak >= daysToForm) {
-      multiplier = 0.5;
-    } else if (streak >= adaptationThreshold) {
-      multiplier = 0.75;
-    }
-
-    const finalXp = Math.max(1, Math.floor(base.xp * multiplier));
-    const finalGold = Math.max(
-      0.01,
-      Math.round(base.gold * multiplier * 100) / 100,
-    );
-    return { xp: finalXp, gold: finalGold };
-  }
-
-  // To-Do: sem decaimento de streak
-  return { xp: base.xp, gold: base.gold };
-}
-
 /** Estado de filtros padrão do quadro Kanban. */
 export const DEFAULT_BOARD_FILTERS: BoardFilterState = {
   taskType: "all",
   difficulty: "all",
+  priority: "all",
   status: "all",
   tag: null,
 };
@@ -411,6 +410,15 @@ export const DAILY_REPEAT_OPTIONS: readonly {
   { id: "YEARLY", label: "Anualmente" },
 ] as const;
 
+/** Opções de regra de repetição mensal para Diárias (Daily). */
+export const DAILY_MONTHLY_OPTIONS: readonly {
+  id: DailyRepeatMonthlyOption;
+  label: string;
+}[] = [
+  { id: "DAY_OF_THE_MONTH", label: "No dia do mês" },
+  { id: "DAY_OF_THE_WEEK", label: "No dia da semana" },
+] as const;
+
 /** Opções de lembrete para Afazeres (ToDo). */
 export const TODO_REMINDER_OPTIONS: readonly {
   id: ReminderTypeOption;
@@ -423,7 +431,6 @@ export const TODO_REMINDER_OPTIONS: readonly {
   { id: "ONE_WEEK_EARLY", label: "1 semana antes" },
 ] as const;
 
-/** Opções de direção para Hábitos (Positivo / Negativo / Ambos). */
 export const HABIT_DIRECTION_OPTIONS: readonly {
   id: HabitTypeOption;
   label: string;
@@ -433,12 +440,8 @@ export const HABIT_DIRECTION_OPTIONS: readonly {
   { id: "BOTH", label: "+/- Ambos" },
 ] as const;
 
-export {
-  COLUMN_ICONS,
-  type ColumnIconOption,
-  getColumnIcon,
-  MAX_COLUMNS_PREMIUM,
-  MAX_VISIBLE_COLUMNS,
-  STATUS_FILTER_OPTIONS,
-  TASK_TYPE_FILTER_OPTIONS,
-} from "./routine";
+/** Limite máximo de tags permitidas por tarefa */
+export const MAX_TASK_TAGS = 5;
+
+/** Tamanho máximo em caracteres de uma única tag */
+export const MAX_TAG_LENGTH = 25;

@@ -34,8 +34,8 @@ export function ViewModeSelector({
           "rounded-[6px] transition-all cursor-pointer flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-gold/50",
           isCompact ? "p-1" : "p-1.5",
           activeMode === "card"
-            ? "bg-background border border-gold/50 text-white shadow-xs"
-            : "border border-transparent text-neutral-400 hover:text-neutral-200 hover:bg-white/5",
+            ? "bg-background border border-gold/50 text-neutral-100 shadow-xs"
+            : "border border-transparent text-neutral-400 hover:text-neutral-100 hover:bg-surface-hover/50",
         )}
       >
         <LayoutGrid size={isCompact ? 16 : 18} aria-hidden="true" />
@@ -50,8 +50,8 @@ export function ViewModeSelector({
           "rounded-[6px] transition-all cursor-pointer flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-gold/50",
           isCompact ? "p-1" : "p-1.5",
           activeMode === "list"
-            ? "bg-background border border-gold/50 text-white shadow-xs"
-            : "border border-transparent text-neutral-400 hover:text-neutral-200 hover:bg-white/5",
+            ? "bg-background border border-gold/50 text-neutral-100 shadow-xs"
+            : "border border-transparent text-neutral-400 hover:text-neutral-100 hover:bg-surface-hover/50",
         )}
       >
         <List size={isCompact ? 16 : 18} aria-hidden="true" />

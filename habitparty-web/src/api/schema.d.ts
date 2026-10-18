@@ -604,6 +604,30 @@ export interface paths {
     patch: operations["changeStatus"];
     trace?: never;
   };
+  "/tasks/{taskId}/score": {
+    parameters: {
+      query?: {
+        delta?: number;
+      };
+      header?: never;
+      path: {
+        taskId: string;
+      };
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Registrar Pontuação de Hábito
+     * @description Registra a repetição positiva (+1) ou negativa (-1) de um hábito, calculando recompensas ou penalidades.
+     */
+    post: operations["recordHabitScore"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/tasks/checklists/{itemId}/toggle": {
     parameters: {
       query?: never;
@@ -980,6 +1004,10 @@ export interface components {
       resetCounter?: "DAILY" | "WEEKLY" | "MONTHLY";
       /** @enum {string} */
       importanceType?: "LOW" | "NORMAL" | "HIGH";
+      /** Format: int32 */
+      positiveCount?: number;
+      /** Format: int32 */
+      negativeCount?: number;
       /** Format: date */
       startDate?: string;
       /** @enum {string} */
@@ -1028,6 +1056,12 @@ export interface components {
       /** Format: uuid */
       id?: string;
       isPremium?: boolean;
+      isFounder?: boolean;
+      /** @enum {string} */
+      subscriptionStatus?: "FREE" | "ACTIVE" | "PAST_DUE" | "CANCELED";
+      /** Format: date-time */
+      subscriptionEndsAt?: string | null;
+      hasActiveRecurringSubscription?: boolean;
       /** @enum {string} */
       role?: "USER" | "ADMIN";
       fullName?: string;
@@ -1433,7 +1467,8 @@ export interface components {
         | "BAD_HABIT_PENALTY"
         | "ITEM_CONSUMED"
         | "ITEM_DISCARDED"
-        | "MANUAL_ADJUSTMENT";
+        | "MANUAL_ADJUSTMENT"
+        | "FOCUS_COMPLETED";
       name?: string;
       goldAmount?: number;
       /** Format: int32 */
@@ -1503,7 +1538,7 @@ export interface components {
       /** Format: int32 */
       orderIndex?: number;
       /** Format: int32 */
-      remainingMinutes?: number;
+      remainingSeconds?: number;
     };
     PageFocusRecordResponseDTO: {
       /** Format: int32 */
@@ -2408,6 +2443,30 @@ export interface operations {
           | "COMPLETED"
           | "FAILED"
           | "CANCELED";
+      };
+      header?: never;
+      path: {
+        taskId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["TaskResponseDTO"];
+        };
+      };
+    };
+  };
+  recordHabitScore: {
+    parameters: {
+      query?: {
+        delta?: number;
       };
       header?: never;
       path: {

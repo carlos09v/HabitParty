@@ -1,16 +1,14 @@
 "use server";
 
 import { updateTag } from "next/cache";
+import { cookies } from "next/headers";
+import { type ActionResponse, getErrorMessage } from "@/actions/types";
 import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
 
 type CreateWorkspaceDTO = components["schemas"]["CreateWorkspaceDTO"];
 type UpdateWorkspaceDTO = components["schemas"]["UpdateWorkspaceDTO"];
 type WorkspaceResponseDTO = components["schemas"]["WorkspaceResponseDTO"];
-
-export type ActionResponse<T = void> =
-  | { success: true; data: T }
-  | { success: false; error: string };
 
 /**
  * Cria um novo Workspace
@@ -23,16 +21,31 @@ export async function createWorkspaceAction(
       body: payload,
     });
 
-    if (error) {
+    if (error || !data) {
+      console.error("[WorkspaceAction:Create] Erro retornado pela API:", error);
       return {
         success: false,
-        error: "Falha ao criar o workspace. Tente novamente.",
+        error: getErrorMessage(
+          error,
+          "Falha ao criar o workspace. Tente novamente.",
+        ),
       };
+    }
+
+    const createdWorkspace = data as WorkspaceResponseDTO;
+
+    if (createdWorkspace.id) {
+      const cookieStore = await cookies();
+      cookieStore.set("activeWorkspaceId", createdWorkspace.id, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 365,
+        sameSite: "lax",
+      });
     }
 
     updateTag("workspaces");
 
-    return { success: true, data: data as WorkspaceResponseDTO };
+    return { success: true, data: createdWorkspace };
   } catch (err) {
     console.error("[WorkspaceAction:Create]", err);
     return {

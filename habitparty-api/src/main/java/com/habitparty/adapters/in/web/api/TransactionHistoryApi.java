@@ -25,6 +25,8 @@ public interface TransactionHistoryApi {
     ResponseEntity<Page<TransactionHistoryResponseDTO>> getMyHistory(
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado,
         @RequestParam(required = false) String tab,
+        @RequestParam(required = false) String period,
+        @RequestParam(required = false) String search,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "8") int size
     );

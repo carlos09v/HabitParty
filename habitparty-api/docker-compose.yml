@@ -1,27 +1,66 @@
-name: personal_projects
+name: habitparty
+
 services:
   # 1. Banco de Dados Principal
   postgres:
     image: postgres:16-alpine
     container_name: habitparty-db
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-habitparty}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    # restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - habitparty-network
+    restart: unless-stopped
 
-  # 2. Redis (Para uso futuro - Descomente as linhas abaixo quando for usar)
-  # redis:
-  #   image: redis:7-alpine
-  #   container_name: habitparty-cache
-  #   ports:
-  #     - "6379:6379"
-  #   restart: unless-stopped
+  # 2. Backend API
+  api:
+    build:
+      context: .
+      target: dev
+    container_name: habitparty-api
+    ports:
+      - "8080:8080"
+    environment:
+      - _JAVA_OPTIONS=-Djava.net.preferIPv4Stack=true
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${DB_NAME:-habitparty}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_NAME=${DB_NAME:-habitparty}
+      - JWT_SECRET=${JWT_SECRET}
+      - STRIPE_API_KEY=${STRIPE_API_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - STRIPE_MONTHLY_PRICE_ID=${STRIPE_MONTHLY_PRICE_ID:-${STRIPE_PRICE_MONTHLY_ID:-}}
+      - STRIPE_ANNUAL_PRICE_ID=${STRIPE_ANNUAL_PRICE_ID:-${STRIPE_PRICE_ANNUAL_ID:-}}
+      - STRIPE_FOUNDER_ANNUAL_PRICE_ID=${STRIPE_FOUNDER_ANNUAL_PRICE_ID:-${STRIPE_PRICE_FOUNDER_ANNUAL_ID:-}}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - APP_FRONTEND_URL=${APP_FRONTEND_URL:-http://localhost:3000}
+    volumes:
+      - ./uploads:/app/uploads
+      - ./src:/app/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - habitparty-network
+    restart: unless-stopped
 
-# Isso garante que seus dados não sumam se você desligar o Docker!
 volumes:
   postgres_data:
+    external: true
+    name: personal_projects_postgres_data
+
+networks:
+  habitparty-network:
+    driver: bridge

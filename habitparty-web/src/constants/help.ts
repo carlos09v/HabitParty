@@ -119,7 +119,7 @@ export const HELP_TABLES: Record<string, HelpTableEntry> = {
   mysteryBoxes: {
     title: "🎁 Caixas Misteriosas (Loot Tables & Probabilidades RNG)",
     description:
-      "Compre caixas da sorte para resgatar recompensas aleatórias da sua lista personalizada de prêmios.",
+      "Caixas da sorte equilibradas matematicamente para proporcionar dopamina e surpresa sem desbalancear a economia do jogo.",
     columns: [
       "Pacote",
       "Custo (🪙)",
@@ -129,27 +129,27 @@ export const HELP_TABLES: Record<string, HelpTableEntry> = {
     rows: [
       [
         "📦 Básico (Basic)",
-        "3,75 🪙",
-        "60% Comum • 30% Bom",
-        "10% Raro (ex: Episódio de Série)",
+        "5,00 🪙",
+        "60% Pausa Curta (10-15m) • 30% Lazer Médio (30m)",
+        "10% Sessão Focada (45m de Hobby + 1 🪙 bônus)",
       ],
       [
         "🎁 Premium",
-        "10,00 🪙",
-        "40% Comum • 40% Bom",
-        "20% Épico (ex: 1h de Jogos)",
+        "15,00 🪙",
+        "50% Lazer Padrão (45-60m) • 35% Lazer Estendido (75-90m)",
+        "15% Noite Gamer / Cinema (120m de Entretenimento)",
       ],
       [
         "💎 Épico (Epic)",
-        "25,00 🪙",
-        "50% Bom",
-        "40% Épico • 10% Lendário (ex: Comprar Livro/Jogo)",
+        "35,00 🪙",
+        "50% Bloco Estendido (120m) • 35% Noite Livre (180m)",
+        "15% Tarde Inteira de Desconexão (240m de Folga)",
       ],
       [
         "👑 Lendário (Legendary)",
-        "62,50 🪙",
-        "—",
-        "70% Épico • 30% Santo Graal (ex: Day Off)",
+        "80,00 🪙",
+        "60% Day-Off Parcial de Elite (240m Livres)",
+        "30% Day-Off Integral • 10% Celebração Absoluta (Final de Semana Livre)",
       ],
     ],
   },
@@ -206,6 +206,49 @@ export const HELP_TABLES: Record<string, HelpTableEntry> = {
       ],
     ],
   },
+  focusRewards: {
+    title: "⏱️ Ferramentas de Foco: Pomodoro, Cronômetro & Economia",
+    description:
+      "O foco premia sua jornada e esforço contínuo com XP e pequenas frações de moedas (🪙), mantendo as tarefas como a principal fonte de riqueza.",
+    columns: [
+      "Modalidade",
+      "Duração / Ciclo",
+      "Recompensa Base",
+      "Regras & Travas de Economia",
+    ],
+    rows: [
+      [
+        "🍅 Pomodoro Curto",
+        "15 a 24 min",
+        "4 XP • 0,10 🪙",
+        "Quebra rápida de inércia. Requer ciclo completado com sucesso.",
+      ],
+      [
+        "🍅 Pomodoro Padrão",
+        "25 a 40 min",
+        "8 XP • 0,25 🪙",
+        "O padrão de ouro do foco. Equivale a pouco mais de 1 Tarefa Fácil.",
+      ],
+      [
+        "🍅 Pomodoro Deep Work",
+        "Mais de 40 min",
+        "15 XP • 0,50 🪙",
+        "Imersão profunda prolongada. Equivale ao XP de 1 Tarefa Média.",
+      ],
+      [
+        "⏱️ Cronômetro Livre",
+        "A cada 30 min",
+        "~7 XP • 0,20 🪙",
+        "Cálculo contínuo proporcional. Limitado ao teto de 90 min por sessão.",
+      ],
+      [
+        "🛡️ Travas de Segurança",
+        "Geral",
+        "Teto Diário: 6h",
+        "Mínimo 10m para pontuar. 4h-6h diárias pagam 50%. Acima de 6h paga 0%. Mochila não pontua.",
+      ],
+    ],
+  },
 };
 
 export const HELP_FAQS: HelpFaqItem[] = [
@@ -237,8 +280,38 @@ export const HELP_FAQS: HelpFaqItem[] = [
     category: "TASKS",
     question: "O que é o Modo Hardcore nas tarefas?",
     answer:
-      "O Modo Hardcore é um compromisso de alta responsabilidade. Ao habilitá-lo em uma tarefa ou diária, caso ela não seja concluída até o prazo, o sistema aplica uma penalidade imediata deduzindo moedas do seu saldo. Use apenas em compromissos inegociáveis!",
-    tags: ["hardcore", "penalidade", "compromisso", "perda de moedas"],
+      "O Modo Hardcore é um compromisso de alta responsabilidade disponível para Hábitos, Diárias e Afazeres (To-dos). Ao habilitá-lo, caso a atividade não seja concluída no prazo, o sistema aplica uma penalidade imediata deduzindo 50% de Moedas e XP do seu saldo na virada da meia-noite. Em Afazeres (To-dos), o prazo de entrega se torna obrigatório e, caso vença, a data fica congelada (não pode ser adiada) — restando concluir com atraso (rendendo apenas 50% da recompensa) ou excluir a tarefa. Use apenas em compromissos inegociáveis!",
+    tags: [
+      "hardcore",
+      "penalidade",
+      "compromisso",
+      "perda de moedas",
+      "prazo fatal",
+      "to-do",
+    ],
+  },
+  {
+    id: "email-reminders-quota",
+    category: "TASKS",
+    question:
+      "Como funcionam os lembretes por e-mail para afazeres e quais os limites?",
+    answer:
+      "Ao cadastrar ou editar um Afazer (To-do) com prazo de entrega, você pode configurar alarmes de lembrete (1 dia antes, 2 dias antes, 3 dias antes, 1 semana antes ou data e hora personalizadas). Se você marcar 'Receber lembrete por e-mail', o HabitParty enviará um alerta diretamente na sua caixa de entrada no horário programado. Para garantir a estabilidade do serviço, os limites são:",
+    bullets: [
+      "Plano Aventureiro (Gratuito): Até 5 afazeres com lembretes por e-mail ativos simultaneamente e cota de até 20 disparos mensais. Ao concluir a tarefa ou disparar o alerta, a vaga simultânea é liberada automaticamente.",
+      "Plano Guardião Cósmico (Premium): Até 30 afazeres com lembretes por e-mail ativos simultaneamente e cota expandida de até 100 disparos mensais (Política de Uso Justo).",
+    ],
+    tags: [
+      "lembretes",
+      "e-mail",
+      "resend",
+      "notificação",
+      "to-do",
+      "limites",
+      "premium",
+      "free",
+    ],
+    highlightBadge: "Importante",
   },
   {
     id: "economy-inflation",
@@ -274,7 +347,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
     category: "REWARDS",
     question: "Como funcionam as Caixas Misteriosas (RNG)?",
     answer:
-      "Ao comprar uma Caixa Misteriosa na Loja, o motor de sorteio avalia a tabela de probabilidades (Loot Table) do pacote (Básico, Premium, Épico ou Lendário). O prêmio sorteado é transferido diretamente para a sua Mochila, permitindo ganhar recompensas muito superiores ao valor gasto quando a sorte sorri!",
+      "Ao cadastrar ou comprar uma Caixa Misteriosa na Loja, você escolhe entre 4 níveis gamificados com custos e probabilidades equilibrados: Básica (5 🪙), Premium (15 🪙), Épica (35 🪙) e Lendária (80 🪙). O sorteio segue a Loot Table do pacote correspondente e o prêmio sorteado vai direto para a sua Mochila, permitindo ganhar recompensas incríveis de acordo com a sua sorte!",
     tags: ["caixa misteriosa", "sorteio", "rng", "loot table", "prêmios"],
   },
   {
@@ -290,8 +363,28 @@ export const HELP_FAQS: HelpFaqItem[] = [
     category: "FOCUS",
     question: "Como funcionam as ferramentas de Foco (Pomodoro & Cronômetro)?",
     answer:
-      "O HabitParty traz um cronômetro e pomodoro nativos integrados. Você pode iniciar sessões de foco dedicadas a atividades de estudo ou trabalho, registrando os minutos concluídos diretamente no seu histórico de produtividade.",
+      "O HabitParty traz um cronômetro e pomodoro nativos integrados. Você pode iniciar sessões de foco dedicadas a atividades de estudo ou trabalho, registrando os minutos concluídos diretamente no seu histórico e recebendo recompensas calibradas em XP e moedas (🪙).",
+    bullets: [
+      "Pomodoro: Ciclos pré-definidos de foco (15 a 50 min) intercalados por pausas. Ao concluir o ciclo, você ganha a bonificação completa do bloco.",
+      "Cronômetro Livre (Stopwatch): Para quem trabalha em fluxo contínuo. Bonifica proporcionalmente ao tempo focado até o teto de 90 minutos por sessão.",
+      "Mochila / Lazer no Foco: Você pode ativar itens de tempo comprados na Loja (ex: videogame). O timer deduz seu saldo de lazer, mas não gera novos ganhos financeiros.",
+    ],
     tags: ["foco", "pomodoro", "cronômetro", "estudo", "timer"],
+    highlightBadge: "Foco",
+  },
+  {
+    id: "focus-economy",
+    category: "FOCUS",
+    question: "Como funciona a economia do Foco e as travas anti-abuso?",
+    answer:
+      "Para manter a gamificação justa, gratificante e protegida contra esquecimento do timer ligado ou mineração ociosa:",
+    bullets: [
+      "Tempo Mínimo: Sessões com menos de 10 minutos são consideradas descartadas e geram 0 XP e 0 moedas.",
+      "Teto Anti-AFK: Se o timer for esquecido ligado por horas, a remuneração é limitada a no máximo 90 minutos contínuos.",
+      "Teto Diário & Rendimento Decrescente (Soft Cap): As primeiras 4 horas diárias de foco pagam 100%. Entre 4h e 6h pagam 50% (fadiga natural). Acima de 6h de foco diário, novas sessões não geram XP nem moedas para evitar burnout e hiperinflação (o tempo continua registrado nas estatísticas).",
+      "Lazer Não Gera Renda: Sessões de itens de inventário da mochila têm rendimento fixo de 0 XP e 0 moedas.",
+    ],
+    tags: ["foco", "economia", "anti-afk", "teto diário", "recompensas"],
   },
   {
     id: "workspaces-concept",
@@ -304,10 +397,119 @@ export const HELP_FAQS: HelpFaqItem[] = [
   {
     id: "user-plans",
     category: "OVERVIEW",
-    question: "Qual a diferença entre a conta Gratuita e a conta Premium?",
+    question: "Qual a diferença entre a conta Gratuita e a assinatura Premium?",
     answer:
-      "A conta Gratuita oferece acesso completo a todas as ferramentas essenciais de tarefas, hábitos, economia, loja e mochila. O plano Premium traz personalizações exclusivas de perfil, destaques visuais com aro dourado, relatórios analíticos aprofundados e suporte a recursos futuros do roadmap.",
-    tags: ["plano", "gratuito", "premium", "vantagens", "benefícios"],
+      "A conta Gratuita oferece acesso completo a todas as ferramentas essenciais de tarefas, hábitos, economia matemática, loja e mochila. O plano Guardião Cósmico (Premium) foi desenhado para quem gerencia rotinas avançadas e deseja máxima personalização estética e imersão:",
+    bullets: [
+      "Molduras Cósmicas de Avatar: 5 molduras animadas exclusivas com aura e pulso de luz radiante para seu perfil.",
+      "Sons Ambientes de Foco: Sons relaxantes sintetizados nativamente no Pomodoro (Chuva Suave, Cafeteria, Lofi Zen e Fogueira).",
+      "Pacote de Ícones VIP: Coleção exclusiva de ícones dourados para colunas, rotinas, foco e itens da loja.",
+      "Capacidade Expandida: Até 4 Ambientes/Workspaces (o dobro do free), até 6 colunas por quadro, até 6 atividades personalizadas no Modo Foco, mochila expandida para 100 itens e até 100 recompensas cadastradas.",
+      "Destaque no Perfil: Emblema VIP de Guardião Cósmico e anel dourado estelar no avatar.",
+      "Planos e Pagamento: R$ 9,90/mês ou R$ 99,00/ano (economia de ~17%), com suporte a Cartão de Crédito recorrente ou Pix Avulso de 30/365 dias sem renovação automática.",
+    ],
+    tags: [
+      "plano",
+      "gratuito",
+      "premium",
+      "vantagens",
+      "benefícios",
+      "guardião cósmico",
+      "assinatura",
+      "pix",
+      "molduras",
+      "sons ambiente",
+    ],
     highlightBadge: "Planos",
+  },
+  {
+    id: "avatar-frames",
+    category: "OVERVIEW",
+    question:
+      "Como funcionam as Molduras de Avatar e a personalização de perfil?",
+    answer:
+      "Em Configurações > Perfil, você pode escolher molduras circulares animadas que envolvem seu avatar com efeitos de luz cósmica e gradientes estelares. Usuários gratuitos contam com a moldura clássica limpa, enquanto assinantes Guardião Cósmico têm acesso irrestrito às 5 molduras animadas: Guardião Cósmico (ouro estelar), Cyberpunk Neon (pulso ciano e magenta), Fogo da Fênix (chamas ardentes), Aura Esmeralda (místico verde) e Vácuo Ametista (arcano violeta).",
+    tags: [
+      "molduras",
+      "avatar",
+      "perfil",
+      "personalização",
+      "cosméticos",
+      "vip",
+    ],
+    highlightBadge: "Visual",
+  },
+  {
+    id: "ambient-sounds",
+    category: "FOCUS",
+    question: "Como funcionam os Sons Ambientes no Modo Foco?",
+    answer:
+      "Os sons ambientes do HabitParty foram gerados usando a Web Audio API nativa do navegador, garantindo latência zero, consumo mínimo de memória e funcionamento 100% offline. Assinantes Premium podem alternar entre quatro paisagens sonoras relaxantes para silenciar distrações e entrar em estado de fluxo:",
+    bullets: [
+      "Chuva Suave: Ruído rosa com filtragem contínua para simular chuva suave e constante.",
+      "Cafeteria: Filtragem acolhedora de frequências médias simulando o murmúrio calmo de um café.",
+      "Lofi Zen: Acorde harmônico e contínuo (C3, G3, C4, E4) em ondas senoidais filtradas para foco profundo.",
+      "Fogueira: Fundo acústico quente com estalidos aleatórios de brasas e lenha estalando.",
+      "Controles: O som pode ser ativado e ajustado tanto no menu Configurações > Áudio quanto diretamente no popover de áudio durante o timer de Foco/Pomodoro.",
+    ],
+    tags: [
+      "sons ambiente",
+      "foco",
+      "pomodoro",
+      "chuva",
+      "cafeteria",
+      "lofi",
+      "fogueira",
+      "áudio",
+    ],
+    highlightBadge: "Foco",
+  },
+  {
+    id: "payment-cancellation",
+    category: "OVERVIEW",
+    question: "Como funciona o pagamento da assinatura e o cancelamento?",
+    answer:
+      "O HabitParty utiliza a infraestrutura de pagamentos global e segura da Stripe. Você pode escolher entre duas modalidades transparentes:",
+    bullets: [
+      "Cartão de Crédito (Recorrente): Renovação automática mensal ou anual. Você pode cancelar quando quiser com 1 clique acessando Configurações > Perfil > Gerenciar Assinatura (Portal Stripe). Ao cancelar, seu acesso Premium permanece ativo até o fim do período já pago.",
+      "Pix Avulso (Sem Recorrência): Pagamento único via QR Code que credita instantaneamente 30 dias (Mensal) ou 365 dias (Anual) de acesso. Não gera cobranças futuras automáticas no seu banco.",
+    ],
+    tags: [
+      "pagamento",
+      "stripe",
+      "pix",
+      "cancelamento",
+      "cartão",
+      "assinatura",
+    ],
+  },
+  {
+    id: "premium-expiration-data",
+    category: "OVERVIEW",
+    question:
+      "O que acontece com as minhas colunas, ambientes e dados quando o Premium expira?",
+    answer:
+      "Nenhum dado ou tarefa é excluído! O HabitParty tem compromisso absoluto de zero perda de dados. Quando seu período Premium expirar (ou voltar para o plano Free), todas as suas estruturas permanecem intactas no banco de dados e o sistema adota uma degradação suave e transparente:",
+    bullets: [
+      "Colunas do Quadro (Até 6 criadas): O quadro de rotinas passa a exibir até 4 colunas ativas ao mesmo tempo (limite Free). As outras colunas ficam preservadas e ocultas do quadro. Você pode abrir o gerenciador de colunas a qualquer momento e alternar livremente quais 4 colunas quer ativas no dia a dia.",
+      "Ambientes (Workspaces): Todos os ambientes criados continuam salvos e acessíveis em modo somente leitura (Bloqueado 👑), permitindo consultar tarefas a qualquer momento.",
+      "Tarefas e Histórico: Todas as tarefas dentro das colunas ou ambientes continuam preservadas, permitindo concluí-las, movê-las ou editá-las.",
+      "Mochila de Itens e Loja: Itens já comprados na sua mochila nunca são perdidos (direito adquirido). Você pode consumi-los normalmente.",
+      "Aviso Prévio na Sidebar: Para que você nunca seja pego de surpresa, uma contagem regressiva aparece no rodapé da Sidebar avisando quando restam 7, 3 e 1 dia para renovar com 1 clique.",
+      "Reativação Imediata: Ao renovar o Premium a qualquer momento, todos os seus recursos extras (6 colunas juntas com scroll, molduras animadas, sons ambiente e 4 ambientes) voltam instantaneamente sem você precisar reconfigurar nada.",
+    ],
+    tags: [
+      "expiração",
+      "premium",
+      "colunas",
+      "mochila",
+      "dados",
+      "segurança",
+      "workspaces",
+      "downgrade",
+      "free",
+      "aviso",
+    ],
+    highlightBadge: "Transparência",
   },
 ];

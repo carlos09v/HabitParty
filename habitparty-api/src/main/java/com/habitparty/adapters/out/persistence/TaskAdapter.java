@@ -2,6 +2,7 @@ package com.habitparty.adapters.out.persistence;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -10,7 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
-import com.habitparty.adapters.in.web.dtos.response.DashboardTaskDTO;
+import com.habitparty.application.ports.projections.DashboardTaskDTO;
 import com.habitparty.adapters.out.persistence.entities.ChecklistItemJpaEntity;
 import com.habitparty.adapters.out.persistence.entities.DailyJpaEntity;
 import com.habitparty.adapters.out.persistence.entities.TaskJpaEntity;
@@ -43,7 +44,12 @@ public class TaskAdapter implements TaskRepository {
   public Task save(Task task) {
     TaskJpaEntity entity = taskMapper.toEntity(task);
     TaskJpaEntity savedEntity = port.save(entity);
-    return taskMapper.toDomain(savedEntity);
+    Task savedDomain = taskMapper.toDomain(savedEntity);
+    if ((savedDomain.getChecklist() == null || savedDomain.getChecklist().isEmpty())
+        && task.getChecklist() != null && !task.getChecklist().isEmpty()) {
+      savedDomain.setChecklist(task.getChecklist());
+    }
+    return savedDomain;
   }
 
   @Override
@@ -59,6 +65,25 @@ public class TaskAdapter implements TaskRepository {
     return port.findAllRecurringTasks().stream()
         .map(taskMapper::toDomain)
         .toList();
+  }
+
+  @Override
+  public List<Task> findOverdueHardcoreTodos(LocalDate today) {
+    return port.findOverdueHardcoreTodos(today).stream()
+        .map(taskMapper::toDomain)
+        .toList();
+  }
+
+  @Override
+  public List<Task> findPendingEmailReminders(LocalDateTime now, LocalDate today) {
+    return port.findPendingEmailReminders(now, today).stream()
+        .map(taskMapper::toDomain)
+        .toList();
+  }
+
+  @Override
+  public long countActiveEmailRemindersByUserId(UUID userId) {
+    return port.countActiveEmailRemindersByUserId(userId);
   }
 
   @Override
@@ -105,6 +130,16 @@ public class TaskAdapter implements TaskRepository {
   @Override
   public List<Task> findByBoardColumnIdOrderByOrderIndexAsc(UUID boardColumnId) {
     return port.findByBoardColumnIdOrderByOrderIndexAsc(boardColumnId).stream()
+        .map(taskMapper::toDomain)
+        .toList();
+  }
+
+  @Override
+  public List<Task> findByBoardColumnIdInOrderByOrderIndexAsc(List<UUID> boardColumnIds) {
+    if (boardColumnIds == null || boardColumnIds.isEmpty()) {
+      return List.of();
+    }
+    return port.findByBoardColumnIdInOrderByOrderIndexAsc(boardColumnIds).stream()
         .map(taskMapper::toDomain)
         .toList();
   }

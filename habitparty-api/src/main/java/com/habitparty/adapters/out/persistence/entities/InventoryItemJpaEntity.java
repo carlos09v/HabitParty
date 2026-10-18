@@ -68,8 +68,8 @@ public class InventoryItemJpaEntity {
   @Column(name = "order_index", nullable = false)
   private int orderIndex;
 
-  @Column(name = "remaining_minutes")
-  private Integer remainingMinutes;
+  @Column(name = "remaining_seconds")
+  private Integer remainingSeconds;
 
   // @CreationTimestamp => O usecase irá gerar
   @Column(name = "acquired_at", nullable = false, updatable = false)

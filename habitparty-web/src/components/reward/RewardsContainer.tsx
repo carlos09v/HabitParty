@@ -19,18 +19,21 @@ import {
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { ItemRow, ItemRowHeader } from "@/components/ui/ItemRow";
+import { PrimaryActionButton } from "@/components/ui/PrimaryActionButton";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
 import {
   REWARD_CATEGORY_OPTIONS,
-  REWARD_PACKAGE_OPTIONS,
-  REWARD_TAG_OPTIONS,
+  REWARD_SORT_OPTIONS,
   REWARD_TYPE_OPTIONS,
 } from "@/constants/reward";
+import { WELCOME_CARD_DETAILS } from "@/constants/welcomeCards";
+
 import { useItemCatalogFilters } from "@/hooks/useItemCatalogFilters";
 import { useReorderableList } from "@/hooks/useReorderableList";
 import { useUserStore } from "@/store/userStore";
 import type { Reward } from "@/types/reward";
 import { cn } from "@/utils";
+import { calculateRewardWelcomeStats } from "@/utils/catalogMetrics";
 import { soundEffects } from "@/utils/soundEffects";
 import { AddRewardCard, RewardCard } from "./RewardCard";
 
@@ -106,8 +109,12 @@ export function RewardsContainer({
       }
 
       if (user && typeof user.currentCoins === "number") {
+        const nextCoins = Math.max(
+          0,
+          Math.round((user.currentCoins - reward.price) * 100) / 100,
+        );
         updateUserPartial({
-          currentCoins: Math.max(0, user.currentCoins - reward.price),
+          currentCoins: nextCoins,
         });
       }
 
@@ -154,7 +161,7 @@ export function RewardsContainer({
   };
 
   const filteredRewards = useMemo(() => {
-    return rewards.filter((r) => {
+    let result = rewards.filter((r) => {
       if (
         filters.search &&
         !r.title.toLowerCase().includes(filters.search.toLowerCase()) &&
@@ -164,31 +171,49 @@ export function RewardsContainer({
       }
       if (filters.type && r.type !== filters.type) return false;
       if (filters.category && r.category !== filters.category) return false;
-      if (filters.packageLevel && r.packageLevel !== filters.packageLevel)
-        return false;
       return true;
     });
+
+    if (filters.sortBy === "price-asc") {
+      result = [...result].sort((a, b) => a.price - b.price);
+    } else if (filters.sortBy === "price-desc") {
+      result = [...result].sort((a, b) => b.price - a.price);
+    } else if (filters.sortBy === "name") {
+      result = [...result].sort((a, b) => a.title.localeCompare(b.title));
+    }
+
+    return result;
   }, [rewards, filters]);
+
+  const currentCoins = user?.currentCoins ?? 0;
+
+  const { stats: welcomeStats } = useMemo(() => {
+    return calculateRewardWelcomeStats(rewards, currentCoins);
+  }, [rewards, currentCoins]);
 
   return (
     <>
       <WelcomeCard
         compact={isCompact}
-        title="Colete sua recompensa!"
-        subtitle="Gerencie sua Vitrine e troque suas moedas."
-        bullets={[
-          "Escolha entre itens de Uso Único ou Cupom!",
-          "Gerencie sua Vitrine com produtos de sua escolha.",
-          "Todo produto comprado irá para a Mochila.",
-        ]}
-        imageSrc="/assets/undraw/reward/undraw_gift-card_sfy8 1.svg"
-        imageWidth={isCompact ? 130 : 162}
-        imageHeight={isCompact ? 70 : 87}
+        title={WELCOME_CARD_DETAILS.rewards.title}
+        subtitle={WELCOME_CARD_DETAILS.rewards.subtitle}
+        bullets={WELCOME_CARD_DETAILS.rewards.bullets}
+        imageSrc={WELCOME_CARD_DETAILS.rewards.imageSrc}
+        stats={welcomeStats}
+        imageWidth={
+          isCompact
+            ? WELCOME_CARD_DETAILS.rewards.compactWidth
+            : WELCOME_CARD_DETAILS.rewards.normalWidth
+        }
+        imageHeight={
+          isCompact
+            ? WELCOME_CARD_DETAILS.rewards.compactHeight
+            : WELCOME_CARD_DETAILS.rewards.normalHeight
+        }
         storageKey="rewards"
-        className="mb-4 sm:mb-6"
       />
 
-      <section className="flex flex-col gap-6 w-full h-full pb-10">
+      <section className="flex-1 min-h-0 flex flex-col gap-6 w-full pb-10">
         <FilterBar
           search={{
             value: filters.search,
@@ -200,32 +225,33 @@ export function RewardsContainer({
           }}
           dropdownFilters={[
             {
-              id: "type",
-              label: "Tipo",
-              options: REWARD_TYPE_OPTIONS,
-              value: filters.type,
-            },
-            {
               id: "category",
               label: "Categorias",
               options: REWARD_CATEGORY_OPTIONS,
               value: filters.category,
             },
             {
-              id: "tag",
-              label: "Tags",
-              options: REWARD_TAG_OPTIONS,
-              value: filters.tag,
+              id: "type",
+              label: "Tipo",
+              options: REWARD_TYPE_OPTIONS,
+              value: filters.type,
             },
             {
-              id: "packageLevel",
-              label: "Pacote",
-              options: REWARD_PACKAGE_OPTIONS,
-              value: filters.packageLevel,
+              id: "sortBy",
+              label: "Ordenar",
+              options: REWARD_SORT_OPTIONS,
+              value: filters.sortBy || "",
             },
           ]}
           onDropdownChange={(id, value) => handleFilterChange({ [id]: value })}
           onClearDropdowns={handleClearFilters}
+          rightActions={
+            <PrimaryActionButton
+              label="Adicionar Produto"
+              onClick={handleAddProduct}
+              isCompact={isCompact}
+            />
+          }
         />
 
         <DndContext

@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
-import com.habitparty.adapters.in.web.dtos.response.BoardColumnSummaryDTO;
+import com.habitparty.application.ports.projections.BoardColumnSummaryDTO;
 import com.habitparty.adapters.out.persistence.entities.BoardColumnJpaEntity;
 import com.habitparty.adapters.out.persistence.mappers.BoardColumnMapper;
 import com.habitparty.adapters.out.persistence.repository.BoardColumnJpaRepository;

@@ -1,21 +1,21 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { BaseModal } from "@/components/ui/BaseModal";
-import { IconPicker } from "@/components/ui/IconPicker";
+import { IconPickerPopover } from "@/components/ui/IconPickerPopover";
+import { Select } from "@/components/ui/Select";
 import {
   CATEGORY_LABELS,
-  PACKAGE_LEVEL_COLOR,
+  COUPON_PACKAGE_OPTIONS,
+  REWARD_ICON_KEYWORD_MAP,
   REWARD_ICONS,
   REWARD_TYPE_META,
 } from "@/constants/reward";
 import { useRewardForm } from "@/hooks/useRewardForm";
-import type {
-  PackageLevel,
-  Reward,
-  RewardCategory,
-  RewardType,
-} from "@/types/reward";
+import type { Reward, RewardCategory, RewardType } from "@/types/reward";
+import { cn } from "@/utils";
+import { MysteryBoxSelector } from "./MysteryBoxSelector";
 
 interface RewardFormModalProps {
   isOpen: boolean;
@@ -26,7 +26,21 @@ interface RewardFormModalProps {
 
 const CATEGORY_KEYS = Object.keys(CATEGORY_LABELS) as RewardCategory[];
 const TYPE_KEYS = Object.keys(REWARD_TYPE_META) as RewardType[];
-const PACKAGE_LEVEL_KEYS = Object.keys(PACKAGE_LEVEL_COLOR) as PackageLevel[];
+
+const REWARD_TYPE_OPTIONS = TYPE_KEYS.map((t) => {
+  const meta = REWARD_TYPE_META[t];
+  const Icon = meta?.icon;
+  return {
+    value: t,
+    label: meta?.label || t,
+    icon: Icon ? <Icon size={15} className="text-gold shrink-0" /> : undefined,
+  };
+});
+
+const CATEGORY_OPTIONS = CATEGORY_KEYS.map((cat) => ({
+  value: cat,
+  label: cat,
+}));
 
 export function RewardFormModal({
   isOpen,
@@ -34,6 +48,8 @@ export function RewardFormModal({
   rewardToEdit,
   onSuccess,
 }: RewardFormModalProps) {
+  const [hasManuallyChangedIcon, setHasManuallyChangedIcon] = useState(false);
+
   const {
     isEditing,
     isPending,
@@ -44,11 +60,12 @@ export function RewardFormModal({
     price,
     setPrice,
     type,
-    setType,
+    handleTypeChange,
     category,
     setCategory,
     packageLevel,
     setPackageLevel,
+    handleMysteryBoxTierSelect,
     baseDurationMinutes,
     setBaseDurationMinutes,
     selectedIcon,
@@ -61,6 +78,32 @@ export function RewardFormModal({
     onClose,
   });
 
+  useEffect(() => {
+    if (isOpen) {
+      setHasManuallyChangedIcon(Boolean(rewardToEdit));
+    }
+  }, [isOpen, rewardToEdit]);
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTitle = e.target.value;
+    setTitle(newTitle);
+
+    // Sugestão automática de ícone baseado nas palavras digitadas (ex: jogar -> gamepad, pizza -> pizza)
+    if (!hasManuallyChangedIcon && !isEditing) {
+      const normalized = newTitle
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+
+      for (const [keyword, iconId] of Object.entries(REWARD_ICON_KEYWORD_MAP)) {
+        if (normalized.includes(keyword)) {
+          setSelectedIcon(iconId);
+          break;
+        }
+      }
+    }
+  };
+
   return (
     <BaseModal
       isOpen={isOpen}
@@ -70,7 +113,7 @@ export function RewardFormModal({
       preventClose={isPending}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {/* Título / Nome */}
+        {/* Nome da Recompensa e Ícone Integrados */}
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="rewardTitle"
@@ -78,17 +121,33 @@ export function RewardFormModal({
           >
             Nome da Recompensa <span className="text-gold">*</span>
           </label>
-          <input
-            id="rewardTitle"
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ex: 1h de videogame, Café especial..."
-            className="w-full bg-background/50 border border-primary/40 rounded-lg px-3 py-2 text-neutral-50 placeholder:text-neutral-500 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s"
-            required
-            maxLength={40}
-            disabled={isPending}
-          />
+          <div className="flex items-center gap-2">
+            <IconPickerPopover
+              options={REWARD_ICONS}
+              value={selectedIcon}
+              onChange={(iconId) => {
+                setSelectedIcon(iconId);
+                setHasManuallyChangedIcon(true);
+              }}
+              disabled={isPending}
+              title="Ícone da Recompensa"
+            />
+            <input
+              id="rewardTitle"
+              type="text"
+              value={title}
+              onChange={handleTitleChange}
+              placeholder="Ex: 1h de videogame, Café especial, Assistir filme..."
+              className="w-full bg-background/50 border border-primary/40 rounded-lg px-3 py-2 text-neutral-50 placeholder:text-neutral-500 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s h-[42px]"
+              required
+              maxLength={40}
+              disabled={isPending}
+            />
+          </div>
+          <span className="text-label-g text-neutral-400">
+            Clique no ícone para personalizar ou digite o nome para sugestão
+            automática.
+          </span>
         </div>
 
         {/* Descrição */}
@@ -112,171 +171,185 @@ export function RewardFormModal({
           />
         </div>
 
-        {/* Linha dupla: Custo (Moedas) e Categoria */}
+        {/* Linha dupla: Tipo de Recompensa e Categoria */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Custo em Moedas/Pontos */}
-          <div className="flex flex-col gap-1.5">
+          {/* Tipo de Recompensa */}
+          <Select
+            id="rewardType"
+            label={
+              <span>
+                Tipo de Recompensa <span className="text-gold">*</span>
+              </span>
+            }
+            value={type}
+            onChange={(val) => handleTypeChange(val as RewardType)}
+            options={REWARD_TYPE_OPTIONS}
+            disabled={isPending}
+            triggerClassName="py-2 px-3 text-body-s h-[42px]"
+          />
+
+          {/* Categoria */}
+          <Select
+            id="rewardCategory"
+            label="Categoria"
+            value={category}
+            onChange={(val) => setCategory(val as RewardCategory)}
+            options={CATEGORY_OPTIONS}
+            disabled={isPending}
+            triggerClassName="py-2 px-3 text-body-s h-[42px]"
+          />
+        </div>
+
+        {/* 4 Caixas Gamificadas Exibidas Imediatamente Abaixo do Tipo de Recompensa */}
+        {type === "MysteryBox" && (
+          <MysteryBoxSelector
+            selectedLevel={packageLevel}
+            onSelect={(tier) =>
+              handleMysteryBoxTierSelect(
+                tier.id,
+                tier.recommendedPrice,
+                tier.name,
+              )
+            }
+            disabled={isPending}
+          />
+        )}
+
+        {/* Seção Condicional se for TimeBased (Cupom - Opção C) */}
+        {type === "TimeBased" && (
+          <div className="flex flex-col gap-3 p-3.5 rounded-xl bg-surface/30 border border-white/10 animate-in fade-in duration-150">
+            {/* Input numérico de Duração */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <label
+                  htmlFor="rewardDuration"
+                  className="text-body-s text-neutral-300 font-medium"
+                >
+                  Duração da Atividade (minutos){" "}
+                  <span className="text-gold">*</span>
+                </label>
+                <span className="text-label-m text-neutral-400">
+                  (tempo que será consumido no Foco)
+                </span>
+              </div>
+              <input
+                id="rewardDuration"
+                type="number"
+                min={5}
+                max={1440}
+                step={5}
+                value={baseDurationMinutes}
+                onChange={(e) => setBaseDurationMinutes(e.target.value)}
+                onBlur={() => {
+                  if (!baseDurationMinutes || Number(baseDurationMinutes) < 5) {
+                    setBaseDurationMinutes("5");
+                  }
+                }}
+                placeholder="Ex: 30, 60, 120"
+                className="w-full bg-background/50 border border-primary/40 rounded-lg px-3 py-2 text-neutral-50 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s font-semibold h-[42px]"
+                disabled={isPending}
+              />
+            </div>
+
+            {/* Opção C: Chips de Pacote / Atalhos de Tempo */}
+            <div className="flex flex-col gap-1.5 pt-0.5">
+              <div className="flex items-center justify-between">
+                <span className="text-body-s text-neutral-300 font-medium">
+                  Nível do Pacote
+                </span>
+                <span className="text-label-m text-neutral-400">
+                  (opcional • clique para aplicar tempo sugerido)
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {COUPON_PACKAGE_OPTIONS.map((pkg) => {
+                  const isSelected =
+                    packageLevel === pkg.id ||
+                    (pkg.id === "Nenhum" &&
+                      (!packageLevel ||
+                        packageLevel === "NONE" ||
+                        packageLevel === "Nenhum"));
+
+                  return (
+                    <button
+                      key={pkg.id}
+                      type="button"
+                      aria-pressed={isSelected}
+                      disabled={isPending}
+                      onClick={() => {
+                        setPackageLevel(pkg.id);
+                        if (pkg.suggestedMinutes) {
+                          setBaseDurationMinutes(String(pkg.suggestedMinutes));
+                        }
+                      }}
+                      className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-label-g font-semibold transition-all cursor-pointer select-none active:scale-95",
+                        isSelected ? pkg.selectedClass : pkg.unselectedClass,
+                        isPending && "opacity-50 cursor-not-allowed",
+                      )}
+                    >
+                      {pkg.dotColor && (
+                        <span
+                          className={cn(
+                            "w-1.5 h-1.5 rounded-full shrink-0",
+                            pkg.dotColor,
+                          )}
+                        />
+                      )}
+                      <span>{pkg.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Custo em Moedas/Pontos */}
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center justify-between">
             <label
               htmlFor="rewardPrice"
               className="text-body-s text-neutral-300 font-medium"
             >
               Custo em Moedas <span className="text-gold">*</span>
             </label>
-            <div className="relative flex items-center">
-              <div className="absolute left-3 w-4 h-4 rounded-full bg-gold border border-orange-500 flex items-center justify-center shrink-0">
-                <span className="text-label-m text-neutral-900 font-bold leading-none">
-                  H
-                </span>
-              </div>
-              <input
-                id="rewardPrice"
-                type="number"
-                step="any"
-                min="0.01"
-                max={99999}
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="Ex: 10 ou 10.5"
-                className="w-full bg-background/50 border border-primary/40 rounded-lg pl-9 pr-3 py-2 text-neutral-50 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s font-bold"
-                required
-                disabled={isPending}
-              />
+            {type === "MysteryBox" && (
+              <span className="text-label-m text-gold font-medium">
+                (Preço sugerido por raridade)
+              </span>
+            )}
+          </div>
+          <div className="relative flex items-center">
+            <div className="absolute left-3 w-4 h-4 rounded-full bg-gold border border-orange-500 flex items-center justify-center shrink-0">
+              <span className="text-label-m text-neutral-900 font-bold leading-none">
+                H
+              </span>
             </div>
-          </div>
-
-          {/* Categoria */}
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="rewardCategory"
-              className="text-body-s text-neutral-300 font-medium"
-            >
-              Categoria
-            </label>
-            <select
-              id="rewardCategory"
-              value={category}
-              onChange={(e) => setCategory(e.target.value as RewardCategory)}
-              className="w-full bg-background/50 border border-primary/40 rounded-lg px-3 py-2 text-neutral-50 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s cursor-pointer"
-              disabled={isPending}
-            >
-              {CATEGORY_KEYS.map((cat) => (
-                <option
-                  key={cat}
-                  value={cat}
-                  className="bg-popover text-neutral-100"
-                >
-                  {cat}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Linha dupla: Tipo e Nível do Pacote */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Tipo de Recompensa */}
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="rewardType"
-              className="text-body-s text-neutral-300 font-medium"
-            >
-              Tipo de Recompensa
-            </label>
-            <select
-              id="rewardType"
-              value={type}
-              onChange={(e) => setType(e.target.value as RewardType)}
-              className="w-full bg-background/50 border border-primary/40 rounded-lg px-3 py-2 text-neutral-50 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s cursor-pointer"
-              disabled={isPending}
-            >
-              {TYPE_KEYS.map((t) => (
-                <option
-                  key={t}
-                  value={t}
-                  className="bg-popover text-neutral-100"
-                >
-                  {REWARD_TYPE_META[t]?.label || t}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Nível do Pacote */}
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="rewardPackage"
-              className="text-body-s text-neutral-300 font-medium"
-            >
-              Pacote / Raridade{" "}
-              {type === "SingleUse" && (
-                <span className="text-neutral-500 text-xs">
-                  (não aplicável)
-                </span>
-              )}
-            </label>
-            <select
-              id="rewardPackage"
-              value={type === "SingleUse" ? "Nenhum" : packageLevel}
-              onChange={(e) => setPackageLevel(e.target.value as PackageLevel)}
-              className="w-full bg-background/50 border border-primary/40 rounded-lg px-3 py-2 text-neutral-50 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isPending || type === "SingleUse"}
-            >
-              {PACKAGE_LEVEL_KEYS.map((level) => (
-                <option
-                  key={level}
-                  value={level}
-                  className="bg-popover text-neutral-100"
-                >
-                  {level}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Duração Condicional se for TimeBased */}
-        {type === "TimeBased" && (
-          <div className="flex flex-col gap-1.5 animate-in fade-in duration-150">
-            <label
-              htmlFor="rewardDuration"
-              className="text-body-s text-neutral-300 font-medium"
-            >
-              Duração da Atividade (minutos)
-            </label>
             <input
-              id="rewardDuration"
+              id="rewardPrice"
               type="number"
-              min={5}
-              max={1440}
-              step={5}
-              value={baseDurationMinutes}
-              onChange={(e) => setBaseDurationMinutes(e.target.value)}
-              onBlur={() => {
-                if (!baseDurationMinutes || Number(baseDurationMinutes) < 5) {
-                  setBaseDurationMinutes("5");
-                }
-              }}
-              className="w-full bg-background/50 border border-primary/40 rounded-lg px-3 py-2 text-neutral-50 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s"
+              step="any"
+              min="0.01"
+              max={99999}
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="Ex: 5, 15, 35 ou 80"
+              className="w-full bg-background/50 border border-primary/40 rounded-lg pl-9 pr-3 py-2 text-neutral-50 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s font-bold h-[42px]"
+              required
               disabled={isPending}
             />
           </div>
-        )}
-
-        {/* Escolha do Ícone */}
-        <div className="flex flex-col gap-2">
-          <span className="text-body-s text-neutral-300 font-medium">
-            Ícone da Recompensa
-          </span>
-          <IconPicker
-            options={REWARD_ICONS}
-            value={selectedIcon}
-            onChange={setSelectedIcon}
-            disabled={isPending}
-          />
+          {type === "MysteryBox" && (
+            <span className="text-label-m text-neutral-400">
+              Você pode manter o preço calibrado para o pacote ou personalizá-lo
+              livremente.
+            </span>
+          )}
         </div>
 
         {/* Botões de Ação */}
-        <div className="flex justify-end gap-3 mt-3 pt-3 border-t border-white/10">
+        <div className="flex items-center justify-end gap-3 mt-3 pt-3 border-t border-white/10 flex-wrap">
           <button
             type="button"
             onClick={onClose}

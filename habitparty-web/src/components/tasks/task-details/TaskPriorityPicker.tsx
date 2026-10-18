@@ -1,8 +1,9 @@
 "use client";
 
 import { Check, Flag } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { TASK_PRIORITY_META, TODO_PRIORITY_OPTIONS } from "@/constants/task";
+import { useClickOutside } from "@/hooks/useClickOutside";
 import type { TaskPriorityOption } from "@/types/task";
 import { cn } from "@/utils";
 
@@ -18,19 +19,7 @@ export function TaskPriorityPicker({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    };
-    window.addEventListener("mousedown", handleClickOutside);
-    return () => window.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen]);
+  useClickOutside(containerRef, () => setIsOpen(false), { enabled: isOpen });
 
   const priorityMeta =
     TASK_PRIORITY_META[priority] || TASK_PRIORITY_META.MEDIUM;
@@ -55,8 +44,8 @@ export function TaskPriorityPicker({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1.5 z-50 bg-[#160b2b] border border-primary/40 rounded-lg p-1.5 shadow-xl flex flex-col gap-1 w-32 animate-in fade-in duration-100">
-          <span className="text-[10px] uppercase font-bold text-neutral-400 px-2 py-0.5">
+        <div className="absolute right-0 top-full mt-1.5 z-50 bg-popover border border-primary/40 rounded-lg p-1.5 shadow-xl flex flex-col gap-1 w-32 animate-in fade-in duration-100">
+          <span className="text-tiny uppercase font-bold text-neutral-400 px-2 py-0.5">
             Prioridade
           </span>
           {TODO_PRIORITY_OPTIONS.map((opt) => (

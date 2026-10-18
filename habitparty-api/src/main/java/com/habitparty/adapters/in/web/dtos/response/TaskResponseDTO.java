@@ -43,6 +43,8 @@ public record TaskResponseDTO(
         HabitType habitType,
         HabitResetCounter resetCounter,
         HabitImportanceType importanceType,
+        Integer positiveCount,
+        Integer negativeCount,
 
         // --- Campos específicos de Daily ---
         LocalDate startDate,
@@ -54,6 +56,9 @@ public record TaskResponseDTO(
         // --- Campos específicos de Todo ---
         TodoReminderType reminderType,
         LocalDateTime reminderAt,
+        Boolean isPenaltyApplied,
+        Boolean sendEmailReminder,
+        Boolean emailReminderSent,
 
         // --- A lista de Checklist ---
         List<ChecklistItemResponseDTO> checklist) {
@@ -87,6 +92,8 @@ public record TaskResponseDTO(
                 task instanceof Habit h ? h.getHabitType() : null,
                 task instanceof Habit h ? h.getResetCounter() : null,
                 task instanceof Habit h ? h.getImportanceType() : null,
+                task instanceof Habit h ? (Integer) h.getPositiveCount() : null,
+                task instanceof Habit h ? (Integer) h.getNegativeCount() : null,
 
                 // Específicos do Daily
                 task instanceof Daily d ? d.getStartDate() : null,
@@ -98,6 +105,9 @@ public record TaskResponseDTO(
                 // Específicos do Todo
                 task instanceof Todo t ? t.getReminderType() : null,
                 task instanceof Todo t ? t.getReminderAt().orElse(null) : null,
+                task instanceof Todo t ? t.isPenaltyApplied() : null,
+                task instanceof Todo t ? t.isSendEmailReminder() : null,
+                task instanceof Todo t ? t.isEmailReminderSent() : null,
 
                 checklistDTOs);
     }

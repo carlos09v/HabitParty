@@ -31,9 +31,8 @@ public class ChecklistItemController implements ChecklistItemApi {
       AuthenticatedUser userIdLogado,
       CreateChecklistItemDTO dto) {
     UUID userId = userIdLogado.id();
-
-    ChecklistItemResponseDTO response = addChecklistItemUseCase.execute(taskId, userId, dto.name());
-    return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    var item = addChecklistItemUseCase.execute(taskId, userId, dto.name());
+    return ResponseEntity.status(HttpStatus.CREATED).body(ChecklistItemResponseDTO.fromDomain(item));
   }
 
   @Override
@@ -42,9 +41,8 @@ public class ChecklistItemController implements ChecklistItemApi {
       AuthenticatedUser userIdLogado,
       CreateChecklistItemDTO dto) {
     UUID userId = userIdLogado.id();
-
-    ChecklistItemResponseDTO response = updateChecklistItemUseCase.execute(itemId, userId, dto.name());
-    return ResponseEntity.ok(response);
+    var item = updateChecklistItemUseCase.execute(itemId, userId, dto.name());
+    return ResponseEntity.ok(ChecklistItemResponseDTO.fromDomain(item));
   }
 
   @Override
@@ -52,9 +50,8 @@ public class ChecklistItemController implements ChecklistItemApi {
       UUID itemId,
       AuthenticatedUser userIdLogado) {
     UUID userId = userIdLogado.id();
-
-    ChecklistItemResponseDTO response = toggleChecklistItemUseCase.execute(itemId, userId);
-    return ResponseEntity.ok(response);
+    var item = toggleChecklistItemUseCase.execute(itemId, userId);
+    return ResponseEntity.ok(ChecklistItemResponseDTO.fromDomain(item));
   }
 
   @Override

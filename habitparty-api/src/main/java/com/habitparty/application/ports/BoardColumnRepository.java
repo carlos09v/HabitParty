@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.habitparty.adapters.in.web.dtos.response.BoardColumnSummaryDTO;
+import com.habitparty.application.ports.projections.BoardColumnSummaryDTO;
 import com.habitparty.core.domain.entities.BoardColumn;
 
 public interface BoardColumnRepository {

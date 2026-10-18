@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { BoardColumn, Task } from "@/types/task";
+import type { BoardColumn, Task, TaskTypeOption } from "@/types/task";
 
 interface UseBoardModalsOptions {
   initialOpenCreateColumn?: boolean;
@@ -43,6 +43,8 @@ export function useBoardModals({
   const [taskModalState, setTaskModalState] = useState<{
     isOpen: boolean;
     columnId?: string;
+    defaultTaskType?: TaskTypeOption;
+    initialTitle?: string;
     taskToEdit?: Task | null;
   }>({ isOpen: false, taskToEdit: null });
 
@@ -121,7 +123,15 @@ export function useBoardModals({
   useEffect(() => {
     if (!selectedColumnId) return;
 
+    // Aguarda um pequeno tick para evitar que o clique de navegação descarte imediatamente a seleção
+    let isReady = false;
+    const timer = setTimeout(() => {
+      isReady = true;
+    }, 200);
+
     const handlePointerDown = (e: PointerEvent) => {
+      if (!isReady) return;
+
       const targetNode =
         e.target instanceof Element
           ? e.target
@@ -129,6 +139,14 @@ export function useBoardModals({
 
       // Se clicou dentro da coluna selecionada, mantém a borda ativa
       if (targetNode?.closest(`[data-column-id="${selectedColumnId}"]`)) {
+        return;
+      }
+
+      // Se clicou em um modal, drawer, popover ou menu aberto, não desseleciona
+      if (
+        targetNode?.closest('[role="dialog"]') ||
+        targetNode?.closest('[role="menu"]')
+      ) {
         return;
       }
 
@@ -148,38 +166,38 @@ export function useBoardModals({
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
+      clearTimeout(timer);
       window.removeEventListener("pointerdown", handlePointerDown, true);
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [selectedColumnId, clearColumnQueryParam]);
 
-  const handleOpenTaskContextMenu = (
-    e: React.MouseEvent,
-    task: Task,
-    columnId: string,
-  ) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenu({
-      isOpen: true,
-      position: { x: e.clientX, y: e.clientY },
-      task,
-      columnId,
-    });
-  };
+  const handleOpenTaskContextMenu = useCallback(
+    (e: React.MouseEvent, task: Task, columnId: string) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setContextMenu({
+        isOpen: true,
+        position: { x: e.clientX, y: e.clientY },
+        task,
+        columnId,
+      });
+    },
+    [],
+  );
 
-  const handleOpenColumnContextMenu = (
-    e: React.MouseEvent,
-    column: BoardColumn,
-  ) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setColumnContextMenu({
-      isOpen: true,
-      position: { x: e.clientX, y: e.clientY },
-      column,
-    });
-  };
+  const handleOpenColumnContextMenu = useCallback(
+    (e: React.MouseEvent, column: BoardColumn) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setColumnContextMenu({
+        isOpen: true,
+        position: { x: e.clientX, y: e.clientY },
+        column,
+      });
+    },
+    [],
+  );
 
   const closeColumnModal = useCallback(() => {
     setColumnModalState({ isOpen: false, columnToEdit: null });

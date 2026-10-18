@@ -1,5 +1,6 @@
 package com.habitparty.application.ports;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,6 +19,9 @@ public interface TransactionHistoryRepository {
 
   // Busca paginada filtrada pelos tipos de transação (Usado para as abas)
   Page<TransactionHistory> findAllByUserIdAndTypes(UUID userId, List<TransactionType> types, int page, int size);
+
+  // Busca paginada filtrada flexível (tipos, período/data inicial, busca textual)
+  Page<TransactionHistory> findFiltered(UUID userId, List<TransactionType> types, LocalDateTime startDate, String search, int page, int size);
 
   // 3. Para deletar um registro específico (Seu botão futuro)
   void deleteById(UUID id);

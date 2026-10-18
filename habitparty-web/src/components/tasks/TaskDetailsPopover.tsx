@@ -3,29 +3,33 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import {
-  addChecklistItemAction,
-  deleteChecklistItemAction,
-  toggleChecklistItemAction,
-} from "@/actions/checklistActions";
 import { updateTask } from "@/actions/taskActions";
-import { calculateTaskReward, normalizeTaskType } from "@/constants/task";
-import type {
-  ChecklistItem,
-  Task,
-  TaskDetailsPopoverProps,
-  TaskPriorityOption,
-} from "@/types/task";
+import {
+  MAX_TAG_LENGTH,
+  MAX_TASK_TAGS,
+  normalizeTaskType,
+} from "@/constants/task";
+import { useAnchoredPopoverPosition } from "@/hooks/useAnchoredPopoverPosition";
+import { useChecklist } from "@/hooks/useChecklist";
+import { useClickOutside } from "@/hooks/useClickOutside";
+import type { ChecklistItem, Task, TaskPriorityOption } from "@/types/task";
+import type { TaskDetailsPopoverProps } from "@/types/task-ui";
 import { cn } from "@/utils";
+import { calculateTaskReward } from "@/utils/economy";
 import { buildUpdateTaskPayload } from "@/utils/taskMapper";
 import {
+  type FormatSyntax,
   TaskDescriptionEditor,
   TaskDetailsChecklist,
   TaskDetailsFooter,
   TaskDetailsHeader,
   TaskDetailsTags,
-  useTaskDetailsPosition,
 } from "./task-details";
+
+const POPOVER_OPTIONS = {
+  popoverWidth: 380,
+  popoverHeight: 420,
+};
 
 export function TaskDetailsPopover({
   isOpen,
@@ -36,6 +40,8 @@ export function TaskDetailsPopover({
   onTaskUpdate,
   onDelete,
   onToggleComplete,
+  onEdit,
+  onDuplicate,
 }: TaskDetailsPopoverProps) {
   const [, startTransition] = useTransition();
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -47,6 +53,7 @@ export function TaskDetailsPopover({
   const descRef = useRef(task?.description || "");
   const newTagRef = useRef("");
   const newItemRef = useRef("");
+  const checklistRef = useRef<ChecklistItem[]>(task?.checklist || []);
 
   const [mounted, setMounted] = useState(false);
   const [completed, setCompleted] = useState(Boolean(task?.completed));
@@ -55,23 +62,51 @@ export function TaskDetailsPopover({
   const [dueDate, setDueDate] = useState(task?.dueDate || "");
   const [priority, setPriority] = useState<string>(task?.priority || "MEDIUM");
   const [tags, setTags] = useState<string[]>(task?.tags || []);
-  const [checklist, setChecklist] = useState<ChecklistItem[]>(
-    task?.checklist || [],
+  const handleChecklistChanged = useCallback(
+    (nextList: ChecklistItem[]) => {
+      checklistRef.current = nextList;
+      if (task) {
+        onTaskUpdate?.({ ...task, checklist: nextList });
+      }
+    },
+    [task, onTaskUpdate],
   );
-  const checklistRef = useRef<ChecklistItem[]>(task?.checklist || []);
+
+  const {
+    checklist,
+    resetChecklist,
+    addItem: addChecklistItem,
+    toggleItem: toggleChecklistItem,
+    deleteItem: deleteChecklistItem,
+  } = useChecklist({
+    initialItems: task?.checklist,
+    taskId: task?.id,
+    onChecklistChanged: handleChecklistChanged,
+  });
 
   // Estados de controle da interface
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [newTagText, setNewTagText] = useState("");
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItemText, setNewItemText] = useState("");
-  const [showFormatToolbar, setShowFormatToolbar] = useState(false);
+  const [isMobileScreen, setIsMobileScreen] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobileScreen(window.innerWidth < 640);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Posição com prevenção de overflow no viewport
-  const popoverPosition = useTaskDetailsPosition(
+  const popoverPosition = useAnchoredPopoverPosition(
     isOpen,
     anchorRect,
     popoverRef,
+    POPOVER_OPTIONS,
+    mounted,
   );
 
   useEffect(() => {
@@ -89,9 +124,9 @@ export function TaskDetailsPopover({
       setDueDate(task.dueDate || "");
       setPriority(task.priority || "MEDIUM");
       setTags(task.tags || []);
-      const currentList = task.checklist || [];
-      setChecklist(currentList);
-      checklistRef.current = currentList;
+      const initialChecklist = task.checklist || [];
+      resetChecklist(initialChecklist);
+      checklistRef.current = initialChecklist;
       setIsAddingTag(false);
       setNewTagText("");
       newTagRef.current = "";
@@ -99,7 +134,11 @@ export function TaskDetailsPopover({
       setNewItemText("");
       newItemRef.current = "";
     }
-  }, [task]);
+  }, [task, resetChecklist]);
+
+  useEffect(() => {
+    checklistRef.current = checklist;
+  }, [checklist]);
 
   const taskType = task ? normalizeTaskType(task) : "todo";
   const isHabit = taskType === "habit";
@@ -113,9 +152,18 @@ export function TaskDetailsPopover({
       const reward = calculateTaskReward({
         ...task,
         ...fields,
+        isHardcoreModeEnabled:
+          fields.isHardcoreModeEnabled ?? task.isHardcoreModeEnabled,
+        dueDate: fields.dueDate ?? task.dueDate,
+        isPenaltyApplied: fields.isPenaltyApplied ?? task.isPenaltyApplied,
       });
+      const currentChecklist =
+        checklistRef.current.length > 0
+          ? checklistRef.current
+          : task.checklist || [];
       const updated = {
         ...task,
+        checklist: currentChecklist,
         ...fields,
         rewardXp: reward.xp,
         rewardGold: reward.gold,
@@ -127,6 +175,16 @@ export function TaskDetailsPopover({
         const res = await updateTask(task.id, payload);
         if (!res.success) {
           toast.error(res.error || "Erro ao salvar alterações da tarefa.");
+        } else if (res.data) {
+          const finalChecklist =
+            res.data.checklist && res.data.checklist.length > 0
+              ? res.data.checklist
+              : currentChecklist;
+          onTaskUpdate?.({
+            ...updated,
+            title: res.data.name || updated.title,
+            checklist: finalChecklist,
+          });
         }
       });
     },
@@ -145,10 +203,14 @@ export function TaskDetailsPopover({
     const descChanged = trimmedDesc !== originalDesc;
 
     let nextTags = [...(task.tags || tags)];
-    const pendingTag = newTagRef.current.trim();
+    const pendingTag = newTagRef.current.trim().slice(0, MAX_TAG_LENGTH);
     let tagsChanged = false;
 
-    if (pendingTag && !nextTags.includes(pendingTag)) {
+    if (
+      pendingTag &&
+      nextTags.length < MAX_TASK_TAGS &&
+      !nextTags.some((t) => t.toLowerCase() === pendingTag.toLowerCase())
+    ) {
       nextTags = [...nextTags, pendingTag];
       tagsChanged = true;
     }
@@ -164,31 +226,52 @@ export function TaskDetailsPopover({
     // Se havia uma subtarefa sendo digitada, salva no backend e sincroniza
     const pendingItem = newItemRef.current.trim();
     if (pendingItem) {
-      const tempId = `temp-${Date.now()}`;
-      const optimisticItem: ChecklistItem = {
-        id: tempId,
-        name: pendingItem,
-        isCompleted: false,
-      };
-      const nextList = [...checklistRef.current, optimisticItem];
-      checklistRef.current = nextList;
-      setChecklist(nextList);
-      onTaskUpdate?.({ ...task, checklist: nextList });
-
-      startTransition(async () => {
-        const res = await addChecklistItemAction(task.id, {
-          name: pendingItem,
-        });
-        if (res.success && res.data) {
-          const confirmed = nextList.map((item) =>
-            item.id === tempId ? (res.data as ChecklistItem) : item,
-          );
-          checklistRef.current = confirmed;
-          onTaskUpdate?.({ ...task, checklist: confirmed });
-        }
-      });
+      addChecklistItem(pendingItem);
     }
-  }, [task, tags, saveTaskField, onTaskUpdate]);
+  }, [task, tags, saveTaskField, addChecklistItem]);
+
+  const handleApplyFormat = useCallback((syntax: FormatSyntax) => {
+    const textarea = descTextareaRef.current;
+    if (!textarea) return;
+
+    const currentDesc = descRef.current;
+    const start = textarea.selectionStart ?? currentDesc.length;
+    const end = textarea.selectionEnd ?? currentDesc.length;
+    const selectedText = currentDesc.substring(start, end);
+
+    let replacement = "";
+    if (syntax === "bold") {
+      replacement = selectedText
+        ? `**${selectedText}**`
+        : "**texto em negrito**";
+    } else if (syntax === "italic") {
+      replacement = selectedText ? `*${selectedText}*` : "*texto em itálico*";
+    } else if (syntax === "highlight") {
+      replacement = selectedText
+        ? `==${selectedText}==`
+        : "==texto destacado==";
+    } else if (syntax === "bullet") {
+      replacement = selectedText ? `\n- ${selectedText}` : "\n- Novo item";
+    } else if (syntax === "code") {
+      replacement = selectedText ? `\`${selectedText}\`` : "`código`";
+    }
+
+    const nextDesc =
+      currentDesc.substring(0, start) +
+      replacement +
+      currentDesc.substring(end);
+
+    setDescription(nextDesc);
+    descRef.current = nextDesc;
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(
+        start + replacement.length,
+        start + replacement.length,
+      );
+    }, 50);
+  }, []);
 
   const handleCloseWithSave = useCallback(() => {
     flushPendingChanges();
@@ -196,30 +279,7 @@ export function TaskDetailsPopover({
   }, [flushPendingChanges, onClose]);
 
   // Listener para fechar e auto-salvar ao clicar fora ou pressionar Escape
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handlePointerDown = (e: MouseEvent) => {
-      const targetNode = e.target as Node;
-      if (popoverRef.current && !popoverRef.current.contains(targetNode)) {
-        handleCloseWithSave();
-      }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        handleCloseWithSave();
-      }
-    };
-
-    window.addEventListener("mousedown", handlePointerDown, true);
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("mousedown", handlePointerDown, true);
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen, handleCloseWithSave]);
+  useClickOutside(popoverRef, handleCloseWithSave, { enabled: isOpen });
 
   if (!isOpen || !mounted || !task) return null;
 
@@ -227,6 +287,7 @@ export function TaskDetailsPopover({
     const next = !completed;
     setCompleted(next);
     onToggleComplete?.(task.id, next);
+    onTaskUpdate?.({ ...task, completed: next });
   };
 
   const handleTitleBlur = () => {
@@ -255,6 +316,13 @@ export function TaskDetailsPopover({
   };
 
   const handleDateChange = (newDate: string) => {
+    if (
+      task?.isHardcoreModeEnabled &&
+      task?.dueDate &&
+      new Date(`${task.dueDate}T23:59:59`) < new Date()
+    ) {
+      return;
+    }
     setDueDate(newDate);
     saveTaskField({ dueDate: newDate || undefined });
   };
@@ -266,16 +334,32 @@ export function TaskDetailsPopover({
 
   // Tags
   const handleAddTag = () => {
-    const trimmed = newTagText.trim();
+    const trimmed = newTagText.trim().slice(0, MAX_TAG_LENGTH);
     if (!trimmed) {
       setIsAddingTag(false);
       return;
     }
-    if (!tags.includes(trimmed)) {
-      const nextTags = [...tags, trimmed];
-      setTags(nextTags);
-      saveTaskField({ tags: nextTags });
+    if (tags.length >= MAX_TASK_TAGS) {
+      toast.error(`Uma tarefa pode ter no máximo ${MAX_TASK_TAGS} tags.`);
+      setNewTagText("");
+      newTagRef.current = "";
+      setIsAddingTag(false);
+      return;
     }
+    const alreadyExists = tags.some(
+      (t) => t.toLowerCase() === trimmed.toLowerCase(),
+    );
+    if (alreadyExists) {
+      toast.error("Esta tag já foi adicionada.");
+      setNewTagText("");
+      newTagRef.current = "";
+      setIsAddingTag(false);
+      return;
+    }
+
+    const nextTags = [...tags, trimmed];
+    setTags(nextTags);
+    saveTaskField({ tags: nextTags });
     setNewTagText("");
     newTagRef.current = "";
     setIsAddingTag(false);
@@ -289,200 +373,186 @@ export function TaskDetailsPopover({
 
   // Subtarefas / Checklist
   const handleToggleCheckItem = (itemId?: string) => {
-    if (!itemId) return;
-    const nextChecklist = checklist.map((item) =>
-      item.id === itemId ? { ...item, isCompleted: !item.isCompleted } : item,
-    );
-    setChecklist(nextChecklist);
-    checklistRef.current = nextChecklist;
-    onTaskUpdate?.({ ...task, checklist: nextChecklist });
-
-    startTransition(async () => {
-      const res = await toggleChecklistItemAction(itemId);
-      if (!res.success) {
-        toast.error(res.error || "Erro ao atualizar subtarefa.");
-        setChecklist(checklist);
-        checklistRef.current = checklist;
-        onTaskUpdate?.({ ...task, checklist });
-      }
-    });
+    toggleChecklistItem(itemId);
   };
 
   const handleDeleteCheckItem = (itemId?: string) => {
-    if (!itemId) return;
-    const nextChecklist = checklist.filter((item) => item.id !== itemId);
-    setChecklist(nextChecklist);
-    checklistRef.current = nextChecklist;
-    onTaskUpdate?.({ ...task, checklist: nextChecklist });
-
-    startTransition(async () => {
-      const res = await deleteChecklistItemAction(itemId);
-      if (!res.success) {
-        toast.error(res.error || "Erro ao remover subtarefa.");
-        setChecklist(checklist);
-        checklistRef.current = checklist;
-        onTaskUpdate?.({ ...task, checklist });
-      }
-    });
+    deleteChecklistItem(itemId);
   };
 
-  const handleAddCheckItem = () => {
+  const handleAddCheckItem = async () => {
     const trimmed = newItemText.trim();
     if (!trimmed) return;
-
-    const tempId = `temp-${Date.now()}`;
-    const optimisticItem: ChecklistItem = {
-      id: tempId,
-      name: trimmed,
-      isCompleted: false,
-    };
-    const nextChecklist = [...checklist, optimisticItem];
-    setChecklist(nextChecklist);
-    checklistRef.current = nextChecklist;
-    onTaskUpdate?.({ ...task, checklist: nextChecklist });
-
     setNewItemText("");
     newItemRef.current = "";
     setIsAddingItem(false);
-
-    startTransition(async () => {
-      const res = await addChecklistItemAction(task.id, { name: trimmed });
-      if (!res.success) {
-        toast.error(res.error || "Erro ao adicionar subtarefa.");
-        const rolledBack = checklistRef.current.filter(
-          (item) => item.id !== tempId,
-        );
-        checklistRef.current = rolledBack;
-        setChecklist(rolledBack);
-        onTaskUpdate?.({ ...task, checklist: rolledBack });
-      } else if (res.data) {
-        const confirmed = checklistRef.current.map((item) =>
-          item.id === tempId ? (res.data as ChecklistItem) : item,
-        );
-        checklistRef.current = confirmed;
-        setChecklist(confirmed);
-        onTaskUpdate?.({ ...task, checklist: confirmed });
-      }
-    });
+    await addChecklistItem(trimmed);
   };
 
   const handleDeleteTask = () => {
-    if (confirm(`Tem certeza que deseja excluir "${task.title}"?`)) {
-      onDelete?.(task.id);
+    onDelete?.(task.id);
+    onClose();
+  };
+
+  const handleDuplicateTask = () => {
+    if (task) {
+      flushPendingChanges();
+      const currentTask: Task = {
+        ...task,
+        title: titleRef.current.trim() || task.title,
+        description: descRef.current.trim() || task.description,
+        tags: tags,
+        checklist:
+          checklistRef.current.length > 0
+            ? checklistRef.current
+            : task.checklist,
+      };
+      onDuplicate?.(currentTask);
+      onClose();
+    }
+  };
+
+  const handleOpenFullModal = () => {
+    if (task) {
+      flushPendingChanges();
+      onEdit?.(task);
       onClose();
     }
   };
 
   return createPortal(
-    <div
-      ref={popoverRef}
-      style={{
-        top: `${popoverPosition.top}px`,
-        left: `${popoverPosition.left}px`,
-      }}
-      className={cn(
-        "fixed z-[120] w-[360px] max-w-[calc(100vw-24px)]",
-        "bg-popover border border-primary/45 rounded-2xl shadow-card-deep backdrop-blur-md",
-        "p-4 flex flex-col gap-3.5 select-none animate-in fade-in zoom-in-95 duration-150",
-      )}
-      role="dialog"
-      aria-label="Detalhes rápidos da tarefa"
-    >
-      {/* 1. TOPO: Checkbox / Tipo + Prazo + Prioridade */}
-      <TaskDetailsHeader
-        task={task}
-        completed={completed}
-        isHabit={isHabit}
-        isDaily={isDaily}
-        isTodo={isTodo}
-        dueDate={dueDate}
-        priority={priority}
-        onToggleComplete={handleToggleTask}
-        onDateChange={handleDateChange}
-        onPrioritySelect={handlePrioritySelect}
+    <>
+      {/* Backdrop para mobile (< sm) */}
+      <div
+        className="fixed inset-0 bg-neutral-950/75 backdrop-blur-xs z-[119] sm:hidden animate-in fade-in duration-200"
+        onClick={handleCloseWithSave}
+        aria-hidden="true"
       />
 
-      {/* 2. TÍTULO EDITÁVEL */}
-      <div className="flex flex-col">
-        <input
-          ref={titleInputRef}
-          type="text"
-          value={title}
-          onChange={(e) => {
-            setTitle(e.target.value);
-            titleRef.current = e.target.value;
-          }}
-          onBlur={handleTitleBlur}
-          onKeyDown={handleTitleKeyDown}
-          placeholder="Título da tarefa..."
-          className={cn(
-            "w-full bg-transparent border border-transparent rounded px-1.5 py-0.5",
-            "text-base font-bold text-neutral-50 placeholder:text-neutral-500",
-            "hover:border-white/15 focus:border-gold focus:bg-primary-dark/30 focus:outline-none transition-all",
-            completed && !isHabit && "line-through text-neutral-400",
+      <div
+        ref={popoverRef}
+        style={
+          isMobileScreen
+            ? undefined
+            : {
+                top: `${popoverPosition.top}px`,
+                left: `${popoverPosition.left}px`,
+              }
+        }
+        className={cn(
+          "fixed z-[120] select-none flex flex-col gap-3.5 backdrop-blur-xl shadow-2xl",
+          // Mobile (< sm): Bottom Sheet fixado na base com scroll interno
+          "max-sm:inset-x-0 max-sm:bottom-0 max-sm:w-full max-sm:rounded-t-2xl max-sm:rounded-b-none max-sm:border-t max-sm:border-x-0 max-sm:border-b-0 max-sm:border-primary/40 max-sm:bg-surface/98 max-sm:p-4 max-sm:max-h-[85vh] max-sm:overflow-y-auto max-sm:animate-in max-sm:slide-in-from-bottom max-sm:duration-200",
+          // Desktop (sm+): Popover flutuante ancorado
+          "sm:w-[380px] sm:max-w-[calc(100vw-24px)] sm:rounded-2xl sm:border sm:border-primary/40 sm:bg-card/95 sm:p-4 sm:animate-in sm:fade-in sm:zoom-in-95 sm:duration-150",
+        )}
+        role="dialog"
+        aria-label="Detalhes rápidos da tarefa"
+      >
+        {/* Pílula visual de puxar para mobile */}
+        <div className="sm:hidden w-12 h-1.5 rounded-full bg-white/25 mx-auto -mt-1 mb-1 shrink-0" />
+
+        {/* 1. TOPO: Checkbox / Tipo + Prazo + Prioridade + Fechar */}
+        <TaskDetailsHeader
+          task={task}
+          completed={completed}
+          isHabit={isHabit}
+          isDaily={isDaily}
+          isTodo={isTodo}
+          dueDate={dueDate}
+          priority={priority}
+          onToggleComplete={handleToggleTask}
+          onDateChange={handleDateChange}
+          onPrioritySelect={handlePrioritySelect}
+          onEdit={handleOpenFullModal}
+          onClose={handleCloseWithSave}
+        />
+
+        {/* 2. ÁREA CENTRAL ROLÁVEL COM CABEÇALHO E RODAPÉ FIXOS */}
+        <div className="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 max-h-[min(500px,calc(100vh-200px))]">
+          {/* TÍTULO EDITÁVEL */}
+          <div className="rounded-xl border border-primary/25 bg-surface/50 px-2.5 py-1.5 focus-within:border-gold focus-within:ring-1 focus-within:ring-gold transition-all">
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                titleRef.current = e.target.value;
+              }}
+              onBlur={handleTitleBlur}
+              onKeyDown={handleTitleKeyDown}
+              placeholder="Título da tarefa..."
+              className={cn(
+                "w-full bg-transparent border-none outline-none",
+                "text-base font-bold text-neutral-50 placeholder:text-neutral-500",
+                completed && !isHabit && "line-through text-neutral-400",
+              )}
+            />
+          </div>
+
+          {/* DESCRIÇÃO */}
+          <TaskDescriptionEditor
+            description={description}
+            onChange={(val) => {
+              setDescription(val);
+              descRef.current = val;
+            }}
+            onBlur={handleDescriptionBlur}
+            textareaRef={descTextareaRef}
+          />
+
+          {/* TAGS */}
+          <TaskDetailsTags
+            tags={tags}
+            isAddingTag={isAddingTag}
+            newTagText={newTagText}
+            onNewTagTextChange={(val) => {
+              setNewTagText(val);
+              newTagRef.current = val;
+            }}
+            onStartAddTag={() => setIsAddingTag(true)}
+            onCancelAddTag={() => {
+              setIsAddingTag(false);
+              newTagRef.current = "";
+            }}
+            onAddTag={handleAddTag}
+            onRemoveTag={handleRemoveTag}
+          />
+
+          {/* CHECKLIST / SUBTAREFAS */}
+          {!isHabit && (
+            <TaskDetailsChecklist
+              checklist={checklist}
+              isAddingItem={isAddingItem}
+              newItemText={newItemText}
+              onNewItemTextChange={(val) => {
+                setNewItemText(val);
+                newItemRef.current = val;
+              }}
+              onStartAddItem={() => setIsAddingItem(true)}
+              onCancelAddItem={() => {
+                setIsAddingItem(false);
+                newItemRef.current = "";
+              }}
+              onAddItem={handleAddCheckItem}
+              onToggleItem={handleToggleCheckItem}
+              onDeleteItem={handleDeleteCheckItem}
+            />
           )}
+        </div>
+
+        {/* 3. RODAPÉ */}
+        <TaskDetailsFooter
+          task={task}
+          columnTitle={columnTitle}
+          onApplyFormat={handleApplyFormat}
+          onDeleteTask={handleDeleteTask}
+          onDuplicateTask={onDuplicate ? handleDuplicateTask : undefined}
+          onOpenEdit={handleOpenFullModal}
         />
       </div>
-
-      {/* 3. DESCRIÇÃO & BARRA DE FORMATAÇÃO */}
-      <TaskDescriptionEditor
-        description={description}
-        onChange={(val) => {
-          setDescription(val);
-          descRef.current = val;
-        }}
-        onBlur={handleDescriptionBlur}
-        showFormatToolbar={showFormatToolbar}
-        textareaRef={descTextareaRef}
-      />
-
-      {/* 4. TAGS */}
-      <TaskDetailsTags
-        tags={tags}
-        isAddingTag={isAddingTag}
-        newTagText={newTagText}
-        onNewTagTextChange={(val) => {
-          setNewTagText(val);
-          newTagRef.current = val;
-        }}
-        onStartAddTag={() => setIsAddingTag(true)}
-        onCancelAddTag={() => {
-          setIsAddingTag(false);
-          newTagRef.current = "";
-        }}
-        onAddTag={handleAddTag}
-        onRemoveTag={handleRemoveTag}
-      />
-
-      {/* 5. CHECKLIST / SUBTAREFAS */}
-      {!isHabit && (
-        <TaskDetailsChecklist
-          checklist={checklist}
-          isAddingItem={isAddingItem}
-          newItemText={newItemText}
-          onNewItemTextChange={(val) => {
-            setNewItemText(val);
-            newItemRef.current = val;
-          }}
-          onStartAddItem={() => setIsAddingItem(true)}
-          onCancelAddItem={() => {
-            setIsAddingItem(false);
-            newItemRef.current = "";
-          }}
-          onAddItem={handleAddCheckItem}
-          onToggleItem={handleToggleCheckItem}
-          onDeleteItem={handleDeleteCheckItem}
-        />
-      )}
-
-      {/* 6. RODAPÉ */}
-      <TaskDetailsFooter
-        columnTitle={columnTitle}
-        showFormatToolbar={showFormatToolbar}
-        onToggleFormatToolbar={() => setShowFormatToolbar((prev) => !prev)}
-        onDeleteTask={handleDeleteTask}
-      />
-    </div>,
+    </>,
     document.body,
   );
 }

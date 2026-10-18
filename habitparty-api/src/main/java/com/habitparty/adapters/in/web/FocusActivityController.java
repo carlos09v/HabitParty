@@ -12,10 +12,13 @@ import com.habitparty.adapters.in.web.dtos.request.CreateFocusActivityDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateFocusActivityDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateFocusActivityOrderDTO;
 import com.habitparty.adapters.in.web.dtos.response.FocusActivityResponseDTO;
+import com.habitparty.application.usecases.focus.CreateFocusActivityCommand;
 import com.habitparty.application.usecases.focus.CreateFocusActivityUseCase;
 import com.habitparty.application.usecases.focus.DeleteFocusActivityUseCase;
+import com.habitparty.application.usecases.focus.FocusActivityOrderCommand;
 import com.habitparty.application.usecases.focus.GetFocusActivitiesUseCase;
 import com.habitparty.application.usecases.focus.ReorderFocusActivitiesUseCase;
+import com.habitparty.application.usecases.focus.UpdateFocusActivityCommand;
 import com.habitparty.application.usecases.focus.UpdateFocusActivityUseCase;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
@@ -34,16 +37,18 @@ public class FocusActivityController implements FocusActivityApi {
   public ResponseEntity<FocusActivityResponseDTO> create(
       CreateFocusActivityDTO dto,
       AuthenticatedUser usuarioLogado) {
-    FocusActivityResponseDTO response = createUseCase.execute(usuarioLogado.id(), dto);
-
-    return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    var command = new CreateFocusActivityCommand(dto.name(), dto.icon(), dto.recordType(), dto.targetTimeMinutes());
+    var activity = createUseCase.execute(usuarioLogado.id(), command);
+    return ResponseEntity.status(HttpStatus.CREATED).body(FocusActivityResponseDTO.fromDomain(activity));
   }
 
   @Override
   public ResponseEntity<List<FocusActivityResponseDTO>> getAll(
       AuthenticatedUser usuarioLogado) {
-
-    List<FocusActivityResponseDTO> responses = getUseCase.execute(usuarioLogado.id());
+    List<FocusActivityResponseDTO> responses = getUseCase.execute(usuarioLogado.id())
+        .stream()
+        .map(FocusActivityResponseDTO::fromDomain)
+        .toList();
     return ResponseEntity.ok(responses);
   }
 
@@ -52,8 +57,9 @@ public class FocusActivityController implements FocusActivityApi {
       UUID activityId,
       UpdateFocusActivityDTO dto,
       AuthenticatedUser usuarioLogado) {
-    FocusActivityResponseDTO response = updateUseCase.execute(usuarioLogado.id(), activityId, dto);
-    return ResponseEntity.ok(response);
+    var command = new UpdateFocusActivityCommand(dto.name(), dto.icon(), dto.recordType(), dto.pomoTimeMinutes());
+    var activity = updateUseCase.execute(usuarioLogado.id(), activityId, command);
+    return ResponseEntity.ok(FocusActivityResponseDTO.fromDomain(activity));
   }
 
   @Override
@@ -69,7 +75,10 @@ public class FocusActivityController implements FocusActivityApi {
   public ResponseEntity<Void> reorder(
       List<UpdateFocusActivityOrderDTO> novaOrdemDtos,
       AuthenticatedUser usuarioLogado) {
-    reorderUseCase.execute(usuarioLogado.id(), novaOrdemDtos);
+    List<FocusActivityOrderCommand> commands = novaOrdemDtos.stream()
+        .map(dto -> new FocusActivityOrderCommand(dto.id(), dto.orderIndex()))
+        .toList();
+    reorderUseCase.execute(usuarioLogado.id(), commands);
     return ResponseEntity.noContent().build();
   }
 }

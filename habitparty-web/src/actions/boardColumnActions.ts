@@ -3,6 +3,7 @@
 import { updateTag } from "next/cache";
 import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
+import { type ActionState, getErrorMessage } from "./types";
 
 type CreateBoardColumnDTO = components["schemas"]["CreateBoardColumnDTO"];
 type UpdateBoardColumnDTO = components["schemas"]["UpdateBoardColumnDTO"];
@@ -10,29 +11,27 @@ type UpdateBoardColumnOrderDTO =
   components["schemas"]["UpdateBoardColumnOrderDTO"];
 type BoardColumnResponseDTO = components["schemas"]["BoardColumnResponseDTO"];
 
-export type ActionResponse<T = void> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+export type ActionResponse<T = void> = ActionState<T>;
 
 /**
  * Cria uma nova coluna no Kanban
  */
-export async function createBoardColumnAction(
+export async function createBoardColumn(
   payload: CreateBoardColumnDTO,
-): Promise<ActionResponse<BoardColumnResponseDTO>> {
+): Promise<ActionState<BoardColumnResponseDTO>> {
   try {
     const { data, error } = await serverApi.POST("/board_columns", {
       body: payload,
     });
 
     if (error) {
-      const backendMessage = (error as any)?.message;
       return {
         success: false,
-        error: backendMessage || "Falha ao criar coluna.",
+        error: getErrorMessage(error, "Falha ao criar coluna."),
       };
     }
 
+    updateTag("kanban");
     updateTag("board_columns");
     updateTag("workspaces");
 
@@ -49,10 +48,10 @@ export async function createBoardColumnAction(
 /**
  * Atualiza os dados de uma coluna existente
  */
-export async function updateBoardColumnAction(
+export async function updateBoardColumn(
   boardColumnId: string,
   payload: UpdateBoardColumnDTO,
-): Promise<ActionResponse<BoardColumnResponseDTO>> {
+): Promise<ActionState<BoardColumnResponseDTO>> {
   try {
     const { data, error } = await serverApi.PUT(
       "/board_columns/{boardColumnId}",
@@ -63,13 +62,13 @@ export async function updateBoardColumnAction(
     );
 
     if (error) {
-      const backendMessage = (error as any)?.message;
       return {
         success: false,
-        error: backendMessage || "Falha ao atualizar coluna.",
+        error: getErrorMessage(error, "Falha ao atualizar coluna."),
       };
     }
 
+    updateTag("kanban");
     updateTag("board_columns");
     updateTag("workspaces");
 
@@ -86,22 +85,22 @@ export async function updateBoardColumnAction(
 /**
  * Exclui uma coluna do Kanban
  */
-export async function deleteBoardColumnAction(
+export async function deleteBoardColumn(
   id: string,
-): Promise<ActionResponse<void>> {
+): Promise<ActionState<void>> {
   try {
     const { error } = await serverApi.DELETE("/board_columns/{id}", {
       params: { path: { id } },
     });
 
     if (error) {
-      const backendMessage = (error as any)?.message;
       return {
         success: false,
-        error: backendMessage || "Falha ao excluir coluna.",
+        error: getErrorMessage(error, "Falha ao excluir coluna."),
       };
     }
 
+    updateTag("kanban");
     updateTag("board_columns");
     updateTag("workspaces");
 
@@ -118,10 +117,10 @@ export async function deleteBoardColumnAction(
 /**
  * Reordena colunas do Kanban
  */
-export async function updateBoardColumnOrderAction(
+export async function updateBoardColumnOrder(
   workspaceId: string,
   payload: UpdateBoardColumnOrderDTO[],
-): Promise<ActionResponse<void>> {
+): Promise<ActionState<void>> {
   try {
     const { error } = await serverApi.PUT(
       "/board_columns/workspace/{workspaceId}/reorder",
@@ -132,13 +131,13 @@ export async function updateBoardColumnOrderAction(
     );
 
     if (error) {
-      const backendMessage = (error as any)?.message;
       return {
         success: false,
-        error: backendMessage || "Falha ao reordenar colunas.",
+        error: getErrorMessage(error, "Falha ao reordenar colunas."),
       };
     }
 
+    updateTag("kanban");
     updateTag("board_columns");
     updateTag("workspaces");
 
@@ -151,3 +150,9 @@ export async function updateBoardColumnOrderAction(
     };
   }
 }
+
+// Aliases para compatibilidade retroativa
+export const createBoardColumnAction = createBoardColumn;
+export const updateBoardColumnAction = updateBoardColumn;
+export const deleteBoardColumnAction = deleteBoardColumn;
+export const updateBoardColumnOrderAction = updateBoardColumnOrder;

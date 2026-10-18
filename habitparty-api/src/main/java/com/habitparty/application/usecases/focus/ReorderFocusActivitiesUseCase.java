@@ -9,11 +9,8 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.habitparty.adapters.in.web.dtos.request.UpdateFocusActivityOrderDTO;
 import com.habitparty.application.ports.FocusActivityRepository;
 import com.habitparty.core.domain.entities.focus.FocusActivity;
-
-
 
 @Service
 public class ReorderFocusActivitiesUseCase {
@@ -24,7 +21,7 @@ public class ReorderFocusActivitiesUseCase {
     }
 
     @Transactional
-    public void execute(UUID userIdLogado, List<UpdateFocusActivityOrderDTO> newOrder) {
+    public void execute(UUID userIdLogado, List<FocusActivityOrderCommand> newOrder) {
         List<FocusActivity> activities = port.findAllByUserIdOrderByOrderIndex(userIdLogado);
 
         // Transforma em um Map para facilitar a busca rápida pelo ID
@@ -33,12 +30,12 @@ public class ReorderFocusActivitiesUseCase {
 
         List<FocusActivity> atividadesAtualizadas = new ArrayList<>();
 
-        // Percorre a lista do front-end e atualiza os índices no Domínio
-        for (UpdateFocusActivityOrderDTO dto : newOrder) {
-            FocusActivity activity = mapaAtividades.get(dto.id());
+        // Percorre a lista de comandos e atualiza os índices no Domínio
+        for (FocusActivityOrderCommand cmd : newOrder) {
+            FocusActivity activity = mapaAtividades.get(cmd.id());
             
             if (activity != null) { // Validação de segurança embutida
-                activity.updateOrderIndex(dto.orderIndex());
+                activity.updateOrderIndex(cmd.orderIndex());
                 atividadesAtualizadas.add(activity);
             }
         }

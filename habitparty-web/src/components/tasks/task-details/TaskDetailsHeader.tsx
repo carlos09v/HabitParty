@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Flame } from "lucide-react";
+import { Check, Flame, Pencil, X } from "lucide-react";
 import type { Task, TaskPriorityOption } from "@/types/task";
 import { cn } from "@/utils";
 import { TaskDatePicker } from "./TaskDatePicker";
@@ -17,6 +17,8 @@ interface TaskDetailsHeaderProps {
   onToggleComplete: () => void;
   onDateChange: (newDate: string) => void;
   onPrioritySelect: (p: TaskPriorityOption) => void;
+  onEdit?: () => void;
+  onClose?: () => void;
 }
 
 export function TaskDetailsHeader({
@@ -30,11 +32,19 @@ export function TaskDetailsHeader({
   onToggleComplete,
   onDateChange,
   onPrioritySelect,
+  onEdit,
+  onClose,
 }: TaskDetailsHeaderProps) {
   const streak = task.streak ?? task.currentStreak ?? 0;
+  const habitScore = (task.positiveCount ?? 0) - (task.negativeCount ?? 0);
+  const isDateLocked = Boolean(
+    task.isHardcoreModeEnabled &&
+      task.dueDate &&
+      new Date(`${task.dueDate}T23:59:59`) < new Date(),
+  );
 
   return (
-    <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+    <div className="flex items-center justify-between gap-2 border-b border-primary/20 pb-2.5">
       <div className="flex items-center gap-2 min-w-0">
         {/* HÁBITO: Não tem data nem checkbox de conclusão */}
         {isHabit ? (
@@ -49,16 +59,17 @@ export function TaskDetailsHeader({
                   ? "Reset mensal"
                   : "Reset diário"}
             </span>
-            {streak > 0 && (
+            {habitScore !== 0 && (
               <span
-                className="flex items-center gap-1 text-tiny text-warning-500 font-bold ml-0.5 shrink-0"
-                title="Streak atual"
+                className={cn(
+                  "px-1.5 py-0.5 rounded text-tiny font-bold shrink-0",
+                  habitScore > 0
+                    ? "text-success-500 bg-success-500/10"
+                    : "text-danger-500 bg-danger-500/10",
+                )}
+                title="Saldo de repetições realizadas no ciclo atual"
               >
-                <Flame
-                  size={12}
-                  className="fill-warning-500/20 text-warning-500"
-                />
-                {streak}
+                {habitScore > 0 ? `+${habitScore}` : habitScore} repetições
               </span>
             )}
           </div>
@@ -86,21 +97,63 @@ export function TaskDetailsHeader({
 
             {/* Prazo (To-Do) ou Badge Diária */}
             {isTodo ? (
-              <TaskDatePicker dueDate={dueDate} onDateChange={onDateChange} />
+              <TaskDatePicker
+                dueDate={dueDate}
+                onDateChange={onDateChange}
+                disabled={isDateLocked}
+              />
             ) : isDaily ? (
-              <span className="text-tiny font-medium text-magenta bg-magenta/15 border border-magenta/40 px-2 py-0.5 rounded uppercase tracking-wider">
-                Diária
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-tiny font-medium text-magenta bg-magenta/15 border border-magenta/40 px-2 py-0.5 rounded uppercase tracking-wider">
+                  Diária
+                </span>
+                {streak > 0 && (
+                  <span
+                    className="flex items-center gap-1 text-tiny text-warning-500 font-bold shrink-0"
+                    title={`Ofensiva de ${streak} dia(s)`}
+                  >
+                    <Flame
+                      size={12}
+                      className="fill-warning-500 text-warning-500"
+                    />
+                    {streak}d
+                  </span>
+                )}
+              </div>
             ) : null}
           </>
         )}
       </div>
 
-      {/* Canto Superior Direito: Bandeira de Prioridade */}
-      <TaskPriorityPicker
-        priority={priority}
-        onPrioritySelect={onPrioritySelect}
-      />
+      {/* Canto Superior Direito: Bandeira de Prioridade + Lápis de Edição + Botão Fechar X */}
+      <div className="flex items-center gap-1.5 shrink-0">
+        <TaskPriorityPicker
+          priority={priority}
+          onPrioritySelect={onPrioritySelect}
+        />
+        {onEdit && (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer"
+            aria-label="Editar detalhes completos da tarefa"
+            title="Editar tarefa completa"
+          >
+            <Pencil size={14} />
+          </button>
+        )}
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-neutral-100 hover:bg-white/10 transition-colors cursor-pointer"
+            aria-label="Fechar"
+            title="Fechar"
+          >
+            <X size={16} />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

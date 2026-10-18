@@ -3,17 +3,21 @@
 import { FilterX, SlidersHorizontal, Tag } from "lucide-react";
 import { useState } from "react";
 import {
-  DEFAULT_BOARD_FILTERS,
   STATUS_FILTER_OPTIONS,
-  TASK_DIFFICULTY_OPTIONS,
   TASK_TYPE_FILTER_OPTIONS,
+} from "@/constants/routine";
+import {
+  DEFAULT_BOARD_FILTERS,
+  TASK_DIFFICULTY_OPTIONS,
+  TODO_PRIORITY_OPTIONS,
 } from "@/constants/task";
 import type {
   BoardFilterState,
-  RoutineFilterPopoverProps,
   TaskDifficultyOption,
+  TaskPriorityOption,
   TaskTypeOption,
 } from "@/types/task";
+import type { RoutineFilterPopoverProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 
 export function RoutineFilterPopover({
@@ -28,6 +32,7 @@ export function RoutineFilterPopover({
   const activeFiltersCount =
     (filters.taskType !== "all" ? 1 : 0) +
     (filters.difficulty !== "all" ? 1 : 0) +
+    (filters.priority !== "all" ? 1 : 0) +
     (filters.status !== "all" ? 1 : 0) +
     (filters.tag !== null ? 1 : 0);
 
@@ -173,7 +178,45 @@ export function RoutineFilterPopover({
                 </div>
               </div>
 
-              {/* 3. Status */}
+              {/* 3. Prioridade */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-label-g font-semibold text-neutral-400">
+                  Prioridade
+                </span>
+                <div className="flex flex-wrap gap-1">
+                  <button
+                    type="button"
+                    onClick={() => updateFilter("priority", "all")}
+                    className={cn(
+                      "px-2 py-0.5 rounded-md text-xs font-medium transition-all cursor-pointer",
+                      filters.priority === "all"
+                        ? "bg-gold text-neutral-900 font-bold"
+                        : "bg-white/5 text-neutral-300 hover:bg-white/10",
+                    )}
+                  >
+                    Todas
+                  </button>
+                  {TODO_PRIORITY_OPTIONS.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() =>
+                        updateFilter("priority", p.id as TaskPriorityOption)
+                      }
+                      className={cn(
+                        "px-2 py-0.5 rounded-md text-xs font-medium transition-all cursor-pointer",
+                        filters.priority === p.id
+                          ? "bg-gold text-neutral-900 font-bold"
+                          : "bg-white/5 text-neutral-300 hover:bg-white/10",
+                      )}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 4. Status */}
               <div className="flex flex-col gap-1.5">
                 <span className="text-label-g font-semibold text-neutral-400">
                   Status
@@ -202,7 +245,7 @@ export function RoutineFilterPopover({
                 </div>
               </div>
 
-              {/* 4. Tags (se houver disponíveis no quadro) */}
+              {/* 5. Tags (se houver disponíveis no quadro) */}
               {availableTags.length > 0 && (
                 <div className="flex flex-col gap-1.5 pt-1 border-t border-white/5">
                   <span className="text-label-g font-semibold text-neutral-400 flex items-center gap-1">

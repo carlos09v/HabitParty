@@ -4,38 +4,24 @@ import {
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
-  ChevronsUpDown,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
+import { Select } from "@/components/ui/Select";
+import { PERIOD_OPTIONS, type PeriodOption } from "@/constants/dashboard";
+import { ALL_WEEK_DAYS, normalizeTaskType } from "@/constants/task";
 import { useCompactMode } from "@/hooks/useCompactMode";
 import type { TransactionHistoryResponseDTO } from "@/types/history";
 import type { Task } from "@/types/task";
 import { cn } from "@/utils";
-
-type PeriodOption = "specific_day" | "today" | "this_week" | "this_month";
-
-const PERIOD_OPTIONS: readonly { id: PeriodOption; label: string }[] = [
-  { id: "specific_day", label: "Dia específico" },
-  { id: "today", label: "Hoje" },
-  { id: "this_week", label: "Esta semana" },
-  { id: "this_month", label: "Este mês" },
-] as const;
-
-const WEEKDAY_NAMES = [
-  "SUNDAY",
-  "MONDAY",
-  "TUESDAY",
-  "WEDNESDAY",
-  "THURSDAY",
-  "FRIDAY",
-  "SATURDAY",
-] as const;
+import { getTodayDateString } from "@/utils/dashboardMetrics";
+import { getWeekDateRange } from "@/utils/date";
 
 interface WeeklyCalendarProps {
   isCompact?: boolean;
   transactions?: TransactionHistoryResponseDTO[];
   tasks?: Task[];
+  onSelectDay?: (isoString: string) => void;
 }
 
 /**
@@ -48,6 +34,7 @@ export function WeeklyCalendar({
   isCompact: propIsCompact,
   transactions = [],
   tasks = [],
+  onSelectDay,
 }: WeeklyCalendarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -55,18 +42,20 @@ export function WeeklyCalendar({
   const isCompact = propIsCompact ?? hookIsCompact;
 
   const urlDate = searchParams.get("date");
-  const [selectedPeriod, setSelectedPeriod] =
-    useState<PeriodOption>("specific_day");
+  const urlFilter = searchParams.get("filter");
+
+  const selectedPeriod: PeriodOption = useMemo(() => {
+    if (urlDate) return "specific_day";
+    if (urlFilter === "this_month") return "this_month";
+    if (urlFilter === "next7days") return "this_week";
+    if (urlFilter === "today") return "today";
+    return "specific_day";
+  }, [urlDate, urlFilter]);
+
   const [weekOffset, setWeekOffset] = useState(0);
 
   // Inicializa data de hoje (YYYY-MM-DD)
-  const todayIso = useMemo(() => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, "0");
-    const d = String(now.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  }, []);
+  const todayIso = useMemo(() => getTodayDateString(), []);
 
   const activeSelectedDate = urlDate || todayIso;
 
@@ -83,15 +72,7 @@ export function WeeklyCalendar({
 
   // Calcula dinamicamente os 7 dias da semana (Segunda a Domingo) baseado no weekOffset
   const weekDays = useMemo(() => {
-    const now = new Date();
-    now.setDate(now.getDate() + weekOffset * 7);
-
-    // Encontra a Segunda-feira da semana (0 = Segunda, 6 = Domingo)
-    const dayOfWeek = (now.getDay() + 6) % 7;
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - dayOfWeek);
-    monday.setHours(0, 0, 0, 0);
-
+    const { monday } = getWeekDateRange(new Date(), weekOffset);
     const shortNames = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
     return shortNames.map((shortName, index) => {
@@ -103,12 +84,12 @@ export function WeeklyCalendar({
       const dayNum = String(d.getDate()).padStart(2, "0");
       const isoString = `${y}-${m}-${dayNum}`;
 
-      const dayName = WEEKDAY_NAMES[d.getDay()];
+      const dayName = ALL_WEEK_DAYS[d.getDay()];
 
       // Contagem de tarefas programadas para este dia
       const scheduledTasksCount = tasks.filter((t) => {
         if (t.dueDate === isoString) return true;
-        const type = (t.type || "").toLowerCase();
+        const type = normalizeTaskType(t);
         if (type === "daily") {
           return (
             !t.daysOfWeek ||
@@ -143,7 +124,6 @@ export function WeeklyCalendar({
   }, [weekOffset, activityDates, tasks, todayIso]);
 
   const handlePeriodChange = (period: PeriodOption) => {
-    setSelectedPeriod(period);
     const params = new URLSearchParams(searchParams.toString());
     if (period === "today") {
       params.delete("date");
@@ -151,9 +131,12 @@ export function WeeklyCalendar({
     } else if (period === "this_week") {
       params.delete("date");
       params.set("filter", "next7days");
+    } else if (period === "this_month") {
+      params.delete("date");
+      params.set("filter", "this_month");
     } else if (period === "specific_day") {
-      // Retorna para visualização de dia específico
       params.delete("filter");
+      params.set("date", todayIso);
     }
     params.set("page", "1");
     router.push(`?${params.toString()}`, { scroll: false });
@@ -168,53 +151,45 @@ export function WeeklyCalendar({
     }
     params.set("page", "1");
     router.push(`?${params.toString()}`, { scroll: false });
+    onSelectDay?.(isoString);
   };
 
   const selectedPeriodLabel =
     PERIOD_OPTIONS.find((p) => p.id === selectedPeriod)?.label ||
     "Dia específico";
 
+  const periodOptions = useMemo(
+    () =>
+      PERIOD_OPTIONS.map((opt) => ({
+        value: opt.id,
+        label: opt.label,
+      })),
+    [],
+  );
+
   return (
     <div className="flex flex-col gap-3 w-full">
       {/* Header do Widget com Dropdown de Período */}
       <div className="flex items-center justify-between w-full">
         <h4 className="text-subtitle-s font-bold text-neutral-100">
-          Histórico:
+          Calendário:
         </h4>
 
-        {/* Dropdown de Parâmetro */}
-        <div className="relative flex items-center">
-          <div className="pointer-events-none absolute left-2 text-neutral-300">
-            <CalendarIcon size={13} aria-hidden="true" />
-          </div>
-
-          <select
-            value={selectedPeriod}
-            onChange={(e) => handlePeriodChange(e.target.value as PeriodOption)}
-            aria-label="Selecionar período do histórico"
-            className={cn(
-              "appearance-none pl-6 pr-6 rounded-md bg-white/10 border border-white/15 text-neutral-100 font-medium hover:bg-white/15 focus:outline-none focus:ring-1 focus:ring-gold/50 cursor-pointer transition-colors text-xs",
-              isCompact ? "py-1" : "py-1.5",
-            )}
-          >
-            {PERIOD_OPTIONS.map((opt) => (
-              <option
-                key={opt.id}
-                value={opt.id}
-                className="bg-neutral-900 text-neutral-100"
-              >
-                {opt.label}
-              </option>
-            ))}
-          </select>
-
-          <div className="pointer-events-none absolute right-1.5 text-neutral-400">
-            <ChevronsUpDown size={12} aria-hidden="true" />
-          </div>
-        </div>
+        {/* Dropdown de Parâmetro Customizado */}
+        <Select
+          variant="inline"
+          align="right"
+          icon={<CalendarIcon size={12} className="text-gold shrink-0" />}
+          value={selectedPeriod}
+          onChange={(val) => handlePeriodChange(val as PeriodOption)}
+          options={periodOptions}
+          aria-label="Selecionar período do histórico"
+          dropdownClassName="min-w-[140px]"
+          className="bg-white/10 hover:bg-white/15 border border-white/15 rounded-md px-1.5 py-0.5"
+        />
       </div>
 
-      {/* Navegador Semanal Dinâmico: só aparece e fica ativo se 'Dia específico' estiver selecionado */}
+      {/* Navegador Semanal Dinâmico */}
       {selectedPeriod === "specific_day" ? (
         <div className="flex items-center justify-between gap-1 w-full transition-all">
           <button
@@ -274,7 +249,7 @@ export function WeeklyCalendar({
                     {day.dayNumber}
                   </span>
 
-                  {/* Marcador de meta/atividade atingida (bolinha rosa/magenta) */}
+                  {/* Marcador de meta/atividade atingida */}
                   <div className="h-2 flex items-center justify-center">
                     {day.hasActivity ? (
                       <span
@@ -305,19 +280,26 @@ export function WeeklyCalendar({
           </button>
         </div>
       ) : (
-        /* Estado desabilitado / sumido quando outro período é selecionado */
+        /* Estado desabilitado quando outro período é selecionado */
         <div
           className={cn(
-            "flex items-center justify-center rounded-lg border border-dashed border-white/10 bg-white/5 text-neutral-400 text-tiny text-center transition-all",
-            isCompact ? "py-2 px-2" : "py-3 px-3",
+            "flex items-center justify-between gap-2 rounded-lg border border-dashed border-white/10 bg-white/5 text-neutral-400 text-tiny transition-all",
+            isCompact ? "py-2 px-2.5" : "py-3 px-3",
           )}
         >
           <span>
-            Exibindo histórico para:{" "}
+            Exibindo tarefas:{" "}
             <strong className="text-gold font-semibold">
               {selectedPeriodLabel}
             </strong>
           </span>
+          <button
+            type="button"
+            onClick={() => handlePeriodChange("specific_day")}
+            className="text-xs text-gold hover:text-gold-light underline font-medium cursor-pointer shrink-0"
+          >
+            Ver semana
+          </button>
         </div>
       )}
     </div>

@@ -3,24 +3,21 @@
 import { updateTag } from "next/cache";
 import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
-
-import { getErrorMessage } from "./types";
+import { type ActionState, getErrorMessage } from "./types";
 
 type CreateChecklistItemDTO = components["schemas"]["CreateChecklistItemDTO"];
 type ChecklistItemResponseDTO =
   components["schemas"]["ChecklistItemResponseDTO"];
 
-export type ActionResponse<T = void> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+export type ActionResponse<T = void> = ActionState<T>;
 
 /**
  * Adiciona um novo item de checklist vinculado a uma tarefa
  */
-export async function addChecklistItemAction(
+export async function addChecklistItem(
   taskId: string,
   payload: CreateChecklistItemDTO,
-): Promise<ActionResponse<ChecklistItemResponseDTO>> {
+): Promise<ActionState<ChecklistItemResponseDTO>> {
   try {
     const { data, error } = await serverApi.POST("/tasks/{taskId}/checklists", {
       params: { path: { taskId } },
@@ -49,10 +46,10 @@ export async function addChecklistItemAction(
 /**
  * Atualiza o texto de um item de checklist
  */
-export async function updateChecklistItemAction(
+export async function updateChecklistItem(
   itemId: string,
   payload: CreateChecklistItemDTO,
-): Promise<ActionResponse<ChecklistItemResponseDTO>> {
+): Promise<ActionState<ChecklistItemResponseDTO>> {
   try {
     const { data, error } = await serverApi.PUT("/tasks/checklists/{itemId}", {
       params: { path: { itemId } },
@@ -81,9 +78,9 @@ export async function updateChecklistItemAction(
 /**
  * Alterna (toggle) a conclusão do checkbox de um item de checklist
  */
-export async function toggleChecklistItemAction(
+export async function toggleChecklistItem(
   itemId: string,
-): Promise<ActionResponse<ChecklistItemResponseDTO>> {
+): Promise<ActionState<ChecklistItemResponseDTO>> {
   try {
     const { data, error } = await serverApi.PATCH(
       "/tasks/checklists/{itemId}/toggle",
@@ -114,9 +111,9 @@ export async function toggleChecklistItemAction(
 /**
  * Remove um item do checklist
  */
-export async function deleteChecklistItemAction(
+export async function deleteChecklistItem(
   itemId: string,
-): Promise<ActionResponse<void>> {
+): Promise<ActionState<void>> {
   try {
     const { error } = await serverApi.DELETE("/tasks/checklists/{itemId}", {
       params: { path: { itemId } },
@@ -139,4 +136,30 @@ export async function deleteChecklistItemAction(
       error: "Erro interno de comunicação com o servidor.",
     };
   }
+}
+
+// Aliases para compatibilidade retroativa
+export const addChecklistItemAction = addChecklistItem;
+export const updateChecklistItemAction = updateChecklistItem;
+export const toggleChecklistItemAction = toggleChecklistItem;
+export const deleteChecklistItemAction = deleteChecklistItem;
+
+/**
+ * Clona todos os itens válidos de um checklist para uma nova tarefa duplicada
+ */
+export async function cloneTaskChecklistItems(
+  newTaskId: string,
+  items?: { name?: string }[],
+): Promise<void> {
+  if (!items || items.length === 0) return;
+  const validItems = items.filter((item) => Boolean(item.name?.trim()));
+  if (validItems.length === 0) return;
+
+  await Promise.all(
+    validItems.map((item) =>
+      addChecklistItem(newTaskId, {
+        name: item.name as string,
+      }),
+    ),
+  );
 }

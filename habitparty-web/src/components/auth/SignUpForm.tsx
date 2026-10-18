@@ -1,23 +1,33 @@
 "use client";
 
-import { Calendar, User } from "lucide-react";
+import { User } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { signUpAction } from "@/actions/auth";
-import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
+import { PasswordStrengthIndicator } from "@/components/auth/PasswordStrengthIndicator";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { GENDER_OPTIONS } from "@/constants/settings";
 import type { CreateUserDTO, GenderType } from "@/types/user";
+import { validateAuthPassword, validateBirthDate } from "@/utils/validators";
 
 export function SignUpForm() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
+  const maxBirthDate = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 12);
+    return d.toISOString().split("T")[0];
+  }, []);
+
   const [gender, setGender] = useState<string>("PREFER_NOT_TO_SAY");
   const [emailValue, setEmailValue] = useState("");
   const [usernameValue, setUsernameValue] = useState("");
+  const [passwordValue, setPasswordValue] = useState("");
   const [hasManuallyEditedUsername, setHasManuallyEditedUsername] =
     useState(false);
 
@@ -44,12 +54,20 @@ export function SignUpForm() {
     const username = (
       formData.get("username")?.toString().trim() || email.split("@")[0]
     ).toLowerCase();
-    const password = formData.get("password")?.toString() || "";
+    const password =
+      passwordValue || formData.get("password")?.toString() || "";
     const birthday = formData.get("birthday")?.toString() || "";
     const selectedGender = (gender || "PREFER_NOT_TO_SAY") as GenderType;
 
-    if (password.length < 8) {
-      toast.error("A senha deve ter no mínimo 8 caracteres.");
+    const validation = validateAuthPassword(password);
+    if (!validation.isValid) {
+      toast.error(validation.error);
+      return;
+    }
+
+    const birthDateValidation = validateBirthDate(birthday);
+    if (!birthDateValidation.isValid) {
+      toast.error(birthDateValidation.error);
       return;
     }
 
@@ -116,28 +134,32 @@ export function SignUpForm() {
         />
       </div>
 
-      <Input
-        label="Senha"
-        id="password"
-        name="password"
-        type="password"
-        placeholder="Mínimo de 8 caracteres"
-        required
-        disabled={isPending}
-      />
+      <div className="flex flex-col gap-2">
+        <Input
+          label="Senha"
+          id="password"
+          name="password"
+          type="password"
+          value={passwordValue}
+          onChange={(e) => setPasswordValue(e.target.value)}
+          placeholder="Mínimo de 8 caracteres"
+          required
+          disabled={isPending}
+        />
+        <PasswordStrengthIndicator password={passwordValue} />
+      </div>
 
       <div className="flex flex-col sm:flex-row gap-4 w-full items-start">
         {/* Data de Nascimento */}
         <div className="flex-1 w-full sm:w-auto min-w-0">
-          <Input
+          <DatePicker
             label="Data de Nascimento"
             id="dob"
             name="birthday"
-            type="date"
-            placeholder="DD / MM / YYYY"
-            icon={<Calendar size={18} aria-hidden="true" />}
+            placeholder="DD / MM / AAAA"
             required
             disabled={isPending}
+            maxDate={maxBirthDate}
           />
         </div>
 
@@ -156,9 +178,9 @@ export function SignUpForm() {
       </div>
 
       <div className="mt-2">
-        <AuthSubmitButton isPending={isPending} loadingText="Cadastrando...">
+        <SubmitButton isPending={isPending} loadingText="Cadastrando...">
           Cadastrar
-        </AuthSubmitButton>
+        </SubmitButton>
       </div>
     </form>
   );

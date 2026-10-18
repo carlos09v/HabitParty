@@ -61,4 +61,11 @@ public interface InventoryItemApi {
         @PathVariable UUID itemId,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
+
+    @Operation(summary = "Abrir Caixa Misteriosa", description = "Abre uma caixa misteriosa do inventário e sorteia a recompensa.")
+    @PostMapping("/{itemId}/open")
+    ResponseEntity<InventoryItemResponseDTO> openMysteryBox(
+        @PathVariable UUID itemId,
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
+    );
 }

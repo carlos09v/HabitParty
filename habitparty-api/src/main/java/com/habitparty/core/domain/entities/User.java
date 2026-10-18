@@ -7,6 +7,7 @@ import java.time.Period;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.habitparty.core.domain.enums.SubscriptionStatus;
 import com.habitparty.core.domain.enums.UserGender;
 import com.habitparty.core.domain.enums.UserLevel;
 import com.habitparty.core.domain.enums.UserRole;
@@ -16,6 +17,11 @@ public class User {
   private UUID id;
   private UserRole role;
   private boolean isPremium;
+  private boolean isFounder;
+  private String stripeCustomerId;
+  private String stripeSubscriptionId;
+  private SubscriptionStatus subscriptionStatus;
+  private LocalDateTime subscriptionEndsAt;
   private String fullName;
   private String username;
   private String email;
@@ -31,16 +37,43 @@ public class User {
   private LocalDateTime createdAt; // Esta sendo definida por ser uma informação relevante pra regra de negócio (vai ser usada)
   // Tudo definido aqui deve ir pra Entity!
 
-  // Construtor no Java
+  // Construtor compatível anterior
   public User(UUID id, UserRole role, boolean isPremium, String fullName, String username, String email,
       String password,
       BigDecimal currentCoins,
       BigDecimal totalGoldEarned,
       LocalDate birthday, String profilePhotoUrl, UserGender gender, int totalXp, int currentStreak, int highestStreak,
       LocalDateTime createdAt) {
+    this(id, role, isPremium, false, null, null, SubscriptionStatus.FREE, null, fullName, username, email, password,
+        currentCoins, totalGoldEarned, birthday, profilePhotoUrl, gender, totalXp, currentStreak, highestStreak,
+        createdAt);
+  }
+
+  // Construtor compatível sem flag de fundador explícita
+  public User(UUID id, UserRole role, boolean isPremium, String stripeCustomerId, String stripeSubscriptionId,
+      SubscriptionStatus subscriptionStatus, LocalDateTime subscriptionEndsAt, String fullName, String username,
+      String email, String password, BigDecimal currentCoins, BigDecimal totalGoldEarned, LocalDate birthday,
+      String profilePhotoUrl, UserGender gender, int totalXp, int currentStreak, int highestStreak,
+      LocalDateTime createdAt) {
+    this(id, role, isPremium, false, stripeCustomerId, stripeSubscriptionId, subscriptionStatus, subscriptionEndsAt,
+        fullName, username, email, password, currentCoins, totalGoldEarned, birthday, profilePhotoUrl, gender,
+        totalXp, currentStreak, highestStreak, createdAt);
+  }
+
+  // Construtor completo com dados de Assinatura/Stripe e Membro Fundador
+  public User(UUID id, UserRole role, boolean isPremium, boolean isFounder, String stripeCustomerId,
+      String stripeSubscriptionId, SubscriptionStatus subscriptionStatus, LocalDateTime subscriptionEndsAt,
+      String fullName, String username, String email, String password, BigDecimal currentCoins,
+      BigDecimal totalGoldEarned, LocalDate birthday, String profilePhotoUrl, UserGender gender,
+      int totalXp, int currentStreak, int highestStreak, LocalDateTime createdAt) {
     this.id = id;
     this.role = role != null ? role : UserRole.USER;
     this.isPremium = isPremium;
+    this.isFounder = isFounder;
+    this.stripeCustomerId = stripeCustomerId;
+    this.stripeSubscriptionId = stripeSubscriptionId;
+    this.subscriptionStatus = subscriptionStatus != null ? subscriptionStatus : SubscriptionStatus.FREE;
+    this.subscriptionEndsAt = subscriptionEndsAt;
     this.fullName = fullName;
     this.username = username;
     this.email = email;
@@ -197,6 +230,18 @@ public class User {
     if (fullName == null || fullName.trim().isEmpty()) {
       throw new DomainValidationException("O nome não pode estar vazio.");
     }
+    if (birthday != null) {
+      if (birthday.isAfter(LocalDate.now())) {
+        throw new DomainValidationException("A data de nascimento deve estar no passado.");
+      }
+      int age = Period.between(birthday, LocalDate.now()).getYears();
+      if (age < 12) {
+        throw new DomainValidationException("Você deve ter no mínimo 12 anos.");
+      }
+      if (age > 120) {
+        throw new DomainValidationException("Data de nascimento inválida.");
+      }
+    }
     this.fullName = fullName;
     this.birthday = birthday;
     this.gender = gender;
@@ -238,11 +283,105 @@ public class User {
   }
 
   public boolean isPremium() {
-    return isPremium;
+    // 1. Se possui data de término definida, ela é a autoridade máxima sobre a validade do acesso:
+    if (this.subscriptionEndsAt != null) {
+      return this.subscriptionEndsAt.isAfter(LocalDateTime.now());
+    }
+
+    // 2. Se a assinatura estiver ativa sem data de término estrita (gerenciada via webhook externo):
+    if (this.subscriptionStatus == SubscriptionStatus.ACTIVE) {
+      return true;
+    }
+
+    // 3. Fallback para concessão manual/vitalícia (ex: cortesia/admin sem assinatura vinculada)
+    return this.isPremium && (this.subscriptionStatus == null || this.subscriptionStatus == SubscriptionStatus.FREE);
+  }
+
+  public boolean hasActiveRecurringSubscription() {
+    return this.stripeSubscriptionId != null && !this.stripeSubscriptionId.isBlank()
+        && this.subscriptionStatus == SubscriptionStatus.ACTIVE;
   }
 
   public void setPremium(boolean isPremium) {
     this.isPremium = isPremium;
+  }
+
+  public boolean isFounder() {
+    return isFounder;
+  }
+
+  public void setFounder(boolean isFounder) {
+    this.isFounder = isFounder;
+  }
+
+  public void grantFounderStatus() {
+    this.isFounder = true;
+  }
+
+  // --- MÉTODOS DE ASSINATURA & STRIPE ---
+  public void activateSubscription(String customerId, String subscriptionId, LocalDateTime endsAt) {
+    if (customerId != null && !customerId.isBlank()) {
+      this.stripeCustomerId = customerId;
+    }
+    this.stripeSubscriptionId = subscriptionId;
+    this.subscriptionStatus = SubscriptionStatus.ACTIVE;
+    this.subscriptionEndsAt = endsAt;
+    this.isPremium = true;
+  }
+
+  public void extendSubscriptionDays(int days) {
+    if (days <= 0) {
+      throw new DomainValidationException("O período a ser adicionado deve ser maior que zero.");
+    }
+    LocalDateTime baseDate = (this.subscriptionEndsAt != null && this.subscriptionEndsAt.isAfter(LocalDateTime.now()))
+        ? this.subscriptionEndsAt
+        : LocalDateTime.now();
+    this.subscriptionEndsAt = baseDate.plusDays(days);
+    this.subscriptionStatus = SubscriptionStatus.ACTIVE;
+    this.isPremium = true;
+  }
+
+  public void cancelSubscription() {
+    this.subscriptionStatus = SubscriptionStatus.CANCELED;
+    if (this.subscriptionEndsAt == null || !this.subscriptionEndsAt.isAfter(LocalDateTime.now())) {
+      this.isPremium = false;
+    }
+  }
+
+  public void markPastDue() {
+    this.subscriptionStatus = SubscriptionStatus.PAST_DUE;
+  }
+
+  public String getStripeCustomerId() {
+    return stripeCustomerId;
+  }
+
+  public void setStripeCustomerId(String stripeCustomerId) {
+    this.stripeCustomerId = stripeCustomerId;
+  }
+
+  public String getStripeSubscriptionId() {
+    return stripeSubscriptionId;
+  }
+
+  public void setStripeSubscriptionId(String stripeSubscriptionId) {
+    this.stripeSubscriptionId = stripeSubscriptionId;
+  }
+
+  public SubscriptionStatus getSubscriptionStatus() {
+    return subscriptionStatus;
+  }
+
+  public void setSubscriptionStatus(SubscriptionStatus subscriptionStatus) {
+    this.subscriptionStatus = subscriptionStatus;
+  }
+
+  public LocalDateTime getSubscriptionEndsAt() {
+    return subscriptionEndsAt;
+  }
+
+  public void setSubscriptionEndsAt(LocalDateTime subscriptionEndsAt) {
+    this.subscriptionEndsAt = subscriptionEndsAt;
   }
 
   public String getFullName() {

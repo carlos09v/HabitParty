@@ -6,12 +6,48 @@ import { useCompactMode } from "@/hooks/useCompactMode";
 import type { TaskPaginationProps } from "@/types/task";
 import { cn } from "@/utils";
 
+function getPageNumbers(
+  currentPage: number,
+  totalPages: number,
+): (number | "dots")[] {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  if (currentPage <= 4) {
+    return [1, 2, 3, 4, 5, "dots", totalPages];
+  }
+
+  if (currentPage >= totalPages - 3) {
+    return [
+      1,
+      "dots",
+      totalPages - 4,
+      totalPages - 3,
+      totalPages - 2,
+      totalPages - 1,
+      totalPages,
+    ];
+  }
+
+  return [
+    1,
+    "dots",
+    currentPage - 1,
+    currentPage,
+    currentPage + 1,
+    "dots",
+    totalPages,
+  ];
+}
+
 export function TaskPagination({
   currentPage,
   totalPages,
   totalItems,
   itemsPerPage,
   itemLabel = "tarefas",
+  onPageChange,
 }: TaskPaginationProps) {
   const { isCompact } = useCompactMode();
   const router = useRouter();
@@ -20,15 +56,22 @@ export function TaskPagination({
 
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > totalPages) return;
+    onPageChange?.(newPage);
     const params = new URLSearchParams(searchParams.toString());
-    params.set("page", newPage.toString());
-    router.push(`${pathname}?${params.toString()}`);
+    if (newPage === 1) {
+      params.delete("page");
+    } else {
+      params.set("page", newPage.toString());
+    }
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
   if (totalPages <= 1) return null;
+
+  const pageNumbers = getPageNumbers(currentPage, totalPages);
 
   return (
     <nav
@@ -49,7 +92,7 @@ export function TaskPagination({
       </span>
 
       {/* Controles da paginação */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         <button
           type="button"
           onClick={() => handlePageChange(currentPage - 1)}
@@ -63,8 +106,21 @@ export function TaskPagination({
           <ChevronLeft size={isCompact ? 14 : 16} aria-hidden="true" />
         </button>
 
-        {Array.from({ length: totalPages }).map((_, i) => {
-          const page = i + 1;
+        {pageNumbers.map((item, idx) => {
+          if (item === "dots") {
+            return (
+              <span
+                // biome-ignore lint/suspicious/noArrayIndexKey: Indicador estático de reticências
+                key={`dots-${idx}`}
+                className="px-1 text-neutral-500 font-bold select-none text-xs"
+                aria-hidden="true"
+              >
+                ...
+              </span>
+            );
+          }
+
+          const page = item;
           const isActive = page === currentPage;
           return (
             <button

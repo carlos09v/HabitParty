@@ -12,6 +12,7 @@ import com.habitparty.core.domain.enums.task.TaskDifficulty;
 import com.habitparty.core.domain.enums.task.TaskPriority;
 import com.habitparty.core.domain.enums.task.TaskStatus;
 import com.habitparty.core.domain.enums.task.TaskType;
+import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.UnauthorizedException;
 
 public abstract class Task {
@@ -50,7 +51,7 @@ public abstract class Task {
     this.description = description;
     this.orderIndex = orderIndex;
     this.priority = priority;
-    this.tags = tags;
+    this.tags = validateAndSanitizeTags(tags);
     this.difficulty = difficulty;
     this.status = status;
     this.taskType = taskType;
@@ -102,16 +103,38 @@ public abstract class Task {
     return new TaskReward(penaltyXp, penaltyCoins);
   }
 
+  public boolean isOverdue() {
+    return this.dueDate != null && this.dueDate.isBefore(LocalDate.now());
+  }
+
   // Uso de setter semântico e não anêmico (tradicional/burro)
   public void updateBaseDetails(String name, String description, TaskPriority priority,
       TaskDifficulty difficulty, List<String> tags,
       boolean isHardcoreModeEnabled) {
+    if (this.isHardcoreModeEnabled && !isHardcoreModeEnabled && this.isOverdue()) {
+      throw new DomainValidationException("Não é permitido desativar o modo Hardcore de uma tarefa com prazo vencido.");
+    }
     this.name = name;
     this.description = description;
     this.priority = priority;
     this.difficulty = difficulty;
-    this.tags = tags;
+    this.tags = validateAndSanitizeTags(tags);
     this.isHardcoreModeEnabled = isHardcoreModeEnabled;
+  }
+
+  private List<String> validateAndSanitizeTags(List<String> tags) {
+    if (tags == null) {
+      return null;
+    }
+    if (tags.size() > 5) {
+      throw new DomainValidationException("A tarefa não pode ter mais de 5 tags.");
+    }
+    for (String tag : tags) {
+      if (tag != null && tag.length() > 25) {
+        throw new DomainValidationException("Cada tag deve ter até 25 caracteres.");
+      }
+    }
+    return tags;
   }
 
   // --- Getters ---

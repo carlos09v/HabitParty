@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.habitparty.adapters.in.web.dtos.request.UpdateRewardOrderDTO;
 import com.habitparty.application.ports.RewardRepository;
 import com.habitparty.core.domain.entities.reward.Reward;
 
@@ -22,7 +21,7 @@ public class ReorderRewardUseCase {
   }
 
   @Transactional
-  public void execute(List<UpdateRewardOrderDTO> newOrderList, UUID userIdLogado) {
+  public void execute(UUID userIdLogado, List<RewardOrderCommand> newOrderList) {
     List<Reward> rewards = port.findAllByUserId(userIdLogado);
 
     // Transforma em um Map para busca instantânea pelo ID
@@ -31,11 +30,11 @@ public class ReorderRewardUseCase {
 
     List<Reward> updatedRewards = new ArrayList<>();
 
-    for (UpdateRewardOrderDTO dto : newOrderList) {
-      Reward reward = mapaRecompensas.get(dto.id());
+    for (RewardOrderCommand cmd : newOrderList) {
+      Reward reward = mapaRecompensas.get(cmd.id());
 
       if (reward != null) { // Evita NullPointer caso o front mande um ID que não existe
-        reward.updateOrderIndex(dto.newIndex());
+        reward.updateOrderIndex(cmd.newIndex());
         updatedRewards.add(reward);
       }
     }

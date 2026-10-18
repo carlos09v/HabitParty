@@ -15,20 +15,23 @@ import com.habitparty.adapters.in.web.api.TaskApi;
 import com.habitparty.adapters.in.web.dtos.request.CreateTaskDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateTaskDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateTaskOrderDTO;
-import com.habitparty.adapters.in.web.dtos.response.DashboardTaskDTO;
+import com.habitparty.application.ports.projections.DashboardTaskDTO;
 import com.habitparty.adapters.in.web.dtos.response.TaskResponseDTO;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 import com.habitparty.application.usecases.task.ChangeTaskStatusUseCase;
+import com.habitparty.application.usecases.task.CreateTaskCommand;
 import com.habitparty.application.usecases.task.CreateTaskUseCase;
 import com.habitparty.application.usecases.task.DeleteTaskUseCase;
 import com.habitparty.application.usecases.task.ListDashboardTasksUseCase;
 import com.habitparty.application.usecases.task.ListTasksByColumnUseCase;
+import com.habitparty.application.usecases.task.MoveTaskCommand;
 import com.habitparty.application.usecases.task.MoveTaskUseCase;
+import com.habitparty.application.usecases.task.UpdateTaskCommand;
+import com.habitparty.application.usecases.task.RecordHabitScoreUseCase;
 import com.habitparty.application.usecases.task.UpdateTaskUseCase;
 import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.domain.enums.task.TaskStatus;
 
-@RequiredArgsConstructor
 @RestController
 public class TaskController implements TaskApi {
   private final CreateTaskUseCase createTaskUseCase;
@@ -36,8 +39,28 @@ public class TaskController implements TaskApi {
   private final DeleteTaskUseCase deleteTaskUseCase;
   private final MoveTaskUseCase moveTaskUseCase;
   private final ChangeTaskStatusUseCase changeTaskStatusUseCase;
+  private final RecordHabitScoreUseCase recordHabitScoreUseCase;
   private final ListTasksByColumnUseCase listTasksByColumnUseCase;
   private final ListDashboardTasksUseCase listDashboardTasksUseCase;
+
+  public TaskController(
+      CreateTaskUseCase createTaskUseCase,
+      UpdateTaskUseCase updateTaskUseCase,
+      DeleteTaskUseCase deleteTaskUseCase,
+      MoveTaskUseCase moveTaskUseCase,
+      ChangeTaskStatusUseCase changeTaskStatusUseCase,
+      RecordHabitScoreUseCase recordHabitScoreUseCase,
+      ListTasksByColumnUseCase listTasksByColumnUseCase,
+      ListDashboardTasksUseCase listDashboardTasksUseCase) {
+    this.createTaskUseCase = createTaskUseCase;
+    this.updateTaskUseCase = updateTaskUseCase;
+    this.deleteTaskUseCase = deleteTaskUseCase;
+    this.moveTaskUseCase = moveTaskUseCase;
+    this.changeTaskStatusUseCase = changeTaskStatusUseCase;
+    this.recordHabitScoreUseCase = recordHabitScoreUseCase;
+    this.listTasksByColumnUseCase = listTasksByColumnUseCase;
+    this.listDashboardTasksUseCase = listDashboardTasksUseCase;
+  }
 
   @Override
   public ResponseEntity<List<TaskResponseDTO>> getTaskListByColumnId(
@@ -78,10 +101,16 @@ public class TaskController implements TaskApi {
       CreateTaskDTO dto,
       UUID boardColumnId) {
     UUID userId = userIdLogado.id();
-
-    TaskResponseDTO response = createTaskUseCase.execute(userId, boardColumnId, dto);
-
-    return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    var command = new CreateTaskCommand(
+        dto.name(), dto.description(), dto.priority(), dto.tags(),
+        dto.difficulty(), dto.taskType(), dto.isHardcoreModeEnabled(),
+        dto.dueDate(), dto.habitType(), dto.resetCounter(), dto.importanceType(),
+        dto.startDate(), dto.repeatType(), dto.repeatEvery(), dto.daysOfWeek(),
+        dto.monthlyOption(), dto.reminderType(), dto.customReminderAt(),
+        dto.sendEmailReminder()
+    );
+    Task createdTask = createTaskUseCase.execute(userId, boardColumnId, command);
+    return ResponseEntity.status(HttpStatus.CREATED).body(TaskResponseDTO.fromDomain(createdTask));
   }
 
   @Override
@@ -90,10 +119,16 @@ public class TaskController implements TaskApi {
       AuthenticatedUser userIdLogado,
       UpdateTaskDTO dto) {
     UUID userId = userIdLogado.id();
-
-    TaskResponseDTO response = updateTaskUseCase.execute(taskId, userId, dto);
-
-    return ResponseEntity.ok(response);
+    var command = new UpdateTaskCommand(
+        dto.name(), dto.description(), dto.priority(), dto.tags(),
+        dto.difficulty(), dto.isHardcoreModeEnabled(), dto.dueDate(),
+        dto.habitType(), dto.resetCounter(), dto.importanceType(),
+        dto.startDate(), dto.repeatType(), dto.repeatEvery(), dto.daysOfWeek(),
+        dto.monthlyOption(), dto.reminderType(), dto.customReminderAt(),
+        dto.sendEmailReminder()
+    );
+    Task updatedTask = updateTaskUseCase.execute(taskId, userId, command);
+    return ResponseEntity.ok(TaskResponseDTO.fromDomain(updatedTask));
   }
 
   @Override
@@ -111,8 +146,10 @@ public class TaskController implements TaskApi {
       AuthenticatedUser userIdLogado,
       List<UpdateTaskOrderDTO> itemsToMove) {
     UUID userId = userIdLogado.id();
-
-    moveTaskUseCase.execute(userId, itemsToMove);
+    List<MoveTaskCommand> commands = itemsToMove.stream()
+        .map(item -> new MoveTaskCommand(item.taskId(), item.boardColumnId(), item.newOrderIndex()))
+        .toList();
+    moveTaskUseCase.execute(userId, commands);
     return ResponseEntity.noContent().build();
   }
 
@@ -122,8 +159,17 @@ public class TaskController implements TaskApi {
       AuthenticatedUser userIdLogado,
       TaskStatus newStatus) {
     UUID userId = userIdLogado.id();
+    Task updatedTask = changeTaskStatusUseCase.execute(taskId, userId, newStatus);
+    return ResponseEntity.ok(TaskResponseDTO.fromDomain(updatedTask));
+  }
 
-    TaskResponseDTO response = changeTaskStatusUseCase.execute(taskId, userId, newStatus);
-    return ResponseEntity.ok(response);
+  @Override
+  public ResponseEntity<TaskResponseDTO> recordHabitScore(
+      UUID taskId,
+      AuthenticatedUser userIdLogado,
+      int delta) {
+    UUID userId = userIdLogado.id();
+    Task updatedHabit = recordHabitScoreUseCase.execute(taskId, userId, delta);
+    return ResponseEntity.ok(TaskResponseDTO.fromDomain(updatedHabit));
   }
 }

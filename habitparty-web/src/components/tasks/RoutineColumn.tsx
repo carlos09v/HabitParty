@@ -1,22 +1,27 @@
+"use client";
+
 import {
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { MoreVertical, Plus } from "lucide-react";
-import { memo, useEffect, useMemo, useRef } from "react";
+import { GripVertical, MoreVertical, Plus } from "lucide-react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { getColumnIcon } from "@/constants/routine";
 import { useCompactMode } from "@/hooks/useCompactMode";
-import type { RoutineColumnProps } from "@/types/task";
+import type { RoutineColumnProps } from "@/types/task-ui";
 import { cn } from "@/utils";
+import { RoutineQuickAddForm } from "./RoutineQuickAddForm";
 import { RoutineTaskCard } from "./RoutineTaskCard";
 
 export const RoutineColumn = memo(function RoutineColumn({
   column,
-  columnIndex: _columnIndex,
   isSelected = false,
+  isCompact: propIsCompact,
+  widthPreset = "normal",
   onAddTaskToColumn,
+  onQuickCreateTask,
   onOpenDetails,
   onContextMenu,
   onOpenColumnMenu,
@@ -24,9 +29,12 @@ export const RoutineColumn = memo(function RoutineColumn({
   onHabitChange,
   isOverlay = false,
 }: RoutineColumnProps) {
-  const { isCompact } = useCompactMode();
+  const { isCompact: hookIsCompact } = useCompactMode();
+  const isCompact = propIsCompact ?? hookIsCompact;
   const ColumnIcon = getColumnIcon(column.icon);
   const columnRef = useRef<HTMLDivElement | null>(null);
+
+  const [isQuickAdding, setIsQuickAdding] = useState(false);
 
   const {
     attributes,
@@ -51,17 +59,51 @@ export const RoutineColumn = memo(function RoutineColumn({
 
   useEffect(() => {
     if (isSelected && columnRef.current) {
-      columnRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "center",
-      });
+      const timer = setTimeout(() => {
+        const column = columnRef.current;
+        if (!column) return;
+
+        // Rola EXCLUSIVAMENTE o container com overflow-x do Kanban para o centro,
+        // evitando que scrollIntoView borbulhe e desloque a página principal ou corte a sidebar.
+        const scrollContainer = column.closest<HTMLElement>(".overflow-x-auto");
+        if (scrollContainer) {
+          const containerRect = scrollContainer.getBoundingClientRect();
+          const columnRect = column.getBoundingClientRect();
+
+          const currentScroll = scrollContainer.scrollLeft;
+          const relativeLeft =
+            columnRect.left - containerRect.left + currentScroll;
+          const targetScroll =
+            relativeLeft -
+            scrollContainer.clientWidth / 2 +
+            column.clientWidth / 2;
+
+          scrollContainer.scrollTo({
+            left: Math.max(0, targetScroll),
+            behavior: "smooth",
+          });
+        }
+
+        // Garante que containers ancestrais (layout/main/window) permaneçam estáticos em 0
+        if (typeof window !== "undefined" && window.scrollX !== 0) {
+          window.scrollTo({ left: 0 });
+        }
+        const mainEl = column.closest("main");
+        if (mainEl && mainEl.scrollLeft !== 0) {
+          mainEl.scrollLeft = 0;
+        }
+        const layoutContainer = mainEl?.parentElement;
+        if (layoutContainer && layoutContainer.scrollLeft !== 0) {
+          layoutContainer.scrollLeft = 0;
+        }
+      }, 80);
+      return () => clearTimeout(timer);
     }
   }, [isSelected]);
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
+    transform: CSS.Translate.toString(transform),
+    transition: isDragging ? undefined : transition,
   };
 
   const taskIds = useMemo(() => column.tasks.map((t) => t.id), [column.tasks]);
@@ -72,11 +114,12 @@ export const RoutineColumn = memo(function RoutineColumn({
       data-column-id={column.id}
       style={style}
       className={cn(
-        "flex flex-col w-full h-full min-h-0 shrink-0 transition-all duration-300 select-none bg-transparent rounded-2xl",
+        "flex flex-col w-full h-full min-h-0 flex-1 min-w-0 transition-[background-color,border-color,box-shadow,opacity] duration-150 select-none bg-transparent rounded-2xl",
         isSelected && "ring-2 ring-gold/90 shadow-glow-gold bg-gold/[0.03]",
-        isDragging && "opacity-30 border-dashed border-primary-light scale-98",
+        isDragging &&
+          "!transition-none opacity-30 border-dashed border-primary-light scale-98",
         isOverlay &&
-          "shadow-card-deep border-gold/70 bg-primary-dark/60 scale-102 rotate-1 z-50",
+          "!transition-none shadow-card-deep border-gold/70 bg-primary-dark/60 scale-102 rotate-1 z-50",
       )}
     >
       {/* HEADER DA COLUNA (Arrastável com dnd-kit) */}
@@ -84,11 +127,15 @@ export const RoutineColumn = memo(function RoutineColumn({
         {...attributes}
         {...listeners}
         className={cn(
-          "flex items-center justify-between cursor-grab active:cursor-grabbing group/header touch-none transition-all shrink-0",
+          "flex items-center justify-between cursor-grab active:cursor-grabbing group/header touch-none shrink-0",
           isCompact ? "p-2.5 mb-1" : "p-3.5 mb-2",
         )}
       >
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <GripVertical
+            size={isCompact ? 13 : 15}
+            className="text-neutral-500/70 group-hover/header:text-gold transition-colors shrink-0 -mr-0.5"
+          />
           <div
             className={cn(
               "rounded-md bg-primary-dark/40 text-neutral-300 group-hover/header:text-gold transition-colors shrink-0",
@@ -139,7 +186,7 @@ export const RoutineColumn = memo(function RoutineColumn({
       {/* ÁREA DE TAREFAS (Sortable vertical com dnd-kit) */}
       <div
         className={cn(
-          "flex flex-col flex-1 min-h-0 overflow-y-auto custom-scrollbar transition-all",
+          "flex flex-col flex-1 min-h-0 overflow-y-auto custom-scrollbar",
           isCompact ? "gap-2 p-1.5" : "gap-2.5 p-3",
         )}
       >
@@ -159,6 +206,7 @@ export const RoutineColumn = memo(function RoutineColumn({
                 key={task.id}
                 task={task}
                 columnId={column.id}
+                isCompact={isCompact}
                 onOpenDetails={onOpenDetails}
                 onContextMenu={onContextMenu}
                 onToggleCompleted={onToggleComplete}
@@ -167,25 +215,45 @@ export const RoutineColumn = memo(function RoutineColumn({
             ))
           )}
         </SortableContext>
+
+        {/* Campo de Criação Rápida Inline */}
+        {isQuickAdding && (
+          <RoutineQuickAddForm
+            columnId={column.id}
+            isCompact={isCompact}
+            isColumnCompact={widthPreset === "compact"}
+            onClose={() => setIsQuickAdding(false)}
+            onQuickCreateTask={onQuickCreateTask}
+            onOpenDetailedForm={onAddTaskToColumn}
+          />
+        )}
       </div>
 
       {/* BOTÃO INFERIOR DE ADICIONAR TAREFA RÁPIDA */}
       <div className={cn("shrink-0", isCompact ? "p-1.5 pt-0" : "p-2.5 pt-0")}>
-        <button
-          type="button"
-          onClick={() => onAddTaskToColumn?.(column.id)}
-          className={cn(
-            "w-full flex items-center justify-center border border-dashed transition-all cursor-pointer",
-            "border-primary/40 bg-primary-dark/10 font-semibold text-neutral-300",
-            "hover:border-gold hover:text-gold hover:bg-primary-dark/25 hover:shadow-glow-gold-sm",
-            isCompact
-              ? "gap-1.5 py-1.5 rounded-lg text-xs"
-              : "gap-2 py-2 rounded-xl text-body-s",
-          )}
-        >
-          <Plus size={isCompact ? 14 : 15} />
-          <span>Adicionar tarefa</span>
-        </button>
+        {!isQuickAdding && (
+          <button
+            type="button"
+            onClick={() => {
+              if (onQuickCreateTask) {
+                setIsQuickAdding(true);
+              } else {
+                onAddTaskToColumn?.(column.id);
+              }
+            }}
+            className={cn(
+              "w-full flex items-center justify-center border border-dashed transition-all cursor-pointer",
+              "border-primary/40 bg-primary-dark/10 font-semibold text-neutral-300",
+              "hover:border-gold hover:text-gold hover:bg-primary-dark/25 hover:shadow-glow-gold-sm",
+              isCompact
+                ? "gap-1.5 py-1.5 rounded-lg text-xs"
+                : "gap-2 py-2 rounded-xl text-body-s",
+            )}
+          >
+            <Plus size={isCompact ? 14 : 15} />
+            <span>Adicionar tarefa</span>
+          </button>
+        )}
       </div>
     </div>
   );

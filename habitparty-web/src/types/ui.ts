@@ -1,10 +1,36 @@
 import type { LucideIcon } from "lucide-react";
 import type { HTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
 
+export type ThemeMode = "light" | "dark";
+
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   compact?: boolean;
   label: string;
   icon?: ReactNode;
+  error?: string;
+  hint?: string;
+}
+
+export interface DatePickerProps {
+  id?: string;
+  label?: string;
+  value?: string;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+  name?: string;
+  required?: boolean;
+  variant?: "input" | "badge";
+  placeholder?: string;
+  disabled?: boolean;
+  minDate?: string;
+  maxDate?: string;
+  allowClear?: boolean;
+  compact?: boolean;
+  className?: string;
+  error?: string;
+  hint?: string;
+  align?: "left" | "right";
+  yearRange?: { min?: number; max?: number };
 }
 
 export interface ListCardProps {
@@ -16,6 +42,7 @@ export interface ListCardProps {
   isAdd?: boolean;
   disabled?: boolean;
   onClick?: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
   className?: string;
 }
 
@@ -23,7 +50,10 @@ export type SelectItem = string | SelectOption;
 
 export interface SelectProps {
   compact?: boolean;
-  label: string;
+  variant?: "default" | "inline";
+  align?: "left" | "right" | "center";
+  label?: ReactNode;
+  icon?: ReactNode;
   options: readonly SelectItem[] | SelectItem[];
   placeholder?: string;
   value?: string;
@@ -34,11 +64,18 @@ export interface SelectProps {
   disabled?: boolean;
   required?: boolean;
   className?: string;
+  dropdownClassName?: string;
+  triggerClassName?: string;
+  usePortal?: boolean;
+  "aria-label"?: string;
 }
 
 export interface WelcomeCardStat {
   label: string;
-  value: string;
+  value: string | number;
+  icon?: LucideIcon;
+  variant?: "default" | "gold" | "success" | "primary" | "warning" | "info";
+  hint?: string;
 }
 
 export interface WelcomeCardProps {
@@ -48,12 +85,15 @@ export interface WelcomeCardProps {
   imageSrc?: string;
   stats?: WelcomeCardStat[];
   isExpanded?: boolean;
+  defaultExpanded?: boolean;
   onToggle?: (expanded: boolean) => void;
   compact?: boolean;
   className?: string;
   imageWidth?: number;
   imageHeight?: number;
   storageKey?: string;
+  dismissible?: boolean;
+  onDismiss?: () => void;
 }
 
 export type LoadingVariant = "spinner" | "dots" | "skeleton" | "overlay";
@@ -74,6 +114,7 @@ export interface LoadingProps extends HTMLAttributes<HTMLDivElement> {
 export interface SelectOption {
   label: string;
   value: string;
+  icon?: ReactNode;
 }
 
 export interface DropdownFilter {
@@ -81,6 +122,17 @@ export interface DropdownFilter {
   label: string;
   value: string;
   options: SelectOption[];
+}
+
+export interface ItemCatalogFilterState {
+  search: string;
+  type: string;
+  category: string;
+  tag?: string;
+  packageLevel?: string;
+  status?: string;
+  sortBy?: string;
+  viewMode?: "card" | "list";
 }
 
 export interface FilterBarProps {
@@ -105,6 +157,7 @@ export interface IconOption {
   id: string;
   label: string;
   icon: LucideIcon;
+  isPremium?: boolean;
 }
 
 export interface IconPickerProps {
@@ -120,9 +173,11 @@ export interface IconPickerProps {
 export interface ContextMenuItem {
   label: string;
   icon?: ReactNode;
-  onClick: () => void;
-  variant?: "default" | "destructive";
+  onClick?: () => void;
+  variant?: "default" | "destructive" | "warning";
   disabled?: boolean;
+  active?: boolean;
+  children?: ContextMenuItem[];
 }
 
 export interface ContextMenuProps {

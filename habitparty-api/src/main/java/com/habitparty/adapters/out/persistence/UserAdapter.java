@@ -54,6 +54,18 @@ public class UserAdapter implements UserRepository {
   }
 
   @Override
+  public Optional<User> findByUsername(String username) {
+    return userRepository.findByUsername(username)
+        .map(userMapper::toDomain);
+  }
+
+  @Override
+  public Optional<User> findByStripeCustomerId(String stripeCustomerId) {
+    return userRepository.findByStripeCustomerId(stripeCustomerId)
+        .map(userMapper::toDomain);
+  }
+
+  @Override
   public void deleteById(UUID id) {
     userRepository.deleteById(id);
   }
@@ -63,5 +75,10 @@ public class UserAdapter implements UserRepository {
     return userRepository.findAll().stream()
         .map(entity -> userMapper.toDomain(entity))
         .toList();
+  }
+
+  @Override
+  public long countFounders() {
+    return userRepository.countByIsFounderTrue();
   }
 }

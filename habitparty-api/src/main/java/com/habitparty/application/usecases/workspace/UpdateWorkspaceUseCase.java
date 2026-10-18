@@ -5,7 +5,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.stereotype.Service;
 
-import com.habitparty.adapters.in.web.dtos.request.UpdateWorkspaceDTO;
 import com.habitparty.application.ports.WorkspaceRepository;
 import com.habitparty.core.domain.entities.Workspace;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
@@ -19,7 +18,11 @@ public class UpdateWorkspaceUseCase  {
     this.port = port;
   }
 
-  public Workspace execute(UUID workspaceId, UpdateWorkspaceDTO dto, UUID userIdLogado) {
+  public Workspace execute(UUID workspaceId, UpdateWorkspaceCommand command, UUID userIdLogado) {
+    return execute(workspaceId, userIdLogado, command.name());
+  }
+
+  public Workspace execute(UUID workspaceId, UUID userIdLogado, String name) {
     // 1. Busca o Workspace no banco
     Workspace workspace = port.findById(workspaceId)
         .orElseThrow(() -> new ResourceNotFoundException("Workspace não encontrado!"));
@@ -28,7 +31,7 @@ public class UpdateWorkspaceUseCase  {
     workspace.validateOwnership(userIdLogado);
 
     // 3. Atualiza o nome através do método de domínio
-    workspace.updateName(dto.name());
+    workspace.updateName(name);
 
     // 4. Salva a entidade modificada (O Hibernate fará um UPDATE automaticamente)
     return port.save(workspace);

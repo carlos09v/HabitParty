@@ -9,8 +9,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.habitparty.adapters.out.persistence.JwtAdapter;
-import com.habitparty.adapters.out.persistence.repository.UserJpaRepository;
+import com.habitparty.application.ports.TokenPort;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
 import jakarta.servlet.FilterChain;
@@ -20,12 +19,10 @@ import jakarta.servlet.http.HttpServletResponse;
 
 @Component
 public class SecurityFilter extends OncePerRequestFilter {
-  private final JwtAdapter jwtAdapter;
-  private final UserJpaRepository userRepository;
+  private final TokenPort tokenPort;
 
-  public SecurityFilter(JwtAdapter jwtAdapter, UserJpaRepository userRepository) {
-    this.jwtAdapter = jwtAdapter;
-    this.userRepository = userRepository;
+  public SecurityFilter(TokenPort tokenPort) {
+    this.tokenPort = tokenPort;
   }
 
   @Override
@@ -35,16 +32,12 @@ public class SecurityFilter extends OncePerRequestFilter {
     var token = this.recoverToken(request);
 
     if (token != null) {
-      var userId = jwtAdapter.validateTokenAndGetUserId(token);
+      var payloadOpt = tokenPort.validateToken(token);
 
-      if (!userId.isEmpty()) {
-        // Busca o usuário no banco para montar o contexto de segurança
-        var userEntity = userRepository.findById(java.util.UUID.fromString(userId)).orElseThrow();
-
-        // Transforma o cargo do Enum em algo que o Spring Security entenda (ROLE_ADMIN)
-        var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + userEntity.getRole().name()));
-        
-        var authUser = new AuthenticatedUser(userEntity.getId(), userEntity.getRole().name());
+      if (payloadOpt.isPresent()) {
+        var payload = payloadOpt.get();
+        var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + payload.role()));
+        var authUser = new AuthenticatedUser(payload.userId(), payload.role());
 
         var authentication = new UsernamePasswordAuthenticationToken(authUser, null, authorities);
         SecurityContextHolder.getContext().setAuthentication(authentication);

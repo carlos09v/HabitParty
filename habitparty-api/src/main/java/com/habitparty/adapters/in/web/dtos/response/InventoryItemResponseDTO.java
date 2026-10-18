@@ -20,7 +20,8 @@ public record InventoryItemResponseDTO(
     RewardPackageLevel rewardPackageLevel,
     InventoryItemStatus status,
     int orderIndex,
-    Integer remainingMinutes
+    Integer remainingMinutes,
+    Integer remainingSeconds
 ) {
     public static InventoryItemResponseDTO fromDomain(InventoryItem domain) {
     return new InventoryItemResponseDTO(
@@ -33,7 +34,8 @@ public record InventoryItemResponseDTO(
         domain.getPackageLevelSnapshot().orElse(null),
         domain.getStatus(),
         domain.getOrderIndex(),
-        domain.getRemainingMinutes().orElse(null)
+        domain.getRemainingMinutes().orElse(null),
+        domain.getRemainingSeconds().orElse(null)
     );
 }
 

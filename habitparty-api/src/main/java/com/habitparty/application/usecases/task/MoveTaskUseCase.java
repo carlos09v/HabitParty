@@ -6,7 +6,6 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.habitparty.adapters.in.web.dtos.request.UpdateTaskOrderDTO;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
@@ -19,10 +18,10 @@ public class MoveTaskUseCase {
         this.taskPort = taskPort;
     }
 
-    public void execute(UUID userIdLogado, List<UpdateTaskOrderDTO> itemsToMove) {
+    public void execute(UUID userIdLogado, List<MoveTaskCommand> itemsToMove) {
         List<Task> tasksToUpdate = new ArrayList<>();
 
-        for (UpdateTaskOrderDTO item : itemsToMove) {
+        for (MoveTaskCommand item : itemsToMove) {
             Task task = taskPort.findById(item.taskId())
                 .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada: " + item.taskId()));
             task.validateOwnership(userIdLogado);

@@ -1,12 +1,10 @@
 package com.habitparty.application.usecases.focus;
 
 import java.util.UUID;
-import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.habitparty.adapters.in.web.dtos.request.CreateFocusActivityDTO;
-import com.habitparty.adapters.in.web.dtos.response.FocusActivityResponseDTO;
 import com.habitparty.application.ports.FocusActivityRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.User;
@@ -25,41 +23,33 @@ public class CreateFocusActivityUseCase {
     this.userPort = userPort;
   }
 
-  public FocusActivityResponseDTO execute(UUID userIdLogado, CreateFocusActivityDTO dto) {
-    // Não precisa validar existencia do User nesse caso pois o Spring Security ja vê pelo Token
-
-    // Buscar o usuário para verificar o plano (Free ou Premium)
+  public FocusActivity execute(UUID userIdLogado, CreateFocusActivityCommand command) {
     User user = userPort.findById(userIdLogado)
         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado!"));
-    int limit = user.isPremium() ? 8 : 5;
+    int limit = user.isPremium() ? 6 : 4;
 
     int currentCount = port.countByUserId(userIdLogado);
     if (currentCount >= limit) {
       throw new LimitExceededException(
           "Limite de " + limit + " atividades por usuário atingido. " +
               (user.isPremium() ? "Você já atingiu o teto máximo."
-                  : "Assine o plano Premium para criar até 8 atividades!"));
+                  : "Assine o plano Premium para criar até 6 atividades!"));
     }
 
-    // Calcula a nova posição no final da lista
-    // O repositório retorna -1 se não houver nenhuma, então -1 + 1 = 0 (primeira posição)
     int maxIndex = port.getMaxOrderIndexByUserId(userIdLogado);
     int newOrderIndex = maxIndex + 1;
 
     FocusActivity activity = new FocusActivity(
-        null, // O dominio esta gerando
+        null,
         userIdLogado,
-        dto.name(),
-        dto.icon(),
+        command.name(),
+        command.icon(),
         newOrderIndex,
-        dto.recordType(),
-        dto.targetTimeMinutes(),
-        null // O dominio esta gerando
+        command.recordType(),
+        command.targetTimeMinutes(),
+        null
     );
 
-    // 4. Salva no banco e converte para Response
-    FocusActivity savedActivity = port.save(activity);
-
-    return FocusActivityResponseDTO.fromDomain(savedActivity);
+    return port.save(activity);
   }
 }

@@ -39,7 +39,8 @@ public record CreateTaskDTO(
 
     TaskPriority priority,
 
-    List<String> tags,
+    @Size(max = 5, message = "Uma tarefa pode ter no máximo 5 tags.")
+    List<@Size(max = 25, message = "Cada tag deve ter até 25 caracteres.") String> tags,
 
     TaskDifficulty difficulty,
 
@@ -63,7 +64,8 @@ public record CreateTaskDTO(
 
     // --- Campos Específicos de Todo ---
     TodoReminderType reminderType,
-    LocalDateTime customReminderAt // Usado apenas se reminderType for CUSTOM
+    LocalDateTime customReminderAt, // Usado apenas se reminderType for CUSTOM
+    Boolean sendEmailReminder
 ) {
 
 }

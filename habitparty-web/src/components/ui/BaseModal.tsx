@@ -69,7 +69,7 @@ export function BaseModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-150"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-3 sm:p-4 animate-in fade-in duration-150"
       onClick={handleOverlayClick}
       onKeyDown={(e) => {
         if (e.key === "Escape" && !preventClose) {
@@ -82,7 +82,7 @@ export function BaseModal({
     >
       <div
         className={cn(
-          "bg-[#1a0f35] border rounded-xl w-full p-6 shadow-2xl relative animate-in zoom-in-95 duration-150",
+          "bg-popover border rounded-xl w-full p-4 sm:p-6 shadow-2xl relative animate-in zoom-in-95 duration-150 max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2rem)] overflow-y-auto custom-scrollbar",
           borderColor,
           maxWidth,
           className,
@@ -93,7 +93,7 @@ export function BaseModal({
             type="button"
             onClick={onClose}
             disabled={preventClose}
-            className="absolute top-4 right-4 text-white hover:text-gold transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 rounded-md disabled:opacity-50 cursor-pointer"
+            className="absolute top-4 right-4 text-neutral-300 hover:text-gold transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 rounded-md disabled:opacity-50 cursor-pointer"
             aria-label="Fechar"
           >
             <X size={20} />

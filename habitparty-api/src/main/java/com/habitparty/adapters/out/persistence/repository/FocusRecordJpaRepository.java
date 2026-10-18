@@ -1,5 +1,6 @@
 package com.habitparty.adapters.out.persistence.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,4 +33,18 @@ public interface FocusRecordJpaRepository extends JpaRepository<FocusRecordJpaEn
 
   // Paginação para o histórico da Atividade
   Page<FocusRecordJpaEntity> findAllByFocusActivityIdOrderByStartTimeDesc(UUID focusActivityId, Pageable pageable);
+
+  // Soma de minutos produtivos de hoje (sem itens de inventário)
+  @Query("""
+      SELECT COALESCE(SUM(f.durationMinutes), 0)
+      FROM FocusRecordJpaEntity f
+      WHERE f.userId = :userId
+        AND f.inventoryItemId IS NULL
+        AND f.startTime >= :startOfDay
+        AND f.startTime <= :endOfDay
+  """)
+  int sumTodayFocusMinutesByUserId(
+      @Param("userId") UUID userId,
+      @Param("startOfDay") LocalDateTime startOfDay,
+      @Param("endOfDay") LocalDateTime endOfDay);
 }

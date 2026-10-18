@@ -11,7 +11,6 @@ import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.TransactionType;
 import com.habitparty.core.domain.enums.task.TaskDifficulty;
 
-
 @JsonInclude(JsonInclude.Include.NON_NULL) // <-- Esconde do JSON tudo que for 'null'
 public record TransactionHistoryResponseDTO(
     UUID id,

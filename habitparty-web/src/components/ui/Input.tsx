@@ -12,6 +12,8 @@ export function Input({
   icon,
   type = "text",
   compact = false,
+  error,
+  hint,
   ...props
 }: InputProps) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -19,14 +21,19 @@ export function Input({
   const isPasswordInput = type === "password";
   const finalType = isPasswordInput && isPasswordVisible ? "text" : type;
 
+  const errorId = id && error ? `${id}-error` : undefined;
+  const hintId = id && hint ? `${id}-hint` : undefined;
+  const describedBy = [errorId, hintId].filter(Boolean).join(" ") || undefined;
+
   return (
-    <div className="flex flex-col gap-2 w-full">
+    <div className="flex flex-col gap-1.5 w-full">
       <label
         htmlFor={id}
-        className={cn("text-neutral-100", compact ? "text-xs" : "text-body-s")}
+        className="font-medium text-neutral-100 select-none text-body-s"
       >
         {label}
       </label>
+
       <div className="relative flex items-center transition-colors">
         {icon && (
           <div
@@ -38,35 +45,62 @@ export function Input({
             {icon}
           </div>
         )}
+
         <input
           id={id}
           type={finalType}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
           className={cn(
-            "peer w-full rounded-lg text-neutral-50 outline-none transition-all",
-            compact ? "py-2 text-xs" : "py-3 text-body-m",
-            "bg-primary-dark/20 border border-primary/30",
-            "focus:border-primary-light focus:bg-primary-dark/30 focus:shadow-[0_0_8px_rgba(168,99,255,0.3)]",
+            "peer w-full rounded-lg transition-all",
+            compact ? "py-2 text-body-s" : "py-3 text-body-m",
+            // Tema Claro: Fundo de card limpo, borda sutil e texto escuro de alta legibilidade
+            "bg-card border border-neutral-700 text-neutral-50 focus:border-primary focus:bg-card shadow-xs",
+            // Tema Escuro: 100% fiel ao original
+            "dark:bg-primary-dark/20 dark:border-primary/30 dark:text-neutral-50 dark:focus:border-primary-light dark:focus:bg-primary-dark/30 dark:shadow-none",
+            // Foco acessível com anel dourado de alto contraste WCAG AA
+            "outline-none focus:outline-none",
+            "focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:border-transparent",
             "placeholder:text-neutral-400",
-            icon ? "pl-11 pr-4" : "px-4",
-            type === "date" &&
-              "[&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer",
+            error &&
+              "border-danger-500/80 focus-visible:ring-danger-500 focus:border-danger-500",
+            icon ? "pl-11 pr-4" : compact ? "px-3" : "px-4",
+            isPasswordInput ? "pr-11" : "",
             className,
           )}
           {...props}
         />
 
-        {/* Alternância de Visibilidade da Senha */}
+        {/* Alternância de Visibilidade da Senha com foco acessível */}
         {isPasswordInput && (
           <button
             type="button"
             onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-            className="absolute right-4 text-neutral-400 hover:text-gold transition-colors focus:outline-none cursor-pointer"
+            className="absolute right-3.5 text-neutral-400 hover:text-gold transition-colors p-1 rounded-md outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold cursor-pointer"
             aria-label={isPasswordVisible ? "Ocultar senha" : "Exibir senha"}
           >
-            {isPasswordVisible ? <EyeOff size={20} /> : <Eye size={20} />}
+            {isPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         )}
       </div>
+
+      {/* Mensagem de Erro de Acessibilidade */}
+      {error && (
+        <span
+          id={errorId}
+          role="alert"
+          className="text-xs text-danger-500 font-semibold mt-0.5"
+        >
+          {error}
+        </span>
+      )}
+
+      {/* Dica do Campo */}
+      {hint && !error && (
+        <span id={hintId} className="text-xs text-neutral-400 mt-0.5">
+          {hint}
+        </span>
+      )}
     </div>
   );
 }

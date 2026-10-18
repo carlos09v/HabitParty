@@ -66,18 +66,16 @@ export interface AddRewardCardProps {
   viewMode?: "card" | "list";
 }
 
-export interface RewardFilterState {
-  search: string;
-  type: string;
-  category: string;
-  tag: string;
-  packageLevel: string;
-  viewMode: "card" | "list";
-}
+export type {
+  ItemCatalogFilterState as RewardFilterState,
+  ItemCatalogFilterState,
+} from "@/types/ui";
 
 export interface RewardFiltersProps {
-  filters: RewardFilterState;
-  onChange: (newFilters: Partial<RewardFilterState>) => void;
+  filters: import("@/types/ui").ItemCatalogFilterState;
+  onChange: (
+    newFilters: Partial<import("@/types/ui").ItemCatalogFilterState>,
+  ) => void;
   onClear: () => void;
 }
 

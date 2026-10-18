@@ -7,17 +7,7 @@ export type InventoryItemResponseDTO =
 
 export type InventoryItemType =
   | NonNullable<InventoryItemResponseDTO["rewardType"]>
-  | "Potion"
-  | "Equipment"
-  | "Consumable"
-  | "Card";
-export type InventoryItemRarity =
-  | "Common"
-  | "Uncommon"
-  | "Rare"
-  | "Epic"
-  | "Legendary"
-  | "Mythic";
+  | "Consumable";
 
 // 2. Model UI (Entidade estendida)
 export interface InventoryItem
@@ -26,12 +16,11 @@ export interface InventoryItem
   name: string;
   description: string;
   quantity: number;
-  itemType: InventoryItemType; // Keeping itemType as it might be used in UI
-  rarity?: InventoryItemRarity;
+  itemType: InventoryItemType;
   imageUrl?: string;
   iconName?: string;
-  isEquipped?: boolean;
   acquiredAt?: string;
+  remainingSeconds?: number;
   reward: Reward;
 }
 
@@ -39,15 +28,13 @@ export interface InventoryItem
 export interface InventoryCardProps {
   item: InventoryItem;
   onUse?: (item: InventoryItem) => void;
-  onEquip?: (item: InventoryItem) => void;
+  onSendToFocus?: (item: InventoryItem) => void;
+  onOpenMysteryBox?: (item: InventoryItem) => void;
+  onContextMenu?: (e: React.MouseEvent, item: InventoryItem) => void;
   isCompact?: boolean;
 }
 
-export interface InventoryFilterState {
-  search: string;
-  type: string;
-  category: string;
-  tag: string;
-  packageLevel: string;
-  viewMode: "card" | "list";
-}
+export type {
+  ItemCatalogFilterState as InventoryFilterState,
+  ItemCatalogFilterState,
+} from "@/types/ui";

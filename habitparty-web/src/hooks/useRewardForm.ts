@@ -120,31 +120,33 @@ export function useRewardForm({
         const payload = mapRewardFormToUpdatePayload(formInput);
         const result = await updateReward(rewardToEdit.id, payload);
 
+        if (!result.success) {
+          toast.error(
+            result.error || "Erro ao atualizar recompensa no servidor.",
+          );
+          return;
+        }
+
         const updatedReward: Reward = {
           ...rewardToEdit,
           ...formInput,
           iconName: selectedIcon,
         };
 
-        if (result.success) {
-          toast.success("Recompensa atualizada com sucesso!");
-        } else {
-          toast.error(
-            result.error || "Erro ao atualizar recompensa no servidor.",
-          );
-        }
-
+        toast.success("Recompensa atualizada com sucesso!");
         onSuccess?.(updatedReward);
         onClose();
       } else {
         const payload = mapRewardFormToCreatePayload(formInput);
         const result = await createReward(payload);
 
+        if (!result.success) {
+          toast.error(result.error || "Erro ao criar recompensa no servidor.");
+          return;
+        }
+
         const createdId =
-          result.success &&
-          result.data &&
-          typeof result.data === "object" &&
-          "id" in result.data
+          result.data && typeof result.data === "object" && "id" in result.data
             ? String((result.data as { id: string }).id)
             : `rew-${Date.now()}`;
 
@@ -155,16 +157,49 @@ export function useRewardForm({
           orderIndex: 0,
         };
 
-        if (result.success) {
-          toast.success("Recompensa criada com sucesso!");
-        } else {
-          toast.error(result.error || "Erro ao criar recompensa no servidor.");
-        }
-
+        toast.success("Recompensa criada com sucesso!");
         onSuccess?.(newReward);
         onClose();
       }
     });
+  };
+
+  const handleTypeChange = (newType: RewardType) => {
+    setType(newType);
+    if (newType === "MysteryBox") {
+      if (packageLevel === "Nenhum" || packageLevel === "NONE") {
+        setPackageLevel("Básico");
+      }
+      if (price === "10" || price === "" || price === "0") {
+        setPrice("5");
+      }
+      setSelectedIcon("mystery_box");
+      if (!title.trim() || title.startsWith("Caixa")) {
+        setTitle("Caixa Misteriosa Básica");
+      }
+    } else if (newType === "SingleUse") {
+      setPackageLevel("Nenhum");
+      if (selectedIcon === "mystery_box") {
+        setSelectedIcon("gamepad");
+      }
+    } else if (newType === "TimeBased") {
+      if (selectedIcon === "mystery_box") {
+        setSelectedIcon("gamepad");
+      }
+    }
+  };
+
+  const handleMysteryBoxTierSelect = (
+    tierId: PackageLevel,
+    recommendedPrice: number,
+    tierName?: string,
+  ) => {
+    setPackageLevel(tierId);
+    setPrice(String(recommendedPrice));
+    setSelectedIcon("mystery_box");
+    if (!title.trim() || title.startsWith("Caixa")) {
+      setTitle(tierName || `Caixa ${tierId}`);
+    }
   };
 
   return {
@@ -178,10 +213,12 @@ export function useRewardForm({
     setPrice,
     type,
     setType,
+    handleTypeChange,
     category,
     setCategory,
     packageLevel,
     setPackageLevel,
+    handleMysteryBoxTierSelect,
     baseDurationMinutes,
     setBaseDurationMinutes,
     selectedIcon,

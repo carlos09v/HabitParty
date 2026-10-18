@@ -12,11 +12,14 @@ import com.habitparty.adapters.in.web.dtos.request.CreateRewardDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateRewardDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateRewardOrderDTO;
 import com.habitparty.adapters.in.web.dtos.response.RewardResponseDTO;
+import com.habitparty.application.usecases.reward.CreateRewardCommand;
 import com.habitparty.application.usecases.reward.CreateRewardUseCase;
 import com.habitparty.application.usecases.reward.DeleteRewardUseCase;
 import com.habitparty.application.usecases.reward.ListUserRewardsUseCase;
 import com.habitparty.application.usecases.reward.RedeemRewardUseCase;
 import com.habitparty.application.usecases.reward.ReorderRewardUseCase;
+import com.habitparty.application.usecases.reward.RewardOrderCommand;
+import com.habitparty.application.usecases.reward.UpdateRewardCommand;
 import com.habitparty.application.usecases.reward.UpdateRewardUseCase;
 import com.habitparty.core.domain.entities.reward.Reward;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
@@ -38,9 +41,7 @@ public class RewardController implements RewardApi {
       UUID rewardId,
       AuthenticatedUser usuarioLogado) {
     UUID userId = usuarioLogado.id();
-    var requestDTO = new com.habitparty.adapters.in.web.dtos.request.RedeemRewardRequestDTO(rewardId);
-
-    redeemRewardUseCase.execute(requestDTO, userId);
+    redeemRewardUseCase.execute(rewardId, userId);
 
     return ResponseEntity.noContent().build();
   }
@@ -50,7 +51,18 @@ public class RewardController implements RewardApi {
       CreateRewardDTO requestDTO,
       AuthenticatedUser usuarioLogado) {
     UUID userId = usuarioLogado.id();
-    Reward createdReward = createRewardUseCase.execute(requestDTO, userId);
+    var command = new CreateRewardCommand(
+        requestDTO.name(),
+        requestDTO.icon(),
+        requestDTO.description(),
+        requestDTO.price(),
+        requestDTO.category(),
+        requestDTO.tags(),
+        requestDTO.type(),
+        requestDTO.packageLevel(),
+        requestDTO.baseDurationMinutes()
+    );
+    Reward createdReward = createRewardUseCase.execute(command, userId);
 
     return ResponseEntity.status(HttpStatus.CREATED).body(RewardResponseDTO.fromDomain(createdReward));
   }
@@ -70,7 +82,10 @@ public class RewardController implements RewardApi {
       List<UpdateRewardOrderDTO> newOrderList,
       AuthenticatedUser usuarioLogado) {
     UUID userId = usuarioLogado.id();
-    reorderRewardUseCase.execute(newOrderList, userId);
+    List<RewardOrderCommand> commands = newOrderList.stream()
+        .map(dto -> new RewardOrderCommand(dto.id(), dto.newIndex()))
+        .toList();
+    reorderRewardUseCase.execute(userId, commands);
 
     return ResponseEntity.noContent().build();
   }
@@ -81,10 +96,19 @@ public class RewardController implements RewardApi {
       UpdateRewardDTO dto,
       AuthenticatedUser usuarioLogado) {
     UUID userId = usuarioLogado.id();
-    
-    RewardResponseDTO responseDTO = updateRewardUseCase.execute(rewardId, dto, userId);
-
-    return ResponseEntity.ok(responseDTO);
+    var command = new UpdateRewardCommand(
+        dto.name(),
+        dto.icon(),
+        dto.description(),
+        dto.price(),
+        dto.category(),
+        dto.tags(),
+        dto.type(),
+        dto.packageLevel(),
+        dto.baseDurationMinutes()
+    );
+    Reward updatedReward = updateRewardUseCase.execute(rewardId, command, userId);
+    return ResponseEntity.ok(RewardResponseDTO.fromDomain(updatedReward));
   }
 
   @Override

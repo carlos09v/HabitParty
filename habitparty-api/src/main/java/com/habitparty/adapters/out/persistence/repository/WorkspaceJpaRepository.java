@@ -13,4 +13,6 @@ public interface WorkspaceJpaRepository extends JpaRepository<WorkspaceJpaEntity
   int countByUser_Id(UUID userId);
   
   List<WorkspaceJpaEntity> findByUser_Id(UUID userId);
+
+  List<WorkspaceJpaEntity> findByUser_IdOrderByCreatedAtAsc(UUID userId);
 }

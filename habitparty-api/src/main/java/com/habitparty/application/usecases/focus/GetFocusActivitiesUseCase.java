@@ -5,8 +5,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.habitparty.adapters.in.web.dtos.response.FocusActivityResponseDTO;
 import com.habitparty.application.ports.FocusActivityRepository;
+import com.habitparty.core.domain.entities.focus.FocusActivity;
 
 @Service
 public class GetFocusActivitiesUseCase {
@@ -16,11 +16,7 @@ public class GetFocusActivitiesUseCase {
     this.port = port;
   }
 
-  public List<FocusActivityResponseDTO> execute(UUID userIdLogado) {
-
-    return port.findAllByUserIdOrderByOrderIndex(userIdLogado)
-        .stream()
-        .map(FocusActivityResponseDTO::fromDomain)
-        .toList();
+  public List<FocusActivity> execute(UUID userIdLogado) {
+    return port.findAllByUserIdOrderByOrderIndex(userIdLogado);
   }
 }

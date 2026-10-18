@@ -41,6 +41,22 @@ public class UserJpaEntity {
   @Column(name = "is_premium", nullable = false)
   private boolean isPremium;
 
+  @Column(name = "is_founder", nullable = false, columnDefinition = "boolean default false")
+  private boolean isFounder = false;
+
+  @Column(name = "stripe_customer_id", unique = true)
+  private String stripeCustomerId;
+
+  @Column(name = "stripe_subscription_id")
+  private String stripeSubscriptionId;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "subscription_status", nullable = false)
+  private com.habitparty.core.domain.enums.SubscriptionStatus subscriptionStatus = com.habitparty.core.domain.enums.SubscriptionStatus.FREE;
+
+  @Column(name = "subscription_ends_at")
+  private LocalDateTime subscriptionEndsAt;
+
   @Column(nullable = false, length = 150, name = "full_name")
   private String fullName;
 
@@ -53,10 +69,10 @@ public class UserJpaEntity {
   @Column(nullable = false)
   private String password;
 
-  @Column(nullable = false, name = "current_coins", columnDefinition = "decimal(10,2) default 0.00")
+  @Column(nullable = false, name = "current_coins", precision = 10, scale = 2)
   private BigDecimal currentCoins;
 
-  @Column(nullable = false, name = "total_gold_earned", columnDefinition = "decimal(10,2) default 0.00")
+  @Column(nullable = false, name = "total_gold_earned", precision = 10, scale = 2)
   private BigDecimal totalGoldEarned;
 
   @Column(name = "profile_photo_url")

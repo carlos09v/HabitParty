@@ -5,6 +5,7 @@ import { cn } from "@/utils";
 interface TaskActionControlProps {
   task: Task;
   isHabit: boolean;
+  isDaily?: boolean;
   completed?: boolean;
   onToggle?: () => void;
   onDelta?: (delta: number) => void;
@@ -14,12 +15,13 @@ interface TaskActionControlProps {
 
 /**
  * Controle de ação padronizado para tarefas:
- * - Checkbox de conclusão para To-Do e Diárias.
+ * - Checkbox de conclusão para To-Do (quadrado) e Diárias (circular).
  * - Botões de incremento/decremento (+/-) para Hábitos.
  */
 export function TaskActionControl({
   task,
   isHabit,
+  isDaily: propIsDaily,
   completed = false,
   onToggle,
   onDelta,
@@ -39,6 +41,7 @@ export function TaskActionControl({
         {showPositive && (
           <button
             type="button"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               onDelta?.(1);
@@ -56,6 +59,7 @@ export function TaskActionControl({
         {showNegative && (
           <button
             type="button"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               onDelta?.(-1);
@@ -74,20 +78,30 @@ export function TaskActionControl({
     );
   }
 
+  const isDaily =
+    propIsDaily ??
+    (Boolean(task.repeatType) ||
+      (Array.isArray(task.daysOfWeek) && task.daysOfWeek.length > 0) ||
+      (task.type || "").toLowerCase() === "daily");
+
   return (
     <button
       type="button"
+      onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.stopPropagation();
         onToggle?.();
       }}
       aria-label={completed ? "Marcar como pendente" : "Marcar como concluída"}
       className={cn(
-        "rounded-md border flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-95",
+        "border flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-95",
+        isDaily ? "rounded-full" : "rounded-md",
         isCompact ? "w-3.5 h-3.5" : "w-4.5 h-4.5",
         completed
           ? "bg-gold border-gold text-neutral-900 shadow-glow-gold-xs"
-          : "border-primary/50 bg-primary-dark/40 hover:border-gold",
+          : isDaily
+            ? "border-magenta/50 bg-magenta/10 hover:border-magenta"
+            : "border-primary/50 bg-primary-dark/40 hover:border-gold",
         className,
       )}
     >

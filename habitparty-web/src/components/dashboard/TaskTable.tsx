@@ -1,40 +1,13 @@
-import { CalendarCheck, CheckCircle2, Sparkles } from "lucide-react";
+"use client";
+
+import { CalendarCheck } from "lucide-react";
+import { DASHBOARD_EMPTY_MESSAGES } from "@/constants/dashboard";
 import { useCompactMode } from "@/hooks/useCompactMode";
-import type {
-  TaskFilterType,
-  TaskTableProps as TaskTableComponentProps,
-} from "@/types/task";
+import type { TaskTableProps as TaskTableComponentProps } from "@/types/task";
 import { cn } from "@/utils";
+import { formatShortDate } from "@/utils/date";
 import { TaskPagination } from "./TaskPagination";
 import { TaskRow } from "./TaskRow";
-
-const EMPTY_MESSAGES: Partial<
-  Record<
-    TaskFilterType,
-    { title: string; description: string; icon: typeof CalendarCheck }
-  >
-> = {
-  today: {
-    title: "Tudo limpo por hoje! 🎉",
-    description: "Você não possui nenhuma tarefa pendente para hoje.",
-    icon: CalendarCheck,
-  },
-  next7days: {
-    title: "Sem tarefas nos próximos 7 dias",
-    description: "Sua semana está tranquila. Que tal planejar novas metas?",
-    icon: Sparkles,
-  },
-  overdue: {
-    title: "Tudo em dia! ✨",
-    description: "Parabéns, você não possui nenhuma tarefa atrasada.",
-    icon: CheckCircle2,
-  },
-  nodate: {
-    title: "Nenhuma tarefa sem prazo",
-    description: "Todas as suas tarefas possuem uma data de entrega definida.",
-    icon: CalendarCheck,
-  },
-};
 
 interface Props extends TaskTableComponentProps {
   isCompact?: boolean;
@@ -47,31 +20,26 @@ export function TaskTable({
   activeFilter = "today",
   onToggle,
   onHabitChange,
+  onContextMenu,
+  onOpenDetails,
+  onDelete,
+  onEdit,
+  onDuplicate,
   selectedDate,
+  onPageChange,
   isCompact: propIsCompact,
 }: Props) {
   const totalItems = tasks.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
 
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage;
   const paginatedTasks = tasks.slice(startIndex, startIndex + itemsPerPage);
 
   const { isCompact: hookIsCompact } = useCompactMode();
   const isCompact = propIsCompact ?? hookIsCompact;
 
-  const formattedDate = (() => {
-    if (!selectedDate) return null;
-    try {
-      const [y, m, d] = selectedDate.split("-").map(Number);
-      const dateObj = new Date(y, (m || 1) - 1, d || 1);
-      return dateObj.toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "2-digit",
-      });
-    } catch {
-      return selectedDate;
-    }
-  })();
+  const formattedDate = formatShortDate(selectedDate);
 
   const fallbackEmpty = {
     title: "Nenhuma tarefa encontrada",
@@ -85,7 +53,7 @@ export function TaskTable({
         description: `Não há tarefas agendadas para o dia ${formattedDate}.`,
         icon: CalendarCheck,
       }
-    : EMPTY_MESSAGES[activeFilter] || fallbackEmpty;
+    : DASHBOARD_EMPTY_MESSAGES[activeFilter] || fallbackEmpty;
 
   const EmptyIcon = emptyMeta.icon;
 
@@ -94,18 +62,19 @@ export function TaskTable({
       className="flex flex-col gap-2.5 w-full"
       aria-label="Lista de tarefas"
     >
-      {/* Cabeçalho da Grade (mesmo grid de TaskRow) */}
+      {/* Cabeçalho da Grade Responsivo */}
       <div
         className={cn(
-          "grid grid-cols-[minmax(0,2.5fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,1.5fr)_36px] items-center text-xs font-semibold text-neutral-300",
-          isCompact ? "gap-3 px-3 py-1.5" : "gap-4 px-4 py-2",
+          "grid grid-cols-[minmax(0,1fr)_auto_40px] sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto_minmax(0,1fr)_40px] md:grid-cols-[minmax(0,2.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_40px] items-center text-xs font-semibold text-neutral-300",
+          isCompact ? "gap-2.5 px-3 py-1.5" : "gap-4 px-4 py-2",
         )}
         aria-hidden="true"
       >
         <span className="pl-13">Nome</span>
-        <span>Lista</span>
+        <span className="hidden sm:block">Lista</span>
         <span>Tipo</span>
-        <span>Frequência/Prazo</span>
+        <span className="hidden sm:block">Prioridade</span>
+        <span className="hidden md:block">Frequência/Prazo</span>
         <span className="text-right sr-only">Ações</span>
       </div>
 
@@ -135,8 +104,16 @@ export function TaskTable({
             <li key={task.id} className="list-none">
               <TaskRow
                 task={task}
+                activeFilter={activeFilter}
+                selectedDate={selectedDate}
                 onToggle={onToggle}
                 onHabitChange={onHabitChange}
+                onContextMenu={onContextMenu}
+                onOpenDetails={onOpenDetails}
+                onDelete={onDelete}
+                onEdit={onEdit}
+                onDuplicate={onDuplicate}
+                isCompact={isCompact}
               />
             </li>
           ))}
@@ -145,10 +122,11 @@ export function TaskTable({
 
       {totalItems > 0 && (
         <TaskPagination
-          currentPage={currentPage}
+          currentPage={safeCurrentPage}
           totalPages={totalPages}
           totalItems={totalItems}
           itemsPerPage={itemsPerPage}
+          onPageChange={onPageChange}
         />
       )}
     </section>

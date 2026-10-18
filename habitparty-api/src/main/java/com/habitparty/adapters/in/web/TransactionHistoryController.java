@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.habitparty.adapters.in.web.api.TransactionHistoryApi;
 import com.habitparty.adapters.in.web.dtos.response.TransactionHistoryResponseDTO;
-import com.habitparty.application.usecases.transaction_history.DeleteTransactionHistoryUseCase;
-import com.habitparty.application.usecases.transaction_history.ExportTransactionsCsvUseCase;
-import com.habitparty.application.usecases.transaction_history.ListUserTransactionsUseCase;
+import com.habitparty.application.usecases.transaction.DeleteTransactionHistoryUseCase;
+import com.habitparty.application.usecases.transaction.ExportTransactionsCsvUseCase;
+import com.habitparty.application.usecases.transaction.ListUserTransactionsUseCase;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -29,11 +29,14 @@ public class TransactionHistoryController implements TransactionHistoryApi {
     public ResponseEntity<Page<TransactionHistoryResponseDTO>> getMyHistory(
             AuthenticatedUser usuarioLogado,
             String tab,
+            String period,
+            String search,
             int page,
             int size) {
 
         UUID userId = usuarioLogado.id();
-        Page<TransactionHistoryResponseDTO> response = listUseCase.execute(userId, tab, page, size);
+        Page<TransactionHistoryResponseDTO> response = listUseCase.execute(userId, tab, period, search, page, size)
+                .map(TransactionHistoryResponseDTO::fromDomain);
         return ResponseEntity.ok(response);
     }
 

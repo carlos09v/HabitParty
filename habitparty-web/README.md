@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎮 HabitParty Web (Frontend)
 
-## Getting Started
+Interface web moderna do HabitParty construída com **Next.js 15+ (App Router)**, **React 19**, **Tailwind CSS v4** e **Biome**.
 
-First, run the development server:
+## 🚀 Como Executar
 
 ```bash
+# Instalar dependências
+npm install
+
+# Iniciar servidor de desenvolvimento (porta 3000)
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Checar linting e formatação
+npm run lint
+
+# Formatar arquivos com Biome
+npm run format
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🎁 Vitrine de Recompensas & Caixas Misteriosas (Loot Tables RNG)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+O módulo de Recompensas permite que o usuário converta moedas (🪙) ganhas na conclusão de tarefas e sessões de foco em momentos reais de lazer e descanso.
 
-## Learn More
+### Modalidades de Recompensa
+1. **Uso Único:** Consumo pontual que é arquivado na Mochila após o uso (ex: pedir delivery, comprar um café especial).
+2. **Baseado em Tempo (Cupom):** Cupons de tempo pré-fixado (ex: 30m, 60m) que podem ser enviados e cronometrados no Palco de Foco.
+3. **Caixa Misteriosa (RNG Gamificado):** Sorteio de prêmios aleatórios por nível de raridade, com custos equilibrados para não quebrar a economia do usuário:
 
-To learn more about Next.js, take a look at the following resources:
+| Nível / Pacote | Cor Tema | Preço Sugerido | Chances de Drop (RNG) | Proposta / Conceito |
+| :--- | :--- | :--- | :--- | :--- |
+| **Básica (Basic)** | 🟢 Verde (`success-500`) | **5,00 🪙** | • 60% Pausa Curta (10-15m)<br>• 30% Lazer Médio (30m)<br>• 10% Sessão Focada (45m + 1 🪙 bônus) | Micro-recompensas para manter o ritmo sem culpa e sem pesar no saldo. |
+| **Premium** | 🔵 Ciano (`info`) | **15,00 🪙** | • 50% Lazer Padrão (45-60m)<br>• 35% Lazer Estendido (75-90m)<br>• 15% Noite Gamer / Cinema (120m) | Recompensa de meio de semana para celebrar metas com jogos e séries. |
+| **Épica (Epic)** | 🟣 Magenta (`magenta`) | **35,00 🪙** | • 50% Bloco Estendido (120m)<br>• 35% Noite Livre (180m)<br>• 15% Tarde Inteira de Desconexão (240m) | Recompensa substancial de final de semana para coroar dias consistentes. |
+| **Lendária (Legendary)** | 🟡 Dourado (`gold`) | **80,00 🪙** | • 60% Day-Off Parcial de Elite (240m)<br>• 30% Day-Off Integral<br>• 10% Celebração Absoluta (Final de Semana Livre) | O ápice de semanas de disciplina e ofensivas intactas. Um marco memorável. |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🏛️ Padrões de Arquitetura
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Component Boundaries:** Server Components por padrão (`RSC`), com client components (`"use client"`) restritos às folhas interativas.
+- **Design Tokens:** Variáveis semânticas em `globals.css` (@theme) sincronizadas com o Figma do projeto.
+- **Micro-interações:** Hover com escala, anel radiante de seleção e popovers ancorados de pré-visualização.

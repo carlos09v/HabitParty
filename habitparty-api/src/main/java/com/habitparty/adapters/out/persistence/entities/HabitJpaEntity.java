@@ -40,4 +40,10 @@ public class HabitJpaEntity extends TaskJpaEntity {
 
   @Column(name = "last_completed_at")
   private LocalDateTime lastCompletedAt;
+
+  @Column(name = "positive_count", nullable = false, columnDefinition = "int default 0")
+  private int positiveCount;
+
+  @Column(name = "negative_count", nullable = false, columnDefinition = "int default 0")
+  private int negativeCount;
 }

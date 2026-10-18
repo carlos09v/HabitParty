@@ -2,16 +2,26 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useEffect, useTransition } from "react";
 import { toast } from "sonner";
 import { signIn } from "@/actions/auth";
-import { AuthSubmitButton } from "@/components/auth/AuthSubmitButton";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { Input } from "@/components/ui/Input";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
-export function SignInForm() {
+interface SignInFormProps {
+  initialError?: string;
+}
+
+export function SignInForm({ initialError }: SignInFormProps = {}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (initialError) {
+      toast.error(initialError);
+    }
+  }, [initialError]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -54,7 +64,7 @@ export function SignInForm() {
         <div className="flex justify-end">
           <Link
             href="/forgot-password"
-            className="text-xs text-neutral-400 hover:text-gold transition-colors focus:outline-none focus:underline"
+            className="text-xs text-neutral-400 hover:text-gold transition-colors outline-none focus:outline-none focus-visible:underline focus-visible:ring-2 focus-visible:ring-gold focus-visible:rounded px-1"
           >
             Esqueceu a senha?
           </Link>
@@ -62,9 +72,9 @@ export function SignInForm() {
       </div>
 
       <div className="flex flex-col gap-3 mt-2">
-        <AuthSubmitButton isPending={isPending} loadingText="Entrando...">
+        <SubmitButton isPending={isPending} loadingText="Entrando...">
           Entrar
-        </AuthSubmitButton>
+        </SubmitButton>
 
         <GoogleSignInButton disabled={isPending} />
       </div>

@@ -6,8 +6,8 @@ import { toast } from "sonner";
 import { updateUserProfilePhotoAction } from "@/actions/userActions";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useUserStore } from "@/store/userStore";
-import type { ProfileHeaderCardProps } from "@/types/user";
-import { cn } from "@/utils";
+import type { ProfileHeaderCardProps } from "@/types/settings";
+import { cn, formatCoins, getCurrentLevel } from "@/utils";
 
 export function ProfileHeaderCard({
   initialUser,
@@ -56,38 +56,50 @@ export function ProfileHeaderCard({
   const displayName = user?.fullName || user?.username || "Aventureiro";
   const displayPhoto = previewUrl || user?.profilePhotoUrl;
   const levelTitle =
-    user?.currentLevelTitle || (user?.isPremium ? "Membro Premium" : "Novato");
+    user?.currentLevelTitle ||
+    getCurrentLevel(user?.totalXp ?? 0).title ||
+    (user?.isPremium ? "Membro Premium" : "Novato");
 
   return (
     <div
       className={cn(
-        "rounded-2xl border border-primary/25 bg-surface/30 backdrop-blur-md flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 sm:gap-8 transition-all",
+        "rounded-2xl border border-primary/20 bg-surface/30 backdrop-blur-md flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 sm:gap-8 transition-all",
         isCompact ? "p-4 sm:p-5" : "p-6 sm:p-7",
       )}
     >
       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-6 min-w-0 flex-1">
-        {/* AVATAR + BOTÃO DE UPLOAD */}
+        {/* AVATAR COM OVERLAY ELEGANTE PARA UPLOAD (NÃO CORTA A MOLDURA) */}
         <div className="relative group shrink-0">
-          <UserAvatar
-            src={displayPhoto}
-            name={displayName}
-            size="xl"
-            hasRing={Boolean(user?.isPremium)}
-            className="ring-4 ring-primary/40 shadow-xl"
-          />
-
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isPending}
-            className={cn(
-              "absolute bottom-0 right-0 p-2 rounded-full bg-gold text-neutral-900 border-2 border-background shadow-lg transition-transform cursor-pointer",
-              "hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed",
-            )}
+            className="relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-gold cursor-pointer transition-transform group-hover:scale-[1.02] block disabled:cursor-not-allowed"
             title="Alterar foto de perfil"
             aria-label="Alterar foto de perfil"
           >
-            <Camera size={16} className={isPending ? "animate-spin" : ""} />
+            <UserAvatar
+              src={displayPhoto}
+              name={displayName}
+              size="xl"
+              hasRing={Boolean(user?.isPremium)}
+              className="shadow-xl"
+            />
+
+            {/* Overlay sutil de câmera no hover (dentro do círculo do avatar, não oculta nem corta a moldura animada externa) */}
+            <div className="absolute inset-0 rounded-full bg-neutral-950/60 backdrop-blur-xs flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity z-20">
+              <Camera
+                size={22}
+                className={
+                  isPending
+                    ? "animate-spin text-gold"
+                    : "text-neutral-100 drop-shadow-sm"
+                }
+              />
+              <span className="text-[10px] font-bold mt-1 text-neutral-100 drop-shadow-sm">
+                {isPending ? "Enviando..." : "Alterar"}
+              </span>
+            </div>
           </button>
 
           <input
@@ -113,7 +125,7 @@ export function ProfileHeaderCard({
                 PREMIUM
               </span>
             ) : (
-              <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-tiny font-bold bg-white/10 text-neutral-300 border border-white/15 shadow-xs">
+              <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-tiny font-bold bg-surface border border-primary/30 text-neutral-300 shadow-xs">
                 <Sparkles size={12} className="text-neutral-400" />
                 GRATUITO
               </span>
@@ -138,19 +150,19 @@ export function ProfileHeaderCard({
           )}
 
           <div className="flex items-center gap-2 mt-2 flex-wrap justify-center sm:justify-start">
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-xs text-neutral-200">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface/60 border border-primary/20 text-xs text-neutral-200">
               <Sparkles size={14} className="text-gold" />
               <span>{levelTitle}</span>
             </div>
 
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-xs text-neutral-200">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface/60 border border-primary/20 text-xs text-neutral-200">
               <span className="text-gold font-bold">
-                {user?.currentCoins ?? 0}
+                {formatCoins(user?.currentCoins ?? 0)}
               </span>
               <span>moedas</span>
             </div>
 
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-xs text-neutral-200">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface/60 border border-primary/20 text-xs text-neutral-200">
               <span className="text-magenta font-bold">
                 {user?.totalXp ?? 0}
               </span>
@@ -160,17 +172,18 @@ export function ProfileHeaderCard({
         </div>
       </div>
 
-      <div className="shrink-0 self-center sm:self-start sm:ml-4">
+      <div className="shrink-0 self-center sm:self-start sm:ml-4 flex flex-col sm:flex-row items-center gap-2.5">
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={isPending}
           className={cn(
-            "rounded-xl border border-white/15 bg-surface/50 text-neutral-200 hover:text-neutral-50 hover:border-gold/50 transition-all font-semibold cursor-pointer",
+            "rounded-xl border border-primary/30 bg-surface/60 text-neutral-200 hover:text-neutral-50 hover:border-gold/50 transition-all font-semibold cursor-pointer flex items-center gap-2",
             isCompact ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm",
           )}
         >
-          {isPending ? "Enviando..." : "Alterar foto"}
+          <Camera size={15} className={isPending ? "animate-spin" : ""} />
+          <span>{isPending ? "Enviando..." : "Alterar foto"}</span>
         </button>
       </div>
     </div>

@@ -9,12 +9,14 @@ import org.springframework.web.bind.annotation.RestController;
 import com.habitparty.adapters.in.web.api.InventoryItemApi;
 import com.habitparty.adapters.in.web.dtos.request.UpdateInventoryOrderDTO;
 import com.habitparty.adapters.in.web.dtos.response.InventoryItemResponseDTO;
-import com.habitparty.application.usecases.inventory_Item.ConsumeInventoryItemUseCase;
-import com.habitparty.application.usecases.inventory_Item.DiscardInventoryItemUseCase;
-import com.habitparty.application.usecases.inventory_Item.ListUserInventoryUseCase;
-import com.habitparty.application.usecases.inventory_Item.ReorderInventoryItemUseCase;
-import com.habitparty.application.usecases.inventory_Item.ReturnItemToBagUseCase;
-import com.habitparty.application.usecases.inventory_Item.SendItemToFocusUseCase;
+import com.habitparty.application.usecases.inventory.ConsumeInventoryItemUseCase;
+import com.habitparty.application.usecases.inventory.DiscardInventoryItemUseCase;
+import com.habitparty.application.usecases.inventory.InventoryItemOrderCommand;
+import com.habitparty.application.usecases.inventory.ListUserInventoryUseCase;
+import com.habitparty.application.usecases.inventory.OpenMysteryBoxUseCase;
+import com.habitparty.application.usecases.inventory.ReorderInventoryItemUseCase;
+import com.habitparty.application.usecases.inventory.ReturnItemToBagUseCase;
+import com.habitparty.application.usecases.inventory.SendItemToFocusUseCase;
 import com.habitparty.core.domain.entities.InventoryItem;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
@@ -29,6 +31,7 @@ public class InventoryItemController implements InventoryItemApi {
     private final DiscardInventoryItemUseCase discardUseCase;
     private final SendItemToFocusUseCase sendItemFocusUseCase;
     private final ReturnItemToBagUseCase returnItemBagUseCase;
+    private final OpenMysteryBoxUseCase openMysteryBoxUseCase;
 
     @Override
     public ResponseEntity<List<InventoryItemResponseDTO>> getMyInventory(
@@ -49,7 +52,10 @@ public class InventoryItemController implements InventoryItemApi {
             List<UpdateInventoryOrderDTO> orderList,
             AuthenticatedUser usuarioLogado) {
         UUID userId = usuarioLogado.id();
-        reorderUseCase.execute(orderList, userId);
+        List<InventoryItemOrderCommand> commands = orderList.stream()
+                .map(dto -> new InventoryItemOrderCommand(dto.itemId(), dto.newIndex()))
+                .toList();
+        reorderUseCase.execute(userId, commands);
 
         return ResponseEntity.noContent().build();
     }
@@ -88,5 +94,14 @@ public class InventoryItemController implements InventoryItemApi {
             AuthenticatedUser usuarioLogado) {
         returnItemBagUseCase.execute(itemId, usuarioLogado.id());
         return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    public ResponseEntity<InventoryItemResponseDTO> openMysteryBox(
+            UUID itemId,
+            AuthenticatedUser usuarioLogado) {
+        UUID userId = usuarioLogado.id();
+        InventoryItem item = openMysteryBoxUseCase.execute(itemId, userId);
+        return ResponseEntity.ok(InventoryItemResponseDTO.fromDomain(item));
     }
 }

@@ -11,6 +11,7 @@ import com.habitparty.adapters.in.web.api.FocusRecordApi;
 import com.habitparty.adapters.in.web.dtos.request.CreateFocusRecordDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateFocusRecordDTO;
 import com.habitparty.adapters.in.web.dtos.response.FocusRecordResponseDTO;
+import com.habitparty.application.usecases.focus.CreateFocusRecordCommand;
 import com.habitparty.application.usecases.focus.CreateFocusRecordUseCase;
 import com.habitparty.application.usecases.focus.DeleteFocusRecordUseCase;
 import com.habitparty.application.usecases.focus.GetFocusRecordsByActivityUseCase;
@@ -33,7 +34,8 @@ public class FocusRecordController implements FocusRecordApi {
       int page,
       AuthenticatedUser usuarioLogado) {
 
-    Page<FocusRecordResponseDTO> response = getByActivityUseCase.execute(usuarioLogado.id(), activityId, page);
+    Page<FocusRecordResponseDTO> response = getByActivityUseCase.execute(usuarioLogado.id(), activityId, page)
+        .map(FocusRecordResponseDTO::fromDomain);
     return ResponseEntity.ok(response);
   }
 
@@ -42,8 +44,17 @@ public class FocusRecordController implements FocusRecordApi {
       CreateFocusRecordDTO request,
       AuthenticatedUser usuarioLogado) {
 
-    FocusRecordResponseDTO response = createUseCase.execute(usuarioLogado.id(), request);
-    return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    var command = new CreateFocusRecordCommand(
+        request.focusActivityId(),
+        request.inventoryItemId(),
+        request.notes(),
+        request.startTime(),
+        request.endTime(),
+        request.recordType(),
+        request.completedPomos()
+    );
+    var record = createUseCase.execute(usuarioLogado.id(), command);
+    return ResponseEntity.status(HttpStatus.CREATED).body(FocusRecordResponseDTO.fromDomain(record));
   }
 
   @Override
@@ -52,8 +63,8 @@ public class FocusRecordController implements FocusRecordApi {
       UpdateFocusRecordDTO request,
       AuthenticatedUser usuarioLogado) {
 
-    FocusRecordResponseDTO response = updateUseCase.execute(usuarioLogado.id(), recordId, request);
-    return ResponseEntity.ok(response);
+    var record = updateUseCase.execute(usuarioLogado.id(), recordId, request.notes());
+    return ResponseEntity.ok(FocusRecordResponseDTO.fromDomain(record));
   }
 
   @Override

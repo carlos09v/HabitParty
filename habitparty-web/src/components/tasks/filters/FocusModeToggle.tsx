@@ -1,6 +1,6 @@
 "use client";
 
-import type { FocusModeToggleProps } from "@/types/task";
+import type { FocusModeToggleProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 
 export function FocusModeToggle({
@@ -9,7 +9,7 @@ export function FocusModeToggle({
   isCompact = false,
 }: FocusModeToggleProps) {
   return (
-    <div className="flex items-center gap-2 px-2 py-1">
+    <div className="hidden items-center gap-2 px-2 py-1">
       <span
         className={cn(
           "font-medium text-neutral-300 select-none",
