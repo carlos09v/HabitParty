@@ -1,12 +1,13 @@
 "use client";
 
 import { BarChart2, Timer } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { deleteFocusRecordAction } from "@/actions/focusActions";
 import { MAX_FOCUS_ACTIVITIES_FREE } from "@/constants/focus";
 import { useCompactMode } from "@/hooks/useCompactMode";
+import { executeDeleteFocusRecord } from "@/hooks/useFocusMutations";
 import { useFocusTimerControls } from "@/hooks/useFocusTimer";
 import { useUserStore } from "@/store/userStore";
 import type {
@@ -18,10 +19,31 @@ import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn } from "@/utils";
 import { calculateFocusMetrics } from "@/utils/focusMetrics";
 import { FocusMain } from "./FocusMain";
-import { FocusManualRecordModal } from "./modals/FocusManualRecordModal";
-import { SwitchFocusTargetModal } from "./modals/SwitchFocusTargetModal";
-import { SwitchTimerModeModal } from "./modals/SwitchTimerModeModal";
 import { FocusSidebarRight } from "./sidebar-right/FocusSidebarRight";
+
+const FocusManualRecordModal = dynamic(
+  () =>
+    import("./modals/FocusManualRecordModal").then(
+      (mod) => mod.FocusManualRecordModal,
+    ),
+  { ssr: false },
+);
+
+const SwitchFocusTargetModal = dynamic(
+  () =>
+    import("./modals/SwitchFocusTargetModal").then(
+      (mod) => mod.SwitchFocusTargetModal,
+    ),
+  { ssr: false },
+);
+
+const SwitchTimerModeModal = dynamic(
+  () =>
+    import("./modals/SwitchTimerModeModal").then(
+      (mod) => mod.SwitchTimerModeModal,
+    ),
+  { ssr: false },
+);
 
 interface FocusContainerProps {
   initialActivities: FocusActivity[];
@@ -77,13 +99,15 @@ export function FocusContainer({
   const [pendingSwitchMode, setPendingSwitchMode] =
     useState<FocusRecordType | null>(null);
 
-  // Controles e ações do timer desacoplados de variáveis de ticking a cada segundo.
-  // Evita re-renders a cada 1 segundo em toda a árvore de FocusContainer!
+  // Controles e ações do timer desacoplados de variáveis de ticking a cada segundo e de sessionNotes.
   const {
     isActive,
+    isPaused,
     mode,
+    phase = "WORK",
     target,
     hasElapsedSeconds,
+    resumeTimer,
     changeMode,
     startFocusActivity,
     startFocusItem,
@@ -98,8 +122,10 @@ export function FocusContainer({
     },
   });
 
-  // Sincroniza o alvo com os dados reais do servidor: se o alvo for item da mochila que não existe mais
-  // (ou se foi consumido), desvincula imediatamente para não deixar o Hero com alvo fantasma.
+  // Há tempo de foco real pendente de decisão apenas na fase WORK com segundos decorridos (> 0s)
+  const hasUnsavedWorkSession = phase === "WORK" && hasElapsedSeconds;
+
+  // Sincroniza o alvo com os dados reais do servidor
   useEffect(() => {
     if (!target) {
       if (!isActive && !hasElapsedSeconds && initialActivities.length > 0) {
@@ -146,16 +172,14 @@ export function FocusContainer({
     selectActivityTarget,
   ]);
 
-  // Ao selecionar uma atividade apenas para ver métricas/registros:
-  // Se o cronômetro estiver em andamento ou pausado com tempo decorrido, NUNCA reseta o timer!
   const handleSelectActivity = (activityId: string | null) => {
     setSelectedActivityId(activityId);
 
-    // Só define o alvo ocioso se não houver sessão ativa nem tempo decorrido
     if (!isActive && !hasElapsedSeconds && activityId) {
-      const act = initialActivities.find((a) => a.id === activityId);
-      if (act) {
-        selectActivityTarget(act);
+      const actIndex = initialActivities.findIndex((a) => a.id === activityId);
+      const isActLocked = !is_Premium && actIndex >= MAX_FOCUS_ACTIVITIES_FREE;
+      if (actIndex !== -1 && !isActLocked) {
+        selectActivityTarget(initialActivities[actIndex]);
       }
     }
   };
@@ -169,8 +193,15 @@ export function FocusContainer({
       return;
     }
 
-    // Se o timer estiver em andamento ou pausado com tempo não salvo em outro alvo
-    if ((isActive || hasElapsedSeconds) && target?.id !== act.id) {
+    if (target?.id === act.id && hasUnsavedWorkSession) {
+      setSelectedActivityId(act.id);
+      if (isPaused) {
+        resumeTimer();
+      }
+      return;
+    }
+
+    if (hasUnsavedWorkSession && target?.id !== act.id) {
       setPendingSwitchTarget({ type: "activity", activity: act });
       return;
     }
@@ -179,11 +210,15 @@ export function FocusContainer({
   };
 
   const handleStartFocusItem = (item: InventoryItemResponseDTO) => {
-    // Se o timer estiver em andamento ou pausado com tempo não salvo em outro alvo
-    if (
-      (isActive || hasElapsedSeconds) &&
-      target?.id !== item.inventoryItemId
-    ) {
+    if (target?.id === item.inventoryItemId && hasUnsavedWorkSession) {
+      setSelectedActivityId(null);
+      if (isPaused) {
+        resumeTimer();
+      }
+      return;
+    }
+
+    if (hasUnsavedWorkSession && target?.id !== item.inventoryItemId) {
       setPendingSwitchTarget({ type: "item", item });
       return;
     }
@@ -191,7 +226,6 @@ export function FocusContainer({
     startFocusItem(item);
   };
 
-  // Opção 1: Transferir tempo decorrido para a nova atividade sem reiniciar
   const handleTransferTarget = () => {
     if (!pendingSwitchTarget) return;
     if (
@@ -204,25 +238,26 @@ export function FocusContainer({
     setPendingSwitchTarget(null);
   };
 
-  // Opção 2: Salvar a sessão atual e iniciar o novo foco do zero
-  const handleSaveAndStartNew = async () => {
+  const handleSaveAndStartNew = async (): Promise<boolean> => {
     const targetToStart = pendingSwitchTarget;
-    if (!targetToStart) return;
+    if (!targetToStart) return false;
 
     const saved = await completeSession();
-    if (saved) {
-      if (targetToStart.type === "activity" && targetToStart.activity) {
-        setSelectedActivityId(targetToStart.activity.id);
-        startFocusActivity(targetToStart.activity);
-      } else if (targetToStart.item) {
-        setSelectedActivityId(null);
-        startFocusItem(targetToStart.item);
-      }
+    if (!saved) {
+      return false;
+    }
+
+    if (targetToStart.type === "activity" && targetToStart.activity) {
+      setSelectedActivityId(targetToStart.activity.id);
+      startFocusActivity(targetToStart.activity);
+    } else if (targetToStart.item) {
+      setSelectedActivityId(null);
+      startFocusItem(targetToStart.item);
     }
     setPendingSwitchTarget(null);
+    return true;
   };
 
-  // Opção 3: Descartar a sessão atual e iniciar o novo foco do zero
   const handleDiscardAndStartNew = () => {
     if (!pendingSwitchTarget) return;
     if (
@@ -241,8 +276,7 @@ export function FocusContainer({
   const handleChangeMode = (newMode: FocusRecordType) => {
     if (newMode === mode) return;
 
-    // Se o timer estiver em andamento ou tiver tempo decorrido não salvo, solicita confirmação
-    if (isActive || hasElapsedSeconds) {
+    if (hasUnsavedWorkSession) {
       setPendingSwitchMode(newMode);
       return;
     }
@@ -257,13 +291,7 @@ export function FocusContainer({
   };
 
   const handleDeleteRecord = async (recordId: string) => {
-    const res = await deleteFocusRecordAction(recordId);
-    if (res.success) {
-      toast.success("Registro de foco removido com sucesso!");
-      router.refresh();
-    } else {
-      toast.error(res.error || "Erro ao excluir registro de foco.");
-    }
+    await executeDeleteFocusRecord(recordId, () => router.refresh());
   };
 
   const handleOpenManualRecordModal = (params?: {
@@ -277,7 +305,6 @@ export function FocusContainer({
     setManualRecordModalOpen(true);
   };
 
-  // Atividade selecionada e registros relevantes filtrados
   const selectedActivity = useMemo(() => {
     if (!selectedActivityId) return null;
     return initialActivities.find((a) => a.id === selectedActivityId) || null;
@@ -290,7 +317,6 @@ export function FocusContainer({
     );
   }, [initialRecords, selectedActivityId]);
 
-  // Cálculo determinístico das métricas e dados semanais
   const { metrics, weeklyDays, totalWeekMinutes, weekLabel, weekDateRange } =
     useMemo(() => {
       return calculateFocusMetrics(relevantRecords, weekOffset);
@@ -382,37 +408,41 @@ export function FocusContainer({
         )}
       />
 
-      {/* Modal Centralizado de Inserção de Registro Manual */}
-      <FocusManualRecordModal
-        isOpen={manualRecordModalOpen}
-        onClose={() => {
-          setManualRecordModalOpen(false);
-          setManualInitialActivityId(undefined);
-          setManualInitialItemId(undefined);
-        }}
-        activities={initialActivities}
-        backpackItems={initialBackpackItems}
-        initialActivityId={manualInitialActivityId}
-        initialItemId={manualInitialItemId}
-        onSuccess={() => router.refresh()}
-      />
+      {/* Modal Centralizado de Inserção de Registro Manual (Carregado sob demanda) */}
+      {manualRecordModalOpen && (
+        <FocusManualRecordModal
+          isOpen={manualRecordModalOpen}
+          onClose={() => {
+            setManualRecordModalOpen(false);
+            setManualInitialActivityId(undefined);
+            setManualInitialItemId(undefined);
+          }}
+          activities={initialActivities}
+          backpackItems={initialBackpackItems}
+          initialActivityId={manualInitialActivityId}
+          initialItemId={manualInitialItemId}
+          onSuccess={() => router.refresh()}
+        />
+      )}
 
-      {/* Modal para Confirmação de Troca de Sessão Ativa (Opção 2 - Escolha Inteligente) */}
-      <SwitchFocusTargetModal
-        isOpen={pendingSwitchTarget !== null}
-        onClose={() => setPendingSwitchTarget(null)}
-        currentName={target?.name || "Sessão Atual"}
-        newTargetName={
-          pendingSwitchTarget?.type === "activity"
-            ? pendingSwitchTarget.activity?.name || "Nova Atividade"
-            : pendingSwitchTarget?.item?.rewardName || "Item de Foco"
-        }
-        isCurrentInventory={target?.type === "inventory"}
-        isNewInventory={pendingSwitchTarget?.type === "item"}
-        onTransfer={handleTransferTarget}
-        onSaveAndStartNew={handleSaveAndStartNew}
-        onDiscardAndStartNew={handleDiscardAndStartNew}
-      />
+      {/* Modal para Confirmação de Troca de Sessão Ativa (Carregado sob demanda) */}
+      {pendingSwitchTarget !== null && (
+        <SwitchFocusTargetModal
+          isOpen={pendingSwitchTarget !== null}
+          onClose={() => setPendingSwitchTarget(null)}
+          currentName={target?.name || "Sessão Atual"}
+          newTargetName={
+            pendingSwitchTarget?.type === "activity"
+              ? pendingSwitchTarget.activity?.name || "Nova Atividade"
+              : pendingSwitchTarget?.item?.rewardName || "Item de Foco"
+          }
+          isCurrentInventory={target?.type === "inventory"}
+          isNewInventory={pendingSwitchTarget?.type === "item"}
+          onTransfer={handleTransferTarget}
+          onSaveAndStartNew={handleSaveAndStartNew}
+          onDiscardAndStartNew={handleDiscardAndStartNew}
+        />
+      )}
 
       {/* Modal para Confirmação de Troca de Modo com Timer Ativo */}
       {pendingSwitchMode && (

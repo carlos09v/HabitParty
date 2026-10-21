@@ -27,45 +27,6 @@ import type { BoardColumn, Task } from "@/types/task";
 
 type SetColumns = Dispatch<SetStateAction<BoardColumn[]>>;
 
-/**
- * Estratégia de detecção de colisão dedicada:
- * Quando arrastando uma Coluna, detecta colisões EXCLUSIVAMENTE contra outras Colunas.
- */
-export const routineBoardCollisionDetection: CollisionDetection = (args) => {
-  if (args.active.data.current?.type === "Column") {
-    const columnContainers = args.droppableContainers.filter(
-      (c) => c.data.current?.type === "Column",
-    );
-    return closestCenter({
-      ...args,
-      droppableContainers: columnContainers,
-    });
-  }
-
-  const candidateContainers = args.droppableContainers.filter(
-    (c) => c.id !== args.active.id,
-  );
-
-  const pointerCollisions = pointerWithin({
-    ...args,
-    droppableContainers: candidateContainers,
-  });
-  const intersections =
-    pointerCollisions.length > 0
-      ? pointerCollisions
-      : rectIntersection({
-          ...args,
-          droppableContainers: candidateContainers,
-        });
-  const overId = getFirstCollision(intersections, "id");
-  if (overId != null) return [{ id: overId }];
-
-  return closestCenter({
-    ...args,
-    droppableContainers: candidateContainers,
-  });
-};
-
 const findColumnByTask = (cols: BoardColumn[], taskId: UniqueIdentifier) =>
   cols.find((col) => col.tasks.some((t) => t.id === taskId));
 
@@ -154,38 +115,15 @@ export interface UseRoutineBoardDndOptions {
  * Toda a lógica de drag-and-drop (@dnd-kit) do quadro de rotina:
  * reordenar colunas, reordenar tarefas e mover tarefas entre colunas com callbacks de persistência.
  */
-export function useRoutineBoardDnd(
-  setColumnsOrOptions: SetColumns | UseRoutineBoardDndOptions,
-  legacyOnTaskMove?: (
-    taskId: string,
-    targetColumnId: string,
-    newOrderIndex: number,
-  ) => void,
-  legacyOnColumnReorder?: (reorderedColumns: BoardColumn[]) => void,
-) {
-  const isOptionsObject =
-    typeof setColumnsOrOptions === "object" &&
-    "setColumns" in setColumnsOrOptions;
-  const setColumns = isOptionsObject
-    ? setColumnsOrOptions.setColumns
-    : setColumnsOrOptions;
-  const onTaskMove = isOptionsObject
-    ? setColumnsOrOptions.onTaskMove
-    : legacyOnTaskMove;
-  const onColumnReorder = isOptionsObject
-    ? setColumnsOrOptions.onColumnReorder
-    : legacyOnColumnReorder;
-  const onHideColumn = isOptionsObject
-    ? setColumnsOrOptions.onHideColumn
-    : undefined;
-  const initialColumns = isOptionsObject
-    ? setColumnsOrOptions.columns || []
-    : [];
-
-  const columnsRef = useRef<BoardColumn[]>(initialColumns);
-  if (isOptionsObject && setColumnsOrOptions.columns) {
-    columnsRef.current = setColumnsOrOptions.columns;
-  }
+export function useRoutineBoardDnd({
+  columns = [],
+  setColumns,
+  onTaskMove,
+  onColumnReorder,
+  onHideColumn,
+}: UseRoutineBoardDndOptions) {
+  const columnsRef = useRef<BoardColumn[]>(columns);
+  columnsRef.current = columns;
 
   const [activeColumn, setActiveColumn] = useState<BoardColumn | null>(null);
   const [activeTask, setActiveTask] = useState<Task | null>(null);

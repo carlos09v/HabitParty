@@ -17,7 +17,8 @@ import {
 } from "@/actions/notificationActions";
 import { useAnchoredPopoverPosition } from "@/hooks/useAnchoredPopoverPosition";
 import { useClickOutside } from "@/hooks/useClickOutside";
-import { cn } from "@/utils";
+import { cn, getTodayDateString } from "@/utils";
+import { soundEffects } from "@/utils/soundEffects";
 
 const POPOVER_OPTIONS = {
   preferredSide: "right" as const,
@@ -35,24 +36,42 @@ export function SidebarNotificationsPopover() {
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const hasPlayedInitialSoundRef = useRef(false);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
 
-  const loadNotifications = useCallback(() => {
+  const loadNotifications = useCallback((playAlertOnNew = false) => {
     startTransition(async () => {
-      const res = await getSidebarNotificationsAction();
+      const now = new Date();
+      const localDateStr = getTodayDateString(now);
+      const localDayIdx = now.getDay();
+      const res = await getSidebarNotificationsAction(
+        localDateStr,
+        localDayIdx,
+      );
       setNotifications(res.notifications);
+      if (
+        playAlertOnNew &&
+        !hasPlayedInitialSoundRef.current &&
+        res.notifications.length > 0
+      ) {
+        hasPlayedInitialSoundRef.current = true;
+        soundEffects.playNotificationSound();
+      }
     });
   }, []);
 
-  // Carrega alertas ao montar
+  // Carrega alertas ao montar / recarregar a página e toca som de notificação se houver alertas
   useEffect(() => {
-    loadNotifications();
+    loadNotifications(true);
   }, [loadNotifications]);
 
   const togglePopover = () => {
     if (!isOpen && triggerRef.current) {
       setAnchorRect(triggerRef.current.getBoundingClientRect());
-      loadNotifications();
+      if (unreadCount > 0) {
+        soundEffects.playNotificationSound();
+      }
+      loadNotifications(false);
       setIsOpen(true);
     } else {
       setIsOpen(false);

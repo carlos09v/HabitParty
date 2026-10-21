@@ -10,45 +10,71 @@ import {
   VolumeX,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
-import { UpgradePremiumModal } from "@/components/subscription/UpgradePremiumModal";
+import dynamic from "next/dynamic";
+import { useRef, useState } from "react";
 import { AMBIENT_ICONS, AMBIENT_SOUND_OPTIONS } from "@/constants/settings";
 import { useClickOutside } from "@/hooks/useClickOutside";
-import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
-import { useUserStore } from "@/store/userStore";
-import type { AmbientSoundType } from "@/types/settings";
+import { useFocusAudioControls } from "@/hooks/useFocusAudioControls";
 import { cn } from "@/utils";
 import { soundEffects } from "@/utils/soundEffects";
+
+const UpgradePremiumModal = dynamic(
+  () =>
+    import("@/components/subscription/UpgradePremiumModal").then(
+      (mod) => mod.UpgradePremiumModal,
+    ),
+  { ssr: false },
+);
 
 export interface FocusStageAudioControlsProps {
   isSoundEnabled?: boolean;
   timerSoundType?: "zen" | "arcade";
   onToggleSound?: () => void;
   onChangeSoundType?: (type: "zen" | "arcade") => void;
+  onOpenUpgradeModal?: () => void;
 }
 
 export function FocusStageAudioControls({
-  isSoundEnabled = true,
-  timerSoundType = "zen",
+  isSoundEnabled: propIsSoundEnabled,
+  timerSoundType: propTimerSoundType,
   onToggleSound,
   onChangeSoundType,
+  onOpenUpgradeModal,
 }: FocusStageAudioControlsProps) {
-  const isPremium = useUserStore((s) => s.is_Premium);
+  const [isAmbientPopoverOpen, setIsAmbientPopoverOpen] = useState(false);
+  const [localUpgradeModalOpen, setLocalUpgradeModalOpen] = useState(false);
+
+  const triggerUpgradeModal = () => {
+    setIsAmbientPopoverOpen(false);
+    if (onOpenUpgradeModal) {
+      onOpenUpgradeModal();
+    } else {
+      setLocalUpgradeModalOpen(true);
+    }
+  };
+
   const {
+    isPremium,
+    timerSoundsEnabled,
+    timerSoundType: storeTimerSoundType,
+    timerVolume,
     browserNotificationsEnabled,
-    setBrowserNotificationsEnabled,
+    hasNotificationPermission,
     ambientSoundType,
     ambientVolume,
     isAmbientPlaying,
-    setAmbientSoundType,
-    setAmbientVolume,
-    setIsAmbientPlaying,
-  } = useSoundPreferencesStore();
+    toggleTimerSounds,
+    setTimerSoundType,
+    toggleBrowserNotifications,
+    selectAmbientSound,
+    changeAmbientVolume,
+  } = useFocusAudioControls({
+    onRequirePremiumUpgrade: triggerUpgradeModal,
+    restoreAmbientOnMount: true,
+  });
 
-  const [hasPermission, setHasPermission] = useState(false);
-  const [isAmbientPopoverOpen, setIsAmbientPopoverOpen] = useState(false);
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const isSoundEnabled = propIsSoundEnabled ?? timerSoundsEnabled;
+  const timerSoundType = propTimerSoundType ?? storeTimerSoundType;
 
   const popoverRef = useRef<HTMLDivElement>(null);
 
@@ -57,89 +83,18 @@ export function FocusStageAudioControls({
     onEscape: () => setIsAmbientPopoverOpen(false),
   });
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && "Notification" in window) {
-      setHasPermission(Notification.permission === "granted");
-    }
-  }, []);
-
   const handleToggleSound = () => {
     if (onToggleSound) {
       onToggleSound();
     } else {
-      useSoundPreferencesStore.getState().toggleTimerSounds();
+      toggleTimerSounds();
     }
   };
 
   const handleSelectSoundType = (type: "zen" | "arcade") => {
     onChangeSoundType?.(type);
-    useSoundPreferencesStore.getState().setTimerSoundType(type);
-    soundEffects.playTimerStartSound(type, 0.8);
-  };
-
-  const handleToggleNotifications = async () => {
-    if (typeof window === "undefined" || !("Notification" in window)) {
-      toast.error("Notificações não suportadas neste navegador.");
-      return;
-    }
-
-    if (Notification.permission === "granted") {
-      const next = !browserNotificationsEnabled;
-      setBrowserNotificationsEnabled(next);
-      if (next) {
-        toast.success(
-          "Notificações do navegador ativadas para o fim do Pomodoro!",
-        );
-      } else {
-        toast.info("Notificações do navegador silenciadas.");
-      }
-    } else if (Notification.permission === "denied") {
-      toast.error(
-        "Permissão bloqueada no navegador. Habilite as notificações nas configurações do site.",
-      );
-    } else {
-      const permission = await Notification.requestPermission();
-      if (permission === "granted") {
-        setHasPermission(true);
-        setBrowserNotificationsEnabled(true);
-        toast.success(
-          "Notificações permitidas! Você será avisado ao fim de cada Pomodoro.",
-        );
-      } else {
-        toast.error("Permissão de notificação negada.");
-      }
-    }
-  };
-
-  const handleSelectAmbientSound = (type: AmbientSoundType) => {
-    if (type !== "none" && !isPremium) {
-      toast.info(
-        "Sons de foco ambiente são exclusivos para assinantes Premium! Faça o upgrade para desbloquear.",
-      );
-      setIsUpgradeModalOpen(true);
-      return;
-    }
-
-    if (type === "none") {
-      soundEffects.stopAmbientSound();
-      setAmbientSoundType("none");
-      setIsAmbientPlaying(false);
-      toast.info("Som ambiente desligado.");
-      return;
-    }
-
-    setAmbientSoundType(type);
-    setIsAmbientPlaying(true);
-    soundEffects.startAmbientSound(type, ambientVolume);
-
-    const soundLabel =
-      AMBIENT_SOUND_OPTIONS.find((s) => s.id === type)?.label || type;
-    toast.success(`Som ambiente ativado: ${soundLabel}`);
-  };
-
-  const handleVolumeChange = (newVol: number) => {
-    setAmbientVolume(newVol);
-    soundEffects.setAmbientVolume(newVol);
+    setTimerSoundType(type);
+    soundEffects.playTimerStartSound(type, timerVolume ?? 0.8);
   };
 
   const AmbientCurrentIcon = AMBIENT_ICONS[ambientSoundType] || Volume2;
@@ -172,27 +127,27 @@ export function FocusStageAudioControls({
         {/* Notificações do Navegador */}
         <button
           type="button"
-          onClick={handleToggleNotifications}
+          onClick={() => toggleBrowserNotifications()}
           className={cn(
             "flex items-center gap-1 px-2 py-1 rounded-lg transition-all cursor-pointer",
-            browserNotificationsEnabled && hasPermission
+            browserNotificationsEnabled && hasNotificationPermission
               ? "text-gold bg-gold/15 border border-gold/30 font-bold"
               : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5",
           )}
           title={
-            browserNotificationsEnabled && hasPermission
+            browserNotificationsEnabled && hasNotificationPermission
               ? "Notificações ativadas para fim de ciclo (clique para silenciar)"
               : "Ativar notificações no navegador ao fim do Pomodoro"
           }
           aria-label="Alternar notificações do navegador"
         >
-          {browserNotificationsEnabled && hasPermission ? (
+          {browserNotificationsEnabled && hasNotificationPermission ? (
             <Bell size={15} />
           ) : (
             <BellOff size={15} />
           )}
           <span className="text-label-g hidden sm:inline">
-            {browserNotificationsEnabled && hasPermission
+            {browserNotificationsEnabled && hasNotificationPermission
               ? "Avisos"
               : "Sem avisos"}
           </span>
@@ -231,7 +186,7 @@ export function FocusStageAudioControls({
         )}
 
         {/* Separador vertical */}
-        <div className="w-[1px] h-4 bg-primary/30 mx-0.5" />
+        <div className="w-px h-4 bg-primary/30 mx-0.5" />
 
         {/* BOTÃO E POPOVER DE SONS AMBIENTE (BENEFÍCIO PREMIUM) */}
         <div className="relative" ref={popoverRef}>
@@ -285,7 +240,7 @@ export function FocusStageAudioControls({
                   <span className="text-caption font-bold text-neutral-100 uppercase tracking-wider">
                     Sons de Ambiente
                   </span>
-                  <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase tracking-wider bg-gold/20 text-gold border border-gold/40">
+                  <span className="px-1.5 py-0.5 rounded-full text-tiny font-black uppercase tracking-wider bg-gold/20 text-gold border border-gold/40">
                     VIP
                   </span>
                 </div>
@@ -315,7 +270,7 @@ export function FocusStageAudioControls({
                     <button
                       key={sound.id}
                       type="button"
-                      onClick={() => handleSelectAmbientSound(sound.id)}
+                      onClick={() => selectAmbientSound(sound.id)}
                       className={cn(
                         "w-full flex items-center justify-between p-2 rounded-xl border text-left transition-all cursor-pointer",
                         isSelected
@@ -340,7 +295,7 @@ export function FocusStageAudioControls({
                           <span className="text-xs truncate font-medium">
                             {sound.label}
                           </span>
-                          <span className="text-[10px] text-neutral-400 truncate">
+                          <span className="text-tiny text-neutral-400 truncate">
                             {sound.description}
                           </span>
                         </div>
@@ -359,7 +314,7 @@ export function FocusStageAudioControls({
               {/* CONTROLE DE VOLUME DO RUÍDO */}
               {isPremium && ambientSoundType !== "none" && (
                 <div className="pt-2 border-t border-white/10 flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between text-[11px] text-neutral-300">
+                  <div className="flex items-center justify-between text-label-g text-neutral-300">
                     <span className="flex items-center gap-1">
                       <Sliders size={12} className="text-gold" />
                       Volume do Ambiente
@@ -375,7 +330,7 @@ export function FocusStageAudioControls({
                     step="0.05"
                     value={ambientVolume}
                     onChange={(e) =>
-                      handleVolumeChange(parseFloat(e.target.value))
+                      changeAmbientVolume(parseFloat(e.target.value))
                     }
                     className="w-full h-1.5 bg-primary/40 rounded-lg appearance-none cursor-pointer accent-gold"
                   />
@@ -387,10 +342,7 @@ export function FocusStageAudioControls({
                 <div className="pt-2 border-t border-white/10">
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsAmbientPopoverOpen(false);
-                      setIsUpgradeModalOpen(true);
-                    }}
+                    onClick={triggerUpgradeModal}
                     className="w-full py-2 px-3 rounded-xl bg-gold text-neutral-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-glow-gold-xs hover:bg-gold-hover transition-all cursor-pointer"
                   >
                     <Crown size={14} />
@@ -403,10 +355,12 @@ export function FocusStageAudioControls({
         </div>
       </div>
 
-      <UpgradePremiumModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-      />
+      {localUpgradeModalOpen && (
+        <UpgradePremiumModal
+          isOpen={localUpgradeModalOpen}
+          onClose={() => setLocalUpgradeModalOpen(false)}
+        />
+      )}
     </>
   );
 }

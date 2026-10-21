@@ -1,7 +1,13 @@
 "use client";
 
-import { Camera, Crown, Shield, Sparkles } from "lucide-react";
-import { type ChangeEvent, useRef, useState, useTransition } from "react";
+import { Camera, Crown, Shield, Sparkles, UploadCloud } from "lucide-react";
+import {
+  type ChangeEvent,
+  type DragEvent,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { toast } from "sonner";
 import { updateUserProfilePhotoAction } from "@/actions/userActions";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -20,11 +26,9 @@ export function ProfileHeaderCard({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
       toast.error("Por favor, selecione um arquivo de imagem válido.");
       return;
@@ -53,6 +57,40 @@ export function ProfileHeaderCard({
     });
   };
 
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    processFile(file);
+    e.target.value = "";
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isPending) {
+      setIsDraggingOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+  };
+
+  const handleDrop = (e: DragEvent<HTMLElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+
+    if (isPending) return;
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processFile(file);
+    }
+  };
+
   const displayName = user?.fullName || user?.username || "Aventureiro";
   const displayPhoto = previewUrl || user?.profilePhotoUrl;
   const levelTitle =
@@ -63,19 +101,22 @@ export function ProfileHeaderCard({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-primary/20 bg-surface/30 backdrop-blur-md flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 sm:gap-8 transition-all",
+        "rounded-2xl border border-primary/20 bg-surface/30 backdrop-blur-md flex flex-col md:flex-row items-center md:items-start justify-between gap-6 md:gap-8 transition-all",
         isCompact ? "p-4 sm:p-5" : "p-6 sm:p-7",
       )}
     >
-      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-6 min-w-0 flex-1">
+      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-6 min-w-0 flex-1 w-full">
         {/* AVATAR COM OVERLAY ELEGANTE PARA UPLOAD (NÃO CORTA A MOLDURA) */}
         <div className="relative group shrink-0">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
             disabled={isPending}
             className="relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-gold cursor-pointer transition-transform group-hover:scale-[1.02] block disabled:cursor-not-allowed"
-            title="Alterar foto de perfil"
+            title="Clique ou solte uma imagem aqui para alterar sua foto de perfil"
             aria-label="Alterar foto de perfil"
           >
             <UserAvatar
@@ -87,7 +128,14 @@ export function ProfileHeaderCard({
             />
 
             {/* Overlay sutil de câmera no hover (dentro do círculo do avatar, não oculta nem corta a moldura animada externa) */}
-            <div className="absolute inset-0 rounded-full bg-neutral-950/60 backdrop-blur-xs flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity z-20">
+            <div
+              className={cn(
+                "absolute inset-0 rounded-full bg-neutral-950/60 backdrop-blur-xs flex flex-col items-center justify-center text-white transition-opacity z-20",
+                isDraggingOver || isPending
+                  ? "opacity-100"
+                  : "opacity-0 group-hover:opacity-100",
+              )}
+            >
               <Camera
                 size={22}
                 className={
@@ -172,18 +220,49 @@ export function ProfileHeaderCard({
         </div>
       </div>
 
-      <div className="shrink-0 self-center sm:self-start sm:ml-4 flex flex-col sm:flex-row items-center gap-2.5">
+      {/* DROPZONE INTERATIVA DE UPLOAD DE FOTO (ARRASTAR E SOLTAR OU CLICAR) */}
+      <div className="shrink-0 w-full md:w-auto self-stretch md:self-center flex items-center justify-center">
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
           disabled={isPending}
           className={cn(
-            "rounded-xl border border-primary/30 bg-surface/60 text-neutral-200 hover:text-neutral-50 hover:border-gold/50 transition-all font-semibold cursor-pointer flex items-center gap-2",
-            isCompact ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm",
+            "w-full md:w-56 rounded-xl border-2 border-dashed transition-all cursor-pointer flex flex-col items-center justify-center text-center group/drop select-none",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold",
+            isCompact ? "p-3 gap-1" : "p-4 gap-1.5",
+            isDraggingOver
+              ? "border-gold bg-gold/15 text-gold shadow-glow-gold-xs scale-[1.01]"
+              : "border-primary/35 bg-surface/40 hover:bg-surface/70 hover:border-gold/50 text-neutral-300 hover:text-neutral-100",
+            isPending && "opacity-60 cursor-not-allowed",
           )}
         >
-          <Camera size={15} className={isPending ? "animate-spin" : ""} />
-          <span>{isPending ? "Enviando..." : "Alterar foto"}</span>
+          <div
+            className={cn(
+              "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
+              isDraggingOver
+                ? "bg-gold/25 text-gold"
+                : "bg-primary-dark/40 text-gold group-hover/drop:bg-gold/20",
+            )}
+          >
+            <UploadCloud
+              size={18}
+              className={isPending ? "animate-bounce" : ""}
+            />
+          </div>
+          <span className="text-xs font-bold text-neutral-100 group-hover/drop:text-gold transition-colors">
+            {isPending
+              ? "Enviando foto..."
+              : isDraggingOver
+                ? "Solte a imagem aqui"
+                : "Arraste uma foto aqui"}
+          </span>
+          <span className="text-[11px] text-neutral-400 leading-tight">
+            ou <span className="text-gold underline">clique para anexar</span>{" "}
+            (máx. 5MB)
+          </span>
         </button>
       </div>
     </div>

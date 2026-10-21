@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
-  createFocusActivityAction,
-  updateFocusActivityAction,
+  createFocusActivity,
+  updateFocusActivity,
 } from "@/actions/focusActions";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { IconPickerPopover } from "@/components/ui/IconPickerPopover";
@@ -16,6 +16,7 @@ import {
 } from "@/constants/focus";
 import type { FocusActivity, FocusRecordType } from "@/types/focus";
 import { cn } from "@/utils";
+import { soundEffects } from "@/utils/soundEffects";
 
 interface FocusActivityModalProps {
   isOpen: boolean;
@@ -87,7 +88,7 @@ export function FocusActivityModal({
     setIsSubmitting(true);
     try {
       if (isEditing && activityToEdit) {
-        const res = await updateFocusActivityAction(activityToEdit.id, {
+        const res = await updateFocusActivity(activityToEdit.id, {
           name: name.trim(),
           icon,
           recordType,
@@ -103,7 +104,7 @@ export function FocusActivityModal({
           toast.error(res.error || "Erro ao atualizar atividade.");
         }
       } else {
-        const res = await createFocusActivityAction({
+        const res = await createFocusActivity({
           name: name.trim(),
           icon,
           recordType,
@@ -112,7 +113,13 @@ export function FocusActivityModal({
         });
 
         if (res.success) {
-          toast.success("Atividade criada com sucesso!");
+          soundEffects.playCreateSound();
+          toast.success(`Atividade "${name.trim()}" criada!`, {
+            description:
+              recordType === "POMO"
+                ? `Ciclo Pomodoro configurado para ${targetTimeMinutes} min.`
+                : "Modo Cronômetro Livre pronto para iniciar.",
+          });
           onSuccess();
           onClose();
         } else {
@@ -157,17 +164,19 @@ export function FocusActivityModal({
               disabled={isSubmitting}
               title="Ícone da Atividade"
             />
-            <input
-              id="activity-name"
-              type="text"
-              value={name}
-              onChange={handleNameChange}
-              placeholder="Ex: Estudos para Concurso, Programação, Leitura..."
-              className="w-full bg-background/50 border border-primary/40 rounded-lg px-3 py-2 text-neutral-50 placeholder:text-neutral-500 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s h-[42px]"
-              required
-              maxLength={40}
-              disabled={isSubmitting}
-            />
+            <div className="flex-1">
+              <Input
+                id="activity-name"
+                type="text"
+                value={name}
+                onChange={handleNameChange}
+                placeholder="Ex: Estudos para Concurso, Programação, Leitura..."
+                className="h-[42px]"
+                required
+                maxLength={40}
+                disabled={isSubmitting}
+              />
+            </div>
           </div>
           <span className="text-label-g text-neutral-400">
             Clique no ícone para personalizar ou digite o nome para sugestão

@@ -145,21 +145,35 @@ export const toggleChecklistItemAction = toggleChecklistItem;
 export const deleteChecklistItemAction = deleteChecklistItem;
 
 /**
- * Clona todos os itens válidos de um checklist para uma nova tarefa duplicada
+ * Clona todos os itens válidos de um checklist para uma nova tarefa em ordem sequencial,
+ * invalidando o cache de tarefas apenas uma vez ao final.
  */
 export async function cloneTaskChecklistItems(
   newTaskId: string,
   items?: { name?: string }[],
-): Promise<void> {
-  if (!items || items.length === 0) return;
+): Promise<ChecklistItemResponseDTO[]> {
+  if (!items || items.length === 0) return [];
   const validItems = items.filter((item) => Boolean(item.name?.trim()));
-  if (validItems.length === 0) return;
+  if (validItems.length === 0) return [];
 
-  await Promise.all(
-    validItems.map((item) =>
-      addChecklistItem(newTaskId, {
-        name: item.name as string,
-      }),
-    ),
-  );
+  const createdItems: ChecklistItemResponseDTO[] = [];
+  for (const item of validItems) {
+    try {
+      const { data } = await serverApi.POST("/tasks/{taskId}/checklists", {
+        params: { path: { taskId: newTaskId } },
+        body: { name: item.name as string },
+      });
+      if (data) {
+        createdItems.push(data as ChecklistItemResponseDTO);
+      }
+    } catch (err) {
+      console.error("[ChecklistAction:Clone]", err);
+    }
+  }
+
+  updateTag("tasks");
+  updateTag("dashboard-tasks");
+  updateTag("kanban");
+
+  return createdItems;
 }

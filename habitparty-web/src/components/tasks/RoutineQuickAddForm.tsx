@@ -2,15 +2,15 @@
 
 import { Calendar, Repeat, SlidersHorizontal, Target } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { ALL_WEEK_DAYS } from "@/constants/task";
+import { ALL_WEEK_DAYS, WEEKDAYS_ONLY } from "@/constants/task";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import type {
   CreateTaskDTO,
-  DailyDaysOfWeek,
   HabitTypeOption,
   TaskTypeOption,
 } from "@/types/task";
 import { cn } from "@/utils";
+import { getTodayDateString } from "@/utils/date";
 
 interface RoutineQuickAddFormProps {
   columnId: string;
@@ -71,18 +71,12 @@ export function RoutineQuickAddForm({
           difficulty: "EASY",
         };
       } else if (taskType === "DAILY") {
-        const weekdays: DailyDaysOfWeek[] = [
-          "MONDAY",
-          "TUESDAY",
-          "WEDNESDAY",
-          "THURSDAY",
-          "FRIDAY",
-        ];
         extraPayload = {
-          startDate: new Date().toISOString().split("T")[0],
+          startDate: getTodayDateString(),
           repeatType: dailyFreq === "WEEKDAYS" ? "WEEKLY" : "DAILY",
           repeatEvery: 1,
-          daysOfWeek: dailyFreq === "WEEKDAYS" ? weekdays : ALL_WEEK_DAYS,
+          daysOfWeek:
+            dailyFreq === "WEEKDAYS" ? [...WEEKDAYS_ONLY] : ALL_WEEK_DAYS,
           difficulty: "MEDIUM",
         };
       }

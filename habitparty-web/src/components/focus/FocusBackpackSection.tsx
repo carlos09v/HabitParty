@@ -2,7 +2,6 @@
 
 import { ArrowUpRight, Backpack, Infinity as InfinityIcon } from "lucide-react";
 import Link from "next/link";
-import { useCompactMode } from "@/hooks/useCompactMode";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn } from "@/utils";
 import { FocusCard } from "./FocusCard";
@@ -28,11 +27,8 @@ export function FocusBackpackSection({
   onStartFocus,
   onContextMenu,
   onConsume,
-  isCompact: propIsCompact,
+  isCompact = false,
 }: FocusBackpackSectionProps) {
-  const { isCompact: storeIsCompact } = useCompactMode();
-  const isCompact = propIsCompact ?? storeIsCompact;
-
   return (
     <section
       className="flex flex-col gap-3 w-full"

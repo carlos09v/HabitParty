@@ -73,13 +73,13 @@ export function AddRewardCard({
       onClick={onClick}
       aria-label="Adicionar nova recompensa"
       className={cn(
-        "flex flex-col items-center justify-center rounded-xl border border-dashed transition-all cursor-pointer group gap-2.5",
-        isCompact ? "p-3 min-h-36" : "p-4 min-h-42",
+        "flex flex-col items-center justify-center rounded-xl border border-dashed transition-all cursor-pointer group gap-2",
+        isCompact ? "p-2.5 min-h-28" : "p-3.5 min-h-32",
         "border-primary/50 bg-white/5 hover:bg-white/10 hover:border-gold text-neutral-300 hover:text-gold focus:outline-none focus:ring-2 focus:ring-gold",
       )}
     >
-      <div className="p-2.5 rounded-xl bg-white/10 group-hover:bg-gold/20 text-primary-light group-hover:text-gold transition-colors">
-        <Plus size={isCompact ? 16 : 20} aria-hidden="true" />
+      <div className="p-2 rounded-xl bg-white/10 group-hover:bg-gold/20 text-primary-light group-hover:text-gold transition-colors">
+        <Plus size={isCompact ? 15 : 18} aria-hidden="true" />
       </div>
       <span className="text-xs font-semibold">Adicionar Produto</span>
     </button>

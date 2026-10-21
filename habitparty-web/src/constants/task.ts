@@ -445,3 +445,41 @@ export const MAX_TASK_TAGS = 5;
 
 /** Tamanho máximo em caracteres de uma única tag */
 export const MAX_TAG_LENGTH = 25;
+
+/** Dias úteis (Segunda a Sexta) para seletores rápidos de tarefas diárias */
+export const WEEKDAYS_ONLY: readonly DailyDaysOfWeek[] = [
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+] as const;
+
+/** Pesos numéricos de dificuldade para ordenação de tarefas */
+export const DIFFICULTY_SORT_WEIGHTS: Readonly<Record<string, number>> = {
+  HARD: 4,
+  MEDIUM: 3,
+  EASY: 2,
+  TRIVIAL: 1,
+  hard: 4,
+  medium: 3,
+  easy: 2,
+  trivial: 1,
+};
+
+/** Pesos numéricos de prioridade para ordenação de tarefas */
+export const PRIORITY_SORT_WEIGHTS: Readonly<Record<string, number>> = {
+  HIGH: 3,
+  MEDIUM: 2,
+  LOW: 1,
+  Low: 1,
+  NONE: 0,
+  high: 3,
+  medium: 2,
+  low: 1,
+  none: 0,
+};
+
+/** Template de colunas CSS Grid compartilhado entre TaskTable, RoutineTaskList e TaskRow */
+export const TASK_TABLE_GRID_COLS =
+  "grid-cols-[minmax(0,1fr)_auto_40px] sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto_minmax(0,1fr)_40px] md:grid-cols-[minmax(0,2.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_40px]";

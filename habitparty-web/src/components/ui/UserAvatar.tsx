@@ -1,10 +1,34 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { type AvatarFrameId, getAvatarFrame } from "@/constants/avatarFrames";
 import { useActiveAvatarFrame } from "@/store/avatarFrameStore";
 import { cn } from "@/utils";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+/**
+ * Resolve URLs relativas vindas do backend (ex: "/uploads/uuid.png")
+ * para o endereço completo do servidor da API, preservando URLs absolutas e blobs.
+ */
+function resolveAvatarSrc(src?: string | null): string | null {
+  if (!src) return null;
+  const trimmed = src.trim();
+  if (!trimmed) return null;
+  if (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("blob:") ||
+    trimmed.startsWith("data:")
+  ) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("/uploads/")) {
+    return `${API_BASE_URL.replace(/\/$/, "")}${trimmed}`;
+  }
+  return trimmed;
+}
 
 export interface UserAvatarProps {
   src?: string | null;
@@ -53,6 +77,13 @@ export function UserAvatar({
   const activeFrameIdFromStore = useActiveAvatarFrame();
   const initials = getInitials(name);
   const sizeClass = SIZE_CLASSES[size];
+  const resolvedSrc = resolveAvatarSrc(src);
+
+  // Reseta erro caso a URL da foto mude
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Reseta flag de erro sempre que a URL resolvida mudar
+  useEffect(() => {
+    setImageError(false);
+  }, [resolvedSrc]);
 
   // Se frameId foi explicitamente fornecido, usa ele.
   // Caso contrário, se hasRing for true (usuário Premium), usa a moldura ativa do store.
@@ -68,7 +99,7 @@ export function UserAvatar({
       : "";
 
   const renderContent = () => {
-    if (src && !imageError) {
+    if (resolvedSrc && !imageError) {
       return (
         <div
           className={cn(
@@ -80,13 +111,17 @@ export function UserAvatar({
           )}
         >
           <Image
-            src={src}
+            src={resolvedSrc}
             alt={`Avatar de ${name || "usuário"}`}
             fill
             sizes="(max-width: 768px) 100vw, 96px"
             className="object-cover"
             onError={() => setImageError(true)}
-            unoptimized={src.startsWith("http") || src.startsWith("blob:")}
+            unoptimized={
+              resolvedSrc.startsWith("http") ||
+              resolvedSrc.startsWith("blob:") ||
+              resolvedSrc.startsWith("data:")
+            }
           />
         </div>
       );

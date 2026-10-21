@@ -1,5 +1,8 @@
+import type { ReactNode } from "react";
 import type { components } from "@/api/schema";
+import type { FocusActivity, FocusRecord } from "@/types/focus";
 import type { Task, TaskFilterType } from "@/types/task";
+import type { UserResponseDTO } from "@/types/user";
 
 export type ColumnSummaryDTO = components["schemas"]["BoardColumnSummaryDTO"];
 export type TransactionHistoryDTO =
@@ -20,6 +23,7 @@ export interface EconomyWidgetProps {
   weeklyEarnings?: number;
   weeklySpent?: number;
   bars?: EconomyBarData[];
+  isCompact?: boolean;
 }
 
 export interface DashboardAdvancedFilters {
@@ -30,11 +34,89 @@ export interface DashboardAdvancedFilters {
   sortBy: "default" | "dueDate" | "difficulty" | "priority" | "reward";
 }
 
+export interface DashboardMainProps {
+  isCompact?: boolean;
+  initialTasks?: Task[];
+  activeWorkspaceId?: string;
+  initialColumns?: ColumnSummaryDTO[];
+  transactions?: TransactionHistoryDTO[];
+  user?: UserResponseDTO | null;
+}
+
+export interface DashboardDailyBriefingProps {
+  greeting: string;
+  firstName: string;
+  streak: number;
+  completedTodayTasks: number;
+  totalTodayTasks: number;
+  todayXp: number;
+  tasks?: Task[];
+  transactions?: TransactionHistoryDTO[];
+}
+
+export interface DashboardListSummaryProps {
+  initialColumns: ColumnSummaryDTO[];
+  maxColumns: number;
+  isCompact?: boolean;
+  isPremium?: boolean;
+  tasks?: Task[];
+}
+
+export interface DashboardTasksPanelProps {
+  initialTasks: Task[];
+  columns: ColumnSummaryDTO[];
+  isCompact?: boolean;
+  tasks?: Task[];
+  onTasksChange?: React.Dispatch<React.SetStateAction<Task[]>>;
+}
+
+export interface DashboardWidgetsDataProps {
+  isCompact?: boolean;
+  balance?: number;
+  weeklyEarnings?: number;
+  weeklySpent?: number;
+  bars?: EconomyBarData[];
+  transactions?: TransactionHistoryDTO[];
+  tasks?: Task[];
+  activities?: FocusActivity[];
+  records?: FocusRecord[];
+}
+
+export type DashboardSidebarRightProps = DashboardWidgetsDataProps;
+
+export interface DashboardWidgetsListProps extends DashboardWidgetsDataProps {
+  onSelectDay?: (isoString: string) => void;
+}
+
+export interface DashboardMobileDrawerProps {
+  isCompact?: boolean;
+  balance?: number;
+  children: ReactNode;
+}
+
+export interface WeeklyCalendarProps {
+  isCompact?: boolean;
+  transactions?: TransactionHistoryDTO[];
+  tasks?: Task[];
+  onSelectDay?: (isoString: string) => void;
+}
+
+export interface ActivitiesWidgetProps {
+  activities?: FocusActivity[];
+  records?: FocusRecord[];
+  isCompact?: boolean;
+}
+
+export interface PartyWidgetProps {
+  isCompact?: boolean;
+}
+
 export interface TaskTableProps {
   tasks: Task[];
   itemsPerPage?: number;
   currentPage?: number;
   activeFilter?: TaskFilterType;
+  isCompact?: boolean;
   onToggle?: (id: string, completed: boolean) => void;
   onHabitChange?: (id: string, delta: number) => void;
   onDelete?: (task: Task) => void;
@@ -49,13 +131,12 @@ export interface TaskTableProps {
 export interface TaskFiltersProps {
   activeFilter?: TaskFilterType;
   onFilterChange?: (filter: TaskFilterType) => void;
-  showCompleted?: boolean;
-  onToggleShowCompleted?: () => void;
   selectedDate?: string | null;
   onClearDate?: () => void;
-  columns?: components["schemas"]["BoardColumnSummaryDTO"][];
+  columns?: ColumnSummaryDTO[];
   advancedFilters?: DashboardAdvancedFilters;
   onAdvancedFiltersChange?: (filters: DashboardAdvancedFilters) => void;
+  isCompact?: boolean;
 }
 
 export interface TaskPaginationProps {
@@ -64,5 +145,6 @@ export interface TaskPaginationProps {
   totalItems: number;
   itemsPerPage: number;
   itemLabel?: string;
+  isCompact?: boolean;
   onPageChange?: (page: number) => void;
 }

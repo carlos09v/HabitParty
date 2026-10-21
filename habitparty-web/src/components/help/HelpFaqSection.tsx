@@ -1,9 +1,15 @@
 "use client";
 
-import { ChevronDown, HelpCircle, Search, X } from "lucide-react";
+import { ArrowUpRight, ChevronDown, HelpCircle, Search, X } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
+import { HelpReferenceTables } from "@/components/help/HelpReferenceTables";
 import { FilterBar } from "@/components/ui/FilterBar";
-import { HELP_CATEGORIES, HELP_FAQS } from "@/constants/help";
+import {
+  HELP_CATEGORIES,
+  HELP_CATEGORY_LABELS,
+  HELP_FAQS,
+} from "@/constants/help";
 import type { HelpCategory } from "@/types/help";
 import { cn } from "@/utils";
 
@@ -121,7 +127,7 @@ export function HelpFaqSection({ isCompact = false }: HelpFaqSectionProps) {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
             <HelpCircle className="text-gold" size={20} />
-            <h2 className="text-body-l sm:text-subtitle-s font-bold text-neutral-100">
+            <h2 className="text-body-m sm:text-subtitle-s font-bold text-neutral-100">
               Perguntas & Respostas Frequentes
             </h2>
             <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-neutral-300 border border-white/10">
@@ -174,6 +180,7 @@ export function HelpFaqSection({ isCompact = false }: HelpFaqSectionProps) {
           <div className="flex flex-col gap-3">
             {filteredFaqs.map((faq) => {
               const isExpanded = expandedFaqIds.has(faq.id);
+              const categoryLabel = HELP_CATEGORY_LABELS[faq.category];
 
               return (
                 <div
@@ -186,7 +193,10 @@ export function HelpFaqSection({ isCompact = false }: HelpFaqSectionProps) {
                   <button
                     type="button"
                     onClick={() => toggleFaq(faq.id)}
-                    className="w-full text-left p-4 sm:p-5 flex items-start justify-between gap-4 cursor-pointer hover:bg-white/5 transition-colors select-none outline-none focus-visible:ring-1 focus-visible:ring-gold"
+                    className={cn(
+                      "w-full text-left flex items-start justify-between gap-4 cursor-pointer hover:bg-white/5 transition-colors select-none outline-none focus-visible:ring-1 focus-visible:ring-gold",
+                      isCompact ? "p-3.5 sm:p-4" : "p-4 sm:p-5",
+                    )}
                     aria-expanded={isExpanded}
                   >
                     <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -208,6 +218,11 @@ export function HelpFaqSection({ isCompact = false }: HelpFaqSectionProps) {
                           >
                             {faq.question}
                           </h3>
+                          {activeCategory === "ALL" && categoryLabel && (
+                            <span className="text-tiny font-semibold px-2 py-0.5 rounded-md bg-primary-dark/40 text-primary-light border border-primary/30">
+                              {categoryLabel}
+                            </span>
+                          )}
                           {faq.highlightBadge && (
                             <span className="text-tiny font-bold px-2 py-0.5 rounded-md bg-gold/15 text-gold border border-gold/30">
                               {faq.highlightBadge}
@@ -219,7 +234,14 @@ export function HelpFaqSection({ isCompact = false }: HelpFaqSectionProps) {
                   </button>
 
                   {isExpanded && (
-                    <div className="px-4 pb-5 sm:px-5 sm:pb-5 pt-1 text-neutral-300 text-body-s flex flex-col gap-3 border-t border-white/5 animate-in fade-in duration-150">
+                    <div
+                      className={cn(
+                        "pt-1 text-neutral-300 text-body-s flex flex-col gap-3 border-t border-white/5 animate-in fade-in duration-150",
+                        isCompact
+                          ? "px-3.5 pb-4 sm:px-4"
+                          : "px-4 pb-5 sm:px-5 sm:pb-5",
+                      )}
+                    >
                       <p className="leading-relaxed">{faq.answer}</p>
 
                       {faq.bullets && faq.bullets.length > 0 && (
@@ -232,23 +254,40 @@ export function HelpFaqSection({ isCompact = false }: HelpFaqSectionProps) {
                         </ul>
                       )}
 
-                      {faq.tags && faq.tags.length > 0 && (
-                        <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-white/5">
-                          <span className="text-tiny uppercase text-neutral-500 font-bold mr-1">
-                            Tags:
-                          </span>
-                          {faq.tags.map((tag) => (
-                            <button
-                              key={tag}
-                              type="button"
-                              onClick={() => setSearchQuery(tag)}
-                              className="text-label-g px-2 py-0.5 rounded-md bg-white/5 hover:bg-gold/20 hover:text-gold text-neutral-400 border border-white/10 transition-colors cursor-pointer"
-                            >
-                              #{tag}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                      <div className="flex items-center justify-between gap-3 flex-wrap pt-2 border-t border-white/5">
+                        {faq.tags && faq.tags.length > 0 ? (
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-tiny uppercase text-neutral-500 font-bold mr-1">
+                              Tags:
+                            </span>
+                            {faq.tags.map((tag) => (
+                              <button
+                                key={tag}
+                                type="button"
+                                onClick={() => setSearchQuery(tag)}
+                                className="text-label-g px-2 py-0.5 rounded-md bg-white/5 hover:bg-gold/20 hover:text-gold text-neutral-400 border border-white/10 transition-colors cursor-pointer"
+                              >
+                                #{tag}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div />
+                        )}
+
+                        {faq.actionLink && (
+                          <Link
+                            href={faq.actionLink.href}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold/15 hover:bg-gold/25 border border-gold/40 text-gold text-xs font-bold transition-all shadow-glow-gold-xs group"
+                          >
+                            <span>{faq.actionLink.label}</span>
+                            <ArrowUpRight
+                              size={13}
+                              className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"
+                            />
+                          </Link>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -257,6 +296,15 @@ export function HelpFaqSection({ isCompact = false }: HelpFaqSectionProps) {
           </div>
         )}
       </section>
+
+      {/* ==========================================
+          TABELAS DE ECONOMIA MATEMÁTICA (Integradas à Busca e Categoria)
+          ========================================== */}
+      <HelpReferenceTables
+        isCompact={isCompact}
+        searchQuery={searchQuery}
+        activeCategory={activeCategory}
+      />
     </div>
   );
 }

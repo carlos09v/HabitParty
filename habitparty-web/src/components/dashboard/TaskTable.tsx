@@ -1,17 +1,11 @@
-"use client";
-
 import { CalendarCheck } from "lucide-react";
+import { TaskRow } from "@/components/tasks/shared/TaskRow";
 import { DASHBOARD_EMPTY_MESSAGES } from "@/constants/dashboard";
-import { useCompactMode } from "@/hooks/useCompactMode";
-import type { TaskTableProps as TaskTableComponentProps } from "@/types/task";
+import { TASK_TABLE_GRID_COLS } from "@/constants/task";
+import type { TaskTableProps } from "@/types/dashboard";
 import { cn } from "@/utils";
 import { formatShortDate } from "@/utils/date";
 import { TaskPagination } from "./TaskPagination";
-import { TaskRow } from "./TaskRow";
-
-interface Props extends TaskTableComponentProps {
-  isCompact?: boolean;
-}
 
 export function TaskTable({
   itemsPerPage = 3,
@@ -27,17 +21,14 @@ export function TaskTable({
   onDuplicate,
   selectedDate,
   onPageChange,
-  isCompact: propIsCompact,
-}: Props) {
+  isCompact = false,
+}: TaskTableProps) {
   const totalItems = tasks.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
 
   const startIndex = (safeCurrentPage - 1) * itemsPerPage;
   const paginatedTasks = tasks.slice(startIndex, startIndex + itemsPerPage);
-
-  const { isCompact: hookIsCompact } = useCompactMode();
-  const isCompact = propIsCompact ?? hookIsCompact;
 
   const formattedDate = formatShortDate(selectedDate);
 
@@ -57,15 +48,22 @@ export function TaskTable({
 
   const EmptyIcon = emptyMeta.icon;
 
+  const panelId = selectedDate ? "panel-date" : `panel-${activeFilter}`;
+  const tabId = selectedDate ? "tab-date" : `tab-${activeFilter}`;
+
   return (
     <section
+      id={panelId}
+      role="tabpanel"
+      aria-labelledby={tabId}
       className="flex flex-col gap-2.5 w-full"
       aria-label="Lista de tarefas"
     >
       {/* Cabeçalho da Grade Responsivo */}
       <div
         className={cn(
-          "grid grid-cols-[minmax(0,1fr)_auto_40px] sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto_minmax(0,1fr)_40px] md:grid-cols-[minmax(0,2.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_40px] items-center text-xs font-semibold text-neutral-300",
+          "grid items-center text-xs font-semibold text-neutral-300",
+          TASK_TABLE_GRID_COLS,
           isCompact ? "gap-2.5 px-3 py-1.5" : "gap-4 px-4 py-2",
         )}
         aria-hidden="true"
@@ -126,6 +124,7 @@ export function TaskTable({
           totalPages={totalPages}
           totalItems={totalItems}
           itemsPerPage={itemsPerPage}
+          isCompact={isCompact}
           onPageChange={onPageChange}
         />
       )}

@@ -2,7 +2,6 @@
 
 import { BarChart2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
-import { useCompactMode } from "@/hooks/useCompactMode";
 import type { WeeklyFocusDayData } from "@/types/focus";
 import { cn } from "@/utils";
 import { formatFocusMinutes } from "@/utils/focusFormatters";
@@ -28,11 +27,8 @@ export function FocusWeeklyChart({
   onPrevWeek,
   onNextWeek,
   onResetWeek,
-  isCompact: propIsCompact,
+  isCompact = false,
 }: FocusWeeklyChartProps) {
-  const { isCompact: storeIsCompact } = useCompactMode();
-  const isCompact = propIsCompact ?? storeIsCompact;
-
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const activeHovered = hoveredIndex !== null ? days[hoveredIndex] : null;
 
@@ -130,7 +126,7 @@ export function FocusWeeklyChart({
       >
         {days.map((item, index) => {
           const isHovered = hoveredIndex === index;
-          const heightClamped = Math.max(item.heightPercent, 6); // mínimo visível
+          const heightClamped = Math.max(item.heightPercent, 6);
 
           return (
             <button

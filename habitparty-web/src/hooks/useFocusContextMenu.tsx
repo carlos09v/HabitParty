@@ -3,7 +3,7 @@
 import { Pencil, Play, PlusCircle, Trash2, Undo2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import { deleteFocusActivityAction } from "@/actions/focusActions";
+import { deleteFocusActivity } from "@/actions/focusActions";
 import type { FocusActivity } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 
@@ -114,7 +114,7 @@ export function useFocusContextMenu({
               return;
             }
 
-            const res = await deleteFocusActivityAction(
+            const res = await deleteFocusActivity(
               contextMenu.activityTarget.id,
               false,
             );

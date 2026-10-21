@@ -2,38 +2,32 @@
 
 import { ChevronRight, Crown, Lock, Plus } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { UpgradePremiumModal } from "@/components/subscription/UpgradePremiumModal";
+import {
+  ACTIVITY_PERIOD_OPTIONS,
+  type ActivityPeriodOption,
+} from "@/constants/dashboard";
 import {
   getFocusIcon,
   MAX_FOCUS_ACTIVITIES_FREE,
   MAX_FOCUS_ACTIVITIES_PREMIUM,
 } from "@/constants/focus";
 import { useUserStore } from "@/store/userStore";
-import type { FocusActivity, FocusRecord } from "@/types/focus";
+import type { ActivitiesWidgetProps } from "@/types/dashboard";
 import { cn } from "@/utils";
-import { getWeekDateRange } from "@/utils/date";
 import { formatFocusMinutes } from "@/utils/focusFormatters";
-
-interface ActivitiesWidgetProps {
-  activities?: FocusActivity[];
-  records?: FocusRecord[];
-  isCompact?: boolean;
-}
+import { calculateActivityDurationMap } from "@/utils/focusMetrics";
 
 /**
- * Widget de Atividades do Usuário com cálculo de tempo dinâmico baseado no filtro.
+ * Widget de Atividades de Foco com seletor de período próprio (Hoje | Semana | Mês).
  */
 export function ActivitiesWidget({
   activities = [],
   records = [],
   isCompact = false,
 }: ActivitiesWidgetProps) {
-  const searchParams = useSearchParams();
-  const urlDate = searchParams.get("date");
-  const urlFilter = searchParams.get("filter");
-
+  const [period, setPeriod] = useState<ActivityPeriodOption>("today");
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const isPremium = useUserStore((s) => s.is_Premium);
   const maxActivities = isPremium
@@ -46,60 +40,48 @@ export function ActivitiesWidget({
     ? Math.max(0, activities.length - maxActivities)
     : 0;
 
-  // Mapa de tempo gasto por atividade conforme o filtro ativo na URL
-  const activityTimeMap = useMemo(() => {
-    const map: Record<string, number> = {};
-    const now = new Date();
-    const todayStr = now.toISOString().split("T")[0];
-
-    // Limites de Segunda a Domingo da semana corrente
-    const { monday, sunday } = getWeekDateRange(now);
-
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-
-    for (const rec of records) {
-      if (!rec.focusActivityId) continue;
-      const recDateStr = rec.endTime.split("T")[0];
-      const recDate = new Date(rec.endTime);
-
-      let matches = false;
-
-      if (urlDate) {
-        // Filtro de dia específico
-        matches = recDateStr === urlDate;
-      } else if (urlFilter === "next7days" || urlFilter === "this_week") {
-        // Filtro desta semana
-        matches = recDate >= monday && recDate <= sunday;
-      } else if (urlFilter === "this_month") {
-        // Filtro deste mês
-        matches =
-          recDate.getFullYear() === currentYear &&
-          recDate.getMonth() === currentMonth;
-      } else {
-        // Padrão: Hoje
-        matches = recDateStr === todayStr;
-      }
-
-      if (matches) {
-        map[rec.focusActivityId] =
-          (map[rec.focusActivityId] || 0) + (rec.durationMinutes || 0);
-      }
-    }
-
-    return map;
-  }, [records, urlDate, urlFilter]);
+  const activityTimeMap = useMemo(
+    () => calculateActivityDurationMap(records, period),
+    [records, period],
+  );
 
   return (
     <div className="flex flex-col gap-2.5 w-full">
-      {/* Header */}
-      <div className="flex items-center justify-between w-full">
-        <h4 className="text-subtitle-s font-bold text-neutral-100">
-          Atividades
-        </h4>
-        <span className="text-xs font-semibold text-neutral-300">
-          {activities.length}/{maxActivities}
-        </span>
+      {/* Header com Seletor Independente de Período */}
+      <div className="flex items-center justify-between gap-2 w-full">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <h4 className="text-subtitle-s font-bold text-neutral-100 truncate">
+            Atividades
+          </h4>
+          <span className="text-tiny font-semibold text-neutral-400">
+            ({activities.length}/{maxActivities})
+          </span>
+        </div>
+
+        <fieldset
+          className="inline-flex items-center rounded-lg bg-white/5 border border-white/10 p-0.5 shrink-0 m-0"
+          aria-label="Período do tempo de foco"
+        >
+          {ACTIVITY_PERIOD_OPTIONS.map((opt) => {
+            const isActive = period === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setPeriod(opt.id)}
+                aria-pressed={isActive}
+                className={cn(
+                  "px-1.5 py-0.5 rounded-md text-[11px] font-semibold transition-all cursor-pointer",
+                  isActive
+                    ? "bg-gold text-neutral-900 font-bold shadow-xs"
+                    : "text-neutral-400 hover:text-neutral-200",
+                )}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </fieldset>
       </div>
 
       {/* Lista de Atividades */}

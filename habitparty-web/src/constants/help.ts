@@ -1,9 +1,14 @@
+import { MYSTERY_BOX_TIERS } from "@/constants/reward";
+import { DIFFICULTY_REWARDS } from "@/constants/task";
 import type {
+  HelpCategory,
   HelpCategoryTab,
   HelpFaqItem,
   HelpProductivityStep,
   HelpTableEntry,
 } from "@/types/help";
+import { formatCoins } from "@/utils";
+import { USER_LEVELS } from "@/utils/levels";
 
 export const HELP_PRODUCTIVITY_STEPS: readonly HelpProductivityStep[] = [
   {
@@ -47,11 +52,86 @@ export const HELP_CATEGORIES: HelpCategoryTab[] = [
   { id: "LEVELS", label: "Níveis & XP" },
 ];
 
+export const HELP_CATEGORY_LABELS: Record<HelpCategory, string> = {
+  ALL: "Tudo",
+  OVERVIEW: "Visão Geral",
+  TASKS: "Tarefas & Hábitos",
+  ECONOMY: "Economia & Ouro",
+  REWARDS: "Loja & Caixas",
+  INVENTORY: "Mochila",
+  FOCUS: "Foco & Pomodoro",
+  LEVELS: "Níveis & XP",
+};
+
+const LEVEL_PROGRESSION_META: Record<
+  string,
+  { englishName: string; tasksEstimate: string; timeEstimate: string }
+> = {
+  NOVICE: {
+    englishName: "Novice",
+    tasksEstimate: "Ponto de partida",
+    timeEstimate: "Primeiro acesso",
+  },
+  APPRENTICE: {
+    englishName: "Apprentice",
+    tasksEstimate: "~7 tarefas médias",
+    timeEstimate: "1º a 2º dia",
+  },
+  ADVENTURER: {
+    englishName: "Adventurer",
+    tasksEstimate: "~20 tarefas médias",
+    timeEstimate: "1ª semana",
+  },
+  CHALLENGER: {
+    englishName: "Challenger",
+    tasksEstimate: "~50 tarefas médias",
+    timeEstimate: "2 a 3 semanas",
+  },
+  AMATEUR: {
+    englishName: "Amateur",
+    tasksEstimate: "~100 tarefas médias",
+    timeEstimate: "1 mês de consistência",
+  },
+  PROFESSIONAL: {
+    englishName: "Professional",
+    tasksEstimate: "~200 tarefas médias",
+    timeEstimate: "Trimestral",
+  },
+  EXPERT: {
+    englishName: "Expert",
+    tasksEstimate: "~400 tarefas médias",
+    timeEstimate: "Semestral",
+  },
+  VETERAN: {
+    englishName: "Veteran",
+    tasksEstimate: "~800 tarefas médias",
+    timeEstimate: "Maturidade alta",
+  },
+  MASTER: {
+    englishName: "Master",
+    tasksEstimate: "~1.600 tarefas médias",
+    timeEstimate: "Constância rigorosa",
+  },
+  LEGEND: {
+    englishName: "Legend",
+    tasksEstimate: "+4.000 tarefas médias",
+    timeEstimate: "Mais de 1 ano diário",
+  },
+};
+
+const MYSTERY_BOX_EMOJI: Record<string, string> = {
+  Básico: "📦 Básico (Basic)",
+  Premium: "🎁 Premium",
+  Épico: "💎 Épico (Epic)",
+  Lendário: "👑 Lendário (Legendary)",
+};
+
 export const HELP_TABLES: Record<string, HelpTableEntry> = {
   difficulties: {
     title: "Economia Rígida: Dificuldades e Recompensas",
     description:
       "Ganhos de XP e moedas (🪙) baseados na carga de esforço real e duração estimada de cada atividade.",
+    category: "ECONOMY",
     columns: [
       "Nível",
       "Dificuldade",
@@ -62,25 +142,25 @@ export const HELP_TABLES: Record<string, HelpTableEntry> = {
       [
         "🟩",
         "Trivial (Muito Fácil)",
-        "2 XP • 0,25 🪙",
+        `${DIFFICULTY_REWARDS.TRIVIAL.xp} XP • ${formatCoins(DIFFICULTY_REWARDS.TRIVIAL.gold)} 🪙`,
         "Tarefas quase automáticas de curtíssima duração (ex: beber água, tomar remédio, arrumar a cama).",
       ],
       [
         "🟦",
         "Fácil",
-        "5 XP • 0,75 🪙",
+        `${DIFFICULTY_REWARDS.EASY.xp} XP • ${formatCoins(DIFFICULTY_REWARDS.EASY.gold)} 🪙`,
         "Tarefas rápidas que exigem intenção básica (ex: responder e-mails, 10 min de leitura, lavar louça).",
       ],
       [
         "🟨",
         "Médio (Padrão)",
-        "15 XP • 2,50 🪙",
+        `${DIFFICULTY_REWARDS.MEDIUM.xp} XP • ${formatCoins(DIFFICULTY_REWARDS.MEDIUM.gold)} 🪙`,
         "A base da economia: 30 a 60 minutos de esforço moderado (ex: treino físico, tarefa de trabalho).",
       ],
       [
         "🟧",
         "Difícil",
-        "30 XP • 5,00 🪙",
+        `${DIFFICULTY_REWARDS.HARD.xp} XP • ${formatCoins(DIFFICULTY_REWARDS.HARD.gold)} 🪙`,
         "Esforço cognitivo ou físico intenso: 1 a 2 horas (ex: sessão de estudo pesado, projeto de programação).",
       ],
     ],
@@ -89,6 +169,7 @@ export const HELP_TABLES: Record<string, HelpTableEntry> = {
     title: "Hábitos: Importância e Decaimento por Ofensiva (Streak)",
     description:
       "Conforme você repete um hábito, ele exige menos esforço cerebral. Para evitar inflação e estimular novos desafios, a recompensa decai com o streak.",
+    category: "TASKS",
     columns: [
       "Fase do Hábito",
       "Dias Consecutivos (Streak)",
@@ -120,96 +201,56 @@ export const HELP_TABLES: Record<string, HelpTableEntry> = {
     title: "🎁 Caixas Misteriosas (Loot Tables & Probabilidades RNG)",
     description:
       "Caixas da sorte equilibradas matematicamente para proporcionar dopamina e surpresa sem desbalancear a economia do jogo.",
+    category: "REWARDS",
     columns: [
       "Pacote",
       "Custo (🪙)",
       "Chances de Prêmio Comum / Bom",
       "Chances de Prêmio Épico / Lendário",
     ],
-    rows: [
-      [
-        "📦 Básico (Basic)",
-        "5,00 🪙",
-        "60% Pausa Curta (10-15m) • 30% Lazer Médio (30m)",
-        "10% Sessão Focada (45m de Hobby + 1 🪙 bônus)",
-      ],
-      [
-        "🎁 Premium",
-        "15,00 🪙",
-        "50% Lazer Padrão (45-60m) • 35% Lazer Estendido (75-90m)",
-        "15% Noite Gamer / Cinema (120m de Entretenimento)",
-      ],
-      [
-        "💎 Épico (Epic)",
-        "35,00 🪙",
-        "50% Bloco Estendido (120m) • 35% Noite Livre (180m)",
-        "15% Tarde Inteira de Desconexão (240m de Folga)",
-      ],
-      [
-        "👑 Lendário (Legendary)",
-        "80,00 🪙",
-        "60% Day-Off Parcial de Elite (240m Livres)",
-        "30% Day-Off Integral • 10% Celebração Absoluta (Final de Semana Livre)",
-      ],
-    ],
+    rows: MYSTERY_BOX_TIERS.map((tier) => {
+      const commonDrops = tier.dropRates
+        .slice(0, 2)
+        .map((d) => `${d.percentage}% ${d.label}`)
+        .join(" • ");
+      const rareDrops = tier.dropRates
+        .slice(2)
+        .map((d) => `${d.percentage}% ${d.label}`)
+        .join(" • ");
+      return [
+        MYSTERY_BOX_EMOJI[tier.id] || tier.name,
+        `${formatCoins(tier.recommendedPrice)} 🪙`,
+        commonDrops,
+        rareDrops,
+      ];
+    }),
   },
   userLevels: {
     title: "🏆 Níveis de Usuário (UserLevel & XP Vitalício)",
     description:
       "Seu XP total acumulado nunca é gasto ou resetado ao comprar recompensas. Ele serve como marco de consistência e maturidade.",
+    category: "LEVELS",
     columns: [
       "Nível",
       "XP Necessário",
       "Tarefas Médias Estimadas",
       "Tempo Estimado",
     ],
-    rows: [
-      ["Novato (Novice)", "0 XP", "Ponto de partida", "Primeiro acesso"],
-      ["Aprendiz (Apprentice)", "100 XP", "~7 tarefas médias", "1º a 2º dia"],
-      ["Aventureiro (Adventurer)", "300 XP", "~20 tarefas médias", "1ª semana"],
-      [
-        "Desafiante (Challenger)",
-        "750 XP",
-        "~50 tarefas médias",
-        "2 a 3 semanas",
-      ],
-      [
-        "Amador (Amateur)",
-        "1.500 XP",
-        "~100 tarefas médias",
-        "1 mês de consistência",
-      ],
-      [
-        "Profissional (Professional)",
-        "3.000 XP",
-        "~200 tarefas médias",
-        "Trimestral",
-      ],
-      ["Especialista (Expert)", "6.000 XP", "~400 tarefas médias", "Semestral"],
-      [
-        "Veterano (Veteran)",
-        "12.000 XP",
-        "~800 tarefas médias",
-        "Maturidade alta",
-      ],
-      [
-        "Mestre (Master)",
-        "25.000 XP",
-        "~1.600 tarefas médias",
-        "Constância rigorosa",
-      ],
-      [
-        "Lenda (Legend)",
-        "60.000 XP",
-        "+4.000 tarefas médias",
-        "Mais de 1 ano diário",
-      ],
-    ],
+    rows: USER_LEVELS.map((lvl) => {
+      const meta = LEVEL_PROGRESSION_META[lvl.tier];
+      return [
+        `${lvl.title} (${meta?.englishName || lvl.tier})`,
+        `${lvl.minXpRequired.toLocaleString("pt-BR")} XP`,
+        meta?.tasksEstimate || "-",
+        meta?.timeEstimate || "-",
+      ];
+    }),
   },
   focusRewards: {
     title: "⏱️ Ferramentas de Foco: Pomodoro, Cronômetro & Economia",
     description:
       "O foco premia sua jornada e esforço contínuo com XP e pequenas frações de moedas (🪙), mantendo as tarefas como a principal fonte de riqueza.",
+    category: "FOCUS",
     columns: [
       "Modalidade",
       "Duração / Ciclo",
@@ -220,25 +261,25 @@ export const HELP_TABLES: Record<string, HelpTableEntry> = {
       [
         "🍅 Pomodoro Curto",
         "15 a 24 min",
-        "4 XP • 0,10 🪙",
+        `4 XP • ${formatCoins(0.1)} 🪙`,
         "Quebra rápida de inércia. Requer ciclo completado com sucesso.",
       ],
       [
         "🍅 Pomodoro Padrão",
         "25 a 40 min",
-        "8 XP • 0,25 🪙",
+        `8 XP • ${formatCoins(0.25)} 🪙`,
         "O padrão de ouro do foco. Equivale a pouco mais de 1 Tarefa Fácil.",
       ],
       [
         "🍅 Pomodoro Deep Work",
         "Mais de 40 min",
-        "15 XP • 0,50 🪙",
+        `15 XP • ${formatCoins(0.5)} 🪙`,
         "Imersão profunda prolongada. Equivale ao XP de 1 Tarefa Média.",
       ],
       [
         "⏱️ Cronômetro Livre",
         "A cada 30 min",
-        "~7 XP • 0,20 🪙",
+        `~7 XP • ${formatCoins(0.2)} 🪙`,
         "Cálculo contínuo proporcional. Limitado ao teto de 90 min por sessão.",
       ],
       [
@@ -260,6 +301,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "O HabitParty é um motor de produtividade gamificado de economia fechada. Ao contrário de apps tradicionais de to-do, ele converte o esforço real do usuário em moedas de ouro (🪙) e experiência (XP) com regras matemáticas rígidas. As moedas ganhas são usadas para 'comprar' momentos reais de lazer na Loja (jogar videogame, assistir séries, pausas sem culpa), transformando o descanso em algo merecido e sem procrastinação.",
     tags: ["visão geral", "gamificação", "introdução", "filosofia", "moedas"],
     highlightBadge: "Fundamental",
+    actionLink: { label: "Ir para o Dashboard", href: "/dashboard" },
   },
   {
     id: "task-types",
@@ -274,6 +316,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
     ],
     tags: ["tarefas", "hábitos", "diárias", "to-do", "rotina"],
     highlightBadge: "Estrutura",
+    actionLink: { label: "Ver Minhas Tarefas", href: "/tasks" },
   },
   {
     id: "hardcore-mode",
@@ -341,6 +384,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "Caixa Misteriosa: Recompensas que realizam um sorteio de itens por raridade (Comum até Lendário).",
     ],
     tags: ["loja", "recompensas", "produtos", "tempo", "compras"],
+    actionLink: { label: "Explorar a Loja", href: "/rewards" },
   },
   {
     id: "mystery-box-system",
@@ -349,6 +393,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
     answer:
       "Ao cadastrar ou comprar uma Caixa Misteriosa na Loja, você escolhe entre 4 níveis gamificados com custos e probabilidades equilibrados: Básica (5 🪙), Premium (15 🪙), Épica (35 🪙) e Lendária (80 🪙). O sorteio segue a Loot Table do pacote correspondente e o prêmio sorteado vai direto para a sua Mochila, permitindo ganhar recompensas incríveis de acordo com a sua sorte!",
     tags: ["caixa misteriosa", "sorteio", "rng", "loot table", "prêmios"],
+    actionLink: { label: "Ver Caixas na Loja", href: "/rewards" },
   },
   {
     id: "inventory-usage",
@@ -357,6 +402,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
     answer:
       "Todos os produtos comprados vão imediatamente para a sua Mochila (Inventário). Lá você pode visualizar o estoque disponível, consumir quando for usufruir da recompensa no mundo real, ou iniciar uma sessão de foco atrelada àquele item.",
     tags: ["mochila", "inventário", "consumo", "itens"],
+    actionLink: { label: "Abrir Minha Mochila", href: "/inventory" },
   },
   {
     id: "focus-sessions",
@@ -371,6 +417,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
     ],
     tags: ["foco", "pomodoro", "cronômetro", "estudo", "timer"],
     highlightBadge: "Foco",
+    actionLink: { label: "Iniciar Sessão de Foco", href: "/focus" },
   },
   {
     id: "focus-economy",
@@ -393,6 +440,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
     answer:
       "Workspaces permitem segregar completamente seus fluxos de vida. Você pode manter um workspace para 'Trabalho / Carreira', outro para 'Faculdade / Concursos' e um para 'Vida Pessoal'. Cada workspace possui seu próprio quadro Kanban com colunas personalizadas.",
     tags: ["workspaces", "áreas", "kanban", "organização"],
+    actionLink: { label: "Gerenciar Quadro", href: "/tasks" },
   },
   {
     id: "user-plans",
@@ -421,6 +469,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "sons ambiente",
     ],
     highlightBadge: "Planos",
+    actionLink: { label: "Ver Planos & Assinatura", href: "/settings" },
   },
   {
     id: "avatar-frames",
@@ -438,6 +487,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "vip",
     ],
     highlightBadge: "Visual",
+    actionLink: { label: "Personalizar Perfil", href: "/settings" },
   },
   {
     id: "ambient-sounds",
@@ -463,6 +513,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "áudio",
     ],
     highlightBadge: "Foco",
+    actionLink: { label: "Configurar Sons & Áudio", href: "/settings" },
   },
   {
     id: "payment-cancellation",
@@ -482,6 +533,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "cartão",
       "assinatura",
     ],
+    actionLink: { label: "Gerenciar Assinatura", href: "/settings" },
   },
   {
     id: "premium-expiration-data",
@@ -492,6 +544,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "Nenhum dado ou tarefa é excluído! O HabitParty tem compromisso absoluto de zero perda de dados. Quando seu período Premium expirar (ou voltar para o plano Free), todas as suas estruturas permanecem intactas no banco de dados e o sistema adota uma degradação suave e transparente:",
     bullets: [
       "Colunas do Quadro (Até 6 criadas): O quadro de rotinas passa a exibir até 4 colunas ativas ao mesmo tempo (limite Free). As outras colunas ficam preservadas e ocultas do quadro. Você pode abrir o gerenciador de colunas a qualquer momento e alternar livremente quais 4 colunas quer ativas no dia a dia.",
+      "Atividades de Foco (Até 6 criadas): As 4 primeiras atividades permanecem ativas e ordenáveis; as últimas 2 ficam preservadas e pausadas até a renovação.",
       "Ambientes (Workspaces): Todos os ambientes criados continuam salvos e acessíveis em modo somente leitura (Bloqueado 👑), permitindo consultar tarefas a qualquer momento.",
       "Tarefas e Histórico: Todas as tarefas dentro das colunas ou ambientes continuam preservadas, permitindo concluí-las, movê-las ou editá-las.",
       "Mochila de Itens e Loja: Itens já comprados na sua mochila nunca são perdidos (direito adquirido). Você pode consumi-los normalmente.",

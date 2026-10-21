@@ -31,7 +31,8 @@ export function HistoryTable({
           {/* CABEÇALHO DA TABELA (Apenas desktop/tablet) */}
           <div
             className={cn(
-              `hidden md:grid md:${HISTORY_GRID_COLS} items-center text-xs font-semibold text-neutral-400 select-none`,
+              "hidden md:grid items-center text-xs font-semibold text-neutral-400 select-none",
+              HISTORY_GRID_COLS,
               isCompact ? "gap-2.5 px-3 py-1.5" : "gap-3.5 px-4 py-2",
             )}
             aria-hidden="true"

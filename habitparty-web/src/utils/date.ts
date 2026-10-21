@@ -12,10 +12,26 @@ export function parseServerDate(dateStr?: string | null): Date | null {
   if (str.includes("T")) {
     const timePart = str.split("T")[1];
     const hasTz =
-      timePart.includes("Z") || timePart.includes("+") || timePart.includes("-");
+      timePart.includes("Z") ||
+      timePart.includes("+") ||
+      timePart.includes("-");
     if (!hasTz) {
       str = `${str}Z`;
     }
+  }
+  const d = new Date(str);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * Converte uma string de data que já está no fuso horário local do usuário
+ * (ex: gerada e enviada via toLocalISOString) para Date, sem adicionar sufixo UTC ('Z').
+ */
+export function parseLocalDate(dateStr?: string | null): Date | null {
+  if (!dateStr) return null;
+  let str = dateStr.trim();
+  if (str.includes(" ")) {
+    str = str.replace(" ", "T");
   }
   const d = new Date(str);
   return Number.isNaN(d.getTime()) ? null : d;
@@ -26,11 +42,17 @@ export function parseServerDate(dateStr?: string | null): Date | null {
  */
 export function formatDateTime(
   dateStr?: string | null,
-  options?: { includeSeconds?: boolean; includeYearFull?: boolean },
+  options?: {
+    includeSeconds?: boolean;
+    includeYearFull?: boolean;
+    isLocal?: boolean;
+  },
 ): string {
   if (!dateStr) return "-";
   try {
-    const d = parseServerDate(dateStr);
+    const d = options?.isLocal
+      ? parseLocalDate(dateStr)
+      : parseServerDate(dateStr);
     if (!d) return dateStr;
     return d.toLocaleString("pt-BR", {
       day: "2-digit",
@@ -446,6 +468,27 @@ export function formatDateParts(
 ): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${year}-${pad(month + 1)}-${pad(day)}`;
+}
+
+/**
+ * Retorna a data de hoje no fuso horário local do usuário no formato YYYY-MM-DD,
+ * evitando o deslocamento prematuro de dia causado por toISOString() (UTC).
+ */
+export function getTodayDateString(now: Date = new Date()): string {
+  return formatDateParts(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+/**
+ * Verifica se uma tarefa com Modo Hardcore ativado já ultrapassou o prazo (23:59:59 do dueDate)
+ * e deve ter seu título, prazo e dificuldade bloqueados contra edição.
+ */
+export function isTaskHardcoreLocked(
+  task?: { isHardcoreModeEnabled?: boolean; dueDate?: string | null } | null,
+  now: Date = new Date(),
+): boolean {
+  if (!task?.isHardcoreModeEnabled || !task?.dueDate) return false;
+  const datePart = task.dueDate.split("T")[0];
+  return new Date(`${datePart}T23:59:59`) < now;
 }
 
 export function generateCalendarGrid(

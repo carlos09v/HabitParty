@@ -115,7 +115,8 @@ export const RoutineColumn = memo(function RoutineColumn({
       style={style}
       className={cn(
         "flex flex-col w-full h-full min-h-0 flex-1 min-w-0 transition-[background-color,border-color,box-shadow,opacity] duration-150 select-none bg-transparent rounded-2xl",
-        isSelected && "ring-2 ring-gold/90 shadow-glow-gold bg-gold/[0.03]",
+        isSelected &&
+          "ring-2 ring-inset ring-gold/90 shadow-glow-gold bg-gold/[0.03]",
         isDragging &&
           "!transition-none opacity-30 border-dashed border-primary-light scale-98",
         isOverlay &&

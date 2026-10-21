@@ -3,43 +3,9 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCompactMode } from "@/hooks/useCompactMode";
-import type { TaskPaginationProps } from "@/types/task";
+import type { TaskPaginationProps } from "@/types/dashboard";
 import { cn } from "@/utils";
-
-function getPageNumbers(
-  currentPage: number,
-  totalPages: number,
-): (number | "dots")[] {
-  if (totalPages <= 7) {
-    return Array.from({ length: totalPages }, (_, i) => i + 1);
-  }
-
-  if (currentPage <= 4) {
-    return [1, 2, 3, 4, 5, "dots", totalPages];
-  }
-
-  if (currentPage >= totalPages - 3) {
-    return [
-      1,
-      "dots",
-      totalPages - 4,
-      totalPages - 3,
-      totalPages - 2,
-      totalPages - 1,
-      totalPages,
-    ];
-  }
-
-  return [
-    1,
-    "dots",
-    currentPage - 1,
-    currentPage,
-    currentPage + 1,
-    "dots",
-    totalPages,
-  ];
-}
+import { getPageNumbers } from "@/utils/dashboardMetrics";
 
 export function TaskPagination({
   currentPage,
@@ -47,9 +13,11 @@ export function TaskPagination({
   totalItems,
   itemsPerPage,
   itemLabel = "tarefas",
+  isCompact: propIsCompact,
   onPageChange,
 }: TaskPaginationProps) {
-  const { isCompact } = useCompactMode();
+  const { isCompact: hookIsCompact } = useCompactMode();
+  const isCompact = propIsCompact ?? hookIsCompact;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

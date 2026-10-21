@@ -1,15 +1,9 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import { toast } from "sonner";
-import { cloneTaskChecklistItems } from "@/actions/checklistActions";
-import { createTask, deleteTask } from "@/actions/taskActions";
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 import type { Task } from "@/types/task";
-import {
-  buildCreateTaskPayloadFromTask,
-  computeOptimisticHabitDelta,
-} from "@/utils/taskMapper";
+import { computeOptimisticHabitDelta } from "@/utils/taskMapper";
 
 interface UseDashboardTaskActionsProps {
   tasks?: Task[];
@@ -19,7 +13,7 @@ interface UseDashboardTaskActionsProps {
 
 /**
  * Hook de ações de tarefas do Dashboard.
- * Gerencia conclusão, hábitos, exclusão, duplicação e atualização de detalhes.
+ * Delega mutações (conclusão, hábitos, exclusão com rollback e duplicação) ao useTaskMutations.
  */
 export function useDashboardTaskActions({
   tasks,
@@ -71,64 +65,42 @@ export function useDashboardTaskActions({
     [setTasks],
   );
 
-  const { handleToggleComplete, handleHabitChange } = useTaskMutations({
-    findTask,
-    onOptimisticToggle,
-    onOptimisticHabit,
-    onRollbackToggle,
-  });
-
-  const handleDeleteTask = useCallback(
-    async (task: Task) => {
+  const onOptimisticDelete = useCallback(
+    (task: Task) => {
       setTasks((prev) => prev.filter((t) => t.id !== task.id));
-      toast.success(`Tarefa "${task.title}" excluída com sucesso!`);
-
-      const res = await deleteTask(task.id);
-      if (!res.success) {
-        toast.error(res.error || "Erro ao excluir tarefa no servidor.");
-      }
     },
     [setTasks],
   );
 
-  const handleDuplicateTask = useCallback(
-    async (task: Task, targetColId?: string) => {
-      const colId = targetColId || task.columnId || defaultColumnId;
-      if (!colId) {
-        toast.error("Coluna de destino não encontrada para duplicação.");
-        return;
-      }
-
-      const payload = buildCreateTaskPayloadFromTask(task);
-
-      const res = await createTask(colId, payload);
-      if (!res.success) {
-        toast.error(res.error || "Erro ao duplicar tarefa.");
-        return;
-      }
-
-      const newTaskId = res.data?.id;
-
-      if (newTaskId && task.checklist && task.checklist.length > 0) {
-        await cloneTaskChecklistItems(newTaskId, task.checklist);
-      }
-
-      const duplicatedTask: Task = {
-        ...task,
-        id: newTaskId || `dup-${Date.now()}`,
-        completed: false,
-        streak: 0,
-        positiveCount: 0,
-        negativeCount: 0,
-        columnId: colId,
-        order: 0,
-      };
-
-      setTasks((prev) => [duplicatedTask, ...prev]);
-      toast.success(`Tarefa "${task.title}" duplicada com sucesso!`);
+  const onRollbackDelete = useCallback(
+    (task: Task) => {
+      setTasks((prev) => [task, ...prev]);
     },
-    [setTasks, defaultColumnId],
+    [setTasks],
   );
+
+  const onTaskDuplicated = useCallback(
+    (duplicatedTask: Task) => {
+      setTasks((prev) => [duplicatedTask, ...prev]);
+    },
+    [setTasks],
+  );
+
+  const {
+    handleToggleComplete,
+    handleHabitChange,
+    handleDeleteTask,
+    handleDuplicateTask,
+  } = useTaskMutations({
+    findTask,
+    onOptimisticToggle,
+    onOptimisticHabit,
+    onRollbackToggle,
+    onOptimisticDelete,
+    onRollbackDelete,
+    onTaskDuplicated,
+    defaultColumnId,
+  });
 
   const handleTaskSaved = useCallback(
     (savedTask: Task) => {

@@ -13,7 +13,8 @@ function invalidateInventoryTags(
 ) {
   updateTag("inventory");
   if (includeFocus) {
-    updateTag("focus");
+    updateTag("focus-activities");
+    updateTag("focus-records");
   }
   if (includeUserAndTransactions) {
     updateTag("user");

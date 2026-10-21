@@ -1,8 +1,10 @@
+import type { ActivityPeriodOption } from "@/constants/dashboard";
 import type {
   FocusMetrics,
   FocusRecord,
   WeeklyFocusDayData,
 } from "@/types/focus";
+import { getWeekDateRange, parseServerDate } from "./date";
 
 export interface FocusMetricsCalculationResult {
   metrics: FocusMetrics;
@@ -18,12 +20,61 @@ const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"] as const;
  * Converte um Date ou string ISO para chave YYYY-MM-DD no fuso horário local.
  */
 export function toLocalDateKey(dateInput: Date | string): string {
-  const d = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
-  if (Number.isNaN(d.getTime())) return "";
+  const d =
+    typeof dateInput === "string"
+      ? dateInput.includes("T")
+        ? parseServerDate(dateInput)
+        : new Date(`${dateInput}T12:00:00`)
+      : dateInput;
+  if (!d || Number.isNaN(d.getTime())) return "";
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+/**
+ * Calcula o mapa de minutos focados por atividade para um determinado período
+ * ("today", "this_week", "this_month") ou data selecionada (YYYY-MM-DD),
+ * respeitando o fuso horário local do usuário.
+ */
+export function calculateActivityDurationMap(
+  records: FocusRecord[],
+  period: ActivityPeriodOption,
+  selectedDate?: string | null,
+  referenceDate: Date = new Date(),
+): Record<string, number> {
+  const map: Record<string, number> = {};
+  const todayStr = toLocalDateKey(referenceDate);
+  const { monday, sunday } = getWeekDateRange(referenceDate, 0);
+
+  for (const rec of records) {
+    if (!rec.focusActivityId || !rec.endTime) continue;
+
+    const recDate = parseServerDate(rec.endTime);
+    if (!recDate) continue;
+    const recDateStr = toLocalDateKey(recDate);
+
+    let matches = false;
+    if (selectedDate) {
+      matches = recDateStr === selectedDate;
+    } else if (period === "today") {
+      matches = recDateStr === todayStr;
+    } else if (period === "this_week") {
+      matches = recDate >= monday && recDate <= sunday;
+    } else if (period === "this_month") {
+      matches =
+        recDate.getFullYear() === referenceDate.getFullYear() &&
+        recDate.getMonth() === referenceDate.getMonth();
+    }
+
+    if (matches) {
+      map[rec.focusActivityId] =
+        (map[rec.focusActivityId] || 0) + (rec.durationMinutes || 0);
+    }
+  }
+
+  return map;
 }
 
 /**

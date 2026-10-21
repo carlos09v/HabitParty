@@ -4,12 +4,13 @@ import { Copy, Pencil, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { components } from "@/api/schema";
 import { TaskFilters } from "@/components/dashboard/TaskFilters";
 import { TaskTable } from "@/components/dashboard/TaskTable";
 import { ContextMenu } from "@/components/ui/ContextMenu";
+import { DASHBOARD_ITEMS_PER_PAGE } from "@/constants/dashboard";
 import { useDashboardTaskActions } from "@/hooks/useDashboardTaskActions";
 import { useDashboardTaskFilters } from "@/hooks/useDashboardTaskFilters";
+import type { DashboardTasksPanelProps } from "@/types/dashboard";
 import type { Task } from "@/types/task";
 import { cn } from "@/utils";
 
@@ -37,28 +38,23 @@ const ConfirmationModal = dynamic(
   { ssr: false },
 );
 
-type Column = components["schemas"]["BoardColumnSummaryDTO"];
-
-interface DashboardTasksPanelProps {
-  initialTasks: Task[];
-  columns: Column[];
-  isCompact?: boolean;
-}
-
-const DASHBOARD_ITEMS_PER_PAGE = 5;
-
 export function DashboardTasksPanel({
   initialTasks,
   columns,
   isCompact = false,
+  tasks: externalTasks,
+  onTasksChange,
 }: DashboardTasksPanelProps) {
   const searchParams = useSearchParams();
-  const [tasksState, setTasksState] = useState<Task[]>(initialTasks);
+  const [internalTasks, setInternalTasks] = useState<Task[]>(initialTasks);
 
   // Sincroniza estado local caso os dados do servidor mudem
   useEffect(() => {
-    setTasksState(initialTasks);
+    setInternalTasks(initialTasks);
   }, [initialTasks]);
+
+  const tasksState = externalTasks ?? internalTasks;
+  const setTasksState = onTasksChange ?? setInternalTasks;
 
   const defaultColumnId = columns[0]?.id;
 

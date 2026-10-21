@@ -2,24 +2,35 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
-import { DEFAULT_DASHBOARD_ADVANCED_FILTERS } from "@/constants/dashboard";
-import { ALL_WEEK_DAYS, normalizeTaskType } from "@/constants/task";
+import {
+  DASHBOARD_TASK_FILTERS,
+  DEFAULT_DASHBOARD_ADVANCED_FILTERS,
+} from "@/constants/dashboard";
+import {
+  DIFFICULTY_SORT_WEIGHTS,
+  normalizeTaskDifficulty,
+  normalizeTaskType,
+  PRIORITY_SORT_WEIGHTS,
+} from "@/constants/task";
 import type { DashboardAdvancedFilters } from "@/types/dashboard";
 import type { Task, TaskFilterType } from "@/types/task";
+import {
+  getTodayDateString,
+  isTaskScheduledForDate,
+} from "@/utils/dashboardMetrics";
+
+function isValidTaskFilter(val: string | null): val is TaskFilterType {
+  return DASHBOARD_TASK_FILTERS.some((f) => f.id === val);
+}
 
 export function useDashboardTaskFilters(tasks: Task[]) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const urlFilterParam = searchParams.get("filter");
-  const initialFilter: TaskFilterType =
-    urlFilterParam === "today" ||
-    urlFilterParam === "next7days" ||
-    urlFilterParam === "this_month" ||
-    urlFilterParam === "overdue" ||
-    urlFilterParam === "nodate"
-      ? (urlFilterParam as TaskFilterType)
-      : "today";
+  const initialFilter: TaskFilterType = isValidTaskFilter(urlFilterParam)
+    ? urlFilterParam
+    : "today";
 
   const [activeFilter, setActiveFilterState] =
     useState<TaskFilterType>(initialFilter);
@@ -27,14 +38,9 @@ export function useDashboardTaskFilters(tasks: Task[]) {
     useState<DashboardAdvancedFilters>(DEFAULT_DASHBOARD_ADVANCED_FILTERS);
 
   const selectedDate = searchParams.get("date");
-  const effectiveFilter =
-    urlFilterParam === "today" ||
-    urlFilterParam === "next7days" ||
-    urlFilterParam === "this_month" ||
-    urlFilterParam === "overdue" ||
-    urlFilterParam === "nodate"
-      ? (urlFilterParam as TaskFilterType)
-      : activeFilter;
+  const effectiveFilter = isValidTaskFilter(urlFilterParam)
+    ? urlFilterParam
+    : activeFilter;
 
   const setActiveFilter = useCallback(
     (newFilter: TaskFilterType) => {
@@ -58,6 +64,7 @@ export function useDashboardTaskFilters(tasks: Task[]) {
   const filteredTasks = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const todayIso = getTodayDateString(today);
 
     const next7Days = new Date(today);
     next7Days.setDate(today.getDate() + 7);
@@ -70,37 +77,19 @@ export function useDashboardTaskFilters(tasks: Task[]) {
       const isHabit = type === "habit";
 
       if (selectedDate) {
-        if (
-          task.dueDate === selectedDate ||
-          task.dueDate?.startsWith(selectedDate)
-        )
-          return true;
-        if (isDaily) {
-          const [y, m, d] = selectedDate.split("-").map(Number);
-          const targetDate = new Date(y, (m || 1) - 1, d || 1);
-          const targetDayName = ALL_WEEK_DAYS[targetDate.getDay()];
-          return (
-            !task.daysOfWeek ||
-            task.daysOfWeek.length === 0 ||
-            task.daysOfWeek.includes(targetDayName)
-          );
-        }
-        return false;
+        return isTaskScheduledForDate(task, selectedDate, {
+          includeHabits: false,
+        });
+      }
+
+      if (effectiveFilter === "today") {
+        return isTaskScheduledForDate(task, todayIso, { includeHabits: true });
       }
 
       if (!task.dueDate) {
-        if (effectiveFilter === "nodate") return true;
-        if (effectiveFilter === "today") {
-          if (isHabit) return true;
-          if (isDaily) {
-            const todayDayName = ALL_WEEK_DAYS[today.getDay()];
-            return (
-              !task.daysOfWeek ||
-              task.daysOfWeek.length === 0 ||
-              task.daysOfWeek.includes(todayDayName)
-            );
-          }
-        }
+        if (effectiveFilter === "nodate") return !isDaily && !isHabit;
+        if (effectiveFilter === "next7days" || effectiveFilter === "this_month")
+          return isDaily || isHabit;
         return false;
       }
 
@@ -109,7 +98,6 @@ export function useDashboardTaskFilters(tasks: Task[]) {
       const taskDate = new Date(year, (month || 1) - 1, day || 1);
       taskDate.setHours(0, 0, 0, 0);
 
-      const isToday = taskDate.getTime() === today.getTime();
       const isPast = taskDate.getTime() < today.getTime();
       const isWithin7Days =
         taskDate.getTime() >= today.getTime() &&
@@ -119,15 +107,6 @@ export function useDashboardTaskFilters(tasks: Task[]) {
         taskDate.getMonth() === today.getMonth();
 
       switch (effectiveFilter) {
-        case "today":
-          return (
-            isToday ||
-            isHabit ||
-            (isDaily &&
-              (!task.daysOfWeek ||
-                task.daysOfWeek.length === 0 ||
-                task.daysOfWeek.includes(ALL_WEEK_DAYS[today.getDay()])))
-          );
         case "next7days":
           return isWithin7Days || isDaily || isHabit;
         case "this_month":
@@ -144,7 +123,7 @@ export function useDashboardTaskFilters(tasks: Task[]) {
     // 2. Filtros Avançados
     if (advancedFilters.taskType !== "all") {
       result = result.filter(
-        (t) => (t.type || "").toUpperCase() === advancedFilters.taskType,
+        (t) => normalizeTaskType(t).toUpperCase() === advancedFilters.taskType,
       );
     }
 
@@ -159,7 +138,7 @@ export function useDashboardTaskFilters(tasks: Task[]) {
     if (advancedFilters.difficulty !== "all") {
       result = result.filter(
         (t) =>
-          (t.difficulty || "").toUpperCase() === advancedFilters.difficulty,
+          normalizeTaskDifficulty(t.difficulty) === advancedFilters.difficulty,
       );
     }
 
@@ -176,24 +155,13 @@ export function useDashboardTaskFilters(tasks: Task[]) {
           );
         }
         if (advancedFilters.sortBy === "difficulty") {
-          const diffWeight: Record<string, number> = {
-            hard: 4,
-            medium: 3,
-            easy: 2,
-            trivial: 1,
-          };
-          const wa = diffWeight[(a.difficulty || "").toLowerCase()] || 0;
-          const wb = diffWeight[(b.difficulty || "").toLowerCase()] || 0;
+          const wa = DIFFICULTY_SORT_WEIGHTS[a.difficulty || ""] || 0;
+          const wb = DIFFICULTY_SORT_WEIGHTS[b.difficulty || ""] || 0;
           return wb - wa;
         }
         if (advancedFilters.sortBy === "priority") {
-          const prioWeight: Record<string, number> = {
-            high: 3,
-            medium: 2,
-            low: 1,
-          };
-          const wa = prioWeight[(a.priority || "").toLowerCase()] || 0;
-          const wb = prioWeight[(b.priority || "").toLowerCase()] || 0;
+          const wa = PRIORITY_SORT_WEIGHTS[a.priority || ""] || 0;
+          const wb = PRIORITY_SORT_WEIGHTS[b.priority || ""] || 0;
           return wb - wa;
         }
         if (advancedFilters.sortBy === "reward") {

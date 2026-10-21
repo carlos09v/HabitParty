@@ -2,7 +2,6 @@ import { HelpCircle } from "lucide-react";
 import type { Metadata } from "next";
 import { HelpFaqSection } from "@/components/help/HelpFaqSection";
 import { HelpProductivityCycle } from "@/components/help/HelpProductivityCycle";
-import { HelpReferenceTables } from "@/components/help/HelpReferenceTables";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { getCompactMode } from "@/utils/cookies";
 
@@ -35,13 +34,10 @@ export default async function HelpPage() {
         </header>
 
         {/* CICLO DE PRODUTIVIDADE (Server Component) */}
-        <HelpProductivityCycle />
+        <HelpProductivityCycle isCompact={isCompact} />
 
-        {/* FAQ INTERATIVO COM BUSCA E FILTROS (Client Component) */}
+        {/* FAQ INTERATIVO + TABELAS DE ECONOMIA INTEGRADAS À BUSCA */}
         <HelpFaqSection isCompact={isCompact} />
-
-        {/* TABELAS DE ECONOMIA MATEMÁTICA (Server Component) */}
-        <HelpReferenceTables />
       </div>
     </PageWrapper>
   );

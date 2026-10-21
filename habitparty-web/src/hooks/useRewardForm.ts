@@ -13,6 +13,7 @@ import {
   mapRewardFormToCreatePayload,
   mapRewardFormToUpdatePayload,
 } from "@/utils/rewardMapper";
+import { soundEffects } from "@/utils/soundEffects";
 
 interface UseRewardFormProps {
   isOpen: boolean;
@@ -157,7 +158,10 @@ export function useRewardForm({
           orderIndex: 0,
         };
 
-        toast.success("Recompensa criada com sucesso!");
+        soundEffects.playCreateSound();
+        toast.success(`Recompensa "${formInput.title}" criada!`, {
+          description: "Disponível para resgate na Loja de Recompensas.",
+        });
         onSuccess?.(newReward);
         onClose();
       }

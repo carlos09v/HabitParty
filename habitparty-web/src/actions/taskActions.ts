@@ -16,15 +16,22 @@ type TaskStatus =
   | "FAILED"
   | "CANCELED";
 
-function invalidateTaskTags(includeUserAndTransactions = false) {
+function invalidateTaskTags(
+  options: {
+    includeUserAndTransactions?: boolean;
+    includeColumnSummaries?: boolean;
+  } = {},
+) {
   updateTag("tasks");
   updateTag("dashboard-tasks");
-  updateTag("dashboard-columns");
   updateTag("kanban");
-  updateTag("board_columns");
-  updateTag("workspaces");
 
-  if (includeUserAndTransactions) {
+  if (options.includeColumnSummaries) {
+    updateTag("dashboard-columns");
+    updateTag("board_columns");
+  }
+
+  if (options.includeUserAndTransactions) {
     updateTag("user");
     updateTag("transactions");
   }
@@ -50,7 +57,7 @@ export async function createTask(
       };
     }
 
-    invalidateTaskTags();
+    invalidateTaskTags({ includeColumnSummaries: true });
     return { success: true, data: data as TaskResponseDTO };
   } catch (err) {
     console.error("[TaskAction:Create]", err);
@@ -102,7 +109,7 @@ export async function deleteTask(taskId: string): Promise<ActionState> {
       };
     }
 
-    invalidateTaskTags();
+    invalidateTaskTags({ includeColumnSummaries: true });
     return { success: true, data };
   } catch (err) {
     console.error("[TaskAction:Delete]", err);
@@ -147,7 +154,7 @@ export async function recordHabitScore(
       };
     }
 
-    invalidateTaskTags(true);
+    invalidateTaskTags({ includeUserAndTransactions: true });
     return { success: true, data: data as TaskResponseDTO };
   } catch (err) {
     console.error("[TaskAction:RecordHabitScore]", err);
@@ -177,7 +184,10 @@ export async function changeTaskStatus(
       };
     }
 
-    invalidateTaskTags(true);
+    invalidateTaskTags({
+      includeUserAndTransactions: true,
+      includeColumnSummaries: true,
+    });
     return { success: true, data };
   } catch (err) {
     console.error("[TaskAction:ChangeStatus]", err);

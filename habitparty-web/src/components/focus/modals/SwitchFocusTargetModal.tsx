@@ -21,7 +21,7 @@ interface SwitchFocusTargetModalProps {
   isCurrentInventory?: boolean;
   isNewInventory?: boolean;
   onTransfer: () => void;
-  onSaveAndStartNew: () => Promise<void> | void;
+  onSaveAndStartNew: () => Promise<boolean> | boolean;
   onDiscardAndStartNew: () => void;
 }
 
@@ -53,11 +53,18 @@ export function SwitchFocusTargetModal({
   // Transferência direta só é permitida entre atividades normais
   const canTransfer = !isCurrentInventory && !isNewInventory;
 
+  // Sessões só podem ser salvas a partir de 1 minuto (60 segundos)
+  const canSaveCurrent = elapsedSeconds >= 60;
+  const secondsUntilCanSave = Math.max(0, 60 - elapsedSeconds);
+
   const handleSave = async () => {
+    if (!canSaveCurrent || isSaving) return;
     setIsSaving(true);
     try {
-      await onSaveAndStartNew();
-      onClose();
+      const saved = await onSaveAndStartNew();
+      if (saved !== false) {
+        onClose();
+      }
     } finally {
       setIsSaving(false);
     }
@@ -177,10 +184,22 @@ export function SwitchFocusTargetModal({
           <button
             type="button"
             onClick={handleSave}
-            disabled={isSaving}
-            className="w-full text-left p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 hover:border-emerald-500/60 transition-all flex items-start gap-3 group cursor-pointer disabled:opacity-50"
+            disabled={!canSaveCurrent || isSaving}
+            className={cn(
+              "w-full text-left p-3.5 rounded-xl border transition-all flex items-start gap-3 group",
+              canSaveCurrent
+                ? "border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 hover:border-emerald-500/60 cursor-pointer disabled:opacity-50"
+                : "border-primary/20 bg-surface/40 opacity-60 cursor-not-allowed",
+            )}
           >
-            <div className="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+            <div
+              className={cn(
+                "w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-transform",
+                canSaveCurrent
+                  ? "bg-emerald-500/20 text-emerald-400 group-hover:scale-105"
+                  : "bg-neutral-800 text-neutral-400",
+              )}
+            >
               {isSaving ? (
                 <Loader2 size={18} className="animate-spin" />
               ) : (
@@ -188,22 +207,45 @@ export function SwitchFocusTargetModal({
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <span className="text-body-s font-bold text-neutral-100">
-                Salvar atual e iniciar nova
-              </span>
-              <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
-                Registra os{" "}
-                <strong className="text-emerald-400 font-semibold">
-                  {timeDisplay}
-                </strong>{" "}
-                na atividade atual (
-                <span className="text-neutral-300">{currentName}</span>) e
-                inicia o foco em{" "}
-                <strong className="text-neutral-200 font-semibold">
-                  {newTargetName}
-                </strong>{" "}
-                do zero.
-              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span
+                  className={cn(
+                    "text-body-s font-bold",
+                    canSaveCurrent ? "text-neutral-100" : "text-neutral-300",
+                  )}
+                >
+                  Salvar atual e iniciar nova
+                </span>
+                {!canSaveCurrent && (
+                  <span className="px-1.5 py-0.5 rounded text-tiny font-semibold bg-neutral-800 text-neutral-400 border border-neutral-700">
+                    Mín. 1 min ({secondsUntilCanSave}s restantes)
+                  </span>
+                )}
+              </div>
+              {canSaveCurrent ? (
+                <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
+                  Registra os{" "}
+                  <strong className="text-emerald-400 font-semibold">
+                    {timeDisplay}
+                  </strong>{" "}
+                  na atividade atual (
+                  <span className="text-neutral-300">{currentName}</span>) e
+                  inicia o foco em{" "}
+                  <strong className="text-neutral-200 font-semibold">
+                    {newTargetName}
+                  </strong>{" "}
+                  do zero.
+                </p>
+              ) : (
+                <p className="text-label-g text-neutral-400 mt-0.5 leading-relaxed">
+                  Sessões com menos de 1 minuto não podem ser salvas no
+                  histórico. Use{" "}
+                  <strong className="text-neutral-300">
+                    {canTransfer ? "Transferir" : "Manter Sessão"}
+                  </strong>{" "}
+                  ou <strong className="text-neutral-300">Descartar</strong>.
+                </p>
+              )}
             </div>
           </button>
 

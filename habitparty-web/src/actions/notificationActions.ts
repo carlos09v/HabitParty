@@ -26,7 +26,10 @@ export interface SidebarNotificationsResponse {
  * - Alerta de manutenção de streak/ofensiva
  * - Itens da mochila ativos na área de foco
  */
-export async function getSidebarNotificationsAction(): Promise<SidebarNotificationsResponse> {
+export async function getSidebarNotificationsAction(
+  clientDateStr?: string,
+  clientDayIndex?: number,
+): Promise<SidebarNotificationsResponse> {
   try {
     const cookieStore = await cookies();
     let workspaceId = cookieStore.get("activeWorkspaceId")?.value;
@@ -64,8 +67,13 @@ export async function getSidebarNotificationsAction(): Promise<SidebarNotificati
 
     const notifications: SidebarNotification[] = [];
     const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    const todayDayName = ALL_WEEK_DAYS[now.getDay()];
+    const todayStr =
+      clientDateStr ||
+      `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const todayDayName =
+      ALL_WEEK_DAYS[
+        typeof clientDayIndex === "number" ? clientDayIndex : now.getDay()
+      ];
 
     const tasks = tasksRes.data?.content || [];
     let overdueCount = 0;

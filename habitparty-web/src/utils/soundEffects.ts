@@ -12,6 +12,53 @@ import {
  */
 class SoundEffectsManager {
   private ctx: AudioContext | null = null;
+  private unlockListenersAttached = false;
+  private pendingUnlockCallbacks: Array<(ctx: AudioContext) => void> = [];
+
+  private ensureUnlockListeners() {
+    if (typeof window === "undefined" || this.unlockListenersAttached) return;
+    this.unlockListenersAttached = true;
+
+    const unlock = () => {
+      if (!this.ctx) return;
+      if (this.ctx.state === "suspended") {
+        this.ctx
+          .resume()
+          .then(() => {
+            if (this.ctx && this.ctx.state === "running") {
+              this.flushPendingCallbacks(this.ctx);
+              cleanup();
+            }
+          })
+          .catch(() => {});
+      } else if (this.ctx.state === "running") {
+        this.flushPendingCallbacks(this.ctx);
+        cleanup();
+      }
+    };
+
+    const cleanup = () => {
+      window.removeEventListener("pointerdown", unlock, true);
+      window.removeEventListener("keydown", unlock, true);
+      window.removeEventListener("touchstart", unlock, true);
+      window.removeEventListener("click", unlock, true);
+      this.unlockListenersAttached = false;
+    };
+
+    window.addEventListener("pointerdown", unlock, true);
+    window.addEventListener("keydown", unlock, true);
+    window.addEventListener("touchstart", unlock, true);
+    window.addEventListener("click", unlock, true);
+  }
+
+  private flushPendingCallbacks(ctx: AudioContext) {
+    const callbacks = this.pendingUnlockCallbacks.splice(0);
+    for (const cb of callbacks) {
+      try {
+        cb(ctx);
+      } catch (_e) {}
+    }
+  }
 
   private getContext(): AudioContext | null {
     if (typeof window === "undefined") return null;
@@ -30,34 +77,46 @@ class SoundEffectsManager {
       }
     }
 
-    if (this.ctx && this.ctx.state === "suspended") {
-      this.ctx.resume().catch(() => {});
-    }
-
     return this.ctx;
   }
 
   /**
    * Executa uma ação garantindo que o AudioContext está em estado 'running'.
-   * Se estiver suspenso por política do navegador, aguarda a resolução do resume().
+   * Se estiver suspenso por política de autoplay (ex: recarregamento da página),
+   * tenta resumir imediatamente e, caso exija gesto do usuário, enfileira para tocar no 1º gesto.
    */
   private runWithContext(fn: (ctx: AudioContext) => void) {
     const ctx = this.getContext();
     if (!ctx) return;
-    if (ctx.state === "suspended") {
-      ctx
-        .resume()
-        .then(() => {
-          try {
-            fn(ctx);
-          } catch (_e) {}
-        })
-        .catch(() => {});
-    } else {
+    if (ctx.state === "running") {
       try {
         fn(ctx);
       } catch (_e) {}
+      return;
     }
+
+    this.ensureUnlockListeners();
+    ctx
+      .resume()
+      .then(() => {
+        if (ctx.state === "running") {
+          try {
+            fn(ctx);
+          } catch (_e) {}
+        } else {
+          // Mantém apenas os últimos 2 efeitos pendentes para não acumular sons antigos
+          if (this.pendingUnlockCallbacks.length >= 2) {
+            this.pendingUnlockCallbacks.shift();
+          }
+          this.pendingUnlockCallbacks.push(fn);
+        }
+      })
+      .catch(() => {
+        if (this.pendingUnlockCallbacks.length >= 2) {
+          this.pendingUnlockCallbacks.shift();
+        }
+        this.pendingUnlockCallbacks.push(fn);
+      });
   }
 
   private getPreferences() {
@@ -74,14 +133,100 @@ class SoundEffectsManager {
   }
 
   /**
+   * Som de Criação (Tarefa, Coluna, Atividade de Foco ou Recompensa)
+   * Pop cristalino ascendente de duas notas (Mi5 -> Si5 + harmônico)
+   */
+  playCreateSound() {
+    if (!this.getPreferences().uiSoundsEnabled) return;
+
+    this.runWithContext((ctx) => {
+      const now = ctx.currentTime;
+
+      const notes = [
+        {
+          freq: 659.25,
+          delay: 0,
+          dur: 0.14,
+          gain: 0.18,
+          type: "sine" as const,
+        }, // E5
+        {
+          freq: 987.77,
+          delay: 0.065,
+          dur: 0.24,
+          gain: 0.22,
+          type: "triangle" as const,
+        }, // B5
+        {
+          freq: 1318.51,
+          delay: 0.11,
+          dur: 0.22,
+          gain: 0.1,
+          type: "sine" as const,
+        }, // E6 brilho
+      ];
+
+      notes.forEach((n) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const start = now + n.delay;
+
+        osc.type = n.type;
+        osc.frequency.setValueAtTime(n.freq, start);
+
+        gain.gain.setValueAtTime(n.gain, start);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + n.dur);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(start);
+        osc.stop(start + n.dur);
+      });
+    });
+  }
+
+  /**
+   * Som de Alerta / Notificação (Sino duplo cristalino suave Sol5 -> Ré6)
+   */
+  playNotificationSound() {
+    if (!this.getPreferences().uiSoundsEnabled) return;
+
+    this.runWithContext((ctx) => {
+      const now = ctx.currentTime;
+
+      const bells = [
+        { freq: 783.99, delay: 0, dur: 0.28, peak: 0.18 }, // G5
+        { freq: 1174.66, delay: 0.11, dur: 0.45, peak: 0.22 }, // D6
+      ];
+
+      bells.forEach((b) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const start = now + b.delay;
+
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(b.freq, start);
+
+        gain.gain.setValueAtTime(b.peak, start);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + b.dur);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(start);
+        osc.stop(start + b.dur);
+      });
+    });
+  }
+
+  /**
    * Som de Compra / Loja de Recompensas (Cha-Ching / Duas notas de moedas brilhantes)
    */
   playBuySound() {
     if (!this.getPreferences().uiSoundsEnabled) return;
 
-    try {
-      const ctx = this.getContext();
-      if (!ctx) return;
+    this.runWithContext((ctx) => {
       const now = ctx.currentTime;
 
       // Nota 1 (Si5 - 987Hz) para Nota 2 (Mi6 - 1318Hz)
@@ -116,9 +261,7 @@ class SoundEffectsManager {
 
       osc2.start(now + 0.08);
       osc2.stop(now + 0.4);
-    } catch (_e) {
-      // Falha silenciosa caso o navegador restrinja áudio
-    }
+    });
   }
 
   /**
@@ -127,9 +270,7 @@ class SoundEffectsManager {
   playTaskCompleteSound() {
     if (!this.getPreferences().uiSoundsEnabled) return;
 
-    try {
-      const ctx = this.getContext();
-      if (!ctx) return;
+    this.runWithContext((ctx) => {
       const now = ctx.currentTime;
 
       // C5, E5, G5, C6
@@ -153,9 +294,7 @@ class SoundEffectsManager {
         osc.start(startTime);
         osc.stop(startTime + duration);
       });
-    } catch (_e) {
-      // Falha silenciosa
-    }
+    });
   }
 
   /**
@@ -164,9 +303,7 @@ class SoundEffectsManager {
   playLevelUpSound() {
     if (!this.getPreferences().uiSoundsEnabled) return;
 
-    try {
-      const ctx = this.getContext();
-      if (!ctx) return;
+    this.runWithContext((ctx) => {
       const now = ctx.currentTime;
 
       // 1. Arpejo de Fanfarra Ascendente (G4 -> C5 -> E5 -> G5 -> C6)
@@ -248,9 +385,7 @@ class SoundEffectsManager {
         osc.start(startTime);
         osc.stop(startTime + dur);
       });
-    } catch (_e) {
-      // Falha silenciosa
-    }
+    });
   }
 
   /**
@@ -300,9 +435,7 @@ class SoundEffectsManager {
   playHabitSound() {
     if (!this.getPreferences().uiSoundsEnabled) return;
 
-    try {
-      const ctx = this.getContext();
-      if (!ctx) return;
+    this.runWithContext((ctx) => {
       const now = ctx.currentTime;
 
       const osc = ctx.createOscillator();
@@ -320,9 +453,7 @@ class SoundEffectsManager {
 
       osc.start(now);
       osc.stop(now + 0.22);
-    } catch (_e) {
-      // Falha silenciosa
-    }
+    });
   }
 
   /**
@@ -331,9 +462,7 @@ class SoundEffectsManager {
   playPenaltySound() {
     if (!this.getPreferences().uiSoundsEnabled) return;
 
-    try {
-      const ctx = this.getContext();
-      if (!ctx) return;
+    this.runWithContext((ctx) => {
       const now = ctx.currentTime;
 
       const osc = ctx.createOscillator();
@@ -351,9 +480,7 @@ class SoundEffectsManager {
 
       osc.start(now);
       osc.stop(now + 0.25);
-    } catch (_e) {
-      // Falha silenciosa
-    }
+    });
   }
 
   /**
@@ -365,9 +492,7 @@ class SoundEffectsManager {
     const volume = volumeOverride ?? prefs.timerVolume;
     if (volume <= 0) return;
 
-    try {
-      const ctx = this.getContext();
-      if (!ctx) return;
+    this.runWithContext((ctx) => {
       const now = ctx.currentTime;
 
       // Frequência fundamental de sino suave (528Hz - nota de cura/foco)
@@ -386,9 +511,7 @@ class SoundEffectsManager {
 
       osc.start(now);
       osc.stop(now + 1.2);
-    } catch (_e) {
-      // Falha silenciosa
-    }
+    });
   }
 
   /**
@@ -465,9 +588,7 @@ class SoundEffectsManager {
     const volume = volumeOverride ?? prefs.timerVolume;
     if (volume <= 0) return;
 
-    try {
-      const ctx = this.getContext();
-      if (!ctx) return;
+    this.runWithContext((ctx) => {
       const now = ctx.currentTime;
 
       const freqs = [698.46, 587.33, 440.0]; // F5, D5, A4
@@ -488,9 +609,7 @@ class SoundEffectsManager {
         osc.start(startTime);
         osc.stop(startTime + 0.6);
       });
-    } catch (_e) {
-      // Falha silenciosa
-    }
+    });
   }
 
   /**
@@ -502,9 +621,7 @@ class SoundEffectsManager {
     const volume = volumeOverride ?? prefs.timerVolume;
     if (volume <= 0) return;
 
-    try {
-      const ctx = this.getContext();
-      if (!ctx) return;
+    this.runWithContext((ctx) => {
       const now = ctx.currentTime;
 
       const freqs = [440.0, 587.33, 739.99]; // A4, D5, F#5
@@ -525,9 +642,7 @@ class SoundEffectsManager {
         osc.start(startTime);
         osc.stop(startTime + 0.5);
       });
-    } catch (_e) {
-      // Falha silenciosa
-    }
+    });
   }
 
   // ========================================================

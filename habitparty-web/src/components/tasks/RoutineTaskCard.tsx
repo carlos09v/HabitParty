@@ -1,21 +1,18 @@
 "use client";
 
-import {
-  Calendar,
-  CheckSquare,
-  ClockAlert,
-  Flag,
-  MessageSquare,
-  Zap,
-} from "lucide-react";
+import { Calendar, ClockAlert } from "lucide-react";
 import { memo } from "react";
 import {
   TaskActionControl,
+  TaskChecklistBadge,
+  TaskDescriptionBadge,
+  TaskHabitScoreBadge,
+  TaskHardcoreBadge,
+  TaskPriorityBadge,
   TaskRewardBadges,
   TaskTypeBadge,
   WeekDaysIndicator,
 } from "@/components/tasks/shared";
-import { TASK_PRIORITY_META } from "@/constants/task";
 import { useTaskCardItem } from "@/hooks/useTaskCardItem";
 import type { RoutineTaskCardProps } from "@/types/task-ui";
 import { cn } from "@/utils";
@@ -98,15 +95,18 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
           ? "hover:bg-primary-dark/35 hover:border-info/40"
           : isDaily
             ? "hover:bg-primary-dark/35 hover:border-magenta/40"
-            : "hover:bg-primary-dark/35 hover:border-gold/40",
-        "hover:border-y-primary-light/40 hover:border-r-primary-light/40",
+            : dueDateInfo.isOverdue && !isDone
+              ? "hover:bg-danger-500/[0.06] hover:border-danger-500/60"
+              : "hover:bg-primary-dark/35 hover:border-gold/40",
+        !(isTodo && dueDateInfo.isOverdue && !isDone) &&
+          "hover:border-y-primary-light/40 hover:border-r-primary-light/40",
         borderClass,
         dueDateInfo.isOverdue &&
           !isDone &&
           !isHardcoreOverdue &&
-          "border-danger-500/40 bg-danger-500/[0.03]",
+          "border-danger-500/40 hover:border-danger-500/60 bg-danger-500/[0.03]",
         isHardcoreOverdue &&
-          "border-danger-500/70 shadow-[0_0_10px_rgba(239,68,68,0.25)]",
+          "border-danger-500/70 hover:border-danger-500/80 shadow-[0_0_10px_rgba(239,68,68,0.25)]",
         isDone && "opacity-60",
         isDragging &&
           "!transition-none opacity-30 border-dashed border-primary-light scale-95",
@@ -148,47 +148,26 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
           )}
         </div>
 
-        {/* Indicadores complementares (Bandeira de Prioridade, Hardcore, Descrição e Grip de Arrasto) */}
+        {/* Indicadores complementares (Bandeira de Prioridade, Hardcore e Descrição) */}
         <div className="flex items-center gap-1.5 shrink-0 ml-auto">
-          {task.priority &&
-            (task.priority as string).toUpperCase() !== "NONE" && (
-              <span
-                title={`Prioridade: ${TASK_PRIORITY_META[task.priority]?.label || task.priority}`}
-                className={cn(
-                  "p-0.5 rounded border flex items-center justify-center transition-all select-none shrink-0",
-                  TASK_PRIORITY_META[task.priority]?.badgeColor ||
-                    "text-neutral-400 bg-white/5 border-white/10",
-                )}
-              >
-                <Flag size={isCompact ? 9 : 11} />
-              </span>
-            )}
+          <TaskPriorityBadge
+            priority={task.priority}
+            isCompact={isCompact}
+            sizeVariant="card"
+          />
 
           {task.isHardcoreModeEnabled && (
-            <span
-              title={
-                isHardcoreOverdue
-                  ? "Modo Hardcore: Prazo fatal expirado! Penalidade de 50% ativa!"
-                  : "Modo Hardcore Ativo"
-              }
-              className={cn(
-                "transition-colors",
-                isHardcoreOverdue
-                  ? "text-danger-500 animate-pulse"
-                  : "text-warning-500 hover:text-warning-hover",
-              )}
-            >
-              <Zap size={isCompact ? 10 : 12} />
-            </span>
+            <TaskHardcoreBadge
+              isHardcoreOverdue={isHardcoreOverdue}
+              isCompact={isCompact}
+            />
           )}
 
           {task.description && (
-            <span
-              title="Possui descrição detalhada (clique no card para visualizar)"
-              className="text-neutral-400 hover:text-gold transition-colors p-0.5"
-            >
-              <MessageSquare size={isCompact ? 10 : 12} />
-            </span>
+            <TaskDescriptionBadge
+              isCompact={isCompact}
+              className="hover:text-gold transition-colors p-0.5"
+            />
           )}
         </div>
       </div>
@@ -261,48 +240,21 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
           )}
 
           {hasChecklist && (
-            <span
-              className={cn(
-                "inline-flex items-center gap-1 font-medium rounded border px-1.5 py-0.5 shrink-0",
-                isCompact ? "text-label-s leading-none" : "text-tiny",
-                isChecklistAllDone
-                  ? "text-success-500 bg-success-500/10 border-success-500/30 font-semibold"
-                  : "text-neutral-300 bg-white/5 border-white/10",
-              )}
-              title={`Subtarefas: ${checklistCompleted} de ${checklistTotal} concluídas`}
-            >
-              <CheckSquare
-                size={isCompact ? 9 : 11}
-                className={
-                  isChecklistAllDone ? "text-success-500" : "text-neutral-400"
-                }
-              />
-              <span>
-                {checklistCompleted}/{checklistTotal}
-              </span>
-            </span>
+            <TaskChecklistBadge
+              checklistCompleted={checklistCompleted}
+              checklistTotal={checklistTotal}
+              isChecklistAllDone={isChecklistAllDone}
+              isCompact={isCompact}
+            />
           )}
 
           {isHabit && (
-            <span
-              className={cn(
-                "font-bold px-1.5 py-0.5 rounded flex items-center gap-1",
-                isCompact ? "text-label-s" : "text-tiny",
-                habitScore >= 0
-                  ? "text-success-500 bg-success-500/10"
-                  : "text-danger-500 bg-danger-500/10",
-              )}
-              title={`Saldo de repetições realizadas no ciclo atual: ${habitScore >= 0 ? `+${habitScore}` : habitScore}`}
-            >
-              <span>{habitScore > 0 ? `+${habitScore}` : habitScore}</span>
-              <span className="font-normal opacity-70">
-                {task.resetCounter === "WEEKLY"
-                  ? "semana"
-                  : task.resetCounter === "MONTHLY"
-                    ? "mês"
-                    : "hoje"}
-              </span>
-            </span>
+            <TaskHabitScoreBadge
+              habitScore={habitScore}
+              resetCounter={task.resetCounter}
+              variant="card"
+              isCompact={isCompact}
+            />
           )}
         </div>
 

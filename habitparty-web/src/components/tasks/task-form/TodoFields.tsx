@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/Switch";
 import { TODO_REMINDER_OPTIONS } from "@/constants/task";
 import type { CreateTaskFormReturn } from "@/hooks/useCreateTaskForm";
 import type { ReminderTypeOption } from "@/types/task";
+import { isTaskHardcoreLocked } from "@/utils/date";
 
 interface TodoFieldsProps {
   form: CreateTaskFormReturn;
@@ -27,10 +28,7 @@ export function TodoFields({ form }: TodoFieldsProps) {
   } = form;
 
   const isOverdueHardcoreLocked = Boolean(
-    isEditing &&
-      taskToEdit?.isHardcoreModeEnabled &&
-      taskToEdit?.dueDate &&
-      new Date(`${taskToEdit.dueDate}T23:59:59`) < new Date(),
+    isEditing && isTaskHardcoreLocked(taskToEdit),
   );
 
   return (
@@ -74,19 +72,19 @@ export function TodoFields({ form }: TodoFieldsProps) {
 
       {/* Opção de Enviar Lembrete por E-mail (Exibida somente se houver lembrete ativo) */}
       {reminderType !== "NONE" && (
-        <div className="flex items-center justify-between p-2.5 rounded-lg bg-neutral-900/60 dark:bg-white/5 border border-neutral-200/20 dark:border-white/10 animate-in fade-in duration-150">
+        <div className="flex items-center justify-between p-2.5 rounded-lg bg-surface/60 border border-primary/25 animate-in fade-in duration-150">
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 rounded-md bg-amber-500/10 text-amber-500 shrink-0">
               <Mail size={16} />
             </div>
             <div className="flex flex-col">
-              <span className="text-body-xs font-semibold text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5 flex-wrap">
+              <span className="text-body-xs font-semibold text-neutral-100 flex items-center gap-1.5 flex-wrap">
                 Receber lembrete por e-mail?
                 <span className="text-tiny font-normal px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">
                   Free: até 5 ativos (20/mês) • VIP: até 30 ativos (100/mês)
                 </span>
               </span>
-              <span className="text-label-g text-neutral-500 dark:text-neutral-400">
+              <span className="text-label-g text-neutral-400">
                 Enviaremos um alerta por e-mail quando o momento do alarme
                 chegar.
               </span>

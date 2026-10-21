@@ -26,19 +26,6 @@ export interface TaskRowProps {
   onOpenDetails?: (task: Task, anchorRect?: DOMRect) => void;
 }
 
-export interface RoutineTaskRowProps {
-  task: Task;
-  columnId: string;
-  columnTitle?: string;
-  isCompact?: boolean;
-  isSortable?: boolean;
-  isOverlay?: boolean;
-  onToggleCompleted?: (id: string, completed: boolean) => void;
-  onHabitChange?: (id: string, delta: number) => void;
-  onContextMenu?: (e: React.MouseEvent, task: Task, columnId: string) => void;
-  onOpenDetails?: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
-}
-
 export interface TaskDetailsPopoverProps {
   isOpen: boolean;
   onClose: () => void;

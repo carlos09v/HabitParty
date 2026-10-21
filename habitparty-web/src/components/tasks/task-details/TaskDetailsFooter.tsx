@@ -21,6 +21,54 @@ import { formatCoins, getTaskRewardBreakdown } from "@/utils/economy";
 
 export type FormatSyntax = "bold" | "italic" | "highlight" | "bullet" | "code";
 
+const MARKDOWN_FORMAT_OPTIONS: Array<{
+  syntax: FormatSyntax;
+  label: string;
+  hint: string;
+  icon: typeof Bold;
+  iconColorClass: string;
+  labelClass?: string;
+}> = [
+  {
+    syntax: "bold",
+    label: "Negrito",
+    hint: "**b**",
+    icon: Bold,
+    iconColorClass: "text-gold",
+    labelClass: "font-semibold",
+  },
+  {
+    syntax: "italic",
+    label: "Itálico",
+    hint: "*i*",
+    icon: Italic,
+    iconColorClass: "text-info",
+    labelClass: "italic",
+  },
+  {
+    syntax: "highlight",
+    label: "Destacar",
+    hint: "==txt==",
+    icon: Highlighter,
+    iconColorClass: "text-warning-500",
+  },
+  {
+    syntax: "bullet",
+    label: "Lista",
+    hint: "- item",
+    icon: List,
+    iconColorClass: "text-primary-light",
+  },
+  {
+    syntax: "code",
+    label: "Código",
+    hint: "`code`",
+    icon: Code,
+    iconColorClass: "text-magenta",
+    labelClass: "font-mono text-label-g",
+  },
+];
+
 interface TaskDetailsFooterProps {
   task?: Task;
   columnTitle?: string;
@@ -157,83 +205,29 @@ export function TaskDetailsFooter({
                   </span>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    onApplyFormat("bold");
-                    setIsFormatMenuOpen(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-neutral-200 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer text-left"
-                >
-                  <Bold size={13} className="text-gold shrink-0" />
-                  <span className="font-semibold">Negrito</span>
-                  <span className="text-tiny text-neutral-500 ml-auto font-mono">
-                    **b**
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    onApplyFormat("italic");
-                    setIsFormatMenuOpen(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-neutral-200 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer text-left"
-                >
-                  <Italic size={13} className="text-info shrink-0" />
-                  <span className="italic">Itálico</span>
-                  <span className="text-tiny text-neutral-500 ml-auto font-mono">
-                    *i*
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    onApplyFormat("highlight");
-                    setIsFormatMenuOpen(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-neutral-200 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer text-left"
-                >
-                  <Highlighter
-                    size={13}
-                    className="text-warning-500 shrink-0"
-                  />
-                  <span>Destacar</span>
-                  <span className="text-tiny text-neutral-500 ml-auto font-mono">
-                    ==txt==
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    onApplyFormat("bullet");
-                    setIsFormatMenuOpen(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-neutral-200 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer text-left"
-                >
-                  <List size={13} className="text-primary-light shrink-0" />
-                  <span>Lista</span>
-                  <span className="text-tiny text-neutral-500 ml-auto font-mono">
-                    - item
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    onApplyFormat("code");
-                    setIsFormatMenuOpen(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-neutral-200 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer text-left"
-                >
-                  <Code size={13} className="text-magenta shrink-0" />
-                  <span className="font-mono text-label-g">Código</span>
-                  <span className="text-tiny text-neutral-500 ml-auto font-mono">
-                    `code`
-                  </span>
-                </button>
+                {MARKDOWN_FORMAT_OPTIONS.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.syntax}
+                      type="button"
+                      onClick={() => {
+                        onApplyFormat(item.syntax);
+                        setIsFormatMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-neutral-200 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer text-left"
+                    >
+                      <Icon
+                        size={13}
+                        className={cn(item.iconColorClass, "shrink-0")}
+                      />
+                      <span className={item.labelClass}>{item.label}</span>
+                      <span className="text-tiny text-neutral-500 ml-auto font-mono">
+                        {item.hint}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>

@@ -140,7 +140,7 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
           className={cn(
             "text-xs font-bold uppercase tracking-wider px-3 py-0.5 rounded-full border transition-all duration-300",
             isBreak
-              ? "bg-emerald-950/70 border-emerald-500/40 text-emerald-300 shadow-glow-emerald-xs"
+              ? "bg-emerald-950/70 border-emerald-500/40 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
               : "bg-white/10 border-white/15 text-neutral-300",
           )}
         >

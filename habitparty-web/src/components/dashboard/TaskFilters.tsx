@@ -21,10 +21,6 @@ import type { TaskFilterType } from "@/types/task";
 import { cn } from "@/utils";
 import { formatShortDate } from "@/utils/date";
 
-interface Props extends TaskFiltersProps {
-  isCompact?: boolean;
-}
-
 export function TaskFilters({
   activeFilter = "today",
   onFilterChange,
@@ -34,7 +30,7 @@ export function TaskFilters({
   advancedFilters = DEFAULT_DASHBOARD_ADVANCED_FILTERS,
   onAdvancedFiltersChange,
   isCompact: propIsCompact,
-}: Props) {
+}: TaskFiltersProps) {
   const { isCompact: hookIsCompact } = useCompactMode();
   const isCompact = propIsCompact ?? hookIsCompact;
   const [showPopover, setShowPopover] = useState(false);
@@ -97,6 +93,10 @@ export function TaskFilters({
         {selectedDate && (
           <button
             type="button"
+            role="tab"
+            id="tab-date"
+            aria-selected={true}
+            aria-controls="panel-date"
             onClick={onClearDate}
             className={cn(
               "flex items-center gap-1.5 rounded-lg font-bold transition-all whitespace-nowrap cursor-pointer shadow-xs bg-gold text-neutral-900 group shrink-0",
@@ -160,7 +160,7 @@ export function TaskFilters({
             aria-hidden="true"
           />
           {activeFiltersCount > 0 && (
-            <span className="px-1.5 py-0.2 rounded-full text-tiny font-bold bg-gold text-neutral-900">
+            <span className="px-1.5 py-0.5 rounded-full text-tiny font-bold bg-gold text-neutral-900">
               {activeFiltersCount}
             </span>
           )}

@@ -2,7 +2,6 @@
 
 import { X } from "lucide-react";
 import { useState } from "react";
-import { useCompactMode } from "@/hooks/useCompactMode";
 import type {
   FocusMetrics,
   FocusPeriodTab,
@@ -52,11 +51,9 @@ export function FocusSidebarRight({
   onRecordUpdated,
   selectedActivityName,
   onClearSelectedActivity,
-  isCompact: propIsCompact,
+  isCompact = false,
   className,
 }: FocusSidebarRightProps) {
-  const { isCompact: storeIsCompact } = useCompactMode();
-  const isCompact = propIsCompact ?? storeIsCompact;
   const [period, setPeriod] = useState<FocusPeriodTab>("HOJE");
 
   return (

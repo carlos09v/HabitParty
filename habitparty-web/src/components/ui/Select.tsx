@@ -25,6 +25,7 @@ export function Select({
   label,
   options,
   placeholder = "Selecione uma opção",
+  emptyMessage = "Sem itens disponíveis.",
   compact = false,
   variant = "default",
   align,
@@ -354,36 +355,51 @@ export function Select({
         dropdownClassName,
       )}
     >
-      {normalizedOptions.map((opt) => {
-        const isSelected = opt.value === currentValue;
-        return (
-          <button
-            key={opt.value}
-            type="button"
-            role="option"
-            aria-selected={isSelected}
-            onClick={() => handleSelect(opt.value)}
-            className={cn(
-              "w-full text-left cursor-pointer transition-colors flex items-center gap-2",
-              isInline
-                ? "px-2.5 py-1.5 rounded-lg text-xs justify-between"
-                : compact
-                  ? "py-2 px-3 text-body-s"
-                  : "py-2.5 px-4 text-body-s",
-              isSelected
-                ? "bg-primary/20 text-gold font-bold"
-                : "text-neutral-200 hover:bg-surface-hover hover:text-neutral-50 dark:text-neutral-100 dark:hover:bg-primary/20 dark:hover:text-neutral-50",
-            )}
-          >
-            {opt.icon && (
-              <span className="shrink-0 flex items-center justify-center">
-                {opt.icon}
-              </span>
-            )}
-            <span className="truncate">{opt.label}</span>
-          </button>
-        );
-      })}
+      {normalizedOptions.length === 0 ? (
+        <div
+          className={cn(
+            "w-full text-neutral-400 italic select-none",
+            isInline
+              ? "px-2.5 py-1.5 text-xs"
+              : compact
+                ? "py-2 px-3 text-body-s"
+                : "py-2.5 px-4 text-body-s",
+          )}
+        >
+          {emptyMessage}
+        </div>
+      ) : (
+        normalizedOptions.map((opt) => {
+          const isSelected = opt.value === currentValue;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              role="option"
+              aria-selected={isSelected}
+              onClick={() => handleSelect(opt.value)}
+              className={cn(
+                "w-full text-left cursor-pointer transition-colors flex items-center gap-2",
+                isInline
+                  ? "px-2.5 py-1.5 rounded-lg text-xs justify-between"
+                  : compact
+                    ? "py-2 px-3 text-body-s"
+                    : "py-2.5 px-4 text-body-s",
+                isSelected
+                  ? "bg-primary/20 text-gold font-bold"
+                  : "text-neutral-200 hover:bg-surface-hover hover:text-neutral-50 dark:text-neutral-100 dark:hover:bg-primary/20 dark:hover:text-neutral-50",
+              )}
+            >
+              {opt.icon && (
+                <span className="shrink-0 flex items-center justify-center">
+                  {opt.icon}
+                </span>
+              )}
+              <span className="truncate">{opt.label}</span>
+            </button>
+          );
+        })
+      )}
     </div>
   );
 

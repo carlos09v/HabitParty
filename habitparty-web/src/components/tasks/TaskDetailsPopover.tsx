@@ -15,9 +15,11 @@ import { useClickOutside } from "@/hooks/useClickOutside";
 import type { ChecklistItem, Task, TaskPriorityOption } from "@/types/task";
 import type { TaskDetailsPopoverProps } from "@/types/task-ui";
 import { cn } from "@/utils";
+import { isTaskHardcoreLocked } from "@/utils/date";
 import { calculateTaskReward } from "@/utils/economy";
 import { buildUpdateTaskPayload } from "@/utils/taskMapper";
 import {
+  applyMarkdownFormat,
   type FormatSyntax,
   TaskDescriptionEditor,
   TaskDetailsChecklist,
@@ -234,42 +236,18 @@ export function TaskDetailsPopover({
     const textarea = descTextareaRef.current;
     if (!textarea) return;
 
-    const currentDesc = descRef.current;
-    const start = textarea.selectionStart ?? currentDesc.length;
-    const end = textarea.selectionEnd ?? currentDesc.length;
-    const selectedText = currentDesc.substring(start, end);
-
-    let replacement = "";
-    if (syntax === "bold") {
-      replacement = selectedText
-        ? `**${selectedText}**`
-        : "**texto em negrito**";
-    } else if (syntax === "italic") {
-      replacement = selectedText ? `*${selectedText}*` : "*texto em itálico*";
-    } else if (syntax === "highlight") {
-      replacement = selectedText
-        ? `==${selectedText}==`
-        : "==texto destacado==";
-    } else if (syntax === "bullet") {
-      replacement = selectedText ? `\n- ${selectedText}` : "\n- Novo item";
-    } else if (syntax === "code") {
-      replacement = selectedText ? `\`${selectedText}\`` : "`código`";
-    }
-
-    const nextDesc =
-      currentDesc.substring(0, start) +
-      replacement +
-      currentDesc.substring(end);
+    const { nextDesc, nextCursorPos } = applyMarkdownFormat(
+      textarea,
+      descRef.current,
+      syntax,
+    );
 
     setDescription(nextDesc);
     descRef.current = nextDesc;
 
     setTimeout(() => {
       textarea.focus();
-      textarea.setSelectionRange(
-        start + replacement.length,
-        start + replacement.length,
-      );
+      textarea.setSelectionRange(nextCursorPos, nextCursorPos);
     }, 50);
   }, []);
 
@@ -316,11 +294,7 @@ export function TaskDetailsPopover({
   };
 
   const handleDateChange = (newDate: string) => {
-    if (
-      task?.isHardcoreModeEnabled &&
-      task?.dueDate &&
-      new Date(`${task.dueDate}T23:59:59`) < new Date()
-    ) {
+    if (isTaskHardcoreLocked(task)) {
       return;
     }
     setDueDate(newDate);

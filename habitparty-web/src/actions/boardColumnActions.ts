@@ -13,6 +13,13 @@ type BoardColumnResponseDTO = components["schemas"]["BoardColumnResponseDTO"];
 
 export type ActionResponse<T = void> = ActionState<T>;
 
+function invalidateBoardColumnTags() {
+  updateTag("kanban");
+  updateTag("board_columns");
+  updateTag("dashboard-columns");
+  updateTag("dashboard-tasks");
+}
+
 /**
  * Cria uma nova coluna no Kanban
  */
@@ -31,9 +38,7 @@ export async function createBoardColumn(
       };
     }
 
-    updateTag("kanban");
-    updateTag("board_columns");
-    updateTag("workspaces");
+    invalidateBoardColumnTags();
 
     return { success: true, data: data as BoardColumnResponseDTO };
   } catch (err) {
@@ -68,9 +73,7 @@ export async function updateBoardColumn(
       };
     }
 
-    updateTag("kanban");
-    updateTag("board_columns");
-    updateTag("workspaces");
+    invalidateBoardColumnTags();
 
     return { success: true, data: data as BoardColumnResponseDTO };
   } catch (err) {
@@ -100,9 +103,7 @@ export async function deleteBoardColumn(
       };
     }
 
-    updateTag("kanban");
-    updateTag("board_columns");
-    updateTag("workspaces");
+    invalidateBoardColumnTags();
 
     return { success: true, data: undefined };
   } catch (err) {
@@ -137,9 +138,7 @@ export async function updateBoardColumnOrder(
       };
     }
 
-    updateTag("kanban");
-    updateTag("board_columns");
-    updateTag("workspaces");
+    invalidateBoardColumnTags();
 
     return { success: true, data: undefined };
   } catch (err) {

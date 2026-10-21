@@ -1,7 +1,11 @@
 import { toast } from "sonner";
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { createFocusRecordAction } from "@/actions/focusActions";
+import {
+  createJSONStorage,
+  persist,
+  type StateStorage,
+} from "zustand/middleware";
+import { createFocusRecord } from "@/actions/focusActions";
 import {
   DEFAULT_LONG_BREAK_MINUTES,
   DEFAULT_POMO_MINUTES,
@@ -17,6 +21,7 @@ import type {
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
 import { toLocalISOString } from "@/utils/date";
+import { formatFocusTime } from "@/utils/focusFormatters";
 import { awardUserRewards } from "@/utils/gamification";
 import { soundEffects } from "@/utils/soundEffects";
 
@@ -34,6 +39,49 @@ function sendBrowserNotification(title: string, body: string) {
       // Falha silenciosa caso o navegador restrinja
     }
   }
+}
+
+const DEFAULT_DOCUMENT_TITLE = "Foco & Pomodoro | HabitParty";
+let baseDocumentTitle: string | null = null;
+
+function updateDocumentTitle(state: {
+  isActive: boolean;
+  isPaused: boolean;
+  mode: FocusRecordType;
+  phase: FocusPhase;
+  secondsRemaining: number;
+  elapsedSeconds: number;
+  target: FocusTimerState["target"];
+}) {
+  if (typeof document === "undefined") return;
+
+  if (!state.isActive) {
+    if (baseDocumentTitle) {
+      document.title = baseDocumentTitle;
+      baseDocumentTitle = null;
+    }
+    return;
+  }
+
+  if (!baseDocumentTitle && !document.title.startsWith("(")) {
+    baseDocumentTitle = document.title || DEFAULT_DOCUMENT_TITLE;
+  }
+
+  const isBreak = state.phase === "SHORT_BREAK" || state.phase === "LONG_BREAK";
+  const isCountdown =
+    state.mode === "POMO" || state.target?.type === "inventory" || isBreak;
+  const displaySeconds = isCountdown
+    ? state.secondsRemaining
+    : state.elapsedSeconds;
+  const timeStr = formatFocusTime(displaySeconds);
+  const statusPrefix = state.isPaused
+    ? "⏸️ Pausado"
+    : isBreak
+      ? "☕ Pausa"
+      : "🔥 Foco";
+  const targetLabel = state.target?.name ? ` • ${state.target.name}` : "";
+
+  document.title = `(${timeStr}) ${statusPrefix}${targetLabel} | HabitParty`;
 }
 
 let globalTimerInterval: NodeJS.Timeout | null = null;
@@ -55,14 +103,103 @@ function stopGlobalTicker() {
   }
 }
 
+/**
+ * Storage inteligente que evita serialização síncrona no localStorage a cada 1 segundo durante o tick,
+ * gravando imediatamente em transições de estado (play, pause, reset, troca de modo/alvo)
+ * e fazendo checkpoint periódico ou no ocultamento/fechamento da aba.
+ */
+let lastWriteTime = 0;
+let lastStructuralKey = "";
+let pendingStorageEntry: { name: string; value: string } | null = null;
+
+function flushPendingStorage() {
+  if (pendingStorageEntry && typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(
+        pendingStorageEntry.name,
+        pendingStorageEntry.value,
+      );
+      pendingStorageEntry = null;
+      lastWriteTime = Date.now();
+    } catch (_e) {
+      // Ignore quota errors
+    }
+  }
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      flushPendingStorage();
+    } else if (document.visibilityState === "visible") {
+      const state = useFocusTimerStore.getState();
+      if (state.isActive && !state.isPaused) {
+        state.tick();
+      }
+    }
+  });
+
+  // Exibe confirmação nativa do navegador (estilo Gmail) ao tentar fechar/recarregar a aba com foco ativo
+  window.addEventListener("beforeunload", (e) => {
+    const state = useFocusTimerStore.getState();
+    if (state.isActive && !state.isPaused) {
+      flushPendingStorage();
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  });
+
+  // Caso o usuário confirme o fechamento da aba, pausa o cronômetro imediatamente para não acumular horas offline
+  window.addEventListener("pagehide", () => {
+    const state = useFocusTimerStore.getState();
+    if (state.isActive && !state.isPaused) {
+      state.pauseTimer();
+    }
+    flushPendingStorage();
+  });
+}
+
+const optimizedFocusStorage: StateStorage = {
+  getItem: (name: string): string | null => {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem(name);
+  },
+  setItem: (name: string, value: string): void => {
+    if (typeof window === "undefined") return;
+    pendingStorageEntry = { name, value };
+
+    try {
+      const parsed = JSON.parse(value)?.state;
+      const structuralKey = parsed
+        ? `${parsed.isActive}|${parsed.isPaused}|${parsed.mode}|${parsed.phase}|${parsed.target?.id ?? ""}|${parsed.totalDurationSeconds}|${parsed.completedCycles}`
+        : "";
+
+      const now = Date.now();
+      const isStructuralChange = structuralKey !== lastStructuralKey;
+
+      if (isStructuralChange || now - lastWriteTime >= 15000) {
+        lastStructuralKey = structuralKey;
+        lastWriteTime = now;
+        pendingStorageEntry = null;
+        window.localStorage.setItem(name, value);
+      }
+    } catch (_e) {
+      window.localStorage.setItem(name, value);
+    }
+  },
+  removeItem: (name: string): void => {
+    if (typeof window === "undefined") return;
+    pendingStorageEntry = null;
+    window.localStorage.removeItem(name);
+  },
+};
+
 export interface FocusTimerStoreState extends FocusTimerState {
   phase: FocusPhase;
   lastTickTimestamp: number | null;
   onSessionSavedCallback: (() => void) | null;
 
-  // Preferências de som
-  isSoundEnabled: boolean;
-  timerSoundType: "zen" | "arcade";
+  // Preferências de som delegadas ao soundPreferencesStore (fonte única da verdade)
   toggleSound: () => void;
   setTimerSoundType: (type: "zen" | "arcade") => void;
 
@@ -106,15 +243,10 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       sessionNotes: "",
       setSessionNotes: (notes: string) => set({ sessionNotes: notes }),
 
-      isSoundEnabled: true,
-      timerSoundType: "zen",
       toggleSound: () => {
-        const next = !get().isSoundEnabled;
-        set({ isSoundEnabled: next });
-        useSoundPreferencesStore.getState().setTimerSoundsEnabled(next);
+        useSoundPreferencesStore.getState().toggleTimerSounds();
       },
       setTimerSoundType: (type) => {
-        set({ timerSoundType: type });
         useSoundPreferencesStore.getState().setTimerSoundType(type);
       },
 
@@ -130,6 +262,19 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         }
 
         const now = Date.now();
+        const elapsedMs = state.lastTickTimestamp
+          ? now - state.lastTickTimestamp
+          : 1000;
+
+        // Evita avanço duplicado caso visibilitychange e setInterval disparem no mesmo segundo
+        if (elapsedMs < 850) {
+          return;
+        }
+
+        const delta = state.lastTickTimestamp
+          ? Math.max(1, Math.round(elapsedMs / 1000))
+          : 1;
+
         const isBreak =
           state.phase === "SHORT_BREAK" || state.phase === "LONG_BREAK";
         const isCountdown =
@@ -138,19 +283,21 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           isBreak;
 
         if (isCountdown) {
-          if (state.secondsRemaining <= 1) {
-            // Ciclo concluído: computa o último segundo para fechar 100% da duração
+          if (state.secondsRemaining <= delta) {
+            // Ciclo concluído: soma exatamente os segundos restantes para fechar 100% da duração
             stopGlobalTicker();
-            const finalElapsed = state.elapsedSeconds + 1;
+            const finalElapsed = state.elapsedSeconds + state.secondsRemaining;
             set({
               secondsRemaining: 0,
               elapsedSeconds: finalElapsed,
-              lastTickTimestamp: now,
+              lastTickTimestamp: null,
             });
+
+            const soundPrefs = useSoundPreferencesStore.getState();
 
             // 1. Pausa concluída (SHORT_BREAK ou LONG_BREAK)
             if (isBreak) {
-              if (state.isSoundEnabled) {
+              if (soundPrefs.timerSoundsEnabled) {
                 soundEffects.playBreakEndSound();
               }
               const workDuration =
@@ -165,6 +312,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
                 startedAt: null,
                 lastTickTimestamp: null,
               });
+              updateDocumentTitle(get());
               toast.info(
                 "Pausa concluída! Pronto para o próximo ciclo de foco?",
               );
@@ -188,7 +336,9 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
                       : DEFAULT_SHORT_BREAK_MINUTES;
                     const breakSeconds = breakMinutes * 60;
 
-                    if (get().isSoundEnabled) {
+                    if (
+                      useSoundPreferencesStore.getState().timerSoundsEnabled
+                    ) {
                       soundEffects.playBreakStartSound();
                     }
                     triggerCelebrationConfetti();
@@ -217,6 +367,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
                       startedAt: new Date().toISOString(),
                       lastTickTimestamp: Date.now(),
                     });
+                    updateDocumentTitle(get());
                     startGlobalTicker(get().tick);
                   }
                 });
@@ -229,21 +380,25 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           }
 
           set((prev) => ({
-            secondsRemaining: Math.max(0, prev.secondsRemaining - 1),
-            elapsedSeconds: prev.elapsedSeconds + 1,
+            secondsRemaining: Math.max(0, prev.secondsRemaining - delta),
+            elapsedSeconds: prev.elapsedSeconds + delta,
             lastTickTimestamp: now,
           }));
+          updateDocumentTitle(get());
         } else {
-          // Cronômetro livre
+          // Cronômetro livre (enquanto a aba estiver aberta)
           set((prev) => ({
-            elapsedSeconds: prev.elapsedSeconds + 1,
+            elapsedSeconds: prev.elapsedSeconds + delta,
             lastTickTimestamp: now,
           }));
+          updateDocumentTitle(get());
         }
       },
 
       toggleTimer: () => {
         const state = get();
+        const soundPrefs = useSoundPreferencesStore.getState();
+
         if (!state.isActive) {
           if (!state.target) {
             toast.info(
@@ -261,11 +416,10 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             return;
           }
           const nowStr = state.startedAt || new Date().toISOString();
-          if (state.isSoundEnabled) {
-            const vol = useSoundPreferencesStore.getState().timerVolume ?? 0.8;
-            soundEffects.playTimerStartSound(state.timerSoundType, vol);
+          if (soundPrefs.timerSoundsEnabled) {
+            const vol = soundPrefs.timerVolume ?? 0.8;
+            soundEffects.playTimerStartSound(soundPrefs.timerSoundType, vol);
           }
-          const soundPrefs = useSoundPreferencesStore.getState();
           if (
             soundPrefs.isAmbientPlaying &&
             soundPrefs.ambientSoundType !== "none"
@@ -281,6 +435,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             startedAt: nowStr,
             lastTickTimestamp: Date.now(),
           });
+          updateDocumentTitle(get());
           startGlobalTicker(get().tick);
           return;
         }
@@ -295,11 +450,10 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             );
             return;
           }
-          if (state.isSoundEnabled) {
-            const vol = useSoundPreferencesStore.getState().timerVolume ?? 0.8;
-            soundEffects.playTimerStartSound(state.timerSoundType, vol);
+          if (soundPrefs.timerSoundsEnabled) {
+            const vol = soundPrefs.timerVolume ?? 0.8;
+            soundEffects.playTimerStartSound(soundPrefs.timerSoundType, vol);
           }
-          const soundPrefs = useSoundPreferencesStore.getState();
           if (
             soundPrefs.isAmbientPlaying &&
             soundPrefs.ambientSoundType !== "none"
@@ -313,22 +467,27 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             isPaused: false,
             lastTickTimestamp: Date.now(),
           });
+          updateDocumentTitle(get());
           startGlobalTicker(get().tick);
         } else {
           set({
             isPaused: true,
+            lastTickTimestamp: null,
           });
           stopGlobalTicker();
+          updateDocumentTitle(get());
         }
       },
 
       pauseTimer: () => {
-        set({ isPaused: true });
+        set({ isPaused: true, lastTickTimestamp: null });
         stopGlobalTicker();
+        updateDocumentTitle(get());
       },
 
       resumeTimer: () => {
         set({ isPaused: false, lastTickTimestamp: Date.now() });
+        updateDocumentTitle(get());
         startGlobalTicker(get().tick);
       },
 
@@ -352,6 +511,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             lastTickTimestamp: null,
           };
         });
+        updateDocumentTitle(get());
       },
 
       skipBreak: () => {
@@ -369,6 +529,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           startedAt: null,
           lastTickTimestamp: null,
         });
+        updateDocumentTitle(get());
         toast.info("Pausa pulada. Pronto para focar!");
       },
 
@@ -408,7 +569,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           exactSeconds >= state.totalDurationSeconds;
 
         try {
-          const res = await createFocusRecordAction({
+          const res = await createFocusRecord({
             focusActivityId: !isInventory ? state.target?.id : undefined,
             inventoryItemId: isInventory ? state.target?.id : undefined,
             recordType,
@@ -483,6 +644,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
                 ? prev.completedCycles + 1
                 : prev.completedCycles,
             }));
+            updateDocumentTitle(get());
 
             // Notifica componentes inscritos (ex: router.refresh())
             state.onSessionSavedCallback?.();
@@ -522,6 +684,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             lastTickTimestamp: null,
           };
         });
+        updateDocumentTitle(get());
       },
 
       changeDuration: (minutes: number) => {
@@ -541,16 +704,18 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             lastTickTimestamp: null,
           };
         });
+        updateDocumentTitle(get());
       },
 
       startFocusActivity: (activity: FocusActivity) => {
         stopGlobalTicker();
         const minutes = activity.targetTimeMinutes || DEFAULT_POMO_MINUTES;
         const mode = activity.recordType || "POMO";
+        const soundPrefs = useSoundPreferencesStore.getState();
 
-        if (get().isSoundEnabled) {
-          const vol = useSoundPreferencesStore.getState().timerVolume ?? 0.8;
-          soundEffects.playTimerStartSound(get().timerSoundType, vol);
+        if (soundPrefs.timerSoundsEnabled) {
+          const vol = soundPrefs.timerVolume ?? 0.8;
+          soundEffects.playTimerStartSound(soundPrefs.timerSoundType, vol);
         }
 
         set({
@@ -572,6 +737,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           startedAt: new Date().toISOString(),
           lastTickTimestamp: Date.now(),
         });
+        updateDocumentTitle(get());
         startGlobalTicker(get().tick);
       },
 
@@ -589,9 +755,10 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           return;
         }
 
-        if (get().isSoundEnabled) {
-          const vol = useSoundPreferencesStore.getState().timerVolume ?? 0.8;
-          soundEffects.playTimerStartSound(get().timerSoundType, vol);
+        const soundPrefs = useSoundPreferencesStore.getState();
+        if (soundPrefs.timerSoundsEnabled) {
+          const vol = soundPrefs.timerVolume ?? 0.8;
+          soundEffects.playTimerStartSound(soundPrefs.timerSoundType, vol);
         }
 
         set({
@@ -615,6 +782,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           startedAt: new Date().toISOString(),
           lastTickTimestamp: Date.now(),
         });
+        updateDocumentTitle(get());
         startGlobalTicker(get().tick);
       },
 
@@ -680,11 +848,25 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           startedAt: null,
           lastTickTimestamp: null,
         });
+        updateDocumentTitle(get());
       },
 
       transferTarget: (activity: FocusActivity) => {
         const minutes = activity.targetTimeMinutes || DEFAULT_POMO_MINUTES;
-        set({
+        const newMode = activity.recordType || "POMO";
+        const newTotalSeconds = minutes * 60;
+
+        set((prev) => ({
+          isActive: true,
+          isPaused: false,
+          mode: newMode,
+          phase: "WORK",
+          totalDurationSeconds: newTotalSeconds,
+          secondsRemaining:
+            newMode === "POMO"
+              ? Math.max(1, newTotalSeconds - prev.elapsedSeconds)
+              : newTotalSeconds,
+          lastTickTimestamp: Date.now(),
           target: {
             type: "activity",
             id: activity.id,
@@ -692,7 +874,9 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             icon: activity.icon,
             targetMinutes: minutes,
           },
-        });
+        }));
+        updateDocumentTitle(get());
+        startGlobalTicker(get().tick);
         toast.success(
           `Vínculo alterado para "${activity.name}". O tempo continua rodando!`,
         );
@@ -700,6 +884,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
     }),
     {
       name: "habitparty-focus-timer",
+      storage: createJSONStorage(() => optimizedFocusStorage),
       partialize: (state) => ({
         isActive: state.isActive,
         isPaused: state.isPaused,
@@ -716,8 +901,6 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             : state.target,
         startedAt: state.startedAt,
         lastTickTimestamp: state.lastTickTimestamp,
-        isSoundEnabled: state.isSoundEnabled,
-        timerSoundType: state.timerSoundType,
       }),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
@@ -737,32 +920,12 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           return;
         }
 
-        if (state.isActive && !state.isPaused) {
-          if (state.lastTickTimestamp) {
-            const elapsedDiff = Math.floor(
-              (Date.now() - state.lastTickTimestamp) / 1000,
-            );
-            if (elapsedDiff > 0) {
-              const isCountdown =
-                state.mode === "POMO" ||
-                state.target?.type === "inventory" ||
-                state.phase === "SHORT_BREAK" ||
-                state.phase === "LONG_BREAK";
-              if (isCountdown) {
-                if (state.secondsRemaining <= elapsedDiff) {
-                  state.completeSession();
-                  return;
-                }
-                state.secondsRemaining = Math.max(
-                  0,
-                  state.secondsRemaining - elapsedDiff,
-                );
-              }
-              state.elapsedSeconds += elapsedDiff;
-              state.lastTickTimestamp = Date.now();
-            }
-          }
-          startGlobalTicker(state.tick);
+        // Se a sessão estava ativa quando a aba/navegador foi fechado, restaura em estado PAUSADO
+        // preservando exatamente o tempo acumulado até o fechamento (sem somar horas offline).
+        if (state.isActive) {
+          state.isPaused = true;
+          state.lastTickTimestamp = null;
+          updateDocumentTitle(state);
         }
       },
     },

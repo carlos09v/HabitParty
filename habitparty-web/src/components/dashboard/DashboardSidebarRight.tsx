@@ -2,30 +2,15 @@ import {
   DashboardMobileDrawer,
   DashboardWidgetsList,
 } from "@/components/dashboard/sidebar-right";
-import type { EconomyBarData } from "@/types/dashboard";
-import type { FocusActivity, FocusRecord } from "@/types/focus";
-import type { TransactionHistoryResponseDTO } from "@/types/history";
-import type { Task } from "@/types/task";
+import type { DashboardSidebarRightProps } from "@/types/dashboard";
 import { cn } from "@/utils";
-
-export interface DashboardSidebarRightProps {
-  isCompact?: boolean;
-  balance?: number;
-  weeklyEarnings?: number;
-  weeklySpent?: number;
-  bars?: EconomyBarData[];
-  transactions?: TransactionHistoryResponseDTO[];
-  tasks?: Task[];
-  activities?: FocusActivity[];
-  records?: FocusRecord[];
-}
 
 /**
  * Painel Lateral Direito do Dashboard com widgets de resumo e histórico.
  * React Server Component:
  * Em telas xl+ (desktop grande), exibe a sidebar estática fixa no servidor.
- * Em telas < xl (tablets e mobile), delega o botão flutuante e a gaveta para o
- * leaf client component DashboardMobileDrawer.
+ * Em telas < xl (tablets e mobile), passa a árvore de widgets como `children` para o
+ * leaf client component DashboardMobileDrawer, evitando duplicar props na hidratação.
  */
 export function DashboardSidebarRight({
   isCompact = false,
@@ -38,17 +23,19 @@ export function DashboardSidebarRight({
   activities = [],
   records = [],
 }: DashboardSidebarRightProps) {
-  const widgetProps = {
-    isCompact,
-    balance,
-    weeklyEarnings,
-    weeklySpent,
-    bars,
-    transactions,
-    tasks,
-    activities,
-    records,
-  };
+  const widgets = (
+    <DashboardWidgetsList
+      isCompact={isCompact}
+      balance={balance}
+      weeklyEarnings={weeklyEarnings}
+      weeklySpent={weeklySpent}
+      bars={bars}
+      transactions={transactions}
+      tasks={tasks}
+      activities={activities}
+      records={records}
+    />
+  );
 
   return (
     <>
@@ -60,11 +47,13 @@ export function DashboardSidebarRight({
         )}
         aria-label="Painel de Resumo e Calendário"
       >
-        <DashboardWidgetsList {...widgetProps} />
+        {widgets}
       </aside>
 
       {/* 2. BOTÃO FLUTUANTE (FAB) E GAVETA LATERAL MOBILE (< xl) */}
-      <DashboardMobileDrawer {...widgetProps} />
+      <DashboardMobileDrawer isCompact={isCompact} balance={balance}>
+        {widgets}
+      </DashboardMobileDrawer>
     </>
   );
 }

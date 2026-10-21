@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
+import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
 import type { FocusTimerControlsState, FocusTimerState } from "@/types/focus";
 import { formatFocusDisplayTime } from "@/utils/focusFormatters";
 
@@ -10,9 +11,21 @@ interface UseFocusTimerOptions {
 }
 
 /**
+ * Hook dedicado às anotações da sessão de foco.
+ * Isolado de useFocusTimerControls para evitar que digitar no input de notas
+ * provoque re-render em FocusContainer, FocusMain ou FocusHeroStage.
+ */
+export function useFocusSessionNotes() {
+  const sessionNotes = useFocusTimerStore((s) => s.sessionNotes);
+  const setSessionNotes = useFocusTimerStore((s) => s.setSessionNotes);
+  return { sessionNotes, setSessionNotes };
+}
+
+/**
  * Hook com foco em CONTROLES e AÇÕES do Timer.
- * NÃO se inscreve nas variáveis que sofrem tick a cada 1 segundo (elapsedSeconds, secondsRemaining).
- * Evita o re-render a cada segundo em containers pais (FocusContainer, FocusMain, FocusSidebarRight).
+ * NÃO se inscreve nas variáveis que sofrem tick a cada 1 segundo (elapsedSeconds, secondsRemaining)
+ * nem nas anotações de texto (sessionNotes).
+ * Evita o re-render a cada segundo ou a cada tecla digitada em containers pais.
  */
 export function useFocusTimerControls({
   onSessionSaved,
@@ -51,11 +64,9 @@ export function useFocusTimerControls({
   );
   const resetTarget = useFocusTimerStore((s) => s.resetTarget);
   const transferTarget = useFocusTimerStore((s) => s.transferTarget);
-  const sessionNotes = useFocusTimerStore((s) => s.sessionNotes);
-  const setSessionNotes = useFocusTimerStore((s) => s.setSessionNotes);
 
-  const isSoundEnabled = useFocusTimerStore((s) => s.isSoundEnabled);
-  const timerSoundType = useFocusTimerStore((s) => s.timerSoundType);
+  const isSoundEnabled = useSoundPreferencesStore((s) => s.timerSoundsEnabled);
+  const timerSoundType = useSoundPreferencesStore((s) => s.timerSoundType);
   const toggleSound = useFocusTimerStore((s) => s.toggleSound);
   const setTimerSoundType = useFocusTimerStore((s) => s.setTimerSoundType);
   const setOnSessionSavedCallback = useFocusTimerStore(
@@ -82,7 +93,7 @@ export function useFocusTimerControls({
   };
 
   return {
-    // Estado livre de ticking
+    // Estado livre de ticking e livre de keystrokes
     controlsState,
     isActive,
     isPaused,
@@ -95,16 +106,14 @@ export function useFocusTimerControls({
     hasElapsedSeconds,
     canComplete,
     isPartialPomo,
-    sessionNotes,
 
-    // Preferências de som
+    // Preferências de som sincronizadas com soundPreferencesStore
     isSoundEnabled,
     timerSoundType,
     toggleSound,
     setTimerSoundType,
 
     // Ações
-    setSessionNotes,
     toggleTimer,
     pauseTimer,
     resumeTimer,
@@ -123,7 +132,7 @@ export function useFocusTimerControls({
 
 /**
  * Hook para componentes que exibem a CONTAGEM EM TEMPO REAL (a cada 1 segundo).
- * Usado exclusivamente em componentes-folha visuais (FocusHeroStage, SidebarFocusWidget).
+ * Usado exclusivamente em componentes-folha visuais (FocusStageTimerCircle, SidebarFocusWidget).
  */
 export function useFocusTimerDisplay() {
   const secondsRemaining = useFocusTimerStore((s) => s.secondsRemaining);

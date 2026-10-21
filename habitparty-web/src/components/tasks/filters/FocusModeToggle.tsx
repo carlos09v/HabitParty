@@ -1,5 +1,3 @@
-"use client";
-
 import type { FocusModeToggleProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 

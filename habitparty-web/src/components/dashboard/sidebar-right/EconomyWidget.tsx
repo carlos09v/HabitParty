@@ -8,10 +8,6 @@ import { useUserStore } from "@/store/userStore";
 import type { EconomyBarData, EconomyWidgetProps } from "@/types/dashboard";
 import { cn, formatCoins } from "@/utils";
 
-interface Props extends EconomyWidgetProps {
-  isCompact?: boolean;
-}
-
 /**
  * Widget de Economia e Histórico Financeiro do Usuário.
  * Client Component (Leaf Node): exibe a carteira dinâmica sincronizada com o userStore
@@ -23,7 +19,7 @@ export function EconomyWidget({
   weeklySpent = 0,
   bars = DEFAULT_ECONOMY_BARS as EconomyBarData[],
   isCompact = false,
-}: Props) {
+}: EconomyWidgetProps) {
   const storeUser = useUserStore((s) => s.user);
   const currentBalance = storeUser?.currentCoins ?? balance;
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);

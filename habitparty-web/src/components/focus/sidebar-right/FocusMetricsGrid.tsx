@@ -1,7 +1,6 @@
 "use client";
 
 import { Award, Coins, Flame, ListChecks, Timer } from "lucide-react";
-import { useCompactMode } from "@/hooks/useCompactMode";
 import type { FocusMetrics, FocusPeriodTab } from "@/types/focus";
 import { cn, formatCoins } from "@/utils";
 import { formatFocusMinutes } from "@/utils/focusFormatters";
@@ -17,11 +16,8 @@ export function FocusMetricsGrid({
   metrics,
   period,
   onPeriodChange,
-  isCompact: propIsCompact,
+  isCompact = false,
 }: FocusMetricsGridProps) {
-  const { isCompact: storeIsCompact } = useCompactMode();
-  const isCompact = propIsCompact ?? storeIsCompact;
-
   const isToday = period === "HOJE";
 
   const recordsCount = isToday
@@ -90,7 +86,7 @@ export function FocusMetricsGrid({
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-1.5 text-neutral-400 mb-0.5">
             <Timer size={13} className="text-gold shrink-0" />
-            <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-300">
+            <span className="text-tiny font-bold uppercase tracking-wider text-neutral-300">
               {isToday ? "Tempo Focado Hoje" : "Tempo Total em Foco"}
             </span>
           </div>
@@ -102,7 +98,7 @@ export function FocusMetricsGrid({
           >
             {formatFocusMinutes(focusTime)}
           </span>
-          <span className="text-[11px] text-neutral-400 font-medium">
+          <span className="text-label-g text-neutral-400 font-medium">
             {isToday
               ? focusTime > 0
                 ? "tempo dedicado hoje 🎯"
@@ -134,7 +130,7 @@ export function FocusMetricsGrid({
             <span className="text-body-m font-bold text-neutral-100">
               {recordsCount}
             </span>
-            <span className="text-[10px] text-neutral-400 truncate">
+            <span className="text-tiny text-neutral-400 truncate">
               {pomosCount > 0
                 ? `${pomosCount} pomo${pomosCount > 1 ? "s" : ""}`
                 : recordsCount === 1
@@ -164,7 +160,7 @@ export function FocusMetricsGrid({
               </span>
               <Flame size={14} className="text-amber-400 fill-amber-400/20" />
             </div>
-            <span className="text-[10px] text-neutral-400 truncate">
+            <span className="text-tiny text-neutral-400 truncate">
               {isToday
                 ? streakDays > 0
                   ? "dias seguidos 🔥"
@@ -192,7 +188,7 @@ export function FocusMetricsGrid({
             <span className="text-body-m font-bold text-neutral-100">
               +{xpCount}
             </span>
-            <span className="text-[10px] text-neutral-400 truncate">
+            <span className="text-tiny text-neutral-400 truncate">
               atividades de foco
             </span>
           </div>
@@ -216,7 +212,7 @@ export function FocusMetricsGrid({
             <span className="text-body-m font-bold text-gold">
               +{formatCoins(goldCount)} H
             </span>
-            <span className="text-[10px] text-neutral-400 truncate">
+            <span className="text-tiny text-neutral-400 truncate">
               atividades de foco
             </span>
           </div>

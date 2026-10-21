@@ -19,6 +19,7 @@ import type {
   UpdateTaskDTO,
 } from "@/types/task";
 import type { WorkspaceResponseDTO } from "@/types/workspace";
+import { getTodayDateString } from "./date";
 import { calculateTaskReward } from "./economy";
 
 const IMPORTANCE_MAP: Record<string, HabitImportance> = {
@@ -406,8 +407,7 @@ export function buildQuickCreateTaskPayload(
   }
 
   if (effectiveType === "DAILY") {
-    const startDate =
-      extraPayload?.startDate || new Date().toISOString().split("T")[0];
+    const startDate = extraPayload?.startDate || getTodayDateString();
     const repeatType = extraPayload?.repeatType || "DAILY";
     const repeatEvery = extraPayload?.repeatEvery || 1;
     const daysOfWeek = extraPayload?.daysOfWeek || ALL_WEEK_DAYS;

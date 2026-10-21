@@ -37,9 +37,11 @@ export const PERIOD_OPTIONS: readonly {
 
 /**
  * Grid de colunas responsivo e perfeitamente alinhado entre o cabeçalho e as linhas da tabela de histórico.
+ * Nota: O prefixo `md:` deve estar explícito na string literal para que o scanner do Tailwind CSS v4
+ * não descarte a classe utilitária durante o build de produção.
  */
 export const HISTORY_GRID_COLS =
-  "grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1.4fr)_90px_80px_125px_36px]";
+  "md:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1.4fr)_90px_80px_125px_36px]";
 
 export const TRANSACTION_TYPE_CONFIG: Record<string, TransactionTypeStyle> = {
   REWARD_BOUGHT: {

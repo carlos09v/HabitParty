@@ -6,6 +6,7 @@ import {
 } from "@/constants/task";
 import type { EconomyBarData } from "@/types/dashboard";
 import type { TransactionHistoryResponseDTO } from "@/types/history";
+import { parseServerDate } from "./date";
 
 export interface WeeklyEarningsResult {
   bars: EconomyBarData[];
@@ -96,8 +97,8 @@ export function calculateWeeklyTaskEarnings(
 
   for (const tx of transactions) {
     if (!tx.createdAt) continue;
-    const txDate = new Date(tx.createdAt);
-    if (Number.isNaN(txDate.getTime())) continue;
+    const txDate = parseServerDate(tx.createdAt);
+    if (!txDate || Number.isNaN(txDate.getTime())) continue;
 
     // Determina o índice da semana (0: -3 sem, 1: -2 sem, 2: Passada, 3: Atual)
     let weekIndex = -1;

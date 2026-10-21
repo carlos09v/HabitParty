@@ -7,11 +7,14 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { deleteBoardColumnAction } from "@/actions/boardColumnActions";
-import type { components } from "@/api/schema";
 import { UpgradeColumnLimitCard } from "@/components/subscription/UpgradeColumnLimitCard";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { ListCard } from "@/components/ui/ListCard";
 import { getColumnIcon } from "@/constants/routine";
+import type {
+  ColumnSummaryDTO,
+  DashboardListSummaryProps,
+} from "@/types/dashboard";
 import type { BoardColumn } from "@/types/task";
 import { cn } from "@/utils";
 
@@ -31,23 +34,15 @@ const ConfirmationModal = dynamic(
   { ssr: false },
 );
 
-type Column = components["schemas"]["BoardColumnSummaryDTO"];
-
-interface DashboardListSummaryProps {
-  initialColumns: Column[];
-  maxColumns: number;
-  isCompact?: boolean;
-  isPremium?: boolean;
-}
-
 export function DashboardListSummary({
   initialColumns,
   maxColumns,
   isCompact = false,
   isPremium = false,
+  tasks,
 }: DashboardListSummaryProps) {
   const router = useRouter();
-  const [columns, setColumns] = useState<Column[]>(initialColumns);
+  const [columns, setColumns] = useState<ColumnSummaryDTO[]>(initialColumns);
 
   useEffect(() => {
     setColumns(initialColumns);
@@ -76,7 +71,7 @@ export function DashboardListSummary({
   );
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleContextMenu = (e: React.MouseEvent, column: Column) => {
+  const handleContextMenu = (e: React.MouseEvent, column: ColumnSummaryDTO) => {
     e.preventDefault();
     e.stopPropagation();
     const boardCol: BoardColumn = {
@@ -137,6 +132,16 @@ export function DashboardListSummary({
       <ul className="flex items-center gap-3.5 sm:gap-4 w-full overflow-x-auto custom-scrollbar px-1 py-2 m-0 list-none">
         {columns.map((column) => {
           const ColumnIcon = getColumnIcon(column.icon);
+          const colTasks = tasks
+            ? tasks.filter((t) => t.columnId === column.id)
+            : null;
+          const completedCount = colTasks
+            ? colTasks.filter((t) => t.completed).length
+            : (column.completedTasks ?? 0);
+          const totalCount = colTasks
+            ? colTasks.length
+            : (column.totalTasks ?? 0);
+
           return (
             <li
               key={column.id}
@@ -151,11 +156,10 @@ export function DashboardListSummary({
                 <ListCard
                   compact={isCompact}
                   title={column.name || "Sem título"}
-                  count={`${column.completedTasks ?? 0}/${column.totalTasks ?? 0}`}
+                  count={`${completedCount}/${totalCount}`}
                   icon={
                     <ColumnIcon size={isCompact ? 16 : 18} aria-hidden="true" />
                   }
-                  onContextMenu={(e) => handleContextMenu(e, column)}
                 />
               </Link>
             </li>

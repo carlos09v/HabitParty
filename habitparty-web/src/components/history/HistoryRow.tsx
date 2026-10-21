@@ -48,7 +48,8 @@ export function HistoryRow({
         // Mobile Layout: flex column
         "flex flex-col gap-2 p-3",
         // Desktop Layout (md+): Grid perfeitamente alinhado com o cabeçalho
-        `md:grid md:${HISTORY_GRID_COLS} md:items-center`,
+        "md:grid md:items-center",
+        HISTORY_GRID_COLS,
         isCompact
           ? "md:gap-2.5 md:px-3 md:py-2 md:text-xs"
           : "md:gap-3.5 md:px-4 md:py-3 md:text-sm",

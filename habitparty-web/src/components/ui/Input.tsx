@@ -27,12 +27,14 @@ export function Input({
 
   return (
     <div className="flex flex-col gap-1.5 w-full">
-      <label
-        htmlFor={id}
-        className="font-medium text-neutral-100 select-none text-body-s"
-      >
-        {label}
-      </label>
+      {label && (
+        <label
+          htmlFor={id}
+          className="font-medium text-neutral-100 select-none text-body-s"
+        >
+          {label}
+        </label>
+      )}
 
       <div className="relative flex items-center transition-colors">
         {icon && (

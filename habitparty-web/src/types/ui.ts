@@ -5,7 +5,7 @@ export type ThemeMode = "light" | "dark";
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   compact?: boolean;
-  label: string;
+  label?: ReactNode;
   icon?: ReactNode;
   error?: string;
   hint?: string;
@@ -56,6 +56,7 @@ export interface SelectProps {
   icon?: ReactNode;
   options: readonly SelectItem[] | SelectItem[];
   placeholder?: string;
+  emptyMessage?: string;
   value?: string;
   defaultValue?: string;
   onChange?: (value: string) => void;

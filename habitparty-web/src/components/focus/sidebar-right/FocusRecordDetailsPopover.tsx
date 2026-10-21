@@ -14,7 +14,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { updateFocusRecordAction } from "@/actions/focusActions";
+import { updateFocusRecord } from "@/actions/focusActions";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { getFocusIcon } from "@/constants/focus";
 import { useAnchoredPopoverPosition } from "@/hooks/useAnchoredPopoverPosition";
@@ -92,7 +92,7 @@ export function FocusRecordDetailsPopover({
   const handleSaveNotes = async () => {
     setIsSaving(true);
     try {
-      const res = await updateFocusRecordAction(record.id, {
+      const res = await updateFocusRecord(record.id, {
         notes: notes.trim(),
       });
 
@@ -135,7 +135,7 @@ export function FocusRecordDetailsPopover({
             </h3>
             <span className="text-label-g text-neutral-400 flex items-center gap-1">
               <Calendar size={11} className="text-neutral-500" />
-              {formatDateTime(record.endTime)}
+              {formatDateTime(record.endTime, { isLocal: true })}
             </span>
           </div>
         </div>

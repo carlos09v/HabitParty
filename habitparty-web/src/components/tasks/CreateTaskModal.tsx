@@ -15,6 +15,7 @@ import { BaseModal } from "@/components/ui/BaseModal";
 import { useCreateTaskForm } from "@/hooks/useCreateTaskForm";
 import type { Task, TaskTypeOption } from "@/types/task";
 import { cn } from "@/utils";
+import { isTaskHardcoreLocked } from "@/utils/date";
 import { formatCoins, getTaskRewardBreakdown } from "@/utils/economy";
 
 export interface CreateTaskModalProps {
@@ -53,10 +54,7 @@ export function CreateTaskModal({
   const isEditing = form.isEditing;
 
   const isOverdueHardcoreLocked = Boolean(
-    isEditing &&
-      taskToEdit?.isHardcoreModeEnabled &&
-      taskToEdit?.dueDate &&
-      new Date(`${taskToEdit.dueDate}T23:59:59`) < new Date(),
+    isEditing && isTaskHardcoreLocked(taskToEdit),
   );
 
   const rewardBreakdown = useMemo(() => {

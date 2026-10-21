@@ -1,5 +1,3 @@
-"use client";
-
 import { AlignCenter, AlignLeft, AlignRight } from "lucide-react";
 import type { BoardAlignment } from "@/types/task-ui";
 import { cn } from "@/utils";

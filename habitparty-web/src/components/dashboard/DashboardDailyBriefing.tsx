@@ -1,28 +1,53 @@
-import { Calendar, Flame, Sparkles, Target } from "lucide-react";
-import { cn } from "@/utils";
+"use client";
 
-interface DashboardDailyBriefingProps {
-  greeting: string;
-  firstName: string;
-  streak: number;
-  completedTodayTasks: number;
-  totalTodayTasks: number;
-  todayXp: number;
-}
+import { Calendar, Flame, Sparkles, Target } from "lucide-react";
+import { useEffect, useState } from "react";
+import type { DashboardDailyBriefingProps } from "@/types/dashboard";
+import { cn } from "@/utils";
+import {
+  getGreeting,
+  getTodayDateString,
+  getTodayTasks,
+  getTodayXp,
+} from "@/utils/dashboardMetrics";
 
 /**
- * Painel de Resumo Diário do Jogador (React Server Component).
- * Substitui o antigo WelcomeCard genérico no Dashboard por um HUD dinâmico
- * e gamificado com foco na rotina do dia, ofensiva e metas.
+ * Painel de Resumo Diário do Jogador (Client Component).
+ * Calcula a saudação, a data por extenso e as métricas diárias usando o relógio
+ * e fuso horário local do dispositivo/navegador do usuário (evitando desvio UTC do servidor).
  */
 export function DashboardDailyBriefing({
-  greeting,
+  greeting: initialGreeting,
   firstName,
   streak,
-  completedTodayTasks,
-  totalTodayTasks,
-  todayXp,
+  completedTodayTasks: initialCompletedTodayTasks,
+  totalTodayTasks: initialTotalTodayTasks,
+  todayXp: initialTodayXp,
+  tasks,
+  transactions,
 }: DashboardDailyBriefingProps) {
+  const [now, setNow] = useState<Date>(() => new Date());
+
+  useEffect(() => {
+    setNow(new Date());
+    const interval = setInterval(() => {
+      setNow(new Date());
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const greeting = getGreeting(now) || initialGreeting;
+
+  const todayDateStr = getTodayDateString(now);
+  const localTodayTasks = tasks ? getTodayTasks(tasks, todayDateStr) : null;
+  const completedTodayTasks = localTodayTasks
+    ? localTodayTasks.filter((t) => t.completed).length
+    : initialCompletedTodayTasks;
+  const totalTodayTasks = localTodayTasks
+    ? localTodayTasks.length
+    : initialTotalTodayTasks;
+  const todayXp = transactions ? getTodayXp(transactions, now) : initialTodayXp;
+
   const completionPercent =
     totalTodayTasks > 0
       ? Math.round((completedTodayTasks / totalTodayTasks) * 100)
@@ -42,8 +67,7 @@ export function DashboardDailyBriefing({
     return "Mantenha a constância e o foco na missão para avançar seus níveis!";
   })();
 
-  // Data formatada para o cabeçalho (ex: Sexta-feira, 16 de out.)
-  const now = new Date();
+  // Data formatada para o cabeçalho no fuso local do navegador (ex: Terça-feira, 20 de out.)
   const formattedDay = now.toLocaleDateString("pt-BR", {
     weekday: "long",
     day: "numeric",
@@ -66,14 +90,22 @@ export function DashboardDailyBriefing({
               className="text-gold shrink-0"
               aria-hidden="true"
             />
-            <span className="capitalize">{capitalizedDay}</span>
+            <span className="capitalize" suppressHydrationWarning>
+              {capitalizedDay}
+            </span>
           </div>
 
-          <h2 className="font-extrabold text-neutral-50 tracking-tight text-2xl sm:text-3xl">
+          <h2
+            className="font-extrabold text-neutral-50 tracking-tight text-2xl sm:text-3xl"
+            suppressHydrationWarning
+          >
             {greeting}, <span className="text-gold">{firstName}</span>! 👋
           </h2>
 
-          <p className="text-body-s text-neutral-300 font-medium leading-relaxed">
+          <p
+            className="text-body-s text-neutral-300 font-medium leading-relaxed"
+            suppressHydrationWarning
+          >
             {motivationalMessage}
           </p>
         </div>
@@ -88,6 +120,7 @@ export function DashboardDailyBriefing({
                   "font-bold",
                   isAllCompleted ? "text-emerald-400" : "text-gold",
                 )}
+                suppressHydrationWarning
               >
                 {completedTodayTasks}/{totalTodayTasks} ({completionPercent}%)
               </span>
@@ -157,7 +190,10 @@ export function DashboardDailyBriefing({
             <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
               Tarefas do Dia
             </span>
-            <span className="text-base sm:text-lg font-extrabold text-neutral-100 truncate">
+            <span
+              className="text-base sm:text-lg font-extrabold text-neutral-100 truncate"
+              suppressHydrationWarning
+            >
               {completedTodayTasks}/{totalTodayTasks} Concluídas
             </span>
             <span
@@ -170,6 +206,7 @@ export function DashboardDailyBriefing({
                   ? "Todas as tarefas de hoje foram concluídas!"
                   : `${totalTodayTasks - completedTodayTasks} tarefas pendentes para hoje`
               }
+              suppressHydrationWarning
             >
               {isAllCompleted
                 ? "Meta cumprida! 🎯"
@@ -187,7 +224,10 @@ export function DashboardDailyBriefing({
             <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
               XP Conquistado
             </span>
-            <span className="text-base sm:text-lg font-extrabold text-gold truncate">
+            <span
+              className="text-base sm:text-lg font-extrabold text-gold truncate"
+              suppressHydrationWarning
+            >
               +{todayXp} XP
             </span>
             <span

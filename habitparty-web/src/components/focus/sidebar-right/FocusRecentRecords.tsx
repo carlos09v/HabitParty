@@ -11,7 +11,6 @@ import {
 import { useState } from "react";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { getFocusIcon } from "@/constants/focus";
-import { useCompactMode } from "@/hooks/useCompactMode";
 import type { FocusRecord } from "@/types/focus";
 import { cn, formatCoins, formatDateTime } from "@/utils";
 import { formatFocusRecordDuration } from "@/utils/focusFormatters";
@@ -32,11 +31,8 @@ export function FocusRecentRecords({
   onOptionsClick,
   onDeleteRecord,
   onRecordUpdated,
-  isCompact: propIsCompact,
+  isCompact = false,
 }: FocusRecentRecordsProps) {
-  const { isCompact: storeIsCompact } = useCompactMode();
-  const isCompact = propIsCompact ?? storeIsCompact;
-
   // Popover de edição ancorado
   const [selectedRecordForEdit, setSelectedRecordForEdit] =
     useState<FocusRecord | null>(null);
@@ -178,7 +174,7 @@ export function FocusRecentRecords({
                       )}
                     </div>
                     <span className="text-tiny text-neutral-400 truncate">
-                      {formatDateTime(rec.endTime)}
+                      {formatDateTime(rec.endTime, { isLocal: true })}
                     </span>
                   </div>
                 </div>
@@ -190,7 +186,7 @@ export function FocusRecentRecords({
                     </span>
                     {!rec.inventoryItemId &&
                     ((rec.xpEarned ?? 0) > 0 || (rec.coinsEarned ?? 0) > 0) ? (
-                      <span className="text-[10px] text-neutral-400 font-medium">
+                      <span className="text-tiny text-neutral-400 font-medium">
                         +{rec.xpEarned ?? 0} XP • +
                         {formatCoins(rec.coinsEarned ?? 0)} H
                       </span>
@@ -200,7 +196,7 @@ export function FocusRecentRecords({
                         {rec.completedPomos > 1 ? "s" : ""}
                       </span>
                     ) : rec.inventoryItemId ? (
-                      <span className="text-[10px] text-neutral-400 font-medium">
+                      <span className="text-tiny text-neutral-400 font-medium">
                         Lazer
                       </span>
                     ) : null}

@@ -73,7 +73,7 @@ export function RoutineFilterPopover({
         />
         <span>Filtrar</span>
         {activeFiltersCount > 0 && (
-          <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-tiny font-bold bg-gold text-neutral-900">
+          <span className="ml-0.5 px-1.5 py-0.5 rounded-full text-tiny font-bold bg-gold text-neutral-900">
             {activeFiltersCount}
           </span>
         )}

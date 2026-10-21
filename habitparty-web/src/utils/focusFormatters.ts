@@ -2,8 +2,9 @@
  * Utilitários centralizados de formatação de tempo e data para as telas de Foco.
  */
 
-export { toLocalISOString, parseServerDate } from "./date";
-import { parseServerDate } from "./date";
+export { parseLocalDate, parseServerDate, toLocalISOString } from "./date";
+
+import { parseLocalDate } from "./date";
 
 /**
  * Formata segundos no padrão MM:SS (ex: 25:00 ou 04:05).
@@ -73,7 +74,7 @@ export function formatFocusMinutes(minutes: number): string {
 export function formatFocusDate(dateStr?: string | null): string {
   if (!dateStr) return "-";
   try {
-    const d = parseServerDate(dateStr);
+    const d = parseLocalDate(dateStr);
     if (!d) return dateStr;
     const day = d.toLocaleDateString("pt-BR", {
       day: "2-digit",

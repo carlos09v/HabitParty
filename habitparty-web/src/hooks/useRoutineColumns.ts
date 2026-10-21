@@ -1,18 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { MAX_COLUMNS_PREMIUM, MAX_VISIBLE_COLUMNS } from "@/constants/routine";
+import {
+  deleteBoardColumnAction,
+  updateBoardColumnOrderAction,
+} from "@/actions/boardColumnActions";
+import {
+  MAX_COLUMNS_PREMIUM,
+  MAX_VISIBLE_COLUMNS,
+  resolveVisibleColumnIds,
+} from "@/constants/routine";
 import type { BoardColumn } from "@/types/task";
 
 /**
- * Estado do quadro de rotina: colunas + quais estão visíveis.
+ * Estado do quadro de rotina: colunas, visibilidade e mutações de colunas.
  * - Usuários Free: até MAX_VISIBLE_COLUMNS (4) colunas ativas.
  * - Usuários Premium: até MAX_COLUMNS_PREMIUM (6) colunas ativas simultaneamente com scroll horizontal.
- *
- * Persistência dupla resiliente:
- * 1. Cookie (hp_visible_cols_${workspaceId}) para SSR sem hydration mismatch e sem layout shift.
- * 2. LocalStorage (habitparty_visible_columns_${workspaceId}) como fallback imediato no navegador.
  */
 export function useRoutineColumns(
   initialColumns: BoardColumn[],
@@ -21,7 +25,9 @@ export function useRoutineColumns(
   initialVisibleColumnIds?: string[],
   targetColumnId?: string,
 ) {
+  const [, startTransition] = useTransition();
   const [columns, setColumns] = useState<BoardColumn[]>(initialColumns);
+  const [isDeletingColumn, setIsDeletingColumn] = useState(false);
   const maxAllowed = isPremium ? MAX_COLUMNS_PREMIUM : MAX_VISIBLE_COLUMNS;
 
   const storageKey = workspaceId
@@ -29,35 +35,14 @@ export function useRoutineColumns(
     : null;
 
   // 1. Inicializa o estado com a preferência do Cookie (se vinda do SSR) ou com o padrão das primeiras colunas
-  const [visibleColumnIds, setVisibleColumnIds] = useState<string[]>(() => {
-    let baseList: string[] = [];
-    if (
-      Array.isArray(initialVisibleColumnIds) &&
-      initialVisibleColumnIds.length > 0
-    ) {
-      const valid = initialVisibleColumnIds.filter((id) =>
-        initialColumns.some((c) => c.id === id),
-      );
-      if (valid.length > 0) {
-        baseList = valid.slice(0, maxAllowed);
-      }
-    }
-    if (baseList.length === 0) {
-      baseList = initialColumns.slice(0, maxAllowed).map((c) => c.id);
-    }
-
-    // Se houver targetColumnId válido (ex: vindo do Dashboard), garante que ele está presente desde o início
-    if (targetColumnId && initialColumns.some((c) => c.id === targetColumnId)) {
-      if (!baseList.includes(targetColumnId)) {
-        baseList =
-          baseList.length < maxAllowed
-            ? [...baseList, targetColumnId]
-            : [...baseList.slice(0, maxAllowed - 1), targetColumnId];
-      }
-    }
-
-    return baseList;
-  });
+  const [visibleColumnIds, setVisibleColumnIds] = useState<string[]>(() =>
+    resolveVisibleColumnIds(
+      initialColumns.map((c) => c.id),
+      initialVisibleColumnIds,
+      maxAllowed,
+      targetColumnId,
+    ),
+  );
 
   // Função dedicada para persistir somente sob ações do usuário
   const persistVisibleColumns = useCallback(
@@ -92,24 +77,14 @@ export function useRoutineColumns(
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const valid = parsed.filter((id: string) =>
-            initialColumns.some((c) => c.id === id),
+          const allIds = initialColumns.map((c) => c.id);
+          const resolved = resolveVisibleColumnIds(
+            allIds,
+            parsed,
+            maxAllowed,
+            targetColumnId,
           );
-          if (valid.length > 0) {
-            let resolved = valid.slice(0, maxAllowed);
-
-            // Garante que targetColumnId não seja apagado pelo localStorage antigo
-            if (
-              targetColumnId &&
-              initialColumns.some((c) => c.id === targetColumnId) &&
-              !resolved.includes(targetColumnId)
-            ) {
-              resolved =
-                resolved.length < maxAllowed
-                  ? [...resolved, targetColumnId]
-                  : [...resolved.slice(0, maxAllowed - 1), targetColumnId];
-            }
-
+          if (resolved.length > 0) {
             setVisibleColumnIds(resolved);
             persistVisibleColumns(resolved);
           }
@@ -130,15 +105,17 @@ export function useRoutineColumns(
   // garante que a coluna esteja visível imediatamente no quadro
   useEffect(() => {
     if (!targetColumnId) return;
-    const isValid = initialColumns.some((c) => c.id === targetColumnId);
-    if (!isValid) return;
+    const allIds = initialColumns.map((c) => c.id);
+    if (!allIds.includes(targetColumnId)) return;
 
     setVisibleColumnIds((prev) => {
       if (prev.includes(targetColumnId)) return prev;
-      const next =
-        prev.length < maxAllowed
-          ? [...prev, targetColumnId]
-          : [...prev.slice(0, maxAllowed - 1), targetColumnId];
+      const next = resolveVisibleColumnIds(
+        allIds,
+        prev,
+        maxAllowed,
+        targetColumnId,
+      );
       persistVisibleColumns(next);
       return next;
     });
@@ -203,27 +180,6 @@ export function useRoutineColumns(
     persistVisibleColumns(next);
   }, [columns, maxAllowed, persistVisibleColumns]);
 
-  const createColumn = useCallback(() => {
-    if (!canCreateColumn) return;
-
-    const id = `col-${crypto.randomUUID()}`;
-    setColumns((prev) => [
-      ...prev,
-      {
-        id,
-        title: `Nova Lista ${prev.length + 1}`,
-        order: prev.length,
-        tasks: [],
-      },
-    ]);
-
-    setVisibleColumnIds((prev) => {
-      const next = prev.length < maxAllowed ? [...prev, id] : prev;
-      persistVisibleColumns(next);
-      return next;
-    });
-  }, [canCreateColumn, maxAllowed, persistVisibleColumns]);
-
   const ensureColumnVisible = useCallback(
     (columnId: string) => {
       setVisibleColumnIds((prev) => {
@@ -239,6 +195,74 @@ export function useRoutineColumns(
     [maxAllowed, persistVisibleColumns],
   );
 
+  const handleColumnSaved = useCallback(
+    (savedCol: BoardColumn, isEdit?: boolean) => {
+      if (isEdit) {
+        setColumns((prev) =>
+          prev.map((c) =>
+            c.id === savedCol.id
+              ? { ...c, title: savedCol.title, icon: savedCol.icon }
+              : c,
+          ),
+        );
+      } else {
+        setColumns((prev) => [...prev, savedCol]);
+        if (visibleColumnIds.length < maxAllowed) {
+          toggleColumnVisibility(savedCol.id);
+        }
+      }
+    },
+    [visibleColumnIds.length, maxAllowed, toggleColumnVisibility],
+  );
+
+  const handleDeleteColumn = useCallback(
+    async (column: BoardColumn) => {
+      setIsDeletingColumn(true);
+      try {
+        const res = await deleteBoardColumnAction(column.id);
+        if (!res.success) {
+          toast.error(res.error || "Erro ao excluir coluna no servidor.");
+          return false;
+        }
+
+        setColumns((prev) => prev.filter((c) => c.id !== column.id));
+        if (visibleColumnIds.includes(column.id)) {
+          toggleColumnVisibility(column.id);
+        }
+
+        toast.success(`Coluna "${column.title}" excluída com sucesso!`);
+        return true;
+      } catch (_error) {
+        toast.error("Erro inesperado ao excluir coluna.");
+        return false;
+      } finally {
+        setIsDeletingColumn(false);
+      }
+    },
+    [visibleColumnIds, toggleColumnVisibility],
+  );
+
+  const handleColumnReorder = useCallback(
+    (reorderedColumns: BoardColumn[]) => {
+      if (!workspaceId) return;
+
+      const payload = reorderedColumns.map((c, idx) => ({
+        board_column_id: c.id,
+        newIndex: idx,
+      }));
+
+      startTransition(async () => {
+        const res = await updateBoardColumnOrderAction(workspaceId, payload);
+        if (!res.success) {
+          toast.error(
+            res.error || "Erro ao salvar ordem das colunas no servidor.",
+          );
+        }
+      });
+    },
+    [workspaceId],
+  );
+
   return {
     columns,
     setColumns,
@@ -247,8 +271,11 @@ export function useRoutineColumns(
     toggleColumnVisibility,
     showAllColumns,
     ensureColumnVisible,
-    createColumn,
     canCreateColumn,
     maxColumns,
+    handleColumnSaved,
+    handleDeleteColumn,
+    isDeletingColumn,
+    handleColumnReorder,
   };
 }

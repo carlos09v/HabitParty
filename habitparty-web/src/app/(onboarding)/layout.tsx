@@ -8,7 +8,7 @@ export default function OnboardingLayout({
   children: ReactNode;
 }) {
   return (
-    <div className="relative min-h-[100dvh] w-full flex flex-col justify-between bg-background overflow-x-hidden overflow-y-auto select-none">
+    <div className="relative h-[100dvh] w-full flex flex-col justify-between bg-background overflow-x-hidden overflow-y-auto lg:overflow-hidden custom-scrollbar select-none">
       {/* 
         ====================================================
         ORBES DE LUZ CÓSMICOS SUTIS (Identidade HabitParty)
@@ -19,7 +19,7 @@ export default function OnboardingLayout({
       <div className="cosmic-orb absolute top-1/3 right-1/4 w-[350px] h-[350px] rounded-full bg-primary/20 blur-[200px] pointer-events-none z-0 opacity-25 dark:opacity-100" />
 
       {/* TOP HEADER: Branding e Indicador de Etapa */}
-      <header className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-4 sm:pt-5 pb-2 flex items-center justify-between shrink-0">
+      <header className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-3 sm:pt-4 pb-1.5 flex items-center justify-between shrink-0">
         <Link
           href="/"
           className="inline-flex items-center transition-opacity hover:opacity-90 outline-none focus-visible:ring-2 focus-visible:ring-gold rounded-lg"
@@ -45,12 +45,12 @@ export default function OnboardingLayout({
       </header>
 
       {/* ÁREA PRINCIPAL: Flex container adaptativo com rolagem fluida quando necessário */}
-      <main className="relative z-10 flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 flex flex-col justify-center py-4">
+      <main className="relative z-10 flex-1 min-h-0 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 flex flex-col justify-center py-2">
         {children}
       </main>
 
       {/* RODAPÉ DISCRETO */}
-      <footer className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-3 text-center text-xs text-neutral-400 shrink-0">
+      <footer className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-2.5 text-center text-xs text-neutral-400 shrink-0">
         © {new Date().getFullYear()} HabitParty. Todos os direitos reservados.
       </footer>
     </div>

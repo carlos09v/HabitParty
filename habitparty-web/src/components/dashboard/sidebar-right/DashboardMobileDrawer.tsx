@@ -1,43 +1,30 @@
 "use client";
 
 import { Calendar, X } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { DashboardWidgetsList } from "@/components/dashboard/sidebar-right/DashboardWidgetsList";
-import type { EconomyBarData } from "@/types/dashboard";
-import type { FocusActivity, FocusRecord } from "@/types/focus";
-import type { TransactionHistoryResponseDTO } from "@/types/history";
-import type { Task } from "@/types/task";
+import type { DashboardMobileDrawerProps } from "@/types/dashboard";
 import { cn } from "@/utils";
-
-export interface DashboardMobileDrawerProps {
-  isCompact?: boolean;
-  balance?: number;
-  weeklyEarnings?: number;
-  weeklySpent?: number;
-  bars?: EconomyBarData[];
-  transactions?: TransactionHistoryResponseDTO[];
-  tasks?: Task[];
-  activities?: FocusActivity[];
-  records?: FocusRecord[];
-}
 
 /**
  * Botão flutuante (FAB) e gaveta deslizante (Slide-over Drawer) para telas < xl.
- * Client Component (Leaf Node): isola todo o estado de abertura/fechamento e listeners
- * de tecla Escape, permitindo que o DashboardSidebarRight principal seja um Server Component puro.
+ * Client Component (Leaf Node): recebe os widgets via `children` (composição RSC)
+ * e isola apenas o estado de abertura/fechamento.
  */
 export function DashboardMobileDrawer({
   isCompact = false,
   balance = 0,
-  weeklyEarnings = 0,
-  weeklySpent = 0,
-  bars,
-  transactions = [],
-  tasks = [],
-  activities = [],
-  records = [],
+  children,
 }: DashboardMobileDrawerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const urlDate = searchParams.get("date");
+
+  // Fecha a gaveta automaticamente ao selecionar uma data no calendário mobile
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Fecha drawer quando parametro date muda
+  useEffect(() => {
+    setIsOpen(false);
+  }, [urlDate]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -51,18 +38,6 @@ export function DashboardMobileDrawer({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
-
-  const widgetProps = {
-    isCompact,
-    balance,
-    weeklyEarnings,
-    weeklySpent,
-    bars,
-    transactions,
-    tasks,
-    activities,
-    records,
-  };
 
   return (
     <>
@@ -137,10 +112,7 @@ export function DashboardMobileDrawer({
 
             {/* Conteúdo dos Widgets com rolagem interna suave */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-5 flex flex-col gap-4">
-              <DashboardWidgetsList
-                {...widgetProps}
-                onSelectDay={() => setIsOpen(false)}
-              />
+              {children}
             </div>
           </aside>
         </div>

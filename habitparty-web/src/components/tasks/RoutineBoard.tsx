@@ -114,7 +114,7 @@ export function RoutineBoard({
       <div
         className={cn(
           "w-full h-full min-h-0 flex-1 overflow-x-auto custom-scrollbar min-w-0",
-          isCompact ? "pb-2 pt-1" : "pb-4 pt-2",
+          isCompact ? "pb-2 pt-1 px-1" : "pb-4 pt-2 px-1.5",
         )}
       >
         <div

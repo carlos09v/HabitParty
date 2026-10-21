@@ -272,10 +272,10 @@ export function RewardsContainer({
             {viewMode === "card" ? (
               <div
                 className={cn(
-                  "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 transition-all duration-200 w-full pb-8",
+                  "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 transition-all duration-200 w-full pb-8",
                   isCompact
-                    ? "lg:grid-cols-4 xl:grid-cols-5 gap-3.5"
-                    : "lg:grid-cols-3 xl:grid-cols-4 gap-5",
+                    ? "lg:grid-cols-3 xl:grid-cols-4 gap-3.5"
+                    : "lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4",
                 )}
               >
                 {filteredRewards.map((reward) => (

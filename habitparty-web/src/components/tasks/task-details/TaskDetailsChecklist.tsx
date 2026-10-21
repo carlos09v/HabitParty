@@ -1,5 +1,3 @@
-"use client";
-
 import { Check, Plus, Trash2, X } from "lucide-react";
 import type { ChecklistItem } from "@/types/task";
 import { cn } from "@/utils";

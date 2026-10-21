@@ -7,6 +7,7 @@ interface HelpReferenceTableProps {
   icon: ReactNode;
   highlightColumnIndex?: number;
   highlightColorClass?: string;
+  isCompact?: boolean;
 }
 
 export function HelpReferenceTable({
@@ -14,9 +15,15 @@ export function HelpReferenceTable({
   icon,
   highlightColumnIndex = 2,
   highlightColorClass = "text-gold",
+  isCompact = false,
 }: HelpReferenceTableProps) {
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-primary/25 bg-surface/30 backdrop-blur-md p-5 sm:p-6">
+    <div
+      className={cn(
+        "flex flex-col rounded-2xl border border-primary/25 bg-surface/30 backdrop-blur-md",
+        isCompact ? "gap-2.5 p-4" : "gap-3 p-5 sm:p-6",
+      )}
+    >
       <div className="flex items-center gap-2">
         {icon}
         <h3 className="text-body-m font-bold text-neutral-100">
@@ -25,12 +32,12 @@ export function HelpReferenceTable({
       </div>
       <p className="text-body-s text-neutral-400">{entry.description}</p>
 
-      <div className="overflow-x-auto custom-scrollbar mt-2 border border-white/10 rounded-xl">
+      <div className="overflow-x-auto custom-scrollbar mt-1.5 border border-white/10 rounded-xl">
         <table className="w-full text-left text-body-s border-collapse">
           <thead>
             <tr className="bg-primary-dark/40 border-b border-white/10 text-neutral-300 font-semibold text-xs">
               {entry.columns.map((col) => (
-                <th key={col} className="p-3">
+                <th key={col} className={cn(isCompact ? "p-2.5" : "p-3")}>
                   {col}
                 </th>
               ))}
@@ -50,7 +57,7 @@ export function HelpReferenceTable({
                     <td
                       key={`${colIndex}-${cell}`}
                       className={cn(
-                        "p-3",
+                        isCompact ? "p-2.5" : "p-3",
                         isFirstCol && "font-bold text-neutral-100",
                         isHighlighted && cn("font-bold", highlightColorClass),
                         !isFirstCol &&

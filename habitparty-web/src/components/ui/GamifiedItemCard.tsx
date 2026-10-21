@@ -15,7 +15,10 @@ import {
 } from "@/constants/reward";
 import type { PackageLevel, RewardType } from "@/types/reward";
 import { cn, formatCoins } from "@/utils";
-import { formatBackpackItemRemainingTime } from "@/utils/focusFormatters";
+import {
+  formatBackpackItemRemainingTime,
+  formatFocusMinutes,
+} from "@/utils/focusFormatters";
 
 export interface GamifiedItemCardProps {
   id: string;
@@ -143,14 +146,14 @@ export function GamifiedItemCard({
       }
       onBlur={() => setIsHovered(false)}
       className={cn(
-        "relative flex flex-col justify-between rounded-xl bg-gradient-to-b from-surface via-surface to-popover/95 border transition-[border-color,background-color,box-shadow,transform] duration-150 group select-none shadow-sm hover:shadow-card-deep hover:-translate-y-1",
+        "relative flex flex-col justify-between rounded-xl bg-gradient-to-b from-surface via-surface to-popover/95 border transition-[border-color,background-color,box-shadow,transform] duration-150 group select-none shadow-sm hover:shadow-card-deep hover:-translate-y-0.5",
         isHovered && isMystery && !isDragging
           ? "overflow-visible z-40"
           : "overflow-hidden",
         inUse
           ? "border-amber-500/40 bg-amber-500/5"
           : packageGlow || "border-white/15 hover:border-gold/50",
-        isCompact ? "p-3 gap-2.5 min-h-36" : "p-4 gap-3.5 min-h-42",
+        isCompact ? "p-2.5 gap-2" : "p-3.5 gap-2.5",
         isDragging && "!transition-none opacity-50 ring-2 ring-gold z-50",
       )}
     >
@@ -168,92 +171,153 @@ export function GamifiedItemCard({
         <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-success-500 to-transparent opacity-70 pointer-events-none" />
       )}
 
-      {/* TOPO: Ícone do Item (Hero) + Quantidade (se houver) + Badge de Tipo */}
-      <header className="flex items-center justify-between w-full">
-        <div
-          className={cn(
-            "rounded-xl border flex items-center justify-center transition-all duration-200 shrink-0 group-hover:scale-105",
-            packageIconTheme ||
-              "bg-white/10 border-white/15 text-primary-light group-hover:text-gold group-hover:border-gold/40",
-            isCompact ? "w-9 h-9" : "w-11 h-11",
-          )}
-        >
-          <RewardIcon
-            size={isCompact ? 18 : 22}
-            className={isMystery ? "text-amber-400" : undefined}
-            aria-hidden="true"
-          />
-        </div>
-
-        <div className="flex items-center gap-1.5 shrink-0">
-          {inUse && (
-            <span
-              className={cn(
-                "inline-flex items-center gap-1.5 font-bold rounded border border-amber-500/40 bg-amber-500/15 text-amber-300",
-                isCompact
-                  ? "text-label-m px-1.5 py-0.5"
-                  : "text-[10px] px-2 py-0.5",
-              )}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-              Em Foco
-            </span>
-          )}
-
-          {typeof quantity === "number" && (
-            <span
-              className={cn(
-                "font-bold bg-white/10 border border-white/20 text-neutral-100",
-                isCompact
-                  ? "text-tiny px-1.5 py-0.5 rounded"
-                  : "text-xs px-2 py-0.5 rounded-md",
-              )}
-            >
-              {quantity}x
-            </span>
-          )}
-
-          <span
+      {/* TOPO INTEGRADO: Ícone + Título/Descrição + Badges de Tipo/Quantidade */}
+      <div className="flex flex-col gap-2 w-full min-w-0">
+        <header className="flex items-start gap-2.5 w-full min-w-0">
+          <div
             className={cn(
-              "inline-flex items-center gap-1 border font-medium leading-none shrink-0",
-              isCompact
-                ? "text-label-m px-1.5 py-0.5 rounded"
-                : "text-[10px] px-2 py-0.5 rounded-md",
-              typeMeta?.color || "text-neutral-200 bg-white/10 border-white/20",
+              "rounded-xl border flex items-center justify-center transition-all duration-200 shrink-0 group-hover:scale-105",
+              packageIconTheme ||
+                "bg-white/10 border-white/15 text-primary-light group-hover:text-gold group-hover:border-gold/40",
+              isCompact ? "w-9 h-9" : "w-10 h-10",
             )}
           >
-            {typeMeta?.icon && (
-              <typeMeta.icon
-                size={isCompact ? 9 : 11}
-                className="shrink-0"
-                aria-hidden="true"
-              />
+            <RewardIcon
+              size={isCompact ? 17 : 20}
+              className={isMystery ? "text-amber-400" : undefined}
+              aria-hidden="true"
+            />
+          </div>
+
+          <div className="flex flex-col flex-1 min-w-0 gap-0.5">
+            <div className="flex items-center justify-between gap-1.5 w-full min-w-0">
+              <h4
+                className={cn(
+                  "font-bold text-neutral-100 truncate group-hover:text-gold transition-colors leading-tight",
+                  isCompact ? "text-xs" : "text-body-s",
+                )}
+              >
+                {title}
+              </h4>
+
+              <div className="flex items-center gap-1 shrink-0">
+                {inUse && (
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 font-bold rounded border border-amber-500/40 bg-amber-500/15 text-amber-300",
+                      isCompact
+                        ? "text-[9px] px-1.5 py-0.5"
+                        : "text-[10px] px-1.5 py-0.5",
+                    )}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    Em Foco
+                  </span>
+                )}
+
+                {typeof quantity === "number" && (
+                  <span
+                    className={cn(
+                      "font-bold bg-white/10 border border-white/20 text-neutral-100",
+                      isCompact
+                        ? "text-[10px] px-1.5 py-0.5 rounded"
+                        : "text-[11px] px-1.5 py-0.5 rounded-md",
+                    )}
+                  >
+                    {quantity}x
+                  </span>
+                )}
+
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 border font-medium leading-none shrink-0",
+                    isCompact
+                      ? "text-[10px] px-1.5 py-0.5 rounded"
+                      : "text-[10px] px-1.5 py-0.5 rounded-md",
+                    typeMeta?.color ||
+                      "text-neutral-200 bg-white/10 border-white/20",
+                  )}
+                >
+                  {typeMeta?.icon && (
+                    <typeMeta.icon
+                      size={isCompact ? 9 : 10}
+                      className="shrink-0"
+                      aria-hidden="true"
+                    />
+                  )}
+                  <span>{typeMeta?.label || type}</span>
+                </span>
+              </div>
+            </div>
+
+            {description && description.trim() !== "" ? (
+              <p
+                className={cn(
+                  "text-neutral-400 truncate leading-tight",
+                  isCompact ? "text-[11px]" : "text-xs",
+                )}
+              >
+                {description}
+              </p>
+            ) : (
+              <p
+                className={cn(
+                  "text-neutral-500 italic truncate leading-tight",
+                  isCompact ? "text-[11px]" : "text-xs",
+                )}
+              >
+                {type === "TimeBased"
+                  ? "Cupom de tempo para sessão de lazer"
+                  : isMystery
+                    ? "Contém uma recompensa surpresa aleatória"
+                    : "Recompensa de resgate imediato"}
+              </p>
             )}
-            <span>{typeMeta?.label || type}</span>
-          </span>
-        </div>
-      </header>
+          </div>
+        </header>
 
-      {/* MEIO: Título, Descrição e Tags de Raridade/Categoria */}
-      <section className="flex flex-col gap-1 w-full min-w-0">
-        <h4
-          className={cn(
-            "font-bold text-neutral-100 truncate group-hover:text-gold transition-colors leading-tight",
-            isCompact ? "text-xs" : "text-body-s",
-          )}
-        >
-          {title}
-        </h4>
-        <p
-          className={cn(
-            "text-neutral-300 truncate leading-tight",
-            isCompact ? "text-tiny" : "text-label-g",
-          )}
-        >
-          {description || "\u00A0"}
-        </p>
+        {/* LINHA DE BADGES: Duração em Destaque + Raridade + Categoria */}
+        <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+          {type === "TimeBased" || remainingSeconds !== undefined ? (
+            remainingSeconds !== undefined && remainingSeconds !== null ? (
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border font-bold tracking-tight leading-none",
+                  isCompact ? "text-[10px]" : "text-[11px]",
+                  remainingSeconds <= 1
+                    ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
+                    : "bg-gold/15 border-gold/40 text-gold shadow-glow-gold-xs",
+                )}
+              >
+                <Clock
+                  size={isCompact ? 10 : 12}
+                  className="shrink-0"
+                  aria-hidden="true"
+                />
+                <span className="truncate">
+                  {formatBackpackItemRemainingTime(remainingSeconds)}
+                </span>
+              </span>
+            ) : baseDurationMinutes ? (
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-md border font-extrabold tracking-tight leading-none bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.12)]",
+                  isCompact ? "text-[10px]" : "text-[11px]",
+                )}
+                title={`Duração do cupom: ${baseDurationMinutes} minutos`}
+              >
+                <Clock
+                  size={isCompact ? 10 : 12}
+                  className="text-emerald-400 shrink-0"
+                  aria-hidden="true"
+                />
+                <span className="truncate">
+                  {formatFocusMinutes(baseDurationMinutes)}
+                </span>
+              </span>
+            ) : null
+          ) : null}
 
-        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
           {Boolean(
             packageLevel &&
               packageLevel !== "Nenhum" &&
@@ -261,7 +325,7 @@ export function GamifiedItemCard({
           ) && (
             <span
               className={cn(
-                "font-semibold rounded border text-label-m px-1.5 py-0.5",
+                "font-semibold rounded border text-[10px] px-1.5 py-0.5 leading-none",
                 PACKAGE_LEVEL_COLOR[packageLevel as PackageLevel] ||
                   "text-neutral-300 bg-white/10 border-white/15",
               )}
@@ -272,85 +336,52 @@ export function GamifiedItemCard({
           {Boolean(
             category && category !== "Nenhum" && category !== "NONE",
           ) && (
-            <span
-              className={cn(
-                "font-medium rounded bg-white/10 border border-white/10 text-neutral-300 text-label-m px-1.5 py-0.5",
-              )}
-            >
+            <span className="font-medium rounded bg-white/8 border border-white/10 text-neutral-300 text-[10px] px-1.5 py-0.5 leading-none">
               {category}
             </span>
           )}
         </div>
-      </section>
+      </div>
 
-      {/* BASE: Duração e Ação / Preço */}
-      <footer className="flex items-center justify-between pt-2 border-t border-white/10 w-full gap-2">
-        <div className="flex items-center gap-1 text-tiny text-neutral-300 min-w-0">
-          {type === "TimeBased" || remainingSeconds !== undefined ? (
-            remainingSeconds !== undefined && remainingSeconds !== null ? (
-              <>
-                <Clock
-                  size={isCompact ? 10 : 12}
-                  className={cn(
-                    "shrink-0",
-                    remainingSeconds <= 1 ? "text-emerald-400" : "text-gold",
-                  )}
-                  aria-hidden="true"
-                />
-                <span
-                  className={cn(
-                    "truncate font-medium",
-                    remainingSeconds <= 1 ? "text-emerald-400" : "text-gold",
-                  )}
-                >
-                  {formatBackpackItemRemainingTime(remainingSeconds)}
-                </span>
-              </>
-            ) : baseDurationMinutes ? (
-              <>
-                <Clock
-                  size={isCompact ? 10 : 12}
-                  className="text-emerald-400 shrink-0"
-                  aria-hidden="true"
-                />
-                <span className="truncate">{baseDurationMinutes} min</span>
-              </>
-            ) : (
-              <span
-                className={cn(
-                  "text-neutral-400",
-                  isCompact ? "text-[10px]" : "text-tiny",
-                )}
-              >
-                Cupom
-              </span>
-            )
-          ) : (
-            <span
-              className={cn(
-                "text-neutral-400",
-                isCompact ? "text-[10px]" : "text-tiny",
-              )}
-            >
-              Uso Imediato
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          {typeof price === "number" && (
-            <div className="flex items-center gap-1.5">
-              <div className="w-4.5 h-4.5 rounded-full bg-gradient-to-br from-yellow-300 to-amber-500 border border-yellow-200/60 flex items-center justify-center shrink-0 shadow-glow-gold-xs">
-                <span className="text-[10px] text-neutral-950 font-black leading-none">
+      {/* BASE: Preço (na Loja) ou Status + Botões de Ação (sem colisão com o tempo) */}
+      <footer className="flex items-center justify-between pt-2.5 border-t border-white/10 w-full gap-2">
+        <div className="flex items-center min-w-0">
+          {typeof price === "number" ? (
+            <div className="flex items-center gap-1.5 bg-gold/10 border border-gold/25 px-2.5 py-1 rounded-lg">
+              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-yellow-300 to-amber-500 border border-yellow-200/60 flex items-center justify-center shrink-0 shadow-glow-gold-xs">
+                <span className="text-[9px] text-neutral-950 font-black leading-none">
                   H
                 </span>
               </div>
-              <span className="text-xs font-bold text-neutral-100">
+              <span className="text-xs font-extrabold text-neutral-100">
                 {formatCoins(price)}
               </span>
             </div>
-          )}
+          ) : !(secondaryActionLabel && onSecondaryAction) ? (
+            <span
+              className={cn(
+                "text-neutral-400 font-medium truncate",
+                isCompact ? "text-[10px]" : "text-tiny",
+              )}
+            >
+              {inUse
+                ? "Sessão ativa"
+                : isMystery
+                  ? "Caixa lacrada"
+                  : "Disponível"}
+            </span>
+          ) : null}
+        </div>
 
+        <div
+          className={cn(
+            "flex items-center gap-2 shrink-0",
+            typeof price !== "number" &&
+              secondaryActionLabel &&
+              onSecondaryAction &&
+              "w-full justify-end",
+          )}
+        >
           {secondaryActionLabel && onSecondaryAction && (
             <button
               type="button"
@@ -363,11 +394,11 @@ export function GamifiedItemCard({
                   : `${secondaryActionLabel} ${title}`
               }
               className={cn(
-                "rounded-md font-semibold transition-all shadow-xs border text-neutral-200",
+                "rounded-lg font-semibold transition-all shadow-xs border text-neutral-200",
                 inUse
                   ? "bg-white/5 border-white/10 text-neutral-400 cursor-not-allowed opacity-60"
                   : "border-primary/40 bg-surface/80 hover:bg-gold/15 hover:border-gold/60 hover:text-gold active:scale-95 cursor-pointer",
-                isCompact ? "px-2 py-0.5 text-label-g" : "px-2.5 py-1 text-xs",
+                isCompact ? "px-2.5 py-1 text-label-g" : "px-3 py-1.5 text-xs",
               )}
             >
               {secondaryActionLabel}
@@ -397,15 +428,19 @@ export function GamifiedItemCard({
                         : `${actionLabel} por ${price ? `${price} moedas` : title}`
                 }
                 className={cn(
-                  "rounded-md font-bold transition-all shadow-xs",
+                  "rounded-lg font-bold transition-all shadow-xs",
+                  typeof price !== "number" &&
+                    secondaryActionLabel &&
+                    onSecondaryAction &&
+                    "flex-1 sm:flex-initial text-center",
                   isFocusNavigate
                     ? "bg-gold hover:bg-gold-hover text-neutral-900 border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95"
                     : canAfford && !inUse
                       ? "bg-warning-500 hover:bg-warning-400 focus:outline-none focus:ring-2 focus:ring-warning-300 focus:ring-offset-1 focus:ring-offset-surface active:scale-95 text-neutral-900 cursor-pointer"
                       : "bg-white/10 text-neutral-400 border border-white/10 cursor-not-allowed opacity-60",
                   isCompact
-                    ? "px-2 py-0.5 text-label-g"
-                    : "px-2.5 py-1 text-xs",
+                    ? "px-2.5 py-1 text-label-g"
+                    : "px-3.5 py-1.5 text-xs",
                 )}
               >
                 {actionLabel}

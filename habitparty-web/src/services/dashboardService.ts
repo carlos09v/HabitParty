@@ -1,4 +1,6 @@
 import { serverApi } from "@/api/server";
+import { getFocusInitialRecords } from "@/services/focusService";
+import { fetchWorkspaceBoardColumns } from "@/services/taskService";
 import type {
   ColumnSummaryDTO,
   TransactionHistoryDTO,
@@ -8,11 +10,7 @@ import type { Task } from "@/types/task";
 import type { UserResponseDTO } from "@/types/user";
 import type { WorkspaceResponseDTO } from "@/types/workspace";
 import { calculateWeeklyTaskEarnings } from "@/utils/economy";
-import {
-  mapFocusActivities,
-  mapFocusRecordDtoToRecord,
-} from "@/utils/focusMapper";
-import { mapTaskResponseToTask } from "@/utils/taskMapper";
+import { mapFocusActivities } from "@/utils/focusMapper";
 
 export interface DashboardData {
   workspaces: WorkspaceResponseDTO[];
@@ -31,46 +29,17 @@ export interface DashboardData {
 
 /**
  * Busca todos os dados necessários para renderizar a página do Dashboard e sua Sidebar.
- * Orquestra as chamadas para workspaces, colunas, tarefas, usuário, transações e foco.
+ * Paraleliza chamadas independentes logo na primeira onda para reduzir latência (RTT)
+ * e inclui tarefas de todas as colunas do workspace (mesmo ocultas no Kanban).
  */
 export async function getDashboardData(
   requestedWorkspaceId?: string,
 ): Promise<DashboardData | null> {
-  const { data: workspaces } = await serverApi.GET("/workspaces", {
-    next: { tags: ["workspaces"] },
-  });
-
-  if (!workspaces || workspaces.length === 0) {
-    return null;
-  }
-
-  const isValidWorkspace = workspaces.some(
-    (w) => w.id === requestedWorkspaceId,
-  );
-  const activeWorkspaceId =
-    requestedWorkspaceId && isValidWorkspace
-      ? requestedWorkspaceId
-      : workspaces[0].id || "";
-
-  const initialTasks: Task[] = [];
-  let initialColumns: ColumnSummaryDTO[] = [];
-
-  const [kanbanRes, columnsRes, userRes, transactionsRes, focusActivitiesRes] =
+  const [workspacesRes, userRes, transactionsRes, focusActivitiesRes] =
     await Promise.all([
-      activeWorkspaceId
-        ? serverApi.GET("/workspaces/{workspaceId}/kanban", {
-            params: {
-              path: { workspaceId: activeWorkspaceId },
-            },
-            next: { tags: ["dashboard-tasks", "kanban", "tasks"] },
-          })
-        : Promise.resolve({ data: null }),
-      activeWorkspaceId
-        ? serverApi.GET("/board_columns/workspace/{workspaceId}", {
-            params: { path: { workspaceId: activeWorkspaceId } },
-            next: { tags: ["dashboard-columns", "board_columns"] },
-          })
-        : Promise.resolve({ data: null }),
+      serverApi.GET("/workspaces", {
+        next: { tags: ["workspaces"] },
+      }),
       serverApi.GET("/users/me", {
         next: { tags: ["user"] },
       }),
@@ -88,57 +57,39 @@ export async function getDashboardData(
       }),
     ]);
 
-  if (columnsRes.data) {
-    initialColumns = columnsRes.data;
+  const workspaces = workspacesRes.data;
+  if (!workspaces || workspaces.length === 0) {
+    return null;
   }
 
-  if (kanbanRes.data?.columns) {
-    const kanbanColumns = kanbanRes.data.columns;
-    for (const col of kanbanColumns) {
-      const colId = col.id || "";
-      const colTitle = col.name || "Lista";
-      if (col.tasks && Array.isArray(col.tasks)) {
-        for (const t of col.tasks) {
-          const mapped = mapTaskResponseToTask(t, colId);
-          initialTasks.push({
-            ...mapped,
-            category: colTitle,
-          });
-        }
-      }
-    }
-  }
+  const isValidWorkspace = workspaces.some(
+    (w) => w.id === requestedWorkspaceId,
+  );
+  const activeWorkspaceId =
+    requestedWorkspaceId && isValidWorkspace
+      ? requestedWorkspaceId
+      : workspaces[0].id || "";
 
   const focusActivities: FocusActivity[] = mapFocusActivities(
     focusActivitiesRes.data,
   );
 
-  const focusRecords: FocusRecord[] = [];
-  if (focusActivities.length > 0) {
-    const activityMap = new Map(focusActivities.map((a) => [a.id, a]));
-    const recordsResponses = await Promise.all(
-      focusActivities.map((act) =>
-        serverApi
-          .GET("/focus-records/activity/{activityId}", {
-            params: {
-              path: { activityId: act.id },
-              query: { page: 0 },
-            },
-            next: { tags: ["focus-records"] },
-          })
-          .catch(() => ({ data: null })),
-      ),
-    );
+  const [boardData, focusRecords] = await Promise.all([
+    activeWorkspaceId
+      ? fetchWorkspaceBoardColumns(activeWorkspaceId)
+      : Promise.resolve({ columns: [], summaries: [] }),
+    getFocusInitialRecords(focusActivities),
+  ]);
 
-    for (const res of recordsResponses) {
-      if (res.data?.content) {
-        for (const item of res.data.content) {
-          const matchedActivity = item.focusActivityId
-            ? activityMap.get(item.focusActivityId)
-            : undefined;
-          focusRecords.push(mapFocusRecordDtoToRecord(item, matchedActivity));
-        }
-      }
+  const initialColumns: ColumnSummaryDTO[] = boardData.summaries;
+  const initialTasks: Task[] = [];
+
+  for (const col of boardData.columns) {
+    for (const task of col.tasks) {
+      initialTasks.push({
+        ...task,
+        category: col.title || task.category,
+      });
     }
   }
 

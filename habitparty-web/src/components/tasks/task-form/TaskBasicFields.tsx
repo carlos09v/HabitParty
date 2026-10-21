@@ -4,6 +4,7 @@ import { Flag, Swords, Tag } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { Select } from "@/components/ui/Select";
 import {
+  DIFFICULTY_REWARDS,
   HABIT_IMPORTANCE_OPTIONS,
   MAX_TASK_TAGS,
   TASK_DIFFICULTY_META,
@@ -14,6 +15,13 @@ import {
 import type { CreateTaskFormReturn } from "@/hooks/useCreateTaskForm";
 import type { TaskDifficultyOption, TaskPriorityOption } from "@/types/task";
 import { cn } from "@/utils";
+
+const DIFFICULTY_DESCRIPTIONS: Record<TaskDifficultyOption, string> = {
+  TRIVIAL: "Quase automática (ex: beber água, remédio).",
+  EASY: "Baixa fricção (ex: e-mails, 10 min leitura).",
+  MEDIUM: "Padrão: 30 a 60 min de esforço (ex: treino).",
+  HARD: "Intensa de 1 a 2 horas (ex: estudo pesado, projeto).",
+};
 
 interface TaskBasicFieldsProps {
   form: CreateTaskFormReturn;
@@ -150,70 +158,32 @@ export function TaskBasicFields({ form, columns }: TaskBasicFieldsProps) {
                   </p>
 
                   <ul className="flex flex-col gap-1.5 py-1 text-label-g text-neutral-200">
-                    <li className="flex items-start gap-1.5">
-                      <span
-                        className={cn(
-                          "font-bold shrink-0 flex items-center gap-1",
-                          TASK_DIFFICULTY_META.TRIVIAL.color,
-                        )}
-                      >
-                        <Swords size={11} className="shrink-0" /> Trivial:
-                      </span>
-                      <span className="text-neutral-300">
-                        <strong className="text-neutral-100">
-                          +2 XP • +0,25 🪙
-                        </strong>{" "}
-                        — Quase automática (ex: beber água, remédio).
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-1.5">
-                      <span
-                        className={cn(
-                          "font-bold shrink-0 flex items-center gap-1",
-                          TASK_DIFFICULTY_META.EASY.color,
-                        )}
-                      >
-                        <Swords size={11} className="shrink-0" /> Fácil:
-                      </span>
-                      <span className="text-neutral-300">
-                        <strong className="text-neutral-100">
-                          +5 XP • +0,75 🪙
-                        </strong>{" "}
-                        — Baixa fricção (ex: e-mails, 10 min leitura).
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-1.5">
-                      <span
-                        className={cn(
-                          "font-bold shrink-0 flex items-center gap-1",
-                          TASK_DIFFICULTY_META.MEDIUM.color,
-                        )}
-                      >
-                        <Swords size={11} className="shrink-0" /> Médio:
-                      </span>
-                      <span className="text-neutral-300">
-                        <strong className="text-neutral-100">
-                          +15 XP • +2,50 🪙
-                        </strong>{" "}
-                        — Padrão: 30 a 60 min de esforço (ex: treino).
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-1.5">
-                      <span
-                        className={cn(
-                          "font-bold shrink-0 flex items-center gap-1",
-                          TASK_DIFFICULTY_META.HARD.color,
-                        )}
-                      >
-                        <Swords size={11} className="shrink-0" /> Difícil:
-                      </span>
-                      <span className="text-neutral-300">
-                        <strong className="text-neutral-100">
-                          +30 XP • +5,00 🪙
-                        </strong>{" "}
-                        — Intensa de 1 a 2 horas (ex: estudo pesado, projeto).
-                      </span>
-                    </li>
+                    {TASK_DIFFICULTY_OPTIONS.map((opt) => {
+                      const meta = TASK_DIFFICULTY_META[opt.id];
+                      const reward = DIFFICULTY_REWARDS[opt.id];
+                      const coinsFormatted = reward.gold
+                        .toFixed(2)
+                        .replace(".", ",");
+                      return (
+                        <li key={opt.id} className="flex items-start gap-1.5">
+                          <span
+                            className={cn(
+                              "font-bold shrink-0 flex items-center gap-1",
+                              meta.color,
+                            )}
+                          >
+                            <Swords size={11} className="shrink-0" />{" "}
+                            {opt.label}:
+                          </span>
+                          <span className="text-neutral-300">
+                            <strong className="text-neutral-100">
+                              +{reward.xp} XP • +{coinsFormatted} 🪙
+                            </strong>{" "}
+                            — {DIFFICULTY_DESCRIPTIONS[opt.id]}
+                          </span>
+                        </li>
+                      );
+                    })}
                   </ul>
 
                   <div className="text-tiny text-neutral-400 bg-white/5 rounded-md p-1.5 border border-white/10 italic">
@@ -269,15 +239,7 @@ export function TaskBasicFields({ form, columns }: TaskBasicFieldsProps) {
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
               placeholder={`Ex: saúde, estudos (máx. ${MAX_TASK_TAGS})`}
-              className={cn(
-                "w-full rounded-lg text-left transition-all py-2 pl-8 pr-3 text-body-s h-[38px]",
-                "bg-card border border-neutral-700 text-neutral-50 shadow-xs",
-                "dark:bg-primary-dark/20 dark:border-primary/30 dark:shadow-none",
-                "placeholder:text-neutral-500",
-                "outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                "focus:border-primary dark:focus:border-primary-light hover:border-neutral-500 dark:hover:border-primary/50",
-                "disabled:opacity-50 disabled:cursor-not-allowed",
-              )}
+              className="w-full rounded-lg text-left transition-colors py-2 pl-8 pr-3 text-body-s h-[38px] bg-background/50 border border-primary/40 text-neutral-50 placeholder:text-neutral-500 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isPending}
             />
           </div>

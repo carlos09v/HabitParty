@@ -85,11 +85,14 @@ export function useTaskCardItem({
   const isHabit = taskType === "habit";
   const isDaily = taskType === "daily";
   const isTodo = taskType === "todo";
-  const borderClass = getTaskBorderClass(task);
   const dueDateInfo = getTaskDueDateInfo(task.dueDate, {
     activeFilter,
     selectedDate,
   });
+  const isTodoOverdue = Boolean(isTodo && dueDateInfo.isOverdue && !isDone);
+  const borderClass = isTodoOverdue
+    ? "border-l-danger-500 hover:border-l-danger-500"
+    : getTaskBorderClass(task);
 
   const displayTag =
     task.tags && task.tags.length > 0

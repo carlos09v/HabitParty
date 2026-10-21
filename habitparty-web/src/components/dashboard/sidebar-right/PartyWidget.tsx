@@ -1,9 +1,6 @@
 import { Sparkles, Users } from "lucide-react";
+import type { PartyWidgetProps } from "@/types/dashboard";
 import { cn } from "@/utils";
-
-interface PartyWidgetProps {
-  isCompact?: boolean;
-}
 
 /**
  * Widget de Membros da Party / Amigos (Formato Compacto).

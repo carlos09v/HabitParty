@@ -5,6 +5,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -62,60 +63,86 @@ export function InfoTooltip({
     setMounted(true);
   }, []);
 
+  const computeCoords = useCallback(
+    (measuredHeight?: number): Coords | null => {
+      if (!buttonRef.current || typeof window === "undefined") return null;
+      const rect = buttonRef.current.getBoundingClientRect();
+      const margin = 12;
+      const popoverWidth = Math.min(320, window.innerWidth - margin * 2);
+      const popoverHeight =
+        measuredHeight || popoverRef.current?.offsetHeight || 160;
+      const gap = 8;
+
+      // Detecta se cabe no topo ou deve inverter para a base
+      let placement: "top" | "bottom" = side;
+      if (side === "top") {
+        if (rect.top - popoverHeight - gap < margin) {
+          placement = "bottom";
+        }
+      } else {
+        if (rect.bottom + popoverHeight + gap > window.innerHeight - margin) {
+          placement = "top";
+        }
+      }
+
+      const top =
+        placement === "top"
+          ? Math.max(margin, rect.top - popoverHeight - gap)
+          : Math.min(
+              window.innerHeight - popoverHeight - margin,
+              rect.bottom + gap,
+            );
+
+      // Alinhamento horizontal com clamp nas bordas da tela
+      let left = align === "right" ? rect.right - popoverWidth : rect.left;
+
+      if (left + popoverWidth > window.innerWidth - margin) {
+        left = window.innerWidth - popoverWidth - margin;
+      }
+      if (left < margin) {
+        left = margin;
+      }
+
+      return {
+        top: Math.round(top),
+        left: Math.round(left),
+        width: popoverWidth,
+        placement,
+      };
+    },
+    [side, align],
+  );
+
   const updatePosition = useCallback(() => {
-    if (!buttonRef.current) return;
-    const rect = buttonRef.current.getBoundingClientRect();
-    const margin = 12;
-    const popoverWidth = Math.min(320, window.innerWidth - margin * 2);
-    const popoverHeight = popoverRef.current?.offsetHeight || 220;
-    const gap = 8;
-
-    // Detecta se cabe no topo ou deve inverter para a base
-    let placement: "top" | "bottom" = side;
-    if (side === "top") {
-      if (rect.top - popoverHeight - gap < margin) {
-        placement = "bottom";
-      }
-    } else {
-      if (rect.bottom + popoverHeight + gap > window.innerHeight - margin) {
-        placement = "top";
-      }
+    const next = computeCoords();
+    if (next) {
+      setCoords((prev) => {
+        if (
+          prev &&
+          prev.top === next.top &&
+          prev.left === next.left &&
+          prev.width === next.width &&
+          prev.placement === next.placement
+        ) {
+          return prev;
+        }
+        return next;
+      });
     }
+  }, [computeCoords]);
 
-    const top =
-      placement === "top"
-        ? Math.max(margin, rect.top - popoverHeight - gap)
-        : Math.min(
-            window.innerHeight - popoverHeight - margin,
-            rect.bottom + gap,
-          );
-
-    // Alinhamento horizontal com clamp nas bordas da tela
-    let left = align === "right" ? rect.right - popoverWidth : rect.left;
-
-    if (left + popoverWidth > window.innerWidth - margin) {
-      left = window.innerWidth - popoverWidth - margin;
-    }
-    if (left < margin) {
-      left = margin;
-    }
-
-    setCoords({
-      top: Math.round(top),
-      left: Math.round(left),
-      width: popoverWidth,
-      placement,
-    });
-  }, [side, align]);
-
-  // Atualiza coordenadas no abrir e acompanha scrolls de qualquer container
-  useEffect(() => {
+  // Refina coordenadas antes da pintura (useLayoutEffect) assim que o DOM do popover existe
+  useLayoutEffect(() => {
     if (!isOpen) {
       setCoords(null);
       return;
     }
-
     updatePosition();
+  }, [isOpen, updatePosition]);
+
+  // Acompanha scrolls e redimensionamentos enquanto aberto
+  useEffect(() => {
+    if (!isOpen) return;
 
     const handleScrollOrResize = () => {
       updatePosition();
@@ -176,7 +203,13 @@ export function InfoTooltip({
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
-    setIsOpen(true);
+    if (!isOpen) {
+      const initial = computeCoords();
+      if (initial) {
+        setCoords(initial);
+      }
+      setIsOpen(true);
+    }
   };
 
   const handleMouseLeave = () => {
@@ -197,7 +230,15 @@ export function InfoTooltip({
             clearTimeout(timeoutRef.current);
             timeoutRef.current = null;
           }
-          setIsOpen((prev) => !prev);
+          if (!isOpen) {
+            const initial = computeCoords();
+            if (initial) {
+              setCoords(initial);
+            }
+            setIsOpen(true);
+          } else {
+            setIsOpen(false);
+          }
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -210,27 +251,21 @@ export function InfoTooltip({
 
       {isOpen &&
         mounted &&
+        coords &&
         createPortal(
           <div
             ref={popoverRef}
             role="tooltip"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-            style={
-              coords
-                ? {
-                    top: `${coords.top}px`,
-                    left: `${coords.left}px`,
-                    width: `${coords.width}px`,
-                  }
-                : {
-                    visibility: "hidden",
-                    top: 0,
-                    left: 0,
-                  }
-            }
+            style={{
+              top: `${coords.top}px`,
+              left: `${coords.left}px`,
+              width: `${coords.width}px`,
+              transformOrigin: coords.placement === "top" ? "bottom" : "top",
+            }}
             className={cn(
-              "fixed z-[130] p-3.5 rounded-xl bg-surface/98 border border-gold/40 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 text-neutral-200 text-xs flex flex-col gap-2 pointer-events-auto",
+              "fixed z-[130] p-3.5 rounded-xl bg-surface/98 border border-gold/40 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 transition-none text-neutral-200 text-xs flex flex-col gap-2 pointer-events-auto",
               popoverClassName,
             )}
           >

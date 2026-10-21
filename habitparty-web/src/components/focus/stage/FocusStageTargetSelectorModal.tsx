@@ -157,15 +157,17 @@ export function FocusStageTargetSelectorModal({
                       ) : (
                         <button
                           type="button"
+                          disabled={isCurrent}
                           onClick={() => {
+                            if (isCurrent) return;
                             onSelectActivity?.(act);
                             onClose();
                           }}
                           className={cn(
-                            "px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0",
+                            "px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0",
                             isCurrent
-                              ? "bg-gold text-neutral-900 shadow-glow-gold-xs"
-                              : "bg-surface/80 hover:bg-gold/20 text-neutral-300 hover:text-gold border border-primary/30",
+                              ? "bg-gold text-neutral-900 shadow-glow-gold-xs cursor-default"
+                              : "bg-surface/80 hover:bg-gold/20 text-neutral-300 hover:text-gold border border-primary/30 cursor-pointer",
                           )}
                         >
                           {isCurrent ? "Selecionado" : "Vincular"}
@@ -215,15 +217,17 @@ export function FocusStageTargetSelectorModal({
 
                     <button
                       type="button"
+                      disabled={isCurrent}
                       onClick={() => {
+                        if (isCurrent) return;
                         onSelectBackpackItem?.(item);
                         onClose();
                       }}
                       className={cn(
-                        "px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0",
+                        "px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0",
                         isCurrent
-                          ? "bg-gold text-neutral-900 shadow-glow-gold-xs"
-                          : "bg-surface/80 hover:bg-gold/20 text-neutral-300 hover:text-gold border border-primary/30",
+                          ? "bg-gold text-neutral-900 shadow-glow-gold-xs cursor-default"
+                          : "bg-surface/80 hover:bg-gold/20 text-neutral-300 hover:text-gold border border-primary/30 cursor-pointer",
                       )}
                     >
                       {isCurrent ? "Selecionado" : "Vincular"}

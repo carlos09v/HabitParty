@@ -1,17 +1,10 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
-import { useCallback, useRef, useState, useTransition } from "react";
+import { useCallback, useRef, useTransition } from "react";
 import { toast } from "sonner";
-import {
-  deleteBoardColumnAction,
-  updateBoardColumnOrderAction,
-} from "@/actions/boardColumnActions";
-import { cloneTaskChecklistItems } from "@/actions/checklistActions";
-import { createTask, deleteTask, moveTasks } from "@/actions/taskActions";
-import { MAX_COLUMNS_PREMIUM, MAX_VISIBLE_COLUMNS } from "@/constants/routine";
+import { createTask, moveTasks } from "@/actions/taskActions";
 import { useTaskMutations } from "@/hooks/useTaskMutations";
-import { useUserStore } from "@/store/userStore";
 import type {
   BoardColumn,
   CreateTaskDTO,
@@ -19,8 +12,8 @@ import type {
   TaskTypeOption,
   UpdateTaskOrderDTO,
 } from "@/types/task";
+import { soundEffects } from "@/utils/soundEffects";
 import {
-  buildCreateTaskPayloadFromTask,
   buildQuickCreateTaskPayload,
   computeOptimisticHabitDelta,
   mapTaskResponseToTask,
@@ -29,116 +22,21 @@ import {
 interface UseBoardTaskActionsOptions {
   columns: BoardColumn[];
   setColumns: Dispatch<SetStateAction<BoardColumn[]>>;
-  activeWorkspaceId?: string | null;
-  visibleColumnIds: string[];
-  toggleColumnVisibility: (columnId: string) => void;
   onTaskUpdatedInDetails?: (task: Task) => void;
 }
 
 /**
- * Hook dedicado a concentrar todas as ações e mutações assíncronas do quadro Kanban
- * (duplicação, criação, salvamento, remoção e reordenação de tarefas e colunas).
+ * Hook dedicado às ações e mutações assíncronas de tarefas do quadro Kanban.
+ * Mantém referências estáveis via columnsRef para evitar re-renders em cascata durante Drag-and-Drop.
  */
 export function useBoardTaskActions({
   columns,
   setColumns,
-  activeWorkspaceId,
-  visibleColumnIds,
-  toggleColumnVisibility,
   onTaskUpdatedInDetails,
 }: UseBoardTaskActionsOptions) {
   const [, startTransition] = useTransition();
-  const is_Premium = useUserStore((s) => s.is_Premium);
-
-  const handleColumnSaved = useCallback(
-    (savedCol: BoardColumn, isEdit?: boolean) => {
-      if (isEdit) {
-        setColumns((prev) =>
-          prev.map((c) =>
-            c.id === savedCol.id
-              ? { ...c, title: savedCol.title, icon: savedCol.icon }
-              : c,
-          ),
-        );
-      } else {
-        setColumns((prev) => [...prev, savedCol]);
-        const limit = is_Premium ? MAX_COLUMNS_PREMIUM : MAX_VISIBLE_COLUMNS;
-        if (visibleColumnIds.length < limit) {
-          toggleColumnVisibility(savedCol.id);
-        }
-      }
-    },
-    [setColumns, visibleColumnIds, toggleColumnVisibility, is_Premium],
-  );
-
-  const [isDeletingColumn, setIsDeletingColumn] = useState(false);
-
-  const handleDeleteColumn = useCallback(
-    async (column: BoardColumn) => {
-      setIsDeletingColumn(true);
-      try {
-        setColumns((prev) => prev.filter((c) => c.id !== column.id));
-        if (visibleColumnIds.includes(column.id)) {
-          toggleColumnVisibility(column.id);
-        }
-
-        const res = await deleteBoardColumnAction(column.id);
-        if (!res.success) {
-          toast.error(res.error || "Erro ao excluir coluna no servidor.");
-          return false;
-        }
-
-        toast.success(`Coluna "${column.title}" excluída com sucesso!`);
-        return true;
-      } catch (_error) {
-        toast.error("Erro inesperado ao excluir coluna.");
-        return false;
-      } finally {
-        setIsDeletingColumn(false);
-      }
-    },
-    [setColumns, visibleColumnIds, toggleColumnVisibility],
-  );
-
-  const handleDuplicateTask = useCallback(
-    async (task: Task, targetColumnId: string) => {
-      const payload = buildCreateTaskPayloadFromTask(task);
-
-      const res = await createTask(targetColumnId, payload);
-      if (!res.success) {
-        toast.error(res.error || "Erro ao duplicar tarefa.");
-        return;
-      }
-
-      const newTaskId = res.data?.id;
-
-      if (newTaskId && task.checklist && task.checklist.length > 0) {
-        await cloneTaskChecklistItems(newTaskId, task.checklist);
-      }
-
-      const duplicatedTask: Task = {
-        ...task,
-        id: newTaskId || `dup-${Date.now()}`,
-        completed: false,
-        streak: 0,
-        positiveCount: 0,
-        negativeCount: 0,
-        columnId: targetColumnId,
-        order: 0,
-      };
-
-      setColumns((prev) =>
-        prev.map((col) =>
-          col.id === targetColumnId
-            ? { ...col, tasks: [...col.tasks, duplicatedTask] }
-            : col,
-        ),
-      );
-
-      toast.success(`Tarefa "${task.title}" duplicada com sucesso!`);
-    },
-    [setColumns],
-  );
+  const columnsRef = useRef(columns);
+  columnsRef.current = columns;
 
   const handleTaskSaved = useCallback(
     (savedTask: Task, targetColumnId: string) => {
@@ -219,6 +117,7 @@ export function useBoardTaskActions({
             : taskType === "DAILY"
               ? "Diária"
               : "Tarefa";
+        soundEffects.playCreateSound();
         toast.success(`${typeLabel} "${title}" adicionada!`);
       } else {
         setColumns((prev) =>
@@ -240,25 +139,6 @@ export function useBoardTaskActions({
     [setColumns],
   );
 
-  const handleDeleteTask = useCallback(
-    async (task: Task, targetColumnId: string) => {
-      setColumns((prev) =>
-        prev.map((col) =>
-          col.id === targetColumnId
-            ? { ...col, tasks: col.tasks.filter((t) => t.id !== task.id) }
-            : col,
-        ),
-      );
-      toast.success(`Tarefa "${task.title}" excluída com sucesso!`);
-
-      const res = await deleteTask(task.id);
-      if (!res.success) {
-        toast.error(res.error || "Erro ao excluir tarefa no servidor.");
-      }
-    },
-    [setColumns],
-  );
-
   const handleTaskMove = useCallback(
     (
       _taskId: string,
@@ -268,7 +148,7 @@ export function useBoardTaskActions({
     ) => {
       const tasksToUpdate =
         allTargetTasks ||
-        columns.find((c) => c.id === targetColumnId)?.tasks ||
+        columnsRef.current.find((c) => c.id === targetColumnId)?.tasks ||
         [];
 
       const updates: UpdateTaskOrderDTO[] = tasksToUpdate
@@ -290,31 +170,7 @@ export function useBoardTaskActions({
         });
       }
     },
-    [columns],
-  );
-
-  const handleColumnReorder = useCallback(
-    (reorderedColumns: BoardColumn[]) => {
-      if (!activeWorkspaceId) return;
-
-      const payload = reorderedColumns.map((c, idx) => ({
-        board_column_id: c.id,
-        newIndex: idx,
-      }));
-
-      startTransition(async () => {
-        const res = await updateBoardColumnOrderAction(
-          activeWorkspaceId,
-          payload,
-        );
-        if (!res.success) {
-          toast.error(
-            res.error || "Erro ao salvar ordem das colunas no servidor.",
-          );
-        }
-      });
-    },
-    [activeWorkspaceId],
+    [],
   );
 
   const handleTaskDetailsUpdate = useCallback(
@@ -331,9 +187,6 @@ export function useBoardTaskActions({
     },
     [setColumns, onTaskUpdatedInDetails],
   );
-
-  const columnsRef = useRef(columns);
-  columnsRef.current = columns;
 
   const findTask = useCallback(
     (taskId: string) =>
@@ -391,24 +244,67 @@ export function useBoardTaskActions({
     [setColumns],
   );
 
-  const { handleToggleComplete, handleHabitChange } = useTaskMutations({
+  const onOptimisticDelete = useCallback(
+    (task: Task, targetColumnId?: string) => {
+      setColumns((prev) =>
+        prev.map((col) =>
+          !targetColumnId || col.id === targetColumnId
+            ? { ...col, tasks: col.tasks.filter((t) => t.id !== task.id) }
+            : col,
+        ),
+      );
+    },
+    [setColumns],
+  );
+
+  const onRollbackDelete = useCallback(
+    (task: Task, targetColumnId?: string) => {
+      const colId = targetColumnId || task.columnId;
+      if (!colId) return;
+      setColumns((prev) =>
+        prev.map((col) =>
+          col.id === colId ? { ...col, tasks: [...col.tasks, task] } : col,
+        ),
+      );
+    },
+    [setColumns],
+  );
+
+  const onTaskDuplicated = useCallback(
+    (duplicatedTask: Task, targetColumnId: string) => {
+      setColumns((prev) =>
+        prev.map((col) =>
+          col.id === targetColumnId
+            ? { ...col, tasks: [...col.tasks, duplicatedTask] }
+            : col,
+        ),
+      );
+    },
+    [setColumns],
+  );
+
+  const {
+    handleToggleComplete,
+    handleHabitChange,
+    handleDeleteTask,
+    handleDuplicateTask,
+  } = useTaskMutations({
     findTask,
     onOptimisticToggle,
     onOptimisticHabit,
     onRollbackToggle,
+    onOptimisticDelete,
+    onRollbackDelete,
+    onTaskDuplicated,
     onTaskUpdatedInDetails,
   });
 
   return {
-    handleColumnSaved,
-    handleDeleteColumn,
-    isDeletingColumn,
     handleDuplicateTask,
     handleTaskSaved,
     handleQuickCreateTask,
     handleDeleteTask,
     handleTaskMove,
-    handleColumnReorder,
     handleTaskDetailsUpdate,
     handleToggleComplete,
     handleHabitChange,

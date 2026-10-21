@@ -11,7 +11,6 @@ import {
 } from "@/constants/task";
 import { useChecklist } from "@/hooks/useChecklist";
 import type {
-  CreateTaskDTO,
   DailyDaysOfWeek,
   DailyRepeatMonthlyOption,
   DailyRepeatTypeOption,
@@ -25,10 +24,16 @@ import type {
   TaskPriorityOption,
   TaskType,
   TaskTypeOption,
-  UpdateTaskDTO,
 } from "@/types/task";
+import { getTodayDateString } from "@/utils/date";
 import { calculateTaskReward } from "@/utils/economy";
-import { parseTaskTags } from "@/utils/taskMapper";
+import { soundEffects } from "@/utils/soundEffects";
+import {
+  buildCreateTaskPayloadFromTask,
+  buildUpdateTaskPayload,
+  mapTaskResponseToTask,
+  parseTaskTags,
+} from "@/utils/taskMapper";
 import { validateHardcoreTodo } from "@/utils/validators";
 
 export interface UseCreateTaskFormOptions {
@@ -153,9 +158,7 @@ export function useCreateTaskForm({
       setDueDate(taskToEdit.dueDate || "");
       setReminderType(taskToEdit.reminderType || "NONE");
       setSendEmailReminder(Boolean(taskToEdit.sendEmailReminder));
-      setStartDate(
-        taskToEdit.startDate || new Date().toISOString().split("T")[0],
-      );
+      setStartDate(taskToEdit.startDate || getTodayDateString());
       setRepeatType(taskToEdit.repeatType || "DAILY");
       setRepeatEvery(taskToEdit.repeatEvery || 1);
       setSelectedDays(
@@ -185,7 +188,7 @@ export function useCreateTaskForm({
       setDueDate("");
       setReminderType("NONE");
       setSendEmailReminder(false);
-      setStartDate(new Date().toISOString().split("T")[0]);
+      setStartDate(getTodayDateString());
       setRepeatType("DAILY");
       setRepeatEvery(1);
       setSelectedDays(ALL_WEEK_DAYS);
@@ -274,41 +277,62 @@ export function useCreateTaskForm({
     }
 
     startTransition(async () => {
-      if (isEditing && taskToEdit) {
-        // MODO EDIÇÃO
-        const updatePayload: UpdateTaskDTO = {
-          name: trimmedName,
-          description: description.trim() || undefined,
-          isHardcoreModeEnabled: isHardcore,
-          tags: tags.length > 0 ? tags : undefined,
-          priority: priority || undefined,
-          ...(taskType === "HABIT" && {
-            habitType,
-            resetCounter,
-            importanceType,
-            difficulty,
-          }),
-          ...(taskType === "DAILY" && {
-            difficulty,
-            startDate: startDate || undefined,
-            repeatType,
-            repeatEvery,
-            ...(repeatType === "WEEKLY" && {
-              daysOfWeek: selectedDays,
-            }),
-            ...(repeatType === "MONTHLY" && {
-              monthlyOption,
-            }),
-          }),
-          ...(taskType === "TODO" && {
-            difficulty,
-            dueDate: dueDate || undefined,
-            reminderType,
-            sendEmailReminder:
-              reminderType !== "NONE" ? sendEmailReminder : false,
-          }),
-        };
+      const calculatedRewards = calculateTaskReward({
+        taskType,
+        difficulty,
+        importanceType,
+        resetCounter,
+        repeatType,
+        currentStreak: isEditing ? (taskToEdit?.streak ?? 0) : 0,
+        isHardcoreModeEnabled: isHardcore,
+        dueDate: dueDate || undefined,
+        isPenaltyApplied: taskToEdit?.isPenaltyApplied,
+      });
 
+      const draftTask: Task = {
+        ...(taskToEdit || {}),
+        id: taskToEdit?.id || `tsk-${Date.now()}`,
+        title: trimmedName,
+        description: description.trim() || undefined,
+        category:
+          tags[0] ||
+          (taskToEdit?.category !== "Geral" ? taskToEdit?.category : undefined),
+        tags,
+        type: (taskType.toLowerCase() as TaskType) || "todo",
+        difficulty,
+        importance: importanceType.toLowerCase() as HabitImportance,
+        importanceType,
+        priority,
+        habitType,
+        resetCounter,
+        rewardXp: calculatedRewards.xp,
+        rewardGold: calculatedRewards.gold,
+        completed: taskToEdit?.completed ?? false,
+        streak: taskToEdit?.streak ?? 0,
+        positiveCount: taskToEdit?.positiveCount ?? 0,
+        negativeCount: taskToEdit?.negativeCount ?? 0,
+        dueDate: dueDate || undefined,
+        columnId,
+        order: taskToEdit?.order ?? 0,
+        daysOfWeek:
+          taskType === "DAILY" && repeatType === "WEEKLY"
+            ? selectedDays
+            : undefined,
+        monthlyOption:
+          taskType === "DAILY" && repeatType === "MONTHLY"
+            ? monthlyOption
+            : undefined,
+        repeatType: taskType === "DAILY" ? repeatType : undefined,
+        repeatEvery: taskType === "DAILY" ? repeatEvery : undefined,
+        startDate: taskType === "DAILY" ? startDate : undefined,
+        isHardcoreModeEnabled: isHardcore,
+        reminderType,
+        sendEmailReminder: reminderType !== "NONE" ? sendEmailReminder : false,
+        checklist,
+      };
+
+      if (isEditing && taskToEdit) {
+        const updatePayload = buildUpdateTaskPayload(draftTask);
         const response = await updateTask(taskToEdit.id, updatePayload);
 
         if (!response.success) {
@@ -316,7 +340,6 @@ export function useCreateTaskForm({
           return;
         }
 
-        // Se a coluna foi alterada na edição, persiste a movimentação de coluna no backend
         const originalColumnId = taskToEdit.columnId || defaultColumnId;
         if (originalColumnId && columnId !== originalColumnId) {
           const moveRes = await moveTasks([
@@ -334,95 +357,14 @@ export function useCreateTaskForm({
           }
         }
 
-        const calculatedRewards = calculateTaskReward({
-          taskType,
-          difficulty,
-          importanceType,
-          resetCounter,
-          repeatType,
-          currentStreak: taskToEdit.streak ?? 0,
-          isHardcoreModeEnabled: isHardcore,
-          dueDate: dueDate || undefined,
-          isPenaltyApplied: taskToEdit.isPenaltyApplied,
-        });
-
-        const updatedTask: Task = {
-          ...taskToEdit,
-          title: trimmedName,
-          description: description.trim() || undefined,
-          category:
-            tags[0] ||
-            (taskToEdit.category !== "Geral" ? taskToEdit.category : undefined),
-          tags: tags.length > 0 ? tags : taskToEdit.tags,
-          type: (taskType.toLowerCase() as TaskType) || taskToEdit.type,
-          difficulty: difficulty,
-          importance: importanceType.toLowerCase() as HabitImportance,
-          importanceType,
-          priority: priority,
-          habitType,
-          resetCounter,
-          rewardXp: calculatedRewards.xp,
-          rewardGold: calculatedRewards.gold,
-          dueDate: dueDate || undefined,
-          columnId: columnId,
-          daysOfWeek:
-            taskType === "DAILY" && repeatType === "WEEKLY"
-              ? selectedDays
-              : undefined,
-          monthlyOption:
-            taskType === "DAILY" && repeatType === "MONTHLY"
-              ? monthlyOption
-              : undefined,
-          repeatType: taskType === "DAILY" ? repeatType : undefined,
-          repeatEvery: taskType === "DAILY" ? repeatEvery : undefined,
-          startDate: taskType === "DAILY" ? startDate : undefined,
-          isHardcoreModeEnabled: isHardcore,
-          sendEmailReminder:
-            reminderType !== "NONE" ? sendEmailReminder : false,
-          checklist: checklist,
-        };
-
         toast.success("Tarefa atualizada com sucesso!");
-        onSuccess?.(updatedTask, columnId);
+        onSuccess?.(draftTask, columnId);
         onClose();
         return;
       }
 
       // MODO CRIAÇÃO
-      const payload: CreateTaskDTO = {
-        name: trimmedName,
-        description: description.trim() || undefined,
-        taskType: taskType,
-        isHardcoreModeEnabled: isHardcore,
-        tags: tags.length > 0 ? tags : undefined,
-        priority: priority || undefined,
-        ...(taskType === "HABIT" && {
-          habitType,
-          resetCounter,
-          importanceType,
-          difficulty,
-        }),
-        ...(taskType === "DAILY" && {
-          difficulty,
-          startDate: startDate || undefined,
-          repeatType,
-          repeatEvery,
-          ...(repeatType === "WEEKLY" && {
-            daysOfWeek: selectedDays,
-          }),
-          ...(repeatType === "MONTHLY" && {
-            monthlyOption,
-          }),
-        }),
-        ...(taskType === "TODO" && {
-          difficulty,
-          dueDate: dueDate || undefined,
-          reminderType,
-          sendEmailReminder:
-            reminderType !== "NONE" ? sendEmailReminder : false,
-        }),
-      };
-
+      const payload = buildCreateTaskPayloadFromTask(draftTask);
       const response = await createTask(columnId, payload);
 
       if (!response.success) {
@@ -433,62 +375,38 @@ export function useCreateTaskForm({
       const createdTaskData = response.data;
       const createdTaskId = createdTaskData?.id;
 
-      // Se houver itens de checklist, adiciona-os em paralelo
+      let finalChecklist = checklist;
       if (createdTaskId && checklist.length > 0) {
-        await cloneTaskChecklistItems(createdTaskId, checklist);
+        const createdItems = await cloneTaskChecklistItems(
+          createdTaskId,
+          checklist,
+        );
+        if (createdItems.length > 0) {
+          finalChecklist = createdItems;
+        }
       }
 
-      const calculatedRewards = calculateTaskReward({
-        taskType,
-        difficulty,
-        importanceType,
-        resetCounter,
-        repeatType,
-        currentStreak: 0,
-        isHardcoreModeEnabled: isHardcore,
-        dueDate: dueDate || undefined,
+      const mappedTask: Task = createdTaskData
+        ? {
+            ...mapTaskResponseToTask(createdTaskData, columnId),
+            checklist: finalChecklist,
+          }
+        : {
+            ...draftTask,
+            id: createdTaskId || draftTask.id,
+            checklist: finalChecklist,
+          };
+
+      const typeLabel =
+        taskType === "HABIT"
+          ? "Hábito"
+          : taskType === "DAILY"
+            ? "Diária"
+            : "Tarefa";
+      soundEffects.playCreateSound();
+      toast.success(`${typeLabel} "${trimmedName}" criada!`, {
+        description: `Recompensa estimada: +${calculatedRewards.xp} XP • +${calculatedRewards.gold.toFixed(2)} 🪙`,
       });
-
-      // Mapeia para a entidade local Task da UI
-      const mappedTask: Task = {
-        id: createdTaskId || `tsk-${Date.now()}`,
-        title: trimmedName,
-        description: description.trim() || undefined,
-        category: tags[0] || undefined,
-        tags,
-        type: (taskType.toLowerCase() as TaskType) || "todo",
-        difficulty: difficulty,
-        importance: importanceType.toLowerCase() as HabitImportance,
-        importanceType,
-        priority: createdTaskData?.priority || priority,
-        habitType,
-        resetCounter,
-        rewardXp: calculatedRewards.xp,
-        rewardGold: calculatedRewards.gold,
-        completed: false,
-        streak: 0,
-        positiveCount: 0,
-        negativeCount: 0,
-        dueDate: dueDate || undefined,
-        columnId: columnId,
-        order: 0,
-        daysOfWeek:
-          taskType === "DAILY" && repeatType === "WEEKLY"
-            ? selectedDays
-            : undefined,
-        monthlyOption:
-          taskType === "DAILY" && repeatType === "MONTHLY"
-            ? monthlyOption
-            : undefined,
-        repeatType: taskType === "DAILY" ? repeatType : undefined,
-        repeatEvery: taskType === "DAILY" ? repeatEvery : undefined,
-        startDate: taskType === "DAILY" ? startDate : undefined,
-        isHardcoreModeEnabled: isHardcore,
-        sendEmailReminder: reminderType !== "NONE" ? sendEmailReminder : false,
-        checklist: checklist,
-      };
-
-      toast.success("Tarefa criada com sucesso!");
       onSuccess?.(mappedTask, columnId);
       onClose();
     });

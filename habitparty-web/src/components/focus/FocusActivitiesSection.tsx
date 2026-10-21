@@ -1,16 +1,21 @@
 "use client";
 
+import { closestCenter, DndContext } from "@dnd-kit/core";
+import { restrictToWindowEdges } from "@dnd-kit/modifiers";
+import { rectSortingStrategy, SortableContext } from "@dnd-kit/sortable";
 import { Crown, Plus, X } from "lucide-react";
-import { useState } from "react";
-import { UpgradePremiumModal } from "@/components/subscription/UpgradePremiumModal";
+import { useCallback, useMemo } from "react";
+import { reorderFocusActivities } from "@/actions/focusActions";
 import {
   MAX_FOCUS_ACTIVITIES_FREE,
   MAX_FOCUS_ACTIVITIES_PREMIUM,
 } from "@/constants/focus";
-import { useCompactMode } from "@/hooks/useCompactMode";
+import { useReorderableList } from "@/hooks/useReorderableList";
 import type { FocusActivity } from "@/types/focus";
 import { cn } from "@/utils";
-import { FocusCard } from "./FocusCard";
+import { FocusCard, SortableFocusActivityCard } from "./FocusCard";
+
+const DND_MODIFIERS = [restrictToWindowEdges];
 
 interface FocusActivitiesSectionProps {
   activities: FocusActivity[];
@@ -23,6 +28,7 @@ interface FocusActivitiesSectionProps {
   onSelectActivity?: (activityId: string | null) => void;
   onStartFocus: (activity: FocusActivity) => void;
   onOpenCreateModal: () => void;
+  onOpenUpgradeModal: () => void;
   onContextMenu: (e: React.MouseEvent, activity: FocusActivity) => void;
   isCompact?: boolean;
 }
@@ -38,20 +44,59 @@ export function FocusActivitiesSection({
   onSelectActivity,
   onStartFocus,
   onOpenCreateModal,
+  onOpenUpgradeModal,
   onContextMenu,
-  isCompact: propIsCompact,
+  isCompact = false,
 }: FocusActivitiesSectionProps) {
-  const { isCompact: storeIsCompact } = useCompactMode();
-  const isCompact = propIsCompact ?? storeIsCompact;
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const maxActivities = isPremium
     ? MAX_FOCUS_ACTIVITIES_PREMIUM
     : MAX_FOCUS_ACTIVITIES_FREE;
   const isLimitReached = activities.length >= maxActivities;
 
-  const selectedActivity = selectedActivityId
-    ? activities.find((act) => act.id === selectedActivityId)
-    : null;
+  const handleReorderServer = useCallback(
+    async (updates: { id: string; newIndex: number }[]) => {
+      return reorderFocusActivities(
+        updates.map((u) => ({ id: u.id, orderIndex: u.newIndex })),
+      );
+    },
+    [],
+  );
+
+  const {
+    items: orderedActivities,
+    sensors,
+    handleDragEnd,
+  } = useReorderableList<FocusActivity>({
+    initialItems: activities,
+    onReorderServerAction: handleReorderServer,
+    maxUnlockedCount: isPremium ? undefined : MAX_FOCUS_ACTIVITIES_FREE,
+  });
+
+  // Apenas as atividades ativas (destravadas) entram no SortableContext.
+  // Quando o plano Premium expira e há > 4 atividades, as últimas 2 ficam travadas e imóveis.
+  const unlockedActivityIds = useMemo(
+    () =>
+      (isPremium
+        ? orderedActivities
+        : orderedActivities.slice(0, MAX_FOCUS_ACTIVITIES_FREE)
+      ).map((act) => act.id),
+    [orderedActivities, isPremium],
+  );
+
+  const selectedActivity = useMemo(
+    () =>
+      selectedActivityId
+        ? orderedActivities.find((act) => act.id === selectedActivityId) || null
+        : null,
+    [orderedActivities, selectedActivityId],
+  );
+
+  const handleSelectCard = useCallback(
+    (act: FocusActivity) => {
+      onSelectActivity?.(selectedActivityId === act.id ? null : act.id);
+    },
+    [onSelectActivity, selectedActivityId],
+  );
 
   return (
     <section className="flex flex-col gap-3 w-full" aria-label="Atividades">
@@ -101,15 +146,15 @@ export function FocusActivitiesSection({
             )}
             title={
               isLimitReached
-                ? `Limite atingido: ${activities.length}/${maxActivities} (${isPremium ? "Premium" : "Free"})`
-                : `${activities.length} de ${maxActivities} atividades utilizadas`
+                ? `Limite atingido: ${orderedActivities.length}/${maxActivities} (${isPremium ? "Premium" : "Free"})`
+                : `${orderedActivities.length} de ${maxActivities} atividades utilizadas`
             }
           >
             {isPremium && (
               <Crown size={12} className="text-gold fill-gold/20" />
             )}
             <span>
-              {activities.length}/{maxActivities}
+              {orderedActivities.length}/{maxActivities}
             </span>
             <span className="text-tiny text-neutral-400 hidden sm:inline">
               ({isPremium ? "Premium" : "Free"})
@@ -119,11 +164,7 @@ export function FocusActivitiesSection({
           {/* Botão + Adicionar / Upgrade */}
           <button
             type="button"
-            onClick={
-              isLimitReached
-                ? () => setIsUpgradeModalOpen(true)
-                : onOpenCreateModal
-            }
+            onClick={isLimitReached ? onOpenUpgradeModal : onOpenCreateModal}
             disabled={isLimitReached && isPremium}
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer",
@@ -137,7 +178,7 @@ export function FocusActivitiesSection({
               isLimitReached
                 ? isPremium
                   ? `Limite máximo de ${maxActivities} atividades atingido`
-                  : `Limite atingido: Seja Premium para criar até 6 atividades 👑`
+                  : "Limite atingido: Seja Premium para criar até 6 atividades 👑"
                 : "Criar nova atividade"
             }
           >
@@ -156,8 +197,8 @@ export function FocusActivitiesSection({
         </div>
       </div>
 
-      {/* Lista de Atividades */}
-      {activities.length === 0 ? (
+      {/* Lista de Atividades com Reordenação Otimizada */}
+      {orderedActivities.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-primary/30 bg-surface/30 p-6 flex flex-col items-center justify-center text-center gap-2">
           <p className="text-body-s text-neutral-400">
             Nenhuma atividade cadastrada no momento.
@@ -173,42 +214,68 @@ export function FocusActivitiesSection({
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-          {activities.map((act, index) => {
-            const isLocked = !isPremium && index >= maxActivities;
-            return (
-              <FocusCard
-                key={act.id}
-                variant="activity"
-                activity={act}
-                isLocked={isLocked}
-                onLockedClick={() => setIsUpgradeModalOpen(true)}
-                isActiveTarget={Boolean(
+        <DndContext
+          id="focus-activities-dnd-context"
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+          modifiers={DND_MODIFIERS}
+        >
+          <SortableContext
+            items={unlockedActivityIds}
+            strategy={rectSortingStrategy}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              {orderedActivities.map((act, index) => {
+                const isLocked = !isPremium && index >= maxActivities;
+                const isActTarget = Boolean(
                   isTimerActive && activeTargetId === act.id,
-                )}
-                isTimerRunning={Boolean(
-                  isTimerActive && activeTargetId === act.id && isTimerRunning,
-                )}
-                onToggleTimer={onToggleTimer}
-                isSelected={selectedActivityId === act.id}
-                onSelect={() =>
-                  onSelectActivity?.(
-                    selectedActivityId === act.id ? null : act.id,
-                  )
-                }
-                onStartFocus={onStartFocus}
-                onContextMenu={onContextMenu}
-                isCompact={isCompact}
-              />
-            );
-          })}
-        </div>
-      )}
+                );
+                const isActRunning = Boolean(isActTarget && isTimerRunning);
+                const isActSelected = selectedActivityId === act.id;
 
-      <UpgradePremiumModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-      />
+                if (isLocked) {
+                  return (
+                    <FocusCard
+                      key={act.id}
+                      variant="activity"
+                      activity={act}
+                      isLocked
+                      onLockedClick={onOpenUpgradeModal}
+                      isActiveTarget={isActTarget}
+                      isTimerRunning={isActRunning}
+                      onToggleTimer={onToggleTimer}
+                      isSelected={isActSelected}
+                      onSelect={handleSelectCard}
+                      onStartFocus={onStartFocus}
+                      onContextMenu={onContextMenu}
+                      isCompact={isCompact}
+                    />
+                  );
+                }
+
+                return (
+                  <SortableFocusActivityCard
+                    key={act.id}
+                    variant="activity"
+                    activity={act}
+                    isLocked={false}
+                    onLockedClick={onOpenUpgradeModal}
+                    isActiveTarget={isActTarget}
+                    isTimerRunning={isActRunning}
+                    onToggleTimer={onToggleTimer}
+                    isSelected={isActSelected}
+                    onSelect={handleSelectCard}
+                    onStartFocus={onStartFocus}
+                    onContextMenu={onContextMenu}
+                    isCompact={isCompact}
+                  />
+                );
+              })}
+            </div>
+          </SortableContext>
+        </DndContext>
+      )}
     </section>
   );
 }

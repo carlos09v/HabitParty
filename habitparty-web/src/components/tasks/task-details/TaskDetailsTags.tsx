@@ -1,5 +1,3 @@
-"use client";
-
 import { Plus, X } from "lucide-react";
 import { MAX_TAG_LENGTH, MAX_TASK_TAGS } from "@/constants/task";
 

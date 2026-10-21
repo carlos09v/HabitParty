@@ -10,17 +10,22 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import dynamic from "next/dynamic";
+import { useState } from "react";
 import { SettingsCard } from "@/components/settings/SettingsCard";
-import { UpgradePremiumModal } from "@/components/subscription/UpgradePremiumModal";
 import { Switch } from "@/components/ui/Switch";
 import { AMBIENT_ICONS, AMBIENT_SOUND_OPTIONS } from "@/constants/settings";
-import { useSoundPreferences } from "@/store/soundPreferencesStore";
-import { useUserStore } from "@/store/userStore";
-import type { AmbientSoundType } from "@/types/settings";
+import { useFocusAudioControls } from "@/hooks/useFocusAudioControls";
 import { cn } from "@/utils";
 import { soundEffects } from "@/utils/soundEffects";
+
+const UpgradePremiumModal = dynamic(
+  () =>
+    import("@/components/subscription/UpgradePremiumModal").then(
+      (mod) => mod.UpgradePremiumModal,
+    ),
+  { ssr: false },
+);
 
 interface SoundNotificationSettingsProps {
   isCompact?: boolean;
@@ -29,15 +34,17 @@ interface SoundNotificationSettingsProps {
 export function SoundNotificationSettings({
   isCompact = false,
 }: SoundNotificationSettingsProps) {
-  const isPremium = useUserStore((s) => s.is_Premium);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   const {
+    mounted,
+    isPremium,
     uiSoundsEnabled,
     timerSoundsEnabled,
     timerVolume,
     timerSoundType,
     browserNotificationsEnabled,
+    notificationPermission,
     ambientSoundType,
     ambientVolume,
     isAmbientPlaying,
@@ -45,92 +52,15 @@ export function SoundNotificationSettings({
     toggleTimerSounds,
     setTimerVolume,
     setTimerSoundType,
-    setBrowserNotificationsEnabled,
-    setAmbientSoundType,
-    setAmbientVolume,
-    setIsAmbientPlaying,
-    mounted,
-  } = useSoundPreferences();
-
-  const [notificationPermission, setNotificationPermission] =
-    useState<NotificationPermission>("default");
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && "Notification" in window) {
-      setNotificationPermission(Notification.permission);
-    }
-  }, []);
-
-  const handleToggleNotifications = async (checked: boolean) => {
-    if (!("Notification" in window)) {
-      toast.error(
-        "Seu navegador não suporta notificações de área de trabalho.",
-      );
-      return;
-    }
-
-    if (checked) {
-      try {
-        const permission = await Notification.requestPermission();
-        setNotificationPermission(permission);
-
-        if (permission === "granted") {
-          setBrowserNotificationsEnabled(true);
-          toast.success("Notificações do navegador ativadas!");
-          new Notification("HabitParty", {
-            body: "Notificações ativadas! Avisaremos você ao concluir suas sessões de foco.",
-            icon: "/favicon.ico",
-          });
-        } else if (permission === "denied") {
-          setBrowserNotificationsEnabled(false);
-          toast.error(
-            "Permissão bloqueada no navegador. Habilite nas configurações do site para receber avisos.",
-          );
-        } else {
-          setBrowserNotificationsEnabled(false);
-        }
-      } catch (_e) {
-        toast.error("Não foi possível solicitar permissão para notificações.");
-      }
-    } else {
-      setBrowserNotificationsEnabled(false);
-      toast.info("Notificações de foco desativadas.");
-    }
-  };
+    toggleBrowserNotifications,
+    selectAmbientSound,
+    changeAmbientVolume,
+  } = useFocusAudioControls({
+    onRequirePremiumUpgrade: () => setIsUpgradeModalOpen(true),
+  });
 
   const handleTestSound = () => {
     soundEffects.playTimerStartSound(timerSoundType, timerVolume);
-  };
-
-  const handleSelectAmbientSound = (type: AmbientSoundType) => {
-    if (type !== "none" && !isPremium) {
-      toast.info(
-        "Sons de foco ambiente são exclusivos para assinantes Premium! Faça o upgrade para desbloquear.",
-      );
-      setIsUpgradeModalOpen(true);
-      return;
-    }
-
-    if (type === "none") {
-      soundEffects.stopAmbientSound();
-      setAmbientSoundType("none");
-      setIsAmbientPlaying(false);
-      toast.info("Som ambiente desligado.");
-      return;
-    }
-
-    setAmbientSoundType(type);
-    setIsAmbientPlaying(true);
-    soundEffects.startAmbientSound(type, ambientVolume);
-
-    const soundLabel =
-      AMBIENT_SOUND_OPTIONS.find((s) => s.id === type)?.label || type;
-    toast.success(`Som ambiente ativado: ${soundLabel}`);
-  };
-
-  const handleAmbientVolumeChange = (newVol: number) => {
-    setAmbientVolume(newVol);
-    soundEffects.setAmbientVolume(newVol);
   };
 
   if (!mounted) {
@@ -159,7 +89,66 @@ export function SoundNotificationSettings({
         isCompact={isCompact}
       >
         <div className="flex flex-col gap-6">
-          {/* BLOCO 1: SONS DE CLIQUE E GAMIFICAÇÃO */}
+          {/* BLOCO 1: NOTIFICAÇÕES DO NAVEGADOR */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-magenta/15 text-magenta flex items-center justify-center shrink-0 border border-magenta/30 mt-0.5">
+                  <Bell size={18} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-body-m font-bold text-neutral-100">
+                    Notificações de Foco do Navegador
+                  </span>
+                  <p className="text-body-s text-neutral-400">
+                    Receba um aviso na área de trabalho quando uma sessão de
+                    foco ou pausa terminar, mesmo em outra aba.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <span
+                  className={cn(
+                    "text-xs font-semibold px-2 py-0.5 rounded-md hidden sm:inline-block",
+                    browserNotificationsEnabled &&
+                      notificationPermission === "granted"
+                      ? "bg-green-500/15 text-green-400 border border-green-500/30"
+                      : notificationPermission === "denied"
+                        ? "bg-red-500/15 text-red-400 border border-red-500/30"
+                        : "bg-white/5 text-neutral-400 border border-white/10",
+                  )}
+                >
+                  {notificationPermission === "denied"
+                    ? "Bloqueado pelo Navegador"
+                    : browserNotificationsEnabled &&
+                        notificationPermission === "granted"
+                      ? "Ativado"
+                      : "Desativado"}
+                </span>
+                <Switch
+                  checked={
+                    browserNotificationsEnabled &&
+                    notificationPermission === "granted"
+                  }
+                  onCheckedChange={toggleBrowserNotifications}
+                  aria-label="Ativar notificações do navegador para término de sessões"
+                />
+              </div>
+            </div>
+
+            {notificationPermission === "denied" && (
+              <p className="text-xs text-red-400/90 pl-12">
+                As notificações estão bloqueadas nas permissões do seu
+                navegador. Para reativar, clique no ícone de cadeado na barra de
+                endereços e permita notificações para o HabitParty.
+              </p>
+            )}
+          </div>
+
+          <div className="h-px w-full bg-white/10" />
+
+          {/* BLOCO 2: SONS DE CLIQUE E GAMIFICAÇÃO */}
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-start gap-3">
@@ -199,7 +188,7 @@ export function SoundNotificationSettings({
 
           <div className="h-px w-full bg-white/10" />
 
-          {/* BLOCO 2: ALARMES E VOLUME DO POMODORO */}
+          {/* BLOCO 3: ALARMES E VOLUME DO POMODORO */}
           <div className="flex flex-col gap-5">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-start gap-3">
@@ -314,7 +303,7 @@ export function SoundNotificationSettings({
                       <span className="text-xs font-bold text-neutral-100">
                         Sino Zen Suave
                       </span>
-                      <span className="text-[11px] text-neutral-400">
+                      <span className="text-label-g text-neutral-400">
                         Harmônico 528Hz focado em calma
                       </span>
                     </div>
@@ -340,7 +329,7 @@ export function SoundNotificationSettings({
                       <span className="text-xs font-bold text-neutral-100">
                         Arcade Retrô
                       </span>
-                      <span className="text-[11px] text-neutral-400">
+                      <span className="text-label-g text-neutral-400">
                         Bips eletrônicos ascendentes gamificados
                       </span>
                     </div>
@@ -355,7 +344,7 @@ export function SoundNotificationSettings({
 
           <div className="h-px w-full bg-white/10" />
 
-          {/* BLOCO 3: SONS DE AMBIENTE PROCEDURAIS (RECURSO VIP) */}
+          {/* BLOCO 4: SONS DE AMBIENTE PROCEDURAIS (RECURSO VIP) */}
           <div className="flex flex-col gap-5">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-start gap-3">
@@ -367,7 +356,7 @@ export function SoundNotificationSettings({
                     <span className="text-body-m font-bold text-neutral-100">
                       Sons de Foco Ambiente
                     </span>
-                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-gold/20 text-gold border border-gold/40">
+                    <span className="text-tiny font-black uppercase px-2 py-0.5 rounded bg-gold/20 text-gold border border-gold/40">
                       VIP
                     </span>
                   </div>
@@ -402,7 +391,7 @@ export function SoundNotificationSettings({
                     <button
                       key={sound.id}
                       type="button"
-                      onClick={() => handleSelectAmbientSound(sound.id)}
+                      onClick={() => selectAmbientSound(sound.id)}
                       className={cn(
                         "p-3 rounded-xl border text-left flex items-center justify-between gap-2.5 transition-all cursor-pointer",
                         isSelected
@@ -427,7 +416,7 @@ export function SoundNotificationSettings({
                           <span className="text-xs truncate">
                             {sound.label}
                           </span>
-                          <span className="text-[10px] text-neutral-400 truncate">
+                          <span className="text-tiny text-neutral-400 truncate">
                             {sound.description}
                           </span>
                         </div>
@@ -465,7 +454,7 @@ export function SoundNotificationSettings({
                       step="0.05"
                       value={ambientVolume}
                       onChange={(e) =>
-                        handleAmbientVolumeChange(parseFloat(e.target.value))
+                        changeAmbientVolume(parseFloat(e.target.value))
                       }
                       aria-label="Volume padrão do som ambiente"
                       className="w-full h-1.5 bg-primary/40 rounded-lg appearance-none cursor-pointer accent-gold"
@@ -478,72 +467,15 @@ export function SoundNotificationSettings({
               )}
             </div>
           </div>
-
-          <div className="h-px w-full bg-white/10" />
-
-          {/* BLOCO 4: NOTIFICAÇÕES DO NAVEGADOR */}
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-magenta/15 text-magenta flex items-center justify-center shrink-0 border border-magenta/30 mt-0.5">
-                  <Bell size={18} />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-body-m font-bold text-neutral-100">
-                    Notificações de Foco do Navegador
-                  </span>
-                  <p className="text-body-s text-neutral-400">
-                    Receba um aviso na área de trabalho quando uma sessão de
-                    foco ou pausa terminar, mesmo em outra aba.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <span
-                  className={cn(
-                    "text-xs font-semibold px-2 py-0.5 rounded-md hidden sm:inline-block",
-                    browserNotificationsEnabled &&
-                      notificationPermission === "granted"
-                      ? "bg-green-500/15 text-green-400 border border-green-500/30"
-                      : notificationPermission === "denied"
-                        ? "bg-red-500/15 text-red-400 border border-red-500/30"
-                        : "bg-white/5 text-neutral-400 border border-white/10",
-                  )}
-                >
-                  {notificationPermission === "denied"
-                    ? "Bloqueado pelo Navegador"
-                    : browserNotificationsEnabled &&
-                        notificationPermission === "granted"
-                      ? "Ativado"
-                      : "Desativado"}
-                </span>
-                <Switch
-                  checked={
-                    browserNotificationsEnabled &&
-                    notificationPermission === "granted"
-                  }
-                  onCheckedChange={handleToggleNotifications}
-                  aria-label="Ativar notificações do navegador para término de sessões"
-                />
-              </div>
-            </div>
-
-            {notificationPermission === "denied" && (
-              <p className="text-xs text-red-400/90 pl-12">
-                As notificações estão bloqueadas nas permissões do seu
-                navegador. Para reativar, clique no ícone de cadeado na barra de
-                endereços e permita notificações para o HabitParty.
-              </p>
-            )}
-          </div>
         </div>
       </SettingsCard>
 
-      <UpgradePremiumModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-      />
+      {isUpgradeModalOpen && (
+        <UpgradePremiumModal
+          isOpen={isUpgradeModalOpen}
+          onClose={() => setIsUpgradeModalOpen(false)}
+        />
+      )}
     </>
   );
 }

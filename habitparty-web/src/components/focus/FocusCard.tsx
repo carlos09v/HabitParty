@@ -1,17 +1,20 @@
 "use client";
 
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   Backpack,
   Check,
+  GripVertical,
   Lock,
   Pause,
   Play,
   Sparkles,
   Timer,
 } from "lucide-react";
+import { type CSSProperties, type HTMLAttributes, memo } from "react";
 import { getFocusIcon } from "@/constants/focus";
 import { getRewardIcon, PACKAGE_LEVEL_COLOR } from "@/constants/reward";
-import { useCompactMode } from "@/hooks/useCompactMode";
 import type { FocusActivity } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn } from "@/utils";
@@ -28,6 +31,11 @@ export interface FocusCardBaseProps {
   onToggleTimer?: () => void;
   onLockedClick?: () => void;
   isCompact?: boolean;
+  isDragging?: boolean;
+  sortableRef?: (node: HTMLElement | null) => void;
+  sortableStyle?: CSSProperties;
+  sortableAttributes?: HTMLAttributes<HTMLElement>;
+  sortableListeners?: HTMLAttributes<HTMLElement>;
 }
 
 export interface FocusActivityCardVariantProps extends FocusCardBaseProps {
@@ -54,23 +62,27 @@ export type FocusCardProps =
 
 /**
  * Card Unificado de Foco para Atividades e Itens da Mochila.
- * Elimina duplicações de estilização, classes do Tailwind e lógica de botões de controle.
+ * Memoizado para evitar re-renders desnecessários durante drag-and-drop ou interações no palco.
  */
-export function FocusCard(props: FocusCardProps) {
-  const { isCompact: storeIsCompact } = useCompactMode();
+export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
   const {
     isActiveTarget = false,
     isTimerRunning = false,
     onToggleTimer,
-    isCompact = storeIsCompact,
+    isCompact = false,
+    isDragging = false,
+    sortableRef,
+    sortableStyle,
+    sortableAttributes,
+    sortableListeners,
   } = props;
 
   const isActivity = props.variant === "activity";
   const activity = isActivity ? props.activity : null;
   const isLocked = isActivity ? Boolean(props.isLocked) : false;
   const item = !isActivity ? props.item : null;
-
   const isSelected = isActivity ? Boolean(props.isSelected) : false;
+  const isDraggable = isActivity && !isLocked && Boolean(sortableListeners);
 
   // Resolução do ícone
   const IconComponent = isActivity
@@ -139,6 +151,10 @@ export function FocusCard(props: FocusCardProps) {
 
   return (
     <article
+      ref={sortableRef}
+      style={sortableStyle}
+      {...sortableAttributes}
+      {...sortableListeners}
       data-focus-card="true"
       data-selected={isSelected}
       onClick={handleCardClick}
@@ -150,8 +166,14 @@ export function FocusCard(props: FocusCardProps) {
       }}
       onContextMenu={handleContextMenu}
       className={cn(
-        "group relative flex items-center justify-between rounded-xl border bg-card/60 backdrop-blur-sm transition-all duration-200",
-        isActivity ? "cursor-pointer" : "select-none",
+        "group relative flex items-center justify-between rounded-xl border bg-card/60 backdrop-blur-sm transition-[border-color,background-color,box-shadow,opacity] duration-200 select-none",
+        isActivity
+          ? isLocked
+            ? "cursor-pointer"
+            : isDraggable
+              ? "cursor-grab active:cursor-grabbing"
+              : "cursor-pointer"
+          : "",
         isCompact ? "p-3 gap-2.5" : "p-3.5 sm:p-4 gap-3",
         isSelected
           ? "ring-2 ring-gold border-gold/80 bg-gold/15 shadow-glow-gold-xs"
@@ -160,10 +182,20 @@ export function FocusCard(props: FocusCardProps) {
             : isLocked
               ? "border-white/5 bg-surface/30 opacity-75 hover:opacity-100 hover:border-gold/30"
               : "border-primary/30 hover:border-gold/40 hover:bg-card-hover/80",
+        isDragging &&
+          "!transition-none opacity-60 ring-2 ring-gold shadow-glow-gold-md z-50 will-change-transform",
       )}
     >
       {/* Esquerda: Ícone + Detalhes */}
-      <div className="flex items-center gap-3 min-w-0 flex-1">
+      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+        {isDraggable && (
+          <GripVertical
+            size={14}
+            aria-hidden="true"
+            className="text-neutral-500 opacity-0 group-hover:opacity-70 transition-opacity shrink-0 -ml-1 hidden sm:block"
+          />
+        )}
+
         <div
           className={cn(
             "rounded-lg flex items-center justify-center shrink-0 border transition-all",
@@ -249,7 +281,10 @@ export function FocusCard(props: FocusCardProps) {
       </div>
 
       {/* Direita: Ações (Play OU Check para Concluir) */}
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div
+        className="flex items-center gap-1.5 shrink-0"
+        onPointerDown={(e) => e.stopPropagation()}
+      >
         {!isActivity && isTimeDepleted ? (
           <button
             type="button"
@@ -332,4 +367,50 @@ export function FocusCard(props: FocusCardProps) {
       </div>
     </article>
   );
-}
+});
+
+/**
+ * Wrapper Sortable exclusivo para atividades destravadas.
+ * Atividades travadas (plano Free com > 4 atividades) NÃO passam por useSortable,
+ * ficando congeladas nas últimas posições sem custo de medição no @dnd-kit.
+ */
+export const SortableFocusActivityCard = memo(
+  function SortableFocusActivityCard(
+    props: Omit<
+      FocusActivityCardVariantProps,
+      | "sortableRef"
+      | "sortableStyle"
+      | "sortableAttributes"
+      | "sortableListeners"
+      | "isDragging"
+    >,
+  ) {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({
+      id: props.activity.id,
+      disabled: Boolean(props.isLocked),
+    });
+
+    const style: CSSProperties = {
+      transform: CSS.Translate.toString(transform),
+      transition: isDragging ? undefined : transition,
+    };
+
+    return (
+      <FocusCard
+        {...props}
+        isDragging={isDragging}
+        sortableRef={setNodeRef}
+        sortableStyle={style}
+        sortableAttributes={attributes}
+        sortableListeners={listeners}
+      />
+    );
+  },
+);

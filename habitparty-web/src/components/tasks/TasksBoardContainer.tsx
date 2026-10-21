@@ -5,7 +5,7 @@ import { restrictToWindowEdges } from "@dnd-kit/modifiers";
 import { Crown, Lock } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { RoutineBoard } from "@/components/tasks/RoutineBoard";
 import { RoutineColumn } from "@/components/tasks/RoutineColumn";
@@ -98,7 +98,7 @@ export function TasksBoardContainer({
 
   const isWorkspaceReadOnly = !is_Premium && activeWorkspaceIndex >= 2;
 
-  // 1. Hook de Colunas e Visibilidade
+  // 1. Hook de Colunas, Visibilidade e Mutações de Coluna
   const {
     columns,
     setColumns,
@@ -108,6 +108,10 @@ export function TasksBoardContainer({
     ensureColumnVisible,
     canCreateColumn,
     maxColumns,
+    handleColumnSaved,
+    handleDeleteColumn,
+    isDeletingColumn,
+    handleColumnReorder,
   } = useRoutineColumns(
     initialColumns,
     is_Premium,
@@ -115,6 +119,9 @@ export function TasksBoardContainer({
     initialVisibleColumnIds,
     effectiveTargetColumnId,
   );
+
+  const columnsRef = useRef(columns);
+  columnsRef.current = columns;
 
   // 1.1 Hook de Alinhamento e Largura das Colunas do Quadro
   const {
@@ -180,38 +187,31 @@ export function TasksBoardContainer({
     setIsColumnsDrawerOpen(true);
   }, []);
 
-  // 4. Hook de Ações e Mutações de Tarefas/Colunas
+  // 4. Hook de Ações e Mutações de Tarefas
   const {
-    handleColumnSaved,
-    handleDeleteColumn,
-    isDeletingColumn,
     handleDuplicateTask,
     handleTaskSaved,
     handleQuickCreateTask,
     handleDeleteTask,
     handleTaskMove,
-    handleColumnReorder,
     handleTaskDetailsUpdate,
     handleToggleComplete,
     handleHabitChange,
   } = useBoardTaskActions({
     columns,
     setColumns,
-    activeWorkspaceId,
-    visibleColumnIds,
-    toggleColumnVisibility,
     onTaskUpdatedInDetails: handleTaskUpdatedInDetails,
   });
 
   const handleHideColumn = useCallback(
     (colId: string) => {
-      const col = columns.find((c) => c.id === colId);
+      const col = columnsRef.current.find((c) => c.id === colId);
       toggleColumnVisibility(colId);
       toast.success(
         `Lista "${col?.title || "Coluna"}" guardada! Reexiba a qualquer momento no botão de colunas.`,
       );
     },
-    [columns, toggleColumnVisibility],
+    [toggleColumnVisibility],
   );
 
   const boardDnd = useRoutineBoardDnd({
@@ -234,39 +234,51 @@ export function TasksBoardContainer({
     [columnStructureKey, columns],
   );
 
+  const ensureWriteAccess = useCallback(
+    (errorMessage: string): boolean => {
+      if (isWorkspaceReadOnly) {
+        setIsUpgradeModalOpen(true);
+        toast.error(errorMessage);
+        return false;
+      }
+      return true;
+    },
+    [isWorkspaceReadOnly],
+  );
+
   const handleOpenCreateColumn = useCallback(() => {
-    if (isWorkspaceReadOnly) {
-      setIsUpgradeModalOpen(true);
-      toast.error(
+    if (
+      !ensureWriteAccess(
         "Este ambiente está no modo somente leitura (Bloqueado). Reative o plano Premium para criar novas listas!",
-      );
+      )
+    ) {
       return;
     }
     setColumnModalState({ isOpen: true, columnToEdit: null });
-  }, [isWorkspaceReadOnly, setColumnModalState]);
+  }, [ensureWriteAccess, setColumnModalState]);
 
   const handleOpenCreateTask = useCallback(() => {
-    if (isWorkspaceReadOnly) {
-      setIsUpgradeModalOpen(true);
-      toast.error(
+    if (
+      !ensureWriteAccess(
         "Este ambiente está no modo somente leitura (Bloqueado). Reative o plano Premium para criar novas tarefas!",
-      );
+      )
+    ) {
       return;
     }
     setTaskModalState({
       isOpen: true,
-      columnId: columns[0]?.id,
+      columnId: columnsRef.current[0]?.id,
       taskToEdit: null,
     });
-  }, [isWorkspaceReadOnly, columns, setTaskModalState]);
+  }, [ensureWriteAccess, setTaskModalState]);
 
   const handleAddTaskToColumnSafe = useCallback(
     (colId: string, initialType?: TaskTypeOption, initialTitle?: string) => {
-      if (isWorkspaceReadOnly) {
-        setIsUpgradeModalOpen(true);
-        toast.error(
+      if (
+        !ensureWriteAccess(
           "Este ambiente está no modo somente leitura (Bloqueado). Reative o plano Premium para criar novas tarefas!",
-        );
+        )
+      ) {
         return;
       }
       setTaskModalState({
@@ -277,7 +289,7 @@ export function TasksBoardContainer({
         taskToEdit: null,
       });
     },
-    [isWorkspaceReadOnly, setTaskModalState],
+    [ensureWriteAccess, setTaskModalState],
   );
 
   const handleQuickCreateTaskSafe = useCallback(
@@ -287,17 +299,44 @@ export function TasksBoardContainer({
       taskType: TaskTypeOption = "TODO",
       extraPayload?: Partial<CreateTaskDTO>,
     ) => {
-      if (isWorkspaceReadOnly) {
-        setIsUpgradeModalOpen(true);
-        toast.error(
+      if (
+        !ensureWriteAccess(
           "Este ambiente está no modo somente leitura (Bloqueado). Reative o plano Premium para criar novas tarefas!",
-        );
+        )
+      ) {
         return;
       }
       await handleQuickCreateTask(title, columnId, taskType, extraPayload);
     },
-    [isWorkspaceReadOnly, handleQuickCreateTask],
+    [ensureWriteAccess, handleQuickCreateTask],
   );
+
+  const handleToggleFocusMode = useCallback(() => {
+    setFocusMode((prev) => !prev);
+  }, [setFocusMode]);
+
+  const sharedFilterProps = {
+    search: searchQuery,
+    onSearch: setSearchQuery,
+    viewMode: {
+      value: viewMode,
+      onChange: setViewMode,
+    },
+    filters,
+    onFilterChange: setFilters,
+    focusMode,
+    onToggleFocusMode: handleToggleFocusMode,
+    alignment,
+    onAlignmentChange: setAlignment,
+    availableTags,
+    maxColumns,
+    isPremium: is_Premium,
+    canCreateColumn: isWorkspaceReadOnly ? false : canCreateColumn,
+    visibleColumnIds,
+    onOpenColumnsDrawer: handleOpenColumnsDrawer,
+    onOpenCreateColumn: handleOpenCreateColumn,
+    onOpenCreateTask: handleOpenCreateTask,
+  };
 
   const welcomeDetails = WELCOME_CARD_DETAILS.tasks;
 
@@ -365,26 +404,7 @@ export function TasksBoardContainer({
           {/* Barra de Filtros com Popover, Busca, Modo Foco e Seletor de Visualização (Cards / Lista) */}
           <div className="shrink-0">
             <RoutineFilters
-              search={searchQuery}
-              onSearch={setSearchQuery}
-              viewMode={{
-                value: viewMode,
-                onChange: setViewMode,
-              }}
-              filters={filters}
-              onFilterChange={setFilters}
-              focusMode={focusMode}
-              onToggleFocusMode={() => setFocusMode((prev) => !prev)}
-              alignment={alignment}
-              onAlignmentChange={setAlignment}
-              availableTags={availableTags}
-              maxColumns={maxColumns}
-              isPremium={is_Premium}
-              canCreateColumn={isWorkspaceReadOnly ? false : canCreateColumn}
-              visibleColumnIds={visibleColumnIds}
-              onOpenColumnsDrawer={() => setIsColumnsDrawerOpen(true)}
-              onOpenCreateColumn={handleOpenCreateColumn}
-              onOpenCreateTask={handleOpenCreateTask}
+              {...sharedFilterProps}
               isDraggingColumn={Boolean(boardDnd.activeColumn)}
               enableDroppable={true}
             />
@@ -454,26 +474,7 @@ export function TasksBoardContainer({
           {/* Barra de Filtros no modo Lista */}
           <div className="shrink-0">
             <RoutineFilters
-              search={searchQuery}
-              onSearch={setSearchQuery}
-              viewMode={{
-                value: viewMode,
-                onChange: setViewMode,
-              }}
-              filters={filters}
-              onFilterChange={setFilters}
-              focusMode={focusMode}
-              onToggleFocusMode={() => setFocusMode((prev) => !prev)}
-              alignment={alignment}
-              onAlignmentChange={setAlignment}
-              availableTags={availableTags}
-              maxColumns={maxColumns}
-              isPremium={is_Premium}
-              canCreateColumn={isWorkspaceReadOnly ? false : canCreateColumn}
-              visibleColumnIds={visibleColumnIds}
-              onOpenColumnsDrawer={() => setIsColumnsDrawerOpen(true)}
-              onOpenCreateColumn={handleOpenCreateColumn}
-              onOpenCreateTask={handleOpenCreateTask}
+              {...sharedFilterProps}
               isDraggingColumn={false}
               enableDroppable={false}
             />

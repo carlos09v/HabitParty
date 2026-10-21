@@ -14,6 +14,11 @@ export interface HelpCategoryTab {
   iconName?: string;
 }
 
+export interface HelpFaqActionLink {
+  label: string;
+  href: string;
+}
+
 export interface HelpFaqItem {
   id: string;
   category: HelpCategory;
@@ -22,11 +27,13 @@ export interface HelpFaqItem {
   bullets?: string[];
   tags: string[];
   highlightBadge?: string;
+  actionLink?: HelpFaqActionLink;
 }
 
 export interface HelpTableEntry {
   title: string;
   description: string;
+  category?: HelpCategory;
   columns: string[];
   rows: Array<Array<string | number>>;
 }

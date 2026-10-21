@@ -4,23 +4,7 @@ import {
   PartyWidget,
   WeeklyCalendar,
 } from "@/components/dashboard/sidebar-right";
-import type { EconomyBarData } from "@/types/dashboard";
-import type { FocusActivity, FocusRecord } from "@/types/focus";
-import type { TransactionHistoryResponseDTO } from "@/types/history";
-import type { Task } from "@/types/task";
-
-interface DashboardWidgetsListProps {
-  isCompact?: boolean;
-  balance?: number;
-  weeklyEarnings?: number;
-  weeklySpent?: number;
-  bars?: EconomyBarData[];
-  transactions?: TransactionHistoryResponseDTO[];
-  tasks?: Task[];
-  activities?: FocusActivity[];
-  records?: FocusRecord[];
-  onSelectDay?: (isoString: string) => void;
-}
+import type { DashboardWidgetsListProps } from "@/types/dashboard";
 
 export function DashboardWidgetsList({
   isCompact = false,

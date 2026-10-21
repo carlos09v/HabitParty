@@ -1,11 +1,12 @@
-import type { components } from "@/api/schema";
+"use client";
+
+import { useEffect, useState } from "react";
 import { DashboardDailyBriefing } from "@/components/dashboard/DashboardDailyBriefing";
 import { DashboardListSummary } from "@/components/dashboard/DashboardListSummary";
 import { DashboardTasksPanel } from "@/components/dashboard/DashboardTasksPanel";
 import { MAX_COLUMNS_PREMIUM, MAX_VISIBLE_COLUMNS } from "@/constants/routine";
-import type { TransactionHistoryResponseDTO } from "@/types/history";
+import type { DashboardMainProps } from "@/types/dashboard";
 import type { Task } from "@/types/task";
-import type { UserResponseDTO } from "@/types/user";
 import { cn } from "@/utils";
 import {
   getFirstName,
@@ -15,21 +16,10 @@ import {
   getTodayXp,
 } from "@/utils/dashboardMetrics";
 
-type Column = components["schemas"]["BoardColumnSummaryDTO"];
-
-interface DashboardMainProps {
-  isCompact?: boolean;
-  initialTasks?: Task[];
-  activeWorkspaceId?: string;
-  initialColumns?: Column[];
-  transactions?: TransactionHistoryResponseDTO[];
-  user?: UserResponseDTO | null;
-}
-
 /**
- * Painel Principal do Dashboard (React Server Component).
- * Renderiza o cabeçalho com briefing diário, métricas de resumo e carrossel de listas no servidor.
- * Mantém o DashboardTasksPanel como folha interativa (Client Component).
+ * Painel Principal do Dashboard.
+ * Orquestra o estado otimista compartilhado de `tasks` entre o resumo diário (HUD),
+ * os cartões de resumo de listas e a tabela interativa de tarefas.
  */
 export function DashboardMain({
   isCompact = false,
@@ -39,16 +29,21 @@ export function DashboardMain({
   transactions = [],
   user = null,
 }: DashboardMainProps) {
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+
+  useEffect(() => {
+    setTasks(initialTasks);
+  }, [initialTasks]);
+
   const isPremium = user?.isPremium ?? false;
   const maxColumns = isPremium ? MAX_COLUMNS_PREMIUM : MAX_VISIBLE_COLUMNS;
 
-  // Métricas do Dashboard calculadas via utilitário puro no servidor
   const greeting = getGreeting();
   const firstName = getFirstName(user?.fullName, user?.username);
   const streak = user?.currentStreak ?? 0;
 
   const todayDateStr = getTodayDateString();
-  const todayTasks = getTodayTasks(initialTasks, todayDateStr);
+  const todayTasks = getTodayTasks(tasks, todayDateStr);
   const completedTodayTasks = todayTasks.filter((t) => t.completed).length;
   const totalTodayTasks = todayTasks.length;
   const todayXp = getTodayXp(transactions);
@@ -68,20 +63,25 @@ export function DashboardMain({
         completedTodayTasks={completedTodayTasks}
         totalTodayTasks={totalTodayTasks}
         todayXp={todayXp}
+        tasks={tasks}
+        transactions={transactions}
       />
 
-      {/* Seção: Resumo de Listas (Client Component Interativo com Menu de Contexto) */}
+      {/* Seção: Resumo de Listas (Interativo com Menu de Contexto e contadores sincronizados) */}
       <DashboardListSummary
         initialColumns={initialColumns}
         maxColumns={maxColumns}
         isCompact={isCompact}
         isPremium={isPremium}
+        tasks={tasks}
       />
 
-      {/* Seção: Filtros de Tarefas e Tabela com Paginação (Client Component) */}
+      {/* Seção: Filtros de Tarefas e Tabela com Paginação */}
       <DashboardTasksPanel
         key={activeWorkspaceId}
         initialTasks={initialTasks}
+        tasks={tasks}
+        onTasksChange={setTasks}
         columns={initialColumns}
         isCompact={isCompact}
       />

@@ -134,3 +134,36 @@ export function inferColumnIcon(name: string): string | null {
   }
   return null;
 }
+
+/**
+ * Resolve de forma determinística quais IDs de colunas devem estar visíveis no Kanban,
+ * aplicando o limite do plano (gratuito vs premium) e garantindo que `targetColumnId`
+ * (se fornecido e válido) esteja incluído na seleção.
+ */
+export function resolveVisibleColumnIds(
+  allColumnIds: string[],
+  savedIds: string[] | undefined | null,
+  maxAllowed: number,
+  targetColumnId?: string,
+): string[] {
+  const validSet = new Set(allColumnIds);
+  const validSaved = Array.isArray(savedIds)
+    ? savedIds.filter((id) => validSet.has(id))
+    : [];
+
+  let result =
+    validSaved.length > 0
+      ? validSaved.slice(0, maxAllowed)
+      : allColumnIds.slice(0, maxAllowed);
+
+  if (targetColumnId && validSet.has(targetColumnId)) {
+    if (!result.includes(targetColumnId)) {
+      result =
+        result.length < maxAllowed
+          ? [...result, targetColumnId]
+          : [...result.slice(0, maxAllowed - 1), targetColumnId];
+    }
+  }
+
+  return result;
+}

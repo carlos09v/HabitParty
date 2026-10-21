@@ -221,13 +221,28 @@ export async function resetPassword(payload: {
 export async function completeOAuthLogin(
   accessToken: string,
   refreshToken: string,
-): Promise<ActionState<void>> {
+): Promise<ActionState<{ isNewUser: boolean }>> {
   if (!accessToken || !refreshToken) {
     return { success: false, error: "Tokens de autenticação inválidos." };
   }
 
   await setAuthCookies(accessToken, refreshToken);
-  return { success: true, data: undefined };
+
+  let isNewUser = false;
+  try {
+    const res = await fetch(`${API_BASE_URL}/workspaces`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+    if (res.ok) {
+      const workspaces = await res.json();
+      isNewUser = Array.isArray(workspaces) && workspaces.length === 0;
+    }
+  } catch {
+    // Fallback silencioso
+  }
+
+  return { success: true, data: { isNewUser } };
 }
 
 /**
@@ -235,7 +250,7 @@ export async function completeOAuthLogin(
  */
 export async function exchangeGoogleCode(
   code: string,
-): Promise<ActionState<{ isNewUser?: boolean }>> {
+): Promise<ActionState<{ isNewUser: boolean }>> {
   if (!code) {
     return { success: false, error: "Código de autorização não fornecido." };
   }
@@ -261,9 +276,26 @@ export async function exchangeGoogleCode(
     }
 
     await setAuthCookies(data.accessToken, data.refreshToken);
+
+    let isNewUser = Boolean(data.isNewUser);
+    if (!isNewUser) {
+      try {
+        const wsRes = await fetch(`${API_BASE_URL}/workspaces`, {
+          headers: { Authorization: `Bearer ${data.accessToken}` },
+          cache: "no-store",
+        });
+        if (wsRes.ok) {
+          const workspaces = await wsRes.json();
+          isNewUser = Array.isArray(workspaces) && workspaces.length === 0;
+        }
+      } catch {
+        // Fallback silencioso
+      }
+    }
+
     return {
       success: true,
-      data: { isNewUser: Boolean(data.isNewUser) },
+      data: { isNewUser },
     };
   } catch (err) {
     console.error("[AuthAction:ExchangeGoogleCode]", err);

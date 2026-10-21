@@ -1,5 +1,3 @@
-"use client";
-
 import { Calendar, Lock, Repeat, Target } from "lucide-react";
 import type { TaskTypeOption } from "@/types/task";
 import { cn } from "@/utils";

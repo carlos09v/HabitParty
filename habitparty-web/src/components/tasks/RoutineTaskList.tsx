@@ -11,12 +11,13 @@ import { CSS } from "@dnd-kit/utilities";
 import { CalendarCheck, GripVertical, Plus } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useMemo, useRef } from "react";
+import { TaskRow } from "@/components/tasks/shared/TaskRow";
 import { getColumnIcon } from "@/constants/routine";
+import { TASK_TABLE_GRID_COLS } from "@/constants/task";
 import { useCompactMode } from "@/hooks/useCompactMode";
 import { useRoutineBoardDnd } from "@/hooks/useRoutineBoardDnd";
 import type { BoardColumn, Task, TaskTypeOption } from "@/types/task";
 import { cn } from "@/utils";
-import { RoutineTaskRow } from "./RoutineTaskRow";
 
 export interface RoutineTaskListProps {
   columns: BoardColumn[];
@@ -123,7 +124,8 @@ function RoutineTaskListSection({
       data-column-id={column.id}
       className={cn(
         "flex flex-col gap-2.5 w-full transition-[background-color,border-color,opacity,box-shadow] duration-150 rounded-xl",
-        isSelected && "ring-2 ring-gold/90 shadow-glow-gold bg-gold/[0.03] p-2",
+        isSelected &&
+          "ring-2 ring-inset ring-gold/90 shadow-glow-gold bg-gold/[0.03] p-2",
         isDragging &&
           "!transition-none opacity-30 border border-dashed border-primary-light p-2",
       )}
@@ -187,13 +189,16 @@ function RoutineTaskListSection({
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
           <ul className="flex flex-col gap-2 w-full p-0 m-0 list-none min-h-6">
             {column.tasks.map((task) => (
-              <RoutineTaskRow
+              <TaskRow
                 key={task.id}
                 task={task}
                 columnId={column.id}
                 columnTitle={column.title}
-                onOpenDetails={onOpenDetails}
-                onContextMenu={onContextMenu}
+                isSortable={true}
+                onOpenDetails={(t, anchorRect) =>
+                  onOpenDetails(t, column.id, anchorRect)
+                }
+                onContextMenu={(e, t) => onContextMenu(e, t, column.id)}
                 onToggleCompleted={onToggleComplete}
                 onHabitChange={onHabitChange}
               />
@@ -252,7 +257,8 @@ export function RoutineTaskList({
         {/* Cabeçalho tabular global */}
         <div
           className={cn(
-            "hidden md:grid grid-cols-[minmax(0,2.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_40px] items-center text-xs font-semibold text-neutral-400 border-b border-white/10 select-none",
+            "hidden md:grid items-center text-xs font-semibold text-neutral-400 border-b border-white/10 select-none",
+            TASK_TABLE_GRID_COLS,
             isCompact ? "gap-2.5 px-3 py-1.5" : "gap-4 px-4 py-2",
           )}
           aria-hidden="true"
@@ -321,12 +327,13 @@ export function RoutineTaskList({
         )}
         {activeTask && (
           <div className="opacity-95 shadow-2xl scale-102">
-            <RoutineTaskRow
+            <TaskRow
               task={activeTask}
               columnId={activeTask.columnId || ""}
               columnTitle={
                 columns.find((c) => c.id === activeTask.columnId)?.title
               }
+              isSortable
               isOverlay
             />
           </div>

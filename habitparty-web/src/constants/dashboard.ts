@@ -126,3 +126,17 @@ export const PERIOD_OPTIONS: readonly { id: PeriodOption; label: string }[] = [
   { id: "this_week", label: "Esta semana" },
   { id: "this_month", label: "Este mês" },
 ] as const;
+
+export type ActivityPeriodOption = "today" | "this_week" | "this_month";
+
+export const ACTIVITY_PERIOD_OPTIONS: readonly {
+  id: ActivityPeriodOption;
+  label: string;
+}[] = [
+  { id: "today", label: "Hoje" },
+  { id: "this_week", label: "Semana" },
+  { id: "this_month", label: "Mês" },
+] as const;
+
+/** Quantidade padrão de tarefas exibidas por página na tabela do Dashboard */
+export const DASHBOARD_ITEMS_PER_PAGE = 5;

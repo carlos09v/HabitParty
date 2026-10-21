@@ -12,7 +12,10 @@ import {
 } from "@/constants/reward";
 import type { PackageLevel, RewardType } from "@/types/reward";
 import { cn, formatCoins } from "@/utils";
-import { formatBackpackItemRemainingTime } from "@/utils/focusFormatters";
+import {
+  formatBackpackItemRemainingTime,
+  formatFocusMinutes,
+} from "@/utils/focusFormatters";
 
 export interface ItemRowProps {
   id: string;
@@ -308,13 +311,13 @@ export function ItemRow({
                 {formatBackpackItemRemainingTime(remainingSeconds)}
               </span>
             ) : baseDurationMinutes ? (
-              <span className="text-label-m text-neutral-300 font-medium inline-flex items-center gap-1">
+              <span className="text-label-m text-emerald-300 bg-emerald-500/15 border border-emerald-500/40 px-2 py-0.5 rounded-md font-bold inline-flex items-center gap-1">
                 <Clock
                   size={10}
                   className="text-emerald-400 shrink-0"
                   aria-hidden="true"
                 />
-                {baseDurationMinutes} min
+                {formatFocusMinutes(baseDurationMinutes)}
               </span>
             ) : (
               <span className="text-label-m text-neutral-400 truncate">
@@ -481,21 +484,21 @@ export function ItemRow({
               </span>
             </>
           ) : baseDurationMinutes ? (
-            <>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg border font-extrabold bg-emerald-500/15 border-emerald-500/40 text-emerald-300",
+                isCompact ? "text-[11px]" : "text-xs",
+              )}
+            >
               <Clock
                 size={isCompact ? 11 : 13}
                 className="text-emerald-400 shrink-0"
                 aria-hidden="true"
               />
-              <span
-                className={cn(
-                  "truncate text-neutral-300 font-medium",
-                  isCompact ? "text-label-m" : "text-label-g",
-                )}
-              >
-                {baseDurationMinutes} min
+              <span className="truncate">
+                {formatFocusMinutes(baseDurationMinutes)}
               </span>
-            </>
+            </span>
           ) : (
             <span
               className={cn(

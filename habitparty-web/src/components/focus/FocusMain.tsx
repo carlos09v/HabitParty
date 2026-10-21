@@ -1,35 +1,44 @@
 "use client";
 
 import { Timer } from "lucide-react";
+import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import {
-  createFocusRecordAction,
-  deleteFocusActivityAction,
-} from "@/actions/focusActions";
-import {
-  consumeInventoryItem,
-  returnItemToBackpack,
-} from "@/actions/inventoryActions";
-import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
+import { useCallback, useEffect, useState } from "react";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
 import { WELCOME_CARD_DETAILS } from "@/constants/welcomeCards";
-import { useCompactMode } from "@/hooks/useCompactMode";
 import { useFocusContextMenu } from "@/hooks/useFocusContextMenu";
+import { useFocusMutations } from "@/hooks/useFocusMutations";
 import { useFocusTimerControls } from "@/hooks/useFocusTimer";
 import type { FocusActivity, FocusRecordType } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn } from "@/utils";
-import { triggerCelebrationConfetti } from "@/utils/confetti";
-import { toLocalISOString } from "@/utils/date";
 import { formatBackpackItemRemainingTime } from "@/utils/focusFormatters";
-import { soundEffects } from "@/utils/soundEffects";
 import { FocusActivitiesSection } from "./FocusActivitiesSection";
 import { FocusBackpackSection } from "./FocusBackpackSection";
 import { FocusHeroStage } from "./FocusHeroStage";
-import { FocusActivityModal } from "./modals/FocusActivityModal";
+
+const FocusActivityModal = dynamic(
+  () =>
+    import("./modals/FocusActivityModal").then((mod) => mod.FocusActivityModal),
+  { ssr: false },
+);
+
+const ConfirmationModal = dynamic(
+  () =>
+    import("@/components/ui/ConfirmationModal").then(
+      (mod) => mod.ConfirmationModal,
+    ),
+  { ssr: false },
+);
+
+const UpgradePremiumModal = dynamic(
+  () =>
+    import("@/components/subscription/UpgradePremiumModal").then(
+      (mod) => mod.UpgradePremiumModal,
+    ),
+  { ssr: false },
+);
 
 interface FocusMainProps {
   activities: FocusActivity[];
@@ -60,26 +69,34 @@ export function FocusMain({
   onOpenManualRecord,
   onRefreshData,
   initialCreateActivity = false,
-  isCompact: propIsCompact,
+  isCompact = false,
   onChangeMode,
 }: FocusMainProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const controls = useFocusTimerControls();
-  const { isCompact: storeIsCompact } = useCompactMode();
 
-  const isCompact = propIsCompact ?? storeIsCompact;
   const { isActive, isPaused, target } = controls;
   const isTimerRunning = isActive && !isPaused;
 
-  // Modais de Criação/Edição de Atividade
+  // Modais de Criação/Edição de Atividade e Upgrade VIP centralizado
   const [activityModalOpen, setActivityModalOpen] = useState(
     Boolean(initialCreateActivity),
   );
   const [editingActivity, setEditingActivity] = useState<FocusActivity | null>(
     null,
   );
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+
+  const handleOpenUpgradeModal = useCallback(() => {
+    setIsUpgradeModalOpen(true);
+  }, []);
+
+  const handleOpenCreateModal = useCallback(() => {
+    setEditingActivity(null);
+    setActivityModalOpen(true);
+  }, []);
 
   useEffect(() => {
     if (
@@ -110,27 +127,32 @@ export function FocusMain({
     }
   }, [initialCreateActivity, searchParams, pathname, router]);
 
-  // Modal de Confirmação para Devolver Item da Mochila
-  const [returnModalItem, setReturnModalItem] =
-    useState<InventoryItemResponseDTO | null>(null);
-  const [isReturningToBackpack, setIsReturningToBackpack] = useState(false);
-
-  // Modal de Confirmação para Excluir Atividade
-  const [deleteModalActivity, setDeleteModalActivity] =
-    useState<FocusActivity | null>(null);
-  const [isDeletingActivity, setIsDeletingActivity] = useState(false);
+  // Hook dedicado às mutações de atividades e itens da mochila
+  const {
+    returnModalItem,
+    setReturnModalItem,
+    isReturningToBackpack,
+    handleConfirmReturnToBackpack,
+    deleteModalActivity,
+    setDeleteModalActivity,
+    isDeletingActivity,
+    handleConfirmDeleteActivity,
+    handleConsumeItem,
+  } = useFocusMutations({
+    activities,
+    selectedActivityId,
+    activeTarget: target,
+    onSelectActivity,
+    onResetTarget: controls.resetTarget,
+    onSelectActivityTarget: controls.selectActivityTarget,
+    onRefreshData,
+  });
 
   // Hook desacoplado de menu de contexto
   const { contextMenu, openActivityMenu, openItemMenu, closeMenu, menuItems } =
     useFocusContextMenu({
-      onStartFocusActivity: (act) => {
-        onSelectActivity?.(act.id);
-        onStartFocusActivity(act);
-      },
-      onStartFocusItem: (item) => {
-        onSelectActivity?.(null);
-        onStartFocusItem(item);
-      },
+      onStartFocusActivity,
+      onStartFocusItem,
       onEditActivity: (act) => {
         setEditingActivity(act);
         setActivityModalOpen(true);
@@ -146,116 +168,6 @@ export function FocusMain({
       },
       onRefreshData,
     });
-
-  const handleConfirmDeleteActivity = async () => {
-    if (!deleteModalActivity) return;
-    setIsDeletingActivity(true);
-    try {
-      const res = await deleteFocusActivityAction(
-        deleteModalActivity.id,
-        false,
-      );
-      if (res.success) {
-        if (selectedActivityId === deleteModalActivity.id) {
-          onSelectActivity?.(null);
-        }
-        if (target?.id === deleteModalActivity.id) {
-          controls.resetTarget();
-          const remainingActivities = activities.filter(
-            (a) => a.id !== deleteModalActivity.id,
-          );
-          if (remainingActivities.length > 0) {
-            controls.selectActivityTarget(remainingActivities[0]);
-            onSelectActivity?.(remainingActivities[0].id);
-          } else {
-            onSelectActivity?.(null);
-          }
-        }
-        toast.success("Atividade excluída com sucesso.");
-        setDeleteModalActivity(null);
-        onRefreshData();
-      } else {
-        toast.error(res.error || "Erro ao excluir atividade.");
-      }
-    } catch {
-      toast.error("Erro ao excluir atividade.");
-    } finally {
-      setIsDeletingActivity(false);
-    }
-  };
-
-  const handleConfirmReturnToBackpack = async () => {
-    if (!returnModalItem?.inventoryItemId) return;
-    setIsReturningToBackpack(true);
-    try {
-      const res = await returnItemToBackpack(returnModalItem.inventoryItemId);
-      if (res.success) {
-        if (target?.id === returnModalItem.inventoryItemId) {
-          controls.resetTarget();
-          if (activities.length > 0) {
-            controls.selectActivityTarget(activities[0]);
-            onSelectActivity?.(activities[0].id);
-          } else {
-            onSelectActivity?.(null);
-          }
-        }
-        toast.success("Item devolvido para a mochila.");
-        setReturnModalItem(null);
-        onRefreshData();
-      } else {
-        toast.error(res.error || "Erro ao devolver item para a mochila.");
-      }
-    } catch {
-      toast.error("Erro ao devolver item para a mochila.");
-    } finally {
-      setIsReturningToBackpack(false);
-    }
-  };
-
-  const handleConsumeItem = async (item: InventoryItemResponseDTO) => {
-    if (!item.inventoryItemId) return;
-    try {
-      if (item.remainingSeconds && item.remainingSeconds > 0) {
-        const now = new Date();
-        const endTime = toLocalISOString(now);
-        const startTime = toLocalISOString(
-          new Date(now.getTime() - item.remainingSeconds * 1000),
-        );
-        await createFocusRecordAction({
-          inventoryItemId: item.inventoryItemId,
-          recordType: "STOPWATCH",
-          completedPomos: 0,
-          startTime,
-          endTime,
-        });
-      }
-
-      const res = await consumeInventoryItem(item.inventoryItemId);
-      if (res.success) {
-        soundEffects.playFocusSessionCompleteSound();
-        triggerCelebrationConfetti();
-        toast.success(
-          `🎉 Recompensa aproveitada com sucesso! "${item.rewardName || "Item"}" concluído!`,
-        );
-
-        if (target?.id === item.inventoryItemId) {
-          controls.resetTarget();
-          if (activities.length > 0) {
-            controls.selectActivityTarget(activities[0]);
-            onSelectActivity?.(activities[0].id);
-          } else {
-            onSelectActivity?.(null);
-          }
-        }
-
-        onRefreshData();
-      } else {
-        toast.error(res.error || "Erro ao concluir item.");
-      }
-    } catch {
-      toast.error("Erro ao concluir item.");
-    }
-  };
 
   // Deseleciona a atividade ativa caso o usuário clique em áreas vazias
   useEffect(() => {
@@ -308,15 +220,10 @@ export function FocusMain({
           activities={activities}
           backpackItems={backpackItems}
           onSelectActivity={onSelectActivity}
-          onStartFocusActivity={(act) => {
-            onSelectActivity?.(act.id);
-            onStartFocusActivity(act);
-          }}
-          onStartFocusItem={(item) => {
-            onSelectActivity?.(null);
-            onStartFocusItem(item);
-          }}
+          onStartFocusActivity={onStartFocusActivity}
+          onStartFocusItem={onStartFocusItem}
           onChangeMode={onChangeMode}
+          onOpenUpgradeModal={handleOpenUpgradeModal}
           isCompact={isCompact}
         />
 
@@ -330,13 +237,9 @@ export function FocusMain({
           onToggleTimer={controls.toggleTimer}
           selectedActivityId={selectedActivityId}
           onSelectActivity={onSelectActivity}
-          onStartFocus={(act) => {
-            onStartFocusActivity(act);
-          }}
-          onOpenCreateModal={() => {
-            setEditingActivity(null);
-            setActivityModalOpen(true);
-          }}
+          onStartFocus={onStartFocusActivity}
+          onOpenCreateModal={handleOpenCreateModal}
+          onOpenUpgradeModal={handleOpenUpgradeModal}
           onContextMenu={openActivityMenu}
           isCompact={isCompact}
         />
@@ -348,9 +251,7 @@ export function FocusMain({
           isTimerActive={isActive}
           isTimerRunning={isTimerRunning}
           onToggleTimer={controls.toggleTimer}
-          onStartFocus={(item) => {
-            onStartFocusItem(item);
-          }}
+          onStartFocus={onStartFocusItem}
           onContextMenu={openItemMenu}
           onConsume={handleConsumeItem}
           isCompact={isCompact}
@@ -365,73 +266,87 @@ export function FocusMain({
         items={menuItems}
       />
 
-      {/* 6. Modal de Atividade */}
-      <FocusActivityModal
-        isOpen={activityModalOpen}
-        onClose={() => setActivityModalOpen(false)}
-        activityToEdit={editingActivity}
-        onSuccess={onRefreshData}
-      />
+      {/* 6. Modal de Atividade (Carregado sob demanda) */}
+      {activityModalOpen && (
+        <FocusActivityModal
+          isOpen={activityModalOpen}
+          onClose={() => setActivityModalOpen(false)}
+          activityToEdit={editingActivity}
+          onSuccess={onRefreshData}
+        />
+      )}
 
-      {/* 7. Modal de Devolver Item para a Mochila (via ConfirmationModal) */}
-      <ConfirmationModal
-        isOpen={Boolean(returnModalItem)}
-        onClose={() => setReturnModalItem(null)}
-        onConfirm={handleConfirmReturnToBackpack}
-        isLoading={isReturningToBackpack}
-        title="Devolver para a Mochila"
-        variant="warning"
-        confirmText="Sim, devolver para mochila"
-        cancelText="Não, manter no Foco"
-        description={
-          <div className="flex flex-col gap-3">
+      {/* 7. Modal de Devolver Item para a Mochila (Carregado sob demanda) */}
+      {returnModalItem && (
+        <ConfirmationModal
+          isOpen={Boolean(returnModalItem)}
+          onClose={() => setReturnModalItem(null)}
+          onConfirm={handleConfirmReturnToBackpack}
+          isLoading={isReturningToBackpack}
+          title="Devolver para a Mochila"
+          variant="warning"
+          confirmText="Sim, devolver para mochila"
+          cancelText="Não, manter no Foco"
+          description={
+            <div className="flex flex-col gap-3">
+              <p>
+                Tem certeza de que deseja devolver o item{" "}
+                <strong className="text-neutral-100">
+                  "{returnModalItem.rewardName || "Item de Foco"}"
+                </strong>{" "}
+                para a sua mochila?
+              </p>
+              {returnModalItem.remainingSeconds !== undefined &&
+                returnModalItem.remainingSeconds !== null && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gold/10 border border-gold/30 text-tiny text-gold font-medium w-fit">
+                    <Timer size={12} className="text-gold" />
+                    <span>
+                      Saldo restante:{" "}
+                      {formatBackpackItemRemainingTime(
+                        returnModalItem.remainingSeconds,
+                      )}
+                    </span>
+                  </div>
+                )}
+              <p className="text-xs text-amber-200/90 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-lg leading-relaxed">
+                <strong>Atenção:</strong> A sessão ativa no cronômetro será
+                desarmada e o item sairá da área de foco. O saldo restante
+                continuará salvo na sua mochila.
+              </p>
+            </div>
+          }
+        />
+      )}
+
+      {/* 8. Modal de Excluir Atividade (Carregado sob demanda) */}
+      {deleteModalActivity && (
+        <ConfirmationModal
+          isOpen={Boolean(deleteModalActivity)}
+          onClose={() => setDeleteModalActivity(null)}
+          onConfirm={handleConfirmDeleteActivity}
+          isLoading={isDeletingActivity}
+          title="Excluir Atividade"
+          description={
             <p>
-              Tem certeza de que deseja devolver o item{" "}
+              Deseja realmente excluir a atividade{" "}
               <strong className="text-neutral-100">
-                "{returnModalItem?.rewardName || "Item de Foco"}"
-              </strong>{" "}
-              para a sua mochila?
+                "{deleteModalActivity.name}"
+              </strong>
+              ? O histórico de sessões anteriores continuará preservado.
             </p>
-            {returnModalItem?.remainingSeconds !== undefined &&
-              returnModalItem?.remainingSeconds !== null && (
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gold/10 border border-gold/30 text-tiny text-gold font-medium w-fit">
-                  <Timer size={12} className="text-gold" />
-                  <span>
-                    Saldo restante:{" "}
-                    {formatBackpackItemRemainingTime(
-                      returnModalItem.remainingSeconds,
-                    )}
-                  </span>
-                </div>
-              )}
-            <p className="text-xs text-amber-200/90 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-lg leading-relaxed">
-              <strong>Atenção:</strong> A sessão ativa no cronômetro será
-              desarmada e o item sairá da área de foco. O saldo restante
-              continuará salvo na sua mochila.
-            </p>
-          </div>
-        }
-      />
+          }
+          confirmText="Sim, excluir"
+          variant="danger"
+        />
+      )}
 
-      {/* 8. Modal de Excluir Atividade */}
-      <ConfirmationModal
-        isOpen={Boolean(deleteModalActivity)}
-        onClose={() => setDeleteModalActivity(null)}
-        onConfirm={handleConfirmDeleteActivity}
-        isLoading={isDeletingActivity}
-        title="Excluir Atividade"
-        description={
-          <p>
-            Deseja realmente excluir a atividade{" "}
-            <strong className="text-neutral-100">
-              "{deleteModalActivity?.name}"
-            </strong>
-            ? O histórico de sessões anteriores continuará preservado.
-          </p>
-        }
-        confirmText="Sim, excluir"
-        variant="danger"
-      />
+      {/* 9. Instância Única de Upgrade Premium */}
+      {isUpgradeModalOpen && (
+        <UpgradePremiumModal
+          isOpen={isUpgradeModalOpen}
+          onClose={() => setIsUpgradeModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { IconPickerPopover } from "@/components/ui/IconPickerPopover";
 import { COLUMN_ICONS, inferColumnIcon } from "@/constants/routine";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import type { BoardColumn } from "@/types/task";
+import { soundEffects } from "@/utils/soundEffects";
 
 interface CreateBoardColumnModalProps {
   isOpen: boolean;
@@ -117,7 +118,10 @@ export function CreateBoardColumnModal({
         return;
       }
 
-      toast.success("Coluna criada com sucesso!");
+      soundEffects.playCreateSound();
+      toast.success(`Coluna "${trimmedName}" criada!`, {
+        description: "Pronta para organizar suas tarefas e hábitos no quadro.",
+      });
       const newCol: BoardColumn = {
         id: response.data.id || `col-${Date.now()}`,
         title: response.data.name || trimmedName,

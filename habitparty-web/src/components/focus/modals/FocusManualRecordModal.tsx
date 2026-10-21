@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { createFocusRecordAction } from "@/actions/focusActions";
+import { createFocusRecord } from "@/actions/focusActions";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -12,6 +12,7 @@ import type { FocusActivity, FocusRecordType } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn, toLocalISOString } from "@/utils";
 import { getItemRemainingMinutes } from "@/utils/focusFormatters";
+import { soundEffects } from "@/utils/soundEffects";
 
 interface FocusManualRecordModalProps {
   isOpen: boolean;
@@ -39,8 +40,8 @@ export function FocusManualRecordModal({
       : activities.slice(0, MAX_FOCUS_ACTIVITIES_FREE);
   }, [activities, is_Premium]);
 
-  const [targetType, setTargetType] = useState<"ACTIVITY" | "ITEM" | "FREE">(
-    initialItemId ? "ITEM" : initialActivityId ? "ACTIVITY" : "FREE",
+  const [targetType, setTargetType] = useState<"ACTIVITY" | "ITEM">(
+    initialItemId ? "ITEM" : "ACTIVITY",
   );
   const [selectedActivityId, setSelectedActivityId] = useState(
     initialActivityId || (selectableActivities[0]?.id ?? ""),
@@ -74,22 +75,20 @@ export function FocusManualRecordModal({
         if (itemMins > 0) {
           setDurationMinutes(itemMins);
         }
-      } else if (initialActivityId) {
+      } else {
         setTargetType("ACTIVITY");
-        const actIndex = activities.findIndex(
-          (a) => a.id === initialActivityId,
-        );
+        const targetActId =
+          initialActivityId || (selectableActivities[0]?.id ?? "");
+        const actIndex = activities.findIndex((a) => a.id === targetActId);
         const isLocked = !is_Premium && actIndex >= MAX_FOCUS_ACTIVITIES_FREE;
         const validId = isLocked
           ? (selectableActivities[0]?.id ?? "")
-          : initialActivityId;
+          : targetActId;
         setSelectedActivityId(validId);
         const act = activities.find((a) => a.id === validId);
         if (act?.targetTimeMinutes) {
           setDurationMinutes(act.targetTimeMinutes);
         }
-      } else {
-        setTargetType("FREE");
       }
       setNotes("");
     }
@@ -105,6 +104,14 @@ export function FocusManualRecordModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (targetType === "ACTIVITY" && !selectedActivityId) {
+      toast.error("Selecione uma atividade para vincular o registro.");
+      return;
+    }
+    if (targetType === "ITEM" && !selectedItemId) {
+      toast.error("Sem itens disponíveis na mochila para vincular.");
+      return;
+    }
     if (durationMinutes <= 0) {
       toast.error("A duração precisa ser maior que 0 minutos.");
       return;
@@ -129,7 +136,7 @@ export function FocusManualRecordModal({
       );
       const endTime = toLocalISOString(now);
 
-      const res = await createFocusRecordAction({
+      const res = await createFocusRecord({
         focusActivityId:
           targetType === "ACTIVITY" ? selectedActivityId : undefined,
         inventoryItemId: targetType === "ITEM" ? selectedItemId : undefined,
@@ -142,6 +149,7 @@ export function FocusManualRecordModal({
       });
 
       if (res.success) {
+        soundEffects.playCreateSound();
         const recordData = res.data as
           | { xpEarned?: number; coinsEarned?: number }
           | undefined;
@@ -174,12 +182,12 @@ export function FocusManualRecordModal({
       description="Lance manualmente uma sessão de foco concluída no seu histórico."
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-2">
-        {/* Associação: Atividade, Mochila ou Livre */}
+        {/* Associação: Atividade ou Mochila */}
         <div className="flex flex-col gap-1.5">
           <span className="text-body-s text-neutral-100 font-medium">
             Vincular Sessão
           </span>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => setTargetType("ACTIVITY")}
@@ -204,18 +212,6 @@ export function FocusManualRecordModal({
             >
               Mochila
             </button>
-            <button
-              type="button"
-              onClick={() => setTargetType("FREE")}
-              className={cn(
-                "py-2 px-2.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer truncate",
-                targetType === "FREE"
-                  ? "bg-gold/20 border-gold text-gold font-bold shadow-glow-gold-xs"
-                  : "bg-surface/80 border-primary/30 text-neutral-300 hover:text-neutral-100 hover:border-gold/40",
-              )}
-            >
-              Livre
-            </button>
           </div>
         </div>
 
@@ -225,6 +221,12 @@ export function FocusManualRecordModal({
             <Select
               id="select-activity"
               label="Selecione a Atividade"
+              placeholder={
+                selectableActivities.length === 0
+                  ? "Sem atividades disponíveis."
+                  : "Selecione uma atividade"
+              }
+              emptyMessage="Sem atividades disponíveis."
               value={selectedActivityId}
               onChange={(val) => setSelectedActivityId(val)}
               options={selectableActivities.map((act) => ({
@@ -233,7 +235,7 @@ export function FocusManualRecordModal({
               }))}
             />
             {!is_Premium && activities.length > MAX_FOCUS_ACTIVITIES_FREE && (
-              <span className="text-[11px] text-gold/90 font-medium px-1">
+              <span className="text-label-g text-gold/90 font-medium px-1">
                 👑 {activities.length - MAX_FOCUS_ACTIVITIES_FREE} atividade(s)
                 pausadas estão indisponíveis para registro manual no plano Free.
               </span>
@@ -246,6 +248,12 @@ export function FocusManualRecordModal({
           <Select
             id="select-item"
             label="Selecione o Item da Mochila"
+            placeholder={
+              backpackItems.length === 0
+                ? "Sem itens disponíveis."
+                : "Selecione um item da mochila"
+            }
+            emptyMessage="Sem itens disponíveis."
             value={selectedItemId}
             onChange={(newId) => {
               setSelectedItemId(newId);
@@ -374,8 +382,12 @@ export function FocusManualRecordModal({
           </button>
           <button
             type="submit"
-            disabled={isSubmitting}
-            className="px-5 py-2 rounded-lg text-xs font-bold bg-gold text-neutral-900 hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer disabled:opacity-50"
+            disabled={
+              isSubmitting ||
+              (targetType === "ACTIVITY" && !selectedActivityId) ||
+              (targetType === "ITEM" && !selectedItemId)
+            }
+            className="px-5 py-2 rounded-lg text-xs font-bold bg-gold text-neutral-900 hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "Registrando..." : "Salvar Registro"}
           </button>

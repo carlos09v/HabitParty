@@ -20,7 +20,8 @@ export async function GET(request: NextRequest) {
   if (accessToken && refreshToken) {
     const res = await completeOAuthLogin(accessToken, refreshToken);
     if (res.success) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      const targetPath = res.data?.isNewUser ? "/firstStep" : "/dashboard";
+      return NextResponse.redirect(new URL(targetPath, request.url));
     }
     return NextResponse.redirect(
       new URL(`/signIn?error=${encodeURIComponent(res.error)}`, request.url),
@@ -30,7 +31,8 @@ export async function GET(request: NextRequest) {
   if (code) {
     const res = await exchangeGoogleCode(code);
     if (res.success) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      const targetPath = res.data?.isNewUser ? "/firstStep" : "/dashboard";
+      return NextResponse.redirect(new URL(targetPath, request.url));
     }
     return NextResponse.redirect(
       new URL(`/signIn?error=${encodeURIComponent(res.error)}`, request.url),

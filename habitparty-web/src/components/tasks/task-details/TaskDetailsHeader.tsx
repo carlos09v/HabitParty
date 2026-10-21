@@ -3,6 +3,7 @@
 import { Check, Flame, Pencil, X } from "lucide-react";
 import type { Task, TaskPriorityOption } from "@/types/task";
 import { cn } from "@/utils";
+import { isTaskHardcoreLocked } from "@/utils/date";
 import { TaskDatePicker } from "./TaskDatePicker";
 import { TaskPriorityPicker } from "./TaskPriorityPicker";
 
@@ -37,11 +38,7 @@ export function TaskDetailsHeader({
 }: TaskDetailsHeaderProps) {
   const streak = task.streak ?? task.currentStreak ?? 0;
   const habitScore = (task.positiveCount ?? 0) - (task.negativeCount ?? 0);
-  const isDateLocked = Boolean(
-    task.isHardcoreModeEnabled &&
-      task.dueDate &&
-      new Date(`${task.dueDate}T23:59:59`) < new Date(),
-  );
+  const isDateLocked = isTaskHardcoreLocked(task);
 
   return (
     <div className="flex items-center justify-between gap-2 border-b border-primary/20 pb-2.5">

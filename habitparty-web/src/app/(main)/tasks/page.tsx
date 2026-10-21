@@ -3,7 +3,11 @@ import { Suspense } from "react";
 import { serverApi } from "@/api/server";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { TasksBoardContainer } from "@/components/tasks/TasksBoardContainer";
-import { MAX_COLUMNS_PREMIUM, MAX_VISIBLE_COLUMNS } from "@/constants/routine";
+import {
+  MAX_COLUMNS_PREMIUM,
+  MAX_VISIBLE_COLUMNS,
+  resolveVisibleColumnIds,
+} from "@/constants/routine";
 import { getTasksBoardData } from "@/services/taskService";
 import { getCompactMode } from "@/utils/cookies";
 
@@ -36,37 +40,21 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
 
   const cookieKey = workspaceId ? `hp_visible_cols_${workspaceId}` : null;
   const cookieVal = cookieKey ? cookieStore.get(cookieKey)?.value : null;
-  let initialVisibleColumnIds: string[] | undefined;
+  let parsedCookieIds: string[] | undefined;
   if (cookieVal) {
     try {
-      initialVisibleColumnIds = JSON.parse(decodeURIComponent(cookieVal));
+      parsedCookieIds = JSON.parse(decodeURIComponent(cookieVal));
     } catch {
       // ignore
     }
   }
 
-  // Se o usuário selecionou uma coluna específica (ex: vindo do Dashboard), garante que ela esteja visível
-  if (targetColumnId && initialColumns.some((c) => c.id === targetColumnId)) {
-    if (
-      Array.isArray(initialVisibleColumnIds) &&
-      initialVisibleColumnIds.length > 0
-    ) {
-      if (!initialVisibleColumnIds.includes(targetColumnId)) {
-        initialVisibleColumnIds =
-          initialVisibleColumnIds.length < maxAllowed
-            ? [...initialVisibleColumnIds, targetColumnId]
-            : [
-                ...initialVisibleColumnIds.slice(0, maxAllowed - 1),
-                targetColumnId,
-              ];
-      }
-    } else {
-      const defaultCols = initialColumns.slice(0, maxAllowed).map((c) => c.id);
-      initialVisibleColumnIds = defaultCols.includes(targetColumnId)
-        ? defaultCols
-        : [...defaultCols.slice(0, maxAllowed - 1), targetColumnId];
-    }
-  }
+  const initialVisibleColumnIds = resolveVisibleColumnIds(
+    initialColumns.map((c) => c.id),
+    parsedCookieIds,
+    maxAllowed,
+    targetColumnId,
+  );
 
   return (
     <PageWrapper noScroll isCompact={isCompact}>
