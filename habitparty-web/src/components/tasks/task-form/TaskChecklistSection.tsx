@@ -1,5 +1,3 @@
-"use client";
-
 import { Check, CheckSquare, Trash2 } from "lucide-react";
 import type { CreateTaskFormReturn } from "@/hooks/useCreateTaskForm";
 import { cn } from "@/utils";

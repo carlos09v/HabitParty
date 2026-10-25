@@ -3,7 +3,6 @@ import { Suspense } from "react";
 import { DashboardEmptyWorkspace } from "@/components/dashboard/DashboardEmptyWorkspace";
 import { DashboardMain } from "@/components/dashboard/DashboardMain";
 import { DashboardSidebarRight } from "@/components/dashboard/DashboardSidebarRight";
-import { PaymentFeedbackListener } from "@/components/subscription/PaymentFeedbackListener";
 import { Loading } from "@/components/ui/Loading";
 import { getDashboardData } from "@/services/dashboardService";
 import { getCompactMode } from "@/utils/cookies";
@@ -49,10 +48,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   return (
     <div className="flex h-full w-full overflow-hidden">
-      <Suspense fallback={null}>
-        <PaymentFeedbackListener />
-      </Suspense>
-
       <Suspense
         fallback={
           <div className="flex-1 flex items-center justify-center p-8">

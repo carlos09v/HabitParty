@@ -5,6 +5,9 @@ import type {
   WeeklyFocusDayData,
 } from "@/types/focus";
 import { getWeekDateRange, parseServerDate } from "./date";
+import { calculateRecordReward } from "./focusRewards";
+
+export { calculateRecordReward };
 
 export interface FocusMetricsCalculationResult {
   metrics: FocusMetrics;
@@ -111,114 +114,6 @@ function calculateConsecutiveStreak(
   }
 
   return streak;
-}
-
-/**
- * Estima a recompensa de uma sessão de foco com base nas regras calibradas do HabitParty,
- * espelhando exatamente a implementação de domínio do backend (FocusRewardCalculator).
- * Regra fundamental: Sessões de itens da mochila NUNCA geram XP nem moedas.
- */
-export function calculateRecordReward(
-  record: FocusRecord,
-  priorFocusMinutesToday = 0,
-): { xp: number; coins: number } {
-  // Trava 1: Se for uso de item de inventário (mochila/recompensa de lazer), NUNCA gera XP ou Moedas
-  if (record.inventoryItemId) {
-    return { xp: 0, coins: 0 };
-  }
-
-  // Se o registro já possui os valores oficiais calculados e persistidos pelo backend
-  if (
-    record.xpEarned !== undefined &&
-    record.xpEarned !== null &&
-    record.coinsEarned !== undefined &&
-    record.coinsEarned !== null
-  ) {
-    return {
-      xp: record.xpEarned,
-      coins: Number(record.coinsEarned),
-    };
-  }
-
-  const durationMinutes = record.durationMinutes || 0;
-
-  // Trava 2: Tempo mínimo de 10 minutos para qualificar para recompensa
-  if (durationMinutes < 10) {
-    return { xp: 0, coins: 0 };
-  }
-
-  // Trava 3: Teto por sessão única (máximo 90 minutos para conter esquecimento / AFK)
-  const effectiveMinutes = Math.min(durationMinutes, 90);
-
-  let baseXp = 0;
-  let baseCoins = 0;
-
-  const isPomo = record.recordType === "POMO";
-  const completedPomos = record.completedPomos ?? 0;
-
-  if (isPomo && completedPomos > 0) {
-    const minutesPerPomo = Math.floor(effectiveMinutes / completedPomos);
-
-    if (minutesPerPomo < 15) {
-      // Anti-exploit: muitos pomos declarados para pouco tempo decorrido
-      baseXp = (effectiveMinutes / 30.0) * 6.0;
-      baseCoins = (effectiveMinutes / 30.0) * 0.15;
-    } else if (minutesPerPomo < 25) {
-      // Pomodoro curto (15 a 24 min)
-      baseXp = completedPomos * 4.0;
-      baseCoins = completedPomos * 0.1;
-    } else if (minutesPerPomo <= 40) {
-      // Pomodoro padrão (25 a 40 min)
-      baseXp = completedPomos * 8.0;
-      baseCoins = completedPomos * 0.25;
-    } else {
-      // Pomodoro longo / Deep work (> 40 min)
-      baseXp = completedPomos * 15.0;
-      baseCoins = completedPomos * 0.5;
-    }
-  } else if (isPomo) {
-    // Pomodoro sem ciclo completado formalmente
-    baseXp = (effectiveMinutes / 30.0) * 6.0;
-    baseCoins = (effectiveMinutes / 30.0) * 0.15;
-  } else {
-    // STOPWATCH: ~7 XP e 0,20 moedas a cada 30 minutos
-    baseXp = (effectiveMinutes / 30.0) * 7.0;
-    baseCoins = (effectiveMinutes / 30.0) * 0.2;
-  }
-
-  // Trava 4: Rendimento Decrescente Diário (Daily Soft Cap)
-  let multiplier = 1.0;
-  const safePrior = Math.max(0, priorFocusMinutesToday);
-  if (safePrior >= 360) {
-    multiplier = 0.0; // Teto diário de 6h excedido
-  } else {
-    const endMinutes = safePrior + effectiveMinutes;
-    if (endMinutes <= 240) {
-      multiplier = 1.0;
-    } else if (safePrior >= 240) {
-      if (endMinutes <= 360) {
-        multiplier = 0.5;
-      } else {
-        const tier2Minutes = 360 - safePrior;
-        multiplier = (tier2Minutes * 0.5) / effectiveMinutes;
-      }
-    } else {
-      const tier1Minutes = 240 - safePrior;
-      const remaining = effectiveMinutes - tier1Minutes;
-      const tier2Minutes = Math.min(remaining, 360 - 240);
-      const weightedSum = tier1Minutes * 1.0 + tier2Minutes * 0.5;
-      multiplier = weightedSum / effectiveMinutes;
-    }
-  }
-
-  if (multiplier <= 0.0) {
-    return { xp: 0, coins: 0 };
-  }
-
-  const finalXp = Math.round(baseXp * multiplier);
-  const finalCoins = Math.round(baseCoins * multiplier * 100) / 100;
-
-  return { xp: finalXp, coins: finalCoins };
 }
 
 /**

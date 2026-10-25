@@ -1,4 +1,7 @@
 import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
   BookOpen,
   Briefcase,
   CheckSquare,
@@ -19,6 +22,7 @@ import {
   Zap,
 } from "lucide-react";
 
+import type { BoardAlignment, ColumnWidthPreset } from "@/types/task-ui";
 import type { IconOption } from "@/types/ui";
 
 /** Máximo de colunas exibidas simultaneamente no quadro. */
@@ -28,6 +32,25 @@ export const MAX_VISIBLE_COLUMNS = 4;
 export const MAX_COLUMNS_PREMIUM = 6;
 
 export type ColumnIconOption = IconOption;
+
+/** Classes de largura das colunas do quadro Kanban por preset. */
+export const COLUMN_WIDTH_CLASSES: Readonly<Record<ColumnWidthPreset, string>> =
+  {
+    compact: "w-[250px] min-w-[240px] max-w-[270px]",
+    normal: "w-[300px] min-w-[270px] max-w-[320px]",
+    wide: "w-[420px] min-w-[380px] max-w-[460px]",
+  };
+
+/** Opções de alinhamento horizontal do quadro Kanban. */
+export const ALIGNMENT_OPTIONS: ReadonlyArray<{
+  id: BoardAlignment;
+  label: string;
+  icon: LucideIcon;
+}> = [
+  { id: "left", label: "Alinhar à esquerda", icon: AlignLeft },
+  { id: "center", label: "Centralizar quadro", icon: AlignCenter },
+  { id: "right", label: "Alinhar à direita", icon: AlignRight },
+] as const;
 
 /** Ícones pré-configurados para seleção de listas/colunas. */
 export const COLUMN_ICONS: readonly IconOption[] = [

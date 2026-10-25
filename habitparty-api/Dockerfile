@@ -31,18 +31,19 @@ RUN ./mvnw clean package -DskipTests -B
 FROM eclipse-temurin:25-jre-alpine AS production
 WORKDIR /app
 
-RUN addgroup -g 1001 -S appgroup && \
+RUN apk add --no-cache su-exec && \
+    addgroup -g 1001 -S appgroup && \
     adduser -S appuser -u 1001 -G appgroup && \
     mkdir -p /app/uploads && \
     chown -R appuser:appgroup /app
 
 COPY --from=build --chown=appuser:appgroup /app/target/habitparty-api-*.jar app.jar
-
-USER appuser
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8080/v3/api-docs || exit 1
 
-ENTRYPOINT ["java", "-Djava.net.preferIPv4Stack=true", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]
+ENTRYPOINT ["/app/entrypoint.sh"]

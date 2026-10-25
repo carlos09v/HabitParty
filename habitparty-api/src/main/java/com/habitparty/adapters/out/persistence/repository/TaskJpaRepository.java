@@ -89,4 +89,12 @@ public interface TaskJpaRepository extends JpaRepository<TaskJpaEntity, UUID> {
     @Modifying
     @Query("DELETE FROM TaskJpaEntity t WHERE t.boardColumnId = :boardColumnId")
     void deleteAllByBoardColumnId(@Param("boardColumnId") UUID boardColumnId);
+
+    @Modifying
+    @Query("DELETE FROM TaskJpaEntity t WHERE t.boardColumnId IN :boardColumnIds")
+    void deleteAllByBoardColumnIds(@Param("boardColumnIds") List<UUID> boardColumnIds);
+
+    @Modifying
+    @Query("DELETE FROM TaskJpaEntity t WHERE t.userId = :userId")
+    void deleteAllByUserId(@Param("userId") UUID userId);
 }

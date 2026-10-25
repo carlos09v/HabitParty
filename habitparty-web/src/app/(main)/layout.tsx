@@ -1,9 +1,10 @@
 import { cookies } from "next/headers";
-import type { ReactNode } from "react";
+import { type ReactNode, Suspense } from "react";
 import { serverApi } from "@/api/server";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { StoreInitializer } from "@/components/layout/StoreInitializer";
+import { PaymentFeedbackListener } from "@/components/subscription/PaymentFeedbackListener";
 import { getCompactMode, getThemeMode } from "@/utils/cookies";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -72,6 +73,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   return (
     // Container principal: h-[100dvh] overflow-hidden impede rolagem na janela toda
     <div className="relative h-[100dvh] flex flex-col lg:flex-row overflow-hidden">
+      <Suspense fallback={null}>
+        <PaymentFeedbackListener />
+      </Suspense>
+
       <StoreInitializer
         compactMode={isCompact}
         theme={theme}

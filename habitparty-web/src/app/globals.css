@@ -339,15 +339,22 @@ html.light .hover\:border-primary-light:hover {
   border-color: rgba(124, 58, 237, 0.3) !important;
 }
 
-/* Diferenciação de camadas na barra lateral direita do Dashboard */
-html.light aside[aria-label="Painel de Resumo e Calendário"] {
+/* Diferenciação de camadas na barra lateral direita do Dashboard e Foco */
+html.light aside[aria-label="Painel de Resumo e Calendário"],
+html.light aside[aria-label="Painel de métricas e histórico de foco"] {
   background-color: #ffffff !important;
   border-left-color: rgba(124, 58, 237, 0.12) !important;
 }
 html.light
   aside[aria-label="Painel de Resumo e Calendário"]
   .bg-primary-dark\/20,
-html.light aside[aria-label="Painel de Resumo e Calendário"] .bg-white\/5 {
+html.light aside[aria-label="Painel de Resumo e Calendário"] .bg-white\/5,
+html.light
+  aside[aria-label="Painel de métricas e histórico de foco"]
+  .bg-primary-dark\/20,
+html.light
+  aside[aria-label="Painel de métricas e histórico de foco"]
+  .bg-white\/5 {
   background-color: rgb(248 247 252) !important;
   border-color: rgba(124, 58, 237, 0.12) !important;
 }
@@ -516,6 +523,76 @@ html.light .border-neutral-300 {
       rgba(124, 58, 237, 0.55),
       rgba(124, 58, 237, 0.25)
     );
+  }
+}
+
+/* ========================================================
+   ANIMAÇÕES DE ENTRADA COMPONÍVEIS
+   Sintaxe compatível com tw-animate-css, sem dependência externa:
+   `animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-150`
+   - `animate-in` dispara o keyframe `enter`.
+   - Os modificadores apenas definem o estado inicial via variáveis CSS.
+   - A duração reaproveita `--tw-duration` (definida por `duration-*`).
+   ======================================================== */
+@keyframes enter {
+  from {
+    opacity: var(--tw-enter-opacity, 1);
+    transform: translate3d(
+        var(--tw-enter-translate-x, 0),
+        var(--tw-enter-translate-y, 0),
+        0
+      )
+      scale3d(
+        var(--tw-enter-scale, 1),
+        var(--tw-enter-scale, 1),
+        var(--tw-enter-scale, 1)
+      );
+  }
+}
+
+@utility animate-in {
+  animation: enter var(--tw-duration, 150ms) var(--tw-ease, ease-out) both;
+}
+
+@utility fade-in {
+  --tw-enter-opacity: 0;
+}
+
+@utility zoom-in-* {
+  --tw-enter-scale: calc(--value(integer) * 1%);
+}
+
+@utility slide-in-from-top {
+  --tw-enter-translate-y: -100%;
+}
+@utility slide-in-from-top-* {
+  --tw-enter-translate-y: calc(--value(number) * var(--spacing) * -1);
+}
+
+@utility slide-in-from-bottom {
+  --tw-enter-translate-y: 100%;
+}
+@utility slide-in-from-bottom-* {
+  --tw-enter-translate-y: calc(--value(number) * var(--spacing));
+}
+
+@utility slide-in-from-left {
+  --tw-enter-translate-x: -100%;
+}
+@utility slide-in-from-left-* {
+  --tw-enter-translate-x: calc(--value(number) * var(--spacing) * -1);
+}
+
+@utility slide-in-from-right {
+  --tw-enter-translate-x: 100%;
+}
+@utility slide-in-from-right-* {
+  --tw-enter-translate-x: calc(--value(number) * var(--spacing));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-in {
+    animation: none !important;
   }
 }
 

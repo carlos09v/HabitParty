@@ -39,7 +39,11 @@ export function PaymentFeedbackListener() {
             const res = await confirmPaymentAction(sessionId);
 
             // Somente celebra se o gateway confirmou E o usuário de fato tornou-se Premium!
-            if (res.success && res.data?.isPaid && res.data.user?.isPremium) {
+            if (
+              res.success &&
+              (res.data.isPaid ?? res.data.paid) &&
+              res.data.user?.isPremium
+            ) {
               toast.dismiss("payment-checking");
               setUser(res.data.user);
               triggerCelebrationConfetti();

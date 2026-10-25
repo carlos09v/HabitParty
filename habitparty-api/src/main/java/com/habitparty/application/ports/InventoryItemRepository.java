@@ -18,4 +18,6 @@ public interface InventoryItemRepository {
     
     // Para a criação da coluna gerar o index a partir do ultimo gerado
     int getMaxOrderIndex(UUID userId);
+
+    void deleteAllByUserId(UUID userId);
 }

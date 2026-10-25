@@ -1,5 +1,7 @@
 import { analyzePassword } from "@/components/auth/PasswordStrengthIndicator";
 import type { PasswordValidationResult } from "@/types/settings";
+import type { Task } from "@/types/task";
+import { getTodayDateString } from "./date";
 
 export const PASSWORD_MIN_LENGTH = 8;
 
@@ -158,7 +160,7 @@ export function validateHardcoreTodo(options: {
     return "No Modo Hardcore, afazeres exigem uma data de vencimento.";
   }
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = getTodayDateString();
 
   if (!isEditing && dueDate < todayStr) {
     return "A data de vencimento de um afazer Hardcore não pode ser no passado.";
@@ -177,4 +179,19 @@ export function validateHardcoreTodo(options: {
   }
 
   return null;
+}
+
+/**
+ * Determina se uma tarefa exige confirmação explícita antes de ser excluída.
+ * Exige confirmação apenas quando há subtarefas (checklist), Modo Hardcore ativo
+ * ou histórico relevante de ofensiva/execuções (streak / contadores).
+ */
+export function shouldConfirmTaskDeletion(task: Task): boolean {
+  const hasChecklist = Boolean(task.checklist && task.checklist.length > 0);
+  const isHardcore = Boolean(task.isHardcoreModeEnabled);
+  const hasStreakOrProgress =
+    (task.streak ?? task.currentStreak ?? 0) > 0 ||
+    (task.positiveCount ?? 0) > 0;
+
+  return hasChecklist || isHardcore || hasStreakOrProgress;
 }

@@ -1,14 +1,17 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { BaseModal } from "@/components/ui/BaseModal";
+import { CoinIcon } from "@/components/ui/CoinIcon";
 import { IconPickerPopover } from "@/components/ui/IconPickerPopover";
+import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
 import {
-  CATEGORY_LABELS,
   COUPON_PACKAGE_OPTIONS,
-  REWARD_ICON_KEYWORD_MAP,
+  REWARD_FORM_CATEGORY_OPTIONS,
+  REWARD_FORM_TYPE_KEYS,
   REWARD_ICONS,
   REWARD_TYPE_META,
 } from "@/constants/reward";
@@ -24,37 +27,17 @@ interface RewardFormModalProps {
   onSuccess?: (reward: Reward) => void;
 }
 
-const CATEGORY_KEYS = Object.keys(CATEGORY_LABELS) as RewardCategory[];
-const TYPE_KEYS = Object.keys(REWARD_TYPE_META) as RewardType[];
-
-const REWARD_TYPE_OPTIONS = TYPE_KEYS.map((t) => {
-  const meta = REWARD_TYPE_META[t];
-  const Icon = meta?.icon;
-  return {
-    value: t,
-    label: meta?.label || t,
-    icon: Icon ? <Icon size={15} className="text-gold shrink-0" /> : undefined,
-  };
-});
-
-const CATEGORY_OPTIONS = CATEGORY_KEYS.map((cat) => ({
-  value: cat,
-  label: cat,
-}));
-
 export function RewardFormModal({
   isOpen,
   onClose,
   rewardToEdit,
   onSuccess,
 }: RewardFormModalProps) {
-  const [hasManuallyChangedIcon, setHasManuallyChangedIcon] = useState(false);
-
   const {
     isEditing,
     isPending,
     title,
-    setTitle,
+    handleTitleChange,
     description,
     setDescription,
     price,
@@ -69,7 +52,7 @@ export function RewardFormModal({
     baseDurationMinutes,
     setBaseDurationMinutes,
     selectedIcon,
-    setSelectedIcon,
+    handleIconSelect,
     handleSubmit,
   } = useRewardForm({
     isOpen,
@@ -78,31 +61,21 @@ export function RewardFormModal({
     onClose,
   });
 
-  useEffect(() => {
-    if (isOpen) {
-      setHasManuallyChangedIcon(Boolean(rewardToEdit));
-    }
-  }, [isOpen, rewardToEdit]);
-
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTitle = e.target.value;
-    setTitle(newTitle);
-
-    // Sugestão automática de ícone baseado nas palavras digitadas (ex: jogar -> gamepad, pizza -> pizza)
-    if (!hasManuallyChangedIcon && !isEditing) {
-      const normalized = newTitle
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "");
-
-      for (const [keyword, iconId] of Object.entries(REWARD_ICON_KEYWORD_MAP)) {
-        if (normalized.includes(keyword)) {
-          setSelectedIcon(iconId);
-          break;
-        }
-      }
-    }
-  };
+  const rewardTypeOptions = useMemo(
+    () =>
+      REWARD_FORM_TYPE_KEYS.map((t) => {
+        const meta = REWARD_TYPE_META[t];
+        const Icon = meta?.icon;
+        return {
+          value: t,
+          label: meta?.label || t,
+          icon: Icon ? (
+            <Icon size={15} className="text-gold shrink-0" />
+          ) : undefined,
+        };
+      }),
+    [],
+  );
 
   return (
     <BaseModal
@@ -117,7 +90,7 @@ export function RewardFormModal({
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="rewardTitle"
-            className="text-body-s text-neutral-300 font-medium"
+            className="text-body-s text-neutral-100 font-medium select-none"
           >
             Nome da Recompensa <span className="text-gold">*</span>
           </label>
@@ -125,20 +98,18 @@ export function RewardFormModal({
             <IconPickerPopover
               options={REWARD_ICONS}
               value={selectedIcon}
-              onChange={(iconId) => {
-                setSelectedIcon(iconId);
-                setHasManuallyChangedIcon(true);
-              }}
+              onChange={handleIconSelect}
               disabled={isPending}
               title="Ícone da Recompensa"
             />
-            <input
+            <Input
               id="rewardTitle"
               type="text"
               value={title}
-              onChange={handleTitleChange}
+              onChange={(e) => handleTitleChange(e.target.value)}
               placeholder="Ex: 1h de videogame, Café especial, Assistir filme..."
-              className="w-full bg-background/50 border border-primary/40 rounded-lg px-3 py-2 text-neutral-50 placeholder:text-neutral-500 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s h-[42px]"
+              compact
+              className="h-[42px]"
               required
               maxLength={40}
               disabled={isPending}
@@ -151,29 +122,20 @@ export function RewardFormModal({
         </div>
 
         {/* Descrição */}
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="rewardDescription"
-            className="text-body-s text-neutral-300 font-medium"
-          >
-            Descrição{" "}
-            <span className="text-neutral-500 text-xs">(opcional)</span>
-          </label>
-          <textarea
-            id="rewardDescription"
-            rows={2}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Detalhes ou regras para desfrutar da sua recompensa..."
-            className="w-full bg-background/50 border border-primary/40 rounded-lg px-3 py-2 text-neutral-50 placeholder:text-neutral-500 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s resize-none"
-            maxLength={120}
-            disabled={isPending}
-          />
-        </div>
+        <Textarea
+          id="rewardDescription"
+          label="Descrição (opcional)"
+          rows={2}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Detalhes ou regras para desfrutar da sua recompensa..."
+          compact
+          maxLength={120}
+          disabled={isPending}
+        />
 
         {/* Linha dupla: Tipo de Recompensa e Categoria */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Tipo de Recompensa */}
           <Select
             id="rewardType"
             label={
@@ -183,18 +145,17 @@ export function RewardFormModal({
             }
             value={type}
             onChange={(val) => handleTypeChange(val as RewardType)}
-            options={REWARD_TYPE_OPTIONS}
+            options={rewardTypeOptions}
             disabled={isPending}
             triggerClassName="py-2 px-3 text-body-s h-[42px]"
           />
 
-          {/* Categoria */}
           <Select
             id="rewardCategory"
             label="Categoria"
             value={category}
             onChange={(val) => setCategory(val as RewardCategory)}
-            options={CATEGORY_OPTIONS}
+            options={REWARD_FORM_CATEGORY_OPTIONS}
             disabled={isPending}
             triggerClassName="py-2 px-3 text-body-s h-[42px]"
           />
@@ -218,12 +179,11 @@ export function RewardFormModal({
         {/* Seção Condicional se for TimeBased (Cupom - Opção C) */}
         {type === "TimeBased" && (
           <div className="flex flex-col gap-3 p-3.5 rounded-xl bg-surface/30 border border-white/10 animate-in fade-in duration-150">
-            {/* Input numérico de Duração */}
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
                 <label
                   htmlFor="rewardDuration"
-                  className="text-body-s text-neutral-300 font-medium"
+                  className="text-body-s text-neutral-100 font-medium"
                 >
                   Duração da Atividade (minutos){" "}
                   <span className="text-gold">*</span>
@@ -232,7 +192,7 @@ export function RewardFormModal({
                   (tempo que será consumido no Foco)
                 </span>
               </div>
-              <input
+              <Input
                 id="rewardDuration"
                 type="number"
                 min={5}
@@ -246,15 +206,16 @@ export function RewardFormModal({
                   }
                 }}
                 placeholder="Ex: 30, 60, 120"
-                className="w-full bg-background/50 border border-primary/40 rounded-lg px-3 py-2 text-neutral-50 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s font-semibold h-[42px]"
+                compact
+                className="font-semibold h-[42px]"
                 disabled={isPending}
               />
             </div>
 
-            {/* Opção C: Chips de Pacote / Atalhos de Tempo */}
+            {/* Chips de Pacote / Atalhos de Tempo */}
             <div className="flex flex-col gap-1.5 pt-0.5">
               <div className="flex items-center justify-between">
-                <span className="text-body-s text-neutral-300 font-medium">
+                <span className="text-body-s text-neutral-100 font-medium">
                   Nível do Pacote
                 </span>
                 <span className="text-label-m text-neutral-400">
@@ -310,7 +271,7 @@ export function RewardFormModal({
           <div className="flex items-center justify-between">
             <label
               htmlFor="rewardPrice"
-              className="text-body-s text-neutral-300 font-medium"
+              className="text-body-s text-neutral-100 font-medium"
             >
               Custo em Moedas <span className="text-gold">*</span>
             </label>
@@ -320,26 +281,21 @@ export function RewardFormModal({
               </span>
             )}
           </div>
-          <div className="relative flex items-center">
-            <div className="absolute left-3 w-4 h-4 rounded-full bg-gold border border-orange-500 flex items-center justify-center shrink-0">
-              <span className="text-label-m text-neutral-900 font-bold leading-none">
-                H
-              </span>
-            </div>
-            <input
-              id="rewardPrice"
-              type="number"
-              step="any"
-              min="0.01"
-              max={99999}
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="Ex: 5, 15, 35 ou 80"
-              className="w-full bg-background/50 border border-primary/40 rounded-lg pl-9 pr-3 py-2 text-neutral-50 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s font-bold h-[42px]"
-              required
-              disabled={isPending}
-            />
-          </div>
+          <Input
+            id="rewardPrice"
+            type="number"
+            step="any"
+            min="0.01"
+            max={99999}
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            placeholder="Ex: 5, 15, 35 ou 80"
+            compact
+            icon={<CoinIcon size={16} withGlow />}
+            className="font-bold h-[42px]"
+            required
+            disabled={isPending}
+          />
           {type === "MysteryBox" && (
             <span className="text-label-m text-neutral-400">
               Você pode manter o preço calibrado para o pacote ou personalizá-lo

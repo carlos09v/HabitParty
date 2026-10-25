@@ -114,19 +114,6 @@ export const TASK_SORT_FILTER_OPTIONS = [
   { value: "reward", label: "Maior Recompensa (XP/Gold)" },
 ] as const;
 
-export type PeriodOption =
-  | "specific_day"
-  | "today"
-  | "this_week"
-  | "this_month";
-
-export const PERIOD_OPTIONS: readonly { id: PeriodOption; label: string }[] = [
-  { id: "specific_day", label: "Dia específico" },
-  { id: "today", label: "Hoje" },
-  { id: "this_week", label: "Esta semana" },
-  { id: "this_month", label: "Este mês" },
-] as const;
-
 export type ActivityPeriodOption = "today" | "this_week" | "this_month";
 
 export const ACTIVITY_PERIOD_OPTIONS: readonly {

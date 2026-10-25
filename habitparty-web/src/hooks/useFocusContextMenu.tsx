@@ -2,8 +2,6 @@
 
 import { Pencil, Play, PlusCircle, Trash2, Undo2 } from "lucide-react";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
-import { deleteFocusActivity } from "@/actions/focusActions";
 import type { FocusActivity } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 
@@ -22,7 +20,6 @@ interface UseFocusContextMenuParams {
   onAddManualRecord: (params: { activityId?: string; itemId?: string }) => void;
   onRequestReturnToBackpack?: (item: InventoryItemResponseDTO) => void;
   onRequestDeleteActivity?: (act: FocusActivity) => void;
-  onRefreshData: () => void;
 }
 
 export function useFocusContextMenu({
@@ -32,7 +29,6 @@ export function useFocusContextMenu({
   onAddManualRecord,
   onRequestReturnToBackpack,
   onRequestDeleteActivity,
-  onRefreshData,
 }: UseFocusContextMenuParams) {
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
     isOpen: false,
@@ -107,22 +103,9 @@ export function useFocusContextMenu({
           label: "Excluir Atividade",
           icon: <Trash2 size={15} />,
           variant: "destructive" as const,
-          onClick: async () => {
-            if (!contextMenu.activityTarget) return;
-            if (onRequestDeleteActivity) {
+          onClick: () => {
+            if (contextMenu.activityTarget && onRequestDeleteActivity) {
               onRequestDeleteActivity(contextMenu.activityTarget);
-              return;
-            }
-
-            const res = await deleteFocusActivity(
-              contextMenu.activityTarget.id,
-              false,
-            );
-            if (res.success) {
-              toast.success("Atividade excluída com sucesso.");
-              onRefreshData();
-            } else {
-              toast.error(res.error || "Erro ao excluir atividade.");
             }
           },
         },

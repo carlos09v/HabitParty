@@ -1,5 +1,3 @@
-"use client";
-
 import { Mail } from "lucide-react";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Select } from "@/components/ui/Select";

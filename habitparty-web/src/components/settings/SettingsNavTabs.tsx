@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { SETTINGS_TABS } from "@/constants/settings";
 import type { SettingsTabId } from "@/types/settings";

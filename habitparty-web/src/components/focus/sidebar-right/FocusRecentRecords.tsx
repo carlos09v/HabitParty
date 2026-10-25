@@ -8,13 +8,123 @@ import {
   Timer,
   Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { memo, useCallback, useState } from "react";
+import { CoinIcon } from "@/components/ui/CoinIcon";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { getFocusIcon } from "@/constants/focus";
 import type { FocusRecord } from "@/types/focus";
 import { cn, formatCoins, formatDateTime } from "@/utils";
 import { formatFocusRecordDuration } from "@/utils/focusFormatters";
 import { FocusRecordDetailsPopover } from "./FocusRecordDetailsPopover";
+
+interface FocusRecentRecordItemProps {
+  record: FocusRecord;
+  isCompact: boolean;
+  onRowClick: (e: React.MouseEvent, record: FocusRecord) => void;
+  onContextMenu: (e: React.MouseEvent, record: FocusRecord) => void;
+  onDeleteRecord?: (recordId: string) => void;
+}
+
+const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
+  record: rec,
+  isCompact,
+  onRowClick,
+  onContextMenu,
+  onDeleteRecord,
+}: FocusRecentRecordItemProps) {
+  const IconComp = rec.activityIcon ? getFocusIcon(rec.activityIcon) : Timer;
+  const durationLabel = formatFocusRecordDuration(
+    rec.startTime,
+    rec.endTime,
+    rec.durationMinutes,
+  );
+
+  return (
+    <article
+      onClick={(e) => onRowClick(e, rec)}
+      onContextMenu={(e) => onContextMenu(e, rec)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onRowClick(e as unknown as React.MouseEvent, rec);
+        }
+      }}
+      title="Clique para editar anotações ou botão direito para opções"
+      className={cn(
+        "group/row rounded-xl border border-primary/20 bg-surface/40 flex items-center justify-between gap-2.5 hover:border-gold/40 hover:bg-surface/70 transition-all cursor-pointer select-none",
+        isCompact ? "p-2" : "p-2.5",
+      )}
+    >
+      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+        <div className="w-8 h-8 rounded-lg bg-primary-dark/40 border border-primary/30 flex items-center justify-center shrink-0 text-primary-light group-hover/row:border-gold/40 transition-colors">
+          <IconComp size={15} />
+        </div>
+        <div className="flex flex-col min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-body-s font-semibold text-neutral-100 group-hover/row:text-gold transition-colors truncate">
+              {rec.activityName || rec.itemName || "Sessão Livre"}
+            </span>
+            {rec.notes && rec.notes.trim() !== "" && (
+              <span
+                title={rec.notes}
+                className="text-neutral-400 group-hover/row:text-gold transition-colors shrink-0 p-0.5"
+              >
+                <MessageSquare size={isCompact ? 10 : 12} />
+              </span>
+            )}
+          </div>
+          <span className="text-tiny text-neutral-400 truncate">
+            {formatDateTime(rec.endTime, { isLocal: true })}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex flex-col items-end">
+          <span className="text-body-s font-bold text-gold">
+            {durationLabel}
+          </span>
+          {!rec.inventoryItemId &&
+          ((rec.xpEarned ?? 0) > 0 || (rec.coinsEarned ?? 0) > 0) ? (
+            <span className="text-tiny text-neutral-400 font-medium inline-flex items-center gap-1">
+              <span>+{rec.xpEarned ?? 0} XP</span>
+              <span>•</span>
+              <span className="inline-flex items-center gap-0.5 text-gold font-semibold">
+                +{formatCoins(rec.coinsEarned ?? 0)}
+                <CoinIcon size={10} />
+              </span>
+            </span>
+          ) : rec.completedPomos && rec.completedPomos > 0 ? (
+            <span className="text-tiny text-neutral-400">
+              {rec.completedPomos} pomo
+              {rec.completedPomos > 1 ? "s" : ""}
+            </span>
+          ) : rec.inventoryItemId ? (
+            <span className="text-tiny text-neutral-400 font-medium">
+              Lazer
+            </span>
+          ) : null}
+        </div>
+
+        {/* Botão de Excluir Registro direto */}
+        {onDeleteRecord && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteRecord(rec.id);
+            }}
+            className="w-6 h-6 rounded flex items-center justify-center text-neutral-500 hover:text-red-400 hover:bg-red-500/15 opacity-70 group-hover/row:opacity-100 transition-all cursor-pointer"
+            title="Excluir este registro"
+            aria-label="Excluir este registro"
+          >
+            <Trash2 size={13} />
+          </button>
+        )}
+      </div>
+    </article>
+  );
+});
 
 interface FocusRecentRecordsProps {
   records: FocusRecord[];
@@ -51,23 +161,29 @@ export function FocusRecentRecords({
     anchorRect: null,
   });
 
-  const handleRowClick = (e: React.MouseEvent, record: FocusRecord) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setEditAnchorRect(rect);
-    setSelectedRecordForEdit(record);
-  };
+  const handleRowClick = useCallback(
+    (e: React.MouseEvent, record: FocusRecord) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setEditAnchorRect(rect);
+      setSelectedRecordForEdit(record);
+    },
+    [],
+  );
 
-  const handleContextMenu = (e: React.MouseEvent, record: FocusRecord) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const rect = e.currentTarget.getBoundingClientRect();
-    setContextMenu({
-      isOpen: true,
-      position: { x: e.clientX, y: e.clientY },
-      record,
-      anchorRect: rect,
-    });
-  };
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent, record: FocusRecord) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const rect = e.currentTarget.getBoundingClientRect();
+      setContextMenu({
+        isOpen: true,
+        position: { x: e.clientX, y: e.clientY },
+        record,
+        anchorRect: rect,
+      });
+    },
+    [],
+  );
 
   return (
     <div className="flex flex-col gap-2.5 w-full flex-1 min-h-0">
@@ -128,99 +244,16 @@ export function FocusRecentRecords({
             )}
           </div>
         ) : (
-          records.map((rec) => {
-            const IconComp = rec.activityIcon
-              ? getFocusIcon(rec.activityIcon)
-              : Timer;
-            const durationLabel = formatFocusRecordDuration(
-              rec.startTime,
-              rec.endTime,
-              rec.durationMinutes,
-            );
-
-            return (
-              <article
-                key={rec.id}
-                onClick={(e) => handleRowClick(e, rec)}
-                onContextMenu={(e) => handleContextMenu(e, rec)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleRowClick(e as unknown as React.MouseEvent, rec);
-                  }
-                }}
-                title="Clique para editar anotações ou botão direito para opções"
-                className={cn(
-                  "group/row rounded-xl border border-primary/20 bg-surface/40 flex items-center justify-between gap-2.5 hover:border-gold/40 hover:bg-surface/70 transition-all cursor-pointer select-none",
-                  isCompact ? "p-2" : "p-2.5",
-                )}
-              >
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className="w-8 h-8 rounded-lg bg-primary-dark/40 border border-primary/30 flex items-center justify-center shrink-0 text-primary-light group-hover/row:border-gold/40 transition-colors">
-                    <IconComp size={15} />
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-body-s font-semibold text-neutral-100 group-hover/row:text-gold transition-colors truncate">
-                        {rec.activityName || rec.itemName || "Sessão Livre"}
-                      </span>
-                      {rec.notes && rec.notes.trim() !== "" && (
-                        <span
-                          title={rec.notes}
-                          className="text-neutral-400 group-hover/row:text-gold transition-colors shrink-0 p-0.5"
-                        >
-                          <MessageSquare size={isCompact ? 10 : 12} />
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-tiny text-neutral-400 truncate">
-                      {formatDateTime(rec.endTime, { isLocal: true })}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <div className="flex flex-col items-end">
-                    <span className="text-body-s font-bold text-gold">
-                      {durationLabel}
-                    </span>
-                    {!rec.inventoryItemId &&
-                    ((rec.xpEarned ?? 0) > 0 || (rec.coinsEarned ?? 0) > 0) ? (
-                      <span className="text-tiny text-neutral-400 font-medium">
-                        +{rec.xpEarned ?? 0} XP • +
-                        {formatCoins(rec.coinsEarned ?? 0)} H
-                      </span>
-                    ) : rec.completedPomos && rec.completedPomos > 0 ? (
-                      <span className="text-tiny text-neutral-400">
-                        {rec.completedPomos} pomo
-                        {rec.completedPomos > 1 ? "s" : ""}
-                      </span>
-                    ) : rec.inventoryItemId ? (
-                      <span className="text-tiny text-neutral-400 font-medium">
-                        Lazer
-                      </span>
-                    ) : null}
-                  </div>
-
-                  {/* Botão de Excluir Registro direto */}
-                  {onDeleteRecord && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteRecord(rec.id);
-                      }}
-                      className="w-6 h-6 rounded flex items-center justify-center text-neutral-500 hover:text-red-400 hover:bg-red-500/15 opacity-70 group-hover/row:opacity-100 transition-all cursor-pointer"
-                      title="Excluir este registro"
-                      aria-label="Excluir este registro"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  )}
-                </div>
-              </article>
-            );
-          })
+          records.map((rec) => (
+            <FocusRecentRecordItem
+              key={rec.id}
+              record={rec}
+              isCompact={isCompact}
+              onRowClick={handleRowClick}
+              onContextMenu={handleContextMenu}
+              onDeleteRecord={onDeleteRecord}
+            />
+          ))
         )}
       </div>
 

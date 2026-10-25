@@ -4,22 +4,16 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
-  createBoardColumnAction,
-  updateBoardColumnAction,
+  createBoardColumn,
+  updateBoardColumn,
 } from "@/actions/boardColumnActions";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { IconPickerPopover } from "@/components/ui/IconPickerPopover";
 import { COLUMN_ICONS, inferColumnIcon } from "@/constants/routine";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import type { BoardColumn } from "@/types/task";
+import type { CreateBoardColumnModalProps } from "@/types/task-ui";
 import { soundEffects } from "@/utils/soundEffects";
-
-interface CreateBoardColumnModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  columnToEdit?: BoardColumn | null;
-  onSuccess?: (column: BoardColumn, isEdit?: boolean) => void;
-}
 
 export function CreateBoardColumnModal({
   isOpen,
@@ -84,7 +78,7 @@ export function CreateBoardColumnModal({
 
     startTransition(async () => {
       if (isEditing && columnToEdit) {
-        const response = await updateBoardColumnAction(columnToEdit.id, {
+        const response = await updateBoardColumn(columnToEdit.id, {
           name: trimmedName,
           icon: selectedIcon,
         });
@@ -107,7 +101,7 @@ export function CreateBoardColumnModal({
 
       if (!activeWorkspaceId) return;
 
-      const response = await createBoardColumnAction({
+      const response = await createBoardColumn({
         workspaceId: activeWorkspaceId,
         name: trimmedName,
         icon: selectedIcon,
@@ -199,7 +193,7 @@ export function CreateBoardColumnModal({
           <button
             type="submit"
             disabled={isPending || !name.trim()}
-            className="flex items-center justify-center gap-2 px-5 py-2 bg-gradient-to-r from-primary to-primary-dark border border-primary-light/30 rounded-lg text-neutral-50 text-body-s font-bold hover:brightness-110 transition-all focus:outline-none focus:ring-2 focus:ring-gold/50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="flex items-center justify-center gap-2 px-5 py-2 bg-linear-to-r from-primary to-primary-dark border border-primary-light/30 rounded-lg text-neutral-50 text-body-s font-bold hover:brightness-110 transition-all focus:outline-none focus:ring-2 focus:ring-gold/50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             {isPending ? (
               <>

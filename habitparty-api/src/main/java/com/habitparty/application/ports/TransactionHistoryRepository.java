@@ -31,4 +31,6 @@ public interface TransactionHistoryRepository {
 
   // Pra validar o incrementStreak do user
   int countCompletedTasksToday(UUID userId);
+
+  void deleteAllByUserId(UUID userId);
 }

@@ -73,4 +73,9 @@ public class FocusActivityAdapter implements FocusActivityRepository {
                 .map(mapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public void deleteAllByUserId(UUID userId) {
+        repository.deleteAllByUserId(userId);
+    }
 }

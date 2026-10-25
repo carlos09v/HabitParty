@@ -210,7 +210,7 @@ export function FocusMetricsGrid({
           </div>
           <div className="flex flex-col">
             <span className="text-body-m font-bold text-gold">
-              +{formatCoins(goldCount)} H
+              +{formatCoins(goldCount)}
             </span>
             <span className="text-tiny text-neutral-400 truncate">
               atividades de foco

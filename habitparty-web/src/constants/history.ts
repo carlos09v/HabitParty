@@ -119,6 +119,31 @@ export const DEFAULT_TRANSACTION_STYLE: TransactionTypeStyle = {
   icon: HelpCircle,
 };
 
+/**
+ * Rotas de origem de cada tipo de transação (resolvido), usadas no atalho
+ * contextual do popover de detalhes. Tipos sem rota não exibem o atalho.
+ */
+const TASKS_ROUTE = { href: "/tasks", label: "Ver em Tarefas" } as const;
+const INVENTORY_ROUTE = {
+  href: "/inventory",
+  label: "Ver na Mochila",
+} as const;
+
+export const TRANSACTION_CONTEXT_ROUTES: Partial<
+  Record<string, { href: string; label: string }>
+> = {
+  REWARD_BOUGHT: { href: "/rewards", label: "Ver na Loja" },
+  ITEM_CONSUMED: INVENTORY_ROUTE,
+  ITEM_DISCARDED: INVENTORY_ROUTE,
+  FOCUS_COMPLETED: { href: "/focus", label: "Ver no Foco" },
+  TASK_COMPLETED: TASKS_ROUTE,
+  HABIT_COMPLETED: TASKS_ROUTE,
+  DAILY_COMPLETED: TASKS_ROUTE,
+  TODO_COMPLETED: TASKS_ROUTE,
+  TASK_FAILED: TASKS_ROUTE,
+  BAD_HABIT_PENALTY: TASKS_ROUTE,
+};
+
 export const DIFFICULTY_LABELS: Record<string, string> = {
   TRIVIAL: "Trivial",
   EASY: "Fácil",

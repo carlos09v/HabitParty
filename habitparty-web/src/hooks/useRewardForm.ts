@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { createReward, updateReward } from "@/actions/rewardActions";
+import { suggestRewardIconFromTitle } from "@/constants/reward";
 import type {
   PackageLevel,
   Reward,
@@ -39,9 +40,11 @@ export function useRewardForm({
   const [packageLevel, setPackageLevel] = useState<PackageLevel>("Nenhum");
   const [baseDurationMinutes, setBaseDurationMinutes] = useState("30");
   const [selectedIcon, setSelectedIcon] = useState("gamepad");
+  const [hasManuallyChangedIcon, setHasManuallyChangedIcon] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
+      setHasManuallyChangedIcon(Boolean(rewardToEdit));
       if (rewardToEdit) {
         setTitle(rewardToEdit.title || "");
         setDescription(rewardToEdit.description || "");
@@ -206,11 +209,27 @@ export function useRewardForm({
     }
   };
 
+  const handleTitleChange = (newTitle: string) => {
+    setTitle(newTitle);
+    if (!hasManuallyChangedIcon && !isEditing && type !== "MysteryBox") {
+      const suggested = suggestRewardIconFromTitle(newTitle);
+      if (suggested) {
+        setSelectedIcon(suggested);
+      }
+    }
+  };
+
+  const handleIconSelect = (iconId: string) => {
+    setSelectedIcon(iconId);
+    setHasManuallyChangedIcon(true);
+  };
+
   return {
     isEditing,
     isPending,
     title,
     setTitle,
+    handleTitleChange,
     description,
     setDescription,
     price,
@@ -227,6 +246,7 @@ export function useRewardForm({
     setBaseDurationMinutes,
     selectedIcon,
     setSelectedIcon,
+    handleIconSelect,
     handleSubmit,
   };
 }

@@ -67,6 +67,11 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
   }
 
   @Override
+  public void deleteAllByUserId(UUID userId) {
+    repository.deleteAllByUserId(userId);
+  }
+
+  @Override
     public Page<TransactionHistory> findAllByUserId(UUID userId, int page, int size) {
         return repository.findAllByUserIdOrderByCreatedAtDesc(userId, PageRequest.of(page, size))
                 .map(mapper::toDomain);

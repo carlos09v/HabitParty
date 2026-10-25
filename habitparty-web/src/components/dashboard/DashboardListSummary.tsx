@@ -1,13 +1,14 @@
 "use client";
 
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { deleteBoardColumnAction } from "@/actions/boardColumnActions";
+import { deleteBoardColumn } from "@/actions/boardColumnActions";
 import { UpgradeColumnLimitCard } from "@/components/subscription/UpgradeColumnLimitCard";
+import { buildColumnContextMenuItems } from "@/components/tasks/shared";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { ListCard } from "@/components/ui/ListCard";
 import { getColumnIcon } from "@/constants/routine";
@@ -49,6 +50,20 @@ export function DashboardListSummary({
   }, [initialColumns]);
 
   const isLimitReached = columns.length >= maxColumns;
+
+  // Pré-computa contadores por coluna em uma única passagem O(T) em vez de O(C * T)
+  const columnCountsMap = useMemo(() => {
+    if (!tasks) return null;
+    const map = new Map<string, { completed: number; total: number }>();
+    for (const task of tasks) {
+      if (!task.columnId) continue;
+      const entry = map.get(task.columnId) || { completed: 0, total: 0 };
+      entry.total += 1;
+      if (task.completed) entry.completed += 1;
+      map.set(task.columnId, entry);
+    }
+    return map;
+  }, [tasks]);
 
   // Context Menu da coluna
   const [contextMenu, setContextMenu] = useState<{
@@ -92,7 +107,7 @@ export function DashboardListSummary({
     if (!columnToDelete?.id) return;
     setIsDeleting(true);
     try {
-      const res = await deleteBoardColumnAction(columnToDelete.id);
+      const res = await deleteBoardColumn(columnToDelete.id);
       if (!res.success) {
         toast.error(res.error || "Falha ao excluir coluna.");
         return;
@@ -107,6 +122,19 @@ export function DashboardListSummary({
       setIsDeleting(false);
     }
   };
+
+  const columnMenuItems = useMemo(
+    () =>
+      buildColumnContextMenuItems({
+        column: contextMenu.column,
+        onEdit: (col) => {
+          setColumnToEdit(col);
+          setIsEditModalOpen(true);
+        },
+        onDelete: (col) => setColumnToDelete(col),
+      }),
+    [contextMenu.column],
+  );
 
   return (
     <section
@@ -132,14 +160,15 @@ export function DashboardListSummary({
       <ul className="flex items-center gap-3.5 sm:gap-4 w-full overflow-x-auto custom-scrollbar px-1 py-2 m-0 list-none">
         {columns.map((column) => {
           const ColumnIcon = getColumnIcon(column.icon);
-          const colTasks = tasks
-            ? tasks.filter((t) => t.columnId === column.id)
-            : null;
-          const completedCount = colTasks
-            ? colTasks.filter((t) => t.completed).length
+          const dynamicCounts =
+            columnCountsMap && column.id
+              ? columnCountsMap.get(column.id)
+              : null;
+          const completedCount = columnCountsMap
+            ? (dynamicCounts?.completed ?? 0)
             : (column.completedTasks ?? 0);
-          const totalCount = colTasks
-            ? colTasks.length
+          const totalCount = columnCountsMap
+            ? (dynamicCounts?.total ?? 0)
             : (column.totalTasks ?? 0);
 
           return (
@@ -197,28 +226,7 @@ export function DashboardListSummary({
         onClose={() =>
           setContextMenu((prev) => ({ ...prev, isOpen: false, column: null }))
         }
-        items={[
-          {
-            label: "Editar",
-            icon: <Pencil size={14} />,
-            onClick: () => {
-              if (contextMenu.column) {
-                setColumnToEdit(contextMenu.column);
-                setIsEditModalOpen(true);
-              }
-            },
-          },
-          {
-            label: "Excluir",
-            icon: <Trash2 size={14} />,
-            variant: "destructive",
-            onClick: () => {
-              if (contextMenu.column) {
-                setColumnToDelete(contextMenu.column);
-              }
-            },
-          },
-        ]}
+        items={columnMenuItems}
       />
 
       {/* Modal: Editar Coluna */}

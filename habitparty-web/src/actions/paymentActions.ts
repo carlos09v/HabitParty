@@ -182,7 +182,8 @@ export async function getFoundersQuotaAction(): Promise<
 }
 
 export interface PaymentConfirmResponse {
-  isPaid: boolean;
+  isPaid?: boolean;
+  paid?: boolean;
   message: string;
   user?: import("@/api/schema").components["schemas"]["UserResponseDTO"];
 }

@@ -9,26 +9,9 @@ import type {
   HabitTypeOption,
   TaskTypeOption,
 } from "@/types/task";
+import type { RoutineQuickAddFormProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 import { getTodayDateString } from "@/utils/date";
-
-interface RoutineQuickAddFormProps {
-  columnId: string;
-  isCompact?: boolean;
-  isColumnCompact?: boolean;
-  onClose: () => void;
-  onQuickCreateTask?: (
-    title: string,
-    columnId: string,
-    type: TaskTypeOption,
-    extraPayload?: Partial<CreateTaskDTO>,
-  ) => Promise<void> | void;
-  onOpenDetailedForm?: (
-    columnId: string,
-    type: TaskTypeOption,
-    title: string,
-  ) => void;
-}
 
 export function RoutineQuickAddForm({
   columnId,

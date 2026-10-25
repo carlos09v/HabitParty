@@ -63,7 +63,6 @@ export function mapAndGroupInventory(
         itemType: dto.rewardType || "Consumable",
         status: dto.status,
         quantity: 1,
-        acquiredAt: new Date().toISOString(),
         remainingSeconds: dto.remainingSeconds,
         reward: {
           id: rewardId,

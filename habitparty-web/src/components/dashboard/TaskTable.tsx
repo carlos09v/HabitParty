@@ -16,9 +16,6 @@ export function TaskTable({
   onHabitChange,
   onContextMenu,
   onOpenDetails,
-  onDelete,
-  onEdit,
-  onDuplicate,
   selectedDate,
   onPageChange,
   isCompact = false,
@@ -108,9 +105,6 @@ export function TaskTable({
                 onHabitChange={onHabitChange}
                 onContextMenu={onContextMenu}
                 onOpenDetails={onOpenDetails}
-                onDelete={onDelete}
-                onEdit={onEdit}
-                onDuplicate={onDuplicate}
                 isCompact={isCompact}
               />
             </li>

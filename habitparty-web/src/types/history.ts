@@ -33,36 +33,18 @@ export interface TransactionMetadata {
   difficultyLabel: string | null;
   packageLabel: string | null;
   formattedDate: string;
+  formattedTime: string;
 }
 
-export interface HistoryContainerProps {
-  pageData: PageTransactionHistoryResponseDTO;
-  currentTab: string;
-  currentPage: number;
-  currentPeriod?: HistoryPeriodFilter;
-  currentSearch?: string;
-  isCompact?: boolean;
-  taskTypeMap?: Record<string, string>;
+export interface TransactionDayGroup {
+  dateKey: string;
+  label: string;
+  items: TransactionHistoryResponseDTO[];
 }
 
-export interface HistoryTableProps {
-  transactions: TransactionHistoryResponseDTO[];
-  isCompact?: boolean;
-  onDelete?: (id: string) => void;
-  taskTypeMap?: Record<string, string>;
-}
-
-export interface HistoryRowProps {
-  transaction: TransactionHistoryResponseDTO;
-  isCompact?: boolean;
-  onClick?: () => void;
-  onDelete?: (id: string) => void;
-  taskTypeMap?: Record<string, string>;
-}
-
-export interface TransactionDetailModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  transaction: TransactionHistoryResponseDTO | null;
-  onDelete?: (id: string) => Promise<void> | void;
+export interface HistoryPageSummary {
+  goldEarned: number;
+  goldSpent: number;
+  xpEarned: number;
+  totalCount: number;
 }

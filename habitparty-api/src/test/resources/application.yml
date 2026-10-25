@@ -45,3 +45,5 @@ resend:
 
 app:
   frontend-url: http://localhost:3000
+  storage:
+    upload-dir: target/test-uploads

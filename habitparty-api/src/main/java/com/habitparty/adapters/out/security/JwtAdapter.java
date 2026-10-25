@@ -1,8 +1,7 @@
 package com.habitparty.adapters.out.security;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -65,6 +64,6 @@ public class JwtAdapter implements TokenPort {
   }
 
   private Instant genExpirationDate() {
-    return LocalDateTime.now().plusHours(2).toInstant(ZoneOffset.of("-03:00"));
+    return Instant.now().plus(2, ChronoUnit.HOURS);
   }
 }

@@ -12,6 +12,7 @@ import { getColumnIcon } from "@/constants/routine";
 import { useCompactMode } from "@/hooks/useCompactMode";
 import type { RoutineColumnProps } from "@/types/task-ui";
 import { cn } from "@/utils";
+import { scrollColumnIntoKanbanView } from "@/utils/dom";
 import { RoutineQuickAddForm } from "./RoutineQuickAddForm";
 import { RoutineTaskCard } from "./RoutineTaskCard";
 
@@ -29,8 +30,7 @@ export const RoutineColumn = memo(function RoutineColumn({
   onHabitChange,
   isOverlay = false,
 }: RoutineColumnProps) {
-  const { isCompact: hookIsCompact } = useCompactMode();
-  const isCompact = propIsCompact ?? hookIsCompact;
+  const { isCompact } = useCompactMode(propIsCompact);
   const ColumnIcon = getColumnIcon(column.icon);
   const columnRef = useRef<HTMLDivElement | null>(null);
 
@@ -60,41 +60,8 @@ export const RoutineColumn = memo(function RoutineColumn({
   useEffect(() => {
     if (isSelected && columnRef.current) {
       const timer = setTimeout(() => {
-        const column = columnRef.current;
-        if (!column) return;
-
-        // Rola EXCLUSIVAMENTE o container com overflow-x do Kanban para o centro,
-        // evitando que scrollIntoView borbulhe e desloque a página principal ou corte a sidebar.
-        const scrollContainer = column.closest<HTMLElement>(".overflow-x-auto");
-        if (scrollContainer) {
-          const containerRect = scrollContainer.getBoundingClientRect();
-          const columnRect = column.getBoundingClientRect();
-
-          const currentScroll = scrollContainer.scrollLeft;
-          const relativeLeft =
-            columnRect.left - containerRect.left + currentScroll;
-          const targetScroll =
-            relativeLeft -
-            scrollContainer.clientWidth / 2 +
-            column.clientWidth / 2;
-
-          scrollContainer.scrollTo({
-            left: Math.max(0, targetScroll),
-            behavior: "smooth",
-          });
-        }
-
-        // Garante que containers ancestrais (layout/main/window) permaneçam estáticos em 0
-        if (typeof window !== "undefined" && window.scrollX !== 0) {
-          window.scrollTo({ left: 0 });
-        }
-        const mainEl = column.closest("main");
-        if (mainEl && mainEl.scrollLeft !== 0) {
-          mainEl.scrollLeft = 0;
-        }
-        const layoutContainer = mainEl?.parentElement;
-        if (layoutContainer && layoutContainer.scrollLeft !== 0) {
-          layoutContainer.scrollLeft = 0;
+        if (columnRef.current) {
+          scrollColumnIntoKanbanView(columnRef.current);
         }
       }, 80);
       return () => clearTimeout(timer);

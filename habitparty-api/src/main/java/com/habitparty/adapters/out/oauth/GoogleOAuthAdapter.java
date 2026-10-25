@@ -61,7 +61,7 @@ public class GoogleOAuthAdapter implements OAuthIdentityProviderPort {
     // 1. Tenta extrair o perfil diretamente do id_token (evita roundtrip HTTP extra e timeouts de rede)
     OAuthUserProfile profileFromIdToken = extractProfileFromIdToken(tokens.idToken());
     if (profileFromIdToken != null && profileFromIdToken.email() != null && !profileFromIdToken.email().isBlank()) {
-      log.info("[GoogleOAuthAdapter] Perfil do usuário extraído com sucesso a partir do id_token (e-mail: {}).", profileFromIdToken.email());
+      log.debug("[GoogleOAuthAdapter] Perfil do usuário extraído com sucesso a partir do id_token.");
       return profileFromIdToken;
     }
 
@@ -131,8 +131,16 @@ public class GoogleOAuthAdapter implements OAuthIdentityProviderPort {
       String picture = node.path("picture").asText(null);
 
       if (email != null && !email.isBlank()) {
-        return new OAuthUserProfile(email, name, picture);
+        JsonNode verifiedNode = node.get("email_verified");
+        if (verifiedNode != null && !verifiedNode.isNull()) {
+          if (!isEmailVerified(node)) {
+            throw new DomainValidationException("O endereço de e-mail da conta Google não está verificado.");
+          }
+          return new OAuthUserProfile(email, name, picture);
+        }
       }
+    } catch (DomainValidationException e) {
+      throw e;
     } catch (Exception e) {
       log.warn("[GoogleOAuthAdapter] Não foi possível ler claims do id_token: {}", e.getMessage());
     }
@@ -161,6 +169,14 @@ public class GoogleOAuthAdapter implements OAuthIdentityProviderPort {
       String name = node.path("name").asText(null);
       String picture = node.path("picture").asText(null);
 
+      if (email == null || email.isBlank()) {
+        throw new DomainValidationException("A conta Google não retornou um endereço de e-mail válido.");
+      }
+
+      if (!isEmailVerified(node)) {
+        throw new DomainValidationException("O endereço de e-mail da conta Google não está verificado.");
+      }
+
       return new OAuthUserProfile(email, name, picture);
     } catch (DomainValidationException e) {
       throw e;
@@ -168,5 +184,16 @@ public class GoogleOAuthAdapter implements OAuthIdentityProviderPort {
       log.error("[GoogleOAuthAdapter] Exceção ao buscar userinfo do Google", e);
       throw new DomainValidationException("Falha ao consultar perfil do Google.");
     }
+  }
+
+  private boolean isEmailVerified(JsonNode node) {
+    JsonNode verifiedNode = node.get("email_verified");
+    if (verifiedNode == null || verifiedNode.isNull()) {
+      return false;
+    }
+    if (verifiedNode.isBoolean()) {
+      return verifiedNode.booleanValue();
+    }
+    return "true".equalsIgnoreCase(verifiedNode.asText());
   }
 }

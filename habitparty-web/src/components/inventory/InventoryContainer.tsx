@@ -7,20 +7,32 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Backpack, SearchX, Store, Undo2 } from "lucide-react";
+import {
+  Backpack,
+  Flame,
+  PackageOpen,
+  SearchX,
+  Store,
+  Trash2,
+  Undo2,
+  Zap,
+} from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   consumeInventoryItem,
+  discardInventoryItem,
   reorderInventory,
   returnItemToBackpack,
   sendItemToFocus,
 } from "@/actions/inventoryActions";
 import { InventoryCard } from "@/components/inventory/InventoryCard";
-import { MysteryBoxRouletteModal } from "@/components/inventory/MysteryBoxRouletteModal";
-import { ContextMenu } from "@/components/ui/ContextMenu";
+import { CatalogEmptyState } from "@/components/ui/CatalogEmptyState";
+import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
+import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { ItemRow, ItemRowHeader } from "@/components/ui/ItemRow";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
@@ -41,6 +53,14 @@ import {
   getInventoryItemActionMeta,
 } from "@/utils/inventoryHelpers";
 import { soundEffects } from "@/utils/soundEffects";
+
+const MysteryBoxRouletteModal = dynamic(
+  () =>
+    import("@/components/inventory/MysteryBoxRouletteModal").then((mod) => ({
+      default: mod.MysteryBoxRouletteModal,
+    })),
+  { ssr: false },
+);
 
 export function InventoryContainer({
   initialItems,
@@ -71,13 +91,18 @@ export function InventoryContainer({
     });
 
   const [isUsing, setIsUsing] = useState(false);
+  const [isSendingToFocus, setIsSendingToFocus] = useState(false);
   const [openingBoxItem, setOpeningBoxItem] = useState<InventoryItem | null>(
     null,
   );
+  const [itemToDiscard, setItemToDiscard] = useState<InventoryItem | null>(
+    null,
+  );
+  const [isDiscarding, startDiscardTransition] = useTransition();
 
-  const handleOpenMysteryBox = (item: InventoryItem) => {
+  const handleOpenMysteryBox = useCallback((item: InventoryItem) => {
     setOpeningBoxItem(item);
-  };
+  }, []);
 
   const filteredItems = useMemo(() => {
     let result = items.filter((item) => {
@@ -114,57 +139,66 @@ export function InventoryContainer({
     return result;
   }, [items, filters]);
 
-  const handleUseItem = async (item: InventoryItem) => {
-    if (isUsing) return;
-    setIsUsing(true);
-    try {
-      const res = await consumeInventoryItem(item.id);
-      if (!res.success) {
-        toast.error(res.error || "Erro ao usar item.");
-        return;
+  const handleUseItem = useCallback(
+    async (item: InventoryItem) => {
+      if (isUsing) return;
+      setIsUsing(true);
+      try {
+        const res = await consumeInventoryItem(item.id);
+        if (!res.success) {
+          toast.error(res.error || "Erro ao usar item.");
+          return;
+        }
+        setItems((prev) =>
+          prev
+            .map((i) =>
+              i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i,
+            )
+            .filter((i) => i.quantity > 0),
+        );
+        soundEffects.playTaskCompleteSound();
+        toast.success(`Você usou "${item.reward.title}"!`);
+      } catch (_error) {
+        toast.error("Erro de comunicação com o servidor.");
+      } finally {
+        setIsUsing(false);
       }
-      setItems((prev) =>
-        prev
-          .map((i) =>
+    },
+    [isUsing, setItems],
+  );
+
+  const handleSendToFocus = useCallback(
+    async (item: InventoryItem) => {
+      if (isSendingToFocus) return;
+      setIsSendingToFocus(true);
+      try {
+        const res = await sendItemToFocus(item.id);
+        if (!res.success) {
+          toast.error(res.error || "Erro ao adicionar item ao Foco.");
+          return;
+        }
+        setItems((prev) => {
+          if (item.quantity <= 1) {
+            return prev.map((i) =>
+              i.id === item.id ? { ...i, status: "IN_FOCUS" } : i,
+            );
+          }
+          // Se havia mais de 1 unidade agrupada, reduz 1 da disponível e sincroniza com o servidor
+          return prev.map((i) =>
             i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i,
-          )
-          .filter((i) => i.quantity > 0),
-      );
-      soundEffects.playTaskCompleteSound();
-      toast.success(`Você usou "${item.reward.title}"!`);
-    } catch (_error) {
-      toast.error("Erro de comunicação com o servidor.");
-    } finally {
-      setIsUsing(false);
-    }
-  };
-
-  const [isSendingToFocus, setIsSendingToFocus] = useState(false);
-
-  const handleSendToFocus = async (item: InventoryItem) => {
-    if (isSendingToFocus) return;
-    setIsSendingToFocus(true);
-    try {
-      const res = await sendItemToFocus(item.id);
-      if (!res.success) {
-        toast.error(res.error || "Erro ao adicionar item ao Foco.");
-        return;
+          );
+        });
+        soundEffects.playTaskCompleteSound();
+        toast.success(`"${item.reward.title}" adicionado ao Foco com sucesso!`);
+        router.refresh();
+      } catch (_error) {
+        toast.error("Erro de comunicação com o servidor.");
+      } finally {
+        setIsSendingToFocus(false);
       }
-      setItems((prev) =>
-        prev
-          .map((i) =>
-            i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i,
-          )
-          .filter((i) => i.quantity > 0),
-      );
-      soundEffects.playTaskCompleteSound();
-      toast.success(`"${item.reward.title}" adicionado ao Foco com sucesso!`);
-    } catch (_error) {
-      toast.error("Erro de comunicação com o servidor.");
-    } finally {
-      setIsSendingToFocus(false);
-    }
-  };
+    },
+    [isSendingToFocus, setItems, router],
+  );
 
   const [contextMenu, setContextMenu] = useState<{
     isOpen: boolean;
@@ -176,49 +210,135 @@ export function InventoryContainer({
     item: null,
   });
 
-  const handleItemContextMenu = (e: React.MouseEvent, item: InventoryItem) => {
-    if (item.status === "IN_FOCUS") {
+  const handleItemContextMenu = useCallback(
+    (e: React.MouseEvent, item: InventoryItem) => {
       e.preventDefault();
+      e.stopPropagation();
       setContextMenu({
         isOpen: true,
         position: { x: e.clientX, y: e.clientY },
         item,
       });
-    }
-  };
+    },
+    [],
+  );
 
-  const handleReturnToBackpack = async (item: InventoryItem) => {
-    try {
-      const res = await returnItemToBackpack(item.id);
-      if (!res.success) {
-        toast.error(res.error || "Erro ao devolver item para a mochila.");
-        return;
+  const handleReturnToBackpack = useCallback(
+    async (item: InventoryItem) => {
+      try {
+        const res = await returnItemToBackpack(item.id);
+        if (!res.success) {
+          toast.error(res.error || "Erro ao devolver item para a mochila.");
+          return;
+        }
+
+        soundEffects.playTaskCompleteSound();
+        toast.success(`"${item.reward.title}" devolvido para a mochila!`);
+        setItems((prev) =>
+          prev.map((i) =>
+            i.id === item.id ? { ...i, status: "AVAILABLE" } : i,
+          ),
+        );
+        router.refresh();
+      } catch (_error) {
+        toast.error("Erro de comunicação com o servidor.");
       }
+    },
+    [setItems, router],
+  );
 
-      soundEffects.playTaskCompleteSound();
-      toast.success(`"${item.reward.title}" devolvido para a mochila!`);
-      setItems((prev) =>
-        prev.map((i) => (i.id === item.id ? { ...i, status: "AVAILABLE" } : i)),
-      );
-      router.refresh();
-    } catch (_error) {
-      toast.error("Erro de comunicação com o servidor.");
-    }
+  const handleConfirmDiscard = () => {
+    if (!itemToDiscard) return;
+    const target = itemToDiscard;
+    const previousItems = [...items];
+
+    setItems((prev) =>
+      prev
+        .map((i) =>
+          i.id === target.id ? { ...i, quantity: i.quantity - 1 } : i,
+        )
+        .filter((i) => i.quantity > 0),
+    );
+    setItemToDiscard(null);
+
+    startDiscardTransition(async () => {
+      const res = await discardInventoryItem(target.id);
+      if (res.success) {
+        toast.success(`Item "${target.reward.title}" descartado.`);
+      } else {
+        setItems(previousItems);
+        toast.error(res.error || "Erro ao descartar item.");
+      }
+    });
   };
 
-  const contextMenuItems = contextMenu.item
-    ? [
+  const contextMenuItems: ContextMenuItem[] = useMemo(() => {
+    const target = contextMenu.item;
+    if (!target) return [];
+
+    const { isInFocus, isMystery, isCoupon } =
+      getInventoryItemActionMeta(target);
+
+    if (isInFocus) {
+      return [
         {
-          label: "Devolver para a backpack",
-          icon: <Undo2 size={15} />,
-          onClick: () => {
-            if (contextMenu.item) {
-              handleReturnToBackpack(contextMenu.item);
-            }
-          },
+          label: "Abrir no Foco",
+          icon: <Flame size={15} />,
+          onClick: () => router.push("/focus"),
         },
-      ]
-    : [];
+        {
+          label: "Devolver para a mochila",
+          icon: <Undo2 size={15} />,
+          onClick: () => handleReturnToBackpack(target),
+        },
+      ];
+    }
+
+    const actions: ContextMenuItem[] = [];
+
+    if (isMystery) {
+      actions.push({
+        label: "Abrir Caixa Misteriosa",
+        icon: <PackageOpen size={15} />,
+        onClick: () => handleOpenMysteryBox(target),
+      });
+    } else if (isCoupon) {
+      actions.push(
+        {
+          label: "Enviar ao Foco",
+          icon: <Flame size={15} />,
+          onClick: () => handleSendToFocus(target),
+        },
+        {
+          label: "Usar Imediatamente",
+          icon: <Zap size={15} />,
+          onClick: () => handleUseItem(target),
+        },
+      );
+    } else {
+      actions.push({
+        label: "Usar Item",
+        icon: <Zap size={15} />,
+        onClick: () => handleUseItem(target),
+      });
+    }
+
+    actions.push({
+      label: "Descartar Item",
+      icon: <Trash2 size={15} />,
+      variant: "destructive",
+      onClick: () => setItemToDiscard(target),
+    });
+
+    return actions;
+  }, [
+    contextMenu.item,
+    router,
+    handleReturnToBackpack,
+    handleOpenMysteryBox,
+    handleSendToFocus,
+    handleUseItem,
+  ]);
 
   const { stats: welcomeStats } = useMemo(() => {
     return calculateInventoryWelcomeStats(items);
@@ -285,34 +405,24 @@ export function InventoryContainer({
             {viewMode === "list" && (
               <ItemRowHeader isCompact={isCompact} mode="inventory" />
             )}
-            <div
-              className={cn(
-                "w-full flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-primary/30 bg-primary-dark/20 backdrop-blur-sm",
-                isCompact ? "py-8 px-4 gap-2.5" : "py-12 px-6 gap-3.5",
-              )}
-            >
-              <div className="w-12 h-12 rounded-full bg-primary/25 border border-primary/40 flex items-center justify-center text-gold shadow-xs">
-                {items.length === 0 ? (
-                  <Backpack size={24} aria-hidden="true" />
-                ) : (
-                  <SearchX size={24} aria-hidden="true" />
-                )}
-              </div>
-              <div className="flex flex-col gap-1 items-center">
-                <h4 className="text-body-m font-bold text-neutral-100">
-                  {items.length === 0
-                    ? "Sua mochila está vazia! 🎒"
-                    : "Nenhum item encontrado"}
-                </h4>
-                <p className="text-body-s text-neutral-400 max-w-sm">
-                  {items.length === 0
-                    ? "Você ainda não possui itens ou cupons no seu inventário. Conquiste moedas completando suas tarefas diárias e resgate recompensas épicas na Loja!"
-                    : "Não encontramos nenhum item que corresponda aos filtros aplicados."}
-                </p>
-                {items.length === 0 ? (
+            <CatalogEmptyState
+              isCompact={isCompact}
+              icon={items.length === 0 ? Backpack : SearchX}
+              title={
+                items.length === 0
+                  ? "Sua mochila está vazia! 🎒"
+                  : "Nenhum item encontrado"
+              }
+              description={
+                items.length === 0
+                  ? "Você ainda não possui itens ou cupons no seu inventário. Conquiste moedas completando suas tarefas diárias e resgate recompensas épicas na Loja!"
+                  : "Não encontramos nenhum item que corresponda aos filtros aplicados."
+              }
+              action={
+                items.length === 0 ? (
                   <Link
                     href="/rewards"
-                    className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gold text-neutral-900 font-bold text-xs hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gold text-neutral-900 font-bold text-xs hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer"
                   >
                     <Store size={15} />
                     <span>Explorar a Loja</span>
@@ -321,13 +431,13 @@ export function InventoryContainer({
                   <button
                     type="button"
                     onClick={handleClearFilters}
-                    className="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-primary/40 bg-surface/80 text-xs font-semibold text-gold hover:border-gold hover:bg-gold/10 transition-all cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-primary/40 bg-surface/80 text-xs font-semibold text-gold hover:border-gold hover:bg-gold/10 transition-all cursor-pointer"
                   >
                     <span>Limpar Filtros</span>
                   </button>
-                )}
-              </div>
-            </div>
+                )
+              }
+            />
           </div>
         ) : (
           <DndContext
@@ -431,17 +541,41 @@ export function InventoryContainer({
         items={contextMenuItems}
       />
 
-      <MysteryBoxRouletteModal
-        isOpen={Boolean(openingBoxItem)}
-        onClose={() => {
-          setOpeningBoxItem(null);
-          router.refresh();
-        }}
-        item={openingBoxItem}
-        onSuccess={() => {
-          router.refresh();
-        }}
+      <ConfirmationModal
+        isOpen={Boolean(itemToDiscard)}
+        onClose={() => !isDiscarding && setItemToDiscard(null)}
+        onConfirm={handleConfirmDiscard}
+        title="Descartar item da mochila?"
+        description={
+          itemToDiscard ? (
+            <span>
+              Tem certeza que deseja descartar 1x{" "}
+              <strong className="text-neutral-100">
+                "{itemToDiscard.reward.title}"
+              </strong>
+              ? Esta ação não reembolsa as moedas gastas.
+            </span>
+          ) : null
+        }
+        confirmText="Sim, descartar"
+        cancelText="Cancelar"
+        variant="danger"
+        isLoading={isDiscarding}
       />
+
+      {openingBoxItem && (
+        <MysteryBoxRouletteModal
+          isOpen={Boolean(openingBoxItem)}
+          onClose={() => {
+            setOpeningBoxItem(null);
+            router.refresh();
+          }}
+          item={openingBoxItem}
+          onSuccess={() => {
+            router.refresh();
+          }}
+        />
+      )}
     </>
   );
 }

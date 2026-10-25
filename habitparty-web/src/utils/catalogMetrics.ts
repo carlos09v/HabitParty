@@ -5,11 +5,9 @@ import {
   Coins,
   Flame,
   Gift,
-  History,
   Sparkles,
   Store,
 } from "lucide-react";
-import type { TransactionHistoryResponseDTO } from "@/types/history";
 import type { InventoryItem } from "@/types/inventory";
 import type { Reward } from "@/types/reward";
 import type { BoardColumn, Task } from "@/types/task";
@@ -192,66 +190,4 @@ export function calculateTasksWelcomeStats(
   ];
 
   return { stats, completedCount, habitsCount, percent };
-}
-
-/**
- * Calcula as estatísticas do WelcomeCard para a tela de Histórico (Extrato de Transações).
- */
-export function calculateHistoryWelcomeStats(
-  transactions: TransactionHistoryResponseDTO[],
-  totalElements?: number,
-): {
-  stats: WelcomeCardStat[];
-  totalGoldEarned: number;
-  totalGoldSpent: number;
-  totalXpEarned: number;
-} {
-  let totalGoldEarned = 0;
-  let totalGoldSpent = 0;
-  let totalXpEarned = 0;
-
-  for (const tx of transactions) {
-    const gold = tx.goldAmount ?? 0;
-    if (gold > 0) {
-      totalGoldEarned += gold;
-    } else if (gold < 0) {
-      totalGoldSpent += Math.abs(gold);
-    }
-
-    const xp = tx.xpAmount ?? 0;
-    if (xp > 0) {
-      totalXpEarned += xp;
-    }
-  }
-
-  const resolvedCount = totalElements ?? transactions.length;
-
-  const stats: WelcomeCardStat[] = [
-    {
-      label: "Moedas",
-      value: `+${formatCoins(totalGoldEarned)} 🪙`,
-      icon: Coins,
-      variant: "gold",
-      hint:
-        totalGoldSpent > 0
-          ? `-${formatCoins(totalGoldSpent)} gastas`
-          : "saldo obtido",
-    },
-    {
-      label: "XP Acumulado",
-      value: `+${formatCoins(totalXpEarned)} XP`,
-      icon: Sparkles,
-      variant: "info",
-      hint: "ganhos totais",
-    },
-    {
-      label: "Registros",
-      value: `${resolvedCount} no total`,
-      icon: History,
-      variant: "default",
-      hint: "movimentações",
-    },
-  ];
-
-  return { stats, totalGoldEarned, totalGoldSpent, totalXpEarned };
 }

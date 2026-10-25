@@ -1,7 +1,11 @@
 "use client";
 
+import type { DraggableAttributes } from "@dnd-kit/core";
+import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, MoreHorizontal } from "lucide-react";
-import { memo } from "react";
+import { type CSSProperties, memo } from "react";
 import {
   TaskActionControl,
   TaskChecklistBadge,
@@ -10,20 +14,25 @@ import {
   TaskHardcoreBadge,
   TaskPriorityBadge,
   TaskRewardBadges,
+  TaskTagBadges,
   TaskTypeBadge,
   WeekDaysIndicator,
 } from "@/components/tasks/shared";
 import { TASK_TABLE_GRID_COLS } from "@/constants/task";
-import { useTaskCardItem } from "@/hooks/useTaskCardItem";
+import { useTaskItemMeta } from "@/hooks/useTaskCardItem";
 import type { TaskRowProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 import { getClickAnchorRect } from "@/utils/dom";
 
-/**
- * Linha de Tarefa Unificada (Dashboard & Quadro Kanban em Lista).
- * Suporta modo estático tabular (Dashboard) e modo arrastável com dnd-kit (Kanban).
- */
-export const TaskRow = memo(function TaskRow({
+interface TaskRowContentProps extends TaskRowProps {
+  setNodeRef?: (node: HTMLElement | null) => void;
+  style?: CSSProperties;
+  attributes?: DraggableAttributes;
+  listeners?: SyntheticListenerMap;
+  isDragging?: boolean;
+}
+
+const TaskRowContent = memo(function TaskRowContent({
   task,
   columnId = task.columnId,
   columnTitle = task.category,
@@ -37,7 +46,12 @@ export const TaskRow = memo(function TaskRow({
   onHabitChange,
   onContextMenu,
   onOpenDetails,
-}: TaskRowProps) {
+  setNodeRef,
+  style,
+  attributes,
+  listeners,
+  isDragging = false,
+}: TaskRowContentProps) {
   const effectiveToggle = onToggleCompleted || onToggle;
 
   const {
@@ -47,11 +61,6 @@ export const TaskRow = memo(function TaskRow({
     toggleCompleted,
     changeHabit,
     isDone,
-    attributes,
-    listeners,
-    setNodeRef,
-    isDragging,
-    style,
     isHabit,
     isDaily,
     isTodo,
@@ -66,15 +75,11 @@ export const TaskRow = memo(function TaskRow({
     checklistCompleted,
     isChecklistAllDone,
     isHardcoreOverdue,
-  } = useTaskCardItem({
+  } = useTaskItemMeta({
     task,
-    columnId,
-    isOverlay,
-    isSortable,
     isCompact: propIsCompact,
     onToggleCompleted: effectiveToggle,
     onHabitChange,
-    useTranslateTransform: true,
     activeFilter,
     selectedDate,
   });
@@ -83,7 +88,7 @@ export const TaskRow = memo(function TaskRow({
     if (!isDragging && onOpenDetails) {
       e.stopPropagation();
       const anchor = getClickAnchorRect(e);
-      onOpenDetails(task, anchor);
+      onOpenDetails(task, anchor, columnId);
     }
   };
 
@@ -99,7 +104,7 @@ export const TaskRow = memo(function TaskRow({
 
   return (
     <ElementTag
-      ref={setNodeRef}
+      ref={setNodeRef as React.Ref<never>}
       style={style}
       {...(isSortable ? attributes : {})}
       {...(isSortable ? listeners : {})}
@@ -207,28 +212,15 @@ export const TaskRow = memo(function TaskRow({
 
       {/* Coluna 2: Categoria / Coluna */}
       <div className="hidden sm:flex items-center gap-1 min-w-0">
-        <span
-          className={cn(
-            "rounded font-medium bg-white/5 border border-white/10 text-neutral-200 truncate",
-            isCompact ? "px-1.5 py-0.5 text-tiny" : "px-2 py-0.5 text-xs",
-          )}
-          title={columnTitle || displayTag || "Geral"}
-        >
-          {columnTitle || displayTag || "-"}
-        </span>
-        {hasExtraTags && (
-          <span
-            className={cn(
-              "rounded font-medium bg-white/5 border border-white/10 text-neutral-400 shrink-0 select-none",
-              isCompact
-                ? "px-1 py-0.5 text-label-s"
-                : "px-1.5 py-0.5 text-tiny",
-            )}
-            title={task.tags?.slice(1).join(", ")}
-          >
-            +{extraTagsCount}
-          </span>
-        )}
+        <TaskTagBadges
+          primaryLabel={columnTitle || displayTag}
+          fallbackLabel="-"
+          hasExtraTags={hasExtraTags}
+          extraTagsCount={extraTagsCount}
+          extraTagsTitle={task.tags?.slice(1).join(", ")}
+          isCompact={isCompact}
+          variant="row"
+        />
       </div>
 
       {/* Coluna 3: Badge do Tipo */}
@@ -306,4 +298,51 @@ export const TaskRow = memo(function TaskRow({
       </div>
     </ElementTag>
   );
+});
+
+function SortableTaskRow(props: TaskRowProps) {
+  const { task, columnId = task.columnId, isOverlay = false } = props;
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: task.id,
+    data: {
+      type: "Task",
+      task,
+      columnId,
+    },
+    disabled: isOverlay,
+  });
+
+  const style: CSSProperties = {
+    transform: CSS.Translate.toString(transform),
+    transition: isDragging ? undefined : transition,
+  };
+
+  return (
+    <TaskRowContent
+      {...props}
+      setNodeRef={setNodeRef}
+      style={style}
+      attributes={attributes}
+      listeners={listeners}
+      isDragging={isDragging}
+    />
+  );
+}
+
+/**
+ * Linha de Tarefa Unificada (Dashboard & Quadro Kanban em Lista).
+ * Evita registrar hooks e sensores do `@dnd-kit/sortable` quando `isSortable = false` (Dashboard).
+ */
+export const TaskRow = memo(function TaskRow(props: TaskRowProps) {
+  if (props.isSortable && !props.isOverlay) {
+    return <SortableTaskRow {...props} />;
+  }
+  return <TaskRowContent {...props} />;
 });

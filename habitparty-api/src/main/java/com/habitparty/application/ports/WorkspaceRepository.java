@@ -12,4 +12,5 @@ public interface WorkspaceRepository {
   void deleteById(UUID id);
   List<Workspace> findAllByUserId(UUID userId);
   Optional<Workspace> findById(UUID id);
+  void deleteAllByUserId(UUID userId);
 }

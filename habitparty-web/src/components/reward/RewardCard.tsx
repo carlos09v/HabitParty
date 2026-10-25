@@ -1,27 +1,18 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import { memo } from "react";
 import { GamifiedItemCard } from "@/components/ui/GamifiedItemCard";
-import { useCompactMode } from "@/hooks/useCompactMode";
-import { useUserStore } from "@/store/userStore";
 import type { AddRewardCardProps, RewardCardProps } from "@/types/reward";
 import { cn } from "@/utils";
 
-export function RewardCard({
+export const RewardCard = memo(function RewardCard({
   reward,
   onBuy,
   onContextMenu,
-  isCompact: propIsCompact,
+  isCompact = false,
+  canAfford = true,
 }: RewardCardProps) {
-  const { isCompact: hookIsCompact } = useCompactMode();
-  const isCompact = propIsCompact ?? hookIsCompact;
-
-  const user = useUserStore((state) => state.user);
-  const canAfford =
-    typeof user?.currentCoins === "number"
-      ? user.currentCoins >= reward.price
-      : true;
-
   return (
     <GamifiedItemCard
       id={reward.id}
@@ -41,14 +32,13 @@ export function RewardCard({
       dragData={{ type: "Reward", reward }}
     />
   );
-}
+});
 
-export function AddRewardCard({
+export const AddRewardCard = memo(function AddRewardCard({
   onClick,
   viewMode = "card",
+  isCompact = false,
 }: AddRewardCardProps) {
-  const { isCompact } = useCompactMode();
-
   if (viewMode === "list") {
     return (
       <button
@@ -84,4 +74,4 @@ export function AddRewardCard({
       <span className="text-xs font-semibold">Adicionar Produto</span>
     </button>
   );
-}
+});

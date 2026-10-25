@@ -44,8 +44,8 @@ public class RewardAdapter implements RewardRepository {
 
   @Override
   public List<Reward> findAllByUserId(UUID userId) {
-    // 1. O JpaRepository vai no banco e traz a lista de entidades
-    List<RewardJpaEntity> entities = rewardJpaRepository.findByUser_Id(userId);
+    // 1. O JpaRepository vai no banco e traz a lista de entidades ordenadas por orderIndex
+    List<RewardJpaEntity> entities = rewardJpaRepository.findByUser_IdOrderByOrderIndexAsc(userId);
 
     // 2. Converte a lista de entidades JPA para lista de Domínio
     return entities.stream()
@@ -58,6 +58,7 @@ public class RewardAdapter implements RewardRepository {
     return rewardJpaRepository.countByUser_Id(userId);
   }
 
+  @Override
   public List<Reward> saveAll(List<Reward> rewards) {
       List<RewardJpaEntity> entities = rewards.stream()
           .map(rewardMapper::toEntity)
@@ -73,7 +74,12 @@ public class RewardAdapter implements RewardRepository {
   }
 
   @Override
-  public int getMaxOrderIndex(UUID workspaceId) {
-    return rewardJpaRepository.findMaxOrderIndexByUserId(workspaceId);
+  public int getMaxOrderIndex(UUID userId) {
+    return rewardJpaRepository.findMaxOrderIndexByUserId(userId);
+  }
+
+  @Override
+  public void deleteAllByUserId(UUID userId) {
+    rewardJpaRepository.deleteAllByUserId(userId);
   }
 }

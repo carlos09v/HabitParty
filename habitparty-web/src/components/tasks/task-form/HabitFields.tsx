@@ -1,5 +1,3 @@
-"use client";
-
 import { Minus, Plus, RotateCcw } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { Select } from "@/components/ui/Select";

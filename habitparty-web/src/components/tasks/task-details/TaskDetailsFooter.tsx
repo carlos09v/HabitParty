@@ -1,82 +1,15 @@
 "use client";
 
-import {
-  Baseline,
-  Bold,
-  Code,
-  Copy,
-  Highlighter,
-  Italic,
-  List,
-  MoreHorizontal,
-  Pencil,
-  Sparkles,
-  Trash2,
-} from "lucide-react";
+import { Baseline, Copy, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import { RewardPreview } from "@/components/ui/reward/RewardPreview";
+import { MARKDOWN_FORMAT_OPTIONS } from "@/constants/task";
 import { useClickOutside } from "@/hooks/useClickOutside";
-import type { Task } from "@/types/task";
+import type { FormatSyntax, TaskDetailsFooterProps } from "@/types/task-ui";
 import { cn } from "@/utils";
-import { formatCoins, getTaskRewardBreakdown } from "@/utils/economy";
+import { getTaskRewardBreakdown, toTaskRewardEstimate } from "@/utils/economy";
 
-export type FormatSyntax = "bold" | "italic" | "highlight" | "bullet" | "code";
-
-const MARKDOWN_FORMAT_OPTIONS: Array<{
-  syntax: FormatSyntax;
-  label: string;
-  hint: string;
-  icon: typeof Bold;
-  iconColorClass: string;
-  labelClass?: string;
-}> = [
-  {
-    syntax: "bold",
-    label: "Negrito",
-    hint: "**b**",
-    icon: Bold,
-    iconColorClass: "text-gold",
-    labelClass: "font-semibold",
-  },
-  {
-    syntax: "italic",
-    label: "Itálico",
-    hint: "*i*",
-    icon: Italic,
-    iconColorClass: "text-info",
-    labelClass: "italic",
-  },
-  {
-    syntax: "highlight",
-    label: "Destacar",
-    hint: "==txt==",
-    icon: Highlighter,
-    iconColorClass: "text-warning-500",
-  },
-  {
-    syntax: "bullet",
-    label: "Lista",
-    hint: "- item",
-    icon: List,
-    iconColorClass: "text-primary-light",
-  },
-  {
-    syntax: "code",
-    label: "Código",
-    hint: "`code`",
-    icon: Code,
-    iconColorClass: "text-magenta",
-    labelClass: "font-mono text-label-g",
-  },
-];
-
-interface TaskDetailsFooterProps {
-  task?: Task;
-  columnTitle?: string;
-  onApplyFormat?: (syntax: FormatSyntax) => void;
-  onDeleteTask: () => void;
-  onDuplicateTask?: () => void;
-  onOpenEdit?: () => void;
-}
+export type { FormatSyntax };
 
 export function TaskDetailsFooter({
   task,
@@ -88,7 +21,6 @@ export function TaskDetailsFooter({
 }: TaskDetailsFooterProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isFormatMenuOpen, setIsFormatMenuOpen] = useState(false);
-  const [isRewardsExpanded, setIsRewardsExpanded] = useState(false);
   const menuContainerRef = useRef<HTMLDivElement>(null);
   const formatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -100,9 +32,9 @@ export function TaskDetailsFooter({
     enabled: isFormatMenuOpen,
   });
 
-  const breakdown = useMemo(() => {
+  const rewardEstimate = useMemo(() => {
     if (!task) return null;
-    return getTaskRewardBreakdown({
+    const breakdown = getTaskRewardBreakdown({
       taskType: task.type,
       difficulty: task.difficulty,
       importanceType: task.importanceType,
@@ -113,6 +45,10 @@ export function TaskDetailsFooter({
       isHardcoreModeEnabled: task.isHardcoreModeEnabled,
       dueDate: task.dueDate,
       isPenaltyApplied: task.isPenaltyApplied,
+    });
+    return toTaskRewardEstimate(breakdown, {
+      isHardcore: task.isHardcoreModeEnabled,
+      taskType: task.type,
     });
   }, [task]);
 
@@ -125,50 +61,12 @@ export function TaskDetailsFooter({
           </span>
         )}
 
-        {breakdown && (
-          <div className="flex items-center gap-1.5 min-w-0">
-            <button
-              type="button"
-              onClick={() => setIsRewardsExpanded((prev) => !prev)}
-              className={cn(
-                "flex items-center gap-1 px-1.5 py-0.5 rounded border text-label-g font-semibold transition-all cursor-pointer select-none active:scale-95 shrink-0",
-                isRewardsExpanded
-                  ? "bg-gold/15 border-gold/40 text-gold shadow-glow-gold-xs font-bold"
-                  : "bg-white/5 border-white/10 text-neutral-300 hover:text-gold hover:border-gold/30 hover:bg-white/10",
-              )}
-              title={
-                isRewardsExpanded
-                  ? "Ocultar recompensas"
-                  : `${breakdown.explanation} Clique para exibir valores.`
-              }
-            >
-              <Sparkles
-                size={11}
-                className={isRewardsExpanded ? "text-gold" : "text-neutral-400"}
-              />
-              <span>Recompensas</span>
-            </button>
-
-            {isRewardsExpanded && (
-              <div className="flex items-center gap-1 truncate animate-in fade-in zoom-in-95 duration-150">
-                <span className="text-gold font-bold text-label-g shrink-0">
-                  +{formatCoins(breakdown.finalReward.gold)} 🪙
-                </span>
-                <span className="opacity-40 text-tiny">•</span>
-                <span className="text-info font-bold text-label-g shrink-0">
-                  +{breakdown.finalReward.xp} XP
-                </span>
-                {breakdown.hasDecay && (
-                  <span
-                    className="text-tiny font-semibold text-purple-400 shrink-0"
-                    title={breakdown.explanation}
-                  >
-                    (-{breakdown.decayPercentage}%)
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
+        {rewardEstimate && (
+          <RewardPreview
+            estimate={rewardEstimate}
+            variant="inline"
+            label="Recompensas"
+          />
         )}
       </div>
 

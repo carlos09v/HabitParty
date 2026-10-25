@@ -59,11 +59,22 @@ export interface RewardCardProps {
   onBuy?: (reward: Reward) => void;
   onContextMenu?: (e: React.MouseEvent, reward: Reward) => void;
   isCompact?: boolean;
+  canAfford?: boolean;
 }
 
 export interface AddRewardCardProps {
   onClick?: () => void;
   viewMode?: "card" | "list";
+  isCompact?: boolean;
+}
+
+export interface RouletteItem {
+  id: string;
+  name: string;
+  icon: string;
+  minutes: number | null;
+  badgeVariant: "emerald" | "amber" | "purple" | "gold";
+  badgeLabel: string;
 }
 
 export type {
@@ -80,3 +91,25 @@ export interface RewardFiltersProps {
 }
 
 export type { SelectOption } from "@/types/ui";
+
+// 4. Contrato unificado de Estimativa de Recompensas (Foco + Tarefas)
+export interface RewardEstimateNotice {
+  tone: "info" | "warning";
+  title: string;
+  message: string;
+}
+
+export interface RewardEstimateBreakdownItem {
+  label: string;
+  value: string;
+}
+
+export interface RewardEstimate {
+  gold: number;
+  xp: number;
+  status?: "full" | "reduced" | "none";
+  zeroReason?: string;
+  notices?: RewardEstimateNotice[];
+  breakdown?: RewardEstimateBreakdownItem[];
+  stageLabel?: string;
+}

@@ -18,6 +18,7 @@ import com.habitparty.application.usecases.auth.RefreshTokenUseCase;
 import com.habitparty.application.usecases.auth.RequestPasswordResetUseCase;
 import com.habitparty.application.usecases.auth.ResetPasswordUseCase;
 import com.habitparty.application.usecases.auth.SignInUseCase;
+import com.habitparty.core.exceptions.UnauthorizedException;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,9 @@ public class AuthController implements AuthApi {
     public ResponseEntity<Void> logout(
             RefreshTokenRequestDTO dto,
             AuthenticatedUser usuarioLogado) {
+        if (usuarioLogado == null) {
+            throw new UnauthorizedException("Usuário não autenticado.");
+        }
         UUID userId = usuarioLogado.id();
         logoutUseCase.execute(dto.refreshToken(), userId);
         return ResponseEntity.noContent().build();

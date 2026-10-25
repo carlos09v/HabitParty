@@ -119,10 +119,32 @@ export async function signUpAction(
 }
 
 /**
- * Encerra a sessão atual e redireciona para a tela de login.
+ * Encerra a sessão atual, revoga o refresh token no servidor e redireciona para a tela de login.
  */
 export async function signOut() {
   const cookieStore = await cookies();
+  const token = cookieStore.get("habitparty_token")?.value;
+  const refreshToken = cookieStore.get("habitparty_refresh_token")?.value;
+
+  if (token && refreshToken) {
+    try {
+      await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ refreshToken }),
+        cache: "no-store",
+      });
+    } catch (err) {
+      console.error(
+        "[AuthAction:SignOut] Erro ao revogar sessão no servidor:",
+        err,
+      );
+    }
+  }
+
   cookieStore.delete("habitparty_token");
   cookieStore.delete("habitparty_refresh_token");
   redirect("/signIn");
@@ -204,6 +226,10 @@ export async function resetPassword(payload: {
         ),
       };
     }
+
+    const cookieStore = await cookies();
+    cookieStore.delete("habitparty_token");
+    cookieStore.delete("habitparty_refresh_token");
 
     return { success: true, data: undefined };
   } catch (err) {

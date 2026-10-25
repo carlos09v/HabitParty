@@ -1,5 +1,3 @@
-"use client";
-
 import { Calendar } from "lucide-react";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";

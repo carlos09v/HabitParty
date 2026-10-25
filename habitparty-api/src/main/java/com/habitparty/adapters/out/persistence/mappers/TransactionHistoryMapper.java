@@ -47,7 +47,7 @@ public class TransactionHistoryMapper {
             entity.getUser().getId(),
             entity.getReferenceId(),
             entity.getGoldAmount(),
-            entity.getXpAmount(),
+            entity.getXpAmount() != null ? entity.getXpAmount() : 0,
             entity.getPriceSnapshot(),
             entity.getTransactionType(),
             entity.getNameSnapshot(),

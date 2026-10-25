@@ -1,5 +1,3 @@
-"use client";
-
 import { DatePicker } from "@/components/ui/DatePicker";
 
 interface TaskDatePickerProps {

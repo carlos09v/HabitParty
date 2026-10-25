@@ -23,4 +23,8 @@ public interface PasswordResetTokenJpaRepository extends JpaRepository<PasswordR
   @Transactional
   @Query("DELETE FROM PasswordResetTokenJpaEntity t WHERE t.expirationDate < :threshold OR t.used = true")
   void deleteObsoleteTokens(@Param("threshold") java.time.Instant threshold);
+
+  @Modifying
+  @Query("DELETE FROM PasswordResetTokenJpaEntity t WHERE t.user.id = :userId")
+  void deleteAllByUserId(@Param("userId") UUID userId);
 }

@@ -8,6 +8,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 import com.habitparty.adapters.out.persistence.entities.TransactionHistoryJpaEntity;
 import com.habitparty.core.domain.enums.TransactionType;
 
@@ -29,4 +33,8 @@ public interface TransactionHistoryJpaRepository extends JpaRepository<Transacti
     // Busca filtrada por tipos (Para as abas) paginada
     Page<TransactionHistoryJpaEntity> findAllByUserIdAndTransactionTypeInOrderByCreatedAtDesc(
             UUID userId, List<TransactionType> types, Pageable pageable);
+
+    @Modifying
+    @Query("DELETE FROM TransactionHistoryJpaEntity t WHERE t.user.id = :userId")
+    void deleteAllByUserId(@Param("userId") UUID userId);
 }

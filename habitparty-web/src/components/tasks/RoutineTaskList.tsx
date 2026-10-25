@@ -9,60 +9,19 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { CalendarCheck, GripVertical, Plus } from "lucide-react";
-import type { Dispatch, SetStateAction } from "react";
-import { useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { TaskRow } from "@/components/tasks/shared/TaskRow";
 import { getColumnIcon } from "@/constants/routine";
 import { TASK_TABLE_GRID_COLS } from "@/constants/task";
 import { useCompactMode } from "@/hooks/useCompactMode";
-import { useRoutineBoardDnd } from "@/hooks/useRoutineBoardDnd";
-import type { BoardColumn, Task, TaskTypeOption } from "@/types/task";
+import type { Task } from "@/types/task";
+import type {
+  RoutineTaskListProps,
+  RoutineTaskListSectionProps,
+} from "@/types/task-ui";
 import { cn } from "@/utils";
 
-export interface RoutineTaskListProps {
-  columns: BoardColumn[];
-  setColumns: Dispatch<SetStateAction<BoardColumn[]>>;
-  visibleColumnIds: string[];
-  selectedColumnId?: string | null;
-  isCompact?: boolean;
-  onAddTaskToColumn: (
-    columnId: string,
-    initialType?: TaskTypeOption,
-    initialTitle?: string,
-  ) => void;
-  onOpenDetails: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
-  onContextMenu: (e: React.MouseEvent, task: Task, columnId: string) => void;
-  onTaskMove?: (
-    taskId: string,
-    targetColumnId: string,
-    newOrderIndex: number,
-    allTargetTasks?: Task[],
-  ) => void;
-  onColumnReorder?: (reorderedColumns: BoardColumn[]) => void;
-  onToggleComplete: (taskId: string, completed: boolean) => void;
-  onHabitChange: (taskId: string, delta: number) => void;
-}
-
-/**
- * Visualização em Lista do Quadro de Tarefas com suporte a Drag-and-Drop (DnD).
- * Permite arrastar e reordenar tarefas dentro e entre listas, similar ao Rewards e ao Kanban.
- */
-interface RoutineTaskListSectionProps {
-  column: BoardColumn;
-  isCompact: boolean;
-  selectedColumnId?: string | null;
-  onAddTaskToColumn: (
-    columnId: string,
-    initialType?: TaskTypeOption,
-    initialTitle?: string,
-  ) => void;
-  onOpenDetails: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
-  onContextMenu: (e: React.MouseEvent, task: Task, columnId: string) => void;
-  onToggleComplete: (taskId: string, completed: boolean) => void;
-  onHabitChange: (taskId: string, delta: number) => void;
-}
-
-function RoutineTaskListSection({
+const RoutineTaskListSection = memo(function RoutineTaskListSection({
   column,
   isCompact,
   selectedColumnId,
@@ -113,6 +72,20 @@ function RoutineTaskListSection({
 
   const ColumnIcon = getColumnIcon(column.icon);
   const taskIds = useMemo(() => column.tasks.map((t) => t.id), [column.tasks]);
+
+  const handleOpenRowDetails = useCallback(
+    (task: Task, anchorRect?: DOMRect, colId?: string) => {
+      onOpenDetails(task, colId || column.id, anchorRect);
+    },
+    [onOpenDetails, column.id],
+  );
+
+  const handleRowContextMenu = useCallback(
+    (e: React.MouseEvent, task: Task, colId?: string) => {
+      onContextMenu(e, task, colId || column.id);
+    },
+    [onContextMenu, column.id],
+  );
 
   return (
     <section
@@ -194,11 +167,10 @@ function RoutineTaskListSection({
                 task={task}
                 columnId={column.id}
                 columnTitle={column.title}
+                isCompact={isCompact}
                 isSortable={true}
-                onOpenDetails={(t, anchorRect) =>
-                  onOpenDetails(t, column.id, anchorRect)
-                }
-                onContextMenu={(e, t) => onContextMenu(e, t, column.id)}
+                onOpenDetails={handleOpenRowDetails}
+                onContextMenu={handleRowContextMenu}
                 onToggleCompleted={onToggleComplete}
                 onHabitChange={onHabitChange}
               />
@@ -208,32 +180,21 @@ function RoutineTaskListSection({
       )}
     </section>
   );
-}
+});
 
 export function RoutineTaskList({
   columns,
-  setColumns,
   visibleColumnIds,
   selectedColumnId,
   isCompact: propIsCompact,
   onAddTaskToColumn,
   onOpenDetails,
   onContextMenu,
-  onTaskMove,
-  onColumnReorder,
   onToggleComplete,
   onHabitChange,
+  dndState,
 }: RoutineTaskListProps) {
-  const { isCompact: hookIsCompact } = useCompactMode();
-  const isCompact = propIsCompact ?? hookIsCompact;
-
-  const { sensors, activeColumn, activeTask, collisionDetection, handlers } =
-    useRoutineBoardDnd({
-      columns,
-      setColumns,
-      onTaskMove,
-      onColumnReorder,
-    });
+  const { isCompact } = useCompactMode(propIsCompact);
 
   const visibleColumns = useMemo(
     () => columns.filter((col) => visibleColumnIds.includes(col.id)),
@@ -245,94 +206,104 @@ export function RoutineTaskList({
     [visibleColumns],
   );
 
+  const listContent = (
+    <div className="flex-1 min-h-0 w-full flex flex-col gap-6 overflow-y-auto pr-1 pb-10">
+      {/* Cabeçalho tabular global */}
+      <div
+        className={cn(
+          "hidden md:grid items-center text-xs font-semibold text-neutral-400 border-b border-white/10 select-none",
+          TASK_TABLE_GRID_COLS,
+          isCompact ? "gap-2.5 px-3 py-1.5" : "gap-4 px-4 py-2",
+        )}
+        aria-hidden="true"
+      >
+        <span className="pl-8">Nome da Tarefa</span>
+        <span>Lista</span>
+        <span>Tipo</span>
+        <span>Prioridade</span>
+        <span>Frequência / Prazo</span>
+        <span className="text-right pr-2">Ações</span>
+      </div>
+
+      {visibleColumns.length === 0 ? (
+        <div className="w-full flex flex-col items-center justify-center text-center py-16 px-4 rounded-2xl border border-dashed border-white/15 bg-primary-dark/10">
+          <CalendarCheck size={32} className="text-neutral-500 mb-2" />
+          <p className="text-body-m font-bold text-neutral-200">
+            Nenhuma coluna visível
+          </p>
+          <p className="text-body-s text-neutral-400 mt-1">
+            Selecione ou crie uma coluna para visualizar suas tarefas.
+          </p>
+        </div>
+      ) : totalTasksCount === 0 ? (
+        <div className="w-full flex flex-col items-center justify-center text-center py-16 px-4 rounded-2xl border border-dashed border-white/15 bg-primary-dark/10">
+          <CalendarCheck size={32} className="text-gold mb-2" />
+          <p className="text-body-m font-bold text-neutral-200">
+            Tudo limpo por aqui! 🎉
+          </p>
+          <p className="text-body-s text-neutral-400 mt-1">
+            Nenhuma tarefa cadastrada nas colunas visíveis.
+          </p>
+        </div>
+      ) : (
+        <SortableContext
+          items={visibleColumns.map((c) => c.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          {visibleColumns.map((col) => (
+            <RoutineTaskListSection
+              key={col.id}
+              column={col}
+              isCompact={isCompact}
+              selectedColumnId={selectedColumnId}
+              onAddTaskToColumn={onAddTaskToColumn}
+              onOpenDetails={onOpenDetails}
+              onContextMenu={onContextMenu}
+              onToggleComplete={onToggleComplete}
+              onHabitChange={onHabitChange}
+            />
+          ))}
+        </SortableContext>
+      )}
+    </div>
+  );
+
+  if (!dndState) {
+    return listContent;
+  }
+
   return (
     <DndContext
       id="routine-list-dnd"
-      sensors={sensors}
-      collisionDetection={collisionDetection}
+      sensors={dndState.sensors}
+      collisionDetection={dndState.collisionDetection}
       modifiers={[restrictToWindowEdges]}
-      {...handlers}
+      {...dndState.handlers}
     >
-      <div className="flex-1 min-h-0 w-full flex flex-col gap-6 overflow-y-auto pr-1 pb-10">
-        {/* Cabeçalho tabular global */}
-        <div
-          className={cn(
-            "hidden md:grid items-center text-xs font-semibold text-neutral-400 border-b border-white/10 select-none",
-            TASK_TABLE_GRID_COLS,
-            isCompact ? "gap-2.5 px-3 py-1.5" : "gap-4 px-4 py-2",
-          )}
-          aria-hidden="true"
-        >
-          <span className="pl-8">Nome da Tarefa</span>
-          <span>Lista</span>
-          <span>Tipo</span>
-          <span>Prioridade</span>
-          <span>Frequência / Prazo</span>
-          <span className="text-right pr-2">Ações</span>
-        </div>
-
-        {visibleColumns.length === 0 ? (
-          <div className="w-full flex flex-col items-center justify-center text-center py-16 px-4 rounded-2xl border border-dashed border-white/15 bg-primary-dark/10">
-            <CalendarCheck size={32} className="text-neutral-500 mb-2" />
-            <p className="text-body-m font-bold text-neutral-200">
-              Nenhuma coluna visível
-            </p>
-            <p className="text-body-s text-neutral-400 mt-1">
-              Selecione ou crie uma coluna para visualizar suas tarefas.
-            </p>
-          </div>
-        ) : totalTasksCount === 0 ? (
-          <div className="w-full flex flex-col items-center justify-center text-center py-16 px-4 rounded-2xl border border-dashed border-white/15 bg-primary-dark/10">
-            <CalendarCheck size={32} className="text-gold mb-2" />
-            <p className="text-body-m font-bold text-neutral-200">
-              Tudo limpo por aqui! 🎉
-            </p>
-            <p className="text-body-s text-neutral-400 mt-1">
-              Nenhuma tarefa cadastrada nas colunas visíveis.
-            </p>
-          </div>
-        ) : (
-          <SortableContext
-            items={visibleColumns.map((c) => c.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            {visibleColumns.map((col) => (
-              <RoutineTaskListSection
-                key={col.id}
-                column={col}
-                isCompact={isCompact}
-                selectedColumnId={selectedColumnId}
-                onAddTaskToColumn={onAddTaskToColumn}
-                onOpenDetails={onOpenDetails}
-                onContextMenu={onContextMenu}
-                onToggleComplete={onToggleComplete}
-                onHabitChange={onHabitChange}
-              />
-            ))}
-          </SortableContext>
-        )}
-      </div>
+      {listContent}
 
       <DragOverlay dropAnimation={defaultDropAnimation}>
-        {activeColumn && (
+        {dndState.activeColumn && (
           <div className="opacity-95 shadow-2xl p-3 rounded-xl bg-surface border border-gold/70 flex items-center gap-2.5">
             <GripVertical size={14} className="text-gold" />
             <span className="font-bold text-neutral-100 text-sm">
-              {activeColumn.title}
+              {dndState.activeColumn.title}
             </span>
             <span className="text-tiny font-bold px-1.5 py-0.5 rounded-full bg-white/10 text-neutral-300">
-              {activeColumn.tasks.length} tarefas
+              {dndState.activeColumn.tasks.length} tarefas
             </span>
           </div>
         )}
-        {activeTask && (
+        {dndState.activeTask && (
           <div className="opacity-95 shadow-2xl scale-102">
             <TaskRow
-              task={activeTask}
-              columnId={activeTask.columnId || ""}
+              task={dndState.activeTask}
+              columnId={dndState.activeTask.columnId || ""}
               columnTitle={
-                columns.find((c) => c.id === activeTask.columnId)?.title
+                columns.find((c) => c.id === dndState.activeTask?.columnId)
+                  ?.title
               }
+              isCompact={isCompact}
               isSortable
               isOverlay
             />

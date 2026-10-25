@@ -33,4 +33,8 @@ public interface BoardColumnRepository {
   int getMaxOrderIndex(UUID workspaceId);
 
   List<BoardColumnSummaryDTO> getColumnSummaries(UUID workspaceId);
+
+  void deleteAllByWorkspaceId(UUID workspaceId);
+
+  void deleteAllByUserId(UUID userId);
 }

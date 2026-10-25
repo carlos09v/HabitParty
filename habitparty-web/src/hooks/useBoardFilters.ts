@@ -9,13 +9,12 @@ import {
 import type { BoardColumn, BoardFilterState } from "@/types/task";
 
 /**
- * Hook dedicado ao controle de busca, filtros de tags, tipos, dificuldade, status e Modo Foco no Kanban.
+ * Hook dedicado ao controle de busca, filtros de tags, tipos, dificuldade e status no Kanban.
  * Utiliza useDeferredValue para garantir digitação suave a 60/120fps sem travar o thread principal.
  */
 export function useBoardFilters(columns: BoardColumn[]) {
   const [searchQuery, setSearchQuery] = useState("");
   const deferredSearchQuery = useDeferredValue(searchQuery);
-  const [focusMode, setFocusMode] = useState(false);
   const [filters, setFilters] = useState<BoardFilterState>(
     DEFAULT_BOARD_FILTERS,
   );
@@ -39,7 +38,6 @@ export function useBoardFilters(columns: BoardColumn[]) {
   const filteredColumns = useMemo(() => {
     const hasFilter =
       deferredSearchQuery.trim() !== "" ||
-      focusMode ||
       filters.taskType !== "all" ||
       filters.difficulty !== "all" ||
       filters.priority !== "all" ||
@@ -64,30 +62,25 @@ export function useBoardFilters(columns: BoardColumn[]) {
 
         const resolvedType = normalizeTaskType(task);
 
-        // 2. Modo Foco: oculta tarefas concluídas (exceto hábitos)
-        if (focusMode && task.completed && resolvedType !== "habit") {
-          return false;
-        }
-
-        // 3. Filtro por Tipo de Tarefa
+        // 2. Filtro por Tipo de Tarefa
         if (filters.taskType !== "all") {
           if (resolvedType.toUpperCase() !== filters.taskType) return false;
         }
 
-        // 4. Filtro por Dificuldade
+        // 3. Filtro por Dificuldade
         if (filters.difficulty !== "all") {
           const normalizedTDiff = normalizeTaskDifficulty(task.difficulty);
           if (normalizedTDiff !== filters.difficulty) return false;
         }
 
-        // 5. Filtro por Prioridade
+        // 4. Filtro por Prioridade
         if (filters.priority !== "all") {
           const taskPriority = (task.priority || "NONE").toUpperCase();
           const filterPriority = filters.priority.toUpperCase();
           if (taskPriority !== filterPriority) return false;
         }
 
-        // 6. Filtro por Status
+        // 5. Filtro por Status
         if (filters.status === "completed" && !task.completed) return false;
         if (filters.status === "pending" && task.completed) return false;
 
@@ -102,13 +95,11 @@ export function useBoardFilters(columns: BoardColumn[]) {
         return true;
       }),
     }));
-  }, [columns, deferredSearchQuery, focusMode, filters]);
+  }, [columns, deferredSearchQuery, filters]);
 
   return {
     searchQuery,
     setSearchQuery,
-    focusMode,
-    setFocusMode,
     filters,
     setFilters,
     availableTags,

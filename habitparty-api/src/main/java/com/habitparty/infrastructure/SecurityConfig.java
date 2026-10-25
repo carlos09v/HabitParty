@@ -78,9 +78,10 @@ public class SecurityConfig {
             // Arquivos públicos de upload (avatares)
             .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
 
-            // Rotas públicas
+            // Rotas públicas e exceção autenticada de logout
             .requestMatchers(HttpMethod.POST, "/users").permitAll()
             .requestMatchers("/error").permitAll()
+            .requestMatchers(HttpMethod.POST, "/auth/logout").authenticated()
             .requestMatchers("/auth/**").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/v1/payments/founders-quota").permitAll()
             .requestMatchers(HttpMethod.POST, "/api/v1/webhooks/**").permitAll()

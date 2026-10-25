@@ -1,9 +1,11 @@
 "use client";
 
 import { Camera, Crown, Shield, Sparkles, UploadCloud } from "lucide-react";
+import { useRouter } from "next/navigation";
 import {
   type ChangeEvent,
   type DragEvent,
+  useEffect,
   useRef,
   useState,
   useTransition,
@@ -19,6 +21,7 @@ export function ProfileHeaderCard({
   initialUser,
   isCompact,
 }: ProfileHeaderCardProps) {
+  const router = useRouter();
   const storeUser = useUserStore((s) => s.user);
   const user = storeUser || initialUser;
   const updateUserPartial = useUserStore((s) => s.updateUserPartial);
@@ -27,6 +30,14 @@ export function ProfileHeaderCard({
   const [isPending, startTransition] = useTransition();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const processFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -40,7 +51,12 @@ export function ProfileHeaderCard({
     }
 
     const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
+    setPreviewUrl((prev) => {
+      if (prev?.startsWith("blob:")) {
+        URL.revokeObjectURL(prev);
+      }
+      return objectUrl;
+    });
 
     const formData = new FormData();
     formData.append("file", file);
@@ -50,8 +66,10 @@ export function ProfileHeaderCard({
       if (res.success) {
         toast.success("Foto de perfil atualizada com sucesso!");
         updateUserPartial({ profilePhotoUrl: objectUrl });
+        router.refresh();
       } else {
         toast.error(res.error || "Erro ao atualizar foto.");
+        URL.revokeObjectURL(objectUrl);
         setPreviewUrl(null);
       }
     });

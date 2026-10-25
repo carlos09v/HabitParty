@@ -1,3 +1,11 @@
+import {
+  Bold,
+  Code,
+  Highlighter,
+  Italic,
+  List,
+  type LucideIcon,
+} from "lucide-react";
 import type {
   BoardFilterState,
   DailyDaysOfWeek,
@@ -10,6 +18,7 @@ import type {
   TaskDifficultyOption,
   TaskPriorityOption,
 } from "@/types/task";
+import type { FormatSyntax } from "@/types/task-ui";
 
 /** Borda esquerda dos Hábitos baseada na Importância. */
 export const HABIT_IMPORTANCE_BORDER: Record<string, string> = {
@@ -63,39 +72,6 @@ export const TASK_TYPE_FILTER_OPTIONS = [
   { id: "TODO", value: "TODO", label: "Afazeres" },
 ] as const;
 
-/** Acentos visuais no card (borda superior temática, tint sutil de fundo e glow) para diferenciação imediata. */
-export const TASK_TYPE_ACCENTS: Record<
-  string,
-  {
-    borderTop: string;
-    borderLeft: string;
-    bgTint: string;
-    accentColor: string;
-  }
-> = {
-  habit: {
-    borderTop: "border-t-2 border-t-info/70",
-    borderLeft: "border-l-4 border-l-info/80",
-    bgTint:
-      "bg-gradient-to-b from-info/6 via-primary-dark/20 to-primary-dark/20 hover:from-info/10",
-    accentColor: "text-info",
-  },
-  daily: {
-    borderTop: "border-t-2 border-t-magenta/70",
-    borderLeft: "border-l-4 border-l-magenta/80",
-    bgTint:
-      "bg-gradient-to-b from-magenta/6 via-primary-dark/20 to-primary-dark/20 hover:from-magenta/10",
-    accentColor: "text-magenta",
-  },
-  todo: {
-    borderTop: "border-t-2 border-t-gold/70",
-    borderLeft: "border-l-4 border-l-gold/80",
-    bgTint:
-      "bg-gradient-to-b from-gold/6 via-primary-dark/20 to-primary-dark/20 hover:from-gold/10",
-    accentColor: "text-gold",
-  },
-};
-
 /** Normaliza com segurança o tipo da tarefa para "habit" | "daily" | "todo". */
 export function normalizeTaskType(
   typeOrTask?:
@@ -138,9 +114,6 @@ export function normalizeTaskType(
   return "todo";
 }
 
-/** Iniciais dos dias da semana (índice 0 = Domingo). */
-export const DAYS_SHORT = ["D", "S", "T", "Q", "Q", "S", "S"] as const;
-
 /** Lista ordenada de dias da semana para exibição consistente em cards e tabelas. */
 export const WEEK_DAYS: readonly {
   enumValue: DailyDaysOfWeek;
@@ -160,12 +133,6 @@ export const WEEK_DAYS: readonly {
 export const ALL_WEEK_DAYS: DailyDaysOfWeek[] = WEEK_DAYS.map(
   (d) => d.enumValue,
 );
-
-/** Recompensas padrão concedidas para tarefas diárias e afazeres. */
-export const DEFAULT_TASK_REWARDS = {
-  xp: 10,
-  gold: 1.5,
-} as const;
 
 /**
  * Retorna a classe de borda lateral esquerda (cor da dificuldade/importância).
@@ -235,6 +202,14 @@ export const TASK_DIFFICULTY_OPTIONS: readonly {
   { id: "MEDIUM", label: "Médio" },
   { id: "HARD", label: "Difícil" },
 ] as const;
+
+/** Descrições explicativas de cada nível de dificuldade no formulário de criação/edição. */
+export const DIFFICULTY_DESCRIPTIONS: Record<TaskDifficultyOption, string> = {
+  TRIVIAL: "Quase automática (ex: beber água, remédio).",
+  EASY: "Baixa fricção (ex: e-mails, 10 min leitura).",
+  MEDIUM: "Padrão: 30 a 60 min de esforço (ex: treino).",
+  HARD: "Intensa de 1 a 2 horas (ex: estudo pesado, projeto).",
+};
 
 /** Opções de prioridade para Afazeres (ToDo). */
 export const TODO_PRIORITY_OPTIONS: readonly {
@@ -483,3 +458,58 @@ export const PRIORITY_SORT_WEIGHTS: Readonly<Record<string, number>> = {
 /** Template de colunas CSS Grid compartilhado entre TaskTable, RoutineTaskList e TaskRow */
 export const TASK_TABLE_GRID_COLS =
   "grid-cols-[minmax(0,1fr)_auto_40px] sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto_minmax(0,1fr)_40px] md:grid-cols-[minmax(0,2.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_40px]";
+
+/** Dimensões padrão de ancoragem para o TaskDetailsPopover */
+export const TASK_DETAILS_POPOVER_OPTIONS = {
+  popoverWidth: 380,
+  popoverHeight: 420,
+} as const;
+
+/** Opções de formatação Markdown rápida para descrição da tarefa */
+export const MARKDOWN_FORMAT_OPTIONS: ReadonlyArray<{
+  syntax: FormatSyntax;
+  label: string;
+  hint: string;
+  icon: LucideIcon;
+  iconColorClass: string;
+  labelClass?: string;
+}> = [
+  {
+    syntax: "bold",
+    label: "Negrito",
+    hint: "**b**",
+    icon: Bold,
+    iconColorClass: "text-gold",
+    labelClass: "font-semibold",
+  },
+  {
+    syntax: "italic",
+    label: "Itálico",
+    hint: "*i*",
+    icon: Italic,
+    iconColorClass: "text-info",
+    labelClass: "italic",
+  },
+  {
+    syntax: "highlight",
+    label: "Destacar",
+    hint: "==txt==",
+    icon: Highlighter,
+    iconColorClass: "text-warning-500",
+  },
+  {
+    syntax: "bullet",
+    label: "Lista",
+    hint: "- item",
+    icon: List,
+    iconColorClass: "text-primary-light",
+  },
+  {
+    syntax: "code",
+    label: "Código",
+    hint: "`code`",
+    icon: Code,
+    iconColorClass: "text-magenta",
+    labelClass: "font-mono text-label-g",
+  },
+] as const;

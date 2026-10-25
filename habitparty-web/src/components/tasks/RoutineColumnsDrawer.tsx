@@ -11,26 +11,13 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { UpgradePremiumModal } from "@/components/subscription/UpgradePremiumModal";
+import { SlideOverDrawer } from "@/components/ui/SlideOverDrawer";
 import { Switch } from "@/components/ui/Switch";
 import { getColumnIcon } from "@/constants/routine";
-import type { BoardColumn } from "@/types/task";
+import type { RoutineColumnsDrawerProps } from "@/types/task-ui";
 import { cn } from "@/utils";
-
-interface RoutineColumnsDrawerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  columns: BoardColumn[];
-  visibleColumnIds: string[];
-  maxColumns: number;
-  isPremium: boolean;
-  onToggleVisibility: (columnId: string) => void;
-  onShowAll: () => void;
-  onOpenCreateColumn: () => void;
-  onEditColumn: (column: BoardColumn) => void;
-  onDeleteColumn: (column: BoardColumn) => void;
-}
 
 export function RoutineColumnsDrawer({
   isOpen,
@@ -47,19 +34,6 @@ export function RoutineColumnsDrawer({
 }: RoutineColumnsDrawerProps) {
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
-
   if (!isOpen) return null;
 
   const canCreateMore = columns.length < maxColumns;
@@ -69,22 +43,14 @@ export function RoutineColumnsDrawer({
     visibleColumnIds.length <= maxColumns;
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Gerenciador de Colunas do Quadro"
-      className="fixed inset-0 z-50 overflow-hidden"
-    >
-      {/* Backdrop */}
-      <button
-        type="button"
-        aria-label="Fechar gaveta de colunas"
-        onClick={onClose}
-        className="fixed inset-0 bg-neutral-950/70 backdrop-blur-xs transition-opacity animate-in fade-in duration-200 cursor-default border-none p-0 m-0 w-full h-full"
-      />
-
-      {/* Drawer Panel */}
-      <div className="fixed inset-y-0 right-0 w-full sm:w-[420px] max-w-full bg-surface border-l border-white/10 shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-300 ease-out">
+    <>
+      <SlideOverDrawer
+        isOpen={isOpen}
+        onClose={onClose}
+        ariaLabel="Gerenciador de Colunas do Quadro"
+        backdropAriaLabel="Fechar gaveta de colunas"
+        panelClassName="w-full sm:w-[420px]"
+      >
         {/* Header */}
         <header className="p-5 border-b border-white/10 flex items-start justify-between gap-3 bg-surface-hover/30">
           <div className="flex flex-col gap-1.5">
@@ -350,12 +316,12 @@ export function RoutineColumnsDrawer({
             </div>
           </div>
         </footer>
-      </div>
+      </SlideOverDrawer>
 
       <UpgradePremiumModal
         isOpen={isUpgradeModalOpen}
         onClose={() => setIsUpgradeModalOpen(false)}
       />
-    </div>
+    </>
   );
 }

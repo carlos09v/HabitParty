@@ -5,124 +5,19 @@ import {
   type MysteryBoxOpenResult,
   openMysteryBox,
 } from "@/actions/inventoryActions";
-import { MYSTERY_BOX_TIERS } from "@/constants/reward";
+import {
+  getMysteryBoxTier,
+  MYSTERY_BOX_ROULETTE_POOLS,
+  ROULETTE_CARD_WIDTH,
+  ROULETTE_TOTAL_CARD_WIDTH,
+  ROULETTE_TRACK_LENGTH,
+  ROULETTE_WINNING_INDEX,
+} from "@/constants/reward";
 import type { InventoryItem } from "@/types/inventory";
-import type { PackageLevel } from "@/types/reward";
+import type { PackageLevel, RouletteItem } from "@/types/reward";
 import { soundEffects } from "@/utils/soundEffects";
 
-export interface RouletteItem {
-  id: string;
-  name: string;
-  icon: string;
-  minutes: number | null;
-  badgeVariant: "emerald" | "amber" | "purple" | "gold";
-  badgeLabel: string;
-}
-
-const TIER_POOLS: Record<string, RouletteItem[]> = {
-  Básico: [
-    {
-      id: "b1",
-      name: "Pausa Curta",
-      icon: "coffee",
-      minutes: null,
-      badgeVariant: "emerald",
-      badgeLabel: "60% Drop",
-    },
-    {
-      id: "b2",
-      name: "Prática de Violão",
-      icon: "music",
-      minutes: 30,
-      badgeVariant: "amber",
-      badgeLabel: "30% Drop",
-    },
-    {
-      id: "b3",
-      name: "Leitura Produtiva",
-      icon: "book",
-      minutes: 45,
-      badgeVariant: "purple",
-      badgeLabel: "10% Drop",
-    },
-  ],
-  Premium: [
-    {
-      id: "p1",
-      name: "Tempo Livre",
-      icon: "smile",
-      minutes: null,
-      badgeVariant: "emerald",
-      badgeLabel: "40% Drop",
-    },
-    {
-      id: "p2",
-      name: "Sessão de Videogame",
-      icon: "gamepad",
-      minutes: 60,
-      badgeVariant: "amber",
-      badgeLabel: "40% Drop",
-    },
-    {
-      id: "p3",
-      name: "Capítulo de FNAF",
-      icon: "book_open",
-      minutes: null,
-      badgeVariant: "purple",
-      badgeLabel: "20% Drop",
-    },
-  ],
-  Épico: [
-    {
-      id: "e1",
-      name: "Tempo de Foco Flexível",
-      icon: "timer",
-      minutes: 60,
-      badgeVariant: "emerald",
-      badgeLabel: "50% Drop",
-    },
-    {
-      id: "e2",
-      name: "Passe Livre (Noite)",
-      icon: "ticket",
-      minutes: null,
-      badgeVariant: "amber",
-      badgeLabel: "40% Drop",
-    },
-    {
-      id: "e3",
-      name: "Tarde de Jogos",
-      icon: "trophy",
-      minutes: 120,
-      badgeVariant: "gold",
-      badgeLabel: "10% Drop",
-    },
-  ],
-  Lendário: [
-    {
-      id: "l1",
-      name: "Fim de Tarde Livre",
-      icon: "star",
-      minutes: 120,
-      badgeVariant: "purple",
-      badgeLabel: "70% Drop",
-    },
-    {
-      id: "l2",
-      name: "Day Off Absoluto",
-      icon: "gem",
-      minutes: 240,
-      badgeVariant: "gold",
-      badgeLabel: "30% Drop",
-    },
-  ],
-};
-
-const CARD_WIDTH = 132;
-const CARD_GAP = 12;
-const TOTAL_CARD_WIDTH = CARD_WIDTH + CARD_GAP;
-const TRACK_LENGTH = 45;
-const WINNING_INDEX = 32;
+export type { RouletteItem };
 
 interface UseMysteryBoxRouletteProps {
   isOpen: boolean;
@@ -146,9 +41,10 @@ export function useMysteryBoxRoulette({
 
   const tierId: PackageLevel =
     (item?.reward.packageLevel as PackageLevel) || "Básico";
-  const tierConfig =
-    MYSTERY_BOX_TIERS.find((t) => t.id === tierId) || MYSTERY_BOX_TIERS[0];
-  const pool = TIER_POOLS[tierId] || TIER_POOLS.Básico;
+  const tierConfig = getMysteryBoxTier(tierId);
+  const pool =
+    MYSTERY_BOX_ROULETTE_POOLS[tierConfig.id] ||
+    MYSTERY_BOX_ROULETTE_POOLS.Básico;
 
   // Monta a fita de itens aleatórios ao abrir a modal
   useEffect(() => {
@@ -158,7 +54,7 @@ export function useMysteryBoxRoulette({
       setTranslateX(0);
 
       const generated: RouletteItem[] = [];
-      for (let i = 0; i < TRACK_LENGTH; i++) {
+      for (let i = 0; i < ROULETTE_TRACK_LENGTH; i++) {
         const randomItem = pool[Math.floor(Math.random() * pool.length)];
         generated.push({
           ...randomItem,
@@ -173,7 +69,7 @@ export function useMysteryBoxRoulette({
   useEffect(() => {
     return () => {
       if (soundIntervalRef.current) {
-        clearInterval(soundIntervalRef.current);
+        clearTimeout(soundIntervalRef.current);
       }
     };
   }, []);
@@ -201,11 +97,11 @@ export function useMysteryBoxRoulette({
         icon: winData.rewardIcon || "gem",
         minutes: winData.remainingMinutes || null,
         badgeVariant:
-          tierId === "Lendário"
+          tierConfig.id === "Lendário"
             ? "gold"
-            : tierId === "Épico"
+            : tierConfig.id === "Épico"
               ? "purple"
-              : tierId === "Premium"
+              : tierConfig.id === "Premium"
                 ? "amber"
                 : "emerald",
         badgeLabel: "SORTEADO!",
@@ -213,7 +109,7 @@ export function useMysteryBoxRoulette({
 
       setTrackItems((prev) => {
         const copy = [...prev];
-        copy[WINNING_INDEX] = winningItem;
+        copy[ROULETTE_WINNING_INDEX] = winningItem;
         return copy;
       });
 
@@ -221,7 +117,8 @@ export function useMysteryBoxRoulette({
       const containerWidth = containerRef.current?.offsetWidth || 560;
       const centerViewport = containerWidth / 2;
       const targetCardCenter =
-        WINNING_INDEX * TOTAL_CARD_WIDTH + CARD_WIDTH / 2;
+        ROULETTE_WINNING_INDEX * ROULETTE_TOTAL_CARD_WIDTH +
+        ROULETTE_CARD_WIDTH / 2;
 
       // Jitter orgânico (+-18px) simulando catraca física
       const randomJitter = Math.floor(Math.random() * 36) - 18;
@@ -275,8 +172,8 @@ export function useMysteryBoxRoulette({
     isOpeningServer,
     containerRef,
     handleSpin,
-    tierId,
+    tierId: tierConfig.id,
     tierConfig,
-    winningIndex: WINNING_INDEX,
+    winningIndex: ROULETTE_WINNING_INDEX,
   };
 }

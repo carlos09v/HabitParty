@@ -41,9 +41,10 @@ public class RedeemRewardUseCase {
 
   @Transactional
   public void execute(UUID rewardId, UUID userIdLogado) {
-    // 1. Busca a Recompensa
+    // 1. Busca a Recompensa e valida propriedade (evita IDOR)
     Reward reward = port.findById(rewardId)
         .orElseThrow(() -> new ResourceNotFoundException("Recompensa não encontrada."));
+    reward.validateOwnership(userIdLogado);
 
     // 2. Busca o Usuário
     User user = userPort.findById(userIdLogado)

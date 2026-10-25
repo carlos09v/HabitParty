@@ -1,31 +1,120 @@
 "use client";
 
 import { Timer, Trash2 } from "lucide-react";
+import { memo } from "react";
+import { CoinIcon } from "@/components/ui/CoinIcon";
+import { CoinAmount } from "@/components/ui/reward/CoinAmount";
+import { XpAmount } from "@/components/ui/reward/XpAmount";
 import { HISTORY_GRID_COLS } from "@/constants/history";
-import type { HistoryRowProps } from "@/types/history";
-import { cn } from "@/utils";
-import { resolveTransactionMetadata } from "@/utils/historyUtils";
+import type {
+  TransactionHistoryResponseDTO,
+  TransactionMetadata,
+} from "@/types/history";
+import { cn, resolveTransactionMetadata } from "@/utils";
 
-export function HistoryRow({
+interface HistoryRowProps {
+  transaction: TransactionHistoryResponseDTO;
+  isCompact?: boolean;
+  /** Quando agrupado por dia, exibe apenas o horário (HH:mm) na coluna de data, mantendo a data completa no tooltip */
+  showTimeOnly?: boolean;
+  onClick?: (tx: TransactionHistoryResponseDTO, rect: DOMRect) => void;
+  /** Solicita exclusão (a confirmação é exibida pelo componente pai). */
+  onRequestDelete?: (transaction: TransactionHistoryResponseDTO) => void;
+}
+
+function TransactionSubtext({
+  isFocus,
+  firstTag,
+  priceSnapshot,
+}: {
+  isFocus: boolean;
+  firstTag?: string;
+  priceSnapshot?: number | null;
+}) {
+  if (isFocus && firstTag) {
+    return (
+      <span className="text-label-g text-neutral-400 font-normal flex items-center gap-1">
+        Duração: <span className="text-gold font-semibold">{firstTag}</span>
+      </span>
+    );
+  }
+  if (priceSnapshot != null && priceSnapshot > 0) {
+    return (
+      <span className="text-tiny text-neutral-400 font-normal inline-flex items-center gap-1">
+        Preço tabela: {priceSnapshot} <CoinIcon size={10} />
+      </span>
+    );
+  }
+  return null;
+}
+
+function TransactionMetaBadges({
+  metadata,
+  tags,
+  showEmptyDash = false,
+}: {
+  metadata: TransactionMetadata;
+  tags: string[];
+  showEmptyDash?: boolean;
+}) {
+  if (metadata.isFocus && tags.length > 0) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gold/15 border border-gold/30 text-gold text-label-g font-bold">
+        <Timer size={11} className="shrink-0" />
+        {tags[0]}
+      </span>
+    );
+  }
+
+  const secondaryBadge = metadata.difficultyLabel || metadata.packageLabel;
+
+  return (
+    <>
+      {secondaryBadge && (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/10 border border-white/15 text-neutral-200 text-label-g font-semibold">
+          {secondaryBadge}
+        </span>
+      )}
+
+      {tags.map((tag) => (
+        <span
+          key={tag}
+          className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-neutral-300 text-tiny truncate max-w-[90px]"
+          title={tag}
+        >
+          #{tag}
+        </span>
+      ))}
+
+      {showEmptyDash && !secondaryBadge && tags.length === 0 && (
+        <span className="text-neutral-500 text-xs">−</span>
+      )}
+    </>
+  );
+}
+
+export const HistoryRow = memo(function HistoryRow({
   transaction,
   isCompact = false,
+  showTimeOnly = false,
   onClick,
-  onDelete,
-  taskTypeMap,
+  onRequestDelete,
 }: HistoryRowProps) {
-  const metadata = resolveTransactionMetadata(transaction, taskTypeMap);
+  const metadata = resolveTransactionMetadata(transaction);
   const IconComponent = metadata.icon;
 
   const gold = transaction.goldAmount ?? 0;
   const xp = transaction.xpAmount ?? 0;
   const priceSnapshot = transaction.priceSnapshot;
   const tags = transaction.tags || [];
+  const canDelete = Boolean(onRequestDelete && transaction.id);
+  const displayDateText = showTimeOnly
+    ? metadata.formattedTime
+    : metadata.formattedDate;
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (transaction.id && onDelete) {
-      onDelete(transaction.id);
-    }
+    onRequestDelete?.(transaction);
   };
 
   return (
@@ -33,15 +122,17 @@ export function HistoryRow({
     <div
       role="button"
       tabIndex={0}
-      onClick={onClick}
+      onClick={(e) =>
+        onClick?.(transaction, e.currentTarget.getBoundingClientRect())
+      }
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          onClick?.();
+          onClick?.(transaction, e.currentTarget.getBoundingClientRect());
         }
       }}
       className={cn(
-        "group w-full rounded-xl border transition-all cursor-pointer select-none text-left",
+        "group w-full rounded-xl border transition-colors cursor-pointer select-none text-left",
         "bg-primary-dark/20 border-primary/25 hover:border-primary-light/40 hover:bg-primary-dark/35 hover:shadow-xs",
         metadata.borderClass,
         "border-l-4",
@@ -70,44 +161,20 @@ export function HistoryRow({
               <span className="font-bold text-neutral-100 text-sm truncate">
                 {transaction.name || "Transação"}
               </span>
-              {metadata.isFocus && tags.length > 0 ? (
-                <span className="text-[11px] text-neutral-400 font-normal flex items-center gap-1">
-                  Duração:{" "}
-                  <span className="text-gold font-semibold">{tags[0]}</span>
-                </span>
-              ) : priceSnapshot != null && priceSnapshot > 0 ? (
-                <span className="text-[10px] text-neutral-400 font-normal">
-                  Preço tabela: {priceSnapshot} H
-                </span>
-              ) : null}
+              <TransactionSubtext
+                isFocus={metadata.isFocus}
+                firstTag={tags[0]}
+                priceSnapshot={priceSnapshot}
+              />
             </div>
           </div>
 
           {/* Moedas e XP */}
           <div className="flex flex-col items-end shrink-0 gap-0.5">
-            {gold > 0 ? (
-              <span className="text-emerald-400 font-bold text-sm flex items-center gap-1">
-                +{gold}
-                <span className="text-[9px] w-3.5 h-3.5 rounded-full bg-gold border border-orange-500 text-neutral-900 inline-flex items-center justify-center font-black">
-                  H
-                </span>
-              </span>
-            ) : gold < 0 ? (
-              <span className="text-red-400 font-bold text-sm flex items-center gap-1">
-                {gold}
-                <span className="text-[9px] w-3.5 h-3.5 rounded-full bg-gold border border-orange-500 text-neutral-900 inline-flex items-center justify-center font-black">
-                  H
-                </span>
-              </span>
-            ) : (
-              <span className="text-neutral-400 text-xs font-normal">0 H</span>
-            )}
-
-            {xp > 0 && (
-              <span className="text-magenta font-bold text-xs flex items-center gap-0.5">
-                +{xp} <span className="text-[10px] font-semibold">XP</span>
-              </span>
-            )}
+            {gold !== 0 || xp === 0 ? (
+              <CoinAmount amount={gold} size="sm" showZeroAsDash={xp === 0} />
+            ) : null}
+            {xp !== 0 && <XpAmount amount={xp} size="xs" />}
           </div>
         </div>
 
@@ -115,44 +182,26 @@ export function HistoryRow({
         <div className="flex items-center gap-1.5 flex-wrap pl-10 text-xs">
           <span
             className={cn(
-              "inline-flex items-center px-1.5 py-0.5 rounded-md border font-semibold text-[10px] truncate",
+              "inline-flex items-center px-1.5 py-0.5 rounded-md border font-semibold text-label-g truncate",
               metadata.badgeClass,
             )}
           >
             {metadata.label}
           </span>
 
-          {metadata.isFocus && tags.length > 0 ? (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-gold/15 border border-gold/30 text-gold text-[10px] font-bold">
-              <Timer size={10} className="shrink-0" />
-              {tags[0]}
-            </span>
-          ) : (
-            <>
-              {(metadata.difficultyLabel || metadata.packageLabel) && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/10 border border-white/15 text-neutral-200 text-[10px] font-semibold">
-                  {metadata.difficultyLabel || metadata.packageLabel}
-                </span>
-              )}
-              {tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-neutral-300 text-[9px] truncate max-w-[80px]"
-                >
-                  #{tag}
-                </span>
-              ))}
-            </>
-          )}
+          <TransactionMetaBadges metadata={metadata} tags={tags} />
         </div>
 
         {/* Linha Inferior: Data/Hora e Ação de Excluir */}
         <div className="flex items-center justify-between pt-1 border-t border-white/5 pl-10">
-          <span className="text-neutral-400 text-[11px] font-medium">
-            {metadata.formattedDate}
+          <span
+            className="text-neutral-400 text-label-g font-medium"
+            title={metadata.formattedDate}
+          >
+            {displayDateText}
           </span>
 
-          {onDelete && transaction.id && (
+          {canDelete && (
             <button
               type="button"
               onClick={handleDeleteClick}
@@ -181,16 +230,11 @@ export function HistoryRow({
           >
             {transaction.name || "Transação"}
           </span>
-          {metadata.isFocus && tags.length > 0 ? (
-            <span className="text-[11px] text-neutral-400 font-normal flex items-center gap-1">
-              Duração:{" "}
-              <span className="text-gold font-semibold">{tags[0]}</span>
-            </span>
-          ) : priceSnapshot != null && priceSnapshot > 0 ? (
-            <span className="text-[10px] text-neutral-400 font-normal">
-              Preço tabela: {priceSnapshot} H
-            </span>
-          ) : null}
+          <TransactionSubtext
+            isFocus={metadata.isFocus}
+            firstTag={tags[0]}
+            priceSnapshot={priceSnapshot}
+          />
         </div>
       </div>
 
@@ -199,7 +243,7 @@ export function HistoryRow({
         <span
           className={cn(
             "inline-flex items-center px-2 py-0.5 rounded-md border font-semibold truncate",
-            isCompact ? "text-[11px]" : "text-xs",
+            isCompact ? "text-label-g" : "text-xs",
             metadata.badgeClass,
           )}
         >
@@ -209,84 +253,45 @@ export function HistoryRow({
 
       {/* Col 3: Dificuldade / Tags */}
       <div className="hidden md:flex items-center gap-1 flex-wrap min-w-0">
-        {metadata.isFocus && tags.length > 0 ? (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gold/15 border border-gold/30 text-gold text-[11px] font-bold">
-            <Timer size={11} className="shrink-0" />
-            {tags[0]}
-          </span>
-        ) : (
-          <>
-            {(metadata.difficultyLabel || metadata.packageLabel) && (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/10 border border-white/15 text-neutral-200 text-[11px] font-semibold">
-                {metadata.difficultyLabel || metadata.packageLabel}
-              </span>
-            )}
-
-            {tags.map((tag) => (
-              <span
-                key={tag}
-                className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-neutral-300 text-[10px] truncate max-w-[90px]"
-                title={tag}
-              >
-                #{tag}
-              </span>
-            ))}
-
-            {!metadata.difficultyLabel &&
-              !metadata.packageLabel &&
-              tags.length === 0 && (
-                <span className="text-neutral-500 text-xs">-</span>
-              )}
-          </>
-        )}
+        <TransactionMetaBadges metadata={metadata} tags={tags} showEmptyDash />
       </div>
 
-      {/* Col 4: Moedas */}
-      <div className="hidden md:flex items-center gap-1 font-bold whitespace-nowrap">
-        {gold > 0 ? (
-          <span className="text-emerald-400 flex items-center gap-1">
-            +{gold}
-            <span className="text-[10px] w-3.5 h-3.5 rounded-full bg-gold border border-orange-500 text-neutral-900 inline-flex items-center justify-center font-bold">
-              H
-            </span>
-          </span>
-        ) : gold < 0 ? (
-          <span className="text-red-400 flex items-center gap-1">
-            {gold}
-            <span className="text-[10px] w-3.5 h-3.5 rounded-full bg-gold border border-orange-500 text-neutral-900 inline-flex items-center justify-center font-bold">
-              H
-            </span>
-          </span>
-        ) : (
-          <span className="text-neutral-400 font-normal">0 H</span>
-        )}
+      {/* Col 4: Moedas (padrão "−" quando 0) */}
+      <div className="hidden md:flex items-center">
+        <CoinAmount
+          amount={gold}
+          size={isCompact ? "xs" : "sm"}
+          showZeroAsDash
+        />
       </div>
 
-      {/* Col 5: XP */}
-      <div className="hidden md:flex items-center gap-1 whitespace-nowrap">
-        {xp > 0 ? (
-          <span className="text-magenta font-bold flex items-center gap-1">
-            +{xp} <span className="text-xs font-semibold">XP</span>
-          </span>
-        ) : (
-          <span className="text-neutral-500 text-xs">-</span>
-        )}
+      {/* Col 5: XP (padrão "−" quando 0) */}
+      <div className="hidden md:flex items-center">
+        <XpAmount
+          amount={xp}
+          size={isCompact ? "xs" : "sm"}
+          showSign={false}
+          showZeroAsDash
+        />
       </div>
 
       {/* Col 6: Data e Hora */}
-      <span className="hidden md:block text-right text-neutral-400 font-medium whitespace-nowrap text-xs">
-        {metadata.formattedDate}
+      <span
+        className="hidden md:block text-right text-neutral-400 font-medium whitespace-nowrap text-xs"
+        title={metadata.formattedDate}
+      >
+        {displayDateText}
       </span>
 
-      {/* Col 7: Ação de Excluir */}
+      {/* Col 7: Ação de Excluir (discreto no desktop, visível no hover/focus) */}
       <div className="hidden md:flex items-center justify-end">
-        {onDelete && transaction.id && (
+        {canDelete && (
           <button
             type="button"
             onClick={handleDeleteClick}
             title="Excluir registro do extrato"
             aria-label="Excluir registro do extrato"
-            className="text-neutral-500 hover:text-red-400 p-1 rounded-md hover:bg-red-500/10 transition-colors cursor-pointer"
+            className="text-neutral-500 hover:text-red-400 p-1 rounded-md hover:bg-red-500/10 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-all cursor-pointer"
           >
             <Trash2 size={13} />
           </button>
@@ -294,4 +299,4 @@ export function HistoryRow({
       </div>
     </div>
   );
-}
+});

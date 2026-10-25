@@ -33,4 +33,6 @@ public interface FocusRecordRepository {
 
   // Soma de minutos produtivos de foco no dia de hoje (excluindo itens de inventário)
   int sumFocusMinutesToday(UUID userId);
+
+  void deleteAllByUserId(UUID userId);
 }

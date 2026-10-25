@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { components } from "@/api/schema";
 import { SubscriptionExpirationAlert } from "@/components/subscription/SubscriptionExpirationAlert";
+import { CoinIcon } from "@/components/ui/CoinIcon";
 import { FounderBadge } from "@/components/ui/FounderBadge";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useUserStore } from "@/store/userStore";
@@ -105,9 +106,7 @@ export function SidebarUserProfile({
           className="flex items-center gap-1 shrink-0 max-w-[90px]"
           title={`${formatCoins(coins)} moedas`}
         >
-          <div className="w-3.5 h-3.5 rounded-full bg-gold border border-orange-500 flex items-center justify-center shadow-xs shrink-0">
-            <span className="text-[7px] text-neutral-900 font-bold">H</span>
-          </div>
+          <CoinIcon size={15} withGlow />
           <span className="text-body-s font-bold text-neutral-50 truncate">
             {formatCoins(coins, { compact: true })}
           </span>

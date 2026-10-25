@@ -1,5 +1,6 @@
 package com.habitparty.infrastructure.jobs;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 import org.slf4j.Logger;
@@ -28,11 +29,21 @@ public class TokenCleanupJob {
   public void cleanObsoleteTokens() {
     logger.info("Iniciando varredura de limpeza de tokens obsoletos...");
 
-    // Calcula exatamente o dia e horário de 1 mês atrás
+    Instant now = Instant.now();
+    // Calcula exatamente o dia e horário de 1 mês atrás para retenção de sessões revogadas
     LocalDateTime umMesAtras = LocalDateTime.now().minusMonths(1);
-    
-    tokenRepository.deleteObsoleteTokens(umMesAtras);
-    passwordResetTokenRepository.deleteObsoleteTokens(java.time.Instant.now());
+
+    try {
+      tokenRepository.deleteObsoleteTokens(now, umMesAtras);
+    } catch (Exception e) {
+      logger.error("Erro ao limpar refresh tokens obsoletos", e);
+    }
+
+    try {
+      passwordResetTokenRepository.deleteObsoleteTokens(now);
+    } catch (Exception e) {
+      logger.error("Erro ao limpar tokens de redefinição de senha obsoletos", e);
+    }
 
     logger.info("Varredura de tokens finalizada com sucesso!");
   }

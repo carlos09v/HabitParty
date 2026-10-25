@@ -1,5 +1,6 @@
 package com.habitparty.adapters.out.persistence;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -41,7 +42,7 @@ public class RefreshTokenAdapter implements RefreshTokenRepository {
 
   @Override
   public void revokeOldestSession(UUID userId) {
-    repository.findFirstByUser_IdAndRevokedFalseOrderByCreatedAtAsc(userId)
+    repository.findFirstByUser_IdAndRevokedFalseAndExpirationDateAfterOrderByCreatedAtAsc(userId, Instant.now())
         .ifPresent(oldestToken -> {
           oldestToken.setRevoked(true);
           repository.save(oldestToken);
@@ -49,7 +50,12 @@ public class RefreshTokenAdapter implements RefreshTokenRepository {
   }
 
   @Override
-public void deleteObsoleteTokens(LocalDateTime dataLimite) {
-    repository.deleteObsoleteTokens(dataLimite);
-}
+  public void deleteObsoleteTokens(Instant now, LocalDateTime revokedCutoff) {
+    repository.deleteObsoleteTokens(now, revokedCutoff);
+  }
+
+  @Override
+  public void deleteAllByUserId(UUID userId) {
+    repository.deleteAllByUserId(userId);
+  }
 }

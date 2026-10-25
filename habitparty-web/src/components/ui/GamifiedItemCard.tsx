@@ -3,11 +3,13 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Clock } from "lucide-react";
-import { type default as React, useState } from "react";
+import { memo, type default as React, useState } from "react";
 import { MysteryBoxTierPopover } from "@/components/reward/MysteryBoxTierPopover";
+import { CoinIcon } from "@/components/ui/CoinIcon";
 import {
+  getMysteryBoxTier,
   getRewardIcon,
-  MYSTERY_BOX_TIERS,
+  isMysteryBoxReward,
   PACKAGE_LEVEL_COLOR,
   PACKAGE_LEVEL_GLOW,
   PACKAGE_LEVEL_ICON_THEME,
@@ -43,11 +45,17 @@ export interface GamifiedItemCardProps {
   inUse?: boolean;
 }
 
+const RARITY_TOP_BAR: Partial<Record<PackageLevel, string>> = {
+  Lendário: "via-gold opacity-90",
+  Épico: "via-magenta opacity-90",
+  Premium: "via-info opacity-90",
+  Básico: "via-success-500 opacity-70",
+};
+
 /**
- * Card gamificado unificado para itens da Vitrine (Rewards) e da Mochila (Inventory).
- * Elimina centenas de linhas de duplicação entre RewardCard e InventoryCard.
+ * Card gamificado unificado e memoizado para itens da Vitrine (Rewards) e da Mochila (Inventory).
  */
-export function GamifiedItemCard({
+export const GamifiedItemCard = memo(function GamifiedItemCard({
   id,
   title,
   description,
@@ -71,20 +79,8 @@ export function GamifiedItemCard({
 }: GamifiedItemCardProps) {
   const typeMeta = REWARD_TYPE_META[type as RewardType];
   const RewardIcon = getRewardIcon(iconName, type);
-  const isMystery =
-    iconName === "mystery_box" ||
-    type === "MysteryBox" ||
-    type === "MISTERY_BOX";
-
-  const mysteryTier = isMystery
-    ? MYSTERY_BOX_TIERS.find(
-        (t) =>
-          t.id === packageLevel ||
-          t.backendPackageLevel === packageLevel ||
-          t.id.toLowerCase() === packageLevel?.toLowerCase() ||
-          t.backendPackageLevel === packageLevel?.toUpperCase(),
-      ) || MYSTERY_BOX_TIERS[0]
-    : null;
+  const isMystery = isMysteryBoxReward(type, iconName);
+  const mysteryTier = isMystery ? getMysteryBoxTier(packageLevel) : null;
 
   const [isHovered, setIsHovered] = useState(false);
   const [popoverPlacement, setPopoverPlacement] = useState<{
@@ -98,9 +94,7 @@ export function GamifiedItemCard({
       const spaceRight = window.innerWidth - rect.right;
       const spaceBelow = window.innerHeight - rect.top;
 
-      // Se houver menos de 310px à direita, abre à esquerda
       const side = spaceRight < 310 ? "left" : "right";
-      // Se estiver muito próximo do rodapé, alinha pela base
       const vertical = spaceBelow < 380 && rect.bottom > 380 ? "bottom" : "top";
 
       setPopoverPlacement({ side, vertical });
@@ -113,6 +107,9 @@ export function GamifiedItemCard({
     : undefined;
   const packageIconTheme = packageLevel
     ? PACKAGE_LEVEL_ICON_THEME[packageLevel as PackageLevel]
+    : undefined;
+  const topBarClass = packageLevel
+    ? RARITY_TOP_BAR[packageLevel as PackageLevel]
     : undefined;
 
   const {
@@ -131,6 +128,11 @@ export function GamifiedItemCard({
     transform: CSS.Translate.toString(transform),
     transition: isDragging ? undefined : transition,
   };
+
+  const isFocusNavigate =
+    inUse &&
+    (actionLabel === "Abrir no Foco" || actionLabel === "Ir para o Foco");
+  const isPrimaryDisabled = !canAfford || (inUse && !isFocusNavigate);
 
   return (
     <article
@@ -158,17 +160,13 @@ export function GamifiedItemCard({
       )}
     >
       {/* Detalhe de Raridade no Topo do Card */}
-      {packageLevel === "Lendário" && (
-        <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-gold to-transparent opacity-90 pointer-events-none" />
-      )}
-      {packageLevel === "Épico" && (
-        <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-magenta to-transparent opacity-90 pointer-events-none" />
-      )}
-      {packageLevel === "Premium" && (
-        <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-info to-transparent opacity-90 pointer-events-none" />
-      )}
-      {packageLevel === "Básico" && (
-        <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-success-500 to-transparent opacity-70 pointer-events-none" />
+      {topBarClass && (
+        <div
+          className={cn(
+            "absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent to-transparent pointer-events-none",
+            topBarClass,
+          )}
+        />
       )}
 
       {/* TOPO INTEGRADO: Ícone + Título/Descrição + Badges de Tipo/Quantidade */}
@@ -202,14 +200,7 @@ export function GamifiedItemCard({
 
               <div className="flex items-center gap-1 shrink-0">
                 {inUse && (
-                  <span
-                    className={cn(
-                      "inline-flex items-center gap-1 font-bold rounded border border-amber-500/40 bg-amber-500/15 text-amber-300",
-                      isCompact
-                        ? "text-[9px] px-1.5 py-0.5"
-                        : "text-[10px] px-1.5 py-0.5",
-                    )}
-                  >
+                  <span className="inline-flex items-center gap-1 font-bold rounded border border-amber-500/40 bg-amber-500/15 text-amber-300 text-tiny px-1.5 py-0.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                     Em Foco
                   </span>
@@ -218,10 +209,10 @@ export function GamifiedItemCard({
                 {typeof quantity === "number" && (
                   <span
                     className={cn(
-                      "font-bold bg-white/10 border border-white/20 text-neutral-100",
+                      "font-bold bg-white/10 border border-white/20 text-neutral-100 px-1.5 py-0.5",
                       isCompact
-                        ? "text-[10px] px-1.5 py-0.5 rounded"
-                        : "text-[11px] px-1.5 py-0.5 rounded-md",
+                        ? "text-tiny rounded"
+                        : "text-label-g rounded-md",
                     )}
                   >
                     {quantity}x
@@ -230,10 +221,8 @@ export function GamifiedItemCard({
 
                 <span
                   className={cn(
-                    "inline-flex items-center gap-1 border font-medium leading-none shrink-0",
-                    isCompact
-                      ? "text-[10px] px-1.5 py-0.5 rounded"
-                      : "text-[10px] px-1.5 py-0.5 rounded-md",
+                    "inline-flex items-center gap-1 border font-medium leading-none shrink-0 text-tiny px-1.5 py-0.5",
+                    isCompact ? "rounded" : "rounded-md",
                     typeMeta?.color ||
                       "text-neutral-200 bg-white/10 border-white/20",
                   )}
@@ -254,7 +243,7 @@ export function GamifiedItemCard({
               <p
                 className={cn(
                   "text-neutral-400 truncate leading-tight",
-                  isCompact ? "text-[11px]" : "text-xs",
+                  isCompact ? "text-label-g" : "text-xs",
                 )}
               >
                 {description}
@@ -263,7 +252,7 @@ export function GamifiedItemCard({
               <p
                 className={cn(
                   "text-neutral-500 italic truncate leading-tight",
-                  isCompact ? "text-[11px]" : "text-xs",
+                  isCompact ? "text-label-g" : "text-xs",
                 )}
               >
                 {type === "TimeBased"
@@ -283,7 +272,7 @@ export function GamifiedItemCard({
               <span
                 className={cn(
                   "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border font-bold tracking-tight leading-none",
-                  isCompact ? "text-[10px]" : "text-[11px]",
+                  isCompact ? "text-tiny" : "text-label-g",
                   remainingSeconds <= 1
                     ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
                     : "bg-gold/15 border-gold/40 text-gold shadow-glow-gold-xs",
@@ -302,7 +291,7 @@ export function GamifiedItemCard({
               <span
                 className={cn(
                   "inline-flex items-center gap-1 px-2 py-0.5 rounded-md border font-extrabold tracking-tight leading-none bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.12)]",
-                  isCompact ? "text-[10px]" : "text-[11px]",
+                  isCompact ? "text-tiny" : "text-label-g",
                 )}
                 title={`Duração do cupom: ${baseDurationMinutes} minutos`}
               >
@@ -325,7 +314,7 @@ export function GamifiedItemCard({
           ) && (
             <span
               className={cn(
-                "font-semibold rounded border text-[10px] px-1.5 py-0.5 leading-none",
+                "font-semibold rounded border text-tiny px-1.5 py-0.5 leading-none",
                 PACKAGE_LEVEL_COLOR[packageLevel as PackageLevel] ||
                   "text-neutral-300 bg-white/10 border-white/15",
               )}
@@ -336,34 +325,25 @@ export function GamifiedItemCard({
           {Boolean(
             category && category !== "Nenhum" && category !== "NONE",
           ) && (
-            <span className="font-medium rounded bg-white/8 border border-white/10 text-neutral-300 text-[10px] px-1.5 py-0.5 leading-none">
+            <span className="font-medium rounded bg-white/8 border border-white/10 text-neutral-300 text-tiny px-1.5 py-0.5 leading-none">
               {category}
             </span>
           )}
         </div>
       </div>
 
-      {/* BASE: Preço (na Loja) ou Status + Botões de Ação (sem colisão com o tempo) */}
+      {/* BASE: Preço (na Loja) ou Status + Botões de Ação */}
       <footer className="flex items-center justify-between pt-2.5 border-t border-white/10 w-full gap-2">
         <div className="flex items-center min-w-0">
           {typeof price === "number" ? (
             <div className="flex items-center gap-1.5 bg-gold/10 border border-gold/25 px-2.5 py-1 rounded-lg">
-              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-yellow-300 to-amber-500 border border-yellow-200/60 flex items-center justify-center shrink-0 shadow-glow-gold-xs">
-                <span className="text-[9px] text-neutral-950 font-black leading-none">
-                  H
-                </span>
-              </div>
+              <CoinIcon size={15} withGlow />
               <span className="text-xs font-extrabold text-neutral-100">
                 {formatCoins(price)}
               </span>
             </div>
           ) : !(secondaryActionLabel && onSecondaryAction) ? (
-            <span
-              className={cn(
-                "text-neutral-400 font-medium truncate",
-                isCompact ? "text-[10px]" : "text-tiny",
-              )}
-            >
+            <span className="text-neutral-400 font-medium truncate text-tiny">
               {inUse
                 ? "Sessão ativa"
                 : isMystery
@@ -405,48 +385,36 @@ export function GamifiedItemCard({
             </button>
           )}
 
-          {(() => {
-            const isFocusNavigate =
-              inUse &&
-              (actionLabel === "Abrir no Foco" ||
-                actionLabel === "Ir para o Foco");
-            const isDisabled = !canAfford || (inUse && !isFocusNavigate);
-
-            return (
-              <button
-                type="button"
-                onClick={onAction}
-                disabled={isDisabled}
-                aria-label={`${actionLabel} ${title}`}
-                title={
-                  isFocusNavigate
-                    ? "Abrir a tela de Foco com esta sessão ativa"
-                    : inUse
-                      ? "Item em uso no Focus"
-                      : !canAfford
-                        ? "Moedas insuficientes"
-                        : `${actionLabel} por ${price ? `${price} moedas` : title}`
-                }
-                className={cn(
-                  "rounded-lg font-bold transition-all shadow-xs",
-                  typeof price !== "number" &&
-                    secondaryActionLabel &&
-                    onSecondaryAction &&
-                    "flex-1 sm:flex-initial text-center",
-                  isFocusNavigate
-                    ? "bg-gold hover:bg-gold-hover text-neutral-900 border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95"
-                    : canAfford && !inUse
-                      ? "bg-warning-500 hover:bg-warning-400 focus:outline-none focus:ring-2 focus:ring-warning-300 focus:ring-offset-1 focus:ring-offset-surface active:scale-95 text-neutral-900 cursor-pointer"
-                      : "bg-white/10 text-neutral-400 border border-white/10 cursor-not-allowed opacity-60",
-                  isCompact
-                    ? "px-2.5 py-1 text-label-g"
-                    : "px-3.5 py-1.5 text-xs",
-                )}
-              >
-                {actionLabel}
-              </button>
-            );
-          })()}
+          <button
+            type="button"
+            onClick={onAction}
+            disabled={isPrimaryDisabled}
+            aria-label={`${actionLabel} ${title}`}
+            title={
+              isFocusNavigate
+                ? "Abrir a tela de Foco com esta sessão ativa"
+                : inUse
+                  ? "Item em uso no Focus"
+                  : !canAfford
+                    ? "Moedas insuficientes"
+                    : `${actionLabel} por ${price ? `${price} moedas` : title}`
+            }
+            className={cn(
+              "rounded-lg font-bold transition-all shadow-xs",
+              typeof price !== "number" &&
+                secondaryActionLabel &&
+                onSecondaryAction &&
+                "flex-1 sm:flex-initial text-center",
+              isFocusNavigate
+                ? "bg-gold hover:bg-gold-hover text-neutral-900 border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95"
+                : canAfford && !inUse
+                  ? "bg-warning-500 hover:bg-warning-400 focus:outline-none focus:ring-2 focus:ring-warning-300 focus:ring-offset-1 focus:ring-offset-surface active:scale-95 text-neutral-900 cursor-pointer"
+                  : "bg-white/10 text-neutral-400 border border-white/10 cursor-not-allowed opacity-60",
+              isCompact ? "px-2.5 py-1 text-label-g" : "px-3.5 py-1.5 text-xs",
+            )}
+          >
+            {actionLabel}
+          </button>
         </div>
       </footer>
 
@@ -468,4 +436,4 @@ export function GamifiedItemCard({
       )}
     </article>
   );
-}
+});

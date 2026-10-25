@@ -1,5 +1,3 @@
-"use client";
-
 import { Check, Flame, Pencil, X } from "lucide-react";
 import type { Task, TaskPriorityOption } from "@/types/task";
 import { cn } from "@/utils";

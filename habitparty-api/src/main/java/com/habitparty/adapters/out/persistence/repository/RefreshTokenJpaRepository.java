@@ -1,5 +1,6 @@
 package com.habitparty.adapters.out.persistence.repository;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,11 +19,19 @@ public interface RefreshTokenJpaRepository extends JpaRepository<RefreshTokenJpa
   @Query("SELECT COUNT(r) FROM RefreshTokenJpaEntity r WHERE r.user.id = :userId AND r.revoked = false AND r.expirationDate > CURRENT_TIMESTAMP")
   int countActiveTokensByUserId(@Param("userId") UUID userId);
 
-  // Encontra a sessão ativa mais antiga do usuário
-  Optional<RefreshTokenJpaEntity> findFirstByUser_IdAndRevokedFalseOrderByCreatedAtAsc(UUID userId);
+  // Encontra a sessão ativa (não revogada e ainda não expirada) mais antiga do usuário
+  Optional<RefreshTokenJpaEntity> findFirstByUser_IdAndRevokedFalseAndExpirationDateAfterOrderByCreatedAtAsc(
+      UUID userId,
+      Instant now);
 
   @Modifying
   @Transactional
-  @Query("DELETE FROM RefreshTokenJpaEntity r WHERE r.expirationDate < :dataLimite OR (r.revoked = true AND r.createdAt < :dataLimite)")
-  void deleteObsoleteTokens(@Param("dataLimite") LocalDateTime dataLimite);
+  @Query("DELETE FROM RefreshTokenJpaEntity r WHERE r.expirationDate < :now OR (r.revoked = true AND r.createdAt < :revokedCutoff)")
+  void deleteObsoleteTokens(
+      @Param("now") Instant now,
+      @Param("revokedCutoff") LocalDateTime revokedCutoff);
+
+  @Modifying
+  @Query("DELETE FROM RefreshTokenJpaEntity r WHERE r.user.id = :userId")
+  void deleteAllByUserId(@Param("userId") UUID userId);
 }

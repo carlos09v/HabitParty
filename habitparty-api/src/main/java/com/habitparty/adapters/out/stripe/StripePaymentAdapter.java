@@ -326,13 +326,24 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
     }
 
     return switch (event.getType()) {
-      case "checkout.session.completed" -> mapCheckoutSession(event.getId(), (Session) stripeObject);
+      case "checkout.session.completed", "checkout.session.async_payment_succeeded" ->
+          mapPaidCheckoutSessionOrIgnore(event.getId(), event.getType(), (Session) stripeObject);
       case "customer.subscription.created", "customer.subscription.updated" ->
           mapSubscriptionUpdated(event.getId(), (Subscription) stripeObject);
       case "customer.subscription.deleted" ->
           mapSubscriptionDeleted(event.getId(), (Subscription) stripeObject);
       default -> new PaymentWebhookEvent.IgnoredEvent(event.getId(), event.getType());
     };
+  }
+
+  private PaymentWebhookEvent mapPaidCheckoutSessionOrIgnore(String eventId, String eventType, Session session) {
+    String paymentStatus = session.getPaymentStatus();
+    if (!"paid".equalsIgnoreCase(paymentStatus) && !"no_payment_required".equalsIgnoreCase(paymentStatus)) {
+      log.info("Sessão de checkout {} recebida no evento {} com payment_status='{}'. Aguardando liquidação efetiva.",
+          session.getId(), eventType, paymentStatus);
+      return new PaymentWebhookEvent.IgnoredEvent(eventId, eventType);
+    }
+    return mapCheckoutSession(eventId, session);
   }
 
   private PaymentWebhookEvent mapCheckoutSession(String eventId, Session session) {

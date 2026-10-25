@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
-  deleteBoardColumnAction,
-  updateBoardColumnOrderAction,
+  deleteBoardColumn,
+  updateBoardColumnOrder,
 } from "@/actions/boardColumnActions";
 import {
   MAX_COLUMNS_PREMIUM,
@@ -219,7 +219,7 @@ export function useRoutineColumns(
     async (column: BoardColumn) => {
       setIsDeletingColumn(true);
       try {
-        const res = await deleteBoardColumnAction(column.id);
+        const res = await deleteBoardColumn(column.id);
         if (!res.success) {
           toast.error(res.error || "Erro ao excluir coluna no servidor.");
           return false;
@@ -252,7 +252,7 @@ export function useRoutineColumns(
       }));
 
       startTransition(async () => {
-        const res = await updateBoardColumnOrderAction(workspaceId, payload);
+        const res = await updateBoardColumnOrder(workspaceId, payload);
         if (!res.success) {
           toast.error(
             res.error || "Erro ao salvar ordem das colunas no servidor.",

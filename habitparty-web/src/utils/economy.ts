@@ -451,3 +451,63 @@ export function calculateTaskPenalty(task: TaskRewardCalculationInput): {
   );
   return { xp: penaltyXp, gold: penaltyGold };
 }
+
+/**
+ * Converte o detalhamento de ganhos de uma tarefa no contrato unificado `RewardEstimate`.
+ */
+export function toTaskRewardEstimate(
+  breakdown: TaskRewardBreakdown,
+  options?: { isHardcore?: boolean; taskType?: string },
+): import("@/types/reward").RewardEstimate {
+  const notices: import("@/types/reward").RewardEstimateNotice[] = [];
+
+  if (breakdown.hasDecay) {
+    notices.push({
+      tone: "info",
+      title: `${breakdown.stageLabel} (-${breakdown.decayPercentage}%)`,
+      message: breakdown.explanation,
+    });
+  } else if (options?.taskType !== "TODO") {
+    notices.push({
+      tone: "info",
+      title: "Base 100%",
+      message:
+        "Recompensa integral no início. Ao consolidar o hábito/rotina (7 e 21 dias), o ganho ajusta gradualmente para 75% e 50%.",
+    });
+  }
+
+  if (options?.isHardcore) {
+    notices.push({
+      tone: "warning",
+      title: "Modo Hardcore Ativo",
+      message: "Falhas ou atrasos aplicam penalidade de -50% sobre os ganhos.",
+    });
+  }
+
+  const breakdownItems: import("@/types/reward").RewardEstimateBreakdownItem[] =
+    [
+      {
+        label: "Recompensa Base",
+        value: `+${formatCoins(breakdown.baseReward.gold)} 🪙 / +${breakdown.baseReward.xp} XP`,
+      },
+      ...(breakdown.hasDecay
+        ? [
+            {
+              label: "Ajuste de Hábito",
+              value: `-${breakdown.decayPercentage}% (${breakdown.stageLabel})`,
+            },
+          ]
+        : []),
+    ];
+
+  return {
+    gold: breakdown.finalReward.gold,
+    xp: breakdown.finalReward.xp,
+    status: breakdown.hasDecay ? "reduced" : "full",
+    stageLabel: breakdown.hasDecay
+      ? `${breakdown.stageLabel} (-${breakdown.decayPercentage}%)`
+      : undefined,
+    notices,
+    breakdown: breakdownItems,
+  };
+}

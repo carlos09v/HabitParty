@@ -25,6 +25,7 @@ import type {
   TaskType,
   TaskTypeOption,
 } from "@/types/task";
+import type { UseCreateTaskFormOptions } from "@/types/task-ui";
 import { getTodayDateString } from "@/utils/date";
 import { calculateTaskReward } from "@/utils/economy";
 import { soundEffects } from "@/utils/soundEffects";
@@ -36,16 +37,7 @@ import {
 } from "@/utils/taskMapper";
 import { validateHardcoreTodo } from "@/utils/validators";
 
-export interface UseCreateTaskFormOptions {
-  isOpen: boolean;
-  columns: { id: string; title: string }[];
-  defaultColumnId?: string;
-  defaultTaskType?: TaskTypeOption;
-  initialTitle?: string;
-  taskToEdit?: Task | null;
-  onSuccess?: (task: Task, columnId: string) => void;
-  onClose: () => void;
-}
+export type { UseCreateTaskFormOptions };
 
 export function useCreateTaskForm({
   isOpen,

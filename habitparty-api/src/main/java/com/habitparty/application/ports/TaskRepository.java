@@ -45,6 +45,10 @@ public interface TaskRepository {
   // Cascata do boardColumn
   void deleteAllByBoardColumnId(UUID boardColumnId);
 
+  void deleteAllByBoardColumnIds(List<UUID> boardColumnIds);
+
+  void deleteAllByUserId(UUID userId);
+
   Page<DashboardTaskDTO> findDashboardTasks(UUID workspaceId, String filter, LocalDate today, Pageable pageable);
 
   // ChecklistItem

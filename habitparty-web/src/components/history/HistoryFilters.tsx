@@ -91,7 +91,11 @@ export function HistoryFilters({
 
   const handleExportCsv = () => {
     startExport(async () => {
-      const res = await exportTransactionsCsvAction();
+      const res = await exportTransactionsCsvAction({
+        tab: currentTab,
+        period: currentPeriod,
+        search: searchInput.trim() || currentSearch,
+      });
       if (!res.success) {
         toast.error(res.error || "Erro ao exportar extrato.");
         return;
@@ -100,7 +104,18 @@ export function HistoryFilters({
       if (res.data) {
         try {
           const dateStr = new Date().toISOString().split("T")[0];
-          downloadBlob(res.data, `meu_extrato_${dateStr}.csv`);
+          const tabSuffix =
+            currentTab && currentTab !== "ALL"
+              ? `_${currentTab.toLowerCase()}`
+              : "";
+          const periodSuffix =
+            currentPeriod && currentPeriod !== "ALL"
+              ? `_${currentPeriod.toLowerCase()}`
+              : "";
+          downloadBlob(
+            res.data,
+            `meu_extrato${tabSuffix}${periodSuffix}_${dateStr}.csv`,
+          );
           toast.success("Extrato exportado com sucesso em CSV!");
         } catch {
           toast.error("Falha ao salvar o arquivo CSV.");

@@ -1,14 +1,22 @@
 "use client";
 
 import { Check, Crown, Lock, Sparkles } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { UpgradePremiumModal } from "@/components/subscription/UpgradePremiumModal";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { AVATAR_FRAMES, type AvatarFrameId } from "@/constants/avatarFrames";
 import { useAvatarFrameStore } from "@/store/avatarFrameStore";
 import { useUserStore } from "@/store/userStore";
 import { cn } from "@/utils";
+
+const UpgradePremiumModal = dynamic(
+  () =>
+    import("@/components/subscription/UpgradePremiumModal").then(
+      (mod) => mod.UpgradePremiumModal,
+    ),
+  { ssr: false },
+);
 
 interface AvatarFrameSettingsProps {
   isCompact?: boolean;
@@ -158,10 +166,12 @@ export function AvatarFrameSettings({
         </div>
       </div>
 
-      <UpgradePremiumModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-      />
+      {isUpgradeModalOpen && (
+        <UpgradePremiumModal
+          isOpen={isUpgradeModalOpen}
+          onClose={() => setIsUpgradeModalOpen(false)}
+        />
+      )}
     </>
   );
 }

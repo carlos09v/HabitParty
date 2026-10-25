@@ -7,6 +7,10 @@ import type {
   TaskTypeOption,
 } from "./task";
 
+export type BoardAlignment = "left" | "center" | "right";
+export type ColumnWidthPreset = "compact" | "normal" | "wide";
+export type FormatSyntax = "bold" | "italic" | "highlight" | "bullet" | "code";
+
 export interface TaskRowProps {
   task: Task;
   isCompact?: boolean;
@@ -19,11 +23,8 @@ export interface TaskRowProps {
   onToggle?: (id: string, completed: boolean) => void;
   onToggleCompleted?: (id: string, completed: boolean) => void;
   onHabitChange?: (id: string, delta: number) => void;
-  onDelete?: (task: Task) => void;
-  onEdit?: (task: Task) => void;
-  onDuplicate?: (task: Task) => void;
   onContextMenu?: (e: React.MouseEvent, task: Task, columnId?: string) => void;
-  onOpenDetails?: (task: Task, anchorRect?: DOMRect) => void;
+  onOpenDetails?: (task: Task, anchorRect?: DOMRect, columnId?: string) => void;
 }
 
 export interface TaskDetailsPopoverProps {
@@ -39,6 +40,15 @@ export interface TaskDetailsPopoverProps {
   onDuplicate?: (task: Task) => void;
 }
 
+export interface TaskDetailsFooterProps {
+  task?: Task;
+  columnTitle?: string;
+  onApplyFormat?: (syntax: FormatSyntax) => void;
+  onDeleteTask: () => void;
+  onDuplicateTask?: () => void;
+  onOpenEdit?: () => void;
+}
+
 export interface RoutineFilterPopoverProps {
   filters?: BoardFilterState;
   onFilterChange?: (filters: BoardFilterState) => void;
@@ -46,14 +56,105 @@ export interface RoutineFilterPopoverProps {
   isCompact?: boolean;
 }
 
-export interface FocusModeToggleProps {
-  focusMode: boolean;
-  onToggleFocusMode?: () => void;
+export interface BoardAlignmentSelectorProps {
+  value: BoardAlignment;
+  onChange: (align: BoardAlignment) => void;
+  isCompact?: boolean;
+  className?: string;
+}
+
+export interface TasksBoardContainerProps {
+  initialColumns: BoardColumn[];
+  initialVisibleColumnIds?: string[];
+  initialOpenCreateColumn?: boolean;
+  targetColumnId?: string;
+  isPremium?: boolean;
+  workspaceId?: string | null;
   isCompact?: boolean;
 }
 
-export type BoardAlignment = "left" | "center" | "right";
-export type ColumnWidthPreset = "compact" | "normal" | "wide";
+export interface TasksBoardModalsProps {
+  columns: BoardColumn[];
+  formColumns: { id: string; title: string }[];
+  visibleColumnIds: string[];
+  maxColumns: number;
+  isPremium: boolean;
+  columnModalState: { isOpen: boolean; columnToEdit?: BoardColumn | null };
+  closeColumnModal: () => void;
+  setColumnModalState: Dispatch<
+    SetStateAction<{ isOpen: boolean; columnToEdit?: BoardColumn | null }>
+  >;
+  handleColumnSaved: (col: BoardColumn, isEdit?: boolean) => void;
+  taskModalState: {
+    isOpen: boolean;
+    columnId?: string;
+    defaultTaskType?: TaskTypeOption;
+    initialTitle?: string;
+    taskToEdit?: Task | null;
+  };
+  setTaskModalState: Dispatch<
+    SetStateAction<{
+      isOpen: boolean;
+      columnId?: string;
+      defaultTaskType?: TaskTypeOption;
+      initialTitle?: string;
+      taskToEdit?: Task | null;
+    }>
+  >;
+  handleTaskSaved: (task: Task, columnId: string) => void;
+  selectedTaskDetails: {
+    task: Task;
+    columnId: string;
+    anchorRect?: DOMRect | null;
+  } | null;
+  setSelectedTaskDetails: Dispatch<
+    SetStateAction<{
+      task: Task;
+      columnId: string;
+      anchorRect?: DOMRect | null;
+    } | null>
+  >;
+  contextMenu: {
+    isOpen: boolean;
+    position: { x: number; y: number };
+    task: Task | null;
+    columnId: string | null;
+  };
+  setContextMenu: Dispatch<
+    SetStateAction<{
+      isOpen: boolean;
+      position: { x: number; y: number };
+      task: Task | null;
+      columnId: string | null;
+    }>
+  >;
+  columnContextMenu: {
+    isOpen: boolean;
+    position: { x: number; y: number };
+    column: BoardColumn | null;
+  };
+  setColumnContextMenu: Dispatch<
+    SetStateAction<{
+      isOpen: boolean;
+      position: { x: number; y: number };
+      column: BoardColumn | null;
+    }>
+  >;
+  columnToDelete: BoardColumn | null;
+  setColumnToDelete: (col: BoardColumn | null) => void;
+  isDeletingColumn: boolean;
+  handleDeleteColumn: (col: BoardColumn) => Promise<boolean>;
+  handleDuplicateTask: (task: Task, columnId: string) => void;
+  handleDeleteTask: (task: Task, columnId: string) => void;
+  handleTaskDetailsUpdate: (task: Task) => void;
+  handleToggleComplete: (taskId: string, completed: boolean) => void;
+  isColumnsDrawerOpen: boolean;
+  setIsColumnsDrawerOpen: (open: boolean) => void;
+  toggleColumnVisibility: (id: string) => void;
+  showAllColumns: () => void;
+  columnWidths?: Record<string, ColumnWidthPreset>;
+  onColumnWidthChange?: (columnId: string, width: ColumnWidthPreset) => void;
+}
 
 export interface RoutineBoardProps {
   columns: BoardColumn[];
@@ -119,6 +220,118 @@ export interface RoutineColumnProps {
   isOverlay?: boolean;
 }
 
+export interface RoutineTaskListProps {
+  columns: BoardColumn[];
+  setColumns: Dispatch<SetStateAction<BoardColumn[]>>;
+  visibleColumnIds: string[];
+  selectedColumnId?: string | null;
+  isCompact?: boolean;
+  onAddTaskToColumn: (
+    columnId: string,
+    initialType?: TaskTypeOption,
+    initialTitle?: string,
+  ) => void;
+  onOpenDetails: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
+  onContextMenu: (e: React.MouseEvent, task: Task, columnId: string) => void;
+  onTaskMove?: (
+    taskId: string,
+    targetColumnId: string,
+    newOrderIndex: number,
+    allTargetTasks?: Task[],
+  ) => void;
+  onColumnReorder?: (reorderedColumns: BoardColumn[]) => void;
+  onToggleComplete: (taskId: string, completed: boolean) => void;
+  onHabitChange: (taskId: string, delta: number) => void;
+  dndState?: {
+    sensors: ReturnType<typeof import("@dnd-kit/core").useSensors>;
+    activeColumn: BoardColumn | null;
+    activeTask: Task | null;
+    collisionDetection: import("@dnd-kit/core").CollisionDetection;
+    handlers: {
+      onDragStart: (event: import("@dnd-kit/core").DragStartEvent) => void;
+      onDragOver: (event: import("@dnd-kit/core").DragOverEvent) => void;
+      onDragEnd: (event: import("@dnd-kit/core").DragEndEvent) => void;
+      onDragCancel: () => void;
+    };
+  };
+}
+
+export interface RoutineTaskListSectionProps {
+  column: BoardColumn;
+  isCompact: boolean;
+  selectedColumnId?: string | null;
+  onAddTaskToColumn: (
+    columnId: string,
+    initialType?: TaskTypeOption,
+    initialTitle?: string,
+  ) => void;
+  onOpenDetails: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
+  onContextMenu: (e: React.MouseEvent, task: Task, columnId: string) => void;
+  onToggleComplete: (taskId: string, completed: boolean) => void;
+  onHabitChange: (taskId: string, delta: number) => void;
+}
+
+export interface RoutineQuickAddFormProps {
+  columnId: string;
+  isCompact?: boolean;
+  isColumnCompact?: boolean;
+  onClose: () => void;
+  onQuickCreateTask?: (
+    title: string,
+    columnId: string,
+    type: TaskTypeOption,
+    extraPayload?: Partial<CreateTaskDTO>,
+  ) => Promise<void> | void;
+  onOpenDetailedForm?: (
+    columnId: string,
+    type: TaskTypeOption,
+    title: string,
+  ) => void;
+}
+
+export interface RoutineColumnsDrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  columns: BoardColumn[];
+  visibleColumnIds: string[];
+  maxColumns: number;
+  isPremium: boolean;
+  onToggleVisibility: (columnId: string) => void;
+  onShowAll: () => void;
+  onOpenCreateColumn: () => void;
+  onEditColumn: (column: BoardColumn) => void;
+  onDeleteColumn: (column: BoardColumn) => void;
+}
+
+export interface CreateBoardColumnModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  columnToEdit?: BoardColumn | null;
+  onSuccess?: (column: BoardColumn, isEdit?: boolean) => void;
+}
+
+export interface CreateTaskModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  columns: { id: string; title: string }[];
+  defaultColumnId?: string;
+  defaultTaskType?: TaskTypeOption;
+  initialTitle?: string;
+  taskToEdit?: Task | null;
+  onSuccess?: (task: Task, columnId: string) => void;
+}
+
+export interface UseCreateTaskFormOptions {
+  isOpen: boolean;
+  columns: { id: string; title: string }[];
+  defaultColumnId?: string;
+  defaultTaskType?: TaskTypeOption;
+  initialTitle?: string;
+  taskToEdit?: Task | null;
+  onSuccess?: (task: Task, columnId: string) => void;
+  onClose: () => void;
+}
+
 export interface RoutineFiltersProps {
   search?: string;
   onSearch?: (query: string) => void;
@@ -128,8 +341,6 @@ export interface RoutineFiltersProps {
   };
   filters?: BoardFilterState;
   onFilterChange?: (filters: BoardFilterState) => void;
-  focusMode?: boolean;
-  onToggleFocusMode?: () => void;
   alignment?: BoardAlignment;
   onAlignmentChange?: (alignment: BoardAlignment) => void;
   availableTags?: string[];
@@ -142,6 +353,7 @@ export interface RoutineFiltersProps {
   onOpenColumnsDrawer?: () => void;
   isDraggingColumn?: boolean;
   enableDroppable?: boolean;
+  isCompact?: boolean;
 }
 
 export interface RoutineTaskCardProps {

@@ -8,7 +8,6 @@ import { useCompactMode } from "@/hooks/useCompactMode";
 import type { RoutineFiltersProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 import { BoardAlignmentSelector } from "./filters/BoardAlignmentSelector";
-import { FocusModeToggle } from "./filters/FocusModeToggle";
 import { RoutineFilterPopover } from "./filters/RoutineFilterPopover";
 
 interface StoreColumnButtonUIProps {
@@ -101,8 +100,6 @@ export function RoutineFilters({
     tag: null,
   },
   onFilterChange,
-  focusMode = false,
-  onToggleFocusMode,
   alignment = "left",
   onAlignmentChange,
   availableTags = [],
@@ -115,8 +112,9 @@ export function RoutineFilters({
   onOpenColumnsDrawer,
   isDraggingColumn = false,
   enableDroppable = false,
+  isCompact: propIsCompact,
 }: RoutineFiltersProps) {
-  const { isCompact } = useCompactMode();
+  const { isCompact } = useCompactMode(propIsCompact);
 
   const leftActions = (
     <>
@@ -124,12 +122,6 @@ export function RoutineFilters({
         filters={filters}
         onFilterChange={onFilterChange}
         availableTags={availableTags}
-        isCompact={isCompact}
-      />
-
-      <FocusModeToggle
-        focusMode={focusMode}
-        onToggleFocusMode={onToggleFocusMode}
         isCompact={isCompact}
       />
 

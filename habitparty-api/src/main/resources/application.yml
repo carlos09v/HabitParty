@@ -33,9 +33,9 @@ stripe:
   webhook:
     secret: ${STRIPE_WEBHOOK_SECRET:}
   success:
-    url: ${APP_FRONTEND_URL:http://localhost:3000}/dashboard?payment=success
+    url: ${STRIPE_SUCCESS_URL:${APP_FRONTEND_URL:http://localhost:3000}/dashboard?payment=success&session_id={CHECKOUT_SESSION_ID}}
   cancel:
-    url: ${APP_FRONTEND_URL:http://localhost:3000}/dashboard?payment=cancel
+    url: ${STRIPE_CANCEL_URL:${APP_FRONTEND_URL:http://localhost:3000}/dashboard?payment=cancel}
   prices:
     monthly: ${STRIPE_MONTHLY_PRICE_ID:${STRIPE_PRICE_MONTHLY_ID:}}
     annual: ${STRIPE_ANNUAL_PRICE_ID:${STRIPE_PRICE_ANNUAL_ID:}}
@@ -54,4 +54,6 @@ resend:
 
 app:
   frontend-url: ${APP_FRONTEND_URL:http://localhost:3000}
+  storage:
+    upload-dir: ${APP_STORAGE_UPLOAD_DIR:uploads}
 

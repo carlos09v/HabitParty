@@ -3,9 +3,9 @@
 import { useCallback, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
-  addChecklistItemAction,
-  deleteChecklistItemAction,
-  toggleChecklistItemAction,
+  addChecklistItem,
+  deleteChecklistItem,
+  toggleChecklistItem,
 } from "@/actions/checklistActions";
 import type { ChecklistItem } from "@/types/task";
 
@@ -60,7 +60,7 @@ export function useChecklist({
 
       if (taskId && !taskId.startsWith("temp-")) {
         startTransition(async () => {
-          const res = await addChecklistItemAction(taskId, { name: trimmed });
+          const res = await addChecklistItem(taskId, { name: trimmed });
           if (!res.success) {
             toast.error(res.error || "Erro ao adicionar item ao checklist.");
             const rolledBack = checklistRef.current.filter(
@@ -91,7 +91,7 @@ export function useChecklist({
 
       if (taskId && !itemId.startsWith("temp-")) {
         startTransition(async () => {
-          const res = await toggleChecklistItemAction(itemId);
+          const res = await toggleChecklistItem(itemId);
           if (!res.success) {
             toast.error(res.error || "Erro ao atualizar item do checklist.");
             updateList(previous);
@@ -112,7 +112,7 @@ export function useChecklist({
 
       if (taskId && !itemId.startsWith("temp-")) {
         startTransition(async () => {
-          const res = await deleteChecklistItemAction(itemId);
+          const res = await deleteChecklistItem(itemId);
           if (!res.success) {
             toast.error(res.error || "Erro ao remover item do checklist.");
             updateList(previous);

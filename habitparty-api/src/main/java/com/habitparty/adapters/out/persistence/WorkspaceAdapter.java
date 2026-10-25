@@ -62,4 +62,9 @@ public class WorkspaceAdapter implements WorkspaceRepository {
     return workspaceRepository.findById(id)
             .map(entity -> workspaceMapper.toDomain(entity));
   }
+
+  @Override
+  public void deleteAllByUserId(UUID userId) {
+    workspaceRepository.deleteAllByUserId(userId);
+  }
 }

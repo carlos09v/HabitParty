@@ -2,7 +2,6 @@
 
 import { Timer } from "lucide-react";
 import dynamic from "next/dynamic";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
@@ -72,9 +71,6 @@ export function FocusMain({
   isCompact = false,
   onChangeMode,
 }: FocusMainProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const controls = useFocusTimerControls();
 
   const { isActive, isPaused, target } = controls;
@@ -99,33 +95,21 @@ export function FocusMain({
   }, []);
 
   useEffect(() => {
-    if (
-      initialCreateActivity ||
-      searchParams.get("createActivity") === "true"
-    ) {
-      setEditingActivity(null);
-      setActivityModalOpen(true);
-      if (typeof window !== "undefined") {
-        const url = new URL(window.location.href);
-        if (url.searchParams.has("createActivity")) {
-          url.searchParams.delete("createActivity");
-          window.history.replaceState(
-            null,
-            "",
-            url.pathname + (url.search ? url.search : ""),
-          );
-        }
-      }
-      const params = new URLSearchParams(searchParams.toString());
-      if (params.has("createActivity")) {
-        params.delete("createActivity");
-        const nextUrl = params.toString()
-          ? `${pathname}?${params.toString()}`
-          : pathname;
-        router.replace(nextUrl, { scroll: false });
+    if (!initialCreateActivity) return;
+    setEditingActivity(null);
+    setActivityModalOpen(true);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("createActivity")) {
+        url.searchParams.delete("createActivity");
+        window.history.replaceState(
+          null,
+          "",
+          url.pathname + (url.search ? url.search : ""),
+        );
       }
     }
-  }, [initialCreateActivity, searchParams, pathname, router]);
+  }, [initialCreateActivity]);
 
   // Hook dedicado às mutações de atividades e itens da mochila
   const {
@@ -166,7 +150,6 @@ export function FocusMain({
       onRequestDeleteActivity: (act) => {
         setDeleteModalActivity(act);
       },
-      onRefreshData,
     });
 
   // Deseleciona a atividade ativa caso o usuário clique em áreas vazias

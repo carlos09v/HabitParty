@@ -82,11 +82,16 @@ export async function proxy(request: NextRequest) {
   }
 
   const isCallbackRoute = pathname.startsWith("/auth/callback");
+  const isResetPasswordRoute = pathname.startsWith("/reset-password");
   const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
   const isRootRoute = pathname === "/";
 
   // 3. Usuário autenticado acessando tela de login/cadastro ou a raiz -> vai pro Dashboard
-  if (token && ((isAuthRoute && !isCallbackRoute) || isRootRoute)) {
+  // Exceção: Permite acesso a /reset-password mesmo logado (ex: usuário Google definindo sua senha manual via e-mail)
+  if (
+    token &&
+    ((isAuthRoute && !isCallbackRoute && !isResetPasswordRoute) || isRootRoute)
+  ) {
     const redirectResponse = NextResponse.redirect(
       new URL("/dashboard", request.url),
     );

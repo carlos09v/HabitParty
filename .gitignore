@@ -1,0 +1,7 @@
+# Configurações de IDE / Editor
+.vscode/
+
+# Ferramentas e metadados de Agentes de IA
+.agents/
+.github/skills/
+skills-lock.json

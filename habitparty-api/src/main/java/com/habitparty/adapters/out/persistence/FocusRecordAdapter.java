@@ -86,4 +86,9 @@ public class FocusRecordAdapter implements FocusRecordRepository {
     LocalDateTime endOfDay = LocalDateTime.now().toLocalDate().atTime(23, 59, 59, 999999999);
     return repository.sumTodayFocusMinutesByUserId(userId, startOfDay, endOfDay);
   }
+
+  @Override
+  public void deleteAllByUserId(UUID userId) {
+    repository.deleteAllByUserId(userId);
+  }
 }

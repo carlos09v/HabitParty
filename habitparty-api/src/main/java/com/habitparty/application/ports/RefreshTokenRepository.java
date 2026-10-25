@@ -1,5 +1,6 @@
 package com.habitparty.application.ports;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -11,5 +12,6 @@ public interface RefreshTokenRepository {
   Optional<RefreshToken> findByToken(String token);
   int countActiveByUserId(UUID userId); // Limitar sessões
   void revokeOldestSession(UUID userId); // Revogar a primeira sessão
-  void deleteObsoleteTokens(LocalDateTime dataLimite); // Apagar os campos obsoletos no db
+  void deleteObsoleteTokens(Instant now, LocalDateTime revokedCutoff); // Apagar os campos obsoletos no db
+  void deleteAllByUserId(UUID userId);
 }

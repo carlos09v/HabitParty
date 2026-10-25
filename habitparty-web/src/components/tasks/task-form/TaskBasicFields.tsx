@@ -1,9 +1,8 @@
-"use client";
-
 import { Flag, Swords, Tag } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { Select } from "@/components/ui/Select";
 import {
+  DIFFICULTY_DESCRIPTIONS,
   DIFFICULTY_REWARDS,
   HABIT_IMPORTANCE_OPTIONS,
   MAX_TASK_TAGS,
@@ -15,13 +14,6 @@ import {
 import type { CreateTaskFormReturn } from "@/hooks/useCreateTaskForm";
 import type { TaskDifficultyOption, TaskPriorityOption } from "@/types/task";
 import { cn } from "@/utils";
-
-const DIFFICULTY_DESCRIPTIONS: Record<TaskDifficultyOption, string> = {
-  TRIVIAL: "Quase automática (ex: beber água, remédio).",
-  EASY: "Baixa fricção (ex: e-mails, 10 min leitura).",
-  MEDIUM: "Padrão: 30 a 60 min de esforço (ex: treino).",
-  HARD: "Intensa de 1 a 2 horas (ex: estudo pesado, projeto).",
-};
 
 interface TaskBasicFieldsProps {
   form: CreateTaskFormReturn;

@@ -44,14 +44,10 @@ export interface DashboardMainProps {
 }
 
 export interface DashboardDailyBriefingProps {
-  greeting: string;
   firstName: string;
   streak: number;
-  completedTodayTasks: number;
-  totalTodayTasks: number;
-  todayXp: number;
-  tasks?: Task[];
-  transactions?: TransactionHistoryDTO[];
+  tasks: Task[];
+  transactions: TransactionHistoryDTO[];
 }
 
 export interface DashboardListSummaryProps {
@@ -119,9 +115,6 @@ export interface TaskTableProps {
   isCompact?: boolean;
   onToggle?: (id: string, completed: boolean) => void;
   onHabitChange?: (id: string, delta: number) => void;
-  onDelete?: (task: Task) => void;
-  onEdit?: (task: Task) => void;
-  onDuplicate?: (task: Task) => void;
   onContextMenu?: (e: React.MouseEvent, task: Task) => void;
   onOpenDetails?: (task: Task, anchorRect?: DOMRect) => void;
   selectedDate?: string | null;

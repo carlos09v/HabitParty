@@ -23,4 +23,6 @@ public interface EmailDispatchLogRepository {
   List<EmailDispatchLog> findRecentByUserId(UUID userId, int limit);
 
   long countTotal();
+
+  void deleteAllByUserId(UUID userId);
 }

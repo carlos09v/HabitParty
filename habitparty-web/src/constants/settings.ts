@@ -37,7 +37,7 @@ export const SETTINGS_TABS: readonly SettingsTabItem[] = [
   {
     id: "appearance",
     label: "Aparência",
-    description: "Tema claro/escuro, densidade e boas-vindas",
+    description: "Densidade da interface e cards de boas-vindas",
     icon: MonitorSmartphone,
   },
   {

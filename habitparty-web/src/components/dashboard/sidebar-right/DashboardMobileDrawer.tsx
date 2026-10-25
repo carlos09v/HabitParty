@@ -3,6 +3,7 @@
 import { Calendar, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { SlideOverDrawer } from "@/components/ui/SlideOverDrawer";
 import type { DashboardMobileDrawerProps } from "@/types/dashboard";
 import { cn } from "@/utils";
 
@@ -25,19 +26,6 @@ export function DashboardMobileDrawer({
   useEffect(() => {
     setIsOpen(false);
   }, [urlDate]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setIsOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen]);
 
   return (
     <>
@@ -67,56 +55,43 @@ export function DashboardMobileDrawer({
       </div>
 
       {/* Gaveta Lateral (Slide-over Drawer) para telas < xl */}
-      {isOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Resumo do Painel e Calendário Semanal"
-          className="fixed inset-0 z-50 overflow-hidden xl:hidden"
-        >
-          {/* Backdrop com blur suave */}
+      <SlideOverDrawer
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        ariaLabel="Resumo do Painel e Calendário Semanal"
+        backdropAriaLabel="Fechar resumo lateral"
+        containerClassName="xl:hidden"
+        panelClassName="w-full sm:w-[380px]"
+      >
+        <header className="p-4 border-b border-white/10 flex items-center justify-between bg-surface-hover/30 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gold/15 border border-gold/30 flex items-center justify-center text-gold">
+              <Calendar size={17} />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-neutral-50 leading-tight">
+                Resumo & Calendário
+              </h2>
+              <p className="text-tiny text-neutral-400">
+                Atividades, finanças e metas
+              </p>
+            </div>
+          </div>
+
           <button
             type="button"
-            aria-label="Fechar resumo lateral"
             onClick={() => setIsOpen(false)}
-            className="fixed inset-0 bg-neutral-950/75 backdrop-blur-xs transition-opacity animate-in fade-in duration-200 cursor-default border-none p-0 m-0 w-full h-full"
-          />
+            className="text-neutral-400 hover:text-neutral-100 p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+            aria-label="Fechar resumo"
+          >
+            <X size={18} />
+          </button>
+        </header>
 
-          {/* Painel Deslizante da Gaveta */}
-          <aside className="fixed inset-y-0 right-0 w-full sm:w-[380px] max-w-full bg-surface border-l border-white/10 shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-300 ease-out">
-            {/* Cabeçalho do Drawer */}
-            <header className="p-4 border-b border-white/10 flex items-center justify-between bg-surface-hover/30 shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-gold/15 border border-gold/30 flex items-center justify-center text-gold">
-                  <Calendar size={17} />
-                </div>
-                <div>
-                  <h2 className="text-sm font-bold text-neutral-50 leading-tight">
-                    Resumo & Calendário
-                  </h2>
-                  <p className="text-tiny text-neutral-400">
-                    Atividades, finanças e metas
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="text-neutral-400 hover:text-neutral-100 p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-                aria-label="Fechar resumo"
-              >
-                <X size={18} />
-              </button>
-            </header>
-
-            {/* Conteúdo dos Widgets com rolagem interna suave */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-5 flex flex-col gap-4">
-              {children}
-            </div>
-          </aside>
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-5 flex flex-col gap-4">
+          {children}
         </div>
-      )}
+      </SlideOverDrawer>
     </>
   );
 }

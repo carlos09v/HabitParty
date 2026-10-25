@@ -9,7 +9,11 @@ type CreateChecklistItemDTO = components["schemas"]["CreateChecklistItemDTO"];
 type ChecklistItemResponseDTO =
   components["schemas"]["ChecklistItemResponseDTO"];
 
-export type ActionResponse<T = void> = ActionState<T>;
+function invalidateChecklistTags() {
+  updateTag("tasks");
+  updateTag("dashboard-tasks");
+  updateTag("kanban");
+}
 
 /**
  * Adiciona um novo item de checklist vinculado a uma tarefa
@@ -31,7 +35,7 @@ export async function addChecklistItem(
       };
     }
 
-    updateTag("tasks");
+    invalidateChecklistTags();
 
     return { success: true, data: data as ChecklistItemResponseDTO };
   } catch (err) {
@@ -63,7 +67,7 @@ export async function updateChecklistItem(
       };
     }
 
-    updateTag("tasks");
+    invalidateChecklistTags();
 
     return { success: true, data: data as ChecklistItemResponseDTO };
   } catch (err) {
@@ -96,7 +100,7 @@ export async function toggleChecklistItem(
       };
     }
 
-    updateTag("tasks");
+    invalidateChecklistTags();
 
     return { success: true, data: data as ChecklistItemResponseDTO };
   } catch (err) {
@@ -126,7 +130,7 @@ export async function deleteChecklistItem(
       };
     }
 
-    updateTag("tasks");
+    invalidateChecklistTags();
 
     return { success: true, data: undefined };
   } catch (err) {
@@ -137,12 +141,6 @@ export async function deleteChecklistItem(
     };
   }
 }
-
-// Aliases para compatibilidade retroativa
-export const addChecklistItemAction = addChecklistItem;
-export const updateChecklistItemAction = updateChecklistItem;
-export const toggleChecklistItemAction = toggleChecklistItem;
-export const deleteChecklistItemAction = deleteChecklistItem;
 
 /**
  * Clona todos os itens válidos de um checklist para uma nova tarefa em ordem sequencial,
@@ -171,9 +169,7 @@ export async function cloneTaskChecklistItems(
     }
   }
 
-  updateTag("tasks");
-  updateTag("dashboard-tasks");
-  updateTag("kanban");
+  invalidateChecklistTags();
 
   return createdItems;
 }

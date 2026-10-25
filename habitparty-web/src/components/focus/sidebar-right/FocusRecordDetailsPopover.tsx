@@ -183,7 +183,7 @@ export function FocusRecordDetailsPopover({
             </span>
             <span className="text-neutral-500">•</span>
             <span className="text-gold flex items-center gap-1">
-              <Coins size={13} />+{formatCoins(record.coinsEarned ?? 0)} H
+              <Coins size={13} />+{formatCoins(record.coinsEarned ?? 0)}
             </span>
           </div>
         </div>

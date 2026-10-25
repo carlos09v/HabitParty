@@ -3,6 +3,7 @@
 import { Coins } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { CoinIcon } from "@/components/ui/CoinIcon";
 import { DEFAULT_ECONOMY_BARS } from "@/constants/dashboard";
 import { useUserStore } from "@/store/userStore";
 import type { EconomyBarData, EconomyWidgetProps } from "@/types/dashboard";
@@ -128,21 +129,29 @@ export function EconomyWidget({
                     </span>
                     <div className="flex items-center justify-between gap-3 text-gold font-semibold">
                       <span>Entradas:</span>
-                      <span>+{formatCoins(bar.gold)} H</span>
+                      <span className="flex items-center gap-1">
+                        +{formatCoins(bar.gold)}
+                        <CoinIcon size={11} />
+                      </span>
                     </div>
                     <div className="flex items-center justify-between gap-3 text-rose-400 font-semibold">
                       <span>Gastos:</span>
-                      <span>-{formatCoins(bar.spent ?? 0)} H</span>
+                      <span className="flex items-center gap-1">
+                        -{formatCoins(bar.spent ?? 0)}
+                        <CoinIcon size={11} />
+                      </span>
                     </div>
                     <div className="flex items-center justify-between gap-3 text-neutral-200 font-bold pt-0.5 border-t border-white/10">
                       <span>Saldo:</span>
                       <span
-                        className={
-                          netGold >= 0 ? "text-emerald-400" : "text-rose-400"
-                        }
+                        className={cn(
+                          "flex items-center gap-1",
+                          netGold >= 0 ? "text-emerald-400" : "text-rose-400",
+                        )}
                       >
                         {netGold >= 0 ? "+" : ""}
-                        {formatCoins(netGold)} H
+                        {formatCoins(netGold)}
+                        <CoinIcon size={11} />
                       </span>
                     </div>
                   </div>

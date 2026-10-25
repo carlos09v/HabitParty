@@ -7,9 +7,10 @@ export * from "./dom";
 export * from "./download";
 export * from "./economy";
 export * from "./focusFormatters";
-
 export * from "./focusMapper";
 export * from "./focusMetrics";
+export * from "./focusRewards";
+export * from "./gamification";
+export * from "./historyUtils";
 export * from "./levels";
-export * from "./rewards";
 export * from "./taskMapper";

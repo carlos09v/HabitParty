@@ -47,4 +47,8 @@ public interface FocusRecordJpaRepository extends JpaRepository<FocusRecordJpaEn
       @Param("userId") UUID userId,
       @Param("startOfDay") LocalDateTime startOfDay,
       @Param("endOfDay") LocalDateTime endOfDay);
+
+  @Modifying
+  @Query("DELETE FROM FocusRecordJpaEntity f WHERE f.userId = :userId")
+  void deleteAllByUserId(@Param("userId") UUID userId);
 }

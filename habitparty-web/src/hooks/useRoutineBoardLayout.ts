@@ -1,13 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { COLUMN_WIDTH_CLASSES } from "@/constants/routine";
 import type { BoardAlignment, ColumnWidthPreset } from "@/types/task-ui";
-
-export const COLUMN_WIDTH_CLASSES: Record<ColumnWidthPreset, string> = {
-  compact: "w-[250px] min-w-[240px] max-w-[270px]",
-  normal: "w-[300px] min-w-[270px] max-w-[320px]",
-  wide: "w-[420px] min-w-[380px] max-w-[460px]",
-};
 
 export interface UseRoutineBoardLayoutOptions {
   workspaceId?: string | null;

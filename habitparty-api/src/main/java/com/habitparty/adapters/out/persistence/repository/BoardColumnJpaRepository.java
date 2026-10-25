@@ -63,4 +63,12 @@ public interface BoardColumnJpaRepository extends JpaRepository<BoardColumnJpaEn
     List<BoardColumnSummaryProjection> findSummaryByWorkspaceId(
             @Param("workspaceId") UUID workspaceId,
             @Param("completedStatus") TaskStatus completedStatus);
+
+    @Modifying
+    @Query("DELETE FROM BoardColumnJpaEntity c WHERE c.workspace.id = :workspaceId")
+    void deleteAllByWorkspaceId(@Param("workspaceId") UUID workspaceId);
+
+    @Modifying
+    @Query("DELETE FROM BoardColumnJpaEntity c WHERE c.user.id = :userId")
+    void deleteAllByUserId(@Param("userId") UUID userId);
 }

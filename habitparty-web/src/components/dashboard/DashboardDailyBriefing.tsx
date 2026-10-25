@@ -17,12 +17,8 @@ import {
  * e fuso horário local do dispositivo/navegador do usuário (evitando desvio UTC do servidor).
  */
 export function DashboardDailyBriefing({
-  greeting: initialGreeting,
   firstName,
   streak,
-  completedTodayTasks: initialCompletedTodayTasks,
-  totalTodayTasks: initialTotalTodayTasks,
-  todayXp: initialTodayXp,
   tasks,
   transactions,
 }: DashboardDailyBriefingProps) {
@@ -36,17 +32,13 @@ export function DashboardDailyBriefing({
     return () => clearInterval(interval);
   }, []);
 
-  const greeting = getGreeting(now) || initialGreeting;
+  const greeting = getGreeting(now);
 
   const todayDateStr = getTodayDateString(now);
-  const localTodayTasks = tasks ? getTodayTasks(tasks, todayDateStr) : null;
-  const completedTodayTasks = localTodayTasks
-    ? localTodayTasks.filter((t) => t.completed).length
-    : initialCompletedTodayTasks;
-  const totalTodayTasks = localTodayTasks
-    ? localTodayTasks.length
-    : initialTotalTodayTasks;
-  const todayXp = transactions ? getTodayXp(transactions, now) : initialTodayXp;
+  const localTodayTasks = getTodayTasks(tasks, todayDateStr);
+  const completedTodayTasks = localTodayTasks.filter((t) => t.completed).length;
+  const totalTodayTasks = localTodayTasks.length;
+  const todayXp = getTodayXp(transactions, now);
 
   const completionPercent =
     totalTodayTasks > 0
@@ -79,7 +71,7 @@ export function DashboardDailyBriefing({
   return (
     <section
       aria-label="Resumo do Dia do Jogador"
-      className="w-full shrink-0 min-h-fit rounded-2xl border border-primary/35 bg-gradient-to-br from-primary-dark/40 via-surface/60 to-primary-dark/25 shadow-[0_0_20px_rgba(124,58,237,0.1)] backdrop-blur-md transition-all duration-200 relative overflow-hidden flex flex-col p-5 sm:p-6 gap-5"
+      className="w-full shrink-0 min-h-fit rounded-2xl border border-primary/35 bg-linear-to-br from-primary-dark/40 via-surface/60 to-primary-dark/25 shadow-[0_0_20px_rgba(124,58,237,0.1)] backdrop-blur-md transition-all duration-200 relative overflow-hidden flex flex-col p-5 sm:p-6 gap-5"
     >
       {/* Bloco Superior: Saudação, Mensagem Contextual e Progresso Diário */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -137,8 +129,8 @@ export function DashboardDailyBriefing({
                 className={cn(
                   "h-full rounded-full transition-all duration-500 ease-out",
                   isAllCompleted
-                    ? "bg-gradient-to-r from-emerald-500 to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
-                    : "bg-gradient-to-r from-gold to-amber-400 shadow-glow-gold-xs",
+                    ? "bg-linear-to-r from-emerald-500 to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                    : "bg-linear-to-r from-gold to-amber-400 shadow-glow-gold-xs",
                 )}
                 style={{ width: `${completionPercent}%` }}
               />

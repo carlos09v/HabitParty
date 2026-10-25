@@ -10,6 +10,7 @@ import {
   TaskHardcoreBadge,
   TaskPriorityBadge,
   TaskRewardBadges,
+  TaskTagBadges,
   TaskTypeBadge,
   WeekDaysIndicator,
 } from "@/components/tasks/shared";
@@ -19,7 +20,7 @@ import { cn } from "@/utils";
 
 /**
  * Card arrastável de Tarefa para as colunas do quadro Kanban de Rotina.
- * Desacoplado: consome useTaskCardItem para eliminar duplicações de lógica com RoutineTaskRow.
+ * Desacoplado: consome useTaskCardItem e componentes compartilhados de badges.
  */
 export const RoutineTaskCard = memo(function RoutineTaskCard({
   task,
@@ -49,6 +50,8 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
     borderClass,
     dueDateInfo,
     displayTag,
+    hasExtraTags,
+    extraTagsCount,
     hasChecklist,
     checklistTotal,
     checklistCompleted,
@@ -114,38 +117,19 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
           "!transition-none shadow-card-active border-gold/70 bg-primary-dark/60 scale-102 rotate-1 cursor-grabbing z-50",
       )}
     >
-      {/* 1. TOPO: Badge do Tipo + Tag Opcional + Indicadores e Grip */}
+      {/* 1. TOPO: Badge do Tipo + Tag Opcional + Indicadores */}
       <div className="flex items-center justify-between gap-1.5 min-w-0">
         <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
           <TaskTypeBadge task={task} isCompact={isCompact} />
 
-          {displayTag && (
-            <span
-              className={cn(
-                "rounded font-medium bg-white/5 border border-white/10 text-neutral-300 truncate",
-                isCompact
-                  ? "px-1 py-0.5 text-label-s font-normal leading-tight max-w-[80px]"
-                  : "px-1.5 py-0.5 text-tiny max-w-[100px]",
-              )}
-              title={displayTag}
-            >
-              {displayTag}
-            </span>
-          )}
-
-          {task.tags && task.tags.length > 1 && (
-            <span
-              className={cn(
-                "rounded font-medium bg-white/5 border border-white/10 text-neutral-400 shrink-0 select-none",
-                isCompact
-                  ? "px-1 py-0.5 text-label-s font-normal leading-tight"
-                  : "px-1.5 py-0.5 text-tiny",
-              )}
-              title={task.tags.slice(1).join(", ")}
-            >
-              +{task.tags.length - 1}
-            </span>
-          )}
+          <TaskTagBadges
+            primaryLabel={displayTag}
+            hasExtraTags={hasExtraTags}
+            extraTagsCount={extraTagsCount}
+            extraTagsTitle={task.tags?.slice(1).join(", ")}
+            isCompact={isCompact}
+            variant="card"
+          />
         </div>
 
         {/* Indicadores complementares (Bandeira de Prioridade, Hardcore e Descrição) */}

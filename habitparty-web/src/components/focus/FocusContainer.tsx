@@ -419,6 +419,7 @@ export function FocusContainer({
           }}
           activities={initialActivities}
           backpackItems={initialBackpackItems}
+          records={initialRecords}
           initialActivityId={manualInitialActivityId}
           initialItemId={manualInitialItemId}
           onSuccess={() => router.refresh()}

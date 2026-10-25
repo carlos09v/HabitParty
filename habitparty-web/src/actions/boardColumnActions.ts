@@ -11,8 +11,6 @@ type UpdateBoardColumnOrderDTO =
   components["schemas"]["UpdateBoardColumnOrderDTO"];
 type BoardColumnResponseDTO = components["schemas"]["BoardColumnResponseDTO"];
 
-export type ActionResponse<T = void> = ActionState<T>;
-
 function invalidateBoardColumnTags() {
   updateTag("kanban");
   updateTag("board_columns");
@@ -149,9 +147,3 @@ export async function updateBoardColumnOrder(
     };
   }
 }
-
-// Aliases para compatibilidade retroativa
-export const createBoardColumnAction = createBoardColumn;
-export const updateBoardColumnAction = updateBoardColumn;
-export const deleteBoardColumnAction = deleteBoardColumn;
-export const updateBoardColumnOrderAction = updateBoardColumnOrder;

@@ -28,4 +28,8 @@ public interface FocusActivityJpaRepository extends JpaRepository<FocusActivityJ
   @Modifying
   @Query("UPDATE FocusActivityJpaEntity f SET f.orderIndex = f.orderIndex - 1 WHERE f.userId = :userId AND f.orderIndex > :deletedOrderIndex")
   void shiftOrderIndexDown(@Param("userId") UUID userId, @Param("deletedOrderIndex") int deletedOrderIndex);
+
+  @Modifying
+  @Query("DELETE FROM FocusActivityJpaEntity f WHERE f.userId = :userId")
+  void deleteAllByUserId(@Param("userId") UUID userId);
 }

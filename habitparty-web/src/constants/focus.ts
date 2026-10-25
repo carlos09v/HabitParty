@@ -44,6 +44,30 @@ export const DEFAULT_LONG_BREAK_MINUTES = 15;
 /** Presets rápidos de duração para sessões de Pomodoro (em minutos) */
 export const FOCUS_POMO_PRESETS = [15, 25, 35, 45, 50] as const;
 
+/** Presets de duração para inserção manual de foco (em minutos) */
+export const FOCUS_MANUAL_PRESETS = [15, 25, 35, 45, 60] as const;
+
+/** Regras de cálculo e tetos de bonificação de foco */
+export const FOCUS_REWARD_RULES = {
+  MIN_QUALIFYING_MINUTES: 10,
+  MAX_EFFECTIVE_MINUTES: 90,
+  ANTI_EXPLOIT_THRESHOLD_MINUTES: 15,
+  STANDARD_POMO_MIN_MINUTES: 25,
+  STANDARD_POMO_MAX_MINUTES: 40,
+  STANDARD_COINS_PER_CYCLE: 0.25,
+  SHORT_POMO_COINS_PER_CYCLE: 0.1,
+  DEEP_WORK_COINS_PER_CYCLE: 0.5,
+  STANDARD_XP_PER_CYCLE: 8,
+  SHORT_POMO_XP_PER_CYCLE: 4,
+  DEEP_WORK_XP_PER_CYCLE: 15,
+  UNCOMPLETED_POMO_XP_PER_30_MIN: 6,
+  UNCOMPLETED_POMO_COINS_PER_30_MIN: 0.15,
+  STOPWATCH_XP_PER_30_MIN: 7,
+  STOPWATCH_COINS_PER_30_MIN: 0.2,
+  DAILY_SOFT_CAP_MINUTES: 240,
+  DAILY_HARD_CAP_MINUTES: 360,
+} as const;
+
 /** Opções de ícones temáticos para atividades de foco */
 export const FOCUS_ICONS: readonly IconOption[] = [
   // Ícones Gratuitos Base
@@ -75,12 +99,14 @@ export const FOCUS_ICONS: readonly IconOption[] = [
   { id: "wand", label: "Arcano", icon: Wand2, isPremium: true },
 ] as const;
 
+/** Índice O(1) para resolução rápida de ícones de foco */
+export const FOCUS_ICON_MAP = new Map(
+  FOCUS_ICONS.map((item) => [item.id.toLowerCase(), item.icon]),
+);
+
 export function getFocusIcon(iconId?: string) {
   if (!iconId) return BookOpen;
-  const found = FOCUS_ICONS.find(
-    (item) => item.id.toLowerCase() === iconId.toLowerCase(),
-  );
-  return found ? found.icon : BookOpen;
+  return FOCUS_ICON_MAP.get(iconId.trim().toLowerCase()) ?? BookOpen;
 }
 
 export const FOCUS_ICON_KEYWORD_MAP: Record<string, string> = {

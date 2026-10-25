@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.habitparty.application.ports.StoragePort;
@@ -24,8 +25,12 @@ public class LocalStorageAdapter implements StoragePort {
   private final Path uploadDir;
 
   @Autowired
+  public LocalStorageAdapter(@Value("${app.storage.upload-dir:uploads}") String uploadDirProp) {
+    this(Paths.get(uploadDirProp).toAbsolutePath().normalize());
+  }
+
   public LocalStorageAdapter() {
-    this(Paths.get("uploads"));
+    this(Paths.get("uploads").toAbsolutePath().normalize());
   }
 
   LocalStorageAdapter(Path uploadDir) {

@@ -91,4 +91,9 @@ public class EmailDispatchLogAdapter implements EmailDispatchLogRepository {
   public long countTotal() {
     return repository.count();
   }
+
+  @Override
+  public void deleteAllByUserId(UUID userId) {
+    repository.deleteAllByUserId(userId);
+  }
 }

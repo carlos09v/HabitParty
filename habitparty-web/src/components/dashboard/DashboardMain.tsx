@@ -8,13 +8,7 @@ import { MAX_COLUMNS_PREMIUM, MAX_VISIBLE_COLUMNS } from "@/constants/routine";
 import type { DashboardMainProps } from "@/types/dashboard";
 import type { Task } from "@/types/task";
 import { cn } from "@/utils";
-import {
-  getFirstName,
-  getGreeting,
-  getTodayDateString,
-  getTodayTasks,
-  getTodayXp,
-} from "@/utils/dashboardMetrics";
+import { getFirstName } from "@/utils/dashboardMetrics";
 
 /**
  * Painel Principal do Dashboard.
@@ -38,18 +32,11 @@ export function DashboardMain({
   const isPremium = user?.isPremium ?? false;
   const maxColumns = isPremium ? MAX_COLUMNS_PREMIUM : MAX_VISIBLE_COLUMNS;
 
-  const greeting = getGreeting();
   const firstName = getFirstName(user?.fullName, user?.username);
   const streak = user?.currentStreak ?? 0;
 
-  const todayDateStr = getTodayDateString();
-  const todayTasks = getTodayTasks(tasks, todayDateStr);
-  const completedTodayTasks = todayTasks.filter((t) => t.completed).length;
-  const totalTodayTasks = todayTasks.length;
-  const todayXp = getTodayXp(transactions);
-
   return (
-    <main
+    <div
       className={cn(
         "flex-1 min-w-0 flex flex-col overflow-y-auto custom-scrollbar transition-[padding,gap] duration-200",
         isCompact ? "p-4 sm:p-5 gap-5" : "p-6 gap-8",
@@ -57,12 +44,8 @@ export function DashboardMain({
     >
       {/* Resumo Diário do Jogador (HUD com Metas e Indicadores Chave) */}
       <DashboardDailyBriefing
-        greeting={greeting}
         firstName={firstName}
         streak={streak}
-        completedTodayTasks={completedTodayTasks}
-        totalTodayTasks={totalTodayTasks}
-        todayXp={todayXp}
         tasks={tasks}
         transactions={transactions}
       />
@@ -85,6 +68,6 @@ export function DashboardMain({
         columns={initialColumns}
         isCompact={isCompact}
       />
-    </main>
+    </div>
   );
 }

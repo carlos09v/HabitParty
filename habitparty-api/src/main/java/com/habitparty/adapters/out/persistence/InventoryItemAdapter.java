@@ -16,6 +16,10 @@ import com.habitparty.core.domain.enums.InventoryItemStatus;
 
 @Component
 public class InventoryItemAdapter implements InventoryItemRepository {
+  private static final List<InventoryItemStatus> ACTIVE_BACKPACK_STATUSES = List.of(
+      InventoryItemStatus.AVAILABLE,
+      InventoryItemStatus.IN_FOCUS);
+
   private final InventoryItemJpaRepository repository;
   private final InventoryItemMapper mapper;
 
@@ -38,7 +42,7 @@ public class InventoryItemAdapter implements InventoryItemRepository {
 
   @Override
   public int countByUserId(UUID userId) {
-    return repository.countByUserId(userId);
+    return repository.countByUser_IdAndStatusIn(userId, ACTIVE_BACKPACK_STATUSES);
   }
 
   @Override
@@ -57,7 +61,7 @@ public class InventoryItemAdapter implements InventoryItemRepository {
 
   @Override
   public List<InventoryItem> findByUserIdAndStatusIn(UUID userId, List<InventoryItemStatus> statuses) {
-    return repository.findByUserIdAndStatusInOrderByAcquiredAtDesc(userId, statuses)
+    return repository.findByUser_IdAndStatusInOrderByOrderIndexAscAcquiredAtDesc(userId, statuses)
         .stream()
         .map(mapper::toDomain)
         .collect(Collectors.toList());
@@ -65,6 +69,11 @@ public class InventoryItemAdapter implements InventoryItemRepository {
 
   @Override
   public int getMaxOrderIndex(UUID userId) {
-    return repository.findMaxOrderIndexByUserId(userId);
+    return repository.findMaxOrderIndexByUserIdAndStatusIn(userId, ACTIVE_BACKPACK_STATUSES);
+  }
+
+  @Override
+  public void deleteAllByUserId(UUID userId) {
+    repository.deleteAllByUserId(userId);
   }
 }

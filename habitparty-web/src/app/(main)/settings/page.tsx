@@ -1,5 +1,4 @@
 import { Eye, MonitorSmartphone, Palette, Sparkles } from "lucide-react";
-import { serverApi } from "@/api/server";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { AvatarFrameSettings } from "@/components/settings/AvatarFrameSettings";
 import { ChangePasswordCard } from "@/components/settings/ChangePasswordCard";
@@ -13,6 +12,7 @@ import { SoundNotificationSettings } from "@/components/settings/SoundNotificati
 import { SubscriptionSettingsCard } from "@/components/settings/SubscriptionSettingsCard";
 import { ThemeSettings } from "@/components/settings/ThemeSettings";
 import { WelcomeCardsSettings } from "@/components/settings/WelcomeCardsSettings";
+import { getCurrentUser } from "@/services/userService";
 import type { SettingsTabId } from "@/types/settings";
 import { getCompactMode } from "@/utils/cookies";
 
@@ -44,9 +44,7 @@ export default async function SettingsPage({
     ? (resolvedParams.tab as SettingsTabId)
     : "profile";
 
-  const { data: user } = await serverApi.GET("/users/me", {
-    next: { tags: ["user"] },
-  });
+  const user = activeTab === "profile" ? await getCurrentUser() : null;
 
   return (
     <PageWrapper isCompact={isCompact}>

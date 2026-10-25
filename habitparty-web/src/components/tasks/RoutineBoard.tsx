@@ -6,8 +6,8 @@ import {
 } from "@dnd-kit/sortable";
 import { Columns3, Plus } from "lucide-react";
 import { useCallback, useMemo, useRef } from "react";
+import { COLUMN_WIDTH_CLASSES } from "@/constants/routine";
 import { useCompactMode } from "@/hooks/useCompactMode";
-import { COLUMN_WIDTH_CLASSES } from "@/hooks/useRoutineBoardLayout";
 import type { RoutineBoardProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 import { RoutineColumn } from "./RoutineColumn";
@@ -29,8 +29,7 @@ export function RoutineBoard({
   onHabitChange,
   onQuickCreateTask,
 }: RoutineBoardProps) {
-  const { isCompact: hookIsCompact } = useCompactMode();
-  const isCompact = propIsCompact ?? hookIsCompact;
+  const { isCompact } = useCompactMode(propIsCompact);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const resolveColumnWidthClass = useCallback(

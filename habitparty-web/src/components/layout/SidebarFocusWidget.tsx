@@ -96,17 +96,17 @@ export function SidebarFocusWidget() {
               <AmbientIcon size={12} />
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-[11px] font-bold text-neutral-100 group-hover:text-gold transition-colors truncate">
+              <span className="text-label-g font-bold text-neutral-100 group-hover:text-gold transition-colors truncate">
                 {ambientLabel}
               </span>
-              <span className="text-[9px] text-gold/90 font-medium leading-none">
+              <span className="text-label-m text-gold/90 font-medium leading-none">
                 Som de Foco Ativo
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
-            <span className="text-[8px] px-1 py-0.5 rounded font-semibold uppercase tracking-wider bg-gold/20 text-gold border border-gold/40">
+            <span className="text-label-s px-1 py-0.5 rounded font-semibold uppercase tracking-wider bg-gold/20 text-gold border border-gold/40">
               VIP
             </span>
             <button
@@ -168,14 +168,14 @@ export function SidebarFocusWidget() {
             <TargetIcon size={11} />
           </div>
 
-          <span className="text-[11px] font-bold text-neutral-100 group-hover:text-gold transition-colors truncate">
+          <span className="text-label-g font-bold text-neutral-100 group-hover:text-gold transition-colors truncate">
             {target?.name || "Modo Foco"}
           </span>
         </div>
 
         <span
           className={cn(
-            "text-[8px] px-1 py-0.5 rounded font-semibold shrink-0 uppercase tracking-wider",
+            "text-label-s px-1 py-0.5 rounded font-semibold shrink-0 uppercase tracking-wider",
             isInventory
               ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
               : mode === "POMO"
@@ -280,7 +280,7 @@ export function SidebarFocusWidget() {
 
       {/* Linha Inferior Opcional: Som Ambiente Ativo Integrado com Mute Rápido */}
       {hasActiveAmbient && (
-        <div className="flex items-center justify-between pt-1 border-t border-primary/20 text-[10px] text-neutral-300">
+        <div className="flex items-center justify-between pt-1 border-t border-primary/20 text-tiny text-neutral-300">
           <div className="flex items-center gap-1 truncate min-w-0">
             <AmbientIcon
               size={11}
@@ -296,7 +296,7 @@ export function SidebarFocusWidget() {
             className="flex items-center gap-0.5 text-neutral-400 hover:text-red-400 transition-colors p-0.5 rounded cursor-pointer shrink-0"
           >
             <VolumeX size={10} />
-            <span className="text-[9px]">Parar</span>
+            <span className="text-label-m">Parar</span>
           </button>
         </div>
       )}

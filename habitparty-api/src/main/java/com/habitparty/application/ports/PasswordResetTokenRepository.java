@@ -10,4 +10,5 @@ public interface PasswordResetTokenRepository {
   Optional<PasswordResetToken> findByToken(String token);
   void invalidateActiveTokensByUserId(UUID userId);
   void deleteObsoleteTokens(java.time.Instant threshold);
+  void deleteAllByUserId(UUID userId);
 }

@@ -7,14 +7,22 @@ import {
   ExternalLink,
   Sparkles,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { createCustomerPortalSessionAction } from "@/actions/paymentActions";
 import { SettingsCard } from "@/components/settings/SettingsCard";
-import { UpgradePremiumModal } from "@/components/subscription/UpgradePremiumModal";
 import { FounderBadge } from "@/components/ui/FounderBadge";
 import { useUserStore } from "@/store/userStore";
 import { cn } from "@/utils";
+
+const UpgradePremiumModal = dynamic(
+  () =>
+    import("@/components/subscription/UpgradePremiumModal").then(
+      (mod) => mod.UpgradePremiumModal,
+    ),
+  { ssr: false },
+);
 
 interface SubscriptionSettingsCardProps {
   isCompact?: boolean;
@@ -198,10 +206,12 @@ export function SubscriptionSettingsCard({
         </div>
       </SettingsCard>
 
-      <UpgradePremiumModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-      />
+      {isUpgradeModalOpen && (
+        <UpgradePremiumModal
+          isOpen={isUpgradeModalOpen}
+          onClose={() => setIsUpgradeModalOpen(false)}
+        />
+      )}
     </>
   );
 }

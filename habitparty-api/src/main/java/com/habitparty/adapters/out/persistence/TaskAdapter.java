@@ -182,8 +182,24 @@ public class TaskAdapter implements TaskRepository {
     checklistRepository.deleteById(itemId);
   }
 
-  @Override 
+  @Override
   public void deleteAllByBoardColumnId(UUID boardColumnId) {
+    checklistRepository.deleteAllByBoardColumnId(boardColumnId);
     port.deleteAllByBoardColumnId(boardColumnId);
+  }
+
+  @Override
+  public void deleteAllByBoardColumnIds(List<UUID> boardColumnIds) {
+    if (boardColumnIds == null || boardColumnIds.isEmpty()) {
+      return;
+    }
+    checklistRepository.deleteAllByBoardColumnIds(boardColumnIds);
+    port.deleteAllByBoardColumnIds(boardColumnIds);
+  }
+
+  @Override
+  public void deleteAllByUserId(UUID userId) {
+    checklistRepository.deleteAllByUserId(userId);
+    port.deleteAllByUserId(userId);
   }
 }

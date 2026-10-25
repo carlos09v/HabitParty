@@ -1,11 +1,11 @@
 "use client";
 
-import { Copy, Pencil, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { TaskFilters } from "@/components/dashboard/TaskFilters";
 import { TaskTable } from "@/components/dashboard/TaskTable";
+import { buildTaskContextMenuItems } from "@/components/tasks/shared";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { DASHBOARD_ITEMS_PER_PAGE } from "@/constants/dashboard";
 import { useDashboardTaskActions } from "@/hooks/useDashboardTaskActions";
@@ -13,6 +13,7 @@ import { useDashboardTaskFilters } from "@/hooks/useDashboardTaskFilters";
 import type { DashboardTasksPanelProps } from "@/types/dashboard";
 import type { Task } from "@/types/task";
 import { cn } from "@/utils";
+import { shouldConfirmTaskDeletion } from "@/utils/validators";
 
 const TaskDetailsPopover = dynamic(
   () =>
@@ -113,7 +114,12 @@ export function DashboardTasksPanel({
   }>({
     isOpen: false,
     position: { x: 0, y: 0 },
+    columnId: undefined,
     task: null,
+  } as {
+    isOpen: boolean;
+    position: { x: number; y: number };
+    task: Task | null;
   });
 
   const [selectedTaskDetails, setSelectedTaskDetails] = useState<{
@@ -131,6 +137,17 @@ export function DashboardTasksPanel({
   });
 
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+
+  const requestDeleteTask = useCallback(
+    (task: Task) => {
+      if (shouldConfirmTaskDeletion(task)) {
+        setTaskToDelete(task);
+      } else {
+        handleDeleteTask(task);
+      }
+    },
+    [handleDeleteTask],
+  );
 
   const handleOpenContextMenu = useCallback(
     (e: React.MouseEvent, task: Task) => {
@@ -157,6 +174,22 @@ export function DashboardTasksPanel({
     [columns],
   );
 
+  const contextMenuItems = useMemo(
+    () =>
+      buildTaskContextMenuItems({
+        task: contextMenu.task,
+        onEdit: (task) =>
+          setTaskModalState({
+            isOpen: true,
+            taskToEdit: task,
+            columnId: task.columnId || defaultColumnId,
+          }),
+        onDuplicate: (task) => handleDuplicateTask(task),
+        onDelete: requestDeleteTask,
+      }),
+    [contextMenu.task, defaultColumnId, handleDuplicateTask, requestDeleteTask],
+  );
+
   return (
     <section className={cn("flex flex-col", isCompact ? "gap-4" : "gap-5")}>
       <TaskFilters
@@ -180,15 +213,6 @@ export function DashboardTasksPanel({
         onHabitChange={handleHabitChange}
         onContextMenu={handleOpenContextMenu}
         onOpenDetails={handleOpenDetails}
-        onDelete={(task) => setTaskToDelete(task)}
-        onEdit={(task) =>
-          setTaskModalState({
-            isOpen: true,
-            taskToEdit: task,
-            columnId: task.columnId || defaultColumnId,
-          })
-        }
-        onDuplicate={(task) => handleDuplicateTask(task)}
         selectedDate={selectedDate}
         isCompact={isCompact}
       />
@@ -198,40 +222,7 @@ export function DashboardTasksPanel({
         isOpen={contextMenu.isOpen}
         position={contextMenu.position}
         onClose={() => setContextMenu((prev) => ({ ...prev, isOpen: false }))}
-        items={[
-          {
-            label: "Editar",
-            icon: <Pencil size={14} />,
-            onClick: () => {
-              if (contextMenu.task) {
-                setTaskModalState({
-                  isOpen: true,
-                  taskToEdit: contextMenu.task,
-                  columnId: contextMenu.task.columnId || defaultColumnId,
-                });
-              }
-            },
-          },
-          {
-            label: "Duplicar",
-            icon: <Copy size={14} />,
-            onClick: () => {
-              if (contextMenu.task) {
-                handleDuplicateTask(contextMenu.task);
-              }
-            },
-          },
-          {
-            label: "Excluir",
-            icon: <Trash2 size={14} />,
-            variant: "destructive",
-            onClick: () => {
-              if (contextMenu.task) {
-                setTaskToDelete(contextMenu.task);
-              }
-            },
-          },
-        ]}
+        items={contextMenuItems}
       />
 
       {/* Popover Lateral Flutuante de Detalhes Rápidos */}
@@ -266,7 +257,7 @@ export function DashboardTasksPanel({
           onDelete={(taskId) => {
             const task = tasksState.find((t) => t.id === taskId);
             if (task) {
-              handleDeleteTask(task);
+              requestDeleteTask(task);
             }
             setSelectedTaskDetails(null);
           }}
@@ -299,7 +290,7 @@ export function DashboardTasksPanel({
         />
       )}
 
-      {/* Modal de Confirmação para Excluir Tarefa */}
+      {/* Modal de Confirmação para Excluir Tarefa Relevante (Checklist, Hardcore ou Ofensiva) */}
       {Boolean(taskToDelete) && (
         <ConfirmationModal
           isOpen={Boolean(taskToDelete)}
@@ -310,7 +301,8 @@ export function DashboardTasksPanel({
               <span className="font-bold text-neutral-100">
                 &quot;{taskToDelete?.title}&quot;
               </span>
-              ? Esta ação não pode ser desfeita.
+              ? Esta tarefa possui subtarefas, Modo Hardcore ou histórico de
+              ofensiva ativo, e a exclusão não pode ser desfeita.
             </>
           }
           confirmText="Excluir Tarefa"

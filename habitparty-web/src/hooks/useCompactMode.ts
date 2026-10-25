@@ -1,23 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useUIStore } from "@/store/uiStore";
 
-export function useCompactMode() {
+/**
+ * Lê e altera o estado de Modo Compacto sincronizado desde o SSR via StoreInitializer.
+ * Aceita `propIsCompact` opcional para priorizar valores repassados por Server Components
+ * sem provocar segundo ciclo de renderização (`useEffect`) após a hidratação.
+ */
+export function useCompactMode(propIsCompact?: boolean) {
   const compactMode = useUIStore((state) => state.compactMode);
   const toggleCompactMode = useUIStore((state) => state.toggleCompactMode);
   const setCompactMode = useUIStore((state) => state.setCompactMode);
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const isCompact = propIsCompact ?? compactMode;
 
   return {
-    isCompact: mounted ? compactMode : false,
+    isCompact,
     compactMode,
     toggleCompactMode,
     setCompactMode,
-    mounted,
+    mounted: true,
   };
 }

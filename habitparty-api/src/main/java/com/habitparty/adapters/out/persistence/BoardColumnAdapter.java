@@ -110,4 +110,14 @@ public class BoardColumnAdapter implements BoardColumnRepository {
   public int getMaxOrderIndex(UUID workspaceId) {
     return repository.findMaxOrderIndexByWorkspaceId(workspaceId);
   }
+
+  @Override
+  public void deleteAllByWorkspaceId(UUID workspaceId) {
+    repository.deleteAllByWorkspaceId(workspaceId);
+  }
+
+  @Override
+  public void deleteAllByUserId(UUID userId) {
+    repository.deleteAllByUserId(userId);
+  }
 }

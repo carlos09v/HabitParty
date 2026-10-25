@@ -518,6 +518,7 @@ export function FocusHeroStage({
           currentTargetId={target?.id}
           onSelectActivity={handleSelectActivity}
           onSelectBackpackItem={handleSelectBackpackItem}
+          onOpenUpgradeModal={onOpenUpgradeModal}
         />
       )}
     </>

@@ -24,12 +24,8 @@ import { useRoutineColumns } from "@/hooks/useRoutineColumns";
 import { useViewMode } from "@/hooks/useViewMode";
 import { useUserStore } from "@/store/userStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
-import type {
-  BoardColumn,
-  CreateTaskDTO,
-  Task,
-  TaskTypeOption,
-} from "@/types/task";
+import type { CreateTaskDTO, Task, TaskTypeOption } from "@/types/task";
+import type { TasksBoardContainerProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 import { calculateTasksWelcomeStats } from "@/utils/catalogMetrics";
 
@@ -49,19 +45,9 @@ const UpgradePremiumModal = dynamic(
   { ssr: false },
 );
 
-interface TasksBoardContainerProps {
-  initialColumns: BoardColumn[];
-  initialVisibleColumnIds?: string[];
-  initialOpenCreateColumn?: boolean;
-  targetColumnId?: string;
-  isPremium?: boolean;
-  workspaceId?: string | null;
-  isCompact?: boolean;
-}
-
 /**
  * Container Orquestrador do Quadro Kanban de Rotinas.
- * Refatorado e desacoplado: consome hooks especializados para estado de colunas,
+ * Desacoplado: consome hooks especializados para estado de colunas,
  * filtros, modais/menus e ações assíncronas de tarefas.
  */
 export function TasksBoardContainer({
@@ -84,8 +70,7 @@ export function TasksBoardContainer({
   const workspaces = useWorkspaceStore((state) => state.workspaces);
   const is_Premium = isPremiumProp ?? userStorePremium;
   const activeWorkspaceId = workspaceIdProp ?? activeWorkspaceIdFromStore;
-  const { isCompact: hookIsCompact } = useCompactMode();
-  const isCompact = isCompactProp ?? hookIsCompact;
+  const { isCompact } = useCompactMode(isCompactProp);
   const [viewMode, setViewMode] = useViewMode("tasks", "card");
   const [isColumnsDrawerOpen, setIsColumnsDrawerOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
@@ -159,8 +144,6 @@ export function TasksBoardContainer({
   const {
     searchQuery,
     setSearchQuery,
-    focusMode,
-    setFocusMode,
     filters,
     setFilters,
     availableTags,
@@ -214,6 +197,7 @@ export function TasksBoardContainer({
     [toggleColumnVisibility],
   );
 
+  // Instância única de Drag-and-Drop compartilhada entre modo Card e modo Lista
   const boardDnd = useRoutineBoardDnd({
     columns: filteredColumns,
     setColumns,
@@ -311,10 +295,6 @@ export function TasksBoardContainer({
     [ensureWriteAccess, handleQuickCreateTask],
   );
 
-  const handleToggleFocusMode = useCallback(() => {
-    setFocusMode((prev) => !prev);
-  }, [setFocusMode]);
-
   const sharedFilterProps = {
     search: searchQuery,
     onSearch: setSearchQuery,
@@ -324,8 +304,6 @@ export function TasksBoardContainer({
     },
     filters,
     onFilterChange: setFilters,
-    focusMode,
-    onToggleFocusMode: handleToggleFocusMode,
     alignment,
     onAlignmentChange: setAlignment,
     availableTags,
@@ -336,6 +314,7 @@ export function TasksBoardContainer({
     onOpenColumnsDrawer: handleOpenColumnsDrawer,
     onOpenCreateColumn: handleOpenCreateColumn,
     onOpenCreateTask: handleOpenCreateTask,
+    isCompact,
   };
 
   const welcomeDetails = WELCOME_CARD_DETAILS.tasks;
@@ -401,7 +380,7 @@ export function TasksBoardContainer({
           modifiers={[restrictToWindowEdges]}
           {...boardDnd.handlers}
         >
-          {/* Barra de Filtros com Popover, Busca, Modo Foco e Seletor de Visualização (Cards / Lista) */}
+          {/* Barra de Filtros com Popover, Busca e Seletor de Visualização (Cards / Lista) */}
           <div className="shrink-0">
             <RoutineFilters
               {...sharedFilterProps}
@@ -497,6 +476,7 @@ export function TasksBoardContainer({
               onColumnReorder={handleColumnReorder}
               onToggleComplete={handleToggleComplete}
               onHabitChange={handleHabitChange}
+              dndState={boardDnd}
             />
           </section>
         </>

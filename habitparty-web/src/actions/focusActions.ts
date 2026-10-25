@@ -234,7 +234,7 @@ export async function deleteFocusRecord(
       };
     }
 
-    invalidateFocusTags({ records: true });
+    invalidateFocusTags({ records: true, rewardsAndInventory: true });
     return { success: true };
   } catch (err) {
     console.error("[FocusAction:DeleteRecord]", err);

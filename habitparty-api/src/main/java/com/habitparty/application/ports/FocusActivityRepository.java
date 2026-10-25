@@ -28,4 +28,6 @@ public interface FocusActivityRepository {
 
   // Salva várias de uma vez (Útil ao fazer drag-and-drop e salvar a lista toda)
   List<FocusActivity> saveAll(List<FocusActivity> activities);
+
+  void deleteAllByUserId(UUID userId);
 }

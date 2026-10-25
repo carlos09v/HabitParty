@@ -1,25 +1,23 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { memo } from "react";
 import { GamifiedItemCard } from "@/components/ui/GamifiedItemCard";
-import { useCompactMode } from "@/hooks/useCompactMode";
 import type { InventoryCardProps } from "@/types/inventory";
 import {
   executeInventoryItemAction,
   getInventoryItemActionMeta,
 } from "@/utils/inventoryHelpers";
 
-export function InventoryCard({
+export const InventoryCard = memo(function InventoryCard({
   item,
   onUse,
   onSendToFocus,
   onOpenMysteryBox,
   onContextMenu,
-  isCompact: propIsCompact,
+  isCompact = false,
 }: InventoryCardProps) {
   const router = useRouter();
-  const { isCompact: hookIsCompact } = useCompactMode();
-  const isCompact = propIsCompact ?? hookIsCompact;
   const reward = item.reward;
 
   const { isInFocus, actionLabel, secondaryActionLabel } =
@@ -59,4 +57,4 @@ export function InventoryCard({
       dragData={{ type: "InventoryItem", item }}
     />
   );
-}
+});

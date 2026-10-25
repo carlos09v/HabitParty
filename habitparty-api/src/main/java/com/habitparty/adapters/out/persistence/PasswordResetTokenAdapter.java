@@ -41,4 +41,9 @@ public class PasswordResetTokenAdapter implements PasswordResetTokenRepository {
   public void deleteObsoleteTokens(java.time.Instant threshold) {
     repository.deleteObsoleteTokens(threshold);
   }
+
+  @Override
+  public void deleteAllByUserId(UUID userId) {
+    repository.deleteAllByUserId(userId);
+  }
 }

@@ -1,23 +1,6 @@
-import { AlignCenter, AlignLeft, AlignRight } from "lucide-react";
-import type { BoardAlignment } from "@/types/task-ui";
+import { ALIGNMENT_OPTIONS } from "@/constants/routine";
+import type { BoardAlignmentSelectorProps } from "@/types/task-ui";
 import { cn } from "@/utils";
-
-export interface BoardAlignmentSelectorProps {
-  value: BoardAlignment;
-  onChange: (align: BoardAlignment) => void;
-  isCompact?: boolean;
-  className?: string;
-}
-
-const ALIGNMENT_OPTIONS: Array<{
-  id: BoardAlignment;
-  label: string;
-  icon: typeof AlignLeft;
-}> = [
-  { id: "left", label: "Alinhar à esquerda", icon: AlignLeft },
-  { id: "center", label: "Centralizar quadro", icon: AlignCenter },
-  { id: "right", label: "Alinhar à direita", icon: AlignRight },
-];
 
 export function BoardAlignmentSelector({
   value,

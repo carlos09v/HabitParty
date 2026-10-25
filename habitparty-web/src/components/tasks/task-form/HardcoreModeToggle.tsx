@@ -1,5 +1,3 @@
-"use client";
-
 import { AlertTriangle, Calendar, Flame, Lock, Zap } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { Switch } from "@/components/ui/Switch";

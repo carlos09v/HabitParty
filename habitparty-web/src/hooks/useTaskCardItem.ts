@@ -26,26 +26,20 @@ export interface UseTaskCardItemOptions {
 }
 
 /**
- * Hook reutilizável que unifica toda a lógica compartilhada entre:
- * 1. RoutineTaskCard (Visualização em Card / Kanban)
- * 2. RoutineTaskRow (Visualização em Linha / Lista no Kanban)
- * 3. TaskRow (Visualização em Linha / Tabela no Dashboard)
- *
- * Centraliza: estado de progresso/streak, drag-and-drop sortable, normalização de tipo,
- * cores de borda/dificuldade, tags e cálculo de vencimento.
+ * Hook leve de metadados e progresso da tarefa, SEM assinar o contexto `@dnd-kit/sortable`.
+ * Ideal para linhas estáticas do Dashboard e overlays onde Drag-and-Drop não é necessário.
  */
-export function useTaskCardItem({
+export function useTaskItemMeta({
   task,
-  columnId,
-  isOverlay = false,
-  isSortable = true,
   isCompact: propIsCompact,
   onToggleCompleted,
   onHabitChange,
-  useTranslateTransform = true,
   activeFilter,
   selectedDate,
-}: UseTaskCardItemOptions) {
+}: Omit<
+  UseTaskCardItemOptions,
+  "columnId" | "isOverlay" | "isSortable" | "useTranslateTransform"
+>) {
   const storeCompact = useUIStore((state) => state.compactMode);
   const isCompact = propIsCompact ?? storeCompact;
 
@@ -54,32 +48,6 @@ export function useTaskCardItem({
       onToggle: onToggleCompleted,
       onHabitChange,
     });
-
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: task.id,
-    data: {
-      type: "Task",
-      task,
-      columnId,
-    },
-    disabled: isOverlay || !isSortable,
-  });
-
-  const style = isSortable
-    ? {
-        transform: useTranslateTransform
-          ? CSS.Translate.toString(transform)
-          : CSS.Transform.toString(transform),
-        transition: isDragging ? undefined : transition,
-      }
-    : undefined;
 
   const taskType = normalizeTaskType(task);
   const isHabit = taskType === "habit";
@@ -128,11 +96,6 @@ export function useTaskCardItem({
     toggleCompleted,
     changeHabit,
     isDone,
-    attributes,
-    listeners,
-    setNodeRef,
-    isDragging,
-    style,
     taskType,
     isHabit,
     isDaily,
@@ -148,5 +111,65 @@ export function useTaskCardItem({
     checklistCompleted,
     isChecklistAllDone,
     isHardcoreOverdue,
+  };
+}
+
+/**
+ * Hook completo que combina `useTaskItemMeta` com `@dnd-kit/sortable` para cards e linhas arrastáveis no Kanban.
+ */
+export function useTaskCardItem({
+  task,
+  columnId,
+  isOverlay = false,
+  isSortable = true,
+  isCompact: propIsCompact,
+  onToggleCompleted,
+  onHabitChange,
+  useTranslateTransform = true,
+  activeFilter,
+  selectedDate,
+}: UseTaskCardItemOptions) {
+  const meta = useTaskItemMeta({
+    task,
+    isCompact: propIsCompact,
+    onToggleCompleted,
+    onHabitChange,
+    activeFilter,
+    selectedDate,
+  });
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: task.id,
+    data: {
+      type: "Task",
+      task,
+      columnId,
+    },
+    disabled: isOverlay || !isSortable,
+  });
+
+  const style = isSortable
+    ? {
+        transform: useTranslateTransform
+          ? CSS.Translate.toString(transform)
+          : CSS.Transform.toString(transform),
+        transition: isDragging ? undefined : transition,
+      }
+    : undefined;
+
+  return {
+    ...meta,
+    attributes,
+    listeners,
+    setNodeRef,
+    isDragging,
+    style,
   };
 }

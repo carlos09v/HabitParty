@@ -8,7 +8,6 @@ import type {
   BoardColumn,
   BoardColumnResponseDTO,
   CreateTaskDTO,
-  DashboardTaskDTO,
   HabitImportance,
   HabitImportanceOption,
   Task,
@@ -140,42 +139,6 @@ export function mapWorkspaceToBoardColumns(
 }
 
 /**
- * Mapeia o DTO de tarefas do Dashboard para o modelo Task da UI.
- */
-export function mapDashboardTaskToTask(
-  dto: DashboardTaskDTO,
-  columnNameToId?: Map<string, string>,
-): Task {
-  const taskType = (dto.taskType?.toLowerCase() as TaskType) || "todo";
-  const reward = calculateTaskReward({
-    taskType: dto.taskType,
-    isHardcoreModeEnabled: dto.isHardcoreModeEnabled,
-    dueDate: dto.dueDate,
-    isPenaltyApplied: (dto as { isPenaltyApplied?: boolean })?.isPenaltyApplied,
-  });
-
-  const columnId =
-    dto.columnName && columnNameToId
-      ? columnNameToId.get(dto.columnName)
-      : undefined;
-
-  return {
-    id: dto.id || "",
-    title: dto.name || "",
-    type: taskType,
-    columnId,
-    category: dto.columnName || undefined,
-    tags: dto.columnName ? [dto.columnName] : [],
-    dueDate: dto.dueDate,
-    daysOfWeek: dto.daysOfWeek,
-    isHardcoreModeEnabled: dto.isHardcoreModeEnabled,
-    completed: false,
-    rewardXp: reward.xp,
-    rewardGold: reward.gold,
-  };
-}
-
-/**
  * Constrói o payload completo de UpdateTaskDTO a partir da entidade Task,
  * garantindo que campos primitivos obrigatórios pelo Jackson (como isHardcoreModeEnabled)
  * e propriedades existentes da tarefa não sejam omitidos ou enviados como null.
@@ -274,45 +237,6 @@ export function buildCreateTaskPayloadFromTask(task: Task): CreateTaskDTO {
       sendEmailReminder: Boolean(task.sendEmailReminder),
     }),
   };
-}
-
-/**
- * Mescla colunas completas do kanban com o resumo de todas as colunas do workspace,
- * garantindo que mesmo colunas que o backend marcou temporariamente como ocultas (isVisible = false)
- * sejam preservadas no quadro e possam ser exibidas pelo usuário.
- */
-export function mergeWorkspaceColumns(
-  kanbanColumns: BoardColumn[],
-  allColumnsSummary?:
-    | {
-        id?: string;
-        name?: string;
-        icon?: string;
-        orderIndex?: number;
-      }[]
-    | null,
-): BoardColumn[] {
-  if (!allColumnsSummary || allColumnsSummary.length === 0) {
-    return kanbanColumns;
-  }
-
-  const existingIds = new Set(kanbanColumns.map((col) => col.id));
-  const merged: BoardColumn[] = [...kanbanColumns];
-
-  for (const summary of allColumnsSummary) {
-    if (summary.id && !existingIds.has(summary.id)) {
-      merged.push({
-        id: summary.id,
-        title: summary.name || "Lista",
-        icon: summary.icon || "sun",
-        order: summary.orderIndex ?? merged.length,
-        tasks: [],
-      });
-      existingIds.add(summary.id);
-    }
-  }
-
-  return merged.sort((a, b) => a.order - b.order);
 }
 
 /**

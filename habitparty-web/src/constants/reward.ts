@@ -32,7 +32,12 @@ import {
   Wand2,
   Zap,
 } from "lucide-react";
-import type { PackageLevel } from "@/types/reward";
+import type {
+  PackageLevel,
+  RewardCategory,
+  RewardType,
+  RouletteItem,
+} from "@/types/reward";
 import type { IconOption, SelectOption } from "@/types/ui";
 
 export type RewardIconOption = IconOption;
@@ -540,4 +545,170 @@ export const REWARD_ICON_KEYWORD_MAP: Record<string, string> = {
   relax: "sparkles",
   massagem: "sparkles",
   spa: "sparkles",
+};
+
+export function suggestRewardIconFromTitle(title: string): string | null {
+  if (!title.trim()) return null;
+  const normalized = title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  for (const [keyword, iconId] of Object.entries(REWARD_ICON_KEYWORD_MAP)) {
+    if (normalized.includes(keyword)) {
+      return iconId;
+    }
+  }
+  return null;
+}
+
+export function isMysteryBoxReward(
+  type?: string | null,
+  iconName?: string | null,
+): boolean {
+  return (
+    iconName === "mystery_box" ||
+    type === "MysteryBox" ||
+    type === "MISTERY_BOX"
+  );
+}
+
+export function getMysteryBoxTier(
+  packageLevel?: string | null,
+): MysteryBoxTier {
+  if (!packageLevel) return MYSTERY_BOX_TIERS[0];
+  return (
+    MYSTERY_BOX_TIERS.find(
+      (t) =>
+        t.id === packageLevel ||
+        t.backendPackageLevel === packageLevel ||
+        t.id.toLowerCase() === packageLevel.toLowerCase() ||
+        t.backendPackageLevel === packageLevel.toUpperCase(),
+    ) || MYSTERY_BOX_TIERS[0]
+  );
+}
+
+export const REWARD_FORM_CATEGORY_OPTIONS: SelectOption[] = (
+  Object.keys(CATEGORY_LABELS) as RewardCategory[]
+).map((cat) => ({
+  value: cat,
+  label: cat,
+}));
+
+export const REWARD_FORM_TYPE_KEYS = Object.keys(
+  REWARD_TYPE_META,
+) as RewardType[];
+
+export const ROULETTE_CARD_WIDTH = 132;
+export const ROULETTE_CARD_GAP = 12;
+export const ROULETTE_TOTAL_CARD_WIDTH =
+  ROULETTE_CARD_WIDTH + ROULETTE_CARD_GAP;
+export const ROULETTE_TRACK_LENGTH = 45;
+export const ROULETTE_WINNING_INDEX = 32;
+
+export const MYSTERY_BOX_ROULETTE_POOLS: Record<string, RouletteItem[]> = {
+  Básico: [
+    {
+      id: "b1",
+      name: "Pausa Revigorante",
+      icon: "coffee",
+      minutes: 15,
+      badgeVariant: "emerald",
+      badgeLabel: "60% Drop",
+    },
+    {
+      id: "b2",
+      name: "Cupom de Lazer Médio",
+      icon: "music",
+      minutes: 30,
+      badgeVariant: "amber",
+      badgeLabel: "30% Drop",
+    },
+    {
+      id: "b3",
+      name: "Sessão Focada de Hobby",
+      icon: "book",
+      minutes: 45,
+      badgeVariant: "purple",
+      badgeLabel: "10% Drop",
+    },
+  ],
+  Premium: [
+    {
+      id: "p1",
+      name: "Lazer Padrão",
+      icon: "gamepad",
+      minutes: 60,
+      badgeVariant: "emerald",
+      badgeLabel: "50% Drop",
+    },
+    {
+      id: "p2",
+      name: "Vale-Lazer Estendido",
+      icon: "pizza",
+      minutes: 90,
+      badgeVariant: "amber",
+      badgeLabel: "35% Drop",
+    },
+    {
+      id: "p3",
+      name: "Noite Gamer / Cinema",
+      icon: "clapperboard",
+      minutes: 120,
+      badgeVariant: "purple",
+      badgeLabel: "15% Drop",
+    },
+  ],
+  Épico: [
+    {
+      id: "e1",
+      name: "Bloco Estendido de Lazer",
+      icon: "gamepad",
+      minutes: 120,
+      badgeVariant: "emerald",
+      badgeLabel: "50% Drop",
+    },
+    {
+      id: "e2",
+      name: "Noite Livre Completa",
+      icon: "ticket",
+      minutes: 180,
+      badgeVariant: "amber",
+      badgeLabel: "35% Drop",
+    },
+    {
+      id: "e3",
+      name: "Tarde de Desconexão",
+      icon: "trophy",
+      minutes: 240,
+      badgeVariant: "purple",
+      badgeLabel: "15% Drop",
+    },
+  ],
+  Lendário: [
+    {
+      id: "l1",
+      name: "Day-Off Parcial de Elite",
+      icon: "star",
+      minutes: 240,
+      badgeVariant: "emerald",
+      badgeLabel: "60% Drop",
+    },
+    {
+      id: "l2",
+      name: "Day-Off Integral",
+      icon: "crown",
+      minutes: 480,
+      badgeVariant: "amber",
+      badgeLabel: "30% Drop",
+    },
+    {
+      id: "l3",
+      name: "Celebração Absoluta",
+      icon: "gem",
+      minutes: null,
+      badgeVariant: "gold",
+      badgeLabel: "10% Drop",
+    },
+  ],
 };
