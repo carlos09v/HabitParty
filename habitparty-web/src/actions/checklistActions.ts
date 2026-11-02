@@ -1,6 +1,7 @@
 "use server";
 
 import { updateTag } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
 import { type ActionState, getErrorMessage } from "./types";
@@ -22,6 +23,7 @@ export async function addChecklistItem(
   taskId: string,
   payload: CreateChecklistItemDTO,
 ): Promise<ActionState<ChecklistItemResponseDTO>> {
+  const t = await getTranslations("tasks.actions");
   try {
     const { data, error } = await serverApi.POST("/tasks/{taskId}/checklists", {
       params: { path: { taskId } },
@@ -31,7 +33,7 @@ export async function addChecklistItem(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao adicionar item ao checklist."),
+        error: getErrorMessage(error, t("addChecklistFailed")),
       };
     }
 
@@ -42,7 +44,7 @@ export async function addChecklistItem(
     console.error("[ChecklistAction:Add]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -54,6 +56,7 @@ export async function updateChecklistItem(
   itemId: string,
   payload: CreateChecklistItemDTO,
 ): Promise<ActionState<ChecklistItemResponseDTO>> {
+  const t = await getTranslations("tasks.actions");
   try {
     const { data, error } = await serverApi.PUT("/tasks/checklists/{itemId}", {
       params: { path: { itemId } },
@@ -63,7 +66,7 @@ export async function updateChecklistItem(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao atualizar item do checklist."),
+        error: getErrorMessage(error, t("updateChecklistFailed")),
       };
     }
 
@@ -74,7 +77,7 @@ export async function updateChecklistItem(
     console.error("[ChecklistAction:Update]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -85,6 +88,7 @@ export async function updateChecklistItem(
 export async function toggleChecklistItem(
   itemId: string,
 ): Promise<ActionState<ChecklistItemResponseDTO>> {
+  const t = await getTranslations("tasks.actions");
   try {
     const { data, error } = await serverApi.PATCH(
       "/tasks/checklists/{itemId}/toggle",
@@ -96,7 +100,7 @@ export async function toggleChecklistItem(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao marcar item do checklist."),
+        error: getErrorMessage(error, t("toggleChecklistFailed")),
       };
     }
 
@@ -107,7 +111,7 @@ export async function toggleChecklistItem(
     console.error("[ChecklistAction:Toggle]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -118,6 +122,7 @@ export async function toggleChecklistItem(
 export async function deleteChecklistItem(
   itemId: string,
 ): Promise<ActionState<void>> {
+  const t = await getTranslations("tasks.actions");
   try {
     const { error } = await serverApi.DELETE("/tasks/checklists/{itemId}", {
       params: { path: { itemId } },
@@ -126,7 +131,7 @@ export async function deleteChecklistItem(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao excluir item do checklist."),
+        error: getErrorMessage(error, t("deleteChecklistFailed")),
       };
     }
 
@@ -137,7 +142,7 @@ export async function deleteChecklistItem(
     console.error("[ChecklistAction:Delete]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }

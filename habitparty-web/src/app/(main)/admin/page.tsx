@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import {
   getAdminOverviewAction,
   listAdminUsersAction,
@@ -10,11 +11,13 @@ import { AdminDashboardView } from "@/components/admin/AdminDashboardView";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { getCompactMode } from "@/utils/cookies";
 
-export const metadata: Metadata = {
-  title: "Painel Administrativo | HabitParty",
-  description:
-    "Monitoramento de recursos, cotas do Resend e controle de usuários.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("admin.metadata");
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
 
 export default async function AdminPage() {
   const isCompact = await getCompactMode();

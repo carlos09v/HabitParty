@@ -1,10 +1,12 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { DashboardDailyBriefing } from "@/components/dashboard/DashboardDailyBriefing";
 import { DashboardListSummary } from "@/components/dashboard/DashboardListSummary";
 import { DashboardTasksPanel } from "@/components/dashboard/DashboardTasksPanel";
 import { MAX_COLUMNS_PREMIUM, MAX_VISIBLE_COLUMNS } from "@/constants/routine";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { DashboardMainProps } from "@/types/dashboard";
 import type { Task } from "@/types/task";
 import { cn } from "@/utils";
@@ -23,6 +25,7 @@ export function DashboardMain({
   transactions = [],
   user = null,
 }: DashboardMainProps) {
+  const t = useTranslations("dashboard.dailyBriefing");
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
 
   useEffect(() => {
@@ -31,8 +34,12 @@ export function DashboardMain({
 
   const isPremium = user?.isPremium ?? false;
   const maxColumns = isPremium ? MAX_COLUMNS_PREMIUM : MAX_VISIBLE_COLUMNS;
+  const { isGamified } = useExperienceMode();
 
-  const firstName = getFirstName(user?.fullName, user?.username);
+  const defaultName = isGamified
+    ? t("defaultNameGamified")
+    : t("defaultNameProductivity");
+  const firstName = getFirstName(user?.fullName, user?.username, defaultName);
   const streak = user?.currentStreak ?? 0;
 
   return (
@@ -54,6 +61,7 @@ export function DashboardMain({
       <DashboardListSummary
         initialColumns={initialColumns}
         maxColumns={maxColumns}
+        activeWorkspaceId={activeWorkspaceId}
         isCompact={isCompact}
         isPremium={isPremium}
         tasks={tasks}

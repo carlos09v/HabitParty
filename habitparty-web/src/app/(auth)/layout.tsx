@@ -1,29 +1,40 @@
-import Image from "next/image";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
+import { LanguageToggleBtn } from "@/components/layout/LanguageToggleBtn";
 import { ThemeToggleBtn } from "@/components/layout/ThemeToggleBtn";
+import { BrandLogo } from "@/components/ui/BrandLogo";
+import { CosmicGalaxyIllustration } from "@/components/ui/CosmicGalaxyIllustration";
 
-export default function AuthLayout({ children }: { children: ReactNode }) {
+export default async function AuthLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const t = await getTranslations("auth.layout");
+
   return (
     <div className="relative min-h-[100dvh] w-full flex bg-background overflow-hidden">
       {/* LADO ESQUERDO: Branding + Formulário Centralizado na Metade (50% do viewport) */}
       <div className="w-full lg:w-1/2 min-h-[100dvh] flex flex-col justify-between p-4 sm:p-8 lg:p-16 relative z-10">
-        {/* Top bar: Logo HabitParty e Alternador de Tema */}
+        {/* Top bar: Logo HabitParty e Alternadores de Idioma e Tema */}
         <div className="flex items-center justify-between">
           <Link
             href="/"
             className="inline-block transition-opacity hover:opacity-90"
           >
-            <Image
-              src="/assets/logo.png"
+            <BrandLogo
               alt="HabitParty"
               width={251}
               height={55}
-              className="w-auto h-11 object-contain"
+              className="w-auto h-11"
               priority
             />
           </Link>
-          <ThemeToggleBtn variant="icon" />
+          <div className="flex items-center gap-2">
+            <LanguageToggleBtn variant="icon" />
+            <ThemeToggleBtn variant="icon" className="hidden" />
+          </div>
         </div>
 
         {/* Container de Formulário: largura de 487px fiel ao Figma */}
@@ -33,7 +44,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 
         {/* Rodapé sutil */}
         <footer className="text-[12px] text-neutral-400 text-center lg:text-left">
-          © {new Date().getFullYear()} HabitParty. Todos os direitos reservados.
+          {t("copyright", { year: new Date().getFullYear() })}
         </footer>
       </div>
 
@@ -46,14 +57,8 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         <div className="cosmic-orb absolute top-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-primary/25 blur-[160px] z-0 pointer-events-none opacity-30 dark:opacity-100" />
 
         {/* Galáxia em escala generosa que ocupa a metade da tela (z-10 sobre a elipse azul) */}
-        <div className="absolute top-0 right-0 w-full h-full max-w-[850px] flex items-start justify-end z-10 opacity-35 dark:opacity-100">
-          <Image
-            src="/assets/Galaxia.svg"
-            alt="Atmosfera Cósmica HabitParty"
-            fill
-            className="object-contain object-top-right select-none"
-            priority
-          />
+        <div className="absolute top-0 right-0 w-full h-full max-w-[850px] flex items-start justify-end z-10 opacity-95 dark:opacity-100">
+          <CosmicGalaxyIllustration alt={t("galaxyAlt")} priority />
         </div>
       </div>
     </div>

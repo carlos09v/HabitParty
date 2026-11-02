@@ -4,6 +4,7 @@
 
 export { parseLocalDate, parseServerDate, toLocalISOString } from "./date";
 
+import type { AppLocale } from "@/i18n/config";
 import { parseLocalDate } from "./date";
 
 /**
@@ -69,22 +70,26 @@ export function formatFocusMinutes(minutes: number): string {
 }
 
 /**
- * Formata data de término de registro de foco no formato legível (DD/MM às HH:MM).
+ * Formata data de término de registro de foco no formato legível (DD/MM às HH:MM ou MM/DD at HH:MM).
  */
-export function formatFocusDate(dateStr?: string | null): string {
+export function formatFocusDate(
+  dateStr?: string | null,
+  locale: AppLocale = "pt-BR",
+): string {
   if (!dateStr) return "-";
   try {
     const d = parseLocalDate(dateStr);
     if (!d) return dateStr;
-    const day = d.toLocaleDateString("pt-BR", {
+    const intlLocale = locale === "en" ? "en-US" : "pt-BR";
+    const day = new Intl.DateTimeFormat(intlLocale, {
       day: "2-digit",
       month: "2-digit",
-    });
-    const time = d.toLocaleTimeString("pt-BR", {
+    }).format(d);
+    const time = new Intl.DateTimeFormat(intlLocale, {
       hour: "2-digit",
       minute: "2-digit",
-    });
-    return `${day} às ${time}`;
+    }).format(d);
+    return locale === "en" ? `${day} at ${time}` : `${day} às ${time}`;
   } catch {
     return dateStr;
   }
@@ -95,16 +100,21 @@ export function formatFocusDate(dateStr?: string | null): string {
  */
 export function formatBackpackItemRemainingTime(
   remainingSeconds?: number | null,
+  locale: AppLocale = "pt-BR",
 ): string {
+  const isEn = locale === "en";
   if (remainingSeconds !== undefined && remainingSeconds !== null) {
-    if (remainingSeconds <= 1) return "Tempo concluído!";
+    if (remainingSeconds <= 1) {
+      return isEn ? "Time completed!" : "Tempo concluído!";
+    }
     const m = Math.floor(remainingSeconds / 60);
     const s = remainingSeconds % 60;
-    if (m > 0 && s > 0) return `${m}m ${s}s restantes`;
-    if (m > 0) return `${m}m restantes`;
-    return `${s}s restantes`;
+    const suffix = isEn ? "remaining" : "restantes";
+    if (m > 0 && s > 0) return `${m}m ${s}s ${suffix}`;
+    if (m > 0) return `${m}m ${suffix}`;
+    return `${s}s ${suffix}`;
   }
-  return "Cupom Ativo";
+  return isEn ? "Active Voucher" : "Cupom Ativo";
 }
 
 /**

@@ -1,6 +1,7 @@
 "use server";
 
 import { updateTag } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { serverApi } from "@/api/server";
 import type {
   CreateFocusActivityDTO,
@@ -37,6 +38,7 @@ function invalidateFocusTags(options?: {
 export async function createFocusActivity(
   dto: CreateFocusActivityDTO,
 ): Promise<ActionState<FocusActivityResponseDTO>> {
+  const t = await getTranslations("focus.actions");
   try {
     const { data, error } = await serverApi.POST("/focus-activities", {
       body: dto,
@@ -45,7 +47,7 @@ export async function createFocusActivity(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao criar atividade de foco."),
+        error: getErrorMessage(error, t("createActivityFailed")),
       };
     }
 
@@ -55,7 +57,7 @@ export async function createFocusActivity(
     console.error("[FocusAction:CreateActivity]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -67,6 +69,7 @@ export async function updateFocusActivity(
   activityId: string,
   dto: UpdateFocusActivityDTO,
 ): Promise<ActionState<FocusActivityResponseDTO>> {
+  const t = await getTranslations("focus.actions");
   try {
     const { data, error } = await serverApi.PUT(
       "/focus-activities/{activityId}",
@@ -79,7 +82,7 @@ export async function updateFocusActivity(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao atualizar atividade de foco."),
+        error: getErrorMessage(error, t("updateActivityFailed")),
       };
     }
 
@@ -89,7 +92,7 @@ export async function updateFocusActivity(
     console.error("[FocusAction:UpdateActivity]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -101,6 +104,7 @@ export async function deleteFocusActivity(
   activityId: string,
   deleteHistory = false,
 ): Promise<ActionState<void>> {
+  const t = await getTranslations("focus.actions");
   try {
     const { error } = await serverApi.DELETE("/focus-activities/{activityId}", {
       params: {
@@ -112,7 +116,7 @@ export async function deleteFocusActivity(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao excluir atividade de foco."),
+        error: getErrorMessage(error, t("deleteActivityFailed")),
       };
     }
 
@@ -122,7 +126,7 @@ export async function deleteFocusActivity(
     console.error("[FocusAction:DeleteActivity]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -133,6 +137,7 @@ export async function deleteFocusActivity(
 export async function reorderFocusActivities(
   updates: UpdateFocusActivityOrderDTO[],
 ): Promise<ActionState<void>> {
+  const t = await getTranslations("focus.actions");
   try {
     const { error } = await serverApi.PUT("/focus-activities/reorder", {
       body: updates,
@@ -141,7 +146,7 @@ export async function reorderFocusActivities(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao reordenar atividades."),
+        error: getErrorMessage(error, t("reorderActivitiesFailed")),
       };
     }
 
@@ -151,7 +156,7 @@ export async function reorderFocusActivities(
     console.error("[FocusAction:ReorderActivities]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -162,6 +167,7 @@ export async function reorderFocusActivities(
 export async function createFocusRecord(
   dto: CreateFocusRecordDTO,
 ): Promise<ActionState<FocusRecordResponseDTO>> {
+  const t = await getTranslations("focus.actions");
   try {
     const { data, error } = await serverApi.POST("/focus-records", {
       body: dto,
@@ -170,7 +176,7 @@ export async function createFocusRecord(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao salvar registro de foco."),
+        error: getErrorMessage(error, t("createRecordFailed")),
       };
     }
 
@@ -180,7 +186,7 @@ export async function createFocusRecord(
     console.error("[FocusAction:CreateRecord]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -192,6 +198,7 @@ export async function updateFocusRecord(
   recordId: string,
   dto: UpdateFocusRecordDTO,
 ): Promise<ActionState<FocusRecordResponseDTO>> {
+  const t = await getTranslations("focus.actions");
   try {
     const { data, error } = await serverApi.PUT("/focus-records/{recordId}", {
       params: { path: { recordId } },
@@ -201,7 +208,7 @@ export async function updateFocusRecord(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao atualizar registro de foco."),
+        error: getErrorMessage(error, t("updateRecordFailed")),
       };
     }
 
@@ -211,7 +218,7 @@ export async function updateFocusRecord(
     console.error("[FocusAction:UpdateRecord]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -222,6 +229,7 @@ export async function updateFocusRecord(
 export async function deleteFocusRecord(
   recordId: string,
 ): Promise<ActionState<void>> {
+  const t = await getTranslations("focus.actions");
   try {
     const { error } = await serverApi.DELETE("/focus-records/{recordId}", {
       params: { path: { recordId } },
@@ -230,7 +238,7 @@ export async function deleteFocusRecord(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao excluir registro de foco."),
+        error: getErrorMessage(error, t("deleteRecordFailed")),
       };
     }
 
@@ -240,7 +248,7 @@ export async function deleteFocusRecord(
     console.error("[FocusAction:DeleteRecord]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }

@@ -1,9 +1,11 @@
 package com.habitparty.adapters.in.web.api;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.habitparty.adapters.in.web.dtos.request.CheckoutRequestDTO;
@@ -21,12 +23,13 @@ public interface PaymentApi {
 
   @Operation(
       summary = "Criar Sessão de Checkout",
-      description = "Cria uma sessão no Stripe Checkout para assinatura recorrente (cartão) ou pagamento avulso (Pix)."
+      description = "Cria uma sessão no Stripe Checkout para assinatura recorrente (cartão em BRL ou USD conforme Accept-Language) ou pagamento avulso (Pix em BRL)."
   )
   @PostMapping("/checkout")
   ResponseEntity<CheckoutResponseDTO> createCheckoutSession(
       @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-      @Valid @RequestBody CheckoutRequestDTO request);
+      @Valid @RequestBody CheckoutRequestDTO request,
+      @Parameter(hidden = true) @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage);
 
   @Operation(
       summary = "Acessar Portal do Cliente",

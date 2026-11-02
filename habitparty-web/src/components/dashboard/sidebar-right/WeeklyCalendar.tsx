@@ -8,8 +8,10 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { useCompactMode } from "@/hooks/useCompactMode";
+import type { AppLocale } from "@/i18n/config";
 import type { WeeklyCalendarProps } from "@/types/dashboard";
 import { cn } from "@/utils";
 import {
@@ -30,6 +32,8 @@ export function WeeklyCalendar({
   tasks = [],
   onSelectDay,
 }: WeeklyCalendarProps) {
+  const t = useTranslations("dashboard.sidebarRight.weeklyCalendar");
+  const locale = useLocale() as AppLocale;
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isCompact: hookIsCompact } = useCompactMode();
@@ -41,8 +45,16 @@ export function WeeklyCalendar({
   const todayIso = useMemo(() => getTodayDateString(), []);
 
   const { weekRangeLabel, weekDays } = useMemo(
-    () => buildWeeklyCalendarData(tasks, transactions, weekOffset, todayIso),
-    [tasks, transactions, weekOffset, todayIso],
+    () =>
+      buildWeeklyCalendarData(
+        tasks,
+        transactions,
+        weekOffset,
+        todayIso,
+        new Date(),
+        locale,
+      ),
+    [tasks, transactions, weekOffset, todayIso, locale],
   );
 
   const handleDayClick = (isoString: string) => {
@@ -75,7 +87,7 @@ export function WeeklyCalendar({
       <div className="flex items-center justify-between gap-2 w-full">
         <div className="flex items-center gap-2 min-w-0">
           <h4 className="text-subtitle-s font-bold text-neutral-100 truncate">
-            Semana
+            {t("title")}
           </h4>
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-tiny font-semibold text-neutral-300 shrink-0">
             <CalendarIcon size={11} className="text-gold shrink-0" />
@@ -88,10 +100,10 @@ export function WeeklyCalendar({
             type="button"
             onClick={handleResetToToday}
             className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gold/15 hover:bg-gold/25 border border-gold/30 text-gold text-tiny font-bold transition-colors cursor-pointer shrink-0"
-            title="Voltar para a semana atual e limpar filtro de dia"
+            title={t("todayButtonTitle")}
           >
             <RotateCcw size={10} />
-            <span>Hoje</span>
+            <span>{t("todayButton")}</span>
           </button>
         )}
       </div>
@@ -102,8 +114,8 @@ export function WeeklyCalendar({
           type="button"
           onClick={() => setWeekOffset((prev) => prev - 1)}
           className="p-1 rounded hover:bg-white/10 text-neutral-400 hover:text-neutral-100 transition-colors cursor-pointer shrink-0"
-          title="Semana anterior"
-          aria-label="Semana anterior"
+          title={t("prevWeek")}
+          aria-label={t("prevWeek")}
         >
           <ChevronLeft size={16} />
         </button>
@@ -122,7 +134,7 @@ export function WeeklyCalendar({
                   "flex flex-col items-center justify-between rounded-lg transition-all flex-1 min-w-0 cursor-pointer relative group/day",
                   isCompact ? "h-12 py-1 px-0.5" : "h-14 py-1.5 px-1",
                   isSelected
-                    ? "bg-gold text-neutral-900 font-bold shadow-glow-gold-xs"
+                    ? "bg-gold text-on-gold font-bold shadow-glow-gold-xs"
                     : day.isToday
                       ? "border border-gold/60 bg-gold/10 text-gold hover:bg-gold/15"
                       : day.hasStreak
@@ -134,7 +146,7 @@ export function WeeklyCalendar({
                   className={cn(
                     "text-label-g font-medium leading-none",
                     isSelected
-                      ? "text-neutral-900 font-semibold"
+                      ? "text-on-gold font-semibold"
                       : day.isToday
                         ? "text-gold font-semibold"
                         : "text-neutral-400",
@@ -148,7 +160,7 @@ export function WeeklyCalendar({
                     "font-bold leading-none my-auto",
                     isCompact ? "text-xs" : "text-body-s",
                     isSelected
-                      ? "text-neutral-900"
+                      ? "text-on-gold"
                       : day.isToday
                         ? "text-gold"
                         : "text-neutral-100",
@@ -165,7 +177,7 @@ export function WeeklyCalendar({
                       className={cn(
                         "shrink-0 transition-transform group-hover/day:scale-110",
                         isSelected
-                          ? "text-neutral-900 fill-neutral-900"
+                          ? "text-on-gold fill-on-gold"
                           : "text-emerald-400 fill-emerald-400",
                       )}
                       aria-hidden="true"
@@ -176,7 +188,7 @@ export function WeeklyCalendar({
                       className={cn(
                         "w-1.5 h-1.5 rounded-full shrink-0 transition-transform group-hover/day:scale-125",
                         isSelected
-                          ? "bg-neutral-900"
+                          ? "bg-on-gold"
                           : "bg-magenta shadow-[0_0_6px_var(--color-magenta)]",
                       )}
                       aria-hidden="true"
@@ -192,8 +204,8 @@ export function WeeklyCalendar({
           type="button"
           onClick={() => setWeekOffset((prev) => prev + 1)}
           className="p-1 rounded hover:bg-white/10 text-neutral-400 hover:text-neutral-100 transition-colors cursor-pointer shrink-0"
-          title="Próxima semana"
-          aria-label="Próxima semana"
+          title={t("nextWeek")}
+          aria-label={t("nextWeek")}
         >
           <ChevronRight size={16} />
         </button>
@@ -207,14 +219,14 @@ export function WeeklyCalendar({
             className="text-emerald-400 fill-emerald-400 shrink-0"
             aria-hidden="true"
           />
-          <span>Dia ativo</span>
+          <span>{t("legendActiveDay")}</span>
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span
             className="w-1.5 h-1.5 rounded-full bg-magenta shrink-0"
             aria-hidden="true"
           />
-          <span>Prazo (To-Do)</span>
+          <span>{t("legendTodoDue")}</span>
         </span>
       </div>
     </div>

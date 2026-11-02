@@ -3,13 +3,35 @@ import type {
   BoardColumn,
   BoardFilterState,
   CreateTaskDTO,
+  DailyDaysOfWeek,
+  DailyRepeatTypeOption,
+  HabitImportanceOption,
+  HabitTypeOption,
+  ResetCounterOption,
   Task,
+  TaskDifficultyOption,
+  TaskPriorityOption,
   TaskTypeOption,
 } from "./task";
 
 export type BoardAlignment = "left" | "center" | "right";
 export type ColumnWidthPreset = "compact" | "normal" | "wide";
 export type FormatSyntax = "bold" | "italic" | "highlight" | "bullet" | "code";
+
+export interface InitialTaskFormData {
+  title?: string;
+  taskType?: TaskTypeOption;
+  difficulty?: TaskDifficultyOption;
+  priority?: TaskPriorityOption;
+  dueDate?: string;
+  habitType?: HabitTypeOption;
+  importanceType?: HabitImportanceOption;
+  resetCounter?: ResetCounterOption;
+  repeatType?: DailyRepeatTypeOption;
+  repeatEvery?: number;
+  daysOfWeek?: DailyDaysOfWeek[];
+  startDate?: string;
+}
 
 export interface TaskRowProps {
   task: Task;
@@ -36,6 +58,7 @@ export interface TaskDetailsPopoverProps {
   onTaskUpdate?: (updatedTask: Task) => void;
   onDelete?: (taskId: string) => void;
   onToggleComplete?: (taskId: string, completed: boolean) => void;
+  onHabitChange?: (taskId: string, delta: number) => void;
   onEdit?: (task: Task) => void;
   onDuplicate?: (task: Task) => void;
 }
@@ -90,6 +113,7 @@ export interface TasksBoardModalsProps {
     columnId?: string;
     defaultTaskType?: TaskTypeOption;
     initialTitle?: string;
+    initialValues?: InitialTaskFormData;
     taskToEdit?: Task | null;
   };
   setTaskModalState: Dispatch<
@@ -98,6 +122,7 @@ export interface TasksBoardModalsProps {
       columnId?: string;
       defaultTaskType?: TaskTypeOption;
       initialTitle?: string;
+      initialValues?: InitialTaskFormData;
       taskToEdit?: Task | null;
     }>
   >;
@@ -148,6 +173,7 @@ export interface TasksBoardModalsProps {
   handleDeleteTask: (task: Task, columnId: string) => void;
   handleTaskDetailsUpdate: (task: Task) => void;
   handleToggleComplete: (taskId: string, completed: boolean) => void;
+  handleHabitChange?: (taskId: string, delta: number) => void;
   isColumnsDrawerOpen: boolean;
   setIsColumnsDrawerOpen: (open: boolean) => void;
   toggleColumnVisibility: (id: string) => void;
@@ -173,6 +199,7 @@ export interface RoutineBoardProps {
     columnId: string,
     initialType?: TaskTypeOption,
     initialTitle?: string,
+    initialValues?: InitialTaskFormData,
   ) => void;
   onOpenDetails?: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
   onContextMenu?: (e: React.MouseEvent, task: Task, columnId: string) => void;
@@ -205,6 +232,7 @@ export interface RoutineColumnProps {
     columnId: string,
     initialType?: TaskTypeOption,
     initialTitle?: string,
+    initialValues?: InitialTaskFormData,
   ) => void;
   onQuickCreateTask?: (
     title: string,
@@ -230,6 +258,7 @@ export interface RoutineTaskListProps {
     columnId: string,
     initialType?: TaskTypeOption,
     initialTitle?: string,
+    initialValues?: InitialTaskFormData,
   ) => void;
   onOpenDetails: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
   onContextMenu: (e: React.MouseEvent, task: Task, columnId: string) => void;
@@ -264,6 +293,7 @@ export interface RoutineTaskListSectionProps {
     columnId: string,
     initialType?: TaskTypeOption,
     initialTitle?: string,
+    initialValues?: InitialTaskFormData,
   ) => void;
   onOpenDetails: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
   onContextMenu: (e: React.MouseEvent, task: Task, columnId: string) => void;
@@ -286,6 +316,7 @@ export interface RoutineQuickAddFormProps {
     columnId: string,
     type: TaskTypeOption,
     title: string,
+    initialValues?: InitialTaskFormData,
   ) => void;
 }
 
@@ -317,6 +348,7 @@ export interface CreateTaskModalProps {
   defaultColumnId?: string;
   defaultTaskType?: TaskTypeOption;
   initialTitle?: string;
+  initialValues?: InitialTaskFormData;
   taskToEdit?: Task | null;
   onSuccess?: (task: Task, columnId: string) => void;
 }
@@ -327,6 +359,7 @@ export interface UseCreateTaskFormOptions {
   defaultColumnId?: string;
   defaultTaskType?: TaskTypeOption;
   initialTitle?: string;
+  initialValues?: InitialTaskFormData;
   taskToEdit?: Task | null;
   onSuccess?: (task: Task, columnId: string) => void;
   onClose: () => void;

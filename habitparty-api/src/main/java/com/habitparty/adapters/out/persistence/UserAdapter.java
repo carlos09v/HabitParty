@@ -1,9 +1,12 @@
 package com.habitparty.adapters.out.persistence;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import com.habitparty.adapters.out.persistence.entities.UserJpaEntity;
@@ -11,13 +14,11 @@ import com.habitparty.adapters.out.persistence.mappers.UserMapper;
 import com.habitparty.adapters.out.persistence.repository.UserJpaRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.domain.enums.UserRole;
 
-// É o maestro!
-@Component // Faz ver que é uma injeção de dependência da implementação definida.
+@Component
 public class UserAdapter implements UserRepository {
-  // Uso do JpaRepository
   private final UserJpaRepository userRepository;
-  // Uso do Mapper (tradutor)
   private final UserMapper userMapper;
 
   public UserAdapter(UserJpaRepository userRepository, UserMapper userMapper) {
@@ -27,24 +28,31 @@ public class UserAdapter implements UserRepository {
 
   @Override
   public User save(User user) {
-    // 1. Usa o mapper para transformar o User (Domínio) em UserJpaEntity (Banco)
-    UserJpaEntity entity = userMapper.toEntity(user);
+    UserJpaEntity entity = userRepository.findById(user.getId())
+        .map(existing -> {
+          userMapper.updateEntityFromDomain(existing, user);
+          return existing;
+        })
+        .orElseGet(() -> userMapper.toEntity(user));
 
-    // 2. O repositório nos devolve a entidade salva (agora com possíveis campos gerados pelo banco, como createdAt).
-    // Usando o JpaRepository!
     UserJpaEntity savedEntity = userRepository.save(entity);
-
-    // 3. Usa o mapper de novo para transformar o resultado do banco de volta em Domínio e devolver.
     return userMapper.toDomain(savedEntity);
   }
 
   @Override
   public Optional<User> findById(UUID id) {
-    // O Spring Data JPA sempre retorna um Optional<> no findById, pois o ID pode
-    // não existir no banco. Se encontrar, mapeie para Domínio. Se não encontrar,
-    // retorne nulo
     return userRepository.findById(id)
-        .map(entity -> userMapper.toDomain(entity));
+        .map(userMapper::toDomain);
+  }
+
+  @Override
+  public List<User> findAllByIds(Collection<UUID> ids) {
+    if (ids == null || ids.isEmpty()) {
+      return List.of();
+    }
+    return userRepository.findAllById(ids).stream()
+        .map(userMapper::toDomain)
+        .toList();
   }
 
   @Override
@@ -73,12 +81,33 @@ public class UserAdapter implements UserRepository {
   @Override
   public List<User> findAll() {
     return userRepository.findAll().stream()
-        .map(entity -> userMapper.toDomain(entity))
+        .map(userMapper::toDomain)
         .toList();
+  }
+
+  @Override
+  public long countAll() {
+    return userRepository.count();
+  }
+
+  @Override
+  public long countByIsPremium(boolean isPremium) {
+    return userRepository.countByIsPremium(isPremium);
+  }
+
+  @Override
+  public long countByRole(UserRole role) {
+    return userRepository.countByRole(role);
   }
 
   @Override
   public long countFounders() {
     return userRepository.countByIsFounderTrue();
+  }
+
+  @Override
+  public Page<User> searchUsers(String search, UserRole role, Boolean isPremium, Boolean isFounder, Pageable pageable) {
+    return userRepository.searchUsers(search, role, isPremium, isFounder, pageable)
+        .map(userMapper::toDomain);
   }
 }

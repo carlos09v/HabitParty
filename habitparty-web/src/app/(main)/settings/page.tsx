@@ -1,9 +1,20 @@
-import { Eye, MonitorSmartphone, Palette, Sparkles } from "lucide-react";
+import {
+  Eye,
+  Languages,
+  MonitorSmartphone,
+  Palette,
+  Sparkles,
+  Swords,
+} from "lucide-react";
+import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { AvatarFrameSettings } from "@/components/settings/AvatarFrameSettings";
 import { ChangePasswordCard } from "@/components/settings/ChangePasswordCard";
 import { CompactModeSettings } from "@/components/settings/CompactModeSettings";
 import { DangerZoneCard } from "@/components/settings/DangerZoneCard";
+import { ExperienceModeSettings } from "@/components/settings/ExperienceModeSettings";
+import { LanguageSettings } from "@/components/settings/LanguageSettings";
 import { ProfileForm } from "@/components/settings/ProfileForm";
 import { ProfileHeaderCard } from "@/components/settings/ProfileHeaderCard";
 import { SettingsCard } from "@/components/settings/SettingsCard";
@@ -16,11 +27,13 @@ import { getCurrentUser } from "@/services/userService";
 import type { SettingsTabId } from "@/types/settings";
 import { getCompactMode } from "@/utils/cookies";
 
-export const metadata = {
-  title: "Configurações | HabitParty",
-  description:
-    "Gerencie seus dados de perfil, preferências da conta e interface no HabitParty.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("settings.metadata");
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
 
 type SettingsPageProps = {
   searchParams: Promise<{ tab?: string }>;
@@ -29,8 +42,11 @@ type SettingsPageProps = {
 export default async function SettingsPage({
   searchParams,
 }: SettingsPageProps) {
-  const isCompact = await getCompactMode();
-  const resolvedParams = await searchParams;
+  const [isCompact, t, resolvedParams] = await Promise.all([
+    getCompactMode(),
+    getTranslations("settings"),
+    searchParams,
+  ]);
 
   const validTabs: SettingsTabId[] = [
     "profile",
@@ -44,7 +60,10 @@ export default async function SettingsPage({
     ? (resolvedParams.tab as SettingsTabId)
     : "profile";
 
-  const user = activeTab === "profile" ? await getCurrentUser() : null;
+  const user =
+    activeTab === "profile" || activeTab === "appearance"
+      ? await getCurrentUser()
+      : null;
 
   return (
     <PageWrapper isCompact={isCompact}>
@@ -52,12 +71,9 @@ export default async function SettingsPage({
         {/* HEADER */}
         <header className="flex flex-col gap-1 border-b border-primary/20 pb-4">
           <h1 className="text-headline-s font-bold text-neutral-50 drop-shadow-md">
-            Configurações
+            {t("headerTitle")}
           </h1>
-          <p className="text-body-m text-neutral-300">
-            Gerencie seus dados de perfil, preferências da conta e interface no
-            HabitParty.
-          </p>
+          <p className="text-body-m text-neutral-300">{t("headerSubtitle")}</p>
         </header>
 
         {/* NAVEGAÇÃO DE ABAS */}
@@ -79,8 +95,8 @@ export default async function SettingsPage({
 
               {/* Molduras Animadas de Avatar */}
               <SettingsCard
-                title="Moldura do Avatar"
-                description="Personalize o anel de energia e luz cósmica ao redor da sua foto de perfil."
+                title={t("cards.avatarFrames")}
+                description={t("cards.avatarFramesDesc")}
                 icon={<Sparkles size={18} className="text-gold" />}
                 isCompact={isCompact}
               >
@@ -97,19 +113,42 @@ export default async function SettingsPage({
             <>
               {/* TEMA DA INTERFACE */}
               <SettingsCard
-                title="Aparência & Tema"
-                description="Alterne entre o tema escuro cósmico tradicional e o novo tema claro iluminado."
+                title={t("cards.appearanceTheme")}
+                description={t("cards.appearanceThemeDesc")}
                 icon={<Palette size={18} className="text-gold" />}
                 isCompact={isCompact}
                 className="hidden"
               >
-                <ThemeSettings isCompact={isCompact} />
+                <ThemeSettings isCompact={isCompact} className="hidden" />
+              </SettingsCard>
+
+              {/* MODO DE EXPERIÊNCIA: GAMIFICADO VS PRODUTIVIDADE */}
+              <SettingsCard
+                title={t("cards.experienceMode")}
+                description={t("cards.experienceModeDesc")}
+                icon={<Swords size={18} className="text-gold" />}
+                isCompact={isCompact}
+              >
+                <ExperienceModeSettings
+                  isCompact={isCompact}
+                  initialMode={user?.experienceMode}
+                />
+              </SettingsCard>
+
+              {/* IDIOMA DA INTERFACE */}
+              <SettingsCard
+                title={t("cards.language")}
+                description={t("cards.languageDesc")}
+                icon={<Languages size={18} className="text-gold" />}
+                isCompact={isCompact}
+              >
+                <LanguageSettings isCompact={isCompact} />
               </SettingsCard>
 
               {/* DENSIDADE DA INTERFACE */}
               <SettingsCard
-                title="Densidade da Interface"
-                description="Personalize o espaçamento e o tamanho visual dos cartões, listas e calendários."
+                title={t("cards.compact")}
+                description={t("cards.compactDesc")}
                 icon={<MonitorSmartphone size={18} className="text-gold" />}
                 isCompact={isCompact}
               >
@@ -118,8 +157,8 @@ export default async function SettingsPage({
 
               {/* CARDS DE BOAS-VINDAS */}
               <SettingsCard
-                title="Cards de Boas-Vindas"
-                description="Personalize a visibilidade dos cards informativos no topo de cada página. Reative os cards que foram ocultados para que voltem a aparecer."
+                title={t("cards.welcomeCards")}
+                description={t("cards.welcomeCardsDesc")}
                 icon={<Eye size={18} className="text-gold" />}
                 isCompact={isCompact}
               >

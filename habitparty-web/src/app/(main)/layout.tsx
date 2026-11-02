@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { type ReactNode, Suspense } from "react";
 import { serverApi } from "@/api/server";
+import { EmailVerificationBanner } from "@/components/auth/EmailVerificationBanner";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { StoreInitializer } from "@/components/layout/StoreInitializer";
@@ -52,12 +53,14 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         {
           params: {
             path: { workspaceId: activeWorkspaceId },
-            query: { filter: "TODAY", size: 50 },
+            query: { filter: "TODAY", size: 1 },
           },
           next: { tags: ["dashboard-tasks"] },
         },
       );
-      if (tasksData?.content) {
+      if (tasksData?.totalElements !== undefined) {
+        pendingTasksCount = tasksData.totalElements;
+      } else if (tasksData?.content) {
         pendingTasksCount = tasksData.content.length;
       }
     } catch {
@@ -80,6 +83,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <StoreInitializer
         compactMode={isCompact}
         theme={theme}
+        experienceMode={user?.experienceMode || "PRODUCTIVITY"}
         workspaces={workspaces || []}
         activeWorkspaceId={activeWorkspaceId}
         user={user || null}
@@ -112,6 +116,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         ========================================= 
       */}
       <main className="relative z-10 flex-1 min-h-0 min-w-0 h-full overflow-hidden flex flex-col">
+        <EmailVerificationBanner initialUser={user || null} />
         {/* Todo o conteúdo das telas /dashboard, /inventory, etc., aparecerá aqui */}
         {children}
       </main>

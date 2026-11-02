@@ -1,6 +1,7 @@
 "use client";
 
 import { Pencil, Play, PlusCircle, Trash2, Undo2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
 import type { FocusActivity } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
@@ -30,6 +31,7 @@ export function useFocusContextMenu({
   onRequestReturnToBackpack,
   onRequestDeleteActivity,
 }: UseFocusContextMenuParams) {
+  const t = useTranslations("focus.contextMenu");
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
     isOpen: false,
     position: { x: 0, y: 0 },
@@ -73,7 +75,7 @@ export function useFocusContextMenu({
   const activityMenuItems = contextMenu.activityTarget
     ? [
         {
-          label: "Iniciar Foco",
+          label: t("startFocus"),
           icon: <Play size={15} />,
           onClick: () => {
             if (contextMenu.activityTarget) {
@@ -82,7 +84,7 @@ export function useFocusContextMenu({
           },
         },
         {
-          label: "Adicionar Registro",
+          label: t("addRecord"),
           icon: <PlusCircle size={15} />,
           onClick: () => {
             onAddManualRecord({
@@ -91,7 +93,7 @@ export function useFocusContextMenu({
           },
         },
         {
-          label: "Editar Atividade",
+          label: t("editActivity"),
           icon: <Pencil size={15} />,
           onClick: () => {
             if (contextMenu.activityTarget) {
@@ -100,7 +102,7 @@ export function useFocusContextMenu({
           },
         },
         {
-          label: "Excluir Atividade",
+          label: t("deleteActivity"),
           icon: <Trash2 size={15} />,
           variant: "destructive" as const,
           onClick: () => {
@@ -115,7 +117,7 @@ export function useFocusContextMenu({
   const itemMenuItems = contextMenu.itemTarget
     ? [
         {
-          label: "Iniciar Foco com Item",
+          label: t("startFocusWithItem"),
           icon: <Play size={15} />,
           onClick: () => {
             if (contextMenu.itemTarget) {
@@ -124,7 +126,7 @@ export function useFocusContextMenu({
           },
         },
         {
-          label: "Adicionar Registro",
+          label: t("addRecord"),
           icon: <PlusCircle size={15} />,
           onClick: () => {
             onAddManualRecord({
@@ -133,7 +135,7 @@ export function useFocusContextMenu({
           },
         },
         {
-          label: "Devolver para Mochila",
+          label: t("returnToBackpack"),
           icon: <Undo2 size={15} />,
           variant: "warning" as const,
           onClick: () => {

@@ -11,13 +11,25 @@ public interface PaymentGatewayPort {
   String createOrGetCustomer(User user);
 
   /**
-   * Cria uma sessão de Checkout usando URLs padrão do gateway.
+   * Cria uma sessão de Checkout usando URLs padrão do gateway (idioma padrão pt-BR).
    */
   String createCheckoutSession(
       User user,
       PlanType plan,
       PaymentMethodType paymentMethod,
       String customerId);
+
+  /**
+   * Cria uma sessão de Checkout usando URLs padrão do gateway e o idioma/moeda do usuário.
+   */
+  default String createCheckoutSession(
+      User user,
+      PlanType plan,
+      PaymentMethodType paymentMethod,
+      String customerId,
+      String locale) {
+    return createCheckoutSession(user, plan, paymentMethod, customerId);
+  }
 
   /**
    * Cria uma sessão de Checkout com URLs explícitas.
@@ -29,6 +41,20 @@ public interface PaymentGatewayPort {
       String customerId,
       String successUrl,
       String cancelUrl);
+
+  /**
+   * Cria uma sessão de Checkout com URLs explícitas e idioma/moeda do usuário.
+   */
+  default String createCheckoutSession(
+      User user,
+      PlanType plan,
+      PaymentMethodType paymentMethod,
+      String customerId,
+      String successUrl,
+      String cancelUrl,
+      String locale) {
+    return createCheckoutSession(user, plan, paymentMethod, customerId, successUrl, cancelUrl);
+  }
 
   /**
    * Valida a assinatura e decodifica o payload do webhook em um evento de domínio.

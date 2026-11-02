@@ -1,0 +1,524 @@
+import { MYSTERY_BOX_TIERS } from "@/constants/reward";
+import { DIFFICULTY_REWARDS } from "@/constants/task";
+import rewardsEn from "@/messages/en/rewards.json";
+import type { HelpFaqItem, HelpTableEntry } from "@/types/help";
+import { formatCoins } from "@/utils";
+import { LEVEL_TITLES_EN, USER_LEVELS } from "@/utils/levels";
+
+/**
+ * Conteúdo extenso da Central de Ajuda em inglês (FAQ e tabelas de referência).
+ * Mantém exatamente a mesma estrutura de `constants/help.ts` (PT-BR) para que a
+ * página selecione o idioma no servidor e envie ao cliente apenas o conteúdo ativo.
+ */
+
+const coins = (value: number) => formatCoins(value, { locale: "en" });
+
+const LEVEL_PROGRESSION_META_EN: Record<
+  string,
+  { tasksEstimate: string; timeEstimate: string }
+> = {
+  NOVICE: { tasksEstimate: "Starting point", timeEstimate: "First login" },
+  APPRENTICE: { tasksEstimate: "~7 medium tasks", timeEstimate: "Day 1 to 2" },
+  ADVENTURER: { tasksEstimate: "~20 medium tasks", timeEstimate: "Week 1" },
+  CHALLENGER: {
+    tasksEstimate: "~50 medium tasks",
+    timeEstimate: "2 to 3 weeks",
+  },
+  AMATEUR: {
+    tasksEstimate: "~100 medium tasks",
+    timeEstimate: "1 month of consistency",
+  },
+  PROFESSIONAL: {
+    tasksEstimate: "~200 medium tasks",
+    timeEstimate: "Quarterly",
+  },
+  EXPERT: { tasksEstimate: "~400 medium tasks", timeEstimate: "Semiannual" },
+  VETERAN: {
+    tasksEstimate: "~800 medium tasks",
+    timeEstimate: "High maturity",
+  },
+  MASTER: {
+    tasksEstimate: "~1,600 medium tasks",
+    timeEstimate: "Rigorous consistency",
+  },
+  LEGEND: {
+    tasksEstimate: "4,000+ medium tasks",
+    timeEstimate: "Over 1 year daily",
+  },
+};
+
+const MYSTERY_BOX_EMOJI_EN: Record<string, string> = {
+  BASIC: "📦 Basic",
+  PREMIUM: "🎁 Premium",
+  EPIC: "💎 Epic",
+  LEGENDARY: "👑 Legendary",
+};
+
+type TierDrops = Record<string, { label: string }>;
+
+function getTierDropLabel(tierKey: string, index: number): string {
+  const tiers = rewardsEn.mysteryBox.tiers as Record<
+    string,
+    { drops: TierDrops }
+  >;
+  return tiers[tierKey]?.drops[String(index)]?.label ?? "";
+}
+
+export const HELP_TABLES_EN: Record<string, HelpTableEntry> = {
+  difficulties: {
+    title: "Strict Economy: Difficulties & Rewards",
+    description:
+      "XP and coin (🪙) earnings based on the real effort load and estimated duration of each activity.",
+    category: "ECONOMY",
+    columns: [
+      "Level",
+      "Difficulty",
+      "Base Reward",
+      "Description & Usage Examples",
+    ],
+    rows: [
+      [
+        "🟩",
+        "Trivial (Very Easy)",
+        `${DIFFICULTY_REWARDS.TRIVIAL.xp} XP • ${coins(DIFFICULTY_REWARDS.TRIVIAL.gold)} 🪙`,
+        "Almost automatic, very short tasks (e.g., drink water, take medicine, make the bed).",
+      ],
+      [
+        "🟦",
+        "Easy",
+        `${DIFFICULTY_REWARDS.EASY.xp} XP • ${coins(DIFFICULTY_REWARDS.EASY.gold)} 🪙`,
+        "Quick tasks that require basic intention (e.g., answer emails, 10 min of reading, wash the dishes).",
+      ],
+      [
+        "🟨",
+        "Medium (Standard)",
+        `${DIFFICULTY_REWARDS.MEDIUM.xp} XP • ${coins(DIFFICULTY_REWARDS.MEDIUM.gold)} 🪙`,
+        "The backbone of the economy: 30 to 60 minutes of moderate effort (e.g., workout, a work task).",
+      ],
+      [
+        "🟧",
+        "Hard",
+        `${DIFFICULTY_REWARDS.HARD.xp} XP • ${coins(DIFFICULTY_REWARDS.HARD.gold)} 🪙`,
+        "Intense cognitive or physical effort: 1 to 2 hours (e.g., heavy study session, programming project).",
+      ],
+    ],
+  },
+  habitDecay: {
+    title: "Habits: Importance & Streak Decay",
+    description:
+      "As you repeat a habit, it demands less mental effort. To avoid inflation and encourage new challenges, the reward decays with the streak.",
+    category: "TASKS",
+    columns: [
+      "Habit Phase",
+      "Consecutive Days (Streak)",
+      "% of Reward",
+      "Psychological Goal",
+    ],
+    rows: [
+      [
+        "Resistance Phase",
+        "Days 1 to 6",
+        "100% of Reward",
+        "Maximum activation energy to engage and break initial inertia.",
+      ],
+      [
+        "Adaptation Phase",
+        "Days 7 to 20",
+        "75% of Reward",
+        "Routine consolidation; the brain starts automating the process.",
+      ],
+      [
+        "Habit Formed",
+        "Day 21 or more",
+        "50% of Reward",
+        "Automated behavior; encourages taking on new challenges and goals.",
+      ],
+    ],
+  },
+  mysteryBoxes: {
+    title: "🎁 Mystery Boxes (Loot Tables & RNG Odds)",
+    description:
+      "Lucky boxes mathematically balanced to deliver dopamine and surprise without unbalancing the game economy.",
+    category: "REWARDS",
+    columns: [
+      "Package",
+      "Cost (🪙)",
+      "Common / Good Prize Odds",
+      "Epic / Legendary Prize Odds",
+    ],
+    rows: MYSTERY_BOX_TIERS.map((tier) => {
+      const tierKey = tier.backendPackageLevel;
+      const format = (index: number, percentage: number) =>
+        `${percentage}% ${getTierDropLabel(tierKey, index)}`;
+      const commonDrops = tier.dropRates
+        .slice(0, 2)
+        .map((d, i) => format(i, d.percentage))
+        .join(" • ");
+      const rareDrops = tier.dropRates
+        .slice(2)
+        .map((d, i) => format(i + 2, d.percentage))
+        .join(" • ");
+      return [
+        MYSTERY_BOX_EMOJI_EN[tierKey] || tierKey,
+        `${coins(tier.recommendedPrice)} 🪙`,
+        commonDrops,
+        rareDrops,
+      ];
+    }),
+  },
+  userLevels: {
+    title: "🏆 User Levels (UserLevel & Lifetime XP)",
+    description:
+      "Your total accumulated XP is never spent or reset when buying rewards. It serves as a milestone of consistency and maturity.",
+    category: "LEVELS",
+    columns: [
+      "Level",
+      "Required XP",
+      "Estimated Medium Tasks",
+      "Estimated Time",
+    ],
+    rows: USER_LEVELS.map((lvl) => {
+      const meta = LEVEL_PROGRESSION_META_EN[lvl.tier];
+      return [
+        LEVEL_TITLES_EN[lvl.tier],
+        `${lvl.minXpRequired.toLocaleString("en-US")} XP`,
+        meta?.tasksEstimate || "-",
+        meta?.timeEstimate || "-",
+      ];
+    }),
+  },
+  focusRewards: {
+    title: "⏱️ Focus Tools: Pomodoro, Stopwatch & Economy",
+    description:
+      "Focus rewards your journey and continuous effort with XP and small fractions of coins (🪙), keeping tasks as the main source of wealth.",
+    category: "FOCUS",
+    columns: [
+      "Mode",
+      "Duration / Cycle",
+      "Base Reward",
+      "Economy Rules & Locks",
+    ],
+    rows: [
+      [
+        "🍅 Short Pomodoro",
+        "15 to 24 min",
+        `4 XP • ${coins(0.1)} 🪙`,
+        "Quick inertia breaker. Requires a successfully completed cycle.",
+      ],
+      [
+        "🍅 Standard Pomodoro",
+        "25 to 40 min",
+        `8 XP • ${coins(0.25)} 🪙`,
+        "The gold standard of focus. Worth a bit more than 1 Easy Task.",
+      ],
+      [
+        "🍅 Deep Work Pomodoro",
+        "Over 40 min",
+        `15 XP • ${coins(0.5)} 🪙`,
+        "Prolonged deep immersion. Worth the XP of 1 Medium Task.",
+      ],
+      [
+        "⏱️ Free Stopwatch",
+        "Every 30 min",
+        `~7 XP • ${coins(0.2)} 🪙`,
+        "Continuous proportional calculation. Capped at 90 min per session.",
+      ],
+      [
+        "🛡️ Safety Locks",
+        "General",
+        "Daily Cap: 6h",
+        "Minimum 10m to score. 4h–6h daily pays 50%. Above 6h pays 0%. Backpack items don't score.",
+      ],
+    ],
+  },
+};
+
+export const HELP_FAQS_EN: HelpFaqItem[] = [
+  {
+    id: "philosophy",
+    category: "OVERVIEW",
+    question: "What is HabitParty and what is its philosophy?",
+    answer:
+      "HabitParty is a gamified productivity engine with a closed economy. Unlike traditional to-do apps, it converts the user's real effort into gold coins (🪙) and experience (XP) using strict mathematical rules. The coins you earn are used to 'buy' real leisure moments in the Store (playing video games, watching series, guilt-free breaks), turning rest into something earned and free of procrastination.",
+    tags: ["overview", "gamification", "introduction", "philosophy", "coins"],
+    highlightBadge: "Essential",
+    actionLink: { label: "Go to Dashboard", href: "/dashboard" },
+  },
+  {
+    id: "experience-modes",
+    category: "OVERVIEW",
+    question:
+      "What is the difference between Focus & Productivity Mode and Gamified Immersion?",
+    answer:
+      "HabitParty provides two distinct user experiences tailored to your cognitive style and workflow. Both share the same underlying consistency engine, Kanban boards, Pomodoro timer, and history:",
+    bullets: [
+      "Focus & Productivity Mode (Minimalist): Designed for executive work, academic study, and anyone preferring a clean, uncluttered interface. It hides coin and loot previews from task modals, mutes game audio, and uses professional terminology (Strict Deadline instead of Hardcore, Inventory instead of Backpack, and Points instead of XP).",
+      "Gamified Immersion Mode (RPG): Designed for those struggling with procrastination who thrive on immediate dopamine feedback. It turns your daily grind into quests with Gold Coins (🪙), lifetime XP, User Levels (Novice to Legend), high-stakes Hardcore Mode, Mystery Loot Boxes in the Store, and celebratory sound effects.",
+      "Total Flexibility: You pick your mode during onboarding and can switch anytime in Settings > Experience Mode with 1 click, preserving all your data, points, and history intact.",
+    ],
+    tags: [
+      "experience",
+      "productivity",
+      "gamification",
+      "modes",
+      "minimalist",
+      "rpg",
+      "settings",
+    ],
+    highlightBadge: "Experience",
+    actionLink: { label: "Configure Mode", href: "/settings" },
+  },
+  {
+    id: "task-types",
+    category: "TASKS",
+    question: "What is the difference between Habits, Dailies, and To-Dos?",
+    answer:
+      "HabitParty splits your routine into three well-defined modes to keep your mind focused:",
+    bullets: [
+      "Habits: Ongoing actions that can be positive (+), negative (-), or mixed. They have no fixed date and work with Importance (Low, Normal, High) and a Streak system.",
+      "Dailies: Recurring routines that must be done on specific weekdays (e.g., Mondays and Wednesdays). They reset periodically.",
+      "To-Dos: One-off tasks with a Due Date and subtask checklists. Once completed, they leave the active flow.",
+    ],
+    tags: ["tasks", "habits", "dailies", "to-do", "routine"],
+    highlightBadge: "Structure",
+    actionLink: { label: "View My Tasks", href: "/tasks" },
+  },
+  {
+    id: "hardcore-mode",
+    category: "TASKS",
+    question: "What is Strict Deadline / Hardcore Mode on tasks?",
+    answer:
+      "It is a high-accountability commitment available for Habits, Dailies, and To-Dos. Its name adapts to your active Experience Mode: it is called 'Strict Deadline (Non-negotiable)' in Productivity Mode, and 'Hardcore Mode' in Gamified Mode. When enabled:",
+    bullets: [
+      "To-Dos: The due date becomes mandatory and cannot be postponed once overdue. Completing an overdue task yields only 50% of the normal reward.",
+      "Midnight Penalty: If the activity is not finished by 11:59 PM of the due date, the system deducts 50% of Coins/XP (or consistency score) from your balance.",
+      "Habits & Dailies: Missing a non-negotiable routine resets your streak to Day 1 and incurs the disciplinary deduction.",
+      "When to use: Reserve strictly for 1 or 2 critical, non-negotiable commitments to prevent procrastination and self-sabotage.",
+    ],
+    tags: [
+      "strict deadline",
+      "hardcore",
+      "penalty",
+      "commitment",
+      "discipline",
+      "anti-procrastination",
+      "hard deadline",
+      "to-do",
+    ],
+    highlightBadge: "Discipline",
+  },
+  {
+    id: "email-reminders-quota",
+    category: "TASKS",
+    question: "How do email reminders for To-Dos work and what are the limits?",
+    answer:
+      "When creating or editing a To-Do with a due date, you can set reminder alarms (1 day before, 2 days before, 3 days before, 1 week before, or a custom date and time). If you check 'Receive email reminder', HabitParty will send an alert straight to your inbox at the scheduled time. To keep the service stable, the limits are:",
+    bullets: [
+      "Adventurer Plan (Free): Up to 5 To-Dos with active email reminders at the same time and a quota of up to 20 sends per month. Completing the task or sending the alert frees the slot automatically.",
+      "Cosmic Guardian Plan (Premium): Up to 30 To-Dos with active email reminders at the same time and an expanded quota of up to 100 sends per month (Fair Use Policy).",
+    ],
+    tags: [
+      "reminders",
+      "email",
+      "resend",
+      "notification",
+      "to-do",
+      "limits",
+      "premium",
+      "free",
+    ],
+    highlightBadge: "Important",
+  },
+  {
+    id: "economy-inflation",
+    category: "ECONOMY",
+    question: "Why are coin and XP values so strict?",
+    answer:
+      "HabitParty's economy is calibrated so that you need a truly productive day (completing medium and hard tasks) to accumulate between 60 and 80 coins. If the system paid hundreds of coins for any simple action, the feeling of achievement would be destroyed by artificial inflation. User honesty is the core engine of the app's effectiveness.",
+    tags: ["economy", "math", "gold", "inflation", "rules"],
+  },
+  {
+    id: "habit-reset",
+    category: "ECONOMY",
+    question: "What happens if I break a habit's Streak?",
+    answer:
+      "If you break a habit's streak, it resets to Day 1. The upside is that the coin reward goes back to 100% of its maximum capacity, giving you a renewed incentive boost to rebuild your discipline.",
+    tags: ["streak", "reset", "decay", "habits"],
+  },
+  {
+    id: "rewards-store",
+    category: "REWARDS",
+    question: "How does the Rewards Store work?",
+    answer:
+      "You create your own real-life products and leisure packages. HabitParty offers three reward models:",
+    bullets: [
+      "Single-Use: Direct items to consume once (e.g., order a pizza, buy a book, have a specialty coffee).",
+      "Time-Based: Packages with a predefined duration (e.g., 30 minutes of video games, 1 hour of social media).",
+      "Mystery Box: Rewards that draw items by rarity (Common to Legendary).",
+    ],
+    tags: ["store", "rewards", "products", "time", "shopping"],
+    actionLink: { label: "Explore the Store", href: "/rewards" },
+  },
+  {
+    id: "mystery-box-system",
+    category: "REWARDS",
+    question: "How do Mystery Boxes (RNG) work?",
+    answer: `When creating or buying a Mystery Box in the Store, you choose between 4 gamified tiers with balanced costs and odds: Basic (${coins(5)} 🪙), Premium (${coins(15)} 🪙), Epic (${coins(35)} 🪙), and Legendary (${coins(80)} 🪙). The draw follows the matching package's Loot Table and the prize goes straight to your Backpack, letting you win amazing rewards depending on your luck!`,
+    tags: ["mystery box", "draw", "rng", "loot table", "prizes"],
+    actionLink: { label: "See Boxes in the Store", href: "/rewards" },
+  },
+  {
+    id: "inventory-usage",
+    category: "INVENTORY",
+    question: "Where do items go after being bought in the Store?",
+    answer:
+      "All purchased products go straight to your Backpack (Inventory). There you can view your available stock, consume an item when you enjoy the reward in real life, or start a focus session tied to that item.",
+    tags: ["backpack", "inventory", "consumption", "items"],
+    actionLink: { label: "Open My Backpack", href: "/inventory" },
+  },
+  {
+    id: "focus-sessions",
+    category: "FOCUS",
+    question: "How do the Focus tools (Pomodoro & Stopwatch) work?",
+    answer:
+      "HabitParty comes with a built-in stopwatch and pomodoro. You can start focus sessions dedicated to study or work activities, logging completed minutes directly in your history and earning calibrated rewards in XP and coins (🪙).",
+    bullets: [
+      "Pomodoro: Predefined focus cycles (15 to 50 min) interleaved with breaks. When you complete a cycle, you earn the full block bonus.",
+      "Free Stopwatch: For those who work in continuous flow. Rewards proportionally to focused time, up to a cap of 90 minutes per session.",
+      "Backpack / Leisure in Focus: You can activate time items bought in the Store (e.g., video games). The timer deducts your leisure balance but does not generate new earnings.",
+    ],
+    tags: ["focus", "pomodoro", "stopwatch", "study", "timer"],
+    highlightBadge: "Focus",
+    actionLink: { label: "Start Focus Session", href: "/focus" },
+  },
+  {
+    id: "focus-economy",
+    category: "FOCUS",
+    question: "How does the Focus economy and anti-abuse locks work?",
+    answer:
+      "To keep gamification fair, rewarding, and protected against a forgotten running timer or idle farming:",
+    bullets: [
+      "Minimum Time: Sessions under 10 minutes are discarded and earn 0 XP and 0 coins.",
+      "Anti-AFK Cap: If the timer is left running for hours, payout is limited to a maximum of 90 continuous minutes.",
+      "Daily Cap & Diminishing Returns (Soft Cap): The first 4 daily hours of focus pay 100%. Between 4h and 6h pay 50% (natural fatigue). Above 6h of daily focus, new sessions earn no XP or coins to prevent burnout and hyperinflation (time is still logged in your stats).",
+      "Leisure Earns Nothing: Sessions with backpack inventory items have a fixed yield of 0 XP and 0 coins.",
+    ],
+    tags: ["focus", "economy", "anti-afk", "daily cap", "rewards"],
+  },
+  {
+    id: "workspaces-concept",
+    category: "OVERVIEW",
+    question: "What are Workspaces and how should I organize them?",
+    answer:
+      "Workspaces let you fully separate your life streams. You can keep one workspace for 'Work / Career', another for 'College / Exams', and one for 'Personal Life'. Each workspace has its own Kanban board with custom columns.",
+    tags: ["workspaces", "areas", "kanban", "organization"],
+    actionLink: { label: "Manage Board", href: "/tasks" },
+  },
+  {
+    id: "user-plans",
+    category: "OVERVIEW",
+    question:
+      "What is the difference between the Free account and the Premium subscription?",
+    answer:
+      "The Free account offers full access to all essential tools: tasks, habits, the mathematical economy, store, and backpack. The Cosmic Guardian (Premium) plan is designed for those who manage advanced routines and want maximum aesthetic customization and immersion:",
+    bullets: [
+      "Cosmic Avatar Frames: 5 exclusive animated frames with a radiant aura and light pulse for your profile.",
+      "Focus Ambient Sounds: Relaxing sounds natively synthesized in the Pomodoro (Gentle Rain, Coffee Shop, Zen Lofi, and Campfire).",
+      "VIP Icon Pack: An exclusive collection of golden icons for columns, routines, focus, and store items.",
+      "Expanded Capacity: Up to 4 Workspaces (double the free plan), up to 6 columns per board, up to 6 custom Focus activities, a backpack expanded to 100 items, and up to 100 registered rewards.",
+      "Profile Highlight: Cosmic Guardian VIP badge and a stellar golden ring on your avatar.",
+      "Plans & Payment: $1.99/month or $19.90/year (~17% savings), paid by recurring credit card.",
+    ],
+    tags: [
+      "plan",
+      "free",
+      "premium",
+      "perks",
+      "benefits",
+      "cosmic guardian",
+      "subscription",
+      "frames",
+      "ambient sounds",
+    ],
+    highlightBadge: "Plans",
+    actionLink: { label: "View Plans & Subscription", href: "/settings" },
+  },
+  {
+    id: "avatar-frames",
+    category: "OVERVIEW",
+    question: "How do Avatar Frames and profile customization work?",
+    answer:
+      "In Settings > Profile, you can choose animated circular frames that wrap your avatar with cosmic light effects and stellar gradients. Free users get the clean classic frame, while Cosmic Guardian subscribers have unrestricted access to all 5 animated frames: Cosmic Guardian (stellar gold), Cyberpunk Neon (cyan and magenta pulse), Phoenix Fire (blazing flames), Emerald Aura (mystic green), and Amethyst Void (arcane violet).",
+    tags: ["frames", "avatar", "profile", "customization", "cosmetics", "vip"],
+    highlightBadge: "Visual",
+    actionLink: { label: "Customize Profile", href: "/settings" },
+  },
+  {
+    id: "ambient-sounds",
+    category: "FOCUS",
+    question: "How do Ambient Sounds work in Focus Mode?",
+    answer:
+      "HabitParty's ambient sounds are generated with the browser's native Web Audio API, ensuring zero latency, minimal memory usage, and 100% offline operation. Premium subscribers can switch between four relaxing soundscapes to silence distractions and get into a flow state:",
+    bullets: [
+      "Gentle Rain: Continuously filtered pink noise simulating soft, steady rain.",
+      "Coffee Shop: Warm mid-frequency filtering simulating the calm murmur of a café.",
+      "Zen Lofi: A continuous harmonic chord (C3, G3, C4, E4) in filtered sine waves for deep focus.",
+      "Campfire: A warm acoustic background with random crackles of embers and burning wood.",
+      "Controls: Sound can be enabled and adjusted both in Settings > Audio and directly in the audio popover during the Focus/Pomodoro timer.",
+    ],
+    tags: [
+      "ambient sounds",
+      "focus",
+      "pomodoro",
+      "rain",
+      "coffee shop",
+      "lofi",
+      "campfire",
+      "audio",
+    ],
+    highlightBadge: "Focus",
+    actionLink: { label: "Configure Sounds & Audio", href: "/settings" },
+  },
+  {
+    id: "payment-cancellation",
+    category: "OVERVIEW",
+    question: "How do subscription payment and cancellation work?",
+    answer:
+      "HabitParty uses Stripe's secure global payment infrastructure. Payments outside Brazil are made by credit card:",
+    bullets: [
+      "Credit Card (Recurring): Automatic monthly or annual renewal. You can cancel anytime with 1 click via Settings > Profile > Manage Subscription (Stripe Portal). When you cancel, your Premium access remains active until the end of the period already paid.",
+    ],
+    tags: ["payment", "stripe", "cancellation", "card", "subscription"],
+    actionLink: { label: "Manage Subscription", href: "/settings" },
+  },
+  {
+    id: "premium-expiration-data",
+    category: "OVERVIEW",
+    question:
+      "What happens to my columns, workspaces, and data when Premium expires?",
+    answer:
+      "No data or task is ever deleted! HabitParty has an absolute zero-data-loss commitment. When your Premium period expires (or you go back to the Free plan), all your structures stay intact in the database and the system applies a smooth, transparent downgrade:",
+    bullets: [
+      "Board Columns (up to 6 created): The routine board shows up to 4 active columns at a time (Free limit). The other columns are preserved and hidden from the board. You can open the column manager at any time and freely choose which 4 columns stay active day to day.",
+      "Focus Activities (up to 6 created): The first 4 activities stay active and sortable; the last 2 are preserved and paused until renewal.",
+      "Workspaces: All created workspaces remain saved and accessible in read-only mode (Locked 👑), so you can check tasks at any time.",
+      "Tasks & History: All tasks inside columns or workspaces remain preserved, so you can complete, move, or edit them.",
+      "Backpack Items & Store: Items already bought in your backpack are never lost (acquired right). You can consume them normally.",
+      "Sidebar Advance Notice: So you're never caught off guard, a countdown appears in the Sidebar footer when 7, 3, and 1 day remain to renew with 1 click.",
+      "Instant Reactivation: When you renew Premium at any time, all your extra features (6 columns with scroll, animated frames, ambient sounds, and 4 workspaces) come back instantly without any reconfiguration.",
+    ],
+    tags: [
+      "expiration",
+      "premium",
+      "columns",
+      "backpack",
+      "data",
+      "security",
+      "workspaces",
+      "downgrade",
+      "free",
+      "notice",
+    ],
+    highlightBadge: "Transparency",
+  },
+];

@@ -44,6 +44,13 @@ export function calculateStoragePercentage(
   return Math.min(Math.round(pct * 10) / 10, 100);
 }
 
+/** Formata bytes em B, KB ou MB (espelhando UserStorageBreakdownProjection.formatBytes do backend) */
+export function formatStorageBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
 /** Abas de filtro da tabela de usuários */
 export const ADMIN_USER_FILTER_TABS = [
   { id: "ALL", label: "Todos os Usuários" },
@@ -93,7 +100,7 @@ export const ADMIN_STORAGE_BREAKDOWN_CONFIG = [
   },
   {
     key: "userRow",
-    label: "Registro de Usuário & Perfil",
+    label: "Conta, Estatísticas & Assinatura",
     icon: UserIcon,
     color: "text-neutral-300 bg-surface border-white/10",
   },

@@ -1,5 +1,7 @@
 package com.habitparty.adapters.in.web.dtos.response.admin;
 
+import com.habitparty.application.ports.projections.UserStorageBreakdownProjection;
+
 public record UserStorageBreakdownDTO(
     long tasksBytes,
     long tasksCount,
@@ -19,9 +21,27 @@ public record UserStorageBreakdownDTO(
     String totalFormatted
 ) {
   public static String formatBytes(long bytes) {
-    if (bytes < 1024) return bytes + " B";
-    int exp = (int) (Math.log(bytes) / Math.log(1024));
-    char unit = "KMGTPE".charAt(exp - 1);
-    return String.format(java.util.Locale.US, "%.1f %cB", bytes / Math.pow(1024, exp), unit);
+    return UserStorageBreakdownProjection.formatBytes(bytes);
+  }
+
+  public static UserStorageBreakdownDTO fromProjection(UserStorageBreakdownProjection p) {
+    return new UserStorageBreakdownDTO(
+        p.tasksBytes(),
+        p.tasksCount(),
+        p.activeTasksCount(),
+        p.checklistsBytes(),
+        p.checklistsCount(),
+        p.workspacesBytes(),
+        p.workspacesCount(),
+        p.historyBytes(),
+        p.historyCount(),
+        p.inventoryBytes(),
+        p.inventoryCount(),
+        p.focusBytes(),
+        p.focusCount(),
+        p.userRowBytes(),
+        p.totalBytes(),
+        p.totalFormatted()
+    );
   }
 }

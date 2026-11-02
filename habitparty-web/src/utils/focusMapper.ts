@@ -1,3 +1,4 @@
+import type { AppLocale } from "@/i18n/config";
 import type {
   FocusActivity,
   FocusActivityResponseDTO,
@@ -11,10 +12,11 @@ import { toLocalISOString } from "./date";
  */
 export function mapFocusActivityDtoToActivity(
   dto: FocusActivityResponseDTO,
+  locale: AppLocale = "pt-BR",
 ): FocusActivity {
   return {
     id: dto.id || "",
-    name: dto.name || "Atividade",
+    name: dto.name || (locale === "en" ? "Activity" : "Atividade"),
     icon: dto.icon || "book",
     orderIndex: dto.orderIndex ?? 0,
     recordType: dto.recordType || "POMO",
@@ -28,9 +30,10 @@ export function mapFocusActivityDtoToActivity(
  */
 export function mapFocusActivities(
   dtos?: FocusActivityResponseDTO[] | null,
+  locale: AppLocale = "pt-BR",
 ): FocusActivity[] {
   if (!dtos) return [];
-  return dtos.map(mapFocusActivityDtoToActivity);
+  return dtos.map((dto) => mapFocusActivityDtoToActivity(dto, locale));
 }
 
 /**

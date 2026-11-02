@@ -1,11 +1,13 @@
 "use client";
 
 import { Calendar, History as HistoryIcon } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { deleteTransactionAction } from "@/actions/historyActions";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { HISTORY_GRID_COLS } from "@/constants/history";
+import type { AppLocale } from "@/i18n/config";
 import type { TransactionHistoryResponseDTO } from "@/types/history";
 import { cn, groupTransactionsByDay } from "@/utils";
 import { HistoryRow } from "./HistoryRow";
@@ -22,6 +24,8 @@ export function HistoryTable({
   isCompact = false,
   onDelete,
 }: HistoryTableProps) {
+  const t = useTranslations("history.table");
+  const locale = useLocale() as AppLocale;
   const [selectedTransaction, setSelectedTransaction] =
     useState<TransactionHistoryResponseDTO | null>(null);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
@@ -30,8 +34,8 @@ export function HistoryTable({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const groupedTransactions = useMemo(
-    () => groupTransactionsByDay(transactions),
-    [transactions],
+    () => groupTransactionsByDay(transactions, locale),
+    [transactions, locale],
   );
 
   const handleRowClick = useCallback(
@@ -62,10 +66,10 @@ export function HistoryTable({
       } else {
         const res = await deleteTransactionAction(pendingDelete.id);
         if (!res.success) {
-          toast.error(res.error || "Erro ao excluir registro.");
+          toast.error(res.error || t("toasts.deleteError"));
           return;
         }
-        toast.success("Registro removido com sucesso!");
+        toast.success(t("toasts.deleteSuccess"));
       }
 
       if (selectedTransaction?.id === pendingDelete.id) {
@@ -80,7 +84,7 @@ export function HistoryTable({
   return (
     <section
       className="flex flex-col gap-2.5 w-full"
-      aria-label="Extrato de transações"
+      aria-label={t("sectionAria")}
     >
       {/* WRAPPER COM ROLAGEM HORIZONTAL PARA DESKTOP/TABLET QUANDO NECESSÁRIO */}
       <div className="w-full overflow-x-visible md:overflow-x-auto pb-1">
@@ -94,13 +98,13 @@ export function HistoryTable({
             )}
             aria-hidden="true"
           >
-            <span>Evento / Item</span>
-            <span>Tipo de Evento</span>
-            <span>Dificuldade / Tags</span>
-            <span>Moedas</span>
-            <span>XP</span>
-            <span className="text-right">Horário</span>
-            <span className="sr-only">Ações</span>
+            <span>{t("headers.eventItem")}</span>
+            <span>{t("headers.eventType")}</span>
+            <span>{t("headers.difficultyTags")}</span>
+            <span>{t("headers.coins")}</span>
+            <span>{t("headers.xp")}</span>
+            <span className="text-right">{t("headers.time")}</span>
+            <span className="sr-only">{t("headers.actions")}</span>
           </div>
 
           {/* LISTA AGRUPADA POR DIA OU ESTADO VAZIO */}
@@ -116,11 +120,10 @@ export function HistoryTable({
               </div>
               <div className="flex flex-col gap-1 max-w-sm">
                 <h4 className="text-body-m font-bold text-neutral-100">
-                  Nenhuma transação encontrada
+                  {t("emptyTitle")}
                 </h4>
                 <p className="text-body-s text-neutral-400">
-                  Não há movimentações de moedas ou XP para os filtros
-                  selecionados.
+                  {t("emptyDescription")}
                 </p>
               </div>
             </div>
@@ -137,7 +140,9 @@ export function HistoryTable({
                     <div className="h-px flex-1 bg-white/10" />
                     <span className="text-tiny text-neutral-400 font-medium">
                       {group.items.length}{" "}
-                      {group.items.length === 1 ? "registro" : "registros"}
+                      {group.items.length === 1
+                        ? t("recordSingular")
+                        : t("recordPlural")}
                     </span>
                   </div>
 
@@ -176,16 +181,15 @@ export function HistoryTable({
         isOpen={Boolean(pendingDelete)}
         onClose={() => !isDeleting && setPendingDelete(null)}
         onConfirm={handleConfirmDelete}
-        title="Excluir registro do extrato"
-        description={
-          <>
-            Remover <strong>{pendingDelete?.name || "este registro"}</strong> do
-            seu extrato? Isso <strong>não altera</strong> seu saldo de moedas
-            nem seu XP, apenas apaga o registro.
-          </>
+        title={t("deleteModal.title")}
+        description={t.rich("deleteModal.description", {
+          name: pendingDelete?.name || t("deleteModal.defaultItemName"),
+          bold: (chunks) => <strong>{chunks}</strong>,
+        })}
+        confirmText={
+          isDeleting ? t("deleteModal.deleting") : t("deleteModal.confirmText")
         }
-        confirmText={isDeleting ? "Excluindo..." : "Excluir registro"}
-        cancelText="Cancelar"
+        cancelText={t("deleteModal.cancelText")}
         variant="danger"
         isLoading={isDeleting}
       />

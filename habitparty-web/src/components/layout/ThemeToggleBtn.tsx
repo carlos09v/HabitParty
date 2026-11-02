@@ -1,6 +1,7 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useThemeMode } from "@/hooks/useThemeMode";
 import { cn } from "@/utils";
 
@@ -17,6 +18,7 @@ export function ThemeToggleBtn({
   variant = "row",
   className,
 }: ThemeToggleBtnProps) {
+  const t = useTranslations("ui.themeToggle");
   const { theme, toggleTheme, mounted } = useThemeMode();
   const isLight = theme === "light";
 
@@ -24,7 +26,11 @@ export function ThemeToggleBtn({
     if (variant === "icon") {
       return (
         <div
-          className={cn("h-9 w-9 rounded-xl opacity-0", className, "hidden")}
+          className={cn(
+            "hidden h-9 w-9 rounded-xl border border-neutral-700/60 bg-card/50 dark:border-white/10 dark:bg-white/[0.04] opacity-50",
+            className,
+            "hidden",
+          )}
           aria-hidden="true"
         />
       );
@@ -33,50 +39,47 @@ export function ThemeToggleBtn({
     return (
       <div
         className={cn(
-          "flex w-full items-center justify-between px-3 py-2.5 rounded-lg text-body-s font-medium text-neutral-400 opacity-60",
+          "hidden flex w-full items-center justify-between px-3 py-2 rounded-lg text-body-s font-medium text-neutral-400 opacity-60",
           className,
           "hidden",
         )}
+        aria-hidden="true"
       >
         <div className="flex items-center gap-3">
           <Moon size={18} aria-hidden="true" />
-          <span>Tema Escuro</span>
+          <span>{t("labelDark")}</span>
         </div>
-        <div className="h-5 w-9 rounded-full bg-neutral-300 dark:bg-neutral-700/40" />
+        <div className="h-5 w-9 rounded-full bg-surface border border-neutral-700 dark:bg-neutral-800 dark:border-white/15" />
       </div>
     );
   }
 
-  // Variante Compacta (Ícone para Headers / Navbars)
+  // Variante Compacta (Ícone para Headers / Navbars / Footers)
   if (variant === "icon") {
     return (
       <button
         type="button"
         onClick={toggleTheme}
         className={cn(
-          "relative inline-flex items-center justify-center h-9 w-9 rounded-xl transition-all duration-200 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-gold/50",
-          "border border-neutral-700 bg-card hover:bg-surface-hover text-neutral-200 hover:text-neutral-50 shadow-2xs backdrop-blur-xs",
-          "dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 dark:text-neutral-200 dark:hover:text-white dark:shadow-none",
+          "hidden relative inline-flex items-center justify-center h-9 w-9 rounded-xl transition-all duration-200 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-gold/50 group",
+          "border border-neutral-700 bg-card/90 hover:bg-surface-hover hover:border-primary/40 text-neutral-200 hover:text-neutral-50 shadow-2xs backdrop-blur-xs",
+          "dark:border-white/12 dark:bg-white/[0.04] dark:hover:bg-white/[0.09] dark:hover:border-gold/40 dark:text-neutral-200 dark:hover:text-white dark:shadow-none",
           className,
           "hidden",
         )}
         aria-label={
-          isLight ? "Ativar tema escuro cósmico" : "Ativar tema claro solar"
+          isLight ? t("switchToDarkIconAria") : t("switchToLightIconAria")
         }
-        title={
-          isLight
-            ? "Mudar para Modo Escuro Cósmico"
-            : "Mudar para Modo Claro Solar"
-        }
+        title={isLight ? t("switchToDarkTitle") : t("switchToLightTitle")}
       >
         {isLight ? (
           <Moon
-            className="w-4 h-4 text-neutral-200 transition-transform duration-200 hover:rotate-12"
+            className="w-4 h-4 text-primary group-hover:text-gold transition-all duration-200 group-hover:-rotate-12"
             aria-hidden="true"
           />
         ) : (
           <Sun
-            className="w-4 h-4 text-gold transition-transform duration-200 hover:rotate-45"
+            className="w-4 h-4 text-gold transition-transform duration-200 group-hover:rotate-45"
             aria-hidden="true"
           />
         )}
@@ -90,32 +93,38 @@ export function ThemeToggleBtn({
       type="button"
       onClick={toggleTheme}
       className={cn(
-        "flex w-full items-center justify-between px-3 py-2 rounded-lg transition-all text-body-s font-medium outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 text-neutral-200 hover:bg-surface-hover hover:text-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-500/10 dark:hover:text-neutral-50 border-r-2 border-transparent text-left cursor-pointer group select-none",
+        "hidden flex w-full items-center justify-between px-3 py-2 rounded-lg transition-all text-body-s font-medium outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 text-neutral-200 hover:bg-surface-hover hover:text-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-500/10 dark:hover:text-neutral-50 border-r-2 border-transparent text-left cursor-pointer group select-none",
         className,
         "hidden",
       )}
-      aria-label={isLight ? "Ativar tema escuro" : "Ativar tema claro"}
-      title={isLight ? "Alternar para Tema Escuro" : "Alternar para Tema Claro"}
+      aria-label={
+        isLight ? t("switchToDarkRowAria") : t("switchToLightRowAria")
+      }
+      title={isLight ? t("switchToDarkTitle") : t("switchToLightTitle")}
     >
       <div className="flex items-center gap-3">
         <span className="transition-colors">
           {isLight ? (
-            <Sun size={18} className="text-amber-500" aria-hidden="true" />
+            <Sun size={18} className="text-gold" aria-hidden="true" />
           ) : (
-            <Moon size={18} className="text-primary-light" aria-hidden="true" />
+            <Moon
+              size={18}
+              className="text-primary-light group-hover:text-gold transition-colors"
+              aria-hidden="true"
+            />
           )}
         </span>
         <span className="text-neutral-200 group-hover:text-neutral-50 dark:text-neutral-200 dark:group-hover:text-neutral-50 transition-colors">
-          {isLight ? "Tema Claro" : "Tema Escuro"}
+          {isLight ? t("labelLight") : t("labelDark")}
         </span>
       </div>
 
-      {/* Indicador de Switch Visual */}
+      {/* Indicador de Switch Visual (contraste >= 3:1 entre thumb e trilha) */}
       <div
         className={cn(
           "relative inline-flex shrink-0 items-center rounded-full transition-colors h-5 w-9 p-0.5",
           isLight
-            ? "bg-amber-100 border border-amber-300 shadow-2xs"
+            ? "bg-amber-100 border border-amber-600/50 shadow-2xs"
             : "bg-neutral-800 border border-white/15",
         )}
         aria-hidden="true"
@@ -124,14 +133,14 @@ export function ThemeToggleBtn({
           className={cn(
             "inline-flex items-center justify-center transform rounded-full shadow-xs transition-transform duration-200 h-3.5 w-3.5",
             isLight
-              ? "translate-x-4 bg-amber-500 text-white"
-              : "translate-x-0.5 bg-neutral-400 text-neutral-900",
+              ? "translate-x-4 bg-amber-700 text-white"
+              : "translate-x-0.5 bg-neutral-300 text-on-gold",
           )}
         >
           {isLight ? (
             <Sun size={10} className="stroke-3 text-white" />
           ) : (
-            <Moon size={9} className="text-neutral-900" />
+            <Moon size={9} className="text-on-gold" />
           )}
         </span>
       </div>

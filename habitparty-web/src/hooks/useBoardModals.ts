@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardColumn, Task, TaskTypeOption } from "@/types/task";
+import type { InitialTaskFormData } from "@/types/task-ui";
 
 interface UseBoardModalsOptions {
   initialOpenCreateColumn?: boolean;
@@ -45,6 +46,7 @@ export function useBoardModals({
     columnId?: string;
     defaultTaskType?: TaskTypeOption;
     initialTitle?: string;
+    initialValues?: InitialTaskFormData;
     taskToEdit?: Task | null;
   }>({ isOpen: false, taskToEdit: null });
 

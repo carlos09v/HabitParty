@@ -2,44 +2,65 @@
 
 import { Star } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { setFirstStepPreferencesAction } from "@/actions/ui";
 import { createWorkspaceAction } from "@/actions/workspaceActions";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { USAGE_MODES } from "@/constants/onboarding";
-import { useThemeMode } from "@/hooks/useThemeMode";
+import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
+import { useUIStore } from "@/store/uiStore";
 import type { ModeOption, UsageMode } from "@/types/onboarding";
-import { AppearanceSelector } from "./AppearanceSelector";
+import type { ExperienceMode } from "@/types/ui";
+import { ExperienceModeSelector } from "./ExperienceModeSelector";
 import { UsageModeSelector } from "./UsageModeSelector";
 import { WorkspaceSetupCard } from "./WorkspaceSetupCard";
 
 export function FirstStepWizard() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const { theme, setTheme, isDark } = useThemeMode();
+  const t = useTranslations("onboarding.wizard");
+  const tUsage = useTranslations("onboarding.usageModes");
 
   // 1. Estado do Modo de Uso
   const [selectedMode, setSelectedMode] = useState<UsageMode>("personal");
 
-  // 2. Estado do Workspace Inicial
-  const currentModeConfig =
-    USAGE_MODES.find((m) => m.id === selectedMode) || USAGE_MODES[0];
-  const [workspaceName, setWorkspaceName] = useState(
-    currentModeConfig.defaultWorkspace,
+  // 2. Estado do Estilo de Experiência (Gamificado vs Produtividade) + Calibragem
+  const [experienceMode, setExperienceModeState] =
+    useState<ExperienceMode>("PRODUCTIVITY");
+  const [isCompact, setIsCompact] = useState(false);
+  const uiSoundsEnabled = useSoundPreferencesStore((s) => s.uiSoundsEnabled);
+  const setUiSoundsEnabled = useSoundPreferencesStore(
+    (s) => s.setUiSoundsEnabled,
   );
-  const [hasManuallyEditedName, setHasManuallyEditedName] = useState(false);
+  const setTimerSoundType = useSoundPreferencesStore(
+    (s) => s.setTimerSoundType,
+  );
 
-  const handleSelectMode = (mode: ModeOption) => {
-    setSelectedMode(mode.id);
-    if (!hasManuallyEditedName) {
-      setWorkspaceName(mode.defaultWorkspace);
+  const handleSelectExperienceMode = (mode: ExperienceMode) => {
+    setExperienceModeState(mode);
+    if (mode === "PRODUCTIVITY") {
+      setTimerSoundType("zen");
+    } else {
+      setUiSoundsEnabled(true);
     }
   };
 
+  // 3. Estado do Workspace Inicial (reativo ao modo e ao idioma enquanto não editado manualmente)
+  const defaultWorkspaceName = tUsage(`modes.${selectedMode}.defaultWorkspace`);
+  const currentChips =
+    (tUsage.raw(`modes.${selectedMode}.chips`) as string[]) || [];
+  const [customWorkspaceName, setCustomWorkspaceName] = useState<string | null>(
+    null,
+  );
+  const workspaceName = customWorkspaceName ?? defaultWorkspaceName;
+
+  const handleSelectMode = (mode: ModeOption) => {
+    setSelectedMode(mode.id);
+  };
+
   const handleSelectChip = (chip: string) => {
-    setWorkspaceName(chip);
-    setHasManuallyEditedName(true);
+    setCustomWorkspaceName(chip);
   };
 
   const handleFinish = async (e: React.FormEvent) => {
@@ -47,12 +68,12 @@ export function FirstStepWizard() {
 
     const trimmedName = workspaceName.trim();
     if (!trimmedName) {
-      toast.error("Por favor, digite um nome para o seu primeiro ambiente.");
+      toast.error(t("validation.nameRequired"));
       return;
     }
 
-    if (trimmedName.length > 12) {
-      toast.error("O nome do ambiente deve ter até 12 caracteres.");
+    if (trimmedName.length > 25) {
+      toast.error(t("validation.nameMaxLength"));
       return;
     }
 
@@ -63,23 +84,31 @@ export function FirstStepWizard() {
       });
 
       if (!result.success) {
-        toast.error(
-          result.error ||
-            "Não foi possível criar o ambiente. Tente novamente em instantes.",
-        );
+        toast.error(result.error || t("validation.createFailed"));
         return;
       }
 
       if (!result.data?.id) {
-        toast.error("O ambiente foi criado sem um identificador válido.");
+        toast.error(t("validation.invalidId"));
         return;
       }
 
-      // 2. Salvar preferências de modo de uso e workspace ativa nos cookies do servidor
-      await setFirstStepPreferencesAction(selectedMode, result.data.id);
+      // 2. Atualizar estado local do Zustand imediatamente
+      useUIStore.setState({
+        experienceMode,
+        compactMode: isCompact,
+      });
+
+      // 3. Salvar preferências de modo de uso, experiência, densidade e workspace ativa no banco e cookies
+      await setFirstStepPreferencesAction(
+        selectedMode,
+        result.data.id,
+        experienceMode,
+        isCompact,
+      );
 
       toast.success(
-        `Ambiente "${result.data.name}" criado com sucesso! Bem-vindo(a) ao HabitParty!`,
+        t("successToast", { name: result.data.name || trimmedName }),
       );
       router.push("/dashboard");
     });
@@ -98,14 +127,13 @@ export function FirstStepWizard() {
           <header className="flex flex-col gap-1.5">
             <div className="inline-flex items-center gap-1.5 self-start px-2.5 py-0.5 rounded-full bg-gold/10 border border-gold/30 text-gold text-[10px] lg:text-[11px] font-bold uppercase tracking-wider">
               <Star size={12} className="fill-gold" />
-              Personalização
+              {t("badge")}
             </div>
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-neutral-50 tracking-tight">
-              Personalize sua Experiência
+              {t("title")}
             </h1>
             <p className="text-xs sm:text-body-s text-neutral-300 max-w-lg leading-relaxed">
-              Vamos calibrar sua jornada no HabitParty. Escolha seu objetivo
-              principal para prepararmos seu primeiro espaço.
+              {t("subtitle")}
             </p>
           </header>
 
@@ -123,30 +151,33 @@ export function FirstStepWizard() {
           <WorkspaceSetupCard
             workspaceName={workspaceName}
             onChangeName={(name) => {
-              setWorkspaceName(name);
-              setHasManuallyEditedName(true);
+              setCustomWorkspaceName(name);
             }}
-            chips={currentModeConfig.chips}
+            chips={currentChips}
             onSelectChip={handleSelectChip}
             disabled={isPending}
           />
 
-          <AppearanceSelector
-            theme={theme}
-            onSetTheme={setTheme}
-            isDark={isDark}
+          <ExperienceModeSelector
+            experienceMode={experienceMode}
+            onSelectExperienceMode={handleSelectExperienceMode}
+            isCompact={isCompact}
+            onToggleCompact={setIsCompact}
+            uiSoundsEnabled={uiSoundsEnabled}
+            onToggleSounds={setUiSoundsEnabled}
+            disabled={isPending}
           />
 
           <div className="flex flex-col gap-2 pt-1">
             <SubmitButton
               isPending={isPending}
               disabled={!workspaceName.trim()}
-              loadingText="Preparando seu ambiente e dashboard..."
+              loadingText={t("submitting")}
             >
-              Criar Ambiente e Começar Minha Jornada
+              {t("submit")}
             </SubmitButton>
             <p className="text-center text-[11px] text-neutral-400">
-              Você será direcionado diretamente ao painel principal ao concluir.
+              {t("redirectHint")}
             </p>
           </div>
         </section>

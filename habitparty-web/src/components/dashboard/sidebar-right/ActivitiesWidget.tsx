@@ -1,23 +1,47 @@
 "use client";
 
-import { ChevronRight, Crown, Lock, Plus } from "lucide-react";
+import { ChevronRight, Crown, Lock, Pencil, Plus, Trash2 } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { deleteFocusActivity } from "@/actions/focusActions";
 import { UpgradePremiumModal } from "@/components/subscription/UpgradePremiumModal";
+import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import {
   ACTIVITY_PERIOD_OPTIONS,
   type ActivityPeriodOption,
 } from "@/constants/dashboard";
 import {
+  DEFAULT_POMO_MINUTES,
   getFocusIcon,
   MAX_FOCUS_ACTIVITIES_FREE,
   MAX_FOCUS_ACTIVITIES_PREMIUM,
 } from "@/constants/focus";
 import { useUserStore } from "@/store/userStore";
 import type { ActivitiesWidgetProps } from "@/types/dashboard";
+import type { FocusActivity } from "@/types/focus";
 import { cn } from "@/utils";
 import { formatFocusMinutes } from "@/utils/focusFormatters";
 import { calculateActivityDurationMap } from "@/utils/focusMetrics";
+
+const FocusActivityModal = dynamic(
+  () =>
+    import("@/components/focus/modals/FocusActivityModal").then((mod) => ({
+      default: mod.FocusActivityModal,
+    })),
+  { ssr: false },
+);
+
+const ConfirmationModal = dynamic(
+  () =>
+    import("@/components/ui/ConfirmationModal").then((mod) => ({
+      default: mod.ConfirmationModal,
+    })),
+  { ssr: false },
+);
 
 /**
  * Widget de Atividades de Foco com seletor de período próprio (Hoje | Semana | Mês).
@@ -27,17 +51,50 @@ export function ActivitiesWidget({
   records = [],
   isCompact = false,
 }: ActivitiesWidgetProps) {
+  const t = useTranslations("dashboard.sidebarRight.activitiesWidget");
+  const router = useRouter();
   const [period, setPeriod] = useState<ActivityPeriodOption>("today");
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const isPremium = useUserStore((s) => s.is_Premium);
+
+  // Sincronização otimista de atividades
+  const [activitiesList, setActivitiesList] =
+    useState<FocusActivity[]>(activities);
+
+  useEffect(() => {
+    setActivitiesList(activities);
+  }, [activities]);
+
+  // Context Menu da atividade
+  const [contextMenu, setContextMenu] = useState<{
+    isOpen: boolean;
+    position: { x: number; y: number };
+    activity: FocusActivity | null;
+  }>({
+    isOpen: false,
+    position: { x: 0, y: 0 },
+    activity: null,
+  });
+
+  // Modal de edição da atividade
+  const [activityToEdit, setActivityToEdit] = useState<FocusActivity | null>(
+    null,
+  );
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // Modal de exclusão da atividade
+  const [activityToDelete, setActivityToDelete] =
+    useState<FocusActivity | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const maxActivities = isPremium
     ? MAX_FOCUS_ACTIVITIES_PREMIUM
     : MAX_FOCUS_ACTIVITIES_FREE;
-  const isLimitReached = activities.length >= maxActivities;
+  const isLimitReached = activitiesList.length >= maxActivities;
 
-  const activeActivities = activities.slice(0, maxActivities);
+  const activeActivities = activitiesList.slice(0, maxActivities);
   const blockedActivitiesCount = !isPremium
-    ? Math.max(0, activities.length - maxActivities)
+    ? Math.max(0, activitiesList.length - maxActivities)
     : 0;
 
   const activityTimeMap = useMemo(
@@ -45,22 +102,76 @@ export function ActivitiesWidget({
     [records, period],
   );
 
+  const handleContextMenu = (e: React.MouseEvent, act: FocusActivity) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      isOpen: true,
+      position: { x: e.clientX, y: e.clientY },
+      activity: act,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!activityToDelete) return;
+    setIsDeleting(true);
+    try {
+      const res = await deleteFocusActivity(activityToDelete.id, false);
+      if (!res.success) {
+        toast.error(res.error || t("deleteError"));
+        return;
+      }
+      toast.success(t("deleteSuccess", { name: activityToDelete.name }));
+      setActivitiesList((prev) =>
+        prev.filter((a) => a.id !== activityToDelete.id),
+      );
+      setActivityToDelete(null);
+      router.refresh();
+    } catch {
+      toast.error(t("deleteUnexpectedError"));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const contextMenuItems: ContextMenuItem[] = useMemo(() => {
+    if (!contextMenu.activity) return [];
+    return [
+      {
+        label: t("contextMenu.edit"),
+        icon: <Pencil size={14} />,
+        onClick: () => {
+          setActivityToEdit(contextMenu.activity);
+          setIsEditModalOpen(true);
+        },
+      },
+      {
+        label: t("contextMenu.delete"),
+        icon: <Trash2 size={14} />,
+        variant: "destructive",
+        onClick: () => {
+          setActivityToDelete(contextMenu.activity);
+        },
+      },
+    ];
+  }, [contextMenu.activity, t]);
+
   return (
     <div className="flex flex-col gap-2.5 w-full">
       {/* Header com Seletor Independente de Período */}
       <div className="flex items-center justify-between gap-2 w-full">
         <div className="flex items-center gap-1.5 min-w-0">
           <h4 className="text-subtitle-s font-bold text-neutral-100 truncate">
-            Atividades
+            {t("title")}
           </h4>
           <span className="text-tiny font-semibold text-neutral-400">
-            ({activities.length}/{maxActivities})
+            ({activitiesList.length}/{maxActivities})
           </span>
         </div>
 
         <fieldset
           className="inline-flex items-center rounded-lg bg-white/5 border border-white/10 p-0.5 shrink-0 m-0"
-          aria-label="Período do tempo de foco"
+          aria-label={t("periodAriaLabel")}
         >
           {ACTIVITY_PERIOD_OPTIONS.map((opt) => {
             const isActive = period === opt.id;
@@ -73,11 +184,11 @@ export function ActivitiesWidget({
                 className={cn(
                   "px-1.5 py-0.5 rounded-md text-[11px] font-semibold transition-all cursor-pointer",
                   isActive
-                    ? "bg-gold text-neutral-900 font-bold shadow-xs"
+                    ? "bg-gold text-on-gold font-bold shadow-xs"
                     : "text-neutral-400 hover:text-neutral-200",
                 )}
               >
-                {opt.label}
+                {t(`periods.${opt.id}`)}
               </button>
             );
           })}
@@ -88,17 +199,28 @@ export function ActivitiesWidget({
       <div className="flex flex-col gap-1.5 w-full">
         {activeActivities.length === 0 ? (
           <div className="rounded-lg border border-dashed border-white/10 bg-white/5 p-3 text-center text-xs text-neutral-400">
-            Nenhuma atividade cadastrada.
+            {t("empty")}
           </div>
         ) : (
           activeActivities.map((act) => {
             const Icon = getFocusIcon(act.icon);
             const minutes = activityTimeMap[act.id] || 0;
+            const typeLabel =
+              act.recordType === "POMO"
+                ? t("pomodoroDuration", {
+                    minutes: act.targetTimeMinutes || DEFAULT_POMO_MINUTES,
+                  })
+                : t("freeStopwatch");
 
             return (
               <Link
                 key={act.id}
                 href={`/focus?activityId=${act.id}`}
+                onContextMenu={(e) => handleContextMenu(e, act)}
+                title={t("rightClickHint", {
+                  name: act.name,
+                  type: typeLabel,
+                })}
                 className={cn(
                   "group flex items-center justify-between rounded-lg border transition-all",
                   isCompact ? "p-1.5" : "p-2",
@@ -107,7 +229,7 @@ export function ActivitiesWidget({
               >
                 <div
                   className={cn(
-                    "flex items-center min-w-0",
+                    "flex items-center min-w-0 flex-1",
                     isCompact ? "gap-1.5" : "gap-2",
                   )}
                 >
@@ -116,7 +238,7 @@ export function ActivitiesWidget({
                   </div>
                   <span
                     className={cn(
-                      "font-medium text-neutral-100 truncate",
+                      "font-medium text-neutral-100 truncate group-hover:text-gold transition-colors",
                       isCompact ? "text-xs" : "text-body-s",
                     )}
                   >
@@ -143,7 +265,7 @@ export function ActivitiesWidget({
           <button
             type="button"
             onClick={() => setIsUpgradeModalOpen(true)}
-            title={`${blockedActivitiesCount} ${blockedActivitiesCount === 1 ? "atividade preservada" : "atividades preservadas"} do período Premium. Reative o plano Premium para cronometrar!`}
+            title={t("lockedPreservedTitle", { count: blockedActivitiesCount })}
             className={cn(
               "group flex items-center justify-between rounded-lg border transition-all text-left w-full cursor-pointer",
               isCompact ? "p-1.5" : "p-2",
@@ -165,10 +287,7 @@ export function ActivitiesWidget({
                   isCompact ? "text-xs" : "text-body-s",
                 )}
               >
-                {blockedActivitiesCount}{" "}
-                {blockedActivitiesCount === 1
-                  ? "atividade bloqueada"
-                  : "atividades bloqueadas"}
+                {t("lockedCount", { count: blockedActivitiesCount })}
               </span>
             </div>
 
@@ -187,7 +306,7 @@ export function ActivitiesWidget({
               <button
                 type="button"
                 onClick={() => setIsUpgradeModalOpen(true)}
-                title="Assine o plano Premium para criar até 6 atividades de foco!"
+                title={t("upgradeTitle")}
                 className={cn(
                   "flex items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-all cursor-pointer group",
                   isCompact ? "py-1" : "p-1.5",
@@ -201,14 +320,14 @@ export function ActivitiesWidget({
                     isCompact ? "text-label-g" : "text-xs",
                   )}
                 >
-                  Limite Atingido • Seja Premium 👑
+                  {t("upgradeLabel")}
                 </span>
               </button>
             ) : (
               <button
                 type="button"
                 disabled
-                title={`Limite de ${maxActivities} atividades atingido`}
+                title={t("limitReachedTitle", { max: maxActivities })}
                 className={cn(
                   "flex items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-all cursor-not-allowed opacity-60",
                   isCompact ? "py-1" : "p-1.5",
@@ -222,7 +341,7 @@ export function ActivitiesWidget({
                     isCompact ? "text-label-g" : "text-xs",
                   )}
                 >
-                  Limite atingido ({maxActivities}/{maxActivities})
+                  {t("limitReachedLabel", { max: maxActivities })}
                 </span>
               </button>
             )
@@ -245,7 +364,7 @@ export function ActivitiesWidget({
                   isCompact ? "text-label-g" : "text-xs",
                 )}
               >
-                Adicionar
+                {t("addButton")}
               </span>
             </Link>
           ))}
@@ -255,6 +374,58 @@ export function ActivitiesWidget({
         isOpen={isUpgradeModalOpen}
         onClose={() => setIsUpgradeModalOpen(false)}
       />
+
+      {/* Popover / Context Menu com Editar e Excluir */}
+      <ContextMenu
+        isOpen={contextMenu.isOpen}
+        position={contextMenu.position}
+        onClose={() =>
+          setContextMenu((prev) => ({ ...prev, isOpen: false, activity: null }))
+        }
+        items={contextMenuItems}
+      />
+
+      {/* Modal: Editar Atividade */}
+      {isEditModalOpen && (
+        <FocusActivityModal
+          isOpen={isEditModalOpen}
+          activityToEdit={activityToEdit}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setActivityToEdit(null);
+          }}
+          onSuccess={() => {
+            setIsEditModalOpen(false);
+            setActivityToEdit(null);
+            router.refresh();
+          }}
+        />
+      )}
+
+      {/* Modal: Confirmação de Exclusão da Atividade */}
+      {Boolean(activityToDelete) && (
+        <ConfirmationModal
+          isOpen={Boolean(activityToDelete)}
+          title={t("deleteModal.title")}
+          description={
+            <>
+              {t("deleteModal.questionPrefix")}{" "}
+              <span className="font-bold text-neutral-100">
+                &quot;{activityToDelete?.name}&quot;
+              </span>
+              {t("deleteModal.questionSuffix")}
+            </>
+          }
+          confirmText={t("deleteModal.confirm")}
+          cancelText={t("deleteModal.cancel")}
+          variant="danger"
+          isLoading={isDeleting}
+          onClose={() => {
+            if (!isDeleting) setActivityToDelete(null);
+          }}
+          onConfirm={handleConfirmDelete}
+        />
+      )}
     </div>
   );
 }

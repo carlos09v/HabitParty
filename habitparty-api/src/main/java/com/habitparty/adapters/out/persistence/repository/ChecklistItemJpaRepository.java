@@ -1,5 +1,6 @@
 package com.habitparty.adapters.out.persistence.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,6 +15,10 @@ import com.habitparty.adapters.out.persistence.entities.ChecklistItemJpaEntity;
 public interface ChecklistItemJpaRepository extends JpaRepository<ChecklistItemJpaEntity, UUID> {
     // Aquele atalho de performance incrível que discutimos!
     Optional<ChecklistItemJpaEntity> findByIdAndUserId(UUID id, UUID userId);
+
+    // Carregamento em lote dos checklists de várias tarefas (elimina o N+1 do TaskMapper)
+    @Query("SELECT c FROM ChecklistItemJpaEntity c WHERE c.task.id IN :taskIds")
+    List<ChecklistItemJpaEntity> findAllByTaskIds(@Param("taskIds") Collection<UUID> taskIds);
 
     @Modifying
     @Query("DELETE FROM ChecklistItemJpaEntity c WHERE c.task.id IN (SELECT t.id FROM TaskJpaEntity t WHERE t.boardColumnId = :boardColumnId)")

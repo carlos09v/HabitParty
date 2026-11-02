@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { DashboardEmptyWorkspace } from "@/components/dashboard/DashboardEmptyWorkspace";
 import { DashboardMain } from "@/components/dashboard/DashboardMain";
@@ -11,12 +13,21 @@ type PageProps = {
   searchParams: Promise<{ workspaceId?: string }>;
 };
 
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("dashboard.metadata");
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
+
 /**
  * Página Principal do Dashboard (Server Component).
  * Orquestra a renderização do painel principal e da sidebar direita,
  * consumindo os dados via dashboardService.
  */
 export default async function DashboardPage({ searchParams }: PageProps) {
+  const t = await getTranslations("dashboard");
   const isCompact = await getCompactMode();
   const resolvedSearchParams = await searchParams;
   const cookieStore = await cookies();
@@ -51,7 +62,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       <Suspense
         fallback={
           <div className="flex-1 flex items-center justify-center p-8">
-            <Loading size="lg" label="Carregando painel..." />
+            <Loading size="lg" label={t("loading")} />
           </div>
         }
       >

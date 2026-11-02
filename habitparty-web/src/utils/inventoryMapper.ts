@@ -67,7 +67,7 @@ export function mapAndGroupInventory(
         reward: {
           id: rewardId,
           title: dto.rewardName || "",
-          description: "Item de inventário",
+          description: "",
           type: mappedType,
           category: "Entretenimento",
           price: dto.rewardPrice || 0,

@@ -1,4 +1,5 @@
 import { CheckCircle2, Circle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { USAGE_MODES } from "@/constants/onboarding";
 import type { ModeOption, UsageMode } from "@/types/onboarding";
 import { cn } from "@/utils";
@@ -14,13 +15,15 @@ export function UsageModeSelector({
   onSelectMode,
   disabled = false,
 }: UsageModeSelectorProps) {
+  const t = useTranslations("onboarding.usageModes");
+
   return (
     <div className="flex flex-col gap-2">
       <h2 className="text-body-s font-bold text-neutral-100 flex items-center gap-2">
         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-gold/20 text-gold text-[11px] font-bold">
           1
         </span>
-        Qual será o seu principal modo de uso?
+        {t("sectionTitle")}
       </h2>
 
       {/* Grid 2x2 Compacto de Modos de Uso */}
@@ -68,10 +71,10 @@ export function UsageModeSelector({
                 )}
               </div>
               <span className="text-body-s font-bold text-neutral-50">
-                {mode.title}
+                {t(`modes.${mode.id}.title`)}
               </span>
               <span className="text-tiny text-neutral-400 mt-0.5 leading-snug line-clamp-2">
-                {mode.description}
+                {t(`modes.${mode.id}.description`)}
               </span>
             </button>
           );

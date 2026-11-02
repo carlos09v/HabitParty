@@ -10,12 +10,15 @@ export interface BaseModalProps {
   onClose: () => void;
   title?: React.ReactNode;
   description?: React.ReactNode;
+  headerIcon?: React.ReactNode;
+  headerBadge?: React.ReactNode;
   children: React.ReactNode;
   maxWidth?: string;
   borderColor?: string;
   showCloseButton?: boolean;
   preventClose?: boolean;
   className?: string;
+  containerClassName?: string;
   headerExtra?: React.ReactNode;
 }
 
@@ -24,12 +27,15 @@ export function BaseModal({
   onClose,
   title,
   description,
+  headerIcon,
+  headerBadge,
   children,
   maxWidth = "max-w-md",
   borderColor = "border-primary/40",
   showCloseButton = true,
   preventClose = false,
   className,
+  containerClassName,
   headerExtra,
 }: BaseModalProps) {
   const [mounted, setMounted] = useState(false);
@@ -69,7 +75,10 @@ export function BaseModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-3 sm:p-4 animate-in fade-in duration-150"
+      className={cn(
+        "fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-3 sm:p-4 animate-in fade-in duration-150",
+        containerClassName,
+      )}
       onClick={handleOverlayClick}
       onKeyDown={(e) => {
         if (e.key === "Escape" && !preventClose) {
@@ -100,21 +109,46 @@ export function BaseModal({
           </button>
         )}
 
-        {(title || headerExtra) && (
-          <div className="flex items-center gap-2 mb-4">
+        {headerIcon ? (
+          <div className="flex items-center gap-3 mb-4 pr-8">
+            <div className="w-10 h-10 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center text-gold shadow-glow-gold-xs shrink-0">
+              {headerIcon}
+            </div>
             {headerExtra}
-            {title && (
-              <h2 className="text-label-l uppercase tracking-wider text-gold-pressed font-bold">
-                {title}
-              </h2>
+            <div className="flex flex-col min-w-0">
+              {title && (
+                <h2 className="text-base sm:text-lg font-bold text-neutral-100 flex items-center gap-2 flex-wrap">
+                  <span>{title}</span>
+                  {headerBadge}
+                </h2>
+              )}
+              {description && (
+                <div className="text-xs text-neutral-400 font-normal leading-relaxed mt-0.5">
+                  {description}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <>
+            {(title || headerExtra) && (
+              <div className="flex items-center gap-2 mb-4 pr-8">
+                {headerExtra}
+                {title && (
+                  <h2 className="text-label-l uppercase tracking-wider text-gold-pressed font-bold flex items-center gap-2 flex-wrap">
+                    <span>{title}</span>
+                    {headerBadge}
+                  </h2>
+                )}
+              </div>
             )}
-          </div>
-        )}
 
-        {description && (
-          <div className="text-body-s text-neutral-300 mb-5 leading-relaxed">
-            {description}
-          </div>
+            {description && (
+              <div className="text-body-s text-neutral-300 mb-5 leading-relaxed">
+                {description}
+              </div>
+            )}
+          </>
         )}
 
         {children}

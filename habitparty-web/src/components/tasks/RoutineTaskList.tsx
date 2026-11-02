@@ -1,7 +1,10 @@
 "use client";
 
 import { DndContext, DragOverlay, defaultDropAnimation } from "@dnd-kit/core";
-import { restrictToWindowEdges } from "@dnd-kit/modifiers";
+import {
+  restrictToVerticalAxis,
+  restrictToWindowEdges,
+} from "@dnd-kit/modifiers";
 import {
   SortableContext,
   useSortable,
@@ -9,6 +12,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { CalendarCheck, GripVertical, Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { TaskRow } from "@/components/tasks/shared/TaskRow";
 import { getColumnIcon } from "@/constants/routine";
@@ -31,6 +35,7 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
   onToggleComplete,
   onHabitChange,
 }: RoutineTaskListSectionProps) {
+  const t = useTranslations("tasks.taskList");
   const {
     attributes,
     listeners,
@@ -102,7 +107,7 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
         isDragging &&
           "!transition-none opacity-30 border border-dashed border-primary-light p-2",
       )}
-      aria-label={`Lista: ${column.title}`}
+      aria-label={t("sectionAria", { title: column.title })}
     >
       {/* Header da Seção da Coluna */}
       <div className="flex items-center justify-between gap-3 border-b border-white/8 pb-2">
@@ -110,7 +115,7 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
           {...attributes}
           {...listeners}
           className="flex items-center gap-2 cursor-grab active:cursor-grabbing touch-none select-none py-0.5 px-1 rounded-lg hover:bg-white/5 transition-colors group/col-header min-w-0 flex-1"
-          title={`Arrastar lista "${column.title}" para reordenar`}
+          title={t("dragListTitle", { title: column.title })}
         >
           {/* Grip de Reordenação da Coluna na Lista */}
           <div className="flex items-center justify-center p-0.5 text-neutral-500 group-hover/col-header:text-gold transition-colors shrink-0">
@@ -142,21 +147,21 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
           type="button"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={() => onAddTaskToColumn(column.id)}
-          title={`Adicionar tarefa em "${column.title}"`}
+          title={t("addTaskInColumnTitle", { title: column.title })}
           className={cn(
             "flex items-center gap-1 text-neutral-400 hover:text-gold hover:bg-white/5 rounded-md transition-all cursor-pointer shrink-0",
             isCompact ? "px-2 py-1 text-label-g" : "px-2.5 py-1 text-xs",
           )}
         >
           <Plus size={isCompact ? 12 : 14} />
-          <span className="hidden sm:inline">Adicionar Tarefa</span>
+          <span className="hidden sm:inline">{t("addTaskButton")}</span>
         </button>
       </div>
 
       {/* Lista de Linhas de Tarefa Sortable */}
       {column.tasks.length === 0 ? (
         <div className="py-6 px-4 text-center rounded-lg border border-dashed border-white/10 text-neutral-500 text-tiny bg-primary-dark/5">
-          Nenhuma tarefa nesta lista. Arraste tarefas aqui ou adicione uma nova.
+          {t("emptyColumnState")}
         </div>
       ) : (
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
@@ -194,6 +199,7 @@ export function RoutineTaskList({
   onHabitChange,
   dndState,
 }: RoutineTaskListProps) {
+  const t = useTranslations("tasks.taskList");
   const { isCompact } = useCompactMode(propIsCompact);
 
   const visibleColumns = useMemo(
@@ -207,7 +213,7 @@ export function RoutineTaskList({
   );
 
   const listContent = (
-    <div className="flex-1 min-h-0 w-full flex flex-col gap-6 overflow-y-auto pr-1 pb-10">
+    <div className="flex-1 min-h-0 w-full flex flex-col gap-6 overflow-y-auto overflow-x-hidden pr-1 pb-10">
       {/* Cabeçalho tabular global */}
       <div
         className={cn(
@@ -217,32 +223,32 @@ export function RoutineTaskList({
         )}
         aria-hidden="true"
       >
-        <span className="pl-8">Nome da Tarefa</span>
-        <span>Lista</span>
-        <span>Tipo</span>
-        <span>Prioridade</span>
-        <span>Frequência / Prazo</span>
-        <span className="text-right pr-2">Ações</span>
+        <span className="pl-8">{t("headerTaskName")}</span>
+        <span>{t("headerList")}</span>
+        <span>{t("headerType")}</span>
+        <span>{t("headerPriority")}</span>
+        <span>{t("headerFrequencyDue")}</span>
+        <span className="text-right pr-2">{t("headerActions")}</span>
       </div>
 
       {visibleColumns.length === 0 ? (
         <div className="w-full flex flex-col items-center justify-center text-center py-16 px-4 rounded-2xl border border-dashed border-white/15 bg-primary-dark/10">
           <CalendarCheck size={32} className="text-neutral-500 mb-2" />
           <p className="text-body-m font-bold text-neutral-200">
-            Nenhuma coluna visível
+            {t("noVisibleColumnsTitle")}
           </p>
           <p className="text-body-s text-neutral-400 mt-1">
-            Selecione ou crie uma coluna para visualizar suas tarefas.
+            {t("noVisibleColumnsDesc")}
           </p>
         </div>
       ) : totalTasksCount === 0 ? (
         <div className="w-full flex flex-col items-center justify-center text-center py-16 px-4 rounded-2xl border border-dashed border-white/15 bg-primary-dark/10">
           <CalendarCheck size={32} className="text-gold mb-2" />
           <p className="text-body-m font-bold text-neutral-200">
-            Tudo limpo por aqui! 🎉
+            {t("allClearTitle")}
           </p>
           <p className="text-body-s text-neutral-400 mt-1">
-            Nenhuma tarefa cadastrada nas colunas visíveis.
+            {t("allClearDesc")}
           </p>
         </div>
       ) : (
@@ -277,7 +283,7 @@ export function RoutineTaskList({
       id="routine-list-dnd"
       sensors={dndState.sensors}
       collisionDetection={dndState.collisionDetection}
-      modifiers={[restrictToWindowEdges]}
+      modifiers={[restrictToVerticalAxis, restrictToWindowEdges]}
       {...dndState.handlers}
     >
       {listContent}
@@ -290,7 +296,9 @@ export function RoutineTaskList({
               {dndState.activeColumn.title}
             </span>
             <span className="text-tiny font-bold px-1.5 py-0.5 rounded-full bg-white/10 text-neutral-300">
-              {dndState.activeColumn.tasks.length} tarefas
+              {t("overlayTasksCount", {
+                count: dndState.activeColumn.tasks.length,
+              })}
             </span>
           </div>
         )}

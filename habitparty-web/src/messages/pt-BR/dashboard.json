@@ -1,0 +1,346 @@
+{
+  "dashboard": {
+    "metadata": {
+      "title": "Painel — HabitParty",
+      "description": "Acompanhe suas metas diárias, hábitos, ofensiva, listas e evolução de recompensas."
+    },
+    "loading": "Carregando painel...",
+    "dailyBriefing": {
+      "ariaLabel": "Resumo do Dia do Jogador",
+      "greetingMorning": "Bom dia",
+      "greetingAfternoon": "Boa tarde",
+      "greetingEvening": "Boa noite",
+      "defaultName": "Aventureiro",
+      "defaultNameGamified": "Aventureiro",
+      "defaultNameProductivity": "Membro",
+      "motivationalEmpty": "Nenhuma tarefa agendada para hoje. Aproveite para planejar novas metas!",
+      "motivationalCompleted": "Sensacional! Todas as metas de hoje foram concluídas. O dia foi conquistado! 🏆",
+      "motivationalActive": "Mantenha a constância e o foco na missão para avançar seus níveis!",
+      "motivationalActiveGamified": "Mantenha a constância e o foco na missão para avançar seus níveis!",
+      "motivationalActiveProductivity": "Mantenha a constância e o foco nas suas prioridades para avançar nas metas!",
+      "todayGoal": "Meta de Hoje",
+      "progressAriaLabel": "Progresso de tarefas de hoje: {percent}%",
+      "streakLabel": "Ofensiva",
+      "streakCount": "{count} {count, plural, one {Dia} other {Dias}}",
+      "streakActiveTitle": "Ritmo diário mantido!",
+      "streakStartTitle": "Complete uma tarefa hoje para iniciar!",
+      "streakActiveBadge": "Ritmo mantido 🔥",
+      "streakStartBadge": "Complete hoje! 🔥",
+      "dailyTasksLabel": "Tarefas do Dia",
+      "completedCount": "{completed}/{total} Concluídas",
+      "allCompletedTitle": "Todas as tarefas de hoje foram concluídas!",
+      "pendingCountTitle": "{count} {count, plural, one {tarefa pendente} other {tarefas pendentes}} para hoje",
+      "goalMetBadge": "Meta cumprida! 🎯",
+      "pendingCountBadge": "{count} {count, plural, one {pendente} other {pendentes}}",
+      "xpEarnedLabel": "XP Conquistado",
+      "xpEarnedLabelGamified": "XP Conquistado",
+      "xpEarnedLabelProductivity": "Pontos de Foco",
+      "todayGainsTitle": "Pontos de experiência acumulados hoje",
+      "todayGainsBadge": "Ganhos de hoje ✨",
+      "todayGainsBadgeGamified": "Ganhos de hoje ✨",
+      "todayGainsBadgeProductivity": "Foco de hoje ✨"
+    },
+    "emptyWorkspace": {
+      "title": "Bem-vindo(a) ao seu Quartel-General! 🚀",
+      "titleGamified": "Bem-vindo(a) ao seu Quartel-General! 🚀",
+      "titleProductivity": "Bem-vindo(a) ao seu Espaço de Trabalho! 📊",
+      "descriptionPrefix": "Toda grande jornada começa com um primeiro território. O seu painel precisa de um",
+      "descriptionPrefixGamified": "Toda grande jornada começa com um primeiro território. O seu painel precisa de um",
+      "descriptionPrefixProductivity": "Todo grande fluxo de produtividade começa com uma boa organização. O seu painel precisa de um",
+      "workspaceHighlight": "Ambiente (Workspace)",
+      "descriptionSuffix": "para organizar suas tarefas, rotinas diárias e recompensas.",
+      "createButton": "Criar Meu Primeiro Ambiente",
+      "wizardQuestion": "Ou prefere ajuda com sugestões?",
+      "wizardLink": "Personalizar com o Assistente Inicial",
+      "defaultInitialName": "Vida Pessoal",
+      "createSuccessToast": "Ambiente \"{name}\" criado com sucesso!",
+      "createErrorToast": "Não foi possível criar o ambiente. Tente novamente."
+    },
+    "listSummary": {
+      "title": "Resumo de Listas",
+      "counterAriaLabel": "Contagem de listas ativas e limite do plano",
+      "storedInBackpackBadge": "+{count} na mochila",
+      "storedInBackpackBadgeGamified": "+{count} na mochila",
+      "storedInBackpackBadgeProductivity": "+{count} arquivadas",
+      "storedInBackpackTitle": "{count} {count, plural, one {lista preservada} other {listas preservadas}} do período Premium. Reative o VIP para exibir até 6 listas simultaneamente!",
+      "storedInBackpackTitleGamified": "{count} {count, plural, one {lista preservada} other {listas preservadas}} do período Premium. Reative o VIP para exibir até 6 listas simultaneamente!",
+      "storedInBackpackTitleProductivity": "{count} {count, plural, one {lista preservada} other {listas preservadas}} do período Premium. Reative o VIP para exibir até 6 listas simultaneamente!",
+      "untitled": "Sem título",
+      "defaultList": "Lista",
+      "rightClickHint": "{name} • Botão direito para editar ou excluir",
+      "addCard": "Adicionar",
+      "addCardSubtitle": "Nova lista",
+      "deleteColumnSuccess": "Coluna \"{title}\" excluída com sucesso!",
+      "deleteColumnError": "Falha ao excluir coluna.",
+      "deleteColumnUnexpectedError": "Erro inesperado ao excluir coluna.",
+      "deleteModalTitle": "Excluir Coluna",
+      "deleteModalDescPrefix": "Tem certeza de que deseja excluir a coluna",
+      "deleteModalDescSuffix": "? Esta ação é irreversível e todas as tarefas desta coluna serão removidas permanentemente.",
+      "deleteModalConfirm": "Excluir Coluna",
+      "deleteModalCancel": "Cancelar"
+    },
+    "tasksPanel": {
+      "defaultList": "Lista",
+      "deleteModalTitle": "Excluir Tarefa",
+      "deleteModalDescPrefix": "Tem certeza de que deseja excluir a tarefa",
+      "deleteModalDescSuffix": "? Esta tarefa possui subtarefas, Modo Hardcore ou histórico de ofensiva ativo, e a exclusão não pode ser desfeita.",
+      "deleteModalConfirm": "Excluir Tarefa",
+      "deleteModalCancel": "Cancelar"
+    },
+    "taskFilters": {
+      "ariaLabel": "Filtros de Data das Tarefas",
+      "datePillLabel": "Dia: {date}",
+      "clearDateTitle": "Remover filtro de dia específico e voltar ao padrão",
+      "tabs": {
+        "today": "Hoje",
+        "next7days": "Próximos 7 dias...",
+        "this_month": "Este mês",
+        "nodate": "Sem prazo",
+        "overdue": "Atrasado"
+      },
+      "advancedButtonTitle": "Filtros avançados e opções de ordenação",
+      "openAdvancedAria": "Abrir filtros avançados",
+      "advancedTitle": "Filtros Avançados",
+      "clearButton": "Limpar",
+      "taskTypeLabel": "Tipo de Tarefa",
+      "allTypes": "Todos os tipos",
+      "habits": "Hábitos",
+      "dailies": "Diárias",
+      "todos": "Afazeres",
+      "columnLabel": "Lista / Categoria",
+      "allColumns": "Todas as listas",
+      "untitledColumn": "Sem título",
+      "difficultyLabel": "Dificuldade",
+      "effortLabel": "Esforço",
+      "allDifficulties": "Todas as dificuldades",
+      "trivial": "Trivial",
+      "easy": "Fácil",
+      "medium": "Médio",
+      "hard": "Difícil",
+      "sortByLabel": "Ordenar por",
+      "sortDefault": "Padrão (Data / Prazo)",
+      "sortDifficulty": "Dificuldade (Maior primeiro)",
+      "sortPriority": "Prioridade (Alta primeiro)",
+      "sortReward": "Maior Recompensa (XP/Gold)",
+      "hideCompletedLabel": "Ocultar tarefas concluídas"
+    },
+    "taskTable": {
+      "ariaLabel": "Lista de tarefas",
+      "colName": "Nome",
+      "colList": "Lista",
+      "colType": "Tipo",
+      "colPriority": "Prioridade",
+      "colSchedule": "Frequência/Prazo",
+      "colActions": "Ações",
+      "paginationItemLabel": "tarefas",
+      "emptyFallbackTitle": "Nenhuma tarefa encontrada",
+      "emptyFallbackDesc": "Não encontramos tarefas para o filtro selecionado.",
+      "emptyDateTitle": "Tudo limpo nesta data! 🎉",
+      "emptyDateDesc": "Não há tarefas agendadas para o dia {date}.",
+      "empty": {
+        "today": {
+          "title": "Tudo limpo por hoje! 🎉",
+          "description": "Você não possui nenhuma tarefa pendente para hoje."
+        },
+        "next7days": {
+          "title": "Sem tarefas nos próximos 7 dias",
+          "description": "Sua semana está tranquila. Que tal planejar novas metas?"
+        },
+        "this_month": {
+          "title": "Mês tranquilo! 📅",
+          "description": "Você não possui nenhuma tarefa pendente para este mês."
+        },
+        "overdue": {
+          "title": "Tudo em dia! ✨",
+          "description": "Parabéns, você não possui nenhuma tarefa atrasada."
+        },
+        "nodate": {
+          "title": "Nenhuma tarefa sem prazo",
+          "description": "Todas as suas tarefas possuem uma data de entrega definida."
+        }
+      }
+    },
+    "taskShared": {
+      "types": {
+        "habit": "Hábito",
+        "daily": "Diária",
+        "todo": "Afazer"
+      },
+      "priorities": {
+        "HIGH": "Alta",
+        "MEDIUM": "Média",
+        "LOW": "Baixa",
+        "Low": "Baixa",
+        "NONE": "Nenhuma"
+      },
+      "difficulties": {
+        "TRIVIAL": "Trivial",
+        "EASY": "Fácil",
+        "MEDIUM": "Médio",
+        "HARD": "Difícil"
+      },
+      "resetCounters": {
+        "DAILY": "Diário",
+        "WEEKLY": "Semanal",
+        "MONTHLY": "Mensal",
+        "CONTINUOUS": "Contínuo"
+      },
+      "habitCycles": {
+        "WEEKLY": "semana",
+        "MONTHLY": "mês",
+        "DAILY": "hoje"
+      },
+      "weekDays": {
+        "activeDaysTitle": "Dias ativos da semana",
+        "todaySuffix": " (Hoje)",
+        "activeStatus": "Ativo",
+        "inactiveStatus": "Inativo",
+        "SUNDAY": { "short": "D", "full": "Domingo" },
+        "MONDAY": { "short": "S", "full": "Segunda" },
+        "TUESDAY": { "short": "T", "full": "Terça" },
+        "WEDNESDAY": { "short": "Q", "full": "Quarta" },
+        "THURSDAY": { "short": "Q", "full": "Quinta" },
+        "FRIDAY": { "short": "S", "full": "Sexta" },
+        "SATURDAY": { "short": "S", "full": "Sábado" }
+      },
+      "badges": {
+        "checklistTitle": "Subtarefas: {completed} de {total} concluídas",
+        "hardcoreOverdueTitle": "Modo Hardcore: Prazo fatal expirado! Penalidade de 50% ativa!",
+        "hardcoreOverdueTitleProductivity": "Prazo Rígido: Prazo fatal expirado! Penalidade de 50% ativa!",
+        "hardcoreActiveTitle": "Modo Hardcore Ativo",
+        "hardcoreActiveTitleProductivity": "Prazo Rígido Ativo (Compromisso Inegociável)",
+        "descriptionTitle": "Possui descrição detalhada",
+        "priorityTitle": "Prioridade: {label}",
+        "habitScoreCardTitle": "Saldo de repetições realizadas no ciclo atual: {score}",
+        "habitScoreRowTitle": "Saldo de repetições realizadas: {score}",
+        "habitScoreRowLabel": "Saldo: {score}",
+        "difficultyTitle": "Dificuldade: {label}",
+        "effortTitle": "Esforço: {label}",
+        "streakTitle": "Ofensiva de {count} {count, plural, one {dia} other {dias}}",
+        "rewardXpTitle": "Recompensa: +{xp} XP",
+        "rewardGoldTitle": "Recompensa: +{gold} Ouro",
+        "defaultCategory": "Geral"
+      },
+      "actions": {
+        "positiveHabitTitle": "Registrar hábito positivo (+)",
+        "positiveHabitAria": "Registrar hábito positivo",
+        "negativeHabitTitle": "Registrar hábito negativo (-)",
+        "negativeHabitAria": "Registrar hábito negativo",
+        "markPendingAria": "Marcar como pendente",
+        "markCompletedAria": "Marcar como concluída",
+        "taskOptionsAria": "Opções da tarefa {title}",
+        "taskOptionsTitle": "Opções da tarefa (Editar, Duplicar, Excluir)"
+      },
+      "contextMenu": {
+        "edit": "Editar",
+        "duplicate": "Duplicar",
+        "delete": "Excluir",
+        "layout": "Layout",
+        "compact": "Compacto",
+        "normal": "Padrão",
+        "wide": "Largo"
+      },
+      "mutations": {
+        "statusUpdateError": "Erro ao atualizar status da tarefa.",
+        "habitCompleted": "Hábito concluído!",
+        "dailyCompleted": "Diária concluída!",
+        "todoCompleted": "Tarefa concluída!",
+        "goldLabel": "Ouro",
+        "decayOverdue": "{stage} (-{percent}% por atraso)",
+        "decayRoutine": "{stage} (-{percent}% por rotina fixada)",
+        "markedPending": "Tarefa marcada como pendente.",
+        "habitScoreError": "Erro ao registrar pontuação do hábito.",
+        "habitRecorded": "Hábito registrado!",
+        "decayHabit": "{stage} (-{percent}% por hábito consolidado)",
+        "positiveHabitSuccess": "Hábito positivo registrado com sucesso!",
+        "habitPenalty": "Penalidade de hábito registrada!",
+        "deleteError": "Erro ao excluir tarefa no servidor.",
+        "deleteSuccess": "Tarefa \"{title}\" excluída com sucesso!",
+        "duplicateColumnError": "Coluna de destino não encontrada para duplicação.",
+        "duplicateError": "Erro ao duplicar tarefa.",
+        "duplicateSuccess": "Tarefa \"{title}\" duplicada com sucesso!"
+      },
+      "levelUp": {
+        "title": "Subiu de Nível!",
+        "congratsPrefix": "Parabéns! Sua nova classificação é",
+        "congratsSuffix": "."
+      }
+    },
+    "sidebarRight": {
+      "asideAriaLabel": "Painel de Resumo e Calendário",
+      "mobileDrawer": {
+        "fabTitle": "Abrir calendário e resumo financeiro",
+        "fabLabel": "Resumo",
+        "drawerAriaLabel": "Resumo do Painel e Calendário Semanal",
+        "backdropAriaLabel": "Fechar resumo lateral",
+        "headerTitle": "Resumo & Calendário",
+        "headerSubtitle": "Atividades, finanças e metas",
+        "closeAriaLabel": "Fechar resumo"
+      },
+      "weeklyCalendar": {
+        "title": "Semana",
+        "todayButton": "Hoje",
+        "todayButtonTitle": "Voltar para a semana atual e limpar filtro de dia",
+        "prevWeek": "Semana anterior",
+        "nextWeek": "Próxima semana",
+        "legendActiveDay": "Dia ativo",
+        "legendTodoDue": "Prazo (To-Do)"
+      },
+      "activitiesWidget": {
+        "title": "Atividades",
+        "periodAriaLabel": "Período do tempo de foco",
+        "periods": {
+          "today": "Hoje",
+          "this_week": "Semana",
+          "this_month": "Mês"
+        },
+        "empty": "Nenhuma atividade cadastrada.",
+        "lockedPreservedTitle": "{count} {count, plural, one {atividade preservada} other {atividades preservadas}} do período Premium. Reative o plano Premium para cronometrar!",
+        "lockedCount": "{count} {count, plural, one {atividade bloqueada} other {atividades bloqueadas}}",
+        "upgradeTitle": "Assine o plano Premium para criar até 6 atividades de foco!",
+        "upgradeLabel": "Limite Atingido • Seja Premium 👑",
+        "limitReachedTitle": "Limite de {max} atividades atingido",
+        "limitReachedLabel": "Limite atingido ({max}/{max})",
+        "addButton": "Adicionar",
+        "pomodoroDuration": "Pomodoro ({minutes}m)",
+        "freeStopwatch": "Cronômetro Livre",
+        "rightClickHint": "{name} • {type} • Botão direito para opções",
+        "deleteSuccess": "Atividade \"{name}\" excluída com sucesso!",
+        "deleteError": "Falha ao excluir atividade.",
+        "deleteUnexpectedError": "Erro inesperado ao excluir atividade.",
+        "contextMenu": {
+          "edit": "Editar",
+          "delete": "Excluir"
+        },
+        "deleteModal": {
+          "title": "Excluir Atividade",
+          "questionPrefix": "Tem certeza de que deseja excluir a atividade",
+          "questionSuffix": "? O histórico de sessões anteriores continuará preservado.",
+          "confirm": "Sim, excluir",
+          "cancel": "Cancelar"
+        }
+      },
+      "economyWidget": {
+        "title": "Economia",
+        "walletTitle": "Ver extrato completo de transações",
+        "walletTitleGamified": "Abrir Cofre do Aventureiro e extrato",
+        "walletTitleProductivity": "Ver extrato completo de transações",
+        "walletLabel": "Carteira:",
+        "earningsAndSpent": "Ganhos & Gastos",
+        "chartAriaLabel": "Gráfico semanal de moedas ganhas e gastas",
+        "barSummaryAria": "{label}: +{earned} ganhos, -{spent} gastos",
+        "inflows": "Entradas:",
+        "outflows": "Gastos:",
+        "netBalance": "Saldo:",
+        "legendEarnings": "Ganhos",
+        "legendSpent": "Gastos"
+      },
+      "partyWidget": {
+        "title": "Party & Amigos",
+        "titleGamified": "Party & Amigos",
+        "titleProductivity": "Equipe & Colaboração",
+        "comingSoon": "Em breve"
+      }
+    }
+  }
+}

@@ -2,6 +2,7 @@
 
 import { Calendar, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { SlideOverDrawer } from "@/components/ui/SlideOverDrawer";
 import type { DashboardMobileDrawerProps } from "@/types/dashboard";
@@ -17,6 +18,7 @@ export function DashboardMobileDrawer({
   balance = 0,
   children,
 }: DashboardMobileDrawerProps) {
+  const t = useTranslations("dashboard.sidebarRight.mobileDrawer");
   const [isOpen, setIsOpen] = useState(false);
   const searchParams = useSearchParams();
   const urlDate = searchParams.get("date");
@@ -35,17 +37,17 @@ export function DashboardMobileDrawer({
           type="button"
           onClick={() => setIsOpen(true)}
           className={cn(
-            "flex items-center gap-2 rounded-full border border-gold/40 bg-neutral-900/95 hover:bg-neutral-900 text-gold shadow-glow-gold-xs hover:shadow-glow-gold hover:scale-105 active:scale-95 transition-all backdrop-blur-md cursor-pointer group",
+            "flex items-center gap-2 rounded-full border border-gold/40 bg-card hover:bg-surface dark:bg-neutral-900/95 dark:hover:bg-neutral-900 text-gold shadow-glow-gold-xs hover:shadow-glow-gold hover:scale-105 active:scale-95 transition-all backdrop-blur-md cursor-pointer group",
             isCompact ? "px-3.5 py-2 text-xs" : "px-4 py-2.5 text-sm",
           )}
-          title="Abrir calendário e resumo financeiro"
-          aria-label="Abrir calendário e resumo financeiro"
+          title={t("fabTitle")}
+          aria-label={t("fabTitle")}
         >
           <Calendar
             size={isCompact ? 16 : 18}
             className="text-gold group-hover:rotate-12 transition-transform"
           />
-          <span className="font-bold text-neutral-100">Resumo</span>
+          <span className="font-bold text-neutral-100">{t("fabLabel")}</span>
           {balance > 0 && (
             <span className="text-[11px] font-semibold text-gold bg-gold/15 border border-gold/30 px-1.5 py-0.5 rounded-full">
               {balance} H
@@ -58,8 +60,8 @@ export function DashboardMobileDrawer({
       <SlideOverDrawer
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        ariaLabel="Resumo do Painel e Calendário Semanal"
-        backdropAriaLabel="Fechar resumo lateral"
+        ariaLabel={t("drawerAriaLabel")}
+        backdropAriaLabel={t("backdropAriaLabel")}
         containerClassName="xl:hidden"
         panelClassName="w-full sm:w-[380px]"
       >
@@ -70,10 +72,10 @@ export function DashboardMobileDrawer({
             </div>
             <div>
               <h2 className="text-sm font-bold text-neutral-50 leading-tight">
-                Resumo & Calendário
+                {t("headerTitle")}
               </h2>
               <p className="text-tiny text-neutral-400">
-                Atividades, finanças e metas
+                {t("headerSubtitle")}
               </p>
             </div>
           </div>
@@ -82,7 +84,7 @@ export function DashboardMobileDrawer({
             type="button"
             onClick={() => setIsOpen(false)}
             className="text-neutral-400 hover:text-neutral-100 p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-            aria-label="Fechar resumo"
+            aria-label={t("closeAriaLabel")}
           >
             <X size={18} />
           </button>

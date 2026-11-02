@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { memo, useCallback, useMemo, useState } from "react";
 import {
   buildColumnContextMenuItems,
@@ -82,6 +83,7 @@ export const TasksBoardModals = memo(function TasksBoardModals({
   handleDeleteTask,
   handleTaskDetailsUpdate,
   handleToggleComplete,
+  handleHabitChange,
   isColumnsDrawerOpen,
   setIsColumnsDrawerOpen,
   toggleColumnVisibility,
@@ -89,6 +91,8 @@ export const TasksBoardModals = memo(function TasksBoardModals({
   columnWidths,
   onColumnWidthChange,
 }: TasksBoardModalsProps) {
+  const t = useTranslations("tasks.container");
+  const tMenus = useTranslations("dashboard.taskShared.contextMenu");
   const [taskToDelete, setTaskToDelete] = useState<{
     task: Task;
     columnId: string;
@@ -128,6 +132,11 @@ export const TasksBoardModals = memo(function TasksBoardModals({
             requestDeleteTask(task, contextMenu.columnId);
           }
         },
+        labels: {
+          edit: tMenus("edit"),
+          duplicate: tMenus("duplicate"),
+          delete: tMenus("delete"),
+        },
       }),
     [
       contextMenu.task,
@@ -135,6 +144,7 @@ export const TasksBoardModals = memo(function TasksBoardModals({
       setTaskModalState,
       handleDuplicateTask,
       requestDeleteTask,
+      tMenus,
     ],
   );
 
@@ -150,6 +160,14 @@ export const TasksBoardModals = memo(function TasksBoardModals({
             columnToEdit: col,
           }),
         onDelete: (col) => setColumnToDelete(col),
+        labels: {
+          edit: tMenus("edit"),
+          delete: tMenus("delete"),
+          layout: tMenus("layout"),
+          compact: tMenus("compact"),
+          normal: tMenus("normal"),
+          wide: tMenus("wide"),
+        },
       }),
     [
       columnContextMenu.column,
@@ -157,6 +175,7 @@ export const TasksBoardModals = memo(function TasksBoardModals({
       onColumnWidthChange,
       setColumnModalState,
       setColumnToDelete,
+      tMenus,
     ],
   );
 
@@ -184,19 +203,15 @@ export const TasksBoardModals = memo(function TasksBoardModals({
       {Boolean(columnToDelete) && (
         <ConfirmationModal
           isOpen={Boolean(columnToDelete)}
-          title="Excluir Coluna"
-          description={
-            <>
-              Tem certeza de que deseja excluir a coluna{" "}
-              <span className="font-bold text-neutral-100">
-                &quot;{columnToDelete?.title}&quot;
-              </span>
-              ? Esta ação é irreversível e todas as tarefas desta coluna serão
-              removidas permanentemente.
-            </>
-          }
-          confirmText="Excluir Coluna"
-          cancelText="Cancelar"
+          title={t("deleteColumnModal.title")}
+          description={t.rich("deleteColumnModal.description", {
+            title: columnToDelete?.title ?? "",
+            bold: (chunks) => (
+              <span className="font-bold text-neutral-100">{chunks}</span>
+            ),
+          })}
+          confirmText={t("deleteColumnModal.confirmText")}
+          cancelText={t("deleteColumnModal.cancelText")}
           variant="danger"
           isLoading={isDeletingColumn}
           onClose={() => {
@@ -217,19 +232,15 @@ export const TasksBoardModals = memo(function TasksBoardModals({
       {Boolean(taskToDelete) && (
         <ConfirmationModal
           isOpen={Boolean(taskToDelete)}
-          title="Excluir Tarefa"
-          description={
-            <>
-              Tem certeza de que deseja excluir a tarefa{" "}
-              <span className="font-bold text-neutral-100">
-                &quot;{taskToDelete?.task.title}&quot;
-              </span>
-              ? Esta tarefa possui subtarefas, Modo Hardcore ou histórico de
-              ofensiva ativo, e a exclusão não pode ser desfeita.
-            </>
-          }
-          confirmText="Excluir Tarefa"
-          cancelText="Cancelar"
+          title={t("deleteTaskModal.title")}
+          description={t.rich("deleteTaskModal.description", {
+            title: taskToDelete?.task.title ?? "",
+            bold: (chunks) => (
+              <span className="font-bold text-neutral-100">{chunks}</span>
+            ),
+          })}
+          confirmText={t("deleteTaskModal.confirmText")}
+          cancelText={t("deleteTaskModal.cancelText")}
           variant="danger"
           onClose={() => setTaskToDelete(null)}
           onConfirm={() => {
@@ -261,12 +272,14 @@ export const TasksBoardModals = memo(function TasksBoardModals({
               taskToEdit: null,
               defaultTaskType: undefined,
               initialTitle: undefined,
+              initialValues: undefined,
             })
           }
           columns={formColumns}
           defaultColumnId={taskModalState.columnId}
           defaultTaskType={taskModalState.defaultTaskType}
           initialTitle={taskModalState.initialTitle}
+          initialValues={taskModalState.initialValues}
           taskToEdit={taskModalState.taskToEdit}
           onSuccess={handleTaskSaved}
         />
@@ -309,6 +322,7 @@ export const TasksBoardModals = memo(function TasksBoardModals({
             }
           }}
           onToggleComplete={handleToggleComplete}
+          onHabitChange={handleHabitChange}
         />
       )}
 

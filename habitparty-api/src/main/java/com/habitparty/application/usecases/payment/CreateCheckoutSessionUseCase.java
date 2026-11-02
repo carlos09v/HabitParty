@@ -9,6 +9,7 @@ import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.enums.PaymentMethodType;
 import com.habitparty.core.domain.enums.PlanType;
+import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
@@ -24,19 +25,39 @@ public class CreateCheckoutSessionUseCase {
   }
 
   public String execute(UUID userId, PlanType plan, PaymentMethodType paymentMethod) {
+    return execute(userId, plan, paymentMethod, null);
+  }
+
+  public String execute(UUID userId, PlanType plan, PaymentMethodType paymentMethod, String locale) {
+    boolean isEnglish = isEnglishLocale(locale);
+
     User user = userRepository.findById(userId)
-        .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+        .orElseThrow(() -> new ResourceNotFoundException(
+            isEnglish ? "User not found." : "Usuário não encontrado."));
+
+    // Ação crítica condicionada à verificação de e-mail
+    user.validateEmailVerified("assinar um plano ou realizar pagamentos");
+
+    // Pix é exclusivo para pagamentos em BRL (Brasil)
+    if (isEnglish && paymentMethod == PaymentMethodType.PIX) {
+      throw new DomainValidationException(
+          "Pix payment is only available in BRL (Brazil). Please select Credit Card.");
+    }
 
     // Impede assinaturas duplicadas no cartão se já houver uma assinatura recorrente ativa
     if (user.hasActiveRecurringSubscription() && paymentMethod == PaymentMethodType.CREDIT_CARD) {
-      throw new com.habitparty.core.exceptions.DomainValidationException(
-          "Você já possui uma assinatura ativa via Cartão de Crédito! Para gerenciar seu plano ou forma de pagamento, utilize o Portal da sua conta.");
+      throw new DomainValidationException(
+          isEnglish
+              ? "You already have an active Credit Card subscription! Please use the Customer Portal in your account to manage your plan."
+              : "Você já possui uma assinatura ativa via Cartão de Crédito! Para gerenciar seu plano ou forma de pagamento, utilize o Portal da sua conta.");
     }
 
     // Impede novas adesões ao plano de Membro Fundador se o lote de 30 vagas já estiver esgotado
     if (plan == PlanType.FOUNDER_ANNUAL && userRepository.countFounders() >= GetFoundersQuotaUseCase.MAX_FOUNDER_SLOTS) {
-      throw new com.habitparty.core.exceptions.DomainValidationException(
-          "O lote promocional de Membros Fundadores (30 vagas) já foi esgotado! Aproveite o plano Anual regular.");
+      throw new DomainValidationException(
+          isEnglish
+              ? "The Founding Member promotional batch (30 slots) is sold out! Enjoy the regular Annual plan."
+              : "O lote promocional de Membros Fundadores (30 vagas) já foi esgotado! Aproveite o plano Anual regular.");
     }
 
     // Garante que o usuário possua Customer correspondente no gateway de pagamento
@@ -46,11 +67,27 @@ public class CreateCheckoutSessionUseCase {
       userRepository.save(user);
     }
 
-    // Gera a URL do Checkout via porta desacoplada
+    if (locale == null || locale.isBlank()) {
+      return paymentGatewayPort.createCheckoutSession(
+          user,
+          plan,
+          paymentMethod,
+          customerId);
+    }
+
+    String normalizedLocale = isEnglish ? "en" : "pt-BR";
     return paymentGatewayPort.createCheckoutSession(
         user,
         plan,
         paymentMethod,
-        customerId);
+        customerId,
+        normalizedLocale);
+  }
+
+  private boolean isEnglishLocale(String locale) {
+    if (locale == null || locale.isBlank()) {
+      return false;
+    }
+    return locale.trim().toLowerCase().startsWith("en");
   }
 }

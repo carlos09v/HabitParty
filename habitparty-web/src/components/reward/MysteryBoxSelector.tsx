@@ -1,8 +1,10 @@
 "use client";
 
 import { Check, Coins, HelpCircle } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { MYSTERY_BOX_TIERS, type MysteryBoxTier } from "@/constants/reward";
+import type { AppLocale } from "@/i18n/config";
 import type { PackageLevel } from "@/types/reward";
 import { cn, formatCoins } from "@/utils";
 import { MysteryBoxTierPopover } from "./MysteryBoxTierPopover";
@@ -18,6 +20,9 @@ export function MysteryBoxSelector({
   onSelect,
   disabled = false,
 }: MysteryBoxSelectorProps) {
+  const t = useTranslations("rewards.mysteryBox");
+  const tOptions = useTranslations("rewards.options");
+  const locale = useLocale() as AppLocale;
   const [hoveredTierId, setHoveredTierId] = useState<string | null>(null);
 
   // Normaliza o nível selecionado para bater tanto com nomes em PT quanto EN
@@ -37,15 +42,15 @@ export function MysteryBoxSelector({
           htmlFor="mystery-box-grid"
           className="text-body-s text-neutral-300 font-medium flex items-center gap-1.5"
         >
-          <span>Nível da Caixa Misteriosa</span>
+          <span>{t("levelLabel")}</span>
           <span className="text-gold">*</span>
           <span className="text-label-m text-neutral-400 font-normal">
-            (passe o mouse para ver as chances)
+            {t("hoverHint")}
           </span>
         </label>
         <span className="text-label-m text-primary-light flex items-center gap-1">
           <HelpCircle size={12} />
-          <span>4 Raridades</span>
+          <span>{t("raritiesCount")}</span>
         </span>
       </div>
 
@@ -57,6 +62,10 @@ export function MysteryBoxSelector({
           const selected = isTierSelected(tier);
           const isHovered = hoveredTierId === tier.id;
           const TierIcon = tier.icon;
+          const tierName = t(`tiers.${tier.backendPackageLevel}.name`);
+          const tierRarityLabel = tOptions(
+            `packages.${tier.backendPackageLevel}`,
+          );
 
           // Alinhamento inteligente do popover para não estourar os limites da modal
           const popoverAlign =
@@ -153,12 +162,12 @@ export function MysteryBoxSelector({
                         ? tier.textClass
                         : "text-neutral-100 group-hover:text-white",
                     )}
-                    title={tier.name}
+                    title={tierName}
                   >
-                    {tier.name}
+                    {tierName}
                   </span>
                   <span className="text-[10px] text-neutral-400 font-medium truncate max-w-full">
-                    {tier.id}
+                    {tierRarityLabel}
                   </span>
                 </div>
 
@@ -172,7 +181,7 @@ export function MysteryBoxSelector({
                   )}
                 >
                   <Coins size={11} className="text-gold shrink-0" />
-                  <span>{formatCoins(tier.recommendedPrice)}</span>
+                  <span>{formatCoins(tier.recommendedPrice, { locale })}</span>
                 </div>
               </button>
 

@@ -101,12 +101,12 @@ class UserGamificationDomainTest {
 
   @Test
   @DisplayName("Atualizar perfil com idade válida atualiza os dados com sucesso")
-  void testUpdateProfileWithValidBirthday() {
-    LocalDate validBirthday = LocalDate.now().minusYears(20);
-    user.updateProfile("Novo Nome", validBirthday, UserGender.FEMALE);
+  void testUpdateProfileWithValidBirthDate() {
+    LocalDate validBirthDate = LocalDate.now().minusYears(20);
+    user.updateProfile("Novo Nome", validBirthDate, UserGender.FEMALE);
 
     assertEquals("Novo Nome", user.getFullName());
-    assertEquals(validBirthday, user.getBirthday());
+    assertEquals(validBirthDate, user.getBirthDate());
     assertEquals(UserGender.FEMALE, user.getGender());
     assertEquals(20, user.getAge());
   }
@@ -114,21 +114,21 @@ class UserGamificationDomainTest {
   @Test
   @DisplayName("Atualizar perfil com idade menor que 12 anos lança DomainValidationException")
   void testUpdateProfileWithAgeUnder12ThrowsException() {
-    LocalDate under12Birthday = LocalDate.now().minusYears(10);
+    LocalDate under12BirthDate = LocalDate.now().minusYears(10);
     DomainValidationException ex = assertThrows(
         DomainValidationException.class,
-        () -> user.updateProfile("Menor de Idade", under12Birthday, UserGender.MALE)
+        () -> user.updateProfile("Menor de Idade", under12BirthDate, UserGender.MALE)
     );
     assertTrue(ex.getMessage().contains("no mínimo 12 anos"));
   }
 
   @Test
   @DisplayName("Atualizar perfil com data no futuro lança DomainValidationException")
-  void testUpdateProfileWithFutureBirthdayThrowsException() {
-    LocalDate futureBirthday = LocalDate.now().plusDays(2);
+  void testUpdateProfileWithFutureBirthDateThrowsException() {
+    LocalDate futureBirthDate = LocalDate.now().plusDays(2);
     DomainValidationException ex = assertThrows(
         DomainValidationException.class,
-        () -> user.updateProfile("Futurista", futureBirthday, UserGender.PREFER_NOT_TO_SAY)
+        () -> user.updateProfile("Futurista", futureBirthDate, UserGender.PREFER_NOT_TO_SAY)
     );
     assertTrue(ex.getMessage().contains("deve estar no passado"));
   }

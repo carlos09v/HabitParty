@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { cn } from "@/utils";
 import { getPageNumbers } from "@/utils/dashboardMetrics";
 
@@ -26,11 +27,14 @@ export function Pagination({
   totalPages,
   totalItems,
   itemsPerPage,
-  itemLabel = "itens",
+  itemLabel,
   isCompact = false,
   buildHref,
   onPageChange,
 }: PaginationProps) {
+  const t = useTranslations("ui.pagination");
+  const resolvedItemLabel = itemLabel ?? t("defaultItemLabel");
+
   if (totalPages <= 1) return null;
 
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
@@ -39,6 +43,8 @@ export function Pagination({
 
   const prevDisabled = currentPage <= 1;
   const nextDisabled = currentPage >= totalPages;
+  const prevPageLabel = t("prevPage");
+  const nextPageLabel = t("nextPage");
 
   const navBtnClass = cn(
     "rounded-lg border border-white/20 bg-surface text-neutral-300 hover:bg-surface-hover hover:text-neutral-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gold flex items-center justify-center cursor-pointer",
@@ -56,16 +62,18 @@ export function Pagination({
         "flex items-center justify-between gap-4 border-t border-white/10 text-sm",
         isCompact ? "py-1.5 px-2" : "py-3 px-2",
       )}
-      aria-label={`Paginação de ${itemLabel}`}
+      aria-label={t("navAriaLabel", { itemLabel: resolvedItemLabel })}
     >
       {/* Contagem de itens */}
       <span className="text-xs text-neutral-400" aria-live="polite">
-        Mostrando{" "}
-        <strong className="text-neutral-100">
-          {startItem}-{endItem}
-        </strong>{" "}
-        de <strong className="text-neutral-100">{totalItems}</strong>{" "}
-        {itemLabel}
+        {t.rich("showingRange", {
+          range: `${startItem}-${endItem}`,
+          total: totalItems,
+          itemLabel: resolvedItemLabel,
+          strong: (chunks) => (
+            <strong className="text-neutral-100">{chunks}</strong>
+          ),
+        })}
       </span>
 
       {/* Controles da paginação */}
@@ -75,7 +83,7 @@ export function Pagination({
             type="button"
             disabled
             aria-disabled="true"
-            aria-label="Página anterior"
+            aria-label={prevPageLabel}
             className={disabledNavBtnClass}
           >
             <ChevronLeft size={isCompact ? 14 : 16} aria-hidden="true" />
@@ -84,7 +92,7 @@ export function Pagination({
           <Link
             href={buildHref(currentPage - 1)}
             scroll={false}
-            aria-label="Página anterior"
+            aria-label={prevPageLabel}
             className={navBtnClass}
           >
             <ChevronLeft size={isCompact ? 14 : 16} aria-hidden="true" />
@@ -93,7 +101,7 @@ export function Pagination({
           <button
             type="button"
             onClick={() => onPageChange?.(currentPage - 1)}
-            aria-label="Página anterior"
+            aria-label={prevPageLabel}
             className={navBtnClass}
           >
             <ChevronLeft size={isCompact ? 14 : 16} aria-hidden="true" />
@@ -116,11 +124,12 @@ export function Pagination({
 
           const page = item;
           const isActive = page === currentPage;
+          const pageAriaLabel = t("pageNumber", { page });
           const pageItemClass = cn(
             "px-2 rounded-lg font-bold transition-all focus:outline-none focus:ring-2 focus:ring-gold focus:ring-offset-1 focus:ring-offset-background flex items-center justify-center cursor-pointer",
             isCompact ? "min-w-7 h-7 text-label-g" : "min-w-8 h-8 text-xs",
             isActive
-              ? "bg-gold text-neutral-900 shadow-sm"
+              ? "bg-gold text-on-gold shadow-sm"
               : "border border-white/20 bg-surface text-neutral-300 hover:bg-surface-hover hover:text-neutral-100",
           );
 
@@ -131,7 +140,7 @@ export function Pagination({
                 href={buildHref(page)}
                 scroll={false}
                 aria-current={isActive ? "page" : undefined}
-                aria-label={`Página ${page}`}
+                aria-label={pageAriaLabel}
                 className={pageItemClass}
               >
                 {page}
@@ -145,7 +154,7 @@ export function Pagination({
               type="button"
               onClick={() => onPageChange?.(page)}
               aria-current={isActive ? "page" : undefined}
-              aria-label={`Página ${page}`}
+              aria-label={pageAriaLabel}
               className={pageItemClass}
             >
               {page}
@@ -158,7 +167,7 @@ export function Pagination({
             type="button"
             disabled
             aria-disabled="true"
-            aria-label="Próxima página"
+            aria-label={nextPageLabel}
             className={disabledNavBtnClass}
           >
             <ChevronRight size={isCompact ? 14 : 16} aria-hidden="true" />
@@ -167,7 +176,7 @@ export function Pagination({
           <Link
             href={buildHref(currentPage + 1)}
             scroll={false}
-            aria-label="Próxima página"
+            aria-label={nextPageLabel}
             className={navBtnClass}
           >
             <ChevronRight size={isCompact ? 14 : 16} aria-hidden="true" />
@@ -176,7 +185,7 @@ export function Pagination({
           <button
             type="button"
             onClick={() => onPageChange?.(currentPage + 1)}
-            aria-label="Próxima página"
+            aria-label={nextPageLabel}
             className={navBtnClass}
           >
             <ChevronRight size={isCompact ? 14 : 16} aria-hidden="true" />

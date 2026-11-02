@@ -1,13 +1,15 @@
 import { BookOpen, Coins, Flame, Sparkles, Timer, Trophy } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { HelpReferenceTable } from "@/components/help/HelpReferenceTable";
-import { HELP_TABLES } from "@/constants/help";
 import type { HelpCategory, HelpTableEntry } from "@/types/help";
 
 interface HelpReferenceTablesProps {
   isCompact?: boolean;
   searchQuery?: string;
   activeCategory?: HelpCategory;
+  /** Tabelas de referência já resolvidas no idioma ativo (via servidor). */
+  tables: Record<string, HelpTableEntry>;
 }
 
 interface TableConfig {
@@ -22,39 +24,41 @@ export function HelpReferenceTables({
   isCompact = false,
   searchQuery = "",
   activeCategory = "ALL",
+  tables: helpTables,
 }: HelpReferenceTablesProps) {
+  const t = useTranslations("help.tables");
   const tables: TableConfig[] = [
     {
       id: "difficulties",
-      entry: HELP_TABLES.difficulties,
+      entry: helpTables.difficulties,
       icon: <Coins className="text-gold" size={18} />,
       highlightColumnIndex: 2,
       highlightColorClass: "text-gold",
     },
     {
       id: "habitDecay",
-      entry: HELP_TABLES.habitDecay,
+      entry: helpTables.habitDecay,
       icon: <Flame className="text-warning-500" size={18} />,
       highlightColumnIndex: 2,
       highlightColorClass: "text-gold",
     },
     {
       id: "focusRewards",
-      entry: HELP_TABLES.focusRewards,
+      entry: helpTables.focusRewards,
       icon: <Timer className="text-primary-light" size={18} />,
       highlightColumnIndex: 2,
       highlightColorClass: "text-gold",
     },
     {
       id: "mysteryBoxes",
-      entry: HELP_TABLES.mysteryBoxes,
+      entry: helpTables.mysteryBoxes,
       icon: <Sparkles className="text-magenta" size={18} />,
       highlightColumnIndex: 1,
       highlightColorClass: "text-gold",
     },
     {
       id: "userLevels",
-      entry: HELP_TABLES.userLevels,
+      entry: helpTables.userLevels,
       icon: <Trophy className="text-gold" size={18} />,
       highlightColumnIndex: 1,
       highlightColorClass: "text-magenta",
@@ -108,11 +112,11 @@ export function HelpReferenceTables({
       <div className="flex items-center gap-2">
         <BookOpen className="text-gold" size={20} />
         <h2 className="text-body-m sm:text-subtitle-s font-bold text-neutral-100">
-          Tabelas de Referência & Economia Matemática
+          {t("sectionTitle")}
         </h2>
         <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-neutral-300 border border-white/10">
           {filteredTables.length}{" "}
-          {filteredTables.length === 1 ? "tabela" : "tabelas"}
+          {filteredTables.length === 1 ? t("tableSingular") : t("tablePlural")}
         </span>
       </div>
 

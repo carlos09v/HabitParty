@@ -2,12 +2,14 @@
 
 import { Download } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { exportTransactionsCsvAction } from "@/actions/historyActions";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Select } from "@/components/ui/Select";
 import { HISTORY_TABS, PERIOD_OPTIONS } from "@/constants/history";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { HistoryPeriodFilter } from "@/types/history";
 import { cn, downloadBlob } from "@/utils";
 
@@ -24,6 +26,8 @@ export function HistoryFilters({
   currentSearch,
   isCompact = false,
 }: HistoryFiltersProps) {
+  const t = useTranslations("history.filters");
+  const { isGamified } = useExperienceMode();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -31,6 +35,15 @@ export function HistoryFilters({
   const [searchInput, setSearchInput] = useState(currentSearch || "");
   const [isExporting, startExport] = useTransition();
   const [, startTransition] = useTransition();
+
+  const localizedPeriodOptions = useMemo(
+    () =>
+      PERIOD_OPTIONS.map((opt) => ({
+        value: opt.value,
+        label: t(`periods.${opt.value}`),
+      })),
+    [t],
+  );
 
   // Sincroniza o input com alterações vindas da URL
   useEffect(() => {
@@ -97,7 +110,7 @@ export function HistoryFilters({
         search: searchInput.trim() || currentSearch,
       });
       if (!res.success) {
-        toast.error(res.error || "Erro ao exportar extrato.");
+        toast.error(res.error || t("toasts.exportError"));
         return;
       }
 
@@ -112,13 +125,14 @@ export function HistoryFilters({
             currentPeriod && currentPeriod !== "ALL"
               ? `_${currentPeriod.toLowerCase()}`
               : "";
+          const prefix = t("csvFilenamePrefix");
           downloadBlob(
             res.data,
-            `meu_extrato${tabSuffix}${periodSuffix}_${dateStr}.csv`,
+            `${prefix}${tabSuffix}${periodSuffix}_${dateStr}.csv`,
           );
-          toast.success("Extrato exportado com sucesso em CSV!");
+          toast.success(t("toasts.exportSuccess"));
         } catch {
-          toast.error("Falha ao salvar o arquivo CSV.");
+          toast.error(t("toasts.saveFileError"));
         }
       }
     });
@@ -129,17 +143,15 @@ export function HistoryFilters({
       search={{
         value: searchInput,
         onChange: setSearchInput,
-        placeholder: "Pesquisar transação...",
+        placeholder: t("searchPlaceholder"),
       }}
       middleActions={
         <div className="flex items-center gap-1.5 shrink-0">
           <span className="text-xs font-semibold text-neutral-400 hidden sm:inline">
-            Período:
+            {t("periodLabel")}
           </span>
           <Select
-            options={
-              PERIOD_OPTIONS as unknown as { value: string; label: string }[]
-            }
+            options={localizedPeriodOptions}
             value={currentPeriod}
             onChange={handlePeriodChange}
             compact
@@ -152,6 +164,17 @@ export function HistoryFilters({
         <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface/60 border border-white/10 shrink-0 overflow-x-auto max-w-full">
           {HISTORY_TABS.map((tab) => {
             const isActive = (currentTab || "ALL") === tab.id;
+            const tabLabel =
+              tab.id === "BACKPACK"
+                ? isGamified
+                  ? t("tabs.BACKPACK_GAMIFIED")
+                  : t("tabs.BACKPACK_PRODUCTIVITY")
+                : tab.id === "SHOPPING"
+                  ? isGamified
+                    ? t("tabs.SHOPPING_GAMIFIED")
+                    : t("tabs.SHOPPING_PRODUCTIVITY")
+                  : t(`tabs.${tab.id}`);
+
             return (
               <button
                 key={tab.id}
@@ -161,11 +184,11 @@ export function HistoryFilters({
                   "px-3 rounded-lg font-semibold transition-all cursor-pointer select-none whitespace-nowrap",
                   isCompact ? "py-1 text-xs" : "py-1.5 text-xs",
                   isActive
-                    ? "bg-gold text-neutral-900 shadow-xs font-bold"
+                    ? "bg-gold text-on-gold shadow-xs font-bold"
                     : "text-neutral-300 hover:text-neutral-50 hover:bg-white/5",
                 )}
               >
-                {tab.label}
+                {tabLabel}
               </button>
             );
           })}
@@ -177,22 +200,22 @@ export function HistoryFilters({
           onClick={handleExportCsv}
           disabled={isExporting}
           className={cn(
-            "rounded-xl border border-gold/40 bg-gold/15 text-gold hover:bg-gold hover:text-neutral-900 transition-all font-bold flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed shrink-0",
+            "rounded-xl border border-gold/40 bg-gold/15 text-gold hover:bg-gold hover:text-on-gold transition-all font-bold flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed shrink-0",
             isCompact
               ? "px-2.5 py-1.5 text-xs"
               : "px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm",
           )}
-          title="Exportar Extrato em formato CSV"
+          title={t("exportButtonTitle")}
         >
           <Download
             size={isCompact ? 14 : 16}
             className={isExporting ? "animate-bounce" : ""}
           />
           <span className="hidden sm:inline">
-            {isExporting ? "Exportando..." : "Exportar CSV"}
+            {isExporting ? t("exporting") : t("exportCsvButton")}
           </span>
           <span className="sm:hidden">
-            {isExporting ? "Exportando..." : "CSV"}
+            {isExporting ? t("exporting") : t("exportCsvShort")}
           </span>
         </button>
       }

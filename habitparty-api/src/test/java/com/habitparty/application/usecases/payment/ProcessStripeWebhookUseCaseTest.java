@@ -23,6 +23,7 @@ import com.habitparty.application.ports.PaymentEventRepository;
 import com.habitparty.application.ports.PaymentWebhookEvent;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.domain.enums.PaymentEventStatus;
 import com.habitparty.core.domain.enums.SubscriptionStatus;
 import com.habitparty.core.domain.enums.UserGender;
 import com.habitparty.core.domain.enums.UserRole;
@@ -86,11 +87,11 @@ class ProcessStripeWebhookUseCaseTest {
 
     verify(userRepository, never()).findById(any());
     verify(userRepository, never()).save(any());
-    verify(paymentEventRepository, never()).recordEvent(any(), any());
+    verify(paymentEventRepository, never()).recordEvent(any(), any(), any(), any(), any());
   }
 
   @Test
-  @DisplayName("Processa Pix avulso com sucesso e estende dias")
+  @DisplayName("Processa Pix avulso com sucesso, estende dias e registra evento com userId e status PROCESSED")
   void testProcessPixCheckoutCompleted() {
     when(paymentEventRepository.existsByEventId("evt_pix_123")).thenReturn(false);
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
@@ -113,8 +114,20 @@ class ProcessStripeWebhookUseCaseTest {
     assertEquals(SubscriptionStatus.ACTIVE, user.getSubscriptionStatus());
     assertNotNull(user.getSubscriptionEndsAt());
     verify(userRepository).save(user);
-    verify(paymentEventRepository).recordEvent("session_cs_pix_123", "CheckoutSessionCompleted");
-    verify(paymentEventRepository).recordEvent("evt_pix_123", "CheckoutCompleted");
+    verify(paymentEventRepository).recordEvent(
+        "session_cs_pix_123",
+        "CheckoutSessionCompleted",
+        userId,
+        PaymentEventStatus.PROCESSED,
+        null
+    );
+    verify(paymentEventRepository).recordEvent(
+        "evt_pix_123",
+        "CheckoutCompleted",
+        userId,
+        PaymentEventStatus.PROCESSED,
+        null
+    );
   }
 
   @Test
@@ -140,11 +153,22 @@ class ProcessStripeWebhookUseCaseTest {
     assertTrue(user.isPremium());
     assertEquals(SubscriptionStatus.ACTIVE, user.getSubscriptionStatus());
     assertEquals("sub_annual_123", user.getStripeSubscriptionId());
-    // Deve vencer em aproximadamente 1 ano (mais de 360 dias)
     assertTrue(user.getSubscriptionEndsAt().isAfter(LocalDateTime.now().plusDays(360)));
     verify(userRepository).save(user);
-    verify(paymentEventRepository).recordEvent("session_cs_annual_123", "CheckoutSessionCompleted");
-    verify(paymentEventRepository).recordEvent("evt_annual_123", "CheckoutCompleted");
+    verify(paymentEventRepository).recordEvent(
+        "session_cs_annual_123",
+        "CheckoutSessionCompleted",
+        userId,
+        PaymentEventStatus.PROCESSED,
+        null
+    );
+    verify(paymentEventRepository).recordEvent(
+        "evt_annual_123",
+        "CheckoutCompleted",
+        userId,
+        PaymentEventStatus.PROCESSED,
+        null
+    );
   }
 
   @Test
@@ -167,9 +191,13 @@ class ProcessStripeWebhookUseCaseTest {
 
     processStripeWebhookUseCase.execute(event);
 
-    // Não deve salvar o usuário novamente (não duplica os dias do Pix)
     verify(userRepository, never()).save(any());
-    // Deve registrar o evento do webhook como finalizado
-    verify(paymentEventRepository).recordEvent("evt_wh_123", "CheckoutCompleted");
+    verify(paymentEventRepository).recordEvent(
+        eq("evt_wh_123"),
+        eq("CheckoutCompleted"),
+        eq(userId),
+        eq(PaymentEventStatus.IGNORED),
+        anyString()
+    );
   }
 }

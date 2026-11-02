@@ -1,7 +1,10 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { updateTag } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { type ActionState, getErrorMessage } from "@/actions/types";
+import { getServerAuthToken } from "@/api/server";
+import { getRequestLocale } from "@/i18n/request";
 import type { CheckoutRequestDTO, CheckoutResponseDTO } from "@/types/payment";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -12,14 +15,17 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 export async function createCheckoutSessionAction(
   payload: CheckoutRequestDTO,
 ): Promise<ActionState<CheckoutResponseDTO>> {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("habitparty_token")?.value;
+  const [t, token, locale] = await Promise.all([
+    getTranslations("settings.paymentActions"),
+    getServerAuthToken(),
+    getRequestLocale(),
+  ]);
 
+  try {
     if (!token) {
       return {
         success: false,
-        error: "Você precisa estar conectado para realizar uma assinatura.",
+        error: t("unauthorized"),
       };
     }
 
@@ -28,25 +34,17 @@ export async function createCheckoutSessionAction(
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        "Accept-Language": locale,
       },
       body: JSON.stringify(payload),
       cache: "no-store",
     });
 
     if (!res.ok) {
-      let errorMsg = "Falha ao iniciar o checkout. Tente novamente.";
-      try {
-        const errorData = await res.json();
-        errorMsg = getErrorMessage(
-          errorData.detail || errorData.message || errorData,
-          errorMsg,
-        );
-      } catch {
-        // Fallback para mensagem padrão
-      }
+      const errorData = await res.json().catch(() => null);
       return {
         success: false,
-        error: errorMsg,
+        error: getErrorMessage(errorData, t("checkoutError")),
       };
     }
 
@@ -55,7 +53,7 @@ export async function createCheckoutSessionAction(
     if (!data.checkoutUrl) {
       return {
         success: false,
-        error: "URL de checkout inválida retornada pelo servidor.",
+        error: t("invalidCheckoutUrl"),
       };
     }
 
@@ -67,7 +65,7 @@ export async function createCheckoutSessionAction(
     console.error("[PaymentAction:CreateCheckout]", err);
     return {
       success: false,
-      error: "Erro de comunicação ao conectar com o serviço de pagamentos.",
+      error: t("networkError"),
     };
   }
 }
@@ -78,15 +76,15 @@ export async function createCheckoutSessionAction(
 export async function createCustomerPortalSessionAction(): Promise<
   ActionState<{ portalUrl: string }>
 > {
+  const t = await getTranslations("settings.paymentActions");
+
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("habitparty_token")?.value;
+    const token = await getServerAuthToken();
 
     if (!token) {
       return {
         success: false,
-        error:
-          "Você precisa estar conectado para acessar o portal de assinaturas.",
+        error: t("unauthorized"),
       };
     }
 
@@ -100,19 +98,10 @@ export async function createCustomerPortalSessionAction(): Promise<
     });
 
     if (!res.ok) {
-      let errorMsg = "Falha ao abrir portal de pagamentos.";
-      try {
-        const errorData = await res.json();
-        errorMsg = getErrorMessage(
-          errorData.detail || errorData.message || errorData,
-          errorMsg,
-        );
-      } catch {
-        // Fallback
-      }
+      const errorData = await res.json().catch(() => null);
       return {
         success: false,
-        error: errorMsg,
+        error: getErrorMessage(errorData, t("portalError")),
       };
     }
 
@@ -125,7 +114,7 @@ export async function createCustomerPortalSessionAction(): Promise<
     console.error("[PaymentAction:CreateCustomerPortal]", err);
     return {
       success: false,
-      error: "Erro inesperado ao conectar ao portal de pagamentos.",
+      error: t("networkError"),
     };
   }
 }
@@ -183,7 +172,6 @@ export async function getFoundersQuotaAction(): Promise<
 
 export interface PaymentConfirmResponse {
   isPaid?: boolean;
-  paid?: boolean;
   message: string;
   user?: import("@/api/schema").components["schemas"]["UserResponseDTO"];
 }
@@ -194,14 +182,15 @@ export interface PaymentConfirmResponse {
 export async function confirmPaymentAction(
   sessionId: string,
 ): Promise<ActionState<PaymentConfirmResponse>> {
+  const t = await getTranslations("settings.paymentActions");
+
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("habitparty_token")?.value;
+    const token = await getServerAuthToken();
 
     if (!token) {
       return {
         success: false,
-        error: "Sessão não autenticada para confirmar pagamento.",
+        error: t("unauthorized"),
       };
     }
 
@@ -216,13 +205,19 @@ export async function confirmPaymentAction(
     });
 
     if (!res.ok) {
+      const errorData = await res.json().catch(() => null);
       return {
         success: false,
-        error: "Não foi possível validar o pagamento com o servidor.",
+        error: getErrorMessage(errorData, t("checkoutError")),
       };
     }
 
     const data: PaymentConfirmResponse = await res.json();
+    if (data.isPaid) {
+      updateTag("user");
+      updateTag("admin-overview");
+      updateTag("admin-users");
+    }
     return {
       success: true,
       data,
@@ -231,7 +226,7 @@ export async function confirmPaymentAction(
     console.error("[PaymentAction:ConfirmPayment]", err);
     return {
       success: false,
-      error: "Erro de comunicação ao validar pagamento.",
+      error: t("networkError"),
     };
   }
 }

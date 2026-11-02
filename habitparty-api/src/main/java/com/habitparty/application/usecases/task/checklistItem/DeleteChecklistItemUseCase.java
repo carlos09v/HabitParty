@@ -3,6 +3,7 @@ package com.habitparty.application.usecases.task.checklistItem;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.core.domain.entities.task.ChecklistItem;
@@ -16,6 +17,7 @@ public class DeleteChecklistItemUseCase {
     this.taskRepository = taskRepository;
   }
 
+  @Transactional
   public void execute(UUID itemId, UUID userIdLogado) {
     ChecklistItem item = taskRepository.findChecklistItemByIdAndUserId(itemId, userIdLogado)
         .orElseThrow(() -> new ResourceNotFoundException("Item não encontrada."));

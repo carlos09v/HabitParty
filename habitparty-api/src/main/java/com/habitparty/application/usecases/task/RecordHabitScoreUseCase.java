@@ -53,32 +53,8 @@ public class RecordHabitScoreUseCase {
         throw new DomainValidationException("Este hábito é do tipo Negativo e não permite pontuação positiva.");
       }
 
-      TaskReward reward = habit.calculateReward();
-      user.addXp(reward.xp());
-      user.addCoins(reward.coins());
-
-      int tasksCompletedToday = transactionPort.countCompletedTasksToday(userIdLogado);
-      if (tasksCompletedToday == 0) {
-        user.incrementStreak();
-      }
-
-      userPort.save(user);
-
-      TransactionHistory transaction = new TransactionHistory(
-          null,
-          userIdLogado,
-          habit.getId(),
-          reward.coins(),
-          reward.xp(),
-          null,
-          TransactionType.HABIT_COMPLETED,
-          habit.getName(),
-          null,
-          null,
-          habit.getDifficulty(),
-          habit.getTags(),
-          null);
-      transactionPort.save(transaction);
+      TaskGamificationHelper.awardTaskCompletion(
+          user, habit, TransactionType.HABIT_COMPLETED, userPort, transactionPort);
 
       habit.registerCompletion();
       habit.changeStatus(TaskStatus.COMPLETED);
@@ -93,20 +69,8 @@ public class RecordHabitScoreUseCase {
       user.applyPenalty(penalty.coins(), penalty.xp());
       userPort.save(user);
 
-      TransactionHistory negativeTransaction = new TransactionHistory(
-          null,
-          userIdLogado,
-          habit.getId(),
-          penalty.coins().negate(),
-          -penalty.xp(),
-          null,
-          TransactionType.BAD_HABIT_PENALTY,
-          "Penalidade de hábito: " + habit.getName(),
-          null,
-          null,
-          habit.getDifficulty(),
-          habit.getTags(),
-          null);
+      TransactionHistory negativeTransaction = TaskGamificationHelper.buildPenaltyTransaction(
+          userIdLogado, habit, penalty, TransactionType.BAD_HABIT_PENALTY, "Penalidade de hábito: ");
       transactionPort.save(negativeTransaction);
     }
 

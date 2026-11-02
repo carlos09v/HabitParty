@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -15,6 +16,7 @@ import type { FocusActiveTarget, FocusActivity } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
 import { toLocalISOString } from "@/utils/date";
+import { getBrowserDocumentLocale } from "@/utils/focusTimerBrowser";
 import { soundEffects } from "@/utils/soundEffects";
 
 interface UseFocusMutationsParams {
@@ -40,6 +42,7 @@ export function useFocusMutations({
   onSelectActivityTarget,
   onRefreshData,
 }: UseFocusMutationsParams) {
+  const t = useTranslations("focus.main.toasts");
   const [returnModalItem, setReturnModalItem] =
     useState<InventoryItemResponseDTO | null>(null);
   const [isReturningToBackpack, setIsReturningToBackpack] = useState(false);
@@ -69,14 +72,14 @@ export function useFocusMutations({
             onSelectActivity?.(null);
           }
         }
-        toast.success("Atividade excluída com sucesso.");
+        toast.success(t("deleteActivitySuccess"));
         setDeleteModalActivity(null);
         onRefreshData();
       } else {
-        toast.error(res.error || "Erro ao excluir atividade.");
+        toast.error(res.error || t("deleteActivityError"));
       }
     } catch {
-      toast.error("Erro ao excluir atividade.");
+      toast.error(t("deleteActivityError"));
     } finally {
       setIsDeletingActivity(false);
     }
@@ -89,6 +92,7 @@ export function useFocusMutations({
     onResetTarget,
     onSelectActivityTarget,
     onRefreshData,
+    t,
   ]);
 
   const handleConfirmReturnToBackpack = useCallback(async () => {
@@ -106,14 +110,14 @@ export function useFocusMutations({
             onSelectActivity?.(null);
           }
         }
-        toast.success("Item devolvido para a mochila.");
+        toast.success(t("returnItemSuccess"));
         setReturnModalItem(null);
         onRefreshData();
       } else {
-        toast.error(res.error || "Erro ao devolver item para a mochila.");
+        toast.error(res.error || t("returnItemError"));
       }
     } catch {
-      toast.error("Erro ao devolver item para a mochila.");
+      toast.error(t("returnItemError"));
     } finally {
       setIsReturningToBackpack(false);
     }
@@ -125,6 +129,7 @@ export function useFocusMutations({
     onSelectActivityTarget,
     onSelectActivity,
     onRefreshData,
+    t,
   ]);
 
   const handleConsumeItem = useCallback(
@@ -151,7 +156,9 @@ export function useFocusMutations({
           soundEffects.playFocusSessionCompleteSound();
           triggerCelebrationConfetti();
           toast.success(
-            `🎉 Recompensa aproveitada com sucesso! "${item.rewardName || "Item"}" concluído!`,
+            t("consumeItemSuccess", {
+              name: item.rewardName || t("consumeItemFallbackName"),
+            }),
           );
 
           if (activeTarget?.id === item.inventoryItemId) {
@@ -166,10 +173,10 @@ export function useFocusMutations({
 
           onRefreshData();
         } else {
-          toast.error(res.error || "Erro ao concluir item.");
+          toast.error(res.error || t("consumeItemError"));
         }
       } catch {
-        toast.error("Erro ao concluir item.");
+        toast.error(t("consumeItemError"));
       }
     },
     [
@@ -179,6 +186,7 @@ export function useFocusMutations({
       onSelectActivityTarget,
       onSelectActivity,
       onRefreshData,
+      t,
     ],
   );
 
@@ -201,12 +209,28 @@ export function useFocusMutations({
 export async function executeDeleteFocusRecord(
   recordId: string,
   onSuccess: () => void,
+  messages?: {
+    success?: string;
+    error?: string;
+  },
 ) {
+  const isEn = getBrowserDocumentLocale() === "en";
   const res = await deleteFocusRecord(recordId);
   if (res.success) {
-    toast.success("Registro de foco removido com sucesso!");
+    toast.success(
+      messages?.success ??
+        (isEn
+          ? "Focus record removed successfully!"
+          : "Registro de foco removido com sucesso!"),
+    );
     onSuccess();
   } else {
-    toast.error(res.error || "Erro ao excluir registro de foco.");
+    toast.error(
+      res.error ||
+        messages?.error ||
+        (isEn
+          ? "Error deleting focus record."
+          : "Erro ao excluir registro de foco."),
+    );
   }
 }

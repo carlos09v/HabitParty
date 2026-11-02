@@ -1,5 +1,6 @@
 package com.habitparty.infrastructure.jobs;
 
+import java.time.Clock;
 import java.time.LocalDate;
 
 import org.slf4j.Logger;
@@ -15,16 +16,19 @@ import com.habitparty.application.usecases.task.DailyResetUseCase;
 public class DailyResetJob {
   private static final Logger logger = LoggerFactory.getLogger(DailyResetJob.class);
   private final DailyResetUseCase dailyResetUseCase;
+  private final Clock clock;
 
-  public DailyResetJob(DailyResetUseCase dailyResetUseCase) {
+  public DailyResetJob(DailyResetUseCase dailyResetUseCase, Clock clock) {
     this.dailyResetUseCase = dailyResetUseCase;
+    this.clock = clock;
   }
 
   // Roda na inicialização do servidor para recuperar afazeres hardcore vencidos caso a aplicação estivesse offline à meia-noite
   @EventListener(ApplicationReadyEvent.class)
   public void catchUpOverdueHardcoreTodosOnStartup() {
     try {
-      int processedCount = dailyResetUseCase.processOverdueHardcoreTodos(LocalDate.now());
+      // Usa o relógio no fuso de negócio (evita penalizar antes da hora quando a JVM está em UTC)
+      int processedCount = dailyResetUseCase.processOverdueHardcoreTodos(LocalDate.now(clock));
       if (processedCount > 0) {
         logger.info("[Startup] {} afazer(es) hardcore vencido(s) processado(s) com aplicação de penalidade.", processedCount);
       }

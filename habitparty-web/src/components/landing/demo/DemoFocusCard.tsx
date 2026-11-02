@@ -1,4 +1,7 @@
+"use client";
+
 import { Pause, Play, Timer } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/utils";
 
 interface DemoFocusCardProps {
@@ -12,6 +15,8 @@ export function DemoFocusCard({
   isRunning,
   onToggleTimer,
 }: DemoFocusCardProps) {
+  const t = useTranslations("landing.demo.focusCard");
+
   const formatTimer = (totalSec: number) => {
     const mins = Math.floor(totalSec / 60);
     const secs = totalSec % 60;
@@ -24,9 +29,11 @@ export function DemoFocusCard({
         <div className="flex items-center justify-between mb-2">
           <span className="text-[11px] font-bold text-info uppercase tracking-wider bg-info/10 px-2 py-0.5 rounded flex items-center gap-1">
             <Timer className="w-3 h-3" />
-            Foco Zen
+            {t("badge")}
           </span>
-          <span className="text-xs font-semibold text-neutral-400">25 min</span>
+          <span className="text-xs font-semibold text-neutral-400">
+            {t("duration")}
+          </span>
         </div>
         <div className="flex items-center justify-between mt-2">
           <div className="text-2xl font-black text-neutral-50 tracking-wider font-mono">
@@ -41,15 +48,13 @@ export function DemoFocusCard({
           )}
         </div>
         <p className="text-xs text-neutral-400 mt-1">
-          {isRunning
-            ? "Hiperfoco ativo • Notificações silenciadas"
-            : "Elimine distrações e foque na tarefa"}
+          {isRunning ? t("descriptionRunning") : t("descriptionIdle")}
         </p>
       </div>
 
       <div className="mt-4 pt-3 border-t border-neutral-700/60 dark:border-white/5 flex items-center justify-between">
         <span className="text-[11px] text-neutral-400">
-          {isRunning ? "Em execução" : "Iniciar sessão:"}
+          {isRunning ? t("statusRunning") : t("statusIdle")}
         </span>
         <button
           type="button"
@@ -58,16 +63,16 @@ export function DemoFocusCard({
             "px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer",
             isRunning
               ? "bg-warning-500/20 text-warning-500 border border-warning-500/40"
-              : "bg-primary hover:bg-primary-light text-white shadow-[0_0_12px_rgba(124,58,237,0.4)]",
+              : "bg-primary hover:bg-primary-light text-white shadow-xs dark:shadow-[0_0_12px_rgba(124,58,237,0.4)]",
           )}
         >
           {isRunning ? (
             <>
-              <Pause className="w-3.5 h-3.5" /> Pausar
+              <Pause className="w-3.5 h-3.5" /> {t("pause")}
             </>
           ) : (
             <>
-              <Play className="w-3.5 h-3.5 fill-white" /> Iniciar Foco
+              <Play className="w-3.5 h-3.5 fill-white" /> {t("start")}
             </>
           )}
         </button>

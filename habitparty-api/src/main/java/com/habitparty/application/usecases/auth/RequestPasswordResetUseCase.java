@@ -1,6 +1,7 @@
 package com.habitparty.application.usecases.auth;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
@@ -8,34 +9,31 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
 
 import com.habitparty.application.ports.EmailDispatchLogRepository;
 import com.habitparty.application.ports.EmailSenderPort;
-import com.habitparty.application.ports.PasswordResetTokenRepository;
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.application.ports.UserTokenRepository;
 import com.habitparty.core.domain.entities.EmailDispatchLog;
-import com.habitparty.core.domain.entities.PasswordResetToken;
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.domain.entities.UserToken;
 import com.habitparty.core.domain.enums.EmailDispatchStatus;
 import com.habitparty.core.domain.enums.EmailType;
+import com.habitparty.core.domain.enums.UserTokenType;
 
 @Service
-@Transactional
 public class RequestPasswordResetUseCase {
   private static final Logger log = LoggerFactory.getLogger(RequestPasswordResetUseCase.class);
 
   private final UserRepository userRepository;
-  private final PasswordResetTokenRepository tokenRepository;
+  private final UserTokenRepository tokenRepository;
   private final EmailSenderPort emailSender;
   private final EmailDispatchLogRepository emailLogPort;
   private final String frontendUrl;
 
   public RequestPasswordResetUseCase(
       UserRepository userRepository,
-      PasswordResetTokenRepository tokenRepository,
+      UserTokenRepository tokenRepository,
       EmailSenderPort emailSender,
       EmailDispatchLogRepository emailLogPort,
       @Value("${app.frontend-url:${APP_FRONTEND_URL:http://localhost:3000}}") String frontendUrl) {
@@ -58,20 +56,23 @@ public class RequestPasswordResetUseCase {
 
     User user = userOptional.get();
 
-    tokenRepository.invalidateActiveTokensByUserId(user.getId());
+    tokenRepository.invalidateActiveTokensByUserIdAndType(user.getId(), UserTokenType.PASSWORD_RESET);
 
-    String tokenValue = UUID.randomUUID().toString();
-    PasswordResetToken token = new PasswordResetToken(
+    String rawTokenValue = UUID.randomUUID().toString();
+    String hashedTokenValue = UserToken.hashToken(rawTokenValue);
+
+    UserToken token = new UserToken(
         UUID.randomUUID(),
         user.getId(),
-        tokenValue,
+        UserTokenType.PASSWORD_RESET,
+        hashedTokenValue,
         Instant.now().plus(15, ChronoUnit.MINUTES),
         false
     );
 
     tokenRepository.save(token);
 
-    String resetLink = frontendUrl + "/reset-password?token=" + tokenValue;
+    String resetLink = frontendUrl + "/reset-password?token=" + rawTokenValue;
     boolean success = emailSender.sendPasswordResetEmail(user.getEmail(), resetLink);
 
     emailLogPort.save(new EmailDispatchLog(

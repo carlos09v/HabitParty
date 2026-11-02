@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import com.habitparty.adapters.in.web.dtos.request.CreateTaskDTO;
@@ -22,6 +23,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RequestMapping("/tasks")
+@Validated
 @Tag(name = "Tasks", description = "Endpoints para gerenciamento de Tarefas, Hábitos e Dailies")
 public interface TaskApi {
 
@@ -64,7 +66,7 @@ public interface TaskApi {
     @PutMapping("/move")
     ResponseEntity<Void> moveTasks(
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser userIdLogado,
-        @RequestBody List<UpdateTaskOrderDTO> itemsToMove);
+        @RequestBody List<@Valid UpdateTaskOrderDTO> itemsToMove);
 
     @Operation(summary = "Alterar Status da Tarefa", description = "Altera o status de uma tarefa e ganha recompensa se concluída.")
     @PatchMapping("/{taskId}/status")

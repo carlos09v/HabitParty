@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { BaseModal } from "@/components/ui/BaseModal";
 
 interface DeleteWorkspaceModalProps {
@@ -18,6 +19,8 @@ export function DeleteWorkspaceModal({
   onClose,
   onConfirm,
 }: DeleteWorkspaceModalProps) {
+  const t = useTranslations("workspace.deleteModal");
+
   return (
     <BaseModal
       isOpen={isOpen}
@@ -26,13 +29,14 @@ export function DeleteWorkspaceModal({
       borderColor="border-red-500/30"
       preventClose={isLoading}
       headerExtra={<AlertTriangle size={20} className="text-red-400" />}
-      title={<span className="text-red-400">Excluir Ambiente</span>}
+      title={<span className="text-red-400">{t("title")}</span>}
     >
       <p className="text-body-s text-neutral-300 mb-6 leading-relaxed">
-        Tem certeza de que deseja excluir o ambiente{" "}
-        <span className="font-bold text-neutral-100">"{workspaceName}"</span>?
-        Esta ação é irreversível e todas as tarefas e colunas associadas serão
-        removidas permanentemente.
+        {t("descriptionPrefix")}{" "}
+        <span className="font-bold text-neutral-100">
+          &quot;{workspaceName}&quot;
+        </span>
+        {t("descriptionSuffix")}
       </p>
 
       <div className="flex justify-end gap-3">
@@ -42,7 +46,7 @@ export function DeleteWorkspaceModal({
           disabled={isLoading}
           className="px-4 py-2 text-body-s text-neutral-300 hover:text-neutral-50 transition-colors focus:outline-none rounded-lg disabled:opacity-50 cursor-pointer"
         >
-          Cancelar
+          {t("cancel")}
         </button>
         <button
           type="button"
@@ -53,10 +57,10 @@ export function DeleteWorkspaceModal({
           {isLoading ? (
             <>
               <Loader2 size={16} className="animate-spin" />
-              <span>Excluindo...</span>
+              <span>{t("deleting")}</span>
             </>
           ) : (
-            <span>Excluir Ambiente</span>
+            <span>{t("confirm")}</span>
           )}
         </button>
       </div>

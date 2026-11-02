@@ -11,13 +11,17 @@ import com.habitparty.adapters.in.web.dtos.request.GoogleSignInRequestDTO;
 import com.habitparty.adapters.in.web.dtos.request.RefreshTokenRequestDTO;
 import com.habitparty.adapters.in.web.dtos.request.ResetPasswordRequestDTO;
 import com.habitparty.adapters.in.web.dtos.request.SignInRequestDTO;
+import com.habitparty.adapters.in.web.dtos.request.VerifyEmailRequestDTO;
 import com.habitparty.adapters.in.web.dtos.response.SignInResponseDTO;
+import com.habitparty.adapters.in.web.dtos.response.UserResponseDTO;
 import com.habitparty.application.usecases.auth.GoogleSignInUseCase;
 import com.habitparty.application.usecases.auth.LogoutUseCase;
 import com.habitparty.application.usecases.auth.RefreshTokenUseCase;
 import com.habitparty.application.usecases.auth.RequestPasswordResetUseCase;
 import com.habitparty.application.usecases.auth.ResetPasswordUseCase;
+import com.habitparty.application.usecases.auth.SendEmailVerificationUseCase;
 import com.habitparty.application.usecases.auth.SignInUseCase;
+import com.habitparty.application.usecases.auth.VerifyEmailUseCase;
 import com.habitparty.core.exceptions.UnauthorizedException;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
@@ -31,6 +35,8 @@ public class AuthController implements AuthApi {
     private final LogoutUseCase logoutUseCase;
     private final RequestPasswordResetUseCase requestPasswordResetUseCase;
     private final ResetPasswordUseCase resetPasswordUseCase;
+    private final VerifyEmailUseCase verifyEmailUseCase;
+    private final SendEmailVerificationUseCase sendEmailVerificationUseCase;
     private final GoogleSignInUseCase googleSignInUseCase;
 
     @Override
@@ -66,6 +72,21 @@ public class AuthController implements AuthApi {
     @Override
     public ResponseEntity<Void> resetPassword(ResetPasswordRequestDTO dto) {
         resetPasswordUseCase.execute(dto.token(), dto.password());
+        return ResponseEntity.ok().build();
+    }
+
+    @Override
+    public ResponseEntity<UserResponseDTO> verifyEmail(VerifyEmailRequestDTO dto) {
+        var user = verifyEmailUseCase.execute(dto.token());
+        return ResponseEntity.ok(UserResponseDTO.fromDomain(user));
+    }
+
+    @Override
+    public ResponseEntity<Void> resendVerification(AuthenticatedUser usuarioLogado) {
+        if (usuarioLogado == null) {
+            throw new UnauthorizedException("Usuário não autenticado.");
+        }
+        sendEmailVerificationUseCase.executeByUserId(usuarioLogado.id());
         return ResponseEntity.ok().build();
     }
 

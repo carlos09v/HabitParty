@@ -9,5 +9,5 @@ public record CreateUserCommand(
     String email,
     String password,
     UserGender gender,
-    LocalDate birthday
+    LocalDate birthDate
 ) {}

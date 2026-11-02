@@ -1,5 +1,7 @@
+import { HELP_FAQS_EN, HELP_TABLES_EN } from "@/constants/help.en";
 import { MYSTERY_BOX_TIERS } from "@/constants/reward";
 import { DIFFICULTY_REWARDS } from "@/constants/task";
+import type { AppLocale } from "@/i18n/config";
 import type {
   HelpCategory,
   HelpCategoryTab,
@@ -15,28 +17,28 @@ export const HELP_PRODUCTIVITY_STEPS: readonly HelpProductivityStep[] = [
     step: 1,
     title: "Planeje sua Rotina",
     description:
-      "Organize seus afazeres em Hábitos contínuos, Diárias recorrentes e To-Dos pontuais com checklists.",
+      "Organize seus afazeres em Hábitos contínuos, Diárias recorrentes e Afazeres (To-Dos) pontuais com checklists e prazos.",
     badgeClassName: "bg-primary/20 border-primary/40 text-primary-light",
   },
   {
     step: 2,
-    title: "Execute e Farme Ouro",
+    title: "Execute com Foco e Constância",
     description:
-      "Conclua tarefas reais. A dificuldade matemática credita moedas (🪙) e XP vitalício imediatamente.",
+      "Conclua tarefas reais. O motor matemático pontua sua consistência, creditando progresso, XP e moedas (🪙) proporcionais ao esforço.",
     badgeClassName: "bg-gold/20 border-gold/40 text-gold",
   },
   {
     step: 3,
-    title: "Compre Recompensas",
+    title: "Recompense sua Dedicação",
     description:
-      "Use suas moedas suadas na Loja para adquirir lazer, pacotes de tempo ou Caixas Misteriosas.",
+      "Defina suas próprias recompensas na Loja: pausas merecidas, momentos de lazer, pacotes de tempo livre ou Caixas Misteriosas.",
     badgeClassName: "bg-magenta/20 border-magenta/40 text-magenta",
   },
   {
     step: 4,
-    title: "Desfrute sem Culpa",
+    title: "Desfrute sem Procrastinação",
     description:
-      "Abra a Mochila, consuma seu descanso merecido e mantenha seu cérebro recompensado e motivado.",
+      "Consulte seu Inventário/Mochila, usufrua do descanso merecido com a mente tranquila e mantenha sua disciplina sustentável.",
     badgeClassName: "bg-success-500/20 border-success-500/40 text-success-500",
   },
 ] as const;
@@ -304,6 +306,30 @@ export const HELP_FAQS: HelpFaqItem[] = [
     actionLink: { label: "Ir para o Dashboard", href: "/dashboard" },
   },
   {
+    id: "experience-modes",
+    category: "OVERVIEW",
+    question:
+      "Qual a diferença entre o Modo Foco em Produtividade e a Imersão Gamificada?",
+    answer:
+      "O HabitParty oferece duas experiências de uso distintas para se adaptar ao seu momento cognitivo e estilo de trabalho. Ambas compartilham o mesmo motor rígido de consistência, quadros Kanban, Pomodoro e histórico:",
+    bullets: [
+      "Modo Foco em Produtividade (Minimalista): Desenvolvido para trabalho executivo, estudos acadêmicos e quem prefere uma interface limpa e sóbria. Oculta prévias de moedas e baús dos formulários, silencia efeitos sonoros e adota termos profissionais (Prazo Rígido em vez de Hardcore, Inventário em vez de Mochila e Pontos em vez de XP).",
+      "Modo Imersão Gamificada (RPG): Desenvolvido para quem sofre com procrastinação e precisa de feedback imediato de dopamina. Transforma afazeres em missões com Moedas de Ouro (🪙), ganho de XP vitalício, Níveis de Usuário (Novice a Legend), Modo Hardcore com riscos reais, Caixas Misteriosas na Loja e efeitos sonoros comemorativos.",
+      "Liberdade de Escolha: Você escolhe seu modo logo no primeiro acesso e pode alternar a qualquer momento em Configurações > Modo de Experiência com 1 clique, sem perder nenhum dado, ponto ou progresso.",
+    ],
+    tags: [
+      "experiência",
+      "produtividade",
+      "gamificação",
+      "modos",
+      "minimalista",
+      "rpg",
+      "configurações",
+    ],
+    highlightBadge: "Experiência",
+    actionLink: { label: "Configurar Modo", href: "/settings" },
+  },
+  {
     id: "task-types",
     category: "TASKS",
     question: "Qual a diferença entre Hábitos, Diárias e Afazeres?",
@@ -321,17 +347,26 @@ export const HELP_FAQS: HelpFaqItem[] = [
   {
     id: "hardcore-mode",
     category: "TASKS",
-    question: "O que é o Modo Hardcore nas tarefas?",
+    question: "O que é o Prazo Rígido / Modo Hardcore nas tarefas?",
     answer:
-      "O Modo Hardcore é um compromisso de alta responsabilidade disponível para Hábitos, Diárias e Afazeres (To-dos). Ao habilitá-lo, caso a atividade não seja concluída no prazo, o sistema aplica uma penalidade imediata deduzindo 50% de Moedas e XP do seu saldo na virada da meia-noite. Em Afazeres (To-dos), o prazo de entrega se torna obrigatório e, caso vença, a data fica congelada (não pode ser adiada) — restando concluir com atraso (rendendo apenas 50% da recompensa) ou excluir a tarefa. Use apenas em compromissos inegociáveis!",
+      "É um compromisso de alta responsabilidade disponível para Hábitos, Diárias e Afazeres (To-dos). A nomenclatura se adapta ao seu Modo de Experiência: chama-se 'Prazo Rígido (Compromisso Inegociável)' no Modo Produtividade e 'Modo Hardcore' no Modo Gamificado. Ao ativá-lo:",
+    bullets: [
+      "Afazeres (To-Dos): A data de entrega torna-se obrigatória e fica bloqueada contra adiamentos após o vencimento. Se atrasar, a entrega tardia rende apenas 50% da recompensa.",
+      "Penalidade Noturna: Se a atividade não for cumprida até as 23:59 do dia/prazo, o sistema aplica uma penalidade imediata deduzindo 50% de Moedas/XP (ou pontos de consistência) do seu saldo.",
+      "Hábitos e Diárias: Falhar na rotina marcada como inegociável reseta a ofensiva (Streak) para o Dia 1 e cobra a multa disciplinar.",
+      "Quando usar: Reserve exclusivamente para os seus 1 ou 2 compromissos inegociáveis do dia ou da semana, evitando a autossabotagem.",
+    ],
     tags: [
+      "prazo rígido",
       "hardcore",
       "penalidade",
       "compromisso",
-      "perda de moedas",
+      "disciplina",
+      "autossabotagem",
       "prazo fatal",
       "to-do",
     ],
+    highlightBadge: "Disciplina",
   },
   {
     id: "email-reminders-quota",
@@ -566,3 +601,20 @@ export const HELP_FAQS: HelpFaqItem[] = [
     highlightBadge: "Transparência",
   },
 ];
+
+/** IDs das categorias exibidas como abas no FAQ (rótulos vêm de `help.faq.categories`). */
+export const HELP_CATEGORY_IDS: readonly HelpCategory[] = HELP_CATEGORIES.map(
+  (c) => c.id,
+);
+
+/** Retorna as perguntas frequentes no idioma solicitado. */
+export function getHelpFaqs(locale: AppLocale): HelpFaqItem[] {
+  return locale === "en" ? HELP_FAQS_EN : HELP_FAQS;
+}
+
+/** Retorna as tabelas de referência da economia no idioma solicitado. */
+export function getHelpTables(
+  locale: AppLocale,
+): Record<string, HelpTableEntry> {
+  return locale === "en" ? HELP_TABLES_EN : HELP_TABLES;
+}

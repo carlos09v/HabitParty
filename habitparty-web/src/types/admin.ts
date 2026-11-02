@@ -7,6 +7,7 @@ export interface AdminOverviewDTO {
   emailsSentThisMonth: number;
   resendMonthlyQuota: number;
   resendQuotaPercentage: number;
+  resendQuotaResetDate?: string;
   totalTasksCount: number;
   totalActiveTasksCount: number;
   estimatedDatabaseSizeBytes: number;
@@ -54,7 +55,11 @@ export interface UserStorageBreakdownDTO {
 export interface EmailDispatchLogDTO {
   id: string;
   taskId?: string | null;
-  emailType: "TASK_REMINDER" | "PASSWORD_RESET" | "SYSTEM";
+  emailType:
+    | "TASK_REMINDER"
+    | "PASSWORD_RESET"
+    | "EMAIL_VERIFICATION"
+    | "SYSTEM";
   recipientEmail: string;
   subject: string;
   status: "SENT" | "FAILED";

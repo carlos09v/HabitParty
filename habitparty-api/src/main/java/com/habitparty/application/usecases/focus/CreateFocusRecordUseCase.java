@@ -58,16 +58,19 @@ public class CreateFocusRecordUseCase {
         command.recordType(),
         command.completedPomos());
 
+    FocusActivity loadedActivity = null;
+    User loadedUser = null;
+
     // Se for uma atividade personalizada, valida posse e se a atividade está ativa no plano (máx. 4 ativas no Free)
     if (command.focusActivityId() != null) {
-      FocusActivity activity = focusActivityPort.findById(command.focusActivityId())
+      loadedActivity = focusActivityPort.findById(command.focusActivityId())
           .orElseThrow(() -> new ResourceNotFoundException("Atividade de foco não encontrada."));
-      activity.validateOwnership(userIdLogado);
+      loadedActivity.validateOwnership(userIdLogado);
 
-      User user = userPort.findById(userIdLogado)
+      loadedUser = userPort.findById(userIdLogado)
           .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
 
-      if (!user.isPremium()) {
+      if (!loadedUser.isPremium()) {
         List<FocusActivity> userActivities = focusActivityPort.findAllByUserIdOrderByOrderIndex(userIdLogado);
         int actIndex = -1;
         for (int i = 0; i < userActivities.size(); i++) {
@@ -121,10 +124,12 @@ public class CreateFocusRecordUseCase {
 
     FocusRecord savedRecord = port.save(recordWithRewards);
 
-    // 4. Credita XP e moedas ao perfil do usuário
+    // 4. Credita XP e moedas ao perfil do usuário (reutilizando loadedUser se já carregado)
     if (reward.xp() > 0 || reward.coins().compareTo(BigDecimal.ZERO) > 0) {
-      User user = userPort.findById(userIdLogado)
-          .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+      User user = loadedUser != null
+          ? loadedUser
+          : userPort.findById(userIdLogado)
+              .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
       if (reward.xp() > 0) {
         user.addXp(reward.xp());
       }
@@ -134,14 +139,15 @@ public class CreateFocusRecordUseCase {
       userPort.save(user);
     }
 
-    // 5. Registra a transação no extrato financeiro (TransactionHistory)
+    // 5. Registra a transação no extrato financeiro (reutilizando loadedActivity sem segunda query)
     String activityName = "Sessão de Foco Livre";
     String activityIcon = "timer";
 
     if (savedRecord.getFocusActivityId().isPresent()) {
-      UUID actId = savedRecord.getFocusActivityId().get();
-      FocusActivity activity = focusActivityPort.findById(actId)
-          .orElseThrow(() -> new ResourceNotFoundException("Atividade de foco não encontrada."));
+      FocusActivity activity = loadedActivity != null
+          ? loadedActivity
+          : focusActivityPort.findById(savedRecord.getFocusActivityId().get())
+              .orElseThrow(() -> new ResourceNotFoundException("Atividade de foco não encontrada."));
       activity.validateOwnership(userIdLogado);
       activityName = activity.getName();
       if (activity.getIcon() != null && !activity.getIcon().isBlank()) {

@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.habitparty.core.domain.enums.SubscriptionStatus;
+import com.habitparty.core.domain.enums.UserExperienceMode;
 import com.habitparty.core.domain.enums.UserGender;
 import com.habitparty.core.domain.enums.UserLevel;
 import com.habitparty.core.domain.enums.UserRole;
@@ -16,225 +17,370 @@ import com.habitparty.core.exceptions.DomainValidationException;
 public class User {
   private UUID id;
   private UserRole role;
-  private boolean isPremium;
-  private boolean isFounder;
-  private String stripeCustomerId;
-  private String stripeSubscriptionId;
-  private SubscriptionStatus subscriptionStatus;
-  private LocalDateTime subscriptionEndsAt;
   private String fullName;
   private String username;
   private String email;
   private String password;
-  private BigDecimal currentCoins;
-  private BigDecimal totalGoldEarned;
-  private LocalDate birthday;
+  private boolean emailVerified;
+  private LocalDateTime emailVerifiedAt;
+  private LocalDate birthDate;
   private String profilePhotoUrl;
   private UserGender gender;
-  private int totalXp;
-  private int currentStreak;
-  private int highestStreak;
-  private LocalDateTime createdAt; // Esta sendo definida por ser uma informação relevante pra regra de negócio (vai ser usada)
-  // Tudo definido aqui deve ir pra Entity!
+  private UserExperienceMode experienceMode = UserExperienceMode.PRODUCTIVITY;
+  private LocalDateTime createdAt;
 
-  // Construtor compatível anterior
+  // Sub-entidades do Agregado (1:1 com PK compartilhada no banco)
+  private UserStats stats;
+  private UserSubscription subscription;
+
+  // Construtor compatível anterior (16 parâmetros)
   public User(UUID id, UserRole role, boolean isPremium, String fullName, String username, String email,
       String password,
       BigDecimal currentCoins,
       BigDecimal totalGoldEarned,
-      LocalDate birthday, String profilePhotoUrl, UserGender gender, int totalXp, int currentStreak, int highestStreak,
+      LocalDate birthDate, String profilePhotoUrl, UserGender gender, int totalXp, int currentStreak, int highestStreak,
       LocalDateTime createdAt) {
     this(id, role, isPremium, false, null, null, SubscriptionStatus.FREE, null, fullName, username, email, password,
-        currentCoins, totalGoldEarned, birthday, profilePhotoUrl, gender, totalXp, currentStreak, highestStreak,
+        true, null, currentCoins, totalGoldEarned, birthDate, profilePhotoUrl, gender, totalXp, currentStreak, highestStreak,
         createdAt);
   }
 
-  // Construtor compatível sem flag de fundador explícita
+  // Construtor compatível sem flag de fundador explícita (20 parâmetros)
   public User(UUID id, UserRole role, boolean isPremium, String stripeCustomerId, String stripeSubscriptionId,
       SubscriptionStatus subscriptionStatus, LocalDateTime subscriptionEndsAt, String fullName, String username,
-      String email, String password, BigDecimal currentCoins, BigDecimal totalGoldEarned, LocalDate birthday,
+      String email, String password, BigDecimal currentCoins, BigDecimal totalGoldEarned, LocalDate birthDate,
       String profilePhotoUrl, UserGender gender, int totalXp, int currentStreak, int highestStreak,
       LocalDateTime createdAt) {
     this(id, role, isPremium, false, stripeCustomerId, stripeSubscriptionId, subscriptionStatus, subscriptionEndsAt,
-        fullName, username, email, password, currentCoins, totalGoldEarned, birthday, profilePhotoUrl, gender,
+        fullName, username, email, password, true, null, currentCoins, totalGoldEarned, birthDate, profilePhotoUrl, gender,
         totalXp, currentStreak, highestStreak, createdAt);
   }
 
-  // Construtor completo com dados de Assinatura/Stripe e Membro Fundador
+  // Construtor completo anterior com dados de Assinatura/Stripe e Membro Fundador (21 parâmetros)
   public User(UUID id, UserRole role, boolean isPremium, boolean isFounder, String stripeCustomerId,
       String stripeSubscriptionId, SubscriptionStatus subscriptionStatus, LocalDateTime subscriptionEndsAt,
       String fullName, String username, String email, String password, BigDecimal currentCoins,
-      BigDecimal totalGoldEarned, LocalDate birthday, String profilePhotoUrl, UserGender gender,
+      BigDecimal totalGoldEarned, LocalDate birthDate, String profilePhotoUrl, UserGender gender,
       int totalXp, int currentStreak, int highestStreak, LocalDateTime createdAt) {
+    this(id, role, isPremium, isFounder, stripeCustomerId, stripeSubscriptionId, subscriptionStatus, subscriptionEndsAt,
+        fullName, username, email, password, true, null, currentCoins, totalGoldEarned, birthDate, profilePhotoUrl, gender,
+        totalXp, currentStreak, highestStreak, createdAt);
+  }
+
+  // Construtor completo com verificação de e-mail explícita (23 parâmetros)
+  public User(UUID id, UserRole role, boolean isPremium, boolean isFounder, String stripeCustomerId,
+      String stripeSubscriptionId, SubscriptionStatus subscriptionStatus, LocalDateTime subscriptionEndsAt,
+      String fullName, String username, String email, String password,
+      boolean emailVerified, LocalDateTime emailVerifiedAt,
+      BigDecimal currentCoins, BigDecimal totalGoldEarned, LocalDate birthDate, String profilePhotoUrl, UserGender gender,
+      int totalXp, int currentStreak, int highestStreak, LocalDateTime createdAt) {
+    this(
+        id,
+        role,
+        fullName,
+        username,
+        email,
+        password,
+        emailVerified,
+        emailVerifiedAt,
+        birthDate,
+        profilePhotoUrl,
+        gender,
+        createdAt,
+        new UserStats(id, currentCoins, totalGoldEarned, totalXp, currentStreak, highestStreak, createdAt),
+        new UserSubscription(id, isPremium, isFounder, stripeCustomerId, stripeSubscriptionId, subscriptionStatus, subscriptionEndsAt, createdAt)
+    );
+  }
+
+  // Construtor orientado às sub-entidades do agregado (UserStats + UserSubscription)
+  public User(
+      UUID id,
+      UserRole role,
+      String fullName,
+      String username,
+      String email,
+      String password,
+      boolean emailVerified,
+      LocalDateTime emailVerifiedAt,
+      LocalDate birthDate,
+      String profilePhotoUrl,
+      UserGender gender,
+      LocalDateTime createdAt,
+      UserStats stats,
+      UserSubscription subscription) {
+    this(
+        id,
+        role,
+        fullName,
+        username,
+        email,
+        password,
+        emailVerified,
+        emailVerifiedAt,
+        birthDate,
+        profilePhotoUrl,
+        gender,
+        UserExperienceMode.PRODUCTIVITY,
+        createdAt,
+        stats,
+        subscription);
+  }
+
+  public User(
+      UUID id,
+      UserRole role,
+      String fullName,
+      String username,
+      String email,
+      String password,
+      boolean emailVerified,
+      LocalDateTime emailVerifiedAt,
+      LocalDate birthDate,
+      String profilePhotoUrl,
+      UserGender gender,
+      UserExperienceMode experienceMode,
+      LocalDateTime createdAt,
+      UserStats stats,
+      UserSubscription subscription) {
     this.id = id;
     this.role = role != null ? role : UserRole.USER;
-    this.isPremium = isPremium;
-    this.isFounder = isFounder;
-    this.stripeCustomerId = stripeCustomerId;
-    this.stripeSubscriptionId = stripeSubscriptionId;
-    this.subscriptionStatus = subscriptionStatus != null ? subscriptionStatus : SubscriptionStatus.FREE;
-    this.subscriptionEndsAt = subscriptionEndsAt;
     this.fullName = fullName;
     this.username = username;
     this.email = email;
     this.password = password;
-    this.currentCoins = currentCoins;
-    this.totalGoldEarned = totalGoldEarned;
-    this.birthday = birthday;
+    this.emailVerified = emailVerified;
+    this.emailVerifiedAt = emailVerifiedAt;
+    this.birthDate = birthDate;
     this.profilePhotoUrl = profilePhotoUrl;
     this.gender = gender;
-    this.totalXp = totalXp;
-    this.currentStreak = currentStreak;
-    this.highestStreak = highestStreak;
-    this.createdAt = createdAt;
+    this.experienceMode = experienceMode != null ? experienceMode : UserExperienceMode.PRODUCTIVITY;
+    this.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
+    this.stats = stats != null ? stats : UserStats.createInitial(id);
+    this.subscription = subscription != null ? subscription : UserSubscription.createInitial(id);
+  }
+
+  // --- VERIFICAÇÃO DE E-MAIL E SEGURANÇA DA CONTA ---
+  public boolean isEmailVerified() {
+    return emailVerified;
+  }
+
+  public void setEmailVerified(boolean emailVerified) {
+    this.emailVerified = emailVerified;
+  }
+
+  public LocalDateTime getEmailVerifiedAt() {
+    return emailVerifiedAt;
+  }
+
+  public void setEmailVerifiedAt(LocalDateTime emailVerifiedAt) {
+    this.emailVerifiedAt = emailVerifiedAt;
+  }
+
+  public void verifyEmail() {
+    this.emailVerified = true;
+    if (this.emailVerifiedAt == null) {
+      this.emailVerifiedAt = LocalDateTime.now();
+    }
+  }
+
+  public void validateEmailVerified(String actionDescription) {
+    if (!this.emailVerified) {
+      String suffix = (actionDescription != null && !actionDescription.isBlank())
+          ? " antes de " + actionDescription + "."
+          : ".";
+      throw new DomainValidationException(
+          "Confirme seu e-mail para garantir a segurança da conta" + suffix);
+    }
+  }
+
+  // --- DELEGAÇÃO PARA USER_STATS (GAMIFICAÇÃO E ECONOMIA) ---
+  public UserStats getStats() {
+    return stats;
+  }
+
+  public void setStats(UserStats stats) {
+    this.stats = stats != null ? stats : UserStats.createInitial(this.id);
   }
 
   public UserLevel getCurrentLevel() {
-    UserLevel[] allLevels = UserLevel.values();
-    UserLevel levelCalculado = allLevels[0]; // Começa no nível mais baixo (Nível 1)
-
-    for (UserLevel level : allLevels) {
-      // Se o totalXp do usuário for maior ou igual ao exigido por este nível, ele assume este nível
-      if (this.totalXp >= level.getMinXpRequired()) {
-        levelCalculado = level;
-      } else {
-        // Como os Enums geralmente estão em ordem, se ele não tem XP para este, ele também não tem para os próximos. Pode parar a busca.
-        break;
-      }
-    }
-    return levelCalculado;
+    return stats.getCurrentLevel();
   }
 
   public UserLevel getNextLevel() {
-    UserLevel current = getCurrentLevel();
-    UserLevel[] allLevels = UserLevel.values();
-
-    // Verifica a posição do nível atual no Enum
-    int currentIndex = current.ordinal();
-
-    // Se não for o último nível do jogo, retorna o próximo
-    if (currentIndex < allLevels.length - 1) {
-      return allLevels[currentIndex + 1];
-    }
-
-    // Se for o nível máximo, retorna ele mesmo
-    return current;
+    return stats.getNextLevel();
   }
 
   public void addXp(int xpToAdd) {
-    if (xpToAdd <= 0) {
-      throw new DomainValidationException("O XP a ser adicionado deve ser maior que zero.");
-    }
-    // Apenas soma o XP. O nível se atualiza "sozinho" através dos métodos abaixo!
-    this.totalXp += xpToAdd;
+    stats.addXp(xpToAdd);
   }
 
-  // Calcula quantos XP faltam para o próximo nível
-  // O frontend usa isso para desenhar a "barrinha de progresso" preenchendo até o final.
   public int getXpToNextLevel() {
-    UserLevel nextLevel = getNextLevel();
-    if (this.getCurrentLevel() == nextLevel) {
-      return 0; // Já está no nível máximo
-    }
-    return nextLevel.getMinXpRequired() - this.totalXp;
+    return stats.getXpToNextLevel();
   }
 
   public void removeXp(int xpToRemove) {
-    if (xpToRemove <= 0) {
-      throw new DomainValidationException("O XP a ser removido deve ser maior que zero.");
-    }
-
-    // Subtrai o XP, mas o Math.max garante que nunca fique menor que 0
-    this.totalXp = Math.max(0, this.totalXp - xpToRemove);
-
-    // Graças ao método getCurrentLevel(), se o XP cair muito, o usuário perde o nível automaticamente na próxima vez que a tela carregar!
+    stats.removeXp(xpToRemove);
   }
 
-  // Modo Hardcore
   public void applyPenalty(BigDecimal penaltyAmount, int xpPenalty) {
-    // 1. Aplica a multa em moedas usando o seu método já existente (que não deixa ficar negativo)
-    if (penaltyAmount != null) {
-      this.removeCoins(penaltyAmount);
-    }
-
-    // 2. Aplica a multa em XP com a trava anti-rebaixamento
-    if (xpPenalty > 0) {
-      // Descobre qual é o XP mínimo para o usuário continuar no nível atual
-      int minXpForCurrentLevel = this.getCurrentLevel().getMinXpRequired();
-
-      // Calcula como ficaria o XP após a multa
-      int xpAfterPenalty = this.totalXp - xpPenalty;
-
-      // O Math.max agora compara com o XP mínimo do nível atual, e não com zero!
-      // Assim, ele nunca cai para o nível de baixo. O pior que acontece é ficar com 0% da barra atual.
-      this.totalXp = Math.max(minXpForCurrentLevel, xpAfterPenalty);
-    }
+    stats.applyPenalty(penaltyAmount, xpPenalty);
   }
 
-  // --- LÓGICA DE OFENSIVA (STREAK) ---
   public void incrementStreak() {
-    this.currentStreak += 1;
-
-    // Se a ofensiva atual superou o recorde do usuário, atualiza o recorde
-    if (this.currentStreak > this.highestStreak) {
-      this.highestStreak = this.currentStreak;
-    }
+    stats.incrementStreak();
   }
 
   public void resetStreak() {
-    // Essa é a penalidade por ficar 1 dia sem completar tarefas
-    this.currentStreak = 0;
+    stats.resetStreak();
   }
 
-  // Ao completar task
   public void addCoins(BigDecimal amount) {
-    if (amount != null && amount.compareTo(BigDecimal.ZERO) > 0) {
-      this.currentCoins = this.currentCoins.add(amount);
-      this.totalGoldEarned = this.totalGoldEarned.add(amount);
-    }
+    stats.addCoins(amount);
   }
 
   public void removeCoins(BigDecimal penaltyAmount) {
-    if (penaltyAmount != null && penaltyAmount.compareTo(BigDecimal.ZERO) > 0) {
-      this.currentCoins = this.currentCoins.subtract(penaltyAmount);
-      
-      // Multas não lançam exceção, apenas garantem que a conta não fique negativa
-      // (Se o usuário tinha $ 1,00 e a multa era $ 5,00, ele fica com R$ 0,00 e a vida segue)
-      if (this.currentCoins.compareTo(BigDecimal.ZERO) < 0) {
-        this.currentCoins = BigDecimal.ZERO;
-      }
-    }
+    stats.removeCoins(penaltyAmount);
   }
 
-  // Compra do Reward
   public void spendMoney(BigDecimal amountToSpend) {
-    if (amountToSpend == null || amountToSpend.compareTo(BigDecimal.ZERO) < 0) {
-      throw new DomainValidationException("Valor de cobrança inválido.");
-    }
-
-    // Se o saldo atual for MENOR que o preço da recompensa...
-    if (this.currentCoins.compareTo(amountToSpend) < 0) {
-      throw new DomainValidationException("Você não tem moedas suficientes para resgatar esta recompensa.");
-    }
-
-    // Se passou, subtrai o dinheiro.
-    this.currentCoins = this.currentCoins.subtract(amountToSpend);
+    stats.spendMoney(amountToSpend);
   }
 
-  // --- ATUALIZAÇÃO DE PERFIL ---
+  public BigDecimal getCurrentCoins() {
+    return stats.getCurrentCoins();
+  }
+
+  public void setCurrentCoins(BigDecimal currentCoins) {
+    stats.setCurrentCoins(currentCoins);
+  }
+
+  public BigDecimal getTotalGoldEarned() {
+    return stats.getTotalGoldEarned();
+  }
+
+  public void setTotalGoldEarned(BigDecimal totalGoldEarned) {
+    stats.setTotalGoldEarned(totalGoldEarned);
+  }
+
+  public int getTotalXp() {
+    return stats.getTotalXp();
+  }
+
+  public void setTotalXp(int totalXp) {
+    stats.setTotalXp(totalXp);
+  }
+
+  public int getCurrentStreak() {
+    return stats.getCurrentStreak();
+  }
+
+  public void setCurrentStreak(int currentStreak) {
+    stats.setCurrentStreak(currentStreak);
+  }
+
+  public int getHighestStreak() {
+    return stats.getHighestStreak();
+  }
+
+  public void setHighestStreak(int highestStreak) {
+    stats.setHighestStreak(highestStreak);
+  }
+
+  // --- DELEGAÇÃO PARA USER_SUBSCRIPTION (PLANOS & STRIPE) ---
+  public UserSubscription getSubscription() {
+    return subscription;
+  }
+
+  public void setSubscription(UserSubscription subscription) {
+    this.subscription = subscription != null ? subscription : UserSubscription.createInitial(this.id);
+  }
+
   public void upgradeToPremium() {
-    this.isPremium = true;
+    subscription.upgradeToPremium();
   }
 
-  public void updateProfile(String fullName, LocalDate birthday, UserGender gender) {
+  public boolean isPremium() {
+    return subscription.isPremium();
+  }
+
+  public boolean hasActiveRecurringSubscription() {
+    return subscription.hasActiveRecurringSubscription();
+  }
+
+  public void setPremium(boolean isPremium) {
+    subscription.setPremium(isPremium);
+  }
+
+  public boolean isFounder() {
+    return subscription.isFounder();
+  }
+
+  public void setFounder(boolean isFounder) {
+    subscription.setFounder(isFounder);
+  }
+
+  public void grantFounderStatus() {
+    subscription.grantFounderStatus();
+  }
+
+  public void activateSubscription(String customerId, String subscriptionId, LocalDateTime endsAt) {
+    subscription.activateSubscription(customerId, subscriptionId, endsAt);
+  }
+
+  public void extendSubscriptionDays(int days) {
+    subscription.extendSubscriptionDays(days);
+  }
+
+  public void cancelSubscription() {
+    subscription.cancelSubscription();
+  }
+
+  public void markPastDue() {
+    subscription.markPastDue();
+  }
+
+  public String getStripeCustomerId() {
+    return subscription.getStripeCustomerId();
+  }
+
+  public void setStripeCustomerId(String stripeCustomerId) {
+    subscription.setStripeCustomerId(stripeCustomerId);
+  }
+
+  public String getStripeSubscriptionId() {
+    return subscription.getStripeSubscriptionId();
+  }
+
+  public void setStripeSubscriptionId(String stripeSubscriptionId) {
+    subscription.setStripeSubscriptionId(stripeSubscriptionId);
+  }
+
+  public SubscriptionStatus getSubscriptionStatus() {
+    return subscription.getSubscriptionStatus();
+  }
+
+  public void setSubscriptionStatus(SubscriptionStatus subscriptionStatus) {
+    subscription.setSubscriptionStatus(subscriptionStatus);
+  }
+
+  public LocalDateTime getSubscriptionEndsAt() {
+    return subscription.getSubscriptionEndsAt();
+  }
+
+  public void setSubscriptionEndsAt(LocalDateTime subscriptionEndsAt) {
+    subscription.setSubscriptionEndsAt(subscriptionEndsAt);
+  }
+
+  // --- ATUALIZAÇÃO DE PERFIL, FOTO E SENHA ---
+  public void updateProfile(String fullName, LocalDate birthDate, UserGender gender) {
     if (fullName == null || fullName.trim().isEmpty()) {
       throw new DomainValidationException("O nome não pode estar vazio.");
     }
-    if (birthday != null) {
-      if (birthday.isAfter(LocalDate.now())) {
+    if (birthDate != null) {
+      if (birthDate.isAfter(LocalDate.now())) {
         throw new DomainValidationException("A data de nascimento deve estar no passado.");
       }
-      int age = Period.between(birthday, LocalDate.now()).getYears();
+      int age = Period.between(birthDate, LocalDate.now()).getYears();
       if (age < 12) {
         throw new DomainValidationException("Você deve ter no mínimo 12 anos.");
       }
@@ -243,18 +389,16 @@ public class User {
       }
     }
     this.fullName = fullName;
-    this.birthday = birthday;
+    this.birthDate = birthDate;
     this.gender = gender;
   }
 
-  // Método dinâmico que não vai pro banco, só devolve pro Frontend!
   public Integer getAge() {
-    if (this.birthday == null)
+    if (this.birthDate == null)
       return null;
-    return Period.between(this.birthday, LocalDate.now()).getYears();
+    return Period.between(this.birthDate, LocalDate.now()).getYears();
   }
 
-  // --- ATUALIZAÇÃO DE FOTO E SENHA ---
   public void updateProfilePhoto(String photoUrl) {
     this.profilePhotoUrl = photoUrl;
   }
@@ -263,7 +407,7 @@ public class User {
     if (newHashedPassword == null || newHashedPassword.isEmpty()) {
       throw new DomainValidationException("A senha não pode ser nula.");
     }
-    this.password = newHashedPassword; // A senha já chega criptografada do UseCase
+    this.password = newHashedPassword;
   }
 
   public UUID getId() {
@@ -272,6 +416,12 @@ public class User {
 
   public void setId(UUID id) {
     this.id = id;
+    if (this.stats != null) {
+      this.stats.setUserId(id);
+    }
+    if (this.subscription != null) {
+      this.subscription.setUserId(id);
+    }
   }
 
   public UserRole getRole() {
@@ -280,108 +430,6 @@ public class User {
 
   public void setRole(UserRole role) {
     this.role = role;
-  }
-
-  public boolean isPremium() {
-    // 1. Se possui data de término definida, ela é a autoridade máxima sobre a validade do acesso:
-    if (this.subscriptionEndsAt != null) {
-      return this.subscriptionEndsAt.isAfter(LocalDateTime.now());
-    }
-
-    // 2. Se a assinatura estiver ativa sem data de término estrita (gerenciada via webhook externo):
-    if (this.subscriptionStatus == SubscriptionStatus.ACTIVE) {
-      return true;
-    }
-
-    // 3. Fallback para concessão manual/vitalícia (ex: cortesia/admin sem assinatura vinculada)
-    return this.isPremium && (this.subscriptionStatus == null || this.subscriptionStatus == SubscriptionStatus.FREE);
-  }
-
-  public boolean hasActiveRecurringSubscription() {
-    return this.stripeSubscriptionId != null && !this.stripeSubscriptionId.isBlank()
-        && this.subscriptionStatus == SubscriptionStatus.ACTIVE;
-  }
-
-  public void setPremium(boolean isPremium) {
-    this.isPremium = isPremium;
-  }
-
-  public boolean isFounder() {
-    return isFounder;
-  }
-
-  public void setFounder(boolean isFounder) {
-    this.isFounder = isFounder;
-  }
-
-  public void grantFounderStatus() {
-    this.isFounder = true;
-  }
-
-  // --- MÉTODOS DE ASSINATURA & STRIPE ---
-  public void activateSubscription(String customerId, String subscriptionId, LocalDateTime endsAt) {
-    if (customerId != null && !customerId.isBlank()) {
-      this.stripeCustomerId = customerId;
-    }
-    this.stripeSubscriptionId = subscriptionId;
-    this.subscriptionStatus = SubscriptionStatus.ACTIVE;
-    this.subscriptionEndsAt = endsAt;
-    this.isPremium = true;
-  }
-
-  public void extendSubscriptionDays(int days) {
-    if (days <= 0) {
-      throw new DomainValidationException("O período a ser adicionado deve ser maior que zero.");
-    }
-    LocalDateTime baseDate = (this.subscriptionEndsAt != null && this.subscriptionEndsAt.isAfter(LocalDateTime.now()))
-        ? this.subscriptionEndsAt
-        : LocalDateTime.now();
-    this.subscriptionEndsAt = baseDate.plusDays(days);
-    this.subscriptionStatus = SubscriptionStatus.ACTIVE;
-    this.isPremium = true;
-  }
-
-  public void cancelSubscription() {
-    this.subscriptionStatus = SubscriptionStatus.CANCELED;
-    if (this.subscriptionEndsAt == null || !this.subscriptionEndsAt.isAfter(LocalDateTime.now())) {
-      this.isPremium = false;
-    }
-  }
-
-  public void markPastDue() {
-    this.subscriptionStatus = SubscriptionStatus.PAST_DUE;
-  }
-
-  public String getStripeCustomerId() {
-    return stripeCustomerId;
-  }
-
-  public void setStripeCustomerId(String stripeCustomerId) {
-    this.stripeCustomerId = stripeCustomerId;
-  }
-
-  public String getStripeSubscriptionId() {
-    return stripeSubscriptionId;
-  }
-
-  public void setStripeSubscriptionId(String stripeSubscriptionId) {
-    this.stripeSubscriptionId = stripeSubscriptionId;
-  }
-
-  public SubscriptionStatus getSubscriptionStatus() {
-    return subscriptionStatus;
-  }
-
-  public void setSubscriptionStatus(SubscriptionStatus subscriptionStatus) {
-    this.subscriptionStatus = subscriptionStatus;
-  }
-
-  public LocalDateTime getSubscriptionEndsAt() {
-    return subscriptionEndsAt;
-  }
-
-  public void setSubscriptionEndsAt(LocalDateTime subscriptionEndsAt) {
-    this.subscriptionEndsAt = subscriptionEndsAt;
   }
 
   public String getFullName() {
@@ -424,28 +472,26 @@ public class User {
     this.gender = gender;
   }
 
-  public BigDecimal getCurrentCoins() {
-    return currentCoins;
+  public UserExperienceMode getExperienceMode() {
+    return experienceMode != null ? experienceMode : UserExperienceMode.PRODUCTIVITY;
   }
 
-  public void setCurrentCoins(BigDecimal currentCoins) {
-    this.currentCoins = currentCoins;
+  public void setExperienceMode(UserExperienceMode experienceMode) {
+    this.experienceMode = experienceMode != null ? experienceMode : UserExperienceMode.PRODUCTIVITY;
   }
 
-  public BigDecimal getTotalGoldEarned() {
-    return totalGoldEarned;
+  public void updateExperienceMode(UserExperienceMode newMode) {
+    if (newMode != null) {
+      this.experienceMode = newMode;
+    }
   }
 
-  public void setTotalGoldEarned(BigDecimal totalGoldEarned) {
-    this.totalGoldEarned = totalGoldEarned;
+  public LocalDate getBirthDate() {
+    return birthDate;
   }
 
-  public LocalDate getBirthday() {
-    return birthday;
-  }
-
-  public void setBirthday(LocalDate birthday) {
-    this.birthday = birthday;
+  public void setBirthDate(LocalDate birthDate) {
+    this.birthDate = birthDate;
   }
 
   public Optional<String> getProfilePhotoUrl() {
@@ -462,29 +508,5 @@ public class User {
 
   public void setCreatedAt(LocalDateTime createdAt) {
     this.createdAt = createdAt;
-  }
-
-  public int getTotalXp() {
-    return totalXp;
-  }
-
-  public void setTotalXp(int totalXp) {
-    this.totalXp = totalXp;
-  }
-
-  public int getCurrentStreak() {
-    return currentStreak;
-  }
-
-  public void setCurrentStreak(int currentStreak) {
-    this.currentStreak = currentStreak;
-  }
-
-  public int getHighestStreak() {
-    return highestStreak;
-  }
-
-  public void setHighestStreak(int highestStreak) {
-    this.highestStreak = highestStreak;
   }
 }

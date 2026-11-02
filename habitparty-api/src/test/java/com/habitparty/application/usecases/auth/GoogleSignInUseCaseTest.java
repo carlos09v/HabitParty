@@ -69,7 +69,7 @@ class GoogleSignInUseCaseTest {
         "hashed_pwd",
         BigDecimal.ZERO,
         BigDecimal.ZERO,
-        LocalDate.of(2000, 1, 1),
+        null,
         "https://avatar.url",
         UserGender.PREFER_NOT_TO_SAY,
         0,
@@ -77,6 +77,7 @@ class GoogleSignInUseCaseTest {
         0,
         LocalDateTime.now()
     );
+    existingUser.verifyEmail();
   }
 
   @Test
@@ -125,6 +126,7 @@ class GoogleSignInUseCaseTest {
     assertEquals("newbie@gmail.com", captor.getValue().getEmail());
     assertEquals("newbie", captor.getValue().getUsername());
     assertEquals("Newbie Hero", captor.getValue().getFullName());
+    assertNull(captor.getValue().getBirthDate());
     assertEquals("https://newbie.png", captor.getValue().getProfilePhotoUrl().orElse(null));
   }
 

@@ -1,4 +1,5 @@
 import { Shield, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/utils";
 
 interface FounderBadgeProps {
@@ -12,6 +13,8 @@ export function FounderBadge({
   showLabel = true,
   className,
 }: FounderBadgeProps) {
+  const t = useTranslations("ui.founderBadge");
+
   return (
     <div
       className={cn(
@@ -20,7 +23,7 @@ export function FounderBadge({
         size === "sm" ? "px-2 py-0.5 text-[9px]" : "px-2.5 py-1 text-[11px]",
         className,
       )}
-      title="Membro Fundador — Insígnia Vitalícia Exclusiva dos Primeiros 30 Apoiadores"
+      title={t("title")}
     >
       <div className="relative flex items-center justify-center shrink-0">
         <Shield
@@ -36,7 +39,7 @@ export function FounderBadge({
           )}
         />
       </div>
-      {showLabel && <span>Fundador</span>}
+      {showLabel && <span>{t("label")}</span>}
     </div>
   );
 }

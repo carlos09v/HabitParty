@@ -164,15 +164,14 @@ public class Todo extends Task {
   @Override
   public TaskReward calculatePenalty() {
     TaskReward base = calculateBaseReward();
-    double penaltyRate = 0.5;
 
-    int penaltyXp = (int) (base.xp() * penaltyRate);
+    int penaltyXp = BigDecimal.valueOf(base.xp()).multiply(HALF_RATE).intValue();
     BigDecimal penaltyCoins = base.coins()
-            .multiply(BigDecimal.valueOf(penaltyRate))
+            .multiply(HALF_RATE)
             .setScale(2, java.math.RoundingMode.HALF_UP);
 
-    if (penaltyCoins.compareTo(new BigDecimal("0.01")) < 0) {
-        penaltyCoins = new BigDecimal("0.01");
+    if (penaltyCoins.compareTo(MIN_COINS) < 0) {
+        penaltyCoins = MIN_COINS;
     }
 
     return new TaskReward(penaltyXp, penaltyCoins);
@@ -184,13 +183,13 @@ public class Todo extends Task {
 
     // Se a penalidade já foi aplicada ou o afazer hardcore está com prazo vencido, ganha apenas 50%
     if (this.isPenaltyApplied || (this.isHardcoreModeEnabled() && this.isOverdue())) {
-      int reducedXp = Math.max(1, (int) (base.xp() * 0.5));
+      int reducedXp = Math.max(1, BigDecimal.valueOf(base.xp()).multiply(HALF_RATE).intValue());
       BigDecimal reducedCoins = base.coins()
-          .multiply(BigDecimal.valueOf(0.5))
+          .multiply(HALF_RATE)
           .setScale(2, java.math.RoundingMode.HALF_DOWN);
 
-      if (reducedCoins.compareTo(new BigDecimal("0.01")) < 0) {
-        reducedCoins = new BigDecimal("0.01");
+      if (reducedCoins.compareTo(MIN_COINS) < 0) {
+        reducedCoins = MIN_COINS;
       }
       return new TaskReward(reducedXp, reducedCoins);
     }

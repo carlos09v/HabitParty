@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { cn } from "@/utils";
 
 export interface TaskTagBadgesProps {
@@ -23,6 +24,7 @@ export function TaskTagBadges({
   isCompact = false,
   variant = "card",
 }: TaskTagBadgesProps) {
+  const t = useTranslations("dashboard.taskShared.badges");
   const label = primaryLabel || fallbackLabel;
   if (!label) return null;
 
@@ -43,7 +45,7 @@ export function TaskTagBadges({
                 isCompact ? "px-1.5 py-0.5 text-tiny" : "px-2 py-0.5 text-xs",
               ),
         )}
-        title={primaryLabel || "Geral"}
+        title={primaryLabel || t("defaultCategory")}
       >
         {label}
       </span>

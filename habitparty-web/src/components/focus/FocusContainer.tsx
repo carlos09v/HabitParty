@@ -3,12 +3,14 @@
 import { BarChart2, Timer } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { MAX_FOCUS_ACTIVITIES_FREE } from "@/constants/focus";
 import { useCompactMode } from "@/hooks/useCompactMode";
 import { executeDeleteFocusRecord } from "@/hooks/useFocusMutations";
 import { useFocusTimerControls } from "@/hooks/useFocusTimer";
+import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import type {
   FocusActivity,
@@ -62,6 +64,8 @@ export function FocusContainer({
   initialCreateActivity = false,
   isCompact: propIsCompact,
 }: FocusContainerProps) {
+  const t = useTranslations("focus.container");
+  const locale = useLocale() as AppLocale;
   const router = useRouter();
   const is_Premium = useUserStore((s) => s.is_Premium);
   const { isCompact: storeIsCompact } = useCompactMode();
@@ -114,6 +118,7 @@ export function FocusContainer({
     selectActivityTarget,
     resetTarget,
     transferTarget,
+    syncTargetMetadata,
     completeSession,
   } = useFocusTimerControls({
     onSessionSaved: () => {
@@ -136,15 +141,21 @@ export function FocusContainer({
     }
 
     if (target.type === "inventory") {
-      const existsInBackpack = initialBackpackItems.some(
+      const currentItem = initialBackpackItems.find(
         (item) => item.inventoryItemId === target.id,
       );
-      if (!existsInBackpack) {
+      if (!currentItem) {
         resetTarget();
         if (initialActivities.length > 0) {
           selectActivityTarget(initialActivities[0]);
           setSelectedActivityId(initialActivities[0].id);
         }
+      } else {
+        syncTargetMetadata({
+          id: currentItem.inventoryItemId,
+          name: currentItem.rewardName,
+          icon: currentItem.rewardIcon,
+        });
       }
     } else if (target.type === "activity") {
       const actIndex = initialActivities.findIndex(
@@ -159,6 +170,14 @@ export function FocusContainer({
           selectActivityTarget(initialActivities[0]);
           setSelectedActivityId(initialActivities[0].id);
         }
+      } else {
+        const currentAct = initialActivities[actIndex];
+        syncTargetMetadata({
+          id: currentAct.id,
+          name: currentAct.name,
+          icon: currentAct.icon,
+          targetMinutes: currentAct.targetTimeMinutes,
+        });
       }
     }
   }, [
@@ -170,6 +189,7 @@ export function FocusContainer({
     is_Premium,
     resetTarget,
     selectActivityTarget,
+    syncTargetMetadata,
   ]);
 
   const handleSelectActivity = (activityId: string | null) => {
@@ -187,14 +207,18 @@ export function FocusContainer({
   const handleStartFocusActivity = (act: FocusActivity) => {
     const actIndex = initialActivities.findIndex((a) => a.id === act.id);
     if (!is_Premium && actIndex >= MAX_FOCUS_ACTIVITIES_FREE) {
-      toast.error(
-        "Esta atividade está guardada na mochila. Assine o plano Premium para cronometrar nela!",
-      );
+      toast.error(t("lockedActivityToast"));
       return;
     }
 
     if (target?.id === act.id && hasUnsavedWorkSession) {
       setSelectedActivityId(act.id);
+      syncTargetMetadata({
+        id: act.id,
+        name: act.name,
+        icon: act.icon,
+        targetMinutes: act.targetTimeMinutes,
+      });
       if (isPaused) {
         resumeTimer();
       }
@@ -212,6 +236,11 @@ export function FocusContainer({
   const handleStartFocusItem = (item: InventoryItemResponseDTO) => {
     if (target?.id === item.inventoryItemId && hasUnsavedWorkSession) {
       setSelectedActivityId(null);
+      syncTargetMetadata({
+        id: item.inventoryItemId,
+        name: item.rewardName,
+        icon: item.rewardIcon,
+      });
       if (isPaused) {
         resumeTimer();
       }
@@ -291,7 +320,10 @@ export function FocusContainer({
   };
 
   const handleDeleteRecord = async (recordId: string) => {
-    await executeDeleteFocusRecord(recordId, () => router.refresh());
+    await executeDeleteFocusRecord(recordId, () => router.refresh(), {
+      success: t("deleteRecordSuccess"),
+      error: t("deleteRecordError"),
+    });
   };
 
   const handleOpenManualRecordModal = (params?: {
@@ -319,8 +351,13 @@ export function FocusContainer({
 
   const { metrics, weeklyDays, totalWeekMinutes, weekLabel, weekDateRange } =
     useMemo(() => {
-      return calculateFocusMetrics(relevantRecords, weekOffset);
-    }, [relevantRecords, weekOffset]);
+      return calculateFocusMetrics(
+        relevantRecords,
+        weekOffset,
+        undefined,
+        locale,
+      );
+    }, [relevantRecords, weekOffset, locale]);
 
   return (
     <div className="flex flex-col xl:flex-row h-full w-full overflow-hidden bg-background">
@@ -338,7 +375,7 @@ export function FocusContainer({
             )}
           >
             <Timer size={14} />
-            <span>Timer & Sessão</span>
+            <span>{t("tabs.timer")}</span>
             {isActive && (
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
             )}
@@ -354,7 +391,7 @@ export function FocusContainer({
             )}
           >
             <BarChart2 size={14} />
-            <span>Métricas & Histórico</span>
+            <span>{t("tabs.metrics")}</span>
           </button>
         </div>
       </div>
@@ -431,11 +468,12 @@ export function FocusContainer({
         <SwitchFocusTargetModal
           isOpen={pendingSwitchTarget !== null}
           onClose={() => setPendingSwitchTarget(null)}
-          currentName={target?.name || "Sessão Atual"}
+          currentName={target?.name || t("fallbacks.currentSession")}
           newTargetName={
             pendingSwitchTarget?.type === "activity"
-              ? pendingSwitchTarget.activity?.name || "Nova Atividade"
-              : pendingSwitchTarget?.item?.rewardName || "Item de Foco"
+              ? pendingSwitchTarget.activity?.name || t("fallbacks.newActivity")
+              : pendingSwitchTarget?.item?.rewardName ||
+                t("fallbacks.focusItem")
           }
           isCurrentInventory={target?.type === "inventory"}
           isNewInventory={pendingSwitchTarget?.type === "item"}

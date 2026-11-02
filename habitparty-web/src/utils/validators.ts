@@ -1,9 +1,104 @@
-import { analyzePassword } from "@/components/auth/PasswordStrengthIndicator";
 import type { PasswordValidationResult } from "@/types/settings";
 import type { Task } from "@/types/task";
 import { getTodayDateString } from "./date";
 
 export const PASSWORD_MIN_LENGTH = 8;
+
+export type PasswordStrengthKey =
+  | "VERY_WEAK"
+  | "WEAK"
+  | "FAIR"
+  | "GOOD"
+  | "STRONG";
+
+export interface PasswordAnalysis {
+  score: number; // 0 to 4
+  levelKey: PasswordStrengthKey;
+  label: "Muito Fraca" | "Fraca" | "Razoável" | "Boa" | "Forte";
+  colorClass: string;
+  barBgClass: string;
+  hasMinLength: boolean;
+  hasUpperCase: boolean;
+  hasLowerCase: boolean;
+  hasNumberOrSpecial: boolean;
+}
+
+export function analyzePassword(password: string): PasswordAnalysis {
+  const hasMinLength = password.length >= PASSWORD_MIN_LENGTH;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumberOrSpecial = /[0-9!@#$%^&*(),.?":{}|<>]/.test(password);
+
+  if (!password) {
+    return {
+      score: 0,
+      levelKey: "VERY_WEAK",
+      label: "Muito Fraca",
+      colorClass: "text-neutral-400",
+      barBgClass: "bg-white/10",
+      hasMinLength: false,
+      hasUpperCase: false,
+      hasLowerCase: false,
+      hasNumberOrSpecial: false,
+    };
+  }
+
+  let passedRules = 0;
+  if (hasMinLength) passedRules++;
+  if (hasUpperCase) passedRules++;
+  if (hasLowerCase) passedRules++;
+  if (hasNumberOrSpecial) passedRules++;
+
+  let score = 1;
+  let levelKey: PasswordStrengthKey = "WEAK";
+  let label: PasswordAnalysis["label"] = "Fraca";
+  let colorClass = "text-danger-500";
+  let barBgClass = "bg-danger-500";
+
+  if (passedRules <= 1) {
+    score = 1;
+    levelKey = "WEAK";
+    label = "Fraca";
+    colorClass = "text-danger-500";
+    barBgClass = "bg-danger-500";
+  } else if (passedRules === 2) {
+    score = 2;
+    levelKey = "FAIR";
+    label = "Razoável";
+    colorClass = "text-warning-500";
+    barBgClass = "bg-warning-500";
+  } else if (passedRules === 3) {
+    score = 3;
+    levelKey = "GOOD";
+    label = "Boa";
+    colorClass = "text-gold";
+    barBgClass = "bg-gold";
+  } else {
+    score = 4;
+    levelKey = "STRONG";
+    label = "Forte";
+    colorClass = "text-success-500";
+    barBgClass = "bg-success-500";
+  }
+
+  return {
+    score,
+    levelKey,
+    label,
+    colorClass,
+    barBgClass,
+    hasMinLength,
+    hasUpperCase,
+    hasLowerCase,
+    hasNumberOrSpecial,
+  };
+}
+
+export type PasswordValidationErrorKey =
+  | "passwordMinLength"
+  | "passwordUppercase"
+  | "passwordNumberOrSpecial"
+  | "passwordWeak";
 
 /**
  * Valida se uma nova senha atende a todas as políticas de segurança de autenticação.
@@ -12,6 +107,7 @@ export const PASSWORD_MIN_LENGTH = 8;
 export function validateAuthPassword(password: string): {
   isValid: boolean;
   error?: string;
+  errorKey?: PasswordValidationErrorKey;
 } {
   const strength = analyzePassword(password);
 
@@ -19,6 +115,7 @@ export function validateAuthPassword(password: string): {
     return {
       isValid: false,
       error: "A senha deve ter no mínimo 8 caracteres.",
+      errorKey: "passwordMinLength",
     };
   }
 
@@ -26,6 +123,7 @@ export function validateAuthPassword(password: string): {
     return {
       isValid: false,
       error: "A senha deve conter pelo menos uma letra maiúscula.",
+      errorKey: "passwordUppercase",
     };
   }
 
@@ -34,6 +132,7 @@ export function validateAuthPassword(password: string): {
       isValid: false,
       error:
         "A senha deve conter pelo menos um caractere especial (@$!%*?&#) ou número.",
+      errorKey: "passwordNumberOrSpecial",
     };
   }
 
@@ -42,6 +141,7 @@ export function validateAuthPassword(password: string): {
       isValid: false,
       error:
         "A senha é muito fraca. Inclua letras maiúsculas, minúsculas ou números/símbolos.",
+      errorKey: "passwordWeak",
     };
   }
 
@@ -80,6 +180,12 @@ export function validatePasswordRequirements(
 export const MIN_USER_AGE = 12;
 export const MAX_USER_AGE = 120;
 
+export type BirthDateValidationErrorKey =
+  | "birthDateRequired"
+  | "birthDateInvalid"
+  | "birthDateFuture"
+  | "birthDateMinAge";
+
 /**
  * Valida se uma data de nascimento atende à idade mínima e máxima da plataforma.
  */
@@ -87,15 +193,27 @@ export function validateBirthDate(
   birthDateString: string,
   minAge: number = MIN_USER_AGE,
   maxAge: number = MAX_USER_AGE,
-): { isValid: boolean; error?: string } {
+): {
+  isValid: boolean;
+  error?: string;
+  errorKey?: BirthDateValidationErrorKey;
+} {
   if (!birthDateString || !birthDateString.trim()) {
-    return { isValid: false, error: "A data de nascimento é obrigatória." };
+    return {
+      isValid: false,
+      error: "A data de nascimento é obrigatória.",
+      errorKey: "birthDateRequired",
+    };
   }
 
   // Espera formato YYYY-MM-DD
   const parts = birthDateString.split("-").map(Number);
   if (parts.length !== 3 || parts.some(Number.isNaN)) {
-    return { isValid: false, error: "Data de nascimento inválida." };
+    return {
+      isValid: false,
+      error: "Data de nascimento inválida.",
+      errorKey: "birthDateInvalid",
+    };
   }
 
   const [year, month, day] = parts;
@@ -106,7 +224,11 @@ export function validateBirthDate(
     birthDate.getMonth() !== month - 1 ||
     birthDate.getDate() !== day
   ) {
-    return { isValid: false, error: "Data de nascimento inválida." };
+    return {
+      isValid: false,
+      error: "Data de nascimento inválida.",
+      errorKey: "birthDateInvalid",
+    };
   }
 
   const today = new Date();
@@ -116,6 +238,7 @@ export function validateBirthDate(
     return {
       isValid: false,
       error: "A data de nascimento não pode estar no futuro.",
+      errorKey: "birthDateFuture",
     };
   }
 
@@ -130,6 +253,7 @@ export function validateBirthDate(
     return {
       isValid: false,
       error: `Você precisa ter no mínimo ${minAge} anos para se cadastrar.`,
+      errorKey: "birthDateMinAge",
     };
   }
 
@@ -137,6 +261,7 @@ export function validateBirthDate(
     return {
       isValid: false,
       error: "Por favor, insira uma data de nascimento válida.",
+      errorKey: "birthDateInvalid",
     };
   }
 
@@ -152,28 +277,44 @@ export function validateHardcoreTodo(options: {
   dueDate?: string;
   isEditing: boolean;
   taskToEdit?: { isHardcoreModeEnabled?: boolean; dueDate?: string } | null;
+  locale?: "pt-BR" | "en";
 }): string | null {
-  const { isHardcore, dueDate, isEditing, taskToEdit } = options;
+  const {
+    isHardcore,
+    dueDate,
+    isEditing,
+    taskToEdit,
+    locale = "pt-BR",
+  } = options;
+  const isEn = locale === "en";
   if (!isHardcore) return null;
 
   if (!dueDate) {
-    return "No Modo Hardcore, afazeres exigem uma data de vencimento.";
+    return isEn
+      ? "In Hardcore Mode, To-Dos require a due date."
+      : "No Modo Hardcore, afazeres exigem uma data de vencimento.";
   }
 
   const todayStr = getTodayDateString();
 
   if (!isEditing && dueDate < todayStr) {
-    return "A data de vencimento de um afazer Hardcore não pode ser no passado.";
+    return isEn
+      ? "A Hardcore To-Do due date cannot be in the past."
+      : "A data de vencimento de um afazer Hardcore não pode ser no passado.";
   }
 
   if (isEditing && taskToEdit?.isHardcoreModeEnabled && taskToEdit?.dueDate) {
     const isOverdue = taskToEdit.dueDate < todayStr;
     if (isOverdue) {
       if (!isHardcore) {
-        return "Não é permitido desativar o Modo Hardcore de uma tarefa com prazo vencido.";
+        return isEn
+          ? "Cannot disable Hardcore Mode on an overdue task."
+          : "Não é permitido desativar o Modo Hardcore de uma tarefa com prazo vencido.";
       }
       if (dueDate !== taskToEdit.dueDate) {
-        return "Não é permitido alterar a data de uma tarefa hardcore vencida.";
+        return isEn
+          ? "Cannot change the due date of an overdue hardcore task."
+          : "Não é permitido alterar a data de uma tarefa hardcore vencida.";
       }
     }
   }

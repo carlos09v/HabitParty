@@ -1,0 +1,71 @@
+{
+  "metadata": {
+    "title": "Central de Ajuda & Guia | HabitParty",
+    "description": "Entenda como funcionam o ciclo de produtividade, XP, moedas de ouro, ofensivas, modo foco e recompensas no HabitParty."
+  },
+  "loading": {
+    "label": "Carregando central de ajuda..."
+  },
+  "page": {
+    "title": "Central de Ajuda & Guia",
+    "subtitle": "Tire todas as suas dúvidas sobre economia matemática, regras de hábitos, recompensas e progressão no HabitParty.",
+    "support": {
+      "title": "Precisa falar conosco ou encontrou algum bug?",
+      "descriptionBeforeIssue": "Para reportar problemas técnicos ou sugerir melhorias, abra uma ",
+      "githubIssueHighlight": "Issue no GitHub",
+      "descriptionMiddle": " do projeto. Se preferir tratar dúvidas sobre sua conta, assinatura ou falar diretamente conosco, envie um e-mail para ",
+      "reportBug": "Reportar Bug (GitHub)",
+      "repository": "Repositório",
+      "sendEmail": "Enviar E-mail"
+    }
+  },
+  "cycle": {
+    "title": "Como funciona a dinâmica do HabitParty",
+    "steps": {
+      "1": {
+        "title": "Planeje sua Rotina",
+        "description": "Organize seus afazeres em Hábitos contínuos, Diárias recorrentes e Afazeres (To-Dos) pontuais com checklists e prazos."
+      },
+      "2": {
+        "title": "Execute com Foco e Constância",
+        "description": "Conclua tarefas reais. O motor matemático pontua sua consistência, creditando progresso, XP e moedas (🪙) proporcionais ao esforço."
+      },
+      "3": {
+        "title": "Recompense sua Dedicação",
+        "description": "Defina suas próprias recompensas na Loja: pausas merecidas, momentos de lazer, pacotes de tempo livre ou Caixas Misteriosas."
+      },
+      "4": {
+        "title": "Desfrute sem Procrastinação",
+        "description": "Consulte seu Inventário/Mochila, usufrua do descanso merecido com a mente tranquila e mantenha sua disciplina sustentável."
+      }
+    }
+  },
+  "tables": {
+    "sectionTitle": "Tabelas de Referência & Economia Matemática",
+    "tableSingular": "tabela",
+    "tablePlural": "tabelas"
+  },
+  "faq": {
+    "searchPlaceholder": "Pesquisar por dúvida, termo ou regra (ex: decaimento, caixa misteriosa, hardcore)...",
+    "clearSearch": "Limpar busca",
+    "sectionTitle": "Perguntas & Respostas Frequentes",
+    "topicSingular": "tópico",
+    "topicPlural": "tópicos",
+    "expandAll": "Expandir todos",
+    "collapseAll": "Recolher todos",
+    "emptyTitle": "Nenhum tópico encontrado para \"{query}\"",
+    "emptyDescription": "Tente pesquisar com outros termos ou altere a categoria selecionada acima.",
+    "viewAllTopics": "Ver todos os tópicos",
+    "tagsLabel": "Tags:",
+    "categories": {
+      "ALL": "Tudo",
+      "OVERVIEW": "Visão Geral",
+      "TASKS": "Tarefas & Hábitos",
+      "ECONOMY": "Economia & Ouro",
+      "REWARDS": "Loja & Caixas",
+      "INVENTORY": "Mochila",
+      "FOCUS": "Foco & Pomodoro",
+      "LEVELS": "Níveis & XP"
+    }
+  }
+}

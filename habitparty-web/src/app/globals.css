@@ -28,11 +28,15 @@
   --color-gold: rgb(237 229 57); /* Seu secundaria-amarelo */
   --color-gold-hover: rgb(213 206 51);
   --color-gold-pressed: rgb(190 183 46);
+  --color-gold-ink: rgb(237 229 57); /* Tinta dourada para textos/gradientes */
   --color-gold-warm: rgb(
     245 197 24
   ); /* Dourado nobre aquecido para botões CTA (#F5C518) */
   --color-gold-warm-hover: rgb(227 180 14);
   --color-gold-warm-pressed: rgb(204 160 8);
+  --color-on-gold: rgb(
+    27 24 36
+  ); /* Texto escuro sobre botões e badges dourados */
   --color-magenta: rgb(237 43 229);
   --color-blue: rgb(64 57 237);
 
@@ -103,72 +107,108 @@
 }
 
 /* ========================================================
-   TEMA CLARO (Sobrescrita de Variáveis e Contraste)
+   TEMA CLARO — COSMIC DAYLIGHT (Alabaster Slate & Royal Gold)
    ======================================================== */
+:root {
+  color-scheme: dark;
+  accent-color: var(--color-primary);
+}
+
 html.light {
-  /* Fundo e Superfícies (Off-white / Lavanda Perolada) */
-  --color-background: rgb(248 247 252);
-  --color-surface: rgb(241 238 249);
-  --color-surface-hover: rgb(233 229 243);
-  --color-card: rgb(255 255 255);
-  --color-card-hover: rgb(250 249 254);
-  --color-popover: rgb(255 255 255);
+  color-scheme: light;
+  accent-color: var(--color-primary);
 
-  /* Marca no Tema Claro (Primary-light escurecida para contraste WCAG AA no branco) */
-  --color-primary: rgb(124 58 237);
-  --color-primary-dark: rgb(109 40 217);
-  --color-primary-light: rgb(109 40 217);
+  /* Superfícies Neutras Frias (Alabaster / Slate) — Zero fadiga de lavanda */
+  --color-background: rgb(245 245 248); /* #F5F5F8 — Canvas Alabastro */
+  --color-surface: rgb(
+    236 236 242
+  ); /* #ECECF2 — Inputs, tabs, containers rebaixados */
+  --color-surface-hover: rgb(226 226 236); /* #E2E2EC — Hover de superfície */
+  --color-card: rgb(255 255 255); /* #FFFFFF — Cards elevados */
+  --color-card-hover: rgb(250 250 253); /* #FAFAFD — Hover sutil de card */
+  --color-popover: rgb(255 255 255); /* #FFFFFF — Menus e modais */
 
-  /* Gamificação adaptada com ouro vibrante e gamificado */
-  --color-gold: rgb(234 168 8); /* Âmbar Dourado quente e vibrante */
-  --color-gold-hover: rgb(217 145 6);
-  --color-gold-pressed: rgb(180 115 5);
-  --color-gold-warm: rgb(234 168 8);
-  --color-gold-warm-hover: rgb(217 145 6);
-  --color-gold-warm-pressed: rgb(180 115 5);
-  --color-magenta: rgb(170 24 186); /* Magenta/fuchsia profundo e nítido */
-  --color-blue: rgb(79 70 229);
+  /* Tríade de Marca (Roxo distinto em 3 degraus) */
+  --color-primary-dark: rgb(91 33 182); /* #5B21B6 */
+  --color-primary: rgb(109 40 217); /* #6D28D9 */
+  --color-primary-light: rgb(124 58 237); /* #7C3AED */
 
-  /* Funcionais adaptados para fundo claro (elimina a queimação visual de neons) */
-  --color-info: rgb(2 132 199); /* Sky-600 contrastante (4.8:1) */
-  --color-info-hover: rgb(3 105 161);
+  /* Gamificação (Ouro Real para CTAs + Tinta Ouro WCAG AA para textos) */
+  --color-gold: rgb(245 184 21); /* #F5B815 — 9.15:1 c/ texto #1E1E2A */
+  --color-gold-hover: rgb(224 163 11); /* #E0A30B */
+  --color-gold-pressed: rgb(
+    154 88 0
+  ); /* #9A5800 — 5.57:1 vs #FFF / 4.73:1 vs surface */
+  --color-gold-ink: rgb(
+    154 88 0
+  ); /* #9A5800 — Uso exclusivo em texto/ícone/gradiente */
+  --color-gold-warm: rgb(245 184 21);
+  --color-gold-warm-hover: rgb(224 163 11);
+  --color-gold-warm-pressed: rgb(154 88 0);
+  --color-on-gold: rgb(
+    30 30 42
+  ); /* #1E1E2A — Contraste 9.15:1 sobre botões e badges dourados */
+  --color-magenta: rgb(162 28 175); /* #A21CAF — 6.32:1 vs #FFF */
+  --color-blue: rgb(67 56 202); /* #4338CA — 7.89:1 vs #FFF */
+
+  /* Funcionais calibrados com contraste real WCAG AA (>= 4.6:1 inclusive em surface) */
+  --color-info: rgb(3 105 161); /* #0369A1 — 5.93:1 vs #FFF */
+  --color-info-hover: rgb(7 89 133); /* #075985 */
   --color-success-100: rgb(220 252 231);
-  --color-success-500: rgb(22 163 74); /* Green-600 contrastante (4.8:1) */
-  --color-success-hover: rgb(21 128 61);
+  --color-success-500: rgb(20 122 56); /* #147A38 — 5.42:1 vs #FFF */
+  --color-success-hover: rgb(17 99 45); /* #11632D */
   --color-warning-100: rgb(254 243 198);
-  --color-warning-500: rgb(217 119 6); /* Amber-600 contrastante */
-  --color-warning-hover: rgb(180 83 9);
+  --color-warning-500: rgb(168 75 7); /* #A84B07 — 5.44:1 vs #FFF */
+  --color-warning-hover: rgb(140 61 5); /* #8C3D05 */
   --color-danger-100: rgb(254 226 226);
-  --color-danger-500: rgb(220 38 38); /* Red-600 contrastante */
-  --color-danger-hover: rgb(185 28 28);
-  --color-blue-hover: rgb(67 56 202);
+  --color-danger-500: rgb(200 30 30); /* #C81E1E — 5.90:1 vs #FFF */
+  --color-danger-hover: rgb(153 27 27); /* #991B1B */
+  --color-blue-hover: rgb(55 48 163); /* #3730A3 */
 
-  /* Inversão da escala neutra para manter hierarquia tipográfica */
-  --color-neutral-50: rgb(24 20 35); /* Títulos principais (alto contraste) */
-  --color-neutral-100: rgb(35 29 49); /* Títulos secundários / Ênfase */
-  --color-neutral-200: rgb(58 50 78); /* Subtítulos */
-  --color-neutral-300: rgb(85 75 107); /* Corpo de texto secundário */
-  --color-neutral-400: rgb(118 108 140); /* Labels e badges */
-  --color-neutral-500: rgb(148 139 168); /* Placeholders e bordas inativas */
-  --color-neutral-600: rgb(200 193 216); /* Bordas médias */
-  --color-neutral-700: rgb(228 224 237); /* Bordas sutis e divisores */
-  --color-neutral-800: rgb(241 238 249); /* Superfície sutil clara */
-  --color-neutral-900: rgb(24 20 35);
+  /* Escala Neutra Invertida (Slate Cósmico Dessaturado) */
+  --color-neutral-50: rgb(30 30 42); /* #1E1E2A — Títulos principais (16.5:1) */
+  --color-neutral-100: rgb(
+    42 42 56
+  ); /* #2A2A38 — Ênfase / Subtítulos fortes (14.1:1) */
+  --color-neutral-200: rgb(
+    59 59 77
+  ); /* #3B3B4D — Subtítulos e texto primário (10.9:1) */
+  --color-neutral-300: rgb(
+    78 78 99
+  ); /* #4E4E63 — Corpo de texto secundário (8.1:1) */
+  --color-neutral-400: rgb(
+    100 100 122
+  ); /* #64647A — Labels, metadados e ícones (5.76:1) */
+  --color-neutral-500: rgb(
+    133 133 155
+  ); /* #85859B — Placeholders e bordas de controle (3.60:1) */
+  --color-neutral-600: rgb(198 198 214); /* #C6C6D6 — Bordas médias */
+  --color-neutral-700: rgb(
+    220 220 232
+  ); /* #DCDCE8 — Divisores e bordas de cards */
+  --color-neutral-800: rgb(
+    232 232 240
+  ); /* #E8E8F0 — Superfície sutil interna */
+  --color-neutral-900: rgb(
+    245 245 248
+  ); /* #F5F5F8 — Base extrema da escala clara invertida */
 
-  /* Sombras limpas e elegantes para fundo claro */
-  --shadow-glow-gold: 0 0 15px rgba(234, 168, 8, 0.28);
-  --shadow-glow-gold-md: 0 0 12px rgba(234, 168, 8, 0.24);
-  --shadow-glow-gold-sm: 0 0 10px rgba(234, 168, 8, 0.18);
-  --shadow-glow-gold-xs: 0 0 6px rgba(234, 168, 8, 0.35);
-  --shadow-glow-magenta: 0 0 10px rgba(170, 24, 186, 0.25);
+  /* Elevação Física Limpa (Zero halos borrados amarelados) */
+  --shadow-glow-gold:
+    0 2px 8px -1px rgba(180, 120, 0, 0.18), 0 1px 2px rgba(15, 15, 30, 0.06);
+  --shadow-glow-gold-md:
+    0 2px 6px -1px rgba(180, 120, 0, 0.14), 0 1px 2px rgba(15, 15, 30, 0.05);
+  --shadow-glow-gold-sm: 0 1px 3px rgba(15, 15, 30, 0.06);
+  --shadow-glow-gold-xs: 0 1px 2px rgba(15, 15, 30, 0.05);
+  --shadow-glow-magenta: 0 2px 8px -1px rgba(162, 28, 175, 0.14);
   --shadow-card-deep:
-    0 10px 25px -5px rgba(33, 4, 89, 0.08),
-    0 8px 10px -6px rgba(33, 4, 89, 0.04);
+    0 1px 3px rgba(15, 15, 30, 0.04), 0 6px 16px -4px rgba(15, 15, 30, 0.06);
   --shadow-card-active:
-    0 14px 28px -4px rgba(33, 4, 89, 0.12),
-    0 10px 10px -5px rgba(33, 4, 89, 0.04);
+    0 4px 12px -2px rgba(15, 15, 30, 0.08),
+    0 12px 24px -6px rgba(15, 15, 30, 0.08);
   --shadow-popover-dark:
-    0 15px 35px -5px rgba(33, 4, 89, 0.14), 0 0 0 1px rgba(33, 4, 89, 0.06);
+    0 12px 32px -4px rgba(15, 15, 30, 0.12),
+    0 2px 6px -1px rgba(15, 15, 30, 0.06);
 }
 
 /* ==========================================
@@ -186,84 +226,185 @@ html.light {
 }
 
 /* ========================================================
-   ADAPTAÇÃO DE UTILITÁRIOS PARA TEMA CLARO
-   Garante contraste perfeito para elementos existentes
+   CLASSES SEMÂNTICAS DE COMPONENTES (Timer, Tooltips, Zen)
    ======================================================== */
 
-/* Ouro tipográfico acessível e contrastante no tema claro */
-html.light .text-gold {
-  color: rgb(
-    180 83 9
-  ) !important; /* Amber-700 #B45309 - Contraste WCAG AAA contra branco */
+/* Sombra do visor do cronômetro de Foco */
+.timer-display-shadow {
+  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.6));
 }
-html.light .hover\:text-gold:hover {
-  color: rgb(180 83 9) !important;
+html.light .timer-display-shadow {
+  filter: drop-shadow(0 2px 8px rgba(109, 40, 217, 0.12));
 }
 
-/* Adaptação de cores neons de utilitários Tailwind (300/400) para fundo claro */
+/* Tooltips escuros em ambos os temas (FocusWeeklyChart, EconomyWidget) */
+.tooltip-dark {
+  background-color: rgba(27, 24, 36, 0.96);
+  color: rgb(249 248 252);
+}
+html.light .tooltip-dark .text-neutral-50,
+html.light .tooltip-dark .text-neutral-100,
+html.light .tooltip-dark .text-neutral-200 {
+  color: rgb(249 248 252);
+}
+html.light .tooltip-dark .text-neutral-300,
+html.light .tooltip-dark .text-neutral-400 {
+  color: rgb(212 207 223);
+}
+html.light .tooltip-dark .text-gold {
+  color: rgb(237 229 57);
+}
+html.light .tooltip-dark .text-rose-400 {
+  color: rgb(251 113 133);
+}
+html.light .tooltip-dark .border-white\/10,
+html.light .tooltip-dark .border-white\/15 {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Dimmer local "Apagar Luzes" do Modo Zen quando o app está no Modo Claro */
+html.light .zen-dimmed-dark {
+  color-scheme: dark;
+  --color-background: rgb(33 4 89);
+  --color-surface: rgb(51 24 102);
+  --color-surface-hover: rgb(61 29 122);
+  --color-card: rgb(55 29 106);
+  --color-gold: rgb(237 229 57);
+  --color-gold-hover: rgb(213 206 51);
+  --color-gold-ink: rgb(237 229 57);
+  --color-on-gold: rgb(27 24 36);
+  --color-neutral-50: rgb(249 248 252);
+  --color-neutral-100: rgb(244 242 248);
+  --color-neutral-200: rgb(228 224 237);
+  --color-neutral-300: rgb(212 207 223);
+  --color-neutral-400: rgb(162 153 181);
+  --color-neutral-500: rgb(123 115 141);
+  --color-neutral-600: rgb(90 83 107);
+  --color-neutral-700: rgb(60 55 74);
+}
+html.light .zen-dimmed-dark .timer-display-shadow {
+  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.6));
+}
+
+/* ========================================================
+   ADAPTAÇÃO DE UTILITÁRIOS PARA TEMA CLARO
+   Especificidade (0,2,1) fora de @layer vence nativamente @layer utilities.
+   Estados :hover sempre declarados após os estados base.
+   ======================================================== */
+
+/* 1. Tipografia Semântica e Cores de Destaque (Base) */
+html.light .text-gold {
+  color: var(--color-gold-ink);
+}
 html.light .text-emerald-400,
 html.light .text-emerald-300 {
-  color: rgb(22 163 74) !important; /* Green-600 #16A34A */
+  color: var(--color-success-500);
 }
 html.light .text-red-400,
 html.light .text-red-300 {
-  color: rgb(220 38 38) !important; /* Red-600 #DC2626 */
+  color: var(--color-danger-500);
 }
 html.light .text-amber-400,
 html.light .text-amber-300 {
-  color: rgb(180 83 9) !important; /* Amber-700 #B45309 */
+  color: var(--color-gold-ink);
 }
-html.light .text-rose-400 {
-  color: rgb(225 29 72) !important; /* Rose-600 */
+html.light .text-rose-400,
+html.light .text-rose-300 {
+  color: rgb(190 18 60); /* Rose-700 #BE123C */
 }
-html.light .text-orange-400 {
-  color: rgb(194 65 12) !important; /* Orange-700 */
+html.light .text-orange-400,
+html.light .text-orange-300 {
+  color: rgb(194 65 12); /* Orange-700 #C2410C */
 }
-html.light .text-cyan-300 {
-  color: rgb(2 132 199) !important;
+html.light .text-cyan-400,
+html.light .text-cyan-300,
+html.light .text-sky-400,
+html.light .text-sky-300 {
+  color: var(--color-info);
 }
-html.light .text-purple-300 {
-  color: rgb(124 58 237) !important;
+html.light .text-blue-400,
+html.light .text-blue-300,
+html.light .text-indigo-400,
+html.light .text-indigo-300 {
+  color: var(--color-blue);
+}
+html.light .text-purple-400,
+html.light .text-purple-300,
+html.light .text-violet-400,
+html.light .text-violet-300 {
+  color: var(--color-primary);
 }
 
-/* Evita que texto desapareça no hover sobre fundos claros */
+/* 1b. Tipografia (:hover declarado após os estados base) */
+html.light .hover\:text-gold:hover,
+html.light .group:hover .group-hover\:text-gold {
+  color: var(--color-gold-ink);
+}
+html.light .hover\:text-on-gold:hover {
+  color: var(--color-on-gold);
+}
 html.light .hover\:text-white:hover {
-  color: var(--color-neutral-50) !important;
+  color: var(--color-neutral-50);
+}
+html.light .hover\:bg-danger-500:hover,
+html.light .hover\:bg-red-600:hover,
+html.light .hover\:text-neutral-100:hover {
+  color: #ffffff;
 }
 
-/* Estados hover de opacidades brancas transformados em destaque suave */
+/* 2. Superfícies Translúcidas (Base) */
+html.light .bg-white\/3,
+html.light .bg-white\/4,
+html.light .bg-white\/5,
+html.light .bg-white\/6,
+html.light .bg-white\/8 {
+  background-color: rgba(30, 30, 42, 0.035);
+}
+html.light .bg-white\/10,
+html.light .bg-white\/15,
+html.light .bg-white\/20 {
+  background-color: rgba(30, 30, 42, 0.065);
+}
+html.light .bg-primary-dark\/15,
+html.light .bg-primary-dark\/20,
+html.light .bg-primary-dark\/25,
+html.light .bg-primary-dark\/30,
+html.light .bg-primary-dark\/35,
+html.light .bg-primary-dark\/40 {
+  background-color: #ffffff;
+  box-shadow:
+    0 1px 3px 0 rgba(15, 15, 30, 0.05),
+    0 1px 2px -1px rgba(15, 15, 30, 0.04);
+}
+html.light .bg-primary-dark\/50,
+html.light .bg-primary-dark\/60 {
+  background-color: rgba(109, 40, 217, 0.08);
+}
+
+/* 2b. Superfícies Translúcidas (:hover declarado após os estados base) */
+html.light .hover\:bg-white\/4:hover,
 html.light .hover\:bg-white\/5:hover,
 html.light .hover\:bg-white\/8:hover,
 html.light .hover\:bg-white\/10:hover,
 html.light .hover\:bg-white\/15:hover {
-  background-color: rgba(33, 4, 89, 0.08) !important;
+  background-color: rgba(30, 30, 42, 0.06);
 }
 html.light .hover\:bg-surface-hover:hover {
-  background-color: rgb(233 229 243) !important;
+  background-color: var(--color-surface-hover);
+}
+html.light .hover\:bg-primary-dark\/30:hover,
+html.light .hover\:bg-primary-dark\/35:hover,
+html.light .hover\:bg-primary-dark\/40:hover {
+  background-color: var(--color-card-hover);
+}
+html.light .hover\:bg-gold:hover {
+  background-color: var(--color-gold);
+}
+html.light .hover\:bg-gold-hover:hover {
+  background-color: var(--color-gold-hover);
 }
 
-/* Preserva texto claro em balões/tooltips e popovers que permanecem propositalmente escuros */
-html.light .bg-neutral-900,
-html.light .bg-neutral-900\/95,
-html.light .bg-neutral-900\/90 {
-  background-color: rgb(27 24 36) !important;
-}
-html.light .bg-neutral-900 .text-neutral-50,
-html.light .bg-neutral-900 .text-neutral-100,
-html.light .bg-neutral-900 .text-neutral-200,
-html.light .bg-neutral-900 .text-neutral-300,
-html.light .bg-neutral-900\/95 .text-neutral-50,
-html.light .bg-neutral-900\/95 .text-neutral-100,
-html.light .bg-neutral-900\/95 .text-neutral-200,
-html.light .bg-neutral-900\/95 .text-neutral-300 {
-  color: rgb(249 248 252) !important;
-}
-html.light .bg-neutral-900 .text-neutral-400,
-html.light .bg-neutral-900\/95 .text-neutral-400 {
-  color: rgb(162 153 181) !important;
-}
-
-/* Bordas e fundos brancos sutis adaptados para fundo claro */
+/* 3. Bordas Sutis e Primárias (Base) */
 html.light .border-white\/5,
 html.light .border-white\/6,
 html.light .border-white\/8,
@@ -272,50 +413,8 @@ html.light .border-white\/15,
 html.light .border-white\/20,
 html.light .border-white\/25,
 html.light .border-white\/30 {
-  border-color: rgba(33, 4, 89, 0.09) !important;
+  border-color: rgba(30, 30, 42, 0.09);
 }
-
-html.light .bg-white\/3,
-html.light .bg-white\/4,
-html.light .bg-white\/5,
-html.light .bg-white\/6,
-html.light .bg-white\/8 {
-  background-color: rgba(33, 4, 89, 0.035) !important;
-}
-
-html.light .bg-white\/10,
-html.light .bg-white\/15,
-html.light .bg-white\/20 {
-  background-color: rgba(33, 4, 89, 0.065) !important;
-}
-
-/* Neutralização de superfícies que usavam roxo escuro (primary-dark) */
-html.light .bg-primary-dark\/15,
-html.light .bg-primary-dark\/20,
-html.light .bg-primary-dark\/25,
-html.light .bg-primary-dark\/30,
-html.light .bg-primary-dark\/35,
-html.light .bg-primary-dark\/40 {
-  background-color: #ffffff !important;
-  box-shadow:
-    0 1px 3px 0 rgba(33, 4, 89, 0.04),
-    0 1px 2px -1px rgba(33, 4, 89, 0.04);
-}
-
-/* Hover de cards e linhas no tema claro */
-html.light .hover\:bg-primary-dark\/30:hover,
-html.light .hover\:bg-primary-dark\/35:hover,
-html.light .hover\:bg-primary-dark\/40:hover {
-  background-color: rgb(250 249 254) !important;
-}
-
-/* Destaque de itens ativos / selecionados no tema claro */
-html.light .bg-primary-dark\/50,
-html.light .bg-primary-dark\/60 {
-  background-color: rgba(124, 58, 237, 0.09) !important;
-}
-
-/* Bordas primárias suavizadas no tema claro */
 html.light .border-primary\/15,
 html.light .border-primary\/20,
 html.light .border-primary\/25,
@@ -324,143 +423,98 @@ html.light .border-primary\/35,
 html.light .border-primary\/40,
 html.light .border-primary\/45,
 html.light .border-primary\/50 {
-  border-color: rgba(124, 58, 237, 0.12) !important;
+  border-color: rgba(109, 40, 217, 0.14);
 }
-
 html.light .border-primary-light\/30,
 html.light .border-primary-light\/40,
 html.light .border-primary-light\/50 {
-  border-color: rgba(124, 58, 237, 0.22) !important;
+  border-color: rgba(109, 40, 217, 0.22);
 }
 
+/* 3b. Bordas (:hover declarado após os estados base) */
+html.light .hover\:border-white\/10:hover,
+html.light .hover\:border-white\/20:hover {
+  border-color: rgba(30, 30, 42, 0.18);
+}
 html.light .hover\:border-y-primary-light\/40:hover,
 html.light .hover\:border-r-primary-light\/40:hover,
 html.light .hover\:border-primary-light:hover {
-  border-color: rgba(124, 58, 237, 0.3) !important;
+  border-color: rgba(109, 40, 217, 0.32);
+}
+html.light .hover\:border-gold:hover {
+  border-color: var(--color-gold);
+}
+html.light .hover\:border-gold\/40:hover,
+html.light .hover\:border-gold\/50:hover {
+  border-color: rgba(245, 184, 21, 0.5);
 }
 
-/* Diferenciação de camadas na barra lateral direita do Dashboard e Foco */
-html.light aside[aria-label="Painel de Resumo e Calendário"],
-html.light aside[aria-label="Painel de métricas e histórico de foco"] {
-  background-color: #ffffff !important;
-  border-left-color: rgba(124, 58, 237, 0.12) !important;
+/* 4. Painéis Laterais, Gradientes e Elementos Decorativos */
+html.light aside[data-panel="sidebar-right"] {
+  background-color: #ffffff;
+  border-left-color: var(--color-neutral-700);
 }
-html.light
-  aside[aria-label="Painel de Resumo e Calendário"]
-  .bg-primary-dark\/20,
-html.light aside[aria-label="Painel de Resumo e Calendário"] .bg-white\/5,
-html.light
-  aside[aria-label="Painel de métricas e histórico de foco"]
-  .bg-primary-dark\/20,
-html.light
-  aside[aria-label="Painel de métricas e histórico de foco"]
-  .bg-white\/5 {
-  background-color: rgb(248 247 252) !important;
-  border-color: rgba(124, 58, 237, 0.12) !important;
+html.light aside[data-panel="sidebar-right"] .bg-primary-dark\/20,
+html.light aside[data-panel="sidebar-right"] .bg-white\/5 {
+  background-color: var(--color-background);
+  border-color: var(--color-neutral-700);
 }
 
-/* Suavização do gradiente do Daily Briefing no tema claro */
 html.light .from-primary-dark\/40 {
-  --tw-gradient-from: rgba(124, 58, 237, 0.08) !important;
+  --tw-gradient-from: rgba(109, 40, 217, 0.06);
 }
 html.light .via-surface\/60 {
-  --tw-gradient-via: rgba(241, 238, 249, 0.8) !important;
+  --tw-gradient-via: rgba(236, 236, 242, 0.85);
 }
 html.light .to-primary-dark\/25 {
-  --tw-gradient-to: rgba(124, 58, 237, 0.04) !important;
+  --tw-gradient-to: rgba(109, 40, 217, 0.03);
 }
 
-/* Timer de Foco: remove sombra pesada preta e ajusta badge de descanso */
-html.light .drop-shadow-\[0_4px_16px_rgba\(0\,0\,0\,0\.6\)\] {
-  filter: drop-shadow(0 2px 8px rgba(124, 58, 237, 0.15)) !important;
-}
-html.light .bg-emerald-950\/70 {
-  background-color: rgba(22, 163, 74, 0.12) !important;
-  border-color: rgba(22, 163, 74, 0.3) !important;
-  color: rgb(21 128 61) !important;
-}
-
-/* Orbes cósmicos de fundo com opacidade sutil no tema claro */
 html.light .cosmic-orb {
-  opacity: 0.06 !important;
+  opacity: 0.05;
 }
 
-/* Confetes na Sidebar com opacidade reduzida no tema claro */
-html.light div[style*="Confetti.svg"] {
-  opacity: 0.15 !important;
+html.light .sidebar-confetti {
+  opacity: 0.18;
+  filter: saturate(1.4) brightness(0.82);
 }
 
-/* Dropdowns e selects no tema claro */
 html.light select option {
-  background-color: #ffffff !important;
-  color: rgb(24 20 35) !important;
-}
-
-/* Hover nos botões de perigo e decremento no tema claro */
-html.light .hover\:bg-danger-500:hover,
-html.light .hover\:bg-red-600:hover {
-  color: #ffffff !important;
-}
-html.light .hover\:text-neutral-100:hover {
-  color: #ffffff !important;
-}
-
-/* Proteções contra escurecimento e contraste de utilitários neutros no tema claro */
-html.light .hover\:bg-neutral-50:hover {
-  background-color: var(--color-surface-hover) !important;
-}
-
-html.light .bg-neutral-100 {
-  background-color: var(--color-surface) !important;
-}
-
-html.light .hover\:bg-neutral-100:hover,
-html.light .hover\:bg-neutral-200:hover {
-  background-color: var(--color-surface-hover) !important;
-}
-
-html.light .text-neutral-600,
-html.light .text-neutral-700 {
-  color: var(--color-neutral-300) !important;
-}
-
-html.light .text-neutral-800 {
-  color: var(--color-neutral-100) !important;
-}
-
-html.light .border-neutral-200,
-html.light .border-neutral-300 {
-  border-color: var(--color-neutral-700) !important;
+  background-color: #ffffff;
+  color: var(--color-neutral-50);
 }
 
 @layer utilities {
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(123, 115, 141, 0.3);
-    border-radius: 9999px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(237, 229, 57, 0.5);
-  }
   .custom-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: rgba(123, 115, 141, 0.3) transparent;
   }
 
-  html.light .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(33, 4, 89, 0.15);
-  }
-  html.light .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(217, 119, 6, 0.4);
-  }
   html.light .custom-scrollbar {
-    scrollbar-color: rgba(33, 4, 89, 0.15) transparent;
+    scrollbar-color: rgba(30, 30, 42, 0.2) transparent;
+  }
+
+  @supports not (scrollbar-color: auto) {
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(123, 115, 141, 0.3);
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(237, 229, 57, 0.5);
+    }
+    html.light .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(30, 30, 42, 0.2);
+    }
+    html.light .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(154, 88, 0, 0.45);
+    }
   }
 
   /* Borda sutil com gradiente para o Workspace Switcher */

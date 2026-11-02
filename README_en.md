@@ -219,19 +219,22 @@ npm run dev
 
 ## 🗺️ Release Roadmap
 
-### 🎯 Release 1.1 — Light Theme & Internationalization (i18n)
-* **Light Theme:** Fresh, clean, high-contrast visual mode designed for comfortable daytime productivity and effortless readability.
+### 🎯 Release 1.1 — Internationalization (i18n) & Experience Modes ✅ (Completed)
 * **Native Internationalization (i18n):** Full native support for **English (EN)** and **Portuguese (PT-BR)** across all platform views, dialogs, and alerts.
+* **Experience Modes (RPG vs. Productivity):** Choose between full RPG immersion with gamified mechanics or a streamlined, distraction-free execution layout.
+* **Security & Anti-Bot Protection:** Progressive email verification, IP rate limiting, and robust shields against bot registrations and abuse.
+* **Performance & Infrastructure Hardening:** Database table refactoring, high-speed indexes, and accelerated response times on frequent queries.
 
 ---
 
-### 🏆 Release 1.2 — Personal Achievements, VIP Themes & Task-Linked Focus
+### 🏆 Release 1.2 — Light Theme, VIP Themes, Personal Achievements & Task-Linked Focus
+* **Light Theme:** Fresh, clean, high-contrast visual mode designed for comfortable daytime productivity and effortless readability.
+* **VIP Atmospheric Themes:** Dynamic color schemes exclusive to Premium subscribers (e.g., *Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold*).
 * **Task-Linked Focus Sessions:** Directly connect Pomodoro/Deep Work timer sessions to specific Kanban tasks and routine cards.
 * **Effort Metrics per Task:** Real-time tracked time on task cards (e.g., `⏱️ 2h 15m focused`), focus cycle history, and auto-complete task prompt at timer end.
 * **Quick "Focus on Task" Action:** Launch a focused timer session right from any task's context menu in 1 click.
 * **Personal Achievement System:** Milestone badges and trophies automatically unlocked by maintaining streaks, achieving task focus milestones, and earning gold.
 * **Achievements Panel:** Dedicated *"My Achievements"* screen to track milestones, trophies, and journey progression.
-* **VIP Atmospheric Themes:** Dynamic color schemes exclusive to Premium subscribers (e.g., *Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold*).
 
 ---
 

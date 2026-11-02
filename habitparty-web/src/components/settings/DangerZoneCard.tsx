@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { deleteUserAccountAction } from "@/actions/userActions";
@@ -11,6 +12,7 @@ import { cn } from "@/utils";
 import { SettingsCard } from "./SettingsCard";
 
 export function DangerZoneCard({ isCompact }: ProfileCardBaseProps) {
+  const t = useTranslations("settings.dangerZone");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -18,7 +20,7 @@ export function DangerZoneCard({ isCompact }: ProfileCardBaseProps) {
     startTransition(async () => {
       const res = await deleteUserAccountAction();
       if (res && !res.success) {
-        toast.error(res.error || "Erro ao excluir conta.");
+        toast.error(res.error || t("errorToast"));
         setIsModalOpen(false);
       }
     });
@@ -27,8 +29,8 @@ export function DangerZoneCard({ isCompact }: ProfileCardBaseProps) {
   return (
     <>
       <SettingsCard
-        title="Zona de Perigo"
-        description="A exclusão da sua conta apagará permanentemente todos os seus dados, tarefas, moedas, itens e histórico no HabitParty. Esta ação é irreversível."
+        title={t("cardTitle")}
+        description={t("cardDesc")}
         icon={<AlertTriangle size={18} className="text-red-400" />}
         variant="danger"
         isCompact={isCompact}
@@ -42,7 +44,7 @@ export function DangerZoneCard({ isCompact }: ProfileCardBaseProps) {
             )}
           >
             <Trash2 size={16} />
-            Excluir Conta
+            {t("deleteButton")}
           </button>
         }
       />
@@ -51,10 +53,10 @@ export function DangerZoneCard({ isCompact }: ProfileCardBaseProps) {
         isOpen={isModalOpen}
         onClose={() => !isPending && setIsModalOpen(false)}
         onConfirm={handleDelete}
-        title="Tem certeza que deseja excluir sua conta?"
-        description="Todos os seus hábitos, tarefas, recompensas e histórico de transações serão excluídos definitivamente. Ao confirmar, sua sessão será encerrada e seus dados não poderão ser recuperados."
-        confirmText="Sim, excluir minha conta"
-        cancelText="Cancelar"
+        title={t("modalTitle")}
+        description={t("modalDesc")}
+        confirmText={t("modalConfirm")}
+        cancelText={t("modalCancel")}
         variant="danger"
         isLoading={isPending}
       />

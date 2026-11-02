@@ -1,24 +1,43 @@
+"use client";
+
 import { CheckCircle2, Crown, HardDrive, Mail, Users } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import type { AppLocale } from "@/i18n/config";
 import type { AdminOverviewDTO } from "@/types/admin";
 import { cn } from "@/utils";
+import { formatShortDate } from "@/utils/date";
 
 interface AdminOverviewCardsProps {
   overview: AdminOverviewDTO;
 }
 
 export function AdminOverviewCards({ overview }: AdminOverviewCardsProps) {
+  const t = useTranslations("admin.overview");
+  const locale = useLocale() as AppLocale;
+
   const isHighQuota = overview.resendQuotaPercentage >= 80;
   const isMediumQuota =
     overview.resendQuotaPercentage >= 50 && overview.resendQuotaPercentage < 80;
+
+  const formattedResetDate = overview.resendQuotaResetDate
+    ? formatShortDate(overview.resendQuotaResetDate, { locale })
+    : null;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {/* 1. COTA RESEND */}
       <div className="p-4 rounded-2xl bg-surface/80 border border-white/10 backdrop-blur-md flex flex-col justify-between relative overflow-hidden group hover:border-gold/40 transition-colors">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-body-xs font-semibold uppercase tracking-wider text-neutral-400">
-            Cota Resend (Mês)
-          </span>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-body-xs font-semibold uppercase tracking-wider text-neutral-400">
+              {t("resendQuota.title")}
+            </span>
+            {formattedResetDate && (
+              <span className="text-[10px] text-amber-400/90 font-medium">
+                {t("resendQuota.renewsOn", { date: formattedResetDate })}
+              </span>
+            )}
+          </div>
           <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
             <Mail size={18} />
           </div>
@@ -27,10 +46,10 @@ export function AdminOverviewCards({ overview }: AdminOverviewCardsProps) {
         <div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl font-black text-neutral-100 font-mono">
-              {overview.emailsSentThisMonth.toLocaleString()}
+              {overview.emailsSentThisMonth.toLocaleString(locale)}
             </span>
             <span className="text-xs text-neutral-400 font-mono">
-              / {overview.resendMonthlyQuota.toLocaleString()}
+              / {overview.resendMonthlyQuota.toLocaleString(locale)}
             </span>
           </div>
 
@@ -52,12 +71,17 @@ export function AdminOverviewCards({ overview }: AdminOverviewCardsProps) {
           </div>
 
           <div className="flex items-center justify-between mt-2 text-[11px] text-neutral-400">
-            <span>{overview.resendQuotaPercentage}% consumido</span>
             <span>
-              {(
-                overview.resendMonthlyQuota - overview.emailsSentThisMonth
-              ).toLocaleString()}{" "}
-              restantes
+              {t("resendQuota.consumed", {
+                percentage: overview.resendQuotaPercentage,
+              })}
+            </span>
+            <span>
+              {t("resendQuota.remaining", {
+                count: (
+                  overview.resendMonthlyQuota - overview.emailsSentThisMonth
+                ).toLocaleString(locale),
+              })}
             </span>
           </div>
         </div>
@@ -67,7 +91,7 @@ export function AdminOverviewCards({ overview }: AdminOverviewCardsProps) {
       <div className="p-4 rounded-2xl bg-surface/80 border border-white/10 backdrop-blur-md flex flex-col justify-between relative overflow-hidden group hover:border-primary-light/40 transition-colors">
         <div className="flex items-center justify-between mb-3">
           <span className="text-body-xs font-semibold uppercase tracking-wider text-neutral-400">
-            Usuários Cadastrados
+            {t("users.title")}
           </span>
           <div className="p-2 rounded-xl bg-primary/20 text-primary-light">
             <Users size={18} />
@@ -76,26 +100,26 @@ export function AdminOverviewCards({ overview }: AdminOverviewCardsProps) {
 
         <div>
           <div className="text-2xl font-black text-neutral-100 font-mono">
-            {overview.totalUsers.toLocaleString()}
+            {overview.totalUsers.toLocaleString(locale)}
           </div>
           <div className="flex items-center gap-1.5 flex-wrap mt-3">
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-neutral-800 text-neutral-300 border border-white/5">
-              Gratuito: {overview.freeUsers}
+              {t("users.free", { count: overview.freeUsers })}
             </span>
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gold/15 text-gold border border-gold/30">
               <Crown size={12} />
-              VIP: {overview.premiumUsers}
+              {t("users.vip", { count: overview.premiumUsers })}
             </span>
             {overview.founderUsers !== undefined &&
               overview.founderUsers > 0 && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gold/25 text-gold border border-gold/40 shadow-xs">
                   <Crown size={12} className="fill-gold" />
-                  Fundadores: {overview.founderUsers}/30
+                  {t("users.founders", { count: overview.founderUsers })}
                 </span>
               )}
             {overview.adminUsers > 0 && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/30">
-                Admin: {overview.adminUsers}
+                {t("users.admin", { count: overview.adminUsers })}
               </span>
             )}
           </div>
@@ -106,7 +130,7 @@ export function AdminOverviewCards({ overview }: AdminOverviewCardsProps) {
       <div className="p-4 rounded-2xl bg-surface/80 border border-white/10 backdrop-blur-md flex flex-col justify-between relative overflow-hidden group hover:border-info/40 transition-colors">
         <div className="flex items-center justify-between mb-3">
           <span className="text-body-xs font-semibold uppercase tracking-wider text-neutral-400">
-            Tarefas & Hábitos
+            {t("tasks.title")}
           </span>
           <div className="p-2 rounded-xl bg-blue/20 text-info">
             <CheckCircle2 size={18} />
@@ -115,17 +139,20 @@ export function AdminOverviewCards({ overview }: AdminOverviewCardsProps) {
 
         <div>
           <div className="text-2xl font-black text-neutral-100 font-mono">
-            {overview.totalTasksCount.toLocaleString()}
+            {overview.totalTasksCount.toLocaleString(locale)}
           </div>
           <div className="flex items-center justify-between mt-3 text-[11px] text-neutral-400">
             <span className="text-amber-400 font-semibold">
-              {overview.totalActiveTasksCount.toLocaleString()} pendentes
+              {t("tasks.pending", {
+                count: overview.totalActiveTasksCount.toLocaleString(locale),
+              })}
             </span>
             <span className="text-neutral-500">
-              {(
-                overview.totalTasksCount - overview.totalActiveTasksCount
-              ).toLocaleString()}{" "}
-              concluídas
+              {t("tasks.completed", {
+                count: (
+                  overview.totalTasksCount - overview.totalActiveTasksCount
+                ).toLocaleString(locale),
+              })}
             </span>
           </div>
         </div>
@@ -135,7 +162,7 @@ export function AdminOverviewCards({ overview }: AdminOverviewCardsProps) {
       <div className="p-4 rounded-2xl bg-surface/80 border border-white/10 backdrop-blur-md flex flex-col justify-between relative overflow-hidden group hover:border-success-500/40 transition-colors">
         <div className="flex items-center justify-between mb-3">
           <span className="text-body-xs font-semibold uppercase tracking-wider text-neutral-400">
-            Armazenamento (Postgres)
+            {t("storage.title")}
           </span>
           <div className="p-2 rounded-xl bg-success-500/15 text-success-500">
             <HardDrive size={18} />
@@ -148,7 +175,7 @@ export function AdminOverviewCards({ overview }: AdminOverviewCardsProps) {
               {overview.estimatedDatabaseSizeFormatted}
             </span>
             <span className="text-xs text-neutral-400 font-mono">
-              / 1 GB (Railway)
+              {t("storage.limitSuffix")}
             </span>
           </div>
 
@@ -170,8 +197,7 @@ export function AdminOverviewCards({ overview }: AdminOverviewCardsProps) {
           </div>
 
           <p className="mt-2 text-[11px] text-neutral-400 leading-tight">
-            Cotas ativas: 5MB/usuário Free e 50MB/usuário VIP. O banco comporta
-            milhares de usuários no plano inicial.
+            {t("storage.description")}
           </p>
         </div>
       </div>

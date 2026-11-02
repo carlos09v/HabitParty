@@ -18,6 +18,7 @@ import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
 import { toLocalISOString } from "@/utils/date";
 import {
+  getBrowserDocumentLocale,
   optimizedFocusStorage,
   registerFocusTimerWindowListeners,
   sendBrowserNotification,
@@ -25,6 +26,148 @@ import {
 } from "@/utils/focusTimerBrowser";
 import { awardUserRewards } from "@/utils/gamification";
 import { soundEffects } from "@/utils/soundEffects";
+
+type StoreTranslateFn = (
+  key: string,
+  values?: Record<string, string | number>,
+) => string;
+
+let customStoreT: StoreTranslateFn | null = null;
+let customNotificationsT: StoreTranslateFn | null = null;
+
+export function setFocusTimerTranslators(translators: {
+  store?: StoreTranslateFn | null;
+  notifications?: StoreTranslateFn | null;
+}) {
+  customStoreT = translators.store ?? null;
+  customNotificationsT = translators.notifications ?? null;
+}
+
+const FALLBACK_STORE_MESSAGES: Record<
+  "en" | "pt-BR",
+  Record<string, string>
+> = {
+  en: {
+    breakCompletedToast: "Break completed! Ready for the next focus cycle?",
+    longBreakLabel: "long (15 min)",
+    shortBreakLabel: "short (5 min)",
+    cycleCompletedToast:
+      "🍅 Cycle {cycles} completed! Starting {breakLabel} break. Relax a little!",
+    selectTargetToStartToast:
+      "Select an activity or backpack item to start focusing.",
+    itemAlreadyCompletedToast:
+      "🎉 This item has already completed its time. Click the Complete (Check) button to redeem it.",
+    breakSkippedToast: "Break skipped. Ready to focus!",
+    linkTargetBeforeSaveToast:
+      "Link your focus to an activity or backpack item before saving.",
+    minDurationWarningToast: "Sessions under 1 minute are not recorded.",
+    couponTimeDepletedToast:
+      "🎉 Coupon time depleted! Click the Complete (Check) button to redeem it.",
+    couponTimeDeductedToast: "Coupon time deducted! (-{time})",
+    sessionCompletedRewardsToast:
+      "Focus session completed! (+{time} • +{xp} XP • +{coins} 🪙)",
+    sessionCompletedLoggedToast: "Focus session completed! (+{time} logged)",
+    saveSessionFailedToast: "Failed to save focus session.",
+    saveSessionServerErrorToast: "Error saving focus session on the server.",
+    couponAlreadyDepletedToast:
+      "This coupon's time is already depleted! Click the Complete (Check) button to redeem it.",
+    defaultItemName: "Focus Item",
+    targetTransferredToast:
+      'Target switched to "{name}". The timer keeps running!',
+  },
+  "pt-BR": {
+    breakCompletedToast:
+      "Pausa concluída! Pronto para o próximo ciclo de foco?",
+    longBreakLabel: "longa (15 min)",
+    shortBreakLabel: "curta (5 min)",
+    cycleCompletedToast:
+      "🍅 Ciclo {cycles} concluído! Iniciando pausa {breakLabel}. Relaxe um pouco!",
+    selectTargetToStartToast:
+      "Selecione uma atividade ou item da mochila para iniciar o foco.",
+    itemAlreadyCompletedToast:
+      "🎉 Este item já concluiu seu tempo. Clique no botão de Concluir (Check) para resgatá-lo.",
+    breakSkippedToast: "Pausa pulada. Pronto para focar!",
+    linkTargetBeforeSaveToast:
+      "Vincule o foco a uma atividade ou item da mochila antes de salvar.",
+    minDurationWarningToast:
+      "Sessões com menos de 1 minuto não são registradas.",
+    couponTimeDepletedToast:
+      "🎉 Tempo do cupom esgotado! Clique no botão de Concluir (Check) para resgatá-lo.",
+    couponTimeDeductedToast: "Tempo do cupom deduzido! (-{time})",
+    sessionCompletedRewardsToast:
+      "Sessão de foco concluída! (+{time} • +{xp} XP • +{coins} 🪙)",
+    sessionCompletedLoggedToast:
+      "Sessão de foco concluída! (+{time} registrados)",
+    saveSessionFailedToast: "Falha ao salvar sessão de foco.",
+    saveSessionServerErrorToast: "Erro ao salvar sessão de foco no servidor.",
+    couponAlreadyDepletedToast:
+      "O tempo deste cupom já está esgotado! Clique no botão de Concluir (Check) para resgatá-lo.",
+    defaultItemName: "Item de Foco",
+    targetTransferredToast:
+      'Vínculo alterado para "{name}". O tempo continua rodando!',
+  },
+};
+
+const FALLBACK_NOTIFICATION_MESSAGES: Record<
+  "en" | "pt-BR",
+  Record<string, string>
+> = {
+  en: {
+    breakEndedTitle: "HabitParty - Break Completed!",
+    breakEndedBody: "Ready for the next focus cycle?",
+    cycleCompletedTitle: "HabitParty - Cycle Completed!",
+    cycleCompletedBody:
+      "🍅 Cycle {cycles} completed! Starting {breakLabel} break. Relax a little!",
+  },
+  "pt-BR": {
+    breakEndedTitle: "HabitParty - Pausa Concluída!",
+    breakEndedBody: "Pronto para o próximo ciclo de foco?",
+    cycleCompletedTitle: "HabitParty - Ciclo Concluído!",
+    cycleCompletedBody:
+      "🍅 Ciclo {cycles} concluído! Iniciando pausa {breakLabel}. Relaxe um pouco!",
+  },
+};
+
+function interpolateFallback(
+  template: string,
+  values?: Record<string, string | number>,
+): string {
+  if (!values) return template;
+  return Object.entries(values).reduce(
+    (acc, [k, v]) => acc.replaceAll(`{${k}}`, String(v)),
+    template,
+  );
+}
+
+function tStoreMsg(
+  key: string,
+  values?: Record<string, string | number>,
+): string {
+  if (customStoreT) {
+    try {
+      return customStoreT(key, values);
+    } catch {
+      // Fallback below
+    }
+  }
+  const dict = FALLBACK_STORE_MESSAGES[getBrowserDocumentLocale()];
+  return interpolateFallback(dict[key] ?? key, values);
+}
+
+function tNotifMsg(
+  key: string,
+  values?: Record<string, string | number>,
+): string {
+  if (customNotificationsT) {
+    try {
+      return customNotificationsT(key, values);
+    } catch {
+      // Fallback below
+    }
+  }
+  const dict = FALLBACK_NOTIFICATION_MESSAGES[getBrowserDocumentLocale()];
+  return interpolateFallback(dict[key] ?? key, values);
+}
 
 let globalTimerInterval: NodeJS.Timeout | null = null;
 
@@ -92,6 +235,12 @@ export interface FocusTimerStoreState extends FocusTimerState {
   startFocusActivity: (activity: FocusActivity) => void;
   startFocusItem: (item: InventoryItemResponseDTO) => void;
   selectActivityTarget: (activity: FocusActivity | null) => void;
+  syncTargetMetadata: (metadata: {
+    id?: string;
+    name?: string;
+    icon?: string;
+    targetMinutes?: number;
+  }) => void;
   resetTarget: () => void;
   transferTarget: (activity: FocusActivity) => void;
   tick: () => void;
@@ -176,12 +325,10 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
                 (state.target?.targetMinutes || DEFAULT_POMO_MINUTES) * 60;
               set(buildIdleTimerPatch(workDuration));
               updateDocumentTitle(get());
-              toast.info(
-                "Pausa concluída! Pronto para o próximo ciclo de foco?",
-              );
+              toast.info(tStoreMsg("breakCompletedToast"));
               sendBrowserNotification(
-                "HabitParty - Pausa Concluída!",
-                "Pronto para o próximo ciclo de foco?",
+                tNotifMsg("breakEndedTitle"),
+                tNotifMsg("breakEndedBody"),
               );
               return;
             }
@@ -210,14 +357,20 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
                       ? "LONG_BREAK"
                       : "SHORT_BREAK";
                     const breakLabel = isLongBreak
-                      ? "longa (15 min)"
-                      : "curta (5 min)";
+                      ? tStoreMsg("longBreakLabel")
+                      : tStoreMsg("shortBreakLabel");
                     toast.success(
-                      `🍅 Ciclo ${cycles} concluído! Iniciando pausa ${breakLabel}. Relaxe um pouco!`,
+                      tStoreMsg("cycleCompletedToast", {
+                        cycles,
+                        breakLabel,
+                      }),
                     );
                     sendBrowserNotification(
-                      "HabitParty - Ciclo Concluído!",
-                      `🍅 Ciclo ${cycles} concluído! Iniciando pausa ${breakLabel}. Relaxe um pouco!`,
+                      tNotifMsg("cycleCompletedTitle"),
+                      tNotifMsg("cycleCompletedBody", {
+                        cycles,
+                        breakLabel,
+                      }),
                     );
 
                     set({
@@ -264,18 +417,14 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
 
         if (!state.isActive) {
           if (!state.target) {
-            toast.info(
-              "Selecione uma atividade ou item da mochila para iniciar o foco.",
-            );
+            toast.info(tStoreMsg("selectTargetToStartToast"));
             return;
           }
           if (
             state.target.type === "inventory" &&
             state.secondsRemaining <= 1
           ) {
-            toast.info(
-              "🎉 Este item já concluiu seu tempo. Clique no botão de Concluir (Check) para resgatá-lo.",
-            );
+            toast.info(tStoreMsg("itemAlreadyCompletedToast"));
             return;
           }
           const nowStr = state.startedAt || new Date().toISOString();
@@ -308,9 +457,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             state.target?.type === "inventory" &&
             state.secondsRemaining <= 1
           ) {
-            toast.info(
-              "🎉 Este item já concluiu seu tempo. Clique no botão de Concluir (Check) para resgatá-lo.",
-            );
+            toast.info(tStoreMsg("itemAlreadyCompletedToast"));
             return;
           }
           if (soundPrefs.timerSoundsEnabled) {
@@ -374,7 +521,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           (state.target?.targetMinutes || DEFAULT_POMO_MINUTES) * 60;
         set(buildIdleTimerPatch(workDuration));
         updateDocumentTitle(get());
-        toast.info("Pausa pulada. Pronto para focar!");
+        toast.info(tStoreMsg("breakSkippedToast"));
       },
 
       completeSession: async (notes?: string) => {
@@ -385,14 +532,12 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         }
 
         if (!state.target) {
-          toast.warning(
-            "Vincule o foco a uma atividade ou item da mochila antes de salvar.",
-          );
+          toast.warning(tStoreMsg("linkTargetBeforeSaveToast"));
           return false;
         }
         const elapsed = state.elapsedSeconds;
         if (elapsed < 60) {
-          toast.warning("Sessões com menos de 1 minuto não são registradas.");
+          toast.warning(tStoreMsg("minDurationWarningToast"));
           return false;
         }
 
@@ -433,15 +578,15 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
                 exactSeconds >= state.totalDurationSeconds;
               if (isFinished) {
                 triggerCelebrationConfetti();
-                toast.success(
-                  "🎉 Tempo do cupom esgotado! Clique no botão de Concluir (Check) para resgatá-lo.",
-                );
+                toast.success(tStoreMsg("couponTimeDepletedToast"));
               } else {
                 const m = Math.floor(exactSeconds / 60);
                 const s = exactSeconds % 60;
                 const timeStr =
                   m > 0 ? (s > 0 ? `${m}m ${s}s` : `${m}m`) : `${s}s`;
-                toast.success(`Tempo do cupom deduzido! (-${timeStr})`);
+                toast.success(
+                  tStoreMsg("couponTimeDeductedToast", { time: timeStr }),
+                );
               }
             } else {
               const m = Math.floor(exactSeconds / 60);
@@ -460,11 +605,17 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
                 soundEffects.playFocusSessionCompleteSound();
                 if (xp > 0 || coins > 0) {
                   toast.success(
-                    `Sessão de foco concluída! (+${timeStr} • +${xp} XP • +${Number(coins).toFixed(2)} 🪙)`,
+                    tStoreMsg("sessionCompletedRewardsToast", {
+                      time: timeStr,
+                      xp,
+                      coins: Number(coins).toFixed(2),
+                    }),
                   );
                 } else {
                   toast.success(
-                    `Sessão de foco concluída! (+${timeStr} registrados)`,
+                    tStoreMsg("sessionCompletedLoggedToast", {
+                      time: timeStr,
+                    }),
                   );
                 }
               }
@@ -491,10 +642,10 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             return true;
           }
 
-          toast.error(res.error || "Falha ao salvar sessão de foco.");
+          toast.error(res.error || tStoreMsg("saveSessionFailedToast"));
           return false;
         } catch {
-          toast.error("Erro ao salvar sessão de foco no servidor.");
+          toast.error(tStoreMsg("saveSessionServerErrorToast"));
           return false;
         }
       },
@@ -570,9 +721,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             : DEFAULT_POMO_MINUTES * 60;
 
         if (totalSecs <= 1) {
-          toast.info(
-            "O tempo deste cupom já está esgotado! Clique no botão de Concluir (Check) para resgatá-lo.",
-          );
+          toast.info(tStoreMsg("couponAlreadyDepletedToast"));
           return;
         }
 
@@ -590,7 +739,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             target: {
               type: "inventory",
               id: item.inventoryItemId || "",
-              name: item.rewardName || "Item de Foco",
+              name: item.rewardName || tStoreMsg("defaultItemName"),
               icon: item.rewardIcon,
               remainingSeconds: totalSecs,
               targetMinutes: Math.ceil(totalSecs / 60),
@@ -678,8 +827,42 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         updateDocumentTitle(get());
         startGlobalTicker(get().tick);
         toast.success(
-          `Vínculo alterado para "${activity.name}". O tempo continua rodando!`,
+          tStoreMsg("targetTransferredToast", { name: activity.name }),
         );
+      },
+
+      syncTargetMetadata: (metadata) => {
+        const currentTarget = get().target;
+        if (
+          !currentTarget ||
+          !metadata.id ||
+          currentTarget.id !== metadata.id
+        ) {
+          return;
+        }
+
+        const hasNameChange =
+          metadata.name !== undefined && metadata.name !== currentTarget.name;
+        const hasIconChange =
+          metadata.icon !== undefined && metadata.icon !== currentTarget.icon;
+        const hasMinutesChange =
+          metadata.targetMinutes !== undefined &&
+          metadata.targetMinutes !== currentTarget.targetMinutes;
+
+        if (!hasNameChange && !hasIconChange && !hasMinutesChange) {
+          return;
+        }
+
+        set({
+          target: {
+            ...currentTarget,
+            name: metadata.name ?? currentTarget.name,
+            icon: metadata.icon ?? currentTarget.icon,
+            targetMinutes:
+              metadata.targetMinutes ?? currentTarget.targetMinutes,
+          },
+        });
+        updateDocumentTitle(get());
       },
     }),
     {

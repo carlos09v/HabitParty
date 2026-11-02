@@ -12,17 +12,16 @@ import {
   Sparkles,
   Timer,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { type CSSProperties, type HTMLAttributes, memo } from "react";
 import { getFocusIcon } from "@/constants/focus";
 import { getRewardIcon, PACKAGE_LEVEL_COLOR } from "@/constants/reward";
+import { useFocusTimerStore } from "@/store/focusTimerStore";
 import type { FocusActivity } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn } from "@/utils";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
-import {
-  formatBackpackItemRemainingTime,
-  isBackpackItemTimeDepleted,
-} from "@/utils/focusFormatters";
+import { isBackpackItemTimeDepleted } from "@/utils/focusFormatters";
 import { BACKEND_TO_UI_PACKAGE } from "@/utils/rewardMapper";
 
 export interface FocusCardBaseProps {
@@ -65,6 +64,7 @@ export type FocusCardProps =
  * Memoizado para evitar re-renders desnecessários durante drag-and-drop ou interações no palco.
  */
 export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
+  const t = useTranslations("focus.card");
   const {
     isActiveTarget = false,
     isTimerRunning = false,
@@ -101,8 +101,17 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
   const isTimeDepleted = isBackpackItemTimeDepleted(item?.remainingSeconds);
 
   const title = isActivity
-    ? activity?.name
-    : item?.rewardName || "Item de Foco";
+    ? activity?.name || ""
+    : item?.rewardName || t("defaultItemName");
+
+  const formatLocalizedRemainingTime = (seconds: number): string => {
+    if (seconds <= 0) return t("timeCompleted");
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    if (m > 0 && s > 0) return t("remainingMinSec", { m, s });
+    if (m > 0) return t("remainingMin", { m });
+    return t("remainingSec", { s });
+  };
 
   const handleCardClick = (e?: React.MouseEvent) => {
     if (isLocked) {
@@ -139,6 +148,20 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
       return;
     }
     if (isActiveTarget && onToggleTimer) {
+      if (isActivity && activity) {
+        useFocusTimerStore.getState().syncTargetMetadata({
+          id: activity.id,
+          name: activity.name,
+          icon: activity.icon,
+          targetMinutes: activity.targetTimeMinutes,
+        });
+      } else if (!isActivity && item) {
+        useFocusTimerStore.getState().syncTargetMetadata({
+          id: item.inventoryItemId,
+          name: item.rewardName,
+          icon: item.rewardIcon,
+        });
+      }
       onToggleTimer();
     } else {
       if (isActivity && activity) {
@@ -224,7 +247,7 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
             {isLocked && (
               <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gold/15 text-gold border border-gold/30 text-tiny font-bold shrink-0">
                 <Lock size={10} />
-                Pausada 👑
+                {t("pausedBadge")}
               </span>
             )}
 
@@ -235,14 +258,16 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
                   packageBadgeColor,
                 )}
               >
-                {uiPackageLevel}
+                {item?.rewardPackageLevel
+                  ? t(`packageLevels.${item.rewardPackageLevel}`)
+                  : uiPackageLevel}
               </span>
             )}
 
             {isActiveTarget && (
               <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gold/20 text-gold border border-gold/40 text-tiny font-bold animate-pulse shrink-0">
                 <span className="w-1.5 h-1.5 rounded-full bg-gold" />
-                No Timer
+                {t("inTimerBadge")}
               </span>
             )}
           </div>
@@ -253,8 +278,10 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
               <span className="flex items-center gap-1">
                 <Timer size={12} className="text-neutral-500" />
                 {activity?.recordType === "POMO"
-                  ? `Pomodoro (${activity?.targetTimeMinutes || 35}m)`
-                  : "Cronômetro Livre"}
+                  ? t("pomodoroDuration", {
+                      minutes: activity?.targetTimeMinutes || 35,
+                    })
+                  : t("freeStopwatch")}
               </span>
             </div>
           ) : item?.remainingSeconds !== undefined &&
@@ -269,12 +296,12 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
                 size={11}
                 className={isTimeDepleted ? "text-emerald-400" : "text-gold"}
               />
-              {formatBackpackItemRemainingTime(item.remainingSeconds)}
+              {formatLocalizedRemainingTime(item.remainingSeconds)}
             </span>
           ) : (
             <span className="flex items-center gap-1 text-tiny text-neutral-400 leading-none mt-0.5">
               <Sparkles size={11} />
-              Cupom Ativo
+              {t("activeCoupon")}
             </span>
           )}
         </div>
@@ -299,8 +326,8 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
               );
               if (item) props.onConsume?.(item);
             }}
-            aria-label={`Concluir item ${title}`}
-            title="Tempo esgotado! Clique para concluir e consumir este item"
+            aria-label={t("completeItemAria", { title })}
+            title={t("completeItemTitle")}
             className={cn(
               "flex items-center justify-center rounded-lg border transition-all cursor-pointer bg-emerald-500 hover:bg-emerald-400 text-neutral-950 border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] animate-pulse",
               isCompact ? "w-8 h-8" : "w-9 h-9",
@@ -315,8 +342,8 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
               e.stopPropagation();
               props.onLockedClick?.();
             }}
-            aria-label={`Atividade ${title} pausada no plano Free. Clique para desbloquear com Premium`}
-            title="Atividade pausada no plano Free (máx. 4 ativas). Assine o Premium para desbloquear 👑"
+            aria-label={t("lockedActivityAria", { title })}
+            title={t("lockedActivityTitle")}
             className={cn(
               "flex items-center justify-center rounded-lg border transition-all cursor-pointer bg-gold/10 hover:bg-gold/20 text-gold border-gold/30 hover:border-gold hover:shadow-glow-gold-xs active:scale-95",
               isCompact ? "w-8 h-8" : "w-9 h-9",
@@ -331,34 +358,32 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
             aria-label={
               isActiveTarget
                 ? isTimerRunning
-                  ? `Pausar foco em ${title}`
-                  : `Continuar foco em ${title}`
-                : `Iniciar foco em ${title}`
+                  ? t("pauseFocusAria", { title })
+                  : t("resumeFocusAria", { title })
+                : t("startFocusAria", { title })
             }
             title={
               isActiveTarget
                 ? isTimerRunning
-                  ? "Pausar Foco"
-                  : "Continuar Foco"
-                : "Iniciar Foco"
+                  ? t("pauseFocusTitle")
+                  : t("resumeFocusTitle")
+                : t("startFocusTitle")
             }
             className={cn(
               "flex items-center justify-center rounded-lg border transition-all cursor-pointer",
               isCompact ? "w-8 h-8" : "w-9 h-9",
               isActiveTarget
-                ? "bg-gold text-neutral-900 border-gold font-bold shadow-glow-gold-xs hover:bg-gold-hover"
+                ? "bg-gold text-on-gold border-gold font-bold shadow-glow-gold-xs hover:bg-gold-hover"
                 : "bg-surface/80 hover:bg-gold/20 text-neutral-200 hover:text-gold border-primary/30 hover:border-gold/50",
             )}
           >
             {isActiveTarget && isTimerRunning ? (
-              <Pause size={isCompact ? 14 : 16} className="fill-neutral-900" />
+              <Pause size={isCompact ? 14 : 16} className="fill-on-gold" />
             ) : (
               <Play
                 size={isCompact ? 14 : 16}
                 className={
-                  isActiveTarget
-                    ? "fill-neutral-900 ml-0.5"
-                    : "fill-current ml-0.5"
+                  isActiveTarget ? "fill-on-gold ml-0.5" : "fill-current ml-0.5"
                 }
               />
             )}

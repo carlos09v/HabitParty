@@ -1,7 +1,10 @@
 package com.habitparty.adapters.out.persistence;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.data.domain.PageRequest;
@@ -56,8 +59,52 @@ public class EmailDispatchLogAdapter implements EmailDispatchLogRepository {
   }
 
   @Override
+  public long countByStatusAndSentAtAfter(
+      com.habitparty.core.domain.enums.EmailDispatchStatus status,
+      LocalDateTime date) {
+    return repository.countByStatusAndSentAtAfter(status, date);
+  }
+
+  @Override
   public long countByUserIdAndSentAtAfter(UUID userId, LocalDateTime date) {
     return repository.countByUserIdAndSentAtAfter(userId, date);
+  }
+
+  @Override
+  public long countByUserIdAndStatusAndSentAtAfter(
+      UUID userId,
+      com.habitparty.core.domain.enums.EmailDispatchStatus status,
+      LocalDateTime date) {
+    return repository.countByUserIdAndStatusAndSentAtAfter(userId, status, date);
+  }
+
+  @Override
+  public Map<UUID, Long> countByUserIdsAndSentAtAfter(Collection<UUID> userIds, LocalDateTime date) {
+    if (userIds == null || userIds.isEmpty()) {
+      return Map.of();
+    }
+    List<Object[]> rows = repository.countByUserIdsAndSentAtAfter(userIds, date);
+    Map<UUID, Long> result = new HashMap<>(rows.size());
+    for (Object[] row : rows) {
+      result.put((UUID) row[0], ((Number) row[1]).longValue());
+    }
+    return result;
+  }
+
+  @Override
+  public Map<UUID, Long> countByUserIdsAndStatusAndSentAtAfter(
+      Collection<UUID> userIds,
+      com.habitparty.core.domain.enums.EmailDispatchStatus status,
+      LocalDateTime date) {
+    if (userIds == null || userIds.isEmpty()) {
+      return Map.of();
+    }
+    List<Object[]> rows = repository.countByUserIdsAndStatusAndSentAtAfter(userIds, status, date);
+    Map<UUID, Long> result = new HashMap<>(rows.size());
+    for (Object[] row : rows) {
+      result.put((UUID) row[0], ((Number) row[1]).longValue());
+    }
+    return result;
   }
 
   @Override

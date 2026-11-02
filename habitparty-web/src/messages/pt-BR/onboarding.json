@@ -1,0 +1,122 @@
+{
+  "onboarding": {
+    "metadata": {
+      "title": "Configuração Inicial — HabitParty",
+      "description": "Personalize seu modo de uso, crie seu primeiro ambiente e defina a aparência inicial."
+    },
+    "layout": {
+      "headerBadge": "Configuração Inicial",
+      "stepIndicator": "Passo {current} de {total}",
+      "copyright": "© {year} HabitParty. Todos os direitos reservados."
+    },
+    "wizard": {
+      "badge": "Personalização",
+      "title": "Personalize sua Experiência",
+      "subtitle": "Vamos calibrar sua jornada no HabitParty. Escolha seu objetivo principal para prepararmos seu primeiro espaço.",
+      "submit": "Criar Ambiente e Começar Minha Jornada",
+      "submitting": "Preparando seu ambiente e dashboard...",
+      "redirectHint": "Você será direcionado diretamente ao painel principal ao concluir.",
+      "validation": {
+        "nameRequired": "Por favor, digite um nome para o seu primeiro ambiente.",
+        "nameMaxLength": "O nome do ambiente deve ter até 25 caracteres.",
+        "createFailed": "Não foi possível criar o ambiente. Tente novamente em instantes.",
+        "invalidId": "O ambiente foi criado sem um identificador válido."
+      },
+      "successToast": "Ambiente \"{name}\" criado com sucesso! Bem-vindo(a) ao HabitParty!"
+    },
+    "usageModes": {
+      "sectionTitle": "Qual será o seu principal modo de uso?",
+      "modes": {
+        "personal": {
+          "title": "Pessoal & Rotina",
+          "description": "Hábitos saudáveis, autocuidado e metas diárias.",
+          "defaultWorkspace": "Vida Pessoal & Rotina",
+          "chips": [
+            "Vida Pessoal & Rotina",
+            "Saúde & Bem-Estar",
+            "Hábitos & Autocuidado",
+            "Finanças & Orçamento",
+            "Metas & Projetos",
+            "Família & Casa"
+          ]
+        },
+        "studies": {
+          "title": "Estudos & Formação",
+          "description": "Disciplinas, revisões, leituras e cursos acadêmicos.",
+          "defaultWorkspace": "Estudos & Formação",
+          "chips": [
+            "Estudos & Formação",
+            "Faculdade & Cursos",
+            "Concursos & Provas",
+            "Idiomas & Leitura",
+            "Desenvolvimento Tech",
+            "Pesquisa & Artigos"
+          ]
+        },
+        "work": {
+          "title": "Trabalho & Projetos",
+          "description": "Demandas profissionais, metas e entregas de carreira.",
+          "defaultWorkspace": "Trabalho & Carreira",
+          "chips": [
+            "Trabalho & Carreira",
+            "Projetos & Demandas",
+            "Freelance & Clientes",
+            "Gestão & Negócios",
+            "Metas Profissionais",
+            "Estúdio Criativo"
+          ]
+        },
+        "all": {
+          "title": "Geral & Equilíbrio",
+          "description": "Tudo em um só espaço integrado para seu dia a dia.",
+          "defaultWorkspace": "Meu Espaço Geral",
+          "chips": [
+            "Meu Espaço Geral",
+            "Foco Diário & Metas",
+            "Equilíbrio & Rotina",
+            "Projetos Pessoais",
+            "Produtividade Total",
+            "Dia a Dia & Hábitos"
+          ]
+        }
+      }
+    },
+    "workspaceSetup": {
+      "title": "Seu Primeiro Ambiente de Trabalho",
+      "badge": "⭐ Essencial",
+      "description": "Ambientes organizam suas tarefas, rotinas e hábitos por contexto. Você poderá criar mais ambientes depois no painel.",
+      "label": "Nome do Ambiente",
+      "placeholder": "Ex: Vida Pessoal, Estudos...",
+      "hint": "Máximo de 25 caracteres.",
+      "suggestionsLabel": "Sugestões rápidas para o seu foco:"
+    },
+    "experienceMode": {
+      "title": "Estilo de Experiência & Interface",
+      "settingsHint": "Altere quando quiser nas configurações",
+      "densityLabel": "Densidade:",
+      "densityStandard": "Padrão",
+      "densityCompact": "Compacto",
+      "soundsLabel": "Sons de UI:",
+      "soundsActive": "Ativos",
+      "soundsMuted": "Mudo",
+      "modes": {
+        "PRODUCTIVITY": {
+          "title": "Foco & Produtividade",
+          "badge": "Executivo",
+          "description": "Interface limpa e minimalista. Oculta moedas, caixas e sons para foco absoluto nas entregas."
+        },
+        "GAMIFIED": {
+          "title": "Imersão Gamificada (RPG)",
+          "badge": "RPG & Dopamina",
+          "description": "Ganhe moedas, XP e enfrente o Modo Hardcore. Compre recompensas reais e derrote a inércia."
+        }
+      }
+    },
+    "workspaceActions": {
+      "createError": "Falha ao criar o workspace. Tente novamente.",
+      "updateError": "Falha ao atualizar o workspace.",
+      "deleteError": "Falha ao excluir o workspace.",
+      "serverError": "Erro interno de comunicação com o servidor."
+    }
+  }
+}

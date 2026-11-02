@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { memo } from "react";
 import { GamifiedItemCard } from "@/components/ui/GamifiedItemCard";
 import type { InventoryCardProps } from "@/types/inventory";
@@ -18,10 +19,16 @@ export const InventoryCard = memo(function InventoryCard({
   isCompact = false,
 }: InventoryCardProps) {
   const router = useRouter();
+  const t = useTranslations("inventory.card");
   const reward = item.reward;
 
   const { isInFocus, actionLabel, secondaryActionLabel } =
-    getInventoryItemActionMeta(item);
+    getInventoryItemActionMeta(item, {
+      openInFocus: t("openInFocus"),
+      openBox: t("openBox"),
+      sendToFocus: t("sendToFocus"),
+      use: t("use"),
+    });
 
   const handleAction = () => {
     executeInventoryItemAction(item, {
@@ -49,6 +56,7 @@ export const InventoryCard = memo(function InventoryCard({
       isCompact={isCompact}
       quantity={item.quantity}
       inUse={isInFocus}
+      isActiveFocusSession={isInFocus}
       actionLabel={actionLabel}
       onAction={handleAction}
       secondaryActionLabel={secondaryActionLabel}

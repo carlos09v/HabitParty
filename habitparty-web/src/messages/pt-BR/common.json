@@ -1,0 +1,372 @@
+{
+  "metadata": {
+    "title": "HabitParty | Produtividade e Gamificação",
+    "description": "Sistema inteligente de gestão de rotinas, hábitos, tarefas e recompensas com foco e gamificação opcional."
+  },
+  "common": {
+    "language": "Idioma",
+    "english": "English",
+    "portuguese": "Português (BR)",
+    "save": "Salvar",
+    "saving": "Salvando...",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "close": "Fechar",
+    "edit": "Editar",
+    "delete": "Excluir",
+    "create": "Criar",
+    "add": "Adicionar",
+    "search": "Buscar...",
+    "loading": "Carregando...",
+    "back": "Voltar",
+    "next": "Continuar",
+    "optional": "opcional",
+    "free": "Free",
+    "premium": "Premium",
+    "yes": "Sim",
+    "no": "Não",
+    "all": "Todas",
+    "none": "Nenhuma"
+  },
+  "ui": {
+    "languageToggle": {
+      "label": "Idioma",
+      "switchToPtAria": "Mudar idioma para Português (BR)",
+      "switchToEnAria": "Mudar idioma para Inglês (US)",
+      "switchToPtTitle": "Alternar para Português (Brasil)",
+      "switchToEnTitle": "Alternar para English (US)"
+    },
+    "themeToggle": {
+      "labelLight": "Tema Claro",
+      "labelDark": "Tema Escuro",
+      "switchToDarkIconAria": "Ativar tema escuro",
+      "switchToLightIconAria": "Ativar tema claro",
+      "switchToDarkRowAria": "Tema Claro — ativar tema escuro",
+      "switchToLightRowAria": "Tema Escuro — ativar tema claro",
+      "switchToDarkTitle": "Alternar para Tema Escuro",
+      "switchToLightTitle": "Alternar para Tema Claro"
+    },
+    "founderBadge": {
+      "label": "Fundador",
+      "title": "Membro Fundador — Insígnia Vitalícia Exclusiva dos Primeiros 30 Apoiadores"
+    },
+    "input": {
+      "showPassword": "Exibir senha",
+      "hidePassword": "Ocultar senha"
+    },
+    "select": {
+      "placeholder": "Selecione uma opção",
+      "emptyMessage": "Sem itens disponíveis."
+    },
+    "datePicker": {
+      "placeholder": "Selecione uma data...",
+      "today": "Hoje",
+      "tomorrow": "Amanhã",
+      "clear": "Limpar",
+      "noDueDate": "Sem prazo",
+      "dialogAriaLabel": "Selecionar data",
+      "prevMonth": "Mês anterior",
+      "nextMonth": "Próximo mês",
+      "selectMonth": "Selecionar mês",
+      "selectYear": "Selecionar ano",
+      "clickToChangeDate": "Clique para alterar a data",
+      "clearDate": "Limpar data"
+    },
+    "loading": {
+      "defaultLabel": "Carregando..."
+    },
+    "pagination": {
+      "defaultItemLabel": "itens",
+      "navAriaLabel": "Paginação de {itemLabel}",
+      "showingRange": "Mostrando <strong>{range}</strong> de <strong>{total}</strong> {itemLabel}",
+      "prevPage": "Página anterior",
+      "nextPage": "Próxima página",
+      "pageNumber": "Página {page}"
+    },
+    "confirmationModal": {
+      "confirm": "Confirmar",
+      "cancel": "Cancelar",
+      "processing": "Processando..."
+    },
+    "welcomeCard": {
+      "hidePermanentlyTitle": "Ocultar card de orientação permanentemente (pode reativar em Configurações)",
+      "hideGuidanceCardAria": "Ocultar card de orientação",
+      "hideGuidanceLabel": "Ocultar orientação",
+      "hideCardTitle": "Ocultar card",
+      "hideCardAria": "Ocultar card",
+      "hideLabel": "Ocultar",
+      "compactModeTitle": "Modo Compacto",
+      "compactModeAria": "Modo Compacto",
+      "normalModeTitle": "Modo Normal",
+      "normalModeAria": "Modo Normal",
+      "toastHidden": "Card ocultado!",
+      "toastHiddenDesc": "Você pode reativá-lo a qualquer momento em Configurações > Preferências.",
+      "sectionAria": "Boas-vindas: {title}",
+      "collapse": "Recolher",
+      "expand": "Expandir",
+      "hideForeverTitle": "Ocultar card permanentemente",
+      "hideForeverAria": "Ocultar card de boas-vindas permanentemente",
+      "illustrationAlt": "Ilustração: {title}",
+      "confirmModalTitle": "Ocultar card de boas-vindas?",
+      "confirmModalBody1": "Este card informativo será removido <bold>permanentemente</bold> desta tela para que você tenha mais espaço útil.",
+      "confirmModalBody2": "Caso queira exibi-lo novamente, você poderá reativá-lo a qualquer momento na página de <gold>Configurações</gold>.",
+      "confirmModalConfirm": "Sim, ocultar card",
+      "confirmModalCancel": "Cancelar",
+      "toastHiddenFull": "Card de boas-vindas ocultado. Você pode reativá-lo nas Configurações.",
+      "cards": {
+        "tasks": {
+          "title": "Gerencie suas Tarefas!",
+          "pageName": "Quadro de Tarefas",
+          "description": "Orientações sobre organização de tarefas, colunas e criação de hábitos no quadro.",
+          "subtitle": "Organize seu Layout e mantenha o ritmo.",
+          "bullet0": "Organize seu Layout e arraste colunas para a melhor ordem.",
+          "bullet1": "Crie colunas apropriadas para cada contexto de tarefa.",
+          "bullet2": "Classifique entre Diário, Hábito e Afazer (ToDo)."
+        },
+        "inventory": {
+          "title": "Sua Mochila!",
+          "titleGamified": "Sua Mochila!",
+          "titleProductivity": "Seu Inventário!",
+          "pageName": "Mochila / Inventário",
+          "pageNameGamified": "Mochila",
+          "pageNameProductivity": "Inventário",
+          "description": "Instruções sobre itens adquiridos na loja e consumo no inventário.",
+          "subtitle": "Gerencie seus itens e recompensas adquiridas.",
+          "bullet0": "Guarde e organize todos os itens e cupons resgatados na Vitrine.",
+          "bullet1": "Use itens consumíveis diretamente ou envie poções para o Palco de Foco.",
+          "bullet2": "Itens de uso único desaparecem da mochila após o consumo total.",
+          "bullet2Gamified": "Itens de uso único desaparecem da mochila após o consumo total.",
+          "bullet2Productivity": "Itens de uso único desaparecem do inventário após o consumo total."
+        },
+        "rewards": {
+          "title": "Colete sua recompensa!",
+          "titleGamified": "Colete sua recompensa!",
+          "titleProductivity": "Resgate suas Recompensas!",
+          "pageName": "Vitrine de Recompensas",
+          "pageNameGamified": "Loja de Recompensas",
+          "pageNameProductivity": "Vitrine de Recompensas",
+          "description": "Dicas sobre troca de moedas por cupons e recompensas personalizadas.",
+          "subtitle": "Gerencie sua Vitrine e troque suas moedas.",
+          "bullet0": "Troque suas moedas de ouro por recompensas reais e personalizadas.",
+          "bullet1": "Cadastre novos prêmios na Vitrine: Cupons, Uso Único ou Caixas Misteriosas.",
+          "bullet2": "Todo produto resgatado é transferido diretamente para a sua Mochila.",
+          "bullet2Gamified": "Todo produto resgatado é transferido diretamente para a sua Mochila.",
+          "bullet2Productivity": "Todo produto resgatado é transferido diretamente para o seu Inventário."
+        },
+        "focus": {
+          "title": "Seu ambiente de Foco!",
+          "pageName": "Sessão de Foco",
+          "description": "Instruções do timer Pomodoro, cronômetro contínuo e sessões guiadas.",
+          "subtitle": "Aumente sua produtividade diária através de sessões guiadas e recompensas gamificadas.",
+          "bullet0": "Crie atividades importantes no seu dia a dia.",
+          "bullet1": "Faça registros utilizando Pomodoro ou Cronômetro.",
+          "bullet2": "Visualize metadados estratégicos para otimizar sua rotina."
+        },
+        "history": {
+          "title": "Extrato de Transações",
+          "titleGamified": "Cofre do Aventureiro",
+          "titleProductivity": "Extrato de Transações",
+          "pageName": "Histórico de Transações",
+          "pageNameGamified": "Cofre do Aventureiro",
+          "pageNameProductivity": "Histórico de Transações",
+          "description": "Resumo sobre moedas, XP e auditoria de transações realizadas.",
+          "subtitle": "Consulte o histórico detalhado de moedas, XP e resgates.",
+          "subtitleGamified": "Consulte seu histórico de ouro, XP e itens conquistados em suas aventuras.",
+          "subtitleProductivity": "Consulte o histórico detalhado de moedas, XP e resgates.",
+          "bullet0": "Conclusões de tarefas, diárias e hábitos registram ganhos de moedas e XP.",
+          "bullet1": "Penalidades de hábitos negativos e falhas computam deduções no saldo.",
+          "bullet2": "Resgates na loja e consumo de itens da mochila ficam arquivados neste extrato.",
+          "bullet2Gamified": "Resgates na loja e consumo de itens da mochila ficam arquivados neste cofre.",
+          "bullet2Productivity": "Resgates na loja e consumo de itens do inventário ficam arquivados neste extrato."
+        }
+      }
+    },
+    "filterBar": {
+      "navAria": "Barra de Filtros",
+      "searchDefaultPlaceholder": "Pesquisar...",
+      "clearSearchAria": "Limpar busca",
+      "clear": "Limpar",
+      "openFiltersAria": "Abrir filtros",
+      "filters": "Filtros",
+      "mobileDialogAria": "Filtros do Catálogo",
+      "closeFiltersAria": "Fechar filtros",
+      "activeCountSingular": "1 ativo",
+      "activeCountPlural": "{count} ativos",
+      "apply": "Aplicar"
+    },
+    "viewMode": {
+      "groupAria": "Modo de visualização",
+      "gridTitle": "Visualização em cards",
+      "gridAria": "Visualização em Grade",
+      "listTitle": "Visualização em lista",
+      "listAria": "Visualização em Lista"
+    },
+    "timePicker": {
+      "placeholder": "00:00",
+      "clearAria": "Limpar horário",
+      "dialogAria": "Selecionar horário",
+      "decrementHour": "Diminuir hora",
+      "incrementHour": "Aumentar hora",
+      "decrementMinute": "Diminuir minuto",
+      "incrementMinute": "Aumentar minuto",
+      "hourHeader": "Hora",
+      "minuteHeader": "Minuto",
+      "now": "Agora",
+      "clear": "Limpar",
+      "confirm": "OK"
+    },
+    "iconPicker": {
+      "groupAria": "Seleção de ícone",
+      "popoverTitle": "Selecione um Ícone",
+      "changeIconButtonTitle": "Alterar ícone ({label})",
+      "exclusiveToast": "O ícone \"{label}\" é exclusivo para membros Premium! Faça o upgrade para desbloquear.",
+      "exclusiveBadge": "{label} (Exclusivo VIP)",
+      "iconsCount": "({count} ícones)",
+      "closeAria": "Fechar seleção de ícones",
+      "compactButtonTitle": "Ícone: {label}. Clique para alterar.",
+      "change": "Alterar",
+      "icons": {
+        "sun": "Manhã",
+        "moon": "Noite",
+        "flame": "Foco",
+        "target": "Metas",
+        "dumbbell": "Treino",
+        "book": "Estudos",
+        "briefcase": "Trabalho",
+        "list": "Tarefas / Geral",
+        "check": "Geral",
+        "sparkles": "Hábitos",
+        "coffee": "Pausa",
+        "crown": "Realeza VIP",
+        "swords": "Quests VIP",
+        "trophy": "Metas VIP",
+        "shield": "Defesa",
+        "wand": "Projetos",
+        "zap": "Sprint",
+        "gem": "Tesouros",
+        "code": "Dev/Código",
+        "brain": "Foco Puro",
+        "graduation": "Acadêmico",
+        "pencil": "Escrita",
+        "laptop": "Notebook / Trabalho",
+        "headphones": "Música/Podcast",
+        "palette": "Design/Arte",
+        "gamepad": "Jogos/Lazer",
+        "rocket": "Produtividade",
+        "compass": "Planejamento",
+        "timer": "Cronômetro",
+        "gift": "Mimo",
+        "clapperboard": "Cinema/Série",
+        "music": "Música",
+        "pizza": "Lanche",
+        "ticket": "Ingresso",
+        "shopping": "Compras",
+        "tv": "TV/Anime",
+        "party": "Comemoração",
+        "beer": "Happy Hour",
+        "utensils": "Jantar",
+        "plane": "Viagem/Lazer",
+        "mystery_box": "Surpresa",
+        "medal": "Medalha Ouro",
+        "heart": "Saúde / Autocuidado",
+        "activity": "Esporte / Atividade",
+        "bike": "Ciclismo / Pedal",
+        "apple": "Nutrição / Dieta",
+        "water": "Água / Hidratação",
+        "meds": "Saúde / Remédios",
+        "home": "Casa / Doméstico",
+        "wallet": "Finanças / Contas",
+        "star": "Estrela Dourada VIP",
+        "skull": "Boss / Hardcore VIP",
+        "key": "Chave Mestra VIP",
+        "hourglass": "Ampulheta Épica VIP",
+        "mountain": "Alta Performance VIP"
+      }
+    },
+    "rewardPreview": {
+      "defaultTitle": "Recompensa estimada",
+      "defaultInlineTitle": "Recompensas",
+      "emptyMessage": "Sem ganhos estimados para esta configuração.",
+      "reducedGainBadge": "Ganho Reduzido",
+      "tooltipAria": "Detalhes de {title}",
+      "yieldWarningTitle": "Aviso sobre regras de rendimento",
+      "expectedYieldHeader": "Rendimento Previsto",
+      "zeroGainDefault": "Sem ganho de XP ou Moedas"
+    },
+    "itemCatalog": {
+      "inFocus": "Em Foco",
+      "types": {
+        "SingleUse": "Uso Único",
+        "TimeBased": "Cupom",
+        "MysteryBox": "Caixa Misteriosa"
+      },
+      "packages": {
+        "NONE": "Nenhum",
+        "BASIC": "Básico",
+        "PREMIUM": "Premium",
+        "EPIC": "Épico",
+        "LEGENDARY": "Lendário"
+      },
+      "categories": {
+        "NONE": "Nenhum",
+        "ENTERTAINMENT": "Entretenimento",
+        "WELLNESS": "Bem-estar",
+        "SHOPPING": "Compras",
+        "DEVELOPMENT": "Desenvolvimento",
+        "LUCK": "Sorte",
+        "HOBBIES": "Hobbies"
+      },
+      "fallbackDescriptions": {
+        "timeBased": "Cupom de tempo para sessão de lazer",
+        "mystery": "Contém uma recompensa surpresa aleatória",
+        "singleUse": "Recompensa de resgate imediato"
+      },
+      "durationTitle": "Duração do cupom: {minutes} minutos",
+      "couponDurationFallback": "Cupom",
+      "instantUseDuration": "Uso Imediato",
+      "statuses": {
+        "activeSession": "Sessão ativa",
+        "sealedBox": "Caixa lacrada",
+        "available": "Disponível"
+      },
+      "tooltips": {
+        "inUse": "Item em uso no Focus",
+        "openFocusSession": "Abrir a tela de Foco com esta sessão ativa",
+        "insufficientCoins": "Moedas insuficientes",
+        "actionForPrice": "{action} por {price} moedas",
+        "actionTarget": "{action} {title}"
+      },
+      "header": {
+        "item": "Item",
+        "product": "Produto",
+        "type": "Tipo",
+        "packageAndCategory": "Pacote & Categoria",
+        "duration": "Duração",
+        "action": "Ação",
+        "priceAndAction": "Preço / Ação"
+      }
+    }
+  },
+  "cookieBanner": {
+    "ariaLabel": "Aviso de cookies e privacidade",
+    "closeAriaLabel": "Fechar aviso de cookies",
+    "title": "Privacidade & Cookies",
+    "badge": "Essenciais",
+    "description": "Utilizamos apenas cookies essenciais para manter sua sessão segura, autenticar sua conta e preservar preferências como tema, idioma e workspace. Não coletamos dados para anúncios ou rastreamento de terceiros.",
+    "privacyLink": "Política de Privacidade e LGPD",
+    "acceptButton": "Entendi e Concordo"
+  },
+  "levels": {
+    "NOVICE": "Novato",
+    "APPRENTICE": "Aprendiz",
+    "ADVENTURER": "Aventureiro",
+    "CHALLENGER": "Desafiante",
+    "AMATEUR": "Amador",
+    "PROFESSIONAL": "Profissional",
+    "EXPERT": "Especialista",
+    "VETERAN": "Veterano",
+    "MASTER": "Mestre",
+    "LEGEND": "Lenda",
+    "PREMIUM_MEMBER": "Membro Premium"
+  }
+}

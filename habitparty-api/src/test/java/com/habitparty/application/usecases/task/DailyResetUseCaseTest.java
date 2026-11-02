@@ -5,10 +5,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -16,9 +16,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.support.TransactionOperations;
 
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
@@ -54,7 +54,6 @@ class DailyResetUseCaseTest {
   @Mock
   private UserRepository userPort;
 
-  @InjectMocks
   private DailyResetUseCase dailyResetUseCase;
 
   private UUID userId;
@@ -62,6 +61,11 @@ class DailyResetUseCaseTest {
 
   @BeforeEach
   void setUp() {
+    dailyResetUseCase = new DailyResetUseCase(
+        port, transactionPort, userPort,
+        Clock.systemDefaultZone(),
+        TransactionOperations.withoutTransaction());
+
     userId = UUID.randomUUID();
     user = new User(
         userId,
@@ -111,7 +115,7 @@ class DailyResetUseCaseTest {
         null
     );
 
-    when(port.findAllRecurringTasks()).thenReturn(List.of(daily));
+    when(port.findRecurringTasksPage(0, DailyResetUseCase.BATCH_SIZE)).thenReturn(List.of(daily));
 
     dailyResetUseCase.executeDailyRollover();
 
@@ -148,8 +152,8 @@ class DailyResetUseCaseTest {
         LocalDateTime.now().minusDays(2)
     );
 
-    when(port.findAllRecurringTasks()).thenReturn(List.of(habit));
-    when(userPort.findById(userId)).thenReturn(Optional.of(user));
+    when(port.findRecurringTasksPage(0, DailyResetUseCase.BATCH_SIZE)).thenReturn(List.of(habit));
+    when(userPort.findAllByIds(any())).thenReturn(List.of(user));
 
     dailyResetUseCase.executeDailyRollover();
 
@@ -198,7 +202,7 @@ class DailyResetUseCaseTest {
         null
     );
 
-    when(port.findAllRecurringTasks()).thenReturn(List.of(daily));
+    when(port.findRecurringTasksPage(0, DailyResetUseCase.BATCH_SIZE)).thenReturn(List.of(daily));
 
     dailyResetUseCase.executeDailyRollover();
 
@@ -211,7 +215,7 @@ class DailyResetUseCaseTest {
   }
 
   @Test
-  @DisplayName("Não deve penalizar Daily pendente cujo vencimento é futuro")
+  @DisplayName("Não deve penalizar nem salvar Daily pendente cujo vencimento é futuro")
   void testPendingDailyDueInFutureIsNotPenalized() {
     LocalDate tomorrow = LocalDate.now().plusDays(1);
     Daily daily = new Daily(
@@ -239,14 +243,15 @@ class DailyResetUseCaseTest {
         null
     );
 
-    when(port.findAllRecurringTasks()).thenReturn(List.of(daily));
+    when(port.findRecurringTasksPage(0, DailyResetUseCase.BATCH_SIZE)).thenReturn(List.of(daily));
 
     dailyResetUseCase.executeDailyRollover();
 
     assertEquals(2, daily.getCurrentStreak()); // streak mantido
     verifyNoInteractions(userPort);
     verifyNoInteractions(transactionPort);
-    verify(port, times(1)).saveAll(List.of(daily));
+    // Tarefa não alterada não deve gerar UPDATE
+    verify(port, never()).saveAll(any());
   }
 
   @Test
@@ -275,9 +280,9 @@ class DailyResetUseCaseTest {
         false // penalty not yet applied
     );
 
-    when(port.findAllRecurringTasks()).thenReturn(List.of());
+    when(port.findRecurringTasksPage(0, DailyResetUseCase.BATCH_SIZE)).thenReturn(List.of());
     when(port.findOverdueHardcoreTodos(any(LocalDate.class))).thenReturn(List.of(todo));
-    when(userPort.findById(userId)).thenReturn(Optional.of(user));
+    when(userPort.findAllByIds(any())).thenReturn(List.of(user));
 
     dailyResetUseCase.executeDailyRollover();
 

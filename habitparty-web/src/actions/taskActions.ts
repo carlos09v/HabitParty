@@ -1,6 +1,7 @@
 "use server";
 
 import { updateTag } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
 import { type ActionState, getErrorMessage } from "./types";
@@ -41,6 +42,7 @@ export async function createTask(
   boardColumnId: string,
   payload: CreateTaskDTO,
 ): Promise<ActionState<TaskResponseDTO>> {
+  const t = await getTranslations("tasks.actions");
   try {
     const { data, error } = await serverApi.POST(
       "/tasks/column/{boardColumnId}",
@@ -53,7 +55,7 @@ export async function createTask(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao criar tarefa."),
+        error: getErrorMessage(error, t("createTaskFailed")),
       };
     }
 
@@ -63,7 +65,7 @@ export async function createTask(
     console.error("[TaskAction:Create]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -72,6 +74,7 @@ export async function updateTask(
   taskId: string,
   payload: UpdateTaskDTO,
 ): Promise<ActionState<TaskResponseDTO>> {
+  const t = await getTranslations("tasks.actions");
   try {
     const { data, error } = await serverApi.PUT("/tasks/{taskId}", {
       params: { path: { taskId } },
@@ -81,7 +84,7 @@ export async function updateTask(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao atualizar tarefa."),
+        error: getErrorMessage(error, t("updateTaskFailed")),
       };
     }
 
@@ -91,12 +94,13 @@ export async function updateTask(
     console.error("[TaskAction:Update]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
 
 export async function deleteTask(taskId: string): Promise<ActionState> {
+  const t = await getTranslations("tasks.actions");
   try {
     const { data, error } = await serverApi.DELETE("/tasks/{taskId}", {
       params: { path: { taskId } },
@@ -105,7 +109,7 @@ export async function deleteTask(taskId: string): Promise<ActionState> {
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao excluir tarefa."),
+        error: getErrorMessage(error, t("deleteTaskFailed")),
       };
     }
 
@@ -115,7 +119,7 @@ export async function deleteTask(taskId: string): Promise<ActionState> {
     console.error("[TaskAction:Delete]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -136,6 +140,7 @@ export async function recordHabitScore(
   taskId: string,
   delta: number,
 ): Promise<ActionState<TaskResponseDTO | undefined>> {
+  const t = await getTranslations("tasks.actions");
   try {
     const { data, error } = await serverApi.POST("/tasks/{taskId}/score", {
       params: {
@@ -147,10 +152,7 @@ export async function recordHabitScore(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(
-          error,
-          "Falha ao registrar pontuação do hábito.",
-        ),
+        error: getErrorMessage(error, t("recordHabitScoreFailed")),
       };
     }
 
@@ -160,7 +162,7 @@ export async function recordHabitScore(
     console.error("[TaskAction:RecordHabitScore]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -169,6 +171,7 @@ export async function changeTaskStatus(
   taskId: string,
   newStatus: TaskStatus,
 ): Promise<ActionState<TaskResponseDTO>> {
+  const t = await getTranslations("tasks.actions");
   try {
     const { data, error } = await serverApi.PATCH("/tasks/{taskId}/status", {
       params: {
@@ -180,7 +183,7 @@ export async function changeTaskStatus(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao alterar status da tarefa."),
+        error: getErrorMessage(error, t("changeTaskStatusFailed")),
       };
     }
 
@@ -193,7 +196,7 @@ export async function changeTaskStatus(
     console.error("[TaskAction:ChangeStatus]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -201,6 +204,7 @@ export async function changeTaskStatus(
 export async function moveTasks(
   updates: UpdateTaskOrderDTO[],
 ): Promise<ActionState> {
+  const t = await getTranslations("tasks.actions");
   try {
     const { data, error } = await serverApi.PUT("/tasks/move", {
       body: updates,
@@ -209,7 +213,7 @@ export async function moveTasks(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao reordenar tarefas."),
+        error: getErrorMessage(error, t("moveTasksFailed")),
       };
     }
 
@@ -219,7 +223,7 @@ export async function moveTasks(
     console.error("[TaskAction:MoveTasks]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }

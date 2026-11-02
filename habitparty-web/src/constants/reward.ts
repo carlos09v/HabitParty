@@ -11,6 +11,7 @@ import {
   Gift,
   Headphones,
   Heart,
+  Key,
   type LucideIcon,
   Medal,
   Music,
@@ -20,6 +21,7 @@ import {
   Plane,
   Shield,
   ShoppingBag,
+  Skull,
   Smile,
   Sparkles,
   Star,
@@ -61,11 +63,12 @@ export const REWARD_ICONS: readonly IconOption[] = [
   { id: "plane", label: "Viagem/Lazer", icon: Plane },
   { id: "dumbbell", label: "Fitness", icon: Dumbbell },
   { id: "sparkles", label: "Especial", icon: Sparkles },
-  { id: "trophy", label: "Conquista", icon: Trophy },
   { id: "mystery_box", label: "Surpresa", icon: Package },
 
   // Ícones Exclusivos VIP Premium
   { id: "crown", label: "Realeza VIP", icon: Crown, isPremium: true },
+  { id: "star", label: "Estrela VIP", icon: Star, isPremium: true },
+  { id: "trophy", label: "Conquista VIP", icon: Trophy, isPremium: true },
   { id: "gem", label: "Joia Rara", icon: Gem, isPremium: true },
   { id: "swords", label: "Loot Épico", icon: Swords, isPremium: true },
   { id: "wand", label: "Artefato", icon: Wand2, isPremium: true },
@@ -74,6 +77,8 @@ export const REWARD_ICONS: readonly IconOption[] = [
   { id: "flame", label: "Chama Dourada", icon: Flame, isPremium: true },
   { id: "zap", label: "Super Recarga", icon: Zap, isPremium: true },
   { id: "heart", label: "Autocuidado VIP", icon: Heart, isPremium: true },
+  { id: "key", label: "Chave Mestra", icon: Key, isPremium: true },
+  { id: "skull", label: "Relíquia Sombria", icon: Skull, isPremium: true },
 ] as const;
 
 export function getRewardIcon(
@@ -128,28 +133,118 @@ export const REWARD_TYPE_META: Record<string, RewardTypeMeta> = {
 
 export const PACKAGE_LEVEL_COLOR: Partial<Record<string, string>> = {
   Nenhum: "text-neutral-400 bg-white/5 border-white/10",
+  NONE: "text-neutral-400 bg-white/5 border-white/10",
   Básico: "text-success-500 bg-success-500/15 border-success-500/30",
+  BASIC: "text-success-500 bg-success-500/15 border-success-500/30",
   Premium: "text-info bg-info/15 border-info/30",
+  PREMIUM: "text-info bg-info/15 border-info/30",
   Épico: "text-magenta bg-magenta/15 border-magenta/30",
+  EPIC: "text-magenta bg-magenta/15 border-magenta/30",
   Lendário: "text-gold bg-gold/15 border-gold/30",
+  LEGENDARY: "text-gold bg-gold/15 border-gold/30",
 };
 
 export const PACKAGE_LEVEL_GLOW: Partial<Record<string, string>> = {
   Básico: "border-success-500/30 group-hover:border-success-500/50",
+  BASIC: "border-success-500/30 group-hover:border-success-500/50",
   Premium: "border-info/30 group-hover:border-info/50",
+  PREMIUM: "border-info/30 group-hover:border-info/50",
   Épico: "border-magenta/30 group-hover:border-magenta/50",
+  EPIC: "border-magenta/30 group-hover:border-magenta/50",
   Lendário: "border-gold/40 group-hover:border-gold/70 shadow-glow-gold-xs",
+  LEGENDARY: "border-gold/40 group-hover:border-gold/70 shadow-glow-gold-xs",
 };
 
 export const PACKAGE_LEVEL_ICON_THEME: Partial<Record<string, string>> = {
   Básico:
     "bg-success-500/15 border-success-500/30 text-success-400 group-hover:border-success-500/50",
+  BASIC:
+    "bg-success-500/15 border-success-500/30 text-success-400 group-hover:border-success-500/50",
   Premium: "bg-info/15 border-info/30 text-info group-hover:border-info/50",
+  PREMIUM: "bg-info/15 border-info/30 text-info group-hover:border-info/50",
   Épico:
     "bg-magenta/15 border-magenta/30 text-magenta group-hover:border-magenta/50",
+  EPIC: "bg-magenta/15 border-magenta/30 text-magenta group-hover:border-magenta/50",
   Lendário:
     "bg-gold/15 border-gold/40 text-gold group-hover:border-gold/60 shadow-glow-gold-xs",
+  LEGENDARY:
+    "bg-gold/15 border-gold/40 text-gold group-hover:border-gold/60 shadow-glow-gold-xs",
 };
+
+export type PackageMessageKey =
+  | "NONE"
+  | "BASIC"
+  | "PREMIUM"
+  | "EPIC"
+  | "LEGENDARY";
+export type CategoryMessageKey =
+  | "NONE"
+  | "ENTERTAINMENT"
+  | "WELLNESS"
+  | "SHOPPING"
+  | "DEVELOPMENT"
+  | "LUCK"
+  | "HOBBIES";
+export type RewardTypeMessageKey = "SingleUse" | "TimeBased" | "MysteryBox";
+
+export function toPackageMessageKey(pkg?: string | null): PackageMessageKey {
+  switch (pkg) {
+    case "Básico":
+    case "BASIC":
+      return "BASIC";
+    case "Premium":
+    case "PREMIUM":
+      return "PREMIUM";
+    case "Épico":
+    case "EPIC":
+      return "EPIC";
+    case "Lendário":
+    case "LEGENDARY":
+      return "LEGENDARY";
+    default:
+      return "NONE";
+  }
+}
+
+export function toCategoryMessageKey(cat?: string | null): CategoryMessageKey {
+  switch (cat) {
+    case "Entretenimento":
+    case "ENTERTAINMENT":
+      return "ENTERTAINMENT";
+    case "Bem-estar":
+    case "WELLNESS":
+      return "WELLNESS";
+    case "Compras":
+    case "SHOPPING":
+      return "SHOPPING";
+    case "Desenvolvimento":
+    case "DEVELOPMENT":
+      return "DEVELOPMENT";
+    case "Sorte":
+    case "LUCK":
+      return "LUCK";
+    case "Hobbies":
+    case "HOBBIES":
+      return "HOBBIES";
+    default:
+      return "NONE";
+  }
+}
+
+export function toRewardTypeMessageKey(
+  type?: string | null,
+): RewardTypeMessageKey {
+  switch (type) {
+    case "TimeBased":
+    case "TIME_BASED":
+      return "TimeBased";
+    case "MysteryBox":
+    case "MISTERY_BOX":
+      return "MysteryBox";
+    default:
+      return "SingleUse";
+  }
+}
 
 export interface MysteryBoxDropRate {
   percentage: number;
@@ -379,14 +474,6 @@ export const REWARD_TAG_OPTIONS: SelectOption[] = [
   { label: "Físico", value: "Físico" },
 ];
 
-export const REWARD_PACKAGE_OPTIONS: SelectOption[] = [
-  { label: "Todos os Pacotes", value: "" },
-  ...(Object.keys(PACKAGE_LEVEL_COLOR) as PackageLevel[]).map((level) => ({
-    label: level,
-    value: level,
-  })),
-];
-
 export interface CouponPackageOption {
   id: PackageLevel;
   label: string;
@@ -494,13 +581,10 @@ export const REWARD_ICON_KEYWORD_MAP: Record<string, string> = {
   burger: "pizza",
   lanche: "pizza",
   comida: "pizza",
-  jantar: "pizza",
-  almoco: "pizza",
   doce: "pizza",
   chocolate: "pizza",
   sorvete: "pizza",
   ifood: "pizza",
-  restaurante: "pizza",
   comer: "pizza",
   livro: "book",
   livros: "book",
@@ -521,12 +605,7 @@ export const REWARD_ICON_KEYWORD_MAP: Record<string, string> = {
   fone: "music",
   mimo: "gift",
   presente: "gift",
-  compra: "gift",
-  compras: "gift",
-  comprar: "gift",
   roupa: "gift",
-  shopping: "gift",
-  shopper: "gift",
   trofeu: "trophy",
   premio: "trophy",
   conquista: "trophy",
@@ -543,9 +622,141 @@ export const REWARD_ICON_KEYWORD_MAP: Record<string, string> = {
   brilho: "sparkles",
   estrelas: "sparkles",
   relax: "sparkles",
-  massagem: "sparkles",
-  spa: "sparkles",
+  movie: "clapperboard",
+  movies: "clapperboard",
+  tvshow: "clapperboard",
+  episode: "clapperboard",
+  watch: "clapperboard",
+  tea: "coffee",
+  espresso: "coffee",
+  snack: "pizza",
+  food: "pizza",
+  dinner: "pizza",
+  lunch: "pizza",
+  dessert: "pizza",
+  sweet: "pizza",
+  icecream: "pizza",
+  restaurant: "pizza",
+  eat: "pizza",
+  book: "book",
+  books: "book",
+  read: "book",
+  reading: "book",
+  comic: "book",
+  study: "book",
+  music: "music",
+  song: "music",
+  listen: "music",
+  concert: "music",
+  headphones: "headphones",
+  gift: "gift",
+  treat: "gift",
+  buy: "gift",
+  clothes: "gift",
+  trophy: "trophy",
+  prize: "trophy",
+  reward: "trophy",
+  victory: "trophy",
+  goal: "trophy",
+  surprise: "mystery_box",
+  mystery: "mystery_box",
+  luck: "mystery_box",
+  special: "sparkles",
+  massage: "heart",
+  beer: "beer",
+  drink: "beer",
+  drinks: "beer",
+  party: "party",
+  celebrate: "party",
+  celebration: "party",
+  travel: "plane",
+  trip: "plane",
+  vacation: "plane",
+  flight: "plane",
+  workout: "dumbbell",
+  gym: "dumbbell",
+  fitness: "dumbbell",
+  treino: "dumbbell",
+  ticket: "ticket",
+  ingresso: "ticket",
+
+  // Saúde, Autocuidado & Spa
+  saude: "heart",
+  health: "heart",
+  autocuidado: "heart",
+  selfcare: "heart",
+  skincare: "heart",
+  massagem: "heart",
+  spa: "heart",
+  terapia: "heart",
+  bemestar: "heart",
+
+  // Compras, TV & Restaurante
+  shopping: "shopping",
+  compras: "shopping",
+  comprar: "shopping",
+  loja: "shopping",
+  tv: "tv",
+  televisao: "tv",
+  dorama: "tv",
+  utensils: "utensils",
+  jantar: "utensils",
+  janta: "utensils",
+  restaurante: "utensils",
+  almoco: "utensils",
+  gastronomia: "utensils",
+  culinaria: "utensils",
+
+  // Itens VIP & Especiais
+  coroa: "crown",
+  crown: "crown",
+  realeza: "crown",
+  estrela: "star",
+  star: "star",
+  joia: "gem",
+  gema: "gem",
+  gem: "gem",
+  diamante: "gem",
+  tesouro: "gem",
+  espada: "swords",
+  espadas: "swords",
+  swords: "swords",
+  varinha: "wand",
+  wand: "wand",
+  magia: "wand",
+  medalha: "medal",
+  medal: "medal",
+  ouro: "medal",
+  escudo: "shield",
+  shield: "shield",
+  chama: "flame",
+  fogo: "flame",
+  flame: "flame",
+  raio: "zap",
+  zap: "zap",
+  recarga: "zap",
+  chave: "key",
+  key: "key",
+  cofre: "key",
+  caveira: "skull",
+  skull: "skull",
 };
+
+export const REWARD_PACKAGE_FILTER_LEVELS: readonly PackageLevel[] = [
+  "Nenhum",
+  "Básico",
+  "Premium",
+  "Épico",
+  "Lendário",
+] as const;
+
+export const REWARD_PACKAGE_OPTIONS: SelectOption[] = [
+  { label: "Todos os Pacotes", value: "" },
+  ...REWARD_PACKAGE_FILTER_LEVELS.map((level) => ({
+    label: level,
+    value: level,
+  })),
+];
 
 export function suggestRewardIconFromTitle(title: string): string | null {
   if (!title.trim()) return null;

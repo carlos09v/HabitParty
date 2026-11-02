@@ -25,7 +25,7 @@ export function PrimaryActionButton({
     <button
       type="button"
       className={cn(
-        "flex items-center gap-1.5 rounded-lg bg-gold-warm hover:bg-gold-warm-hover active:bg-gold-warm-pressed text-neutral-950 font-bold transition-all cursor-pointer active:scale-98 shadow-sm shrink-0 select-none",
+        "flex items-center gap-1.5 rounded-lg bg-gold-warm hover:bg-gold-warm-hover active:bg-gold-warm-pressed text-on-gold font-bold transition-all cursor-pointer active:scale-98 shadow-sm shrink-0 select-none",
         isCompact ? "px-3 py-1.5 text-xs" : "px-3.5 py-2.5 text-body-s",
         className,
       )}
@@ -33,9 +33,9 @@ export function PrimaryActionButton({
     >
       <Icon
         size={isCompact ? 14 : 16}
-        className="stroke-3 shrink-0 text-neutral-950"
+        className="stroke-3 shrink-0 text-on-gold"
       />
-      <span className="text-neutral-950">{label}</span>
+      <span className="text-on-gold">{label}</span>
     </button>
   );
 }

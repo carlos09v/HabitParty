@@ -1,9 +1,11 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { createFocusRecord } from "@/actions/focusActions";
 import { MAX_FOCUS_ACTIVITIES_FREE } from "@/constants/focus";
+import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import type {
   FocusActivity,
@@ -11,7 +13,14 @@ import type {
   FocusRecordType,
 } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
-import { getTodayDateString, toLocalISOString } from "@/utils/date";
+import {
+  computeTimeWindowFromDuration,
+  formatTimeHHMM,
+  getTodayDateString,
+  minutesToTimeHHMM,
+  parseTimeToMinutes,
+  toLocalISOString,
+} from "@/utils/date";
 import { getItemRemainingMinutes } from "@/utils/focusFormatters";
 import { toLocalDateKey } from "@/utils/focusMetrics";
 import {
@@ -45,6 +54,8 @@ export function useFocusManualRecordForm({
   onSuccess,
   onClose,
 }: UseFocusManualRecordFormParams) {
+  const t = useTranslations("focus.manualRecord");
+  const locale = useLocale() as AppLocale;
   const isPremium = useUserStore((s) => s.is_Premium);
   const [isPending, startTransition] = useTransition();
 
@@ -107,7 +118,71 @@ export function useFocusManualRecordForm({
   });
 
   const [sessionDate, setSessionDate] = useState<string>(getTodayDateString);
+  const [endTimeStr, setEndTimeStr] = useState<string>(() =>
+    formatTimeHHMM(new Date()),
+  );
+  const [startTimeStr, setStartTimeStr] = useState<string>(() => {
+    const initialEnd = formatTimeHHMM(new Date());
+    return computeTimeWindowFromDuration(initialEnd, durationMinutes)
+      .startTimeStr;
+  });
   const [notes, setNotes] = useState("");
+
+  const syncDurationWithWindow = (nextDuration: number) => {
+    const clamped = Math.max(1, Math.min(1439, nextDuration));
+    setDurationMinutes(clamped);
+    const window = computeTimeWindowFromDuration(endTimeStr, clamped);
+    setStartTimeStr(window.startTimeStr);
+    setEndTimeStr(window.endTimeStr);
+  };
+
+  const syncPomosFromMinutes = (mins: number) => {
+    if (recordType === "POMO") {
+      if (mins <= 45) {
+        setCompletedPomos(1);
+      } else if (mins <= 60) {
+        setCompletedPomos(2);
+      } else {
+        setCompletedPomos(Math.max(1, Math.round(mins / 30)));
+      }
+    }
+  };
+
+  const handleStartTimeChange = (nextStart: string) => {
+    setStartTimeStr(nextStart);
+    const startMins = parseTimeToMinutes(nextStart);
+    const endMins = parseTimeToMinutes(endTimeStr);
+    if (startMins === null || endMins === null) return;
+
+    if (endMins > startMins) {
+      const diff = endMins - startMins;
+      setDurationMinutes(diff);
+      syncPomosFromMinutes(diff);
+    } else {
+      const nextEndMins = Math.min(1439, startMins + durationMinutes);
+      const safeDiff = Math.max(1, nextEndMins - startMins);
+      setEndTimeStr(minutesToTimeHHMM(startMins + safeDiff));
+      setDurationMinutes(safeDiff);
+    }
+  };
+
+  const handleEndTimeChange = (nextEnd: string) => {
+    setEndTimeStr(nextEnd);
+    const startMins = parseTimeToMinutes(startTimeStr);
+    const endMins = parseTimeToMinutes(nextEnd);
+    if (startMins === null || endMins === null) return;
+
+    if (endMins > startMins) {
+      const diff = endMins - startMins;
+      setDurationMinutes(diff);
+      syncPomosFromMinutes(diff);
+    } else {
+      const nextStartMins = Math.max(0, endMins - durationMinutes);
+      const safeDiff = Math.max(1, endMins - nextStartMins);
+      setStartTimeStr(minutesToTimeHHMM(endMins - safeDiff));
+      setDurationMinutes(safeDiff);
+    }
+  };
 
   const selectedItem = useMemo(() => {
     return backpackItems.find((b) => b.inventoryItemId === selectedItemId);
@@ -138,6 +213,7 @@ export function useFocusManualRecordForm({
       durationMinutes,
       completedPomos,
       priorFocusMinutesForDate,
+      locale,
     );
   }, [
     targetType,
@@ -145,15 +221,21 @@ export function useFocusManualRecordForm({
     durationMinutes,
     completedPomos,
     priorFocusMinutesForDate,
+    locale,
   ]);
 
   const rewardEstimate = useMemo(() => {
-    return toFocusRewardEstimate(estimatedRewards, {
-      durationMinutes,
-      completedPomos,
-      recordType,
-    });
-  }, [estimatedRewards, durationMinutes, completedPomos, recordType]);
+    return toFocusRewardEstimate(
+      estimatedRewards,
+      {
+        durationMinutes,
+        completedPomos,
+        recordType,
+        locale,
+      },
+      locale,
+    );
+  }, [estimatedRewards, durationMinutes, completedPomos, recordType, locale]);
 
   const handleTargetTypeChange = (type: "ACTIVITY" | "ITEM") => {
     setTargetType(type);
@@ -164,7 +246,7 @@ export function useFocusManualRecordForm({
       if (item) {
         setSelectedItemId(item.inventoryItemId || "");
         const mins = getItemRemainingMinutes(item.remainingSeconds);
-        if (mins > 0) setDurationMinutes(mins);
+        if (mins > 0) syncDurationWithWindow(mins);
       }
     }
   };
@@ -173,14 +255,8 @@ export function useFocusManualRecordForm({
     setSelectedActivityId(actId);
     const act = selectableActivities.find((a) => a.id === actId);
     if (act?.targetTimeMinutes) {
-      setDurationMinutes(act.targetTimeMinutes);
-      if (recordType === "POMO") {
-        setCompletedPomos(
-          act.targetTimeMinutes <= 45
-            ? 1
-            : Math.max(1, Math.round(act.targetTimeMinutes / 30)),
-        );
-      }
+      syncDurationWithWindow(act.targetTimeMinutes);
+      syncPomosFromMinutes(act.targetTimeMinutes);
     }
   };
 
@@ -189,21 +265,17 @@ export function useFocusManualRecordForm({
     const item = backpackItems.find((b) => b.inventoryItemId === itemId);
     const itemMins = getItemRemainingMinutes(item?.remainingSeconds);
     if (itemMins > 0) {
-      setDurationMinutes(itemMins);
+      syncDurationWithWindow(itemMins);
     }
   };
 
   const handlePresetSelect = (minutes: number) => {
-    setDurationMinutes(minutes);
-    if (recordType === "POMO") {
-      if (minutes <= 45) {
-        setCompletedPomos(1);
-      } else if (minutes <= 60) {
-        setCompletedPomos(2);
-      } else {
-        setCompletedPomos(Math.max(1, Math.round(minutes / 30)));
-      }
-    }
+    syncDurationWithWindow(minutes);
+    syncPomosFromMinutes(minutes);
+  };
+
+  const handleDurationChange = (minutes: number) => {
+    syncDurationWithWindow(minutes);
   };
 
   const handleCompletedPomosStep = (delta: number) => {
@@ -214,17 +286,17 @@ export function useFocusManualRecordForm({
     e.preventDefault();
 
     if (targetType === "ACTIVITY" && !selectedActivityId) {
-      toast.error("Selecione uma atividade para vincular o registro.");
+      toast.error(t("toasts.selectActivityRequired"));
       return;
     }
 
     if (targetType === "ITEM" && !selectedItemId) {
-      toast.error("Sem itens disponíveis na mochila para vincular.");
+      toast.error(t("toasts.noBackpackItems"));
       return;
     }
 
     if (durationMinutes <= 0) {
-      toast.error("A duração precisa ser maior que 0 minutos.");
+      toast.error(t("toasts.invalidDuration"));
       return;
     }
 
@@ -234,7 +306,7 @@ export function useFocusManualRecordForm({
       durationMinutes > selectedItemMinutes
     ) {
       toast.error(
-        `A duração não pode exceder o tempo restante do item (${selectedItemMinutes}m).`,
+        t("toasts.exceedsItemBalance", { minutes: selectedItemMinutes }),
       );
       return;
     }
@@ -242,44 +314,45 @@ export function useFocusManualRecordForm({
     startTransition(async () => {
       try {
         const now = new Date();
-        const todayStr = getTodayDateString();
+        let startDate: Date;
         let endDate: Date;
 
-        if (sessionDate) {
-          const [y, m, d] = sessionDate.split("-").map(Number);
-          if (sessionDate === todayStr) {
-            endDate = new Date(
-              y,
-              m - 1,
-              d,
-              now.getHours(),
-              now.getMinutes(),
-              now.getSeconds(),
-            );
-          } else {
-            // Datas retroativas usam fim de tarde como referência para não vazar para o dia anterior na madrugada
-            endDate = new Date(y, m - 1, d, 18, 0, 0);
-          }
+        const baseDateStr = sessionDate || getTodayDateString(now);
+        const [y, m, d] = baseDateStr.split("-").map(Number);
+        const startMins = parseTimeToMinutes(startTimeStr);
+        const endMins = parseTimeToMinutes(endTimeStr);
 
-          // Garante que o startDate permaneça dentro da própria data escolhida (exceto sessões > 24h)
-          const dayStart = new Date(y, m - 1, d, 0, 0, 0);
-          const dayEnd = new Date(y, m - 1, d, 23, 59, 0);
-          const candidateStart = new Date(
-            endDate.getTime() - durationMinutes * 60 * 1000,
+        if (startMins !== null && endMins !== null && endMins > startMins) {
+          startDate = new Date(
+            y,
+            m - 1,
+            d,
+            Math.floor(startMins / 60),
+            startMins % 60,
+            0,
           );
-          if (candidateStart < dayStart && durationMinutes < 1440) {
-            const shiftedEnd = new Date(
-              dayStart.getTime() + durationMinutes * 60 * 1000,
-            );
-            endDate = shiftedEnd <= dayEnd ? shiftedEnd : dayEnd;
-          }
+          endDate = new Date(
+            y,
+            m - 1,
+            d,
+            Math.floor(endMins / 60),
+            endMins % 60,
+            0,
+          );
         } else {
-          endDate = now;
+          const fallbackEndMins =
+            endMins ?? now.getHours() * 60 + now.getMinutes();
+          endDate = new Date(
+            y,
+            m - 1,
+            d,
+            Math.floor(fallbackEndMins / 60),
+            fallbackEndMins % 60,
+            0,
+          );
+          startDate = new Date(endDate.getTime() - durationMinutes * 60 * 1000);
         }
 
-        const startDate = new Date(
-          endDate.getTime() - durationMinutes * 60 * 1000,
-        );
         const startTime = toLocalISOString(startDate);
         const endTime = toLocalISOString(endDate);
 
@@ -305,24 +378,27 @@ export function useFocusManualRecordForm({
               soundEffects.playCreateSound();
               if (xp > 0 || coins > 0) {
                 toast.success(
-                  `Registro salvo! (+${xp} XP • +${coins.toFixed(2)} 🪙)`,
+                  t("toasts.recordSavedWithRewards", {
+                    xp,
+                    coins: coins.toFixed(2),
+                  }),
                 );
               } else {
-                toast.success("Registro de foco adicionado com sucesso!");
+                toast.success(t("toasts.recordSaved"));
               }
             }
           } else {
             soundEffects.playCreateSound();
-            toast.success("Tempo do item registrado com sucesso!");
+            toast.success(t("toasts.itemTimeLogged"));
           }
 
           onSuccess();
           onClose();
         } else {
-          toast.error(res.error || "Falha ao registrar sessão de foco.");
+          toast.error(res.error || t("toasts.saveFailed"));
         }
       } catch {
-        toast.error("Ocorreu um erro ao salvar o registro manual.");
+        toast.error(t("toasts.unexpectedError"));
       }
     });
   };
@@ -339,7 +415,11 @@ export function useFocusManualRecordForm({
     recordType,
     setRecordType,
     durationMinutes,
-    setDurationMinutes,
+    setDurationMinutes: handleDurationChange,
+    startTimeStr,
+    endTimeStr,
+    handleStartTimeChange,
+    handleEndTimeChange,
     completedPomos,
     setCompletedPomos,
     sessionDate,

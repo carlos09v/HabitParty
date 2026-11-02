@@ -1,10 +1,15 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect } from "react";
-import { useFocusTimerStore } from "@/store/focusTimerStore";
+import {
+  setFocusTimerTranslators,
+  useFocusTimerStore,
+} from "@/store/focusTimerStore";
 import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
 import type { FocusTimerControlsState, FocusTimerState } from "@/types/focus";
 import { formatFocusDisplayTime } from "@/utils/focusFormatters";
+import { setFocusBrowserTranslations } from "@/utils/focusTimerBrowser";
 
 interface UseFocusTimerOptions {
   onSessionSaved?: () => void;
@@ -30,6 +35,9 @@ export function useFocusSessionNotes() {
 export function useFocusTimerControls({
   onSessionSaved,
 }: UseFocusTimerOptions = {}) {
+  const tStore = useTranslations("focus.store");
+  const tNotifications = useTranslations("focus.notifications");
+
   const isActive = useFocusTimerStore((s) => s.isActive);
   const isPaused = useFocusTimerStore((s) => s.isPaused);
   const mode = useFocusTimerStore((s) => s.mode);
@@ -64,6 +72,7 @@ export function useFocusTimerControls({
   );
   const resetTarget = useFocusTimerStore((s) => s.resetTarget);
   const transferTarget = useFocusTimerStore((s) => s.transferTarget);
+  const syncTargetMetadata = useFocusTimerStore((s) => s.syncTargetMetadata);
 
   const isSoundEnabled = useSoundPreferencesStore((s) => s.timerSoundsEnabled);
   const timerSoundType = useSoundPreferencesStore((s) => s.timerSoundType);
@@ -72,6 +81,20 @@ export function useFocusTimerControls({
   const setOnSessionSavedCallback = useFocusTimerStore(
     (s) => s.setOnSessionSavedCallback,
   );
+
+  useEffect(() => {
+    setFocusTimerTranslators({
+      store: (key, values) => tStore(key as never, values as never),
+      notifications: (key, values) =>
+        tNotifications(key as never, values as never),
+    });
+    setFocusBrowserTranslations({
+      defaultDocumentTitle: tNotifications("defaultDocumentTitle"),
+      titlePausedPrefix: tNotifications("titlePausedPrefix"),
+      titleBreakPrefix: tNotifications("titleBreakPrefix"),
+      titleFocusPrefix: tNotifications("titleFocusPrefix"),
+    });
+  }, [tStore, tNotifications]);
 
   useEffect(() => {
     if (onSessionSaved) {
@@ -127,6 +150,7 @@ export function useFocusTimerControls({
     selectActivityTarget,
     resetTarget,
     transferTarget,
+    syncTargetMetadata,
   };
 }
 

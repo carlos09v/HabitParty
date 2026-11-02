@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 interface DemoPlayerHeaderProps {
   level: number;
   xp: number;
@@ -5,6 +7,7 @@ interface DemoPlayerHeaderProps {
 }
 
 export function DemoPlayerHeader({ level, xp, maxXp }: DemoPlayerHeaderProps) {
+  const t = useTranslations("landing.demo.playerHeader");
   const xpPercent = Math.min(100, Math.round((xp / maxXp) * 100));
 
   return (
@@ -16,19 +19,19 @@ export function DemoPlayerHeader({ level, xp, maxXp }: DemoPlayerHeaderProps) {
               ⚔️
             </div>
           </div>
-          <div className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full bg-gold text-neutral-900 text-[10px] font-extrabold shadow-sm">
-            Nv.{level}
+          <div className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full bg-gold text-on-gold text-[10px] font-extrabold shadow-sm">
+            {t("levelBadge", { level })}
           </div>
         </div>
         <div>
           <h3 className="text-sm font-bold text-neutral-50 flex items-center gap-2">
-            Explorador Cósmico
+            {t("name")}
             <span className="text-[10px] font-semibold text-primary-dark dark:text-primary-light px-2 py-0.5 rounded bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30">
-              Guerreiro do Foco
+              {t("titleBadge")}
             </span>
           </h3>
           <p className="text-xs text-neutral-400">
-            {xp} / {maxXp} XP para o próximo nível
+            {t("xpNextLevel", { xp, maxXp })}
           </p>
         </div>
       </div>
@@ -36,7 +39,7 @@ export function DemoPlayerHeader({ level, xp, maxXp }: DemoPlayerHeaderProps) {
       {/* Barra de Progresso de XP Dinâmica */}
       <div className="w-full sm:w-72">
         <div className="flex justify-between text-xs font-semibold mb-1">
-          <span className="text-neutral-400">Progresso de XP</span>
+          <span className="text-neutral-400">{t("xpProgressLabel")}</span>
           <span className="text-gold font-bold">{xpPercent}%</span>
         </div>
         <div className="w-full h-3 rounded-full bg-neutral-700/60 dark:bg-neutral-900/80 border border-neutral-700 dark:border-white/10 overflow-hidden relative">

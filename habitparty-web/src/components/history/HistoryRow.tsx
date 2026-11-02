@@ -1,16 +1,18 @@
 "use client";
 
 import { Timer, Trash2 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { memo } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { CoinAmount } from "@/components/ui/reward/CoinAmount";
 import { XpAmount } from "@/components/ui/reward/XpAmount";
 import { HISTORY_GRID_COLS } from "@/constants/history";
+import type { AppLocale } from "@/i18n/config";
 import type {
   TransactionHistoryResponseDTO,
   TransactionMetadata,
 } from "@/types/history";
-import { cn, resolveTransactionMetadata } from "@/utils";
+import { cn, formatCoins, resolveTransactionMetadata } from "@/utils";
 
 interface HistoryRowProps {
   transaction: TransactionHistoryResponseDTO;
@@ -26,22 +28,30 @@ function TransactionSubtext({
   isFocus,
   firstTag,
   priceSnapshot,
+  durationLabel,
+  listPriceLabel,
+  locale,
 }: {
   isFocus: boolean;
   firstTag?: string;
   priceSnapshot?: number | null;
+  durationLabel: string;
+  listPriceLabel: string;
+  locale: AppLocale;
 }) {
   if (isFocus && firstTag) {
     return (
       <span className="text-label-g text-neutral-400 font-normal flex items-center gap-1">
-        Duração: <span className="text-gold font-semibold">{firstTag}</span>
+        {durationLabel}{" "}
+        <span className="text-gold font-semibold">{firstTag}</span>
       </span>
     );
   }
   if (priceSnapshot != null && priceSnapshot > 0) {
     return (
       <span className="text-tiny text-neutral-400 font-normal inline-flex items-center gap-1">
-        Preço tabela: {priceSnapshot} <CoinIcon size={10} />
+        {listPriceLabel} {formatCoins(priceSnapshot, { locale })}{" "}
+        <CoinIcon size={10} />
       </span>
     );
   }
@@ -100,7 +110,9 @@ export const HistoryRow = memo(function HistoryRow({
   onClick,
   onRequestDelete,
 }: HistoryRowProps) {
-  const metadata = resolveTransactionMetadata(transaction);
+  const t = useTranslations("history.row");
+  const locale = useLocale() as AppLocale;
+  const metadata = resolveTransactionMetadata(transaction, locale);
   const IconComponent = metadata.icon;
 
   const gold = transaction.goldAmount ?? 0;
@@ -145,7 +157,7 @@ export const HistoryRow = memo(function HistoryRow({
           ? "md:gap-2.5 md:px-3 md:py-2 md:text-xs"
           : "md:gap-3.5 md:px-4 md:py-3 md:text-sm",
       )}
-      title="Clique para ver os detalhes da transação"
+      title={t("rowTitle")}
     >
       {/* ========================================================= */}
       {/* 1. VISUALIZAÇÃO MOBILE (< md)                              */}
@@ -159,12 +171,15 @@ export const HistoryRow = memo(function HistoryRow({
             </div>
             <div className="flex flex-col min-w-0">
               <span className="font-bold text-neutral-100 text-sm truncate">
-                {transaction.name || "Transação"}
+                {transaction.name || t("defaultTransactionName")}
               </span>
               <TransactionSubtext
                 isFocus={metadata.isFocus}
                 firstTag={tags[0]}
                 priceSnapshot={priceSnapshot}
+                durationLabel={t("durationLabel")}
+                listPriceLabel={t("listPriceLabel")}
+                locale={locale}
               />
             </div>
           </div>
@@ -205,8 +220,8 @@ export const HistoryRow = memo(function HistoryRow({
             <button
               type="button"
               onClick={handleDeleteClick}
-              title="Excluir registro do extrato"
-              aria-label="Excluir registro do extrato"
+              title={t("deleteRecordTitle")}
+              aria-label={t("deleteRecordAria")}
               className="text-neutral-400 hover:text-red-400 p-1 rounded-md hover:bg-red-500/10 transition-colors cursor-pointer"
             >
               <Trash2 size={13} />
@@ -226,14 +241,17 @@ export const HistoryRow = memo(function HistoryRow({
         <div className="flex flex-col min-w-0">
           <span
             className="font-bold text-neutral-100 truncate group-hover:text-gold transition-colors"
-            title={transaction.name || "Evento"}
+            title={transaction.name || t("defaultEventTitle")}
           >
-            {transaction.name || "Transação"}
+            {transaction.name || t("defaultTransactionName")}
           </span>
           <TransactionSubtext
             isFocus={metadata.isFocus}
             firstTag={tags[0]}
             priceSnapshot={priceSnapshot}
+            durationLabel={t("durationLabel")}
+            listPriceLabel={t("listPriceLabel")}
+            locale={locale}
           />
         </div>
       </div>
@@ -289,8 +307,8 @@ export const HistoryRow = memo(function HistoryRow({
           <button
             type="button"
             onClick={handleDeleteClick}
-            title="Excluir registro do extrato"
-            aria-label="Excluir registro do extrato"
+            title={t("deleteRecordTitle")}
+            aria-label={t("deleteRecordAria")}
             className="text-neutral-500 hover:text-red-400 p-1 rounded-md hover:bg-red-500/10 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-all cursor-pointer"
           >
             <Trash2 size={13} />

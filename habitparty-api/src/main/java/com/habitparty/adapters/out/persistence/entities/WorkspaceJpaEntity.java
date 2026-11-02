@@ -35,7 +35,7 @@ public class WorkspaceJpaEntity {
   @JoinColumn(name = "user_id", nullable = false)
   private UserJpaEntity user;
 
-  @Column(nullable = false, length = 12)
+  @Column(nullable = false, length = 25)
   private String name;
 
   @Column(name = "created_at", nullable = false, updatable = false)

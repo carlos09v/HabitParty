@@ -1,6 +1,8 @@
 "use client";
 
 import { Award, Coins, Flame, ListChecks, Timer } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import type { AppLocale } from "@/i18n/config";
 import type { FocusMetrics, FocusPeriodTab } from "@/types/focus";
 import { cn, formatCoins } from "@/utils";
 import { formatFocusMinutes } from "@/utils/focusFormatters";
@@ -18,6 +20,8 @@ export function FocusMetricsGrid({
   onPeriodChange,
   isCompact = false,
 }: FocusMetricsGridProps) {
+  const t = useTranslations("focus.metrics");
+  const locale = useLocale() as AppLocale;
   const isToday = period === "HOJE";
 
   const recordsCount = isToday
@@ -45,7 +49,7 @@ export function FocusMetricsGrid({
             isCompact ? "text-body-m" : "text-subtitle-s",
           )}
         >
-          Visão Geral
+          {t("title")}
         </h3>
 
         <div className="flex items-center rounded-lg bg-surface/80 p-0.5 border border-primary/30">
@@ -55,11 +59,11 @@ export function FocusMetricsGrid({
             className={cn(
               "px-2.5 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer",
               isToday
-                ? "bg-gold text-neutral-900 shadow-glow-gold-xs font-bold"
+                ? "bg-gold text-on-gold shadow-glow-gold-xs font-bold"
                 : "text-neutral-400 hover:text-neutral-200",
             )}
           >
-            Hoje
+            {t("todayTab")}
           </button>
           <button
             type="button"
@@ -67,11 +71,11 @@ export function FocusMetricsGrid({
             className={cn(
               "px-2.5 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer",
               !isToday
-                ? "bg-gold text-neutral-900 shadow-glow-gold-xs font-bold"
+                ? "bg-gold text-on-gold shadow-glow-gold-xs font-bold"
                 : "text-neutral-400 hover:text-neutral-200",
             )}
           >
-            Total
+            {t("totalTab")}
           </button>
         </div>
       </div>
@@ -87,7 +91,7 @@ export function FocusMetricsGrid({
           <div className="flex items-center gap-1.5 text-neutral-400 mb-0.5">
             <Timer size={13} className="text-gold shrink-0" />
             <span className="text-tiny font-bold uppercase tracking-wider text-neutral-300">
-              {isToday ? "Tempo Focado Hoje" : "Tempo Total em Foco"}
+              {isToday ? t("focusedTodayLabel") : t("totalFocusTimeLabel")}
             </span>
           </div>
           <span
@@ -101,9 +105,9 @@ export function FocusMetricsGrid({
           <span className="text-label-g text-neutral-400 font-medium">
             {isToday
               ? focusTime > 0
-                ? "tempo dedicado hoje 🎯"
-                : "nenhum foco registrado hoje"
-              : `${formatFocusMinutes(focusTime)} acumulados no total`}
+                ? t("dedicatedToday")
+                : t("noFocusToday")
+              : t("accumulatedTotal", { time: formatFocusMinutes(focusTime) })}
           </span>
         </div>
         <div className="w-10 h-10 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center text-gold shrink-0 shadow-glow-gold-xs">
@@ -122,7 +126,7 @@ export function FocusMetricsGrid({
         >
           <div className="flex items-center justify-between text-neutral-400">
             <span className="text-tiny font-medium truncate">
-              {isToday ? "Sessões (Hoje)" : "Total Sessões"}
+              {isToday ? t("sessionsTodayLabel") : t("totalSessionsLabel")}
             </span>
             <ListChecks size={13} className="text-primary-light shrink-0" />
           </div>
@@ -132,10 +136,8 @@ export function FocusMetricsGrid({
             </span>
             <span className="text-tiny text-neutral-400 truncate">
               {pomosCount > 0
-                ? `${pomosCount} pomo${pomosCount > 1 ? "s" : ""}`
-                : recordsCount === 1
-                  ? "1 registro"
-                  : `${recordsCount} registros`}
+                ? t("pomosCount", { count: pomosCount })
+                : t("recordsCount", { count: recordsCount })}
             </span>
           </div>
         </div>
@@ -149,7 +151,7 @@ export function FocusMetricsGrid({
         >
           <div className="flex items-center justify-between text-neutral-400">
             <span className="text-tiny font-medium truncate">
-              {isToday ? "Constância" : "Dias Ativos"}
+              {isToday ? t("consistencyLabel") : t("activeDaysLabel")}
             </span>
             <Flame size={13} className="text-amber-400 shrink-0" />
           </div>
@@ -163,9 +165,9 @@ export function FocusMetricsGrid({
             <span className="text-tiny text-neutral-400 truncate">
               {isToday
                 ? streakDays > 0
-                  ? "dias seguidos 🔥"
-                  : "inicie hoje!"
-                : "dias com foco"}
+                  ? t("streakDaysSub")
+                  : t("startTodaySub")
+                : t("daysWithFocusSub")}
             </span>
           </div>
         </div>
@@ -176,11 +178,11 @@ export function FocusMetricsGrid({
             "rounded-xl border border-primary/25 bg-surface/50 flex flex-col justify-between transition-all hover:border-gold/30",
             isCompact ? "p-2 gap-1" : "p-2.5 gap-1.5",
           )}
-          title="Ganhos de XP obtidos em atividades de foco. Mochila de lazer não gera XP."
+          title={t("xpTooltip")}
         >
           <div className="flex items-center justify-between text-neutral-400">
             <span className="text-tiny font-medium truncate">
-              {isToday ? "XP em Foco" : "XP Total"}
+              {isToday ? t("focusXpLabel") : t("totalXpLabel")}
             </span>
             <Award size={13} className="text-purple-400 shrink-0" />
           </div>
@@ -189,7 +191,7 @@ export function FocusMetricsGrid({
               +{xpCount}
             </span>
             <span className="text-tiny text-neutral-400 truncate">
-              atividades de foco
+              {t("focusActivitiesSub")}
             </span>
           </div>
         </div>
@@ -200,20 +202,20 @@ export function FocusMetricsGrid({
             "rounded-xl border border-primary/25 bg-surface/50 flex flex-col justify-between transition-all hover:border-gold/30",
             isCompact ? "p-2 gap-1" : "p-2.5 gap-1.5",
           )}
-          title="Moedas ganhas em atividades de foco. Mochila de lazer não gera moedas."
+          title={t("goldTooltip")}
         >
           <div className="flex items-center justify-between text-neutral-400">
             <span className="text-tiny font-medium truncate">
-              {isToday ? "Ouro Ganho" : "Ouro Total"}
+              {isToday ? t("goldEarnedLabel") : t("totalGoldLabel")}
             </span>
             <Coins size={13} className="text-gold shrink-0" />
           </div>
           <div className="flex flex-col">
             <span className="text-body-m font-bold text-gold">
-              +{formatCoins(goldCount)}
+              +{formatCoins(goldCount, { locale })}
             </span>
             <span className="text-tiny text-neutral-400 truncate">
-              atividades de foco
+              {t("focusActivitiesSub")}
             </span>
           </div>
         </div>

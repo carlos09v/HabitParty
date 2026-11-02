@@ -3,8 +3,10 @@
 import { updateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { type ActionState, getErrorMessage } from "@/actions/types";
-import { serverApi } from "@/api/server";
+import { getServerAuthToken, serverApi } from "@/api/server";
+import type { ExperienceMode } from "@/types/ui";
 import type {
   UpdateUserDTO,
   UpdateUserPasswordDTO,
@@ -16,11 +18,12 @@ export type { UpdateUserDTO, UpdateUserPasswordDTO, UserResponseDTO };
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 /**
- * Atualiza os dados de perfil do usuário (Nome, Data de Nascimento, Gênero)
+ * Atualiza os dados de perfil do usuário (Nome, Data de Nascimento, Gênero, Modo de Experiência)
  */
 export async function updateUserProfileAction(
   payload: UpdateUserDTO,
 ): Promise<ActionState<UserResponseDTO>> {
+  const t = await getTranslations("settings.userActions");
   try {
     const { data, error } = await serverApi.PUT("/users", {
       body: payload,
@@ -29,10 +32,7 @@ export async function updateUserProfileAction(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(
-          error,
-          "Falha ao atualizar o perfil. Verifique os dados.",
-        ),
+        error: getErrorMessage(error, t("updateProfileError")),
       };
     }
 
@@ -42,9 +42,18 @@ export async function updateUserProfileAction(
     console.error("[UserAction:UpdateProfile]", err);
     return {
       success: false,
-      error: "Erro de comunicação ao atualizar perfil.",
+      error: t("updateProfileNetworkError"),
     };
   }
+}
+
+/**
+ * Atualiza especificamente o Modo de Experiência (GAMIFIED | PRODUCTIVITY) do usuário no banco
+ */
+export async function updateUserExperienceModeAction(
+  experienceMode: ExperienceMode,
+): Promise<ActionState<UserResponseDTO>> {
+  return updateUserProfileAction({ experienceMode });
 }
 
 /**
@@ -53,27 +62,30 @@ export async function updateUserProfileAction(
 export async function updateUserProfilePhotoAction(
   formData: FormData,
 ): Promise<ActionState<void>> {
+  const t = await getTranslations("settings.userActions");
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("habitparty_token")?.value;
+    const token = await getServerAuthToken();
+    if (!token) {
+      return {
+        success: false,
+        error: t("unauthorizedSession"),
+      };
+    }
 
     const res = await fetch(`${API_BASE_URL}/users/photo`, {
       method: "PATCH",
       headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        Authorization: `Bearer ${token}`,
       },
       body: formData,
     });
 
     if (!res.ok) {
-      let errorMsg = "Não foi possível enviar a foto. Tente novamente.";
-      try {
-        const json = await res.json();
-        if (json?.message) errorMsg = json.message;
-      } catch {
-        // ignora erro de parse
-      }
-      return { success: false, error: errorMsg };
+      const json = await res.json().catch(() => null);
+      return {
+        success: false,
+        error: getErrorMessage(json, t("uploadPhotoError")),
+      };
     }
 
     updateTag("user");
@@ -82,7 +94,7 @@ export async function updateUserProfilePhotoAction(
     console.error("[UserAction:UpdatePhoto]", err);
     return {
       success: false,
-      error: "Erro de rede ao enviar foto de perfil.",
+      error: t("uploadPhotoNetworkError"),
     };
   }
 }
@@ -93,6 +105,7 @@ export async function updateUserProfilePhotoAction(
 export async function updateUserPasswordAction(
   payload: UpdateUserPasswordDTO,
 ): Promise<ActionState<void>> {
+  const t = await getTranslations("settings.userActions");
   try {
     const { error } = await serverApi.PATCH("/users/password", {
       body: payload,
@@ -101,10 +114,7 @@ export async function updateUserPasswordAction(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(
-          error,
-          "Falha ao alterar senha. Verifique a senha atual.",
-        ),
+        error: getErrorMessage(error, t("updatePasswordError")),
       };
     }
 
@@ -113,7 +123,7 @@ export async function updateUserPasswordAction(
     console.error("[UserAction:UpdatePassword]", err);
     return {
       success: false,
-      error: "Erro ao comunicar com o servidor para troca de senha.",
+      error: t("updatePasswordNetworkError"),
     };
   }
 }
@@ -122,16 +132,14 @@ export async function updateUserPasswordAction(
  * Exclui a conta do usuário conectado
  */
 export async function deleteUserAccountAction(): Promise<ActionState<void>> {
+  const t = await getTranslations("settings.userActions");
   try {
     const { error } = await serverApi.DELETE("/users/me");
 
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(
-          error,
-          "Não foi possível excluir a conta. Tente novamente.",
-        ),
+        error: getErrorMessage(error, t("deleteAccountError")),
       };
     }
 
@@ -142,7 +150,7 @@ export async function deleteUserAccountAction(): Promise<ActionState<void>> {
     console.error("[UserAction:DeleteAccount]", err);
     return {
       success: false,
-      error: "Erro de comunicação ao excluir conta.",
+      error: t("deleteAccountNetworkError"),
     };
   }
 

@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Size;
 
 public record CreateWorkspaceDTO(
   @NotBlank(message = "O nome não pode ser vazio")
-  @Size(max = 12, message = "O nome deve ter até 12 caracteres")
+  @Size(max = 25, message = "O nome deve ter até 25 caracteres")
   String name
 ) {
 

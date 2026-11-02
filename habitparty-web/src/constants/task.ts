@@ -173,13 +173,13 @@ export const DAYS_OF_WEEK_OPTIONS: readonly {
   id: DailyDaysOfWeek;
   label: string;
 }[] = [
+  { id: "SUNDAY", label: "Dom" },
   { id: "MONDAY", label: "Seg" },
   { id: "TUESDAY", label: "Ter" },
   { id: "WEDNESDAY", label: "Qua" },
   { id: "THURSDAY", label: "Qui" },
   { id: "FRIDAY", label: "Sex" },
   { id: "SATURDAY", label: "Sab" },
-  { id: "SUNDAY", label: "Dom" },
 ] as const;
 
 /** Opções de importância para Hábitos. */
@@ -221,6 +221,20 @@ export const TODO_PRIORITY_OPTIONS: readonly {
   { id: "MEDIUM", label: "Média" },
   { id: "HIGH", label: "Alta" },
 ] as const;
+
+/** Chaves de prioridade normalizadas usadas nos dicionários de i18n. */
+export type PriorityMessageKey = "NONE" | "LOW" | "MEDIUM" | "HIGH";
+
+/**
+ * Normaliza o valor de prioridade (o enum do backend usa `Low` em vez de `LOW`)
+ * para a chave usada nos dicionários de tradução.
+ */
+export function toPriorityMessageKey(
+  priority: string | null | undefined,
+): PriorityMessageKey {
+  const key = (priority ?? "NONE").toUpperCase();
+  return key === "LOW" || key === "MEDIUM" || key === "HIGH" ? key : "NONE";
+}
 
 /** Metadados e cores de dificuldade de tarefas (Diárias e Afazeres). */
 export const TASK_DIFFICULTY_META: Record<
@@ -267,6 +281,22 @@ export const TASK_DIFFICULTY_META: Record<
     color: "text-purple-400",
     badgeColor: "text-purple-300 bg-purple-500/20 border-purple-500/40",
   },
+};
+
+/** Cores de indicador em ponto (dot) por dificuldade (Modo Produtividade). */
+export const DIFFICULTY_DOT_COLORS: Record<TaskDifficultyOption, string> = {
+  TRIVIAL: "bg-info shadow-[0_0_6px_rgba(56,189,248,0.5)]",
+  EASY: "bg-success-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]",
+  MEDIUM: "bg-warning-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]",
+  HARD: "bg-purple-400 shadow-[0_0_6px_rgba(192,132,252,0.5)]",
+};
+
+/** Cores de ícone de espada por dificuldade (Modo Gamificado). */
+export const DIFFICULTY_SWORD_COLORS: Record<TaskDifficultyOption, string> = {
+  TRIVIAL: "text-info drop-shadow-[0_0_5px_rgba(56,189,248,0.45)]",
+  EASY: "text-success-500 drop-shadow-[0_0_5px_rgba(34,197,94,0.45)]",
+  MEDIUM: "text-warning-500 drop-shadow-[0_0_5px_rgba(245,158,11,0.45)]",
+  HARD: "text-purple-400 drop-shadow-[0_0_5px_rgba(192,132,252,0.55)]",
 };
 
 /** Metadados e cores de prioridade de tarefas. */

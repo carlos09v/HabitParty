@@ -1,5 +1,4 @@
-"use client";
-
+import { useTranslations } from "next-intl";
 import { FOCUS_POMO_PRESETS } from "@/constants/focus";
 import { cn } from "@/utils";
 
@@ -12,9 +11,13 @@ export function FocusDurationPresets({
   totalDurationSeconds,
   onChangeDuration,
 }: FocusDurationPresetsProps) {
+  const t = useTranslations("focus.stage");
+
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-tiny text-neutral-400 mr-1">Duração:</span>
+      <span className="text-tiny text-neutral-400 mr-1">
+        {t("durationLabel")}
+      </span>
       {FOCUS_POMO_PRESETS.map((m) => (
         <button
           key={m}
@@ -23,7 +26,7 @@ export function FocusDurationPresets({
           className={cn(
             "px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all cursor-pointer",
             totalDurationSeconds === m * 60
-              ? "bg-gold text-neutral-900 border-gold font-bold shadow-glow-gold-xs"
+              ? "bg-gold text-on-gold border-gold font-bold shadow-glow-gold-xs"
               : "bg-surface/80 border-primary/30 text-neutral-300 hover:text-gold hover:border-gold/40",
           )}
         >

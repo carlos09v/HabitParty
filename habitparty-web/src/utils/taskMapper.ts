@@ -152,7 +152,7 @@ export function buildUpdateTaskPayload(
   const isHabit = taskType === "habit";
   const isDaily = taskType === "daily";
 
-  const priority = (merged.priority as TaskPriorityOption) || "MEDIUM";
+  const priority = (merged.priority as TaskPriorityOption) || "NONE";
   const difficulty = normalizeTaskDifficulty(merged.difficulty);
 
   const payload: UpdateTaskDTO = {
@@ -231,7 +231,7 @@ export function buildCreateTaskPayloadFromTask(task: Task): CreateTaskDTO {
       }),
     }),
     ...(isTodo && {
-      priority: (task.priority as TaskPriorityOption) || "MEDIUM",
+      priority: (task.priority as TaskPriorityOption) || "NONE",
       dueDate: task.dueDate || undefined,
       reminderType: task.reminderType || "NONE",
       sendEmailReminder: Boolean(task.sendEmailReminder),
@@ -306,7 +306,7 @@ export function buildQuickCreateTaskPayload(
         habitType,
         resetCounter,
         importanceType,
-        priority: "MEDIUM",
+        priority: extraPayload?.priority || "NONE",
         difficulty: "EASY",
         isHardcoreModeEnabled: false,
       },
@@ -322,7 +322,7 @@ export function buildQuickCreateTaskPayload(
         habitType,
         resetCounter,
         importanceType,
-        priority: "MEDIUM",
+        priority: extraPayload?.priority || "NONE",
         difficulty: "EASY",
         isHardcoreModeEnabled: false,
         order: 0,
@@ -336,6 +336,8 @@ export function buildQuickCreateTaskPayload(
     const repeatEvery = extraPayload?.repeatEvery || 1;
     const daysOfWeek = extraPayload?.daysOfWeek || ALL_WEEK_DAYS;
     const monthlyOption = extraPayload?.monthlyOption || "DAY_OF_THE_MONTH";
+    const difficulty = extraPayload?.difficulty || "MEDIUM";
+    const priority = extraPayload?.priority || "NONE";
 
     return {
       payload: {
@@ -346,8 +348,8 @@ export function buildQuickCreateTaskPayload(
         repeatEvery,
         ...(repeatType === "WEEKLY" && { daysOfWeek }),
         ...(repeatType === "MONTHLY" && { monthlyOption }),
-        priority: "MEDIUM",
-        difficulty: "MEDIUM",
+        priority,
+        difficulty,
         isHardcoreModeEnabled: false,
       },
       optimisticTask: {
@@ -364,20 +366,25 @@ export function buildQuickCreateTaskPayload(
         repeatEvery,
         daysOfWeek: repeatType === "WEEKLY" ? daysOfWeek : undefined,
         monthlyOption: repeatType === "MONTHLY" ? monthlyOption : undefined,
-        priority: "MEDIUM",
-        difficulty: "MEDIUM",
+        priority,
+        difficulty,
         isHardcoreModeEnabled: false,
         order: 0,
       },
     };
   }
 
+  const difficulty = extraPayload?.difficulty || "MEDIUM";
+  const priority = extraPayload?.priority || "NONE";
+  const dueDate = extraPayload?.dueDate || undefined;
+
   return {
     payload: {
       name: title,
       taskType: "TODO",
-      priority: "MEDIUM",
-      difficulty: "MEDIUM",
+      priority,
+      difficulty,
+      ...(dueDate && { dueDate }),
       isHardcoreModeEnabled: false,
       reminderType: "NONE",
     },
@@ -390,8 +397,9 @@ export function buildQuickCreateTaskPayload(
       positiveCount: 0,
       negativeCount: 0,
       type: "TODO",
-      priority: "MEDIUM",
-      difficulty: "MEDIUM",
+      priority,
+      difficulty,
+      dueDate,
       isHardcoreModeEnabled: false,
       reminderType: "NONE",
       order: 0,

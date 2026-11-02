@@ -2,6 +2,10 @@ target/
 .git/
 .gitignore
 .env
+.env.*
 uploads/
 *.md
+*.log
+.vscode/
+.idea/
 HabitParty API/

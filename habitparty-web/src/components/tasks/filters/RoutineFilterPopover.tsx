@@ -1,6 +1,7 @@
 "use client";
 
 import { FilterX, SlidersHorizontal, Tag } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import {
   STATUS_FILTER_OPTIONS,
@@ -10,7 +11,9 @@ import {
   DEFAULT_BOARD_FILTERS,
   TASK_DIFFICULTY_OPTIONS,
   TODO_PRIORITY_OPTIONS,
+  toPriorityMessageKey,
 } from "@/constants/task";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type {
   BoardFilterState,
   TaskDifficultyOption,
@@ -27,6 +30,8 @@ export function RoutineFilterPopover({
   availableTags = [],
   isCompact = false,
 }: RoutineFilterPopoverProps) {
+  const t = useTranslations("tasks.filters.popover");
+  const { isGamified } = useExperienceMode();
   const [showFilterPopover, setShowFilterPopover] = useState(false);
 
   const activeFiltersCount =
@@ -71,9 +76,9 @@ export function RoutineFilterPopover({
             activeFiltersCount > 0 ? "text-gold" : "text-neutral-300",
           )}
         />
-        <span>Filtrar</span>
+        <span>{t("triggerLabel")}</span>
         {activeFiltersCount > 0 && (
-          <span className="ml-0.5 px-1.5 py-0.5 rounded-full text-tiny font-bold bg-gold text-neutral-900">
+          <span className="ml-0.5 px-1.5 py-0.5 rounded-full text-tiny font-bold bg-gold text-on-gold">
             {activeFiltersCount}
           </span>
         )}
@@ -83,7 +88,7 @@ export function RoutineFilterPopover({
         <>
           <button
             type="button"
-            aria-label="Fechar popover de filtros"
+            aria-label={t("closeAria")}
             className="fixed inset-0 z-40 cursor-default bg-transparent border-none p-0 m-0"
             onClick={() => setShowFilterPopover(false)}
           />
@@ -93,7 +98,7 @@ export function RoutineFilterPopover({
             <div className="flex items-center justify-between pb-2 border-b border-white/10 mb-3">
               <span className="text-xs font-bold text-neutral-100 flex items-center gap-1.5">
                 <SlidersHorizontal size={13} className="text-gold" />
-                Filtrar Atividades
+                {t("title")}
               </span>
               {activeFiltersCount > 0 && (
                 <button
@@ -102,7 +107,7 @@ export function RoutineFilterPopover({
                   className="flex items-center gap-1 text-tiny text-neutral-400 hover:text-danger-500 transition-colors cursor-pointer"
                 >
                   <FilterX size={12} />
-                  <span>Limpar</span>
+                  <span>{t("clear")}</span>
                 </button>
               )}
             </div>
@@ -111,7 +116,7 @@ export function RoutineFilterPopover({
               {/* 1. Tipo de Tarefa */}
               <div className="flex flex-col gap-1.5">
                 <span className="text-label-g font-semibold text-neutral-400">
-                  Tipo de Tarefa
+                  {t("typeLabel")}
                 </span>
                 <div className="grid grid-cols-2 gap-1.5">
                   {TASK_TYPE_FILTER_OPTIONS.map((opt) => (
@@ -127,20 +132,20 @@ export function RoutineFilterPopover({
                       className={cn(
                         "px-2 py-1 rounded-md text-xs font-medium transition-all text-center cursor-pointer",
                         filters.taskType === opt.id
-                          ? "bg-gold text-neutral-900 font-bold shadow-xs"
+                          ? "bg-gold text-on-gold font-bold shadow-xs"
                           : "bg-white/5 text-neutral-300 hover:bg-white/10",
                       )}
                     >
-                      {opt.label}
+                      {t(`types.${opt.id as "all" | TaskTypeOption}`)}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* 2. Dificuldade */}
+              {/* 2. Dificuldade / Esforço */}
               <div className="flex flex-col gap-1.5">
                 <span className="text-label-g font-semibold text-neutral-400">
-                  Dificuldade
+                  {isGamified ? t("difficultyLabel") : t("effortLabel")}
                 </span>
                 <div className="flex flex-wrap gap-1">
                   <button
@@ -149,11 +154,11 @@ export function RoutineFilterPopover({
                     className={cn(
                       "px-2 py-0.5 rounded-md text-xs font-medium transition-all cursor-pointer",
                       filters.difficulty === "all"
-                        ? "bg-gold text-neutral-900 font-bold"
+                        ? "bg-gold text-on-gold font-bold"
                         : "bg-white/5 text-neutral-300 hover:bg-white/10",
                     )}
                   >
-                    Todas
+                    {t("allOptions")}
                   </button>
                   {TASK_DIFFICULTY_OPTIONS.map((diff) => (
                     <button
@@ -168,11 +173,11 @@ export function RoutineFilterPopover({
                       className={cn(
                         "px-2 py-0.5 rounded-md text-xs font-medium transition-all cursor-pointer",
                         filters.difficulty === diff.id
-                          ? "bg-gold text-neutral-900 font-bold"
+                          ? "bg-gold text-on-gold font-bold"
                           : "bg-white/5 text-neutral-300 hover:bg-white/10",
                       )}
                     >
-                      {diff.label}
+                      {t(`difficulties.${diff.id}`)}
                     </button>
                   ))}
                 </div>
@@ -181,7 +186,7 @@ export function RoutineFilterPopover({
               {/* 3. Prioridade */}
               <div className="flex flex-col gap-1.5">
                 <span className="text-label-g font-semibold text-neutral-400">
-                  Prioridade
+                  {t("priorityLabel")}
                 </span>
                 <div className="flex flex-wrap gap-1">
                   <button
@@ -190,11 +195,11 @@ export function RoutineFilterPopover({
                     className={cn(
                       "px-2 py-0.5 rounded-md text-xs font-medium transition-all cursor-pointer",
                       filters.priority === "all"
-                        ? "bg-gold text-neutral-900 font-bold"
+                        ? "bg-gold text-on-gold font-bold"
                         : "bg-white/5 text-neutral-300 hover:bg-white/10",
                     )}
                   >
-                    Todas
+                    {t("allOptions")}
                   </button>
                   {TODO_PRIORITY_OPTIONS.map((p) => (
                     <button
@@ -206,11 +211,11 @@ export function RoutineFilterPopover({
                       className={cn(
                         "px-2 py-0.5 rounded-md text-xs font-medium transition-all cursor-pointer",
                         filters.priority === p.id
-                          ? "bg-gold text-neutral-900 font-bold"
+                          ? "bg-gold text-on-gold font-bold"
                           : "bg-white/5 text-neutral-300 hover:bg-white/10",
                       )}
                     >
-                      {p.label}
+                      {t(`priorities.${toPriorityMessageKey(p.id)}`)}
                     </button>
                   ))}
                 </div>
@@ -219,7 +224,7 @@ export function RoutineFilterPopover({
               {/* 4. Status */}
               <div className="flex flex-col gap-1.5">
                 <span className="text-label-g font-semibold text-neutral-400">
-                  Status
+                  {t("statusLabel")}
                 </span>
                 <div className="grid grid-cols-3 gap-1">
                   {STATUS_FILTER_OPTIONS.map((st) => (
@@ -235,11 +240,13 @@ export function RoutineFilterPopover({
                       className={cn(
                         "px-2 py-1 rounded-md text-xs font-medium transition-all text-center cursor-pointer",
                         filters.status === st.id
-                          ? "bg-gold text-neutral-900 font-bold shadow-xs"
+                          ? "bg-gold text-on-gold font-bold shadow-xs"
                           : "bg-white/5 text-neutral-300 hover:bg-white/10",
                       )}
                     >
-                      {st.label}
+                      {t(
+                        `statuses.${st.id as "all" | "pending" | "completed"}`,
+                      )}
                     </button>
                   ))}
                 </div>
@@ -249,7 +256,7 @@ export function RoutineFilterPopover({
               {availableTags.length > 0 && (
                 <div className="flex flex-col gap-1.5 pt-1 border-t border-white/5">
                   <span className="text-label-g font-semibold text-neutral-400 flex items-center gap-1">
-                    <Tag size={11} /> Tags
+                    <Tag size={11} /> {t("tagsLabel")}
                   </span>
                   <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto custom-scrollbar">
                     <button
@@ -258,27 +265,30 @@ export function RoutineFilterPopover({
                       className={cn(
                         "px-2 py-0.5 rounded-full text-tiny font-medium transition-all cursor-pointer",
                         filters.tag === null
-                          ? "bg-gold text-neutral-900 font-bold"
+                          ? "bg-gold text-on-gold font-bold"
                           : "bg-white/5 text-neutral-300 hover:bg-white/10",
                       )}
                     >
-                      Todas
+                      {t("allOptions")}
                     </button>
-                    {availableTags.map((t) => (
+                    {availableTags.map((tagItem) => (
                       <button
-                        key={t}
+                        key={tagItem}
                         type="button"
                         onClick={() =>
-                          updateFilter("tag", filters.tag === t ? null : t)
+                          updateFilter(
+                            "tag",
+                            filters.tag === tagItem ? null : tagItem,
+                          )
                         }
                         className={cn(
                           "px-2 py-0.5 rounded-full text-tiny font-medium transition-all cursor-pointer truncate max-w-[120px]",
-                          filters.tag === t
-                            ? "bg-gold text-neutral-900 font-bold"
+                          filters.tag === tagItem
+                            ? "bg-gold text-on-gold font-bold"
                             : "bg-white/5 text-neutral-300 hover:bg-white/10",
                         )}
                       >
-                        #{t}
+                        #{tagItem}
                       </button>
                     ))}
                   </div>

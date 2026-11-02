@@ -1,6 +1,7 @@
 "use server";
 
 import { updateTag } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
 import { type ActionState, getErrorMessage } from "./types";
@@ -24,6 +25,7 @@ function invalidateBoardColumnTags() {
 export async function createBoardColumn(
   payload: CreateBoardColumnDTO,
 ): Promise<ActionState<BoardColumnResponseDTO>> {
+  const t = await getTranslations("tasks.actions");
   try {
     const { data, error } = await serverApi.POST("/board_columns", {
       body: payload,
@@ -32,7 +34,7 @@ export async function createBoardColumn(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao criar coluna."),
+        error: getErrorMessage(error, t("createColumnFailed")),
       };
     }
 
@@ -43,7 +45,7 @@ export async function createBoardColumn(
     console.error("[BoardColumnAction:Create]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -55,6 +57,7 @@ export async function updateBoardColumn(
   boardColumnId: string,
   payload: UpdateBoardColumnDTO,
 ): Promise<ActionState<BoardColumnResponseDTO>> {
+  const t = await getTranslations("tasks.actions");
   try {
     const { data, error } = await serverApi.PUT(
       "/board_columns/{boardColumnId}",
@@ -67,7 +70,7 @@ export async function updateBoardColumn(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao atualizar coluna."),
+        error: getErrorMessage(error, t("updateColumnFailed")),
       };
     }
 
@@ -78,7 +81,7 @@ export async function updateBoardColumn(
     console.error("[BoardColumnAction:Update]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -89,6 +92,7 @@ export async function updateBoardColumn(
 export async function deleteBoardColumn(
   id: string,
 ): Promise<ActionState<void>> {
+  const t = await getTranslations("tasks.actions");
   try {
     const { error } = await serverApi.DELETE("/board_columns/{id}", {
       params: { path: { id } },
@@ -97,7 +101,7 @@ export async function deleteBoardColumn(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao excluir coluna."),
+        error: getErrorMessage(error, t("deleteColumnFailed")),
       };
     }
 
@@ -108,7 +112,7 @@ export async function deleteBoardColumn(
     console.error("[BoardColumnAction:Delete]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -120,6 +124,7 @@ export async function updateBoardColumnOrder(
   workspaceId: string,
   payload: UpdateBoardColumnOrderDTO[],
 ): Promise<ActionState<void>> {
+  const t = await getTranslations("tasks.actions");
   try {
     const { error } = await serverApi.PUT(
       "/board_columns/workspace/{workspaceId}/reorder",
@@ -132,7 +137,7 @@ export async function updateBoardColumnOrder(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao reordenar colunas."),
+        error: getErrorMessage(error, t("reorderColumnsFailed")),
       };
     }
 
@@ -143,7 +148,7 @@ export async function updateBoardColumnOrder(
     console.error("[BoardColumnAction:Order]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }

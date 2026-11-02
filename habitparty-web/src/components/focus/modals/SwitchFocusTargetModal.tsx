@@ -8,6 +8,7 @@ import {
   RotateCcw,
   Timer,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
@@ -36,6 +37,7 @@ export function SwitchFocusTargetModal({
   onSaveAndStartNew,
   onDiscardAndStartNew,
 }: SwitchFocusTargetModalProps) {
+  const t = useTranslations("focus.switchTargetModal");
   const [isSaving, setIsSaving] = useState(false);
   const elapsedSeconds = useFocusTimerStore((s) => s.elapsedSeconds);
 
@@ -86,15 +88,15 @@ export function SwitchFocusTargetModal({
       onClose={onClose}
       preventClose={isSaving}
       maxWidth="max-w-lg"
-      title="Trocar Sessão de Foco"
-      description="Você possui uma contagem com tempo em andamento."
+      title={t("title")}
+      description={t("description")}
     >
       <div className="flex flex-col gap-4 mt-2">
         {/* Banner de Comparação Visual */}
         <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-surface/70 border border-primary/30">
           <div className="flex flex-col min-w-0 flex-1">
             <span className="text-label-g text-neutral-400 font-medium">
-              Sessão Atual
+              {t("currentSessionLabel")}
             </span>
             <span
               className="text-body-s font-bold text-neutral-200 truncate"
@@ -104,7 +106,7 @@ export function SwitchFocusTargetModal({
             </span>
             <span className="flex items-center gap-1 text-label-g font-semibold text-gold mt-0.5">
               <Timer size={12} />
-              {timeDisplay} decorridos
+              {t("elapsed", { time: timeDisplay })}
             </span>
           </div>
 
@@ -114,7 +116,7 @@ export function SwitchFocusTargetModal({
 
           <div className="flex flex-col min-w-0 flex-1 text-right">
             <span className="text-label-g text-gold/90 font-medium">
-              Novo Alvo
+              {t("newTargetLabel")}
             </span>
             <span
               className="text-body-s font-bold text-gold truncate"
@@ -123,7 +125,9 @@ export function SwitchFocusTargetModal({
               {newTargetName}
             </span>
             <span className="text-label-g text-neutral-400 mt-0.5">
-              {isNewInventory ? "Item da Mochila" : "Atividade"}
+              {isNewInventory
+                ? t("targetTypeInventory")
+                : t("targetTypeActivity")}
             </span>
           </div>
         </div>
@@ -144,22 +148,27 @@ export function SwitchFocusTargetModal({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-body-s font-bold text-neutral-100">
-                    Transferir tempo atual
+                    {t("transferTitle")}
                   </span>
-                  <span className="px-1.5 py-0.5 rounded text-tiny font-bold bg-gold text-neutral-900">
-                    Recomendado
+                  <span className="px-1.5 py-0.5 rounded text-tiny font-bold bg-gold text-on-gold">
+                    {t("recommendedBadge")}
                   </span>
                 </div>
                 <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
-                  Mantém os{" "}
-                  <strong className="text-gold font-semibold">
-                    {timeDisplay}
-                  </strong>{" "}
-                  decorridos e continua o cronômetro para{" "}
-                  <strong className="text-neutral-200 font-semibold">
-                    {newTargetName}
-                  </strong>{" "}
-                  sem reiniciar a contagem.
+                  {t.rich("transferDescription", {
+                    time: timeDisplay,
+                    target: newTargetName,
+                    gold: (chunks) => (
+                      <strong className="text-gold font-semibold">
+                        {chunks}
+                      </strong>
+                    ),
+                    strong: (chunks) => (
+                      <strong className="text-neutral-200 font-semibold">
+                        {chunks}
+                      </strong>
+                    ),
+                  })}
                 </p>
               </div>
             </button>
@@ -170,11 +179,10 @@ export function SwitchFocusTargetModal({
               </div>
               <div className="flex-1 min-w-0">
                 <span className="text-xs font-semibold text-neutral-300">
-                  Transferência direta indisponível
+                  {t("transferUnavailableTitle")}
                 </span>
                 <p className="text-label-g text-neutral-400 mt-0.5">
-                  Não é possível transferir saldo de tempo entre itens da
-                  mochila e atividades comuns.
+                  {t("transferUnavailableDescription")}
                 </p>
               </div>
             </div>
@@ -214,36 +222,45 @@ export function SwitchFocusTargetModal({
                     canSaveCurrent ? "text-neutral-100" : "text-neutral-300",
                   )}
                 >
-                  Salvar atual e iniciar nova
+                  {t("saveAndStartTitle")}
                 </span>
                 {!canSaveCurrent && (
                   <span className="px-1.5 py-0.5 rounded text-tiny font-semibold bg-neutral-800 text-neutral-400 border border-neutral-700">
-                    Mín. 1 min ({secondsUntilCanSave}s restantes)
+                    {t("minOneMinBadge", { seconds: secondsUntilCanSave })}
                   </span>
                 )}
               </div>
               {canSaveCurrent ? (
                 <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
-                  Registra os{" "}
-                  <strong className="text-emerald-400 font-semibold">
-                    {timeDisplay}
-                  </strong>{" "}
-                  na atividade atual (
-                  <span className="text-neutral-300">{currentName}</span>) e
-                  inicia o foco em{" "}
-                  <strong className="text-neutral-200 font-semibold">
-                    {newTargetName}
-                  </strong>{" "}
-                  do zero.
+                  {t.rich("saveAndStartDescription", {
+                    time: timeDisplay,
+                    current: currentName,
+                    target: newTargetName,
+                    emerald: (chunks) => (
+                      <strong className="text-emerald-400 font-semibold">
+                        {chunks}
+                      </strong>
+                    ),
+                    currentSpan: (chunks) => (
+                      <span className="text-neutral-300">{chunks}</span>
+                    ),
+                    strong: (chunks) => (
+                      <strong className="text-neutral-200 font-semibold">
+                        {chunks}
+                      </strong>
+                    ),
+                  })}
                 </p>
               ) : (
                 <p className="text-label-g text-neutral-400 mt-0.5 leading-relaxed">
-                  Sessões com menos de 1 minuto não podem ser salvas no
-                  histórico. Use{" "}
-                  <strong className="text-neutral-300">
-                    {canTransfer ? "Transferir" : "Manter Sessão"}
-                  </strong>{" "}
-                  ou <strong className="text-neutral-300">Descartar</strong>.
+                  {t.rich("cannotSaveUnderOneMinDescription", {
+                    fallbackAction: canTransfer
+                      ? t("fallbackTransfer")
+                      : t("fallbackKeepSession"),
+                    strong: (chunks) => (
+                      <strong className="text-neutral-300">{chunks}</strong>
+                    ),
+                  })}
                 </p>
               )}
             </div>
@@ -261,15 +278,17 @@ export function SwitchFocusTargetModal({
             </div>
             <div className="flex-1 min-w-0">
               <span className="text-body-s font-bold text-neutral-100">
-                Descartar atual e começar nova
+                {t("discardAndStartTitle")}
               </span>
               <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
-                Descarta o tempo não salvo desta sessão e inicia o cronômetro
-                para{" "}
-                <strong className="text-neutral-200 font-semibold">
-                  {newTargetName}
-                </strong>{" "}
-                do zero.
+                {t.rich("discardAndStartDescription", {
+                  target: newTargetName,
+                  strong: (chunks) => (
+                    <strong className="text-neutral-200 font-semibold">
+                      {chunks}
+                    </strong>
+                  ),
+                })}
               </p>
             </div>
           </button>
@@ -286,7 +305,7 @@ export function SwitchFocusTargetModal({
               isSaving && "opacity-50 cursor-not-allowed",
             )}
           >
-            Manter Sessão Atual
+            {t("keepCurrentSession")}
           </button>
         </div>
       </div>

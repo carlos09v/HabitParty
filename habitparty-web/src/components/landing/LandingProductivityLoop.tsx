@@ -1,8 +1,11 @@
 import { Sparkles, Zap } from "lucide-react";
-import { LANDING_PRODUCTIVITY_STEPS } from "@/constants/landing";
+import { useTranslations } from "next-intl";
+import { LANDING_PRODUCTIVITY_STEP_CONFIGS } from "@/constants/landing";
 import { cn } from "@/utils";
 
 export function LandingProductivityLoop() {
+  const t = useTranslations("landing.productivityLoop");
+
   return (
     <section
       id="como-funciona"
@@ -13,25 +16,24 @@ export function LandingProductivityLoop() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary-light text-xs font-semibold uppercase tracking-wider mb-3">
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary dark:text-primary-light text-xs font-semibold uppercase tracking-wider mb-3">
             <Zap className="w-3.5 h-3.5" />
-            Metodologia HabitParty
+            {t("badge")}
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-neutral-50 tracking-tight">
-            O ciclo contínuo de evolução pessoal.
+            {t("title")}
           </h2>
           <p className="mt-4 text-base sm:text-lg text-neutral-300">
-            Unimos neurociência e mecânicas de gamificação para transformar a
-            disciplina em entusiasmo diário.
+            {t("subtitle")}
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-          {LANDING_PRODUCTIVITY_STEPS.map((step) => {
+          {LANDING_PRODUCTIVITY_STEP_CONFIGS.map((step) => {
             const Icon = step.icon;
             return (
               <div
-                key={step.number}
+                key={step.id}
                 className={cn(
                   "relative p-8 rounded-2xl bg-card dark:bg-surface/80 border border-neutral-700 dark:border-white/10 shadow-sm dark:shadow-card-deep backdrop-blur-md flex flex-col justify-between group hover:scale-[1.02] transition-all duration-300",
                   step.borderColor,
@@ -39,7 +41,7 @@ export function LandingProductivityLoop() {
               >
                 <div>
                   <div className="flex items-center justify-between mb-6">
-                    <span className="text-4xl font-black text-neutral-600/40 dark:text-white/10 group-hover:text-neutral-500/50 dark:group-hover:text-white/20 transition-colors font-mono">
+                    <span className="text-4xl font-black text-neutral-500/35 dark:text-white/10 group-hover:text-primary/40 dark:group-hover:text-white/20 transition-colors font-mono">
                       {step.number}
                     </span>
                     <div
@@ -55,19 +57,19 @@ export function LandingProductivityLoop() {
                   </div>
 
                   <span className="inline-block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">
-                    {step.tag}
+                    {t(`steps.${step.id}.tag`)}
                   </span>
                   <h3 className="text-xl font-bold text-neutral-50 mb-3 group-hover:text-gold transition-colors">
-                    {step.title}
+                    {t(`steps.${step.id}.title`)}
                   </h3>
                   <p className="text-sm text-neutral-300 leading-relaxed">
-                    {step.description}
+                    {t(`steps.${step.id}.description`)}
                   </p>
                 </div>
 
                 <div className="mt-6 pt-4 border-t border-neutral-700/60 dark:border-white/5 flex items-center gap-2 text-xs font-semibold text-neutral-400 group-hover:text-neutral-200">
                   <Sparkles className="w-3.5 h-3.5 text-gold" />
-                  <span>Gamificado e Automatizado</span>
+                  <span>{t("cardFooter")}</span>
                 </div>
               </div>
             );

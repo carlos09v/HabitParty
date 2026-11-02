@@ -3,6 +3,7 @@ package com.habitparty.application.usecases.task.checklistItem;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.core.domain.entities.task.ChecklistItem;
@@ -17,6 +18,7 @@ public class AddChecklistItemUseCase {
     this.taskPort = taskPort;
   }
 
+  @Transactional
   public ChecklistItem execute(UUID taskId, UUID userIdLogado, String itemName) {
     Task task = taskPort.findById(taskId)
         .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada."));

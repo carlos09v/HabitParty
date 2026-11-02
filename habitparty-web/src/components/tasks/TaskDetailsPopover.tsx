@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
 import { useTaskDetailsPopover } from "@/hooks/useTaskDetailsPopover";
 import type { TaskDetailsPopoverProps } from "@/types/task-ui";
@@ -21,9 +22,11 @@ export function TaskDetailsPopover({
   onTaskUpdate,
   onDelete,
   onToggleComplete,
+  onHabitChange,
   onEdit,
   onDuplicate,
 }: TaskDetailsPopoverProps) {
+  const t = useTranslations("tasks.detailsPopover");
   const {
     mounted,
     popoverRef,
@@ -55,6 +58,7 @@ export function TaskDetailsPopover({
     isTodo,
     handleCloseWithSave,
     handleToggleTask,
+    handleHabitDelta,
     handleTitleBlur,
     handleTitleKeyDown,
     handleDescriptionBlur,
@@ -77,6 +81,7 @@ export function TaskDetailsPopover({
     onTaskUpdate,
     onDelete,
     onToggleComplete,
+    onHabitChange,
     onEdit,
     onDuplicate,
   });
@@ -110,7 +115,7 @@ export function TaskDetailsPopover({
           "sm:w-[380px] sm:max-w-[calc(100vw-24px)] sm:rounded-2xl sm:border sm:border-primary/40 sm:bg-card/95 sm:p-4 sm:animate-in sm:fade-in sm:zoom-in-95 sm:duration-150",
         )}
         role="dialog"
-        aria-label="Detalhes rápidos da tarefa"
+        aria-label={t("dialogAria")}
       >
         {/* Pílula visual de puxar para mobile */}
         <div className="sm:hidden w-12 h-1.5 rounded-full bg-white/25 mx-auto -mt-1 mb-1 shrink-0" />
@@ -125,6 +130,7 @@ export function TaskDetailsPopover({
           dueDate={dueDate}
           priority={priority}
           onToggleComplete={handleToggleTask}
+          onHabitDelta={handleHabitDelta}
           onDateChange={handleDateChange}
           onPrioritySelect={handlePrioritySelect}
           onEdit={handleOpenFullModal}
@@ -142,7 +148,7 @@ export function TaskDetailsPopover({
               onChange={(e) => setTitle(e.target.value)}
               onBlur={handleTitleBlur}
               onKeyDown={handleTitleKeyDown}
-              placeholder="Título da tarefa..."
+              placeholder={t("titlePlaceholder")}
               className={cn(
                 "w-full bg-transparent border-none outline-none",
                 "text-base font-bold text-neutral-50 placeholder:text-neutral-500",

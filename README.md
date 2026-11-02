@@ -219,19 +219,22 @@ npm run dev
 
 ## 🗺️ Roadmap de Lançamentos
 
-### 🎯 Release 1.1 — Modo Claro & Internacionalização (i18n)
-* **Modo Claro (Light Theme):** Nova interface visual arejada, luminosa e com alto contraste, projetada para uso diurno confortável e excelente legibilidade.
+### 🎯 Release 1.1 — Internacionalização (i18n) & Modos de Experiência ✅ (Concluído)
 * **Internacionalização (i18n):** Suporte nativo completo à **Língua Inglesa (EN)** e **Português (PT-BR)** em todas as telas, alertas e componentes da plataforma.
+* **Modos de Experiência (RPG vs. Produtividade):** Escolha entre imersão gamificada completa com mecânicas de RPG ou interface minimalista focada em produtividade ágil.
+* **Segurança e Proteção Anti-Bot:** Verificação progressiva de e-mail, limitação de taxa por IP e blindagem contra cadastros automatizados e abusos.
+* **Performance e Otimizações de Infraestrutura:** Reestruturação de tabelas, índices otimizados e respostas mais rápidas em queries frequentes.
 
 ---
 
-### 🏆 Release 1.2 — Conquistas Pessoais, Temas VIP & Foco Vinculado a Tarefas
+### 🏆 Release 1.2 — Modo Claro, Temas VIP, Conquistas & Foco Vinculado a Tarefas
+* **Modo Claro (Light Theme):** Nova interface visual arejada, luminosa e com alto contraste, projetada para uso diurno confortável e excelente legibilidade.
+* **Temas Exclusivos VIP:** Seletor dinâmico de atmosferas visuais para membros Premium (ex: *Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold*).
 * **Vinculação de Foco a Tarefas:** Possibilidade de associar sessões de Pomodoro/Foco diretamente a tarefas específicas do seu quadro Kanban/rotina.
 * **Métricas de Esforço por Tarefa:** Registro do tempo acumulado dedicado por card (ex: `⏱️ 2h 15m`), histórico de ciclos de foco e opção de concluir a tarefa ao término do timer.
 * **Ação Rápida "Focar nesta Tarefa":** Inicie o timer de foco diretamente pelo menu de contexto de qualquer tarefa em 1 clique.
 * **Sistema de Conquistas Pessoais:** Dezenas de medalhas e troféus desbloqueados automaticamente ao manter ofensivas de hábitos, bater metas de foco em tarefas e acumular moedas.
 * **Painel de Conquistas:** Nova tela *"Minhas Conquistas"* para acompanhar a evolução e os marcos da sua jornada.
-* **Temas Exclusivos VIP:** Seletor dinâmico de atmosferas visuais para membros Premium (ex: *Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold*).
 
 ---
 

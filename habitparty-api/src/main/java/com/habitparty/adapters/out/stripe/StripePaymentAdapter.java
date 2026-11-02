@@ -101,7 +101,17 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
       PlanType plan,
       PaymentMethodType paymentMethod,
       String customerId) {
-    return createCheckoutSession(user, plan, paymentMethod, customerId, defaultSuccessUrl, defaultCancelUrl);
+    return createCheckoutSession(user, plan, paymentMethod, customerId, defaultSuccessUrl, defaultCancelUrl, "pt-BR");
+  }
+
+  @Override
+  public String createCheckoutSession(
+      User user,
+      PlanType plan,
+      PaymentMethodType paymentMethod,
+      String customerId,
+      String locale) {
+    return createCheckoutSession(user, plan, paymentMethod, customerId, defaultSuccessUrl, defaultCancelUrl, locale);
   }
 
   @Override
@@ -112,7 +122,22 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
       String customerId,
       String successUrl,
       String cancelUrl) {
+    return createCheckoutSession(user, plan, paymentMethod, customerId, successUrl, cancelUrl, "pt-BR");
+  }
+
+  @Override
+  public String createCheckoutSession(
+      User user,
+      PlanType plan,
+      PaymentMethodType paymentMethod,
+      String customerId,
+      String successUrl,
+      String cancelUrl,
+      String locale) {
     try {
+      boolean isEnglish = locale != null && locale.trim().toLowerCase().startsWith("en");
+      String currency = isEnglish ? "usd" : "brl";
+
       String effectiveSuccessUrl = (successUrl != null && !successUrl.isBlank()) ? successUrl : defaultSuccessUrl;
       if (!effectiveSuccessUrl.contains("session_id=")) {
         effectiveSuccessUrl += (effectiveSuccessUrl.contains("?") ? "&" : "?") + "session_id={CHECKOUT_SESSION_ID}";
@@ -124,6 +149,8 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
           .putMetadata("userId", user.getId().toString())
           .putMetadata("plan", plan.name())
           .putMetadata("paymentType", paymentMethod.name())
+          .putMetadata("locale", isEnglish ? "en" : "pt-BR")
+          .putMetadata("currency", currency)
           .setSuccessUrl(effectiveSuccessUrl)
           .setCancelUrl(cancelUrl != null ? cancelUrl : defaultCancelUrl);
 
@@ -188,6 +215,7 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
 
         sessionBuilder
             .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
+            .setCurrency(currency)
             .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
             .setSubscriptionData(subBuilder.build());
 
@@ -209,26 +237,42 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
                   ? SessionCreateParams.LineItem.PriceData.Recurring.Interval.YEAR
                   : SessionCreateParams.LineItem.PriceData.Recurring.Interval.MONTH;
 
-          long amountInCents = switch (plan) {
-            case FOUNDER_ANNUAL -> 5990L;
-            case ANNUAL -> 9900L;
-            case MONTHLY -> 990L;
-          };
-          String planTitle = switch (plan) {
-            case FOUNDER_ANNUAL -> "Membro Fundador (Anual)";
-            case ANNUAL -> "Anual";
-            case MONTHLY -> "Mensal";
-          };
-          String planDescription = plan == PlanType.FOUNDER_ANNUAL
-              ? "Assinatura Anual Especial com Insígnia Vitalícia de Membro Fundador"
-              : "Assinatura recorrente com renovação automática";
+          long amountInCents = isEnglish
+              ? switch (plan) {
+                  case FOUNDER_ANNUAL -> 1090L;
+                  case ANNUAL -> 1990L;
+                  case MONTHLY -> 199L;
+                }
+              : switch (plan) {
+                  case FOUNDER_ANNUAL -> 5990L;
+                  case ANNUAL -> 9900L;
+                  case MONTHLY -> 990L;
+                };
+          String planTitle = isEnglish
+              ? switch (plan) {
+                  case FOUNDER_ANNUAL -> "Founding Member (Annual)";
+                  case ANNUAL -> "Annual";
+                  case MONTHLY -> "Monthly";
+                }
+              : switch (plan) {
+                  case FOUNDER_ANNUAL -> "Membro Fundador (Anual)";
+                  case ANNUAL -> "Anual";
+                  case MONTHLY -> "Mensal";
+                };
+          String planDescription = isEnglish
+              ? (plan == PlanType.FOUNDER_ANNUAL
+                  ? "Special Annual Subscription with Exclusive Lifetime Founding Member Badge"
+                  : "Recurring subscription with automatic renewal")
+              : (plan == PlanType.FOUNDER_ANNUAL
+                  ? "Assinatura Anual Especial com Insígnia Vitalícia de Membro Fundador"
+                  : "Assinatura recorrente com renovação automática");
 
           sessionBuilder.addLineItem(
               SessionCreateParams.LineItem.builder()
                   .setQuantity(1L)
                   .setPriceData(
                       SessionCreateParams.LineItem.PriceData.builder()
-                          .setCurrency("brl")
+                          .setCurrency(currency)
                           .setUnitAmount(amountInCents)
                           .setRecurring(
                               SessionCreateParams.LineItem.PriceData.Recurring.builder()
@@ -282,8 +326,11 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
     }
     try {
       Session session = Session.retrieve(sessionId);
-      if (session != null && "paid".equalsIgnoreCase(session.getPaymentStatus())) {
-        return java.util.Optional.of((PaymentWebhookEvent.CheckoutCompleted) mapCheckoutSession("direct_verify_" + session.getId(), session));
+      if (session != null) {
+        String paymentStatus = session.getPaymentStatus();
+        if ("paid".equalsIgnoreCase(paymentStatus) || "no_payment_required".equalsIgnoreCase(paymentStatus)) {
+          return java.util.Optional.of((PaymentWebhookEvent.CheckoutCompleted) mapCheckoutSession("direct_verify_" + session.getId(), session));
+        }
       }
       return java.util.Optional.empty();
     } catch (StripeException e) {

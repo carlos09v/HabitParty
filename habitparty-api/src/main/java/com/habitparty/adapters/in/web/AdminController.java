@@ -35,7 +35,7 @@ public class AdminController implements AdminApi {
 
   @Override
   public ResponseEntity<AdminOverviewDTO> getOverview() {
-    AdminOverviewDTO overview = getAdminOverviewUseCase.execute();
+    AdminOverviewDTO overview = AdminOverviewDTO.fromProjection(getAdminOverviewUseCase.execute());
     return ResponseEntity.ok(overview);
   }
 
@@ -52,13 +52,13 @@ public class AdminController implements AdminApi {
         search,
         filter,
         PageRequest.of(safePage, safeSize)
-    );
+    ).map(AdminUserSummaryDTO::fromProjection);
     return ResponseEntity.ok(users);
   }
 
   @Override
   public ResponseEntity<AdminUserDetailDTO> getUserDetails(UUID userId) {
-    AdminUserDetailDTO detail = getAdminUserDetailUseCase.execute(userId);
+    AdminUserDetailDTO detail = AdminUserDetailDTO.fromProjection(getAdminUserDetailUseCase.execute(userId));
     return ResponseEntity.ok(detail);
   }
 

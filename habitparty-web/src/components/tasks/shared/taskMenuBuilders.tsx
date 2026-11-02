@@ -20,25 +20,30 @@ export function buildTaskContextMenuItems(options: {
   onEdit: (task: Task) => void;
   onDuplicate: (task: Task) => void;
   onDelete: (task: Task) => void;
+  labels?: {
+    edit?: string;
+    duplicate?: string;
+    delete?: string;
+  };
 }): ContextMenuItem[] {
-  const { task, onEdit, onDuplicate, onDelete } = options;
+  const { task, onEdit, onDuplicate, onDelete, labels } = options;
   return [
     {
-      label: "Editar",
+      label: labels?.edit || "Editar",
       icon: <Pencil size={14} />,
       onClick: () => {
         if (task) onEdit(task);
       },
     },
     {
-      label: "Duplicar",
+      label: labels?.duplicate || "Duplicar",
       icon: <Copy size={14} />,
       onClick: () => {
         if (task) onDuplicate(task);
       },
     },
     {
-      label: "Excluir",
+      label: labels?.delete || "Excluir",
       icon: <Trash2 size={14} />,
       variant: "destructive",
       onClick: () => {
@@ -57,14 +62,28 @@ export function buildColumnContextMenuItems(options: {
   onEdit: (column: BoardColumn) => void;
   onDelete: (column: BoardColumn) => void;
   onColumnWidthChange?: (columnId: string, width: ColumnWidthPreset) => void;
+  labels?: {
+    edit?: string;
+    delete?: string;
+    layout?: string;
+    compact?: string;
+    normal?: string;
+    wide?: string;
+  };
 }): ContextMenuItem[] {
-  const { column, columnWidths, onEdit, onDelete, onColumnWidthChange } =
-    options;
+  const {
+    column,
+    columnWidths,
+    onEdit,
+    onDelete,
+    onColumnWidthChange,
+    labels,
+  } = options;
   const currentWidth = (column && columnWidths?.[column.id]) || "normal";
 
   return [
     {
-      label: "Editar",
+      label: labels?.edit || "Editar",
       icon: <Pencil size={14} />,
       onClick: () => {
         if (column) onEdit(column);
@@ -73,11 +92,11 @@ export function buildColumnContextMenuItems(options: {
     ...(onColumnWidthChange && column
       ? [
           {
-            label: "Layout",
+            label: labels?.layout || "Layout",
             icon: <LayoutGrid size={14} />,
             children: [
               {
-                label: "Compacto",
+                label: labels?.compact || "Compacto",
                 icon:
                   currentWidth === "compact" ? (
                     <Check size={14} className="text-gold shrink-0" />
@@ -91,7 +110,7 @@ export function buildColumnContextMenuItems(options: {
                 onClick: () => onColumnWidthChange(column.id, "compact"),
               },
               {
-                label: "Padrão",
+                label: labels?.normal || "Padrão",
                 icon:
                   currentWidth === "normal" ? (
                     <Check size={14} className="text-gold shrink-0" />
@@ -102,7 +121,7 @@ export function buildColumnContextMenuItems(options: {
                 onClick: () => onColumnWidthChange(column.id, "normal"),
               },
               {
-                label: "Largo",
+                label: labels?.wide || "Largo",
                 icon:
                   currentWidth === "wide" ? (
                     <Check size={14} className="text-gold shrink-0" />
@@ -120,7 +139,7 @@ export function buildColumnContextMenuItems(options: {
         ]
       : []),
     {
-      label: "Excluir",
+      label: labels?.delete || "Excluir",
       icon: <Trash2 size={14} />,
       variant: "destructive",
       onClick: () => {

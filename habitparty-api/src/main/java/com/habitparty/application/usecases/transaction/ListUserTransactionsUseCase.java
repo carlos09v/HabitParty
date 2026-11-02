@@ -20,21 +20,26 @@ public class ListUserTransactionsUseCase {
   }
 
   public Page<TransactionHistory> execute(UUID userId, String tab, String period, String search, int page, int requestedSize) {
-    int safeSize = Math.min(requestedSize, 16);
-    List<TransactionType> typesToFilter = (tab == null || tab.trim().isEmpty() || tab.equalsIgnoreCase("ALL"))
-        ? null
-        : getTypesForTab(tab);
-
+    int safePage = Math.max(page, 0);
+    int safeSize = Math.min(Math.max(requestedSize, 1), 100);
+    List<TransactionType> typesToFilter = resolveTypesForTab(tab);
     LocalDateTime startDate = resolveStartDateForPeriod(period);
 
-    return port.findFiltered(userId, typesToFilter, startDate, search, page, safeSize);
+    return port.findFiltered(userId, typesToFilter, startDate, search, safePage, safeSize);
   }
 
   public Page<TransactionHistory> execute(UUID userId, String tab, int page, int requestedSize) {
     return execute(userId, tab, null, null, page, requestedSize);
   }
 
-  private LocalDateTime resolveStartDateForPeriod(String period) {
+  public static List<TransactionType> resolveTypesForTab(String tab) {
+    if (tab == null || tab.trim().isEmpty() || tab.equalsIgnoreCase("ALL")) {
+      return null;
+    }
+    return getTypesForTab(tab);
+  }
+
+  public static LocalDateTime resolveStartDateForPeriod(String period) {
     if (period == null || period.trim().isEmpty() || period.equalsIgnoreCase("ALL")) {
       return null;
     }
@@ -46,7 +51,7 @@ public class ListUserTransactionsUseCase {
     };
   }
 
-  private List<TransactionType> getTypesForTab(String tab) {
+  private static List<TransactionType> getTypesForTab(String tab) {
     return switch (tab.toUpperCase()) {
       case "SHOPPING" -> List.of(TransactionType.REWARD_BOUGHT);
       case "BACKPACK" -> List.of(TransactionType.ITEM_CONSUMED, TransactionType.ITEM_DISCARDED);

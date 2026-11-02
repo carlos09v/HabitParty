@@ -23,6 +23,8 @@ export interface InfoTooltipProps {
   children: ReactNode;
   /** Tamanho do ícone <Info /> no botão gatilho (padrão: 15) */
   size?: number;
+  /** Rótulo opcional visível ao lado do ícone no botão gatilho (ex: "Ainda em dúvida?") */
+  triggerLabel?: ReactNode;
   /** Alinhamento horizontal preferido do popover (padrão: 'left') */
   align?: "left" | "right";
   /** Posição vertical preferida do popover (padrão: 'top') */
@@ -46,6 +48,7 @@ export function InfoTooltip({
   icon,
   children,
   size = 15,
+  triggerLabel,
   align = "left",
   side = "top",
   className,
@@ -244,9 +247,15 @@ export function InfoTooltip({
         onMouseLeave={handleMouseLeave}
         aria-label={ariaLabel}
         aria-expanded={isOpen}
-        className="text-neutral-400 hover:text-gold focus:outline-none focus:text-gold transition-colors cursor-pointer p-0.5"
+        className={cn(
+          "inline-flex items-center gap-1 text-neutral-400 hover:text-gold focus:outline-none focus:text-gold transition-colors cursor-pointer",
+          triggerLabel
+            ? "text-tiny font-medium px-1.5 py-0.5 rounded-md bg-white/5 hover:bg-gold/10 border border-white/10 hover:border-gold/30"
+            : "p-0.5",
+        )}
       >
-        <Info size={size} />
+        <Info size={size} className="shrink-0" />
+        {triggerLabel && <span>{triggerLabel}</span>}
       </button>
 
       {isOpen &&

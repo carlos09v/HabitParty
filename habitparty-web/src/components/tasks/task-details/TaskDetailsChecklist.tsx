@@ -1,4 +1,5 @@
 import { Check, Plus, Trash2, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { ChecklistItem } from "@/types/task";
 import { cn } from "@/utils";
 
@@ -25,16 +26,43 @@ export function TaskDetailsChecklist({
   onToggleItem,
   onDeleteItem,
 }: TaskDetailsChecklistProps) {
+  const t = useTranslations("tasks.detailsPopover.checklist");
   const completedCount = checklist.filter((i) => i.isCompleted).length;
+  const totalCount = checklist.length;
+  const progressPercent =
+    totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const isAllDone = totalCount > 0 && completedCount === totalCount;
 
   return (
-    <div className="flex flex-col gap-2 pt-1 border-t border-white/8">
-      <div className="flex items-center justify-between text-tiny font-bold text-neutral-400 uppercase tracking-wider">
-        <span>Subtarefas</span>
-        {checklist.length > 0 && (
-          <span className="text-neutral-400 font-medium">
-            {completedCount}/{checklist.length}
-          </span>
+    <div className="flex flex-col gap-2 pt-1.5 border-t border-white/8">
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between text-tiny font-bold text-neutral-400 uppercase tracking-wider">
+          <span>{t("title")}</span>
+          {totalCount > 0 && (
+            <span
+              className={cn(
+                "font-semibold",
+                isAllDone ? "text-success-500" : "text-gold",
+              )}
+            >
+              {completedCount}/{totalCount}
+            </span>
+          )}
+        </div>
+
+        {totalCount > 0 && (
+          <div
+            aria-hidden="true"
+            className="w-full h-1.5 rounded-full bg-white/8 overflow-hidden"
+          >
+            <div
+              className={cn(
+                "h-full rounded-full transition-[width,background-color] duration-300",
+                isAllDone ? "bg-success-500" : "bg-gold",
+              )}
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
         )}
       </div>
       <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-0.5">
@@ -50,7 +78,7 @@ export function TaskDetailsChecklist({
                 className={cn(
                   "w-3.5 h-3.5 rounded border flex items-center justify-center transition-all cursor-pointer shrink-0",
                   item.isCompleted
-                    ? "bg-gold border-gold text-neutral-900"
+                    ? "bg-gold border-gold text-on-gold"
                     : "border-primary/50 bg-primary-dark/40 hover:border-gold",
                 )}
               >
@@ -70,7 +98,7 @@ export function TaskDetailsChecklist({
               type="button"
               onClick={() => onDeleteItem(item.id)}
               className="opacity-0 group-hover/item:opacity-100 p-0.5 rounded text-neutral-500 hover:text-danger-500 transition-all cursor-pointer shrink-0"
-              aria-label={`Excluir item ${item.name}`}
+              aria-label={t("deleteItemAria", { name: item.name ?? "" })}
             >
               <Trash2 size={12} />
             </button>
@@ -87,15 +115,15 @@ export function TaskDetailsChecklist({
                 if (e.key === "Enter") onAddItem();
                 if (e.key === "Escape") onCancelAddItem();
               }}
-              placeholder="Nome da subtarefa..."
+              placeholder={t("newItemPlaceholder")}
               className="flex-1 bg-background/50 border border-primary/40 rounded px-2 py-0.5 text-xs text-neutral-50 placeholder:text-neutral-500 focus:outline-none focus:border-gold"
             />
             <button
               type="button"
               onClick={onAddItem}
-              className="px-2 py-0.5 rounded bg-gold text-neutral-900 font-bold text-tiny hover:brightness-110 cursor-pointer"
+              className="px-2 py-0.5 rounded bg-gold text-on-gold font-bold text-tiny hover:brightness-110 cursor-pointer"
             >
-              OK
+              {t("okButton")}
             </button>
             <button
               type="button"
@@ -112,7 +140,7 @@ export function TaskDetailsChecklist({
             className="flex items-center gap-1 text-tiny text-neutral-400 hover:text-gold transition-colors font-medium cursor-pointer py-0.5"
           >
             <Plus size={12} />
-            <span>Adicionar item</span>
+            <span>{t("addItemButton")}</span>
           </button>
         )}
       </div>

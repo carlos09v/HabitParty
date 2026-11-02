@@ -1,5 +1,6 @@
 package com.habitparty.adapters.out.oauth;
 
+import java.io.IOException;
 import java.net.ProxySelector;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -88,7 +89,7 @@ public class GoogleOAuthAdapter implements OAuthIdentityProviderPort {
           .POST(HttpRequest.BodyPublishers.ofString(formBody))
           .build();
 
-      HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      HttpResponse<String> response = sendWithRetry(request);
 
       if (response.statusCode() != 200) {
         log.error("[GoogleOAuthAdapter] Erro ao trocar code pelo token do Google. Status: {}, Body: {}",
@@ -156,7 +157,7 @@ public class GoogleOAuthAdapter implements OAuthIdentityProviderPort {
           .GET()
           .build();
 
-      HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      HttpResponse<String> response = sendWithRetry(request);
 
       if (response.statusCode() != 200) {
         log.error("[GoogleOAuthAdapter] Falha ao obter dados do usuário no Google. Status: {}, Body: {}",
@@ -183,6 +184,22 @@ public class GoogleOAuthAdapter implements OAuthIdentityProviderPort {
     } catch (Exception e) {
       log.error("[GoogleOAuthAdapter] Exceção ao buscar userinfo do Google", e);
       throw new DomainValidationException("Falha ao consultar perfil do Google.");
+    }
+  }
+
+  private HttpResponse<String> sendWithRetry(HttpRequest request) throws IOException, InterruptedException {
+    try {
+      return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    } catch (IOException firstException) {
+      log.warn("[GoogleOAuthAdapter] Falha de conexão na 1ª tentativa ({}). Tentando novamente em 150ms...",
+          firstException.toString());
+      try {
+        Thread.sleep(150);
+      } catch (InterruptedException ie) {
+        Thread.currentThread().interrupt();
+        throw ie;
+      }
+      return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     }
   }
 

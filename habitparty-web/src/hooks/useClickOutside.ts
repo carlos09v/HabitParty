@@ -29,6 +29,33 @@ export function useClickOutside<T extends HTMLElement = HTMLElement>(
       // Ignora se o clique ocorreu dentro do container principal
       if (ref.current.contains(target)) return;
 
+      // Ignora se o clique ocorreu dentro de um dropdown/popover em Portal (suporta múltiplos níveis aninhados)
+      if (target instanceof Element) {
+        let currentEl: Element | null = target;
+        while (currentEl) {
+          const portalPopup: Element | null =
+            currentEl.closest("[data-select-for]");
+          if (!portalPopup) break;
+          const triggerId: string | null =
+            portalPopup.getAttribute("data-select-for");
+          const triggerEl: HTMLElement | null = triggerId
+            ? document.getElementById(triggerId)
+            : null;
+          if (!triggerEl) break;
+          if (
+            ref.current.contains(triggerEl) ||
+            extraRefs?.some((extra) => {
+              if (!extra) return false;
+              const el = "current" in extra ? extra.current : extra;
+              return el?.contains(triggerEl);
+            })
+          ) {
+            return;
+          }
+          currentEl = triggerEl;
+        }
+      }
+
       // Ignora se o clique ocorreu dentro de algum dos refs extras (ex: dropdown em Portal)
       if (
         extraRefs?.some((extra) => {

@@ -3,6 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Clock } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { memo, type default as React, useState } from "react";
 import { MysteryBoxTierPopover } from "@/components/reward/MysteryBoxTierPopover";
 import { CoinIcon } from "@/components/ui/CoinIcon";
@@ -14,7 +15,11 @@ import {
   PACKAGE_LEVEL_GLOW,
   PACKAGE_LEVEL_ICON_THEME,
   REWARD_TYPE_META,
+  toCategoryMessageKey,
+  toPackageMessageKey,
+  toRewardTypeMessageKey,
 } from "@/constants/reward";
+import type { AppLocale } from "@/i18n/config";
 import type { PackageLevel, RewardType } from "@/types/reward";
 import { cn, formatCoins } from "@/utils";
 import {
@@ -43,13 +48,18 @@ export interface GamifiedItemCardProps {
   onContextMenu?: (e: React.MouseEvent) => void;
   dragData?: Record<string, unknown>;
   inUse?: boolean;
+  isActiveFocusSession?: boolean;
 }
 
 const RARITY_TOP_BAR: Partial<Record<PackageLevel, string>> = {
   Lendário: "via-gold opacity-90",
+  LEGENDARY: "via-gold opacity-90",
   Épico: "via-magenta opacity-90",
+  EPIC: "via-magenta opacity-90",
   Premium: "via-info opacity-90",
+  PREMIUM: "via-info opacity-90",
   Básico: "via-success-500 opacity-70",
+  BASIC: "via-success-500 opacity-70",
 };
 
 /**
@@ -76,8 +86,12 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
   onContextMenu,
   dragData,
   inUse = false,
+  isActiveFocusSession,
 }: GamifiedItemCardProps) {
-  const typeMeta = REWARD_TYPE_META[type as RewardType];
+  const t = useTranslations("ui.itemCatalog");
+  const locale = useLocale() as AppLocale;
+  const typeKey = toRewardTypeMessageKey(type);
+  const typeMeta = REWARD_TYPE_META[typeKey as RewardType];
   const RewardIcon = getRewardIcon(iconName, type);
   const isMystery = isMysteryBoxReward(type, iconName);
   const mysteryTier = isMystery ? getMysteryBoxTier(packageLevel) : null;
@@ -130,8 +144,12 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
   };
 
   const isFocusNavigate =
-    inUse &&
-    (actionLabel === "Abrir no Foco" || actionLabel === "Ir para o Foco");
+    Boolean(isActiveFocusSession) ||
+    (inUse &&
+      (actionLabel === "Abrir no Foco" ||
+        actionLabel === "Ir para o Foco" ||
+        actionLabel === "Open in Focus" ||
+        actionLabel === "Go to Focus"));
   const isPrimaryDisabled = !canAfford || (inUse && !isFocusNavigate);
 
   return (
@@ -202,7 +220,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                 {inUse && (
                   <span className="inline-flex items-center gap-1 font-bold rounded border border-amber-500/40 bg-amber-500/15 text-amber-300 text-tiny px-1.5 py-0.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                    Em Foco
+                    {t("inFocus")}
                   </span>
                 )}
 
@@ -234,7 +252,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                       aria-hidden="true"
                     />
                   )}
-                  <span>{typeMeta?.label || type}</span>
+                  <span>{t(`types.${typeKey}`)}</span>
                 </span>
               </div>
             </div>
@@ -255,11 +273,11 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                   isCompact ? "text-label-g" : "text-xs",
                 )}
               >
-                {type === "TimeBased"
-                  ? "Cupom de tempo para sessão de lazer"
+                {typeKey === "TimeBased"
+                  ? t("fallbackDescriptions.timeBased")
                   : isMystery
-                    ? "Contém uma recompensa surpresa aleatória"
-                    : "Recompensa de resgate imediato"}
+                    ? t("fallbackDescriptions.mystery")
+                    : t("fallbackDescriptions.singleUse")}
               </p>
             )}
           </div>
@@ -267,7 +285,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
 
         {/* LINHA DE BADGES: Duração em Destaque + Raridade + Categoria */}
         <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-          {type === "TimeBased" || remainingSeconds !== undefined ? (
+          {typeKey === "TimeBased" || remainingSeconds !== undefined ? (
             remainingSeconds !== undefined && remainingSeconds !== null ? (
               <span
                 className={cn(
@@ -284,7 +302,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                   aria-hidden="true"
                 />
                 <span className="truncate">
-                  {formatBackpackItemRemainingTime(remainingSeconds)}
+                  {formatBackpackItemRemainingTime(remainingSeconds, locale)}
                 </span>
               </span>
             ) : baseDurationMinutes ? (
@@ -293,7 +311,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                   "inline-flex items-center gap-1 px-2 py-0.5 rounded-md border font-extrabold tracking-tight leading-none bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.12)]",
                   isCompact ? "text-tiny" : "text-label-g",
                 )}
-                title={`Duração do cupom: ${baseDurationMinutes} minutos`}
+                title={t("durationTitle", { minutes: baseDurationMinutes })}
               >
                 <Clock
                   size={isCompact ? 10 : 12}
@@ -319,14 +337,14 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                   "text-neutral-300 bg-white/10 border-white/15",
               )}
             >
-              {packageLevel}
+              {t(`packages.${toPackageMessageKey(packageLevel)}`)}
             </span>
           )}
           {Boolean(
             category && category !== "Nenhum" && category !== "NONE",
           ) && (
             <span className="font-medium rounded bg-white/8 border border-white/10 text-neutral-300 text-tiny px-1.5 py-0.5 leading-none">
-              {category}
+              {t(`categories.${toCategoryMessageKey(category)}`)}
             </span>
           )}
         </div>
@@ -339,16 +357,16 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
             <div className="flex items-center gap-1.5 bg-gold/10 border border-gold/25 px-2.5 py-1 rounded-lg">
               <CoinIcon size={15} withGlow />
               <span className="text-xs font-extrabold text-neutral-100">
-                {formatCoins(price)}
+                {formatCoins(price, { locale })}
               </span>
             </div>
           ) : !(secondaryActionLabel && onSecondaryAction) ? (
             <span className="text-neutral-400 font-medium truncate text-tiny">
               {inUse
-                ? "Sessão ativa"
+                ? t("statuses.activeSession")
                 : isMystery
-                  ? "Caixa lacrada"
-                  : "Disponível"}
+                  ? t("statuses.sealedBox")
+                  : t("statuses.available")}
             </span>
           ) : null}
         </div>
@@ -370,8 +388,11 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
               aria-label={`${secondaryActionLabel} ${title}`}
               title={
                 inUse
-                  ? "Item em uso no Focus"
-                  : `${secondaryActionLabel} ${title}`
+                  ? t("tooltips.inUse")
+                  : t("tooltips.actionTarget", {
+                      action: secondaryActionLabel,
+                      title,
+                    })
               }
               className={cn(
                 "rounded-lg font-semibold transition-all shadow-xs border text-neutral-200",
@@ -392,12 +413,20 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
             aria-label={`${actionLabel} ${title}`}
             title={
               isFocusNavigate
-                ? "Abrir a tela de Foco com esta sessão ativa"
+                ? t("tooltips.openFocusSession")
                 : inUse
-                  ? "Item em uso no Focus"
+                  ? t("tooltips.inUse")
                   : !canAfford
-                    ? "Moedas insuficientes"
-                    : `${actionLabel} por ${price ? `${price} moedas` : title}`
+                    ? t("tooltips.insufficientCoins")
+                    : price
+                      ? t("tooltips.actionForPrice", {
+                          action: actionLabel,
+                          price: formatCoins(price, { locale }),
+                        })
+                      : t("tooltips.actionTarget", {
+                          action: actionLabel,
+                          title,
+                        })
             }
             className={cn(
               "rounded-lg font-bold transition-all shadow-xs",
@@ -406,9 +435,9 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                 onSecondaryAction &&
                 "flex-1 sm:flex-initial text-center",
               isFocusNavigate
-                ? "bg-gold hover:bg-gold-hover text-neutral-900 border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95"
+                ? "bg-gold hover:bg-gold-hover text-on-gold border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95"
                 : canAfford && !inUse
-                  ? "bg-warning-500 hover:bg-warning-400 focus:outline-none focus:ring-2 focus:ring-warning-300 focus:ring-offset-1 focus:ring-offset-surface active:scale-95 text-neutral-900 cursor-pointer"
+                  ? "bg-warning-500 hover:bg-warning-400 focus:outline-none focus:ring-2 focus:ring-warning-300 focus:ring-offset-1 focus:ring-offset-surface active:scale-95 text-on-gold cursor-pointer"
                   : "bg-white/10 text-neutral-400 border border-white/10 cursor-not-allowed opacity-60",
               isCompact ? "px-2.5 py-1 text-label-g" : "px-3.5 py-1.5 text-xs",
             )}

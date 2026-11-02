@@ -12,8 +12,6 @@ import com.habitparty.application.ports.PaymentWebhookEvent;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.User;
 
-import org.springframework.transaction.annotation.Transactional;
-
 @Service
 public class ConfirmCheckoutSessionUseCase {
   private static final Logger log = LoggerFactory.getLogger(ConfirmCheckoutSessionUseCase.class);
@@ -31,7 +29,6 @@ public class ConfirmCheckoutSessionUseCase {
     this.userRepository = userRepository;
   }
 
-  @Transactional
   public Optional<User> execute(UUID userId, String sessionId) {
     if (sessionId == null || sessionId.isBlank()) {
       return Optional.empty();
@@ -67,7 +64,11 @@ public class ConfirmCheckoutSessionUseCase {
             checkout.metadata())
         : checkout;
 
-    processStripeWebhookUseCase.execute(effectiveCheckout);
+    try {
+      processStripeWebhookUseCase.execute(effectiveCheckout);
+    } catch (org.springframework.dao.DataIntegrityViolationException e) {
+      log.info("Sessão de checkout {} processada simultaneamente pelo webhook. Prosseguindo com leitura do usuário.", sessionId);
+    }
 
     // Validação estrita: somente devolve o usuário se ele de fato foi ativado como Premium!
     Optional<User> updatedUserOpt = userRepository.findById(userId);

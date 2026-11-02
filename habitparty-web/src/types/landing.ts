@@ -1,64 +1,85 @@
 import type { LucideIcon } from "lucide-react";
 
-export interface LandingNavAnchor {
-  label: string;
+export type LandingNavLinkKey =
+  | "howItWorks"
+  | "gamification"
+  | "features"
+  | "roadmap"
+  | "pricing"
+  | "faq";
+
+export interface LandingNavLinkConfig {
+  id: LandingNavLinkKey;
   href: string;
 }
 
-export interface LandingHeroHighlight {
-  label: string;
+export type LandingHeroHighlightKey =
+  | "levels"
+  | "streaks"
+  | "pomodoro"
+  | "shop";
+
+export interface LandingHeroHighlightConfig {
+  id: LandingHeroHighlightKey;
   icon: LucideIcon;
   colorClass: string;
 }
 
-export interface LandingStepItem {
+export type LandingProductivityStepKey = "step1" | "step2" | "step3";
+
+export interface LandingProductivityStepConfig {
+  id: LandingProductivityStepKey;
   number: string;
   icon: LucideIcon;
-  title: string;
-  tag: string;
-  description: string;
   color: string;
   borderColor: string;
 }
 
-export interface LandingFeatureItem {
+export type LandingFeatureKey =
+  | "experienceMode"
+  | "rewardShop"
+  | "partyGuild"
+  | "hardcoreMode"
+  | "workspaces"
+  | "analytics"
+  | "soundEffects";
+
+export interface LandingFeatureConfig {
+  id: LandingFeatureKey;
   icon: LucideIcon;
-  title: string;
-  description: string;
-  badge: string;
   badgeColor: string;
 }
 
-export interface LandingPlan {
-  name: string;
-  badge: string;
-  badgeColor: string;
-  price: string;
-  originalPrice?: string;
-  period: string;
-  description: string;
-  highlight: boolean;
-  ctaText: string;
-  ctaLink: string;
-  features: string[];
-  slotsLimitBadge?: string;
-  isFounder?: boolean;
-}
+export type LandingRoadmapKey = "r11" | "r12" | "r13" | "r14" | "r20";
 
-export interface LandingRoadmapItem {
+export interface LandingRoadmapConfig {
+  id: LandingRoadmapKey;
   release: string;
-  title: string;
-  tagline: string;
-  status: "in_progress" | "next" | "planned" | "epic";
-  statusLabel: string;
+  status: "completed" | "in_progress" | "next" | "planned" | "epic";
   statusBadgeColor: string;
   icon: LucideIcon;
   accentColor: string;
   borderGlowColor: string;
-  features: string[];
+  hasExtras?: boolean;
 }
 
-export interface LandingFaqItem {
-  question: string;
-  answer: string;
+export type LandingPlanKey = "adventurer" | "founder" | "guardian";
+
+export interface LandingPlanConfig {
+  id: LandingPlanKey;
+  badgeColor: string;
+  highlight: boolean;
+  isFounder?: boolean;
+  hasOriginalPrice?: boolean;
+  ctaLink: string;
 }
+
+export type LandingFaqKey =
+  | "founderPromo"
+  | "freeVsPremium"
+  | "honestyShop"
+  | "hardcoreMode"
+  | "partyGuild"
+  | "dataPreservation"
+  | "experienceMode"
+  | "mobileApp";

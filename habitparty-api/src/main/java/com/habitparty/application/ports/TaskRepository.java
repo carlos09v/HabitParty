@@ -2,7 +2,9 @@ package com.habitparty.application.ports;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -29,13 +31,16 @@ public interface TaskRepository {
   // Busca em lote todas as tarefas de múltiplas colunas (elimina N+1)
   List<Task> findByBoardColumnIdInOrderByOrderIndexAsc(List<UUID> boardColumnIds);
 
-  List<Task> findAllRecurringTasks();
+  // Busca paginada das tarefas recorrentes (HABIT/DAILY) para o rollover diário em lotes
+  List<Task> findRecurringTasksPage(int page, int size);
 
   List<Task> findOverdueHardcoreTodos(LocalDate today);
 
   List<Task> findPendingEmailReminders(LocalDateTime now, LocalDate today);
 
   long countActiveEmailRemindersByUserId(UUID userId);
+
+  Map<UUID, Long> countActiveEmailRemindersByUserIds(Collection<UUID> userIds);
 
   // Para quando a coluna estiver vazia e a primeira task precisar do index 0
   int findMaxOrderIndexByBoardColumnId(UUID boardColumnId);

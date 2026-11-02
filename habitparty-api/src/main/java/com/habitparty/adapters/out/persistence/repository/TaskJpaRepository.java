@@ -2,6 +2,7 @@ package com.habitparty.adapters.out.persistence.repository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,9 +31,9 @@ public interface TaskJpaRepository extends JpaRepository<TaskJpaEntity, UUID> {
     @Query("SELECT COALESCE(MAX(t.orderIndex), -1) FROM TaskJpaEntity t WHERE t.boardColumnId = :boardColumnId")
     Integer findMaxOrderIndexByBoardColumnId(@Param("boardColumnId") UUID boardColumnId);
 
-    // Busca apenas as tarefas filhas que precisam de reset diário
-    @Query("SELECT t FROM TaskJpaEntity t WHERE t.taskType IN ('HABIT', 'DAILY')")
-    List<TaskJpaEntity> findAllRecurringTasks();
+    // Busca paginada (ordenação estável por id) das tarefas recorrentes que precisam de reset diário
+    @Query("SELECT t FROM TaskJpaEntity t WHERE t.taskType IN ('HABIT', 'DAILY') ORDER BY t.id")
+    List<TaskJpaEntity> findRecurringTasks(Pageable pageable);
 
     // Busca afazeres no modo hardcore pendentes, vencidos e que ainda não receberam a penalidade
     @Query("""
@@ -66,10 +67,24 @@ public interface TaskJpaRepository extends JpaRepository<TaskJpaEntity, UUID> {
     long countActiveEmailRemindersByUserId(@Param("userId") UUID userId);
 
     @Query("""
-                SELECT t, b.name
+        SELECT t.userId, COUNT(t) FROM TodoJpaEntity t
+        WHERE t.userId IN :userIds
+          AND t.status = 'PENDING'
+          AND t.sendEmailReminder = true
+          AND t.emailReminderSent = false
+        GROUP BY t.userId
+    """)
+    List<Object[]> countActiveEmailRemindersByUserIds(@Param("userIds") Collection<UUID> userIds);
+
+    // Projeção escalar: não hidrata a entidade polimórfica (evita LEFT JOIN em habit/todo e o
+    // overhead do Persistence Context). Só junta 'daily' para obter os dias da semana.
+    @Query(value = """
+                SELECT t.id, t.name, t.taskType, t.dueDate, b.name, t.isHardcoreModeEnabled, d.daysOfWeek
                 FROM TaskJpaEntity t
                 JOIN BoardColumnJpaEntity b ON t.boardColumnId = b.id
+                LEFT JOIN DailyJpaEntity d ON d.id = t.id
                 WHERE b.workspace.id = :workspaceId
+                  AND b.isVisible = true
                   AND (
                       (t.status = 'PENDING' AND (
                           (:filter = 'TODAY' AND t.dueDate = :today) OR
@@ -79,6 +94,21 @@ public interface TaskJpaRepository extends JpaRepository<TaskJpaEntity, UUID> {
                       (t.taskType = 'HABIT' AND (:filter = 'TODAY' OR :filter = 'ALL'))
                   )
                 ORDER BY t.dueDate ASC NULLS LAST
+            """,
+            countQuery = """
+                SELECT COUNT(t.id)
+                FROM TaskJpaEntity t
+                JOIN BoardColumnJpaEntity b ON t.boardColumnId = b.id
+                WHERE b.workspace.id = :workspaceId
+                  AND b.isVisible = true
+                  AND (
+                      (t.status = 'PENDING' AND (
+                          (:filter = 'TODAY' AND t.dueDate = :today) OR
+                          (:filter = 'OVERDUE' AND t.dueDate < :today AND t.taskType = 'TODO') OR
+                          (:filter = 'ALL')
+                      )) OR
+                      (t.taskType = 'HABIT' AND (:filter = 'TODAY' OR :filter = 'ALL'))
+                  )
             """)
     Page<Object[]> findDashboardTasks(
             @Param("workspaceId") UUID workspaceId,

@@ -57,9 +57,9 @@ export function SidebarLink({
         {showBadge && (
           <span
             className={cn(
-              "px-1.5 py-0.2 rounded-full text-[10px] font-extrabold shrink-0 shadow-xs transition-colors",
+              "px-1.5 py-0.5 rounded-full text-[10px] font-extrabold shrink-0 shadow-xs transition-colors",
               badgeVariant === "gold" || isActive
-                ? "bg-gold text-neutral-900"
+                ? "bg-gold text-on-gold"
                 : "bg-white/10 text-neutral-200 border border-white/15 group-hover:border-gold/40 group-hover:text-gold",
             )}
           >

@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import com.habitparty.adapters.in.web.dtos.request.UpdateInventoryOrderDTO;
@@ -17,6 +18,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RequestMapping("/inventory")
+@Validated
 @Tag(name = "Inventory", description = "Endpoints para gerenciamento do inventário e mochila do usuário")
 public interface InventoryItemApi {
 
@@ -30,7 +32,7 @@ public interface InventoryItemApi {
     @Operation(summary = "Reordenar Inventário", description = "Atualiza a ordem de exibição dos itens no inventário.")
     @PutMapping("/reorder")
     ResponseEntity<Void> reorderInventory(
-        @RequestBody @Valid List<UpdateInventoryOrderDTO> orderList,
+        @RequestBody List<@Valid UpdateInventoryOrderDTO> orderList,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 

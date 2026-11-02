@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import {
   DashboardMobileDrawer,
   DashboardWidgetsList,
@@ -12,7 +13,7 @@ import { cn } from "@/utils";
  * Em telas < xl (tablets e mobile), passa a árvore de widgets como `children` para o
  * leaf client component DashboardMobileDrawer, evitando duplicar props na hidratação.
  */
-export function DashboardSidebarRight({
+export async function DashboardSidebarRight({
   isCompact = false,
   balance = 0,
   weeklyEarnings = 0,
@@ -23,6 +24,7 @@ export function DashboardSidebarRight({
   activities = [],
   records = [],
 }: DashboardSidebarRightProps) {
+  const t = await getTranslations("dashboard.sidebarRight");
   const widgets = (
     <DashboardWidgetsList
       isCompact={isCompact}
@@ -41,11 +43,12 @@ export function DashboardSidebarRight({
     <>
       {/* 1. SIDEBAR ESTÁTICA PARA TELAS DESKTOP (xl+) */}
       <aside
+        data-panel="sidebar-right"
         className={cn(
           "hidden xl:flex shrink-0 bg-primary-dark/20 border-l border-primary/30 backdrop-blur-md h-full flex-col overflow-y-auto custom-scrollbar transition-[width,padding,gap] duration-200 z-20",
           isCompact ? "w-[300px] px-4 py-4 gap-3" : "w-[345px] px-5 py-5 gap-4",
         )}
-        aria-label="Painel de Resumo e Calendário"
+        aria-label={t("asideAriaLabel")}
       >
         {widgets}
       </aside>

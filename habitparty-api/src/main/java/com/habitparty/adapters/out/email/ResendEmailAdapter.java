@@ -1,5 +1,6 @@
 package com.habitparty.adapters.out.email;
 
+import java.io.IOException;
 import java.net.ProxySelector;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -64,7 +65,6 @@ public class ResendEmailAdapter implements EmailSenderPort {
           </div>
           """.formatted(resetLink);
 
-      // Constrói o JSON escapando as aspas de forma segura
       String jsonBody = """
           {
             "from": %s,
@@ -86,7 +86,7 @@ public class ResendEmailAdapter implements EmailSenderPort {
           .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
           .build();
 
-      HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      HttpResponse<String> response = sendWithRetry(request);
 
       if (response.statusCode() >= 200 && response.statusCode() < 300) {
         log.info("[ResendEmailAdapter] E-mail de recuperação enviado com sucesso para: {}", toEmail);
@@ -97,6 +97,71 @@ public class ResendEmailAdapter implements EmailSenderPort {
       }
     } catch (Exception e) {
       log.error("[ResendEmailAdapter] Erro inesperado ao tentar disparar e-mail via Resend", e);
+      return false;
+    }
+  }
+
+  @Override
+  public boolean sendEmailVerificationEmail(String toEmail, String userName, String verificationLink) {
+    if (apiKey.isEmpty() || apiKey.startsWith("re_sua_chave")) {
+      log.warn("================================================================================");
+      log.warn("[ResendEmailAdapter] RESEND_API_KEY não configurada ou com valor placeholder.");
+      log.warn("[Simulação de E-mail de Verificação de Conta]");
+      log.warn("Destinatário: {} ({})", toEmail, userName);
+      log.warn("Link de Verificação: {}", verificationLink);
+      log.warn("================================================================================");
+      return true;
+    }
+
+    try {
+      String greetingName = (userName != null && !userName.isBlank()) ? userName : "Aventureiro(a)";
+      String htmlContent = """
+          <div style="font-family: Arial, sans-serif; background-color: #0b021d; color: #ffffff; padding: 32px; border-radius: 12px; max-width: 520px; margin: 0 auto; border: 1px solid rgba(255, 215, 0, 0.25);">
+            <h2 style="color: #ffd700; margin-top: 0; text-align: center;">🛡️ Confirme seu E-mail - HabitParty</h2>
+            <p style="font-size: 15px; color: #e2e8f0; line-height: 1.6;">Olá, <strong>%s</strong>!</p>
+            <p style="font-size: 15px; color: #e2e8f0; line-height: 1.6;">Bem-vindo(a) ao HabitParty! Confirme seu endereço de e-mail clicando no botão abaixo para garantir a segurança da sua conta e liberar recursos como lembretes por e-mail, alteração de senha e assinatura de planos:</p>
+            <div style="margin: 28px 0; text-align: center;">
+              <a href="%s" style="background-color: #ffd700; color: #0b021d; font-weight: bold; text-decoration: none; padding: 12px 24px; border-radius: 8px; display: inline-block;">Confirmar Meu E-mail</a>
+            </div>
+            <p style="font-size: 12px; color: #94a3b8; line-height: 1.4; text-align: center;">Este link é válido por 24 horas. Se você não criou uma conta no HabitParty, ignore esta mensagem.</p>
+          </div>
+          """.formatted(
+              escapeHtml(greetingName),
+              escapeHtml(verificationLink)
+          );
+
+      String jsonBody = """
+          {
+            "from": %s,
+            "to": [%s],
+            "subject": "Confirme seu e-mail - HabitParty",
+            "html": %s
+          }
+          """.formatted(
+              escapeJsonString(fromEmail),
+              escapeJsonString(toEmail),
+              escapeJsonString(htmlContent)
+          );
+
+      HttpRequest request = HttpRequest.newBuilder()
+          .uri(URI.create("https://api.resend.com/emails"))
+          .timeout(Duration.ofSeconds(15))
+          .header("Authorization", "Bearer " + apiKey)
+          .header("Content-Type", "application/json")
+          .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+          .build();
+
+      HttpResponse<String> response = sendWithRetry(request);
+
+      if (response.statusCode() >= 200 && response.statusCode() < 300) {
+        log.info("[ResendEmailAdapter] E-mail de verificação enviado com sucesso para: {}", toEmail);
+        return true;
+      } else {
+        log.error("[ResendEmailAdapter] Falha ao enviar e-mail de verificação via Resend. Status: {}, Resposta: {}", response.statusCode(), response.body());
+        return false;
+      }
+    } catch (Exception e) {
+      log.error("[ResendEmailAdapter] Erro inesperado ao tentar disparar e-mail de verificação via Resend", e);
       return false;
     }
   }
@@ -147,7 +212,13 @@ public class ResendEmailAdapter implements EmailSenderPort {
             </div>
             <p style="font-size: 12px; color: #94a3b8; line-height: 1.4; text-align: center;">Você está recebendo este e-mail porque solicitou lembrete para esta tarefa no HabitParty.</p>
           </div>
-          """.formatted(greetingName, taskTitle, formattedDate, hardcoreBadge, tasksUrl);
+          """.formatted(
+              escapeHtml(greetingName),
+              escapeHtml(taskTitle),
+              escapeHtml(formattedDate),
+              hardcoreBadge,
+              escapeHtml(tasksUrl)
+          );
 
       String subject = isHardcore
           ? "⚠️ [URGENTE HabitParty] Lembrete da sua tarefa hardcore: " + taskTitle
@@ -175,7 +246,7 @@ public class ResendEmailAdapter implements EmailSenderPort {
           .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
           .build();
 
-      HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      HttpResponse<String> response = sendWithRetry(request);
 
       if (response.statusCode() >= 200 && response.statusCode() < 300) {
         log.info("[ResendEmailAdapter] Lembrete de tarefa enviado com sucesso para: {}", toEmail);
@@ -188,6 +259,34 @@ public class ResendEmailAdapter implements EmailSenderPort {
       log.error("[ResendEmailAdapter] Erro inesperado ao tentar disparar lembrete via Resend", e);
       return false;
     }
+  }
+
+  private HttpResponse<String> sendWithRetry(HttpRequest request) throws IOException, InterruptedException {
+    try {
+      return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    } catch (IOException firstException) {
+      log.warn("[ResendEmailAdapter] Falha de conexão na 1ª tentativa ({}). Tentando novamente em 150ms...",
+          firstException.toString());
+      try {
+        Thread.sleep(150);
+      } catch (InterruptedException ie) {
+        Thread.currentThread().interrupt();
+        throw ie;
+      }
+      return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+  }
+
+  private static String escapeHtml(String text) {
+    if (text == null) {
+      return "";
+    }
+    return text
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\"", "&quot;")
+        .replace("'", "&#39;");
   }
 
   private String escapeJsonString(String text) {

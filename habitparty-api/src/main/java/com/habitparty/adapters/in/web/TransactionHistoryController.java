@@ -43,6 +43,9 @@ public class TransactionHistoryController implements TransactionHistoryApi {
     @Override
     public void exportToCsv(
             AuthenticatedUser usuarioLogado,
+            String tab,
+            String period,
+            String search,
             HttpServletResponse response) throws IOException {
 
         response.setContentType("text/csv");
@@ -50,7 +53,7 @@ public class TransactionHistoryController implements TransactionHistoryApi {
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"meu_extrato.csv\"");
         response.getWriter().write('\uFEFF');
 
-        exportTransactionsCsvUseCase.execute(usuarioLogado.id(), response.getWriter());
+        exportTransactionsCsvUseCase.execute(usuarioLogado.id(), tab, period, search, response.getWriter());
     }
 
     @Override

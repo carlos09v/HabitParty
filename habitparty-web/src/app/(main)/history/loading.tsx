@@ -1,11 +1,18 @@
+import { getTranslations } from "next-intl/server";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { HISTORY_GRID_COLS } from "@/constants/history";
 import { cn } from "@/utils";
 
-export default function HistoryLoading() {
+export default async function HistoryLoading() {
+  const t = await getTranslations("history.loading");
+
   return (
     <PageWrapper>
-      <div className="flex flex-col gap-6 w-full max-w-6xl mx-auto pb-16 animate-pulse">
+      <div
+        className="flex flex-col gap-6 w-full max-w-6xl mx-auto pb-16 animate-pulse"
+        aria-busy="true"
+      >
+        <span className="sr-only">{t("ariaLabel")}</span>
         {/* Welcome Card Skeleton */}
         <div className="w-full h-14 rounded-2xl bg-surface/50 border border-primary/20" />
 

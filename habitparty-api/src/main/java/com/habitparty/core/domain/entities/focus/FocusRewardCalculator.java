@@ -77,42 +77,49 @@ public final class FocusRewardCalculator {
     }
 
     // Trava 4: Rendimento Decrescente Diário (Daily Soft Cap)
-    double multiplier = calculateDailyMultiplier(priorFocusMinutesToday, effectiveMinutes);
+    BigDecimal multiplier = calculateDailyMultiplierDecimal(priorFocusMinutesToday, effectiveMinutes);
 
-    if (multiplier <= 0.0) {
+    if (multiplier.compareTo(BigDecimal.ZERO) <= 0) {
       return FocusReward.ZERO;
     }
 
-    int finalXp = (int) Math.round(baseXp * multiplier);
-    BigDecimal finalCoins = baseCoins.multiply(BigDecimal.valueOf(multiplier))
+    int finalXp = BigDecimal.valueOf(baseXp)
+        .multiply(multiplier)
+        .setScale(0, RoundingMode.HALF_UP)
+        .intValue();
+    BigDecimal finalCoins = baseCoins.multiply(multiplier)
         .setScale(2, RoundingMode.HALF_UP);
 
     return new FocusReward(finalXp, finalCoins);
   }
 
-  public static double calculateDailyMultiplier(int priorMinutes, int sessionMinutes) {
+  public static BigDecimal calculateDailyMultiplierDecimal(int priorMinutes, int sessionMinutes) {
     if (sessionMinutes <= 0) {
-      return 0.0;
+      return BigDecimal.ZERO;
     }
     int safePrior = Math.max(0, priorMinutes);
     if (safePrior >= DAILY_TIER2_MINUTES) {
-      return 0.0; // Teto diário de 6h excedido
+      return BigDecimal.ZERO; // Teto diário de 6h excedido
     }
 
     int endMinutes = safePrior + sessionMinutes;
 
     // Caso 1: Sessão inteira dentro da Faixa 1 (até 240 min)
     if (endMinutes <= DAILY_TIER1_MINUTES) {
-      return 1.0;
+      return BigDecimal.ONE;
     }
+
+    BigDecimal half = new BigDecimal("0.5");
 
     // Caso 2: Sessão começou após a Faixa 1 (>= 240 min)
     if (safePrior >= DAILY_TIER1_MINUTES) {
       if (endMinutes <= DAILY_TIER2_MINUTES) {
-        return 0.5;
+        return half;
       }
       int tier2Minutes = DAILY_TIER2_MINUTES - safePrior;
-      return (tier2Minutes * 0.5) / sessionMinutes;
+      return BigDecimal.valueOf(tier2Minutes)
+          .multiply(half)
+          .divide(BigDecimal.valueOf(sessionMinutes), 6, RoundingMode.HALF_UP);
     }
 
     // Caso 3: Sessão cruza a fronteira de 240 min
@@ -120,7 +127,12 @@ public final class FocusRewardCalculator {
     int remaining = sessionMinutes - tier1Minutes;
     int tier2Minutes = Math.min(remaining, DAILY_TIER2_MINUTES - DAILY_TIER1_MINUTES);
 
-    double weightedSum = (tier1Minutes * 1.0) + (tier2Minutes * 0.5);
-    return weightedSum / sessionMinutes;
+    BigDecimal weightedSum = BigDecimal.valueOf(tier1Minutes)
+        .add(BigDecimal.valueOf(tier2Minutes).multiply(half));
+    return weightedSum.divide(BigDecimal.valueOf(sessionMinutes), 6, RoundingMode.HALF_UP);
+  }
+
+  public static double calculateDailyMultiplier(int priorMinutes, int sessionMinutes) {
+    return calculateDailyMultiplierDecimal(priorMinutes, sessionMinutes).doubleValue();
   }
 }

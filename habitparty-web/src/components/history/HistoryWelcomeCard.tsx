@@ -1,7 +1,10 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
 import { WELCOME_CARD_DETAILS } from "@/constants/welcomeCards";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
+import type { AppLocale } from "@/i18n/config";
 import type {
   HistoryPageSummary,
   TransactionHistoryResponseDTO,
@@ -21,19 +24,28 @@ export function HistoryWelcomeCard({
   totalElements,
   isCompact = false,
 }: HistoryWelcomeCardProps) {
+  const t = useTranslations("history.welcomeCard");
+  const { isGamified } = useExperienceMode();
+  const locale = useLocale() as AppLocale;
   const welcomeDetails = WELCOME_CARD_DETAILS.history;
   if (!welcomeDetails) return null;
 
   const stats = summary
-    ? calculateHistoryWelcomeStats(summary)
-    : calculateHistoryWelcomeStats(transactions, totalElements);
+    ? calculateHistoryWelcomeStats(summary, locale)
+    : calculateHistoryWelcomeStats(transactions, totalElements, locale);
+
+  const title = isGamified ? t("titleGamified") : t("titleProductivity");
+  const subtitle = isGamified
+    ? t("subtitleGamified")
+    : t("subtitleProductivity");
+  const bullet2 = isGamified ? t("bullet2Gamified") : t("bullet2Productivity");
 
   return (
     <WelcomeCard
       compact={isCompact}
-      title={welcomeDetails.title}
-      subtitle={welcomeDetails.subtitle}
-      bullets={welcomeDetails.bullets}
+      title={title}
+      subtitle={subtitle}
+      bullets={[t("bullet0"), t("bullet1"), bullet2]}
       imageSrc={welcomeDetails.imageSrc}
       stats={stats}
       imageWidth={

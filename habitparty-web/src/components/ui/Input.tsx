@@ -1,6 +1,7 @@
 "use client";
 
 import { Eye, EyeOff } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { InputProps } from "@/types/ui";
 import { cn } from "@/utils";
@@ -16,6 +17,7 @@ export function Input({
   hint,
   ...props
 }: InputProps) {
+  const t = useTranslations("ui.input");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const isPasswordInput = type === "password";
@@ -79,7 +81,9 @@ export function Input({
             type="button"
             onClick={() => setIsPasswordVisible(!isPasswordVisible)}
             className="absolute right-3.5 text-neutral-400 hover:text-gold transition-colors p-1 rounded-md outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold cursor-pointer"
-            aria-label={isPasswordVisible ? "Ocultar senha" : "Exibir senha"}
+            aria-label={
+              isPasswordVisible ? t("hidePassword") : t("showPassword")
+            }
           >
             {isPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>

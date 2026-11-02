@@ -1,9 +1,11 @@
 import { Mail } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Select } from "@/components/ui/Select";
 import { Switch } from "@/components/ui/Switch";
 import { TODO_REMINDER_OPTIONS } from "@/constants/task";
 import type { CreateTaskFormReturn } from "@/hooks/useCreateTaskForm";
+import { useUserStore } from "@/store/userStore";
 import type { ReminderTypeOption } from "@/types/task";
 import { isTaskHardcoreLocked } from "@/utils/date";
 
@@ -12,6 +14,9 @@ interface TodoFieldsProps {
 }
 
 export function TodoFields({ form }: TodoFieldsProps) {
+  const t = useTranslations("tasks.taskModal.todoFields");
+  const user = useUserStore((s) => s.user);
+  const isEmailUnverified = user?.emailVerified === false;
   const {
     dueDate,
     setDueDate,
@@ -34,33 +39,25 @@ export function TodoFields({ form }: TodoFieldsProps) {
       {/* Prazo */}
       <DatePicker
         id="todoDue"
-        label={
-          isHardcore
-            ? "Prazo de Entrega (Obrigatório no Hardcore)"
-            : "Prazo de Entrega"
-        }
+        label={isHardcore ? t("dueDateHardcoreLabel") : t("dueDateLabel")}
         value={dueDate}
         disabled={isPending || isOverdueHardcoreLocked}
         onChange={setDueDate}
         placeholder={
-          isHardcore ? "Selecione o prazo obrigatório..." : "Definir prazo..."
+          isHardcore ? t("dueDateHardcorePlaceholder") : t("dueDatePlaceholder")
         }
         compact
         required={isHardcore}
         allowClear={!isOverdueHardcoreLocked && !isHardcore}
-        hint={
-          isOverdueHardcoreLocked
-            ? "🔒 Data congelada: prazo expirado no Modo Hardcore."
-            : undefined
-        }
+        hint={isOverdueHardcoreLocked ? t("dueDateFrozenHint") : undefined}
       />
 
       {/* Lembrete */}
       <Select
-        label="Lembrete"
+        label={t("reminderLabel")}
         options={TODO_REMINDER_OPTIONS.map((opt) => ({
           value: opt.id,
-          label: opt.label,
+          label: t(`reminders.${opt.id}`),
         }))}
         value={reminderType}
         onChange={(val) => setReminderType(val as ReminderTypeOption)}
@@ -77,23 +74,24 @@ export function TodoFields({ form }: TodoFieldsProps) {
             </div>
             <div className="flex flex-col">
               <span className="text-body-xs font-semibold text-neutral-100 flex items-center gap-1.5 flex-wrap">
-                Receber lembrete por e-mail?
+                {t("emailReminderTitle")}
                 <span className="text-tiny font-normal px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                  Free: até 5 ativos (20/mês) • VIP: até 30 ativos (100/mês)
+                  {t("emailReminderQuotaBadge")}
                 </span>
               </span>
               <span className="text-label-g text-neutral-400">
-                Enviaremos um alerta por e-mail quando o momento do alarme
-                chegar.
+                {isEmailUnverified
+                  ? t("emailUnverifiedDesc")
+                  : t("emailVerifiedDesc")}
               </span>
             </div>
           </div>
           <Switch
-            checked={sendEmailReminder}
+            checked={sendEmailReminder && !isEmailUnverified}
             onCheckedChange={setSendEmailReminder}
-            disabled={isPending}
+            disabled={isPending || isEmailUnverified}
             size="sm"
-            aria-label="Receber lembrete por e-mail"
+            aria-label={t("emailSwitchAria")}
           />
         </div>
       )}

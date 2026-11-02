@@ -5,6 +5,7 @@ import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, MoreHorizontal } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { type CSSProperties, memo } from "react";
 import {
   TaskActionControl,
@@ -52,6 +53,7 @@ const TaskRowContent = memo(function TaskRowContent({
   listeners,
   isDragging = false,
 }: TaskRowContentProps) {
+  const t = useTranslations("dashboard.taskShared");
   const effectiveToggle = onToggleCompleted || onToggle;
 
   const {
@@ -193,19 +195,19 @@ const TaskRowContent = memo(function TaskRowContent({
           </div>
 
           <div className="flex items-center gap-2 text-label-g text-neutral-400">
-            {isHabit ? (
+            {isHabit && (
               <TaskHabitScoreBadge
                 habitScore={habitScore}
                 variant="row"
                 isCompact={isCompact}
               />
-            ) : (
-              <TaskRewardBadges
-                task={task}
-                isCompact={isCompact}
-                showStreak={true}
-              />
             )}
+            <TaskRewardBadges
+              task={task}
+              isCompact={isCompact}
+              showStreak={true}
+              showRewards={!isHabit}
+            />
           </div>
         </div>
       </div>
@@ -268,12 +270,12 @@ const TaskRowContent = memo(function TaskRowContent({
         ) : (
           <span className="text-body-s text-neutral-400 font-medium truncate">
             {task.resetCounter === "DAILY"
-              ? "Diário"
+              ? t("resetCounters.DAILY")
               : task.resetCounter === "WEEKLY"
-                ? "Semanal"
+                ? t("resetCounters.WEEKLY")
                 : task.resetCounter === "MONTHLY"
-                  ? "Mensal"
-                  : "Contínuo"}
+                  ? t("resetCounters.MONTHLY")
+                  : t("resetCounters.CONTINUOUS")}
           </span>
         )}
       </div>
@@ -289,8 +291,8 @@ const TaskRowContent = memo(function TaskRowContent({
               onContextMenu(e, task, columnId);
             }
           }}
-          aria-label={`Opções da tarefa ${task.title}`}
-          title="Opções da tarefa (Editar, Duplicar, Excluir)"
+          aria-label={t("actions.taskOptionsAria", { title: task.title })}
+          title={t("actions.taskOptionsTitle")}
           className="p-1 rounded text-neutral-400 group-hover:text-neutral-200 hover:!text-gold hover:!bg-white/10 focus:outline-none focus:ring-1 focus:ring-gold/60 transition-colors cursor-pointer"
         >
           <MoreHorizontal size={isCompact ? 14 : 16} />

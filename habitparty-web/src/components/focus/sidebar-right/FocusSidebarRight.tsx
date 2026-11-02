@@ -1,6 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type {
   FocusMetrics,
@@ -40,7 +41,7 @@ export function FocusSidebarRight({
   totalWeekMinutes,
   recentRecords,
   weekOffset = 0,
-  weekLabel = "Esta semana",
+  weekLabel,
   weekDateRange,
   onPrevWeek,
   onNextWeek,
@@ -54,10 +55,13 @@ export function FocusSidebarRight({
   isCompact = false,
   className,
 }: FocusSidebarRightProps) {
+  const t = useTranslations("focus.sidebar");
+  const resolvedWeekLabel = weekLabel ?? t("thisWeek");
   const [period, setPeriod] = useState<FocusPeriodTab>("HOJE");
 
   return (
     <aside
+      data-panel="sidebar-right"
       className={cn(
         "shrink-0 bg-primary-dark/20 border-t xl:border-t-0 xl:border-l border-primary/30 backdrop-blur-md h-full flex flex-col overflow-y-auto custom-scrollbar transition-all duration-200",
         isCompact
@@ -65,13 +69,15 @@ export function FocusSidebarRight({
           : "w-full xl:w-[345px] p-4 gap-4",
         className,
       )}
-      aria-label="Painel de métricas e histórico de foco"
+      aria-label={t("ariaLabel")}
     >
       {/* Indicador de Filtro Ativo */}
       {selectedActivityName && (
         <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-gold/10 border border-gold/40 text-xs shrink-0">
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-label-g text-neutral-400">Atividade:</span>
+            <span className="text-label-g text-neutral-400">
+              {t("activityFilterLabel")}
+            </span>
             <span className="font-bold text-gold truncate">
               {selectedActivityName}
             </span>
@@ -80,9 +86,9 @@ export function FocusSidebarRight({
             type="button"
             onClick={onClearSelectedActivity}
             className="flex items-center gap-1 text-neutral-400 hover:text-neutral-100 text-label-g font-semibold px-1.5 py-0.5 rounded hover:bg-white/10 transition-colors cursor-pointer"
-            title="Ver todas as atividades"
+            title={t("viewAllActivities")}
           >
-            <span>Todas</span>
+            <span>{t("allActivities")}</span>
             <X size={12} />
           </button>
         </div>
@@ -103,7 +109,7 @@ export function FocusSidebarRight({
         days={weeklyDays}
         totalWeekMinutes={totalWeekMinutes}
         weekOffset={weekOffset}
-        weekLabel={weekLabel}
+        weekLabel={resolvedWeekLabel}
         weekDateRange={weekDateRange}
         onPrevWeek={onPrevWeek}
         onNextWeek={onNextWeek}

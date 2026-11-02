@@ -1,13 +1,19 @@
+"use client";
+
 import { Sparkles, Users } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { PartyWidgetProps } from "@/types/dashboard";
 import { cn } from "@/utils";
 
 /**
- * Widget de Membros da Party / Amigos (Formato Compacto).
- * Server Component: renderiza de forma estática sem JavaScript de cliente,
- * ocupando o mínimo de espaço vertical enquanto a feature está em desenvolvimento.
+ * Widget de Membros da Party / Equipe (Formato Compacto).
+ * Client Component: exibe dinamicamente "Party & Amigos" (Gamificado)
+ * ou "Equipe & Colaboração" (Produtividade).
  */
 export function PartyWidget({ isCompact = false }: PartyWidgetProps) {
+  const t = useTranslations("dashboard.sidebarRight.partyWidget");
+  const { isGamified } = useExperienceMode();
   return (
     <div
       className={cn(
@@ -22,13 +28,13 @@ export function PartyWidget({ isCompact = false }: PartyWidgetProps) {
           aria-hidden="true"
         />
         <span className="text-xs font-semibold text-neutral-300 truncate">
-          Party & Amigos
+          {isGamified ? t("titleGamified") : t("titleProductivity")}
         </span>
       </div>
 
       <div className="flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-medium text-neutral-400">
         <Sparkles size={11} className="text-gold/80" aria-hidden="true" />
-        <span>Em breve</span>
+        <span>{t("comingSoon")}</span>
       </div>
     </div>
   );

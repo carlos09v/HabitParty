@@ -1,9 +1,14 @@
-export default function FocusLoading() {
+import { getTranslations } from "next-intl/server";
+
+export default async function FocusLoading() {
+  const t = await getTranslations("focus.loading");
+
   return (
     <div
       className="flex flex-col xl:flex-row h-full w-full overflow-hidden bg-background animate-pulse"
       aria-busy="true"
     >
+      <span className="sr-only">{t("ariaLabel")}</span>
       {/* Área Principal Esquerda */}
       <div className="flex-1 min-w-0 h-full flex flex-col p-5 sm:p-6 gap-5 overflow-hidden">
         {/* Welcome Card Colapsado Skeleton */}

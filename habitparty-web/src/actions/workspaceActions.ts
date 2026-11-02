@@ -2,6 +2,7 @@
 
 import { updateTag } from "next/cache";
 import { cookies } from "next/headers";
+import { getTranslations } from "next-intl/server";
 import { type ActionResponse, getErrorMessage } from "@/actions/types";
 import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
@@ -16,6 +17,7 @@ type WorkspaceResponseDTO = components["schemas"]["WorkspaceResponseDTO"];
 export async function createWorkspaceAction(
   payload: CreateWorkspaceDTO,
 ): Promise<ActionResponse<WorkspaceResponseDTO>> {
+  const t = await getTranslations("onboarding.workspaceActions");
   try {
     const { data, error } = await serverApi.POST("/workspaces", {
       body: payload,
@@ -25,10 +27,7 @@ export async function createWorkspaceAction(
       console.error("[WorkspaceAction:Create] Erro retornado pela API:", error);
       return {
         success: false,
-        error: getErrorMessage(
-          error,
-          "Falha ao criar o workspace. Tente novamente.",
-        ),
+        error: getErrorMessage(error, t("createError")),
       };
     }
 
@@ -50,7 +49,7 @@ export async function createWorkspaceAction(
     console.error("[WorkspaceAction:Create]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("serverError"),
     };
   }
 }
@@ -62,6 +61,7 @@ export async function updateWorkspaceAction(
   workspaceId: string,
   payload: UpdateWorkspaceDTO,
 ): Promise<ActionResponse<WorkspaceResponseDTO>> {
+  const t = await getTranslations("onboarding.workspaceActions");
   try {
     const { data, error } = await serverApi.PUT("/workspaces/{workspaceId}", {
       params: {
@@ -71,7 +71,10 @@ export async function updateWorkspaceAction(
     });
 
     if (error) {
-      return { success: false, error: "Falha ao atualizar o workspace." };
+      return {
+        success: false,
+        error: getErrorMessage(error, t("updateError")),
+      };
     }
 
     updateTag("workspaces");
@@ -80,7 +83,7 @@ export async function updateWorkspaceAction(
     return { success: true, data: data as WorkspaceResponseDTO };
   } catch (err) {
     console.error("[WorkspaceAction:Update]", err);
-    return { success: false, error: "Erro interno de comunicação." };
+    return { success: false, error: t("serverError") };
   }
 }
 
@@ -90,6 +93,7 @@ export async function updateWorkspaceAction(
 export async function deleteWorkspaceAction(
   id: string,
 ): Promise<ActionResponse> {
+  const t = await getTranslations("onboarding.workspaceActions");
   try {
     const { error } = await serverApi.DELETE("/workspaces/{id}", {
       params: {
@@ -98,7 +102,10 @@ export async function deleteWorkspaceAction(
     });
 
     if (error) {
-      return { success: false, error: "Falha ao excluir o workspace." };
+      return {
+        success: false,
+        error: getErrorMessage(error, t("deleteError")),
+      };
     }
 
     updateTag("workspaces");
@@ -106,6 +113,6 @@ export async function deleteWorkspaceAction(
     return { success: true, data: undefined };
   } catch (err) {
     console.error("[WorkspaceAction:Delete]", err);
-    return { success: false, error: "Erro interno de comunicação." };
+    return { success: false, error: t("serverError") };
   }
 }

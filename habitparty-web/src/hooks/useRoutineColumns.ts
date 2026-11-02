@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
@@ -25,6 +26,7 @@ export function useRoutineColumns(
   initialVisibleColumnIds?: string[],
   targetColumnId?: string,
 ) {
+  const t = useTranslations("tasks.hooks");
   const [, startTransition] = useTransition();
   const [columns, setColumns] = useState<BoardColumn[]>(initialColumns);
   const [isDeletingColumn, setIsDeletingColumn] = useState(false);
@@ -161,9 +163,7 @@ export function useRoutineColumns(
         } else {
           next = [...prev.slice(0, maxAllowed - 1), columnId];
           if (!isPremium) {
-            toast.info(
-              `Limite de ${maxAllowed} colunas ativas (Plano Free). Uma coluna foi ocultada do quadro para exibir esta.`,
-            );
+            toast.info(t("freeColumnLimitToast", { max: maxAllowed }));
           }
         }
 
@@ -171,7 +171,7 @@ export function useRoutineColumns(
         return next;
       });
     },
-    [maxAllowed, isPremium, persistVisibleColumns],
+    [maxAllowed, isPremium, persistVisibleColumns, t],
   );
 
   const showAllColumns = useCallback(() => {
@@ -221,7 +221,7 @@ export function useRoutineColumns(
       try {
         const res = await deleteBoardColumn(column.id);
         if (!res.success) {
-          toast.error(res.error || "Erro ao excluir coluna no servidor.");
+          toast.error(res.error || t("deleteColumnServerError"));
           return false;
         }
 
@@ -230,16 +230,16 @@ export function useRoutineColumns(
           toggleColumnVisibility(column.id);
         }
 
-        toast.success(`Coluna "${column.title}" excluída com sucesso!`);
+        toast.success(t("deleteColumnSuccess", { title: column.title }));
         return true;
       } catch (_error) {
-        toast.error("Erro inesperado ao excluir coluna.");
+        toast.error(t("deleteColumnUnexpectedError"));
         return false;
       } finally {
         setIsDeletingColumn(false);
       }
     },
-    [visibleColumnIds, toggleColumnVisibility],
+    [visibleColumnIds, toggleColumnVisibility, t],
   );
 
   const handleColumnReorder = useCallback(
@@ -254,13 +254,11 @@ export function useRoutineColumns(
       startTransition(async () => {
         const res = await updateBoardColumnOrder(workspaceId, payload);
         if (!res.success) {
-          toast.error(
-            res.error || "Erro ao salvar ordem das colunas no servidor.",
-          );
+          toast.error(res.error || t("reorderColumnsError"));
         }
       });
     },
-    [workspaceId],
+    [workspaceId, t],
   );
 
   return {

@@ -1,22 +1,22 @@
 package com.habitparty.application.usecases.user;
 
 import java.util.UUID;
-import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.BoardColumnRepository;
 import com.habitparty.application.ports.EmailDispatchLogRepository;
 import com.habitparty.application.ports.FocusActivityRepository;
 import com.habitparty.application.ports.FocusRecordRepository;
 import com.habitparty.application.ports.InventoryItemRepository;
-import com.habitparty.application.ports.PasswordResetTokenRepository;
 import com.habitparty.application.ports.RefreshTokenRepository;
 import com.habitparty.application.ports.RewardRepository;
 import com.habitparty.application.ports.StoragePort;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.application.ports.UserTokenRepository;
 import com.habitparty.application.ports.WorkspaceRepository;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
@@ -35,7 +35,7 @@ public class DeleteUserUseCase {
     private final FocusActivityRepository focusActivityPort;
     private final TransactionHistoryRepository transactionHistoryPort;
     private final RefreshTokenRepository refreshTokenPort;
-    private final PasswordResetTokenRepository passwordResetTokenPort;
+    private final UserTokenRepository userTokenPort;
     private final EmailDispatchLogRepository emailDispatchLogPort;
 
     public DeleteUserUseCase(UserRepository port,
@@ -49,7 +49,7 @@ public class DeleteUserUseCase {
             FocusActivityRepository focusActivityPort,
             TransactionHistoryRepository transactionHistoryPort,
             RefreshTokenRepository refreshTokenPort,
-            PasswordResetTokenRepository passwordResetTokenPort,
+            UserTokenRepository userTokenPort,
             EmailDispatchLogRepository emailDispatchLogPort) {
         this.port = port;
         this.storagePort = storagePort;
@@ -62,7 +62,7 @@ public class DeleteUserUseCase {
         this.focusActivityPort = focusActivityPort;
         this.transactionHistoryPort = transactionHistoryPort;
         this.refreshTokenPort = refreshTokenPort;
-        this.passwordResetTokenPort = passwordResetTokenPort;
+        this.userTokenPort = userTokenPort;
         this.emailDispatchLogPort = emailDispatchLogPort;
     }
 
@@ -81,10 +81,10 @@ public class DeleteUserUseCase {
         rewardPort.deleteAllByUserId(id);
         transactionHistoryPort.deleteAllByUserId(id);
         refreshTokenPort.deleteAllByUserId(id);
-        passwordResetTokenPort.deleteAllByUserId(id);
+        userTokenPort.deleteAllByUserId(id);
         emailDispatchLogPort.deleteAllByUserId(id);
 
-        // 3. Remove o usuário
+        // 3. Remove o usuário (e por cascade 1:1 remove user_stats e user_subscriptions)
         port.deleteById(id);
 
         // 4. Remove a foto de perfil do armazenamento local, se existir

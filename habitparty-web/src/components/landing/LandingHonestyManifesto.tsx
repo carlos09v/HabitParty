@@ -1,6 +1,9 @@
 import { ShieldCheck, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export function LandingHonestyManifesto() {
+  const t = useTranslations("landing.manifesto");
+
   return (
     <section className="py-20 md:py-28 relative overflow-hidden">
       {/* Glow cósmico sutil */}
@@ -11,39 +14,35 @@ export function LandingHonestyManifesto() {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gold/10 border border-gold/30 text-gold text-xs font-bold uppercase tracking-wider mb-6">
             <ShieldCheck className="w-4 h-4 text-gold" />
-            <span>O Pacto da Honestidade</span>
+            <span>{t("badge")}</span>
           </div>
 
           {/* Frase Central em Destaque */}
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-neutral-50 tracking-tight leading-snug max-w-3xl mx-auto mb-6">
-            “Trapacear nas suas tarefas é enganar a si mesmo:{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-gold via-amber-600 to-gold dark:from-gold dark:via-yellow-200 dark:to-gold">
-              aqui, cada moeda e cada nível valem o peso da sua sinceridade.
+            {t("quoteStart")}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-gold-ink via-amber-700 to-gold-ink dark:from-gold dark:via-yellow-200 dark:to-gold">
+              {t("quoteHighlight")}
             </span>
-            ”
+            {t("quoteEnd")}
           </h2>
 
           {/* Manifesto / Explicação */}
           <p className="max-w-2xl mx-auto text-sm sm:text-base text-neutral-300 leading-relaxed mb-8">
-            A loja de recompensas é você quem abastece. O ouro é conquistado com
-            o seu próprio suor e os prêmios são desfrutados por você na vida
-            real. No HabitParty, você não joga contra um algoritmo — joga pelo
-            seu próprio futuro. Marcar uma tarefa que não fez só sabota quem
-            você quer se tornar.
+            {t("description")}
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-6 pt-6 border-t border-neutral-700 dark:border-white/10 text-xs font-semibold text-neutral-200">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-gold shrink-0" />
-              <span>Sem trapaças contra você mesmo</span>
+              <span>{t("pillars.p1")}</span>
             </div>
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-gold shrink-0" />
-              <span>Recompensas merecidas de verdade</span>
+              <span>{t("pillars.p2")}</span>
             </div>
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-gold shrink-0" />
-              <span>Dopamina limpa e sem culpa</span>
+              <span>{t("pillars.p3")}</span>
             </div>
           </div>
         </div>

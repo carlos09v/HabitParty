@@ -1,4 +1,5 @@
 import { Check, CheckSquare, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { CreateTaskFormReturn } from "@/hooks/useCreateTaskForm";
 import { cn } from "@/utils";
 
@@ -7,6 +8,7 @@ interface TaskChecklistSectionProps {
 }
 
 export function TaskChecklistSection({ form }: TaskChecklistSectionProps) {
+  const t = useTranslations("tasks.taskModal.checklistSection");
   const {
     checklist,
     newChecklistText,
@@ -22,10 +24,11 @@ export function TaskChecklistSection({ form }: TaskChecklistSectionProps) {
       <div className="flex items-center justify-between shrink-0">
         <span className="text-body-s text-neutral-300 font-medium flex items-center gap-1.5">
           <CheckSquare size={15} className="text-gold" />
-          <span>Checklist / Subtarefas</span>
+          <span>{t("title")}</span>
         </span>
         <span className="text-tiny text-neutral-400">
-          {checklist.length} {checklist.length === 1 ? "item" : "itens"}
+          {checklist.length}{" "}
+          {checklist.length === 1 ? t("itemSingular") : t("itemPlural")}
         </span>
       </div>
 
@@ -41,7 +44,7 @@ export function TaskChecklistSection({ form }: TaskChecklistSectionProps) {
               handleAddChecklistItem();
             }
           }}
-          placeholder="+ Adicionar item ao checklist..."
+          placeholder={t("inputPlaceholder")}
           className="flex-1 bg-background/50 border border-primary/40 rounded-lg px-3 py-1.5 text-neutral-50 placeholder:text-neutral-500 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s"
           disabled={isPending}
         />
@@ -51,7 +54,7 @@ export function TaskChecklistSection({ form }: TaskChecklistSectionProps) {
           disabled={!newChecklistText.trim() || isPending}
           className="px-3 py-1.5 bg-primary hover:bg-primary-dark text-neutral-50 rounded-lg text-body-s font-semibold transition-colors disabled:opacity-50 cursor-pointer shrink-0"
         >
-          Adicionar
+          {t("addButton")}
         </button>
       </div>
 
@@ -71,17 +74,17 @@ export function TaskChecklistSection({ form }: TaskChecklistSectionProps) {
                   className={cn(
                     "w-4 h-4 rounded border flex items-center justify-center transition-colors cursor-pointer shrink-0",
                     item.isCompleted
-                      ? "bg-gold border-gold text-neutral-900 shadow-glow-gold-xs"
+                      ? "bg-gold border-gold text-on-gold shadow-glow-gold-xs"
                       : "border-primary/50 bg-primary-dark/40 hover:border-gold",
                   )}
                   aria-label={
                     item.isCompleted
-                      ? "Marcar subtarefa como pendente"
-                      : "Marcar subtarefa como concluída"
+                      ? t("markPendingAria")
+                      : t("markCompletedAria")
                   }
                 >
                   {item.isCompleted && (
-                    <Check size={11} className="stroke-3 text-neutral-900" />
+                    <Check size={11} className="stroke-3 text-on-gold" />
                   )}
                 </button>
                 <span
@@ -98,7 +101,7 @@ export function TaskChecklistSection({ form }: TaskChecklistSectionProps) {
                 onClick={() => handleRemoveChecklistItem(idx)}
                 disabled={isPending}
                 className="text-neutral-400 hover:text-danger-500 p-1 rounded transition-colors cursor-pointer disabled:opacity-50 shrink-0"
-                aria-label={`Remover item ${item.name}`}
+                aria-label={t("removeItemAria", { name: item.name ?? "" })}
               >
                 <Trash2 size={14} />
               </button>

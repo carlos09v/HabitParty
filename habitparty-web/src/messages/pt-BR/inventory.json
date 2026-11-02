@@ -1,0 +1,144 @@
+{
+  "metadata": {
+    "title": "Mochila & Inventário | HabitParty",
+    "titleGamified": "Mochila & Inventário | HabitParty",
+    "titleProductivity": "Inventário & Recompensas | HabitParty",
+    "description": "Gerencie suas recompensas resgatadas, consumíveis, caixas misteriosas e cupons de foco."
+  },
+  "loading": {
+    "label": "Carregando mochila...",
+    "labelGamified": "Carregando mochila...",
+    "labelProductivity": "Carregando inventário..."
+  },
+  "helpers": {
+    "openInFocus": "Abrir no Foco",
+    "openBox": "Abrir Caixa",
+    "sendToFocus": "Enviar ao Foco",
+    "use": "Usar"
+  },
+  "card": {
+    "openInFocus": "Abrir no Foco",
+    "openBox": "Abrir Caixa",
+    "sendToFocus": "Enviar ao Foco",
+    "use": "Usar"
+  },
+  "container": {
+    "listAriaLabel": "Itens do inventário",
+    "filters": {
+      "statusLabel": "Status",
+      "statusAll": "Todos os Status",
+      "statusAvailable": "Disponíveis",
+      "statusInFocus": "No Foco",
+      "typeLabel": "Tipo",
+      "typeAll": "Todos os Tipos",
+      "typeSingleUse": "Uso Único",
+      "typeTimeBased": "Cupom",
+      "typeMysteryBox": "Caixa Misteriosa",
+      "sortLabel": "Ordenar",
+      "sortDefault": "Ordem Padrão",
+      "sortQuantityDesc": "Maior Quantidade",
+      "sortName": "Nome (A-Z)"
+    },
+    "emptyState": {
+      "emptyTitle": "Sua mochila está vazia! 🎒",
+      "emptyTitleGamified": "Sua mochila está vazia! 🎒",
+      "emptyTitleProductivity": "Seu inventário está vazio! 📦",
+      "noResultsTitle": "Nenhum item encontrado",
+      "emptyDescription": "Você ainda não possui itens ou cupons no seu inventário. Conquiste moedas completando suas tarefas diárias e resgate recompensas épicas na Loja!",
+      "emptyDescriptionGamified": "Você ainda não possui itens ou cupons na sua mochila. Conquiste moedas completando suas tarefas diárias e resgate recompensas épicas na Loja!",
+      "emptyDescriptionProductivity": "Você ainda não possui itens ou cupons no seu inventário. Conquiste moedas completando suas tarefas e resgate recompensas na Loja!",
+      "noResultsDescription": "Não encontramos nenhum item que corresponda aos filtros aplicados.",
+      "exploreStore": "Explorar a Loja",
+      "clearFilters": "Limpar Filtros"
+    },
+    "contextMenu": {
+      "openInFocus": "Abrir no Foco",
+      "returnToBackpack": "Devolver para a mochila",
+      "returnToBackpackGamified": "Devolver para a mochila",
+      "returnToBackpackProductivity": "Devolver ao inventário",
+      "openMysteryBox": "Abrir Caixa Misteriosa",
+      "sendToFocus": "Enviar ao Foco",
+      "useImmediately": "Usar Imediatamente",
+      "useItem": "Usar Item",
+      "discardItem": "Descartar Item"
+    },
+    "discardModal": {
+      "title": "Descartar item da mochila?",
+      "titleGamified": "Descartar item da mochila?",
+      "titleProductivity": "Descartar item do inventário?",
+      "description": "Tem certeza que deseja descartar 1x <strong>\"{title}\"</strong>? Esta ação não reembolsa as moedas gastas.",
+      "confirmText": "Sim, descartar",
+      "cancelText": "Cancelar"
+    },
+    "toasts": {
+      "useError": "Erro ao usar item.",
+      "useSuccess": "Você usou \"{title}\"!",
+      "sendToFocusError": "Erro ao adicionar item ao Foco.",
+      "sendToFocusSuccess": "\"{title}\" adicionado ao Foco com sucesso!",
+      "returnToBackpackError": "Erro ao devolver item para a mochila.",
+      "returnToBackpackErrorGamified": "Erro ao devolver item para a mochila.",
+      "returnToBackpackErrorProductivity": "Erro ao devolver item ao inventário.",
+      "returnToBackpackSuccess": "\"{title}\" devolvido para a mochila!",
+      "returnToBackpackSuccessGamified": "\"{title}\" devolvido para a mochila!",
+      "returnToBackpackSuccessProductivity": "\"{title}\" devolvido ao inventário!",
+      "discardSuccess": "Item \"{title}\" descartado.",
+      "discardError": "Erro ao descartar item.",
+      "serverError": "Erro de comunicação com o servidor."
+    }
+  },
+  "rouletteHook": {
+    "defaultWinName": "Recompensa Especial",
+    "wonBadgeLabel": "SORTEADO!",
+    "dropBadge": "{percent}% Drop",
+    "tiers": {
+      "NONE": "Caixa Básica",
+      "BASIC": "Caixa Básica",
+      "PREMIUM": "Caixa Premium",
+      "EPIC": "Caixa Épica",
+      "LEGENDARY": "Caixa Lendária"
+    },
+    "poolItems": {
+      "b1": "Pausa Revigorante",
+      "b2": "Cupom de Lazer Médio",
+      "b3": "Sessão Focada de Hobby",
+      "p1": "Lazer Padrão",
+      "p2": "Vale-Lazer Estendido",
+      "p3": "Noite Gamer / Cinema",
+      "e1": "Bloco Estendido de Lazer",
+      "e2": "Noite Livre Completa",
+      "e3": "Tarde de Desconexão",
+      "l1": "Day-Off Parcial de Elite",
+      "l2": "Day-Off Integral",
+      "l3": "Celebração Absoluta"
+    }
+  },
+  "rouletteModal": {
+    "subtitleWon": "Parabéns! Veja o prêmio que você tirou nesta rodada:",
+    "subtitleIdle": "Role os dados da sorte e descubra qual prêmio sairá da sua caixa!",
+    "trackCouponMinutes": "Cupom {minutes}m",
+    "trackSingleUse": "Uso Único",
+    "prizeUnlockedTitle": "Prêmio Desbloqueado com Sucesso!",
+    "wonFocusItemMinutes": "Item de Foco ({minutes} minutos)",
+    "wonSingleUseItem": "Item de Uso Único direto da Mochila",
+    "drawingButton": "Sorteando...",
+    "spinButton": "Girar Roleta!",
+    "spinningStatus": "Girando a sorte...",
+    "storeInBackpackButton": "Guardar na Mochila",
+    "tiers": {
+      "NONE": "Básico",
+      "BASIC": "Básico",
+      "PREMIUM": "Premium",
+      "EPIC": "Épico",
+      "LEGENDARY": "Lendário"
+    }
+  },
+  "actions": {
+    "communicationError": "Erro interno de comunicação com o servidor.",
+    "reorderFailed": "Falha ao reordenar inventário.",
+    "consumeFailed": "Falha ao consumir item.",
+    "discardFailed": "Falha ao descartar item.",
+    "sendToFocusFailed": "Falha ao enviar item para o Foco.",
+    "returnToBackpackFailed": "Falha ao devolver item para a mochila.",
+    "openMysteryBoxFailed": "Falha ao abrir caixa misteriosa."
+  }
+}

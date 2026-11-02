@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCallback, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
@@ -24,6 +25,7 @@ export function useChecklist({
   taskId,
   onChecklistChanged,
 }: UseChecklistOptions = {}) {
+  const t = useTranslations("tasks.hooks");
   const [checklist, setChecklist] = useState<ChecklistItem[]>(initialItems);
   const checklistRef = useRef<ChecklistItem[]>(initialItems);
   const [isPending, startTransition] = useTransition();
@@ -62,7 +64,7 @@ export function useChecklist({
         startTransition(async () => {
           const res = await addChecklistItem(taskId, { name: trimmed });
           if (!res.success) {
-            toast.error(res.error || "Erro ao adicionar item ao checklist.");
+            toast.error(res.error || t("checklistAddError"));
             const rolledBack = checklistRef.current.filter(
               (i) => i.id !== tempId,
             );
@@ -76,7 +78,7 @@ export function useChecklist({
         });
       }
     },
-    [taskId, updateList],
+    [taskId, updateList, t],
   );
 
   const toggleItem = useCallback(
@@ -93,13 +95,13 @@ export function useChecklist({
         startTransition(async () => {
           const res = await toggleChecklistItem(itemId);
           if (!res.success) {
-            toast.error(res.error || "Erro ao atualizar item do checklist.");
+            toast.error(res.error || t("checklistUpdateError"));
             updateList(previous);
           }
         });
       }
     },
-    [taskId, updateList],
+    [taskId, updateList, t],
   );
 
   const deleteItem = useCallback(
@@ -114,13 +116,13 @@ export function useChecklist({
         startTransition(async () => {
           const res = await deleteChecklistItem(itemId);
           if (!res.success) {
-            toast.error(res.error || "Erro ao remover item do checklist.");
+            toast.error(res.error || t("checklistDeleteError"));
             updateList(previous);
           }
         });
       }
     },
-    [taskId, updateList],
+    [taskId, updateList, t],
   );
 
   return {

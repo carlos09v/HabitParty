@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, ArrowRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { BaseModal } from "@/components/ui/BaseModal";
 import type { FocusRecordType } from "@/types/focus";
 
@@ -19,15 +20,16 @@ export function SwitchTimerModeModal({
   newMode,
   onConfirm,
 }: SwitchTimerModeModalProps) {
-  const currentModeLabel = currentMode === "POMO" ? "Pomodoro" : "Cronômetro";
-  const newModeLabel = newMode === "POMO" ? "Pomodoro" : "Cronômetro";
+  const t = useTranslations("focus.switchTimerModal");
+  const currentModeLabel = t(`modes.${currentMode}`);
+  const newModeLabel = t(`modes.${newMode}`);
 
   return (
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Trocar Modo de Foco"
-      description="Já existe uma contagem de foco em andamento."
+      title={t("title")}
+      description={t("description")}
     >
       <div className="flex flex-col gap-4 mt-2">
         {/* Aviso visual */}
@@ -35,11 +37,16 @@ export function SwitchTimerModeModal({
           <AlertTriangle size={18} className="text-amber-400 shrink-0 mt-0.5" />
           <div className="text-xs leading-relaxed text-neutral-300">
             <p>
-              Você possui uma contagem ativa no modo{" "}
-              <strong className="text-amber-300">{currentModeLabel}</strong>. Se
-              você alternar para{" "}
-              <strong className="text-gold">{newModeLabel}</strong> agora, o
-              tempo não salvo desta sessão será zerado.
+              {t.rich("warningBody", {
+                currentMode: currentModeLabel,
+                newMode: newModeLabel,
+                amber: (chunks) => (
+                  <strong className="text-amber-300">{chunks}</strong>
+                ),
+                gold: (chunks) => (
+                  <strong className="text-gold">{chunks}</strong>
+                ),
+              })}
             </p>
           </div>
         </div>
@@ -48,7 +55,7 @@ export function SwitchTimerModeModal({
         <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-surface/70 border border-primary/30">
           <div className="flex flex-col min-w-0 flex-1">
             <span className="text-label-g text-neutral-400 font-medium">
-              Modo Atual
+              {t("currentModeLabel")}
             </span>
             <span
               className="text-body-s font-bold text-neutral-200 truncate"
@@ -64,7 +71,7 @@ export function SwitchTimerModeModal({
 
           <div className="flex flex-col min-w-0 flex-1 text-right">
             <span className="text-label-g text-gold/90 font-medium">
-              Novo Modo
+              {t("newModeLabel")}
             </span>
             <span
               className="text-body-s font-bold text-gold truncate"
@@ -82,7 +89,7 @@ export function SwitchTimerModeModal({
             onClick={onClose}
             className="px-4 py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:bg-white/10 transition-colors cursor-pointer"
           >
-            Manter Atual
+            {t("keepCurrent")}
           </button>
           <button
             type="button"
@@ -90,9 +97,9 @@ export function SwitchTimerModeModal({
               onConfirm();
               onClose();
             }}
-            className="px-5 py-2 rounded-lg text-xs font-bold bg-gold text-neutral-900 hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer"
+            className="px-5 py-2 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer"
           >
-            Trocar e Zerar Tempo
+            {t("switchAndReset")}
           </button>
         </div>
       </div>

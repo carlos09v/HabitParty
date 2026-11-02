@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { HistoryFilters } from "@/components/history/HistoryFilters";
 import { HistoryTable } from "@/components/history/HistoryTable";
 import { HistoryWelcomeCard } from "@/components/history/HistoryWelcomeCard";
@@ -8,11 +10,13 @@ import type { HistoryPeriodFilter } from "@/types/history";
 import { summarizeHistoryPage } from "@/utils";
 import { getCompactMode } from "@/utils/cookies";
 
-export const metadata = {
-  title: "Extrato & Histórico | HabitParty",
-  description:
-    "Consulte e exporte seu extrato de moedas, XP, tarefas, foco e recompensas.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("history.metadata");
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
 
 interface HistoryPageProps {
   searchParams: Promise<{
@@ -25,6 +29,7 @@ interface HistoryPageProps {
 
 export default async function HistoryPage({ searchParams }: HistoryPageProps) {
   const isCompact = await getCompactMode();
+  const tPage = await getTranslations("history.page");
   const resolvedParams = await searchParams;
 
   const currentTab = resolvedParams.tab || "ALL";
@@ -86,7 +91,7 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
             totalPages={totalPages}
             totalItems={totalElements}
             itemsPerPage={pageData.size || 8}
-            itemLabel="transações"
+            itemLabel={tPage("paginationItemLabel")}
             isCompact={isCompact}
             buildHref={buildPaginationHref}
           />

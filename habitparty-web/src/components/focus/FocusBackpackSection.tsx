@@ -1,7 +1,6 @@
-"use client";
-
 import { ArrowUpRight, Backpack, Infinity as InfinityIcon } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn } from "@/utils";
 import { FocusCard } from "./FocusCard";
@@ -29,10 +28,12 @@ export function FocusBackpackSection({
   onConsume,
   isCompact = false,
 }: FocusBackpackSectionProps) {
+  const t = useTranslations("focus.backpack");
+
   return (
     <section
       className="flex flex-col gap-3 w-full"
-      aria-label="Mochila em Foco"
+      aria-label={t("sectionAria")}
     >
       {/* Header com Título, Contador e Link para a Mochila */}
       <div className="flex items-center justify-between gap-3">
@@ -43,12 +44,12 @@ export function FocusBackpackSection({
               isCompact ? "text-body-m sm:text-subtitle-s" : "text-subtitle-s",
             )}
           >
-            Mochila
+            {t("title")}
           </h3>
 
           <div
             className="flex items-center gap-1 px-2 py-0.5 rounded-lg border border-primary/30 bg-surface/60 text-neutral-300 text-xs font-medium"
-            title="Itens e cupons trazidos da mochila para o Foco"
+            title={t("counterTitle")}
           >
             <span>{items.length} /</span>
             <InfinityIcon size={13} className="text-primary-light" />
@@ -58,9 +59,9 @@ export function FocusBackpackSection({
         <Link
           href="/inventory"
           className="flex items-center gap-1 text-xs font-semibold text-neutral-400 hover:text-gold transition-colors group cursor-pointer"
-          title="Ver todos os itens no inventário"
+          title={t("manageLinkTitle")}
         >
-          <span>Gerenciar Mochila</span>
+          <span>{t("manageLinkLabel")}</span>
           <ArrowUpRight
             size={13}
             className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"
@@ -72,18 +73,15 @@ export function FocusBackpackSection({
       {items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-primary/30 bg-surface/30 p-6 flex flex-col items-center justify-center text-center gap-2">
           <Backpack size={26} className="text-neutral-500 mb-0.5" />
-          <p className="text-body-s text-neutral-300">
-            Nenhum item ou cupom da mochila adicionado ao Foco.
-          </p>
+          <p className="text-body-s text-neutral-300">{t("emptyTitle")}</p>
           <p className="text-tiny text-neutral-400 max-w-sm">
-            Resgate cupons e recompensas baseadas em tempo na Loja e adicione-os
-            aqui pela sua Mochila!
+            {t("emptyDescription")}
           </p>
           <Link
             href="/inventory"
             className="mt-1 text-xs font-bold text-gold hover:underline"
           >
-            Acessar Mochila
+            {t("emptyAction")}
           </Link>
         </div>
       ) : (

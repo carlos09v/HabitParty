@@ -1,0 +1,411 @@
+{
+  "landing": {
+    "metadata": {
+      "title": "HabitParty — Produtividade Gamificada & Hábitos em RPG",
+      "description": "Transforme sua rotina diária em uma jornada épica. Ganhe XP, acumule moedas de ouro, vença a procrastinação no Modo Foco e troque esforço por recompensas reais."
+    },
+    "navbar": {
+      "links": {
+        "howItWorks": "Como Funciona",
+        "gamification": "Gamificação",
+        "features": "Recursos",
+        "roadmap": "Roadmap",
+        "pricing": "Planos",
+        "faq": "Dúvidas (FAQ)"
+      },
+      "signIn": "Entrar",
+      "startFree": "Começar Grátis",
+      "signInAccount": "Entrar na Conta",
+      "startFreeAdventure": "Começar Gratuitamente ✨",
+      "openMenu": "Abrir menu",
+      "closeMenu": "Fechar menu"
+    },
+    "hero": {
+      "badge": "Produtividade com Propósito • Escolha entre Foco Executivo ou Imersão RPG",
+      "titleLine1": "Sua rotina não precisa ser um fardo. ",
+      "titleHighlight": "Torne-a consistente e recompensadora.",
+      "subtitle": "Gerencie tarefas, hábitos e projetos em quadros Kanban ágeis. Escolha entre uma interface executiva minimalista para trabalho ou transforme sua rotina em um jogo com moedas, XP e recompensas reais.",
+      "primaryCta": "Começar Gratuitamente",
+      "secondaryCta": "Explorar o App ao Vivo",
+      "highlights": {
+        "levels": "Níveis de Foco e XP",
+        "streaks": "Streaks e Dailies",
+        "pomodoro": "Pomodoro & Modo Zen",
+        "shop": "Loja de Recompensas"
+      }
+    },
+    "demo": {
+      "badge": "Demonstração Interativa",
+      "title": "Sinta a satisfação de evoluir na prática.",
+      "subtitle": "Clique nos botões e tarefas abaixo. No HabitParty, cada esforço real gera recompensas imediatas com som, XP e moedas de ouro.",
+      "windowTitle": "HabitParty Cosmic Studio • Demonstração ao Vivo",
+      "goldStatus": "{gold} Ouro",
+      "levelStatus": "Nível {level}",
+      "footerHint": "Simulação interativa: clique nos botões para sentir a sensação imediata de recompensa.",
+      "footerHighlight": "No HabitParty: seus hábitos diários viram ouro e evolução de verdade ✨",
+      "toasts": {
+        "habitLevelUp": "🎉 SUBIU DE NÍVEL! Nível {level} alcançado!",
+        "habitScored": "+15 XP • +5 Moedas de Ouro!",
+        "habitDecremented": "Hábito decrementado",
+        "dailyLevelUp": "🎉 LEVEL UP! Nível {level}!",
+        "dailyCompleted": "⚔️ Missão Cumprida! +60 XP • +25 Ouro!",
+        "dailyReopened": "Missão reaberta",
+        "timerStarted": "⏱️ Modo Hiperfoco Iniciado! Respire fundo.",
+        "timerPaused": "Pausa no cronômetro."
+      },
+      "playerHeader": {
+        "levelBadge": "Nv.{level}",
+        "name": "Explorador Cósmico",
+        "titleBadge": "Guerreiro do Foco",
+        "xpNextLevel": "{xp} / {maxXp} XP para o próximo nível",
+        "xpProgressLabel": "Progresso de XP"
+      },
+      "habitCard": {
+        "badge": "Hábito Diário",
+        "title": "💧 Beber 2L de Água",
+        "logsLabel": "Registros de hoje: ",
+        "glassesCount": "{count, plural, one {# copo} other {# copos}}",
+        "clickToScore": "Clique para pontuar:",
+        "decreaseAria": "Diminuir copo"
+      },
+      "dailyCard": {
+        "streakBadge": "{count, plural, one {Streak # dia} other {Streak # dias}}",
+        "title": "💻 1h de Estudo Profundo",
+        "resetNote": "Reseta à meia-noite se não for concluída.",
+        "statusDone": "Concluída!",
+        "statusPending": "Completar Quest:",
+        "buttonDone": "Feito!",
+        "buttonPending": "Concluir (+60 XP)"
+      },
+      "focusCard": {
+        "badge": "Foco Zen",
+        "duration": "25 min",
+        "descriptionRunning": "Hiperfoco ativo • Notificações silenciadas",
+        "descriptionIdle": "Elimine distrações e foque na tarefa",
+        "statusRunning": "Em execução",
+        "statusIdle": "Iniciar sessão:",
+        "pause": "Pausar",
+        "start": "Iniciar Foco"
+      }
+    },
+    "productivityLoop": {
+      "badge": "Metodologia HabitParty",
+      "title": "O ciclo contínuo de consistência pessoal.",
+      "subtitle": "Unimos neurociência, organização ágil e psicologia comportamental para transformar disciplina em entusiasmo diário.",
+      "cardFooter": "Personalizado e Automatizado",
+      "steps": {
+        "step1": {
+          "tag": "Rotina & Hábitos",
+          "title": "Estruture sua Rotina",
+          "description": "Crie hábitos com gatilhos positivos e negativos (+/-), rotinas diárias com ofensivas de consistência e projetos organizados em quadros Kanban ágeis."
+        },
+        "step2": {
+          "tag": "Pomodoro & Foco",
+          "title": "Ative o Hiperfoco Zen",
+          "description": "Entre em estado de fluxo com o Focus Hero Stage. Cronômetro inteligente, intervalos revigorantes e sons ambientes relaxantes para silenciar o ruído mental."
+        },
+        "step3": {
+          "tag": "Recompensas & Lazer",
+          "title": "Recompense sua Dedicação",
+          "description": "Transforme disciplina em momentos merecidos. Desfrute de pausas sem culpa, tempo livre ou itens da sua própria loja pessoal, seja acumulando pontos ou moedas de ouro."
+        }
+      }
+    },
+    "manifesto": {
+      "badge": "O Pacto da Honestidade",
+      "quoteStart": "“Trapacear nas suas tarefas é enganar a si mesmo: ",
+      "quoteHighlight": "aqui, cada moeda e cada nível valem o peso da sua sinceridade.",
+      "quoteEnd": "”",
+      "description": "A loja de recompensas é você quem abastece. O ouro é conquistado com o seu próprio suor e os prêmios são desfrutados por você na vida real. No HabitParty, você não joga contra um algoritmo — joga pelo seu próprio futuro. Marcar uma tarefa que não fez só sabota quem você quer se tornar.",
+      "pillars": {
+        "p1": "Sem trapaças contra você mesmo",
+        "p2": "Recompensas merecidas de verdade",
+        "p3": "Dopamina limpa e sem culpa"
+      }
+    },
+    "features": {
+      "badge": "Arsenal Completo",
+      "title": "Tudo o que você precisa para dominar sua rotina.",
+      "subtitle": "Cada recurso foi desenhado para eliminar atrito e recompensar sua dedicação com elegância e consistência.",
+      "items": {
+        "experienceMode": {
+          "badge": "Personalização Total",
+          "title": "Duas Experiências: Produtividade ou RPG",
+          "description": "Escolha como quer viver seu dia: adote o Modo Produtividade para uma interface limpa, sem poluição de moedas e focada em entregas; ou ative a Imersão RPG com moedas de ouro, XP e baús da sorte. Alterne com 1 clique sempre que quiser."
+        },
+        "rewardShop": {
+          "badge": "Economia Real",
+          "title": "Loja de Recompensas & Caixas Misteriosas",
+          "description": "Cadastre os mimos da sua vida real (ex: 'Sessão de Cinema', '1h de Game') ou tente a sorte abrindo Caixas Misteriosas com recompensas épicas."
+        },
+        "partyGuild": {
+          "badge": "Em Breve",
+          "title": "Sistema de Party e Guilda",
+          "description": "Em breve: convide amigos para a sua guilda no seu ambiente, acompanhem o progresso mútuo e celebrem vitórias em equipe."
+        },
+        "hardcoreMode": {
+          "badge": "Disciplina Real",
+          "title": "Prazo Rígido & Modo Hardcore",
+          "description": "Para compromissos inegociáveis. Falhar na meta do dia ou perder o prazo de afazeres bloqueia adiamentos e aplica penalidade imediata de 50%, fortalecendo sua responsabilidade."
+        },
+        "workspaces": {
+          "badge": "Organização",
+          "title": "Ambientes Independentes",
+          "description": "Isole Projetos de Trabalho, Estudos e Vida Pessoal com 1 clique, cada um com seus próprios quadros e métricas."
+        },
+        "analytics": {
+          "badge": "Métricas",
+          "title": "Gráficos de Histórico & Economia",
+          "description": "Acompanhe relatórios visuais da sua semana: horas de foco acumuladas, fluxo de ouro ganho e evolução da consistência."
+        },
+        "soundEffects": {
+          "badge": "Imersão",
+          "title": "Efeitos Sonoros Gratificantes",
+          "description": "Sinta a dopamina a cada conquista: áudios satisfatórios de vitória, tintilar de moedas e sino relaxante para o foco."
+        }
+      }
+    },
+    "roadmap": {
+      "badge": "Mapa da Jornada",
+      "title": "Da Jornada Individual ao MMO Social.",
+      "subtitle": "Conheça os próximos capítulos da evolução do HabitParty. Cada atualização adiciona mais imersão, cooperação e ferramentas para turbinar sua consistência.",
+      "founderBanner": {
+        "title": "Acesso Antecipado para Membros Fundadores",
+        "spotsBadge": "30 Vagas",
+        "description": "Assinantes pioneiros testam cada fase antes de todos e ganham uma insígnia vitalícia de prestígio no perfil.",
+        "cta": "Ver Oferta"
+      },
+      "phaseLabel": "Fase 0{index}",
+      "highlightsLabel": "Destaques desta versão:",
+      "extrasLabel": "Extras desta versão:",
+      "cardFooter": "Entrega contínua no ecossistema",
+      "cardFooterCompleted": "Entregue e ativo no ecossistema",
+      "feedbackPrompt": "Tem sugestões para as próximas versões ou encontrou algum bug? Participe diretamente da evolução do HabitParty:",
+      "reportBugCta": "Reportar Bug ou Sugerir Ideia (GitHub)",
+      "contactCreatorCta": "Falar com o Criador ({email})",
+      "items": {
+        "r11": {
+          "statusLabel": "Concluído",
+          "title": "Internacionalização & Modos de Experiência",
+          "tagline": "Expansão global bilíngue, perfis adaptativos de produtividade e blindagem estrutural de segurança e performance.",
+          "features": [
+            "Internacionalização (i18n): Suporte completo a Inglês (EN) e Português (PT-BR)",
+            "Alternância instantânea de idioma em todas as telas sem recarregar a aplicação",
+            "Modos de Experiência (RPG vs. Produtividade): escolha entre imersão gamificada ou layout minimalista focado em execução",
+            "Verificação progressiva de e-mail para segurança da conta e ativação de alertas"
+          ],
+          "extras": [
+            "Proteção Anti-Bot multicamada (Rate Limiting por IP, Honeypot invisível e bloqueio de e-mails temporários)",
+            "Refatoração arquitetural do banco de dados e índices de alta performance",
+            "Controles de densidade de interface (Modo Compacto) e customização de layout"
+          ]
+        },
+        "r12": {
+          "statusLabel": "Próximo Marco",
+          "title": "Modo Claro, Temas VIP & Conquistas",
+          "tagline": "Interface luminosa com alto contraste, atmosferas visuais exclusivas, deep work em tarefas e os primeiros troféus da disciplina.",
+          "features": [
+            "Modo Claro (Light Theme) com alto contraste e legibilidade impecável para uso diurno",
+            "Alternância dinâmica de tema (Dark Cósmico vs. Cosmic Daylight)",
+            "Temas Exclusivos VIP (Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold)",
+            "Vinculação direta de sessões de Pomodoro/Foco a tarefas específicas do Kanban",
+            "Métricas de esforço por card com histórico de tempo dedicado e conclusão automática",
+            "Sistema de Conquistas Pessoais com dezenas de troféus e medalhas automáticas",
+            "Nova tela 'Minhas Conquistas' para acompanhar sua evolução de aventureiro"
+          ]
+        },
+        "r13": {
+          "statusLabel": "Planejado",
+          "title": "Perfil Público & Vitrine de Troféus",
+          "tagline": "Compartilhe sua jornada épica, conecte-se com amigos e exiba suas insígnias raras no topo do perfil.",
+          "features": [
+            "Páginas Públicas de Aventureiro para compartilhar nível, consistência e streaks",
+            "Vitrine de Destaques para fixar sua Insígnia de Membro Fundador no topo do perfil",
+            "Rede de Amizades com busca de jogadores por nome e código de amigo",
+            "Controles granulares de privacidade para estatísticas e rotinas"
+          ]
+        },
+        "r14": {
+          "statusLabel": "Planejado",
+          "title": "Party & Cooperação em Tempo Real",
+          "tagline": "A união faz a força: pequenos grupos de foco mútuo, metas cooperativas e bate-papo integrado.",
+          "features": [
+            "Formação de Parties (grupos de foco) via código de convite rápido",
+            "Missões Diárias Cooperativas com bônus coletivo de ouro se todos cumprirem",
+            "Chat Integrado em Tempo Real com alertas de foco e celebrações mútuas",
+            "Notificações sonoras e visuais elegantes para marcos em equipe"
+          ]
+        },
+        "r20": {
+          "statusLabel": "Grande Marco MMO & Mobile",
+          "title": "App Mobile, Guildas & O MMO Social Completo",
+          "tagline": "O ápice do HabitParty: aplicativo nativo no seu bolso, mega guildas, guerras cooperativas contra chefões e rankings mundiais.",
+          "features": [
+            "Aplicativo Mobile oficial (iOS & Android) com widgets, check-in rápido e notificações push nativas",
+            "Sincronização em tempo real do Modo Foco e Pomodoro entre PC e smartphone",
+            "Guildas Temáticas de grande porte (Concursos, Devs, Saúde, Academia, Idiomas)",
+            "Quests & Raids contra Chefões Mundiais que perdem HP conforme você estuda e foca",
+            "Leaderboards Globais de consistência (Global, entre Amigos e entre Guildas rivais)",
+            "Temporadas competitivas com recompensas e títulos cosméticos lendários"
+          ]
+        }
+      }
+    },
+    "pricing": {
+      "founderPrice": "R$ 59,90",
+      "founderDiscountBadge": "~40% OFF",
+      "badge": "Escolha seu Nível",
+      "title": "Planos desenhados para o seu ritmo.",
+      "subtitle": "Comece 100% de graça ou garanta uma das <gold>{remainingSlots} vagas</gold> de Fundador com acesso completo e insígnia vitalícia no seu perfil.",
+      "promoBanner": {
+        "tag": "Special Early Adopter",
+        "spotsRemaining": "Vagas Restantes: Apenas {remainingSlots} de 30",
+        "soldOut": "Lote Promocional Esgotado",
+        "headline": "Ganhe o Plano Anual por apenas <gold>{founderPrice}</gold> e uma Insígnia Vitalícia de Membro Fundador.",
+        "cta": "Garantir Minha Vaga"
+      },
+      "cardBadges": {
+        "spotsLeft": "Apenas {remainingSlots} vagas restantes",
+        "soldOut": "Lote Esgotado",
+        "mostPopular": "Mais Popular"
+      },
+      "lifetimeBadge": {
+        "title": "Insígnia Vitalícia",
+        "description": "Gravada permanentemente no seu perfil, mesmo após o ciclo anual."
+      },
+      "includedLabel": "O que está incluso:",
+      "plans": {
+        "adventurer": {
+          "name": "Aventureiro",
+          "badge": "Gratuito",
+          "price": "R$ 0",
+          "period": "para sempre",
+          "description": "Tudo o que você precisa para vencer a procrastinação e transformar sua rotina com gamificação.",
+          "ctaText": "Começar Gratuitamente",
+          "features": [
+            "Até 2 Ambientes independentes",
+            "Até 4 Listas/Colunas por quadro em cada ambiente",
+            "Até 4 Atividades personalizadas no Modo Foco",
+            "Até 25 Recompensas cadastradas na sua loja",
+            "Mochila com capacidade para até 20 itens guardados",
+            "Lembretes por e-mail para afazeres (até 5 ativos e 20 disparos/mês)",
+            "Pomodoro & Modo Zen ilimitados",
+            "Streaks de Hábitos e Tarefas Diárias",
+            "Modo Hardcore para Tarefas, Hábitos e Diárias",
+            "Efeitos sonoros e comemorações com confetes"
+          ]
+        },
+        "founder": {
+          "name": "Membro Fundador",
+          "badge": "Edição Limitada",
+          "price": "R$ 59,90",
+          "originalPrice": "R$ 99,00",
+          "period": "ano (cobrança única/anual)",
+          "description": "Apenas para os primeiros 30 assinantes: plano anual com ~40% de desconto e Insígnia Vitalícia de Membro Fundador no perfil.",
+          "ctaText": "Garantir Vaga de Fundador 🛡️✨",
+          "features": [
+            "🛡️ Insígnia Exclusiva Vitalícia de Membro Fundador no seu perfil para sempre",
+            "👑 1 ano completo de Guardião Cósmico por R$ 59,90 (de R$ 99/ano)",
+            "⭐ Reconhecimento perpétuo como pioneiro da história do HabitParty",
+            "🚀 Acesso prioritário a todos os lançamentos do Roadmap (Temas, Vitrine, Party e Guildas)",
+            "Molduras animadas exclusivas para seu perfil e avatar",
+            "Sons ambiente no Pomodoro (Chuva, Cafeteria, Fogueira, Lofi)",
+            "Pacote exclusivo de ícones VIP para atividades, colunas e loja",
+            "Até 4 Ambientes independentes — o dobro do plano gratuito!",
+            "Até 6 Listas/Colunas por quadro para fluxos completos",
+            "Até 6 Atividades personalizadas no Modo Foco",
+            "Até 100 Recompensas cadastradas na sua loja",
+            "Mochila expandida com capacidade para até 100 itens",
+            "Lembretes por e-mail expandidos (até 30 ativos e 100 disparos/mês)"
+          ]
+        },
+        "guardian": {
+          "name": "Guardião Cósmico",
+          "badge": "Assinatura Regular",
+          "price": "R$ 9,90",
+          "period": "mês (ou R$ 99/ano)",
+          "description": "Capacidade expandida para quem gerencia múltiplos projetos, estudos avançados e quer foco sem barreiras.",
+          "ctaText": "Desbloquear Plano Mensal 👑",
+          "features": [
+            "Lembretes por e-mail expandidos (até 30 ativos e 100 disparos/mês)",
+            "Molduras animadas exclusivas para seu perfil e avatar",
+            "Sons ambiente no Pomodoro (Chuva, Cafeteria, Fogueira, Lofi)",
+            "Pacote exclusivo de ícones VIP para atividades, colunas e loja",
+            "Até 4 Ambientes independentes — o dobro do plano gratuito!",
+            "Até 6 Listas/Colunas por quadro para fluxos completos",
+            "Até 6 Atividades personalizadas no Modo Foco",
+            "Até 100 Recompensas cadastradas na sua loja",
+            "Mochila expandida com capacidade para até 100 itens",
+            "Emblema VIP de Guardião Cósmico no perfil e anel dourado",
+            "Acesso antecipado a novos recursos (como a Guilda/Party)"
+          ]
+        }
+      },
+      "securityStrip": {
+        "stripe": "Pagamento 100% seguro via Stripe",
+        "methods": "Aceitamos <card>Cartão de Crédito</card> e <pix>Pix Avulso</pix> (sem renovação automática)",
+        "cancel": "Cancele sua assinatura recorrente quando quiser com 1 clique"
+      }
+    },
+    "faq": {
+      "badge": "Tire suas Dúvidas",
+      "title": "Perguntas Frequentes",
+      "subtitle": "Tudo o que você precisa saber antes de iniciar sua primeira quest.",
+      "items": {
+        "founderPromo": {
+          "question": "Como funciona a promoção de lançamento 'Membros Fundadores'?",
+          "answer": "A promoção de Membros Fundadores é uma edição limitada exclusiva para os primeiros 30 assinantes do HabitParty. Ao garantir sua vaga, você desbloqueia o plano Anual com cerca de 40% de desconto (de R$ 99,00 por apenas R$ 59,90) e recebe a insígnia exclusiva e vitalícia de 'Membro Fundador' gravada no seu perfil. Essa insígnia é perpétua: ela permanece no seu perfil para sempre, mesmo se após 1 ano você optar por não renovar a assinatura."
+        },
+        "freeVsPremium": {
+          "question": "O HabitParty é gratuito? O que o plano Premium oferece?",
+          "answer": "O HabitParty possui um plano 100% gratuito com tudo o que você precisa: até 2 ambientes independentes, 4 colunas por ambiente, 4 atividades no Modo Foco, até 25 recompensas, mochila para 20 itens e até 5 lembretes por e-mail ativos simultaneamente (com cota de 20 disparos mensais) para seus afazeres. Para quem gerencia múltiplos projetos e busca foco profundo, o plano Guardião Cósmico traz capacidade expandida de lembretes por e-mail (até 30 ativos e 100 disparos mensais), molduras animadas para o perfil, geradores de sons ambiente (Chuva, Café, Lofi, Fogueira), pacote de ícones VIP, expansão para 4 ambientes, 6 colunas, 6 atividades de foco, até 100 recompensas e mochila para 100 itens."
+        },
+        "honestyShop": {
+          "question": "Como funciona a Loja e por que é baseada na minha honestidade?",
+          "answer": "A loja de recompensas é você quem abastece com os mimos da sua vida real (ex: ver um filme, pedir uma pizza, 1 hora de videogame). O HabitParty é um jogo de sinceridade: não há como hackear ou burlar a si mesmo. Se você marcar tarefas que não cumpriu, a recompensa perde todo o sabor. Quando você joga limpo, cada conquista traz satisfação genuína e sem culpa."
+        },
+        "hardcoreMode": {
+          "question": "O que é o Modo Hardcore?",
+          "answer": "O Modo Hardcore pode ser ativado para Afazeres (To-dos), Hábitos e Diárias. Se você falhar no compromisso do dia ou deixar o prazo fatal de um afazer expirar, o jogo desconta moedas da sua conta e reduz seu XP na virada da meia-noite. Além disso, em afazeres com prazo vencido a data fica congelada e a recompensa tardia é reduzida, criando uma consequência real que fortalece sua disciplina."
+        },
+        "partyGuild": {
+          "question": "O sistema de Party / Guilda com amigos já está disponível?",
+          "answer": "Atualmente você pode usar o HabitParty com foco total individual. O sistema de Guildas e Party em equipe está em fase final de desenvolvimento e será lançado em breve para você evoluir junto com amigos no mesmo ambiente."
+        },
+        "dataPreservation": {
+          "question": "O que acontece com minhas colunas e dados se o Premium acabar?",
+          "answer": "Nenhum dado ou tarefa é apagado! No HabitParty garantimos zero perda de dados. Se você criou até 6 colunas ou 4 ambientes durante o Premium e voltar para o plano Free, tudo continua 100% preservado. O quadro exibe até 4 colunas ativas simultaneamente e as colunas extras ficam preservadas e ocultas do quadro, podendo ser alternadas pelo gerenciador quando quiser. Ambientes adicionais entram em modo de consulta sem riscos. Além disso, você recebe avisos prévios na sidebar (7, 3 e 1 dia antes) para renovar com calma."
+        },
+        "experienceMode": {
+          "question": "O HabitParty é apenas um jogo ou serve para trabalho e estudos sérios?",
+          "answer": "O HabitParty foi arquitetado para atender com excelência a ambos os perfis. No seu primeiro acesso (e a qualquer momento nas Configurações com 1 clique), você escolhe seu modo de experiência: se busca uma ferramenta executiva séria, o 'Modo Foco & Produtividade' oferece uma interface minimalista sem distrações visuais de moedas ou baús, com termos profissionais como Prazos Rígidos e Gestão de Inventário; já se você precisa de dopamina imediata contra a procrastinação, a 'Imersão Gamificada (RPG)' transforma suas tarefas em missões com moedas de ouro, XP vitalício, Modo Hardcore e sons de comemoração. Todas as suas tarefas, quadros e histórico são 100% preservados em ambos os modos."
+        },
+        "mobileApp": {
+          "question": "Funciona bem no celular? Terá aplicativo Mobile?",
+          "answer": "Sim! Hoje a versão web do HabitParty possui design 100% responsivo para qualquer smartphone, tablet ou computador. Além disso, o aplicativo nativo para iOS e Android (com widgets e notificações push) já está mapeado no nosso Roadmap a partir da versão 2.0."
+        }
+      }
+    },
+    "ctaBanner": {
+      "badge": "Sua Jornada Começa Agora",
+      "title": "Pronto para transformar sua rotina em resultados?",
+      "subtitle": "Junte-se ao HabitParty gratuitamente. Escolha entre foco executivo ou imersão RPG e sinta a satisfação real de cada conquista diária.",
+      "primaryCta": "Criar Conta Gratuita",
+      "secondaryCta": "Já tenho uma conta"
+    },
+    "footer": {
+      "brandDescription": "O sistema definitivo de produtividade gamificada. Transforme suas metas e rotinas diárias em uma jornada cósmica com XP, Ouro e recompensas reais.",
+      "githubAria": "Repositório no GitHub",
+      "exploreTitle": "Explorar",
+      "accessTitle": "Acesso",
+      "signInLink": "Entrar na Conta",
+      "signUpFreeLink": "Cadastre-se Gratuitamente",
+      "helpCenterLink": "Central de Ajuda",
+      "supportTitle": "Suporte & Contato",
+      "reportBugLink": "Reportar Bug (GitHub)",
+      "officialRepoLink": "Repositório Oficial",
+      "copyright": "© {year} HabitParty. Todos os direitos reservados.",
+      "tagline": "Feito para quem escolheu levar a própria disciplina a sério."
+    }
+  }
+}

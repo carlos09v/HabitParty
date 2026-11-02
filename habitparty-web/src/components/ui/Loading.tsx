@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import type { LoadingProps, LoadingSize } from "@/types/ui";
 import { cn } from "@/utils";
 
@@ -48,6 +49,8 @@ export function Loading({
   style,
   ...props
 }: LoadingProps) {
+  const t = useTranslations("ui.loading");
+  const defaultLoadingLabel = t("defaultLabel");
   const isPrimary = color === "primary";
 
   // 1. VARIANTE: SKELETON
@@ -78,7 +81,7 @@ export function Loading({
         )}
         {...props}
       >
-        <span className="sr-only">{label || "Carregando..."}</span>
+        <span className="sr-only">{label || defaultLoadingLabel}</span>
       </div>
     );
   }
@@ -167,7 +170,7 @@ export function Loading({
           {label}
         </span>
       ) : (
-        <span className="sr-only">Carregando...</span>
+        <span className="sr-only">{defaultLoadingLabel}</span>
       )}
     </div>
   );

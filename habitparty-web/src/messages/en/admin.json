@@ -1,0 +1,170 @@
+{
+  "metadata": {
+    "title": "Admin Panel | HabitParty",
+    "description": "Platform administration, metrics, user management, and storage overview."
+  },
+  "loading": {
+    "label": "Loading admin panel..."
+  },
+  "dashboard": {
+    "badge": "Administrator Control Panel",
+    "title": "System Management & Metrics",
+    "subtitle": "Monitor Resend email usage, database disk space, and control per-user resource consumption.",
+    "refreshButton": "Refresh Data",
+    "refreshedMessage": "Admin data updated successfully!",
+    "userDetailLoadError": "Could not load user details.",
+    "roleUpdateError": "Error updating user role.",
+    "promotedMessage": "User {fullName} promoted to Administrator!",
+    "demotedMessage": "User {fullName} demoted to standard User.",
+    "roleModal": {
+      "demoteTitle": "Demote to Standard User",
+      "promoteTitle": "Promote to Administrator",
+      "demoteConfirm": "Yes, demote",
+      "promoteConfirm": "Yes, promote",
+      "cancel": "Cancel",
+      "demoteDescriptionPrefix": "Are you sure you want to revoke Administrator privileges from",
+      "promoteDescriptionPrefix": "Are you sure you want to promote",
+      "promoteDescriptionTo": "to",
+      "promoteRoleBadge": "Administrator",
+      "promoteDescriptionSuffix": "? They will have access to all system metrics and user management."
+    }
+  },
+  "overview": {
+    "resendQuota": {
+      "title": "Resend Quota (Month)",
+      "renewsOn": "Renews on {date}",
+      "consumed": "{percentage}% used",
+      "remaining": "{count} remaining"
+    },
+    "users": {
+      "title": "Registered Users",
+      "free": "Free: {count}",
+      "vip": "VIP: {count}",
+      "founders": "Founders: {count}/30",
+      "admin": "Admin: {count}"
+    },
+    "tasks": {
+      "title": "Tasks & Habits",
+      "pending": "{count} pending",
+      "completed": "{count} completed"
+    },
+    "storage": {
+      "title": "Storage (Postgres)",
+      "limitSuffix": "/ 1 GB (Railway)",
+      "description": "Active quotas: 5MB/Free user and 50MB/VIP user. The database supports thousands of users on the starter plan."
+    }
+  },
+  "usersTable": {
+    "filterTabs": {
+      "ALL": "All Users",
+      "FREE": "Free Plan",
+      "PREMIUM": "Premium VIP",
+      "FOUNDER": "Founders 👑",
+      "ADMIN": "Administrators"
+    },
+    "searchPlaceholder": "Search by name, @user, or email...",
+    "loading": "Loading data...",
+    "headers": {
+      "user": "User",
+      "role": "Role",
+      "plan": "Plan",
+      "emails": "Resend Reminders (Month)",
+      "tasks": "Tasks",
+      "storage": "DB Space",
+      "actions": "Actions"
+    },
+    "empty": "No users found matching your search criteria.",
+    "roles": {
+      "admin": "ADMIN",
+      "user": "USER"
+    },
+    "plans": {
+      "founder": "Founder 👑",
+      "premiumActive": "• Active Premium",
+      "freeAccess": "• Free Access",
+      "premiumVip": "Premium VIP",
+      "free": "Adventurer (Free)"
+    },
+    "emails": {
+      "monthlyQuota": "/ {limit} this month",
+      "activeReminders": "{active} / {max} active reminder(s)"
+    },
+    "tasks": {
+      "totalSuffix": "/ {total} total"
+    },
+    "storage": {
+      "quotaPercentage": "{percentage}% of quota ({tier})",
+      "tierVip": "VIP 50MB",
+      "tierFree": "Free 5MB"
+    },
+    "actions": {
+      "details": "Details",
+      "detailsTitle": "View storage and email breakdown",
+      "makeUser": "Make USER",
+      "makeAdmin": "Make ADMIN",
+      "demoteTitle": "Demote to Standard User",
+      "promoteTitle": "Promote to Administrator"
+    },
+    "pagination": {
+      "itemLabel": "users",
+      "totalSinglePagePrefix": "Total of",
+      "totalSinglePageSuffix": "user(s)"
+    }
+  },
+  "userModal": {
+    "badges": {
+      "founder": "Founder 👑",
+      "premiumVip": "Premium VIP",
+      "free": "Free",
+      "admin": "ADMIN"
+    },
+    "closeAriaLabel": "Close modal",
+    "closeButton": "Close",
+    "storage": {
+      "title": "Database Storage",
+      "totalBadge": "Total: {used} / {limit} ({percentage}%)",
+      "recordsCount": "{count} record(s)",
+      "items": {
+        "tasks": "To-Dos & Tasks",
+        "checklists": "Checklist Items",
+        "workspaces": "Workspaces & Boards",
+        "history": "Economy History (XP & Gold)",
+        "inventory": "Backpack & Inventory",
+        "focus": "Focus Records (Pomodoro)",
+        "userRow": "Account, Stats & Subscription"
+      }
+    },
+    "emails": {
+      "title": "Sent Email History (Resend)",
+      "monthlyCount": "{count} sent this month",
+      "empty": "No emails sent to this user yet.",
+      "recipientPrefix": "To: {email}",
+      "errorPrefix": "Error: {message}",
+      "statusSent": "Sent",
+      "statusFailed": "Failed",
+      "subjects": {
+        "EMAIL_VERIFICATION": "Confirm your email - HabitParty",
+        "PASSWORD_RESET": "Password Reset - HabitParty",
+        "TASK_REMINDER": "Task Reminder: {task}",
+        "SYSTEM": "System Notification"
+      },
+      "errors": {
+        "verificationFailed": "Failed to send verification email via Resend",
+        "passwordResetFailed": "Failed to send password reset email via Resend",
+        "resendProviderFailed": "Failed to send email via Resend provider",
+        "quotaExceeded": "Monthly quota of {max} reminders exceeded for plan {plan}",
+        "unknown": "Failed to send email"
+      }
+    }
+  },
+  "actions": {
+    "overviewFailed": "Failed to load administrator overview.",
+    "overviewConnectionError": "Communication error with the admin server.",
+    "listUsersFailed": "Failed to fetch user list.",
+    "listUsersConnectionError": "Connection error while fetching users.",
+    "userDetailFailed": "Failed to load user details.",
+    "userDetailConnectionError": "Error fetching user details.",
+    "updateRoleFailed": "Could not update user role.",
+    "updateRoleConnectionError": "Communication error while updating user role."
+  }
+}

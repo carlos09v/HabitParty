@@ -1,4 +1,5 @@
 import { serverApi } from "@/api/server";
+import { getRequestLocale } from "@/i18n/request";
 import type { FocusActivity, FocusRecord } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { mapFocusActivities, mapFocusRecords } from "@/utils/focusMapper";
@@ -16,7 +17,7 @@ export async function getFocusActivitiesAndItems(): Promise<{
   activities: FocusActivity[];
   backpackItems: InventoryItemResponseDTO[];
 }> {
-  const [activitiesRes, inventoryRes] = await Promise.all([
+  const [activitiesRes, inventoryRes, locale] = await Promise.all([
     serverApi.GET("/focus-activities", {
       next: { tags: ["focus-activities"] },
     }),
@@ -26,9 +27,10 @@ export async function getFocusActivitiesAndItems(): Promise<{
       },
       next: { tags: ["inventory"] },
     }),
+    getRequestLocale(),
   ]);
 
-  const activities = mapFocusActivities(activitiesRes.data);
+  const activities = mapFocusActivities(activitiesRes.data, locale);
   const backpackItems: InventoryItemResponseDTO[] = inventoryRes.data || [];
 
   return { activities, backpackItems };

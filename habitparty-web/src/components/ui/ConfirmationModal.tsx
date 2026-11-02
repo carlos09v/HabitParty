@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { BaseModal } from "./BaseModal";
 
@@ -22,11 +23,14 @@ export function ConfirmationModal({
   onConfirm,
   title,
   description,
-  confirmText = "Confirmar",
-  cancelText = "Cancelar",
+  confirmText,
+  cancelText,
   variant = "danger",
   isLoading = false,
 }: ConfirmationModalProps) {
+  const t = useTranslations("ui.confirmationModal");
+  const resolvedConfirmText = confirmText ?? t("confirm");
+  const resolvedCancelText = cancelText ?? t("cancel");
   const isDanger = variant === "danger";
   const isWarning = variant === "warning";
 
@@ -48,8 +52,8 @@ export function ConfirmationModal({
   const confirmBtnClasses = isDanger
     ? "bg-red-500 hover:bg-red-600 text-white shadow-xs"
     : isWarning
-      ? "bg-amber-500 hover:bg-amber-400 text-neutral-950 shadow-glow-gold-xs"
-      : "bg-gold hover:bg-gold-hover text-neutral-900 shadow-glow-gold-xs";
+      ? "bg-amber-500 hover:bg-amber-400 text-on-gold shadow-glow-gold-xs"
+      : "bg-gold hover:bg-gold-hover text-on-gold shadow-glow-gold-xs";
 
   return (
     <BaseModal
@@ -85,7 +89,7 @@ export function ConfirmationModal({
             disabled={isLoading}
             className="px-4 py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50"
           >
-            {cancelText}
+            {resolvedCancelText}
           </button>
           <button
             type="button"
@@ -96,10 +100,10 @@ export function ConfirmationModal({
             {isLoading ? (
               <>
                 <Loader2 size={14} className="animate-spin" />
-                <span>Processando...</span>
+                <span>{t("processing")}</span>
               </>
             ) : (
-              <span>{confirmText}</span>
+              <span>{resolvedConfirmText}</span>
             )}
           </button>
         </div>

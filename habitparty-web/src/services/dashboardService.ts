@@ -1,4 +1,5 @@
 import { serverApi } from "@/api/server";
+import { getRequestLocale } from "@/i18n/request";
 import { getFocusInitialRecords } from "@/services/focusService";
 import { fetchWorkspaceBoardColumns } from "@/services/taskService";
 import type {
@@ -70,8 +71,10 @@ export async function getDashboardData(
       ? requestedWorkspaceId
       : workspaces[0].id || "";
 
+  const locale = await getRequestLocale();
   const focusActivities: FocusActivity[] = mapFocusActivities(
     focusActivitiesRes.data,
+    locale,
   );
 
   const [boardData, focusRecords] = await Promise.all([
@@ -96,7 +99,7 @@ export async function getDashboardData(
   const userBalance = userRes.data?.currentCoins ?? 0;
   const transactions = transactionsRes.data?.content || [];
   const { bars, currentWeekEarnings, currentWeekSpent } =
-    calculateWeeklyTaskEarnings(transactions);
+    calculateWeeklyTaskEarnings(transactions, new Date(), locale);
 
   return {
     workspaces,

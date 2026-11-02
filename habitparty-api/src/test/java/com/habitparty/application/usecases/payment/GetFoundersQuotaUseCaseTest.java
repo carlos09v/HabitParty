@@ -10,8 +10,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.habitparty.adapters.in.web.dtos.response.FoundersQuotaDTO;
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.application.ports.projections.FoundersQuotaProjection;
 
 @ExtendWith(MockitoExtension.class)
 class GetFoundersQuotaUseCaseTest {
@@ -27,7 +27,7 @@ class GetFoundersQuotaUseCaseTest {
   void testCalculateQuotaAvailable() {
     when(userRepository.countFounders()).thenReturn(12L);
 
-    FoundersQuotaDTO dto = getFoundersQuotaUseCase.execute();
+    FoundersQuotaProjection dto = getFoundersQuotaUseCase.execute();
 
     assertEquals(30, dto.maxSlots());
     assertEquals(12L, dto.claimedSlots());
@@ -40,7 +40,7 @@ class GetFoundersQuotaUseCaseTest {
   void testCalculateQuotaSoldOut() {
     when(userRepository.countFounders()).thenReturn(30L);
 
-    FoundersQuotaDTO dto = getFoundersQuotaUseCase.execute();
+    FoundersQuotaProjection dto = getFoundersQuotaUseCase.execute();
 
     assertEquals(30, dto.maxSlots());
     assertEquals(30L, dto.claimedSlots());

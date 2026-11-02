@@ -1,4 +1,5 @@
 import { Calendar, Lock, Repeat, Target } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { TaskTypeOption } from "@/types/task";
 import { cn } from "@/utils";
 
@@ -15,6 +16,8 @@ export function TaskTypeTabs({
   disabled = false,
   isEditing = false,
 }: TaskTypeTabsProps) {
+  const t = useTranslations("tasks.taskModal.tabs");
+
   return (
     <div className="grid grid-cols-3 gap-2.5 p-1 bg-surface/60 border border-primary/25 rounded-xl">
       <button
@@ -24,8 +27,8 @@ export function TaskTypeTabs({
         className={cn(
           "flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg font-bold text-body-s transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
           taskType === "HABIT"
-            ? "border-gold bg-gold/20 text-gold shadow-glow-gold-xs border"
-            : "text-neutral-300 hover:text-gold hover:bg-white/5",
+            ? "border-info bg-info/15 text-info shadow-[0_0_10px_rgba(0,194,255,0.2)] border"
+            : "text-neutral-300 hover:text-info hover:bg-white/5",
         )}
       >
         {isEditing && taskType !== "HABIT" ? (
@@ -33,7 +36,7 @@ export function TaskTypeTabs({
         ) : (
           <Repeat size={16} />
         )}
-        <span>Hábito</span>
+        <span>{t("HABIT")}</span>
       </button>
 
       <button
@@ -43,8 +46,8 @@ export function TaskTypeTabs({
         className={cn(
           "flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg font-bold text-body-s transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
           taskType === "DAILY"
-            ? "border-gold bg-gold/20 text-gold shadow-glow-gold-xs border"
-            : "text-neutral-300 hover:text-gold hover:bg-white/5",
+            ? "border-magenta bg-magenta/15 text-magenta shadow-glow-magenta border"
+            : "text-neutral-300 hover:text-magenta hover:bg-white/5",
         )}
       >
         {isEditing && taskType !== "DAILY" ? (
@@ -52,7 +55,7 @@ export function TaskTypeTabs({
         ) : (
           <Calendar size={16} />
         )}
-        <span>Diária</span>
+        <span>{t("DAILY")}</span>
       </button>
 
       <button
@@ -71,7 +74,7 @@ export function TaskTypeTabs({
         ) : (
           <Target size={16} />
         )}
-        <span>Afazer (ToDo)</span>
+        <span>{t("TODO")}</span>
       </button>
     </div>
   );

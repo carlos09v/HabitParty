@@ -1,6 +1,7 @@
 "use client";
 
 import { Crown } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { cn } from "@/utils";
 import { UpgradePremiumModal } from "./UpgradePremiumModal";
@@ -16,6 +17,7 @@ export function SubscribeButton({
   variant = "primary",
   children,
 }: SubscribeButtonProps) {
+  const t = useTranslations("settings.subscribeButton");
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -38,7 +40,7 @@ export function SubscribeButton({
           size={14}
           className="stroke-2 shrink-0 fill-gold text-neutral-950"
         />
-        <span>{children || "Seja Premium"}</span>
+        <span>{children || t("defaultLabel")}</span>
       </button>
 
       <UpgradePremiumModal isOpen={isOpen} onClose={() => setIsOpen(false)} />

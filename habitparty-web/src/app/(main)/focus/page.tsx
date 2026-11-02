@@ -1,12 +1,16 @@
+import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { FocusContainer } from "@/components/focus/FocusContainer";
 import { getFocusPageData } from "@/services/focusService";
 import { getCompactMode } from "@/utils/cookies";
 
-export const metadata = {
-  title: "Foco | HabitParty",
-  description:
-    "Gerencie suas atividades de foco, Pomodoro e sessões gamificadas.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("focus.metadata");
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
 
 type PageProps = {
   searchParams: Promise<{ activityId?: string; createActivity?: string }>;

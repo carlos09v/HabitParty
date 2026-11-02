@@ -14,7 +14,7 @@ COPY --from=deps /root/.m2 /root/.m2
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
 COPY src/ ./src/
-ENV JAVA_TOOL_OPTIONS="-Djava.net.preferIPv4Stack=true"
+ENV JAVA_TOOL_OPTIONS="-Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses=true -Dnetworkaddress.cache.negative.ttl=0 -Djdk.httpclient.keepalive.timeout=30"
 EXPOSE 8080
 CMD ["./mvnw", "spring-boot:run"]
 
@@ -31,7 +31,9 @@ RUN ./mvnw clean package -DskipTests -B
 FROM eclipse-temurin:25-jre-alpine AS production
 WORKDIR /app
 
-RUN apk add --no-cache su-exec && \
+RUN apk update && \
+    apk upgrade --no-cache && \
+    apk add --no-cache su-exec && \
     addgroup -g 1001 -S appgroup && \
     adduser -S appuser -u 1001 -G appgroup && \
     mkdir -p /app/uploads && \
@@ -44,6 +46,6 @@ RUN chmod +x /app/entrypoint.sh
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/v3/api-docs || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
 ENTRYPOINT ["/app/entrypoint.sh"]

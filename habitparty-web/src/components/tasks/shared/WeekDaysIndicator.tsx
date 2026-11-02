@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { WEEK_DAYS } from "@/constants/task";
 import type { DailyDaysOfWeek } from "@/types/task";
 import { cn } from "@/utils";
@@ -17,6 +18,7 @@ export function WeekDaysIndicator({
   isCompact = false,
   className,
 }: WeekDaysIndicatorProps) {
+  const t = useTranslations("dashboard.taskShared.weekDays");
   // Se daysOfWeek tiver itens, acende apenas os selecionados. Se for nulo/vazio em Diária, acende todos os dias.
   const hasSelectedDays = Array.isArray(daysOfWeek) && daysOfWeek.length > 0;
   const todayIndex = new Date().getDay(); // 0 = Domingo, 1 = Segunda, etc.
@@ -24,25 +26,27 @@ export function WeekDaysIndicator({
   return (
     <div
       className={cn("flex items-center gap-0.5", className)}
-      title="Dias ativos da semana"
+      title={t("activeDaysTitle")}
     >
       {WEEK_DAYS.map((day, index) => {
         const isActive = !hasSelectedDays || daysOfWeek.includes(day.enumValue);
         const isToday = index === todayIndex;
+        const fullName = t(`${day.enumValue}.full`);
+        const shortLabel = t(`${day.enumValue}.short`);
 
         return (
           <span
             key={day.enumValue}
-            title={`${day.fullName}${isToday ? " (Hoje)" : ""}: ${isActive ? "Ativo" : "Inativo"}`}
+            title={`${fullName}${isToday ? t("todaySuffix") : ""}: ${isActive ? t("activeStatus") : t("inactiveStatus")}`}
             className={cn(
-              "rounded-full flex items-center justify-center font-bold transition-all",
-              isCompact ? "w-4 h-4 text-label-s" : "w-4.5 h-4.5 text-label-m",
+              "rounded-full flex items-center justify-center font-bold transition-all shrink-0",
+              isCompact ? "w-3.5 h-3.5 text-[8px]" : "w-4.5 h-4.5 text-label-m",
               isActive &&
                 isToday &&
                 "bg-magenta text-white shadow-glow-magenta font-extrabold ring-1 ring-white/40",
               isActive &&
                 !isToday &&
-                "bg-gold text-neutral-900 shadow-glow-gold-xs font-extrabold",
+                "bg-gold text-on-gold shadow-glow-gold-xs font-extrabold",
               !isActive &&
                 isToday &&
                 "border border-magenta/70 text-magenta font-bold bg-magenta/10",
@@ -51,7 +55,7 @@ export function WeekDaysIndicator({
                 "bg-white/5 text-neutral-500 border border-white/5",
             )}
           >
-            {day.shortLabel}
+            {shortLabel}
           </span>
         );
       })}

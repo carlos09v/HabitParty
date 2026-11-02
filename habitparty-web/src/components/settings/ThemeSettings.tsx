@@ -1,37 +1,49 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { THEME_OPTIONS } from "@/constants/settings";
 import { useCompactMode } from "@/hooks/useCompactMode";
 import { useThemeMode } from "@/hooks/useThemeMode";
+import { cn } from "@/utils";
 import { SettingsOptionGrid } from "./SettingsOptionGrid";
 
 interface ThemeSettingsProps {
   isCompact?: boolean;
+  className?: string;
 }
 
 export function ThemeSettings({
   isCompact: propIsCompact,
+  className,
 }: ThemeSettingsProps = {}) {
+  const t = useTranslations("settings.theme");
   const { theme, setTheme, isDark } = useThemeMode();
   const { isCompact: storeIsCompact } = useCompactMode();
   const isCompact = propIsCompact ?? storeIsCompact;
 
   const statusMessage = (
     <>
-      <span className="font-bold">Tema ativo: </span>
-      {isDark
-        ? "O Tema Escuro está ativo (visual clássico cósmico e místico)."
-        : "O Tema Claro está ativo (superfícies limpas e iluminadas em tons de lavanda)."}
+      <span className="font-bold">{t("statusActiveLabel")}</span>
+      {isDark ? t("statusDark") : t("statusLight")}
     </>
   );
 
+  const options = THEME_OPTIONS.map((opt) => ({
+    ...opt,
+    title: opt.value === "dark" ? t("dark") : t("light"),
+    description: opt.value === "dark" ? t("darkDesc") : t("lightDesc"),
+    badge: opt.badge ? t("defaultBadge") : undefined,
+  }));
+
   return (
-    <SettingsOptionGrid
-      statusMessage={statusMessage}
-      options={THEME_OPTIONS}
-      selectedValue={theme}
-      onSelect={(val) => setTheme(val)}
-      isCompact={isCompact}
-    />
+    <div className={cn("hidden", className)}>
+      <SettingsOptionGrid
+        statusMessage={statusMessage}
+        options={options}
+        selectedValue={theme}
+        onSelect={(val) => setTheme(val)}
+        isCompact={isCompact}
+      />
+    </div>
   );
 }

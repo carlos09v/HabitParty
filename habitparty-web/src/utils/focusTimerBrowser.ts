@@ -26,7 +26,58 @@ export function sendBrowserNotification(title: string, body: string) {
   }
 }
 
-const DEFAULT_DOCUMENT_TITLE = "Foco & Pomodoro | HabitParty";
+export interface FocusBrowserTranslations {
+  defaultDocumentTitle: string;
+  titlePausedPrefix: string;
+  titleBreakPrefix: string;
+  titleFocusPrefix: string;
+}
+
+const FALLBACK_BROWSER_TRANSLATIONS: Record<
+  "en" | "pt-BR",
+  FocusBrowserTranslations
+> = {
+  en: {
+    defaultDocumentTitle: "Focus & Pomodoro | HabitParty",
+    titlePausedPrefix: "⏸️ Paused",
+    titleBreakPrefix: "☕ Break",
+    titleFocusPrefix: "🔥 Focus",
+  },
+  "pt-BR": {
+    defaultDocumentTitle: "Foco & Pomodoro | HabitParty",
+    titlePausedPrefix: "⏸️ Pausado",
+    titleBreakPrefix: "☕ Pausa",
+    titleFocusPrefix: "🔥 Foco",
+  },
+};
+
+let customBrowserTranslations: Partial<FocusBrowserTranslations> | null = null;
+
+export function setFocusBrowserTranslations(
+  translations: Partial<FocusBrowserTranslations> | null,
+) {
+  customBrowserTranslations = translations;
+}
+
+export function getBrowserDocumentLocale(): "en" | "pt-BR" {
+  if (
+    typeof document !== "undefined" &&
+    document.documentElement.lang?.toLowerCase().startsWith("en")
+  ) {
+    return "en";
+  }
+  return "pt-BR";
+}
+
+function getActiveBrowserTranslations(): FocusBrowserTranslations {
+  const fallback = FALLBACK_BROWSER_TRANSLATIONS[getBrowserDocumentLocale()];
+  if (!customBrowserTranslations) return fallback;
+  return {
+    ...fallback,
+    ...customBrowserTranslations,
+  };
+}
+
 let baseDocumentTitle: string | null = null;
 
 /**
@@ -51,8 +102,10 @@ export function updateDocumentTitle(state: {
     return;
   }
 
+  const i18n = getActiveBrowserTranslations();
+
   if (!baseDocumentTitle && !document.title.startsWith("(")) {
-    baseDocumentTitle = document.title || DEFAULT_DOCUMENT_TITLE;
+    baseDocumentTitle = document.title || i18n.defaultDocumentTitle;
   }
 
   const isBreak = state.phase === "SHORT_BREAK" || state.phase === "LONG_BREAK";
@@ -63,10 +116,10 @@ export function updateDocumentTitle(state: {
     : state.elapsedSeconds;
   const timeStr = formatFocusTime(displaySeconds);
   const statusPrefix = state.isPaused
-    ? "⏸️ Pausado"
+    ? i18n.titlePausedPrefix
     : isBreak
-      ? "☕ Pausa"
-      : "🔥 Foco";
+      ? i18n.titleBreakPrefix
+      : i18n.titleFocusPrefix;
   const targetLabel = state.target?.name ? ` • ${state.target.name}` : "";
 
   document.title = `(${timeStr}) ${statusPrefix}${targetLabel} | HabitParty`;

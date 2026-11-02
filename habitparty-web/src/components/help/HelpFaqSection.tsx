@@ -2,22 +2,28 @@
 
 import { ArrowUpRight, ChevronDown, HelpCircle, Search, X } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { HelpReferenceTables } from "@/components/help/HelpReferenceTables";
 import { FilterBar } from "@/components/ui/FilterBar";
-import {
-  HELP_CATEGORIES,
-  HELP_CATEGORY_LABELS,
-  HELP_FAQS,
-} from "@/constants/help";
-import type { HelpCategory } from "@/types/help";
+import { HELP_CATEGORY_IDS } from "@/constants/help";
+import type { HelpCategory, HelpFaqItem, HelpTableEntry } from "@/types/help";
 import { cn } from "@/utils";
 
 interface HelpFaqSectionProps {
   isCompact?: boolean;
+  /** Perguntas frequentes já resolvidas no idioma ativo (via servidor). */
+  faqs: HelpFaqItem[];
+  /** Tabelas de referência já resolvidas no idioma ativo (via servidor). */
+  tables: Record<string, HelpTableEntry>;
 }
 
-export function HelpFaqSection({ isCompact = false }: HelpFaqSectionProps) {
+export function HelpFaqSection({
+  isCompact = false,
+  faqs,
+  tables,
+}: HelpFaqSectionProps) {
+  const t = useTranslations("help.faq");
   const [activeCategory, setActiveCategory] = useState<HelpCategory>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedFaqIds, setExpandedFaqIds] = useState<Set<string>>(
@@ -37,7 +43,7 @@ export function HelpFaqSection({ isCompact = false }: HelpFaqSectionProps) {
   };
 
   const handleExpandAll = () => {
-    setExpandedFaqIds(new Set(HELP_FAQS.map((f) => f.id)));
+    setExpandedFaqIds(new Set(faqs.map((f) => f.id)));
   };
 
   const handleCollapseAll = () => {
@@ -48,7 +54,7 @@ export function HelpFaqSection({ isCompact = false }: HelpFaqSectionProps) {
   const filteredFaqs = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
-    return HELP_FAQS.filter((faq) => {
+    return faqs.filter((faq) => {
       const matchesCategory =
         activeCategory === "ALL" || faq.category === activeCategory;
 
@@ -64,7 +70,7 @@ export function HelpFaqSection({ isCompact = false }: HelpFaqSectionProps) {
 
       return inQuestion || inAnswer || inTags || inBullets;
     });
-  }, [activeCategory, searchQuery]);
+  }, [activeCategory, searchQuery, faqs]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -76,27 +82,26 @@ export function HelpFaqSection({ isCompact = false }: HelpFaqSectionProps) {
           search={{
             value: searchQuery,
             onChange: setSearchQuery,
-            placeholder:
-              "Pesquisar por dúvida, termo ou regra (ex: decaimento, caixa misteriosa, hardcore)...",
+            placeholder: t("searchPlaceholder"),
           }}
           leftActions={
             <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface/60 border border-white/10 shrink-0 overflow-x-auto max-w-full custom-scrollbar">
-              {HELP_CATEGORIES.map((tab) => {
-                const isActive = activeCategory === tab.id;
+              {HELP_CATEGORY_IDS.map((tabId) => {
+                const isActive = activeCategory === tabId;
                 return (
                   <button
-                    key={tab.id}
+                    key={tabId}
                     type="button"
-                    onClick={() => setActiveCategory(tab.id)}
+                    onClick={() => setActiveCategory(tabId)}
                     className={cn(
                       "px-3 rounded-lg font-semibold transition-all cursor-pointer select-none whitespace-nowrap",
                       isCompact ? "py-1 text-xs" : "py-1.5 text-xs",
                       isActive
-                        ? "bg-gold text-neutral-900 shadow-sm font-bold"
+                        ? "bg-gold text-on-gold shadow-sm font-bold"
                         : "text-neutral-300 hover:text-neutral-50 hover:bg-white/5",
                     )}
                   >
-                    {tab.label}
+                    {t(`categories.${tabId}`)}
                   </button>
                 );
               })}
@@ -113,7 +118,7 @@ export function HelpFaqSection({ isCompact = false }: HelpFaqSectionProps) {
                 )}
               >
                 <X size={14} />
-                Limpar busca
+                {t("clearSearch")}
               </button>
             ) : undefined
           }
@@ -128,11 +133,13 @@ export function HelpFaqSection({ isCompact = false }: HelpFaqSectionProps) {
           <div className="flex items-center gap-2">
             <HelpCircle className="text-gold" size={20} />
             <h2 className="text-body-m sm:text-subtitle-s font-bold text-neutral-100">
-              Perguntas & Respostas Frequentes
+              {t("sectionTitle")}
             </h2>
             <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-neutral-300 border border-white/10">
               {filteredFaqs.length}{" "}
-              {filteredFaqs.length === 1 ? "tópico" : "tópicos"}
+              {filteredFaqs.length === 1
+                ? t("topicSingular")
+                : t("topicPlural")}
             </span>
           </div>
 
@@ -142,15 +149,15 @@ export function HelpFaqSection({ isCompact = false }: HelpFaqSectionProps) {
               onClick={handleExpandAll}
               className="text-xs text-neutral-400 hover:text-gold transition-colors font-medium cursor-pointer"
             >
-              Expandir todos
+              {t("expandAll")}
             </button>
-            <span className="text-neutral-600">•</span>
+            <span className="text-neutral-400 dark:text-neutral-600">•</span>
             <button
               type="button"
               onClick={handleCollapseAll}
               className="text-xs text-neutral-400 hover:text-gold transition-colors font-medium cursor-pointer"
             >
-              Recolher todos
+              {t("collapseAll")}
             </button>
           </div>
         </div>
@@ -159,11 +166,10 @@ export function HelpFaqSection({ isCompact = false }: HelpFaqSectionProps) {
           <div className="p-12 rounded-2xl bg-surface/20 border border-primary/20 text-center flex flex-col items-center justify-center gap-3">
             <Search className="text-neutral-400" size={32} />
             <p className="text-body-m font-bold text-neutral-200">
-              Nenhum tópico encontrado para "{searchQuery}"
+              {t("emptyTitle", { query: searchQuery })}
             </p>
             <p className="text-body-s text-neutral-400 max-w-md">
-              Tente pesquisar com outros termos ou altere a categoria
-              selecionada acima.
+              {t("emptyDescription")}
             </p>
             <button
               type="button"
@@ -171,16 +177,16 @@ export function HelpFaqSection({ isCompact = false }: HelpFaqSectionProps) {
                 setSearchQuery("");
                 setActiveCategory("ALL");
               }}
-              className="mt-2 px-4 py-2 rounded-xl bg-gold text-neutral-900 font-bold text-xs hover:bg-gold-hover transition-colors cursor-pointer shadow-glow-gold-xs"
+              className="mt-2 px-4 py-2 rounded-xl bg-gold text-on-gold font-bold text-xs hover:bg-gold-hover transition-colors cursor-pointer shadow-glow-gold-xs"
             >
-              Ver todos os tópicos
+              {t("viewAllTopics")}
             </button>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
             {filteredFaqs.map((faq) => {
               const isExpanded = expandedFaqIds.has(faq.id);
-              const categoryLabel = HELP_CATEGORY_LABELS[faq.category];
+              const categoryLabel = t(`categories.${faq.category}`);
 
               return (
                 <div
@@ -258,7 +264,7 @@ export function HelpFaqSection({ isCompact = false }: HelpFaqSectionProps) {
                         {faq.tags && faq.tags.length > 0 ? (
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="text-tiny uppercase text-neutral-500 font-bold mr-1">
-                              Tags:
+                              {t("tagsLabel")}
                             </span>
                             {faq.tags.map((tag) => (
                               <button
@@ -304,6 +310,7 @@ export function HelpFaqSection({ isCompact = false }: HelpFaqSectionProps) {
         isCompact={isCompact}
         searchQuery={searchQuery}
         activeCategory={activeCategory}
+        tables={tables}
       />
     </div>
   );

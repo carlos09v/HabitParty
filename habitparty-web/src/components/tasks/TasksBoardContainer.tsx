@@ -5,6 +5,7 @@ import { restrictToWindowEdges } from "@dnd-kit/modifiers";
 import { Crown, Lock } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { RoutineBoard } from "@/components/tasks/RoutineBoard";
@@ -22,10 +23,14 @@ import { useRoutineBoardDnd } from "@/hooks/useRoutineBoardDnd";
 import { useRoutineBoardLayout } from "@/hooks/useRoutineBoardLayout";
 import { useRoutineColumns } from "@/hooks/useRoutineColumns";
 import { useViewMode } from "@/hooks/useViewMode";
+import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import type { CreateTaskDTO, Task, TaskTypeOption } from "@/types/task";
-import type { TasksBoardContainerProps } from "@/types/task-ui";
+import type {
+  InitialTaskFormData,
+  TasksBoardContainerProps,
+} from "@/types/task-ui";
 import { cn } from "@/utils";
 import { calculateTasksWelcomeStats } from "@/utils/catalogMetrics";
 
@@ -59,6 +64,8 @@ export function TasksBoardContainer({
   workspaceId: workspaceIdProp,
   isCompact: isCompactProp,
 }: TasksBoardContainerProps) {
+  const t = useTranslations("tasks.container");
+  const locale = useLocale() as AppLocale;
   const searchParams = useSearchParams();
   const effectiveTargetColumnId =
     targetColumnIdProp || searchParams.get("columnId") || undefined;
@@ -191,10 +198,12 @@ export function TasksBoardContainer({
       const col = columnsRef.current.find((c) => c.id === colId);
       toggleColumnVisibility(colId);
       toast.success(
-        `Lista "${col?.title || "Coluna"}" guardada! Reexiba a qualquer momento no botão de colunas.`,
+        t("toastColumnHidden", {
+          title: col?.title || t("defaultColumnTitle"),
+        }),
       );
     },
-    [toggleColumnVisibility],
+    [toggleColumnVisibility, t],
   );
 
   // Instância única de Drag-and-Drop compartilhada entre modo Card e modo Lista
@@ -207,8 +216,8 @@ export function TasksBoardContainer({
   });
 
   const { stats: tasksStats } = useMemo(
-    () => calculateTasksWelcomeStats(columns),
-    [columns],
+    () => calculateTasksWelcomeStats(columns, undefined, locale),
+    [columns, locale],
   );
 
   const columnStructureKey = columns.map((c) => `${c.id}:${c.title}`).join("|");
@@ -231,22 +240,14 @@ export function TasksBoardContainer({
   );
 
   const handleOpenCreateColumn = useCallback(() => {
-    if (
-      !ensureWriteAccess(
-        "Este ambiente está no modo somente leitura (Bloqueado). Reative o plano Premium para criar novas listas!",
-      )
-    ) {
+    if (!ensureWriteAccess(t("readOnlyCreateColumnToast"))) {
       return;
     }
     setColumnModalState({ isOpen: true, columnToEdit: null });
-  }, [ensureWriteAccess, setColumnModalState]);
+  }, [ensureWriteAccess, setColumnModalState, t]);
 
   const handleOpenCreateTask = useCallback(() => {
-    if (
-      !ensureWriteAccess(
-        "Este ambiente está no modo somente leitura (Bloqueado). Reative o plano Premium para criar novas tarefas!",
-      )
-    ) {
+    if (!ensureWriteAccess(t("readOnlyCreateTaskToast"))) {
       return;
     }
     setTaskModalState({
@@ -254,26 +255,28 @@ export function TasksBoardContainer({
       columnId: columnsRef.current[0]?.id,
       taskToEdit: null,
     });
-  }, [ensureWriteAccess, setTaskModalState]);
+  }, [ensureWriteAccess, setTaskModalState, t]);
 
   const handleAddTaskToColumnSafe = useCallback(
-    (colId: string, initialType?: TaskTypeOption, initialTitle?: string) => {
-      if (
-        !ensureWriteAccess(
-          "Este ambiente está no modo somente leitura (Bloqueado). Reative o plano Premium para criar novas tarefas!",
-        )
-      ) {
+    (
+      colId: string,
+      initialType?: TaskTypeOption,
+      initialTitle?: string,
+      initialValues?: InitialTaskFormData,
+    ) => {
+      if (!ensureWriteAccess(t("readOnlyCreateTaskToast"))) {
         return;
       }
       setTaskModalState({
         isOpen: true,
         columnId: colId,
-        defaultTaskType: initialType,
-        initialTitle: initialTitle,
+        defaultTaskType: initialType ?? initialValues?.taskType,
+        initialTitle: initialTitle ?? initialValues?.title,
+        initialValues,
         taskToEdit: null,
       });
     },
-    [ensureWriteAccess, setTaskModalState],
+    [ensureWriteAccess, setTaskModalState, t],
   );
 
   const handleQuickCreateTaskSafe = useCallback(
@@ -283,16 +286,12 @@ export function TasksBoardContainer({
       taskType: TaskTypeOption = "TODO",
       extraPayload?: Partial<CreateTaskDTO>,
     ) => {
-      if (
-        !ensureWriteAccess(
-          "Este ambiente está no modo somente leitura (Bloqueado). Reative o plano Premium para criar novas tarefas!",
-        )
-      ) {
+      if (!ensureWriteAccess(t("readOnlyCreateTaskToast"))) {
         return;
       }
       await handleQuickCreateTask(title, columnId, taskType, extraPayload);
     },
-    [ensureWriteAccess, handleQuickCreateTask],
+    [ensureWriteAccess, handleQuickCreateTask, t],
   );
 
   const sharedFilterProps = {
@@ -348,25 +347,24 @@ export function TasksBoardContainer({
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="text-body-s font-bold text-neutral-100">
-                  Ambiente em Modo Somente Leitura (Bloqueado 👑)
+                  {t("readOnlyTitle")}
                 </span>
                 <span className="text-tiny uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-gold/20 text-gold border border-gold/30">
                   VIP
                 </span>
               </div>
               <p className="text-xs text-neutral-300">
-                Suas tarefas e listas estão 100% preservadas. Para criar novas
-                tarefas ou listas neste ambiente, reative o plano Premium.
+                {t("readOnlyDescription")}
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={() => setIsUpgradeModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold hover:bg-gold-hover text-neutral-900 font-bold text-xs shadow-glow-gold-xs transition-all cursor-pointer shrink-0"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold hover:bg-gold-hover text-on-gold font-bold text-xs shadow-glow-gold-xs transition-all cursor-pointer shrink-0"
           >
-            <Crown size={14} className="fill-neutral-900" />
-            <span>Reativar Premium</span>
+            <Crown size={14} className="fill-on-gold" />
+            <span>{t("reactivatePremium")}</span>
           </button>
         </div>
       )}
@@ -391,7 +389,7 @@ export function TasksBoardContainer({
 
           <section
             className="flex-1 min-h-0 min-w-0 flex flex-col"
-            aria-label="Quadro de rotinas"
+            aria-label={t("boardAria")}
           >
             <RoutineBoard
               columns={filteredColumns}
@@ -461,7 +459,7 @@ export function TasksBoardContainer({
 
           <section
             className="flex-1 min-h-0 min-w-0 flex flex-col"
-            aria-label="Quadro de rotinas"
+            aria-label={t("boardAria")}
           >
             <RoutineTaskList
               columns={filteredColumns}
@@ -510,6 +508,7 @@ export function TasksBoardContainer({
         handleDeleteTask={handleDeleteTask}
         handleTaskDetailsUpdate={handleTaskDetailsUpdate}
         handleToggleComplete={handleToggleComplete}
+        handleHabitChange={handleHabitChange}
         isColumnsDrawerOpen={isColumnsDrawerOpen}
         setIsColumnsDrawerOpen={setIsColumnsDrawerOpen}
         toggleColumnVisibility={toggleColumnVisibility}

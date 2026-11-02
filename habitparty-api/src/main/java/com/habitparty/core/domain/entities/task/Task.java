@@ -81,23 +81,25 @@ public abstract class Task {
     this.status = newStatus;
   }
 
+  protected static final BigDecimal HALF_RATE = new BigDecimal("0.50");
+  protected static final BigDecimal ADAPTATION_RATE = new BigDecimal("0.75");
+  protected static final BigDecimal MIN_COINS = new BigDecimal("0.01");
+
   // Calcula a penalidade do modo Hardcore
   public TaskReward calculatePenalty() {
     // 1. Descobre quanto essa tarefa pagaria hoje (O filho responde isso!)
     TaskReward fullReward = this.calculateReward();
 
     // 2. Aplica a taxa de penalidade (Ex: 50% de multa)
-    double penaltyRate = 0.5;
-
-    int penaltyXp = (int) (fullReward.xp() * penaltyRate);
+    int penaltyXp = (int) (fullReward.xp() * 0.5);
     BigDecimal penaltyCoins = fullReward.coins()
-            .multiply(BigDecimal.valueOf(penaltyRate))
+            .multiply(HALF_RATE)
             .setScale(2, java.math.RoundingMode.HALF_UP);
 
     // 4. compareTo garante que a multa mínima seja $ 0,01 
     // para que o usuário não saia impune nas tarefas Triviais
-    if (penaltyCoins.compareTo(new BigDecimal("0.01")) < 0) {
-        penaltyCoins = new BigDecimal("0.01");
+    if (penaltyCoins.compareTo(MIN_COINS) < 0) {
+        penaltyCoins = MIN_COINS;
     }
 
     return new TaskReward(penaltyXp, penaltyCoins);

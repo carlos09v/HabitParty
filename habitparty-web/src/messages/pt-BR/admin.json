@@ -1,0 +1,170 @@
+{
+  "metadata": {
+    "title": "Painel Administrativo | HabitParty",
+    "description": "Administração da plataforma, métricas, gestão de usuários e armazenamento."
+  },
+  "loading": {
+    "label": "Carregando painel administrativo..."
+  },
+  "dashboard": {
+    "badge": "Painel de Controle do Administrador",
+    "title": "Gestão do Sistema & Métricas",
+    "subtitle": "Monitore o consumo de e-mails via Resend, espaço em disco do banco de dados e controle o uso de recursos por usuário.",
+    "refreshButton": "Atualizar Dados",
+    "refreshedMessage": "Dados administrativos atualizados com sucesso!",
+    "userDetailLoadError": "Não foi possível carregar os detalhes do usuário.",
+    "roleUpdateError": "Erro ao alterar o papel do usuário.",
+    "promotedMessage": "Usuário {fullName} promovido a Administrador!",
+    "demotedMessage": "Usuário {fullName} rebaixado para Usuário padrão.",
+    "roleModal": {
+      "demoteTitle": "Rebaixar para Usuário Comum",
+      "promoteTitle": "Promover a Administrador",
+      "demoteConfirm": "Sim, rebaixar",
+      "promoteConfirm": "Sim, promover",
+      "cancel": "Cancelar",
+      "demoteDescriptionPrefix": "Deseja realmente revogar os privilégios de Administrador de",
+      "promoteDescriptionPrefix": "Deseja realmente promover",
+      "promoteDescriptionTo": "a",
+      "promoteRoleBadge": "Administrador",
+      "promoteDescriptionSuffix": "? Ele terá acesso a todas as métricas do sistema e gerenciamento de usuários."
+    }
+  },
+  "overview": {
+    "resendQuota": {
+      "title": "Cota Resend (Mês)",
+      "renewsOn": "Renova em {date}",
+      "consumed": "{percentage}% consumido",
+      "remaining": "{count} restantes"
+    },
+    "users": {
+      "title": "Usuários Cadastrados",
+      "free": "Gratuito: {count}",
+      "vip": "VIP: {count}",
+      "founders": "Fundadores: {count}/30",
+      "admin": "Admin: {count}"
+    },
+    "tasks": {
+      "title": "Tarefas & Hábitos",
+      "pending": "{count} pendentes",
+      "completed": "{count} concluídas"
+    },
+    "storage": {
+      "title": "Armazenamento (Postgres)",
+      "limitSuffix": "/ 1 GB (Railway)",
+      "description": "Cotas ativas: 5MB/usuário Free e 50MB/usuário VIP. O banco comporta milhares de usuários no plano inicial."
+    }
+  },
+  "usersTable": {
+    "filterTabs": {
+      "ALL": "Todos os Usuários",
+      "FREE": "Plano Gratuito",
+      "PREMIUM": "Premium VIP",
+      "FOUNDER": "Fundadores 👑",
+      "ADMIN": "Administradores"
+    },
+    "searchPlaceholder": "Buscar por nome, @user ou e-mail...",
+    "loading": "Carregando dados...",
+    "headers": {
+      "user": "Usuário",
+      "role": "Cargo",
+      "plan": "Plano",
+      "emails": "Lembretes Resend (Mês)",
+      "tasks": "Tarefas",
+      "storage": "Espaço no DB",
+      "actions": "Ações"
+    },
+    "empty": "Nenhum usuário encontrado para os critérios pesquisados.",
+    "roles": {
+      "admin": "ADMIN",
+      "user": "USER"
+    },
+    "plans": {
+      "founder": "Fundador 👑",
+      "premiumActive": "• Premium Ativo",
+      "freeAccess": "• Acesso Free",
+      "premiumVip": "Premium VIP",
+      "free": "Aventureiro (Free)"
+    },
+    "emails": {
+      "monthlyQuota": "/ {limit} no mês",
+      "activeReminders": "{active} / {max} lembrete(s) ativo(s)"
+    },
+    "tasks": {
+      "totalSuffix": "/ {total} total"
+    },
+    "storage": {
+      "quotaPercentage": "{percentage}% da cota ({tier})",
+      "tierVip": "VIP 50MB",
+      "tierFree": "Free 5MB"
+    },
+    "actions": {
+      "details": "Detalhes",
+      "detailsTitle": "Ver detalhamento de espaço e e-mails",
+      "makeUser": "Tornar USER",
+      "makeAdmin": "Tornar ADMIN",
+      "demoteTitle": "Rebaixar para Usuário Comum",
+      "promoteTitle": "Promover a Administrador"
+    },
+    "pagination": {
+      "itemLabel": "usuários",
+      "totalSinglePagePrefix": "Total de",
+      "totalSinglePageSuffix": "usuário(s)"
+    }
+  },
+  "userModal": {
+    "badges": {
+      "founder": "Fundador 👑",
+      "premiumVip": "Premium VIP",
+      "free": "Gratuito",
+      "admin": "ADMIN"
+    },
+    "closeAriaLabel": "Fechar modal",
+    "closeButton": "Fechar",
+    "storage": {
+      "title": "Armazenamento no Banco de Dados",
+      "totalBadge": "Total: {used} / {limit} ({percentage}%)",
+      "recordsCount": "{count} registro(s)",
+      "items": {
+        "tasks": "Afazeres e Tarefas",
+        "checklists": "Itens de Checklist",
+        "workspaces": "Ambientes & Quadros",
+        "history": "Histórico de Economia (XP & Ouro)",
+        "inventory": "Mochila & Inventário",
+        "focus": "Registros de Foco (Pomodoro)",
+        "userRow": "Conta, Estatísticas & Assinatura"
+      }
+    },
+    "emails": {
+      "title": "Histórico de E-mails Enviados (Resend)",
+      "monthlyCount": "{count} disparo(s) este mês",
+      "empty": "Nenhum e-mail disparado para este usuário até o momento.",
+      "recipientPrefix": "Para: {email}",
+      "errorPrefix": "Erro: {message}",
+      "statusSent": "Enviado",
+      "statusFailed": "Falhou",
+      "subjects": {
+        "EMAIL_VERIFICATION": "Confirme seu e-mail - HabitParty",
+        "PASSWORD_RESET": "Recuperação de Senha - HabitParty",
+        "TASK_REMINDER": "Lembrete de Tarefa: {task}",
+        "SYSTEM": "Notificação do Sistema"
+      },
+      "errors": {
+        "verificationFailed": "Falha ao enviar e-mail de verificação via Resend",
+        "passwordResetFailed": "Falha ao enviar e-mail de redefinição de senha via Resend",
+        "resendProviderFailed": "Falha no provedor Resend",
+        "quotaExceeded": "Cota mensal de {max} lembretes excedida para o plano {plan}",
+        "unknown": "Falha ao enviar e-mail"
+      }
+    }
+  },
+  "actions": {
+    "overviewFailed": "Falha ao carregar visão geral de administrador.",
+    "overviewConnectionError": "Erro de comunicação com o servidor administrativo.",
+    "listUsersFailed": "Falha ao buscar lista de usuários.",
+    "listUsersConnectionError": "Erro de conexão ao buscar usuários.",
+    "userDetailFailed": "Falha ao carregar detalhes do usuário.",
+    "userDetailConnectionError": "Erro ao obter detalhes do usuário.",
+    "updateRoleFailed": "Não foi possível alterar a role do usuário.",
+    "updateRoleConnectionError": "Erro de comunicação ao alterar o cargo do usuário."
+  }
+}

@@ -1,5 +1,7 @@
 import { CheckSquare, Flag, MessageSquare, Zap } from "lucide-react";
-import { TASK_PRIORITY_META } from "@/constants/task";
+import { useTranslations } from "next-intl";
+import { TASK_PRIORITY_META, toPriorityMessageKey } from "@/constants/task";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { Task } from "@/types/task";
 import { cn } from "@/utils";
 
@@ -14,23 +16,47 @@ export function TaskChecklistBadge({
   isChecklistAllDone: boolean;
   isCompact?: boolean;
 }) {
+  const t = useTranslations("dashboard.taskShared.badges");
+  const progressPercent =
+    checklistTotal > 0
+      ? Math.round((checklistCompleted / checklistTotal) * 100)
+      : 0;
+
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 font-medium rounded border px-1.5 py-0.5 shrink-0",
+        "inline-flex items-center gap-1.5 font-medium rounded-md border px-1.5 py-0.5 shrink-0 transition-colors",
         isCompact ? "text-label-s leading-none" : "text-tiny",
         isChecklistAllDone
-          ? "text-success-500 bg-success-500/10 border-success-500/30 font-semibold"
-          : "text-neutral-300 bg-white/5 border-white/10",
+          ? "text-success-500 bg-success-500/12 border-success-500/35 font-semibold"
+          : "text-neutral-200 bg-white/5 border-white/12",
       )}
-      title={`Subtarefas: ${checklistCompleted} de ${checklistTotal} concluídas`}
+      title={t("checklistTitle", {
+        completed: checklistCompleted,
+        total: checklistTotal,
+      })}
     >
       <CheckSquare
         size={isCompact ? 9 : 11}
-        className={isChecklistAllDone ? "text-success-500" : "text-neutral-400"}
+        className={isChecklistAllDone ? "text-success-500" : "text-gold"}
       />
       <span>
         {checklistCompleted}/{checklistTotal}
+      </span>
+      <span
+        aria-hidden="true"
+        className={cn(
+          "rounded-full bg-white/10 overflow-hidden shrink-0",
+          isCompact ? "w-5 h-1" : "w-7 h-1",
+        )}
+      >
+        <span
+          className={cn(
+            "block h-full rounded-full transition-[width] duration-300",
+            isChecklistAllDone ? "bg-success-500" : "bg-gold",
+          )}
+          style={{ width: `${progressPercent}%` }}
+        />
       </span>
     </span>
   );
@@ -43,13 +69,20 @@ export function TaskHardcoreBadge({
   isHardcoreOverdue: boolean;
   isCompact?: boolean;
 }) {
+  const t = useTranslations("dashboard.taskShared.badges");
+  const { isGamified } = useExperienceMode();
+
+  const title = isGamified
+    ? isHardcoreOverdue
+      ? t("hardcoreOverdueTitle")
+      : t("hardcoreActiveTitle")
+    : isHardcoreOverdue
+      ? t("hardcoreOverdueTitleProductivity")
+      : t("hardcoreActiveTitleProductivity");
+
   return (
     <span
-      title={
-        isHardcoreOverdue
-          ? "Modo Hardcore: Prazo fatal expirado! Penalidade de 50% ativa!"
-          : "Modo Hardcore Ativo"
-      }
+      title={title}
       className={cn(
         "shrink-0 transition-colors",
         isHardcoreOverdue
@@ -69,9 +102,10 @@ export function TaskDescriptionBadge({
   isCompact?: boolean;
   className?: string;
 }) {
+  const t = useTranslations("dashboard.taskShared.badges");
   return (
     <span
-      title="Possui descrição detalhada"
+      title={t("descriptionTitle")}
       className={cn("text-neutral-400 shrink-0", className)}
     >
       <MessageSquare size={isCompact ? 10 : 12} />
@@ -88,13 +122,15 @@ export function TaskPriorityBadge({
   isCompact?: boolean;
   sizeVariant?: "card" | "row";
 }) {
+  const t = useTranslations("dashboard.taskShared");
   if (!priority || (priority as string).toUpperCase() === "NONE") {
     return null;
   }
   const meta = TASK_PRIORITY_META[priority];
+  const priorityLabel = t(`priorities.${toPriorityMessageKey(priority)}`);
   return (
     <span
-      title={`Prioridade: ${meta?.label || priority}`}
+      title={t("badges.priorityTitle", { label: priorityLabel })}
       className={cn(
         "flex items-center justify-center transition-all select-none shrink-0 border",
         sizeVariant === "card" ? "p-0.5 rounded" : "p-1 rounded-md",
@@ -117,6 +153,7 @@ export function TaskHabitScoreBadge({
   variant?: "card" | "row";
   isCompact?: boolean;
 }) {
+  const t = useTranslations("dashboard.taskShared");
   const formattedScore = habitScore > 0 ? `+${habitScore}` : String(habitScore);
 
   if (variant === "card") {
@@ -129,15 +166,15 @@ export function TaskHabitScoreBadge({
             ? "text-success-500 bg-success-500/10"
             : "text-danger-500 bg-danger-500/10",
         )}
-        title={`Saldo de repetições realizadas no ciclo atual: ${formattedScore}`}
+        title={t("badges.habitScoreCardTitle", { score: formattedScore })}
       >
         <span>{formattedScore}</span>
         <span className="font-normal opacity-70">
           {resetCounter === "WEEKLY"
-            ? "semana"
+            ? t("habitCycles.WEEKLY")
             : resetCounter === "MONTHLY"
-              ? "mês"
-              : "hoje"}
+              ? t("habitCycles.MONTHLY")
+              : t("habitCycles.DAILY")}
         </span>
       </span>
     );
@@ -151,9 +188,9 @@ export function TaskHabitScoreBadge({
           ? "text-success-500 bg-success-500/10"
           : "text-danger-500 bg-danger-500/10",
       )}
-      title={`Saldo de repetições realizadas: ${formattedScore}`}
+      title={t("badges.habitScoreRowTitle", { score: formattedScore })}
     >
-      Saldo: {formattedScore}
+      {t("badges.habitScoreRowLabel", { score: formattedScore })}
     </span>
   );
 }

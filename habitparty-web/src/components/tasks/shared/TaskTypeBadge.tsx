@@ -1,4 +1,5 @@
 import { CheckSquare, Flame, RotateCcw } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { normalizeTaskType, TASK_TYPE_META } from "@/constants/task";
 import type { Task } from "@/types/task";
 import { cn } from "@/utils";
@@ -20,6 +21,7 @@ export function TaskTypeBadge({
   className,
   showIcon = true,
 }: TaskTypeBadgeProps) {
+  const t = useTranslations("dashboard.taskShared.types");
   const taskType = normalizeTaskType(task);
   const typeMeta = TASK_TYPE_META[taskType] || TASK_TYPE_META.todo;
 
@@ -51,7 +53,7 @@ export function TaskTypeBadge({
       )}
     >
       {renderIcon()}
-      <span>{typeMeta.label}</span>
+      <span>{t(taskType)}</span>
     </span>
   );
 }

@@ -1,4 +1,6 @@
+import { useLocale } from "next-intl";
 import { CoinIcon } from "@/components/ui/CoinIcon";
+import type { AppLocale } from "@/i18n/config";
 import { cn, formatCoins } from "@/utils";
 
 export interface CoinAmountProps {
@@ -36,6 +38,7 @@ export function CoinAmount({
   withGlow,
   className,
 }: CoinAmountProps) {
+  const locale = useLocale() as AppLocale;
   const isPositive = amount > 0;
   const isNegative = amount < 0;
   const isZero = amount === 0;
@@ -49,7 +52,7 @@ export function CoinAmount({
   }
 
   const glow = withGlow ?? isPositive;
-  const formattedValue = formatCoins(Math.abs(amount));
+  const formattedValue = formatCoins(Math.abs(amount), { locale });
   const signPrefix = showSign ? (isPositive ? "+" : isNegative ? "−" : "") : "";
 
   return (

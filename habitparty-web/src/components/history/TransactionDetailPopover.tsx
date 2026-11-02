@@ -14,14 +14,16 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { CoinAmount } from "@/components/ui/reward/CoinAmount";
 import { XpAmount } from "@/components/ui/reward/XpAmount";
-import { TRANSACTION_CONTEXT_ROUTES } from "@/constants/history";
+import { getTransactionContextRoute } from "@/constants/history";
 import { useAnchoredPopoverPosition } from "@/hooks/useAnchoredPopoverPosition";
 import { useClickOutside } from "@/hooks/useClickOutside";
+import type { AppLocale } from "@/i18n/config";
 import type { TransactionHistoryResponseDTO } from "@/types/history";
 import { cn, formatCoins, formatDateTime } from "@/utils";
 import { resolveTransactionMetadata } from "@/utils/historyUtils";
@@ -52,6 +54,8 @@ export function TransactionDetailPopover({
   onRequestDelete,
   suspendDismiss = false,
 }: TransactionDetailPopoverProps) {
+  const t = useTranslations("history.detailPopover");
+  const locale = useLocale() as AppLocale;
   const [mounted, setMounted] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -76,7 +80,7 @@ export function TransactionDetailPopover({
 
   if (!isOpen || !mounted || !transaction) return null;
 
-  const metadata = resolveTransactionMetadata(transaction);
+  const metadata = resolveTransactionMetadata(transaction, locale);
   const IconComponent = metadata.icon || HelpCircle;
 
   const gold = transaction.goldAmount ?? 0;
@@ -93,7 +97,7 @@ export function TransactionDetailPopover({
 
   // Atalho contextual para o módulo de origem (apenas se houver referência)
   const contextualRoute = transaction.referenceId
-    ? TRANSACTION_CONTEXT_ROUTES[metadata.resolvedType]
+    ? getTransactionContextRoute(metadata.resolvedType, locale)
     : undefined;
 
   // Mobile: centralizado via classes. Desktop (md+): ancorado via CSS vars.
@@ -115,7 +119,7 @@ export function TransactionDetailPopover({
       <div
         ref={popoverRef}
         role="dialog"
-        aria-label="Detalhes da Transação"
+        aria-label={t("dialogAria")}
         style={anchorStyle}
         className={cn(
           "fixed z-60 flex flex-col w-95 max-w-[calc(100vw-32px)] max-h-[calc(100vh-48px)] overflow-hidden",
@@ -153,7 +157,7 @@ export function TransactionDetailPopover({
                   <button
                     type="button"
                     onClick={handleCopyId}
-                    title="Copiar ID da Transação"
+                    title={t("copyIdTitle")}
                     className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-tiny font-mono text-neutral-400 bg-white/5 hover:bg-white/10 hover:text-neutral-200 transition-colors cursor-pointer"
                   >
                     {copiedId ? (
@@ -167,7 +171,7 @@ export function TransactionDetailPopover({
               </div>
 
               <h3 className="text-sm font-bold text-neutral-100 leading-snug break-words">
-                {transaction.name || "Transação"}
+                {transaction.name || t("defaultTransactionName")}
               </h3>
             </div>
           </div>
@@ -175,7 +179,7 @@ export function TransactionDetailPopover({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Fechar detalhes"
+            aria-label={t("closeAria")}
             className="p-1 rounded-md text-neutral-400 hover:text-neutral-100 hover:bg-white/10 transition-colors cursor-pointer shrink-0"
           >
             <X size={16} />
@@ -194,7 +198,7 @@ export function TransactionDetailPopover({
                 ) : gold < 0 ? (
                   <ArrowDownLeft size={12} className="text-danger-500" />
                 ) : null}
-                Saldo de Moedas
+                {t("coinBalanceLabel")}
               </span>
               <div className="flex items-center gap-1">
                 <CoinAmount amount={gold} size="lg" />
@@ -204,7 +208,7 @@ export function TransactionDetailPopover({
             {/* Experiência (XP) */}
             <div className="flex flex-col gap-0.5">
               <span className="text-label-g font-semibold text-neutral-400">
-                Experiência (XP)
+                {t("xpLabel")}
               </span>
               <div className="flex items-center gap-1">
                 <XpAmount amount={xp} size="lg" withIcon />
@@ -217,9 +221,12 @@ export function TransactionDetailPopover({
             {/* Preço original na loja se houver */}
             {priceSnapshot != null && priceSnapshot > 0 && (
               <div className="flex items-center justify-between py-1 border-b border-white/5">
-                <span className="text-neutral-400">Preço tabela original:</span>
+                <span className="text-neutral-400">
+                  {t("originalListPriceLabel")}
+                </span>
                 <span className="font-semibold text-neutral-200 inline-flex items-center gap-1">
-                  {formatCoins(priceSnapshot)} <CoinIcon size={12} />
+                  {formatCoins(priceSnapshot, { locale })}{" "}
+                  <CoinIcon size={12} />
                 </span>
               </div>
             )}
@@ -227,7 +234,9 @@ export function TransactionDetailPopover({
             {/* Dificuldade ou Raridade */}
             {metadata.difficultyLabel && (
               <div className="flex items-center justify-between py-1 border-b border-white/5">
-                <span className="text-neutral-400">Dificuldade da Tarefa:</span>
+                <span className="text-neutral-400">
+                  {t("taskDifficultyLabel")}
+                </span>
                 <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/10 border border-white/15 text-neutral-100 font-semibold text-label-g">
                   {metadata.difficultyLabel}
                 </span>
@@ -236,7 +245,9 @@ export function TransactionDetailPopover({
 
             {metadata.packageLabel && (
               <div className="flex items-center justify-between py-1 border-b border-white/5">
-                <span className="text-neutral-400">Raridade do Pacote:</span>
+                <span className="text-neutral-400">
+                  {t("packageRarityLabel")}
+                </span>
                 <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/10 border border-white/15 text-neutral-100 font-semibold text-label-g">
                   {metadata.packageLabel}
                 </span>
@@ -246,7 +257,9 @@ export function TransactionDetailPopover({
             {/* Sessão de Foco: Duração */}
             {metadata.isFocus && tags.length > 0 && (
               <div className="flex items-center justify-between py-1 border-b border-white/5">
-                <span className="text-neutral-400">Duração da Sessão:</span>
+                <span className="text-neutral-400">
+                  {t("sessionDurationLabel")}
+                </span>
                 <span className="inline-flex items-center gap-1 font-bold text-gold bg-gold/15 px-1.5 py-0.5 rounded-md border border-gold/30 text-label-g">
                   <Timer size={12} />
                   {tags[0]}
@@ -257,12 +270,13 @@ export function TransactionDetailPopover({
             {/* Data e Hora Exatas */}
             <div className="flex items-center justify-between py-1 border-b border-white/5">
               <span className="text-neutral-400 flex items-center gap-1">
-                <Calendar size={12} /> Registrado em:
+                <Calendar size={12} /> {t("recordedAtLabel")}
               </span>
               <span className="font-medium text-neutral-200 text-label-g">
                 {formatDateTime(transaction.createdAt, {
                   includeSeconds: true,
                   includeYearFull: true,
+                  locale,
                 })}
               </span>
             </div>
@@ -271,7 +285,7 @@ export function TransactionDetailPopover({
             {tags.length > 0 && (!metadata.isFocus || tags.length > 1) && (
               <div className="flex flex-col gap-1 pt-1">
                 <span className="text-neutral-400 flex items-center gap-1 text-label-g">
-                  <Tag size={12} /> Tags vinculadas:
+                  <Tag size={12} /> {t("linkedTagsLabel")}
                 </span>
                 <div className="flex items-center gap-1 flex-wrap">
                   {(metadata.isFocus ? tags.slice(1) : tags).map((tag) => (
@@ -314,7 +328,7 @@ export function TransactionDetailPopover({
               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all cursor-pointer"
             >
               <Trash2 size={13} />
-              Excluir
+              {t("deleteButton")}
             </button>
           ) : (
             <div />
@@ -325,7 +339,7 @@ export function TransactionDetailPopover({
             onClick={onClose}
             className="px-3 py-1.5 rounded-lg bg-surface border border-white/15 text-neutral-200 hover:text-white hover:bg-white/10 transition-colors text-xs font-semibold cursor-pointer"
           >
-            Fechar
+            {t("closeButton")}
           </button>
         </footer>
       </div>

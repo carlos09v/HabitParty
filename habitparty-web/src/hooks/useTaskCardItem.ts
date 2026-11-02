@@ -2,12 +2,14 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useLocale } from "next-intl";
 import {
   getTaskBorderClass,
   normalizeTaskType,
   TASK_PRIORITY_META,
 } from "@/constants/task";
 import { useTaskProgress } from "@/hooks/useTaskProgress";
+import type { AppLocale } from "@/i18n/config";
 import { useUIStore } from "@/store/uiStore";
 import type { Task } from "@/types/task";
 import { getTaskDueDateInfo } from "@/utils/date";
@@ -40,6 +42,7 @@ export function useTaskItemMeta({
   UseTaskCardItemOptions,
   "columnId" | "isOverlay" | "isSortable" | "useTranslateTransform"
 >) {
+  const locale = useLocale() as AppLocale;
   const storeCompact = useUIStore((state) => state.compactMode);
   const isCompact = propIsCompact ?? storeCompact;
 
@@ -56,6 +59,7 @@ export function useTaskItemMeta({
   const dueDateInfo = getTaskDueDateInfo(task.dueDate, {
     activeFilter,
     selectedDate,
+    locale,
   });
   const isTodoOverdue = Boolean(isTodo && dueDateInfo.isOverdue && !isDone);
   const borderClass = isTodoOverdue
@@ -86,7 +90,7 @@ export function useTaskItemMeta({
     hasChecklist && checklistCompleted === checklistTotal;
 
   const isHardcoreOverdue = Boolean(
-    task.isHardcoreModeEnabled && dueDateInfo.isOverdue,
+    isTodo && task.isHardcoreModeEnabled && dueDateInfo.isOverdue,
   );
 
   return {

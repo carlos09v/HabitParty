@@ -2,9 +2,12 @@
 
 import { Coins } from "lucide-react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { DEFAULT_ECONOMY_BARS } from "@/constants/dashboard";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
+import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import type { EconomyBarData, EconomyWidgetProps } from "@/types/dashboard";
 import { cn, formatCoins } from "@/utils";
@@ -21,6 +24,9 @@ export function EconomyWidget({
   bars = DEFAULT_ECONOMY_BARS as EconomyBarData[],
   isCompact = false,
 }: EconomyWidgetProps) {
+  const t = useTranslations("dashboard.sidebarRight.economyWidget");
+  const { isGamified } = useExperienceMode();
+  const locale = useLocale() as AppLocale;
   const storeUser = useUserStore((s) => s.user);
   const currentBalance = storeUser?.currentCoins ?? balance;
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -35,15 +41,19 @@ export function EconomyWidget({
     <div className="flex flex-col gap-2.5 w-full">
       {/* Header com Saldo Dinâmico e Link para o Extrato */}
       <div className="flex items-center justify-between w-full">
-        <h4 className="text-subtitle-s font-bold text-neutral-100">Economia</h4>
+        <h4 className="text-subtitle-s font-bold text-neutral-100">
+          {t("title")}
+        </h4>
 
         <Link
           href="/history"
           className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-gold/15 border border-gold/30 hover:bg-gold/25 hover:border-gold/50 transition-all cursor-pointer group shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50"
-          title="Ver extrato completo de transações"
+          title={
+            isGamified ? t("walletTitleGamified") : t("walletTitleProductivity")
+          }
         >
           <span className="text-label-g text-neutral-300 group-hover:text-neutral-100 transition-colors">
-            Carteira:
+            {t("walletLabel")}
           </span>
           <div className="flex items-center gap-1">
             <Coins
@@ -52,7 +62,7 @@ export function EconomyWidget({
               aria-hidden="true"
             />
             <span className="text-body-s font-bold text-gold">
-              {formatCoins(currentBalance)}
+              {formatCoins(currentBalance, { locale })}
             </span>
           </div>
         </Link>
@@ -67,26 +77,26 @@ export function EconomyWidget({
       >
         {/* Cabeçalho do Gráfico com Balanço Dinâmico */}
         <div className="flex items-center justify-between text-label-g text-neutral-400">
-          <span>Ganhos & Gastos</span>
+          <span>{t("earningsAndSpent")}</span>
           <span className="font-semibold text-xs transition-colors">
             {activeHoveredBar ? (
               <span className="flex items-center gap-1.5">
                 <span className="text-gold">
-                  +{formatCoins(activeHoveredBar.gold)}
+                  +{formatCoins(activeHoveredBar.gold, { locale })}
                 </span>
                 <span className="text-neutral-500">/</span>
                 <span className="text-rose-400">
-                  -{formatCoins(activeHoveredBar.spent ?? 0)}
+                  -{formatCoins(activeHoveredBar.spent ?? 0, { locale })}
                 </span>
               </span>
             ) : (
               <span className="flex items-center gap-1.5">
                 <span className="text-gold">
-                  +{formatCoins(weeklyEarnings)}
+                  +{formatCoins(weeklyEarnings, { locale })}
                 </span>
                 <span className="text-neutral-500">/</span>
                 <span className="text-rose-400">
-                  -{formatCoins(weeklySpent)}
+                  -{formatCoins(weeklySpent, { locale })}
                 </span>
               </span>
             )}
@@ -100,7 +110,7 @@ export function EconomyWidget({
             isCompact ? "h-14" : "h-16",
           )}
           role="img"
-          aria-label="Gráfico semanal de moedas ganhas e gastas"
+          aria-label={t("chartAriaLabel")}
         >
           {displayBars.map((bar, index) => {
             const isHovered = hoveredIndex === index;
@@ -108,6 +118,11 @@ export function EconomyWidget({
               ? `${bar.label} (${bar.periodLabel})`
               : bar.label;
             const netGold = bar.gold - (bar.spent ?? 0);
+            const barSummary = t("barSummaryAria", {
+              label: fullLabel,
+              earned: formatCoins(bar.gold, { locale }),
+              spent: formatCoins(bar.spent ?? 0, { locale }),
+            });
 
             return (
               <button
@@ -118,31 +133,31 @@ export function EconomyWidget({
                 onFocus={() => setHoveredIndex(index)}
                 onBlur={() => setHoveredIndex(null)}
                 className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group/bar relative cursor-pointer bg-transparent border-0 p-0 focus:outline-none"
-                title={`${fullLabel}: +${formatCoins(bar.gold)} ganhos, -${formatCoins(bar.spent ?? 0)} gastos`}
-                aria-label={`${fullLabel}: +${formatCoins(bar.gold)} ganhos, -${formatCoins(bar.spent ?? 0)} gastos`}
+                title={barSummary}
+                aria-label={barSummary}
               >
                 {/* Balãozinho flutuante detalhado no hover */}
                 {isHovered && (
-                  <div className="absolute -top-20 px-2.5 py-1.5 rounded-lg bg-neutral-900/95 border border-white/15 text-neutral-100 shadow-xl pointer-events-none whitespace-nowrap z-30 transition-all transform -translate-y-1 backdrop-blur-md flex flex-col gap-0.5 text-tiny">
+                  <div className="tooltip-dark absolute -top-20 px-2.5 py-1.5 rounded-lg border border-white/15 text-neutral-100 shadow-xl pointer-events-none whitespace-nowrap z-30 transition-all transform -translate-y-1 backdrop-blur-md flex flex-col gap-0.5 text-tiny">
                     <span className="font-bold text-neutral-300 border-b border-white/10 pb-0.5">
                       {fullLabel}
                     </span>
                     <div className="flex items-center justify-between gap-3 text-gold font-semibold">
-                      <span>Entradas:</span>
+                      <span>{t("inflows")}</span>
                       <span className="flex items-center gap-1">
-                        +{formatCoins(bar.gold)}
+                        +{formatCoins(bar.gold, { locale })}
                         <CoinIcon size={11} />
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-3 text-rose-400 font-semibold">
-                      <span>Gastos:</span>
+                      <span>{t("outflows")}</span>
                       <span className="flex items-center gap-1">
-                        -{formatCoins(bar.spent ?? 0)}
+                        -{formatCoins(bar.spent ?? 0, { locale })}
                         <CoinIcon size={11} />
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-3 text-neutral-200 font-bold pt-0.5 border-t border-white/10">
-                      <span>Saldo:</span>
+                      <span>{t("netBalance")}</span>
                       <span
                         className={cn(
                           "flex items-center gap-1",
@@ -150,7 +165,7 @@ export function EconomyWidget({
                         )}
                       >
                         {netGold >= 0 ? "+" : ""}
-                        {formatCoins(netGold)}
+                        {formatCoins(netGold, { locale })}
                         <CoinIcon size={11} />
                       </span>
                     </div>
@@ -204,14 +219,14 @@ export function EconomyWidget({
         <div className="flex items-center justify-center gap-4 pt-0.5 text-[11px] text-neutral-400">
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-xs bg-gold" aria-hidden="true" />
-            <span>Ganhos</span>
+            <span>{t("legendEarnings")}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div
               className="w-2 h-2 rounded-xs bg-rose-400"
               aria-hidden="true"
             />
-            <span>Gastos</span>
+            <span>{t("legendSpent")}</span>
           </div>
         </div>
       </div>

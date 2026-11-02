@@ -11,11 +11,13 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { UpgradePremiumModal } from "@/components/subscription/UpgradePremiumModal";
 import { SlideOverDrawer } from "@/components/ui/SlideOverDrawer";
 import { Switch } from "@/components/ui/Switch";
 import { getColumnIcon } from "@/constants/routine";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { RoutineColumnsDrawerProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 
@@ -32,6 +34,8 @@ export function RoutineColumnsDrawer({
   onEditColumn,
   onDeleteColumn,
 }: RoutineColumnsDrawerProps) {
+  const t = useTranslations("tasks.columnsDrawer");
+  const { isGamified } = useExperienceMode();
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   if (!isOpen) return null;
@@ -47,8 +51,8 @@ export function RoutineColumnsDrawer({
       <SlideOverDrawer
         isOpen={isOpen}
         onClose={onClose}
-        ariaLabel="Gerenciador de Colunas do Quadro"
-        backdropAriaLabel="Fechar gaveta de colunas"
+        ariaLabel={t("dialogAria")}
+        backdropAriaLabel={t("backdropAria")}
         panelClassName="w-full sm:w-[420px]"
       >
         {/* Header */}
@@ -60,30 +64,34 @@ export function RoutineColumnsDrawer({
               </div>
               <div>
                 <h2 className="text-body-m font-bold text-neutral-50 leading-tight">
-                  Gerenciar Colunas
+                  {t("title")}
                 </h2>
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-tiny font-bold text-gold">
-                    {visibleColumnIds.length}/{maxColumns} ativas
+                    {t("activeCount", {
+                      visible: visibleColumnIds.length,
+                      max: maxColumns,
+                    })}
                   </span>
                   <span className="text-neutral-500">•</span>
                   <span className="text-tiny text-neutral-400">
-                    {columns.length} criadas
+                    {t("createdCount", { total: columns.length })}
                   </span>
                 </div>
               </div>
             </div>
             <p className="text-label-s text-neutral-400 mt-1 leading-snug">
-              Ative ou oculte colunas para personalizar seu foco. Usuários{" "}
-              {isPremium ? "Premium" : "Free"} podem manter até {maxColumns}{" "}
-              colunas ativas ao mesmo tempo.
+              {t("description", {
+                plan: isPremium ? "Premium" : "Free",
+                max: maxColumns,
+              })}
             </p>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            aria-label="Fechar"
+            aria-label={t("closeAria")}
             className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-100 hover:bg-white/10 transition-colors cursor-pointer"
           >
             <X size={18} />
@@ -99,7 +107,11 @@ export function RoutineColumnsDrawer({
               className="text-xs font-semibold text-primary-light hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
             >
               <Eye size={13} />
-              <span>Exibir todas ({Math.min(columns.length, maxColumns)})</span>
+              <span>
+                {t("showAllCountButton", {
+                  count: Math.min(columns.length, maxColumns),
+                })}
+              </span>
             </button>
           )}
 
@@ -113,18 +125,18 @@ export function RoutineColumnsDrawer({
               disabled={!canCreateMore}
               title={
                 canCreateMore
-                  ? "Criar nova lista"
-                  : `Limite máximo de ${maxColumns} colunas atingido`
+                  ? t("createNewListTitle")
+                  : t("maxColumnsReachedTitle", { max: maxColumns })
               }
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
                 canCreateMore
-                  ? "bg-gold hover:bg-gold-hover text-neutral-900 shadow-glow-gold-xs active:scale-98"
+                  ? "bg-gold hover:bg-gold-hover text-on-gold shadow-glow-gold-xs active:scale-98"
                   : "bg-white/5 text-neutral-500 cursor-not-allowed border border-white/10",
               )}
             >
               <Plus size={14} className="stroke-3" />
-              <span>Nova Coluna</span>
+              <span>{t("newColumnButton")}</span>
             </button>
           </div>
         </div>
@@ -134,18 +146,16 @@ export function RoutineColumnsDrawer({
           {columns.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center text-neutral-400 gap-2">
               <Columns3 size={32} className="opacity-40 text-neutral-500" />
-              <p className="text-body-s font-medium">
-                Nenhuma coluna cadastrada neste workspace.
-              </p>
+              <p className="text-body-s font-medium">{t("emptyState")}</p>
               <button
                 type="button"
                 onClick={() => {
                   onOpenCreateColumn();
                   onClose();
                 }}
-                className="mt-2 px-3 py-1.5 rounded-lg bg-gold text-neutral-900 font-bold text-xs"
+                className="mt-2 px-3 py-1.5 rounded-lg bg-gold text-on-gold font-bold text-xs"
               >
-                Criar primeira coluna
+                {t("createFirstColumnButton")}
               </button>
             </div>
           ) : (
@@ -196,7 +206,10 @@ export function RoutineColumnsDrawer({
                       </div>
                       <span className="text-tiny text-neutral-400 flex items-center gap-1 mt-0.5">
                         <span>
-                          {taskCount} {taskCount === 1 ? "tarefa" : "tarefas"}
+                          {taskCount}{" "}
+                          {taskCount === 1
+                            ? t("taskSingular")
+                            : t("taskPlural")}
                         </span>
                         <span>•</span>
                         <span
@@ -206,7 +219,9 @@ export function RoutineColumnsDrawer({
                               : "text-neutral-400"
                           }
                         >
-                          {isVisible ? "Visível no quadro" : "Oculta do quadro"}
+                          {isVisible
+                            ? t("visibleOnBoard")
+                            : t("hiddenFromBoard")}
                         </span>
                       </span>
                     </div>
@@ -221,7 +236,7 @@ export function RoutineColumnsDrawer({
                         onEditColumn(col);
                         onClose();
                       }}
-                      title="Editar nome ou ícone"
+                      title={t("editColumnTitle")}
                       className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-100 hover:bg-white/10 transition-colors cursor-pointer"
                     >
                       <Pencil size={14} />
@@ -234,7 +249,7 @@ export function RoutineColumnsDrawer({
                         onDeleteColumn(col);
                         onClose();
                       }}
-                      title="Excluir coluna"
+                      title={t("deleteColumnTitle")}
                       className="p-1.5 rounded-lg text-neutral-400 hover:text-danger-500 hover:bg-danger-500/10 transition-colors cursor-pointer"
                     >
                       <Trash2 size={14} />
@@ -243,10 +258,10 @@ export function RoutineColumnsDrawer({
                     <div
                       title={
                         isOnlyVisible
-                          ? "Pelo menos uma coluna precisa ficar visível"
+                          ? t("onlyVisibleTitle")
                           : isVisible
-                            ? "Ocultar do quadro"
-                            : "Exibir no quadro"
+                            ? t("toggleHideTitle")
+                            : t("toggleShowTitle")
                       }
                     >
                       <Switch
@@ -256,12 +271,12 @@ export function RoutineColumnsDrawer({
                         onCheckedChange={() => onToggleVisibility(col.id)}
                         thumbContent={
                           isVisible ? (
-                            <Eye size={10} className="text-neutral-900" />
+                            <Eye size={10} className="text-white" />
                           ) : (
                             <EyeOff size={10} className="text-neutral-500" />
                           )
                         }
-                        aria-label={`Alternar visibilidade da coluna ${col.title}`}
+                        aria-label={t("toggleSwitchAria", { title: col.title })}
                       />
                     </div>
                   </div>
@@ -279,25 +294,38 @@ export function RoutineColumnsDrawer({
                 <Crown size={16} className="text-gold shrink-0 mt-0.5" />
                 <div className="flex flex-col text-label-s">
                   <span className="font-bold text-gold">
-                    {columns.length - maxColumns}{" "}
                     {columns.length - maxColumns === 1
-                      ? "coluna guardada na mochila"
-                      : "colunas guardadas na mochila"}
+                      ? isGamified
+                        ? t("storedInBackpackSingular", {
+                            count: columns.length - maxColumns,
+                          })
+                        : t("storedInBackpackSingularProductivity", {
+                            count: columns.length - maxColumns,
+                          })
+                      : isGamified
+                        ? t("storedInBackpackPlural", {
+                            count: columns.length - maxColumns,
+                          })
+                        : t("storedInBackpackPluralProductivity", {
+                            count: columns.length - maxColumns,
+                          })}
                   </span>
                   <p className="text-neutral-400 text-tiny leading-relaxed">
-                    No plano Free, até {maxColumns} colunas ficam ativas no
-                    quadro. Suas listas e tarefas estão 100% preservadas! Faça
-                    upgrade para exibir todas ao mesmo tempo.
+                    {isGamified
+                      ? t("storedInBackpackDesc", { max: maxColumns })
+                      : t("storedInBackpackDescProductivity", {
+                          max: maxColumns,
+                        })}
                   </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsUpgradeModalOpen(true)}
-                className="w-full py-1.5 px-3 rounded-lg bg-gold hover:bg-gold-hover text-neutral-900 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-98"
+                className="w-full py-1.5 px-3 rounded-lg bg-gold hover:bg-gold-hover text-on-gold font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-98"
               >
                 <Crown size={13} className="shrink-0 stroke-2" />
-                <span>Exibir todas com Premium 👑</span>
+                <span>{t("showAllWithPremium")}</span>
               </button>
             </div>
           )}
@@ -306,12 +334,10 @@ export function RoutineColumnsDrawer({
             <Sparkles size={16} className="text-gold shrink-0 mt-0.5" />
             <div className="flex flex-col gap-0.5 text-label-s text-neutral-300">
               <span className="font-bold text-neutral-100">
-                {isPremium ? "Benefício Premium Ativo" : "Quadro de Rotinas"}
+                {isPremium ? t("premiumBenefitTitle") : t("routineBoardTitle")}
               </span>
               <p className="text-neutral-400 text-tiny leading-relaxed">
-                {isPremium
-                  ? "Você pode manter até 6 colunas ativas ao mesmo tempo! O quadro ajusta o scroll horizontal suavemente para navegar entre elas."
-                  : "No plano Free você pode alternar até 4 colunas ativas. Faça upgrade para Premium para desbloquear até 6 colunas simultâneas!"}
+                {isPremium ? t("premiumBenefitDesc") : t("freeBenefitDesc")}
               </p>
             </div>
           </div>

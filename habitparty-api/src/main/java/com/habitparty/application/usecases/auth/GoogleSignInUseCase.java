@@ -1,14 +1,11 @@
 package com.habitparty.application.usecases.auth;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.OAuthIdentityProviderPort;
 import com.habitparty.application.ports.PasswordHasherPort;
@@ -16,18 +13,15 @@ import com.habitparty.application.ports.RefreshTokenRepository;
 import com.habitparty.application.ports.TokenPort;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.AuthTokens;
-import com.habitparty.core.domain.entities.RefreshToken;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.auth.OAuthUserProfile;
+import com.habitparty.core.domain.enums.SubscriptionStatus;
 import com.habitparty.core.domain.enums.UserGender;
 import com.habitparty.core.domain.enums.UserRole;
 import com.habitparty.core.exceptions.DomainValidationException;
 
 @Service
-@Transactional
 public class GoogleSignInUseCase {
-  private static final int MAX_ACTIVE_SESSIONS = 3;
-
   private final UserRepository userRepository;
   private final PasswordHasherPort passwordHasher;
   private final TokenPort tokenPort;
@@ -59,28 +53,23 @@ public class GoogleSignInUseCase {
 
     // 2. Localiza ou cria o usuário na base de dados
     User user = userRepository.findByEmail(emailNormalized)
+        .map(existing -> {
+          boolean needsSave = false;
+          if (!existing.isEmailVerified()) {
+            existing.verifyEmail();
+            needsSave = true;
+          }
+          // Limpa data de nascimento fictícia legada (2000-01-01) para permitir preenchimento pelo usuário
+          if (LocalDate.of(2000, 1, 1).equals(existing.getBirthDate())) {
+            existing.setBirthDate(null);
+            needsSave = true;
+          }
+          return needsSave ? userRepository.save(existing) : existing;
+        })
         .orElseGet(() -> createGoogleUser(profile, emailNormalized));
 
-    // 3. Limita sessões ativas
-    int activeSessions = refreshTokenRepository.countActiveByUserId(user.getId());
-    if (activeSessions >= MAX_ACTIVE_SESSIONS) {
-      refreshTokenRepository.revokeOldestSession(user.getId());
-    }
-
-    // 4. Gera Access Token e Refresh Token do HabitParty
-    String accessToken = tokenPort.generateToken(user);
-
-    RefreshToken refreshToken = new RefreshToken(
-        UUID.randomUUID(),
-        user.getId(),
-        UUID.randomUUID().toString(),
-        Instant.now().plus(7, ChronoUnit.DAYS),
-        false
-    );
-
-    refreshTokenRepository.save(refreshToken);
-
-    return new AuthTokens(accessToken, refreshToken.getToken());
+    // 3. Limita sessões ativas e emite Access Token + Refresh Token
+    return AuthSessionIssuer.issueSession(user, tokenPort, refreshTokenRepository);
   }
 
   private User createGoogleUser(OAuthUserProfile profile, String emailNormalized) {
@@ -99,23 +88,32 @@ public class GoogleSignInUseCase {
         ? profile.name().trim()
         : uniqueUsername;
 
+    LocalDateTime now = LocalDateTime.now();
+
     User newUser = new User(
         UUID.randomUUID(),
         UserRole.USER,
         false,
+        false,
+        null,
+        null,
+        SubscriptionStatus.FREE,
+        null,
         fullName,
         uniqueUsername,
         emailNormalized,
         passwordHasher.encode(UUID.randomUUID().toString()),
+        true, // Conta Google já tem e-mail verificado pelo provedor OAuth
+        now,
         BigDecimal.ZERO,
         BigDecimal.ZERO,
-        LocalDate.of(2000, 1, 1),
+        null,
         profile.picture(),
         UserGender.PREFER_NOT_TO_SAY,
         0,
         0,
         0,
-        LocalDateTime.now()
+        now
     );
 
     return userRepository.save(newUser);

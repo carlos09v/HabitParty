@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Pagination } from "@/components/ui/Pagination";
 import { useCompactMode } from "@/hooks/useCompactMode";
 import type { TaskPaginationProps } from "@/types/dashboard";
@@ -14,10 +15,11 @@ export function TaskPagination({
   totalPages,
   totalItems,
   itemsPerPage,
-  itemLabel = "tarefas",
+  itemLabel,
   isCompact: propIsCompact,
   onPageChange,
 }: TaskPaginationProps) {
+  const t = useTranslations("dashboard.taskTable");
   const { isCompact } = useCompactMode(propIsCompact);
   const router = useRouter();
   const pathname = usePathname();
@@ -42,7 +44,7 @@ export function TaskPagination({
       totalPages={totalPages}
       totalItems={totalItems}
       itemsPerPage={itemsPerPage}
-      itemLabel={itemLabel}
+      itemLabel={itemLabel ?? t("paginationItemLabel")}
       isCompact={isCompact}
       onPageChange={handlePageChange}
     />

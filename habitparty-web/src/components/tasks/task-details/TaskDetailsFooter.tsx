@@ -1,10 +1,12 @@
 "use client";
 
 import { Baseline, Copy, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useRef, useState } from "react";
 import { RewardPreview } from "@/components/ui/reward/RewardPreview";
 import { MARKDOWN_FORMAT_OPTIONS } from "@/constants/task";
 import { useClickOutside } from "@/hooks/useClickOutside";
+import type { AppLocale } from "@/i18n/config";
 import type { FormatSyntax, TaskDetailsFooterProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 import { getTaskRewardBreakdown, toTaskRewardEstimate } from "@/utils/economy";
@@ -19,6 +21,8 @@ export function TaskDetailsFooter({
   onDuplicateTask,
   onOpenEdit,
 }: TaskDetailsFooterProps) {
+  const t = useTranslations("tasks.detailsPopover.footer");
+  const locale = useLocale() as AppLocale;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isFormatMenuOpen, setIsFormatMenuOpen] = useState(false);
   const menuContainerRef = useRef<HTMLDivElement>(null);
@@ -45,12 +49,14 @@ export function TaskDetailsFooter({
       isHardcoreModeEnabled: task.isHardcoreModeEnabled,
       dueDate: task.dueDate,
       isPenaltyApplied: task.isPenaltyApplied,
+      locale,
     });
     return toTaskRewardEstimate(breakdown, {
       isHardcore: task.isHardcoreModeEnabled,
       taskType: task.type,
+      locale,
     });
-  }, [task]);
+  }, [task, locale]);
 
   return (
     <div className="flex items-center justify-between pt-1 border-t border-white/8 mt-0.5 min-w-0">
@@ -65,7 +71,7 @@ export function TaskDetailsFooter({
           <RewardPreview
             estimate={rewardEstimate}
             variant="inline"
-            label="Recompensas"
+            label={t("rewardsLabel")}
           />
         )}
       </div>
@@ -77,14 +83,14 @@ export function TaskDetailsFooter({
             <button
               type="button"
               onClick={() => setIsFormatMenuOpen((prev) => !prev)}
-              title="Formatação de texto (Negrito, Destacar, Lista, etc.)"
+              title={t("formatButtonTitle")}
               className={cn(
                 "p-1.5 rounded-md transition-all cursor-pointer",
                 isFormatMenuOpen
-                  ? "bg-gold text-neutral-900 shadow-glow-gold-xs font-bold"
+                  ? "bg-gold text-on-gold shadow-glow-gold-xs font-bold"
                   : "text-neutral-300 hover:text-gold hover:bg-white/8",
               )}
-              aria-label="Abrir opções de formatação de texto"
+              aria-label={t("formatButtonAria")}
               aria-expanded={isFormatMenuOpen}
             >
               <Baseline size={15} />
@@ -93,13 +99,13 @@ export function TaskDetailsFooter({
             {isFormatMenuOpen && (
               <div
                 role="menu"
-                aria-label="Opções de formatação de texto"
+                aria-label={t("formatMenuAria")}
                 className="absolute right-0 bottom-full mb-2 w-48 bg-popover/98 border border-primary/40 rounded-xl shadow-2xl p-1.5 z-50 flex flex-col gap-0.5 backdrop-blur-md animate-in fade-in zoom-in-95 duration-100"
               >
                 <div className="px-2 py-1 border-b border-white/10 text-tiny font-semibold text-neutral-400 uppercase tracking-wider flex items-center justify-between">
-                  <span>Formatação</span>
+                  <span>{t("formatHeader")}</span>
                   <span className="text-label-m text-neutral-500 font-normal">
-                    Markdown
+                    {t("markdownLabel")}
                   </span>
                 </div>
 
@@ -119,7 +125,9 @@ export function TaskDetailsFooter({
                         size={13}
                         className={cn(item.iconColorClass, "shrink-0")}
                       />
-                      <span className={item.labelClass}>{item.label}</span>
+                      <span className={item.labelClass}>
+                        {t(`formats.${item.syntax}`)}
+                      </span>
                       <span className="text-tiny text-neutral-500 ml-auto font-mono">
                         {item.hint}
                       </span>
@@ -136,7 +144,7 @@ export function TaskDetailsFooter({
           <button
             type="button"
             onClick={() => setIsMenuOpen((prev) => !prev)}
-            title="Mais opções"
+            title={t("moreOptionsTitle")}
             className="p-1.5 rounded-md text-neutral-300 hover:text-gold hover:bg-white/8 transition-colors cursor-pointer"
           >
             <MoreHorizontal size={15} />
@@ -154,7 +162,7 @@ export function TaskDetailsFooter({
                   className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-200 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   <Pencil size={12} />
-                  <span>Editar completo</span>
+                  <span>{t("editFull")}</span>
                 </button>
               )}
               {onDuplicateTask && (
@@ -167,7 +175,7 @@ export function TaskDetailsFooter({
                   className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-200 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   <Copy size={12} />
-                  <span>Duplicar</span>
+                  <span>{t("duplicate")}</span>
                 </button>
               )}
               <button
@@ -179,7 +187,7 @@ export function TaskDetailsFooter({
                 className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-danger-500 hover:bg-danger-500/10 cursor-pointer"
               >
                 <Trash2 size={12} />
-                <span>Excluir tarefa</span>
+                <span>{t("deleteTask")}</span>
               </button>
             </div>
           )}

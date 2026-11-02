@@ -420,6 +420,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/inventory/{itemId}/open": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Abrir Caixa Misteriosa
+     * @description Abre uma caixa misteriosa do inventário e sorteia a recompensa.
+     */
+    post: operations["openMysteryBox"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/focus-records": {
     parameters: {
       query?: never;
@@ -538,6 +558,86 @@ export interface paths {
      * @description Autentica o usuário com email/username e senha, retornando os tokens.
      */
     post: operations["signIn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/forgot-password": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["forgotPassword"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/reset-password": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["resetPassword"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/verify-email": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["verifyEmail"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/resend-verification": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["resendVerification"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/google": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["googleSignIn"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1035,6 +1135,9 @@ export interface components {
         | "CUSTOM";
       /** Format: date-time */
       reminderAt?: string;
+      isPenaltyApplied?: boolean;
+      sendEmailReminder?: boolean;
+      emailReminderSent?: boolean;
       checklist?: components["schemas"]["ChecklistItemResponseDTO"][];
     };
     WorkspaceResponseDTO: {
@@ -1048,15 +1151,18 @@ export interface components {
     UpdateUserDTO: {
       fullName?: string;
       /** Format: date */
-      birthday?: string;
+      birthDate?: string;
       /** @enum {string} */
       gender?: "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_TO_SAY";
+      /** @enum {string} */
+      experienceMode?: "GAMIFIED" | "PRODUCTIVITY";
     };
     UserResponseDTO: {
       /** Format: uuid */
       id?: string;
       isPremium?: boolean;
       isFounder?: boolean;
+      emailVerified?: boolean;
       /** @enum {string} */
       subscriptionStatus?: "FREE" | "ACTIVE" | "PAST_DUE" | "CANCELED";
       /** Format: date-time */
@@ -1068,10 +1174,12 @@ export interface components {
       username?: string;
       /** @enum {string} */
       gender?: "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_TO_SAY";
+      /** @enum {string} */
+      experienceMode?: "GAMIFIED" | "PRODUCTIVITY";
       email?: string;
       profilePhotoUrl?: string;
       /** Format: date */
-      birthday?: string;
+      birthDate?: string;
       /** Format: int32 */
       age?: number;
       currentLevelTitle?: string;
@@ -1143,6 +1251,7 @@ export interface components {
         | "CUSTOM";
       /** Format: date-time */
       customReminderAt?: string;
+      sendEmailReminder?: boolean;
     };
     UpdateTaskOrderDTO: {
       /** Format: uuid */
@@ -1240,6 +1349,9 @@ export interface components {
       completedPomos?: number;
       /** Format: int32 */
       durationMinutes?: number;
+      /** Format: int32 */
+      xpEarned?: number;
+      coinsEarned?: number;
     };
     UpdateFocusActivityDTO: {
       name?: string;
@@ -1291,7 +1403,7 @@ export interface components {
       /** @enum {string} */
       gender: "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_TO_SAY";
       /** Format: date */
-      birthday: string;
+      birthDate: string;
     };
     /**
      * @example {
@@ -1352,6 +1464,7 @@ export interface components {
         | "CUSTOM";
       /** Format: date-time */
       customReminderAt?: string;
+      sendEmailReminder?: boolean;
     };
     CreateRewardDTO: {
       name: string;
@@ -1410,11 +1523,26 @@ export interface components {
     SignInResponseDTO: {
       accessToken?: string;
       refreshToken?: string;
+      isNewUser?: boolean;
     };
     SignInRequestDTO: {
       /** Format: email */
       email: string;
       password: string;
+    };
+    ForgotPasswordRequestDTO: {
+      /** Format: email */
+      email: string;
+    };
+    ResetPasswordRequestDTO: {
+      token: string;
+      password: string;
+    };
+    VerifyEmailRequestDTO: {
+      token: string;
+    };
+    GoogleSignInRequestDTO: {
+      code: string;
     };
     UpdateUserPasswordDTO: {
       currentPassword: string;
@@ -2225,6 +2353,28 @@ export interface operations {
       };
     };
   };
+  openMysteryBox: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        itemId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["InventoryItemResponseDTO"];
+        };
+      };
+    };
+  };
   create: {
     parameters: {
       query?: never;
@@ -2373,6 +2523,116 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": components["schemas"]["SignInRequestDTO"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["SignInResponseDTO"];
+        };
+      };
+    };
+  };
+  forgotPassword: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ForgotPasswordRequestDTO"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  resetPassword: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ResetPasswordRequestDTO"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  verifyEmail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["VerifyEmailRequestDTO"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["UserResponseDTO"];
+        };
+      };
+    };
+  };
+  resendVerification: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  googleSignIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GoogleSignInRequestDTO"];
       };
     };
     responses: {
@@ -2613,6 +2873,8 @@ export interface operations {
     parameters: {
       query?: {
         tab?: string;
+        period?: string;
+        search?: string;
         page?: number;
         size?: number;
       };
@@ -2635,7 +2897,11 @@ export interface operations {
   };
   exportToCsv: {
     parameters: {
-      query?: never;
+      query?: {
+        tab?: string;
+        period?: string;
+        search?: string;
+      };
       header?: never;
       path?: never;
       cookie?: never;

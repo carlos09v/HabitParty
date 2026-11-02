@@ -2,6 +2,7 @@
 
 import { Check, Crown, Lock, Sparkles } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -25,6 +26,7 @@ interface AvatarFrameSettingsProps {
 export function AvatarFrameSettings({
   isCompact = false,
 }: AvatarFrameSettingsProps) {
+  const t = useTranslations("settings.avatarFrames");
   const user = useUserStore((s) => s.user);
   const isPremium = useUserStore((s) => s.is_Premium);
   const currentFrameId = useAvatarFrameStore((s) => s.frameId);
@@ -45,25 +47,24 @@ export function AvatarFrameSettings({
     isFramePremium: boolean,
   ) => {
     if (isFramePremium && !isPremium) {
-      toast.info(
-        "Molduras animadas são exclusivas para membros Premium! Faça o upgrade para desbloquear.",
-      );
+      toast.info(t("upgradeToast"));
       setIsUpgradeModalOpen(true);
       return;
     }
 
     setFrameId(frameId);
-    toast.success("Moldura de perfil atualizada!");
+    toast.success(
+      t("successToast", {
+        name: t(`frames.${frameId}.name`),
+      }),
+    );
   };
 
   return (
     <>
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-body-s text-neutral-300">
-            Escolha uma moldura animada com luz cósmica para destacar seu perfil
-            na Party, no ranking e no painel.
-          </p>
+          <p className="text-body-s text-neutral-300">{t("subtitle")}</p>
 
           {!isPremium && (
             <button
@@ -72,7 +73,7 @@ export function AvatarFrameSettings({
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-tiny font-bold bg-gold/15 text-gold border border-gold/40 hover:bg-gold/25 transition-all cursor-pointer shrink-0"
             >
               <Crown size={12} className="stroke-2" />
-              <span>Desbloquear Todas</span>
+              <span>{t("unlockAll")}</span>
             </button>
           )}
         </div>
@@ -123,23 +124,23 @@ export function AvatarFrameSettings({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <span className="text-body-s font-bold text-neutral-100 truncate">
-                      {frame.name}
+                      {t(`frames.${frame.id}.name`)}
                     </span>
 
                     {frame.isPremium ? (
                       <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase tracking-wider bg-gold/20 text-gold border border-gold/40 shrink-0">
                         <Sparkles size={9} />
-                        VIP
+                        {t("vipBadge")}
                       </span>
                     ) : (
                       <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold uppercase tracking-wider bg-surface text-neutral-400 border border-primary/20 shrink-0">
-                        Grátis
+                        {t("freeBadge")}
                       </span>
                     )}
                   </div>
 
                   <p className="text-tiny text-neutral-400 line-clamp-2 mt-0.5 leading-snug">
-                    {frame.description}
+                    {t(`frames.${frame.id}.description`)}
                   </p>
                 </div>
 
@@ -152,7 +153,7 @@ export function AvatarFrameSettings({
                   ) : isLocked ? (
                     <div
                       className="w-6 h-6 rounded-full bg-surface border border-gold/30 text-gold flex items-center justify-center"
-                      title="Exclusivo Premium"
+                      title={t("lockedTitle")}
                     >
                       <Lock size={12} />
                     </div>

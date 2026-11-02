@@ -4,6 +4,7 @@ import {
   normalizeTaskDifficulty,
   normalizeTaskType,
 } from "@/constants/task";
+import type { AppLocale } from "@/i18n/config";
 import type { EconomyBarData } from "@/types/dashboard";
 import type { TransactionHistoryResponseDTO } from "@/types/history";
 import { parseServerDate } from "./date";
@@ -19,10 +20,12 @@ export interface FormatCoinsOptions {
   compact?: boolean;
   /** Número máximo de casas decimais (padrão 2 se houver centavos, 0 se inteiro) */
   maxDecimals?: number;
+  /** Idioma para separador decimal e abreviação compacta (padrão: "pt-BR") */
+  locale?: AppLocale;
 }
 
 /**
- * Formata valores de moedas prevenindo dízimas flutuantes (ex: 14.750000000000002 -> "14,75")
+ * Formata valores de moedas prevenindo dízimas flutuantes (ex: 14.750000000000002 -> "14,75" ou "14.75")
  * e suportando abreviação compacta para manter a integridade de layouts estreitos (como a Sidebar).
  */
 export function formatCoins(
@@ -33,10 +36,11 @@ export function formatCoins(
   const num = typeof amount === "string" ? Number(amount) : amount;
   if (Number.isNaN(num)) return "0";
 
-  const { compact = false, maxDecimals = 2 } = options;
+  const { compact = false, maxDecimals = 2, locale = "pt-BR" } = options;
+  const intlLocale = locale === "en" ? "en-US" : "pt-BR";
 
   if (compact && Math.abs(num) >= 1000) {
-    return new Intl.NumberFormat("pt-BR", {
+    return new Intl.NumberFormat(intlLocale, {
       notation: "compact",
       compactDisplay: "short",
       maximumFractionDigits: 1,
@@ -47,13 +51,16 @@ export function formatCoins(
   const factor = 10 ** maxDecimals;
   const rounded = Math.round(num * factor) / factor;
 
-  return new Intl.NumberFormat("pt-BR", {
+  return new Intl.NumberFormat(intlLocale, {
     minimumFractionDigits: 0,
     maximumFractionDigits: maxDecimals,
   }).format(rounded);
 }
 
-function formatPeriodRange(startDate: Date): string {
+function formatPeriodRange(
+  startDate: Date,
+  locale: AppLocale = "pt-BR",
+): string {
   const endDate = new Date(startDate);
   endDate.setDate(startDate.getDate() + 6);
 
@@ -61,6 +68,13 @@ function formatPeriodRange(startDate: Date): string {
   const startMonth = String(startDate.getMonth() + 1).padStart(2, "0");
   const endDay = String(endDate.getDate()).padStart(2, "0");
   const endMonth = String(endDate.getMonth() + 1).padStart(2, "0");
+
+  if (locale === "en") {
+    if (startMonth === endMonth) {
+      return `${startMonth}/${startDay} to ${endDay}`;
+    }
+    return `${startMonth}/${startDay} to ${endMonth}/${endDay}`;
+  }
 
   if (startMonth === endMonth) {
     return `${startDay} a ${endDay}/${startMonth}`;
@@ -75,10 +89,11 @@ function formatPeriodRange(startDate: Date): string {
 export function calculateWeeklyTaskEarnings(
   transactions: TransactionHistoryResponseDTO[] = [],
   referenceDate: Date = new Date(),
+  locale: AppLocale = "pt-BR",
 ): WeeklyEarningsResult {
-  // Encontra o início da semana atual (Segunda-feira às 00:00:00)
+  // Encontra o início da semana atual (Domingo às 00:00:00)
   const now = new Date(referenceDate);
-  const dayOfWeek = (now.getDay() + 6) % 7; // 0 = Segunda, 6 = Domingo
+  const dayOfWeek = now.getDay(); // 0 = Domingo, 6 = Sábado
   const startOfCurrentWeek = new Date(now);
   startOfCurrentWeek.setDate(now.getDate() - dayOfWeek);
   startOfCurrentWeek.setHours(0, 0, 0, 0);
@@ -139,7 +154,10 @@ export function calculateWeeklyTaskEarnings(
     startOfWeek3,
     startOfCurrentWeek,
   ];
-  const relativeLabels = ["-3 sem", "-2 sem", "Passada", "Atual"];
+  const relativeLabels =
+    locale === "en"
+      ? ["-3 wks", "-2 wks", "Last", "Current"]
+      : ["-3 sem", "-2 sem", "Passada", "Atual"];
 
   const bars: EconomyBarData[] = weekGains.map((gold, index) => {
     const spent = weekSpent[index];
@@ -159,10 +177,14 @@ export function calculateWeeklyTaskEarnings(
         : 6;
 
     const startDate = weekStarts[index];
-    const periodLabel = startDate ? formatPeriodRange(startDate) : undefined;
+    const periodLabel = startDate
+      ? formatPeriodRange(startDate, locale)
+      : undefined;
 
     return {
-      label: relativeLabels[index] ?? `Sem ${index + 1}`,
+      label:
+        relativeLabels[index] ??
+        (locale === "en" ? `Wk ${index + 1}` : `Sem ${index + 1}`),
       periodLabel,
       gold,
       spent,
@@ -193,6 +215,7 @@ export interface TaskRewardCalculationInput {
   isHardcoreModeEnabled?: boolean;
   dueDate?: string;
   isPenaltyApplied?: boolean;
+  locale?: AppLocale;
 }
 
 export type RewardStage = "INITIAL" | "ADAPTATION" | "FORMED";
@@ -216,12 +239,25 @@ export interface TaskRewardBreakdown {
 }
 
 /**
+ * Arredonda para 2 casas decimais seguindo RoundingMode.HALF_DOWN do BigDecimal no backend
+ * (ex: 0.375 -> 0.37), usado nas recompensas reduzidas de Habit, Daily e Todo.
+ */
+function roundHalfDownTwoDecimals(value: number): number {
+  const scaled = Number((value * 100).toPrecision(12));
+  const floor = Math.floor(scaled);
+  const fraction = scaled - floor;
+  const rounded = fraction > 0.5 ? floor + 1 : floor;
+  return rounded / 100;
+}
+
+/**
  * Retorna o detalhamento completo dos ganhos de uma tarefa, incluindo recompensa base,
  * estágio de consolidação (Inicial, Adaptação, Formado) e percentual de decaimento.
  */
 export function getTaskRewardBreakdown(
   task: TaskRewardCalculationInput,
 ): TaskRewardBreakdown {
+  const isEn = task.locale === "en";
   const normalizedType = normalizeTaskType(task);
   const currentCount =
     task.currentStreak ?? task.streak ?? task.positiveCount ?? 0;
@@ -248,20 +284,20 @@ export function getTaskRewardBreakdown(
 
     let multiplier = 1.0;
     let stage: RewardStage = "INITIAL";
-    let stageLabel = "Fase Inicial";
+    let stageLabel = isEn ? "Initial Stage" : "Fase Inicial";
     let decayPercentage = 0;
     let stageBadgeVariant: "emerald" | "amber" | "purple" = "emerald";
 
     if (currentCount >= habitFormedThreshold) {
       multiplier = 0.5;
       stage = "FORMED";
-      stageLabel = "Hábito Formado";
+      stageLabel = isEn ? "Formed Habit" : "Hábito Formado";
       decayPercentage = 50;
       stageBadgeVariant = "purple";
     } else if (currentCount >= adaptationThreshold) {
       multiplier = 0.75;
       stage = "ADAPTATION";
-      stageLabel = "Em Adaptação";
+      stageLabel = isEn ? "In Adaptation" : "Em Adaptação";
       decayPercentage = 25;
       stageBadgeVariant = "amber";
     }
@@ -269,7 +305,7 @@ export function getTaskRewardBreakdown(
     const finalXp = Math.max(1, Math.floor(base.xp * multiplier));
     const finalGold = Math.max(
       0.01,
-      Math.round(base.gold * multiplier * 100) / 100,
+      roundHalfDownTwoDecimals(base.gold * multiplier),
     );
 
     let explanation = `Recompensa base integral ($${base.gold.toFixed(2)}). Você realizou ${currentCount} repetição(ões).`;
@@ -324,20 +360,20 @@ export function getTaskRewardBreakdown(
 
     let multiplier = 1.0;
     let stage: RewardStage = "INITIAL";
-    let stageLabel = "Fase Inicial";
+    let stageLabel = isEn ? "Initial Stage" : "Fase Inicial";
     let decayPercentage = 0;
     let stageBadgeVariant: "emerald" | "amber" | "purple" = "emerald";
 
     if (currentCount >= daysToForm) {
       multiplier = 0.5;
       stage = "FORMED";
-      stageLabel = "Rotina Consolidada";
+      stageLabel = isEn ? "Consolidated Routine" : "Rotina Consolidada";
       decayPercentage = 50;
       stageBadgeVariant = "purple";
     } else if (currentCount >= adaptationThreshold) {
       multiplier = 0.75;
       stage = "ADAPTATION";
-      stageLabel = "Em Adaptação";
+      stageLabel = isEn ? "In Adaptation" : "Em Adaptação";
       decayPercentage = 25;
       stageBadgeVariant = "amber";
     }
@@ -345,7 +381,7 @@ export function getTaskRewardBreakdown(
     const finalXp = Math.max(1, Math.floor(base.xp * multiplier));
     const finalGold = Math.max(
       0.01,
-      Math.round(base.gold * multiplier * 100) / 100,
+      roundHalfDownTwoDecimals(base.gold * multiplier),
     );
 
     let explanation = `Ofensiva de ${currentCount} dia(s). Recompensa base integral ($${base.gold.toFixed(2)}).`;
@@ -387,7 +423,7 @@ export function getTaskRewardBreakdown(
 
   if (isLateHardcoreTodo) {
     const finalXp = Math.max(1, Math.floor(base.xp * 0.5));
-    const finalGold = Math.max(0.01, Math.round(base.gold * 0.5 * 100) / 100);
+    const finalGold = Math.max(0.01, roundHalfDownTwoDecimals(base.gold * 0.5));
 
     return {
       baseReward: { xp: base.xp, gold: base.gold },
@@ -395,7 +431,9 @@ export function getTaskRewardBreakdown(
       multiplier: 0.5,
       decayPercentage: 50,
       stage: "FORMED",
-      stageLabel: "Entrega Tardia (Hardcore)",
+      stageLabel: isEn
+        ? "Late Delivery (Hardcore)"
+        : "Entrega Tardia (Hardcore)",
       stageBadgeVariant: "amber",
       currentCount: 0,
       thresholds: { adaptation: 0, formed: 0 },
@@ -412,7 +450,7 @@ export function getTaskRewardBreakdown(
     multiplier: 1.0,
     decayPercentage: 0,
     stage: "INITIAL",
-    stageLabel: "Padrão",
+    stageLabel: isEn ? "Standard" : "Padrão",
     stageBadgeVariant: "emerald",
     currentCount: 0,
     thresholds: { adaptation: 0, formed: 0 },
@@ -457,8 +495,10 @@ export function calculateTaskPenalty(task: TaskRewardCalculationInput): {
  */
 export function toTaskRewardEstimate(
   breakdown: TaskRewardBreakdown,
-  options?: { isHardcore?: boolean; taskType?: string },
+  options?: { isHardcore?: boolean; taskType?: string; locale?: AppLocale },
 ): import("@/types/reward").RewardEstimate {
+  const locale = options?.locale ?? "pt-BR";
+  const isEn = locale === "en";
   const notices: import("@/types/reward").RewardEstimateNotice[] = [];
 
   if (breakdown.hasDecay) {
@@ -471,29 +511,32 @@ export function toTaskRewardEstimate(
     notices.push({
       tone: "info",
       title: "Base 100%",
-      message:
-        "Recompensa integral no início. Ao consolidar o hábito/rotina (7 e 21 dias), o ganho ajusta gradualmente para 75% e 50%.",
+      message: isEn
+        ? "Full reward at the start. As you consolidate the habit/routine (7 and 21 days), gains gradually adjust to 75% and 50%."
+        : "Recompensa integral no início. Ao consolidar o hábito/rotina (7 e 21 dias), o ganho ajusta gradualmente para 75% e 50%.",
     });
   }
 
   if (options?.isHardcore) {
     notices.push({
       tone: "warning",
-      title: "Modo Hardcore Ativo",
-      message: "Falhas ou atrasos aplicam penalidade de -50% sobre os ganhos.",
+      title: isEn ? "Hardcore Mode Active" : "Modo Hardcore Ativo",
+      message: isEn
+        ? "Failures or delays apply a -50% penalty on rewards."
+        : "Falhas ou atrasos aplicam penalidade de -50% sobre os ganhos.",
     });
   }
 
   const breakdownItems: import("@/types/reward").RewardEstimateBreakdownItem[] =
     [
       {
-        label: "Recompensa Base",
-        value: `+${formatCoins(breakdown.baseReward.gold)} 🪙 / +${breakdown.baseReward.xp} XP`,
+        label: isEn ? "Base Reward" : "Recompensa Base",
+        value: `+${formatCoins(breakdown.baseReward.gold, { locale })} 🪙 / +${breakdown.baseReward.xp} XP`,
       },
       ...(breakdown.hasDecay
         ? [
             {
-              label: "Ajuste de Hábito",
+              label: isEn ? "Habit Adjustment" : "Ajuste de Hábito",
               value: `-${breakdown.decayPercentage}% (${breakdown.stageLabel})`,
             },
           ]

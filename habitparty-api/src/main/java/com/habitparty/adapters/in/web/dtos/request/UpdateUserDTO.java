@@ -2,6 +2,7 @@ package com.habitparty.adapters.in.web.dtos.request;
 
 import java.time.LocalDate;
 
+import com.habitparty.core.domain.enums.UserExperienceMode;
 import com.habitparty.core.domain.enums.UserGender;
 
 import jakarta.validation.constraints.Past;
@@ -12,9 +13,13 @@ public record UpdateUserDTO(
   String fullName,
 
   @Past(message = "A data de nascimento deve ser uma data no passado")
-  LocalDate birthday,
+  LocalDate birthDate,
 
-  UserGender gender
+  UserGender gender,
+
+  UserExperienceMode experienceMode
 ) {
-  
+  public UpdateUserDTO(String fullName, LocalDate birthDate, UserGender gender) {
+    this(fullName, birthDate, gender, null);
+  }
 }

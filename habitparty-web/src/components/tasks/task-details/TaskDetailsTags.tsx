@@ -1,4 +1,5 @@
 import { Plus, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { MAX_TAG_LENGTH, MAX_TASK_TAGS } from "@/constants/task";
 
 interface TaskDetailsTagsProps {
@@ -22,6 +23,7 @@ export function TaskDetailsTags({
   onAddTag,
   onRemoveTag,
 }: TaskDetailsTagsProps) {
+  const t = useTranslations("tasks.detailsPopover.tags");
   const isLimitReached = tags.length >= MAX_TASK_TAGS;
 
   return (
@@ -38,7 +40,7 @@ export function TaskDetailsTags({
             type="button"
             onClick={() => onRemoveTag(tag)}
             className="hover:text-danger-500 cursor-pointer opacity-70 hover:opacity-100"
-            title={`Remover tag ${tag}`}
+            title={t("removeTagTitle", { tag })}
           >
             <X size={10} />
           </button>
@@ -57,26 +59,29 @@ export function TaskDetailsTags({
               if (e.key === "Escape") onCancelAddTag();
             }}
             onBlur={onAddTag}
-            placeholder="Tag..."
+            placeholder={t("tagPlaceholder")}
             className="w-20 bg-background/60 border border-primary/40 rounded px-1.5 py-0.5 text-tiny text-neutral-50 focus:outline-none focus:border-gold"
           />
         </div>
       ) : isLimitReached ? (
         <span
-          title={`Limite máximo de ${MAX_TASK_TAGS} tags atingido`}
+          title={t("maxTagsTitle", { max: MAX_TASK_TAGS })}
           className="text-tiny text-neutral-500 italic px-1 select-none"
         >
-          Máx. {MAX_TASK_TAGS} tags
+          {t("maxTagsLabel", { max: MAX_TASK_TAGS })}
         </span>
       ) : (
         <button
           type="button"
           onClick={onStartAddTag}
-          title={`Adicionar Tag (${tags.length}/${MAX_TASK_TAGS})`}
+          title={t("addTagTitle", {
+            current: tags.length,
+            max: MAX_TASK_TAGS,
+          })}
           className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-tiny text-neutral-400 hover:text-gold hover:border-gold/40 transition-colors cursor-pointer"
         >
           <Plus size={10} />
-          <span>Tag</span>
+          <span>{t("addTagButton")}</span>
         </button>
       )}
     </div>

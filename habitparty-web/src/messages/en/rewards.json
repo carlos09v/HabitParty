@@ -1,0 +1,233 @@
+{
+  "metadata": {
+    "title": "Rewards Store | HabitParty",
+    "description": "Redeem your gold coins for custom rewards, time vouchers, and mystery boxes."
+  },
+  "loading": {
+    "label": "Loading rewards..."
+  },
+  "options": {
+    "types": {
+      "all": "All Types",
+      "SingleUse": "Single-Use",
+      "TimeBased": "Voucher",
+      "MysteryBox": "Mystery Box"
+    },
+    "categories": {
+      "all": "All Categories",
+      "NONE": "None",
+      "ENTERTAINMENT": "Entertainment",
+      "WELLNESS": "Wellness",
+      "SHOPPING": "Shopping",
+      "DEVELOPMENT": "Development",
+      "LUCK": "Luck",
+      "HOBBIES": "Hobbies"
+    },
+    "packages": {
+      "all": "All Packages",
+      "NONE": "None",
+      "BASIC": "Basic",
+      "PREMIUM": "Premium",
+      "EPIC": "Epic",
+      "LEGENDARY": "Legendary"
+    },
+    "couponPackages": {
+      "NONE": "None",
+      "BASIC": "Basic (30m)",
+      "PREMIUM": "Premium (60m)",
+      "EPIC": "Epic (120m)",
+      "LEGENDARY": "Legendary (240m)"
+    },
+    "sort": {
+      "default": "Default Order",
+      "price-asc": "Lowest Price",
+      "price-desc": "Highest Price",
+      "name": "Name (A-Z)"
+    }
+  },
+  "container": {
+    "addProduct": "Add Product",
+    "buy": "Buy",
+    "insufficientCoinsShort": "Insufficient coins",
+    "filters": {
+      "category": "Categories",
+      "type": "Type",
+      "packageLevel": "Package",
+      "sortBy": "Sort"
+    },
+    "empty": {
+      "showcaseEmptyTitle": "Your rewards showcase is empty! 🛍️",
+      "showcaseEmptyDescription": "Register your first treats, leisure vouchers, or mystery boxes to redeem with the coins you earn completing tasks!",
+      "noResultsTitle": "No rewards found",
+      "noResultsDescription": "We couldn't find any rewards matching the applied filters.",
+      "createFirstReward": "Create First Reward",
+      "clearFilters": "Clear Filters"
+    },
+    "contextMenu": {
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "deleteModal": {
+      "title": "Delete reward?",
+      "description": "Are you sure you want to delete <bold>\"{title}\"</bold> from your Rewards Store?",
+      "confirmText": "Yes, delete",
+      "cancelText": "Cancel"
+    },
+    "toasts": {
+      "insufficientCoins": "Insufficient coins to redeem this item!",
+      "redeemError": "Error redeeming reward.",
+      "buySuccess": "You bought \"{title}\"! The item was sent to your Backpack.",
+      "buySuccessGamified": "You bought \"{title}\"! The item was sent to your Backpack.",
+      "buySuccessProductivity": "You redeemed \"{title}\"! The item was added to your Inventory.",
+      "serverError": "Server communication error.",
+      "deleteSuccess": "Reward \"{title}\" deleted successfully!",
+      "deleteError": "Error deleting reward."
+    }
+  },
+  "card": {
+    "buy": "Buy",
+    "addRewardAria": "Add new reward",
+    "addProduct": "Add Product"
+  },
+  "formModal": {
+    "editTitle": "Edit Reward",
+    "createTitle": "New Reward",
+    "editDescription": "Update the name, cost, and rules of this reward in your Store.",
+    "createDescription": "Register a prize, time voucher, or mystery box in the Store.",
+    "titleLabel": "Reward Name",
+    "iconPickerTitle": "Reward Icon",
+    "titlePlaceholder": "E.g., 1h of video games, Specialty coffee, Watch a movie...",
+    "iconHelperText": "Click the icon to customize or type the name for an automatic suggestion.",
+    "descriptionLabel": "Description (optional)",
+    "descriptionPlaceholder": "Details or rules for enjoying your reward...",
+    "typeLabel": "Reward Type",
+    "categoryLabel": "Category",
+    "durationLabel": "Activity Duration (minutes)",
+    "durationHint": "(time that will be consumed in Focus)",
+    "durationPlaceholder": "E.g., 30, 60, 120",
+    "packageLevelLabel": "Package Level",
+    "packageLevelHint": "(optional • click to apply suggested time)",
+    "priceLabel": "Cost in Coins",
+    "suggestedPriceByRarity": "(Suggested price by rarity)",
+    "pricePlaceholder": "E.g., 5, 15, 35, or 80",
+    "mysteryBoxPriceHelper": "You can keep the calibrated price for the package or customize it freely.",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "saveChanges": "Save Changes",
+    "saveReward": "Save Reward"
+  },
+  "mysteryBox": {
+    "levelLabel": "Mystery Box Level",
+    "hoverHint": "(hover to view drop rates)",
+    "raritiesCount": "4 Rarities",
+    "tiers": {
+      "BASIC": {
+        "name": "Basic Box",
+        "subtitle": "Daily Breaks & Quick Treats",
+        "concept": "Micro-rewards to keep your momentum guilt-free without unbalancing your coins.",
+        "colorName": "Emerald Green",
+        "drops": {
+          "0": {
+            "label": "Refreshing Break (10-15m)",
+            "description": "Specialty coffee, favorite snack, 1 video, or a short break."
+          },
+          "1": {
+            "label": "Medium Leisure Voucher (30m)",
+            "description": "Leisure reading, relaxing music, or a podcast."
+          },
+          "2": {
+            "label": "Focused Hobby Session (45m)",
+            "description": "45 minutes of leisure + 1 bonus cashback coin."
+          }
+        }
+      },
+      "PREMIUM": {
+        "name": "Premium Box",
+        "subtitle": "Entertainment & Gaming Session",
+        "concept": "A reward for one or two days of goals completed with excellence.",
+        "colorName": "Cyan Blue",
+        "drops": {
+          "0": {
+            "label": "Standard Leisure (45-60m)",
+            "description": "Video game session or 1 series episode."
+          },
+          "1": {
+            "label": "Extended Leisure Voucher (75-90m)",
+            "description": "Extended time or a celebratory special snack."
+          },
+          "2": {
+            "label": "Gaming / Movie Night (120m)",
+            "description": "2 hours of uninterrupted, guilt-free entertainment."
+          }
+        }
+      },
+      "EPIC": {
+        "name": "Epic Box",
+        "subtitle": "Big Weekly Achievement",
+        "concept": "A substantial weekend reward to crown consistent days.",
+        "colorName": "Radiant Magenta",
+        "drops": {
+          "0": {
+            "label": "Extended Leisure Block (120m)",
+            "description": "2 hours of favorite games, binge-watching, or an outdoor outing."
+          },
+          "1": {
+            "label": "Full Free Evening (180m)",
+            "description": "3 free hours or a book/game on Steam sale."
+          },
+          "2": {
+            "label": "Full Afternoon Unplugged (240m)",
+            "description": "4 hours of well-deserved rest and a full energy recharge."
+          }
+        }
+      },
+      "LEGENDARY": {
+        "name": "Legendary Box",
+        "subtitle": "The Holy Grail of Productivity",
+        "concept": "The pinnacle of weeks of discipline and unbroken streaks. A memorable milestone.",
+        "colorName": "Noble Gold",
+        "drops": {
+          "0": {
+            "label": "Elite Half Day-Off (240m)",
+            "description": "4 hours dedicated to your hobbies with duty fulfilled."
+          },
+          "1": {
+            "label": "Full Day-Off (Entire Day)",
+            "description": "A full day off from chores with complete streak protection."
+          },
+          "2": {
+            "label": "Ultimate Celebration (Supreme Jackpot)",
+            "description": "Free weekend + permission for a major real-life treat."
+          }
+        }
+      }
+    }
+  },
+  "tierPopover": {
+    "detailsAria": "{name} details",
+    "rngHeader": "Drop Rates (RNG)",
+    "dropPercentHeader": "% Drop",
+    "priceInCoins": "Price in Coins:",
+    "balancedPrice": "Balanced Price:",
+    "coinsUnit": "coins"
+  },
+  "hook": {
+    "titleRequired": "Reward title is required.",
+    "invalidPrice": "Price must be a valid value greater than zero.",
+    "mysteryBoxPackageRequired": "Mystery Box requires a selected package level.",
+    "updateError": "Error updating reward on the server.",
+    "updateSuccess": "Reward updated successfully!",
+    "createError": "Error creating reward on the server.",
+    "createSuccess": "Reward \"{title}\" created!",
+    "createSuccessDescription": "Available to redeem in the Rewards Store.",
+    "defaultMysteryBoxTitle": "Basic Mystery Box"
+  },
+  "actions": {
+    "communicationError": "Internal server communication error.",
+    "createFailed": "Failed to create reward.",
+    "updateFailed": "Failed to update reward.",
+    "deleteFailed": "Failed to delete reward.",
+    "reorderFailed": "Failed to reorder rewards.",
+    "redeemFailed": "Failed to redeem reward."
+  }
+}

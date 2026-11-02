@@ -1,16 +1,40 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import {
+  detectLocaleFromAcceptLanguage,
+  isValidLocale,
+  LOCALE_COOKIE_NAME,
+} from "@/i18n/config";
 
 const AUTH_ROUTES = [
   "/signIn",
   "/signUp",
   "/forgot-password",
   "/reset-password",
+  "/verify-email",
   "/auth/callback",
 ];
 const ACCESS_COOKIE_NAME = "habitparty_token";
 const REFRESH_COOKIE_NAME = "habitparty_refresh_token";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+function attachLocaleCookieIfMissing(
+  request: NextRequest,
+  response: NextResponse,
+): NextResponse {
+  const existingLocale = request.cookies.get(LOCALE_COOKIE_NAME)?.value;
+  if (!isValidLocale(existingLocale)) {
+    const detected = detectLocaleFromAcceptLanguage(
+      request.headers.get("accept-language"),
+    );
+    response.cookies.set(LOCALE_COOKIE_NAME, detected, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365, // 1 ano
+      sameSite: "lax",
+    });
+  }
+  return response;
+}
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -83,14 +107,19 @@ export async function proxy(request: NextRequest) {
 
   const isCallbackRoute = pathname.startsWith("/auth/callback");
   const isResetPasswordRoute = pathname.startsWith("/reset-password");
+  const isVerifyEmailRoute = pathname.startsWith("/verify-email");
   const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
   const isRootRoute = pathname === "/";
 
   // 3. Usuário autenticado acessando tela de login/cadastro ou a raiz -> vai pro Dashboard
-  // Exceção: Permite acesso a /reset-password mesmo logado (ex: usuário Google definindo sua senha manual via e-mail)
+  // Exceção: Permite acesso a /reset-password e /verify-email mesmo logado
   if (
     token &&
-    ((isAuthRoute && !isCallbackRoute && !isResetPasswordRoute) || isRootRoute)
+    ((isAuthRoute &&
+      !isCallbackRoute &&
+      !isResetPasswordRoute &&
+      !isVerifyEmailRoute) ||
+      isRootRoute)
   ) {
     const redirectResponse = NextResponse.redirect(
       new URL("/dashboard", request.url),
@@ -100,30 +129,45 @@ export async function proxy(request: NextRequest) {
       const newCookie = responseToPass.cookies.get(ACCESS_COOKIE_NAME);
       if (newCookie) redirectResponse.cookies.set(newCookie);
     }
-    return redirectResponse;
+    return attachLocaleCookieIfMissing(request, redirectResponse);
   }
 
   // 4. Visitante acessando a raiz (Landing Page) ou telas de login/cadastro -> permite visualização
   if (isRootRoute || isAuthRoute) {
-    return responseToPass || NextResponse.next();
+    return attachLocaleCookieIfMissing(
+      request,
+      responseToPass || NextResponse.next(),
+    );
   }
 
   // 5. Rota de Onboarding / First Step: acessível para configuração inicial
   if (pathname.startsWith("/firstStep")) {
-    return responseToPass || NextResponse.next();
+    return attachLocaleCookieIfMissing(
+      request,
+      responseToPass || NextResponse.next(),
+    );
   }
 
   // 6. Proteção das rotas privadas: se não tiver token, redireciona para login
   if (!token) {
     const signInUrl = new URL("/signIn", request.url);
-    // Guarda a URL de origem para redirecionar após o login se desejado
+    // Guarda a URL de origem (incluindo query params) para redirecionar após o login se desejado
     if (pathname !== "/dashboard") {
-      signInUrl.searchParams.set("returnTo", pathname);
+      signInUrl.searchParams.set(
+        "returnTo",
+        `${pathname}${request.nextUrl.search}`,
+      );
     }
-    return NextResponse.redirect(signInUrl);
+    return attachLocaleCookieIfMissing(
+      request,
+      NextResponse.redirect(signInUrl),
+    );
   }
 
-  return responseToPass || NextResponse.next();
+  return attachLocaleCookieIfMissing(
+    request,
+    responseToPass || NextResponse.next(),
+  );
 }
 
 export const config = {

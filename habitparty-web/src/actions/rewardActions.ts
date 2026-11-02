@@ -1,6 +1,7 @@
 "use server";
 
 import { updateTag } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
 import { type ActionState, getErrorMessage } from "./types";
@@ -22,6 +23,7 @@ function invalidateRewardTags(includeUserAndInventory = false) {
 export async function createReward(
   payload: CreateRewardDTO,
 ): Promise<ActionState<RewardResponseDTO>> {
+  const t = await getTranslations("rewards.actions");
   try {
     const { data, error } = await serverApi.POST("/rewards", {
       body: payload,
@@ -30,7 +32,7 @@ export async function createReward(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao criar recompensa."),
+        error: getErrorMessage(error, t("createFailed")),
       };
     }
 
@@ -40,7 +42,7 @@ export async function createReward(
     console.error("[RewardAction:Create]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -49,6 +51,7 @@ export async function updateReward(
   rewardId: string,
   payload: UpdateRewardDTO,
 ): Promise<ActionState<RewardResponseDTO>> {
+  const t = await getTranslations("rewards.actions");
   try {
     const { data, error } = await serverApi.PUT("/rewards/{rewardId}", {
       params: { path: { rewardId } },
@@ -58,7 +61,7 @@ export async function updateReward(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao atualizar recompensa."),
+        error: getErrorMessage(error, t("updateFailed")),
       };
     }
 
@@ -68,12 +71,13 @@ export async function updateReward(
     console.error("[RewardAction:Update]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
 
 export async function deleteReward(rewardId: string): Promise<ActionState> {
+  const t = await getTranslations("rewards.actions");
   try {
     const { error } = await serverApi.DELETE("/rewards/{id}", {
       params: { path: { id: rewardId } },
@@ -82,7 +86,7 @@ export async function deleteReward(rewardId: string): Promise<ActionState> {
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao excluir recompensa."),
+        error: getErrorMessage(error, t("deleteFailed")),
       };
     }
 
@@ -92,7 +96,7 @@ export async function deleteReward(rewardId: string): Promise<ActionState> {
     console.error("[RewardAction:Delete]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -100,6 +104,7 @@ export async function deleteReward(rewardId: string): Promise<ActionState> {
 export async function reorderRewards(
   updates: UpdateRewardOrderDTO[],
 ): Promise<ActionState> {
+  const t = await getTranslations("rewards.actions");
   try {
     const { error } = await serverApi.PUT("/rewards/reorder", {
       body: updates,
@@ -108,7 +113,7 @@ export async function reorderRewards(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao reordenar recompensas."),
+        error: getErrorMessage(error, t("reorderFailed")),
       };
     }
 
@@ -118,12 +123,13 @@ export async function reorderRewards(
     console.error("[RewardAction:Reorder]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
 
 export async function redeemReward(rewardId: string): Promise<ActionState> {
+  const t = await getTranslations("rewards.actions");
   try {
     const { error } = await serverApi.POST("/rewards/{rewardId}/redeem", {
       params: { path: { rewardId } },
@@ -132,7 +138,7 @@ export async function redeemReward(rewardId: string): Promise<ActionState> {
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao resgatar recompensa."),
+        error: getErrorMessage(error, t("redeemFailed")),
       };
     }
 
@@ -142,7 +148,7 @@ export async function redeemReward(rewardId: string): Promise<ActionState> {
     console.error("[RewardAction:Redeem]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }

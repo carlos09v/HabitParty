@@ -80,7 +80,7 @@ export function SettingsOptionGrid<T extends string | boolean>({
               </div>
 
               {isSelected && (
-                <div className="w-6 h-6 rounded-full bg-gold text-neutral-900 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-6 h-6 rounded-full bg-gold text-on-gold flex items-center justify-center shrink-0 mt-0.5">
                   <Check size={14} className="stroke-3" />
                 </div>
               )}

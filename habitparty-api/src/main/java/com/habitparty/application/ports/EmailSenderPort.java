@@ -4,5 +4,6 @@ import java.time.LocalDate;
 
 public interface EmailSenderPort {
   boolean sendPasswordResetEmail(String toEmail, String resetLink);
+  boolean sendEmailVerificationEmail(String toEmail, String userName, String verificationLink);
   boolean sendTaskReminderEmail(String toEmail, String userName, String taskTitle, LocalDate dueDate, boolean isHardcore);
 }

@@ -53,6 +53,7 @@ export interface DashboardDailyBriefingProps {
 export interface DashboardListSummaryProps {
   initialColumns: ColumnSummaryDTO[];
   maxColumns: number;
+  activeWorkspaceId?: string;
   isCompact?: boolean;
   isPremium?: boolean;
   tasks?: Task[];

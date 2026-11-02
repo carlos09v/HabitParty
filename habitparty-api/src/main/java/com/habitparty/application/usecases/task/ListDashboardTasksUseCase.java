@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.projections.DashboardTaskDTO;
 import com.habitparty.application.ports.TaskRepository;
@@ -23,6 +24,7 @@ public class ListDashboardTasksUseCase {
     this.port = port;
   }
 
+  @Transactional(readOnly = true)
   public Page<DashboardTaskDTO> execute(UUID workspaceId, UUID userIdLogado, String filter, Pageable pageable) {
     Workspace workspace = workspacePort.findById(workspaceId)
         .orElseThrow(() -> new ResourceNotFoundException("Workspace não encontrado."));

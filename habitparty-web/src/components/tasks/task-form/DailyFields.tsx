@@ -1,4 +1,5 @@
 import { Calendar } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { Select } from "@/components/ui/Select";
@@ -19,6 +20,8 @@ interface DailyFieldsProps {
 }
 
 export function DailyFields({ form }: DailyFieldsProps) {
+  const t = useTranslations("tasks.taskModal.dailyFields");
+  const tOptions = useTranslations("tasks.options");
   const {
     startDate,
     setStartDate,
@@ -33,35 +36,28 @@ export function DailyFields({ form }: DailyFieldsProps) {
     isPending,
   } = form;
 
-  const intervalUnitLabel =
-    repeatType === "WEEKLY"
-      ? "semanas"
-      : repeatType === "MONTHLY"
-        ? "meses"
-        : repeatType === "YEARLY"
-          ? "anos"
-          : "dias";
+  const intervalUnitLabel = t(`units.${repeatType}`);
 
   return (
     <div className="flex flex-col gap-3.5 animate-in fade-in duration-150">
       {/* Data Inicial */}
       <DatePicker
         id="dailyStart"
-        label="Data Inicial"
+        label={t("startDateLabel")}
         value={startDate}
         disabled={isPending}
         onChange={setStartDate}
-        placeholder="Definir data inicial..."
+        placeholder={t("startDatePlaceholder")}
         compact
       />
 
       {/* Repetição & Intervalo */}
       <div className="grid grid-cols-2 gap-3">
         <Select
-          label="Repetição"
+          label={t("repeatLabel")}
           options={DAILY_REPEAT_OPTIONS.map((opt) => ({
             value: opt.id,
-            label: opt.label,
+            label: tOptions(`repeats.${opt.id}`),
           }))}
           value={repeatType}
           onChange={(val) => setRepeatType(val as DailyRepeatTypeOption)}
@@ -74,7 +70,7 @@ export function DailyFields({ form }: DailyFieldsProps) {
             htmlFor="dailyInterval"
             className="text-body-s text-neutral-300 font-medium"
           >
-            A cada ({intervalUnitLabel})
+            {t("everyLabel", { unit: intervalUnitLabel })}
           </label>
           <input
             id="dailyInterval"
@@ -98,44 +94,39 @@ export function DailyFields({ form }: DailyFieldsProps) {
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-1.5">
                 <span className="text-body-s text-neutral-300 font-medium">
-                  Repetir no
+                  {t("repeatOnLabel")}
                 </span>
                 <InfoTooltip
-                  title="Regra de Repetição Mensal"
+                  title={t("monthlyTooltipTitle")}
                   icon={<Calendar size={14} className="text-gold shrink-0" />}
-                  ariaLabel="Entenda as opções de repetição mensal da tarefa"
+                  ariaLabel={t("monthlyTooltipAria")}
                   size={14}
                 >
                   <p className="text-neutral-300 leading-relaxed text-label-g">
-                    Define como a nova data da tarefa será calculada a cada mês
-                    após você concluí-la:
+                    {t("monthlyTooltipIntro")}
                   </p>
 
                   <ul className="flex flex-col gap-1.5 py-1 text-label-g text-neutral-200">
                     <li className="flex items-start gap-1.5">
                       <span className="text-gold font-bold shrink-0">
-                        • No dia do mês:
+                        {t("monthlyDayOfMonthLabel")}
                       </span>
                       <span className="text-neutral-300">
-                        Repete sempre na mesma data numérica (ex: todo dia 15).
-                        Ideal para contas, relatórios mensais e metas fixas.
+                        {t("monthlyDayOfMonthDesc")}
                       </span>
                     </li>
                     <li className="flex items-start gap-1.5">
                       <span className="text-gold font-bold shrink-0">
-                        • No dia da semana:
+                        {t("monthlyDayOfWeekLabel")}
                       </span>
                       <span className="text-neutral-300">
-                        Mantém a posição relativa do dia na semana (ex: toda 2ª
-                        Terça-feira do mês). Ideal para reuniões periódicas,
-                        consultas ou rituais de calendário.
+                        {t("monthlyDayOfWeekDesc")}
                       </span>
                     </li>
                   </ul>
 
                   <div className="text-tiny text-neutral-400 bg-white/5 rounded-md p-1.5 border border-white/10 italic">
-                    💡 Ambas as opções respeitam o intervalo definido em &quot;A
-                    cada (meses)&quot;.
+                    {t("monthlyNote")}
                   </div>
                 </InfoTooltip>
               </div>
@@ -143,7 +134,7 @@ export function DailyFields({ form }: DailyFieldsProps) {
           }
           options={DAILY_MONTHLY_OPTIONS.map((opt) => ({
             value: opt.id,
-            label: opt.label,
+            label: t(`monthlyOptions.${opt.id}`),
           }))}
           value={monthlyOption}
           onChange={(val) => setMonthlyOption(val as DailyRepeatMonthlyOption)}
@@ -156,7 +147,7 @@ export function DailyFields({ form }: DailyFieldsProps) {
       {repeatType === "WEEKLY" && (
         <div className="flex flex-col gap-1.5 animate-in fade-in duration-150">
           <span className="text-body-s text-neutral-300 font-medium">
-            Dias da semana
+            {t("daysOfWeekLabel")}
           </span>
           <div className="grid grid-cols-7 gap-1">
             {DAYS_OF_WEEK_OPTIONS.map((day) => {
@@ -170,11 +161,11 @@ export function DailyFields({ form }: DailyFieldsProps) {
                   className={cn(
                     "py-1.5 px-0.5 rounded-lg border text-tiny font-bold transition-all cursor-pointer disabled:opacity-50 text-center flex items-center justify-center",
                     isSelected
-                      ? "border-gold bg-gold text-neutral-900 shadow-glow-gold-xs font-black"
+                      ? "border-gold bg-gold text-on-gold shadow-glow-gold-xs font-black"
                       : "border-primary/30 bg-primary-dark/20 text-neutral-300 hover:text-gold hover:border-gold/40",
                   )}
                 >
-                  {day.label}
+                  {t(`days.${day.id}`)}
                 </button>
               );
             })}

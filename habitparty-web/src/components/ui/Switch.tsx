@@ -42,7 +42,7 @@ export function Switch({
         isSm ? "h-5 w-9" : "h-6 w-11",
         checked
           ? "bg-amber-400 dark:bg-amber-500 shadow-glow-gold-xs border border-amber-300 dark:border-amber-400"
-          : "bg-neutral-300 dark:bg-neutral-800 border border-neutral-400/40 dark:border-white/10",
+          : "bg-surface-hover dark:bg-neutral-800 border border-neutral-600 dark:border-white/10",
         className,
       )}
     >
@@ -52,9 +52,9 @@ export function Switch({
           isSm ? "h-3.5 w-3.5" : "h-4.5 w-4.5",
           checked
             ? isSm
-              ? "translate-x-4.5 bg-neutral-900 text-white"
-              : "translate-x-5.5 bg-neutral-900 text-white"
-            : "translate-x-1 bg-white text-neutral-600",
+              ? "translate-x-4.5 bg-on-gold text-white"
+              : "translate-x-5.5 bg-on-gold text-white"
+            : "translate-x-1 bg-white text-neutral-400 dark:text-neutral-600",
         )}
       >
         {thumbContent}

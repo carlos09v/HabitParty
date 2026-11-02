@@ -1,8 +1,8 @@
 package com.habitparty.infrastructure;
 
 import java.util.Arrays;
-import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,17 +19,26 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.habitparty.infrastructure.security.BotProtectionFilter;
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
   private final SecurityFilter securityFilter;
+  private final BotProtectionFilter botProtectionFilter;
 
   @Value("${app.frontend-url:http://localhost:3000}")
   private String frontendUrl;
 
   public SecurityConfig(SecurityFilter securityFilter) {
+    this(securityFilter, new BotProtectionFilter());
+  }
+
+  @Autowired
+  public SecurityConfig(SecurityFilter securityFilter, BotProtectionFilter botProtectionFilter) {
     this.securityFilter = securityFilter;
+    this.botProtectionFilter = botProtectionFilter;
   }
 
   @Bean
@@ -41,7 +50,6 @@ public class SecurityConfig {
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
     
-    // Origens permitidas (frontend configurado + fallbacks locais para dev)
     configuration.setAllowedOrigins(Arrays.asList(
         frontendUrl,
         "http://localhost:3000",
@@ -72,16 +80,17 @@ public class SecurityConfig {
                   .write("{\"title\": \"Não Autorizado\", \"detail\": \"Token ausente, expirado ou inválido.\"}");
             }))
         .authorizeHttpRequests(auth -> auth
-            // Documentação OpenAPI / Swagger
+            // Healthcheck leve e Documentação OpenAPI / Swagger
+            .requestMatchers(HttpMethod.GET, "/health").permitAll()
             .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
             // Arquivos públicos de upload (avatares)
             .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
 
-            // Rotas públicas e exceção autenticada de logout
+            // Rotas públicas e exceções autenticadas dentro de /auth
             .requestMatchers(HttpMethod.POST, "/users").permitAll()
             .requestMatchers("/error").permitAll()
-            .requestMatchers(HttpMethod.POST, "/auth/logout").authenticated()
+            .requestMatchers(HttpMethod.POST, "/auth/logout", "/auth/resend-verification").authenticated()
             .requestMatchers("/auth/**").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/v1/payments/founders-quota").permitAll()
             .requestMatchers(HttpMethod.POST, "/api/v1/webhooks/**").permitAll()
@@ -92,6 +101,7 @@ public class SecurityConfig {
             .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
             .anyRequest().authenticated())
+        .addFilterBefore(botProtectionFilter, UsernamePasswordAuthenticationFilter.class)
         .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();

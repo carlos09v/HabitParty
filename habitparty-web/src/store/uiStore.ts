@@ -1,6 +1,12 @@
 import { create } from "zustand";
-import { setCompactModeCookie, setThemeCookie } from "@/actions/ui";
-import type { ThemeMode } from "@/types/ui";
+import {
+  setCompactModeCookie,
+  setLocaleCookie,
+  setThemeCookie,
+} from "@/actions/ui";
+import { updateUserExperienceModeAction } from "@/actions/userActions";
+import { useUserStore } from "@/store/userStore";
+import type { AppLocale, ExperienceMode, ThemeMode } from "@/types/ui";
 
 export interface UIState {
   compactMode: boolean;
@@ -9,6 +15,11 @@ export interface UIState {
   theme: ThemeMode;
   setTheme: (theme: ThemeMode) => void;
   toggleTheme: () => void;
+  locale: AppLocale;
+  setLocale: (locale: AppLocale) => void;
+  toggleLocale: () => void;
+  experienceMode: ExperienceMode;
+  setExperienceMode: (mode: ExperienceMode) => void;
 }
 
 export const useUIStore = create<UIState>()((set) => ({
@@ -42,4 +53,27 @@ export const useUIStore = create<UIState>()((set) => ({
       setThemeCookie(newTheme);
       return { theme: newTheme };
     }),
+  locale: "en",
+  setLocale: (locale) => {
+    set({ locale });
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = locale;
+    }
+    setLocaleCookie(locale);
+  },
+  toggleLocale: () =>
+    set((state) => {
+      const newLocale: AppLocale = state.locale === "pt-BR" ? "en" : "pt-BR";
+      if (typeof document !== "undefined") {
+        document.documentElement.lang = newLocale;
+      }
+      setLocaleCookie(newLocale);
+      return { locale: newLocale };
+    }),
+  experienceMode: "PRODUCTIVITY",
+  setExperienceMode: (experienceMode) => {
+    set({ experienceMode });
+    useUserStore.getState().updateUserPartial({ experienceMode });
+    updateUserExperienceModeAction(experienceMode);
+  },
 }));

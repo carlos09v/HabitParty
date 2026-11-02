@@ -2,6 +2,8 @@ import type { LucideIcon } from "lucide-react";
 import type { HTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
 
 export type ThemeMode = "light" | "dark";
+export type ExperienceMode = "GAMIFIED" | "PRODUCTIVITY";
+export type AppLocale = "en" | "pt-BR";
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   compact?: boolean;
@@ -13,7 +15,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export interface DatePickerProps {
   id?: string;
-  label?: string;
+  label?: ReactNode;
   value?: string;
   defaultValue?: string;
   onChange?: (value: string) => void;
@@ -25,12 +27,33 @@ export interface DatePickerProps {
   minDate?: string;
   maxDate?: string;
   allowClear?: boolean;
+  clearLabel?: string;
+  badgeLabel?: string;
+  isOverdue?: boolean;
   compact?: boolean;
   className?: string;
   error?: string;
   hint?: string;
   align?: "left" | "right";
   yearRange?: { min?: number; max?: number };
+}
+
+export interface TimePickerProps {
+  id?: string;
+  label?: ReactNode;
+  value?: string;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+  name?: string;
+  required?: boolean;
+  placeholder?: string;
+  disabled?: boolean;
+  allowClear?: boolean;
+  compact?: boolean;
+  className?: string;
+  error?: string;
+  hint?: string;
+  align?: "left" | "right";
 }
 
 export interface ListCardProps {
@@ -50,7 +73,7 @@ export type SelectItem = string | SelectOption;
 
 export interface SelectProps {
   compact?: boolean;
-  variant?: "default" | "inline";
+  variant?: "default" | "inline" | "filter";
   align?: "left" | "right" | "center";
   label?: ReactNode;
   icon?: ReactNode;
@@ -64,6 +87,8 @@ export interface SelectProps {
   id?: string;
   disabled?: boolean;
   required?: boolean;
+  error?: string;
+  hint?: string;
   className?: string;
   dropdownClassName?: string;
   triggerClassName?: string;
@@ -84,6 +109,7 @@ export interface WelcomeCardProps {
   subtitle?: string;
   bullets: string[];
   imageSrc?: string;
+  icon?: LucideIcon;
   stats?: WelcomeCardStat[];
   isExpanded?: boolean;
   defaultExpanded?: boolean;

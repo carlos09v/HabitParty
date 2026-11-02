@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { confirmPaymentAction } from "@/actions/paymentActions";
@@ -11,6 +12,7 @@ export function PaymentFeedbackListener() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const t = useTranslations("paymentFeedback");
   const setUser = useUserStore((s) => s.setUser);
   const isVerifyingRef = useRef(false);
 
@@ -39,18 +41,11 @@ export function PaymentFeedbackListener() {
             const res = await confirmPaymentAction(sessionId);
 
             // Somente celebra se o gateway confirmou E o usuário de fato tornou-se Premium!
-            if (
-              res.success &&
-              (res.data.isPaid ?? res.data.paid) &&
-              res.data.user?.isPremium
-            ) {
+            if (res.success && res.data.isPaid && res.data.user?.isPremium) {
               toast.dismiss("payment-checking");
               setUser(res.data.user);
               triggerCelebrationConfetti();
-              toast.success(
-                "Parabéns! Sua assinatura Premium de Guardião Cósmico foi ativada com sucesso!",
-                { duration: 6000 },
-              );
+              toast.success(t("successToast"), { duration: 6000 });
               router.refresh();
               cleanupUrl();
               return;
@@ -58,7 +53,7 @@ export function PaymentFeedbackListener() {
 
             // Se ainda não compensou (comum no Pix nos primeiros segundos):
             if (retriesLeft > 0) {
-              toast.loading("Aguardando compensação do pagamento...", {
+              toast.loading(t("waitingCompensationToast"), {
                 id: "payment-checking",
               });
               setTimeout(() => {
@@ -66,10 +61,7 @@ export function PaymentFeedbackListener() {
               }, 2500);
             } else {
               toast.dismiss("payment-checking");
-              toast.info(
-                "Pagamento em processamento! Se você pagou via Pix, seu acesso VIP será liberado automaticamente assim que a compensação for concluída pelo banco.",
-                { duration: 6000 },
-              );
+              toast.info(t("processingPixToast"), { duration: 6000 });
               router.refresh();
               cleanupUrl();
             }
@@ -85,13 +77,10 @@ export function PaymentFeedbackListener() {
         cleanupUrl();
       }
     } else if (payment === "cancel") {
-      toast.info(
-        "Processo de pagamento cancelado. Nenhuma cobrança foi realizada.",
-        { duration: 4000 },
-      );
+      toast.info(t("cancelledToast"), { duration: 4000 });
       cleanupUrl();
     }
-  }, [searchParams, router, pathname, setUser]);
+  }, [searchParams, router, pathname, setUser, t]);
 
   return null;
 }

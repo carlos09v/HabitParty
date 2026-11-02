@@ -13,8 +13,10 @@ import {
   Timer,
 } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { memo, useCallback, useEffect, useState } from "react";
 import { getFocusIcon, MAX_FOCUS_ACTIVITIES_FREE } from "@/constants/focus";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import {
   useFocusSessionNotes,
   useFocusTimerControls,
@@ -45,6 +47,7 @@ const FocusStageTargetSelectorModal = dynamic(
  * Garante que digitar no input não provoque re-render no FocusHeroStage.
  */
 const FocusSessionNotesInput = memo(function FocusSessionNotesInput() {
+  const t = useTranslations("focus.hero");
   const { sessionNotes, setSessionNotes } = useFocusSessionNotes();
 
   return (
@@ -54,8 +57,8 @@ const FocusSessionNotesInput = memo(function FocusSessionNotesInput() {
         type="text"
         value={sessionNotes}
         onChange={(e) => setSessionNotes(e.target.value)}
-        placeholder="Anotações da sessão (opcional)..."
-        aria-label="Anotações da sessão de foco"
+        placeholder={t("notesPlaceholder")}
+        aria-label={t("notesAria")}
         className="w-full bg-transparent text-xs text-neutral-100 placeholder:text-neutral-400 outline-none"
       />
     </div>
@@ -83,6 +86,8 @@ export function FocusHeroStage({
   onOpenUpgradeModal,
   isCompact = false,
 }: FocusHeroStageProps) {
+  const t = useTranslations("focus.hero");
+  const { isGamified } = useExperienceMode();
   const controls = useFocusTimerControls();
   const isPremium = useUserStore((s) => s.is_Premium);
 
@@ -215,12 +220,12 @@ export function FocusHeroStage({
           PALCO DE FOCO HERÓICO (Hero Focus Stage)
           ========================================================================= */}
       <section
-        aria-label="Palco de Foco"
+        aria-label={t("sectionAria")}
         className={cn(
           "group/hero relative w-full shrink-0 min-h-fit rounded-2xl border transition-all duration-300 select-none z-20",
           isCompact ? "p-3 sm:p-3.5" : "p-3.5 sm:p-4",
           isBreak
-            ? "border-emerald-500/40 bg-gradient-to-b from-emerald-950/30 via-card/80 to-card/50 shadow-[0_4px_24px_rgba(16,185,129,0.12)] hover:border-emerald-500/60 hover:shadow-[0_8px_32px_rgba(16,185,129,0.2)]"
+            ? "border-emerald-500/40 bg-gradient-to-b from-emerald-500/10 dark:from-emerald-950/30 via-card/90 dark:via-card/80 to-card/80 dark:to-card/50 shadow-sm dark:shadow-[0_4px_24px_rgba(16,185,129,0.12)] hover:border-emerald-500/60 dark:hover:shadow-[0_8px_32px_rgba(16,185,129,0.2)]"
             : isRunning
               ? "border-gold/60 bg-gradient-to-b from-gold/10 via-card/80 to-card/50 shadow-glow-gold-xs hover:border-gold/80 hover:shadow-glow-gold-md"
               : "border-primary/30 bg-card/70 backdrop-blur-md hover:border-gold/50 hover:shadow-[0_8px_32px_rgba(234,179,8,0.12)]",
@@ -263,7 +268,7 @@ export function FocusHeroStage({
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-bold text-neutral-100 text-subtitle-s sm:text-subtitle-m truncate max-w-[180px] xs:max-w-xs sm:max-w-md">
-                  {target?.name || "Nenhuma Atividade Selecionada"}
+                  {target?.name || t("noActivitySelected")}
                 </h3>
 
                 {/* Badge da Fase Atual */}
@@ -271,13 +276,13 @@ export function FocusHeroStage({
                   <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-label-g font-bold animate-pulse shrink-0 whitespace-nowrap">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                     {phase === "LONG_BREAK"
-                      ? "🌴 Pausa Longa (15m)"
-                      : "☕ Pausa Curta (5m)"}
+                      ? t("longBreakBadge")
+                      : t("shortBreakBadge")}
                   </span>
                 ) : isRunning ? (
                   <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold/20 border border-gold/50 text-gold text-label-g font-bold animate-pulse shrink-0 whitespace-nowrap">
-                    <span className="w-1.5 h-1.5 rounded-full bg-gold" />⚡ Foco
-                    Ativo
+                    <span className="w-1.5 h-1.5 rounded-full bg-gold" />
+                    {t("activeFocusBadge")}
                   </span>
                 ) : null}
 
@@ -285,15 +290,17 @@ export function FocusHeroStage({
                 {isTargetLocked ? (
                   <span className="text-tiny px-2 py-0.5 rounded-full font-bold bg-gold/20 border border-gold/40 text-gold shrink-0 whitespace-nowrap flex items-center gap-1">
                     <Lock size={10} />
-                    Pausada 👑
+                    {t("pausedBadge")}
                   </span>
                 ) : (
                   <span className="text-tiny px-2 py-0.5 rounded-full font-semibold bg-surface border border-primary/30 text-neutral-300 shrink-0 whitespace-nowrap">
                     {isInventoryItem
-                      ? "Cupom da Mochila"
+                      ? isGamified
+                        ? t("modeBackpackCouponGamified")
+                        : t("modeBackpackCouponProductivity")
                       : mode === "POMO"
-                        ? "Pomodoro"
-                        : "Cronômetro Livre"}
+                        ? t("modePomodoro")
+                        : t("modeFreeStopwatch")}
                   </span>
                 )}
 
@@ -304,7 +311,7 @@ export function FocusHeroStage({
                   className="inline-flex items-center gap-1 text-label-g font-semibold text-gold hover:text-gold-hover hover:underline cursor-pointer ml-1 shrink-0 whitespace-nowrap"
                 >
                   <ArrowRightLeft size={11} />
-                  <span>{target ? "Trocar" : "Vincular"}</span>
+                  <span>{target ? t("switchTarget") : t("linkTarget")}</span>
                 </button>
               </div>
             </div>
@@ -321,11 +328,11 @@ export function FocusHeroStage({
                   className={cn(
                     "px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer",
                     mode === "POMO"
-                      ? "bg-gold text-neutral-900 shadow-glow-gold-xs"
+                      ? "bg-gold text-on-gold shadow-glow-gold-xs"
                       : "text-neutral-400 hover:text-neutral-200",
                   )}
                 >
-                  Pomodoro
+                  {t("modePomodoro")}
                 </button>
                 <button
                   type="button"
@@ -333,11 +340,11 @@ export function FocusHeroStage({
                   className={cn(
                     "px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer",
                     mode === "STOPWATCH"
-                      ? "bg-gold text-neutral-900 shadow-glow-gold-xs"
+                      ? "bg-gold text-on-gold shadow-glow-gold-xs"
                       : "text-neutral-400 hover:text-neutral-200",
                   )}
                 >
-                  Cronômetro
+                  {t("modeStopwatch")}
                 </button>
               </div>
             )}
@@ -355,14 +362,14 @@ export function FocusHeroStage({
             <button
               type="button"
               onClick={() => setIsZenModeOpen(true)}
-              title="Entrar em Modo Zen (Atalho: Z)"
+              title={t("zenModeTitle")}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-primary/30 bg-surface/90 hover:bg-gold/15 hover:border-gold/50 text-neutral-200 hover:text-gold text-xs font-bold transition-all cursor-pointer shadow-sm group"
             >
               <Maximize2
                 size={14}
                 className="group-hover:scale-110 transition-transform text-gold"
               />
-              <span className="hidden sm:inline">Modo Zen</span>
+              <span className="hidden sm:inline">{t("zenModeButton")}</span>
             </button>
           </div>
         </div>
@@ -383,35 +390,35 @@ export function FocusHeroStage({
               <button
                 type="button"
                 onClick={onOpenUpgradeModal}
-                title="Atividade pausada. Reative o plano Premium para cronometrar nesta atividade!"
-                className="w-full py-3 px-5 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md bg-gold hover:bg-gold-hover text-neutral-900 shadow-glow-gold-md hover:scale-[1.01]"
+                title={t("lockedActivityTitle")}
+                className="w-full py-3 px-5 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md bg-gold hover:bg-gold-hover text-on-gold shadow-glow-gold-md hover:scale-[1.01]"
               >
                 <Lock size={18} />
-                <span>Atividade Pausada • Seja VIP 👑</span>
+                <span>{t("lockedActivityButton")}</span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={handleToggleTimer}
-                title="Atalho rápido: Barra de Espaço"
+                title={t("spaceShortcutTitle")}
                 className={cn(
                   "w-full py-3 px-5 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md",
                   isBreak
-                    ? "bg-emerald-500 hover:bg-emerald-400 text-neutral-950 shadow-[0_0_16px_rgba(16,185,129,0.4)]"
+                    ? "bg-emerald-500 hover:bg-emerald-400 text-neutral-950 shadow-sm dark:shadow-[0_0_16px_rgba(16,185,129,0.4)]"
                     : isRunning
                       ? "bg-amber-500 hover:bg-amber-600 text-neutral-950 shadow-amber-500/20"
-                      : "bg-gold hover:bg-gold-hover text-neutral-900 shadow-glow-gold-md hover:scale-[1.01]",
+                      : "bg-gold hover:bg-gold-hover text-on-gold shadow-glow-gold-md hover:scale-[1.01]",
                 )}
               >
                 {isRunning ? (
                   <>
                     <Pause size={18} className="fill-current" />
-                    <span>Pausar Foco</span>
+                    <span>{t("pauseFocus")}</span>
                   </>
                 ) : (
                   <>
                     <Play size={18} className="fill-current ml-0.5" />
-                    <span>{isPaused ? "Continuar Foco" : "Começar Foco"}</span>
+                    <span>{isPaused ? t("resumeFocus") : t("startFocus")}</span>
                   </>
                 )}
               </button>
@@ -424,14 +431,16 @@ export function FocusHeroStage({
                 onClick={handleComplete}
                 title={
                   isPartialPomo
-                    ? "Encerrar e salvar tempo decorrido (ciclo incompleto)"
-                    : "Concluir sessão e registrar histórico"
+                    ? t("savePartialTitle")
+                    : t("completeSessionTitle")
                 }
                 className="w-full py-2.5 px-5 rounded-xl border border-emerald-500/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm hover:scale-[1.01]"
               >
                 <CheckCircle2 size={17} />
                 <span>
-                  {isPartialPomo ? "Salvar Tempo Parcial" : "Concluir Sessão"}
+                  {isPartialPomo
+                    ? t("savePartialButton")
+                    : t("completeSessionButton")}
                 </span>
               </button>
             )}
@@ -451,11 +460,11 @@ export function FocusHeroStage({
                   <button
                     type="button"
                     onClick={resetTimer}
-                    title="Reiniciar tempo"
+                    title={t("resetTitle")}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/30 bg-surface/80 text-neutral-300 hover:text-gold hover:border-gold/50 text-xs font-semibold transition-all cursor-pointer"
                   >
                     <RotateCcw size={14} />
-                    <span>Reiniciar</span>
+                    <span>{t("resetButton")}</span>
                   </button>
                 ) : (
                   <div />
@@ -466,11 +475,11 @@ export function FocusHeroStage({
                   <button
                     type="button"
                     onClick={skipBreak}
-                    title="Pular pausa e voltar ao foco agora"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/40 bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-300 text-xs font-semibold transition-all cursor-pointer"
+                    title={t("skipBreakTitle")}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 text-emerald-400 dark:text-emerald-300 text-xs font-semibold transition-all cursor-pointer"
                   >
                     <FastForward size={14} />
-                    <span>Pular Pausa</span>
+                    <span>{t("skipBreakButton")}</span>
                   </button>
                 )}
               </div>

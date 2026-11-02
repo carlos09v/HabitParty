@@ -1,6 +1,7 @@
 "use server";
 
 import { updateTag } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
 import { type ActionState, getErrorMessage } from "./types";
@@ -25,6 +26,7 @@ function invalidateInventoryTags(
 export async function reorderInventory(
   updates: UpdateInventoryOrderDTO[],
 ): Promise<ActionState> {
+  const t = await getTranslations("inventory.actions");
   try {
     const { error } = await serverApi.PUT("/inventory/reorder", {
       body: updates,
@@ -33,7 +35,7 @@ export async function reorderInventory(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao reordenar inventário."),
+        error: getErrorMessage(error, t("reorderFailed")),
       };
     }
 
@@ -43,7 +45,7 @@ export async function reorderInventory(
     console.error("[InventoryAction:Reorder]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -51,6 +53,7 @@ export async function reorderInventory(
 export async function consumeInventoryItem(
   itemId: string,
 ): Promise<ActionState> {
+  const t = await getTranslations("inventory.actions");
   try {
     const { error } = await serverApi.POST("/inventory/{itemId}/consume", {
       params: { path: { itemId } },
@@ -59,7 +62,7 @@ export async function consumeInventoryItem(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao consumir item."),
+        error: getErrorMessage(error, t("consumeFailed")),
       };
     }
 
@@ -69,7 +72,7 @@ export async function consumeInventoryItem(
     console.error("[InventoryAction:Consume]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -77,6 +80,7 @@ export async function consumeInventoryItem(
 export async function discardInventoryItem(
   itemId: string,
 ): Promise<ActionState> {
+  const t = await getTranslations("inventory.actions");
   try {
     const { error } = await serverApi.DELETE("/inventory/{itemId}/discard", {
       params: { path: { itemId } },
@@ -85,7 +89,7 @@ export async function discardInventoryItem(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao descartar item."),
+        error: getErrorMessage(error, t("discardFailed")),
       };
     }
 
@@ -95,7 +99,7 @@ export async function discardInventoryItem(
     console.error("[InventoryAction:Discard]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -103,6 +107,7 @@ export async function discardInventoryItem(
 export async function sendItemToFocus(
   itemId: string,
 ): Promise<ActionState<void>> {
+  const t = await getTranslations("inventory.actions");
   try {
     const { error } = await serverApi.PATCH(
       "/inventory/{itemId}/send-to-focus",
@@ -114,7 +119,7 @@ export async function sendItemToFocus(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao enviar item para o Foco."),
+        error: getErrorMessage(error, t("sendToFocusFailed")),
       };
     }
 
@@ -124,7 +129,7 @@ export async function sendItemToFocus(
     console.error("[InventoryAction:SendToFocus]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -132,6 +137,7 @@ export async function sendItemToFocus(
 export async function returnItemToBackpack(
   itemId: string,
 ): Promise<ActionState<void>> {
+  const t = await getTranslations("inventory.actions");
   try {
     const { error } = await serverApi.PATCH(
       "/inventory/{itemId}/return-to-backpack",
@@ -143,7 +149,7 @@ export async function returnItemToBackpack(
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao devolver item para a mochila."),
+        error: getErrorMessage(error, t("returnToBackpackFailed")),
       };
     }
 
@@ -153,7 +159,7 @@ export async function returnItemToBackpack(
     console.error("[InventoryAction:ReturnToBackpack]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }
@@ -174,19 +180,16 @@ export interface MysteryBoxOpenResult {
 export async function openMysteryBox(
   itemId: string,
 ): Promise<ActionState<MysteryBoxOpenResult>> {
+  const t = await getTranslations("inventory.actions");
   try {
-    const { data, error } = await serverApi.POST(
-      // @ts-expect-error newly added backend endpoint until openapi schema regenerated
-      "/inventory/{itemId}/open",
-      {
-        params: { path: { itemId } },
-      },
-    );
+    const { data, error } = await serverApi.POST("/inventory/{itemId}/open", {
+      params: { path: { itemId } },
+    });
 
     if (error) {
       return {
         success: false,
-        error: getErrorMessage(error, "Falha ao abrir caixa misteriosa."),
+        error: getErrorMessage(error, t("openMysteryBoxFailed")),
       };
     }
 
@@ -196,7 +199,7 @@ export async function openMysteryBox(
     console.error("[InventoryAction:OpenMysteryBox]", err);
     return {
       success: false,
-      error: "Erro interno de comunicação com o servidor.",
+      error: t("communicationError"),
     };
   }
 }

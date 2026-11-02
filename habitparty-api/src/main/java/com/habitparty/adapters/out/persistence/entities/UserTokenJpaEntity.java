@@ -6,8 +6,12 @@ import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.habitparty.core.domain.enums.UserTokenType;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -19,28 +23,35 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "password_reset_tokens")
+@Table(name = "user_tokens")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class PasswordResetTokenJpaEntity {
+public class UserTokenJpaEntity {
   @Id
-  @Column(name = "reset_token_id")
+  @Column(name = "token_id")
   private UUID id;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
   private UserJpaEntity user;
 
-  @Column(nullable = false, unique = true)
+  @Enumerated(EnumType.STRING)
+  @Column(name = "token_type", nullable = false, length = 40)
+  private UserTokenType tokenType;
+
+  @Column(name = "token", nullable = false, unique = true)
   private String token;
 
   @Column(name = "expiration_date", nullable = false)
   private Instant expirationDate;
 
-  @Column(nullable = false)
+  @Column(name = "used", nullable = false)
   private boolean used;
+
+  @Column(name = "used_at")
+  private Instant usedAt;
 
   @Column(name = "created_at", nullable = false, updatable = false)
   @CreationTimestamp

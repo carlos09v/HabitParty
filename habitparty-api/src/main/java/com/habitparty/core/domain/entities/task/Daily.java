@@ -83,7 +83,9 @@ public class Daily extends Task {
     this.repeatEvery = repeatEvery;
     this.lastCompletedAt = lastCompletedAt;
 
-    this.dueDate = (dueDate != null) ? dueDate : calculateNextOccurrence(this.startDate, true);
+    LocalDate today = LocalDate.now();
+    LocalDate initialReferenceDate = today.isAfter(this.startDate) ? today : this.startDate;
+    this.dueDate = (dueDate != null) ? dueDate : calculateNextOccurrence(initialReferenceDate, true);
   }
 
   public LocalDate calculateNextOccurrence(LocalDate referenceDate, boolean isFirstTime) {
@@ -220,21 +222,21 @@ public class Daily extends Task {
     int adaptationThreshold = Math.max(1, daysToForm / 3);
 
     // 3. Aplica o decaimento baseado no Streak
-    double multiplier = 1.0;
+    BigDecimal multiplier = BigDecimal.ONE;
     if (this.currentStreak >= daysToForm) {
-      multiplier = 0.5; // Rotina cravada: paga 50%
+      multiplier = HALF_RATE; // Rotina cravada: paga 50%
     } else if (this.currentStreak >= adaptationThreshold) {
-      multiplier = 0.75; // Adaptação: paga 75%
+      multiplier = ADAPTATION_RATE; // Adaptação: paga 75%
     }
 
-    int finalXp = Math.max(1, (int) (baseXp * multiplier));
+    int finalXp = Math.max(1, BigDecimal.valueOf(baseXp).multiply(multiplier).intValue());
     
     BigDecimal finalCoins = baseCoins
-            .multiply(BigDecimal.valueOf(multiplier))
+            .multiply(multiplier)
             .setScale(2, java.math.RoundingMode.HALF_DOWN);
 
-    if (finalCoins.compareTo(new BigDecimal("0.01")) < 0) {
-        finalCoins = new BigDecimal("0.01");
+    if (finalCoins.compareTo(MIN_COINS) < 0) {
+        finalCoins = MIN_COINS;
     }
 
     return new TaskReward(finalXp, finalCoins);

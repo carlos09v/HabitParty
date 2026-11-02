@@ -1,10 +1,11 @@
 import type { ActivityPeriodOption } from "@/constants/dashboard";
+import type { AppLocale } from "@/i18n/config";
 import type {
   FocusMetrics,
   FocusRecord,
   WeeklyFocusDayData,
 } from "@/types/focus";
-import { getWeekDateRange, parseServerDate } from "./date";
+import { getShortWeekDays, getWeekDateRange, parseServerDate } from "./date";
 import { calculateRecordReward } from "./focusRewards";
 
 export { calculateRecordReward };
@@ -16,8 +17,6 @@ export interface FocusMetricsCalculationResult {
   weekLabel: string;
   weekDateRange: string;
 }
-
-const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"] as const;
 
 /**
  * Converte um Date ou string ISO para chave YYYY-MM-DD no fuso horário local.
@@ -124,7 +123,10 @@ export function calculateFocusMetrics(
   records: FocusRecord[],
   weekOffset = 0,
   referenceDate: Date = new Date(),
+  locale: AppLocale = "pt-BR",
 ): FocusMetricsCalculationResult {
+  const isEn = locale === "en";
+  const shortWeekDays = getShortWeekDays(locale);
   const todayStr = toLocalDateKey(referenceDate);
 
   const yesterday = new Date(referenceDate);
@@ -203,7 +205,7 @@ export function calculateFocusMetrics(
     }
 
     calculatedDays.push({
-      dayLabel: DAY_LABELS[i],
+      dayLabel: shortWeekDays[i],
       fullDate: dateKey,
       minutes: mins,
       heightPercent: 0,
@@ -217,23 +219,25 @@ export function calculateFocusMetrics(
   }));
 
   // Rótulo conciso da semana para caber perfeitamente na sidebar sem quebrar o título
-  let weekLabel = "Esta semana";
+  let weekLabel = isEn ? "This week" : "Esta semana";
   if (weekOffset === -1) {
-    weekLabel = "Sem. passada";
+    weekLabel = isEn ? "Last wk." : "Sem. passada";
   } else if (weekOffset < -1) {
-    weekLabel = `Sem. ${weekOffset}`;
+    weekLabel = isEn ? `Wk. ${weekOffset}` : `Sem. ${weekOffset}`;
   } else if (weekOffset > 0) {
-    weekLabel = `Sem. +${weekOffset}`;
+    weekLabel = isEn ? `Wk. +${weekOffset}` : `Sem. +${weekOffset}`;
   }
 
-  // Range de data (ex: "12/10 a 18/10")
+  // Range de data (ex: "12/10 a 18/10" ou "10/12 to 10/18")
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(startOfWeek.getDate() + 6);
   const startDay = String(startOfWeek.getDate()).padStart(2, "0");
   const startMonth = String(startOfWeek.getMonth() + 1).padStart(2, "0");
   const endDay = String(endOfWeek.getDate()).padStart(2, "0");
   const endMonth = String(endOfWeek.getMonth() + 1).padStart(2, "0");
-  const weekDateRange = `${startDay}/${startMonth} a ${endDay}/${endMonth}`;
+  const weekDateRange = isEn
+    ? `${startMonth}/${startDay} to ${endMonth}/${endDay}`
+    : `${startDay}/${startMonth} a ${endDay}/${endMonth}`;
 
   const todayAverageMinutes =
     todayCount > 0 ? Math.round(todayMinutes / todayCount) : 0;

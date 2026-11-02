@@ -1,7 +1,10 @@
 "use client";
 
 import { closestCenter, DndContext } from "@dnd-kit/core";
-import { restrictToWindowEdges } from "@dnd-kit/modifiers";
+import {
+  restrictToParentElement,
+  restrictToWindowEdges,
+} from "@dnd-kit/modifiers";
 import {
   rectSortingStrategy,
   SortableContext,
@@ -10,6 +13,7 @@ import {
 import {
   Backpack,
   Flame,
+  Package,
   PackageOpen,
   SearchX,
   Store,
@@ -20,6 +24,7 @@ import {
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
@@ -36,16 +41,13 @@ import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { ItemRow, ItemRowHeader } from "@/components/ui/ItemRow";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
-import {
-  INVENTORY_SORT_OPTIONS,
-  INVENTORY_STATUS_OPTIONS,
-} from "@/constants/inventory";
-import { REWARD_TYPE_OPTIONS } from "@/constants/reward";
 import { WELCOME_CARD_DETAILS } from "@/constants/welcomeCards";
-
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useItemCatalogFilters } from "@/hooks/useItemCatalogFilters";
 import { useReorderableList } from "@/hooks/useReorderableList";
+import type { AppLocale } from "@/i18n/config";
 import type { InventoryItem } from "@/types/inventory";
+import type { SelectOption } from "@/types/ui";
 import { cn } from "@/utils";
 import { calculateInventoryWelcomeStats } from "@/utils/catalogMetrics";
 import {
@@ -70,6 +72,49 @@ export function InventoryContainer({
   isCompact?: boolean;
 }) {
   const router = useRouter();
+  const locale = useLocale() as AppLocale;
+  const t = useTranslations("inventory.container");
+  const tHelpers = useTranslations("inventory.helpers");
+  const { isGamified } = useExperienceMode();
+
+  const actionLabels = useMemo(
+    () => ({
+      openInFocus: tHelpers("openInFocus"),
+      openBox: tHelpers("openBox"),
+      sendToFocus: tHelpers("sendToFocus"),
+      use: tHelpers("use"),
+    }),
+    [tHelpers],
+  );
+
+  const statusOptions = useMemo<SelectOption[]>(
+    () => [
+      { label: t("filters.statusAll"), value: "" },
+      { label: t("filters.statusAvailable"), value: "AVAILABLE" },
+      { label: t("filters.statusInFocus"), value: "IN_FOCUS" },
+    ],
+    [t],
+  );
+
+  const typeOptions = useMemo<SelectOption[]>(
+    () => [
+      { label: t("filters.typeAll"), value: "" },
+      { label: t("filters.typeSingleUse"), value: "SingleUse" },
+      { label: t("filters.typeTimeBased"), value: "TimeBased" },
+      { label: t("filters.typeMysteryBox"), value: "MysteryBox" },
+    ],
+    [t],
+  );
+
+  const sortOptions = useMemo<SelectOption[]>(
+    () => [
+      { label: t("filters.sortDefault"), value: "" },
+      { label: t("filters.sortQuantityDesc"), value: "quantity-desc" },
+      { label: t("filters.sortName"), value: "name" },
+    ],
+    [t],
+  );
+
   const {
     viewMode,
     setViewMode,
@@ -146,7 +191,7 @@ export function InventoryContainer({
       try {
         const res = await consumeInventoryItem(item.id);
         if (!res.success) {
-          toast.error(res.error || "Erro ao usar item.");
+          toast.error(res.error || t("toasts.useError"));
           return;
         }
         setItems((prev) =>
@@ -157,14 +202,14 @@ export function InventoryContainer({
             .filter((i) => i.quantity > 0),
         );
         soundEffects.playTaskCompleteSound();
-        toast.success(`Você usou "${item.reward.title}"!`);
+        toast.success(t("toasts.useSuccess", { title: item.reward.title }));
       } catch (_error) {
-        toast.error("Erro de comunicação com o servidor.");
+        toast.error(t("toasts.serverError"));
       } finally {
         setIsUsing(false);
       }
     },
-    [isUsing, setItems],
+    [isUsing, setItems, t],
   );
 
   const handleSendToFocus = useCallback(
@@ -174,7 +219,7 @@ export function InventoryContainer({
       try {
         const res = await sendItemToFocus(item.id);
         if (!res.success) {
-          toast.error(res.error || "Erro ao adicionar item ao Foco.");
+          toast.error(res.error || t("toasts.sendToFocusError"));
           return;
         }
         setItems((prev) => {
@@ -189,15 +234,17 @@ export function InventoryContainer({
           );
         });
         soundEffects.playTaskCompleteSound();
-        toast.success(`"${item.reward.title}" adicionado ao Foco com sucesso!`);
+        toast.success(
+          t("toasts.sendToFocusSuccess", { title: item.reward.title }),
+        );
         router.refresh();
       } catch (_error) {
-        toast.error("Erro de comunicação com o servidor.");
+        toast.error(t("toasts.serverError"));
       } finally {
         setIsSendingToFocus(false);
       }
     },
-    [isSendingToFocus, setItems, router],
+    [isSendingToFocus, setItems, router, t],
   );
 
   const [contextMenu, setContextMenu] = useState<{
@@ -228,12 +275,25 @@ export function InventoryContainer({
       try {
         const res = await returnItemToBackpack(item.id);
         if (!res.success) {
-          toast.error(res.error || "Erro ao devolver item para a mochila.");
+          toast.error(
+            res.error ||
+              (isGamified
+                ? t("toasts.returnToBackpackErrorGamified")
+                : t("toasts.returnToBackpackErrorProductivity")),
+          );
           return;
         }
 
         soundEffects.playTaskCompleteSound();
-        toast.success(`"${item.reward.title}" devolvido para a mochila!`);
+        toast.success(
+          isGamified
+            ? t("toasts.returnToBackpackSuccessGamified", {
+                title: item.reward.title,
+              })
+            : t("toasts.returnToBackpackSuccessProductivity", {
+                title: item.reward.title,
+              }),
+        );
         setItems((prev) =>
           prev.map((i) =>
             i.id === item.id ? { ...i, status: "AVAILABLE" } : i,
@@ -241,10 +301,10 @@ export function InventoryContainer({
         );
         router.refresh();
       } catch (_error) {
-        toast.error("Erro de comunicação com o servidor.");
+        toast.error(t("toasts.serverError"));
       }
     },
-    [setItems, router],
+    [isGamified, setItems, router, t],
   );
 
   const handleConfirmDiscard = () => {
@@ -264,10 +324,12 @@ export function InventoryContainer({
     startDiscardTransition(async () => {
       const res = await discardInventoryItem(target.id);
       if (res.success) {
-        toast.success(`Item "${target.reward.title}" descartado.`);
+        toast.success(
+          t("toasts.discardSuccess", { title: target.reward.title }),
+        );
       } else {
         setItems(previousItems);
-        toast.error(res.error || "Erro ao descartar item.");
+        toast.error(res.error || t("toasts.discardError"));
       }
     });
   };
@@ -276,18 +338,22 @@ export function InventoryContainer({
     const target = contextMenu.item;
     if (!target) return [];
 
-    const { isInFocus, isMystery, isCoupon } =
-      getInventoryItemActionMeta(target);
+    const { isInFocus, isMystery, isCoupon } = getInventoryItemActionMeta(
+      target,
+      actionLabels,
+    );
 
     if (isInFocus) {
       return [
         {
-          label: "Abrir no Foco",
+          label: t("contextMenu.openInFocus"),
           icon: <Flame size={15} />,
           onClick: () => router.push("/focus"),
         },
         {
-          label: "Devolver para a mochila",
+          label: isGamified
+            ? t("contextMenu.returnToBackpackGamified")
+            : t("contextMenu.returnToBackpackProductivity"),
           icon: <Undo2 size={15} />,
           onClick: () => handleReturnToBackpack(target),
         },
@@ -298,33 +364,33 @@ export function InventoryContainer({
 
     if (isMystery) {
       actions.push({
-        label: "Abrir Caixa Misteriosa",
+        label: t("contextMenu.openMysteryBox"),
         icon: <PackageOpen size={15} />,
         onClick: () => handleOpenMysteryBox(target),
       });
     } else if (isCoupon) {
       actions.push(
         {
-          label: "Enviar ao Foco",
+          label: t("contextMenu.sendToFocus"),
           icon: <Flame size={15} />,
           onClick: () => handleSendToFocus(target),
         },
         {
-          label: "Usar Imediatamente",
+          label: t("contextMenu.useImmediately"),
           icon: <Zap size={15} />,
           onClick: () => handleUseItem(target),
         },
       );
     } else {
       actions.push({
-        label: "Usar Item",
+        label: t("contextMenu.useItem"),
         icon: <Zap size={15} />,
         onClick: () => handleUseItem(target),
       });
     }
 
     actions.push({
-      label: "Descartar Item",
+      label: t("contextMenu.discardItem"),
       icon: <Trash2 size={15} />,
       variant: "destructive",
       onClick: () => setItemToDiscard(target),
@@ -333,6 +399,9 @@ export function InventoryContainer({
     return actions;
   }, [
     contextMenu.item,
+    actionLabels,
+    isGamified,
+    t,
     router,
     handleReturnToBackpack,
     handleOpenMysteryBox,
@@ -341,8 +410,8 @@ export function InventoryContainer({
   ]);
 
   const { stats: welcomeStats } = useMemo(() => {
-    return calculateInventoryWelcomeStats(items);
-  }, [items]);
+    return calculateInventoryWelcomeStats(items, locale);
+  }, [items, locale]);
 
   return (
     <>
@@ -379,20 +448,20 @@ export function InventoryContainer({
           dropdownFilters={[
             {
               id: "status",
-              label: "Status",
-              options: INVENTORY_STATUS_OPTIONS,
+              label: t("filters.statusLabel"),
+              options: statusOptions,
               value: filters.status || "",
             },
             {
               id: "type",
-              label: "Tipo",
-              options: REWARD_TYPE_OPTIONS,
+              label: t("filters.typeLabel"),
+              options: typeOptions,
               value: filters.type,
             },
             {
               id: "sortBy",
-              label: "Ordenar",
-              options: INVENTORY_SORT_OPTIONS,
+              label: t("filters.sortLabel"),
+              options: sortOptions,
               value: filters.sortBy || "",
             },
           ]}
@@ -407,25 +476,31 @@ export function InventoryContainer({
             )}
             <CatalogEmptyState
               isCompact={isCompact}
-              icon={items.length === 0 ? Backpack : SearchX}
+              icon={
+                items.length === 0 ? (isGamified ? Backpack : Package) : SearchX
+              }
               title={
                 items.length === 0
-                  ? "Sua mochila está vazia! 🎒"
-                  : "Nenhum item encontrado"
+                  ? isGamified
+                    ? t("emptyState.emptyTitleGamified")
+                    : t("emptyState.emptyTitleProductivity")
+                  : t("emptyState.noResultsTitle")
               }
               description={
                 items.length === 0
-                  ? "Você ainda não possui itens ou cupons no seu inventário. Conquiste moedas completando suas tarefas diárias e resgate recompensas épicas na Loja!"
-                  : "Não encontramos nenhum item que corresponda aos filtros aplicados."
+                  ? isGamified
+                    ? t("emptyState.emptyDescriptionGamified")
+                    : t("emptyState.emptyDescriptionProductivity")
+                  : t("emptyState.noResultsDescription")
               }
               action={
                 items.length === 0 ? (
                   <Link
                     href="/rewards"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gold text-neutral-900 font-bold text-xs hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gold text-on-gold font-bold text-xs hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer"
                   >
                     <Store size={15} />
-                    <span>Explorar a Loja</span>
+                    <span>{t("emptyState.exploreStore")}</span>
                   </Link>
                 ) : (
                   <button
@@ -433,7 +508,7 @@ export function InventoryContainer({
                     onClick={handleClearFilters}
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-primary/40 bg-surface/80 text-xs font-semibold text-gold hover:border-gold hover:bg-gold/10 transition-all cursor-pointer"
                   >
-                    <span>Limpar Filtros</span>
+                    <span>{t("emptyState.clearFilters")}</span>
                   </button>
                 )
               }
@@ -445,7 +520,7 @@ export function InventoryContainer({
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
-            modifiers={[restrictToWindowEdges]}
+            modifiers={[restrictToParentElement, restrictToWindowEdges]}
           >
             <SortableContext
               items={filteredItems.map((i) => i.id)}
@@ -481,11 +556,11 @@ export function InventoryContainer({
                   <ItemRowHeader isCompact={isCompact} mode="inventory" />
                   <ul
                     className="flex flex-col gap-2 w-full"
-                    aria-label="Itens do inventário"
+                    aria-label={t("listAriaLabel")}
                   >
                     {filteredItems.map((item) => {
                       const { isInFocus, actionLabel, secondaryActionLabel } =
-                        getInventoryItemActionMeta(item);
+                        getInventoryItemActionMeta(item, actionLabels);
 
                       const handleAction = () => {
                         executeInventoryItemAction(item, {
@@ -516,6 +591,7 @@ export function InventoryContainer({
                           remainingSeconds={item.remainingSeconds}
                           quantity={item.quantity}
                           inUse={isInFocus}
+                          isActiveFocusSession={isInFocus}
                           actionLabel={actionLabel}
                           onAction={handleAction}
                           secondaryActionLabel={secondaryActionLabel}
@@ -545,20 +621,25 @@ export function InventoryContainer({
         isOpen={Boolean(itemToDiscard)}
         onClose={() => !isDiscarding && setItemToDiscard(null)}
         onConfirm={handleConfirmDiscard}
-        title="Descartar item da mochila?"
+        title={
+          isGamified
+            ? t("discardModal.titleGamified")
+            : t("discardModal.titleProductivity")
+        }
         description={
           itemToDiscard ? (
             <span>
-              Tem certeza que deseja descartar 1x{" "}
-              <strong className="text-neutral-100">
-                "{itemToDiscard.reward.title}"
-              </strong>
-              ? Esta ação não reembolsa as moedas gastas.
+              {t.rich("discardModal.description", {
+                title: itemToDiscard.reward.title,
+                strong: (chunks) => (
+                  <strong className="text-neutral-100">{chunks}</strong>
+                ),
+              })}
             </span>
           ) : null
         }
-        confirmText="Sim, descartar"
-        cancelText="Cancelar"
+        confirmText={t("discardModal.confirmText")}
+        cancelText={t("discardModal.cancelText")}
         variant="danger"
         isLoading={isDiscarding}
       />

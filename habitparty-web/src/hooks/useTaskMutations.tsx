@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useTransition } from "react";
 import { toast } from "sonner";
 import { cloneTaskChecklistItems } from "@/actions/checklistActions";
@@ -10,6 +11,7 @@ import {
   deleteTask,
   recordHabitScore,
 } from "@/actions/taskActions";
+import type { AppLocale } from "@/i18n/config";
 import type { Task } from "@/types/task";
 import {
   calculateTaskPenalty,
@@ -48,6 +50,9 @@ export function useTaskMutations({
   onTaskUpdatedInDetails,
   defaultColumnId,
 }: UseTaskMutationsOptions) {
+  const t = useTranslations("dashboard.taskShared.mutations");
+  const tLevelUp = useTranslations("dashboard.taskShared.levelUp");
+  const locale = useLocale() as AppLocale;
   const [isPending, startTransition] = useTransition();
 
   const handleToggleComplete = useCallback(
@@ -64,7 +69,7 @@ export function useTaskMutations({
           : await changeTaskStatus(taskId, "PENDING");
 
         if (!res.success) {
-          toast.error(res.error || "Erro ao atualizar status da tarefa.");
+          toast.error(res.error || t("statusUpdateError"));
           onRollbackToggle(taskId, !completed);
           onTaskUpdatedInDetails?.({ ...targetTask, completed: !completed });
           return;
@@ -85,33 +90,48 @@ export function useTaskMutations({
             isHardcoreModeEnabled: targetTask.isHardcoreModeEnabled,
             dueDate: targetTask.dueDate,
             isPenaltyApplied: targetTask.isPenaltyApplied,
+            locale,
           });
 
           const xp = breakdown.finalReward.xp;
           const gold = breakdown.finalReward.gold;
 
-          const rewardResult = awardUserRewards(xp, gold);
+          const rewardResult = awardUserRewards(xp, gold, {
+            locale,
+            levelUpTitle: tLevelUp("title"),
+            congratsPrefix: tLevelUp("congratsPrefix"),
+            congratsSuffix: tLevelUp("congratsSuffix"),
+          });
 
           // Se não subiu de nível, executa o som e o toast padrão contextual ao tipo da atividade
           if (!rewardResult.didLevelUp) {
             soundEffects.playTaskCompleteSound();
             const completionLabel =
               targetTask.type?.toLowerCase() === "habit"
-                ? "Hábito concluído!"
+                ? t("habitCompleted")
                 : targetTask.type?.toLowerCase() === "daily"
-                  ? "Diária concluída!"
-                  : "Tarefa concluída!";
+                  ? t("dailyCompleted")
+                  : t("todoCompleted");
 
             if (xp > 0 || gold > 0) {
               toast.success(
                 <span>
                   {completionLabel} (<strong>+{xp} XP</strong> •{" "}
-                  <strong>+{formatCoins(gold)} Ouro</strong>)
+                  <strong>
+                    +{formatCoins(gold, { locale })} {t("goldLabel")}
+                  </strong>
+                  )
                   {breakdown.hasDecay && (
                     <span className="block text-[11px] text-neutral-400 mt-0.5 font-normal">
                       {targetTask.type?.toLowerCase() === "todo"
-                        ? `${breakdown.stageLabel} (-${breakdown.decayPercentage}% por atraso)`
-                        : `${breakdown.stageLabel} (-${breakdown.decayPercentage}% por rotina fixada)`}
+                        ? t("decayOverdue", {
+                            stage: breakdown.stageLabel,
+                            percent: breakdown.decayPercentage,
+                          })
+                        : t("decayRoutine", {
+                            stage: breakdown.stageLabel,
+                            percent: breakdown.decayPercentage,
+                          })}
                     </span>
                   )}
                 </span>,
@@ -121,11 +141,19 @@ export function useTaskMutations({
             }
           }
         } else {
-          toast.info("Tarefa marcada como pendente.");
+          toast.info(t("markedPending"));
         }
       });
     },
-    [findTask, onOptimisticToggle, onRollbackToggle, onTaskUpdatedInDetails],
+    [
+      findTask,
+      onOptimisticToggle,
+      onRollbackToggle,
+      onTaskUpdatedInDetails,
+      t,
+      tLevelUp,
+      locale,
+    ],
   );
 
   const handleHabitChange = useCallback(
@@ -140,7 +168,7 @@ export function useTaskMutations({
         const res = await recordHabitScore(taskId, delta);
 
         if (!res.success) {
-          toast.error(res.error || "Erro ao registrar pontuação do hábito.");
+          toast.error(res.error || t("habitScoreError"));
           // Rollback otimista revertendo o incremento ou decremento
           onOptimisticHabit(taskId, -delta);
           return;
@@ -167,12 +195,18 @@ export function useTaskMutations({
               targetTask.streak ??
               targetTask.positiveCount ??
               0,
+            locale,
           });
 
           const xp = breakdown.finalReward.xp;
           const gold = breakdown.finalReward.gold;
 
-          const rewardResult = awardUserRewards(xp, gold);
+          const rewardResult = awardUserRewards(xp, gold, {
+            locale,
+            levelUpTitle: tLevelUp("title"),
+            congratsPrefix: tLevelUp("congratsPrefix"),
+            congratsSuffix: tLevelUp("congratsSuffix"),
+          });
 
           // Se não subiu de nível, executa o som e o toast padrão do hábito
           if (!rewardResult.didLevelUp) {
@@ -180,18 +214,23 @@ export function useTaskMutations({
             if (xp > 0 || gold > 0) {
               toast.success(
                 <span>
-                  Hábito registrado! (<strong>+{xp} XP</strong> •{" "}
-                  <strong>+{formatCoins(gold)} Ouro</strong>)
+                  {t("habitRecorded")} (<strong>+{xp} XP</strong> •{" "}
+                  <strong>
+                    +{formatCoins(gold, { locale })} {t("goldLabel")}
+                  </strong>
+                  )
                   {breakdown.hasDecay && (
                     <span className="block text-[11px] text-neutral-400 mt-0.5 font-normal">
-                      {breakdown.stageLabel} (-{breakdown.decayPercentage}% por
-                      hábito consolidado)
+                      {t("decayHabit", {
+                        stage: breakdown.stageLabel,
+                        percent: breakdown.decayPercentage,
+                      })}
                     </span>
                   )}
                 </span>,
               );
             } else {
-              toast.success("Hábito positivo registrado com sucesso!");
+              toast.success(t("positiveHabitSuccess"));
             }
           }
         } else if (delta < 0) {
@@ -213,15 +252,19 @@ export function useTaskMutations({
 
           toast.error(
             <span>
-              Penalidade de hábito registrada! (
+              {t("habitPenalty")} (
               <strong>-{penaltyResult.xpDeducted} XP</strong> •{" "}
-              <strong>-{formatCoins(penaltyResult.coinsDeducted)} Ouro</strong>)
+              <strong>
+                -{formatCoins(penaltyResult.coinsDeducted, { locale })}{" "}
+                {t("goldLabel")}
+              </strong>
+              )
             </span>,
           );
         }
       });
     },
-    [findTask, onOptimisticHabit, onTaskUpdatedInDetails],
+    [findTask, onOptimisticHabit, onTaskUpdatedInDetails, t, tLevelUp, locale],
   );
 
   const handleDeleteTask = useCallback(
@@ -232,27 +275,27 @@ export function useTaskMutations({
       const res = await deleteTask(task.id);
       if (!res.success) {
         onRollbackDelete?.(task, colId);
-        toast.error(res.error || "Erro ao excluir tarefa no servidor.");
+        toast.error(res.error || t("deleteError"));
         return;
       }
 
-      toast.success(`Tarefa "${task.title}" excluída com sucesso!`);
+      toast.success(t("deleteSuccess", { title: task.title }));
     },
-    [defaultColumnId, onOptimisticDelete, onRollbackDelete],
+    [defaultColumnId, onOptimisticDelete, onRollbackDelete, t],
   );
 
   const handleDuplicateTask = useCallback(
     async (task: Task, targetColumnId?: string) => {
       const colId = targetColumnId || task.columnId || defaultColumnId;
       if (!colId) {
-        toast.error("Coluna de destino não encontrada para duplicação.");
+        toast.error(t("duplicateColumnError"));
         return;
       }
 
       const payload = buildCreateTaskPayloadFromTask(task);
       const res = await createTask(colId, payload);
       if (!res.success) {
-        toast.error(res.error || "Erro ao duplicar tarefa.");
+        toast.error(res.error || t("duplicateError"));
         return;
       }
 
@@ -283,9 +326,9 @@ export function useTaskMutations({
 
       onTaskDuplicated?.(duplicatedTask, colId);
       soundEffects.playCreateSound();
-      toast.success(`Tarefa "${task.title}" duplicada com sucesso!`);
+      toast.success(t("duplicateSuccess", { title: task.title }));
     },
-    [defaultColumnId, onTaskDuplicated],
+    [defaultColumnId, onTaskDuplicated, t],
   );
 
   return {

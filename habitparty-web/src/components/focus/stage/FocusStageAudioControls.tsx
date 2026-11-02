@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { AMBIENT_ICONS, AMBIENT_SOUND_OPTIONS } from "@/constants/settings";
 import { useClickOutside } from "@/hooks/useClickOutside";
@@ -41,6 +42,8 @@ export function FocusStageAudioControls({
   onChangeSoundType,
   onOpenUpgradeModal,
 }: FocusStageAudioControlsProps) {
+  const t = useTranslations("focus.audio");
+  const tWidget = useTranslations("focusWidget");
   const [isAmbientPopoverOpen, setIsAmbientPopoverOpen] = useState(false);
   const [localUpgradeModalOpen, setLocalUpgradeModalOpen] = useState(false);
 
@@ -112,15 +115,11 @@ export function FocusStageAudioControls({
               ? "text-gold bg-gold/15 border border-gold/30 font-bold"
               : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5",
           )}
-          title={
-            isSoundEnabled
-              ? "Som do Pomodoro ativado (clique para silenciar)"
-              : "Som do Pomodoro silenciado (clique para ativar)"
-          }
+          title={isSoundEnabled ? t("soundEnabledTitle") : t("soundMutedTitle")}
         >
           {isSoundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
           <span className="text-label-g hidden sm:inline">
-            {isSoundEnabled ? "Som" : "Mudo"}
+            {isSoundEnabled ? t("soundOn") : t("soundOff")}
           </span>
         </button>
 
@@ -136,10 +135,10 @@ export function FocusStageAudioControls({
           )}
           title={
             browserNotificationsEnabled && hasNotificationPermission
-              ? "Notificações ativadas para fim de ciclo (clique para silenciar)"
-              : "Ativar notificações no navegador ao fim do Pomodoro"
+              ? t("notificationsEnabledTitle")
+              : t("notificationsDisabledTitle")
           }
-          aria-label="Alternar notificações do navegador"
+          aria-label={t("notificationsAria")}
         >
           {browserNotificationsEnabled && hasNotificationPermission ? (
             <Bell size={15} />
@@ -148,8 +147,8 @@ export function FocusStageAudioControls({
           )}
           <span className="text-label-g hidden sm:inline">
             {browserNotificationsEnabled && hasNotificationPermission
-              ? "Avisos"
-              : "Sem avisos"}
+              ? t("notificationsOn")
+              : t("notificationsOff")}
           </span>
         </button>
 
@@ -162,12 +161,12 @@ export function FocusStageAudioControls({
               className={cn(
                 "px-2 py-0.5 text-label-g font-semibold rounded-md transition-all cursor-pointer",
                 timerSoundType === "zen"
-                  ? "bg-gold text-neutral-900 shadow-glow-gold-xs font-bold"
+                  ? "bg-gold text-on-gold shadow-glow-gold-xs font-bold"
                   : "text-neutral-400 hover:text-neutral-200",
               )}
-              title="Tocar som Zen (Sino harmônico suave)"
+              title={t("zenSoundTitle")}
             >
-              Zen
+              {t("zenSoundLabel")}
             </button>
             <button
               type="button"
@@ -175,12 +174,12 @@ export function FocusStageAudioControls({
               className={cn(
                 "px-2 py-0.5 text-label-g font-semibold rounded-md transition-all cursor-pointer",
                 timerSoundType === "arcade"
-                  ? "bg-gold text-neutral-900 shadow-glow-gold-xs font-bold"
+                  ? "bg-gold text-on-gold shadow-glow-gold-xs font-bold"
                   : "text-neutral-400 hover:text-neutral-200",
               )}
-              title="Tocar som Arcade (Bips retrô gamificados)"
+              title={t("arcadeSoundTitle")}
             >
-              Arcade
+              {t("arcadeSoundLabel")}
             </button>
           </div>
         )}
@@ -199,7 +198,7 @@ export function FocusStageAudioControls({
                 ? "text-gold bg-gold/15 border border-gold/40 shadow-glow-gold-xs font-bold"
                 : "text-neutral-300 hover:text-gold hover:bg-white/5 border border-transparent",
             )}
-            title="Sons ambiente de foco (Chuva, Lofi, Cafeteria)"
+            title={t("ambientButtonTitle")}
             aria-expanded={isAmbientPopoverOpen}
           >
             <AmbientCurrentIcon
@@ -212,9 +211,8 @@ export function FocusStageAudioControls({
             />
             <span className="text-label-g hidden sm:inline">
               {isAmbientPlaying && ambientSoundType !== "none"
-                ? AMBIENT_SOUND_OPTIONS.find((s) => s.id === ambientSoundType)
-                    ?.label
-                : "Ambiente"}
+                ? tWidget(`ambientSounds.${ambientSoundType}`)
+                : tWidget("ambientSounds.default")}
             </span>
 
             {!isPremium && (
@@ -229,7 +227,7 @@ export function FocusStageAudioControls({
           {isAmbientPopoverOpen && (
             <div
               role="dialog"
-              aria-label="Sons ambiente de foco"
+              aria-label={t("ambientDialogAria")}
               className={cn(
                 "absolute top-full right-0 mt-2 z-50 p-3.5 rounded-2xl border border-primary/40 bg-surface/98 dark:bg-card/98 backdrop-blur-xl shadow-2xl drop-shadow-2xl",
                 "w-72 sm:w-80 max-w-[calc(100vw-2rem)] animate-in fade-in zoom-in-95 duration-150",
@@ -238,25 +236,24 @@ export function FocusStageAudioControls({
               <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-white/10">
                 <div className="flex items-center gap-1.5">
                   <span className="text-caption font-bold text-neutral-100 uppercase tracking-wider">
-                    Sons de Ambiente
+                    {t("ambientHeaderTitle")}
                   </span>
                   <span className="px-1.5 py-0.5 rounded-full text-tiny font-black uppercase tracking-wider bg-gold/20 text-gold border border-gold/40">
-                    VIP
+                    {t("vipBadge")}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsAmbientPopoverOpen(false)}
                   className="text-neutral-400 hover:text-neutral-200 p-1 rounded-md hover:bg-white/5 transition-colors cursor-pointer"
-                  aria-label="Fechar"
+                  aria-label={t("closeAria")}
                 >
                   <X size={14} />
                 </button>
               </div>
 
               <p className="text-tiny text-neutral-300 mb-3 leading-snug">
-                Bloqueie distrações e aumente sua imersão durante o Pomodoro com
-                ruídos contínuos gerados proceduralmente.
+                {t("ambientSubtitle")}
               </p>
 
               {/* LISTA DE OPÇÕES DE SOM */}
@@ -293,10 +290,10 @@ export function FocusStageAudioControls({
                         </span>
                         <div className="flex flex-col min-w-0">
                           <span className="text-xs truncate font-medium">
-                            {sound.label}
+                            {tWidget(`ambientSounds.${sound.id}`)}
                           </span>
                           <span className="text-tiny text-neutral-400 truncate">
-                            {sound.description}
+                            {t(`ambientDescriptions.${sound.id}`)}
                           </span>
                         </div>
                       </div>
@@ -317,7 +314,7 @@ export function FocusStageAudioControls({
                   <div className="flex items-center justify-between text-label-g text-neutral-300">
                     <span className="flex items-center gap-1">
                       <Sliders size={12} className="text-gold" />
-                      Volume do Ambiente
+                      {t("ambientVolumeLabel")}
                     </span>
                     <span className="font-mono font-bold text-gold">
                       {Math.round(ambientVolume * 100)}%
@@ -346,7 +343,7 @@ export function FocusStageAudioControls({
                     className="w-full py-2 px-3 rounded-xl bg-gold text-neutral-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-glow-gold-xs hover:bg-gold-hover transition-all cursor-pointer"
                   >
                     <Crown size={14} />
-                    <span>Liberar Sons de Foco</span>
+                    <span>{t("unlockAmbientButton")}</span>
                   </button>
                 </div>
               )}

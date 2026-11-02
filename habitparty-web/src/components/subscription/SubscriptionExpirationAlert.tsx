@@ -1,9 +1,11 @@
 "use client";
 
 import { AlertTriangle, Clock, Crown, Sparkles } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import type { components } from "@/api/schema";
 import { UpgradePremiumModal } from "@/components/subscription/UpgradePremiumModal";
+import type { AppLocale } from "@/i18n/config";
 import { cn } from "@/utils";
 import { getSubscriptionExpirationInfo } from "@/utils/subscription";
 
@@ -18,8 +20,10 @@ export function SubscriptionExpirationAlert({
   user,
   className,
 }: SubscriptionExpirationAlertProps) {
+  const locale = useLocale() as AppLocale;
+  const t = useTranslations("subscriptionAlert");
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-  const info = getSubscriptionExpirationInfo(user);
+  const info = getSubscriptionExpirationInfo(user, locale);
 
   // Exibe apenas se estiver expirando em até 7 dias
   if (!info.isExpiringSoon) {
@@ -32,7 +36,7 @@ export function SubscriptionExpirationAlert({
   return (
     <>
       <aside
-        aria-label="Aviso de expiração da assinatura"
+        aria-label={t("ariaLabel")}
         className={cn(
           "rounded-xl p-2.5 border transition-all duration-300 flex flex-col gap-1.5",
           isLastDay
@@ -76,12 +80,12 @@ export function SubscriptionExpirationAlert({
             >
               {isLastDay
                 ? `🚨 ${info.formattedRemaining}`
-                : `⏳ ${info.formattedRemaining} de Premium`}
+                : t("remainingOfPremium", {
+                    remaining: info.formattedRemaining,
+                  })}
             </span>
             <span className="text-[10px] text-neutral-400 leading-tight truncate">
-              {isLastDay
-                ? "Quadros e bônus extras serão guardados"
-                : "Mantenha seus 6 quadros e itens VIP"}
+              {isLastDay ? t("lastDayHint") : t("normalHint")}
             </span>
           </div>
         </div>
@@ -95,11 +99,11 @@ export function SubscriptionExpirationAlert({
               ? "bg-danger-500 hover:bg-danger-600 text-white"
               : isUrgent
                 ? "bg-orange-500 hover:bg-orange-600 text-white"
-                : "bg-gold hover:bg-gold-hover text-neutral-900",
+                : "bg-gold hover:bg-gold-hover text-on-gold",
           )}
         >
           <Crown size={12} className="shrink-0 stroke-2" />
-          <span>Renovar Acesso</span>
+          <span>{t("renewButton")}</span>
         </button>
       </aside>
 

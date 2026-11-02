@@ -2,6 +2,7 @@
 
 import { Camera, Crown, Shield, Sparkles, UploadCloud } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import {
   type ChangeEvent,
   type DragEvent,
@@ -13,6 +14,7 @@ import {
 import { toast } from "sonner";
 import { updateUserProfilePhotoAction } from "@/actions/userActions";
 import { UserAvatar } from "@/components/ui/UserAvatar";
+import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import type { ProfileHeaderCardProps } from "@/types/settings";
 import { cn, formatCoins, getCurrentLevel } from "@/utils";
@@ -22,6 +24,9 @@ export function ProfileHeaderCard({
   isCompact,
 }: ProfileHeaderCardProps) {
   const router = useRouter();
+  const t = useTranslations("settings.profileHeader");
+  const locale = useLocale() as AppLocale;
+
   const storeUser = useUserStore((s) => s.user);
   const user = storeUser || initialUser;
   const updateUserPartial = useUserStore((s) => s.updateUserPartial);
@@ -41,12 +46,12 @@ export function ProfileHeaderCard({
 
   const processFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
-      toast.error("Por favor, selecione um arquivo de imagem válido.");
+      toast.error(t("invalidImageToast"));
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("A imagem deve ter no máximo 5MB.");
+      toast.error(t("imageSizeToast"));
       return;
     }
 
@@ -64,11 +69,11 @@ export function ProfileHeaderCard({
     startTransition(async () => {
       const res = await updateUserProfilePhotoAction(formData);
       if (res.success) {
-        toast.success("Foto de perfil atualizada com sucesso!");
+        toast.success(t("photoSuccessToast"));
         updateUserPartial({ profilePhotoUrl: objectUrl });
         router.refresh();
       } else {
-        toast.error(res.error || "Erro ao atualizar foto.");
+        toast.error(res.error || t("photoErrorToast"));
         URL.revokeObjectURL(objectUrl);
         setPreviewUrl(null);
       }
@@ -109,12 +114,12 @@ export function ProfileHeaderCard({
     }
   };
 
-  const displayName = user?.fullName || user?.username || "Aventureiro";
+  const displayName = user?.fullName || user?.username || t("adventurer");
   const displayPhoto = previewUrl || user?.profilePhotoUrl;
   const levelTitle =
     user?.currentLevelTitle ||
     getCurrentLevel(user?.totalXp ?? 0).title ||
-    (user?.isPremium ? "Membro Premium" : "Novato");
+    (user?.isPremium ? t("premiumMember") : t("novice"));
 
   return (
     <div
@@ -124,7 +129,7 @@ export function ProfileHeaderCard({
       )}
     >
       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-6 min-w-0 flex-1 w-full">
-        {/* AVATAR COM OVERLAY ELEGANTE PARA UPLOAD (NÃO CORTA A MOLDURA) */}
+        {/* AVATAR COM OVERLAY ELEGANTE PARA UPLOAD */}
         <div className="relative group shrink-0">
           <button
             type="button"
@@ -134,8 +139,8 @@ export function ProfileHeaderCard({
             onDrop={handleDrop}
             disabled={isPending}
             className="relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-gold cursor-pointer transition-transform group-hover:scale-[1.02] block disabled:cursor-not-allowed"
-            title="Clique ou solte uma imagem aqui para alterar sua foto de perfil"
-            aria-label="Alterar foto de perfil"
+            title={t("dropzoneTitle")}
+            aria-label={t("changePhotoAria")}
           >
             <UserAvatar
               src={displayPhoto}
@@ -145,7 +150,7 @@ export function ProfileHeaderCard({
               className="shadow-xl"
             />
 
-            {/* Overlay sutil de câmera no hover (dentro do círculo do avatar, não oculta nem corta a moldura animada externa) */}
+            {/* Overlay sutil de câmera no hover */}
             <div
               className={cn(
                 "absolute inset-0 rounded-full bg-neutral-950/60 backdrop-blur-xs flex flex-col items-center justify-center text-white transition-opacity z-20",
@@ -163,7 +168,7 @@ export function ProfileHeaderCard({
                 }
               />
               <span className="text-[10px] font-bold mt-1 text-neutral-100 drop-shadow-sm">
-                {isPending ? "Enviando..." : "Alterar"}
+                {isPending ? t("uploading") : t("changePhoto")}
               </span>
             </div>
           </button>
@@ -188,19 +193,19 @@ export function ProfileHeaderCard({
             {user?.isPremium ? (
               <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-tiny font-bold bg-gold/20 text-gold border border-gold/40 shadow-xs">
                 <Crown size={12} className="stroke-2" />
-                PREMIUM
+                {t("premiumBadge")}
               </span>
             ) : (
               <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-tiny font-bold bg-surface border border-primary/30 text-neutral-300 shadow-xs">
                 <Sparkles size={12} className="text-neutral-400" />
-                GRATUITO
+                {t("freeBadge")}
               </span>
             )}
 
             {user?.role === "ADMIN" && (
               <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-tiny font-bold bg-magenta/20 text-magenta border border-magenta/40">
                 <Shield size={12} />
-                ADMIN
+                {t("adminBadge")}
               </span>
             )}
           </div>
@@ -223,22 +228,22 @@ export function ProfileHeaderCard({
 
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface/60 border border-primary/20 text-xs text-neutral-200">
               <span className="text-gold font-bold">
-                {formatCoins(user?.currentCoins ?? 0)}
+                {formatCoins(user?.currentCoins ?? 0, { locale })}
               </span>
-              <span>moedas</span>
+              <span>{t("coinsLabel")}</span>
             </div>
 
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface/60 border border-primary/20 text-xs text-neutral-200">
               <span className="text-magenta font-bold">
                 {user?.totalXp ?? 0}
               </span>
-              <span>XP acumulado</span>
+              <span>{t("xpLabel")}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* DROPZONE INTERATIVA DE UPLOAD DE FOTO (ARRASTAR E SOLTAR OU CLICAR) */}
+      {/* DROPZONE INTERATIVA DE UPLOAD DE FOTO */}
       <div className="shrink-0 w-full md:w-auto self-stretch md:self-center flex items-center justify-center">
         <button
           type="button"
@@ -272,14 +277,13 @@ export function ProfileHeaderCard({
           </div>
           <span className="text-xs font-bold text-neutral-100 group-hover/drop:text-gold transition-colors">
             {isPending
-              ? "Enviando foto..."
+              ? t("uploadingPhoto")
               : isDraggingOver
-                ? "Solte a imagem aqui"
-                : "Arraste uma foto aqui"}
+                ? t("dropzoneActive")
+                : t("dropzoneDefault")}
           </span>
           <span className="text-[11px] text-neutral-400 leading-tight">
-            ou <span className="text-gold underline">clique para anexar</span>{" "}
-            (máx. 5MB)
+            {t("dropzoneHint")}
           </span>
         </button>
       </div>

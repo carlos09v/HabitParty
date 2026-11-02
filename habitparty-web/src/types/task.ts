@@ -2,17 +2,10 @@ import type { components } from "@/api/schema";
 
 // 1. DTOs Base (Direto do backend)
 export type DashboardTaskDTO = components["schemas"]["DashboardTaskDTO"];
-export type CreateTaskDTO = components["schemas"]["CreateTaskDTO"] & {
-  sendEmailReminder?: boolean;
-};
-export type UpdateTaskDTO = components["schemas"]["UpdateTaskDTO"] & {
-  sendEmailReminder?: boolean;
-};
+export type CreateTaskDTO = components["schemas"]["CreateTaskDTO"];
+export type UpdateTaskDTO = components["schemas"]["UpdateTaskDTO"];
 export type UpdateTaskOrderDTO = components["schemas"]["UpdateTaskOrderDTO"];
-export type TaskResponseDTO = components["schemas"]["TaskResponseDTO"] & {
-  sendEmailReminder?: boolean;
-  emailReminderSent?: boolean;
-};
+export type TaskResponseDTO = components["schemas"]["TaskResponseDTO"];
 export type TaskDifficulty =
   | NonNullable<UpdateTaskDTO["difficulty"]>
   | "trivial"

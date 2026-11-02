@@ -84,7 +84,9 @@ public class TaskController implements TaskApi {
       int size,
       AuthenticatedUser usuarioLogado) {
     UUID userId = usuarioLogado.id();
-    Pageable pageable = PageRequest.of(page, size);
+    int safePage = Math.max(page, 0);
+    int safeSize = Math.min(Math.max(size, 1), 100);
+    Pageable pageable = PageRequest.of(safePage, safeSize);
 
     Page<DashboardTaskDTO> responsePage = listDashboardTasksUseCase.execute(
         workspaceId,

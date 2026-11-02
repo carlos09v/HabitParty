@@ -46,7 +46,7 @@ public class UserController implements UserApi {
         requestDto.email(),
         requestDto.password(),
         requestDto.gender(),
-        requestDto.birthday()
+        requestDto.birthDate()
     );
     User createdUser = createUserUseCase.execute(command);
     UserResponseDTO response = UserResponseDTO.fromDomain(createdUser);
@@ -91,7 +91,7 @@ public class UserController implements UserApi {
       UpdateUserDTO dto,
       AuthenticatedUser usuarioLogado) {
     UUID userId = usuarioLogado.id();
-    var command = new UpdateUserProfileCommand(dto.fullName(), dto.birthday(), dto.gender());
+    var command = new UpdateUserProfileCommand(dto.fullName(), dto.birthDate(), dto.gender(), dto.experienceMode());
     User updatedUser = updateUserProfileUseCase.execute(userId, command);
     return ResponseEntity.ok(UserResponseDTO.fromDomain(updatedUser));
   }

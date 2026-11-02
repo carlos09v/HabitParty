@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { cloneTaskChecklistItems } from "@/actions/checklistActions";
@@ -10,6 +11,7 @@ import {
   normalizeTaskDifficulty,
 } from "@/constants/task";
 import { useChecklist } from "@/hooks/useChecklist";
+import type { AppLocale } from "@/i18n/config";
 import type {
   DailyDaysOfWeek,
   DailyRepeatMonthlyOption,
@@ -26,6 +28,7 @@ import type {
   TaskTypeOption,
 } from "@/types/task";
 import type { UseCreateTaskFormOptions } from "@/types/task-ui";
+import { formatCoins } from "@/utils";
 import { getTodayDateString } from "@/utils/date";
 import { calculateTaskReward } from "@/utils/economy";
 import { soundEffects } from "@/utils/soundEffects";
@@ -45,16 +48,19 @@ export function useCreateTaskForm({
   defaultColumnId,
   defaultTaskType,
   initialTitle,
+  initialValues,
   taskToEdit,
   onSuccess,
   onClose,
 }: UseCreateTaskFormOptions) {
+  const t = useTranslations("tasks.hooks");
+  const locale = useLocale() as AppLocale;
   const [isPending, startTransition] = useTransition();
   const isEditing = !!taskToEdit;
 
   // Tipo de tarefa ativo
   const [taskType, setTaskType] = useState<TaskTypeOption>(
-    defaultTaskType || "TODO",
+    initialValues?.taskType || defaultTaskType || "TODO",
   );
 
   // Campos Comuns
@@ -72,7 +78,7 @@ export function useCreateTaskForm({
 
   // Campos de Diária (Daily) & ToDo
   const [difficulty, setDifficulty] = useState<TaskDifficultyOption>("MEDIUM");
-  const [priority, setPriority] = useState<TaskPriorityOption>("MEDIUM");
+  const [priority, setPriority] = useState<TaskPriorityOption>("NONE");
   const [dueDate, setDueDate] = useState("");
   const [reminderType, setReminderType] = useState<ReminderTypeOption>("NONE");
   const [sendEmailReminder, setSendEmailReminder] = useState(false);
@@ -145,7 +151,7 @@ export function useCreateTaskForm({
           "NORMAL",
       );
       setDifficulty(normalizeTaskDifficulty(taskToEdit.difficulty));
-      setPriority((taskToEdit.priority as TaskPriorityOption) || "MEDIUM");
+      setPriority((taskToEdit.priority as TaskPriorityOption) || "NONE");
 
       setDueDate(taskToEdit.dueDate || "");
       setReminderType(taskToEdit.reminderType || "NONE");
@@ -166,24 +172,24 @@ export function useCreateTaskForm({
       );
       setNewChecklistText("");
     } else {
-      setTaskType(defaultTaskType || "TODO");
+      setTaskType(initialValues?.taskType || defaultTaskType || "TODO");
       setColumnId(defaultColumnId || columns[0]?.id || "");
-      setName(initialTitle || "");
+      setName(initialValues?.title || initialTitle || "");
       setDescription("");
       setTagsInput("");
       setIsHardcore(false);
-      setHabitType("POSITIVE");
-      setResetCounter("DAILY");
-      setImportanceType("NORMAL");
-      setDifficulty("MEDIUM");
-      setPriority("MEDIUM");
-      setDueDate("");
+      setHabitType(initialValues?.habitType || "POSITIVE");
+      setResetCounter(initialValues?.resetCounter || "DAILY");
+      setImportanceType(initialValues?.importanceType || "NORMAL");
+      setDifficulty(initialValues?.difficulty || "MEDIUM");
+      setPriority(initialValues?.priority || "NONE");
+      setDueDate(initialValues?.dueDate || "");
       setReminderType("NONE");
       setSendEmailReminder(false);
-      setStartDate(getTodayDateString());
-      setRepeatType("DAILY");
-      setRepeatEvery(1);
-      setSelectedDays(ALL_WEEK_DAYS);
+      setStartDate(initialValues?.startDate || getTodayDateString());
+      setRepeatType(initialValues?.repeatType || "DAILY");
+      setRepeatEvery(initialValues?.repeatEvery ?? 1);
+      setSelectedDays(initialValues?.daysOfWeek || ALL_WEEK_DAYS);
       setMonthlyOption("DAY_OF_THE_MONTH");
       resetChecklist([]);
       setNewChecklistText("");
@@ -198,6 +204,7 @@ export function useCreateTaskForm({
     defaultColumnId,
     defaultTaskType,
     initialTitle,
+    initialValues,
     columns,
     resetChecklist,
   ]);
@@ -238,19 +245,19 @@ export function useCreateTaskForm({
     const trimmedName = name.trim();
 
     if (!trimmedName) {
-      toast.error("O título da tarefa é obrigatório.");
+      toast.error(t("titleRequired"));
       return;
     }
 
     if (!columnId) {
-      toast.error("Selecione uma lista/coluna para a tarefa.");
+      toast.error(t("columnRequired"));
       return;
     }
 
     const tags = parseTaskTags(tagsInput);
 
     if (tags.length > MAX_TASK_TAGS) {
-      toast.error(`Uma tarefa pode ter no máximo ${MAX_TASK_TAGS} tags.`);
+      toast.error(t("maxTagsError", { max: MAX_TASK_TAGS }));
       return;
     }
 
@@ -261,6 +268,7 @@ export function useCreateTaskForm({
         dueDate,
         isEditing,
         taskToEdit,
+        locale,
       });
       if (hardcoreError) {
         toast.error(hardcoreError);
@@ -328,7 +336,7 @@ export function useCreateTaskForm({
         const response = await updateTask(taskToEdit.id, updatePayload);
 
         if (!response.success) {
-          toast.error(response.error || "Erro ao atualizar tarefa.");
+          toast.error(response.error || t("updateTaskError"));
           return;
         }
 
@@ -342,14 +350,11 @@ export function useCreateTaskForm({
             },
           ]);
           if (!moveRes.success) {
-            toast.error(
-              moveRes.error ||
-                "Erro ao mover tarefa para a nova coluna no servidor.",
-            );
+            toast.error(moveRes.error || t("moveTaskColumnError"));
           }
         }
 
-        toast.success("Tarefa atualizada com sucesso!");
+        toast.success(t("updateTaskSuccess"));
         onSuccess?.(draftTask, columnId);
         onClose();
         return;
@@ -360,7 +365,7 @@ export function useCreateTaskForm({
       const response = await createTask(columnId, payload);
 
       if (!response.success) {
-        toast.error(response.error || "Erro ao criar tarefa.");
+        toast.error(response.error || t("createTaskError"));
         return;
       }
 
@@ -389,15 +394,13 @@ export function useCreateTaskForm({
             checklist: finalChecklist,
           };
 
-      const typeLabel =
-        taskType === "HABIT"
-          ? "Hábito"
-          : taskType === "DAILY"
-            ? "Diária"
-            : "Tarefa";
+      const typeLabel = t(`typeLabels.${taskType}`);
       soundEffects.playCreateSound();
-      toast.success(`${typeLabel} "${trimmedName}" criada!`, {
-        description: `Recompensa estimada: +${calculatedRewards.xp} XP • +${calculatedRewards.gold.toFixed(2)} 🪙`,
+      toast.success(t("createTaskSuccess", { typeLabel, title: trimmedName }), {
+        description: t("createTaskRewardDesc", {
+          xp: calculatedRewards.xp,
+          gold: formatCoins(calculatedRewards.gold, { locale }),
+        }),
       });
       onSuccess?.(mappedTask, columnId);
       onClose();

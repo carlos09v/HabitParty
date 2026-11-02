@@ -86,6 +86,21 @@ class CreateCheckoutSessionUseCaseTest {
   }
 
   @Test
+  @DisplayName("Deve bloquear checkout quando o usuário ainda não verificou seu e-mail")
+  void testCreateCheckoutSessionFailsWhenEmailNotVerified() {
+    user.setEmailVerified(false);
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+    com.habitparty.core.exceptions.DomainValidationException ex = assertThrows(
+        com.habitparty.core.exceptions.DomainValidationException.class,
+        () -> createCheckoutSessionUseCase.execute(userId, PlanType.MONTHLY, PaymentMethodType.PIX)
+    );
+
+    assertTrue(ex.getMessage().contains("Confirme seu e-mail para garantir a segurança da conta"));
+    verify(paymentGatewayPort, never()).createCheckoutSession(any(), any(), any(), any());
+  }
+
+  @Test
   @DisplayName("Deve impedir criação de nova sessão no cartão se usuário já tem assinatura recorrente ativa")
   void testCreateCheckoutSessionFailsWhenAlreadySubscribed() {
     user.activateSubscription("cus_123", "sub_active_123", LocalDateTime.now().plusMonths(1));
@@ -101,7 +116,7 @@ class CreateCheckoutSessionUseCaseTest {
   @DisplayName("Deve permitir checkout de Membro Fundador quando ainda restarem vagas")
   void testCreateCheckoutSessionFounderSuccess() {
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-    when(userRepository.countFounders()).thenReturn(20L); // 20 de 30 vagas preenchidas
+    when(userRepository.countFounders()).thenReturn(20L);
     when(paymentGatewayPort.createOrGetCustomer(user)).thenReturn("cus_founder_123");
     when(paymentGatewayPort.createCheckoutSession(
         eq(user),
@@ -120,7 +135,7 @@ class CreateCheckoutSessionUseCaseTest {
   @DisplayName("Deve bloquear checkout de Membro Fundador quando limite de 30 vagas for atingido")
   void testCreateCheckoutSessionFounderFailsWhenSlotsExceeded() {
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-    when(userRepository.countFounders()).thenReturn(30L); // Todas as 30 vagas preenchidas
+    when(userRepository.countFounders()).thenReturn(30L);
 
     com.habitparty.core.exceptions.DomainValidationException ex = assertThrows(
         com.habitparty.core.exceptions.DomainValidationException.class,
@@ -129,5 +144,49 @@ class CreateCheckoutSessionUseCaseTest {
 
     assertTrue(ex.getMessage().contains("esgotado"));
     verify(paymentGatewayPort, never()).createCheckoutSession(any(), any(), any(), any());
+  }
+
+  @Test
+  @DisplayName("Deve repassar locale 'en' ao gateway para cobrança em USD via cartão")
+  void testCreateCheckoutSessionWithEnglishLocaleUsesUsd() {
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(paymentGatewayPort.createOrGetCustomer(user)).thenReturn("cus_usd_123");
+    when(paymentGatewayPort.createCheckoutSession(
+        eq(user),
+        eq(PlanType.MONTHLY),
+        eq(PaymentMethodType.CREDIT_CARD),
+        eq("cus_usd_123"),
+        eq("en")
+    )).thenReturn("https://checkout.stripe.com/c/pay/cs_usd_test");
+
+    String url = createCheckoutSessionUseCase.execute(
+        userId,
+        PlanType.MONTHLY,
+        PaymentMethodType.CREDIT_CARD,
+        "en-US,en;q=0.9");
+
+    assertNotNull(url);
+    assertEquals("https://checkout.stripe.com/c/pay/cs_usd_test", url);
+    verify(paymentGatewayPort).createCheckoutSession(
+        eq(user),
+        eq(PlanType.MONTHLY),
+        eq(PaymentMethodType.CREDIT_CARD),
+        eq("cus_usd_123"),
+        eq("en"));
+  }
+
+  @Test
+  @DisplayName("Deve bloquear checkout via Pix quando o idioma selecionado for inglês")
+  void testCreateCheckoutSessionBlocksPixForEnglishLocale() {
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+    com.habitparty.core.exceptions.DomainValidationException ex = assertThrows(
+        com.habitparty.core.exceptions.DomainValidationException.class,
+        () -> createCheckoutSessionUseCase.execute(userId, PlanType.MONTHLY, PaymentMethodType.PIX, "en")
+    );
+
+    assertTrue(ex.getMessage().contains("Pix payment is only available in BRL"));
+    verify(paymentGatewayPort, never()).createCheckoutSession(any(), any(), any(), any());
+    verify(paymentGatewayPort, never()).createCheckoutSession(any(), any(), any(), any(), any());
   }
 }

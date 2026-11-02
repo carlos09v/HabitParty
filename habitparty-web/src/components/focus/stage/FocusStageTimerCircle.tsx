@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useFocusTimerDisplay } from "@/hooks/useFocusTimer";
 import { cn } from "@/utils";
 import { formatFocusTime } from "@/utils/focusFormatters";
@@ -19,6 +20,7 @@ export interface FocusStageTimerCircleProps {
 }
 
 export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
+  const t = useTranslations("focus.timer");
   const storeDisplay = useFocusTimerDisplay();
 
   const mode = props.mode ?? storeDisplay.mode;
@@ -89,9 +91,9 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
         className="w-full h-full -rotate-90 transform"
         viewBox="0 0 280 280"
         role="img"
-        aria-label="Indicador de progresso do timer de foco"
+        aria-label={t("progressAria")}
       >
-        <title>Indicador de progresso do timer de foco</title>
+        <title>{t("progressAria")}</title>
         {/* Círculo de fundo */}
         <circle
           cx="140"
@@ -101,7 +103,9 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
           fill="transparent"
           className={cn(
             "transition-colors duration-500",
-            isBreak ? "stroke-emerald-950/40" : "stroke-white/10",
+            isBreak
+              ? "stroke-emerald-500/20 dark:stroke-emerald-950/40"
+              : "stroke-neutral-700 dark:stroke-white/10",
           )}
         />
         {/* Círculo de progresso animado */}
@@ -127,9 +131,11 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 transition-transform duration-200">
         <span
           className={cn(
-            "font-mono font-black tracking-tight drop-shadow-[0_4px_16px_rgba(0,0,0,0.6)] transition-colors duration-500",
+            "font-mono font-black tracking-tight timer-display-shadow transition-colors duration-500",
             fontClasses,
-            isBreak ? "text-emerald-300" : "text-neutral-50",
+            isBreak
+              ? "text-emerald-400 dark:text-emerald-300"
+              : "text-neutral-50",
           )}
         >
           {displayTime}
@@ -140,23 +146,23 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
           className={cn(
             "text-xs font-bold uppercase tracking-wider px-3 py-0.5 rounded-full border transition-all duration-300",
             isBreak
-              ? "bg-emerald-950/70 border-emerald-500/40 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
+              ? "bg-emerald-500/15 dark:bg-emerald-950/70 border-emerald-500/40 text-emerald-400 dark:text-emerald-300 shadow-2xs dark:shadow-[0_0_12px_rgba(16,185,129,0.25)]"
               : "bg-white/10 border-white/15 text-neutral-300",
           )}
         >
           {isBreak
             ? isRunning
               ? phase === "LONG_BREAK"
-                ? "Pausa Longa"
-                : "Pausa Curta"
+                ? t("status.longBreak")
+                : t("status.shortBreak")
               : isPaused
-                ? "Pausa Pausada"
-                : "Pronto para Descansar"
+                ? t("status.breakPaused")
+                : t("status.readyToRest")
             : isRunning
-              ? "Focando"
+              ? t("status.focusing")
               : isPaused
-                ? "Pausado"
-                : "Pronto para Iniciar"}
+                ? t("status.paused")
+                : t("status.readyToStart")}
         </span>
 
         {/* Ciclos de Pomodoro */}
@@ -173,9 +179,13 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
                       : "bg-gold border-gold shadow-glow-gold-xs"
                     : isBreak
                       ? "bg-transparent border-emerald-500/30"
-                      : "bg-transparent border-white/20",
+                      : "bg-transparent border-neutral-600 dark:border-white/20",
                 )}
-                title={`Ciclo ${cycle} ${cycle <= completedCycles ? "concluído" : ""}`}
+                title={
+                  cycle <= completedCycles
+                    ? t("cycleCompleted", { cycle })
+                    : t("cycleNumber", { cycle })
+                }
               />
             ))}
           </div>
@@ -189,7 +199,7 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
       <button
         type="button"
         onClick={props.onToggle}
-        title={isRunning ? "Clique para pausar" : "Clique para começar"}
+        title={isRunning ? t("clickToPause") : t("clickToStart")}
         className={cn(
           "group relative flex items-center justify-center select-none transition-all duration-300 cursor-pointer hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 focus-visible:rounded-full bg-transparent border-none p-0",
           sizeClasses,

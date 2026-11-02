@@ -1,9 +1,12 @@
 "use server";
 
+import { updateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { type ActionState, getErrorMessage } from "@/actions/types";
-import { serverApi } from "@/api/server";
+import { getServerAuthToken, serverApi } from "@/api/server";
+import { getRequestLocale } from "@/i18n/request";
 import type { CreateUserDTO, UserResponseDTO } from "@/types/user";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -38,13 +41,14 @@ async function setAuthCookies(accessToken: string, refreshToken: string) {
  * Realiza autenticação do usuário e grava a sessão.
  */
 export async function signIn(formData: FormData): Promise<ActionState<void>> {
+  const t = await getTranslations("auth.errors");
   const email = formData.get("email")?.toString().trim();
   const password = formData.get("password")?.toString();
 
   if (!email || !password) {
     return {
       success: false,
-      error: "Por favor, informe seu email e sua senha.",
+      error: t("missingCredentials"),
     };
   }
 
@@ -56,10 +60,7 @@ export async function signIn(formData: FormData): Promise<ActionState<void>> {
     if (error || !data?.accessToken || !data?.refreshToken) {
       return {
         success: false,
-        error: getErrorMessage(
-          error,
-          "Credenciais inválidas. Verifique seu email e senha.",
-        ),
+        error: getErrorMessage(error, t("invalidCredentials")),
       };
     }
 
@@ -69,7 +70,7 @@ export async function signIn(formData: FormData): Promise<ActionState<void>> {
     console.error("[AuthAction:SignIn]", err);
     return {
       success: false,
-      error: "Ocorreu um erro de conexão. Tente novamente mais tarde.",
+      error: t("connectionError"),
     };
   }
 }
@@ -79,20 +80,38 @@ export async function signIn(formData: FormData): Promise<ActionState<void>> {
  */
 export async function signUpAction(
   payload: CreateUserDTO,
+  botProtection?: { honeypot?: string; turnstileToken?: string },
 ): Promise<ActionState<UserResponseDTO>> {
+  const t = await getTranslations("auth.errors");
+
+  if (botProtection?.honeypot) {
+    return {
+      success: false,
+      error: t("botDetected"),
+    };
+  }
+
   try {
+    const customHeaders: Record<string, string> = {};
+    if (botProtection?.turnstileToken) {
+      customHeaders["X-Turnstile-Token"] = botProtection.turnstileToken;
+    }
+    if (botProtection?.honeypot) {
+      customHeaders["X-HP-Trap"] = botProtection.honeypot;
+    }
+
     const { data: createdUser, error: createError } = await serverApi.POST(
       "/users",
-      { body: payload },
+      {
+        body: payload,
+        headers: customHeaders,
+      },
     );
 
     if (createError || !createdUser) {
       return {
         success: false,
-        error: getErrorMessage(
-          createError,
-          "Falha ao realizar cadastro. Verifique os dados informados.",
-        ),
+        error: getErrorMessage(createError, t("signUpFailed")),
       };
     }
 
@@ -113,7 +132,7 @@ export async function signUpAction(
     console.error("[AuthAction:SignUp]", err);
     return {
       success: false,
-      error: "Erro de comunicação ao criar conta. Tente novamente mais tarde.",
+      error: t("signUpConnectionError"),
     };
   }
 }
@@ -123,19 +142,13 @@ export async function signUpAction(
  */
 export async function signOut() {
   const cookieStore = await cookies();
-  const token = cookieStore.get("habitparty_token")?.value;
+  const token = await getServerAuthToken();
   const refreshToken = cookieStore.get("habitparty_refresh_token")?.value;
 
   if (token && refreshToken) {
     try {
-      await fetch(`${API_BASE_URL}/auth/logout`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ refreshToken }),
-        cache: "no-store",
+      await serverApi.POST("/auth/logout", {
+        body: { refreshToken },
       });
     } catch (err) {
       console.error(
@@ -156,30 +169,24 @@ export async function signOut() {
 export async function requestPasswordReset(
   email: string,
 ): Promise<ActionState<void>> {
+  const t = await getTranslations("auth.errors");
   const cleanEmail = email.trim();
   if (!cleanEmail) {
     return {
       success: false,
-      error: "Por favor, informe seu email.",
+      error: t("emailRequired"),
     };
   }
 
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: cleanEmail }),
-      cache: "no-store",
+    const { error } = await serverApi.POST("/auth/forgot-password", {
+      body: { email: cleanEmail },
     });
 
-    if (!res.ok) {
-      const data = await res.json().catch(() => null);
+    if (error) {
       return {
         success: false,
-        error: getErrorMessage(
-          data,
-          "Não foi possível processar a solicitação. Tente novamente mais tarde.",
-        ),
+        error: getErrorMessage(error, t("resetRequestFailed")),
       };
     }
 
@@ -188,7 +195,7 @@ export async function requestPasswordReset(
     console.error("[AuthAction:RequestPasswordReset]", err);
     return {
       success: false,
-      error: "Erro de conexão ao solicitar recuperação de senha.",
+      error: t("resetRequestConnectionError"),
     };
   }
 }
@@ -200,43 +207,38 @@ export async function resetPassword(payload: {
   token: string;
   password: string;
 }): Promise<ActionState<void>> {
+  const t = await getTranslations("auth.errors");
   const { token, password } = payload;
   if (!token || !password) {
     return {
       success: false,
-      error: "Token ou senha ausente.",
+      error: t("missingTokenOrPassword"),
     };
   }
 
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, password }),
-      cache: "no-store",
+    const { error } = await serverApi.POST("/auth/reset-password", {
+      body: { token, password },
     });
 
-    if (!res.ok) {
-      const data = await res.json().catch(() => null);
+    if (error) {
       return {
         success: false,
-        error: getErrorMessage(
-          data,
-          "Token inválido ou expirado. Solicite um novo link.",
-        ),
+        error: getErrorMessage(error, t("invalidOrExpiredToken")),
       };
     }
 
     const cookieStore = await cookies();
     cookieStore.delete("habitparty_token");
     cookieStore.delete("habitparty_refresh_token");
+    updateTag("user");
 
     return { success: true, data: undefined };
   } catch (err) {
     console.error("[AuthAction:ResetPassword]", err);
     return {
       success: false,
-      error: "Erro de conexão ao redefinir a senha.",
+      error: t("resetPasswordConnectionError"),
     };
   }
 }
@@ -248,8 +250,13 @@ export async function completeOAuthLogin(
   accessToken: string,
   refreshToken: string,
 ): Promise<ActionState<{ isNewUser: boolean }>> {
+  const [t, locale] = await Promise.all([
+    getTranslations("auth.errors"),
+    getRequestLocale(),
+  ]);
+
   if (!accessToken || !refreshToken) {
-    return { success: false, error: "Tokens de autenticação inválidos." };
+    return { success: false, error: t("invalidOAuthTokens") };
   }
 
   await setAuthCookies(accessToken, refreshToken);
@@ -257,7 +264,10 @@ export async function completeOAuthLogin(
   let isNewUser = false;
   try {
     const res = await fetch(`${API_BASE_URL}/workspaces`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Accept-Language": locale,
+      },
       cache: "no-store",
     });
     if (res.ok) {
@@ -277,14 +287,22 @@ export async function completeOAuthLogin(
 export async function exchangeGoogleCode(
   code: string,
 ): Promise<ActionState<{ isNewUser: boolean }>> {
+  const [t, locale] = await Promise.all([
+    getTranslations("auth.errors"),
+    getRequestLocale(),
+  ]);
+
   if (!code) {
-    return { success: false, error: "Código de autorização não fornecido." };
+    return { success: false, error: t("missingAuthCode") };
   }
 
   try {
     const res = await fetch(`${API_BASE_URL}/auth/google`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Accept-Language": locale,
+      },
       body: JSON.stringify({ code }),
       cache: "no-store",
     });
@@ -294,10 +312,7 @@ export async function exchangeGoogleCode(
     if (!res.ok || !data?.accessToken || !data?.refreshToken) {
       return {
         success: false,
-        error: getErrorMessage(
-          data,
-          "Falha na autenticação com o Google. Tente novamente.",
-        ),
+        error: getErrorMessage(data, t("googleAuthFailed")),
       };
     }
 
@@ -307,7 +322,10 @@ export async function exchangeGoogleCode(
     if (!isNewUser) {
       try {
         const wsRes = await fetch(`${API_BASE_URL}/workspaces`, {
-          headers: { Authorization: `Bearer ${data.accessToken}` },
+          headers: {
+            Authorization: `Bearer ${data.accessToken}`,
+            "Accept-Language": locale,
+          },
           cache: "no-store",
         });
         if (wsRes.ok) {
@@ -327,7 +345,101 @@ export async function exchangeGoogleCode(
     console.error("[AuthAction:ExchangeGoogleCode]", err);
     return {
       success: false,
-      error: "Erro de comunicação ao validar login do Google.",
+      error: t("googleConnectionError"),
+    };
+  }
+}
+
+/**
+ * Confirma o e-mail do usuário através do token enviado por e-mail.
+ * Pode ser chamada como Server Action ou diretamente na renderização SSR (com skipCacheUpdate = true).
+ */
+export async function verifyEmailAction(
+  token: string,
+  options?: { skipCacheUpdate?: boolean },
+): Promise<ActionState<UserResponseDTO>> {
+  const t = await getTranslations("auth.errors");
+  const cleanToken = token?.trim();
+  if (!cleanToken) {
+    return {
+      success: false,
+      error: t("missingVerificationToken"),
+    };
+  }
+
+  try {
+    const { data, error } = await serverApi.POST("/auth/verify-email", {
+      body: { token: cleanToken },
+      cache: "no-store",
+    });
+
+    if (error || !data) {
+      return {
+        success: false,
+        error: getErrorMessage(error, t("invalidVerificationLink")),
+      };
+    }
+
+    if (!options?.skipCacheUpdate) {
+      updateTag("user");
+    }
+    return {
+      success: true,
+      data: data as UserResponseDTO,
+    };
+  } catch (err) {
+    console.error("[AuthAction:VerifyEmail]", err);
+    return {
+      success: false,
+      error: t("verifyEmailConnectionError"),
+    };
+  }
+}
+
+/**
+ * Invalida a tag de cache do usuário e redireciona para o Dashboard após confirmação de e-mail via SSR.
+ */
+export async function redirectAfterEmailVerificationAction(): Promise<void> {
+  updateTag("user");
+  redirect("/dashboard");
+}
+
+/**
+ * Reenvia o e-mail de verificação para o usuário autenticado.
+ */
+export async function resendVerificationEmailAction(): Promise<
+  ActionState<void>
+> {
+  const [t, token] = await Promise.all([
+    getTranslations("auth.errors"),
+    getServerAuthToken(),
+  ]);
+
+  if (!token) {
+    return {
+      success: false,
+      error: t("sessionExpired"),
+    };
+  }
+
+  try {
+    const { error } = await serverApi.POST("/auth/resend-verification", {
+      cache: "no-store",
+    });
+
+    if (error) {
+      return {
+        success: false,
+        error: getErrorMessage(error, t("resendVerificationFailed")),
+      };
+    }
+
+    return { success: true, data: undefined };
+  } catch (err) {
+    console.error("[AuthAction:ResendVerification]", err);
+    return {
+      success: false,
+      error: t("resendVerificationConnectionError"),
     };
   }
 }

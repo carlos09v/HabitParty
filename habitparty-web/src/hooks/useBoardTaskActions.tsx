@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { Dispatch, SetStateAction } from "react";
 import { useCallback, useRef, useTransition } from "react";
 import { toast } from "sonner";
@@ -34,6 +35,7 @@ export function useBoardTaskActions({
   setColumns,
   onTaskUpdatedInDetails,
 }: UseBoardTaskActionsOptions) {
+  const t = useTranslations("tasks.hooks");
   const [, startTransition] = useTransition();
   const columnsRef = useRef(columns);
   columnsRef.current = columns;
@@ -111,32 +113,25 @@ export function useBoardTaskActions({
               : col,
           ),
         );
-        const typeLabel =
-          taskType === "HABIT"
-            ? "Hábito"
-            : taskType === "DAILY"
-              ? "Diária"
-              : "Tarefa";
+        const typeLabel = t(`typeLabels.${taskType}`);
         soundEffects.playCreateSound();
-        toast.success(`${typeLabel} "${title}" adicionada!`);
+        toast.success(t("quickCreateSuccess", { typeLabel, title }));
       } else {
         setColumns((prev) =>
           prev.map((col) =>
             col.id === targetColumnId
               ? {
                   ...col,
-                  tasks: col.tasks.filter((t) => t.id !== tempId),
+                  tasks: col.tasks.filter((taskItem) => taskItem.id !== tempId),
                 }
               : col,
           ),
         );
-        const errMsg = !res.success
-          ? res.error
-          : "Erro ao criar tarefa rápida.";
-        toast.error(errMsg || "Erro ao criar tarefa rápida.");
+        const errMsg = !res.success ? res.error : t("quickCreateError");
+        toast.error(errMsg || t("quickCreateError"));
       }
     },
-    [setColumns],
+    [setColumns, t],
   );
 
   const handleTaskMove = useCallback(
@@ -152,9 +147,9 @@ export function useBoardTaskActions({
         [];
 
       const updates: UpdateTaskOrderDTO[] = tasksToUpdate
-        .filter((t) => t.id && !t.id.startsWith("temp-"))
-        .map((t, idx) => ({
-          taskId: t.id,
+        .filter((taskItem) => taskItem.id && !taskItem.id.startsWith("temp-"))
+        .map((taskItem, idx) => ({
+          taskId: taskItem.id,
           boardColumnId: targetColumnId,
           newOrderIndex: idx,
         }));
@@ -163,14 +158,12 @@ export function useBoardTaskActions({
         startTransition(async () => {
           const res = await moveTasks(updates);
           if (!res.success) {
-            toast.error(
-              res.error || "Erro ao salvar nova posição da tarefa no servidor.",
-            );
+            toast.error(res.error || t("movePositionError"));
           }
         });
       }
     },
-    [],
+    [t],
   );
 
   const handleTaskDetailsUpdate = useCallback(

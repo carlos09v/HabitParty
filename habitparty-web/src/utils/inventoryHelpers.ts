@@ -8,12 +8,20 @@ export interface InventoryItemActionMeta {
   secondaryActionLabel?: string;
 }
 
+export interface InventoryItemActionLabels {
+  openInFocus: string;
+  openBox: string;
+  sendToFocus: string;
+  use: string;
+}
+
 /**
  * Normaliza e resolve as propriedades de apresentação e ações de um item do inventário.
  * Centraliza a regra de negócio para evitar duplicações entre InventoryCard e ItemRow/InventoryContainer.
  */
 export function getInventoryItemActionMeta(
   item: InventoryItem,
+  labels?: Partial<InventoryItemActionLabels>,
 ): InventoryItemActionMeta {
   const reward = item.reward;
   const isInFocus = item.status === "IN_FOCUS";
@@ -32,15 +40,20 @@ export function getInventoryItemActionMeta(
       rawType === "TIME_BASED" ||
       Boolean(reward?.baseDurationMinutes));
 
-  const actionLabel = isInFocus
-    ? "Abrir no Foco"
-    : isMystery
-      ? "Abrir Caixa"
-      : isCoupon
-        ? "Enviar ao Foco"
-        : "Usar";
+  const openInFocusLabel = labels?.openInFocus ?? "Abrir no Foco";
+  const openBoxLabel = labels?.openBox ?? "Abrir Caixa";
+  const sendToFocusLabel = labels?.sendToFocus ?? "Enviar ao Foco";
+  const useLabel = labels?.use ?? "Usar";
 
-  const secondaryActionLabel = !isInFocus && isCoupon ? "Usar" : undefined;
+  const actionLabel = isInFocus
+    ? openInFocusLabel
+    : isMystery
+      ? openBoxLabel
+      : isCoupon
+        ? sendToFocusLabel
+        : useLabel;
+
+  const secondaryActionLabel = !isInFocus && isCoupon ? useLabel : undefined;
 
   return {
     isMystery,

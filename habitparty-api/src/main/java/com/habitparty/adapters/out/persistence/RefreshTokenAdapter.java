@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.adapters.out.persistence.mappers.RefreshTokenMapper;
 import com.habitparty.adapters.out.persistence.repository.RefreshTokenJpaRepository;
@@ -41,6 +42,7 @@ public class RefreshTokenAdapter implements RefreshTokenRepository {
   }
 
   @Override
+  @Transactional
   public void revokeOldestSession(UUID userId) {
     repository.findFirstByUser_IdAndRevokedFalseAndExpirationDateAfterOrderByCreatedAtAsc(userId, Instant.now())
         .ifPresent(oldestToken -> {

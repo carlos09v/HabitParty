@@ -1,11 +1,12 @@
 "use client";
 
 import { Menu } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import type { components } from "@/api/schema";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 import { Sidebar, type SidebarBadgeCounts } from "./Sidebar";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 
@@ -17,6 +18,7 @@ interface MobileHeaderProps {
 }
 
 export function MobileHeader({ user, badgeCounts }: MobileHeaderProps) {
+  const t = useTranslations("nav");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const pathname = usePathname();
 
@@ -55,20 +57,19 @@ export function MobileHeader({ user, badgeCounts }: MobileHeaderProps) {
           <button
             type="button"
             onClick={() => setIsDrawerOpen(true)}
-            aria-label="Abrir menu de navegação"
+            aria-label={t("openMenu")}
             className="p-1.5 -ml-1 text-neutral-300 hover:text-white rounded-lg hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 cursor-pointer"
           >
             <Menu size={22} />
           </button>
 
           <Link href="/dashboard" className="flex items-center shrink-0">
-            <Image
-              src="/assets/logo.png"
+            <BrandLogo
               alt="Logo HabitParty"
               width={118}
               height={32}
               priority
-              className="object-contain h-7 w-auto"
+              className="h-7 w-auto"
             />
           </Link>
         </div>
@@ -94,7 +95,7 @@ export function MobileHeader({ user, badgeCounts }: MobileHeaderProps) {
             className="fixed inset-y-0 left-0 w-[280px] sm:w-[320px] max-w-[85vw] bg-surface/95 border-r border-primary/30 backdrop-blur-2xl shadow-2xl flex flex-col z-50 animate-in slide-in-from-left duration-200"
             role="dialog"
             aria-modal="true"
-            aria-label="Menu de Navegação Mobile"
+            aria-label={t("mobileDrawerAria")}
           >
             <Sidebar
               user={user}

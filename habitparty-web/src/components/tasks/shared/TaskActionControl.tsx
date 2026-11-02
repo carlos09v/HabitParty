@@ -1,4 +1,5 @@
 import { Check, Minus, Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { Task } from "@/types/task";
 import { cn } from "@/utils";
 
@@ -28,6 +29,8 @@ export function TaskActionControl({
   isCompact = false,
   className,
 }: TaskActionControlProps) {
+  const t = useTranslations("dashboard.taskShared.actions");
+
   if (isHabit) {
     const showPositive =
       task.habitType === "POSITIVE" ||
@@ -46,14 +49,14 @@ export function TaskActionControl({
               e.stopPropagation();
               onDelta?.(1);
             }}
-            title="Registrar hábito positivo (+)"
-            aria-label="Registrar hábito positivo"
+            title={t("positiveHabitTitle")}
+            aria-label={t("positiveHabitAria")}
             className={cn(
-              "rounded bg-success-500/20 border border-success-500/40 text-success-500 hover:bg-success-500 hover:text-neutral-900 flex items-center justify-center font-bold transition-all cursor-pointer shadow-2xs active:scale-95",
-              isCompact ? "w-4 h-4 text-label-m" : "w-5 h-5 text-tiny",
+              "rounded-md bg-success-500/20 border border-success-500/50 text-success-500 hover:bg-success-500 hover:border-success-500 hover:text-on-gold hover:shadow-[0_0_10px_rgba(0,201,80,0.35)] flex items-center justify-center font-bold transition-all cursor-pointer shadow-2xs active:scale-90",
+              isCompact ? "w-5 h-5 text-label-m" : "w-6 h-6 text-tiny",
             )}
           >
-            <Plus size={isCompact ? 9 : 12} className="stroke-3" />
+            <Plus size={isCompact ? 11 : 13} className="stroke-3" />
           </button>
         )}
         {showNegative && (
@@ -64,14 +67,14 @@ export function TaskActionControl({
               e.stopPropagation();
               onDelta?.(-1);
             }}
-            title="Registrar hábito negativo (-)"
-            aria-label="Registrar hábito negativo"
+            title={t("negativeHabitTitle")}
+            aria-label={t("negativeHabitAria")}
             className={cn(
-              "rounded bg-danger-500/20 border border-danger-500/40 text-danger-500 hover:bg-danger-500 hover:text-neutral-100 flex items-center justify-center font-bold transition-all cursor-pointer shadow-2xs active:scale-95",
-              isCompact ? "w-4 h-4 text-label-m" : "w-5 h-5 text-tiny",
+              "rounded-md bg-danger-500/20 border border-danger-500/50 text-danger-500 hover:bg-danger-500 hover:border-danger-500 hover:text-white hover:shadow-[0_0_10px_rgba(251,44,54,0.35)] flex items-center justify-center font-bold transition-all cursor-pointer shadow-2xs active:scale-90",
+              isCompact ? "w-5 h-5 text-label-m" : "w-6 h-6 text-tiny",
             )}
           >
-            <Minus size={isCompact ? 9 : 12} className="stroke-3" />
+            <Minus size={isCompact ? 11 : 13} className="stroke-3" />
           </button>
         )}
       </div>
@@ -92,24 +95,21 @@ export function TaskActionControl({
         e.stopPropagation();
         onToggle?.();
       }}
-      aria-label={completed ? "Marcar como pendente" : "Marcar como concluída"}
+      aria-label={completed ? t("markPendingAria") : t("markCompletedAria")}
       className={cn(
-        "border flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-95",
+        "border-2 flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-90",
         isDaily ? "rounded-full" : "rounded-md",
-        isCompact ? "w-3.5 h-3.5" : "w-4.5 h-4.5",
+        isCompact ? "w-4 h-4" : "w-5 h-5",
         completed
-          ? "bg-gold border-gold text-neutral-900 shadow-glow-gold-xs"
+          ? "bg-gold border-gold text-on-gold shadow-glow-gold-xs"
           : isDaily
-            ? "border-magenta/50 bg-magenta/10 hover:border-magenta"
-            : "border-primary/50 bg-primary-dark/40 hover:border-gold",
+            ? "border-magenta/60 bg-magenta/10 hover:border-magenta hover:bg-magenta/20 hover:shadow-glow-magenta"
+            : "border-primary-light/55 bg-primary-dark/40 hover:border-gold hover:bg-gold/15 hover:shadow-glow-gold-xs",
         className,
       )}
     >
       {completed && (
-        <Check
-          size={isCompact ? 9 : 12}
-          className="stroke-3 text-neutral-900"
-        />
+        <Check size={isCompact ? 10 : 12} className="stroke-3 text-on-gold" />
       )}
     </button>
   );

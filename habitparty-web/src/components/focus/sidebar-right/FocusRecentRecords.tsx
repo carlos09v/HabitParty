@@ -8,10 +8,12 @@ import {
   Timer,
   Trash2,
 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { memo, useCallback, useState } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { getFocusIcon } from "@/constants/focus";
+import type { AppLocale } from "@/i18n/config";
 import type { FocusRecord } from "@/types/focus";
 import { cn, formatCoins, formatDateTime } from "@/utils";
 import { formatFocusRecordDuration } from "@/utils/focusFormatters";
@@ -32,6 +34,8 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
   onContextMenu,
   onDeleteRecord,
 }: FocusRecentRecordItemProps) {
+  const t = useTranslations("focus.records");
+  const locale = useLocale() as AppLocale;
   const IconComp = rec.activityIcon ? getFocusIcon(rec.activityIcon) : Timer;
   const durationLabel = formatFocusRecordDuration(
     rec.startTime,
@@ -49,7 +53,7 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
           onRowClick(e as unknown as React.MouseEvent, rec);
         }
       }}
-      title="Clique para editar anotações ou botão direito para opções"
+      title={t("rowTooltip")}
       className={cn(
         "group/row rounded-xl border border-primary/20 bg-surface/40 flex items-center justify-between gap-2.5 hover:border-gold/40 hover:bg-surface/70 transition-all cursor-pointer select-none",
         isCompact ? "p-2" : "p-2.5",
@@ -62,7 +66,7 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="text-body-s font-semibold text-neutral-100 group-hover/row:text-gold transition-colors truncate">
-              {rec.activityName || rec.itemName || "Sessão Livre"}
+              {rec.activityName || rec.itemName || t("freeSession")}
             </span>
             {rec.notes && rec.notes.trim() !== "" && (
               <span
@@ -74,7 +78,7 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
             )}
           </div>
           <span className="text-tiny text-neutral-400 truncate">
-            {formatDateTime(rec.endTime, { isLocal: true })}
+            {formatDateTime(rec.endTime, { isLocal: true, locale })}
           </span>
         </div>
       </div>
@@ -90,18 +94,17 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
               <span>+{rec.xpEarned ?? 0} XP</span>
               <span>•</span>
               <span className="inline-flex items-center gap-0.5 text-gold font-semibold">
-                +{formatCoins(rec.coinsEarned ?? 0)}
+                +{formatCoins(rec.coinsEarned ?? 0, { locale })}
                 <CoinIcon size={10} />
               </span>
             </span>
           ) : rec.completedPomos && rec.completedPomos > 0 ? (
             <span className="text-tiny text-neutral-400">
-              {rec.completedPomos} pomo
-              {rec.completedPomos > 1 ? "s" : ""}
+              {t("pomosCount", { count: rec.completedPomos })}
             </span>
           ) : rec.inventoryItemId ? (
             <span className="text-tiny text-neutral-400 font-medium">
-              Lazer
+              {t("leisureLabel")}
             </span>
           ) : null}
         </div>
@@ -115,8 +118,8 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
               onDeleteRecord(rec.id);
             }}
             className="w-6 h-6 rounded flex items-center justify-center text-neutral-500 hover:text-red-400 hover:bg-red-500/15 opacity-70 group-hover/row:opacity-100 transition-all cursor-pointer"
-            title="Excluir este registro"
-            aria-label="Excluir este registro"
+            title={t("deleteRecordAria")}
+            aria-label={t("deleteRecordAria")}
           >
             <Trash2 size={13} />
           </button>
@@ -143,6 +146,7 @@ export function FocusRecentRecords({
   onRecordUpdated,
   isCompact = false,
 }: FocusRecentRecordsProps) {
+  const t = useTranslations("focus.records");
   // Popover de edição ancorado
   const [selectedRecordForEdit, setSelectedRecordForEdit] =
     useState<FocusRecord | null>(null);
@@ -192,21 +196,21 @@ export function FocusRecentRecords({
         <div className="flex items-center gap-1.5 text-neutral-300">
           <History size={15} className="text-primary-light" />
           <h4 className="text-body-s font-bold text-neutral-100">
-            Foco em Registro
+            {t("title")}
           </h4>
         </div>
 
         <div className="flex items-center gap-1.5">
           <span className="text-tiny text-neutral-400 font-medium mr-1">
-            {records.length} {records.length === 1 ? "sessão" : "sessões"}
+            {t("sessionsCount", { count: records.length })}
           </span>
 
           {/* Botão + (Novo Registro) */}
           <button
             type="button"
             onClick={onAddRecord}
-            title="Inserir novo registro de foco"
-            aria-label="Inserir novo registro de foco"
+            title={t("addRecordAria")}
+            aria-label={t("addRecordAria")}
             className="w-7 h-7 rounded-lg border border-primary/30 bg-surface/70 hover:bg-gold/20 text-neutral-300 hover:text-gold hover:border-gold/50 flex items-center justify-center transition-all cursor-pointer shadow-xs"
           >
             <Plus size={14} />
@@ -216,8 +220,8 @@ export function FocusRecentRecords({
           <button
             type="button"
             onClick={onOptionsClick}
-            title="Ver extrato completo no Histórico"
-            aria-label="Ver extrato completo no Histórico"
+            title={t("viewFullHistoryAria")}
+            aria-label={t("viewFullHistoryAria")}
             className="w-7 h-7 rounded-lg border border-primary/30 bg-surface/70 hover:bg-white/15 text-neutral-400 hover:text-neutral-100 transition-all flex items-center justify-center cursor-pointer shadow-xs"
           >
             <History size={14} />
@@ -230,16 +234,14 @@ export function FocusRecentRecords({
         {records.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-6 text-center rounded-xl border border-dashed border-primary/30 bg-surface/30">
             <Timer size={24} className="text-neutral-500 mb-1" />
-            <p className="text-xs text-neutral-400">
-              Nenhuma sessão registrada para o período selecionado.
-            </p>
+            <p className="text-xs text-neutral-400">{t("emptyState")}</p>
             {onAddRecord && (
               <button
                 type="button"
                 onClick={onAddRecord}
                 className="mt-2 text-xs font-bold text-gold hover:underline cursor-pointer"
               >
-                + Adicionar primeiro registro
+                {t("addFirstRecord")}
               </button>
             )}
           </div>
@@ -277,7 +279,7 @@ export function FocusRecentRecords({
         onClose={() => setContextMenu((prev) => ({ ...prev, isOpen: false }))}
         items={[
           {
-            label: "Editar Anotações",
+            label: t("contextEditNotes"),
             icon: <Pencil size={14} />,
             onClick: () => {
               if (contextMenu.record) {
@@ -289,7 +291,7 @@ export function FocusRecentRecords({
           ...(onDeleteRecord
             ? [
                 {
-                  label: "Excluir Registro",
+                  label: t("contextDeleteRecord"),
                   icon: <Trash2 size={14} />,
                   variant: "destructive" as const,
                   onClick: () => {

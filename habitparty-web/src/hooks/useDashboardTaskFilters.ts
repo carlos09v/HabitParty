@@ -18,9 +18,30 @@ import {
   getTodayDateString,
   isTaskScheduledForDate,
 } from "@/utils/dashboardMetrics";
+import { formatDateParts } from "@/utils/date";
 
 function isValidTaskFilter(val: string | null): val is TaskFilterType {
   return DASHBOARD_TASK_FILTERS.some((f) => f.id === val);
+}
+
+function isDailyScheduledBetween(
+  task: Task,
+  startDate: Date,
+  daysCount: number,
+): boolean {
+  const cursor = new Date(startDate);
+  for (let i = 0; i < daysCount; i++) {
+    const iso = formatDateParts(
+      cursor.getFullYear(),
+      cursor.getMonth(),
+      cursor.getDate(),
+    );
+    if (isTaskScheduledForDate(task, iso, { includeHabits: false })) {
+      return true;
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return false;
 }
 
 export function useDashboardTaskFilters(tasks: Task[]) {
@@ -70,6 +91,16 @@ export function useDashboardTaskFilters(tasks: Task[]) {
     next7Days.setDate(today.getDate() + 7);
     next7Days.setHours(23, 59, 59, 999);
 
+    const daysInCurrentMonth = new Date(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      0,
+    ).getDate();
+    const remainingDaysInMonth = Math.max(
+      1,
+      daysInCurrentMonth - today.getDate() + 1,
+    );
+
     // 1. Filtro Temporal
     let result = tasks.filter((task) => {
       const type = normalizeTaskType(task);
@@ -78,7 +109,7 @@ export function useDashboardTaskFilters(tasks: Task[]) {
 
       if (selectedDate) {
         return isTaskScheduledForDate(task, selectedDate, {
-          includeHabits: false,
+          includeHabits: selectedDate === todayIso,
         });
       }
 
@@ -86,11 +117,25 @@ export function useDashboardTaskFilters(tasks: Task[]) {
         return isTaskScheduledForDate(task, todayIso, { includeHabits: true });
       }
 
-      if (!task.dueDate) {
-        if (effectiveFilter === "nodate") return !isDaily && !isHabit;
-        if (effectiveFilter === "next7days" || effectiveFilter === "this_month")
-          return isDaily || isHabit;
+      // Hábitos não possuem prazo fixo: ficam visíveis apenas na aba "Hoje"
+      if (isHabit) {
         return false;
+      }
+
+      // Diárias são avaliadas conforme sua programação real dentro do intervalo
+      if (isDaily) {
+        if (effectiveFilter === "next7days") {
+          return isDailyScheduledBetween(task, today, 8);
+        }
+        if (effectiveFilter === "this_month") {
+          return isDailyScheduledBetween(task, today, remainingDaysInMonth);
+        }
+        return false;
+      }
+
+      // Afazeres (To-Do) sem data de entrega definida
+      if (!task.dueDate) {
+        return effectiveFilter === "nodate";
       }
 
       const datePart = task.dueDate.split("T")[0];
@@ -108,9 +153,9 @@ export function useDashboardTaskFilters(tasks: Task[]) {
 
       switch (effectiveFilter) {
         case "next7days":
-          return isWithin7Days || isDaily || isHabit;
+          return isWithin7Days;
         case "this_month":
-          return isThisMonth || isDaily || isHabit;
+          return isThisMonth;
         case "overdue":
           return isPast && !task.completed;
         case "nodate":
@@ -128,11 +173,7 @@ export function useDashboardTaskFilters(tasks: Task[]) {
     }
 
     if (advancedFilters.columnId !== "all") {
-      result = result.filter(
-        (t) =>
-          t.columnId === advancedFilters.columnId ||
-          t.category === advancedFilters.columnId,
-      );
+      result = result.filter((t) => t.columnId === advancedFilters.columnId);
     }
 
     if (advancedFilters.difficulty !== "all") {
@@ -147,31 +188,34 @@ export function useDashboardTaskFilters(tasks: Task[]) {
     }
 
     // 3. Ordenação
-    if (advancedFilters.sortBy !== "default") {
-      result = [...result].sort((a, b) => {
-        if (advancedFilters.sortBy === "dueDate") {
-          return (a.dueDate || "9999-99-99").localeCompare(
-            b.dueDate || "9999-99-99",
-          );
-        }
-        if (advancedFilters.sortBy === "difficulty") {
-          const wa = DIFFICULTY_SORT_WEIGHTS[a.difficulty || ""] || 0;
-          const wb = DIFFICULTY_SORT_WEIGHTS[b.difficulty || ""] || 0;
-          return wb - wa;
-        }
-        if (advancedFilters.sortBy === "priority") {
-          const wa = PRIORITY_SORT_WEIGHTS[a.priority || ""] || 0;
-          const wb = PRIORITY_SORT_WEIGHTS[b.priority || ""] || 0;
-          return wb - wa;
-        }
-        if (advancedFilters.sortBy === "reward") {
-          const ra = (a.rewardGold ?? 0) + (a.rewardXp ?? 0);
-          const rb = (b.rewardGold ?? 0) + (b.rewardXp ?? 0);
-          return rb - ra;
-        }
-        return 0;
-      });
-    }
+    result = [...result].sort((a, b) => {
+      if (
+        advancedFilters.sortBy === "default" ||
+        advancedFilters.sortBy === "dueDate"
+      ) {
+        const dateA = a.dueDate ? a.dueDate.split("T")[0] : "9999-99-99";
+        const dateB = b.dueDate ? b.dueDate.split("T")[0] : "9999-99-99";
+        return dateA.localeCompare(dateB);
+      }
+      if (advancedFilters.sortBy === "difficulty") {
+        const wa = DIFFICULTY_SORT_WEIGHTS[a.difficulty || ""] || 0;
+        const wb = DIFFICULTY_SORT_WEIGHTS[b.difficulty || ""] || 0;
+        return wb - wa;
+      }
+      if (advancedFilters.sortBy === "priority") {
+        const wa =
+          PRIORITY_SORT_WEIGHTS[a.priority || a.importanceType || ""] || 0;
+        const wb =
+          PRIORITY_SORT_WEIGHTS[b.priority || b.importanceType || ""] || 0;
+        return wb - wa;
+      }
+      if (advancedFilters.sortBy === "reward") {
+        const ra = (a.rewardGold ?? 0) + (a.rewardXp ?? 0);
+        const rb = (b.rewardGold ?? 0) + (b.rewardXp ?? 0);
+        return rb - ra;
+      }
+      return 0;
+    });
 
     return result;
   }, [tasks, selectedDate, effectiveFilter, advancedFilters]);

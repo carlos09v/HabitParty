@@ -49,35 +49,11 @@ public class ChangeTaskStatusUseCase {
           TaskReward penalty = todo.calculatePenalty();
           user.applyPenalty(penalty.coins(), penalty.xp());
 
-          TransactionHistory negativeTransaction = new TransactionHistory(
-              null,
-              userIdLogado,
-              todo.getId(),
-              penalty.coins().negate(),
-              -penalty.xp(),
-              null,
-              TransactionType.TASK_FAILED,
-              "Falhou no prazo: " + todo.getName(),
-              null,
-              null,
-              todo.getDifficulty(),
-              todo.getTags(),
-              null
-          );
+          TransactionHistory negativeTransaction = TaskGamificationHelper.buildPenaltyTransaction(
+              userIdLogado, todo, penalty, TransactionType.TASK_FAILED, "Falhou no prazo: ");
           transactionPort.save(negativeTransaction);
         }
       }
-
-      TaskReward reward = task.calculateReward();
-      user.addXp(reward.xp());
-      user.addCoins(reward.coins());
-
-      int tasksCompletedToday = transactionPort.countCompletedTasksToday(userIdLogado);
-      if (tasksCompletedToday == 0) {
-        user.incrementStreak();
-      }
-
-      userPort.save(user);
 
       TransactionType txType = switch (task.getTaskType()) {
         case HABIT -> TransactionType.HABIT_COMPLETED;
@@ -85,23 +61,7 @@ public class ChangeTaskStatusUseCase {
         case TODO -> TransactionType.TODO_COMPLETED;
       };
 
-      TransactionHistory transaction = new TransactionHistory(
-          null,
-          userIdLogado, 
-          task.getId(),
-          reward.coins(),
-          reward.xp(),
-          null,
-          txType,
-          task.getName(), 
-          null, 
-          null,
-          task.getDifficulty(),
-          task.getTags(),
-          null
-      );
-
-      transactionPort.save(transaction);
+      TaskGamificationHelper.awardTaskCompletion(user, task, txType, userPort, transactionPort);
       task.registerCompletion();
     }
 

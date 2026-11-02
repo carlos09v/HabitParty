@@ -1,61 +1,43 @@
 package com.habitparty.adapters.out.persistence.entities;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.habitparty.core.domain.enums.UserExperienceMode;
 import com.habitparty.core.domain.enums.UserGender;
 import com.habitparty.core.domain.enums.UserRole;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-// Usando o Lambok pra gerar Getters e Setters
 @Entity
 @Table(name = "users")
 @Getter
 @Setter
-@NoArgsConstructor // Cria aquele construtor vazio que o JPA obriga a ter
-@AllArgsConstructor // Cria um construtor com todos os campos
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserJpaEntity {
   @Id
-  // @GeneratedValue(strategy = GenerationType.UUID) => O usecase que gera
   @Column(name = "user_id")
   private UUID id;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "role", nullable = false)
   private UserRole role;
-
-  @Column(name = "is_premium", nullable = false)
-  private boolean isPremium;
-
-  @Column(name = "is_founder", nullable = false, columnDefinition = "boolean default false")
-  private boolean isFounder = false;
-
-  @Column(name = "stripe_customer_id", unique = true)
-  private String stripeCustomerId;
-
-  @Column(name = "stripe_subscription_id")
-  private String stripeSubscriptionId;
-
-  @Enumerated(EnumType.STRING)
-  @Column(name = "subscription_status", nullable = false)
-  private com.habitparty.core.domain.enums.SubscriptionStatus subscriptionStatus = com.habitparty.core.domain.enums.SubscriptionStatus.FREE;
-
-  @Column(name = "subscription_ends_at")
-  private LocalDateTime subscriptionEndsAt;
 
   @Column(nullable = false, length = 150, name = "full_name")
   private String fullName;
@@ -69,32 +51,49 @@ public class UserJpaEntity {
   @Column(nullable = false)
   private String password;
 
-  @Column(nullable = false, name = "current_coins", precision = 10, scale = 2)
-  private BigDecimal currentCoins;
+  @Column(name = "email_verified", nullable = false, columnDefinition = "boolean default false")
+  private boolean emailVerified = false;
 
-  @Column(nullable = false, name = "total_gold_earned", precision = 10, scale = 2)
-  private BigDecimal totalGoldEarned;
+  @Column(name = "email_verified_at")
+  private LocalDateTime emailVerifiedAt;
 
   @Column(name = "profile_photo_url")
   private String profilePhotoUrl;
 
-  @Column(nullable = false)
-  private LocalDate birthday;
+  @Column(name = "birth_date", nullable = true)
+  private LocalDate birthDate;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private UserGender gender;
 
-  @Column(name = "total_xp", nullable = false, columnDefinition = "int default 0")
-  private int totalXp;
-
-  @Column(name = "current_streak", nullable = false, columnDefinition = "int default 0")
-  private int currentStreak;
-
-  @Column(name = "highest_streak", nullable = false, columnDefinition = "int default 0")
-  private int highestStreak;  
+  @Enumerated(EnumType.STRING)
+  @Column(name = "experience_mode", nullable = false, length = 30, columnDefinition = "varchar(30) default 'PRODUCTIVITY'")
+  private UserExperienceMode experienceMode = UserExperienceMode.PRODUCTIVITY;
 
   @Column(name = "created_at", nullable = false, updatable = false)
   @CreationTimestamp
   private LocalDateTime createdAt;
+
+  @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+  private UserStatsJpaEntity stats;
+
+  @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+  private UserSubscriptionJpaEntity subscription;
+
+  public void setStats(UserStatsJpaEntity stats) {
+    this.stats = stats;
+    if (stats != null) {
+      stats.setUser(this);
+      stats.setUserId(this.id);
+    }
+  }
+
+  public void setSubscription(UserSubscriptionJpaEntity subscription) {
+    this.subscription = subscription;
+    if (subscription != null) {
+      subscription.setUser(this);
+      subscription.setUserId(this.id);
+    }
+  }
 }

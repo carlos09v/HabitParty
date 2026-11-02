@@ -1,6 +1,7 @@
 "use client";
 
 import { Crown, Lock } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { ListCard } from "@/components/ui/ListCard";
 import { UpgradePremiumModal } from "./UpgradePremiumModal";
@@ -18,6 +19,7 @@ export function UpgradeColumnLimitCard({
   currentCount,
   maxCount,
 }: UpgradeColumnLimitCardProps) {
+  const t = useTranslations("upgradeColumnLimitCard");
   const [isOpen, setIsOpen] = useState(false);
 
   // Se já for Premium, realmente bateu o teto absoluto de 6/6
@@ -25,8 +27,8 @@ export function UpgradeColumnLimitCard({
     return (
       <ListCard
         compact={compact}
-        title="Limite Atingido"
-        subtitle={`${currentCount}/${maxCount} (Máximo)`}
+        title={t("title")}
+        subtitle={t("maxSubtitle", { current: currentCount, max: maxCount })}
         disabled={true}
         icon={<Lock size={compact ? 16 : 18} aria-hidden="true" />}
       />
@@ -34,16 +36,20 @@ export function UpgradeColumnLimitCard({
   }
 
   const hasSurplus = currentCount > maxCount;
+  const surplusCount = Math.max(0, currentCount - maxCount);
+  const title = hasSurplus
+    ? t("surplusTitle", { count: surplusCount })
+    : t("title");
   const subtitle = hasSurplus
-    ? `Você tem ${currentCount} listas • Seja VIP 👑`
-    : "Seja Premium (até 6) 👑";
+    ? t("surplusSubtitle", { current: currentCount })
+    : t("upgradeSubtitle");
 
   // Se for Free (4/4 ou com colunas na mochila), o card convida para o upgrade com 1 clique!
   return (
     <>
       <ListCard
         compact={compact}
-        title="Limite Atingido"
+        title={title}
         subtitle={subtitle}
         onClick={() => setIsOpen(true)}
         className="cursor-pointer group border-gold/40 bg-gold/5 hover:bg-gold/15 hover:border-gold hover:shadow-glow-gold transition-all"

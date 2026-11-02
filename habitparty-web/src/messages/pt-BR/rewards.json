@@ -1,0 +1,233 @@
+{
+  "metadata": {
+    "title": "Loja de Recompensas | HabitParty",
+    "description": "Troque suas moedas de ouro por recompensas personalizadas, cupons de tempo e caixas misteriosas."
+  },
+  "loading": {
+    "label": "Carregando recompensas..."
+  },
+  "options": {
+    "types": {
+      "all": "Todos os Tipos",
+      "SingleUse": "Uso Único",
+      "TimeBased": "Cupom",
+      "MysteryBox": "Caixa Misteriosa"
+    },
+    "categories": {
+      "all": "Todas as Categorias",
+      "NONE": "Nenhum",
+      "ENTERTAINMENT": "Entretenimento",
+      "WELLNESS": "Bem-estar",
+      "SHOPPING": "Compras",
+      "DEVELOPMENT": "Desenvolvimento",
+      "LUCK": "Sorte",
+      "HOBBIES": "Hobbies"
+    },
+    "packages": {
+      "all": "Todos os Pacotes",
+      "NONE": "Nenhum",
+      "BASIC": "Básico",
+      "PREMIUM": "Premium",
+      "EPIC": "Épico",
+      "LEGENDARY": "Lendário"
+    },
+    "couponPackages": {
+      "NONE": "Nenhum",
+      "BASIC": "Básico (30m)",
+      "PREMIUM": "Premium (60m)",
+      "EPIC": "Épico (120m)",
+      "LEGENDARY": "Lendário (240m)"
+    },
+    "sort": {
+      "default": "Ordem Padrão",
+      "price-asc": "Menor Preço",
+      "price-desc": "Maior Preço",
+      "name": "Nome (A-Z)"
+    }
+  },
+  "container": {
+    "addProduct": "Adicionar Produto",
+    "buy": "Comprar",
+    "insufficientCoinsShort": "Moedas insuficientes",
+    "filters": {
+      "category": "Categorias",
+      "type": "Tipo",
+      "packageLevel": "Pacote",
+      "sortBy": "Ordenar"
+    },
+    "empty": {
+      "showcaseEmptyTitle": "Sua vitrine de recompensas está vazia! 🛍️",
+      "showcaseEmptyDescription": "Cadastre seus primeiros mimos, cupons de lazer ou caixas misteriosas para trocar pelas moedas que você ganha completando tarefas!",
+      "noResultsTitle": "Nenhuma recompensa encontrada",
+      "noResultsDescription": "Não encontramos nenhuma recompensa que corresponda aos filtros aplicados.",
+      "createFirstReward": "Criar Primeira Recompensa",
+      "clearFilters": "Limpar Filtros"
+    },
+    "contextMenu": {
+      "edit": "Editar",
+      "delete": "Excluir"
+    },
+    "deleteModal": {
+      "title": "Excluir recompensa?",
+      "description": "Tem certeza que deseja excluir <bold>\"{title}\"</bold> da sua Loja de Recompensas?",
+      "confirmText": "Sim, excluir",
+      "cancelText": "Cancelar"
+    },
+    "toasts": {
+      "insufficientCoins": "Moedas insuficientes para resgatar este item!",
+      "redeemError": "Erro ao resgatar recompensa.",
+      "buySuccess": "Você comprou \"{title}\"! O item foi enviado para a sua Mochila.",
+      "buySuccessGamified": "Você comprou \"{title}\"! O item foi enviado para a sua Mochila.",
+      "buySuccessProductivity": "Você resgatou \"{title}\"! O item foi adicionado ao seu Inventário.",
+      "serverError": "Erro de comunicação com o servidor.",
+      "deleteSuccess": "Recompensa \"{title}\" excluída com sucesso!",
+      "deleteError": "Erro ao excluir recompensa."
+    }
+  },
+  "card": {
+    "buy": "Comprar",
+    "addRewardAria": "Adicionar nova recompensa",
+    "addProduct": "Adicionar Produto"
+  },
+  "formModal": {
+    "editTitle": "Editar Recompensa",
+    "createTitle": "Nova Recompensa",
+    "editDescription": "Atualize o nome, custo e regras desta recompensa na sua Loja.",
+    "createDescription": "Cadastre um prêmio, cupom de tempo ou caixa misteriosa na Loja.",
+    "titleLabel": "Nome da Recompensa",
+    "iconPickerTitle": "Ícone da Recompensa",
+    "titlePlaceholder": "Ex: 1h de videogame, Café especial, Assistir filme...",
+    "iconHelperText": "Clique no ícone para personalizar ou digite o nome para sugestão automática.",
+    "descriptionLabel": "Descrição (opcional)",
+    "descriptionPlaceholder": "Detalhes ou regras para desfrutar da sua recompensa...",
+    "typeLabel": "Tipo de Recompensa",
+    "categoryLabel": "Categoria",
+    "durationLabel": "Duração da Atividade (minutos)",
+    "durationHint": "(tempo que será consumido no Foco)",
+    "durationPlaceholder": "Ex: 30, 60, 120",
+    "packageLevelLabel": "Nível do Pacote",
+    "packageLevelHint": "(opcional • clique para aplicar tempo sugerido)",
+    "priceLabel": "Custo em Moedas",
+    "suggestedPriceByRarity": "(Preço sugerido por raridade)",
+    "pricePlaceholder": "Ex: 5, 15, 35 ou 80",
+    "mysteryBoxPriceHelper": "Você pode manter o preço calibrado para o pacote ou personalizá-lo livremente.",
+    "cancel": "Cancelar",
+    "saving": "Salvando...",
+    "saveChanges": "Salvar Alterações",
+    "saveReward": "Salvar Recompensa"
+  },
+  "mysteryBox": {
+    "levelLabel": "Nível da Caixa Misteriosa",
+    "hoverHint": "(passe o mouse para ver as chances)",
+    "raritiesCount": "4 Raridades",
+    "tiers": {
+      "BASIC": {
+        "name": "Caixa Básica",
+        "subtitle": "Pausas Diárias & Mimos Rápidos",
+        "concept": "Micro-recompensas para manter o ritmo sem culpa e sem desbalancear o saldo.",
+        "colorName": "Verde Esmeralda",
+        "drops": {
+          "0": {
+            "label": "Pausa Revigorante (10-15m)",
+            "description": "Café especial, snack favorito, 1 vídeo ou pausa curta."
+          },
+          "1": {
+            "label": "Cupom de Lazer Médio (30m)",
+            "description": "Leitura de lazer, música relaxante ou podcast."
+          },
+          "2": {
+            "label": "Sessão Focada de Hobby (45m)",
+            "description": "45 minutos de lazer + 1 moeda de cashback bônus."
+          }
+        }
+      },
+      "PREMIUM": {
+        "name": "Caixa Premium",
+        "subtitle": "Entretenimento & Sessão de Jogos",
+        "concept": "Recompensa por um ou dois dias de metas cumpridas com excelência.",
+        "colorName": "Azul Ciano",
+        "drops": {
+          "0": {
+            "label": "Lazer Padrão (45-60m)",
+            "description": "Sessão de videogame ou 1 episódio de série."
+          },
+          "1": {
+            "label": "Vale-Lazer Estendido (75-90m)",
+            "description": "Tempo estendido ou lanche especial de comemoração."
+          },
+          "2": {
+            "label": "Noite Gamer / Cinema (120m)",
+            "description": "2 horas de entretenimento ininterrupto e sem culpa."
+          }
+        }
+      },
+      "EPIC": {
+        "name": "Caixa Épica",
+        "subtitle": "Grande Conquista da Semana",
+        "concept": "Recompensa substancial de final de semana para coroar dias consistentes.",
+        "colorName": "Magenta Radiante",
+        "drops": {
+          "0": {
+            "label": "Bloco Estendido de Lazer (120m)",
+            "description": "2 horas de jogos favoritos, maratona ou passeio externo."
+          },
+          "1": {
+            "label": "Noite Livre Completa (180m)",
+            "description": "3 horas livres ou livro/jogo na promoção da Steam."
+          },
+          "2": {
+            "label": "Tarde Inteira de Desconexão (240m)",
+            "description": "4 horas de descanso merecido e recarga total de ânimo."
+          }
+        }
+      },
+      "LEGENDARY": {
+        "name": "Caixa Lendária",
+        "subtitle": "O Santo Graal da Produtividade",
+        "concept": "O ápice de semanas de disciplina e ofensivas intactas. Um marco memorável.",
+        "colorName": "Dourado Nobre",
+        "drops": {
+          "0": {
+            "label": "Day-Off Parcial de Elite (240m)",
+            "description": "4 horas dedicadas aos seus hobbies com dever cumprido."
+          },
+          "1": {
+            "label": "Day-Off Integral (Dia Inteiro)",
+            "description": "Folga total de afazeres com proteção total de streak."
+          },
+          "2": {
+            "label": "Celebração Absoluta (Jackpot Supremo)",
+            "description": "Final de semana livre + autorização para grande mimo real."
+          }
+        }
+      }
+    }
+  },
+  "tierPopover": {
+    "detailsAria": "Detalhes da {name}",
+    "rngHeader": "Chances de Saque (RNG)",
+    "dropPercentHeader": "% Drop",
+    "priceInCoins": "Preço em Moedas:",
+    "balancedPrice": "Preço Equilibrado:",
+    "coinsUnit": "moedas"
+  },
+  "hook": {
+    "titleRequired": "O título da recompensa é obrigatório.",
+    "invalidPrice": "O preço deve ser um valor válido maior que zero.",
+    "mysteryBoxPackageRequired": "Caixa Misteriosa precisa de um nível de pacote selecionado.",
+    "updateError": "Erro ao atualizar recompensa no servidor.",
+    "updateSuccess": "Recompensa atualizada com sucesso!",
+    "createError": "Erro ao criar recompensa no servidor.",
+    "createSuccess": "Recompensa \"{title}\" criada!",
+    "createSuccessDescription": "Disponível para resgate na Loja de Recompensas.",
+    "defaultMysteryBoxTitle": "Caixa Misteriosa Básica"
+  },
+  "actions": {
+    "communicationError": "Erro interno de comunicação com o servidor.",
+    "createFailed": "Falha ao criar recompensa.",
+    "updateFailed": "Falha ao atualizar recompensa.",
+    "deleteFailed": "Falha ao excluir recompensa.",
+    "reorderFailed": "Falha ao reordenar recompensas.",
+    "redeemFailed": "Falha ao resgatar recompensa."
+  }
+}

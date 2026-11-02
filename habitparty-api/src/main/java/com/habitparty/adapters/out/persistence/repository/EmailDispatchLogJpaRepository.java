@@ -1,6 +1,7 @@
 package com.habitparty.adapters.out.persistence.repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,7 +21,41 @@ public interface EmailDispatchLogJpaRepository extends JpaRepository<EmailDispat
 
   long countBySentAtAfter(LocalDateTime date);
 
+  long countByStatusAndSentAtAfter(
+      com.habitparty.core.domain.enums.EmailDispatchStatus status,
+      LocalDateTime date
+  );
+
   long countByUserIdAndSentAtAfter(UUID userId, LocalDateTime date);
+
+  long countByUserIdAndStatusAndSentAtAfter(
+      UUID userId,
+      com.habitparty.core.domain.enums.EmailDispatchStatus status,
+      LocalDateTime date
+  );
+
+  @Query("""
+      SELECT l.userId, COUNT(l)
+      FROM EmailDispatchLogJpaEntity l
+      WHERE l.userId IN :userIds AND l.sentAt > :date
+      GROUP BY l.userId
+  """)
+  List<Object[]> countByUserIdsAndSentAtAfter(
+      @Param("userIds") Collection<UUID> userIds,
+      @Param("date") LocalDateTime date
+  );
+
+  @Query("""
+      SELECT l.userId, COUNT(l)
+      FROM EmailDispatchLogJpaEntity l
+      WHERE l.userId IN :userIds AND l.status = :status AND l.sentAt > :date
+      GROUP BY l.userId
+  """)
+  List<Object[]> countByUserIdsAndStatusAndSentAtAfter(
+      @Param("userIds") Collection<UUID> userIds,
+      @Param("status") com.habitparty.core.domain.enums.EmailDispatchStatus status,
+      @Param("date") LocalDateTime date
+  );
 
   long countByUserIdAndEmailTypeAndStatusAndSentAtAfter(
       UUID userId,

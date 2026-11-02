@@ -73,17 +73,13 @@ public class UpdateTaskUseCase {
         if (!wasAlreadyActive) {
           var user = userPort.findById(userIdLogado)
               .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+
+          user.validateEmailVerified("ativar lembretes por e-mail");
+
           boolean isPremium = user.isPremium();
-          int maxActive = com.habitparty.core.domain.entities.task.EmailReminderQuotas.getMaxActiveReminders(isPremium);
-          int maxMonthly = com.habitparty.core.domain.entities.task.EmailReminderQuotas.getMaxMonthlyDispatches(isPremium);
 
           long activeReminders = port.countActiveEmailRemindersByUserId(userIdLogado);
-          if (activeReminders >= maxActive) {
-            String msg = isPremium
-                ? "Limite de lembretes ativos atingido! Usuários Premium podem ter no máximo " + maxActive + " lembretes por e-mail ativos simultaneamente (Política de Uso Justo)."
-                : "Limite de lembretes atingido! Usuários do plano gratuito podem ter no máximo " + maxActive + " lembretes por e-mail ativos simultaneamente. Assine o plano Premium para ter até 30 lembretes ativos.";
-            throw new DomainValidationException(msg);
-          }
+          com.habitparty.core.domain.entities.task.EmailReminderQuotas.validateActiveRemindersQuota(isPremium, activeReminders);
 
           LocalDateTime startOfMonth = java.time.LocalDate.now().withDayOfMonth(1).atStartOfDay();
           long sentThisMonth = emailLogPort.countByUserIdAndEmailTypeAndStatusAndSentAtAfter(
@@ -92,12 +88,7 @@ public class UpdateTaskUseCase {
               EmailDispatchStatus.SENT,
               startOfMonth
           );
-          if (sentThisMonth >= maxMonthly) {
-            String msg = isPremium
-                ? "Cota mensal atingida! Usuários Premium podem receber no máximo " + maxMonthly + " lembretes por e-mail por mês (Política de Uso Justo)."
-                : "Limite mensal atingido! Usuários do plano gratuito podem receber no máximo " + maxMonthly + " lembretes por e-mail por mês. Faça upgrade para o plano Premium para ter até 100 disparos mensais.";
-            throw new DomainValidationException(msg);
-          }
+          com.habitparty.core.domain.entities.task.EmailReminderQuotas.validateMonthlyDispatchesQuota(isPremium, sentThisMonth);
         }
       }
 

@@ -1,0 +1,372 @@
+{
+  "metadata": {
+    "title": "HabitParty | Productivity & Gamification",
+    "description": "Smart routine, habit, task, and reward management system with deep focus and optional gamification."
+  },
+  "common": {
+    "language": "Language",
+    "english": "English",
+    "portuguese": "Português (BR)",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "edit": "Edit",
+    "delete": "Delete",
+    "create": "Create",
+    "add": "Add",
+    "search": "Search...",
+    "loading": "Loading...",
+    "back": "Back",
+    "next": "Continue",
+    "optional": "optional",
+    "free": "Free",
+    "premium": "Premium",
+    "yes": "Yes",
+    "no": "No",
+    "all": "All",
+    "none": "None"
+  },
+  "ui": {
+    "languageToggle": {
+      "label": "Language",
+      "switchToPtAria": "Switch language to Portuguese (BR)",
+      "switchToEnAria": "Switch language to English (US)",
+      "switchToPtTitle": "Switch to Português (Brasil)",
+      "switchToEnTitle": "Switch to English (US)"
+    },
+    "themeToggle": {
+      "labelLight": "Light Theme",
+      "labelDark": "Dark Theme",
+      "switchToDarkIconAria": "Switch to dark theme",
+      "switchToLightIconAria": "Switch to light theme",
+      "switchToDarkRowAria": "Light Theme — switch to dark theme",
+      "switchToLightRowAria": "Dark Theme — switch to light theme",
+      "switchToDarkTitle": "Switch to Dark Theme",
+      "switchToLightTitle": "Switch to Light Theme"
+    },
+    "founderBadge": {
+      "label": "Founder",
+      "title": "Founding Member — Exclusive Lifetime Badge of the First 30 Supporters"
+    },
+    "input": {
+      "showPassword": "Show password",
+      "hidePassword": "Hide password"
+    },
+    "select": {
+      "placeholder": "Select an option",
+      "emptyMessage": "No items available."
+    },
+    "datePicker": {
+      "placeholder": "Select a date...",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "clear": "Clear",
+      "noDueDate": "No due date",
+      "dialogAriaLabel": "Select date",
+      "prevMonth": "Previous month",
+      "nextMonth": "Next month",
+      "selectMonth": "Select month",
+      "selectYear": "Select year",
+      "clickToChangeDate": "Click to change date",
+      "clearDate": "Clear date"
+    },
+    "loading": {
+      "defaultLabel": "Loading..."
+    },
+    "pagination": {
+      "defaultItemLabel": "items",
+      "navAriaLabel": "Pagination for {itemLabel}",
+      "showingRange": "Showing <strong>{range}</strong> of <strong>{total}</strong> {itemLabel}",
+      "prevPage": "Previous page",
+      "nextPage": "Next page",
+      "pageNumber": "Page {page}"
+    },
+    "confirmationModal": {
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "processing": "Processing..."
+    },
+    "welcomeCard": {
+      "hidePermanentlyTitle": "Permanently hide guidance card (can be re-enabled in Settings)",
+      "hideGuidanceCardAria": "Hide guidance card",
+      "hideGuidanceLabel": "Hide guidance",
+      "hideCardTitle": "Hide card",
+      "hideCardAria": "Hide card",
+      "hideLabel": "Hide",
+      "compactModeTitle": "Compact Mode",
+      "compactModeAria": "Compact Mode",
+      "normalModeTitle": "Normal Mode",
+      "normalModeAria": "Normal Mode",
+      "toastHidden": "Card hidden!",
+      "toastHiddenDesc": "You can re-enable it anytime in Settings > Preferences.",
+      "sectionAria": "Welcome: {title}",
+      "collapse": "Collapse",
+      "expand": "Expand",
+      "hideForeverTitle": "Permanently hide card",
+      "hideForeverAria": "Permanently hide welcome card",
+      "illustrationAlt": "Illustration: {title}",
+      "confirmModalTitle": "Hide welcome card?",
+      "confirmModalBody1": "This info card will be <bold>permanently</bold> removed from this screen to give you more workspace.",
+      "confirmModalBody2": "If you'd like to show it again, you can re-enable it anytime on the <gold>Settings</gold> page.",
+      "confirmModalConfirm": "Yes, hide card",
+      "confirmModalCancel": "Cancel",
+      "toastHiddenFull": "Welcome card hidden. You can re-enable it in Settings.",
+      "cards": {
+        "tasks": {
+          "title": "Manage your Tasks!",
+          "pageName": "Tasks Board",
+          "description": "Guidance on organizing tasks, columns, and creating habits on the board.",
+          "subtitle": "Organize your layout and keep your momentum.",
+          "bullet0": "Organize your layout and drag columns into the best order.",
+          "bullet1": "Create dedicated columns for each task context.",
+          "bullet2": "Classify activities into Daily, Habit, and To-Do."
+        },
+        "inventory": {
+          "title": "Your Backpack!",
+          "titleGamified": "Your Backpack!",
+          "titleProductivity": "Your Inventory!",
+          "pageName": "Backpack / Inventory",
+          "pageNameGamified": "Backpack",
+          "pageNameProductivity": "Inventory",
+          "description": "Instructions on items purchased in the shop and consumed in your inventory.",
+          "subtitle": "Manage your acquired items and rewards.",
+          "bullet0": "Store and organize all items and coupons redeemed in the Showcase.",
+          "bullet1": "Use consumable items directly or send potions to the Focus Stage.",
+          "bullet2": "Single-use items disappear from your backpack once fully consumed.",
+          "bullet2Gamified": "Single-use items disappear from your backpack once fully consumed.",
+          "bullet2Productivity": "Single-use items disappear from your inventory once fully consumed."
+        },
+        "rewards": {
+          "title": "Claim your reward!",
+          "titleGamified": "Claim your reward!",
+          "titleProductivity": "Redeem your Rewards!",
+          "pageName": "Rewards Showcase",
+          "pageNameGamified": "Rewards Shop",
+          "pageNameProductivity": "Rewards Showcase",
+          "description": "Tips on trading coins for coupons and custom rewards.",
+          "subtitle": "Manage your Showcase and trade your coins.",
+          "bullet0": "Trade your gold coins for real, custom rewards.",
+          "bullet1": "Add new prizes to the Showcase: Coupons, Single-Use, or Mystery Boxes.",
+          "bullet2": "Every redeemed item is transferred directly to your Backpack.",
+          "bullet2Gamified": "Every redeemed item is transferred directly to your Backpack.",
+          "bullet2Productivity": "Every redeemed item is transferred directly to your Inventory."
+        },
+        "focus": {
+          "title": "Your Focus environment!",
+          "pageName": "Focus Session",
+          "description": "Instructions for the Pomodoro timer, continuous stopwatch, and guided sessions.",
+          "subtitle": "Boost your daily productivity through guided sessions and gamified rewards.",
+          "bullet0": "Create important activities for your daily routine.",
+          "bullet1": "Track sessions using Pomodoro or Stopwatch.",
+          "bullet2": "View strategic metadata to optimize your routine."
+        },
+        "history": {
+          "title": "Transaction History",
+          "titleGamified": "Adventurer's Vault",
+          "titleProductivity": "Transaction Statement",
+          "pageName": "Transaction History",
+          "pageNameGamified": "Adventurer's Vault",
+          "pageNameProductivity": "Transaction History",
+          "description": "Summary of coins, XP, and audit log of completed transactions.",
+          "subtitle": "Browse your detailed history of coins, XP, and redemptions.",
+          "subtitleGamified": "Browse your history of gold, XP, and items earned on your adventures.",
+          "subtitleProductivity": "Browse your detailed history of coins, XP, and redemptions.",
+          "bullet0": "Completing tasks, dailies, and habits logs coin and XP gains.",
+          "bullet1": "Negative habit penalties and failures record balance deductions.",
+          "bullet2": "Shop redemptions and backpack item usage are archived in this statement.",
+          "bullet2Gamified": "Shop redemptions and backpack item usage are archived in this vault.",
+          "bullet2Productivity": "Shop redemptions and inventory item usage are archived in this statement."
+        }
+      }
+    },
+    "filterBar": {
+      "navAria": "Filter Bar",
+      "searchDefaultPlaceholder": "Search...",
+      "clearSearchAria": "Clear search",
+      "clear": "Clear",
+      "openFiltersAria": "Open filters",
+      "filters": "Filters",
+      "mobileDialogAria": "Catalog Filters",
+      "closeFiltersAria": "Close filters",
+      "activeCountSingular": "1 active",
+      "activeCountPlural": "{count} active",
+      "apply": "Apply"
+    },
+    "viewMode": {
+      "groupAria": "View mode",
+      "gridTitle": "Card view",
+      "gridAria": "Grid View",
+      "listTitle": "List view",
+      "listAria": "List View"
+    },
+    "timePicker": {
+      "placeholder": "00:00",
+      "clearAria": "Clear time",
+      "dialogAria": "Select time",
+      "decrementHour": "Decrease hour",
+      "incrementHour": "Increase hour",
+      "decrementMinute": "Decrease minute",
+      "incrementMinute": "Increase minute",
+      "hourHeader": "Hour",
+      "minuteHeader": "Minute",
+      "now": "Now",
+      "clear": "Clear",
+      "confirm": "OK"
+    },
+    "iconPicker": {
+      "groupAria": "Icon selection",
+      "popoverTitle": "Select an Icon",
+      "changeIconButtonTitle": "Change icon ({label})",
+      "exclusiveToast": "The \"{label}\" icon is exclusive to Premium members! Upgrade to unlock.",
+      "exclusiveBadge": "{label} (VIP Exclusive)",
+      "iconsCount": "({count} icons)",
+      "closeAria": "Close icon selection",
+      "compactButtonTitle": "Icon: {label}. Click to change.",
+      "change": "Change",
+      "icons": {
+        "sun": "Morning",
+        "moon": "Night",
+        "flame": "Focus",
+        "target": "Goals",
+        "dumbbell": "Workout",
+        "book": "Studies",
+        "briefcase": "Work",
+        "list": "Tasks / General",
+        "check": "General",
+        "sparkles": "Habits",
+        "coffee": "Break",
+        "crown": "VIP Royalty",
+        "swords": "VIP Quests",
+        "trophy": "VIP Goals",
+        "shield": "Defense",
+        "wand": "Projects",
+        "zap": "Sprint",
+        "gem": "Treasures",
+        "code": "Dev/Code",
+        "brain": "Pure Focus",
+        "graduation": "Academic",
+        "pencil": "Writing",
+        "laptop": "Laptop / Work",
+        "headphones": "Music/Podcast",
+        "palette": "Design/Art",
+        "gamepad": "Games/Leisure",
+        "rocket": "Productivity",
+        "compass": "Planning",
+        "timer": "Stopwatch",
+        "gift": "Treat",
+        "clapperboard": "Cinema/Series",
+        "music": "Music",
+        "pizza": "Snack",
+        "ticket": "Ticket",
+        "shopping": "Shopping",
+        "tv": "TV/Anime",
+        "party": "Celebration",
+        "beer": "Happy Hour",
+        "utensils": "Dinner",
+        "plane": "Travel/Leisure",
+        "mystery_box": "Surprise",
+        "medal": "Gold Medal",
+        "heart": "Health / Self-Care",
+        "activity": "Sport / Activity",
+        "bike": "Cycling / Bike",
+        "apple": "Nutrition / Diet",
+        "water": "Water / Hydration",
+        "meds": "Health / Medications",
+        "home": "Home / Household",
+        "wallet": "Finance / Money",
+        "star": "VIP Golden Star",
+        "skull": "VIP Boss / Hardcore",
+        "key": "VIP Master Key",
+        "hourglass": "VIP Epic Hourglass",
+        "mountain": "VIP High Performance"
+      }
+    },
+    "rewardPreview": {
+      "defaultTitle": "Estimated reward",
+      "defaultInlineTitle": "Rewards",
+      "emptyMessage": "No estimated rewards for this configuration.",
+      "reducedGainBadge": "Reduced Gain",
+      "tooltipAria": "Details for {title}",
+      "yieldWarningTitle": "Notice on yield rules",
+      "expectedYieldHeader": "Expected Yield",
+      "zeroGainDefault": "No XP or Coin gain"
+    },
+    "itemCatalog": {
+      "inFocus": "In Focus",
+      "types": {
+        "SingleUse": "Single-Use",
+        "TimeBased": "Voucher",
+        "MysteryBox": "Mystery Box"
+      },
+      "packages": {
+        "NONE": "None",
+        "BASIC": "Basic",
+        "PREMIUM": "Premium",
+        "EPIC": "Epic",
+        "LEGENDARY": "Legendary"
+      },
+      "categories": {
+        "NONE": "None",
+        "ENTERTAINMENT": "Entertainment",
+        "WELLNESS": "Wellness",
+        "SHOPPING": "Shopping",
+        "DEVELOPMENT": "Development",
+        "LUCK": "Luck",
+        "HOBBIES": "Hobbies"
+      },
+      "fallbackDescriptions": {
+        "timeBased": "Time voucher for a leisure session",
+        "mystery": "Contains a random surprise reward",
+        "singleUse": "Instant redemption reward"
+      },
+      "durationTitle": "Voucher duration: {minutes} minutes",
+      "couponDurationFallback": "Voucher",
+      "instantUseDuration": "Instant Use",
+      "statuses": {
+        "activeSession": "Active session",
+        "sealedBox": "Sealed box",
+        "available": "Available"
+      },
+      "tooltips": {
+        "inUse": "Item in use in Focus",
+        "openFocusSession": "Open Focus screen with this active session",
+        "insufficientCoins": "Insufficient coins",
+        "actionForPrice": "{action} for {price} coins",
+        "actionTarget": "{action} {title}"
+      },
+      "header": {
+        "item": "Item",
+        "product": "Product",
+        "type": "Type",
+        "packageAndCategory": "Package & Category",
+        "duration": "Duration",
+        "action": "Action",
+        "priceAndAction": "Price / Action"
+      }
+    }
+  },
+  "cookieBanner": {
+    "ariaLabel": "Cookie and privacy notice",
+    "closeAriaLabel": "Close cookie notice",
+    "title": "Privacy & Cookies",
+    "badge": "Essential",
+    "description": "We only use essential cookies to keep your session secure, authenticate your account, and preserve preferences such as theme, language, and workspace. We do not collect data for ads or third-party tracking.",
+    "privacyLink": "Privacy Policy & Data Protection",
+    "acceptButton": "Got it, I Agree"
+  },
+  "levels": {
+    "NOVICE": "Novice",
+    "APPRENTICE": "Apprentice",
+    "ADVENTURER": "Adventurer",
+    "CHALLENGER": "Challenger",
+    "AMATEUR": "Amateur",
+    "PROFESSIONAL": "Professional",
+    "EXPERT": "Expert",
+    "VETERAN": "Veteran",
+    "MASTER": "Master",
+    "LEGEND": "Legend",
+    "PREMIUM_MEMBER": "Premium Member"
+  }
+}

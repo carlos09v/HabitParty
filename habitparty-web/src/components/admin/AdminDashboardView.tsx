@@ -1,7 +1,9 @@
 "use client";
 
 import { RefreshCw, ShieldCheck } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCallback, useState, useTransition } from "react";
+import { toast } from "sonner";
 import {
   getAdminOverviewAction,
   getAdminUserDetailAction,
@@ -31,6 +33,7 @@ export function AdminDashboardView({
   initialTotalPages,
   initialTotalElements,
 }: AdminDashboardViewProps) {
+  const t = useTranslations("admin.dashboard");
   const [overview, setOverview] = useState<AdminOverviewDTO | null>(
     initialOverview,
   );
@@ -85,10 +88,10 @@ export function AdminDashboardView({
         setTotalPages(usersRes.data.totalPages);
         setTotalElements(usersRes.data.totalElements);
       }
-      setActionMessage("Dados administrativos atualizados com sucesso!");
+      setActionMessage(t("refreshedMessage"));
       setTimeout(() => setActionMessage(null), 3000);
     });
-  }, [search, filter, page]);
+  }, [search, filter, page, t]);
 
   const handleSearchChange = (newSearch: string) => {
     setSearch(newSearch);
@@ -111,7 +114,7 @@ export function AdminDashboardView({
     startTransition(async () => {
       const res = await getAdminUserDetailAction(user.id);
       if (!res.success) {
-        alert(res.error || "Não foi possível carregar os detalhes do usuário.");
+        toast.error(res.error || t("userDetailLoadError"));
         return;
       }
       setSelectedUserDetail(res.data);
@@ -135,12 +138,12 @@ export function AdminDashboardView({
         refreshAll();
         setActionMessage(
           newRole === "ADMIN"
-            ? `Usuário ${targetUser.fullName} promovido a Administrador!`
-            : `Usuário ${targetUser.fullName} rebaixado para Usuário padrão.`,
+            ? t("promotedMessage", { fullName: targetUser.fullName })
+            : t("demotedMessage", { fullName: targetUser.fullName }),
         );
         setTimeout(() => setActionMessage(null), 3000);
       } else {
-        alert(res.error || "Erro ao alterar o papel do usuário.");
+        toast.error(res.error || t("roleUpdateError"));
       }
     });
   };
@@ -152,15 +155,12 @@ export function AdminDashboardView({
         <div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-bold uppercase tracking-wider mb-2">
             <ShieldCheck size={14} />
-            Painel de Controle do Administrador
+            {t("badge")}
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-neutral-50 tracking-tight">
-            Gestão do Sistema & Métricas
+            {t("title")}
           </h1>
-          <p className="text-sm text-neutral-400 mt-1">
-            Monitore o consumo de e-mails via Resend, espaço em disco do banco
-            de dados e controle o uso de recursos por usuário.
-          </p>
+          <p className="text-sm text-neutral-400 mt-1">{t("subtitle")}</p>
         </div>
 
         <button
@@ -173,7 +173,7 @@ export function AdminDashboardView({
             size={14}
             className={isPending ? "animate-spin text-gold" : ""}
           />
-          Atualizar Dados
+          {t("refreshButton")}
         </button>
       </div>
 
@@ -211,6 +211,7 @@ export function AdminDashboardView({
           setSelectedUserDetail(null);
         }}
       />
+
       {/* MODAL DE CONFIRMAÇÃO DE ALTERAÇÃO DE CARGO */}
       <ConfirmationModal
         isOpen={Boolean(roleModalUser)}
@@ -219,21 +220,23 @@ export function AdminDashboardView({
         isLoading={isPending}
         title={
           roleModalUser?.role === "ADMIN"
-            ? "Rebaixar para Usuário Comum"
-            : "Promover a Administrador"
+            ? t("roleModal.demoteTitle")
+            : t("roleModal.promoteTitle")
         }
         variant={roleModalUser?.role === "ADMIN" ? "danger" : "warning"}
         confirmText={
-          roleModalUser?.role === "ADMIN" ? "Sim, rebaixar" : "Sim, promover"
+          roleModalUser?.role === "ADMIN"
+            ? t("roleModal.demoteConfirm")
+            : t("roleModal.promoteConfirm")
         }
-        cancelText="Cancelar"
+        cancelText={t("roleModal.cancel")}
         description={
           roleModalUser ? (
             <div className="flex flex-col gap-2">
               <p>
                 {roleModalUser.role === "ADMIN" ? (
                   <>
-                    Deseja realmente revogar os privilégios de Administrador de{" "}
+                    {t("roleModal.demoteDescriptionPrefix")}{" "}
                     <strong className="text-neutral-100">
                       {roleModalUser.fullName}
                     </strong>{" "}
@@ -241,14 +244,16 @@ export function AdminDashboardView({
                   </>
                 ) : (
                   <>
-                    Deseja realmente promover{" "}
+                    {t("roleModal.promoteDescriptionPrefix")}{" "}
                     <strong className="text-neutral-100">
                       {roleModalUser.fullName}
                     </strong>{" "}
-                    (@{roleModalUser.username}) a{" "}
-                    <strong className="text-gold">Administrador</strong>? Ele
-                    terá acesso a todas as métricas do sistema e gerenciamento
-                    de usuários.
+                    (@{roleModalUser.username}){" "}
+                    {t("roleModal.promoteDescriptionTo")}{" "}
+                    <strong className="text-gold">
+                      {t("roleModal.promoteRoleBadge")}
+                    </strong>
+                    {t("roleModal.promoteDescriptionSuffix")}
                   </>
                 )}
               </p>

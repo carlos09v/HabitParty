@@ -35,6 +35,9 @@ public interface TransactionHistoryApi {
     @GetMapping("/export")
     void exportToCsv(
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado,
+        @RequestParam(required = false) String tab,
+        @RequestParam(required = false) String period,
+        @RequestParam(required = false) String search,
         HttpServletResponse response
     ) throws IOException;
 

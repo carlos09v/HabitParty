@@ -2,17 +2,21 @@
 
 import { useEffect, useRef } from "react";
 import { useUIStore } from "@/store/uiStore";
-import type { ThemeMode } from "@/types/ui";
+import type { AppLocale, ThemeMode } from "@/types/ui";
 
 interface ThemeInitializerProps {
   theme: ThemeMode;
+  locale?: AppLocale;
 }
 
-export function ThemeInitializer({ theme }: ThemeInitializerProps) {
+export function ThemeInitializer({
+  theme,
+  locale = "en",
+}: ThemeInitializerProps) {
   const initialized = useRef(false);
 
   if (!initialized.current) {
-    useUIStore.setState({ theme });
+    useUIStore.setState({ theme, locale });
     initialized.current = true;
   }
 
@@ -25,6 +29,12 @@ export function ThemeInitializer({ theme }: ThemeInitializerProps) {
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (useUIStore.getState().locale !== locale) {
+      useUIStore.setState({ locale });
+    }
+  }, [locale]);
 
   return null;
 }

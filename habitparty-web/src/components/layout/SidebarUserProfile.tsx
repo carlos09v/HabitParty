@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import type { components } from "@/api/schema";
 import { SubscriptionExpirationAlert } from "@/components/subscription/SubscriptionExpirationAlert";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { FounderBadge } from "@/components/ui/FounderBadge";
 import { UserAvatar } from "@/components/ui/UserAvatar";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
+import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import { formatCoins } from "@/utils";
-import { getLevelProgress } from "@/utils/levels";
+import { getLevelProgress, localizeLevelTitle } from "@/utils/levels";
 
 type User = components["schemas"]["UserResponseDTO"];
 
@@ -21,21 +24,34 @@ export function SidebarUserProfile({
   initialUser,
   onClose,
 }: SidebarUserProfileProps) {
+  const locale = useLocale() as AppLocale;
+  const t = useTranslations("userProfile");
+  const { isGamified } = useExperienceMode();
   const storeUser = useUserStore((s) => s.user);
   const user = storeUser || initialUser;
 
   const currentXp = user?.totalXp ?? 0;
   const progress = getLevelProgress(currentXp);
-  const displayName = user?.fullName || user?.username || "Aventureiro";
-  const levelTitle =
+  const defaultFallbackName = isGamified
+    ? t("defaultNameGamified")
+    : t("defaultNameProductivity");
+  const displayName = user?.fullName || user?.username || defaultFallbackName;
+  const rawLevelTitle =
     user?.currentLevelTitle ||
     progress.currentLevel.title ||
-    (user?.isPremium ? "Membro Premium" : "Novato");
+    (user?.isPremium ? "PREMIUM_MEMBER" : "NOVICE");
+  const levelTitle = localizeLevelTitle(rawLevelTitle, locale);
 
   const targetXp = progress.targetXp;
-  const remainingXp = progress.remainingXp;
+  const remainingXp =
+    user?.xpToNextLevel !== undefined
+      ? user.xpToNextLevel
+      : progress.remainingXp;
   const xpPercent = progress.percent;
-  const nextLevelTitle = progress.nextLevel.title;
+  const nextLevelTitle = localizeLevelTitle(
+    user?.nextLevelTitle || progress.nextLevel.title,
+    locale,
+  );
   const coins = user?.currentCoins ?? 0;
 
   return (
@@ -44,7 +60,7 @@ export function SidebarUserProfile({
         href="/settings"
         onClick={onClose}
         className="flex items-center gap-2.5 mb-2 group rounded-lg p-1 -m-1 hover:bg-surface-hover/70 dark:hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50"
-        title={`Ver configurações de perfil (${displayName})`}
+        title={t("settingsTitle", { name: displayName })}
       >
         <UserAvatar
           src={user?.profilePhotoUrl}
@@ -69,47 +85,59 @@ export function SidebarUserProfile({
         </div>
       </Link>
 
-      <div className="flex items-center justify-between gap-2 mt-2">
-        <div className="flex-1 min-w-0">
-          <div
-            className="h-1.5 w-full bg-surface-hover/80 dark:bg-neutral-900 border border-primary/10 dark:border-transparent rounded-full overflow-hidden"
-            role="progressbar"
-            aria-valuenow={currentXp}
-            aria-valuemin={0}
-            aria-valuemax={targetXp}
+      <div className="flex flex-col gap-1.5 mt-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <span
+            className="text-tiny font-semibold text-neutral-300 tabular-nums leading-none truncate"
             title={
               !progress.isMaxLevel
-                ? `Progresso: ${currentXp}/${targetXp} XP (${xpPercent}%). Faltam ${remainingXp} XP para ${nextLevelTitle}.`
-                : `Progresso: ${currentXp} XP (Nível Máximo - ${progress.currentLevel.title})`
-            }
-          >
-            <div
-              className="h-full bg-gold rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${xpPercent}%` }}
-            />
-          </div>
-          <p
-            className="text-tiny text-neutral-300 text-center mt-0.5"
-            title={
-              !progress.isMaxLevel
-                ? `Faltam ${remainingXp} XP para ${nextLevelTitle}`
-                : "Nível Máximo"
+                ? t("remainingXpTitle", {
+                    xp: remainingXp,
+                    nextTitle: nextLevelTitle,
+                  })
+                : t("maxLevelTitle")
             }
           >
             {!progress.isMaxLevel
-              ? `(${currentXp}/${targetXp} XP)`
-              : `(${currentXp} XP - Nível Máximo)`}
-          </p>
+              ? `${currentXp} / ${targetXp} XP`
+              : t("xpMaxLabel", { xp: currentXp })}
+          </span>
+
+          <div
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold/10 border border-gold/25 shrink-0 max-w-[105px]"
+            title={t("coinsTitle", {
+              coins: formatCoins(coins, { locale }),
+            })}
+          >
+            <CoinIcon size={13} withGlow className="shrink-0" />
+            <span className="text-xs font-bold text-neutral-50 leading-none tabular-nums truncate">
+              {formatCoins(coins, { compact: true, locale })}
+            </span>
+          </div>
         </div>
 
         <div
-          className="flex items-center gap-1 shrink-0 max-w-[90px]"
-          title={`${formatCoins(coins)} moedas`}
+          className="h-2 w-full bg-surface-hover/80 dark:bg-neutral-900 border border-primary/15 dark:border-white/5 rounded-full overflow-hidden"
+          role="progressbar"
+          aria-valuenow={currentXp}
+          aria-valuemin={0}
+          aria-valuemax={targetXp}
+          title={
+            !progress.isMaxLevel
+              ? t("progressTitle", {
+                  currentXp,
+                  targetXp,
+                  percent: xpPercent,
+                  remainingXp,
+                  nextTitle: nextLevelTitle,
+                })
+              : t("progressMaxTitle", { currentXp, levelTitle })
+          }
         >
-          <CoinIcon size={15} withGlow />
-          <span className="text-body-s font-bold text-neutral-50 truncate">
-            {formatCoins(coins, { compact: true })}
-          </span>
+          <div
+            className="h-full bg-gold rounded-full transition-all duration-500 ease-out shadow-glow-gold-xs"
+            style={{ width: `${xpPercent}%` }}
+          />
         </div>
       </div>
 

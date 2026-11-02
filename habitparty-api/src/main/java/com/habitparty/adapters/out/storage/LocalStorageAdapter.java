@@ -60,7 +60,8 @@ public class LocalStorageAdapter implements StoragePort {
     }
 
     if (!ALLOWED_EXTENSIONS.contains(extension)) {
-      throw new DomainValidationException("Formato de arquivo inválido. Apenas imagens JPG, PNG ou WEBP são permitidas.");
+      throw new DomainValidationException(
+          "Formato de arquivo inválido. Apenas imagens JPG, PNG ou WEBP são permitidas.");
     }
 
     try {

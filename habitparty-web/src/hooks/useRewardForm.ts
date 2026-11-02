@@ -1,9 +1,13 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { createReward, updateReward } from "@/actions/rewardActions";
-import { suggestRewardIconFromTitle } from "@/constants/reward";
+import {
+  suggestRewardIconFromTitle,
+  toPackageMessageKey,
+} from "@/constants/reward";
 import type {
   PackageLevel,
   Reward,
@@ -29,6 +33,8 @@ export function useRewardForm({
   onSuccess,
   onClose,
 }: UseRewardFormProps) {
+  const t = useTranslations("rewards.hook");
+  const tMystery = useTranslations("rewards.mysteryBox");
   const isEditing = Boolean(rewardToEdit);
   const [isPending, startTransition] = useTransition();
 
@@ -44,7 +50,7 @@ export function useRewardForm({
 
   useEffect(() => {
     if (isOpen) {
-      setHasManuallyChangedIcon(Boolean(rewardToEdit));
+      setHasManuallyChangedIcon(false);
       if (rewardToEdit) {
         setTitle(rewardToEdit.title || "");
         setDescription(rewardToEdit.description || "");
@@ -83,13 +89,13 @@ export function useRewardForm({
     e.preventDefault();
 
     if (!title.trim()) {
-      toast.error("O título da recompensa é obrigatório.");
+      toast.error(t("titleRequired"));
       return;
     }
 
     const numericPrice = parseFloat(price.replace(",", "."));
     if (Number.isNaN(numericPrice) || numericPrice <= 0) {
-      toast.error("O preço deve ser um valor válido maior que zero.");
+      toast.error(t("invalidPrice"));
       return;
     }
 
@@ -97,9 +103,7 @@ export function useRewardForm({
       type === "MysteryBox" &&
       (packageLevel === "Nenhum" || packageLevel === "NONE")
     ) {
-      toast.error(
-        "Caixa Misteriosa precisa de um nível de pacote selecionado.",
-      );
+      toast.error(t("mysteryBoxPackageRequired"));
       return;
     }
 
@@ -125,9 +129,7 @@ export function useRewardForm({
         const result = await updateReward(rewardToEdit.id, payload);
 
         if (!result.success) {
-          toast.error(
-            result.error || "Erro ao atualizar recompensa no servidor.",
-          );
+          toast.error(result.error || t("updateError"));
           return;
         }
 
@@ -137,7 +139,7 @@ export function useRewardForm({
           iconName: selectedIcon,
         };
 
-        toast.success("Recompensa atualizada com sucesso!");
+        toast.success(t("updateSuccess"));
         onSuccess?.(updatedReward);
         onClose();
       } else {
@@ -145,7 +147,7 @@ export function useRewardForm({
         const result = await createReward(payload);
 
         if (!result.success) {
-          toast.error(result.error || "Erro ao criar recompensa no servidor.");
+          toast.error(result.error || t("createError"));
           return;
         }
 
@@ -162,13 +164,23 @@ export function useRewardForm({
         };
 
         soundEffects.playCreateSound();
-        toast.success(`Recompensa "${formInput.title}" criada!`, {
-          description: "Disponível para resgate na Loja de Recompensas.",
+        toast.success(t("createSuccess", { title: formInput.title }), {
+          description: t("createSuccessDescription"),
         });
         onSuccess?.(newReward);
         onClose();
       }
     });
+  };
+
+  const isDefaultBoxTitle = (val: string) => {
+    const trimmed = val.trim();
+    return (
+      !trimmed ||
+      trimmed.startsWith("Caixa") ||
+      trimmed.endsWith("Box") ||
+      trimmed === t("defaultMysteryBoxTitle")
+    );
   };
 
   const handleTypeChange = (newType: RewardType) => {
@@ -181,8 +193,8 @@ export function useRewardForm({
         setPrice("5");
       }
       setSelectedIcon("mystery_box");
-      if (!title.trim() || title.startsWith("Caixa")) {
-        setTitle("Caixa Misteriosa Básica");
+      if (isDefaultBoxTitle(title)) {
+        setTitle(t("defaultMysteryBoxTitle"));
       }
     } else if (newType === "SingleUse") {
       setPackageLevel("Nenhum");
@@ -204,14 +216,17 @@ export function useRewardForm({
     setPackageLevel(tierId);
     setPrice(String(recommendedPrice));
     setSelectedIcon("mystery_box");
-    if (!title.trim() || title.startsWith("Caixa")) {
-      setTitle(tierName || `Caixa ${tierId}`);
+    if (isDefaultBoxTitle(title)) {
+      const key = toPackageMessageKey(tierId);
+      const fallbackTierName =
+        key !== "NONE" ? tMystery(`tiers.${key}.name`) : `Caixa ${tierId}`;
+      setTitle(tierName || fallbackTierName);
     }
   };
 
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle);
-    if (!hasManuallyChangedIcon && !isEditing && type !== "MysteryBox") {
+    if (!hasManuallyChangedIcon && type !== "MysteryBox") {
       const suggested = suggestRewardIconFromTitle(newTitle);
       if (suggested) {
         setSelectedIcon(suggested);

@@ -1,7 +1,9 @@
 import { CalendarCheck } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { TaskRow } from "@/components/tasks/shared/TaskRow";
 import { DASHBOARD_EMPTY_MESSAGES } from "@/constants/dashboard";
 import { TASK_TABLE_GRID_COLS } from "@/constants/task";
+import type { AppLocale } from "@/i18n/config";
 import type { TaskTableProps } from "@/types/dashboard";
 import { cn } from "@/utils";
 import { formatShortDate } from "@/utils/date";
@@ -20,6 +22,8 @@ export function TaskTable({
   onPageChange,
   isCompact = false,
 }: TaskTableProps) {
+  const t = useTranslations("dashboard.taskTable");
+  const locale = useLocale() as AppLocale;
   const totalItems = tasks.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
@@ -27,23 +31,28 @@ export function TaskTable({
   const startIndex = (safeCurrentPage - 1) * itemsPerPage;
   const paginatedTasks = tasks.slice(startIndex, startIndex + itemsPerPage);
 
-  const formattedDate = formatShortDate(selectedDate);
+  const formattedDate = formatShortDate(selectedDate, { locale });
 
-  const fallbackEmpty = {
-    title: "Nenhuma tarefa encontrada",
-    description: "Não encontramos tarefas para o filtro selecionado.",
-    icon: CalendarCheck,
-  };
+  const EmptyIcon =
+    DASHBOARD_EMPTY_MESSAGES[activeFilter]?.icon || CalendarCheck;
 
   const emptyMeta = selectedDate
     ? {
-        title: "Tudo limpo nesta data! 🎉",
-        description: `Não há tarefas agendadas para o dia ${formattedDate}.`,
+        title: t("emptyDateTitle"),
+        description: t("emptyDateDesc", { date: formattedDate }),
         icon: CalendarCheck,
       }
-    : DASHBOARD_EMPTY_MESSAGES[activeFilter] || fallbackEmpty;
-
-  const EmptyIcon = emptyMeta.icon;
+    : DASHBOARD_EMPTY_MESSAGES[activeFilter]
+      ? {
+          title: t(`empty.${activeFilter}.title`),
+          description: t(`empty.${activeFilter}.description`),
+          icon: EmptyIcon,
+        }
+      : {
+          title: t("emptyFallbackTitle"),
+          description: t("emptyFallbackDesc"),
+          icon: CalendarCheck,
+        };
 
   const panelId = selectedDate ? "panel-date" : `panel-${activeFilter}`;
   const tabId = selectedDate ? "tab-date" : `tab-${activeFilter}`;
@@ -54,7 +63,7 @@ export function TaskTable({
       role="tabpanel"
       aria-labelledby={tabId}
       className="flex flex-col gap-2.5 w-full"
-      aria-label="Lista de tarefas"
+      aria-label={t("ariaLabel")}
     >
       {/* Cabeçalho da Grade Responsivo */}
       <div
@@ -65,12 +74,12 @@ export function TaskTable({
         )}
         aria-hidden="true"
       >
-        <span className="pl-13">Nome</span>
-        <span className="hidden sm:block">Lista</span>
-        <span>Tipo</span>
-        <span className="hidden sm:block">Prioridade</span>
-        <span className="hidden md:block">Frequência/Prazo</span>
-        <span className="text-right sr-only">Ações</span>
+        <span className="pl-13">{t("colName")}</span>
+        <span className="hidden sm:block">{t("colList")}</span>
+        <span>{t("colType")}</span>
+        <span className="hidden sm:block">{t("colPriority")}</span>
+        <span className="hidden md:block">{t("colSchedule")}</span>
+        <span className="text-right sr-only">{t("colActions")}</span>
       </div>
 
       {/* Linhas de Tarefas ou Estado Vazio */}

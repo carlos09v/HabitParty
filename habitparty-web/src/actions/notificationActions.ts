@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { getTranslations } from "next-intl/server";
 import { serverApi } from "@/api/server";
 import { ALL_WEEK_DAYS } from "@/constants/task";
 
@@ -31,7 +32,10 @@ export async function getSidebarNotificationsAction(
   clientDayIndex?: number,
 ): Promise<SidebarNotificationsResponse> {
   try {
-    const cookieStore = await cookies();
+    const [cookieStore, t] = await Promise.all([
+      cookies(),
+      getTranslations("notifications"),
+    ]);
     let workspaceId = cookieStore.get("activeWorkspaceId")?.value;
 
     const [workspacesRes, userRes, inventoryRes] = await Promise.all([
@@ -79,13 +83,13 @@ export async function getSidebarNotificationsAction(
     let overdueCount = 0;
     let todayTasksCount = 0;
 
-    for (const t of tasks) {
-      const type = (t.taskType || "").toLowerCase();
+    for (const task of tasks) {
+      const type = (task.taskType || "").toLowerCase();
       const isDaily = type === "daily";
       const isHabit = type === "habit";
 
-      if (t.dueDate) {
-        const datePart = t.dueDate.split("T")[0];
+      if (task.dueDate) {
+        const datePart = task.dueDate.split("T")[0];
         if (datePart < todayStr) {
           overdueCount++;
         } else if (datePart === todayStr) {
@@ -96,9 +100,9 @@ export async function getSidebarNotificationsAction(
           todayTasksCount++;
         } else if (isDaily) {
           if (
-            !t.daysOfWeek ||
-            t.daysOfWeek.length === 0 ||
-            t.daysOfWeek.includes(
+            !task.daysOfWeek ||
+            task.daysOfWeek.length === 0 ||
+            task.daysOfWeek.includes(
               todayDayName as (typeof ALL_WEEK_DAYS)[number],
             )
           ) {
@@ -113,9 +117,9 @@ export async function getSidebarNotificationsAction(
       notifications.push({
         id: "alert-overdue",
         type: "overdue",
-        title: `${overdueCount} ${overdueCount === 1 ? "tarefa atrasada" : "tarefas atrasadas"}!`,
-        description: "Você tem pendências vencidas aguardando conclusão.",
-        timestamp: "Atenção necessária",
+        title: t("overdueTitle", { count: overdueCount }),
+        description: t("overdueDesc"),
+        timestamp: t("overdueTimestamp"),
         severity: "danger",
         href: "/dashboard?filter=overdue",
       });
@@ -126,9 +130,9 @@ export async function getSidebarNotificationsAction(
       notifications.push({
         id: "alert-today",
         type: "today",
-        title: `${todayTasksCount} ${todayTasksCount === 1 ? "tarefa/hábito" : "tarefas/hábitos"} para hoje`,
-        description: "Mantenha o ritmo para conquistar XP e moedas.",
-        timestamp: "Meta do dia",
+        title: t("todayTitle", { count: todayTasksCount }),
+        description: t("todayDesc"),
+        timestamp: t("todayTimestamp"),
         severity: "info",
         href: "/dashboard?filter=today",
       });
@@ -140,10 +144,9 @@ export async function getSidebarNotificationsAction(
       notifications.push({
         id: "alert-streak",
         type: "streak",
-        title: `Ofensiva de ${streak} ${streak === 1 ? "dia" : "dias"} ativa! 🔥`,
-        description:
-          "Complete suas metas diárias hoje para manter sua sequência viva.",
-        timestamp: "Ofensiva",
+        title: t("streakTitle", { count: streak }),
+        description: t("streakDesc"),
+        timestamp: t("streakTimestamp"),
         severity: "warning",
         href: "/dashboard?filter=today",
       });
@@ -156,9 +159,11 @@ export async function getSidebarNotificationsAction(
       notifications.push({
         id: `alert-focus-item-${firstItem.inventoryItemId}`,
         type: "focus_item",
-        title: `Recompensa pronta: "${firstItem.rewardName || "Item de Foco"}"`,
-        description: "Item em foco pronto para ser desfrutado ou concluído.",
-        timestamp: "Mochila / Foco",
+        title: t("focusItemTitle", {
+          name: firstItem.rewardName || t("focusItemDefaultName"),
+        }),
+        description: t("focusItemDesc"),
+        timestamp: t("focusItemTimestamp"),
         severity: "gold",
         href: "/focus",
       });

@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { completeOAuthLogin, exchangeGoogleCode } from "@/actions/auth";
 
 export async function GET(request: NextRequest) {
@@ -7,11 +8,12 @@ export async function GET(request: NextRequest) {
   const accessToken = searchParams.get("accessToken");
   const refreshToken = searchParams.get("refreshToken");
   const errorParam = searchParams.get("error");
+  const t = await getTranslations("auth.oauthCallback");
 
   if (errorParam) {
     return NextResponse.redirect(
       new URL(
-        "/signIn?error=O login com Google foi cancelado ou não autorizado.",
+        `/signIn?error=${encodeURIComponent(t("cancelledError"))}`,
         request.url,
       ),
     );
@@ -41,7 +43,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.redirect(
     new URL(
-      "/signIn?error=Nenhum código de autorização foi recebido do Google.",
+      `/signIn?error=${encodeURIComponent(t("noCodeError"))}`,
       request.url,
     ),
   );

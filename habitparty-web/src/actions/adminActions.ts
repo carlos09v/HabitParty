@@ -1,6 +1,7 @@
 "use server";
 
 import { updateTag } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { type ActionState, getErrorMessage } from "@/actions/types";
 import { getServerAuthToken } from "@/api/server";
 import type {
@@ -22,6 +23,7 @@ async function getAuthHeader(): Promise<HeadersInit> {
 export async function getAdminOverviewAction(): Promise<
   ActionState<AdminOverviewDTO>
 > {
+  const t = await getTranslations("admin.actions");
   try {
     const authHeaders = await getAuthHeader();
     const res = await fetch(`${API_BASE_URL}/api/v1/admin/overview`, {
@@ -37,10 +39,7 @@ export async function getAdminOverviewAction(): Promise<
       const err = await res.json().catch(() => null);
       return {
         success: false,
-        error: getErrorMessage(
-          err,
-          "Falha ao carregar visão geral de administrador.",
-        ),
+        error: getErrorMessage(err, t("overviewFailed")),
       };
     }
 
@@ -50,7 +49,7 @@ export async function getAdminOverviewAction(): Promise<
     console.error("[AdminAction:getOverview]", err);
     return {
       success: false,
-      error: "Erro de comunicação com o servidor administrativo.",
+      error: t("overviewConnectionError"),
     };
   }
 }
@@ -64,6 +63,7 @@ export async function listAdminUsersAction(
   page = 0,
   size = 15,
 ): Promise<ActionState<AdminUsersPageResponse>> {
+  const t = await getTranslations("admin.actions");
   try {
     const authHeaders = await getAuthHeader();
     const query = new URLSearchParams({
@@ -90,7 +90,7 @@ export async function listAdminUsersAction(
       const err = await res.json().catch(() => null);
       return {
         success: false,
-        error: getErrorMessage(err, "Falha ao buscar lista de usuários."),
+        error: getErrorMessage(err, t("listUsersFailed")),
       };
     }
 
@@ -100,7 +100,7 @@ export async function listAdminUsersAction(
     console.error("[AdminAction:listUsers]", err);
     return {
       success: false,
-      error: "Erro de conexão ao buscar usuários.",
+      error: t("listUsersConnectionError"),
     };
   }
 }
@@ -111,6 +111,7 @@ export async function listAdminUsersAction(
 export async function getAdminUserDetailAction(
   userId: string,
 ): Promise<ActionState<AdminUserDetailDTO>> {
+  const t = await getTranslations("admin.actions");
   try {
     const authHeaders = await getAuthHeader();
     const res = await fetch(`${API_BASE_URL}/api/v1/admin/users/${userId}`, {
@@ -126,7 +127,7 @@ export async function getAdminUserDetailAction(
       const err = await res.json().catch(() => null);
       return {
         success: false,
-        error: getErrorMessage(err, "Falha ao carregar detalhes do usuário."),
+        error: getErrorMessage(err, t("userDetailFailed")),
       };
     }
 
@@ -136,7 +137,7 @@ export async function getAdminUserDetailAction(
     console.error("[AdminAction:getUserDetail]", err);
     return {
       success: false,
-      error: "Erro ao obter detalhes do usuário.",
+      error: t("userDetailConnectionError"),
     };
   }
 }
@@ -148,6 +149,7 @@ export async function updateUserRoleAction(
   userId: string,
   role: "USER" | "ADMIN",
 ): Promise<ActionState<void>> {
+  const t = await getTranslations("admin.actions");
   try {
     const authHeaders = await getAuthHeader();
     const res = await fetch(
@@ -166,10 +168,7 @@ export async function updateUserRoleAction(
       const err = await res.json().catch(() => null);
       return {
         success: false,
-        error: getErrorMessage(
-          err,
-          "Não foi possível alterar a role do usuário.",
-        ),
+        error: getErrorMessage(err, t("updateRoleFailed")),
       };
     }
 
@@ -180,7 +179,7 @@ export async function updateUserRoleAction(
     console.error("[AdminAction:updateRole]", err);
     return {
       success: false,
-      error: "Erro de comunicação ao alterar o cargo do usuário.",
+      error: t("updateRoleConnectionError"),
     };
   }
 }

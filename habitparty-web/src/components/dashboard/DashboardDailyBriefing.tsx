@@ -1,7 +1,10 @@
 "use client";
 
 import { Calendar, Flame, Sparkles, Target } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
+import type { AppLocale } from "@/i18n/config";
 import type { DashboardDailyBriefingProps } from "@/types/dashboard";
 import { cn } from "@/utils";
 import {
@@ -22,6 +25,9 @@ export function DashboardDailyBriefing({
   tasks,
   transactions,
 }: DashboardDailyBriefingProps) {
+  const t = useTranslations("dashboard.dailyBriefing");
+  const { isGamified } = useExperienceMode();
+  const locale = useLocale() as AppLocale;
   const [now, setNow] = useState<Date>(() => new Date());
 
   useEffect(() => {
@@ -32,7 +38,7 @@ export function DashboardDailyBriefing({
     return () => clearInterval(interval);
   }, []);
 
-  const greeting = getGreeting(now);
+  const greeting = getGreeting(now, locale);
 
   const todayDateStr = getTodayDateString(now);
   const localTodayTasks = getTodayTasks(tasks, todayDateStr);
@@ -51,26 +57,31 @@ export function DashboardDailyBriefing({
   // Frase de motivação contextual e limpa
   const motivationalMessage = (() => {
     if (totalTodayTasks === 0) {
-      return "Nenhuma tarefa agendada para hoje. Aproveite para planejar novas metas!";
+      return t("motivationalEmpty");
     }
     if (isAllCompleted) {
-      return "Sensacional! Todas as metas de hoje foram concluídas. O dia foi conquistado! 🏆";
+      return t("motivationalCompleted");
     }
-    return "Mantenha a constância e o foco na missão para avançar seus níveis!";
+    return isGamified
+      ? t("motivationalActiveGamified")
+      : t("motivationalActiveProductivity");
   })();
 
   // Data formatada para o cabeçalho no fuso local do navegador (ex: Terça-feira, 20 de out.)
-  const formattedDay = now.toLocaleDateString("pt-BR", {
-    weekday: "long",
-    day: "numeric",
-    month: "short",
-  });
+  const formattedDay = now.toLocaleDateString(
+    locale === "en" ? "en-US" : "pt-BR",
+    {
+      weekday: "long",
+      day: "numeric",
+      month: "short",
+    },
+  );
   const capitalizedDay =
     formattedDay.charAt(0).toUpperCase() + formattedDay.slice(1);
 
   return (
     <section
-      aria-label="Resumo do Dia do Jogador"
+      aria-label={t("ariaLabel")}
       className="w-full shrink-0 min-h-fit rounded-2xl border border-primary/35 bg-linear-to-br from-primary-dark/40 via-surface/60 to-primary-dark/25 shadow-[0_0_20px_rgba(124,58,237,0.1)] backdrop-blur-md transition-all duration-200 relative overflow-hidden flex flex-col p-5 sm:p-6 gap-5"
     >
       {/* Bloco Superior: Saudação, Mensagem Contextual e Progresso Diário */}
@@ -106,7 +117,9 @@ export function DashboardDailyBriefing({
         {totalTodayTasks > 0 && (
           <div className="flex flex-col gap-1.5 sm:w-64 shrink-0 p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-neutral-300 font-medium">Meta de Hoje</span>
+              <span className="text-neutral-300 font-medium">
+                {t("todayGoal")}
+              </span>
               <span
                 className={cn(
                   "font-bold",
@@ -123,7 +136,9 @@ export function DashboardDailyBriefing({
               aria-valuenow={completedTodayTasks}
               aria-valuemin={0}
               aria-valuemax={totalTodayTasks}
-              aria-label={`Progresso de tarefas de hoje: ${completionPercent}%`}
+              aria-label={t("progressAriaLabel", {
+                percent: completionPercent,
+              })}
             >
               <div
                 className={cn(
@@ -148,20 +163,18 @@ export function DashboardDailyBriefing({
           </div>
           <div className="flex flex-col min-w-0 flex-1">
             <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-              Ofensiva
+              {t("streakLabel")}
             </span>
             <span className="text-base sm:text-lg font-extrabold text-neutral-100 truncate">
-              {streak} {streak === 1 ? "Dia" : "Dias"}
+              {t("streakCount", { count: streak })}
             </span>
             <span
               className="text-xs font-semibold text-orange-400 whitespace-nowrap overflow-visible"
               title={
-                streak > 0
-                  ? "Ritmo diário mantido!"
-                  : "Complete uma tarefa hoje para iniciar!"
+                streak > 0 ? t("streakActiveTitle") : t("streakStartTitle")
               }
             >
-              {streak > 0 ? "Ritmo mantido 🔥" : "Complete hoje! 🔥"}
+              {streak > 0 ? t("streakActiveBadge") : t("streakStartBadge")}
             </span>
           </div>
         </div>
@@ -180,13 +193,16 @@ export function DashboardDailyBriefing({
           </div>
           <div className="flex flex-col min-w-0 flex-1">
             <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-              Tarefas do Dia
+              {t("dailyTasksLabel")}
             </span>
             <span
               className="text-base sm:text-lg font-extrabold text-neutral-100 truncate"
               suppressHydrationWarning
             >
-              {completedTodayTasks}/{totalTodayTasks} Concluídas
+              {t("completedCount", {
+                completed: completedTodayTasks,
+                total: totalTodayTasks,
+              })}
             </span>
             <span
               className={cn(
@@ -195,38 +211,46 @@ export function DashboardDailyBriefing({
               )}
               title={
                 isAllCompleted
-                  ? "Todas as tarefas de hoje foram concluídas!"
-                  : `${totalTodayTasks - completedTodayTasks} tarefas pendentes para hoje`
+                  ? t("allCompletedTitle")
+                  : t("pendingCountTitle", {
+                      count: totalTodayTasks - completedTodayTasks,
+                    })
               }
               suppressHydrationWarning
             >
               {isAllCompleted
-                ? "Meta cumprida! 🎯"
-                : `${totalTodayTasks - completedTodayTasks} pendente(s)`}
+                ? t("goalMetBadge")
+                : t("pendingCountBadge", {
+                    count: totalTodayTasks - completedTodayTasks,
+                  })}
             </span>
           </div>
         </div>
 
-        {/* Card 3: XP Acumulado Hoje */}
+        {/* Card 3: XP / Pontos Acumulados Hoje */}
         <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-white/5 border border-white/10 hover:border-gold/30 transition-colors backdrop-blur-xs min-w-0">
           <div className="w-11 h-11 rounded-lg bg-gold/15 border border-gold/30 flex items-center justify-center text-gold shrink-0">
             <Sparkles size={22} aria-hidden="true" />
           </div>
           <div className="flex flex-col min-w-0 flex-1">
             <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-              XP Conquistado
+              {isGamified
+                ? t("xpEarnedLabelGamified")
+                : t("xpEarnedLabelProductivity")}
             </span>
             <span
               className="text-base sm:text-lg font-extrabold text-gold truncate"
               suppressHydrationWarning
             >
-              +{todayXp} XP
+              +{todayXp} {isGamified ? "XP" : "pts"}
             </span>
             <span
               className="text-xs font-semibold text-neutral-300 whitespace-nowrap overflow-visible"
-              title="Pontos de experiência acumulados hoje"
+              title={t("todayGainsTitle")}
             >
-              Ganhos de hoje ✨
+              {isGamified
+                ? t("todayGainsBadgeGamified")
+                : t("todayGainsBadgeProductivity")}
             </span>
           </div>
         </div>

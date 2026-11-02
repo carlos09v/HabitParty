@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { updateTask } from "@/actions/taskActions";
@@ -17,7 +18,10 @@ import type { FormatSyntax, TaskDetailsPopoverProps } from "@/types/task-ui";
 import { isTaskHardcoreLocked } from "@/utils/date";
 import { calculateTaskReward } from "@/utils/economy";
 import { applyMarkdownFormat } from "@/utils/markdown";
-import { buildUpdateTaskPayload } from "@/utils/taskMapper";
+import {
+  buildUpdateTaskPayload,
+  computeOptimisticHabitDelta,
+} from "@/utils/taskMapper";
 
 export function useTaskDetailsPopover({
   isOpen,
@@ -27,9 +31,11 @@ export function useTaskDetailsPopover({
   onTaskUpdate,
   onDelete,
   onToggleComplete,
+  onHabitChange,
   onEdit,
   onDuplicate,
 }: Omit<TaskDetailsPopoverProps, "columnTitle">) {
+  const t = useTranslations("tasks.hooks");
   const [, startTransition] = useTransition();
   const popoverRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -47,7 +53,7 @@ export function useTaskDetailsPopover({
   const [title, setTitle] = useState(task?.title || "");
   const [description, setDescription] = useState(task?.description || "");
   const [dueDate, setDueDate] = useState(task?.dueDate || "");
-  const [priority, setPriority] = useState<string>(task?.priority || "MEDIUM");
+  const [priority, setPriority] = useState<string>(task?.priority || "NONE");
   const [tags, setTags] = useState<string[]>(task?.tags || []);
 
   const handleChecklistChanged = useCallback(
@@ -109,7 +115,7 @@ export function useTaskDetailsPopover({
       setDescription(task.description || "");
       descRef.current = task.description || "";
       setDueDate(task.dueDate || "");
-      setPriority(task.priority || "MEDIUM");
+      setPriority(task.priority || "NONE");
       setTags(task.tags || []);
       const initialChecklist = task.checklist || [];
       resetChecklist(initialChecklist);
@@ -160,7 +166,7 @@ export function useTaskDetailsPopover({
       startTransition(async () => {
         const res = await updateTask(task.id, payload);
         if (!res.success) {
-          toast.error(res.error || "Erro ao salvar alterações da tarefa.");
+          toast.error(res.error || t("saveChangesError"));
         } else if (res.data) {
           const finalChecklist =
             res.data.checklist && res.data.checklist.length > 0
@@ -174,7 +180,7 @@ export function useTaskDetailsPopover({
         }
       });
     },
-    [task, onTaskUpdate],
+    [task, onTaskUpdate, t],
   );
 
   const flushPendingChanges = useCallback(() => {
@@ -248,6 +254,13 @@ export function useTaskDetailsPopover({
     onTaskUpdate?.({ ...task, completed: next });
   };
 
+  const handleHabitDelta = (delta: number) => {
+    if (!task) return;
+    onHabitChange?.(task.id, delta);
+    const nextFields = computeOptimisticHabitDelta(task, delta);
+    onTaskUpdate?.({ ...task, ...nextFields });
+  };
+
   const handleTitleBlur = () => {
     if (!task) return;
     const trimmed = title.trim();
@@ -295,17 +308,17 @@ export function useTaskDetailsPopover({
       return;
     }
     if (tags.length >= MAX_TASK_TAGS) {
-      toast.error(`Uma tarefa pode ter no máximo ${MAX_TASK_TAGS} tags.`);
+      toast.error(t("maxTagsError", { max: MAX_TASK_TAGS }));
       setNewTagText("");
       newTagRef.current = "";
       setIsAddingTag(false);
       return;
     }
     const alreadyExists = tags.some(
-      (t) => t.toLowerCase() === trimmed.toLowerCase(),
+      (tagItem) => tagItem.toLowerCase() === trimmed.toLowerCase(),
     );
     if (alreadyExists) {
-      toast.error("Esta tag já foi adicionada.");
+      toast.error(t("tagAlreadyAdded"));
       setNewTagText("");
       newTagRef.current = "";
       setIsAddingTag(false);
@@ -416,6 +429,7 @@ export function useTaskDetailsPopover({
     isTodo,
     handleCloseWithSave,
     handleToggleTask,
+    handleHabitDelta,
     handleTitleBlur,
     handleTitleKeyDown,
     handleDescriptionBlur,

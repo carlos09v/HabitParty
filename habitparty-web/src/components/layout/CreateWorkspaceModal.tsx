@@ -1,7 +1,10 @@
 "use client";
 
+import { Check, FolderKanban, Loader2, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { BaseModal } from "@/components/ui/BaseModal";
+import { cn } from "@/utils";
 
 interface CreateWorkspaceModalProps {
   isOpen: boolean;
@@ -9,7 +12,10 @@ interface CreateWorkspaceModalProps {
   onSubmit: (name: string) => void;
   initialName?: string;
   isEdit?: boolean;
+  isLoading?: boolean;
 }
+
+const MAX_WORKSPACE_NAME_LENGTH = 25;
 
 export function CreateWorkspaceModal({
   isOpen,
@@ -17,7 +23,9 @@ export function CreateWorkspaceModal({
   onSubmit,
   initialName = "",
   isEdit = false,
+  isLoading = false,
 }: CreateWorkspaceModalProps) {
+  const t = useTranslations("workspace.createModal");
   const [workspaceName, setWorkspaceName] = useState(initialName);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -41,44 +49,70 @@ export function CreateWorkspaceModal({
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEdit ? "Editar Ambiente" : "Novo Ambiente"}
+      headerIcon={<FolderKanban size={20} />}
+      title={isEdit ? t("editTitle") : t("newTitle")}
+      description={isEdit ? t("editDesc") : t("newDesc")}
       maxWidth="max-w-sm"
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-1">
         <div className="flex flex-col gap-2">
-          <label
-            htmlFor="workspaceName"
-            className="text-body-s text-neutral-300"
-          >
-            Nome do Ambiente
-          </label>
+          <div className="flex items-center justify-between">
+            <label
+              htmlFor="workspaceName"
+              className="text-body-s text-neutral-300 font-medium"
+            >
+              {t("nameLabel")} <span className="text-gold">*</span>
+            </label>
+            <span
+              className={cn(
+                "text-tiny tabular-nums transition-colors",
+                workspaceName.length >= MAX_WORKSPACE_NAME_LENGTH
+                  ? "text-gold font-semibold"
+                  : "text-neutral-400",
+              )}
+            >
+              {workspaceName.length}/{MAX_WORKSPACE_NAME_LENGTH}
+            </span>
+          </div>
           <input
             ref={inputRef}
             id="workspaceName"
             type="text"
             value={workspaceName}
-            onChange={(e) => setWorkspaceName(e.target.value)}
-            placeholder="Ex: Trabalho, Estudos..."
-            className="w-full bg-background/50 border border-primary/40 rounded-lg px-3 py-2 text-neutral-50 placeholder:text-neutral-500 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors"
+            onChange={(e) =>
+              setWorkspaceName(
+                e.target.value.slice(0, MAX_WORKSPACE_NAME_LENGTH),
+              )
+            }
+            placeholder={t("placeholder")}
+            disabled={isLoading}
+            className="w-full bg-background/50 border border-primary/40 rounded-lg px-3 py-2 text-neutral-50 placeholder:text-neutral-500 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s disabled:opacity-50"
             required
-            maxLength={12}
+            maxLength={MAX_WORKSPACE_NAME_LENGTH}
           />
         </div>
 
-        <div className="flex justify-end gap-3 mt-2">
+        <div className="flex items-center justify-end gap-2.5 pt-3.5 border-t border-white/10 mt-1">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-body-s text-neutral-300 hover:text-neutral-50 transition-colors focus:outline-none rounded-lg cursor-pointer"
+            disabled={isLoading}
+            className="px-4 py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:text-neutral-50 hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Cancelar
+            <X size={14} />
+            {t("cancel")}
           </button>
           <button
             type="submit"
-            disabled={!workspaceName.trim()}
-            className="px-4 py-2 bg-gradient-to-r from-primary to-primary-dark border border-primary-light/30 rounded-lg text-neutral-50 text-body-s font-bold hover:brightness-110 transition-all focus:outline-none focus:ring-2 focus:ring-gold/50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            disabled={!workspaceName.trim() || isLoading}
+            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
           >
-            {isEdit ? "Salvar" : "Criar"}
+            {isLoading ? (
+              <Loader2 size={15} className="animate-spin" />
+            ) : (
+              <Check size={15} />
+            )}
+            <span>{isEdit ? t("saveChanges") : t("createSubmit")}</span>
           </button>
         </div>
       </form>

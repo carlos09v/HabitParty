@@ -30,8 +30,11 @@ services:
     container_name: habitparty-api
     ports:
       - "8080:8080"
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     environment:
-      - _JAVA_OPTIONS=-Djava.net.preferIPv4Stack=true
+      - _JAVA_OPTIONS=-Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses=true -Dnetworkaddress.cache.negative.ttl=0 -Djdk.httpclient.keepalive.timeout=30
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${DB_NAME:-habitparty}
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}

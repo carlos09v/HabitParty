@@ -68,8 +68,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
 
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: Dnd-kit sortable task card containing inner action buttons
-    // biome-ignore lint/a11y/noStaticElementInteractions: Dnd-kit sortable task card containing inner action buttons
-    <div
+    <article
       ref={setNodeRef}
       style={style}
       {...attributes}
@@ -89,32 +88,31 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
         }
       }}
       className={cn(
-        "group/card flex flex-col transition-[background-color,border-color,opacity,box-shadow] duration-150 select-none touch-none cursor-pointer",
+        "group/card flex flex-col transition-[background-color,border-color,opacity,box-shadow,transform] duration-150 select-none touch-none cursor-pointer",
         isCompact
           ? "gap-2 p-2.5 rounded-lg border border-l-4"
           : "gap-2.5 p-3 rounded-xl border border-l-4",
-        "bg-primary-dark/20 border-primary/30",
+        "bg-card dark:bg-gradient-to-b dark:from-card dark:to-surface/95 border-y-neutral-700/80 border-r-neutral-700/80 dark:border-y-white/12 dark:border-r-white/12 shadow-xs dark:shadow-sm hover:shadow-card-deep hover:-translate-y-0.5",
         isHabit
-          ? "hover:bg-primary-dark/35 hover:border-info/40"
+          ? "hover:border-y-info/45 hover:border-r-info/45"
           : isDaily
-            ? "hover:bg-primary-dark/35 hover:border-magenta/40"
-            : dueDateInfo.isOverdue && !isDone
-              ? "hover:bg-danger-500/[0.06] hover:border-danger-500/60"
-              : "hover:bg-primary-dark/35 hover:border-gold/40",
-        !(isTodo && dueDateInfo.isOverdue && !isDone) &&
-          "hover:border-y-primary-light/40 hover:border-r-primary-light/40",
+            ? "hover:border-y-magenta/45 hover:border-r-magenta/45"
+            : isTodo && dueDateInfo.isOverdue && !isDone
+              ? "hover:bg-danger-500/[0.06] hover:border-y-danger-500/60 hover:border-r-danger-500/60"
+              : "hover:border-y-gold/45 hover:border-r-gold/45",
         borderClass,
-        dueDateInfo.isOverdue &&
+        isTodo &&
+          dueDateInfo.isOverdue &&
           !isDone &&
           !isHardcoreOverdue &&
-          "border-danger-500/40 hover:border-danger-500/60 bg-danger-500/[0.03]",
+          "border-y-danger-500/40 border-r-danger-500/40 hover:border-y-danger-500/60 hover:border-r-danger-500/60 bg-danger-500/[0.04]",
         isHardcoreOverdue &&
-          "border-danger-500/70 hover:border-danger-500/80 shadow-[0_0_10px_rgba(239,68,68,0.25)]",
-        isDone && "opacity-60",
+          "border-y-danger-500/70 border-r-danger-500/70 hover:border-y-danger-500/80 hover:border-r-danger-500/80 shadow-[0_0_12px_rgba(239,68,68,0.28)]",
+        isDone && "opacity-65 hover:translate-y-0",
         isDragging &&
           "!transition-none opacity-30 border-dashed border-primary-light scale-95",
         isOverlay &&
-          "!transition-none shadow-card-active border-gold/70 bg-primary-dark/60 scale-102 rotate-1 cursor-grabbing z-50",
+          "!transition-none shadow-card-active border-gold/70 bg-card scale-102 rotate-1 cursor-grabbing z-50",
       )}
     >
       {/* 1. TOPO: Badge do Tipo + Tag Opcional + Indicadores */}
@@ -157,7 +155,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
       </div>
 
       {/* 2. MEIO: Controle de Ação + Título da Tarefa */}
-      <div className="flex items-start gap-2 min-w-0">
+      <div className="flex items-start gap-2.5 min-w-0">
         <TaskActionControl
           task={task}
           isHabit={isHabit}
@@ -170,23 +168,25 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
 
         <span
           className={cn(
-            "font-medium text-neutral-100 leading-snug line-clamp-2 min-w-0 break-words",
+            "font-semibold text-neutral-50 leading-snug line-clamp-2 min-w-0 break-words transition-colors",
             isCompact ? "text-xs" : "text-sm",
-            isDone && "line-through text-neutral-400",
+            isDone
+              ? "line-through text-neutral-400 font-medium"
+              : "group-hover/card:text-gold",
           )}
         >
           {task.title}
         </span>
       </div>
 
-      {/* 3. BASE: Frequência/Prazo/Saldo + Ofensiva (Streak) */}
+      {/* 3. BASE: Frequência/Prazo/Saldo + Ofensiva (Streak) / Indicador de Esforço */}
       <div
         className={cn(
-          "flex items-center justify-between text-neutral-400 border-t border-white/5",
-          isCompact ? "pt-1 text-label-s" : "pt-1.5 text-tiny",
+          "flex items-center justify-between gap-2 text-neutral-400 border-t border-white/8",
+          isCompact ? "pt-1.5 text-label-s" : "pt-2 text-tiny",
         )}
       >
-        <div className="flex items-center gap-1.5 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
           {isDaily && (
             <WeekDaysIndicator
               daysOfWeek={task.daysOfWeek}
@@ -249,6 +249,6 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
           showRewards={false}
         />
       </div>
-    </div>
+    </article>
   );
 });

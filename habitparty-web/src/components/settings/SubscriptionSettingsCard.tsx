@@ -8,13 +8,14 @@ import {
   Sparkles,
 } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useLocale, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { createCustomerPortalSessionAction } from "@/actions/paymentActions";
 import { SettingsCard } from "@/components/settings/SettingsCard";
 import { FounderBadge } from "@/components/ui/FounderBadge";
 import { useUserStore } from "@/store/userStore";
-import { cn } from "@/utils";
+import { cn, parseServerDate } from "@/utils";
 
 const UpgradePremiumModal = dynamic(
   () =>
@@ -31,6 +32,9 @@ interface SubscriptionSettingsCardProps {
 export function SubscriptionSettingsCard({
   isCompact = false,
 }: SubscriptionSettingsCardProps) {
+  const t = useTranslations("settings.subscriptionCard");
+  const locale = useLocale();
+
   const user = useUserStore((s) => s.user);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isPendingPortal, startTransition] = useTransition();
@@ -41,22 +45,17 @@ export function SubscriptionSettingsCard({
         const res = await createCustomerPortalSessionAction();
         if (res.success) {
           if (res.data?.portalUrl) {
-            toast.success(
-              "Redirecionando para o Portal de Assinatura do Stripe...",
-            );
+            toast.success(t("redirectingPortal"));
             window.location.href = res.data.portalUrl;
           } else {
-            toast.error("URL do portal não encontrada.");
+            toast.error(t("missingPortalUrl"));
           }
         } else {
-          toast.error(
-            res.error ||
-              "Não foi possível abrir o portal de assinaturas. Verifique se possui uma assinatura ativa.",
-          );
+          toast.error(res.error || t("portalError"));
         }
       } catch (err) {
         console.error(err);
-        toast.error("Erro inesperado ao conectar ao Stripe.");
+        toast.error(t("unexpectedStripeError"));
       }
     });
   };
@@ -65,8 +64,12 @@ export function SubscriptionSettingsCard({
   const isFounder = Boolean(user?.isFounder);
 
   // Formata data de expiração se disponível
-  const endsAtFormatted = user?.subscriptionEndsAt
-    ? new Date(user.subscriptionEndsAt).toLocaleDateString("pt-BR", {
+  const endsAtDate = user?.subscriptionEndsAt
+    ? (parseServerDate(user.subscriptionEndsAt) ??
+      new Date(user.subscriptionEndsAt))
+    : null;
+  const endsAtFormatted = endsAtDate
+    ? endsAtDate.toLocaleDateString(locale, {
         day: "2-digit",
         month: "long",
         year: "numeric",
@@ -76,8 +79,8 @@ export function SubscriptionSettingsCard({
   return (
     <>
       <SettingsCard
-        title="Plano & Assinatura"
-        description="Gerencie seu status VIP, renovação, faturas e cancelamento seguro pelo Stripe."
+        title={t("cardTitle")}
+        description={t("cardDesc")}
         icon={<Crown size={18} className="text-gold fill-gold" />}
         isCompact={isCompact}
       >
@@ -112,32 +115,32 @@ export function SubscriptionSettingsCard({
                   <h4 className="text-base sm:text-lg font-bold text-neutral-50">
                     {isFounder
                       ? isPremium
-                        ? "Membro Fundador (Premium VIP)"
-                        : "Membro Fundador (Acesso Gratuito)"
+                        ? t("founderActiveTitle")
+                        : t("founderExpiredTitle")
                       : isPremium
-                        ? "Guardião Cósmico (Premium VIP)"
-                        : "Aventureiro (Gratuito)"}
+                        ? t("guardianTitle")
+                        : t("adventurerTitle")}
                   </h4>
                   {isFounder && <FounderBadge size="sm" />}
                   {isPremium && !isFounder && (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gold text-neutral-950">
-                      VIP Ativo
+                      {t("vipActiveBadge")}
                     </span>
                   )}
                 </div>
 
                 <p className="text-xs sm:text-sm text-neutral-300 mt-1">
                   {isPremium
-                    ? "Você possui acesso irrestrito a 4 ambientes, 6 colunas, sons ambientes e molduras exclusivas."
+                    ? t("premiumAccessDesc")
                     : isFounder
-                      ? "Seu período anual de lançamento expirou. Você mantém sua insígnia vitalícia de Fundador, com os recursos do plano gratuito."
-                      : "Você está usando a versão gratuita com até 2 ambientes e 4 colunas por quadro."}
+                      ? t("founderExpiredDesc")
+                      : t("freeAccessDesc")}
                 </p>
 
                 {endsAtFormatted && (
                   <div className="flex items-center gap-1.5 text-xs text-neutral-300 mt-2 font-medium">
                     <Calendar size={13} className="text-gold" />
-                    <span>Acesso válido até: {endsAtFormatted}</span>
+                    <span>{t("validUntil", { date: endsAtFormatted })}</span>
                   </div>
                 )}
               </div>
@@ -155,13 +158,13 @@ export function SubscriptionSettingsCard({
                       "px-4 py-2.5 rounded-xl border border-gold/40 bg-gold/15 text-xs sm:text-sm font-bold text-gold hover:bg-gold/25 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs",
                       "disabled:opacity-60 disabled:cursor-not-allowed",
                     )}
-                    title="Acesse o portal da Stripe para atualizar cartão, ver faturas ou cancelar"
+                    title={t("portalTooltip")}
                   >
                     <ExternalLink size={14} />
                     <span>
                       {isPendingPortal
-                        ? "Abrindo Stripe..."
-                        : "Gerenciar ou Cancelar Assinatura"}
+                        ? t("openingStripe")
+                        : t("manageOrCancel")}
                     </span>
                   </button>
 
@@ -170,7 +173,7 @@ export function SubscriptionSettingsCard({
                     onClick={() => setIsUpgradeModalOpen(true)}
                     className="px-3.5 py-2.5 rounded-xl border border-white/10 bg-surface hover:bg-surface-hover text-xs font-semibold text-neutral-200 transition-colors text-center cursor-pointer"
                   >
-                    Ver Benefícios
+                    {t("viewPerks")}
                   </button>
                 </>
               ) : (
@@ -180,11 +183,7 @@ export function SubscriptionSettingsCard({
                   className="px-5 py-2.5 rounded-xl bg-gold hover:bg-gold-hover text-neutral-950 text-xs sm:text-sm font-extrabold uppercase tracking-wider transition-all shadow-glow-gold flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Crown size={15} className="fill-neutral-950" />
-                  <span>
-                    {isFounder
-                      ? "Renovar Plano Premium 👑"
-                      : "Evoluir para Premium 👑"}
-                  </span>
+                  <span>{isFounder ? t("renewPlan") : t("upgradePlan")}</span>
                 </button>
               )}
             </div>
@@ -195,12 +194,9 @@ export function SubscriptionSettingsCard({
             <CheckCircle2 size={15} className="text-gold shrink-0 mt-0.5" />
             <div>
               <span className="font-bold text-neutral-200">
-                Cancelamento e Renovação Descomplicados:
+                {t("transparentNoteTitle")}
               </span>{" "}
-              Se você assinou no cartão recorrente, pode cancelar a qualquer
-              momento pelo portal com 1 clique (o acesso continuará liberado até
-              o fim do ciclo pago). Se pagou via Pix, não há cobrança automática
-              e o acesso simplesmente expira ao final dos dias contratados.
+              {t("transparentNoteDesc")}
             </div>
           </div>
         </div>

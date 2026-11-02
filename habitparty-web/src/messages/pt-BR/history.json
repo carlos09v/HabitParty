@@ -1,0 +1,172 @@
+{
+  "metadata": {
+    "title": "Extrato & Histórico | HabitParty",
+    "titleGamified": "Cofre do Aventureiro | HabitParty",
+    "titleProductivity": "Extrato & Histórico | HabitParty",
+    "description": "Consulte e exporte seu extrato de moedas, XP, tarefas, foco e recompensas."
+  },
+  "loading": {
+    "ariaLabel": "Carregando histórico de transações..."
+  },
+  "page": {
+    "paginationItemLabel": "transações"
+  },
+  "welcomeCard": {
+    "title": "Extrato de Transações",
+    "titleGamified": "Cofre do Aventureiro",
+    "titleProductivity": "Extrato de Transações",
+    "subtitle": "Consulte o histórico detalhado de moedas, XP e resgates.",
+    "subtitleGamified": "Consulte seu histórico de ouro, XP e itens conquistados em suas aventuras.",
+    "subtitleProductivity": "Consulte o histórico detalhado de moedas, XP e resgates.",
+    "bullet0": "Conclusões de tarefas, diárias e hábitos registram ganhos de moedas e XP.",
+    "bullet1": "Penalidades de hábitos negativos e falhas computam deduções no saldo.",
+    "bullet2": "Resgates na loja e consumo de itens da mochila ficam arquivados neste extrato.",
+    "bullet2Gamified": "Resgates na loja e consumo de itens da mochila ficam arquivados neste cofre.",
+    "bullet2Productivity": "Resgates na loja e consumo de itens do inventário ficam arquivados neste extrato.",
+    "stats": {
+      "coinsOnPageLabel": "Moedas na Página",
+      "coinsValue": "+{amount} Moedas",
+      "coinsSpentHint": "−{amount} moedas gastas nesta página",
+      "coinsEarnedHint": "ganhas nos registros visíveis",
+      "xpOnPageLabel": "XP na Página",
+      "xpValue": "+{amount} XP",
+      "xpEarnedHint": "experiência nos registros visíveis",
+      "totalRecordsLabel": "Total de Registros",
+      "transactionSingular": "transação",
+      "transactionPlural": "transações",
+      "currentFiltersHint": "com os filtros atuais"
+    }
+  },
+  "filters": {
+    "searchPlaceholder": "Pesquisar transação...",
+    "periodLabel": "Período:",
+    "tabs": {
+      "ALL": "Todas",
+      "TASKS": "Tarefas & Hábitos",
+      "SHOPPING": "Loja",
+      "SHOPPING_GAMIFIED": "Loja",
+      "SHOPPING_PRODUCTIVITY": "Recompensas",
+      "BACKPACK": "Mochila",
+      "BACKPACK_GAMIFIED": "Mochila",
+      "BACKPACK_PRODUCTIVITY": "Inventário",
+      "FOCUS": "Foco"
+    },
+    "periods": {
+      "ALL": "Todo o período",
+      "TODAY": "Hoje",
+      "7DAYS": "Últimos 7 dias",
+      "30DAYS": "Últimos 30 dias"
+    },
+    "exportButtonTitle": "Exportar Extrato em formato CSV",
+    "exporting": "Exportando...",
+    "exportCsvButton": "Exportar CSV",
+    "exportCsvShort": "CSV",
+    "csvFilenamePrefix": "meu_extrato",
+    "toasts": {
+      "exportError": "Erro ao exportar extrato.",
+      "exportSuccess": "Extrato exportado com sucesso em CSV!",
+      "saveFileError": "Falha ao salvar o arquivo CSV."
+    }
+  },
+  "table": {
+    "sectionAria": "Extrato de transações",
+    "headers": {
+      "eventItem": "Evento / Item",
+      "eventType": "Tipo de Evento",
+      "difficultyTags": "Dificuldade / Tags",
+      "coins": "Moedas",
+      "xp": "XP",
+      "time": "Horário",
+      "actions": "Ações"
+    },
+    "emptyTitle": "Nenhuma transação encontrada",
+    "emptyDescription": "Não há movimentações de moedas ou XP para os filtros selecionados.",
+    "recordSingular": "registro",
+    "recordPlural": "registros",
+    "toasts": {
+      "deleteError": "Erro ao excluir registro.",
+      "deleteSuccess": "Registro removido com sucesso!"
+    },
+    "deleteModal": {
+      "title": "Excluir registro do extrato",
+      "defaultItemName": "este registro",
+      "description": "Remover <bold>{name}</bold> do seu extrato? Isso <bold>não altera</bold> seu saldo de moedas nem seu XP, apenas apaga o registro.",
+      "deleting": "Excluindo...",
+      "confirmText": "Excluir registro",
+      "cancelText": "Cancelar"
+    }
+  },
+  "row": {
+    "rowTitle": "Clique para ver os detalhes da transação",
+    "defaultTransactionName": "Transação",
+    "defaultEventTitle": "Evento",
+    "durationLabel": "Duração:",
+    "listPriceLabel": "Preço tabela:",
+    "deleteRecordTitle": "Excluir registro do extrato",
+    "deleteRecordAria": "Excluir registro do extrato"
+  },
+  "detailPopover": {
+    "dialogAria": "Detalhes da Transação",
+    "copyIdTitle": "Copiar ID da Transação",
+    "defaultTransactionName": "Transação",
+    "closeAria": "Fechar detalhes",
+    "coinBalanceLabel": "Saldo de Moedas",
+    "xpLabel": "Experiência (XP)",
+    "originalListPriceLabel": "Preço tabela original:",
+    "taskDifficultyLabel": "Dificuldade da Tarefa:",
+    "packageRarityLabel": "Raridade do Pacote:",
+    "sessionDurationLabel": "Duração da Sessão:",
+    "recordedAtLabel": "Registrado em:",
+    "linkedTagsLabel": "Tags vinculadas:",
+    "deleteButton": "Excluir",
+    "closeButton": "Fechar"
+  },
+  "utils": {
+    "unknownDate": "Data desconhecida",
+    "today": "Hoje",
+    "yesterday": "Ontem",
+    "defaultTransactionLabel": "Transação",
+    "transactionTypes": {
+      "REWARD_BOUGHT": "Resgate na Loja",
+      "HABIT_COMPLETED": "Hábito Praticado",
+      "DAILY_COMPLETED": "Diária Concluída",
+      "TODO_COMPLETED": "Afazer Concluído",
+      "TASK_COMPLETED": "Tarefa Concluída",
+      "TASK_FAILED": "Tarefa Falhada",
+      "BAD_HABIT_PENALTY": "Penalidade Hábito",
+      "ITEM_CONSUMED": "Item Consumido",
+      "ITEM_DISCARDED": "Item Descartado",
+      "MANUAL_ADJUSTMENT": "Ajuste Manual",
+      "FOCUS_COMPLETED": "Sessão de Foco"
+    },
+    "contextRoutes": {
+      "tasks": "Ver em Tarefas",
+      "inventory": "Ver na Mochila",
+      "inventoryGamified": "Ver na Mochila",
+      "inventoryProductivity": "Ver no Inventário",
+      "rewards": "Ver na Loja",
+      "rewardsGamified": "Ver na Loja",
+      "rewardsProductivity": "Ver em Recompensas",
+      "focus": "Ver no Foco"
+    },
+    "difficulties": {
+      "TRIVIAL": "Trivial",
+      "EASY": "Fácil",
+      "MEDIUM": "Médio",
+      "HARD": "Difícil"
+    },
+    "packages": {
+      "NONE": "Comum",
+      "BASIC": "Básico",
+      "PREMIUM": "Raro",
+      "EPIC": "Épico",
+      "LEGENDARY": "Lendário"
+    }
+  },
+  "actions": {
+    "exportCsvFailed": "Falha ao exportar arquivo CSV do extrato.",
+    "exportCsvUnexpectedError": "Erro ao gerar arquivo CSV.",
+    "deleteFailed": "Falha ao remover o registro de transação.",
+    "deleteUnexpectedError": "Erro ao comunicar com servidor para exclusão."
+  }
+}

@@ -1,5 +1,6 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import createClient, { type Middleware } from "openapi-fetch";
+import { getLocaleMode } from "@/utils/cookies";
 import type { paths } from "./schema";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -59,6 +60,31 @@ const serverAuthMiddleware: Middleware = {
     if (token) {
       request.headers.set("Authorization", `Bearer ${token}`);
     }
+
+    try {
+      const locale = await getLocaleMode();
+      if (!request.headers.has("Accept-Language")) {
+        request.headers.set("Accept-Language", locale);
+      }
+
+      const incomingHeaders = await headers();
+      const cfIp = incomingHeaders.get("cf-connecting-ip");
+      const forwardedFor = incomingHeaders.get("x-forwarded-for");
+      const realIp = incomingHeaders.get("x-real-ip");
+
+      if (cfIp && !request.headers.has("CF-Connecting-IP")) {
+        request.headers.set("CF-Connecting-IP", cfIp);
+      }
+      if (forwardedFor && !request.headers.has("X-Forwarded-For")) {
+        request.headers.set("X-Forwarded-For", forwardedFor);
+      }
+      if (realIp && !request.headers.has("X-Real-IP")) {
+        request.headers.set("X-Real-IP", realIp);
+      }
+    } catch {
+      // Ignora caso headers() seja chamado fora de um contexto de request HTTP
+    }
+
     return request;
   },
 };

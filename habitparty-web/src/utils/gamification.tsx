@@ -1,6 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
+import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
 import {
@@ -8,6 +9,7 @@ import {
   getCurrentLevel,
   getNextLevel,
   getXpToNextLevel,
+  localizeLevelTitle,
 } from "@/utils/levels";
 import { soundEffects } from "@/utils/soundEffects";
 
@@ -18,6 +20,13 @@ export interface AwardRewardsResult {
   totalXp: number;
   coinsEarned: number;
   xpEarned: number;
+}
+
+export interface AwardRewardsOptions {
+  locale?: AppLocale;
+  levelUpTitle?: string;
+  congratsPrefix?: string;
+  congratsSuffix?: string;
 }
 
 /**
@@ -31,6 +40,7 @@ export interface AwardRewardsResult {
 export function awardUserRewards(
   xpToAdd: number,
   coinsToAdd: number,
+  options?: AwardRewardsOptions,
 ): AwardRewardsResult {
   const store = useUserStore.getState();
   const user = store.user;
@@ -73,17 +83,37 @@ export function awardUserRewards(
     soundEffects.playLevelUpSound();
     triggerCelebrationConfetti();
 
+    const detectedLocale: AppLocale =
+      options?.locale ||
+      (typeof document !== "undefined" &&
+      document.documentElement.lang?.startsWith("en")
+        ? "en"
+        : "pt-BR");
+
+    const localizedNewTitle = localizeLevelTitle(
+      newLevel.title,
+      detectedLocale,
+    );
+    const titleText =
+      options?.levelUpTitle ||
+      (detectedLocale === "en" ? "Level Up!" : "Subiu de Nível!");
+    const prefixText =
+      options?.congratsPrefix ||
+      (detectedLocale === "en"
+        ? "Congratulations! Your new rank is"
+        : "Parabéns! Sua nova classificação é");
+    const suffixText = options?.congratsSuffix ?? ".";
+
     toast.success(
       <div className="flex flex-col gap-1 py-0.5">
         <div className="flex items-center gap-1.5 font-bold text-gold">
           <span className="text-base leading-none">👑</span>
-          <span className="tracking-wide uppercase text-xs">
-            Subiu de Nível!
-          </span>
+          <span className="tracking-wide uppercase text-xs">{titleText}</span>
         </div>
         <p className="text-body-s text-neutral-100">
-          Parabéns! Sua nova classificação é{" "}
-          <strong className="text-gold font-bold">{newLevel.title}</strong>.
+          {prefixText}{" "}
+          <strong className="text-gold font-bold">{localizedNewTitle}</strong>
+          {suffixText}
         </p>
       </div>,
       {

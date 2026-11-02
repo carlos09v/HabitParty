@@ -22,6 +22,13 @@ export function getErrorMessage(
       return (error as { message: string }).message;
     }
     if (
+      "detail" in error &&
+      typeof (error as { detail: unknown }).detail === "string" &&
+      (error as { detail: string }).detail.trim()
+    ) {
+      return (error as { detail: string }).detail;
+    }
+    if (
       "error" in error &&
       typeof (error as { error: unknown }).error === "string" &&
       (error as { error: string }).error.trim()

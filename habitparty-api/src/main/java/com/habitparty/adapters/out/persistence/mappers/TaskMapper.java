@@ -24,10 +24,12 @@ public class TaskMapper {
     this.checklistMapper = checklistMapper;
   }
 
-  public Task toDomain(TaskJpaEntity entity) {
-        List<ChecklistItem> checklist = entity.getChecklist() != null 
-            ? entity.getChecklist().stream().map(checklistMapper::toDomain).toList()
-            : List.of();
+  /**
+   * Converte a entidade para o domínio usando um checklist já carregado em lote pelo adapter.
+   * Não acessa a coleção LAZY {@code entity.getChecklist()}, evitando N+1 e LazyInitializationException.
+   */
+  public Task toDomain(TaskJpaEntity entity, List<ChecklistItem> preloadedChecklist) {
+        List<ChecklistItem> checklist = preloadedChecklist != null ? preloadedChecklist : List.of();
 
         if (entity instanceof HabitJpaEntity h) {
             return new Habit(

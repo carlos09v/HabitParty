@@ -1,0 +1,172 @@
+{
+  "metadata": {
+    "title": "Statement & History | HabitParty",
+    "titleGamified": "Adventurer's Vault | HabitParty",
+    "titleProductivity": "Statement & History | HabitParty",
+    "description": "View and export your statement of coins, XP, tasks, focus sessions, and rewards."
+  },
+  "loading": {
+    "ariaLabel": "Loading transaction history..."
+  },
+  "page": {
+    "paginationItemLabel": "transactions"
+  },
+  "welcomeCard": {
+    "title": "Transaction Statement",
+    "titleGamified": "Adventurer's Vault",
+    "titleProductivity": "Transaction Statement",
+    "subtitle": "View your detailed history of coins, XP, and redemptions.",
+    "subtitleGamified": "Browse your history of gold, XP, and items earned on your adventures.",
+    "subtitleProductivity": "View your detailed history of coins, XP, and redemptions.",
+    "bullet0": "Completed tasks, dailies, and habits record coin and XP gains.",
+    "bullet1": "Penalties from negative habits and failures record balance deductions.",
+    "bullet2": "Store redemptions and consumed backpack items are archived in this statement.",
+    "bullet2Gamified": "Store redemptions and backpack item consumption are archived in this vault.",
+    "bullet2Productivity": "Store redemptions and inventory item consumption are archived in this statement.",
+    "stats": {
+      "coinsOnPageLabel": "Coins on Page",
+      "coinsValue": "+{amount} Coins",
+      "coinsSpentHint": "−{amount} coins spent on this page",
+      "coinsEarnedHint": "earned in visible records",
+      "xpOnPageLabel": "XP on Page",
+      "xpValue": "+{amount} XP",
+      "xpEarnedHint": "experience in visible records",
+      "totalRecordsLabel": "Total Records",
+      "transactionSingular": "transaction",
+      "transactionPlural": "transactions",
+      "currentFiltersHint": "with current filters"
+    }
+  },
+  "filters": {
+    "searchPlaceholder": "Search transaction...",
+    "periodLabel": "Period:",
+    "tabs": {
+      "ALL": "All",
+      "TASKS": "Tasks & Habits",
+      "SHOPPING": "Store",
+      "SHOPPING_GAMIFIED": "Store",
+      "SHOPPING_PRODUCTIVITY": "Rewards",
+      "BACKPACK": "Backpack",
+      "BACKPACK_GAMIFIED": "Backpack",
+      "BACKPACK_PRODUCTIVITY": "Inventory",
+      "FOCUS": "Focus"
+    },
+    "periods": {
+      "ALL": "All time",
+      "TODAY": "Today",
+      "7DAYS": "Last 7 days",
+      "30DAYS": "Last 30 days"
+    },
+    "exportButtonTitle": "Export Statement in CSV format",
+    "exporting": "Exporting...",
+    "exportCsvButton": "Export CSV",
+    "exportCsvShort": "CSV",
+    "csvFilenamePrefix": "my_statement",
+    "toasts": {
+      "exportError": "Error exporting statement.",
+      "exportSuccess": "Statement exported to CSV successfully!",
+      "saveFileError": "Failed to save CSV file."
+    }
+  },
+  "table": {
+    "sectionAria": "Transaction statement",
+    "headers": {
+      "eventItem": "Event / Item",
+      "eventType": "Event Type",
+      "difficultyTags": "Difficulty / Tags",
+      "coins": "Coins",
+      "xp": "XP",
+      "time": "Time",
+      "actions": "Actions"
+    },
+    "emptyTitle": "No transactions found",
+    "emptyDescription": "There are no coin or XP movements for the selected filters.",
+    "recordSingular": "record",
+    "recordPlural": "records",
+    "toasts": {
+      "deleteError": "Error deleting record.",
+      "deleteSuccess": "Record removed successfully!"
+    },
+    "deleteModal": {
+      "title": "Delete statement record",
+      "defaultItemName": "this record",
+      "description": "Remove <bold>{name}</bold> from your statement? This <bold>does not change</bold> your coin balance or XP, it only deletes the record.",
+      "deleting": "Deleting...",
+      "confirmText": "Delete record",
+      "cancelText": "Cancel"
+    }
+  },
+  "row": {
+    "rowTitle": "Click to view transaction details",
+    "defaultTransactionName": "Transaction",
+    "defaultEventTitle": "Event",
+    "durationLabel": "Duration:",
+    "listPriceLabel": "List price:",
+    "deleteRecordTitle": "Delete statement record",
+    "deleteRecordAria": "Delete statement record"
+  },
+  "detailPopover": {
+    "dialogAria": "Transaction Details",
+    "copyIdTitle": "Copy Transaction ID",
+    "defaultTransactionName": "Transaction",
+    "closeAria": "Close details",
+    "coinBalanceLabel": "Coin Balance",
+    "xpLabel": "Experience (XP)",
+    "originalListPriceLabel": "Original list price:",
+    "taskDifficultyLabel": "Task Difficulty:",
+    "packageRarityLabel": "Package Rarity:",
+    "sessionDurationLabel": "Session Duration:",
+    "recordedAtLabel": "Recorded on:",
+    "linkedTagsLabel": "Linked tags:",
+    "deleteButton": "Delete",
+    "closeButton": "Close"
+  },
+  "utils": {
+    "unknownDate": "Unknown date",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "defaultTransactionLabel": "Transaction",
+    "transactionTypes": {
+      "REWARD_BOUGHT": "Store Redemption",
+      "HABIT_COMPLETED": "Habit Practiced",
+      "DAILY_COMPLETED": "Daily Completed",
+      "TODO_COMPLETED": "To-Do Completed",
+      "TASK_COMPLETED": "Task Completed",
+      "TASK_FAILED": "Task Failed",
+      "BAD_HABIT_PENALTY": "Habit Penalty",
+      "ITEM_CONSUMED": "Item Consumed",
+      "ITEM_DISCARDED": "Item Discarded",
+      "MANUAL_ADJUSTMENT": "Manual Adjustment",
+      "FOCUS_COMPLETED": "Focus Session"
+    },
+    "contextRoutes": {
+      "tasks": "View in Tasks",
+      "inventory": "View in Backpack",
+      "inventoryGamified": "View in Backpack",
+      "inventoryProductivity": "View in Inventory",
+      "rewards": "View in Store",
+      "rewardsGamified": "View in Store",
+      "rewardsProductivity": "View in Rewards",
+      "focus": "View in Focus"
+    },
+    "difficulties": {
+      "TRIVIAL": "Trivial",
+      "EASY": "Easy",
+      "MEDIUM": "Medium",
+      "HARD": "Hard"
+    },
+    "packages": {
+      "NONE": "Common",
+      "BASIC": "Basic",
+      "PREMIUM": "Rare",
+      "EPIC": "Epic",
+      "LEGENDARY": "Legendary"
+    }
+  },
+  "actions": {
+    "exportCsvFailed": "Failed to export statement CSV file.",
+    "exportCsvUnexpectedError": "Error generating CSV file.",
+    "deleteFailed": "Failed to remove transaction record.",
+    "deleteUnexpectedError": "Error communicating with server for deletion."
+  }
+}

@@ -8,6 +8,8 @@ import {
   Music,
   ShieldAlert,
   Sun,
+  Swords,
+  Target,
   UserCircle,
   Volume2,
   VolumeX,
@@ -19,6 +21,7 @@ import type {
   SettingsOptionItem,
   SettingsTabItem,
 } from "@/types/settings";
+import type { ExperienceMode } from "@/types/ui";
 
 export const GENDER_OPTIONS: readonly GenderOption[] = [
   { value: "MALE", label: "Masculino" },
@@ -37,7 +40,7 @@ export const SETTINGS_TABS: readonly SettingsTabItem[] = [
   {
     id: "appearance",
     label: "Aparência",
-    description: "Densidade da interface e cards de boas-vindas",
+    description: "Tema claro/escuro, idioma, densidade e cards",
     icon: MonitorSmartphone,
   },
   {
@@ -68,7 +71,7 @@ export const THEME_OPTIONS: readonly SettingsOptionItem<"dark" | "light">[] = [
     title: "Tema Claro",
     icon: Sun,
     description:
-      "Visual arejado e luminoso. Fundo em tom suave de lavanda perolada, cards brancos com sombras limpas e paleta de ouro quente para alta legibilidade.",
+      "Paleta Cosmic Daylight de conforto ocular. Fundo em alabastro frio neutro, cards brancos com bordas nítidas e tipografia em slate editorial.",
   },
 ] as const;
 
@@ -87,6 +90,25 @@ export const COMPACT_OPTIONS: readonly SettingsOptionItem<boolean>[] = [
       "Paddings mais generosos e tipografia padrão. Ideal para telas grandes ou para quem prefere espaçamentos mais relaxados e elementos maiores.",
   },
 ] as const;
+
+export const EXPERIENCE_MODE_OPTIONS: readonly SettingsOptionItem<ExperienceMode>[] =
+  [
+    {
+      value: "PRODUCTIVITY",
+      title: "Foco & Produtividade (Minimalista)",
+      badge: "Padrão",
+      icon: Target,
+      description:
+        "Interface limpa e executiva focada em entregas. Oculta as estimativas de recompensa dos modais e popovers, usa indicadores discretos de esforço e mantém a gamificação rodando silenciosamente nos bastidores.",
+    },
+    {
+      value: "GAMIFIED",
+      title: "Imersão RPG (Gamificado)",
+      icon: Swords,
+      description:
+        "Painel de estimativa de recompensa sempre aberto e visível nos formulários, ícones de espadas para representar a dificuldade das tarefas e exibição de ganhos de XP e Ouro nas listagens.",
+    },
+  ] as const;
 
 export const AMBIENT_SOUND_OPTIONS: readonly AmbientSoundOption[] = [
   {

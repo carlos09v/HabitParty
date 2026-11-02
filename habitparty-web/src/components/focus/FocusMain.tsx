@@ -2,17 +2,19 @@
 
 import { Timer } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
 import { WELCOME_CARD_DETAILS } from "@/constants/welcomeCards";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useFocusContextMenu } from "@/hooks/useFocusContextMenu";
 import { useFocusMutations } from "@/hooks/useFocusMutations";
 import { useFocusTimerControls } from "@/hooks/useFocusTimer";
 import type { FocusActivity, FocusRecordType } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn } from "@/utils";
-import { formatBackpackItemRemainingTime } from "@/utils/focusFormatters";
+import { calculateFocusWelcomeStats } from "@/utils/catalogMetrics";
 import { FocusActivitiesSection } from "./FocusActivitiesSection";
 import { FocusBackpackSection } from "./FocusBackpackSection";
 import { FocusHeroStage } from "./FocusHeroStage";
@@ -71,6 +73,8 @@ export function FocusMain({
   isCompact = false,
   onChangeMode,
 }: FocusMainProps) {
+  const t = useTranslations("focus.main");
+  const { isGamified } = useExperienceMode();
   const controls = useFocusTimerControls();
 
   const { isActive, isPaused, target } = controls;
@@ -176,12 +180,62 @@ export function FocusMain({
     return () => window.removeEventListener("pointerdown", handlePointerDown);
   }, [selectedActivityId, onSelectActivity]);
 
+  const focusWelcomeStats = useMemo(() => {
+    const baseStats = calculateFocusWelcomeStats(activities, backpackItems);
+    const activitiesCount = activities.length;
+    const backpackCount = backpackItems.length;
+    return [
+      {
+        ...baseStats[0],
+        label: t("welcomeStats.activitiesLabel"),
+        value: t("welcomeStats.activitiesValue", { count: activitiesCount }),
+        hint:
+          activitiesCount > 0
+            ? t("welcomeStats.activitiesHintReady")
+            : t("welcomeStats.activitiesHintEmpty"),
+      },
+      {
+        ...baseStats[1],
+        label: isGamified
+          ? t("welcomeStats.stageItemsLabelGamified")
+          : t("welcomeStats.stageItemsLabelProductivity"),
+        value: t("welcomeStats.stageItemsValue", { count: backpackCount }),
+        hint:
+          backpackCount > 0
+            ? t("welcomeStats.stageItemsHintReady")
+            : isGamified
+              ? t("welcomeStats.stageItemsHintEmptyGamified")
+              : t("welcomeStats.stageItemsHintEmptyProductivity"),
+      },
+      {
+        ...baseStats[2],
+        label: t("welcomeStats.modesLabel"),
+        value: t("welcomeStats.modesValue"),
+        hint: isGamified
+          ? t("welcomeStats.modesHintGamified")
+          : t("welcomeStats.modesHintProductivity"),
+      },
+    ];
+  }, [activities, backpackItems, isGamified, t]);
+
+  const formatRemainingTime = (remainingSeconds?: number | null): string => {
+    if (remainingSeconds !== undefined && remainingSeconds !== null) {
+      if (remainingSeconds <= 1) return t("returnModal.timeCompleted");
+      const m = Math.floor(remainingSeconds / 60);
+      const s = remainingSeconds % 60;
+      if (m > 0 && s > 0) return t("returnModal.remainingMinSec", { m, s });
+      if (m > 0) return t("returnModal.remainingMin", { m });
+      return t("returnModal.remainingSec", { s });
+    }
+    return t("returnModal.activeCoupon");
+  };
+
   return (
     <div className="relative flex-1 min-w-0 h-full flex flex-col overflow-hidden transition-all duration-200">
       {/* Área Rolável de Conteúdo */}
       <div
         className={cn(
-          "flex-1 overflow-y-auto custom-scrollbar flex flex-col pr-1",
+          "flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col pr-1",
           isCompact
             ? "p-3 sm:p-4 gap-3 sm:gap-4 pb-6"
             : "p-5 sm:p-6 gap-5 sm:gap-6 pb-8",
@@ -193,6 +247,17 @@ export function FocusMain({
           subtitle={WELCOME_CARD_DETAILS.focus.subtitle}
           bullets={WELCOME_CARD_DETAILS.focus.bullets}
           imageSrc={WELCOME_CARD_DETAILS.focus.imageSrc}
+          stats={focusWelcomeStats}
+          imageWidth={
+            isCompact
+              ? WELCOME_CARD_DETAILS.focus.compactWidth
+              : WELCOME_CARD_DETAILS.focus.normalWidth
+          }
+          imageHeight={
+            isCompact
+              ? WELCOME_CARD_DETAILS.focus.compactHeight
+              : WELCOME_CARD_DETAILS.focus.normalHeight
+          }
           storageKey="focus"
           compact={isCompact}
           defaultExpanded={false}
@@ -266,35 +331,57 @@ export function FocusMain({
           onClose={() => setReturnModalItem(null)}
           onConfirm={handleConfirmReturnToBackpack}
           isLoading={isReturningToBackpack}
-          title="Devolver para a Mochila"
+          title={
+            isGamified
+              ? t("returnModal.titleGamified")
+              : t("returnModal.titleProductivity")
+          }
           variant="warning"
-          confirmText="Sim, devolver para mochila"
-          cancelText="Não, manter no Foco"
+          confirmText={
+            isGamified
+              ? t("returnModal.confirmGamified")
+              : t("returnModal.confirmProductivity")
+          }
+          cancelText={t("returnModal.cancel")}
           description={
             <div className="flex flex-col gap-3">
               <p>
-                Tem certeza de que deseja devolver o item{" "}
-                <strong className="text-neutral-100">
-                  "{returnModalItem.rewardName || "Item de Foco"}"
-                </strong>{" "}
-                para a sua mochila?
+                {t.rich(
+                  isGamified
+                    ? "returnModal.questionGamified"
+                    : "returnModal.questionProductivity",
+                  {
+                    name:
+                      returnModalItem.rewardName ||
+                      t("returnModal.fallbackName"),
+                    strong: (chunks) => (
+                      <strong className="text-neutral-100">{chunks}</strong>
+                    ),
+                  },
+                )}
               </p>
               {returnModalItem.remainingSeconds !== undefined &&
                 returnModalItem.remainingSeconds !== null && (
                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gold/10 border border-gold/30 text-tiny text-gold font-medium w-fit">
                     <Timer size={12} className="text-gold" />
                     <span>
-                      Saldo restante:{" "}
-                      {formatBackpackItemRemainingTime(
-                        returnModalItem.remainingSeconds,
-                      )}
+                      {t("returnModal.remainingBalance", {
+                        time: formatRemainingTime(
+                          returnModalItem.remainingSeconds,
+                        ),
+                      })}
                     </span>
                   </div>
                 )}
               <p className="text-xs text-amber-200/90 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-lg leading-relaxed">
-                <strong>Atenção:</strong> A sessão ativa no cronômetro será
-                desarmada e o item sairá da área de foco. O saldo restante
-                continuará salvo na sua mochila.
+                {t.rich(
+                  isGamified
+                    ? "returnModal.warningGamified"
+                    : "returnModal.warningProductivity",
+                  {
+                    strong: (chunks) => <strong>{chunks}</strong>,
+                  },
+                )}
               </p>
             </div>
           }
@@ -308,17 +395,18 @@ export function FocusMain({
           onClose={() => setDeleteModalActivity(null)}
           onConfirm={handleConfirmDeleteActivity}
           isLoading={isDeletingActivity}
-          title="Excluir Atividade"
+          title={t("deleteModal.title")}
           description={
             <p>
-              Deseja realmente excluir a atividade{" "}
-              <strong className="text-neutral-100">
-                "{deleteModalActivity.name}"
-              </strong>
-              ? O histórico de sessões anteriores continuará preservado.
+              {t.rich("deleteModal.question", {
+                name: deleteModalActivity.name,
+                strong: (chunks) => (
+                  <strong className="text-neutral-100">{chunks}</strong>
+                ),
+              })}
             </p>
           }
-          confirmText="Sim, excluir"
+          confirmText={t("deleteModal.confirm")}
           variant="danger"
         />
       )}

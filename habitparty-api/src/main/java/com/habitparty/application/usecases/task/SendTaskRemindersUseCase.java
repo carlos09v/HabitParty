@@ -2,19 +2,24 @@ package com.habitparty.application.usecases.task;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.EmailDispatchLogRepository;
 import com.habitparty.application.ports.EmailSenderPort;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.EmailDispatchLog;
+import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.domain.entities.task.Todo;
 import com.habitparty.core.domain.enums.EmailDispatchStatus;
@@ -40,7 +45,6 @@ public class SendTaskRemindersUseCase {
     this.emailLogPort = emailLogPort;
   }
 
-  @Transactional
   public int execute() {
     LocalDateTime now = LocalDateTime.now();
     LocalDate today = LocalDate.now();
@@ -50,21 +54,35 @@ public class SendTaskRemindersUseCase {
       return 0;
     }
 
+    Set<UUID> userIds = pendingReminders.stream()
+        .map(Task::getUserId)
+        .collect(Collectors.toSet());
+    Map<UUID, User> usersById = new HashMap<>(userPort.findAllByIds(userIds).stream()
+        .collect(Collectors.toMap(User::getId, Function.identity())));
+    Map<UUID, Long> monthlySentCache = new HashMap<>();
+    LocalDateTime startOfMonth = today.withDayOfMonth(1).atStartOfDay();
+
     int sentCount = 0;
 
     for (Task task : pendingReminders) {
       if (task instanceof Todo todo && todo.isSendEmailReminder() && !todo.isEmailReminderSent()) {
         try {
-          var userOpt = userPort.findById(todo.getUserId());
-          if (userOpt.isPresent()) {
-            var user = userOpt.get();
+          User user = usersById.get(todo.getUserId());
+          if (user == null) {
+            user = userPort.findById(todo.getUserId()).orElse(null);
+            if (user != null) {
+              usersById.put(user.getId(), user);
+            }
+          }
+          if (user != null) {
             boolean isPremium = user.isPremium();
             int maxMonthly = com.habitparty.core.domain.entities.task.EmailReminderQuotas.getMaxMonthlyDispatches(isPremium);
 
-            LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
-            long sentThisMonth = emailLogPort.countByUserIdAndEmailTypeAndStatusAndSentAtAfter(
-                user.getId(), EmailType.TASK_REMINDER, EmailDispatchStatus.SENT, startOfMonth
-            );
+            UUID uid = user.getId();
+            long sentThisMonth = monthlySentCache.computeIfAbsent(uid,
+                id -> emailLogPort.countByUserIdAndEmailTypeAndStatusAndSentAtAfter(
+                    id, EmailType.TASK_REMINDER, EmailDispatchStatus.SENT, startOfMonth
+                ));
             if (sentThisMonth >= maxMonthly) {
               String planName = isPremium ? "Premium (Uso Justo)" : "Free";
               log.warn("Usuário {} atingiu a cota mensal de {} e-mails de lembrete (plano {}). Lembrete pulado.",
@@ -102,6 +120,7 @@ public class SendTaskRemindersUseCase {
               todo.markEmailReminderSent();
               taskPort.save(todo);
               sentCount++;
+              monthlySentCache.put(uid, sentThisMonth + 1);
 
               emailLogPort.save(new EmailDispatchLog(
                   UUID.randomUUID(),

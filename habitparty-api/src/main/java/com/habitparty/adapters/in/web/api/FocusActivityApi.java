@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import com.habitparty.adapters.in.web.dtos.request.CreateFocusActivityDTO;
@@ -19,6 +20,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RequestMapping("/focus-activities")
+@Validated
 @Tag(name = "Focus Activities", description = "Endpoints para gerenciamento de atividades de modo foco (Pomodoro/Cronômetro)")
 public interface FocusActivityApi {
 
@@ -54,7 +56,7 @@ public interface FocusActivityApi {
     @Operation(summary = "Reordenar Atividades de Foco", description = "Atualiza a ordem das atividades de foco.")
     @PutMapping("/reorder")
     ResponseEntity<Void> reorder(
-        @RequestBody @Valid List<UpdateFocusActivityOrderDTO> novaOrdemDtos,
+        @RequestBody List<@Valid UpdateFocusActivityOrderDTO> novaOrdemDtos,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 }

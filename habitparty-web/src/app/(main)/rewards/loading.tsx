@@ -1,9 +1,12 @@
+import { getTranslations } from "next-intl/server";
 import { Loading } from "@/components/ui/Loading";
 
-export default function RewardsLoading() {
+export default async function RewardsLoading() {
+  const t = await getTranslations("rewards.loading");
+
   return (
     <div className="flex-1 flex items-center justify-center min-h-[50vh] p-8">
-      <Loading size="lg" label="Carregando recompensas..." />
+      <Loading size="lg" label={t("label")} />
     </div>
   );
 }

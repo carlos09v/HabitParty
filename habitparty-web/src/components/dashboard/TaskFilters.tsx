@@ -1,18 +1,18 @@
 "use client";
 
 import { Calendar, FilterX, SlidersHorizontal, X } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useRef, useState } from "react";
 import { Select } from "@/components/ui/Select";
 import { Switch } from "@/components/ui/Switch";
 import {
   DASHBOARD_TASK_FILTERS,
   DEFAULT_DASHBOARD_ADVANCED_FILTERS,
-  TASK_DIFFICULTY_FILTER_OPTIONS,
-  TASK_SORT_FILTER_OPTIONS,
-  TASK_TYPE_FILTER_OPTIONS,
 } from "@/constants/dashboard";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useCompactMode } from "@/hooks/useCompactMode";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
+import type { AppLocale } from "@/i18n/config";
 import type {
   DashboardAdvancedFilters,
   TaskFiltersProps,
@@ -31,7 +31,10 @@ export function TaskFilters({
   onAdvancedFiltersChange,
   isCompact: propIsCompact,
 }: TaskFiltersProps) {
+  const t = useTranslations("dashboard.taskFilters");
+  const locale = useLocale() as AppLocale;
   const { isCompact: hookIsCompact } = useCompactMode();
+  const { isGamified } = useExperienceMode();
   const isCompact = propIsCompact ?? hookIsCompact;
   const [showPopover, setShowPopover] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -53,20 +56,51 @@ export function TaskFilters({
 
   const formattedDateLabel = useMemo(() => {
     if (!selectedDate) return null;
-    return formatShortDate(selectedDate, { monthFormat: "short" });
-  }, [selectedDate]);
+    return formatShortDate(selectedDate, { monthFormat: "short", locale });
+  }, [selectedDate, locale]);
 
   const columnOptions = useMemo(() => {
-    const opts = [{ value: "all", label: "Todas as listas" }];
+    const opts = [{ value: "all", label: t("allColumns") }];
     if (columns) {
       for (const c of columns) {
         if (c.id) {
-          opts.push({ value: c.id, label: c.name || "Sem título" });
+          opts.push({ value: c.id, label: c.name || t("untitledColumn") });
         }
       }
     }
     return opts;
-  }, [columns]);
+  }, [columns, t]);
+
+  const taskTypeOptions = useMemo(
+    () => [
+      { value: "all", label: t("allTypes") },
+      { value: "habit", label: t("habits") },
+      { value: "daily", label: t("dailies") },
+      { value: "todo", label: t("todos") },
+    ],
+    [t],
+  );
+
+  const difficultyOptions = useMemo(
+    () => [
+      { value: "all", label: t("allDifficulties") },
+      { value: "TRIVIAL", label: t("trivial") },
+      { value: "EASY", label: t("easy") },
+      { value: "MEDIUM", label: t("medium") },
+      { value: "HARD", label: t("hard") },
+    ],
+    [t],
+  );
+
+  const sortOptions = useMemo(
+    () => [
+      { value: "default", label: t("sortDefault") },
+      { value: "difficulty_desc", label: t("sortDifficulty") },
+      { value: "priority_desc", label: t("sortPriority") },
+      { value: "reward_desc", label: t("sortReward") },
+    ],
+    [t],
+  );
 
   const handleSelectStandardFilter = (id: TaskFilterType) => {
     if (selectedDate && onClearDate) {
@@ -82,7 +116,7 @@ export function TaskFilters({
   return (
     <nav
       className="flex items-center justify-between gap-4 w-full relative"
-      aria-label="Filtros de Data das Tarefas"
+      aria-label={t("ariaLabel")}
     >
       {/* Pílulas de filtro */}
       <div
@@ -99,13 +133,15 @@ export function TaskFilters({
             aria-controls="panel-date"
             onClick={onClearDate}
             className={cn(
-              "flex items-center gap-1.5 rounded-lg font-bold transition-all whitespace-nowrap cursor-pointer shadow-xs bg-gold text-neutral-900 group shrink-0",
+              "flex items-center gap-1.5 rounded-lg font-bold transition-all whitespace-nowrap cursor-pointer shadow-xs bg-gold text-on-gold group shrink-0",
               isCompact ? "px-2.5 py-1 text-xs" : "px-3.5 py-1.5 text-sm",
             )}
-            title="Remover filtro de dia específico e voltar ao padrão"
+            title={t("clearDateTitle")}
           >
             <Calendar size={isCompact ? 12 : 14} className="shrink-0" />
-            <span>Dia: {formattedDateLabel}</span>
+            <span>
+              {t("datePillLabel", { date: formattedDateLabel || "" })}
+            </span>
             <X
               size={isCompact ? 12 : 14}
               className="shrink-0 group-hover:scale-125 transition-transform ml-0.5"
@@ -128,11 +164,11 @@ export function TaskFilters({
                 "rounded-lg font-medium transition-all whitespace-nowrap cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold focus:ring-offset-1 focus:ring-offset-background",
                 isCompact ? "px-2.5 py-1 text-xs" : "px-3.5 py-1.5 text-sm",
                 isSelected
-                  ? "bg-gold text-neutral-900 font-bold border-transparent shadow-xs"
+                  ? "bg-gold text-on-gold font-bold border-transparent shadow-xs"
                   : "bg-primary-dark/20 text-neutral-100 hover:bg-primary-dark/40 border border-primary/30",
               )}
             >
-              {f.label}
+              {t(`tabs.${f.id}`)}
             </button>
           );
         })}
@@ -143,9 +179,9 @@ export function TaskFilters({
         <button
           type="button"
           onClick={() => setShowPopover(!showPopover)}
-          title="Filtros avançados e opções de ordenação"
+          title={t("advancedButtonTitle")}
           aria-expanded={showPopover}
-          aria-label="Abrir filtros avançados"
+          aria-label={t("openAdvancedAria")}
           className={cn(
             "flex items-center gap-1.5 rounded-lg border transition-all shrink-0 focus:outline-none focus:ring-2 focus:ring-gold cursor-pointer",
             isCompact ? "p-1.5 text-xs" : "p-2 text-sm",
@@ -160,7 +196,7 @@ export function TaskFilters({
             aria-hidden="true"
           />
           {activeFiltersCount > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full text-tiny font-bold bg-gold text-neutral-900">
+            <span className="px-1.5 py-0.5 rounded-full text-tiny font-bold bg-gold text-on-gold">
               {activeFiltersCount}
             </span>
           )}
@@ -173,7 +209,7 @@ export function TaskFilters({
             <div className="flex items-center justify-between pb-2 border-b border-white/10">
               <span className="text-xs font-bold text-neutral-100 flex items-center gap-1.5">
                 <SlidersHorizontal size={13} className="text-gold" />
-                Filtros Avançados
+                {t("advancedTitle")}
               </span>
               {activeFiltersCount > 0 && (
                 <button
@@ -182,7 +218,7 @@ export function TaskFilters({
                   className="flex items-center gap-1 text-tiny text-neutral-400 hover:text-danger-500 font-semibold transition-colors cursor-pointer"
                 >
                   <FilterX size={12} />
-                  <span>Limpar</span>
+                  <span>{t("clearButton")}</span>
                 </button>
               )}
             </div>
@@ -190,7 +226,7 @@ export function TaskFilters({
             {/* Filtro por Tipo de Tarefa */}
             <Select
               id="filter-task-type"
-              label="Tipo de Tarefa"
+              label={t("taskTypeLabel")}
               compact
               value={advancedFilters.taskType}
               onChange={(val) =>
@@ -199,14 +235,14 @@ export function TaskFilters({
                   taskType: val as DashboardAdvancedFilters["taskType"],
                 })
               }
-              options={TASK_TYPE_FILTER_OPTIONS}
+              options={taskTypeOptions}
             />
 
             {/* Filtro por Lista / Coluna */}
             {columns && columns.length > 0 && (
               <Select
                 id="filter-column"
-                label="Lista / Categoria"
+                label={t("columnLabel")}
                 compact
                 value={advancedFilters.columnId}
                 onChange={(val) =>
@@ -219,10 +255,10 @@ export function TaskFilters({
               />
             )}
 
-            {/* Filtro por Dificuldade */}
+            {/* Filtro por Dificuldade / Esforço */}
             <Select
               id="filter-difficulty"
-              label="Dificuldade"
+              label={isGamified ? t("difficultyLabel") : t("effortLabel")}
               compact
               value={advancedFilters.difficulty}
               onChange={(val) =>
@@ -231,13 +267,13 @@ export function TaskFilters({
                   difficulty: val as DashboardAdvancedFilters["difficulty"],
                 })
               }
-              options={TASK_DIFFICULTY_FILTER_OPTIONS}
+              options={difficultyOptions}
             />
 
             {/* Ordenação */}
             <Select
               id="filter-sort"
-              label="Ordenar por"
+              label={t("sortByLabel")}
               compact
               value={advancedFilters.sortBy}
               onChange={(val) =>
@@ -246,7 +282,7 @@ export function TaskFilters({
                   sortBy: val as DashboardAdvancedFilters["sortBy"],
                 })
               }
-              options={TASK_SORT_FILTER_OPTIONS}
+              options={sortOptions}
             />
 
             {/* Toggle Ocultar Concluídas */}
@@ -255,7 +291,7 @@ export function TaskFilters({
                 htmlFor="filter-hide-completed"
                 className="text-xs text-neutral-200 group-hover:text-gold transition-colors font-medium cursor-pointer select-none"
               >
-                Ocultar tarefas concluídas
+                {t("hideCompletedLabel")}
               </label>
               <Switch
                 id="filter-hide-completed"
@@ -267,7 +303,7 @@ export function TaskFilters({
                     hideCompleted: checked,
                   })
                 }
-                aria-label="Ocultar tarefas concluídas"
+                aria-label={t("hideCompletedLabel")}
               />
             </div>
           </div>

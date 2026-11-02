@@ -1,4 +1,6 @@
 import type { components } from "@/api/schema";
+import type { AppLocale } from "@/types/ui";
+import { parseServerDate } from "./date";
 
 type User = components["schemas"]["UserResponseDTO"];
 
@@ -26,7 +28,9 @@ export interface SubscriptionExpirationInfo {
  */
 export function getSubscriptionExpirationInfo(
   user?: Partial<User> | null,
+  locale: AppLocale = "pt-BR",
 ): SubscriptionExpirationInfo {
+  const isEn = locale === "en";
   const isPremium = Boolean(user?.isPremium);
   const status =
     (user?.subscriptionStatus as
@@ -55,7 +59,9 @@ export function getSubscriptionExpirationInfo(
     };
   }
 
-  const endsAt = new Date(user.subscriptionEndsAt);
+  const endsAt =
+    parseServerDate(user.subscriptionEndsAt) ??
+    new Date(user.subscriptionEndsAt);
   const now = new Date();
   const diffMs = endsAt.getTime() - now.getTime();
   const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
@@ -70,23 +76,33 @@ export function getSubscriptionExpirationInfo(
   let warningLevel: ExpirationWarningLevel = "none";
 
   if (hasExpired) {
-    formattedRemaining = "Plano expirado";
+    formattedRemaining = isEn ? "Plan expired" : "Plano expirado";
     warningLevel = "danger";
   } else if (daysRemaining <= 1) {
     if (totalHours <= 1) {
-      formattedRemaining = "Expira em menos de 1h!";
+      formattedRemaining = isEn
+        ? "Expires in less than 1h!"
+        : "Expira em menos de 1h!";
     } else {
-      formattedRemaining = `Expira em ${totalHours}h`;
+      formattedRemaining = isEn
+        ? `Expires in ${totalHours}h`
+        : `Expira em ${totalHours}h`;
     }
     warningLevel = "danger";
   } else if (daysRemaining <= 3) {
-    formattedRemaining = `Faltam ${daysRemaining} dias`;
+    formattedRemaining = isEn
+      ? `${daysRemaining} ${daysRemaining === 1 ? "day" : "days"} left`
+      : `Faltam ${daysRemaining} dias`;
     warningLevel = "warning";
   } else if (daysRemaining <= 7) {
-    formattedRemaining = `Faltam ${daysRemaining} dias`;
+    formattedRemaining = isEn
+      ? `${daysRemaining} ${daysRemaining === 1 ? "day" : "days"} left`
+      : `Faltam ${daysRemaining} dias`;
     warningLevel = "info";
   } else {
-    formattedRemaining = `${daysRemaining} dias restantes`;
+    formattedRemaining = isEn
+      ? `${daysRemaining} ${daysRemaining === 1 ? "day" : "days"} remaining`
+      : `${daysRemaining} dias restantes`;
     warningLevel = "none";
   }
 

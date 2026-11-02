@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.enums.SubscriptionStatus;
+import com.habitparty.core.domain.enums.UserExperienceMode;
 import com.habitparty.core.domain.enums.UserGender;
 import com.habitparty.core.domain.enums.UserRole;
 
@@ -14,6 +15,7 @@ public record UserResponseDTO(
         UUID id,
         boolean isPremium,
         boolean isFounder,
+        boolean emailVerified,
         SubscriptionStatus subscriptionStatus,
         LocalDateTime subscriptionEndsAt,
         boolean hasActiveRecurringSubscription,
@@ -21,9 +23,10 @@ public record UserResponseDTO(
         String fullName,
         String username,
         UserGender gender,
+        UserExperienceMode experienceMode,
         String email,
         String profilePhotoUrl,
-        LocalDate birthday,
+        LocalDate birthDate,
 
         // Atributos Derivados (Calculados no Domínio)
         Integer age,
@@ -38,11 +41,11 @@ public record UserResponseDTO(
         int currentStreak,
         int highestStreak) {
     public static UserResponseDTO fromDomain(User user) {
-        // Obs: dados sensíveis são omitidos (como a password)
         return new UserResponseDTO(
                 user.getId(),
                 user.isPremium(),
                 user.isFounder(),
+                user.isEmailVerified(),
                 user.getSubscriptionStatus(),
                 user.getSubscriptionEndsAt(),
                 user.hasActiveRecurringSubscription(),
@@ -50,12 +53,13 @@ public record UserResponseDTO(
                 user.getFullName(),
                 user.getUsername(),
                 user.getGender(),
+                user.getExperienceMode(),
                 user.getEmail(),
-                user.getProfilePhotoUrl().orElse(null), // Se você usou Optional no getter
-                user.getBirthday(),
+                user.getProfilePhotoUrl().orElse(null),
+                user.getBirthDate(),
 
-                user.getAge(), // A mágica da Idade!
-                user.getCurrentLevel().getTitle(), // A mágica do Nível!
+                user.getAge(),
+                user.getCurrentLevel().getTitle(),
                 user.getNextLevel().getTitle(),
                 user.getXpToNextLevel(),
 

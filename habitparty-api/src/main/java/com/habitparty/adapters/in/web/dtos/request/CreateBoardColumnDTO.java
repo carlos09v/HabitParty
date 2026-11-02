@@ -11,7 +11,7 @@ public record CreateBoardColumnDTO(
   UUID workspaceId,
 
   @NotBlank(message = "O nome é obrigatório")
-  @Size(max = 12, message = "O nome deve ter até 12 caracteres")
+  @Size(max = 30, message = "O nome deve ter até 30 caracteres")
   String name,
 
   String icon

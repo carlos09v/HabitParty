@@ -5,34 +5,51 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.PasswordHasherPort;
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.application.usecases.auth.SendEmailVerificationUseCase;
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.domain.entities.auth.DisposableEmailValidator;
+import com.habitparty.core.domain.enums.SubscriptionStatus;
 import com.habitparty.core.domain.enums.UserRole;
 import com.habitparty.core.exceptions.DomainValidationException;
 
 @Service
-@Transactional
 public class CreateUserUseCase {
+  private static final Logger log = LoggerFactory.getLogger(CreateUserUseCase.class);
+
   private final UserRepository port;
   private final PasswordHasherPort passwordHasher;
+  private final SendEmailVerificationUseCase sendEmailVerificationUseCase;
 
   public CreateUserUseCase(UserRepository port, PasswordHasherPort passwordHasher) {
+    this(port, passwordHasher, null);
+  }
+
+  @Autowired
+  public CreateUserUseCase(
+      UserRepository port,
+      PasswordHasherPort passwordHasher,
+      SendEmailVerificationUseCase sendEmailVerificationUseCase) {
     this.port = port;
     this.passwordHasher = passwordHasher;
+    this.sendEmailVerificationUseCase = sendEmailVerificationUseCase;
   }
 
   public User execute(CreateUserCommand command) {
-    if (command.birthday() == null) {
+    if (command.birthDate() == null) {
       throw new DomainValidationException("A data de nascimento é obrigatória.");
     }
-    if (command.birthday().isAfter(LocalDate.now())) {
+    if (command.birthDate().isAfter(LocalDate.now())) {
       throw new DomainValidationException("A data de nascimento deve estar no passado.");
     }
-    int age = Period.between(command.birthday(), LocalDate.now()).getYears();
+    int age = Period.between(command.birthDate(), LocalDate.now()).getYears();
     if (age < 12) {
       throw new DomainValidationException("Você deve ter no mínimo 12 anos para criar uma conta.");
     }
@@ -40,30 +57,52 @@ public class CreateUserUseCase {
       throw new DomainValidationException("Data de nascimento inválida.");
     }
 
+    // Valida e bloqueia domínios de e-mails temporários/descartáveis (Anti-Bot)
+    DisposableEmailValidator.validate(command.email());
+
     // 1. Gera o hash da senha
     String hashedPassword = passwordHasher.encode(command.password());
 
-    // Aqui ele "fabrica" o usuário a partir do Command. Obs: os dados precisam estar em ordem conforme constructor do dominio
+    // 2. Cria o usuário no cadastro comum com emailVerified = false
     User newUser = new User(
-        UUID.randomUUID(), // O sistema gera o ID e não o DB
+        UUID.randomUUID(),
         UserRole.USER,
-        false, // Todo user nasce Free
+        false,
+        false,
+        null,
+        null,
+        SubscriptionStatus.FREE,
+        null,
         command.fullName(),
         command.username(),
-        command.email(),
+        command.email() != null ? command.email().trim().toLowerCase() : null,
         hashedPassword,
-        BigDecimal.ZERO, // = currentCoins. Regra de Negócio: Todo mundo começa com 0 moedas
-        BigDecimal.ZERO, // = totalGoldEarned
-        command.birthday(),
-        null, // = profilePhotoUrl. Sem foto no cadastro
+        false, // emailVerified = false até confirmar no link enviado por e-mail
+        null,  // emailVerifiedAt
+        BigDecimal.ZERO,
+        BigDecimal.ZERO,
+        command.birthDate(),
+        null,
         command.gender(),
-        0, // = totalXp
-        0, // = currentStreak
-        0, // = highestStreak
-        LocalDateTime.now() // Data exata do cadastro
+        0,
+        0,
+        0,
+        LocalDateTime.now()
     );
 
-    // 2. Manda o Adapter salvar no banco
-    return port.save(newUser);
+    // 3. Salva no banco
+    User savedUser = port.save(newUser);
+
+    // 4. Dispara o e-mail de confirmação pós-cadastro
+    if (sendEmailVerificationUseCase != null) {
+      try {
+        sendEmailVerificationUseCase.executeForUser(savedUser);
+      } catch (Exception e) {
+        log.error("[CreateUserUseCase] Falha ao enviar e-mail de verificação inicial para {}: {}",
+            savedUser.getEmail(), e.getMessage());
+      }
+    }
+
+    return savedUser;
   }
 }

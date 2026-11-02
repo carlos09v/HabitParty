@@ -1,7 +1,13 @@
 import { Check, Flame, Pencil, X } from "lucide-react";
+import { useTranslations } from "next-intl";
+import {
+  TaskActionControl,
+  TaskHardcoreBadge,
+  TaskRewardBadges,
+} from "@/components/tasks/shared";
 import type { Task, TaskPriorityOption } from "@/types/task";
 import { cn } from "@/utils";
-import { isTaskHardcoreLocked } from "@/utils/date";
+import { getTaskDueDateInfo, isTaskHardcoreLocked } from "@/utils/date";
 import { TaskDatePicker } from "./TaskDatePicker";
 import { TaskPriorityPicker } from "./TaskPriorityPicker";
 
@@ -14,6 +20,7 @@ interface TaskDetailsHeaderProps {
   dueDate: string;
   priority: string;
   onToggleComplete: () => void;
+  onHabitDelta?: (delta: number) => void;
   onDateChange: (newDate: string) => void;
   onPrioritySelect: (p: TaskPriorityOption) => void;
   onEdit?: () => void;
@@ -29,30 +36,44 @@ export function TaskDetailsHeader({
   dueDate,
   priority,
   onToggleComplete,
+  onHabitDelta,
   onDateChange,
   onPrioritySelect,
   onEdit,
   onClose,
 }: TaskDetailsHeaderProps) {
+  const t = useTranslations("tasks.detailsPopover.header");
   const streak = task.streak ?? task.currentStreak ?? 0;
   const habitScore = (task.positiveCount ?? 0) - (task.negativeCount ?? 0);
   const isDateLocked = isTaskHardcoreLocked(task);
+  const dueDateInfo = getTaskDueDateInfo(dueDate || task.dueDate);
+  const isHardcoreOverdue = Boolean(
+    isTodo && task.isHardcoreModeEnabled && dueDateInfo.isOverdue,
+  );
 
   return (
     <div className="flex items-center justify-between gap-2 border-b border-primary/20 pb-2.5">
       <div className="flex items-center gap-2 min-w-0">
-        {/* HÁBITO: Não tem data nem checkbox de conclusão */}
+        {/* HÁBITO: Controles +/- diretos + Badge + Reset + Saldo */}
         {isHabit ? (
           <div className="flex items-center gap-2 min-w-0">
+            <TaskActionControl
+              task={task}
+              isHabit={true}
+              onDelta={onHabitDelta}
+            />
+
+            <div className="h-4 w-px bg-white/15 shrink-0" />
+
             <span className="px-2 py-0.5 rounded text-tiny font-bold uppercase tracking-wider bg-info/15 border border-info/40 text-info shrink-0">
-              Hábito
+              {t("habitBadge")}
             </span>
             <span className="text-tiny font-medium text-neutral-400 truncate">
               {task.resetCounter === "WEEKLY"
-                ? "Reset semanal"
+                ? t("resetWeekly")
                 : task.resetCounter === "MONTHLY"
-                  ? "Reset mensal"
-                  : "Reset diário"}
+                  ? t("resetMonthly")
+                  : t("resetDaily")}
             </span>
             {habitScore !== 0 && (
               <span
@@ -62,9 +83,11 @@ export function TaskDetailsHeader({
                     ? "text-success-500 bg-success-500/10"
                     : "text-danger-500 bg-danger-500/10",
                 )}
-                title="Saldo de repetições realizadas no ciclo atual"
+                title={t("repetitionsTitle")}
               >
-                {habitScore > 0 ? `+${habitScore}` : habitScore} repetições
+                {t("repetitionsCount", {
+                  score: habitScore > 0 ? `+${habitScore}` : String(habitScore),
+                })}
               </span>
             )}
           </div>
@@ -75,13 +98,15 @@ export function TaskDetailsHeader({
               type="button"
               onClick={onToggleComplete}
               aria-label={
-                completed ? "Marcar como pendente" : "Marcar como concluída"
+                completed ? t("markPendingAria") : t("markCompletedAria")
               }
               className={cn(
-                "w-5 h-5 rounded-md border flex items-center justify-center transition-all cursor-pointer shrink-0",
+                "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-90",
                 completed
-                  ? "bg-gold border-gold text-neutral-900 shadow-glow-gold-xs"
-                  : "border-primary/50 bg-primary-dark/40 hover:border-gold",
+                  ? "bg-gold border-gold text-on-gold shadow-glow-gold-xs"
+                  : isDaily
+                    ? "border-magenta/60 bg-magenta/10 hover:border-magenta"
+                    : "border-primary-light/55 bg-primary-dark/40 hover:border-gold",
               )}
             >
               {completed && <Check size={12} className="stroke-3" />}
@@ -100,12 +125,12 @@ export function TaskDetailsHeader({
             ) : isDaily ? (
               <div className="flex items-center gap-1.5">
                 <span className="text-tiny font-medium text-magenta bg-magenta/15 border border-magenta/40 px-2 py-0.5 rounded uppercase tracking-wider">
-                  Diária
+                  {t("dailyBadge")}
                 </span>
                 {streak > 0 && (
                   <span
                     className="flex items-center gap-1 text-tiny text-warning-500 font-bold shrink-0"
-                    title={`Ofensiva de ${streak} dia(s)`}
+                    title={t("streakTitle", { streak })}
                   >
                     <Flame
                       size={12}
@@ -120,8 +145,14 @@ export function TaskDetailsHeader({
         )}
       </div>
 
-      {/* Canto Superior Direito: Bandeira de Prioridade + Lápis de Edição + Botão Fechar X */}
+      {/* Canto Superior Direito: Hardcore + Dificuldade + Bandeira de Prioridade + Lápis + Fechar X */}
       <div className="flex items-center gap-1.5 shrink-0">
+        {task.isHardcoreModeEnabled && (
+          <TaskHardcoreBadge isHardcoreOverdue={isHardcoreOverdue} />
+        )}
+
+        <TaskRewardBadges task={task} showStreak={false} showRewards={false} />
+
         <TaskPriorityPicker
           priority={priority}
           onPrioritySelect={onPrioritySelect}
@@ -131,8 +162,8 @@ export function TaskDetailsHeader({
             type="button"
             onClick={onEdit}
             className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer"
-            aria-label="Editar detalhes completos da tarefa"
-            title="Editar tarefa completa"
+            aria-label={t("editFullAria")}
+            title={t("editFullTitle")}
           >
             <Pencil size={14} />
           </button>
@@ -142,8 +173,8 @@ export function TaskDetailsHeader({
             type="button"
             onClick={onClose}
             className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-neutral-100 hover:bg-white/10 transition-colors cursor-pointer"
-            aria-label="Fechar"
-            title="Fechar"
+            aria-label={t("closeAria")}
+            title={t("closeTitle")}
           >
             <X size={16} />
           </button>

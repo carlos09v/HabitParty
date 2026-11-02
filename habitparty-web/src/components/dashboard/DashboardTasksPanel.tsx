@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { TaskFilters } from "@/components/dashboard/TaskFilters";
 import { TaskTable } from "@/components/dashboard/TaskTable";
@@ -46,6 +47,8 @@ export function DashboardTasksPanel({
   tasks: externalTasks,
   onTasksChange,
 }: DashboardTasksPanelProps) {
+  const t = useTranslations("dashboard.tasksPanel");
+  const tMenu = useTranslations("dashboard.taskShared.contextMenu");
   const searchParams = useSearchParams();
   const [internalTasks, setInternalTasks] = useState<Task[]>(initialTasks);
 
@@ -169,9 +172,9 @@ export function DashboardTasksPanel({
     () =>
       columns.map((c) => ({
         id: c.id || "",
-        title: c.name || "Lista",
+        title: c.name || t("defaultList"),
       })),
-    [columns],
+    [columns, t],
   );
 
   const contextMenuItems = useMemo(
@@ -186,8 +189,19 @@ export function DashboardTasksPanel({
           }),
         onDuplicate: (task) => handleDuplicateTask(task),
         onDelete: requestDeleteTask,
+        labels: {
+          edit: tMenu("edit"),
+          duplicate: tMenu("duplicate"),
+          delete: tMenu("delete"),
+        },
       }),
-    [contextMenu.task, defaultColumnId, handleDuplicateTask, requestDeleteTask],
+    [
+      contextMenu.task,
+      defaultColumnId,
+      handleDuplicateTask,
+      requestDeleteTask,
+      tMenu,
+    ],
   );
 
   return (
@@ -262,6 +276,7 @@ export function DashboardTasksPanel({
             setSelectedTaskDetails(null);
           }}
           onToggleComplete={handleToggleComplete}
+          onHabitChange={handleHabitChange}
         />
       )}
 
@@ -294,19 +309,18 @@ export function DashboardTasksPanel({
       {Boolean(taskToDelete) && (
         <ConfirmationModal
           isOpen={Boolean(taskToDelete)}
-          title="Excluir Tarefa"
+          title={t("deleteModalTitle")}
           description={
             <>
-              Tem certeza de que deseja excluir a tarefa{" "}
+              {t("deleteModalDescPrefix")}{" "}
               <span className="font-bold text-neutral-100">
                 &quot;{taskToDelete?.title}&quot;
               </span>
-              ? Esta tarefa possui subtarefas, Modo Hardcore ou histórico de
-              ofensiva ativo, e a exclusão não pode ser desfeita.
+              {t("deleteModalDescSuffix")}
             </>
           }
-          confirmText="Excluir Tarefa"
-          cancelText="Cancelar"
+          confirmText={t("deleteModalConfirm")}
+          cancelText={t("deleteModalCancel")}
           variant="danger"
           onClose={() => setTaskToDelete(null)}
           onConfirm={async () => {

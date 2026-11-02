@@ -25,11 +25,13 @@ public class PaymentController implements PaymentApi {
   @Override
   public ResponseEntity<CheckoutResponseDTO> createCheckoutSession(
       AuthenticatedUser authenticatedUser,
-      CheckoutRequestDTO request) {
+      CheckoutRequestDTO request,
+      String acceptLanguage) {
     String checkoutUrl = createCheckoutSessionUseCase.execute(
         authenticatedUser.id(),
         request.plan(),
-        request.paymentMethod());
+        request.paymentMethod(),
+        acceptLanguage);
 
     return ResponseEntity.ok(new CheckoutResponseDTO(checkoutUrl));
   }
@@ -46,7 +48,9 @@ public class PaymentController implements PaymentApi {
 
   @Override
   public ResponseEntity<com.habitparty.adapters.in.web.dtos.response.FoundersQuotaDTO> getFoundersQuota() {
-    return ResponseEntity.ok(getFoundersQuotaUseCase.execute());
+    return ResponseEntity.ok(
+        com.habitparty.adapters.in.web.dtos.response.FoundersQuotaDTO.fromProjection(
+            getFoundersQuotaUseCase.execute()));
   }
 
   @Override

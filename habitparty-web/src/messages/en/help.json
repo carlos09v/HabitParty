@@ -1,0 +1,71 @@
+{
+  "metadata": {
+    "title": "Help Center & Guide | HabitParty",
+    "description": "Learn how the productivity cycle, XP, gold coins, streaks, focus mode, and rewards work in HabitParty."
+  },
+  "loading": {
+    "label": "Loading help center..."
+  },
+  "page": {
+    "title": "Help Center & Guide",
+    "subtitle": "Find answers to all your questions about the mathematical economy, habit rules, rewards, and progression in HabitParty.",
+    "support": {
+      "title": "Need to reach us or found a bug?",
+      "descriptionBeforeIssue": "To report technical issues or suggest improvements, open a ",
+      "githubIssueHighlight": "GitHub Issue",
+      "descriptionMiddle": " on the project. If you prefer to discuss questions about your account, subscription, or talk directly with us, send an email to ",
+      "reportBug": "Report Bug (GitHub)",
+      "repository": "Repository",
+      "sendEmail": "Send Email"
+    }
+  },
+  "cycle": {
+    "title": "How HabitParty's dynamics work",
+    "steps": {
+      "1": {
+        "title": "Plan Your Routine",
+        "description": "Organize your tasks into ongoing Habits, recurring Dailies, and one-off To-Dos with checklists and deadlines."
+      },
+      "2": {
+        "title": "Execute with Focus & Consistency",
+        "description": "Complete real tasks. The mathematical engine scores your consistency, granting progress, XP, and coins (🪙) proportional to effort."
+      },
+      "3": {
+        "title": "Reward Your Dedication",
+        "description": "Set up your own rewards in the Store: breaks, leisure, free-time blocks, or lucky Mystery Boxes."
+      },
+      "4": {
+        "title": "Enjoy Guilt-Free",
+        "description": "Access your Inventory/Backpack, enjoy your earned rest with peace of mind, and keep your discipline sustainable."
+      }
+    }
+  },
+  "tables": {
+    "sectionTitle": "Reference Tables & Mathematical Economy",
+    "tableSingular": "table",
+    "tablePlural": "tables"
+  },
+  "faq": {
+    "searchPlaceholder": "Search by question, term, or rule (e.g., decay, mystery box, hardcore)...",
+    "clearSearch": "Clear search",
+    "sectionTitle": "Frequently Asked Questions",
+    "topicSingular": "topic",
+    "topicPlural": "topics",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all",
+    "emptyTitle": "No topics found for \"{query}\"",
+    "emptyDescription": "Try searching with different terms or change the selected category above.",
+    "viewAllTopics": "View all topics",
+    "tagsLabel": "Tags:",
+    "categories": {
+      "ALL": "All",
+      "OVERVIEW": "Overview",
+      "TASKS": "Tasks & Habits",
+      "ECONOMY": "Economy & Gold",
+      "REWARDS": "Store & Boxes",
+      "INVENTORY": "Backpack",
+      "FOCUS": "Focus & Pomodoro",
+      "LEVELS": "Levels & XP"
+    }
+  }
+}

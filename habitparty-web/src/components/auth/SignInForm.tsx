@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useTransition } from "react";
 import { toast } from "sonner";
 import { signIn } from "@/actions/auth";
@@ -16,6 +17,7 @@ interface SignInFormProps {
 export function SignInForm({ initialError }: SignInFormProps = {}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const t = useTranslations("auth.signIn");
 
   useEffect(() => {
     if (initialError) {
@@ -33,7 +35,7 @@ export function SignInForm({ initialError }: SignInFormProps = {}) {
       if (!result.success) {
         toast.error(result.error);
       } else {
-        toast.success("Login realizado com sucesso!");
+        toast.success(t("successToast"));
         router.push("/dashboard");
       }
     });
@@ -42,22 +44,22 @@ export function SignInForm({ initialError }: SignInFormProps = {}) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full">
       <Input
-        label="Email"
+        label={t("emailLabel")}
         id="email"
         name="email"
         type="email"
-        placeholder="Insira seu email"
+        placeholder={t("emailPlaceholder")}
         required
         disabled={isPending}
       />
 
       <div className="flex flex-col gap-2">
         <Input
-          label="Senha"
+          label={t("passwordLabel")}
           id="password"
           name="password"
           type="password"
-          placeholder="********"
+          placeholder={t("passwordPlaceholder")}
           required
           disabled={isPending}
         />
@@ -66,14 +68,14 @@ export function SignInForm({ initialError }: SignInFormProps = {}) {
             href="/forgot-password"
             className="text-xs text-neutral-400 hover:text-gold transition-colors outline-none focus:outline-none focus-visible:underline focus-visible:ring-2 focus-visible:ring-gold focus-visible:rounded px-1"
           >
-            Esqueceu a senha?
+            {t("forgotPassword")}
           </Link>
         </div>
       </div>
 
       <div className="flex flex-col gap-3 mt-2">
-        <SubmitButton isPending={isPending} loadingText="Entrando...">
-          Entrar
+        <SubmitButton isPending={isPending} loadingText={t("submitting")}>
+          {t("submit")}
         </SubmitButton>
 
         <GoogleSignInButton disabled={isPending} />

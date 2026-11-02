@@ -18,6 +18,8 @@ export interface LevelInfo {
   minXpRequired: number;
 }
 
+import type { AppLocale } from "@/types/ui";
+
 export const USER_LEVELS: readonly LevelInfo[] = [
   { tier: "NOVICE", title: "Novato", minXpRequired: 0 },
   { tier: "APPRENTICE", title: "Aprendiz", minXpRequired: 100 },
@@ -30,6 +32,71 @@ export const USER_LEVELS: readonly LevelInfo[] = [
   { tier: "MASTER", title: "Mestre", minXpRequired: 25000 },
   { tier: "LEGEND", title: "Lenda", minXpRequired: 60000 },
 ] as const;
+
+export const LEVEL_TITLES_PT: Record<LevelInfo["tier"], string> = {
+  NOVICE: "Novato",
+  APPRENTICE: "Aprendiz",
+  ADVENTURER: "Aventureiro",
+  CHALLENGER: "Desafiante",
+  AMATEUR: "Amador",
+  PROFESSIONAL: "Profissional",
+  EXPERT: "Especialista",
+  VETERAN: "Veterano",
+  MASTER: "Mestre",
+  LEGEND: "Lenda",
+};
+
+export const LEVEL_TITLES_EN: Record<LevelInfo["tier"], string> = {
+  NOVICE: "Novice",
+  APPRENTICE: "Apprentice",
+  ADVENTURER: "Adventurer",
+  CHALLENGER: "Challenger",
+  AMATEUR: "Amateur",
+  PROFESSIONAL: "Professional",
+  EXPERT: "Expert",
+  VETERAN: "Veteran",
+  MASTER: "Master",
+  LEGEND: "Legend",
+};
+
+const NORMALIZED_TIER_LOOKUP: Record<string, LevelInfo["tier"]> = {};
+for (const lvl of USER_LEVELS) {
+  NORMALIZED_TIER_LOOKUP[lvl.tier.toLowerCase()] = lvl.tier;
+  NORMALIZED_TIER_LOOKUP[LEVEL_TITLES_PT[lvl.tier].toLowerCase()] = lvl.tier;
+  NORMALIZED_TIER_LOOKUP[LEVEL_TITLES_EN[lvl.tier].toLowerCase()] = lvl.tier;
+}
+
+export function resolveLevelTier(
+  titleOrTier: string | undefined | null,
+): LevelInfo["tier"] | null {
+  if (!titleOrTier) return null;
+  return NORMALIZED_TIER_LOOKUP[titleOrTier.trim().toLowerCase()] ?? null;
+}
+
+export function localizeLevelTitle(
+  titleOrTier: string | undefined | null,
+  locale: AppLocale,
+): string {
+  const isEn = locale === "en";
+  if (!titleOrTier) return isEn ? "Novice" : "Novato";
+
+  const trimmed = titleOrTier.trim();
+  const lower = trimmed.toLowerCase();
+  if (
+    lower === "membro premium" ||
+    lower === "premium member" ||
+    lower === "premium_member"
+  ) {
+    return isEn ? "Premium Member" : "Membro Premium";
+  }
+
+  const tier = resolveLevelTier(trimmed);
+  if (tier) {
+    return isEn ? LEVEL_TITLES_EN[tier] : LEVEL_TITLES_PT[tier];
+  }
+
+  return trimmed;
+}
 
 /**
  * Retorna o nível correspondente ao total de XP acumulado.

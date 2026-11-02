@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, KeyRound, Lock, Mail, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { type FormEvent, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { requestPasswordReset } from "@/actions/auth";
@@ -44,6 +45,7 @@ function PasswordRuleItem({
 }
 
 export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
+  const t = useTranslations("settings.changePassword");
   const user = useUserStore((s) => s.user);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -66,12 +68,17 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
     isValid: isFormValid,
   } = validatePasswordRequirements(newPassword, confirmPassword);
 
+  const isEmailUnverified = user?.emailVerified === false;
+
   const canSubmit =
-    currentPassword.length > 0 && isFormValid && !isSameAsCurrent;
+    !isEmailUnverified &&
+    currentPassword.length > 0 &&
+    isFormValid &&
+    !isSameAsCurrent;
 
   const handleSendPasswordSetupEmail = () => {
     if (!user?.email) {
-      toast.error("E-mail do usuário não encontrado.");
+      toast.error(t("userEmailNotFound"));
       return;
     }
 
@@ -79,14 +86,9 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
       const res = await requestPasswordReset(user.email || "");
       if (res.success) {
         setResetEmailSent(true);
-        toast.success(
-          `Enviamos um link para ${user.email} para você definir ou redefinir sua senha!`,
-        );
+        toast.success(t("setupLinkSent", { email: user?.email ?? "" }));
       } else {
-        toast.error(
-          res.error ||
-            "Não foi possível enviar o e-mail de definição de senha.",
-        );
+        toast.error(res.error || t("setupLinkError"));
       }
     });
   };
@@ -95,24 +97,22 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
     e.preventDefault();
 
     if (!currentPassword) {
-      toast.error("Informe a sua senha atual.");
+      toast.error(t("currentPasswordRequired"));
       return;
     }
 
     if (currentPassword === newPassword) {
-      toast.error("A nova senha deve ser diferente da sua senha atual.");
+      toast.error(t("newPasswordDifferent"));
       return;
     }
 
     if (!hasMinLength || !hasUpperCase || !hasSpecialChar) {
-      toast.error(
-        "A nova senha deve atender a todos os requisitos de segurança.",
-      );
+      toast.error(t("requirementsNotMet"));
       return;
     }
 
     if (!passwordsMatch) {
-      toast.error("A confirmação de senha não confere.");
+      toast.error(t("passwordsDoNotMatch"));
       return;
     }
 
@@ -123,26 +123,33 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
       });
 
       if (res.success) {
-        toast.success("Senha alterada com sucesso!");
+        toast.success(t("successToast"));
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
       } else {
-        toast.error(
-          res.error || "Erro ao alterar senha. Verifique sua senha atual.",
-        );
+        toast.error(res.error || t("changePasswordError"));
       }
     });
   };
 
   return (
     <SettingsCard
-      title="Segurança & Senha"
-      description="Mantenha sua conta protegida atualizando sua senha periodicamente."
+      title={t("cardTitle")}
+      description={t("cardDesc")}
       icon={<KeyRound size={18} className="text-gold" />}
       isCompact={isCompact}
     >
       <div className="flex flex-col gap-5">
+        {isEmailUnverified && (
+          <div className="p-3.5 sm:p-4 rounded-xl bg-gold/10 border border-gold/30 text-xs sm:text-body-s text-neutral-200 leading-relaxed">
+            <strong className="text-gold font-bold">
+              {t("unverifiedEmailWarning")}
+            </strong>{" "}
+            {t("unverifiedEmailDesc", { email: user?.email ?? "" })}
+          </div>
+        )}
+
         {/* Aviso informativo para contas criadas/vinculadas via Google */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 p-3.5 sm:p-4 rounded-xl bg-surface/60 border border-primary/25">
           <div className="flex items-start gap-3">
@@ -151,12 +158,10 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
             </div>
             <div className="flex flex-col gap-0.5">
               <span className="text-xs sm:text-body-s font-bold text-neutral-100">
-                Criou sua conta com o Google ou não sabe sua senha atual?
+                {t("googleNoticeTitleFull")}
               </span>
               <p className="text-tiny sm:text-xs text-neutral-300 leading-relaxed">
-                Contas criadas via Google não possuem uma senha manual inicial.
-                Se desejar definir uma senha própria para também entrar com
-                e-mail e senha, solicite um link de definição no seu e-mail.
+                {t("googleNoticeDescFull")}
               </p>
             </div>
           </div>
@@ -177,15 +182,13 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
             {resetEmailSent ? (
               <>
                 <Check size={14} />
-                <span>Link enviado no e-mail</span>
+                <span>{t("linkSent")}</span>
               </>
             ) : (
               <>
                 <Mail size={14} />
                 <span>
-                  {isSendingReset
-                    ? "Enviando link..."
-                    : "Receber link por e-mail"}
+                  {isSendingReset ? t("sendingEmail") : t("receiveLink")}
                 </span>
               </>
             )}
@@ -197,10 +200,10 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
             <Input
               id="currentPassword"
               type="password"
-              label="Senha Atual"
+              label={t("currentPasswordLabel")}
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="Digite sua senha atual"
+              placeholder={t("currentPasswordPlaceholder")}
               compact={isCompact}
               icon={<Lock size={18} />}
               required
@@ -209,41 +212,37 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
             <Input
               id="newPassword"
               type="password"
-              label="Nova Senha"
+              label={t("newPasswordLabel")}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Digite a nova senha"
+              placeholder={t("newPasswordPlaceholder")}
               compact={isCompact}
               icon={<Lock size={18} />}
-              error={
-                isSameAsCurrent
-                  ? "A nova senha não pode ser igual à senha atual."
-                  : undefined
-              }
+              error={isSameAsCurrent ? t("samePasswordError") : undefined}
               required
             />
 
             {/* Indicador de requisitos */}
             <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-surface/60 border border-primary/20 text-xs">
               <span className="font-semibold text-neutral-300">
-                Requisitos da senha:
+                {t("requirementsTitle")}
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-1">
                 <PasswordRuleItem
                   satisfied={hasMinLength}
-                  label="Mínimo de 8 caracteres"
+                  label={t("ruleMinLength")}
                 />
                 <PasswordRuleItem
                   satisfied={hasUpperCase}
-                  label="1 letra maiúscula"
+                  label={t("ruleUpperCase")}
                 />
                 <PasswordRuleItem
                   satisfied={hasSpecialChar}
-                  label="1 caractere especial (@$!%*?&#)"
+                  label={t("ruleSpecialChar")}
                 />
                 <PasswordRuleItem
                   satisfied={passwordsMatch}
-                  label="Senhas coincidem"
+                  label={t("ruleMatch")}
                 />
                 <PasswordRuleItem
                   satisfied={
@@ -252,7 +251,7 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
                     !isSameAsCurrent
                   }
                   isError={isSameAsCurrent}
-                  label="Diferente da senha atual"
+                  label={t("ruleDifferent")}
                   className="sm:col-span-2"
                 />
               </div>
@@ -261,10 +260,10 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
             <Input
               id="confirmPassword"
               type="password"
-              label="Confirmar Nova Senha"
+              label={t("confirmPasswordLabel")}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirme a nova senha"
+              placeholder={t("confirmPasswordPlaceholder")}
               compact={isCompact}
               icon={<Lock size={18} />}
               required
@@ -277,12 +276,12 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
               disabled={isPending || !canSubmit}
               className={cn(
                 "rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md",
-                "bg-gold text-neutral-900 hover:bg-gold-hover active:bg-gold-pressed",
+                "bg-gold text-on-gold hover:bg-gold-hover active:bg-gold-pressed",
                 "disabled:opacity-40 disabled:cursor-not-allowed",
                 isCompact ? "px-4 py-2 text-xs" : "px-6 py-2.5 text-sm",
               )}
             >
-              {isPending ? "Alterando..." : "Alterar Senha"}
+              {isPending ? t("submittingBtn") : t("submitBtn")}
             </button>
           </div>
         </form>

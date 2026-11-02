@@ -1,14 +1,101 @@
 "use client";
 
 import { Crown, Database, Mail, X } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import {
   ADMIN_STORAGE_BREAKDOWN_CONFIG,
   calculateStoragePercentage,
+  formatStorageBytes,
   getUserStorageLimitFormatted,
 } from "@/constants/admin";
-import type { AdminUserDetailDTO } from "@/types/admin";
-import { cn } from "@/utils";
+import type { AppLocale } from "@/i18n/config";
+import type { AdminUserDetailDTO, EmailDispatchLogDTO } from "@/types/admin";
+import { cn, formatDateTime } from "@/utils";
+
+function getLocalizedSubject(
+  log: EmailDispatchLogDTO,
+  t: (key: string, values?: Record<string, string | number>) => string,
+): string {
+  if (
+    log.emailType === "EMAIL_VERIFICATION" ||
+    log.subject.toLowerCase().includes("confirme seu e-mail") ||
+    log.subject.toLowerCase().includes("confirm your email")
+  ) {
+    return t("emails.subjects.EMAIL_VERIFICATION");
+  }
+
+  if (
+    log.emailType === "PASSWORD_RESET" ||
+    log.subject.toLowerCase().includes("recuperação de senha") ||
+    log.subject.toLowerCase().includes("password reset")
+  ) {
+    return t("emails.subjects.PASSWORD_RESET");
+  }
+
+  if (
+    log.emailType === "TASK_REMINDER" ||
+    log.subject.toLowerCase().startsWith("lembrete de tarefa:") ||
+    log.subject.toLowerCase().startsWith("task reminder:")
+  ) {
+    const taskName = log.subject
+      .replace(/^(lembrete de tarefa:\s*|task reminder:\s*)/i, "")
+      .trim();
+    return t("emails.subjects.TASK_REMINDER", { task: taskName });
+  }
+
+  if (log.emailType === "SYSTEM") {
+    return t("emails.subjects.SYSTEM");
+  }
+
+  return log.subject;
+}
+
+function getLocalizedErrorMessage(
+  rawError: string | null | undefined,
+  t: (key: string, values?: Record<string, string | number>) => string,
+): string | null {
+  if (!rawError) return null;
+
+  const err = rawError.trim();
+  const lower = err.toLowerCase();
+
+  if (
+    lower.includes("falha ao enviar e-mail de verificação via resend") ||
+    lower.includes("failed to send verification email")
+  ) {
+    return t("emails.errors.verificationFailed");
+  }
+
+  if (
+    lower.includes(
+      "falha ao enviar e-mail de redefinição de senha via resend",
+    ) ||
+    lower.includes("failed to send password reset email")
+  ) {
+    return t("emails.errors.passwordResetFailed");
+  }
+
+  if (
+    lower.includes("falha ao enviar e-mail via resend") ||
+    lower.includes("falha no provedor resend") ||
+    lower.includes("failed to send email")
+  ) {
+    return t("emails.errors.resendProviderFailed");
+  }
+
+  const quotaMatch = err.match(
+    /cota mensal de (\d+) lembretes excedida para o plano (.*)/i,
+  );
+  if (quotaMatch) {
+    return t("emails.errors.quotaExceeded", {
+      max: quotaMatch[1],
+      plan: quotaMatch[2],
+    });
+  }
+
+  return rawError;
+}
 
 interface AdminUserDetailModalProps {
   detail: AdminUserDetailDTO | null;
@@ -21,6 +108,9 @@ export function AdminUserDetailModal({
   isOpen,
   onClose,
 }: AdminUserDetailModalProps) {
+  const t = useTranslations("admin.userModal");
+  const locale = useLocale();
+
   if (!isOpen || !detail) return null;
 
   const { summary, storage, recentEmailLogs } = detail;
@@ -83,22 +173,22 @@ export function AdminUserDetailModal({
                 {summary.isFounder && (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gold/20 text-gold border border-gold/40 shadow-glow-gold-xs">
                     <Crown size={12} className="fill-gold" />
-                    Fundador 👑
+                    {t("badges.founder")}
                   </span>
                 )}
                 {summary.isPremium ? (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-gold/15 text-gold border border-gold/30">
                     <Crown size={12} />
-                    Premium VIP
+                    {t("badges.premiumVip")}
                   </span>
                 ) : (
                   <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-neutral-800 text-neutral-400 border border-white/5">
-                    Gratuito
+                    {t("badges.free")}
                   </span>
                 )}
                 {summary.role === "ADMIN" && (
                   <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
-                    ADMIN
+                    {t("badges.admin")}
                   </span>
                 )}
               </div>
@@ -112,7 +202,7 @@ export function AdminUserDetailModal({
             type="button"
             onClick={onClose}
             className="p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-            aria-label="Fechar modal"
+            aria-label={t("closeAriaLabel")}
           >
             <X size={20} />
           </button>
@@ -135,12 +225,15 @@ export function AdminUserDetailModal({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2 text-sm font-bold text-neutral-200 uppercase tracking-wider">
                     <Database size={16} className="text-success-500" />
-                    <span>Armazenamento no Banco de Dados</span>
+                    <span>{t("storage.title")}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="px-3 py-1 rounded-full bg-success-500/15 border border-success-500/30 text-success-500 font-mono font-bold text-xs">
-                      Total: {storage.totalFormatted} / {storageLimitFormatted}{" "}
-                      ({storagePct}%)
+                      {t("storage.totalBadge", {
+                        used: storage.totalFormatted,
+                        limit: storageLimitFormatted,
+                        percentage: storagePct,
+                      })}
                     </div>
                   </div>
                 </div>
@@ -150,14 +243,11 @@ export function AdminUserDetailModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {storageItems.map((item) => {
                 const Icon = item.icon;
-                const formatted =
-                  item.bytes < 1024
-                    ? `${item.bytes} B`
-                    : `${(item.bytes / 1024).toFixed(1)} KB`;
+                const formatted = formatStorageBytes(item.bytes);
 
                 return (
                   <div
-                    key={item.label}
+                    key={item.key}
                     className="p-3.5 rounded-xl bg-surface-alt/70 border border-white/5 flex items-center justify-between"
                   >
                     <div className="flex items-center gap-2.5">
@@ -166,10 +256,12 @@ export function AdminUserDetailModal({
                       </div>
                       <div>
                         <p className="text-xs font-medium text-neutral-200">
-                          {item.label}
+                          {t(`storage.items.${item.key}`)}
                         </p>
                         <p className="text-[11px] text-neutral-400 font-mono">
-                          {item.count.toLocaleString()} registro(s)
+                          {t("storage.recordsCount", {
+                            count: item.count.toLocaleString(locale),
+                          })}
                         </p>
                       </div>
                     </div>
@@ -187,30 +279,31 @@ export function AdminUserDetailModal({
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2 text-sm font-bold text-neutral-200 uppercase tracking-wider">
                 <Mail size={16} className="text-amber-400" />
-                <span>Histórico de E-mails Enviados (Resend)</span>
+                <span>{t("emails.title")}</span>
               </div>
               <span className="text-xs text-neutral-400 font-mono">
-                {summary.emailsSentThisMonth} disparo(s) este mês
+                {t("emails.monthlyCount", {
+                  count: summary.emailsSentThisMonth,
+                })}
               </span>
             </div>
 
             {recentEmailLogs.length === 0 ? (
               <div className="p-6 rounded-xl bg-surface-alt/40 border border-white/5 text-center text-xs text-neutral-400">
-                Nenhum e-mail disparado para este usuário até o momento.
+                {t("emails.empty")}
               </div>
             ) : (
               <div className="border border-white/10 rounded-xl overflow-hidden divide-y divide-white/5 bg-surface-alt/40">
                 {recentEmailLogs.map((log) => {
                   const isSent = log.status === "SENT";
-                  const dateFormatted = new Date(log.sentAt).toLocaleString(
-                    "pt-BR",
-                    {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    },
+                  const dateFormatted = formatDateTime(log.sentAt, {
+                    includeYearFull: true,
+                    locale: locale as AppLocale,
+                  });
+                  const localizedSubject = getLocalizedSubject(log, t);
+                  const localizedError = getLocalizedErrorMessage(
+                    log.errorMessage,
+                    t,
                   );
 
                   return (
@@ -229,14 +322,18 @@ export function AdminUserDetailModal({
                         />
                         <div className="truncate">
                           <p className="font-semibold text-neutral-200 truncate">
-                            {log.subject}
+                            {localizedSubject}
                           </p>
                           <p className="text-[11px] text-neutral-400">
-                            Para: {log.recipientEmail}
+                            {t("emails.recipientPrefix", {
+                              email: log.recipientEmail,
+                            })}
                           </p>
-                          {log.errorMessage && (
+                          {localizedError && (
                             <p className="text-[10px] text-red-400 mt-0.5">
-                              Erro: {log.errorMessage}
+                              {t("emails.errorPrefix", {
+                                message: localizedError,
+                              })}
                             </p>
                           )}
                         </div>
@@ -251,7 +348,9 @@ export function AdminUserDetailModal({
                               : "bg-red-500/15 text-red-400 border border-red-500/30",
                           )}
                         >
-                          {isSent ? "Enviado" : "Falhou"}
+                          {isSent
+                            ? t("emails.statusSent")
+                            : t("emails.statusFailed")}
                         </span>
                         <p className="text-[10px] text-neutral-500 mt-1 font-mono">
                           {dateFormatted}
@@ -272,7 +371,7 @@ export function AdminUserDetailModal({
             onClick={onClose}
             className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold transition-colors cursor-pointer"
           >
-            Fechar
+            {t("closeButton")}
           </button>
         </div>
       </div>

@@ -11,6 +11,7 @@ import {
   Trash2,
   XCircle,
 } from "lucide-react";
+import type { AppLocale } from "@/i18n/config";
 import type {
   HistoryPeriodFilter,
   HistoryTab,
@@ -25,6 +26,20 @@ export const HISTORY_TABS: readonly HistoryTab[] = [
   { id: "FOCUS", label: "Foco" },
 ] as const;
 
+export const HISTORY_TABS_EN: readonly HistoryTab[] = [
+  { id: "ALL", label: "All" },
+  { id: "TASKS", label: "Tasks & Habits" },
+  { id: "SHOPPING", label: "Store" },
+  { id: "BACKPACK", label: "Backpack" },
+  { id: "FOCUS", label: "Focus" },
+] as const;
+
+export function getHistoryTabs(
+  locale: AppLocale = "pt-BR",
+): readonly HistoryTab[] {
+  return locale === "en" ? HISTORY_TABS_EN : HISTORY_TABS;
+}
+
 export const PERIOD_OPTIONS: readonly {
   value: HistoryPeriodFilter;
   label: string;
@@ -34,6 +49,23 @@ export const PERIOD_OPTIONS: readonly {
   { value: "7DAYS", label: "Últimos 7 dias" },
   { value: "30DAYS", label: "Últimos 30 dias" },
 ] as const;
+
+export const PERIOD_OPTIONS_EN: readonly {
+  value: HistoryPeriodFilter;
+  label: string;
+}[] = [
+  { value: "ALL", label: "All time" },
+  { value: "TODAY", label: "Today" },
+  { value: "7DAYS", label: "Last 7 days" },
+  { value: "30DAYS", label: "Last 30 days" },
+] as const;
+
+export function getPeriodOptions(locale: AppLocale = "pt-BR"): readonly {
+  value: HistoryPeriodFilter;
+  label: string;
+}[] {
+  return locale === "en" ? PERIOD_OPTIONS_EN : PERIOD_OPTIONS;
+}
 
 /**
  * Grid de colunas responsivo e perfeitamente alinhado entre o cabeçalho e as linhas da tabela de histórico.
@@ -112,12 +144,39 @@ export const TRANSACTION_TYPE_CONFIG: Record<string, TransactionTypeStyle> = {
   },
 };
 
+export const TRANSACTION_TYPE_LABELS_EN: Record<string, string> = {
+  REWARD_BOUGHT: "Store Redemption",
+  HABIT_COMPLETED: "Habit Practiced",
+  DAILY_COMPLETED: "Daily Completed",
+  TODO_COMPLETED: "To-Do Completed",
+  TASK_COMPLETED: "Task Completed",
+  TASK_FAILED: "Task Failed",
+  BAD_HABIT_PENALTY: "Habit Penalty",
+  ITEM_CONSUMED: "Item Consumed",
+  ITEM_DISCARDED: "Item Discarded",
+  MANUAL_ADJUSTMENT: "Manual Adjustment",
+  FOCUS_COMPLETED: "Focus Session",
+};
+
 export const DEFAULT_TRANSACTION_STYLE: TransactionTypeStyle = {
   label: "Transação",
   borderClass: "border-l-primary",
   badgeClass: "bg-white/10 text-neutral-300 border-white/20",
   icon: HelpCircle,
 };
+
+export function getTransactionTypeLabel(
+  resolvedType: string,
+  locale: AppLocale = "pt-BR",
+): string {
+  if (locale === "en") {
+    return TRANSACTION_TYPE_LABELS_EN[resolvedType] || "Transaction";
+  }
+  return (
+    TRANSACTION_TYPE_CONFIG[resolvedType]?.label ||
+    DEFAULT_TRANSACTION_STYLE.label
+  );
+}
 
 /**
  * Rotas de origem de cada tipo de transação (resolvido), usadas no atalho
@@ -127,6 +186,12 @@ const TASKS_ROUTE = { href: "/tasks", label: "Ver em Tarefas" } as const;
 const INVENTORY_ROUTE = {
   href: "/inventory",
   label: "Ver na Mochila",
+} as const;
+
+const TASKS_ROUTE_EN = { href: "/tasks", label: "View in Tasks" } as const;
+const INVENTORY_ROUTE_EN = {
+  href: "/inventory",
+  label: "View in Backpack",
 } as const;
 
 export const TRANSACTION_CONTEXT_ROUTES: Partial<
@@ -144,12 +209,51 @@ export const TRANSACTION_CONTEXT_ROUTES: Partial<
   BAD_HABIT_PENALTY: TASKS_ROUTE,
 };
 
+export const TRANSACTION_CONTEXT_ROUTES_EN: Partial<
+  Record<string, { href: string; label: string }>
+> = {
+  REWARD_BOUGHT: { href: "/rewards", label: "View in Store" },
+  ITEM_CONSUMED: INVENTORY_ROUTE_EN,
+  ITEM_DISCARDED: INVENTORY_ROUTE_EN,
+  FOCUS_COMPLETED: { href: "/focus", label: "View in Focus" },
+  TASK_COMPLETED: TASKS_ROUTE_EN,
+  HABIT_COMPLETED: TASKS_ROUTE_EN,
+  DAILY_COMPLETED: TASKS_ROUTE_EN,
+  TODO_COMPLETED: TASKS_ROUTE_EN,
+  TASK_FAILED: TASKS_ROUTE_EN,
+  BAD_HABIT_PENALTY: TASKS_ROUTE_EN,
+};
+
+export function getTransactionContextRoute(
+  resolvedType: string,
+  locale: AppLocale = "pt-BR",
+): { href: string; label: string } | undefined {
+  return locale === "en"
+    ? TRANSACTION_CONTEXT_ROUTES_EN[resolvedType]
+    : TRANSACTION_CONTEXT_ROUTES[resolvedType];
+}
+
 export const DIFFICULTY_LABELS: Record<string, string> = {
   TRIVIAL: "Trivial",
   EASY: "Fácil",
   MEDIUM: "Médio",
   HARD: "Difícil",
 };
+
+export const DIFFICULTY_LABELS_EN: Record<string, string> = {
+  TRIVIAL: "Trivial",
+  EASY: "Easy",
+  MEDIUM: "Medium",
+  HARD: "Hard",
+};
+
+export function getDifficultyLabel(
+  difficulty: string,
+  locale: AppLocale = "pt-BR",
+): string {
+  const map = locale === "en" ? DIFFICULTY_LABELS_EN : DIFFICULTY_LABELS;
+  return map[difficulty] || difficulty;
+}
 
 export const PACKAGE_LABELS: Record<string, string> = {
   NONE: "Comum",
@@ -158,3 +262,19 @@ export const PACKAGE_LABELS: Record<string, string> = {
   EPIC: "Épico",
   LEGENDARY: "Lendário",
 };
+
+export const PACKAGE_LABELS_EN: Record<string, string> = {
+  NONE: "Common",
+  BASIC: "Basic",
+  PREMIUM: "Rare",
+  EPIC: "Epic",
+  LEGENDARY: "Legendary",
+};
+
+export function getPackageLabel(
+  packageLevel: string,
+  locale: AppLocale = "pt-BR",
+): string {
+  const map = locale === "en" ? PACKAGE_LABELS_EN : PACKAGE_LABELS;
+  return map[packageLevel] || packageLevel;
+}

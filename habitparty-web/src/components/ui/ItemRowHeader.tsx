@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { cn } from "@/utils";
 
 export interface ItemRowHeaderProps {
@@ -9,6 +10,8 @@ export function ItemRowHeader({
   isCompact = false,
   mode = "reward",
 }: ItemRowHeaderProps) {
+  const t = useTranslations("ui.itemCatalog.header");
+
   return (
     <div
       className={cn(
@@ -23,13 +26,13 @@ export function ItemRowHeader({
         {mode === "inventory" && (
           <div className={cn("shrink-0", isCompact ? "w-6" : "w-7")} />
         )}
-        <span>{mode === "inventory" ? "Item" : "Produto"}</span>
+        <span>{mode === "inventory" ? t("item") : t("product")}</span>
       </div>
-      <span>Tipo</span>
-      <span>Pacote & Categoria</span>
-      <span>Duração</span>
+      <span>{t("type")}</span>
+      <span>{t("packageAndCategory")}</span>
+      <span>{t("duration")}</span>
       <span className="text-right pr-2">
-        {mode === "inventory" ? "Ação" : "Preço / Ação"}
+        {mode === "inventory" ? t("action") : t("priceAndAction")}
       </span>
     </div>
   );

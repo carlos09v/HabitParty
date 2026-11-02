@@ -1,7 +1,9 @@
 package com.habitparty.application.usecases.inventory;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,13 +29,15 @@ public class ReorderInventoryItemUseCase {
         );
 
         List<InventoryItem> items = port.findByUserIdAndStatusIn(userId, statusesToReorder);
+        Map<UUID, Integer> newOrderByItemId = orderCommands.stream()
+            .collect(Collectors.toMap(InventoryItemOrderCommand::itemId, InventoryItemOrderCommand::newIndex, (a, b) -> b));
 
-        // 2. Atualiza o orderIndex de cada item cruzando com os comandos recebidos
+        // 2. Atualiza o orderIndex de cada item em O(N) cruzando com o mapa recebido
         for (InventoryItem item : items) {
-            orderCommands.stream()
-                .filter(cmd -> cmd.itemId().equals(item.getId()))
-                .findFirst()
-                .ifPresent(cmd -> item.setOrderIndex(cmd.newIndex()));
+            Integer newIndex = newOrderByItemId.get(item.getId());
+            if (newIndex != null) {
+                item.setOrderIndex(newIndex);
+            }
         }
 
         // 3. Salva a lista atualizada no banco em lote

@@ -1,9 +1,13 @@
 "use client";
 
 import { closestCenter, DndContext } from "@dnd-kit/core";
-import { restrictToWindowEdges } from "@dnd-kit/modifiers";
+import {
+  restrictToParentElement,
+  restrictToWindowEdges,
+} from "@dnd-kit/modifiers";
 import { rectSortingStrategy, SortableContext } from "@dnd-kit/sortable";
 import { Crown, Plus, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCallback, useMemo } from "react";
 import { reorderFocusActivities } from "@/actions/focusActions";
 import {
@@ -15,7 +19,7 @@ import type { FocusActivity } from "@/types/focus";
 import { cn } from "@/utils";
 import { FocusCard, SortableFocusActivityCard } from "./FocusCard";
 
-const DND_MODIFIERS = [restrictToWindowEdges];
+const DND_MODIFIERS = [restrictToParentElement, restrictToWindowEdges];
 
 interface FocusActivitiesSectionProps {
   activities: FocusActivity[];
@@ -48,6 +52,7 @@ export function FocusActivitiesSection({
   onContextMenu,
   isCompact = false,
 }: FocusActivitiesSectionProps) {
+  const t = useTranslations("focus.activities");
   const maxActivities = isPremium
     ? MAX_FOCUS_ACTIVITIES_PREMIUM
     : MAX_FOCUS_ACTIVITIES_FREE;
@@ -98,8 +103,13 @@ export function FocusActivitiesSection({
     [onSelectActivity, selectedActivityId],
   );
 
+  const planName = isPremium ? t("planPremium") : t("planFree");
+
   return (
-    <section className="flex flex-col gap-3 w-full" aria-label="Atividades">
+    <section
+      className="flex flex-col gap-3 w-full"
+      aria-label={t("sectionAria")}
+    >
       {/* Header com Título, Chip de Filtro, Contador e Botão de Criar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
@@ -109,14 +119,14 @@ export function FocusActivitiesSection({
               isCompact ? "text-body-m sm:text-subtitle-s" : "text-subtitle-s",
             )}
           >
-            Atividades
+            {t("title")}
           </h3>
 
           {/* Chip de Filtro Ativo (Visível, Discreto e Imediato) */}
           {selectedActivity && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gold/15 border border-gold/40 text-xs text-gold font-medium animate-in fade-in zoom-in-95 duration-150">
               <span className="text-label-g text-neutral-400 hidden sm:inline">
-                Filtrando:
+                {t("filteringLabel")}
               </span>
               <span className="font-bold truncate max-w-[130px]">
                 {selectedActivity.name}
@@ -125,8 +135,10 @@ export function FocusActivitiesSection({
                 type="button"
                 onClick={() => onSelectActivity?.(null)}
                 className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-gold/30 text-gold transition-colors cursor-pointer ml-0.5"
-                title="Desmarcar filtro desta atividade"
-                aria-label={`Desmarcar filtro da atividade ${selectedActivity.name}`}
+                title={t("clearFilterTitle")}
+                aria-label={t("clearFilterAria", {
+                  name: selectedActivity.name,
+                })}
               >
                 <X size={11} />
               </button>
@@ -146,8 +158,15 @@ export function FocusActivitiesSection({
             )}
             title={
               isLimitReached
-                ? `Limite atingido: ${orderedActivities.length}/${maxActivities} (${isPremium ? "Premium" : "Free"})`
-                : `${orderedActivities.length} de ${maxActivities} atividades utilizadas`
+                ? t("limitReachedTitle", {
+                    current: orderedActivities.length,
+                    max: maxActivities,
+                    plan: planName,
+                  })
+                : t("limitUsedTitle", {
+                    current: orderedActivities.length,
+                    max: maxActivities,
+                  })
             }
           >
             {isPremium && (
@@ -157,7 +176,7 @@ export function FocusActivitiesSection({
               {orderedActivities.length}/{maxActivities}
             </span>
             <span className="text-tiny text-neutral-400 hidden sm:inline">
-              ({isPremium ? "Premium" : "Free"})
+              ({planName})
             </span>
           </div>
 
@@ -177,20 +196,22 @@ export function FocusActivitiesSection({
             title={
               isLimitReached
                 ? isPremium
-                  ? `Limite máximo de ${maxActivities} atividades atingido`
-                  : "Limite atingido: Seja Premium para criar até 6 atividades 👑"
-                : "Criar nova atividade"
+                  ? t("maxLimitReachedTitle", { max: maxActivities })
+                  : t("upgradeLimitTitle")
+                : t("createActivityTitle")
             }
           >
             {isLimitReached && !isPremium ? (
               <>
                 <Crown size={14} className="fill-gold/20" />
-                <span>Seja Premium 👑</span>
+                <span>{t("goPremiumButton")}</span>
               </>
             ) : (
               <>
                 <Plus size={14} />
-                <span className="hidden sm:inline">Nova Atividade</span>
+                <span className="hidden sm:inline">
+                  {t("newActivityButton")}
+                </span>
               </>
             )}
           </button>
@@ -200,16 +221,14 @@ export function FocusActivitiesSection({
       {/* Lista de Atividades com Reordenação Otimizada */}
       {orderedActivities.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-primary/30 bg-surface/30 p-6 flex flex-col items-center justify-center text-center gap-2">
-          <p className="text-body-s text-neutral-400">
-            Nenhuma atividade cadastrada no momento.
-          </p>
+          <p className="text-body-s text-neutral-400">{t("emptyState")}</p>
           {!isLimitReached && (
             <button
               type="button"
               onClick={onOpenCreateModal}
               className="text-xs font-bold text-gold hover:underline cursor-pointer"
             >
-              Criar primeira atividade
+              {t("createFirstButton")}
             </button>
           )}
         </div>
@@ -220,12 +239,13 @@ export function FocusActivitiesSection({
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
           modifiers={DND_MODIFIERS}
+          autoScroll={false}
         >
           <SortableContext
             items={unlockedActivityIds}
             strategy={rectSortingStrategy}
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+            <div className="relative grid grid-cols-1 md:grid-cols-2 gap-2.5 overflow-hidden p-0.5">
               {orderedActivities.map((act, index) => {
                 const isLocked = !isPremium && index >= maxActivities;
                 const isActTarget = Boolean(

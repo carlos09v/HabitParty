@@ -18,7 +18,7 @@ public record CreateUserDTO(
     String fullName,
 
     @NotBlank
-    @Size(min = 3, max = 12, message = "O username deve ter entre 3 e 12 caracteres")
+    @Size(min = 3, max = 30, message = "O username deve ter entre 3 e 30 caracteres")
     String username,
 
     @NotBlank
@@ -38,7 +38,7 @@ public record CreateUserDTO(
 
     @NotNull(message = "A data de nascimento é obrigatória")
     @Past(message = "A data de nascimento deve estar no passado")
-    LocalDate birthday
+    LocalDate birthDate
 ) {
     // Repare que NÃO colocamos ID, money, profile_photo_url ou created_at aqui.
     // O usuário não envia o próprio ID ou Saldo na hora de se cadastrar!

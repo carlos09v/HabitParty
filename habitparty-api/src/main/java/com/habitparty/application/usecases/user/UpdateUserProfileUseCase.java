@@ -24,9 +24,13 @@ public class UpdateUserProfileUseCase {
 
     user.updateProfile(
         command.fullName() != null ? command.fullName() : user.getFullName(),
-        command.birthday() != null ? command.birthday() : user.getBirthday(),
+        command.birthDate() != null ? command.birthDate() : user.getBirthDate(),
         command.gender() != null ? command.gender() : user.getGender()
     );
+
+    if (command.experienceMode() != null) {
+      user.updateExperienceMode(command.experienceMode());
+    }
 
     return port.save(user);
   }

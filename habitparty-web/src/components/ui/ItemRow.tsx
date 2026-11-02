@@ -3,6 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Clock, GripVertical } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { memo, type default as React } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import {
@@ -11,7 +12,11 @@ import {
   PACKAGE_LEVEL_COLOR,
   PACKAGE_LEVEL_ICON_THEME,
   REWARD_TYPE_META,
+  toCategoryMessageKey,
+  toPackageMessageKey,
+  toRewardTypeMessageKey,
 } from "@/constants/reward";
+import type { AppLocale } from "@/i18n/config";
 import type { PackageLevel, RewardType } from "@/types/reward";
 import { cn, formatCoins } from "@/utils";
 import {
@@ -41,13 +46,18 @@ export interface ItemRowProps {
   onContextMenu?: (e: React.MouseEvent) => void;
   dragData?: Record<string, unknown>;
   inUse?: boolean;
+  isActiveFocusSession?: boolean;
 }
 
 const RARITY_LEFT_ACCENT: Record<string, string> = {
   Lendário: "border-l-4 border-l-gold",
+  LEGENDARY: "border-l-4 border-l-gold",
   Épico: "border-l-4 border-l-magenta",
+  EPIC: "border-l-4 border-l-magenta",
   Premium: "border-l-4 border-l-info",
+  PREMIUM: "border-l-4 border-l-info",
   Básico: "border-l-4 border-l-success-500",
+  BASIC: "border-l-4 border-l-success-500",
 };
 
 /**
@@ -76,8 +86,12 @@ export const ItemRow = memo(function ItemRow({
   onContextMenu,
   dragData,
   inUse = false,
+  isActiveFocusSession,
 }: ItemRowProps) {
-  const typeMeta = REWARD_TYPE_META[type as RewardType];
+  const t = useTranslations("ui.itemCatalog");
+  const locale = useLocale() as AppLocale;
+  const typeKey = toRewardTypeMessageKey(type);
+  const typeMeta = REWARD_TYPE_META[typeKey as RewardType];
   const RewardIcon = getRewardIcon(iconName, type);
   const isMystery = isMysteryBoxReward(type, iconName);
   const packageIconTheme = packageLevel
@@ -105,8 +119,12 @@ export const ItemRow = memo(function ItemRow({
   };
 
   const isFocusNavigate =
-    inUse &&
-    (actionLabel === "Abrir no Foco" || actionLabel === "Ir para o Foco");
+    Boolean(isActiveFocusSession) ||
+    (inUse &&
+      (actionLabel === "Abrir no Foco" ||
+        actionLabel === "Ir para o Foco" ||
+        actionLabel === "Open in Focus" ||
+        actionLabel === "Go to Focus"));
   const isPrimaryDisabled = disabled || (inUse && !isFocusNavigate);
 
   const hasValidPackage = Boolean(
@@ -201,7 +219,7 @@ export const ItemRow = memo(function ItemRow({
           <div className="flex md:hidden items-center gap-1.5 shrink-0 bg-gold/10 border border-gold/25 px-2 py-0.5 rounded-lg">
             <CoinIcon size={14} withGlow />
             <span className="font-bold text-neutral-100 text-xs">
-              {formatCoins(price)}
+              {formatCoins(price, { locale })}
             </span>
           </div>
         )}
@@ -219,7 +237,7 @@ export const ItemRow = memo(function ItemRow({
               )}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-              Em Foco
+              {t("inFocus")}
             </span>
           )}
           <span
@@ -236,7 +254,7 @@ export const ItemRow = memo(function ItemRow({
                 aria-hidden="true"
               />
             )}
-            <span>{typeMeta?.label || type}</span>
+            <span>{t(`types.${typeKey}`)}</span>
           </span>
         </div>
 
@@ -251,7 +269,7 @@ export const ItemRow = memo(function ItemRow({
                   "text-neutral-300 bg-white/10 border-white/15",
               )}
             >
-              {packageLevel}
+              {t(`packages.${toPackageMessageKey(packageLevel)}`)}
             </span>
           )}
           {hasValidCategory && (
@@ -261,14 +279,14 @@ export const ItemRow = memo(function ItemRow({
                 isCompact ? "px-1.5 py-0.5" : "px-2 py-0.5",
               )}
             >
-              {category}
+              {t(`categories.${toCategoryMessageKey(category)}`)}
             </span>
           )}
         </div>
 
         {/* Coluna 4: Duração */}
         <div className="flex items-center gap-1.5 text-neutral-300 min-w-0">
-          {type === "TimeBased" || remainingSeconds !== undefined ? (
+          {typeKey === "TimeBased" || remainingSeconds !== undefined ? (
             remainingSeconds !== undefined && remainingSeconds !== null ? (
               <span
                 className={cn(
@@ -283,7 +301,7 @@ export const ItemRow = memo(function ItemRow({
                   aria-hidden="true"
                 />
                 <span className="truncate">
-                  {formatBackpackItemRemainingTime(remainingSeconds)}
+                  {formatBackpackItemRemainingTime(remainingSeconds, locale)}
                 </span>
               </span>
             ) : baseDurationMinutes ? (
@@ -309,7 +327,7 @@ export const ItemRow = memo(function ItemRow({
                   isCompact ? "text-label-m" : "text-label-g",
                 )}
               >
-                Cupom
+                {t("couponDurationFallback")}
               </span>
             )
           ) : (
@@ -319,7 +337,7 @@ export const ItemRow = memo(function ItemRow({
                 isCompact ? "text-label-m" : "text-label-g",
               )}
             >
-              Uso Imediato
+              {t("instantUseDuration")}
             </span>
           )}
         </div>
@@ -336,7 +354,7 @@ export const ItemRow = memo(function ItemRow({
                 isCompact ? "text-xs" : "text-sm",
               )}
             >
-              {formatCoins(price)}
+              {formatCoins(price, { locale })}
             </span>
           </div>
         )}
@@ -349,8 +367,11 @@ export const ItemRow = memo(function ItemRow({
             aria-label={`${secondaryActionLabel} ${title}`}
             title={
               inUse
-                ? "Item em uso no Focus"
-                : `${secondaryActionLabel} ${title}`
+                ? t("tooltips.inUse")
+                : t("tooltips.actionTarget", {
+                    action: secondaryActionLabel,
+                    title,
+                  })
             }
             className={cn(
               "rounded-md font-semibold transition-all shadow-xs border text-neutral-200",
@@ -371,20 +392,23 @@ export const ItemRow = memo(function ItemRow({
           aria-label={`${actionLabel} ${title}`}
           title={
             isFocusNavigate
-              ? "Abrir a tela de Foco com esta sessão ativa"
+              ? t("tooltips.openFocusSession")
               : inUse
-                ? "Item em uso no Focus"
+                ? t("tooltips.inUse")
                 : disabled
-                  ? disabledTitle || "Moedas insuficientes"
-                  : `${actionLabel} ${title}`
+                  ? disabledTitle || t("tooltips.insufficientCoins")
+                  : t("tooltips.actionTarget", {
+                      action: actionLabel,
+                      title,
+                    })
           }
           className={cn(
             "rounded-md font-bold transition-all shadow-xs",
             isFocusNavigate
-              ? "bg-gold hover:bg-gold-hover text-neutral-900 border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95"
+              ? "bg-gold hover:bg-gold-hover text-on-gold border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95"
               : disabled || inUse
                 ? "bg-white/10 text-neutral-400 border border-white/10 cursor-not-allowed opacity-60"
-                : "bg-warning-500 hover:bg-warning-400 focus:outline-none focus:ring-2 focus:ring-warning-300 focus:ring-offset-1 focus:ring-offset-surface active:scale-95 text-neutral-900 cursor-pointer",
+                : "bg-warning-500 hover:bg-warning-400 focus:outline-none focus:ring-2 focus:ring-warning-300 focus:ring-offset-1 focus:ring-offset-surface active:scale-95 text-on-gold cursor-pointer",
             isCompact
               ? "px-2.5 py-1 text-label-g"
               : "px-3 py-1.5 text-xs sm:py-1",

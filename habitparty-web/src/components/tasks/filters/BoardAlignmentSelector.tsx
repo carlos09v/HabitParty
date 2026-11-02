@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { ALIGNMENT_OPTIONS } from "@/constants/routine";
 import type { BoardAlignmentSelectorProps } from "@/types/task-ui";
 import { cn } from "@/utils";
@@ -8,16 +9,19 @@ export function BoardAlignmentSelector({
   isCompact = false,
   className,
 }: BoardAlignmentSelectorProps) {
+  const t = useTranslations("tasks.filters.alignment");
+
   return (
     <fieldset
       className={cn(
         "flex items-center rounded-lg bg-surface border border-white/15 p-0.5 shadow-xs shrink-0",
         className,
       )}
-      aria-label="Alinhamento do quadro Kanban"
+      aria-label={t("ariaLabel")}
     >
-      {ALIGNMENT_OPTIONS.map(({ id, label, icon: Icon }) => {
+      {ALIGNMENT_OPTIONS.map(({ id, icon: Icon }) => {
         const isActive = value === id;
+        const label = t(id);
         return (
           <button
             key={id}

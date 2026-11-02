@@ -1,6 +1,7 @@
 "use client";
 
 import { Crown, Database, HardDrive, Mail, Search, Shield } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { TaskPagination } from "@/components/dashboard/TaskPagination";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -41,6 +42,7 @@ export function AdminUsersTable({
   onSelectUser,
   onToggleRole,
 }: AdminUsersTableProps) {
+  const t = useTranslations("admin.usersTable");
   const [searchInput, setSearchInput] = useState(search);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -70,7 +72,7 @@ export function AdminUsersTable({
                     : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5",
                 )}
               >
-                {tab.label}
+                {t(`filterTabs.${tab.id}`)}
               </button>
             );
           })}
@@ -89,7 +91,7 @@ export function AdminUsersTable({
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Buscar por nome, @user ou e-mail..."
+            placeholder={t("searchPlaceholder")}
             className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-surface/80 border border-white/10 text-xs text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:border-gold/50"
           />
         </form>
@@ -100,7 +102,7 @@ export function AdminUsersTable({
         {isLoading && (
           <div className="absolute inset-0 bg-background/50 backdrop-blur-xs flex items-center justify-center z-10">
             <span className="text-xs font-semibold text-gold animate-pulse">
-              Carregando dados...
+              {t("loading")}
             </span>
           </div>
         )}
@@ -109,13 +111,15 @@ export function AdminUsersTable({
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-white/10 bg-surface-alt/40 text-neutral-400 uppercase tracking-wider text-[11px] font-semibold">
-                <th className="py-3.5 px-4">Usuário</th>
-                <th className="py-3.5 px-4">Cargo</th>
-                <th className="py-3.5 px-4">Plano</th>
-                <th className="py-3.5 px-4">Lembretes Resend (Mês)</th>
-                <th className="py-3.5 px-4">Tarefas</th>
-                <th className="py-3.5 px-4">Espaço no DB</th>
-                <th className="py-3.5 px-4 text-right">Ações</th>
+                <th className="py-3.5 px-4">{t("headers.user")}</th>
+                <th className="py-3.5 px-4">{t("headers.role")}</th>
+                <th className="py-3.5 px-4">{t("headers.plan")}</th>
+                <th className="py-3.5 px-4">{t("headers.emails")}</th>
+                <th className="py-3.5 px-4">{t("headers.tasks")}</th>
+                <th className="py-3.5 px-4">{t("headers.storage")}</th>
+                <th className="py-3.5 px-4 text-right">
+                  {t("headers.actions")}
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -125,7 +129,7 @@ export function AdminUsersTable({
                     colSpan={7}
                     className="py-12 text-center text-neutral-400 text-xs"
                   >
-                    Nenhum usuário encontrado para os critérios pesquisados.
+                    {t("empty")}
                   </td>
                 </tr>
               ) : (
@@ -163,11 +167,11 @@ export function AdminUsersTable({
                         {isAdmin ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
                             <Shield size={12} />
-                            ADMIN
+                            {t("roles.admin")}
                           </span>
                         ) : (
                           <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-neutral-800 text-neutral-400 border border-white/5">
-                            USER
+                            {t("roles.user")}
                           </span>
                         )}
                       </td>
@@ -178,26 +182,26 @@ export function AdminUsersTable({
                           <div className="flex flex-col gap-1 items-start">
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gold/20 text-gold border border-gold/40 shadow-glow-gold-xs">
                               <Crown size={12} className="fill-gold" />
-                              Fundador 👑
+                              {t("plans.founder")}
                             </span>
                             {user.isPremium ? (
                               <span className="text-[10px] font-semibold text-emerald-400">
-                                • Premium Ativo
+                                {t("plans.premiumActive")}
                               </span>
                             ) : (
                               <span className="text-[10px] font-semibold text-neutral-400">
-                                • Acesso Free
+                                {t("plans.freeAccess")}
                               </span>
                             )}
                           </div>
                         ) : user.isPremium ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gold/15 text-gold border border-gold/30">
                             <Crown size={12} />
-                            Premium VIP
+                            {t("plans.premiumVip")}
                           </span>
                         ) : (
                           <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-neutral-800 text-neutral-300 border border-white/5">
-                            Aventureiro (Free)
+                            {t("plans.free")}
                           </span>
                         )}
                       </td>
@@ -211,13 +215,17 @@ export function AdminUsersTable({
                               {user.emailsSentThisMonth}
                             </span>
                             <span className="text-[11px] text-neutral-500">
-                              {isFree ? "/ 20 no mês" : "/ 100 no mês"}
+                              {t("emails.monthlyQuota", {
+                                limit: isFree ? 20 : 100,
+                              })}
                             </span>
                           </div>
                           {user.activeEmailReminders > 0 && (
                             <span className="text-[10px] text-amber-400 mt-0.5">
-                              {user.activeEmailReminders} / {isFree ? 5 : 30}{" "}
-                              lembrete(s) ativo(s)
+                              {t("emails.activeReminders", {
+                                active: user.activeEmailReminders,
+                                max: isFree ? 5 : 30,
+                              })}
                             </span>
                           )}
                         </div>
@@ -230,7 +238,9 @@ export function AdminUsersTable({
                         </span>
                         <span className="text-neutral-500 text-[11px]">
                           {" "}
-                          / {user.totalTasksCount} total
+                          {t("tasks.totalSuffix", {
+                            total: user.totalTasksCount,
+                          })}
                         </span>
                       </td>
 
@@ -273,8 +283,12 @@ export function AdminUsersTable({
                               </div>
 
                               <span className="text-[10px] text-neutral-400 font-normal">
-                                {storagePct}% da cota (
-                                {user.isPremium ? "VIP 50MB" : "Free 5MB"})
+                                {t("storage.quotaPercentage", {
+                                  percentage: storagePct,
+                                  tier: user.isPremium
+                                    ? t("storage.tierVip")
+                                    : t("storage.tierFree"),
+                                })}
                               </span>
                             </div>
                           );
@@ -288,10 +302,10 @@ export function AdminUsersTable({
                             type="button"
                             onClick={() => onSelectUser(user)}
                             className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-200 hover:text-white transition-colors text-xs font-semibold flex items-center gap-1 cursor-pointer"
-                            title="Ver detalhamento de espaço e e-mails"
+                            title={t("actions.detailsTitle")}
                           >
                             <Database size={13} />
-                            Detalhes
+                            {t("actions.details")}
                           </button>
 
                           <button
@@ -305,11 +319,13 @@ export function AdminUsersTable({
                             )}
                             title={
                               isAdmin
-                                ? "Rebaixar para Usuário Comum"
-                                : "Promover a Administrador"
+                                ? t("actions.demoteTitle")
+                                : t("actions.promoteTitle")
                             }
                           >
-                            {isAdmin ? "Tornar USER" : "Tornar ADMIN"}
+                            {isAdmin
+                              ? t("actions.makeUser")
+                              : t("actions.makeAdmin")}
                           </button>
                         </div>
                       </td>
@@ -329,15 +345,15 @@ export function AdminUsersTable({
               totalPages={totalPages}
               totalItems={totalElements}
               itemsPerPage={15}
-              itemLabel="usuários"
+              itemLabel={t("pagination.itemLabel")}
               onPageChange={(page) => onPageChange(page - 1)}
             />
           </div>
         ) : totalElements > 0 ? (
           <div className="p-3 border-t border-white/10 bg-surface-alt/10 text-xs text-neutral-400 text-right">
-            Total de{" "}
+            {t("pagination.totalSinglePagePrefix")}{" "}
             <strong className="text-neutral-200">{totalElements}</strong>{" "}
-            usuário(s)
+            {t("pagination.totalSinglePageSuffix")}
           </div>
         ) : null}
       </div>

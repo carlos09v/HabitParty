@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 
 export default function MainError({
@@ -10,6 +11,8 @@ export default function MainError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations("auth.mainError");
+
   useEffect(() => {
     // Pode ser integrado com Sentry, Datadog ou console log
     console.error("Erro capturado pelo Error Boundary da aplicação:", error);
@@ -38,12 +41,9 @@ export default function MainError({
 
         <div>
           <h2 className="text-2xl font-bold text-neutral-50 mb-2">
-            Ops! Algo deu errado.
+            {t("title")}
           </h2>
-          <p className="text-neutral-300 text-sm">
-            Não conseguimos processar essa tela no momento. Tente novamente ou
-            volte para o início.
-          </p>
+          <p className="text-neutral-300 text-sm">{t("description")}</p>
         </div>
 
         <div className="flex flex-col w-full gap-3 mt-4">
@@ -52,14 +52,14 @@ export default function MainError({
             onClick={() => reset()}
             className="w-full py-3.5 rounded-lg bg-primary hover:bg-primary-dark text-neutral-50 font-bold transition-all shadow-[0_0_15px_rgba(124,58,237,0.2)] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
           >
-            Tentar Novamente
+            {t("retryButton")}
           </button>
 
           <Link
             href="/dashboard"
             className="w-full py-3.5 rounded-lg border border-surface hover:border-surface-hover bg-surface hover:bg-surface-hover text-neutral-100 font-semibold transition-all flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-surface focus:ring-offset-2 focus:ring-offset-background"
           >
-            Voltar ao Início
+            {t("backButton")}
           </Link>
         </div>
       </div>

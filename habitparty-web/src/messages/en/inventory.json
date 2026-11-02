@@ -1,0 +1,144 @@
+{
+  "metadata": {
+    "title": "Backpack & Inventory | HabitParty",
+    "titleGamified": "Backpack & Inventory | HabitParty",
+    "titleProductivity": "Inventory & Rewards | HabitParty",
+    "description": "Manage your redeemed rewards, use consumables, open mystery boxes, and send vouchers to Focus."
+  },
+  "loading": {
+    "label": "Loading backpack...",
+    "labelGamified": "Loading backpack...",
+    "labelProductivity": "Loading inventory..."
+  },
+  "helpers": {
+    "openInFocus": "Open in Focus",
+    "openBox": "Open Box",
+    "sendToFocus": "Send to Focus",
+    "use": "Use"
+  },
+  "card": {
+    "openInFocus": "Open in Focus",
+    "openBox": "Open Box",
+    "sendToFocus": "Send to Focus",
+    "use": "Use"
+  },
+  "container": {
+    "listAriaLabel": "Inventory items",
+    "filters": {
+      "statusLabel": "Status",
+      "statusAll": "All Statuses",
+      "statusAvailable": "Available",
+      "statusInFocus": "In Focus",
+      "typeLabel": "Type",
+      "typeAll": "All Types",
+      "typeSingleUse": "Single-Use",
+      "typeTimeBased": "Voucher",
+      "typeMysteryBox": "Mystery Box",
+      "sortLabel": "Sort",
+      "sortDefault": "Default Order",
+      "sortQuantityDesc": "Highest Quantity",
+      "sortName": "Name (A-Z)"
+    },
+    "emptyState": {
+      "emptyTitle": "Your backpack is empty! 🎒",
+      "emptyTitleGamified": "Your backpack is empty! 🎒",
+      "emptyTitleProductivity": "Your inventory is empty! 📦",
+      "noResultsTitle": "No items found",
+      "emptyDescription": "You don't have any items or vouchers in your inventory yet. Earn coins by completing your daily tasks and redeem epic rewards in the Store!",
+      "emptyDescriptionGamified": "You don't have any items or vouchers in your backpack yet. Earn coins by completing your daily tasks and redeem epic rewards in the Store!",
+      "emptyDescriptionProductivity": "You don't have any items or vouchers in your inventory yet. Earn coins by completing tasks and redeem rewards in the Store!",
+      "noResultsDescription": "We couldn't find any items matching the applied filters.",
+      "exploreStore": "Explore Store",
+      "clearFilters": "Clear Filters"
+    },
+    "contextMenu": {
+      "openInFocus": "Open in Focus",
+      "returnToBackpack": "Return to backpack",
+      "returnToBackpackGamified": "Return to backpack",
+      "returnToBackpackProductivity": "Return to inventory",
+      "openMysteryBox": "Open Mystery Box",
+      "sendToFocus": "Send to Focus",
+      "useImmediately": "Use Immediately",
+      "useItem": "Use Item",
+      "discardItem": "Discard Item"
+    },
+    "discardModal": {
+      "title": "Discard item from backpack?",
+      "titleGamified": "Discard item from backpack?",
+      "titleProductivity": "Discard item from inventory?",
+      "description": "Are you sure you want to discard 1x <strong>\"{title}\"</strong>? This action does not refund spent coins.",
+      "confirmText": "Yes, discard",
+      "cancelText": "Cancel"
+    },
+    "toasts": {
+      "useError": "Error using item.",
+      "useSuccess": "You used \"{title}\"!",
+      "sendToFocusError": "Error adding item to Focus.",
+      "sendToFocusSuccess": "\"{title}\" successfully added to Focus!",
+      "returnToBackpackError": "Error returning item to backpack.",
+      "returnToBackpackErrorGamified": "Error returning item to backpack.",
+      "returnToBackpackErrorProductivity": "Error returning item to inventory.",
+      "returnToBackpackSuccess": "\"{title}\" returned to backpack!",
+      "returnToBackpackSuccessGamified": "\"{title}\" returned to backpack!",
+      "returnToBackpackSuccessProductivity": "\"{title}\" returned to inventory!",
+      "discardSuccess": "Item \"{title}\" discarded.",
+      "discardError": "Error discarding item.",
+      "serverError": "Server communication error."
+    }
+  },
+  "rouletteHook": {
+    "defaultWinName": "Special Reward",
+    "wonBadgeLabel": "WON!",
+    "dropBadge": "{percent}% Drop",
+    "tiers": {
+      "NONE": "Basic Box",
+      "BASIC": "Basic Box",
+      "PREMIUM": "Premium Box",
+      "EPIC": "Epic Box",
+      "LEGENDARY": "Legendary Box"
+    },
+    "poolItems": {
+      "b1": "Refreshing Break",
+      "b2": "Medium Leisure Voucher",
+      "b3": "Focused Hobby Session",
+      "p1": "Standard Leisure",
+      "p2": "Extended Leisure Voucher",
+      "p3": "Gaming / Movie Night",
+      "e1": "Extended Leisure Block",
+      "e2": "Full Free Night",
+      "e3": "Unplugged Afternoon",
+      "l1": "Elite Partial Day-Off",
+      "l2": "Full Day-Off",
+      "l3": "Ultimate Celebration"
+    }
+  },
+  "rouletteModal": {
+    "subtitleWon": "Congratulations! Check out the prize you won in this round:",
+    "subtitleIdle": "Roll the lucky dice and discover which prize comes out of your box!",
+    "trackCouponMinutes": "{minutes}m Voucher",
+    "trackSingleUse": "Single-Use",
+    "prizeUnlockedTitle": "Prize Successfully Unlocked!",
+    "wonFocusItemMinutes": "Focus Item ({minutes} minutes)",
+    "wonSingleUseItem": "Single-Use Item straight from your Backpack",
+    "drawingButton": "Drawing...",
+    "spinButton": "Spin Roulette!",
+    "spinningStatus": "Spinning your luck...",
+    "storeInBackpackButton": "Store in Backpack",
+    "tiers": {
+      "NONE": "Basic",
+      "BASIC": "Basic",
+      "PREMIUM": "Premium",
+      "EPIC": "Epic",
+      "LEGENDARY": "Legendary"
+    }
+  },
+  "actions": {
+    "communicationError": "Internal server communication error.",
+    "reorderFailed": "Failed to reorder inventory.",
+    "consumeFailed": "Failed to consume item.",
+    "discardFailed": "Failed to discard item.",
+    "sendToFocusFailed": "Failed to send item to Focus.",
+    "returnToBackpackFailed": "Failed to return item to backpack.",
+    "openMysteryBoxFailed": "Failed to open mystery box."
+  }
+}

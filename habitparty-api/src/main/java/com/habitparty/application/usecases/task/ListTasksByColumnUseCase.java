@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.BoardColumnRepository;
 import com.habitparty.application.ports.TaskRepository;
@@ -21,6 +22,7 @@ public class ListTasksByColumnUseCase {
     this.columnRepository = columnRepository;
   }
 
+  @Transactional(readOnly = true)
   public List<Task> execute(UUID boardColumnId, UUID userIdLogado) {
     BoardColumn column = columnRepository.findById(boardColumnId)
         .orElseThrow(() -> new ResourceNotFoundException("Coluna não encontrada!"));

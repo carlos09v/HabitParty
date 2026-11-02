@@ -10,6 +10,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import {
   getSidebarNotificationsAction,
@@ -27,7 +28,15 @@ const POPOVER_OPTIONS = {
   margin: 14,
 };
 
-export function SidebarNotificationsPopover() {
+export interface SidebarNotificationsPopoverProps {
+  className?: string;
+}
+
+export function SidebarNotificationsPopover({
+  className,
+}: SidebarNotificationsPopoverProps = {}) {
+  const locale = useLocale();
+  const t = useTranslations("notifications");
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"ALL" | "CRITICAL">("ALL");
   const [notifications, setNotifications] = useState<SidebarNotification[]>([]);
@@ -60,17 +69,15 @@ export function SidebarNotificationsPopover() {
     });
   }, []);
 
-  // Carrega alertas ao montar / recarregar a página e toca som de notificação se houver alertas
+  // Carrega alertas ao montar / recarregar a página ou mudar idioma e toca som de notificação se houver alertas
   useEffect(() => {
+    void locale;
     loadNotifications(true);
-  }, [loadNotifications]);
+  }, [loadNotifications, locale]);
 
   const togglePopover = () => {
     if (!isOpen && triggerRef.current) {
       setAnchorRect(triggerRef.current.getBoundingClientRect());
-      if (unreadCount > 0) {
-        soundEffects.playNotificationSound();
-      }
       loadNotifications(false);
       setIsOpen(true);
     } else {
@@ -141,7 +148,7 @@ export function SidebarNotificationsPopover() {
   };
 
   return (
-    <div className="relative w-full">
+    <div className={cn("relative w-full", className)}>
       {/* Botão de Disparo (Notificações) */}
       <button
         ref={triggerRef}
@@ -149,18 +156,18 @@ export function SidebarNotificationsPopover() {
         onClick={togglePopover}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
-        aria-label={`Notificações e alertas (${unreadCount} pendentes)`}
+        aria-label={t("triggerAria", { count: unreadCount })}
         className={cn(
-          "flex w-full items-center justify-between px-3 py-2 rounded-lg transition-all text-body-s font-medium outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 border-r-2 border-transparent text-left cursor-pointer group select-none",
+          "flex w-full h-9 items-center justify-between px-3 py-2 rounded-lg transition-all text-body-s font-medium outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 border-r-2 border-transparent text-left cursor-pointer group select-none",
           isOpen
             ? "bg-primary-dark/50 text-neutral-50 border-gold font-bold"
             : "text-neutral-300 hover:bg-neutral-500/10 hover:text-neutral-50",
         )}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <span
             className={cn(
-              "transition-colors",
+              "transition-colors shrink-0",
               isOpen
                 ? "text-gold"
                 : "text-neutral-300 group-hover:text-neutral-50",
@@ -169,8 +176,8 @@ export function SidebarNotificationsPopover() {
           >
             <Bell size={18} />
           </span>
-          <span className="text-neutral-200 group-hover:text-neutral-50 transition-colors">
-            Notificações
+          <span className="text-neutral-200 group-hover:text-neutral-50 transition-colors truncate">
+            {t("label")}
           </span>
         </div>
 
@@ -178,8 +185,10 @@ export function SidebarNotificationsPopover() {
         {unreadCount > 0 && (
           <span
             className={cn(
-              "min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-bold flex items-center justify-center text-neutral-950 shadow-sm shrink-0",
-              hasCritical ? "bg-red-500 text-white animate-pulse" : "bg-gold",
+              "min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-bold flex items-center justify-center shadow-sm shrink-0",
+              hasCritical
+                ? "bg-red-500 text-white animate-pulse"
+                : "bg-gold text-on-gold",
             )}
           >
             {unreadCount > 9 ? "9+" : unreadCount}
@@ -192,7 +201,7 @@ export function SidebarNotificationsPopover() {
         <div
           ref={popoverRef}
           role="dialog"
-          aria-label="Central de Notificações"
+          aria-label={t("dialogAria")}
           style={{
             position: "fixed",
             top: `${position.top}px`,
@@ -208,12 +217,12 @@ export function SidebarNotificationsPopover() {
           <header className="p-3.5 border-b border-primary/20 flex items-center justify-between gap-2 shrink-0 bg-surface/50">
             <div className="flex items-center gap-2">
               <span className="font-bold text-neutral-100 text-body-s">
-                Alertas & Notificações
+                {t("headerTitle")}
               </span>
               {unreadCount > 0 && (
                 <span
                   className={cn(
-                    "px-1.5 py-0.2 rounded-full text-[10px] font-bold border",
+                    "px-1.5 py-0.5 rounded-full text-[10px] font-bold border",
                     hasCritical
                       ? "border-red-500/40 bg-red-500/15 text-red-300"
                       : "border-gold/40 bg-gold/15 text-gold",
@@ -229,8 +238,8 @@ export function SidebarNotificationsPopover() {
                 <button
                   type="button"
                   onClick={handleDismissAll}
-                  title="Marcar todas como lidas"
-                  aria-label="Marcar todas como lidas"
+                  title={t("markAllRead")}
+                  aria-label={t("markAllRead")}
                   className="p-1 rounded-md text-neutral-400 hover:text-neutral-100 hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   <CheckCheck size={14} />
@@ -239,7 +248,7 @@ export function SidebarNotificationsPopover() {
               <button
                 type="button"
                 onClick={closePopover}
-                aria-label="Fechar notificações"
+                aria-label={t("closeAria")}
                 className="p-1 rounded-md text-neutral-400 hover:text-neutral-100 hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <X size={14} />
@@ -255,11 +264,11 @@ export function SidebarNotificationsPopover() {
               className={cn(
                 "flex-1 py-1 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer",
                 activeTab === "ALL"
-                  ? "bg-gold text-neutral-900 font-bold shadow-xs"
+                  ? "bg-gold text-on-gold font-bold shadow-xs"
                   : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5",
               )}
             >
-              Todas ({activeNotifications.length})
+              {t("tabAll", { count: activeNotifications.length })}
             </button>
             <button
               type="button"
@@ -267,11 +276,11 @@ export function SidebarNotificationsPopover() {
               className={cn(
                 "flex-1 py-1 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer",
                 activeTab === "CRITICAL"
-                  ? "bg-red-500 text-neutral-950 font-bold shadow-xs"
+                  ? "bg-red-500 text-white font-bold shadow-xs"
                   : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5",
               )}
             >
-              Críticas ({criticalNotifications.length})
+              {t("tabCritical", { count: criticalNotifications.length })}
             </button>
           </div>
 
@@ -279,7 +288,7 @@ export function SidebarNotificationsPopover() {
           <div className="p-2.5 overflow-y-auto custom-scrollbar flex-1 flex flex-col gap-2">
             {isPending && displayedNotifications.length === 0 ? (
               <div className="p-6 text-center text-xs text-neutral-400">
-                Atualizando alertas...
+                {t("updating")}
               </div>
             ) : displayedNotifications.length === 0 ? (
               <div className="p-6 text-center flex flex-col items-center justify-center gap-2">
@@ -287,10 +296,10 @@ export function SidebarNotificationsPopover() {
                   <CheckCheck size={18} />
                 </div>
                 <p className="text-body-s font-semibold text-neutral-200">
-                  Tudo em ordem!
+                  {t("emptyTitle")}
                 </p>
                 <p className="text-tiny text-neutral-400">
-                  Nenhuma notificação ou pendência urgente no momento.
+                  {t("emptySubtitle")}
                 </p>
               </div>
             ) : (
@@ -309,7 +318,7 @@ export function SidebarNotificationsPopover() {
                       </span>
                       <span
                         className={cn(
-                          "px-1.5 py-0.2 rounded text-[9px] font-bold border shrink-0",
+                          "px-1.5 py-0.5 rounded text-[9px] font-bold border shrink-0",
                           getSeverityBadgeClasses(n.severity),
                         )}
                       >

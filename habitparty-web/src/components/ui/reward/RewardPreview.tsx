@@ -1,9 +1,11 @@
 "use client";
 
 import { AlertTriangle, ChevronDown, Info, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { CoinAmount } from "@/components/ui/reward/CoinAmount";
 import { XpAmount } from "@/components/ui/reward/XpAmount";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { RewardEstimate } from "@/types/reward";
 import { cn } from "@/utils";
 
@@ -17,25 +19,38 @@ export interface RewardPreviewProps {
   /** Estado controlado opcional */
   isOpen?: boolean;
   onToggle?: (isOpen: boolean) => void;
+  /** Se verdadeiro, oculta completamente no modo Produtividade (padrão: true). */
+  respectExperienceMode?: boolean;
 }
 
 /**
  * Componente unificado e reutilizável de prévia e cálculo de recompensas (Foco + Tarefas).
- * Fica inicialmente recolhido e, ao clicar, expande detalhes, regras e bonificações.
+ * Inicia fechado (collapsed) por padrão para manter o layout limpo e sob demanda.
+ * No perfil Produtividade, fica oculto para manter o layout focado na execução.
  */
 export function RewardPreview({
   estimate,
   variant = "panel",
-  label = "Recompensa estimada",
+  label,
   className,
   isOpen: controlledIsOpen,
   onToggle,
+  respectExperienceMode = true,
 }: RewardPreviewProps) {
+  const t = useTranslations("ui.rewardPreview");
+  const resolvedLabel =
+    label ??
+    (variant === "inline" ? t("defaultInlineTitle") : t("defaultTitle"));
+  const { isProductivity } = useExperienceMode();
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const isControlled = controlledIsOpen !== undefined;
   const isExpanded = isControlled ? controlledIsOpen : internalIsOpen;
 
   const contentId = useId();
+
+  if (respectExperienceMode && isProductivity) {
+    return null;
+  }
 
   const handleToggle = () => {
     const next = !isExpanded;
@@ -76,7 +91,7 @@ export function RewardPreview({
                   : "text-neutral-400",
             )}
           />
-          <span>{label}</span>
+          <span>{resolvedLabel}</span>
           <ChevronDown
             size={13}
             className={cn(
@@ -138,11 +153,11 @@ export function RewardPreview({
                   : "text-neutral-400",
             )}
           />
-          <span>{label}</span>
+          <span>{resolvedLabel}</span>
           {hasWarning && !isExpanded && (
             <span
               className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"
-              title="Aviso sobre regras de rendimento"
+              title={t("yieldWarningTitle")}
             />
           )}
           <ChevronDown
@@ -167,17 +182,19 @@ export function RewardPreview({
           {/* Cabeçalho com Total Estimado */}
           <div className="flex items-center justify-between pb-2 border-b border-white/8 gap-2">
             <span className="text-[11px] uppercase tracking-wider font-bold text-neutral-400">
-              Rendimento Previsto
+              {t("expectedYieldHeader")}
             </span>
 
             {isZero ? (
               <span className="text-xs text-neutral-400 italic">
-                {estimate.zeroReason || "Sem ganho de XP ou Moedas"}
+                {estimate.zeroReason || t("zeroGainDefault")}
               </span>
             ) : (
               <div className="flex items-center gap-3">
                 <CoinAmount amount={estimate.gold} size="sm" withGlow />
-                <span className="text-neutral-600">•</span>
+                <span className="text-neutral-400 dark:text-neutral-600">
+                  •
+                </span>
                 <XpAmount amount={estimate.xp} size="sm" withIcon />
               </div>
             )}

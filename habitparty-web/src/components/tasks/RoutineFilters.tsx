@@ -2,6 +2,7 @@
 
 import { useDroppable } from "@dnd-kit/core";
 import { ArchiveRestore, Columns3, SquarePlus } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { PrimaryActionButton } from "@/components/ui/PrimaryActionButton";
 import { useCompactMode } from "@/hooks/useCompactMode";
@@ -29,6 +30,7 @@ function StoreColumnButtonUI({
   isOver = false,
   setNodeRef,
 }: StoreColumnButtonUIProps) {
+  const t = useTranslations("tasks.filters");
   // Apenas considera "isOver" se o elemento arrastado for de fato uma Coluna, nunca um Card de Tarefa
   const isOverValid = isOver && isDraggingColumn;
 
@@ -39,8 +41,8 @@ function StoreColumnButtonUI({
       onClick={onOpenColumnsDrawer}
       title={
         isDraggingColumn
-          ? "Solte aqui para ocultar e guardar esta coluna"
-          : "Gerenciar colunas e visibilidade no quadro"
+          ? t("storeColumnDropTitle")
+          : t("storeColumnManageTitle")
       }
       className={cn(
         "flex items-center gap-1.5 rounded-lg border font-semibold shadow-xs transition-all cursor-pointer select-none active:scale-98 shrink-0",
@@ -62,10 +64,10 @@ function StoreColumnButtonUI({
       )}
       <span>
         {isOverValid
-          ? "Solte para guardar"
+          ? t("dropHere")
           : isDraggingColumn
-            ? "Guardar"
-            : "Colunas"}
+            ? t("storeDragging")
+            : t("columnsLabel")}
       </span>
       <span className="text-gold font-bold">
         {visibleCount}/{maxColumns}
@@ -114,6 +116,7 @@ export function RoutineFilters({
   enableDroppable = false,
   isCompact: propIsCompact,
 }: RoutineFiltersProps) {
+  const t = useTranslations("tasks.filters");
   const { isCompact } = useCompactMode(propIsCompact);
 
   const leftActions = (
@@ -161,8 +164,10 @@ export function RoutineFilters({
         disabled={!canCreateColumn}
         title={
           !canCreateColumn
-            ? `Limite de ${maxColumns} listas atingido${!isPremium ? " (plano Free)" : ""}`
-            : "Criar nova coluna"
+            ? !isPremium
+              ? t("newColumnFreeLimitTitle", { max: maxColumns })
+              : t("newColumnMaxReachedTitle", { max: maxColumns })
+            : t("newColumnCreateTitle")
         }
         className={cn(
           "flex items-center gap-1.5 rounded-lg bg-surface border font-semibold transition-all shadow-xs shrink-0",
@@ -173,11 +178,11 @@ export function RoutineFilters({
         )}
       >
         <SquarePlus size={isCompact ? 14 : 16} className="shrink-0" />
-        <span className="hidden sm:inline">Criar coluna</span>
+        <span className="hidden sm:inline">{t("newColumnButton")}</span>
       </button>
 
       <PrimaryActionButton
-        label="Adicionar Tarefa"
+        label={t("newTaskButton")}
         onClick={onOpenCreateTask}
         isCompact={isCompact}
       />

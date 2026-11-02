@@ -1,0 +1,346 @@
+{
+  "dashboard": {
+    "metadata": {
+      "title": "Dashboard — HabitParty",
+      "description": "Track your daily goals, habits, streak, lists, and reward progression."
+    },
+    "loading": "Loading dashboard...",
+    "dailyBriefing": {
+      "ariaLabel": "Player Daily Summary",
+      "greetingMorning": "Good morning",
+      "greetingAfternoon": "Good afternoon",
+      "greetingEvening": "Good evening",
+      "defaultName": "Adventurer",
+      "defaultNameGamified": "Adventurer",
+      "defaultNameProductivity": "Member",
+      "motivationalEmpty": "No tasks scheduled for today. Take the time to plan new goals!",
+      "motivationalCompleted": "Awesome! All of today's goals are complete. Day conquered! 🏆",
+      "motivationalActive": "Stay consistent and focused on your mission to level up!",
+      "motivationalActiveGamified": "Stay consistent and focused on your mission to level up!",
+      "motivationalActiveProductivity": "Stay consistent and focused on your priorities to reach your goals!",
+      "todayGoal": "Today's Goal",
+      "progressAriaLabel": "Today's task progress: {percent}%",
+      "streakLabel": "Streak",
+      "streakCount": "{count} {count, plural, one {Day} other {Days}}",
+      "streakActiveTitle": "Daily pace maintained!",
+      "streakStartTitle": "Complete a task today to start!",
+      "streakActiveBadge": "Pace kept 🔥",
+      "streakStartBadge": "Complete today! 🔥",
+      "dailyTasksLabel": "Today's Tasks",
+      "completedCount": "{completed}/{total} Completed",
+      "allCompletedTitle": "All of today's tasks are completed!",
+      "pendingCountTitle": "{count} {count, plural, one {pending task} other {pending tasks}} for today",
+      "goalMetBadge": "Goal met! 🎯",
+      "pendingCountBadge": "{count} pending",
+      "xpEarnedLabel": "XP Earned",
+      "xpEarnedLabelGamified": "XP Earned",
+      "xpEarnedLabelProductivity": "Focus Points",
+      "todayGainsTitle": "Experience points earned today",
+      "todayGainsBadge": "Today's gains ✨",
+      "todayGainsBadgeGamified": "Today's gains ✨",
+      "todayGainsBadgeProductivity": "Today's focus ✨"
+    },
+    "emptyWorkspace": {
+      "title": "Welcome to your Headquarters! 🚀",
+      "titleGamified": "Welcome to your Headquarters! 🚀",
+      "titleProductivity": "Welcome to your Workspace Dashboard! 📊",
+      "descriptionPrefix": "Every great journey begins with a first territory. Your dashboard needs a",
+      "descriptionPrefixGamified": "Every great journey begins with a first territory. Your dashboard needs a",
+      "descriptionPrefixProductivity": "Every productive routine begins with clear organization. Your dashboard needs a",
+      "workspaceHighlight": "Workspace",
+      "descriptionSuffix": "to organize your tasks, daily routines, and rewards.",
+      "createButton": "Create My First Workspace",
+      "wizardQuestion": "Or prefer guided suggestions?",
+      "wizardLink": "Customize with the Initial Setup Wizard",
+      "defaultInitialName": "Personal",
+      "createSuccessToast": "Workspace \"{name}\" created successfully!",
+      "createErrorToast": "Could not create workspace. Please try again."
+    },
+    "listSummary": {
+      "title": "Lists Summary",
+      "counterAriaLabel": "Active lists count and plan limit",
+      "storedInBackpackBadge": "+{count} stored",
+      "storedInBackpackBadgeGamified": "+{count} in backpack",
+      "storedInBackpackBadgeProductivity": "+{count} archived",
+      "storedInBackpackTitle": "{count} {count, plural, one {list preserved} other {lists preserved}} from your Premium period. Reactivate VIP to display up to 6 lists at once!",
+      "storedInBackpackTitleGamified": "{count} {count, plural, one {list preserved} other {lists preserved}} from your Premium period. Reactivate VIP to display up to 6 lists at once!",
+      "storedInBackpackTitleProductivity": "{count} {count, plural, one {list preserved} other {lists preserved}} from your Premium period. Reactivate VIP to display up to 6 lists at once!",
+      "untitled": "Untitled",
+      "defaultList": "List",
+      "rightClickHint": "{name} • Right-click to edit or delete",
+      "addCard": "Add",
+      "addCardSubtitle": "New list",
+      "deleteColumnSuccess": "Column \"{title}\" deleted successfully!",
+      "deleteColumnError": "Failed to delete column.",
+      "deleteColumnUnexpectedError": "Unexpected error while deleting column.",
+      "deleteModalTitle": "Delete Column",
+      "deleteModalDescPrefix": "Are you sure you want to delete the column",
+      "deleteModalDescSuffix": "? This action is irreversible and all tasks in this column will be permanently removed.",
+      "deleteModalConfirm": "Delete Column",
+      "deleteModalCancel": "Cancel"
+    },
+    "tasksPanel": {
+      "defaultList": "List",
+      "deleteModalTitle": "Delete Task",
+      "deleteModalDescPrefix": "Are you sure you want to delete the task",
+      "deleteModalDescSuffix": "? This task has subtasks, Hardcore Mode, or an active streak history, and deletion cannot be undone.",
+      "deleteModalConfirm": "Delete Task",
+      "deleteModalCancel": "Cancel"
+    },
+    "taskFilters": {
+      "ariaLabel": "Task Date Filters",
+      "datePillLabel": "Day: {date}",
+      "clearDateTitle": "Remove specific date filter and return to default",
+      "tabs": {
+        "today": "Today",
+        "next7days": "Next 7 days...",
+        "this_month": "This month",
+        "nodate": "No due date",
+        "overdue": "Overdue"
+      },
+      "advancedButtonTitle": "Advanced filters and sorting options",
+      "openAdvancedAria": "Open advanced filters",
+      "advancedTitle": "Advanced Filters",
+      "clearButton": "Clear",
+      "taskTypeLabel": "Task Type",
+      "allTypes": "All types",
+      "habits": "Habits",
+      "dailies": "Dailies",
+      "todos": "To-Dos",
+      "columnLabel": "List / Category",
+      "allColumns": "All lists",
+      "untitledColumn": "Untitled",
+      "difficultyLabel": "Difficulty",
+      "effortLabel": "Effort",
+      "allDifficulties": "All difficulties",
+      "trivial": "Trivial",
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard",
+      "sortByLabel": "Sort by",
+      "sortDefault": "Default (Date / Due)",
+      "sortDifficulty": "Difficulty (Highest first)",
+      "sortPriority": "Priority (Highest first)",
+      "sortReward": "Highest Reward (XP/Gold)",
+      "hideCompletedLabel": "Hide completed tasks"
+    },
+    "taskTable": {
+      "ariaLabel": "Task list",
+      "colName": "Name",
+      "colList": "List",
+      "colType": "Type",
+      "colPriority": "Priority",
+      "colSchedule": "Schedule/Due",
+      "colActions": "Actions",
+      "paginationItemLabel": "tasks",
+      "emptyFallbackTitle": "No tasks found",
+      "emptyFallbackDesc": "We couldn't find any tasks for the selected filter.",
+      "emptyDateTitle": "All clear on this date! 🎉",
+      "emptyDateDesc": "No tasks scheduled for {date}.",
+      "empty": {
+        "today": {
+          "title": "All clear for today! 🎉",
+          "description": "You have no pending tasks for today."
+        },
+        "next7days": {
+          "title": "No tasks in the next 7 days",
+          "description": "Your week looks calm. How about planning new goals?"
+        },
+        "this_month": {
+          "title": "Quiet month! 📅",
+          "description": "You have no pending tasks for this month."
+        },
+        "overdue": {
+          "title": "All caught up! ✨",
+          "description": "Awesome! You have no overdue tasks."
+        },
+        "nodate": {
+          "title": "No tasks without a due date",
+          "description": "All of your tasks have a scheduled due date."
+        }
+      }
+    },
+    "taskShared": {
+      "types": {
+        "habit": "Habit",
+        "daily": "Daily",
+        "todo": "To-Do"
+      },
+      "priorities": {
+        "HIGH": "High",
+        "MEDIUM": "Medium",
+        "LOW": "Low",
+        "Low": "Low",
+        "NONE": "None"
+      },
+      "difficulties": {
+        "TRIVIAL": "Trivial",
+        "EASY": "Easy",
+        "MEDIUM": "Medium",
+        "HARD": "Hard"
+      },
+      "resetCounters": {
+        "DAILY": "Daily",
+        "WEEKLY": "Weekly",
+        "MONTHLY": "Monthly",
+        "CONTINUOUS": "Continuous"
+      },
+      "habitCycles": {
+        "WEEKLY": "week",
+        "MONTHLY": "month",
+        "DAILY": "today"
+      },
+      "weekDays": {
+        "activeDaysTitle": "Active days of the week",
+        "todaySuffix": " (Today)",
+        "activeStatus": "Active",
+        "inactiveStatus": "Inactive",
+        "SUNDAY": { "short": "S", "full": "Sunday" },
+        "MONDAY": { "short": "M", "full": "Monday" },
+        "TUESDAY": { "short": "T", "full": "Tuesday" },
+        "WEDNESDAY": { "short": "W", "full": "Wednesday" },
+        "THURSDAY": { "short": "T", "full": "Thursday" },
+        "FRIDAY": { "short": "F", "full": "Friday" },
+        "SATURDAY": { "short": "S", "full": "Saturday" }
+      },
+      "badges": {
+        "checklistTitle": "Subtasks: {completed} of {total} completed",
+        "hardcoreOverdueTitle": "Hardcore Mode: Deadline expired! 50% penalty active!",
+        "hardcoreOverdueTitleProductivity": "Strict Deadline: Due date expired! 50% penalty active!",
+        "hardcoreActiveTitle": "Hardcore Mode Active",
+        "hardcoreActiveTitleProductivity": "Strict Deadline Active (Non-negotiable)",
+        "descriptionTitle": "Has detailed description",
+        "priorityTitle": "Priority: {label}",
+        "habitScoreCardTitle": "Repetitions balance in current cycle: {score}",
+        "habitScoreRowTitle": "Repetitions balance: {score}",
+        "habitScoreRowLabel": "Score: {score}",
+        "difficultyTitle": "Difficulty: {label}",
+        "effortTitle": "Effort: {label}",
+        "streakTitle": "{count}-{count, plural, one {day} other {day}} streak",
+        "rewardXpTitle": "Reward: +{xp} XP",
+        "rewardGoldTitle": "Reward: +{gold} Gold",
+        "defaultCategory": "General"
+      },
+      "actions": {
+        "positiveHabitTitle": "Log positive habit (+)",
+        "positiveHabitAria": "Log positive habit",
+        "negativeHabitTitle": "Log negative habit (-)",
+        "negativeHabitAria": "Log negative habit",
+        "markPendingAria": "Mark as pending",
+        "markCompletedAria": "Mark as completed",
+        "taskOptionsAria": "Task options for {title}",
+        "taskOptionsTitle": "Task options (Edit, Duplicate, Delete)"
+      },
+      "contextMenu": {
+        "edit": "Edit",
+        "duplicate": "Duplicate",
+        "delete": "Delete",
+        "layout": "Layout",
+        "compact": "Compact",
+        "normal": "Standard",
+        "wide": "Wide"
+      },
+      "mutations": {
+        "statusUpdateError": "Failed to update task status.",
+        "habitCompleted": "Habit completed!",
+        "dailyCompleted": "Daily completed!",
+        "todoCompleted": "Task completed!",
+        "goldLabel": "Gold",
+        "decayOverdue": "{stage} (-{percent}% overdue penalty)",
+        "decayRoutine": "{stage} (-{percent}% formed routine)",
+        "markedPending": "Task marked as pending.",
+        "habitScoreError": "Failed to record habit score.",
+        "habitRecorded": "Habit logged!",
+        "decayHabit": "{stage} (-{percent}% formed habit)",
+        "positiveHabitSuccess": "Positive habit logged successfully!",
+        "habitPenalty": "Habit penalty logged!",
+        "deleteError": "Failed to delete task on server.",
+        "deleteSuccess": "Task \"{title}\" deleted successfully!",
+        "duplicateColumnError": "Target column not found for duplication.",
+        "duplicateError": "Failed to duplicate task.",
+        "duplicateSuccess": "Task \"{title}\" duplicated successfully!"
+      },
+      "levelUp": {
+        "title": "Level Up!",
+        "congratsPrefix": "Congratulations! Your new rank is",
+        "congratsSuffix": "."
+      }
+    },
+    "sidebarRight": {
+      "asideAriaLabel": "Summary and Calendar Panel",
+      "mobileDrawer": {
+        "fabTitle": "Open calendar and financial summary",
+        "fabLabel": "Summary",
+        "drawerAriaLabel": "Dashboard Summary and Weekly Calendar",
+        "backdropAriaLabel": "Close side summary",
+        "headerTitle": "Summary & Calendar",
+        "headerSubtitle": "Activities, finances, and goals",
+        "closeAriaLabel": "Close summary"
+      },
+      "weeklyCalendar": {
+        "title": "Week",
+        "todayButton": "Today",
+        "todayButtonTitle": "Return to current week and clear day filter",
+        "prevWeek": "Previous week",
+        "nextWeek": "Next week",
+        "legendActiveDay": "Active day",
+        "legendTodoDue": "Due date (To-Do)"
+      },
+      "activitiesWidget": {
+        "title": "Activities",
+        "periodAriaLabel": "Focus time period",
+        "periods": {
+          "today": "Today",
+          "this_week": "Week",
+          "this_month": "Month"
+        },
+        "empty": "No activities registered.",
+        "lockedPreservedTitle": "{count} {count, plural, one {activity preserved} other {activities preserved}} from Premium period. Reactivate Premium to track time!",
+        "lockedCount": "{count} {count, plural, one {locked activity} other {locked activities}}",
+        "upgradeTitle": "Subscribe to Premium to create up to 6 focus activities!",
+        "upgradeLabel": "Limit Reached • Go Premium 👑",
+        "limitReachedTitle": "Limit of {max} activities reached",
+        "limitReachedLabel": "Limit reached ({max}/{max})",
+        "addButton": "Add",
+        "pomodoroDuration": "Pomodoro ({minutes}m)",
+        "freeStopwatch": "Free Stopwatch",
+        "rightClickHint": "{name} • {type} • Right click for options",
+        "deleteSuccess": "Activity \"{name}\" deleted successfully!",
+        "deleteError": "Failed to delete activity.",
+        "deleteUnexpectedError": "Unexpected error deleting activity.",
+        "contextMenu": {
+          "edit": "Edit",
+          "delete": "Delete"
+        },
+        "deleteModal": {
+          "title": "Delete Activity",
+          "questionPrefix": "Are you sure you want to delete the activity",
+          "questionSuffix": "? Your previous session history will remain preserved.",
+          "confirm": "Yes, delete",
+          "cancel": "Cancel"
+        }
+      },
+      "economyWidget": {
+        "title": "Economy",
+        "walletTitle": "View full transaction history",
+        "walletTitleGamified": "Open Adventurer's Vault and statement",
+        "walletTitleProductivity": "View full transaction history",
+        "walletLabel": "Wallet:",
+        "earningsAndSpent": "Earnings & Spent",
+        "chartAriaLabel": "Weekly chart of coins earned and spent",
+        "barSummaryAria": "{label}: +{earned} earned, -{spent} spent",
+        "inflows": "Inflows:",
+        "outflows": "Outflows:",
+        "netBalance": "Net:",
+        "legendEarnings": "Earned",
+        "legendSpent": "Spent"
+      },
+      "partyWidget": {
+        "title": "Party & Friends",
+        "titleGamified": "Party & Friends",
+        "titleProductivity": "Team & Collaboration",
+        "comingSoon": "Coming soon"
+      }
+    }
+  }
+}

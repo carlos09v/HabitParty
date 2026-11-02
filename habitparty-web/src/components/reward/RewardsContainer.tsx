@@ -1,7 +1,10 @@
 "use client";
 
 import { closestCenter, DndContext } from "@dnd-kit/core";
-import { restrictToWindowEdges } from "@dnd-kit/modifiers";
+import {
+  restrictToParentElement,
+  restrictToWindowEdges,
+} from "@dnd-kit/modifiers";
 import {
   rectSortingStrategy,
   SortableContext,
@@ -9,6 +12,7 @@ import {
 } from "@dnd-kit/sortable";
 import { Pencil, Plus, SearchX, Store, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
@@ -28,11 +32,15 @@ import {
   REWARD_PACKAGE_OPTIONS,
   REWARD_SORT_OPTIONS,
   REWARD_TYPE_OPTIONS,
+  toCategoryMessageKey,
+  toPackageMessageKey,
+  toRewardTypeMessageKey,
 } from "@/constants/reward";
 import { WELCOME_CARD_DETAILS } from "@/constants/welcomeCards";
-
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useItemCatalogFilters } from "@/hooks/useItemCatalogFilters";
 import { useReorderableList } from "@/hooks/useReorderableList";
+import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import type { Reward } from "@/types/reward";
 import { cn } from "@/utils";
@@ -55,6 +63,11 @@ export function RewardsContainer({
   isCompact?: boolean;
   initialRewards: Reward[];
 }) {
+  const t = useTranslations("rewards.container");
+  const tOptions = useTranslations("rewards.options");
+  const { isGamified } = useExperienceMode();
+  const locale = useLocale() as AppLocale;
+
   const {
     viewMode,
     setViewMode,
@@ -94,12 +107,56 @@ export function RewardsContainer({
   const updateUserPartial = useUserStore((s) => s.updateUserPartial);
   const [isRedeeming, setIsRedeeming] = useState(false);
 
+  const categoryOptions = useMemo(
+    () =>
+      REWARD_CATEGORY_OPTIONS.map((opt) => ({
+        value: opt.value,
+        label: opt.value
+          ? tOptions(`categories.${toCategoryMessageKey(opt.value)}`)
+          : tOptions("categories.all"),
+      })),
+    [tOptions],
+  );
+
+  const typeOptions = useMemo(
+    () =>
+      REWARD_TYPE_OPTIONS.map((opt) => ({
+        value: opt.value,
+        label: opt.value
+          ? tOptions(`types.${toRewardTypeMessageKey(opt.value)}`)
+          : tOptions("types.all"),
+      })),
+    [tOptions],
+  );
+
+  const packageOptions = useMemo(
+    () =>
+      REWARD_PACKAGE_OPTIONS.map((opt) => ({
+        value: opt.value,
+        label: opt.value
+          ? tOptions(`packages.${toPackageMessageKey(opt.value)}`)
+          : tOptions("packages.all"),
+      })),
+    [tOptions],
+  );
+
+  const sortOptions = useMemo(
+    () =>
+      REWARD_SORT_OPTIONS.map((opt) => ({
+        value: opt.value,
+        label: tOptions(
+          `sort.${(opt.value || "default") as "default" | "price-asc" | "price-desc" | "name"}`,
+        ),
+      })),
+    [tOptions],
+  );
+
   const handleBuy = useCallback(
     async (reward: Reward) => {
       if (isRedeeming) return;
 
       if (typeof currentCoins === "number" && currentCoins < reward.price) {
-        toast.error("Moedas insuficientes para resgatar este item!");
+        toast.error(t("toasts.insufficientCoins"));
         return;
       }
 
@@ -107,7 +164,7 @@ export function RewardsContainer({
       try {
         const res = await redeemReward(reward.id);
         if (!res.success) {
-          toast.error(res.error || "Erro ao resgatar recompensa.");
+          toast.error(res.error || t("toasts.redeemError"));
           return;
         }
 
@@ -123,15 +180,17 @@ export function RewardsContainer({
 
         soundEffects.playBuySound();
         toast.success(
-          `Você comprou "${reward.title}"! O item foi enviado para a sua Mochila.`,
+          isGamified
+            ? t("toasts.buySuccessGamified", { title: reward.title })
+            : t("toasts.buySuccessProductivity", { title: reward.title }),
         );
       } catch (_error) {
-        toast.error("Erro de comunicação com o servidor.");
+        toast.error(t("toasts.serverError"));
       } finally {
         setIsRedeeming(false);
       }
     },
-    [isRedeeming, currentCoins, updateUserPartial],
+    [isGamified, isRedeeming, currentCoins, updateUserPartial, t],
   );
 
   const handleAddProduct = useCallback(() => {
@@ -176,10 +235,10 @@ export function RewardsContainer({
     startDeleteTransition(async () => {
       const res = await deleteReward(target.id);
       if (res.success) {
-        toast.success(`Recompensa "${target.title}" excluída com sucesso!`);
+        toast.success(t("toasts.deleteSuccess", { title: target.title }));
       } else {
         setRewards(previousRewards);
-        toast.error(res.error || "Erro ao excluir recompensa.");
+        toast.error(res.error || t("toasts.deleteError"));
       }
     });
   };
@@ -216,8 +275,8 @@ export function RewardsContainer({
   const resolvedCoins = currentCoins ?? 0;
 
   const { stats: welcomeStats } = useMemo(() => {
-    return calculateRewardWelcomeStats(rewards, resolvedCoins);
-  }, [rewards, resolvedCoins]);
+    return calculateRewardWelcomeStats(rewards, resolvedCoins, locale);
+  }, [rewards, resolvedCoins, locale]);
 
   return (
     <>
@@ -254,26 +313,26 @@ export function RewardsContainer({
           dropdownFilters={[
             {
               id: "category",
-              label: "Categorias",
-              options: REWARD_CATEGORY_OPTIONS,
+              label: t("filters.category"),
+              options: categoryOptions,
               value: filters.category,
             },
             {
               id: "type",
-              label: "Tipo",
-              options: REWARD_TYPE_OPTIONS,
+              label: t("filters.type"),
+              options: typeOptions,
               value: filters.type,
             },
             {
               id: "packageLevel",
-              label: "Pacote",
-              options: REWARD_PACKAGE_OPTIONS,
+              label: t("filters.packageLevel"),
+              options: packageOptions,
               value: filters.packageLevel || "",
             },
             {
               id: "sortBy",
-              label: "Ordenar",
-              options: REWARD_SORT_OPTIONS,
+              label: t("filters.sortBy"),
+              options: sortOptions,
               value: filters.sortBy || "",
             },
           ]}
@@ -281,7 +340,7 @@ export function RewardsContainer({
           onClearDropdowns={handleClearFilters}
           rightActions={
             <PrimaryActionButton
-              label="Adicionar Produto"
+              label={t("addProduct")}
               onClick={handleAddProduct}
               isCompact={isCompact}
             />
@@ -298,23 +357,23 @@ export function RewardsContainer({
               icon={rewards.length === 0 ? Store : SearchX}
               title={
                 rewards.length === 0
-                  ? "Sua vitrine de recompensas está vazia! 🛍️"
-                  : "Nenhuma recompensa encontrada"
+                  ? t("empty.showcaseEmptyTitle")
+                  : t("empty.noResultsTitle")
               }
               description={
                 rewards.length === 0
-                  ? "Cadastre seus primeiros mimos, cupons de lazer ou caixas misteriosas para trocar pelas moedas que você ganha completando tarefas!"
-                  : "Não encontramos nenhuma recompensa que corresponda aos filtros aplicados."
+                  ? t("empty.showcaseEmptyDescription")
+                  : t("empty.noResultsDescription")
               }
               action={
                 rewards.length === 0 ? (
                   <button
                     type="button"
                     onClick={handleAddProduct}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gold text-neutral-900 font-bold text-xs hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gold text-on-gold font-bold text-xs hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer"
                   >
                     <Plus size={15} />
-                    <span>Criar Primeira Recompensa</span>
+                    <span>{t("empty.createFirstReward")}</span>
                   </button>
                 ) : (
                   <button
@@ -322,7 +381,7 @@ export function RewardsContainer({
                     onClick={handleClearFilters}
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-primary/40 bg-surface/80 text-xs font-semibold text-gold hover:border-gold hover:bg-gold/10 transition-all cursor-pointer"
                   >
-                    <span>Limpar Filtros</span>
+                    <span>{t("empty.clearFilters")}</span>
                   </button>
                 )
               }
@@ -334,7 +393,7 @@ export function RewardsContainer({
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
-            modifiers={[restrictToWindowEdges]}
+            modifiers={[restrictToParentElement, restrictToWindowEdges]}
           >
             <SortableContext
               items={filteredRewards.map((r) => r.id)}
@@ -401,9 +460,9 @@ export function RewardsContainer({
                           price={reward.price}
                           disabled={!canAfford}
                           disabledTitle={
-                            !canAfford ? "Moedas insuficientes" : undefined
+                            !canAfford ? t("insufficientCoinsShort") : undefined
                           }
-                          actionLabel="Comprar"
+                          actionLabel={t("buy")}
                           onAction={() => handleBuy(reward)}
                           onContextMenu={(e) => handleContextMenu(e, reward)}
                           isCompact={isCompact}
@@ -431,7 +490,7 @@ export function RewardsContainer({
         onClose={() => setContextMenu((prev) => ({ ...prev, isOpen: false }))}
         items={[
           {
-            label: "Editar",
+            label: t("contextMenu.edit"),
             icon: <Pencil size={14} />,
             onClick: () => {
               if (contextMenu.reward) {
@@ -441,7 +500,7 @@ export function RewardsContainer({
             },
           },
           {
-            label: "Excluir",
+            label: t("contextMenu.delete"),
             icon: <Trash2 size={14} />,
             variant: "destructive",
             onClick: () => {
@@ -458,20 +517,21 @@ export function RewardsContainer({
         isOpen={Boolean(rewardToDelete)}
         onClose={() => !isDeleting && setRewardToDelete(null)}
         onConfirm={handleConfirmDelete}
-        title="Excluir recompensa?"
+        title={t("deleteModal.title")}
         description={
           rewardToDelete ? (
             <span>
-              Tem certeza que deseja excluir{" "}
-              <strong className="text-neutral-100">
-                "{rewardToDelete.title}"
-              </strong>{" "}
-              da sua Loja de Recompensas?
+              {t.rich("deleteModal.description", {
+                title: rewardToDelete.title,
+                bold: (chunks) => (
+                  <strong className="text-neutral-100">{chunks}</strong>
+                ),
+              })}
             </span>
           ) : null
         }
-        confirmText="Sim, excluir"
-        cancelText="Cancelar"
+        confirmText={t("deleteModal.confirmText")}
+        cancelText={t("deleteModal.cancelText")}
         variant="danger"
         isLoading={isDeleting}
       />

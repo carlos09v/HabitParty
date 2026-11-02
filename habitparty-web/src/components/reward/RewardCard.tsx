@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { memo } from "react";
 import { GamifiedItemCard } from "@/components/ui/GamifiedItemCard";
 import type { AddRewardCardProps, RewardCardProps } from "@/types/reward";
@@ -13,6 +14,8 @@ export const RewardCard = memo(function RewardCard({
   isCompact = false,
   canAfford = true,
 }: RewardCardProps) {
+  const t = useTranslations("rewards.card");
+
   return (
     <GamifiedItemCard
       id={reward.id}
@@ -26,7 +29,7 @@ export const RewardCard = memo(function RewardCard({
       isCompact={isCompact}
       price={reward.price}
       canAfford={canAfford}
-      actionLabel="Comprar"
+      actionLabel={t("buy")}
       onAction={() => onBuy?.(reward)}
       onContextMenu={(e) => onContextMenu?.(e, reward)}
       dragData={{ type: "Reward", reward }}
@@ -39,12 +42,14 @@ export const AddRewardCard = memo(function AddRewardCard({
   viewMode = "card",
   isCompact = false,
 }: AddRewardCardProps) {
+  const t = useTranslations("rewards.card");
+
   if (viewMode === "list") {
     return (
       <button
         type="button"
         onClick={onClick}
-        aria-label="Adicionar nova recompensa"
+        aria-label={t("addRewardAria")}
         className={cn(
           "w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-dashed transition-all cursor-pointer",
           "border-white/20 bg-card/40 text-xs font-semibold text-neutral-300",
@@ -52,7 +57,7 @@ export const AddRewardCard = memo(function AddRewardCard({
         )}
       >
         <Plus size={15} aria-hidden="true" />
-        <span>Adicionar Produto</span>
+        <span>{t("addProduct")}</span>
       </button>
     );
   }
@@ -61,7 +66,7 @@ export const AddRewardCard = memo(function AddRewardCard({
     <button
       type="button"
       onClick={onClick}
-      aria-label="Adicionar nova recompensa"
+      aria-label={t("addRewardAria")}
       className={cn(
         "flex flex-col items-center justify-center rounded-xl border border-dashed transition-all cursor-pointer group gap-2",
         isCompact ? "p-2.5 min-h-28" : "p-3.5 min-h-32",
@@ -71,7 +76,7 @@ export const AddRewardCard = memo(function AddRewardCard({
       <div className="p-2 rounded-xl bg-white/10 group-hover:bg-gold/20 text-primary-light group-hover:text-gold transition-colors">
         <Plus size={isCompact ? 15 : 18} aria-hidden="true" />
       </div>
-      <span className="text-xs font-semibold">Adicionar Produto</span>
+      <span className="text-xs font-semibold">{t("addProduct")}</span>
     </button>
   );
 });

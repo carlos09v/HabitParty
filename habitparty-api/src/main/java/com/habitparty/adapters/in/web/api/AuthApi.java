@@ -11,7 +11,9 @@ import com.habitparty.adapters.in.web.dtos.request.GoogleSignInRequestDTO;
 import com.habitparty.adapters.in.web.dtos.request.RefreshTokenRequestDTO;
 import com.habitparty.adapters.in.web.dtos.request.ResetPasswordRequestDTO;
 import com.habitparty.adapters.in.web.dtos.request.SignInRequestDTO;
+import com.habitparty.adapters.in.web.dtos.request.VerifyEmailRequestDTO;
 import com.habitparty.adapters.in.web.dtos.response.SignInResponseDTO;
+import com.habitparty.adapters.in.web.dtos.response.UserResponseDTO;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,7 +22,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RequestMapping("/auth")
-@Tag(name = "Authentication", description = "Endpoints para autenticação, login, refresh token e logout")
+@Tag(name = "Authentication", description = "Endpoints para autenticação, login, refresh token, verificação de e-mail e logout")
 public interface AuthApi {
 
     @Operation(summary = "Login / Sign-in", description = "Autentica o usuário com email/username e senha, retornando os tokens.")
@@ -45,6 +47,16 @@ public interface AuthApi {
     @Operation(summary = "Redefinir Senha", description = "Redefine a senha do usuário utilizando um token de recuperação válido.")
     @PostMapping("/reset-password")
     ResponseEntity<Void> resetPassword(@RequestBody @Valid ResetPasswordRequestDTO dto);
+
+    @Operation(summary = "Confirmar E-mail da Conta", description = "Confirma o endereço de e-mail do usuário através do token enviado por e-mail.")
+    @PostMapping("/verify-email")
+    ResponseEntity<UserResponseDTO> verifyEmail(@RequestBody @Valid VerifyEmailRequestDTO dto);
+
+    @Operation(summary = "Reenviar E-mail de Confirmação", description = "Reenvia o link de confirmação de e-mail para o usuário autenticado.")
+    @PostMapping("/resend-verification")
+    ResponseEntity<Void> resendVerification(
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
+    );
 
     @Operation(summary = "Login com Google", description = "Autentica ou cadastra o usuário via Google OAuth 2.0 através do código retornado pelo consentimento.")
     @PostMapping("/google")

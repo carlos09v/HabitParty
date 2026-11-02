@@ -5,7 +5,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.StoragePort;
 import com.habitparty.application.ports.UserRepository;
@@ -13,7 +12,6 @@ import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
-@Transactional
 public class UpdateProfilePhotoUseCase {
   private final UserRepository port;
   private final StoragePort storagePort;

@@ -1,9 +1,11 @@
 "use client";
 
 import { Eye, EyeOff, RotateCcw, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/Switch";
 import { CONFIGURABLE_WELCOME_CARDS } from "@/constants/welcomeCards";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useWelcomeCards } from "@/store/welcomeCardsStore";
 import { cn } from "@/utils";
 
@@ -14,6 +16,8 @@ interface WelcomeCardsSettingsProps {
 export function WelcomeCardsSettings({
   isCompact = false,
 }: WelcomeCardsSettingsProps) {
+  const t = useTranslations("settings.welcomeCards");
+  const { isGamified } = useExperienceMode();
   const {
     hiddenCards,
     isCardHidden,
@@ -23,6 +27,14 @@ export function WelcomeCardsSettings({
     mounted,
   } = useWelcomeCards();
 
+  const getItemText = (key: string, field: string): string => {
+    const modeKey = isGamified ? `${field}Gamified` : `${field}Productivity`;
+    if (t.has(`items.${key}.${modeKey}`)) {
+      return t(`items.${key}.${modeKey}`);
+    }
+    return t(`items.${key}.${field}`);
+  };
+
   const hiddenCount = mounted
     ? hiddenCards.filter((key) =>
         CONFIGURABLE_WELCOME_CARDS.some((card) => card.key === key),
@@ -31,27 +43,20 @@ export function WelcomeCardsSettings({
 
   const totalCards = CONFIGURABLE_WELCOME_CARDS.length;
 
-  const handleToggle = (
-    key: string,
-    title: string,
-    currentlyHidden: boolean,
-  ) => {
+  const handleToggle = (key: string, currentlyHidden: boolean) => {
+    const cardTitle = getItemText(key, "title");
     if (currentlyHidden) {
       showCard(key);
-      toast.success(
-        `Card "${title}" reativado! Ele voltará a aparecer na tela.`,
-      );
+      toast.success(t("cardReactivatedToast", { title: cardTitle }));
     } else {
       hideCard(key);
-      toast.info(`Card "${title}" foi ocultado.`);
+      toast.info(t("cardHiddenToast", { title: cardTitle }));
     }
   };
 
   const handleRestoreAll = () => {
     showAllCards();
-    toast.success(
-      "Todos os cards de boas-vindas foram reativados com sucesso!",
-    );
+    toast.success(t("restoreAllSuccess"));
   };
 
   return (
@@ -73,10 +78,10 @@ export function WelcomeCardsSettings({
             <Sparkles size={20} className="shrink-0 text-gold" />
           )}
           <div className="text-sm">
-            <span className="font-bold">Status: </span>
+            <span className="font-bold">{t("statusLabel")}</span>
             {hiddenCount === 0
-              ? "Todos os cards de boas-vindas estão ativos e visíveis nas telas."
-              : `${hiddenCount} de ${totalCards} cards informativos estão ocultados.`}
+              ? t("allVisible")
+              : t("statusSummary", { count: hiddenCount, total: totalCards })}
           </div>
         </div>
 
@@ -87,7 +92,7 @@ export function WelcomeCardsSettings({
             className="self-end sm:self-center px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 border border-amber-400/30 transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
           >
             <RotateCcw size={13} />
-            <span>Reativar Todos</span>
+            <span>{t("restoreAllBtn")}</span>
           </button>
         )}
       </div>
@@ -125,7 +130,7 @@ export function WelcomeCardsSettings({
 
                   <div className="flex flex-col min-w-0">
                     <h4 className="text-body-m font-bold text-neutral-100 truncate">
-                      {card.pageName}
+                      {getItemText(card.key, "pageName")}
                     </h4>
                     <span className="text-tiny font-mono text-neutral-400">
                       {card.route}
@@ -144,22 +149,26 @@ export function WelcomeCardsSettings({
                     {isHidden ? (
                       <>
                         <EyeOff size={12} />
-                        <span className="hidden sm:inline">Oculto</span>
+                        <span className="hidden sm:inline">
+                          {t("hiddenBadge")}
+                        </span>
                       </>
                     ) : (
                       <>
                         <Eye size={12} />
-                        <span className="hidden sm:inline">Visível</span>
+                        <span className="hidden sm:inline">
+                          {t("visibleBadge")}
+                        </span>
                       </>
                     )}
                   </span>
                   <Switch
                     checked={!isHidden}
-                    onCheckedChange={() =>
-                      handleToggle(card.key, card.title, isHidden)
-                    }
+                    onCheckedChange={() => handleToggle(card.key, isHidden)}
                     size="sm"
-                    aria-label={`Alternar visibilidade do card de boas-vindas da página ${card.pageName}`}
+                    aria-label={t("cardAria", {
+                      pageName: getItemText(card.key, "pageName"),
+                    })}
                   />
                 </div>
               </div>
@@ -167,10 +176,10 @@ export function WelcomeCardsSettings({
               {/* Informações do Banner */}
               <div className="flex flex-col gap-1">
                 <p className="text-xs font-semibold text-gold/90 truncate">
-                  "{card.title}"
+                  "{getItemText(card.key, "title")}"
                 </p>
                 <p className="text-xs text-neutral-300 leading-relaxed">
-                  {card.description}
+                  {getItemText(card.key, "description")}
                 </p>
               </div>
 
@@ -178,11 +187,11 @@ export function WelcomeCardsSettings({
               {isHidden && (
                 <button
                   type="button"
-                  onClick={() => handleToggle(card.key, card.title, true)}
+                  onClick={() => handleToggle(card.key, true)}
                   className="w-full py-1.5 px-3 rounded-lg text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 transition-colors flex items-center justify-center gap-1.5 cursor-pointer mt-1"
                 >
                   <RotateCcw size={13} />
-                  <span>Reativar na Tela</span>
+                  <span>{t("reactivateBtn")}</span>
                 </button>
               )}
             </div>

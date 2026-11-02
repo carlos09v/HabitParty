@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.BoardColumnRepository;
 import com.habitparty.application.ports.TaskRepository;
@@ -27,6 +28,7 @@ public class GetFullKanbanBoardUseCase {
     this.taskRepository = taskRepository;
   }
 
+  @Transactional(readOnly = true)
   public KanbanBoard execute(UUID workspaceId, UUID userIdLogado) {
     Workspace workspace = port.findById(workspaceId)
         .orElseThrow(() -> new ResourceNotFoundException("Workspace não encontrado!"));

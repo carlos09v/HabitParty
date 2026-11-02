@@ -1,9 +1,10 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
+import { useEffect, useId, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { useClickOutside } from "@/hooks/useClickOutside";
+import { useFloatingPopover } from "@/hooks/useFloatingPopover";
 import type { SelectItem, SelectOption, SelectProps } from "@/types/ui";
 import { cn } from "@/utils";
 
@@ -14,18 +15,11 @@ function normalizeOption(option: SelectItem): SelectOption {
   return option;
 }
 
-interface DropdownCoords {
-  top: number;
-  left: number;
-  width?: number;
-  placement: "bottom" | "top";
-}
-
 export function Select({
   label,
   options,
-  placeholder = "Selecione uma opção",
-  emptyMessage = "Sem itens disponíveis.",
+  placeholder,
+  emptyMessage,
   compact = false,
   variant = "default",
   align,
@@ -37,24 +31,25 @@ export function Select({
   id,
   disabled = false,
   required = false,
+  error,
+  hint,
   className,
   dropdownClassName,
   triggerClassName,
   usePortal = true,
   "aria-label": ariaLabel,
 }: SelectProps) {
+  const t = useTranslations("ui.select");
+  const resolvedPlaceholder = placeholder ?? t("placeholder");
+  const resolvedEmptyMessage = emptyMessage ?? t("emptyMessage");
   const generatedId = useId();
   const selectId = id || generatedId;
-  const containerRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
 
-  const [mounted, setMounted] = useState(false);
-  const [coords, setCoords] = useState<DropdownCoords | null>(null);
+  const normalizedOptions = useMemo(
+    () => options.map(normalizeOption),
+    [options],
+  );
 
-  const normalizedOptions = options.map(normalizeOption);
-
-  const [isOpen, setIsOpen] = useState(false);
   const [internalValue, setInternalValue] = useState<string>(
     value ?? defaultValue ?? "",
   );
@@ -62,279 +57,85 @@ export function Select({
   const isControlled = value !== undefined;
   const currentValue = isControlled ? value : internalValue;
 
-  const currentOption = normalizedOptions.find(
-    (opt) => opt.value === currentValue,
+  const currentOption = useMemo(
+    () => normalizedOptions.find((opt) => opt.value === currentValue),
+    [normalizedOptions, currentValue],
   );
 
   const isInline = variant === "inline";
+  const isFilter = variant === "filter";
+  const isAutoWidth = isInline || isFilter;
 
-  // Montagem no cliente para permitir createPortal
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const itemHeight = isInline ? 30 : compact ? 36 : 40;
+  const maxAllowedHeight = isInline ? 192 : 240;
+  const estimatedHeight = Math.min(
+    Math.max(normalizedOptions.length, 1) * itemHeight + 8,
+    maxAllowedHeight,
+  );
 
-  // Fechamento no clique fora e Escape (inclui listRef do Portal nos elementos protegidos)
-  useClickOutside(containerRef, () => setIsOpen(false), {
-    enabled: isOpen,
-    onEscape: () => setIsOpen(false),
-    extraRefs: [listRef],
+  const {
+    containerRef,
+    triggerRef,
+    popoverRef,
+    isOpen,
+    close,
+    toggle,
+    coords,
+    shouldRenderPortal,
+    floatingStyle,
+  } = useFloatingPopover<HTMLDivElement, HTMLButtonElement, HTMLDivElement>({
+    align: align ?? (isInline ? "center" : "left"),
+    estimatedHeight,
+    estimatedWidth: isFilter ? 192 : 140,
+    matchTriggerWidth: !isAutoWidth,
+    maxAllowedHeight,
+    offset: isFilter ? 6 : 4,
+    disabled,
+    usePortal,
   });
-
-  // Cálculo síncrono e preciso de coordenadas do gatilho
-  const computeCoords = useCallback((): DropdownCoords | null => {
-    if (!triggerRef.current) return null;
-    const rect = triggerRef.current.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    const viewportWidth = window.innerWidth;
-    const margin = 8;
-    const estimatedHeight = Math.min(listRef.current?.offsetHeight || 220, 240);
-
-    // Se o gatilho rolou totalmente para fora do viewport visível, fecha
-    if (rect.bottom < 0 || rect.top > viewportHeight) {
-      return null;
-    }
-
-    const spaceBelow = viewportHeight - rect.bottom;
-    const spaceAbove = rect.top;
-
-    let placement: "bottom" | "top" = "bottom";
-    if (spaceBelow < estimatedHeight + margin && spaceAbove > spaceBelow) {
-      placement = "top";
-    }
-
-    const top =
-      placement === "bottom"
-        ? rect.bottom + 4
-        : Math.max(margin, rect.top - estimatedHeight - 4);
-
-    let left = rect.left;
-    let width: number | undefined = isInline ? undefined : rect.width;
-
-    if (isInline) {
-      width = undefined;
-      const dropdownWidth = listRef.current?.offsetWidth || 140;
-      if (align === "right") {
-        left = rect.right - dropdownWidth;
-      } else if (align === "left") {
-        left = rect.left;
-      } else {
-        left = rect.left + rect.width / 2 - dropdownWidth / 2;
-      }
-    } else if (align === "right") {
-      const dropdownWidth = listRef.current?.offsetWidth || rect.width;
-      left = rect.right - dropdownWidth;
-    }
-
-    if (width) {
-      if (left + width > viewportWidth - margin) {
-        left = Math.max(margin, viewportWidth - width - margin);
-      }
-    } else {
-      const estimatedWidth = listRef.current?.offsetWidth || 120;
-      if (left + estimatedWidth > viewportWidth - margin) {
-        left = Math.max(margin, viewportWidth - estimatedWidth - margin);
-      }
-    }
-    if (left < margin) {
-      left = margin;
-    }
-
-    return {
-      top: Math.round(top),
-      left: Math.round(left),
-      width,
-      placement,
-    };
-  }, [align, isInline]);
-
-  // Alterna abertura calculando coordenadas de forma síncrona NO ATO DO CLIQUE
-  const handleToggle = () => {
-    if (disabled) return;
-    if (!isOpen) {
-      const initialCoords = computeCoords();
-      if (initialCoords) {
-        setCoords(initialCoords);
-      }
-      setIsOpen(true);
-    } else {
-      setIsOpen(false);
-      setCoords(null);
-    }
-  };
-
-  // Atualiza coordenadas em scroll ou resize
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleScrollOrResize = () => {
-      const nextCoords = computeCoords();
-      if (!nextCoords) {
-        setIsOpen(false);
-      } else {
-        setCoords(nextCoords);
-      }
-    };
-
-    window.addEventListener("scroll", handleScrollOrResize, true);
-    window.addEventListener("resize", handleScrollOrResize);
-
-    return () => {
-      window.removeEventListener("scroll", handleScrollOrResize, true);
-      window.removeEventListener("resize", handleScrollOrResize);
-    };
-  }, [isOpen, computeCoords]);
 
   // Rola automaticamente para a opção selecionada ao abrir
   useEffect(() => {
-    if (isOpen && listRef.current) {
-      const selectedEl = listRef.current.querySelector(
+    if (isOpen && popoverRef.current) {
+      const selectedEl = popoverRef.current.querySelector(
         '[aria-selected="true"]',
       );
       if (selectedEl) {
         selectedEl.scrollIntoView({ block: "nearest" });
       }
     }
-  }, [isOpen]);
+  }, [isOpen, popoverRef]);
 
   const handleSelect = (optionValue: string) => {
     if (!isControlled) {
       setInternalValue(optionValue);
     }
     onChange?.(optionValue);
-    setIsOpen(false);
+    close();
   };
 
-  const shouldRenderPortal = Boolean(usePortal && mounted);
+  const displayLabel = isFilter
+    ? currentValue && currentOption
+      ? currentOption.label
+      : resolvedPlaceholder
+    : currentOption
+      ? currentOption.label
+      : resolvedPlaceholder;
 
-  // Se estiver usando Portal, aguarda termos as coordenadas válidas do gatilho antes de renderizar
-  // Isso evita qualquer renderização no topo esquerdo (0,0)
-  if (isOpen && shouldRenderPortal && !coords) {
-    return (
-      <div
-        ref={containerRef}
-        className={cn(
-          isInline ? "relative inline-block" : "flex flex-col w-full relative",
-          "gap-1.5",
-          className,
-        )}
-      >
-        {/* Renderiza o gatilho sem o dropdown até o cálculo de coordenadas estar pronto */}
-        {renderTrigger()}
-      </div>
-    );
-  }
-
-  function renderTrigger() {
-    return isInline ? (
-      <button
-        ref={triggerRef}
-        id={selectId}
-        type="button"
-        disabled={disabled}
-        onClick={handleToggle}
-        aria-haspopup="listbox"
-        aria-expanded={isOpen}
-        aria-label={ariaLabel}
-        className={cn(
-          "px-2 py-0.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer select-none",
-          isOpen
-            ? "bg-gold/15 text-gold border border-gold/40 shadow-glow-gold-xs"
-            : "bg-transparent text-neutral-100 hover:text-gold hover:bg-white/10 border border-transparent hover:border-white/10",
-          disabled && "opacity-50 cursor-not-allowed",
-          triggerClassName,
-        )}
-      >
-        {icon && (
-          <span className="shrink-0 flex items-center justify-center">
-            {icon}
-          </span>
-        )}
-        {currentOption?.icon && !icon && (
-          <span className="shrink-0 flex items-center justify-center">
-            {currentOption.icon}
-          </span>
-        )}
-        <span className="truncate">
-          {currentOption ? currentOption.label : placeholder}
-        </span>
-        <ChevronDown
-          size={12}
-          className={cn(
-            "text-neutral-400 transition-transform duration-200 shrink-0",
-            isOpen && "rotate-180 text-gold",
-          )}
-        />
-      </button>
-    ) : (
-      <button
-        ref={triggerRef}
-        id={selectId}
-        type="button"
-        disabled={disabled}
-        onClick={handleToggle}
-        aria-haspopup="listbox"
-        aria-expanded={isOpen}
-        aria-label={ariaLabel}
-        className={cn(
-          "w-full rounded-lg text-left transition-all flex items-center justify-between cursor-pointer",
-          compact ? "py-2 px-3 text-body-s" : "py-3 px-4 text-body-m",
-          "bg-card border border-neutral-700 text-neutral-50 shadow-xs",
-          "dark:bg-primary-dark/20 dark:border-primary/30 dark:shadow-none",
-          "outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-          isOpen
-            ? "border-primary dark:border-primary-light bg-card dark:bg-primary-dark/30 shadow-[0_0_8px_rgba(168,99,255,0.3)]"
-            : "hover:border-neutral-500 dark:hover:border-primary/50",
-          disabled && "opacity-50 cursor-not-allowed",
-          currentOption ? "text-neutral-50" : "text-neutral-400",
-          triggerClassName,
-        )}
-      >
-        <span className="flex items-center gap-2 truncate">
-          {icon && (
-            <span className="shrink-0 flex items-center justify-center">
-              {icon}
-            </span>
-          )}
-          {currentOption?.icon && !icon && (
-            <span className="shrink-0 flex items-center justify-center">
-              {currentOption.icon}
-            </span>
-          )}
-          <span className="truncate">
-            {currentOption ? currentOption.label : placeholder}
-          </span>
-        </span>
-        <ChevronDown
-          size={compact ? 16 : 18}
-          className={cn(
-            "text-neutral-400 transition-transform duration-200 shrink-0",
-            isOpen && "rotate-180 text-primary-light",
-          )}
-        />
-      </button>
-    );
-  }
+  const activeIcon = icon ?? currentOption?.icon;
+  const errorId = id && error ? `${id}-error` : undefined;
+  const hintId = id && hint ? `${id}-hint` : undefined;
+  const describedBy = [errorId, hintId].filter(Boolean).join(" ") || undefined;
 
   const dropdownMenu = (
     <div
-      ref={listRef}
+      ref={popoverRef}
       role="listbox"
-      style={
-        shouldRenderPortal && coords
-          ? {
-              position: "fixed",
-              top: `${coords.top}px`,
-              left: `${coords.left}px`,
-              width: coords.width ? `${coords.width}px` : undefined,
-              zIndex: 150,
-              transformOrigin: coords.placement === "top" ? "bottom" : "top",
-            }
-          : undefined
-      }
+      data-select-for={selectId}
+      style={floatingStyle}
       className={cn(
-        shouldRenderPortal
-          ? "fixed z-[150] bg-card dark:bg-popover/98 border border-neutral-700 dark:border-primary/40 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100"
-          : "absolute z-50 bg-card dark:bg-popover/98 border border-neutral-700 dark:border-primary/40 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100 origin-top",
+        shouldRenderPortal ? "fixed z-[150]" : "absolute z-50",
+        "bg-card dark:bg-popover/98 border border-neutral-700 dark:border-primary/40 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100",
         coords?.placement === "top" ? "origin-bottom" : "origin-top",
         isInline
           ? cn(
@@ -346,12 +147,19 @@ export function Select({
                 (!align || align === "center") &&
                 "left-1/2 -translate-x-1/2",
             )
-          : cn(
-              !shouldRenderPortal && "top-[105%]",
-              "max-h-60",
-              !shouldRenderPortal &&
-                (align === "right" ? "right-0 left-auto" : "left-0 w-full"),
-            ),
+          : isFilter
+            ? cn(
+                !shouldRenderPortal && "top-full mt-2",
+                "w-48 max-h-60 p-1.5 flex flex-col gap-0.5",
+                !shouldRenderPortal &&
+                  (align === "right" ? "right-0 left-auto" : "left-0"),
+              )
+            : cn(
+                !shouldRenderPortal && "top-[105%]",
+                "max-h-60",
+                !shouldRenderPortal &&
+                  (align === "right" ? "right-0 left-auto" : "left-0 w-full"),
+              ),
         dropdownClassName,
       )}
     >
@@ -366,7 +174,7 @@ export function Select({
                 : "py-2.5 px-4 text-body-s",
           )}
         >
-          {emptyMessage}
+          {resolvedEmptyMessage}
         </div>
       ) : (
         normalizedOptions.map((opt) => {
@@ -382,9 +190,14 @@ export function Select({
                 "w-full text-left cursor-pointer transition-colors flex items-center gap-2",
                 isInline
                   ? "px-2.5 py-1.5 rounded-lg text-xs justify-between"
-                  : compact
-                    ? "py-2 px-3 text-body-s"
-                    : "py-2.5 px-4 text-body-s",
+                  : isFilter
+                    ? cn(
+                        "rounded-md",
+                        compact ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm",
+                      )
+                    : compact
+                      ? "py-2 px-3 text-body-s"
+                      : "py-2.5 px-4 text-body-s",
                 isSelected
                   ? "bg-primary/20 text-gold font-bold"
                   : "text-neutral-200 hover:bg-surface-hover hover:text-neutral-50 dark:text-neutral-100 dark:hover:bg-primary/20 dark:hover:text-neutral-50",
@@ -407,14 +220,14 @@ export function Select({
     <div
       ref={containerRef}
       className={cn(
-        isInline ? "relative inline-block" : "flex flex-col w-full relative",
-        "gap-1.5",
+        isAutoWidth ? "relative inline-block" : "flex flex-col w-full relative",
+        !isAutoWidth && "gap-1.5",
         isOpen && "z-30",
         className,
       )}
     >
       {label &&
-        !isInline &&
+        !isAutoWidth &&
         (typeof label === "string" ? (
           <label
             htmlFor={selectId}
@@ -428,7 +241,6 @@ export function Select({
           </div>
         ))}
 
-      {/* Input hidden para suporte nativo a FormData */}
       {name && (
         <input
           type="hidden"
@@ -438,15 +250,97 @@ export function Select({
         />
       )}
 
-      {/* Gatilho (Botão do Select) */}
-      {renderTrigger()}
+      <button
+        ref={triggerRef}
+        id={selectId}
+        type="button"
+        disabled={disabled}
+        onClick={toggle}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-label={ariaLabel}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy}
+        className={cn(
+          "transition-all flex items-center cursor-pointer select-none",
+          isInline
+            ? cn(
+                "px-2 py-0.5 rounded-md text-xs font-bold gap-1.5",
+                isOpen
+                  ? "bg-gold/15 text-gold border border-gold/40 shadow-glow-gold-xs"
+                  : "bg-transparent text-neutral-100 hover:text-gold hover:bg-white/10 border border-transparent hover:border-white/10",
+              )
+            : isFilter
+              ? cn(
+                  "gap-2 rounded-lg bg-surface border font-medium focus:outline-none focus:ring-2 focus:ring-gold/50",
+                  compact ? "px-2 py-1 text-xs" : "px-3 py-2 text-sm",
+                  currentValue
+                    ? "border-gold text-gold font-bold"
+                    : "border-white/20 text-neutral-200 hover:border-white/30",
+                )
+              : cn(
+                  "w-full rounded-lg text-left justify-between",
+                  compact ? "py-2 px-3 text-body-s" : "py-3 px-4 text-body-m",
+                  "bg-card border border-neutral-700 text-neutral-50 shadow-xs",
+                  "dark:bg-primary-dark/20 dark:border-primary/30 dark:shadow-none",
+                  "outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                  isOpen
+                    ? "border-primary dark:border-primary-light bg-card dark:bg-primary-dark/30 shadow-[0_0_8px_rgba(168,99,255,0.3)]"
+                    : "hover:border-neutral-500 dark:hover:border-primary/50",
+                  error && "border-danger-500/80",
+                  currentOption ? "text-neutral-50" : "text-neutral-400",
+                ),
+          disabled && "opacity-50 cursor-not-allowed",
+          triggerClassName,
+        )}
+      >
+        <span
+          className={cn(
+            "flex items-center truncate",
+            isInline ? "gap-1.5" : "gap-2",
+          )}
+        >
+          {activeIcon && (
+            <span className="shrink-0 flex items-center justify-center">
+              {activeIcon}
+            </span>
+          )}
+          <span className="truncate">{displayLabel}</span>
+        </span>
+        <ChevronDown
+          size={
+            isInline ? 12 : isFilter ? (compact ? 12 : 14) : compact ? 16 : 18
+          }
+          className={cn(
+            "text-neutral-400 transition-transform duration-200 shrink-0",
+            isOpen &&
+              (isInline || isFilter
+                ? "rotate-180 text-gold"
+                : "rotate-180 text-primary-light"),
+          )}
+        />
+      </button>
 
-      {/* Caixa de Opções Flutuante Customizada */}
       {isOpen &&
         !disabled &&
         (shouldRenderPortal
-          ? createPortal(dropdownMenu, document.body)
+          ? coords && createPortal(dropdownMenu, document.body)
           : dropdownMenu)}
+
+      {error && !isAutoWidth && (
+        <span
+          id={errorId}
+          role="alert"
+          className="text-xs text-danger-500 font-semibold mt-0.5"
+        >
+          {error}
+        </span>
+      )}
+      {hint && !error && !isAutoWidth && (
+        <span id={hintId} className="text-xs text-neutral-400 mt-0.5">
+          {hint}
+        </span>
+      )}
     </div>
   );
 }

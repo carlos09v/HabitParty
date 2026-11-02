@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Dices, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { MysteryBoxOpenResult } from "@/actions/inventoryActions";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { getRewardIcon } from "@/constants/reward";
@@ -21,6 +22,7 @@ export function MysteryBoxRouletteModal({
   item,
   onSuccess,
 }: MysteryBoxRouletteModalProps) {
+  const t = useTranslations("inventory.rouletteModal");
   const {
     phase,
     wonResult,
@@ -74,9 +76,7 @@ export function MysteryBoxRouletteModal({
           </h2>
         </div>
         <p className="text-label-g text-neutral-300">
-          {phase === "won"
-            ? "Parabéns! Veja o prêmio que você tirou nesta rodada:"
-            : "Role os dados da sorte e descubra qual prêmio sairá da sua caixa!"}
+          {phase === "won" ? t("subtitleWon") : t("subtitleIdle")}
         </p>
       </div>
 
@@ -95,11 +95,11 @@ export function MysteryBoxRouletteModal({
         {/* Viewport com overflow oculto e bordas degradê */}
         <div
           ref={containerRef}
-          className="relative w-full h-[164px] bg-neutral-950/80 border-2 border-primary/40 rounded-2xl overflow-hidden shadow-inner flex items-center"
+          className="relative w-full h-[164px] bg-surface/80 dark:bg-neutral-950/80 border-2 border-primary/40 rounded-2xl overflow-hidden shadow-inner flex items-center"
         >
           {/* Sombras de vinheta esquerda e direita */}
-          <div className="absolute left-0 inset-y-0 w-16 bg-gradient-to-r from-neutral-950 via-neutral-950/70 to-transparent z-10 pointer-events-none" />
-          <div className="absolute right-0 inset-y-0 w-16 bg-gradient-to-l from-neutral-950 via-neutral-950/70 to-transparent z-10 pointer-events-none" />
+          <div className="absolute left-0 inset-y-0 w-16 bg-gradient-to-r from-card via-card/70 dark:from-neutral-950 dark:via-neutral-950/70 to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 inset-y-0 w-16 bg-gradient-to-l from-card via-card/70 dark:from-neutral-950 dark:via-neutral-950/70 to-transparent z-10 pointer-events-none" />
 
           {/* Fita deslizante com os cards */}
           <div
@@ -161,8 +161,10 @@ export function MysteryBoxRouletteModal({
                     </span>
                     <span className="text-tiny text-neutral-400 truncate w-full">
                       {trackItem.minutes
-                        ? `Cupom ${trackItem.minutes}m`
-                        : "Uso Único"}
+                        ? t("trackCouponMinutes", {
+                            minutes: trackItem.minutes,
+                          })
+                        : t("trackSingleUse")}
                     </span>
                   </div>
                 </div>
@@ -184,7 +186,7 @@ export function MysteryBoxRouletteModal({
         <div className="w-full flex flex-col items-center gap-3 p-4 rounded-xl bg-gold/10 border border-gold/40 shadow-glow-gold-xs animate-in zoom-in-95 duration-200">
           <div className="flex items-center gap-2 text-gold font-bold text-body-m">
             <Sparkles size={18} className="animate-spin text-gold" />
-            <span>Prêmio Desbloqueado com Sucesso!</span>
+            <span>{t("prizeUnlockedTitle")}</span>
           </div>
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-gold/20 border border-gold/40 flex items-center justify-center text-gold shadow-md">
@@ -199,8 +201,10 @@ export function MysteryBoxRouletteModal({
               </span>
               <span className="text-label-g text-neutral-300">
                 {wonResult.remainingMinutes
-                  ? `Item de Foco (${wonResult.remainingMinutes} minutos)`
-                  : "Item de Uso Único direto da Mochila"}
+                  ? t("wonFocusItemMinutes", {
+                      minutes: wonResult.remainingMinutes,
+                    })
+                  : t("wonSingleUseItem")}
               </span>
             </div>
           </div>
@@ -214,17 +218,19 @@ export function MysteryBoxRouletteModal({
             type="button"
             disabled={isOpeningServer}
             onClick={handleSpin}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 via-gold to-orange-500 rounded-xl text-neutral-950 font-black text-body-m hover:brightness-110 active:scale-95 transition-all shadow-glow-gold-sm cursor-pointer disabled:opacity-50"
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 via-gold to-orange-500 rounded-xl text-on-gold font-black text-body-m hover:brightness-110 active:scale-95 transition-all shadow-glow-gold-sm cursor-pointer disabled:opacity-50"
           >
-            <Dices size={20} className="text-neutral-950" />
-            <span>{isOpeningServer ? "Sorteando..." : "Girar Roleta!"}</span>
+            <Dices size={20} className="text-on-gold" />
+            <span>
+              {isOpeningServer ? t("drawingButton") : t("spinButton")}
+            </span>
           </button>
         )}
 
         {isSpinning && (
           <div className="flex items-center gap-2 text-gold font-bold py-2 animate-pulse">
             <Sparkles size={18} />
-            <span>Girando a sorte...</span>
+            <span>{t("spinningStatus")}</span>
           </div>
         )}
 
@@ -235,7 +241,7 @@ export function MysteryBoxRouletteModal({
             className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-primary to-primary-dark border border-primary-light/40 rounded-xl text-neutral-50 font-bold text-body-s hover:brightness-110 active:scale-95 transition-all shadow-md cursor-pointer"
           >
             <Check size={18} />
-            <span>Guardar na Mochila</span>
+            <span>{t("storeInBackpackButton")}</span>
           </button>
         )}
       </div>

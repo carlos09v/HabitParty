@@ -1,6 +1,7 @@
 "use client";
 
 import { Coins, Sparkles, Zap } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
 import { soundEffects } from "@/utils/soundEffects";
@@ -10,6 +11,7 @@ import { DemoHabitCard } from "./demo/DemoHabitCard";
 import { DemoPlayerHeader } from "./demo/DemoPlayerHeader";
 
 export function LandingInteractiveDemo() {
+  const t = useTranslations("landing.demo");
   const [xp, setXp] = useState(720);
   const maxXp = 1000;
   const [level, setLevel] = useState(14);
@@ -51,12 +53,12 @@ export function LandingInteractiveDemo() {
     if (newXp >= maxXp) {
       setLevel((prev) => prev + 1);
       setXp(newXp - maxXp);
-      showToast(`🎉 SUBIU DE NÍVEL! Nível ${level + 1} alcançado!`);
+      showToast(t("toasts.habitLevelUp", { level: level + 1 }));
       triggerCelebrationConfetti(e.clientX, e.clientY);
       soundEffects.playTaskCompleteSound();
     } else {
       setXp(newXp);
-      showToast("+15 XP • +5 Moedas de Ouro!");
+      showToast(t("toasts.habitScored"));
       soundEffects.playHabitSound();
     }
   };
@@ -64,7 +66,7 @@ export function LandingInteractiveDemo() {
   const handleWaterMinus = () => {
     if (waterCount > 0) {
       setWaterCount((prev) => prev - 1);
-      showToast("Hábito decrementado");
+      showToast(t("toasts.habitDecremented"));
     }
   };
 
@@ -78,10 +80,10 @@ export function LandingInteractiveDemo() {
       if (newXp >= maxXp) {
         setLevel((prev) => prev + 1);
         setXp(newXp - maxXp);
-        showToast(`🎉 LEVEL UP! Nível ${level + 1}!`);
+        showToast(t("toasts.dailyLevelUp", { level: level + 1 }));
       } else {
         setXp(newXp);
-        showToast("⚔️ Missão Cumprida! +60 XP • +25 Ouro!");
+        showToast(t("toasts.dailyCompleted"));
       }
 
       triggerCelebrationConfetti(e.clientX, e.clientY);
@@ -91,7 +93,7 @@ export function LandingInteractiveDemo() {
       setStudyStreak((s) => Math.max(1, s - 1));
       setGold((g) => Math.max(0, g - 25));
       setXp((x) => Math.max(0, x - 60));
-      showToast("Missão reaberta");
+      showToast(t("toasts.dailyReopened"));
     }
   };
 
@@ -99,10 +101,10 @@ export function LandingInteractiveDemo() {
     if (!isTimerRunning) {
       setIsTimerRunning(true);
       soundEffects.playTimerStartSound("zen");
-      showToast("⏱️ Modo Hiperfoco Iniciado! Respire fundo.");
+      showToast(t("toasts.timerStarted"));
     } else {
       setIsTimerRunning(false);
-      showToast("Pausa no cronômetro.");
+      showToast(t("toasts.timerPaused"));
     }
   };
 
@@ -113,15 +115,12 @@ export function LandingInteractiveDemo() {
         <div className="text-center max-w-2xl mx-auto mb-12">
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-gold/10 border border-gold/30 text-gold text-xs font-semibold uppercase tracking-wider mb-3">
             <Sparkles className="w-3.5 h-3.5" />
-            Demonstração Interativa
+            {t("badge")}
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-neutral-50 tracking-tight">
-            Sinta a satisfação de evoluir na prática.
+            {t("title")}
           </h2>
-          <p className="mt-3 text-base text-neutral-300">
-            Clique nos botões e tarefas abaixo. No HabitParty, cada esforço real
-            gera recompensas imediatas com som, XP e moedas de ouro.
-          </p>
+          <p className="mt-3 text-base text-neutral-300">{t("subtitle")}</p>
         </div>
 
         {/* Mockup da Janela do App */}
@@ -133,17 +132,17 @@ export function LandingInteractiveDemo() {
               <div className="w-3 h-3 rounded-full bg-warning-500/80" />
               <div className="w-3 h-3 rounded-full bg-success-500/80" />
               <span className="ml-2 text-xs font-medium text-neutral-400 hidden sm:inline">
-                HabitParty Cosmic Studio • Demonstração ao Vivo
+                {t("windowTitle")}
               </span>
             </div>
             <div className="flex items-center gap-4 text-xs font-medium text-neutral-200">
               <span className="flex items-center gap-1 text-gold font-bold">
                 <Coins className="w-4 h-4 fill-gold text-gold" />
-                {gold} Ouro
+                {t("goldStatus", { gold })}
               </span>
-              <span className="flex items-center gap-1 text-primary-light font-bold">
-                <Zap className="w-4 h-4 text-primary-light fill-primary-light" />
-                Nível {level}
+              <span className="flex items-center gap-1 text-primary dark:text-primary-light font-bold">
+                <Zap className="w-4 h-4 text-primary fill-primary dark:text-primary-light dark:fill-primary-light" />
+                {t("levelStatus", { level })}
               </span>
             </div>
           </div>
@@ -176,21 +175,17 @@ export function LandingInteractiveDemo() {
           <div className="px-6 py-3.5 bg-surface/90 dark:bg-neutral-900/70 border-t border-neutral-700 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-neutral-300">
             <div className="flex items-center gap-2">
               <span className="inline-block w-2 h-2 rounded-full bg-success-500 animate-ping" />
-              <span>
-                Simulação interativa: clique nos botões para sentir a sensação
-                imediata de recompensa.
-              </span>
+              <span>{t("footerHint")}</span>
             </div>
             <span className="text-gold font-semibold">
-              No HabitParty: seus hábitos diários viram ouro e evolução de
-              verdade ✨
+              {t("footerHighlight")}
             </span>
           </div>
 
           {/* Toast de Recompensa Flutuante */}
           {toastMessage && (
             <div className="absolute top-4 right-4 z-30 animate-in fade-in slide-in-from-top-3 duration-300">
-              <div className="px-4 py-2.5 rounded-xl bg-gold text-neutral-950 font-bold text-xs shadow-glow-gold flex items-center gap-2 border border-yellow-200">
+              <div className="px-4 py-2.5 rounded-xl bg-gold text-neutral-950 font-bold text-xs shadow-glow-gold flex items-center gap-2 border border-gold-hover/40 dark:border-yellow-200">
                 <Sparkles className="w-4 h-4 fill-neutral-950" />
                 <span>{toastMessage}</span>
               </div>

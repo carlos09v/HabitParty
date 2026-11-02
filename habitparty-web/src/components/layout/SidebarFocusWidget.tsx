@@ -10,9 +10,10 @@ import {
   VolumeX,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { type MouseEvent, useEffect, useState } from "react";
 import { getFocusIcon } from "@/constants/focus";
-import { AMBIENT_ICONS, AMBIENT_SOUND_OPTIONS } from "@/constants/settings";
+import { AMBIENT_ICONS } from "@/constants/settings";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
 import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
 import { cn } from "@/utils";
@@ -21,6 +22,7 @@ import { soundEffects } from "@/utils/soundEffects";
 
 export function SidebarFocusWidget() {
   const router = useRouter();
+  const t = useTranslations("focusWidget");
   const [mounted, setMounted] = useState(false);
 
   // Estados do Timer
@@ -72,8 +74,13 @@ export function SidebarFocusWidget() {
 
   const AmbientIcon = AMBIENT_ICONS[ambientSoundType] || Volume2;
   const ambientLabel =
-    AMBIENT_SOUND_OPTIONS.find((s) => s.id === ambientSoundType)?.label ||
-    "Ambiente";
+    ambientSoundType === "rain" ||
+    ambientSoundType === "cafe" ||
+    ambientSoundType === "fire" ||
+    ambientSoundType === "lofi" ||
+    ambientSoundType === "none"
+      ? t(`ambientSounds.${ambientSoundType}`)
+      : t("ambientSounds.default");
 
   // CASO 1: Apenas Som Ambiente Ativo (sem timer)
   if (!hasActiveTimer && hasActiveAmbient) {
@@ -86,8 +93,8 @@ export function SidebarFocusWidget() {
             handleCardClick();
           }
         }}
-        title="Som ambiente de foco ativo. Clique para ir à tela de Foco"
-        aria-label="Som ambiente ativo"
+        title={t("activeAmbientTitle")}
+        aria-label={t("activeAmbientAria")}
         className="group relative flex flex-col gap-1.5 p-2 rounded-lg border border-gold/60 bg-gold/10 hover:border-gold hover:bg-gold/15 transition-all cursor-pointer select-none text-left shadow-glow-gold-xs mb-2.5"
       >
         <div className="flex items-center justify-between gap-1 min-w-0">
@@ -100,7 +107,7 @@ export function SidebarFocusWidget() {
                 {ambientLabel}
               </span>
               <span className="text-label-m text-gold/90 font-medium leading-none">
-                Som de Foco Ativo
+                {t("activeFocusSound")}
               </span>
             </div>
           </div>
@@ -112,8 +119,8 @@ export function SidebarFocusWidget() {
             <button
               type="button"
               onClick={handleStopAmbient}
-              title="Desligar Som Ambiente"
-              aria-label="Desligar Som Ambiente"
+              title={t("turnOffAmbient")}
+              aria-label={t("turnOffAmbient")}
               className="w-5 h-5 rounded flex items-center justify-center border border-primary/30 bg-surface/80 text-neutral-400 hover:text-red-400 hover:border-red-500/40 hover:bg-red-500/10 transition-all cursor-pointer shadow-xs ml-0.5"
             >
               <VolumeX size={10} />
@@ -145,8 +152,8 @@ export function SidebarFocusWidget() {
           handleCardClick();
         }
       }}
-      title="Sessão de foco ativa. Clique para abrir a tela de Foco"
-      aria-label="Sessão de foco ativa. Clique para ir à tela de Foco"
+      title={t("activeSessionTitle")}
+      aria-label={t("activeSessionAria")}
       className={cn(
         "group relative flex flex-col gap-1.5 p-2 rounded-lg border transition-all cursor-pointer select-none text-left shadow-xs mb-2.5",
         isRunning
@@ -169,7 +176,7 @@ export function SidebarFocusWidget() {
           </div>
 
           <span className="text-label-g font-bold text-neutral-100 group-hover:text-gold transition-colors truncate">
-            {target?.name || "Modo Foco"}
+            {target?.name || t("defaultModeName")}
           </span>
         </div>
 
@@ -184,10 +191,10 @@ export function SidebarFocusWidget() {
           )}
         >
           {isInventory
-            ? "Mochila"
+            ? t("modeBackpack")
             : mode === "POMO"
-              ? "Pomodoro"
-              : "Cronômetro"}
+              ? t("modePomodoro")
+              : t("modeStopwatch")}
         </span>
       </div>
 
@@ -216,12 +223,12 @@ export function SidebarFocusWidget() {
               e.stopPropagation();
               toggleTimer();
             }}
-            title={isRunning ? "Pausar Foco" : "Continuar Foco"}
-            aria-label={isRunning ? "Pausar" : "Continuar"}
+            title={isRunning ? t("pauseTitle") : t("resumeTitle")}
+            aria-label={isRunning ? t("pauseAria") : t("resumeAria")}
             className={cn(
               "w-5 h-5 rounded flex items-center justify-center border transition-all cursor-pointer shadow-xs",
               isRunning
-                ? "bg-gold text-neutral-900 border-gold hover:bg-gold-hover"
+                ? "bg-gold text-on-gold border-gold hover:bg-gold-hover"
                 : "bg-surface hover:bg-gold/20 text-neutral-200 hover:text-gold border-primary/30",
             )}
           >
@@ -245,13 +252,13 @@ export function SidebarFocusWidget() {
               }}
               title={
                 mode === "POMO" && secondsRemaining > 0 && !isInventory
-                  ? "Salvar tempo parcial (ciclo incompleto)"
-                  : "Concluir sessão e salvar registro"
+                  ? t("savePartialTitle")
+                  : t("completeSaveTitle")
               }
               aria-label={
                 mode === "POMO" && secondsRemaining > 0 && !isInventory
-                  ? "Salvar tempo parcial"
-                  : "Concluir e Salvar"
+                  ? t("savePartialAria")
+                  : t("completeSaveAria")
               }
               className="w-5 h-5 rounded flex items-center justify-center border border-emerald-500/40 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 hover:border-emerald-400 transition-all cursor-pointer shadow-xs"
             >
@@ -268,8 +275,8 @@ export function SidebarFocusWidget() {
                 resetTimer();
                 router.refresh();
               }}
-              title="Parar / Reiniciar tempo"
-              aria-label="Parar"
+              title={t("stopResetTitle")}
+              aria-label={t("stopAria")}
               className="w-5 h-5 rounded flex items-center justify-center border border-primary/30 bg-surface/80 text-neutral-400 hover:text-red-400 hover:border-red-500/40 hover:bg-red-500/10 transition-all cursor-pointer shadow-xs"
             >
               <RotateCcw size={9} />
@@ -291,12 +298,12 @@ export function SidebarFocusWidget() {
           <button
             type="button"
             onClick={handleStopAmbient}
-            title="Desligar Som Ambiente"
-            aria-label="Desligar Som Ambiente"
+            title={t("turnOffAmbient")}
+            aria-label={t("turnOffAmbient")}
             className="flex items-center gap-0.5 text-neutral-400 hover:text-red-400 transition-colors p-0.5 rounded cursor-pointer shrink-0"
           >
             <VolumeX size={10} />
-            <span className="text-label-m">Parar</span>
+            <span className="text-label-m">{t("stopLabel")}</span>
           </button>
         </div>
       )}

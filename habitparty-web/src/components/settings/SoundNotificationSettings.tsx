@@ -11,6 +11,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { SettingsCard } from "@/components/settings/SettingsCard";
 import { SettingToggleRow } from "@/components/settings/SettingToggleRow";
@@ -33,26 +34,12 @@ interface SoundNotificationSettingsProps {
   isCompact?: boolean;
 }
 
-const ALARM_TONE_OPTIONS: readonly {
-  id: TimerSoundType;
-  label: string;
-  description: string;
-}[] = [
-  {
-    id: "zen",
-    label: "Sino Zen Suave",
-    description: "Harmônico 528Hz focado em calma",
-  },
-  {
-    id: "arcade",
-    label: "Arcade Retrô",
-    description: "Bips eletrônicos ascendentes gamificados",
-  },
-] as const;
+const ALARM_TONE_IDS: readonly TimerSoundType[] = ["zen", "arcade"] as const;
 
 export function SoundNotificationSettings({
   isCompact = false,
 }: SoundNotificationSettingsProps) {
+  const t = useTranslations("settings.soundNotifications");
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   const {
@@ -100,8 +87,8 @@ export function SoundNotificationSettings({
   return (
     <>
       <SettingsCard
-        title="Preferências de Notificações & Sons"
-        description="Personalize o feedback auditivo das suas ações no aplicativo, alarmes do Pomodoro e ruídos ambientes de foco."
+        title={t("cardTitle")}
+        description={t("cardDesc")}
         icon={<Volume2 className="text-gold" size={20} />}
         isCompact={isCompact}
       >
@@ -110,15 +97,15 @@ export function SoundNotificationSettings({
           <SettingToggleRow
             icon={<Bell size={18} />}
             iconWrapperClassName="bg-magenta/15 text-magenta border-magenta/30"
-            title="Notificações de Foco do Navegador"
-            description="Receba um aviso na área de trabalho quando uma sessão de foco ou pausa terminar, mesmo em outra aba."
+            title={t("browserTitle")}
+            description={t("browserDesc")}
             statusBadge={{
               label:
                 notificationPermission === "denied"
-                  ? "Bloqueado pelo Navegador"
+                  ? t("browserDenied")
                   : isNotificationActive
-                    ? "Ativado"
-                    : "Desativado",
+                    ? t("statusActive")
+                    : t("statusInactive"),
               className: isNotificationActive
                 ? "bg-green-500/15 text-green-400 border-green-500/30"
                 : notificationPermission === "denied"
@@ -129,15 +116,13 @@ export function SoundNotificationSettings({
               <Switch
                 checked={isNotificationActive}
                 onCheckedChange={toggleBrowserNotifications}
-                aria-label="Ativar notificações do navegador para término de sessões"
+                aria-label={t("browserAria")}
               />
             }
             footer={
               notificationPermission === "denied" ? (
                 <p className="text-xs text-red-400/90 pl-12">
-                  As notificações estão bloqueadas nas permissões do seu
-                  navegador. Para reativar, clique no ícone de cadeado na barra
-                  de endereços e permita notificações para o HabitParty.
+                  {t("browserDeniedHelp")}
                 </p>
               ) : undefined
             }
@@ -149,10 +134,10 @@ export function SoundNotificationSettings({
           <SettingToggleRow
             icon={<MousePointerClick size={18} />}
             iconWrapperClassName="bg-gold/15 text-gold border-gold/30"
-            title="Sons de Cliques & Conquistas"
-            description="Feedback de áudio ao completar tarefas, avançar hábitos e comprar recompensas."
+            title={t("uiSoundsTitle")}
+            description={t("uiSoundsDesc")}
             statusBadge={{
-              label: uiSoundsEnabled ? "Ativado" : "Silenciado",
+              label: uiSoundsEnabled ? t("statusActive") : t("statusMuted"),
               className: uiSoundsEnabled
                 ? "bg-gold/15 text-gold border-gold/30"
                 : "bg-white/5 text-neutral-400 border-white/10",
@@ -161,7 +146,7 @@ export function SoundNotificationSettings({
               <Switch
                 checked={uiSoundsEnabled}
                 onCheckedChange={toggleUiSounds}
-                aria-label="Ativar ou silenciar sons de clique e gamificação"
+                aria-label={t("uiSoundsAria")}
               />
             }
           />
@@ -173,10 +158,12 @@ export function SoundNotificationSettings({
             <SettingToggleRow
               icon={<Bell size={18} />}
               iconWrapperClassName="bg-primary-dark/40 text-primary-light border-primary/30"
-              title="Alarmes do Pomodoro & Pausas"
-              description="Tocar sinos sonoros ao iniciar o foco, nas pausas e ao concluir os ciclos."
+              title={t("pomodoroTitle")}
+              description={t("pomodoroDesc")}
               statusBadge={{
-                label: timerSoundsEnabled ? "Ativado" : "Mudo",
+                label: timerSoundsEnabled
+                  ? t("statusActive")
+                  : t("statusSilent"),
                 className: timerSoundsEnabled
                   ? "bg-gold/15 text-gold border-gold/30"
                   : "bg-white/5 text-neutral-400 border-white/10",
@@ -185,7 +172,7 @@ export function SoundNotificationSettings({
                 <Switch
                   checked={timerSoundsEnabled}
                   onCheckedChange={toggleTimerSounds}
-                  aria-label="Ativar ou desativar alarmes do Pomodoro"
+                  aria-label={t("pomodoroAria")}
                 />
               }
             />
@@ -207,7 +194,7 @@ export function SoundNotificationSettings({
                     <Volume2 size={18} className="text-gold" />
                   )}
                   <span className="text-body-s font-bold text-neutral-200">
-                    Volume dos Alarmes
+                    {t("alarmVolume")}
                   </span>
                 </div>
 
@@ -223,10 +210,10 @@ export function SoundNotificationSettings({
                         timerVolume,
                       )
                     }
-                    className="px-2.5 py-1 text-xs font-bold rounded-lg bg-gold text-neutral-900 hover:bg-gold-hover transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
+                    className="px-2.5 py-1 text-xs font-bold rounded-lg bg-gold text-on-gold hover:bg-gold-hover transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
                   >
                     <Sparkles size={13} />
-                    Testar
+                    {t("testBtn")}
                   </button>
                 </div>
               </div>
@@ -242,7 +229,7 @@ export function SoundNotificationSettings({
                   step="5"
                   value={timerVolumePercent}
                   onChange={(e) => setTimerVolume(Number(e.target.value) / 100)}
-                  aria-label="Volume do alarme do Pomodoro"
+                  aria-label={t("volumeAria")}
                   className="w-full h-2 rounded-lg bg-surface/80 appearance-none cursor-pointer accent-gold"
                 />
                 <span className="text-xs text-neutral-400 font-semibold">
@@ -253,21 +240,19 @@ export function SoundNotificationSettings({
               {/* ESTILO DO SOM */}
               <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
                 <span className="text-xs font-semibold text-neutral-300">
-                  Tom do Alarme:
+                  {t("toneLabel")}
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {ALARM_TONE_OPTIONS.map((tone) => {
-                    const isSelected = timerSoundType === tone.id;
+                  {ALARM_TONE_IDS.map((toneId) => {
+                    const isSelected = timerSoundType === toneId;
+
                     return (
                       <button
-                        key={tone.id}
+                        key={toneId}
                         type="button"
                         onClick={() => {
-                          setTimerSoundType(tone.id);
-                          soundEffects.playTimerStartSound(
-                            tone.id,
-                            timerVolume,
-                          );
+                          setTimerSoundType(toneId);
+                          soundEffects.playTimerStartSound(toneId, timerVolume);
                         }}
                         className={cn(
                           "p-3 rounded-xl border text-left flex items-center justify-between gap-3 transition-all cursor-pointer",
@@ -278,10 +263,10 @@ export function SoundNotificationSettings({
                       >
                         <div className="flex flex-col">
                           <span className="text-xs font-bold text-neutral-100">
-                            {tone.label}
+                            {t(`tones.${toneId}.label`)}
                           </span>
                           <span className="text-label-g text-neutral-400">
-                            {tone.description}
+                            {t(`tones.${toneId}.description`)}
                           </span>
                         </div>
                         {isSelected && (
@@ -304,21 +289,21 @@ export function SoundNotificationSettings({
               iconWrapperClassName="bg-gold/15 text-gold border-gold/30"
               title={
                 <>
-                  <span>Sons de Foco Ambiente</span>
+                  <span>{t("ambientTitle")}</span>
                   <span className="text-tiny font-black uppercase px-2 py-0.5 rounded bg-gold/20 text-gold border border-gold/40">
-                    VIP
+                    {t("vipBadge")}
                   </span>
                 </>
               }
-              description="Ruídos procedurais e atmosferas relaxantes geradas pelo navegador para bloquear distrações."
+              description={t("ambientDesc")}
               rightControl={
                 !isPremium ? (
                   <button
                     type="button"
                     onClick={() => setIsUpgradeModalOpen(true)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gold text-neutral-900 hover:bg-gold-hover cursor-pointer shrink-0 shadow-xs"
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover cursor-pointer shrink-0 shadow-xs"
                   >
-                    Liberar VIP
+                    {t("unlockVip")}
                   </button>
                 ) : null
               }
@@ -360,10 +345,10 @@ export function SoundNotificationSettings({
                         </span>
                         <div className="flex flex-col min-w-0">
                           <span className="text-xs truncate">
-                            {sound.label}
+                            {t(`ambientSounds.${sound.id}.label`)}
                           </span>
                           <span className="text-tiny text-neutral-400 truncate">
-                            {sound.description}
+                            {t(`ambientSounds.${sound.id}.description`)}
                           </span>
                         </div>
                       </div>
@@ -383,7 +368,7 @@ export function SoundNotificationSettings({
                   <div className="flex items-center justify-between text-xs text-neutral-300">
                     <span className="flex items-center gap-1.5 font-semibold">
                       <Sliders size={13} className="text-gold" />
-                      Volume do Som Ambiente
+                      {t("ambientVolumeTitle")}
                     </span>
                     <span className="font-mono font-bold text-gold">
                       {ambientVolumePercent}%
@@ -402,7 +387,7 @@ export function SoundNotificationSettings({
                       onChange={(e) =>
                         changeAmbientVolume(parseFloat(e.target.value))
                       }
-                      aria-label="Volume padrão do som ambiente"
+                      aria-label={t("ambientVolumeAria")}
                       className="w-full h-1.5 bg-primary/40 rounded-lg appearance-none cursor-pointer accent-gold"
                     />
                     <span className="text-xs text-neutral-400 font-semibold">

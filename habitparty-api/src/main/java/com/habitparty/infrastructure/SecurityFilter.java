@@ -49,8 +49,11 @@ public class SecurityFilter extends OncePerRequestFilter {
   }
 
   private String recoverToken(HttpServletRequest request) {
-        var authHeader = request.getHeader("Authorization");
-        if (authHeader == null) return null;
-        return authHeader.replace("Bearer ", "");
+    var authHeader = request.getHeader("Authorization");
+    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+      return null;
     }
+    String token = authHeader.substring(7).trim();
+    return token.isEmpty() ? null : token;
+  }
 }

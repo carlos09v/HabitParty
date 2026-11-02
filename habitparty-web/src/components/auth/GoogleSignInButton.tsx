@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { type ButtonHTMLAttributes, useState } from "react";
 import { GoogleLogoIcon } from "@/components/ui/GoogleLogoIcon";
 import { cn } from "@/utils";
@@ -12,15 +13,17 @@ interface GoogleSignInButtonProps
 }
 
 export function GoogleSignInButton({
-  label = "Continuar com Google",
+  label,
   isPending: externalPending,
   className,
   disabled,
   onClick,
   ...props
 }: GoogleSignInButtonProps) {
+  const t = useTranslations("auth.oauth");
   const [internalPending, setInternalPending] = useState(false);
   const isPending = externalPending ?? internalPending;
+  const resolvedLabel = label ?? t("googleButton");
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (onClick) {
@@ -68,11 +71,11 @@ export function GoogleSignInButton({
       {...props}
     >
       {isPending ? (
-        <Loader2 className="w-5 h-5 shrink-0 animate-spin text-neutral-600 dark:text-neutral-700" />
+        <Loader2 className="w-5 h-5 shrink-0 animate-spin text-neutral-300 dark:text-neutral-700" />
       ) : (
         <GoogleLogoIcon className="w-5 h-5" />
       )}
-      <span>{isPending ? "Conectando ao Google..." : label}</span>
+      <span>{isPending ? t("googleConnecting") : resolvedLabel}</span>
     </button>
   );
 }

@@ -1,12 +1,14 @@
 import type { LucideIcon } from "lucide-react";
+import type { ExperienceMode } from "./ui";
 
 export type UsageMode = "personal" | "studies" | "work" | "all";
 
 export interface ModeOption {
   id: UsageMode;
-  title: string;
-  description: string;
   icon: LucideIcon;
-  defaultWorkspace: string;
-  chips: string[];
+}
+
+export interface ExperienceModeOption {
+  id: ExperienceMode;
+  icon: LucideIcon;
 }

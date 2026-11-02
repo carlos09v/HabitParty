@@ -1,4 +1,5 @@
-import { Minus, Plus, RotateCcw } from "lucide-react";
+import { ArrowLeftRight, Minus, Plus, RotateCcw } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { Select } from "@/components/ui/Select";
 import { HABIT_RESET_OPTIONS } from "@/constants/task";
@@ -11,6 +12,8 @@ interface HabitFieldsProps {
 }
 
 export function HabitFields({ form }: HabitFieldsProps) {
+  const t = useTranslations("tasks.taskModal.habitFields");
+  const tOptions = useTranslations("tasks.options");
   const { habitType, setHabitType, resetCounter, setResetCounter, isPending } =
     form;
 
@@ -18,9 +21,54 @@ export function HabitFields({ form }: HabitFieldsProps) {
     <div className="flex flex-col gap-4 animate-in fade-in duration-150">
       {/* Tipo de Hábito (Positivo / Negativo / Ambos) */}
       <div className="flex flex-col gap-2">
-        <span className="text-body-s text-neutral-300 font-medium">
-          Direção do Hábito
-        </span>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <span className="text-body-s text-neutral-100 font-medium">
+              {t("directionLabel")}
+            </span>
+            <InfoTooltip
+              title={t("directionTooltipTitle")}
+              icon={<ArrowLeftRight size={14} className="text-gold shrink-0" />}
+              ariaLabel={t("directionTooltipAria")}
+              size={14}
+            >
+              <p className="text-neutral-300 leading-relaxed text-label-g">
+                {t("directionTooltipIntro")}
+              </p>
+
+              <ul className="flex flex-col gap-1.5 py-1 text-label-g text-neutral-200">
+                <li className="flex items-start gap-1.5">
+                  <span className="text-success-500 font-bold shrink-0">
+                    {t("positiveBulletLabel")}
+                  </span>
+                  <span className="text-neutral-300">
+                    {t.rich("positiveBulletDesc", {
+                      bold: (chunks) => <strong>{chunks}</strong>,
+                    })}
+                  </span>
+                </li>
+                <li className="flex items-start gap-1.5">
+                  <span className="text-danger-500 font-bold shrink-0">
+                    {t("negativeBulletLabel")}
+                  </span>
+                  <span className="text-neutral-300">
+                    {t.rich("negativeBulletDesc", {
+                      bold: (chunks) => <strong>{chunks}</strong>,
+                    })}
+                  </span>
+                </li>
+                <li className="flex items-start gap-1.5">
+                  <span className="text-purple-400 font-bold shrink-0">
+                    {t("bothBulletLabel")}
+                  </span>
+                  <span className="text-neutral-300">
+                    {t("bothBulletDesc")}
+                  </span>
+                </li>
+              </ul>
+            </InfoTooltip>
+          </div>
+        </div>
         <div className="grid grid-cols-3 gap-2">
           <button
             type="button"
@@ -34,7 +82,7 @@ export function HabitFields({ form }: HabitFieldsProps) {
             )}
           >
             <Plus size={16} />
-            <span>Positivo</span>
+            <span>{t("positiveOption")}</span>
           </button>
 
           <button
@@ -49,7 +97,7 @@ export function HabitFields({ form }: HabitFieldsProps) {
             )}
           >
             <Minus size={16} />
-            <span>Negativo</span>
+            <span>{t("negativeOption")}</span>
           </button>
 
           <button
@@ -63,7 +111,7 @@ export function HabitFields({ form }: HabitFieldsProps) {
                 : "border-primary/30 bg-primary-dark/20 text-neutral-300 hover:text-gold hover:border-gold/40",
             )}
           >
-            <span>+/- Ambos</span>
+            <span>{t("bothOption")}</span>
           </button>
         </div>
       </div>
@@ -72,44 +120,46 @@ export function HabitFields({ form }: HabitFieldsProps) {
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center gap-1.5">
           <span className="text-xs font-medium text-neutral-100">
-            Reiniciar Contador (Reset)
+            {t("resetLabel")}
           </span>
 
           <InfoTooltip
-            title="Frequência de Reinício do Contador"
+            title={t("resetTooltipTitle")}
             icon={<RotateCcw size={14} className="text-gold" />}
-            ariaLabel="Entenda o que é o Reiniciar Contador"
+            ariaLabel={t("resetTooltipAria")}
             size={14}
           >
             <p className="text-neutral-300 leading-relaxed text-label-g">
-              Define com que frequência os contadores de repetições (saldo +/-)
-              voltam a zero para você reiniciar a contagem:
+              {t("resetTooltipIntro")}
             </p>
 
             <ul className="flex flex-col gap-1.5 py-1 text-label-g text-neutral-200">
               <li className="flex items-start gap-1.5">
-                <span className="text-gold font-bold shrink-0">• Diário:</span>
-                <span className="text-neutral-300">
-                  Zera todo dia à meia-noite (ex: beber água, treino diário).
+                <span className="text-gold font-bold shrink-0">
+                  {t("resetDailyLabel")}
                 </span>
+                <span className="text-neutral-300">{t("resetDailyDesc")}</span>
               </li>
               <li className="flex items-start gap-1.5">
-                <span className="text-gold font-bold shrink-0">• Semanal:</span>
-                <span className="text-neutral-300">
-                  Zera toda segunda-feira (ex: ir à academia 3x na semana).
+                <span className="text-gold font-bold shrink-0">
+                  {t("resetWeeklyLabel")}
                 </span>
+                <span className="text-neutral-300">{t("resetWeeklyDesc")}</span>
               </li>
               <li className="flex items-start gap-1.5">
-                <span className="text-gold font-bold shrink-0">• Mensal:</span>
+                <span className="text-gold font-bold shrink-0">
+                  {t("resetMonthlyLabel")}
+                </span>
                 <span className="text-neutral-300">
-                  Zera no dia 1º de cada mês (ex: ler 2 livros no mês).
+                  {t("resetMonthlyDesc")}
                 </span>
               </li>
             </ul>
 
             <div className="text-tiny text-neutral-400 bg-white/5 rounded-md p-1.5 border border-white/10 italic">
-              🛡️ Sua ofensiva (Streak) e moedas acumuladas <strong>NÃO</strong>{" "}
-              são perdidas quando o contador reinicia!
+              {t.rich("resetStreakNote", {
+                bold: (chunks) => <strong>{chunks}</strong>,
+              })}
             </div>
           </InfoTooltip>
         </div>
@@ -117,7 +167,7 @@ export function HabitFields({ form }: HabitFieldsProps) {
         <Select
           options={HABIT_RESET_OPTIONS.map((opt) => ({
             value: opt.id,
-            label: opt.label,
+            label: tOptions(`resets.${opt.id}`),
           }))}
           value={resetCounter}
           onChange={(val) => setResetCounter(val as ResetCounterOption)}

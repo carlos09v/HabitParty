@@ -6,14 +6,18 @@ import {
   Crown,
   Loader2,
   Lock,
+  Pencil,
   Plus,
   Trash2,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { toast } from "sonner";
 import {
   createWorkspaceAction,
   deleteWorkspaceAction,
+  updateWorkspaceAction,
 } from "@/actions/workspaceActions";
 import { UpgradePremiumModal } from "@/components/subscription/UpgradePremiumModal";
 import { useUserStore } from "@/store/userStore";
@@ -25,17 +29,24 @@ import { DeleteWorkspaceModal } from "./DeleteWorkspaceModal";
 interface WorkspaceSwitcherProps {
   onDeleteWorkspace?: (id: string) => void;
   onCreateWorkspace?: (name: string) => void;
+  onUpdateWorkspace?: (id: string, name: string) => void;
   className?: string;
 }
 
 export function WorkspaceSwitcher({
   onDeleteWorkspace,
   onCreateWorkspace,
+  onUpdateWorkspace,
   className,
 }: WorkspaceSwitcherProps) {
+  const t = useTranslations("workspace");
   const [isOpen, setIsOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [workspaceToEdit, setWorkspaceToEdit] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [workspaceToDelete, setWorkspaceToDelete] = useState<{
     id: string;
     name: string;
@@ -118,7 +129,44 @@ export function WorkspaceSwitcher({
         });
       } else {
         console.error(response.error);
-        alert(response.error || "Erro ao criar workspace");
+        toast.error(response.error || t("createError"));
+      }
+    });
+  };
+
+  const handleOpenEditModal = (
+    e: React.MouseEvent,
+    ws: { id?: string; name?: string },
+  ) => {
+    e.stopPropagation();
+    setWorkspaceToEdit({
+      id: ws.id as string,
+      name: ws.name || "",
+    });
+  };
+
+  const handleUpdate = (name: string) => {
+    if (!workspaceToEdit) return;
+    const id = workspaceToEdit.id;
+
+    startTransition(async () => {
+      const response = await updateWorkspaceAction(id, { name });
+      if (response.success) {
+        if (onUpdateWorkspace) {
+          onUpdateWorkspace(id, name);
+        }
+        // Atualiza a store localmente para refletir instantaneamente a edição
+        const updatedName = response.data.name || name;
+        const updatedWorkspaces = workspaces.map((w) =>
+          w.id === id ? { ...w, name: updatedName } : w,
+        );
+        useWorkspaceStore.setState({
+          workspaces: updatedWorkspaces,
+        });
+        setWorkspaceToEdit(null);
+      } else {
+        console.error(response.error);
+        toast.error(response.error || t("updateError"));
       }
     });
   };
@@ -130,7 +178,7 @@ export function WorkspaceSwitcher({
     e.stopPropagation();
     setWorkspaceToDelete({
       id: ws.id as string,
-      name: ws.name || "Sem nome",
+      name: ws.name || t("unnamed"),
     });
   };
 
@@ -156,7 +204,7 @@ export function WorkspaceSwitcher({
         setWorkspaceToDelete(null);
       } else {
         console.error(response.error);
-        alert(response.error || "Erro ao deletar workspace");
+        toast.error(response.error || t("deleteError"));
       }
     });
   };
@@ -177,10 +225,10 @@ export function WorkspaceSwitcher({
             </div>
             <div className="flex flex-col items-start min-w-0">
               <span className="text-[10px] uppercase tracking-wider text-gold-pressed font-bold leading-tight">
-                Ambiente
+                {t("label")}
               </span>
               <span className="text-body-s text-neutral-50 font-bold truncate max-w-[130px]">
-                {activeWorkspace?.name || "Nenhum"}
+                {activeWorkspace?.name || t("none")}
               </span>
             </div>
           </div>
@@ -198,9 +246,12 @@ export function WorkspaceSwitcher({
           <div className="absolute top-full right-0 sm:left-0 mt-2 min-w-[210px] w-full bg-popover/95 border border-primary/40 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col backdrop-blur-md animate-in fade-in zoom-in-95 duration-100">
             {/* Cabeçalho com indicador de contagem */}
             <div className="flex items-center justify-between px-3 py-1.5 border-b border-primary/20 bg-background/40 text-tiny text-neutral-400 font-semibold select-none">
-              <span>Seus Ambientes</span>
+              <span>{t("yourWorkspaces")}</span>
               <span className="text-gold font-bold font-mono">
-                {workspaces.length} de {maxWorkspaces}
+                {t("counter", {
+                  current: workspaces.length,
+                  max: maxWorkspaces,
+                })}
               </span>
             </div>
 
@@ -228,7 +279,7 @@ export function WorkspaceSwitcher({
                         className={cn(
                           "w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold shrink-0",
                           isActive
-                            ? "bg-gold text-neutral-900"
+                            ? "bg-gold text-on-gold"
                             : "bg-white/10 text-neutral-300",
                         )}
                       >
@@ -246,17 +297,33 @@ export function WorkspaceSwitcher({
                       </span>
                     </button>
 
-                    {canDelete && (
+                    <div className="flex items-center gap-0.5 shrink-0">
                       <button
                         type="button"
-                        onClick={(e) => handleOpenDeleteModal(e, ws)}
+                        onClick={(e) => handleOpenEditModal(e, ws)}
                         disabled={isPending}
-                        className="text-neutral-400 hover:text-red-400 p-1 rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-red-400/50 disabled:opacity-50 cursor-pointer"
-                        aria-label={`Excluir ambiente ${ws.name}`}
+                        className="text-neutral-400 hover:text-gold p-1 rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-gold/50 disabled:opacity-50 cursor-pointer"
+                        aria-label={t("editAria", {
+                          name: ws.name || t("unnamed"),
+                        })}
                       >
-                        <Trash2 size={16} />
+                        <Pencil size={15} />
                       </button>
-                    )}
+
+                      {canDelete && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleOpenDeleteModal(e, ws)}
+                          disabled={isPending}
+                          className="text-neutral-400 hover:text-red-400 p-1 rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-red-400/50 disabled:opacity-50 cursor-pointer"
+                          aria-label={t("deleteAria", {
+                            name: ws.name || t("unnamed"),
+                          })}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
                   </li>
                 );
               })}
@@ -269,7 +336,9 @@ export function WorkspaceSwitcher({
                       e.stopPropagation();
                       setIsBlockedExpanded(!isBlockedExpanded);
                     }}
-                    title={`${blockedWorkspaces.length} ambientes preservados do período Premium. Clique para expandir ou recolher.`}
+                    title={t("lockedPreservedTitle", {
+                      count: blockedWorkspaces.length,
+                    })}
                     className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gold/90 hover:text-gold bg-gold/5 hover:bg-gold/15 border border-gold/20 hover:border-gold/40 transition-all cursor-pointer group text-left"
                     aria-expanded={isBlockedExpanded}
                   >
@@ -279,10 +348,9 @@ export function WorkspaceSwitcher({
                         className="text-gold/70 group-hover:text-gold shrink-0"
                       />
                       <span className="truncate">
-                        {blockedWorkspaces.length}{" "}
-                        {blockedWorkspaces.length === 1
-                          ? "ambiente bloqueado"
-                          : "ambientes bloqueados"}
+                        {t("lockedCount", {
+                          count: blockedWorkspaces.length,
+                        })}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0 ml-1">
@@ -319,13 +387,15 @@ export function WorkspaceSwitcher({
                               type="button"
                               onClick={() => handleSelect(ws.id as string)}
                               className="flex-1 flex items-center gap-2 text-left truncate mr-2 cursor-pointer focus:outline-none focus:underline"
-                              title={`Acessar ${ws.name} em modo somente leitura`}
+                              title={t("accessReadOnlyTitle", {
+                                name: ws.name || t("unnamed"),
+                              })}
                             >
                               <div
                                 className={cn(
                                   "w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold shrink-0",
                                   isActive
-                                    ? "bg-gold text-neutral-900"
+                                    ? "bg-gold text-on-gold"
                                     : "bg-white/10 text-neutral-300",
                                 )}
                               >
@@ -343,24 +413,40 @@ export function WorkspaceSwitcher({
                               </span>
                               <span
                                 className="text-[9px] px-1.5 py-0.5 rounded bg-gold/15 text-gold border border-gold/30 shrink-0 font-semibold flex items-center gap-1 ml-auto"
-                                title="Ambiente em modo somente leitura (Bloqueado)"
+                                title={t("readOnlyBadgeTitle")}
                               >
                                 <Lock size={9} />
-                                Leitura
+                                {t("readOnlyBadge")}
                               </span>
                             </button>
 
-                            {canDelete && (
+                            <div className="flex items-center gap-0.5 shrink-0">
                               <button
                                 type="button"
-                                onClick={(e) => handleOpenDeleteModal(e, ws)}
+                                onClick={(e) => handleOpenEditModal(e, ws)}
                                 disabled={isPending}
-                                className="text-neutral-400 hover:text-red-400 p-1 rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-red-400/50 disabled:opacity-50 cursor-pointer"
-                                aria-label={`Excluir ambiente ${ws.name}`}
+                                className="text-neutral-400 hover:text-gold p-1 rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-gold/50 disabled:opacity-50 cursor-pointer"
+                                aria-label={t("editAria", {
+                                  name: ws.name || t("unnamed"),
+                                })}
                               >
-                                <Trash2 size={16} />
+                                <Pencil size={15} />
                               </button>
-                            )}
+
+                              {canDelete && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleOpenDeleteModal(e, ws)}
+                                  disabled={isPending}
+                                  className="text-neutral-400 hover:text-red-400 p-1 rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-red-400/50 disabled:opacity-50 cursor-pointer"
+                                  aria-label={t("deleteAria", {
+                                    name: ws.name || t("unnamed"),
+                                  })}
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              )}
+                            </div>
                           </li>
                         );
                       })}
@@ -370,7 +456,7 @@ export function WorkspaceSwitcher({
               )}
               {workspaces.length === 0 && (
                 <li className="px-3 py-3 text-center text-body-s text-neutral-400">
-                  Nenhum ambiente
+                  {t("empty")}
                 </li>
               )}
             </ul>
@@ -405,10 +491,13 @@ export function WorkspaceSwitcher({
                   <Plus size={16} />
                 )}
                 {canAddMore
-                  ? "Adicionar Ambiente"
+                  ? t("addWorkspace")
                   : !is_Premium
-                    ? "Limite Atingido (Seja Premium 👑)"
-                    : "Limite Atingido (4/4)"}
+                    ? t("limitUpgrade")
+                    : t("limitReached", {
+                        current: maxWorkspaces,
+                        max: maxWorkspaces,
+                      })}
               </button>
             </div>
           </div>
@@ -419,6 +508,17 @@ export function WorkspaceSwitcher({
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleCreate}
+      />
+
+      <CreateWorkspaceModal
+        isOpen={!!workspaceToEdit}
+        isEdit={true}
+        initialName={workspaceToEdit?.name || ""}
+        isLoading={isPending}
+        onClose={() => {
+          if (!isPending) setWorkspaceToEdit(null);
+        }}
+        onSubmit={handleUpdate}
       />
 
       <DeleteWorkspaceModal

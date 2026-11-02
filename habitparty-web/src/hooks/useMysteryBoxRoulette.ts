@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import {
   type MysteryBoxOpenResult,
@@ -12,12 +13,27 @@ import {
   ROULETTE_TOTAL_CARD_WIDTH,
   ROULETTE_TRACK_LENGTH,
   ROULETTE_WINNING_INDEX,
+  toPackageMessageKey,
 } from "@/constants/reward";
 import type { InventoryItem } from "@/types/inventory";
 import type { PackageLevel, RouletteItem } from "@/types/reward";
 import { soundEffects } from "@/utils/soundEffects";
 
 export type { RouletteItem };
+
+type PoolItemId =
+  | "b1"
+  | "b2"
+  | "b3"
+  | "p1"
+  | "p2"
+  | "p3"
+  | "e1"
+  | "e2"
+  | "e3"
+  | "l1"
+  | "l2"
+  | "l3";
 
 interface UseMysteryBoxRouletteProps {
   isOpen: boolean;
@@ -30,6 +46,7 @@ export function useMysteryBoxRoulette({
   item,
   onSuccess,
 }: UseMysteryBoxRouletteProps) {
+  const t = useTranslations("inventory.rouletteHook");
   const [phase, setPhase] = useState<"idle" | "spinning" | "won">("idle");
   const [wonResult, setWonResult] = useState<MysteryBoxOpenResult | null>(null);
   const [translateX, setTranslateX] = useState(0);
@@ -56,14 +73,23 @@ export function useMysteryBoxRoulette({
       const generated: RouletteItem[] = [];
       for (let i = 0; i < ROULETTE_TRACK_LENGTH; i++) {
         const randomItem = pool[Math.floor(Math.random() * pool.length)];
+        const poolKey = `poolItems.${randomItem.id as PoolItemId}` as const;
+        const localizedName = t.has(poolKey) ? t(poolKey) : randomItem.name;
+        const percentMatch = randomItem.badgeLabel.match(/^(\d+)%/);
+        const localizedBadge = percentMatch
+          ? t("dropBadge", { percent: percentMatch[1] })
+          : randomItem.badgeLabel;
+
         generated.push({
           ...randomItem,
           id: `${randomItem.id}-${i}`,
+          name: localizedName,
+          badgeLabel: localizedBadge,
         });
       }
       setTrackItems(generated);
     }
-  }, [isOpen, item, pool]);
+  }, [isOpen, item, pool, t]);
 
   // Limpeza de intervalos sonoros ao desmontar ou fechar
   useEffect(() => {
@@ -93,7 +119,7 @@ export function useMysteryBoxRoulette({
       // Substitui o card no índice premiado pelo item sorteado
       const winningItem: RouletteItem = {
         id: `won-${winData.rewardName}`,
-        name: winData.rewardName || "Recompensa Especial",
+        name: winData.rewardName || t("defaultWinName"),
         icon: winData.rewardIcon || "gem",
         minutes: winData.remainingMinutes || null,
         badgeVariant:
@@ -104,7 +130,7 @@ export function useMysteryBoxRoulette({
               : tierConfig.id === "Premium"
                 ? "amber"
                 : "emerald",
-        badgeLabel: "SORTEADO!",
+        badgeLabel: t("wonBadgeLabel"),
       };
 
       setTrackItems((prev) => {
@@ -173,6 +199,7 @@ export function useMysteryBoxRoulette({
     containerRef,
     handleSpin,
     tierId: tierConfig.id,
+    tierName: t(`tiers.${toPackageMessageKey(tierConfig.id)}`),
     tierConfig,
     winningIndex: ROULETTE_WINNING_INDEX,
   };

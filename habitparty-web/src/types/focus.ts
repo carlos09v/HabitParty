@@ -10,10 +10,7 @@ export type UpdateFocusActivityOrderDTO =
   components["schemas"]["UpdateFocusActivityOrderDTO"];
 
 export type FocusRecordResponseDTO =
-  components["schemas"]["FocusRecordResponseDTO"] & {
-    xpEarned?: number;
-    coinsEarned?: number | string;
-  };
+  components["schemas"]["FocusRecordResponseDTO"];
 export type CreateFocusRecordDTO =
   components["schemas"]["CreateFocusRecordDTO"];
 export type UpdateFocusRecordDTO =

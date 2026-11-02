@@ -13,7 +13,7 @@ export function AppearanceSelector({
   isDark,
 }: AppearanceSelectorProps) {
   return (
-    <div className="flex flex-col gap-2.5 p-3.5 rounded-xl border border-neutral-700 bg-card/90 shadow-xs dark:border-primary/20 dark:bg-surface/30 backdrop-blur-md">
+    <div className="hidden flex-col gap-2.5 p-3.5 rounded-xl border border-neutral-700 bg-card/90 shadow-xs dark:border-primary/20 dark:bg-surface/30 backdrop-blur-md">
       <div className="flex items-center justify-between">
         <h3 className="text-body-s font-bold text-neutral-50 flex items-center gap-2">
           <span className="flex items-center justify-center w-5 h-5 rounded-full bg-gold/20 text-gold text-[11px] font-bold">
@@ -31,7 +31,7 @@ export function AppearanceSelector({
           type="button"
           onClick={() => onSetTheme("dark")}
           className={cn(
-            "col-span-2 flex items-center gap-2.5 p-2 rounded-lg border text-left transition-all cursor-pointer",
+            "flex items-center gap-2.5 p-2 rounded-lg border text-left transition-all cursor-pointer",
             isDark
               ? "border-primary bg-primary/10 ring-1 ring-primary/30 text-neutral-50 shadow-sm dark:border-gold dark:bg-primary-dark/60 dark:text-neutral-50 dark:ring-1 dark:ring-gold/40"
               : "border-neutral-700 bg-card hover:bg-surface-hover text-neutral-300 hover:text-neutral-50 dark:border-primary/20 dark:bg-primary-dark/15 dark:text-neutral-400 dark:hover:text-neutral-200 dark:hover:bg-primary-dark/30",
@@ -63,7 +63,6 @@ export function AppearanceSelector({
             theme === "light"
               ? "border-primary bg-primary/10 ring-1 ring-primary/30 text-neutral-50 shadow-sm dark:border-gold dark:bg-primary-dark/60 dark:text-neutral-50 dark:ring-1 dark:ring-gold/40"
               : "border-neutral-700 bg-card hover:bg-surface-hover text-neutral-300 hover:text-neutral-50 dark:border-primary/20 dark:bg-primary-dark/15 dark:text-neutral-400 dark:hover:text-neutral-200 dark:hover:bg-primary-dark/30",
-            "hidden",
           )}
         >
           <div

@@ -7,8 +7,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.habitparty.adapters.in.web.api.WebhookApi;
-import com.habitparty.application.ports.PaymentGatewayPort;
-import com.habitparty.application.ports.PaymentWebhookEvent;
 import com.habitparty.application.usecases.payment.ProcessStripeWebhookUseCase;
 import com.habitparty.core.exceptions.PaymentProcessingException;
 
@@ -16,21 +14,16 @@ import com.habitparty.core.exceptions.PaymentProcessingException;
 public class WebhookController implements WebhookApi {
   private static final Logger log = LoggerFactory.getLogger(WebhookController.class);
 
-  private final PaymentGatewayPort paymentGatewayPort;
   private final ProcessStripeWebhookUseCase processStripeWebhookUseCase;
 
-  public WebhookController(
-      PaymentGatewayPort paymentGatewayPort,
-      ProcessStripeWebhookUseCase processStripeWebhookUseCase) {
-    this.paymentGatewayPort = paymentGatewayPort;
+  public WebhookController(ProcessStripeWebhookUseCase processStripeWebhookUseCase) {
     this.processStripeWebhookUseCase = processStripeWebhookUseCase;
   }
 
   @Override
   public ResponseEntity<Void> handleStripeWebhook(String payload, String sigHeader) {
     try {
-      PaymentWebhookEvent event = paymentGatewayPort.parseWebhookEvent(payload, sigHeader);
-      processStripeWebhookUseCase.execute(event);
+      processStripeWebhookUseCase.execute(payload, sigHeader);
       return ResponseEntity.ok().build();
     } catch (PaymentProcessingException e) {
       log.warn("Falha ao processar assinatura ou evento do webhook: {}", e.getMessage());

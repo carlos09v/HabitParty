@@ -1,4 +1,5 @@
 import { FOCUS_REWARD_RULES } from "@/constants/focus";
+import type { AppLocale } from "@/i18n/config";
 import type { FocusRecord, FocusRecordType } from "@/types/focus";
 import type {
   RewardEstimate,
@@ -66,8 +67,11 @@ export function toFocusRewardEstimate(
     durationMinutes: number;
     completedPomos: number;
     recordType: FocusRecordType;
+    locale?: AppLocale;
   },
+  locale: AppLocale = details?.locale ?? "pt-BR",
 ): RewardEstimate {
+  const isEn = locale === "en";
   const notices: RewardEstimateNotice[] = [];
   if (result.notice) {
     notices.push({
@@ -80,16 +84,20 @@ export function toFocusRewardEstimate(
   const breakdown: RewardEstimateBreakdownItem[] = [];
   if (details && details.durationMinutes > 0) {
     breakdown.push({
-      label: "Tempo Registrado",
-      value: `${details.durationMinutes} minutos`,
+      label: isEn ? "Logged Time" : "Tempo Registrado",
+      value: isEn
+        ? `${details.durationMinutes} ${details.durationMinutes === 1 ? "minute" : "minutes"}`
+        : `${details.durationMinutes} minutos`,
     });
     if (details.recordType === "POMO" && details.completedPomos > 0) {
       const avgMins = Math.floor(
         details.durationMinutes / details.completedPomos,
       );
       breakdown.push({
-        label: "Ciclos Pomodoro",
-        value: `${details.completedPomos} ciclo(s) (méd. ${avgMins}m/ciclo)`,
+        label: isEn ? "Pomodoro Cycles" : "Ciclos Pomodoro",
+        value: isEn
+          ? `${details.completedPomos} cycle(s) (avg. ${avgMins}m/cycle)`
+          : `${details.completedPomos} ciclo(s) (méd. ${avgMins}m/ciclo)`,
       });
     }
   }
@@ -119,12 +127,16 @@ export function calculateFocusRewardEstimate(
   durationMinutes: number,
   completedPomos: number,
   priorFocusMinutesToday = 0,
+  locale: AppLocale = "pt-BR",
 ): EstimatedRewardResult {
+  const isEn = locale === "en";
   if (targetType === "ITEM") {
     return {
       xp: 0,
       coins: 0,
-      isZeroReason: "Itens de lazer da mochila não concedem XP ou Moedas.",
+      isZeroReason: isEn
+        ? "Backpack leisure items do not grant XP or Coins."
+        : "Itens de lazer da mochila não concedem XP ou Moedas.",
     };
   }
 
@@ -132,11 +144,15 @@ export function calculateFocusRewardEstimate(
     return {
       xp: 0,
       coins: 0,
-      isZeroReason: `Sessões menores que ${FOCUS_REWARD_RULES.MIN_QUALIFYING_MINUTES} min não qualificam para recompensas.`,
+      isZeroReason: isEn
+        ? `Sessions shorter than ${FOCUS_REWARD_RULES.MIN_QUALIFYING_MINUTES} min do not qualify for rewards.`
+        : `Sessões menores que ${FOCUS_REWARD_RULES.MIN_QUALIFYING_MINUTES} min não qualificam para recompensas.`,
       notice: {
         type: "warning",
-        title: "Tempo Mínimo",
-        message: `Sessões com menos de ${FOCUS_REWARD_RULES.MIN_QUALIFYING_MINUTES} min não acumulam XP ou Moedas.`,
+        title: isEn ? "Minimum Time" : "Tempo Mínimo",
+        message: isEn
+          ? `Sessions under ${FOCUS_REWARD_RULES.MIN_QUALIFYING_MINUTES} min do not earn XP or Coins.`
+          : `Sessões com menos de ${FOCUS_REWARD_RULES.MIN_QUALIFYING_MINUTES} min não acumulam XP ou Moedas.`,
       },
     };
   }
@@ -153,8 +169,12 @@ export function calculateFocusRewardEstimate(
   if (durationMinutes > FOCUS_REWARD_RULES.MAX_EFFECTIVE_MINUTES) {
     notice = {
       type: "warning",
-      title: `Teto de ${FOCUS_REWARD_RULES.MAX_EFFECTIVE_MINUTES} min`,
-      message: `Excedente acima de ${FOCUS_REWARD_RULES.MAX_EFFECTIVE_MINUTES} min por sessão não gera moedas adicionais (anti-AFK).`,
+      title: isEn
+        ? `${FOCUS_REWARD_RULES.MAX_EFFECTIVE_MINUTES} min Cap`
+        : `Teto de ${FOCUS_REWARD_RULES.MAX_EFFECTIVE_MINUTES} min`,
+      message: isEn
+        ? `Time beyond ${FOCUS_REWARD_RULES.MAX_EFFECTIVE_MINUTES} min per session does not grant extra coins (anti-AFK).`
+        : `Excedente acima de ${FOCUS_REWARD_RULES.MAX_EFFECTIVE_MINUTES} min por sessão não gera moedas adicionais (anti-AFK).`,
     };
   }
 
@@ -172,7 +192,9 @@ export function calculateFocusRewardEstimate(
       notice = {
         type: "warning",
         title: "Anti-Exploit",
-        message: `Média menor que ${FOCUS_REWARD_RULES.ANTI_EXPLOIT_THRESHOLD_MINUTES}m/ciclo reduz os ganhos proporcionalmente.`,
+        message: isEn
+          ? `Average below ${FOCUS_REWARD_RULES.ANTI_EXPLOIT_THRESHOLD_MINUTES}m/cycle reduces rewards proportionally.`
+          : `Média menor que ${FOCUS_REWARD_RULES.ANTI_EXPLOIT_THRESHOLD_MINUTES}m/ciclo reduz os ganhos proporcionalmente.`,
       };
     } else if (minutesPerPomo < FOCUS_REWARD_RULES.STANDARD_POMO_MIN_MINUTES) {
       // Pomodoro curto (15 a 24 min)
@@ -182,8 +204,12 @@ export function calculateFocusRewardEstimate(
       if (!notice) {
         notice = {
           type: "info",
-          title: `Ciclo Curto (${FOCUS_REWARD_RULES.ANTI_EXPLOIT_THRESHOLD_MINUTES}m-${FOCUS_REWARD_RULES.STANDARD_POMO_MIN_MINUTES - 1}m)`,
-          message: `Média de ${minutesPerPomo}m/ciclo (+${FOCUS_REWARD_RULES.SHORT_POMO_COINS_PER_CYCLE.toFixed(2)} 🪙/ciclo). Faixa padrão (${FOCUS_REWARD_RULES.STANDARD_POMO_MIN_MINUTES}m-${FOCUS_REWARD_RULES.STANDARD_POMO_MAX_MINUTES}m) rende +${FOCUS_REWARD_RULES.STANDARD_COINS_PER_CYCLE.toFixed(2)} 🪙.`,
+          title: isEn
+            ? `Short Cycle (${FOCUS_REWARD_RULES.ANTI_EXPLOIT_THRESHOLD_MINUTES}m-${FOCUS_REWARD_RULES.STANDARD_POMO_MIN_MINUTES - 1}m)`
+            : `Ciclo Curto (${FOCUS_REWARD_RULES.ANTI_EXPLOIT_THRESHOLD_MINUTES}m-${FOCUS_REWARD_RULES.STANDARD_POMO_MIN_MINUTES - 1}m)`,
+          message: isEn
+            ? `Average of ${minutesPerPomo}m/cycle (+${FOCUS_REWARD_RULES.SHORT_POMO_COINS_PER_CYCLE.toFixed(2)} 🪙/cycle). Standard range (${FOCUS_REWARD_RULES.STANDARD_POMO_MIN_MINUTES}m-${FOCUS_REWARD_RULES.STANDARD_POMO_MAX_MINUTES}m) yields +${FOCUS_REWARD_RULES.STANDARD_COINS_PER_CYCLE.toFixed(2)} 🪙.`
+            : `Média de ${minutesPerPomo}m/ciclo (+${FOCUS_REWARD_RULES.SHORT_POMO_COINS_PER_CYCLE.toFixed(2)} 🪙/ciclo). Faixa padrão (${FOCUS_REWARD_RULES.STANDARD_POMO_MIN_MINUTES}m-${FOCUS_REWARD_RULES.STANDARD_POMO_MAX_MINUTES}m) rende +${FOCUS_REWARD_RULES.STANDARD_COINS_PER_CYCLE.toFixed(2)} 🪙.`,
         };
       }
     } else if (minutesPerPomo <= FOCUS_REWARD_RULES.STANDARD_POMO_MAX_MINUTES) {
@@ -198,7 +224,9 @@ export function calculateFocusRewardEstimate(
         notice = {
           type: "info",
           title: `Deep Work (> ${FOCUS_REWARD_RULES.STANDARD_POMO_MAX_MINUTES}m)`,
-          message: `Sessão estendida ininterrupta qualifica para a bonificação máxima (+${FOCUS_REWARD_RULES.DEEP_WORK_COINS_PER_CYCLE.toFixed(2)} 🪙/ciclo)!`,
+          message: isEn
+            ? `Extended uninterrupted session qualifies for the maximum bonus (+${FOCUS_REWARD_RULES.DEEP_WORK_COINS_PER_CYCLE.toFixed(2)} 🪙/cycle)!`
+            : `Sessão estendida ininterrupta qualifica para a bonificação máxima (+${FOCUS_REWARD_RULES.DEEP_WORK_COINS_PER_CYCLE.toFixed(2)} 🪙/ciclo)!`,
         };
       }
     }
@@ -226,12 +254,15 @@ export function calculateFocusRewardEstimate(
     return {
       xp: 0,
       coins: 0,
-      isZeroReason: `Limite diário de recompensas (${FOCUS_REWARD_RULES.DAILY_HARD_CAP_MINUTES / 60}h) atingido neste dia.`,
+      isZeroReason: isEn
+        ? `Daily reward cap (${FOCUS_REWARD_RULES.DAILY_HARD_CAP_MINUTES / 60}h) reached for this day.`
+        : `Limite diário de recompensas (${FOCUS_REWARD_RULES.DAILY_HARD_CAP_MINUTES / 60}h) atingido neste dia.`,
       notice: {
         type: "warning",
-        title: "Teto Diário Atingido (6h)",
-        message:
-          "Você já acumulou 6h de foco recompensado neste dia. O tempo será registrado, mas sem XP/Moedas adicionais.",
+        title: isEn ? "Daily Cap Reached (6h)" : "Teto Diário Atingido (6h)",
+        message: isEn
+          ? "You have already accumulated 6h of rewarded focus on this day. Time will be logged, but without extra XP/Coins."
+          : "Você já acumulou 6h de foco recompensado neste dia. O tempo será registrado, mas sem XP/Moedas adicionais.",
       },
     };
   }
@@ -239,9 +270,12 @@ export function calculateFocusRewardEstimate(
   if (multiplier < 1.0) {
     notice = {
       type: "warning",
-      title: "Rendimento Decrescente Diário (4h+)",
-      message:
-        "Acima de 4h focadas no mesmo dia, as recompensas de XP e Moedas rendem 50% até o teto de 6h.",
+      title: isEn
+        ? "Daily Diminishing Returns (4h+)"
+        : "Rendimento Decrescente Diário (4h+)",
+      message: isEn
+        ? "Above 4h focused on the same day, XP and Coin rewards yield 50% up to the 6h cap."
+        : "Acima de 4h focadas no mesmo dia, as recompensas de XP e Moedas rendem 50% até o teto de 6h.",
     };
   }
 
@@ -252,36 +286,19 @@ export function calculateFocusRewardEstimate(
 }
 
 /**
- * Estima ou lê a recompensa de um FocusRecord existente usando a regra unificada.
+ * Lê a recompensa de um FocusRecord retornado pelo backend.
  * Regra fundamental: Sessões de itens da mochila NUNCA geram XP nem moedas.
  */
-export function calculateRecordReward(
-  record: FocusRecord,
-  priorFocusMinutesToday = 0,
-): { xp: number; coins: number } {
+export function calculateRecordReward(record: FocusRecord): {
+  xp: number;
+  coins: number;
+} {
   if (record.inventoryItemId) {
     return { xp: 0, coins: 0 };
   }
 
-  if (
-    record.xpEarned !== undefined &&
-    record.xpEarned !== null &&
-    record.coinsEarned !== undefined &&
-    record.coinsEarned !== null
-  ) {
-    return {
-      xp: record.xpEarned,
-      coins: Number(record.coinsEarned),
-    };
-  }
-
-  const estimate = calculateFocusRewardEstimate(
-    "ACTIVITY",
-    record.recordType,
-    record.durationMinutes || 0,
-    record.completedPomos ?? 0,
-    priorFocusMinutesToday,
-  );
-
-  return { xp: estimate.xp, coins: estimate.coins };
+  return {
+    xp: record.xpEarned ?? 0,
+    coins: Number(record.coinsEarned ?? 0),
+  };
 }

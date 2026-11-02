@@ -9,7 +9,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import com.habitparty.adapters.in.web.dtos.request.CreateRewardDTO;
-import com.habitparty.adapters.in.web.dtos.request.RedeemRewardRequestDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateRewardDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateRewardOrderDTO;
 import com.habitparty.adapters.in.web.dtos.response.RewardResponseDTO;

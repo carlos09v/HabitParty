@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { serverApi } from "@/api/server";
 import { PageWrapper } from "@/components/layout/PageWrapper";
@@ -17,6 +19,14 @@ interface TasksPageProps {
     createColumn?: string;
     columnId?: string;
   }>;
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("tasks.metadata");
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
 }
 
 export default async function TasksPage({ searchParams }: TasksPageProps) {

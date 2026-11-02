@@ -1,6 +1,5 @@
-"use client";
-
 import { LayoutGrid, List } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/utils";
 
 export type ViewMode = "card" | "list";
@@ -18,18 +17,20 @@ export function ViewModeSelector({
   isCompact = false,
   className,
 }: ViewModeSelectorProps) {
+  const t = useTranslations("ui.viewMode");
   const activeMode: ViewMode = value === "list" ? "list" : "card";
 
   return (
     <fieldset
       className={cn("flex items-center gap-3 border-none p-0 m-0", className)}
-      aria-label="Modo de visualização"
+      aria-label={t("groupAria")}
     >
       <button
         type="button"
         onClick={() => onChange("card")}
         aria-pressed={activeMode === "card"}
-        title="Visualização em cards"
+        title={t("gridTitle")}
+        aria-label={t("gridAria")}
         className={cn(
           "rounded-[6px] transition-all cursor-pointer flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-gold/50",
           isCompact ? "p-1" : "p-1.5",
@@ -45,7 +46,8 @@ export function ViewModeSelector({
         type="button"
         onClick={() => onChange("list")}
         aria-pressed={activeMode === "list"}
-        title="Visualização em lista"
+        title={t("listTitle")}
+        aria-label={t("listAria")}
         className={cn(
           "rounded-[6px] transition-all cursor-pointer flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-gold/50",
           isCompact ? "p-1" : "p-1.5",

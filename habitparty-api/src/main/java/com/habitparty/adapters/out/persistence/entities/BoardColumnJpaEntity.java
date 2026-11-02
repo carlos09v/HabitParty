@@ -39,7 +39,7 @@ public class BoardColumnJpaEntity {
   @Column(name = "is_visible", nullable = false)
   private boolean isVisible;
 
-  @Column(nullable = false, length = 12)
+  @Column(nullable = false, length = 30)
   private String name;
 
   @Column(length = 20)

@@ -1,6 +1,7 @@
 "use client";
 
 import { Crown } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 import { UpgradePremiumModal } from "@/components/subscription/UpgradePremiumModal";
@@ -17,6 +18,7 @@ export function IconPicker({
   className,
   isCompact = false,
 }: IconPickerProps) {
+  const t = useTranslations("ui.iconPicker");
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const isPremium = useUserStore((s) => s.is_Premium);
 
@@ -27,11 +29,13 @@ export function IconPicker({
         ? "grid-cols-6"
         : "grid-cols-5";
 
+  const getOptionLabel = (item: IconOption) =>
+    t.has(`icons.${item.id}`) ? t(`icons.${item.id}`) : item.label;
+
   const handleSelect = (item: IconOption) => {
+    const label = getOptionLabel(item);
     if (item.isPremium && !isPremium) {
-      toast.info(
-        `O ícone "${item.label}" é exclusivo para membros Premium! Faça o upgrade para desbloquear.`,
-      );
+      toast.info(t("exclusiveToast", { label }));
       setIsUpgradeModalOpen(true);
       return;
     }
@@ -43,20 +47,19 @@ export function IconPicker({
       <fieldset
         className={cn("grid gap-2 border-0 p-0 m-0", gridColsClass, className)}
       >
-        <legend className="sr-only">Seleção de ícone</legend>
+        <legend className="sr-only">{t("groupAria")}</legend>
         {options.map((item) => {
           const Icon = item.icon;
           const isSelected = value.toLowerCase() === item.id.toLowerCase();
           const isLocked = item.isPremium && !isPremium;
+          const label = getOptionLabel(item);
 
           return (
             <button
               key={item.id}
               type="button"
               aria-pressed={isSelected}
-              title={
-                item.isPremium ? `${item.label} (Exclusivo VIP)` : item.label
-              }
+              title={item.isPremium ? t("exclusiveBadge", { label }) : label}
               onClick={() => handleSelect(item)}
               disabled={disabled}
               className={cn(
@@ -78,7 +81,7 @@ export function IconPicker({
               )}
               <Icon size={isCompact ? 16 : 18} />
               <span className="text-[10px] font-medium leading-none truncate max-w-full">
-                {item.label}
+                {label}
               </span>
             </button>
           );

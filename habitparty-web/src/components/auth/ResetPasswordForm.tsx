@@ -1,6 +1,8 @@
 "use client";
+
 import { KeyRound } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { resetPassword } from "@/actions/auth";
@@ -14,6 +16,7 @@ interface ResetPasswordFormProps {
 }
 
 export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
+  const t = useTranslations("auth.resetPassword");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -35,7 +38,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
     }
 
     if (!passwordsMatch) {
-      toast.error("As senhas não coincidem.");
+      toast.error(t("passwordsMismatchError"));
       return;
     }
 
@@ -45,7 +48,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
       if (!result.success) {
         toast.error(result.error);
       } else {
-        toast.success("Senha redefinida com sucesso! Você já pode entrar.");
+        toast.success(t("successToast"));
         router.push("/signIn");
       }
     });
@@ -55,13 +58,13 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full">
       <div className="flex flex-col gap-2">
         <Input
-          label="Nova Senha"
+          label={t("passwordLabel")}
           id="password"
           name="password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Mínimo de 8 caracteres"
+          placeholder={t("passwordPlaceholder")}
           icon={<KeyRound size={18} aria-hidden="true" />}
           required
           disabled={isPending}
@@ -71,32 +74,31 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
 
       <div className="flex flex-col gap-1.5">
         <Input
-          label="Confirmar Nova Senha"
+          label={t("confirmPasswordLabel")}
           id="confirmPassword"
           name="confirmPassword"
           type="password"
           value={confirmPassword}
           onChange={(e) => {
             setConfirmPassword(e.target.value);
-            if (!confirmTouched) setConfirmTouched(true);
+            setConfirmTouched(true);
           }}
-          placeholder="Repita a nova senha"
+          onBlur={() => setConfirmTouched(true)}
+          placeholder={t("confirmPlaceholder")}
           icon={<KeyRound size={18} aria-hidden="true" />}
-          error={
-            showPasswordMismatch
-              ? "As senhas digitadas não coincidem"
-              : undefined
-          }
+          error={showPasswordMismatch ? t("passwordsMismatchError") : undefined}
           required
           disabled={isPending}
         />
       </div>
 
-      <div className="mt-2">
-        <SubmitButton isPending={isPending} loadingText="Redefinindo senha...">
-          Redefinir Senha
-        </SubmitButton>
-      </div>
+      <SubmitButton
+        isPending={isPending}
+        loadingText={t("submitting")}
+        className="mt-2"
+      >
+        {t("submit")}
+      </SubmitButton>
     </form>
   );
 }

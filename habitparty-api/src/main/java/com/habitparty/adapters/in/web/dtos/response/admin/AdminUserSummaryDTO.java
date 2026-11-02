@@ -3,6 +3,7 @@ package com.habitparty.adapters.in.web.dtos.response.admin;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.habitparty.application.ports.projections.AdminUserSummaryProjection;
 import com.habitparty.core.domain.enums.SubscriptionStatus;
 import com.habitparty.core.domain.enums.UserRole;
 
@@ -23,4 +24,25 @@ public record AdminUserSummaryDTO(
     long activeTasksCount,
     long estimatedStorageBytes,
     String estimatedStorageFormatted
-) {}
+) {
+  public static AdminUserSummaryDTO fromProjection(AdminUserSummaryProjection p) {
+    return new AdminUserSummaryDTO(
+        p.id(),
+        p.fullName(),
+        p.username(),
+        p.email(),
+        p.profilePhotoUrl(),
+        p.role(),
+        p.isPremium(),
+        p.isFounder(),
+        p.subscriptionStatus(),
+        p.createdAt(),
+        p.emailsSentThisMonth(),
+        p.activeEmailReminders(),
+        p.totalTasksCount(),
+        p.activeTasksCount(),
+        p.estimatedStorageBytes(),
+        p.estimatedStorageFormatted()
+    );
+  }
+}

@@ -34,7 +34,7 @@ export async function getHistoryData(
         size: pageSize,
         ...(currentPeriod ? { period: currentPeriod } : {}),
         ...(currentSearch ? { search: currentSearch } : {}),
-      } as Record<string, unknown>,
+      },
     },
     next: { tags: ["transactions"] },
   });

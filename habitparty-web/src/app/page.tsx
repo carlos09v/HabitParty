@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { LandingCtaBanner } from "@/components/landing/LandingCtaBanner";
 import { LandingFaq } from "@/components/landing/LandingFaq";
 import { LandingFeaturesGrid } from "@/components/landing/LandingFeaturesGrid";
@@ -13,15 +14,17 @@ import { LandingRoadmap } from "@/components/landing/LandingRoadmap";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "HabitParty — Produtividade Gamificada & Hábitos em RPG",
-  description:
-    "Transforme sua rotina diária em uma jornada épica. Ganhe XP, acumule moedas de ouro, vença a procrastinação no Modo Foco e troque esforço por recompensas reais.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("landing.metadata");
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background text-neutral-50 flex flex-col selection:bg-gold selection:text-neutral-900">
+    <div className="min-h-screen bg-background text-neutral-50 flex flex-col selection:bg-gold selection:text-on-gold">
       {/* Barra de Navegação Fixa */}
       <LandingNavbar />
 

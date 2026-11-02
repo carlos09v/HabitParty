@@ -107,22 +107,22 @@ public class Habit extends Task {
     int adaptationThreshold = habitFormedThreshold / 3;
 
     // 2. Aplica o decaimento baseado no Streak atual
-    double multiplier = 1.0;
+    BigDecimal multiplier = BigDecimal.ONE;
     if (this.currentStreak >= habitFormedThreshold) {
-      multiplier = 0.5; // Hábito formado: paga metade
+      multiplier = HALF_RATE; // Hábito formado: paga metade
     } else if (this.currentStreak >= adaptationThreshold) {
-      multiplier = 0.75; // Adaptação: paga 75%
+      multiplier = ADAPTATION_RATE; // Adaptação: paga 75%
     }
 
     // Calcula o valor final arredondando para baixo
-    int finalXp = Math.max(1, (int) (baseXp * multiplier));
+    int finalXp = Math.max(1, BigDecimal.valueOf(baseXp).multiply(multiplier).intValue());
     BigDecimal finalCoins = baseCoins
-            .multiply(BigDecimal.valueOf(multiplier))
+            .multiply(multiplier)
             .setScale(2, java.math.RoundingMode.HALF_DOWN);
 
     // Garante que ganhe no mínimo $ 0,01
-    if (finalCoins.compareTo(new BigDecimal("0.01")) < 0) {
-        finalCoins = new BigDecimal("0.01");
+    if (finalCoins.compareTo(MIN_COINS) < 0) {
+        finalCoins = MIN_COINS;
     }
     
     return new TaskReward(finalXp, finalCoins);

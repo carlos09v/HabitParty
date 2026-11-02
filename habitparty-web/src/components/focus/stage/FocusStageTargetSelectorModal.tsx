@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRightLeft, Backpack, Layers, Lock } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { getFocusIcon, MAX_FOCUS_ACTIVITIES_FREE } from "@/constants/focus";
@@ -31,6 +32,7 @@ export function FocusStageTargetSelectorModal({
   onSelectBackpackItem,
   onOpenUpgradeModal,
 }: FocusStageTargetSelectorModalProps) {
+  const t = useTranslations("focus.targetSelector");
   const [selectorTab, setSelectorTab] = useState<"ACTIVITIES" | "BACKPACK">(
     "ACTIVITIES",
   );
@@ -42,8 +44,8 @@ export function FocusStageTargetSelectorModal({
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Vincular ao Timer"
-      description="Selecione onde contabilizar sua sessão de foco."
+      title={t("title")}
+      description={t("description")}
       headerExtra={
         <div className="w-8 h-8 rounded-lg bg-gold/15 border border-gold/40 flex items-center justify-center text-gold">
           <ArrowRightLeft size={16} />
@@ -59,12 +61,14 @@ export function FocusStageTargetSelectorModal({
             className={cn(
               "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer",
               selectorTab === "ACTIVITIES"
-                ? "bg-gold text-neutral-900 shadow-glow-gold-xs"
+                ? "bg-gold text-on-gold shadow-glow-gold-xs"
                 : "text-neutral-400 hover:text-neutral-200",
             )}
           >
             <Layers size={13} />
-            <span>Atividades ({activeActivities.length})</span>
+            <span>
+              {t("activitiesTab", { count: activeActivities.length })}
+            </span>
           </button>
           <button
             type="button"
@@ -72,12 +76,12 @@ export function FocusStageTargetSelectorModal({
             className={cn(
               "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer",
               selectorTab === "BACKPACK"
-                ? "bg-gold text-neutral-900 shadow-glow-gold-xs"
+                ? "bg-gold text-on-gold shadow-glow-gold-xs"
                 : "text-neutral-400 hover:text-neutral-200",
             )}
           >
             <Backpack size={13} />
-            <span>Mochila ({backpackItems.length})</span>
+            <span>{t("backpackTab", { count: backpackItems.length })}</span>
           </button>
         </div>
 
@@ -86,7 +90,7 @@ export function FocusStageTargetSelectorModal({
           {selectorTab === "ACTIVITIES" ? (
             activeActivities.length === 0 ? (
               <div className="p-6 text-center text-xs text-neutral-400 border border-dashed border-primary/30 rounded-xl">
-                Nenhuma atividade cadastrada. Crie uma na tela principal.
+                {t("emptyActivities")}
               </div>
             ) : (
               activeActivities.map((act, index) => {
@@ -101,7 +105,7 @@ export function FocusStageTargetSelectorModal({
                     className={cn(
                       "flex items-center justify-between p-2.5 rounded-xl border transition-all",
                       isLocked
-                        ? "bg-neutral-900/40 border-gold/30 opacity-80"
+                        ? "bg-surface/60 dark:bg-neutral-900/40 border-gold/30 opacity-80"
                         : isCurrent
                           ? "bg-gold/15 border-gold/60 text-gold"
                           : "bg-surface/60 border-primary/20 hover:border-gold/40 hover:bg-surface",
@@ -129,10 +133,12 @@ export function FocusStageTargetSelectorModal({
                         </span>
                         <span className="text-tiny text-neutral-400">
                           {isLocked
-                            ? "Pausada"
+                            ? t("pausedStatus")
                             : act.recordType === "POMO"
-                              ? `Pomodoro (${act.targetTimeMinutes || 35}m)`
-                              : "Cronômetro Livre"}
+                              ? t("pomodoroDuration", {
+                                  minutes: act.targetTimeMinutes || 35,
+                                })
+                              : t("freeStopwatch")}
                         </span>
                       </div>
                     </div>
@@ -144,11 +150,11 @@ export function FocusStageTargetSelectorModal({
                           onClose();
                           onOpenUpgradeModal?.();
                         }}
-                        title="Atividade pausada. Reative o plano Premium para cronometrar nesta atividade!"
+                        title={t("lockedActivityTitle")}
                         className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 bg-gold/15 hover:bg-gold/25 text-gold border border-gold/40 flex items-center gap-1 shadow-glow-gold-xs"
                       >
                         <Lock size={12} />
-                        <span>Pausada 👑</span>
+                        <span>{t("pausedBadge")}</span>
                       </button>
                     ) : (
                       <button
@@ -162,11 +168,11 @@ export function FocusStageTargetSelectorModal({
                         className={cn(
                           "px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0",
                           isCurrent
-                            ? "bg-gold text-neutral-900 shadow-glow-gold-xs cursor-default"
+                            ? "bg-gold text-on-gold shadow-glow-gold-xs cursor-default"
                             : "bg-surface/80 hover:bg-gold/20 text-neutral-300 hover:text-gold border border-primary/30 cursor-pointer",
                         )}
                       >
-                        {isCurrent ? "Selecionado" : "Vincular"}
+                        {isCurrent ? t("selected") : t("link")}
                       </button>
                     )}
                   </div>
@@ -175,8 +181,7 @@ export function FocusStageTargetSelectorModal({
             )
           ) : backpackItems.length === 0 ? (
             <div className="p-6 text-center text-xs text-neutral-400 border border-dashed border-primary/30 rounded-xl">
-              Nenhum item ou cupom em foco. Acesse a mochila para enviar itens
-              ao foco.
+              {t("emptyBackpack")}
             </div>
           ) : (
             backpackItems.map((item) => {
@@ -201,12 +206,14 @@ export function FocusStageTargetSelectorModal({
                     </div>
                     <div className="flex flex-col min-w-0 flex-1">
                       <span className="text-xs font-bold text-neutral-100 truncate">
-                        {item.rewardName || "Item de Foco"}
+                        {item.rewardName || t("defaultItemName")}
                       </span>
                       <span className="text-tiny text-neutral-400">
                         {remainingMinutes > 0
-                          ? `${remainingMinutes}m restantes de saldo`
-                          : "Cupom com tempo concluído"}
+                          ? t("remainingMinutesBalance", {
+                              minutes: remainingMinutes,
+                            })
+                          : t("completedCoupon")}
                       </span>
                     </div>
                   </div>
@@ -222,11 +229,11 @@ export function FocusStageTargetSelectorModal({
                     className={cn(
                       "px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0",
                       isCurrent
-                        ? "bg-gold text-neutral-900 shadow-glow-gold-xs cursor-default"
+                        ? "bg-gold text-on-gold shadow-glow-gold-xs cursor-default"
                         : "bg-surface/80 hover:bg-gold/20 text-neutral-300 hover:text-gold border border-primary/30 cursor-pointer",
                     )}
                   >
-                    {isCurrent ? "Selecionado" : "Vincular"}
+                    {isCurrent ? t("selected") : t("link")}
                   </button>
                 </div>
               );

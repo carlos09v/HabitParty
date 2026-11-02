@@ -26,6 +26,7 @@ public class GetFocusRecordsByActivityUseCase {
         .orElseThrow(() -> new ResourceNotFoundException("Atividade não encontrada."));
     activity.validateOwnership(userIdLogado);
 
-    return port.findAllByFocusActivityId(activityId, page, 20);
+    int safePage = Math.max(page, 0);
+    return port.findAllByFocusActivityId(activityId, safePage, 20);
   }
 }

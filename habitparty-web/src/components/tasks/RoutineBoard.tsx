@@ -5,6 +5,7 @@ import {
   SortableContext,
 } from "@dnd-kit/sortable";
 import { Columns3, Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCallback, useMemo, useRef } from "react";
 import { COLUMN_WIDTH_CLASSES } from "@/constants/routine";
 import { useCompactMode } from "@/hooks/useCompactMode";
@@ -29,6 +30,7 @@ export function RoutineBoard({
   onHabitChange,
   onQuickCreateTask,
 }: RoutineBoardProps) {
+  const t = useTranslations("tasks.board");
   const { isCompact } = useCompactMode(propIsCompact);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -65,11 +67,10 @@ export function RoutineBoard({
           </div>
           <div className="flex flex-col gap-1.5 items-center">
             <h3 className="text-lg font-bold text-neutral-100">
-              Seu quadro ainda não tem listas!
+              {t("noColumnsTitle")}
             </h3>
             <p className="text-sm text-neutral-400 max-w-sm">
-              Crie sua primeira coluna (ex: A Fazer, Em Andamento, Rotinas) para
-              começar a organizar suas tarefas e manter o foco.
+              {t("noColumnsDescription")}
             </p>
           </div>
           {onAddColumn && (
@@ -79,7 +80,7 @@ export function RoutineBoard({
               className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gold hover:bg-gold-hover text-neutral-950 font-bold text-sm shadow-glow-gold-xs transition-all cursor-pointer"
             >
               <Plus size={16} />
-              <span>Criar Primeira Coluna</span>
+              <span>{t("createFirstColumnButton")}</span>
             </button>
           )}
         </div>
@@ -93,11 +94,10 @@ export function RoutineBoard({
       <div className="w-full flex-1 flex flex-col items-center justify-center text-center p-6">
         <div className="max-w-md w-full flex flex-col items-center gap-3 p-6 rounded-2xl border border-dashed border-white/10 bg-white/5">
           <h3 className="text-base font-bold text-neutral-200">
-            Todas as colunas estão ocultas
+            {t("allHiddenTitle")}
           </h3>
           <p className="text-xs text-neutral-400">
-            Abra o gerenciador de colunas na barra de filtros para reexibi-las
-            no quadro.
+            {t("allHiddenDescription")}
           </p>
         </div>
       </div>
