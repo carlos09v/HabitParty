@@ -37,7 +37,7 @@ export function SidebarLink({
         className={cn(
           "flex items-center justify-between px-3 py-2.5 rounded-lg transition-all text-body-s font-medium outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 group select-none",
           isActive
-            ? "bg-primary-dark/50 text-neutral-50 border-r-2 border-gold font-bold"
+            ? "bg-primary/[0.08] dark:bg-primary-dark/50 text-primary dark:text-neutral-50 border-r-2 border-primary dark:border-gold font-bold"
             : "text-neutral-300 hover:bg-neutral-500/10 hover:text-neutral-50 border-r-2 border-transparent",
         )}
       >
@@ -45,7 +45,9 @@ export function SidebarLink({
           <span
             className={cn(
               "transition-colors shrink-0",
-              isActive ? "text-gold" : "text-neutral-300 group-hover:text-gold",
+              isActive
+                ? "text-primary dark:text-gold"
+                : "text-neutral-400 dark:text-neutral-300 group-hover:text-primary dark:group-hover:text-gold",
             )}
             aria-hidden="true"
           >
@@ -59,8 +61,8 @@ export function SidebarLink({
             className={cn(
               "px-1.5 py-0.5 rounded-full text-[10px] font-extrabold shrink-0 shadow-xs transition-colors",
               badgeVariant === "gold" || isActive
-                ? "bg-gold text-on-gold"
-                : "bg-white/10 text-neutral-200 border border-white/15 group-hover:border-gold/40 group-hover:text-gold",
+                ? "bg-primary text-white dark:bg-gold dark:text-on-gold"
+                : "bg-surface dark:bg-white/10 text-neutral-200 border border-neutral-700 dark:border-white/15 group-hover:border-primary/40 dark:group-hover:border-gold/40 group-hover:text-primary dark:group-hover:text-gold",
             )}
           >
             {badge}

@@ -31,7 +31,12 @@ export function LandingFeaturesGrid() {
                 className="p-6 sm:p-7 rounded-2xl bg-card hover:bg-surface dark:bg-surface/70 dark:hover:bg-surface/90 border border-neutral-700 dark:border-white/10 hover:border-primary-light/35 shadow-xs dark:shadow-card-deep transition-all duration-300 hover:-translate-y-1 group"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-surface dark:bg-card border border-neutral-700 dark:border-white/10 flex items-center justify-center text-primary-dark dark:text-primary-light group-hover:text-gold group-hover:border-gold/30 transition-colors">
+                  <div
+                    className={cn(
+                      "w-12 h-12 rounded-xl border flex items-center justify-center group-hover:scale-105 transition-all",
+                      item.iconBoxColor,
+                    )}
+                  >
                     <Icon className="w-6 h-6" />
                   </div>
                   <span

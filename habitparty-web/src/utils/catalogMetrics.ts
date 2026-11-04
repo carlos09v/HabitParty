@@ -85,7 +85,7 @@ export function calculateRewardWelcomeStats(
       label: isEn ? "Current Balance" : "Saldo Atual",
       value: `${formatCoins(currentCoins, { locale })} ${currencyLabel}`,
       icon: Coins,
-      variant: "gold",
+      variant: isGamified ? "gold" : "info",
       hint: isEn ? "available to redeem" : "disponíveis para troca",
     },
     {
@@ -273,37 +273,64 @@ export function calculateTasksWelcomeStats(
 export function calculateFocusWelcomeStats(
   activities: FocusActivity[] = [],
   backpackItems: InventoryItemResponseDTO[] = [],
+  locale: AppLocale = "pt-BR",
+  isGamified = true,
 ): WelcomeCardStat[] {
+  const isEn = locale === "en";
   const activitiesCount = activities.length;
   const backpackCount = backpackItems.length;
 
   return [
     {
-      label: "Atividades de Foco",
-      value: `${activitiesCount} ${activitiesCount === 1 ? "atividade" : "atividades"}`,
+      label: isEn ? "Focus Activities" : "Atividades de Foco",
+      value: `${activitiesCount} ${activitiesCount === 1 ? (isEn ? "activity" : "atividade") : isEn ? "activities" : "atividades"}`,
       icon: Target,
       variant: "info",
       hint:
         activitiesCount > 0
-          ? "prontas para iniciar sessão"
-          : "crie sua primeira atividade",
+          ? isEn
+            ? "ready to start a session"
+            : "prontas para iniciar sessão"
+          : isEn
+            ? "create your first activity"
+            : "crie sua primeira atividade",
     },
     {
-      label: "Itens no Palco",
-      value: `${backpackCount} ${backpackCount === 1 ? "item" : "itens"}`,
+      label: isGamified
+        ? isEn
+          ? "Items on Stage"
+          : "Itens no Palco"
+        : isEn
+          ? "Coupons & Active Breaks"
+          : "Cupons & Pausas Ativas",
+      value: `${backpackCount} ${backpackCount === 1 ? "item" : isEn ? "items" : "itens"}`,
       icon: Backpack,
       variant: backpackCount > 0 ? "gold" : "default",
       hint:
         backpackCount > 0
-          ? "cupons/recompensas de foco"
-          : "envie itens pela Mochila",
+          ? isEn
+            ? "focus coupons/rewards"
+            : "cupons/recompensas de foco"
+          : isGamified
+            ? isEn
+              ? "send items from your Backpack"
+              : "envie itens pela Mochila"
+            : isEn
+              ? "link items via Inventory"
+              : "vincule itens pelo Inventário",
     },
     {
-      label: "Modos de Sessão",
-      value: "Pomodoro & Livre",
+      label: isEn ? "Session Modes" : "Modos de Sessão",
+      value: isEn ? "Pomodoro & Free" : "Pomodoro & Livre",
       icon: Timer,
       variant: "primary",
-      hint: "ganhe XP e moedas por minuto",
+      hint: isGamified
+        ? isEn
+          ? "earn XP and coins per minute"
+          : "ganhe XP e moedas por minuto"
+        : isEn
+          ? "log your focus time and build consistency"
+          : "registre seu tempo de concentração e consistência",
     },
   ];
 }

@@ -5,8 +5,11 @@ import { useEffect, useState } from "react";
 import { DashboardDailyBriefing } from "@/components/dashboard/DashboardDailyBriefing";
 import { DashboardListSummary } from "@/components/dashboard/DashboardListSummary";
 import { DashboardTasksPanel } from "@/components/dashboard/DashboardTasksPanel";
+import { RouteLoading } from "@/components/layout/RouteLoading";
 import { MAX_COLUMNS_PREMIUM, MAX_VISIBLE_COLUMNS } from "@/constants/routine";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useProgressStore } from "@/store/progressStore";
+import { useWorkspaceStore } from "@/store/workspaceStore";
 import type { DashboardMainProps } from "@/types/dashboard";
 import type { Task } from "@/types/task";
 import { cn } from "@/utils";
@@ -28,6 +31,8 @@ export function DashboardMain({
   const t = useTranslations("dashboard.dailyBriefing");
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [columns, setColumns] = useState(initialColumns);
+  const isSwitchingWorkspace = useWorkspaceStore((s) => s.isSwitchingWorkspace);
+  const storeActiveWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
 
   useEffect(() => {
     setTasks(initialTasks);
@@ -36,6 +41,16 @@ export function DashboardMain({
   useEffect(() => {
     setColumns(initialColumns);
   }, [initialColumns]);
+
+  useEffect(() => {
+    if (
+      isSwitchingWorkspace &&
+      (!storeActiveWorkspaceId || activeWorkspaceId === storeActiveWorkspaceId)
+    ) {
+      useWorkspaceStore.setState({ isSwitchingWorkspace: false });
+      useProgressStore.getState().done("workspace-switch");
+    }
+  }, [activeWorkspaceId, storeActiveWorkspaceId, isSwitchingWorkspace]);
 
   const handleColumnDeleted = (deletedColumnId: string) => {
     setTasks((prev) =>
@@ -52,6 +67,10 @@ export function DashboardMain({
     : t("defaultNameProductivity");
   const firstName = getFirstName(user?.fullName, user?.username, defaultName);
   const streak = user?.currentStreak ?? 0;
+
+  if (isSwitchingWorkspace) {
+    return <RouteLoading route="dashboard" />;
+  }
 
   return (
     <div

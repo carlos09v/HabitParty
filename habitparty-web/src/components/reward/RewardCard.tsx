@@ -2,8 +2,9 @@
 
 import { Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { memo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { GamifiedItemCard } from "@/components/ui/GamifiedItemCard";
+import { ItemRow } from "@/components/ui/ItemRow";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AddRewardCardProps, RewardCardProps } from "@/types/reward";
 import { cn } from "@/utils";
@@ -17,6 +18,22 @@ export const RewardCard = memo(function RewardCard({
 }: RewardCardProps) {
   const t = useTranslations("rewards.card");
   const { isGamified } = useExperienceMode();
+
+  const handleBuy = useCallback(() => {
+    onBuy?.(reward);
+  }, [onBuy, reward]);
+
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      onContextMenu?.(e, reward);
+    },
+    [onContextMenu, reward],
+  );
+
+  const dragData = useMemo(
+    () => ({ type: "Reward" as const, reward }),
+    [reward],
+  );
 
   return (
     <GamifiedItemCard
@@ -32,9 +49,63 @@ export const RewardCard = memo(function RewardCard({
       price={reward.price}
       canAfford={canAfford}
       actionLabel={isGamified ? t("buy") : t("buyProductivity")}
-      onAction={() => onBuy?.(reward)}
-      onContextMenu={(e) => onContextMenu?.(e, reward)}
-      dragData={{ type: "Reward", reward }}
+      onAction={handleBuy}
+      onContextMenu={handleContextMenu}
+      dragData={dragData}
+    />
+  );
+});
+
+export const RewardItemRow = memo(function RewardItemRow({
+  reward,
+  onBuy,
+  onContextMenu,
+  isCompact = false,
+  canAfford = true,
+}: RewardCardProps) {
+  const t = useTranslations("rewards.container");
+  const { isGamified } = useExperienceMode();
+
+  const handleBuy = useCallback(() => {
+    onBuy?.(reward);
+  }, [onBuy, reward]);
+
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      onContextMenu?.(e, reward);
+    },
+    [onContextMenu, reward],
+  );
+
+  const dragData = useMemo(
+    () => ({ type: "Reward" as const, reward }),
+    [reward],
+  );
+
+  return (
+    <ItemRow
+      id={reward.id}
+      title={reward.title}
+      description={reward.description}
+      type={reward.type}
+      packageLevel={reward.packageLevel}
+      category={reward.category}
+      iconName={reward.icon || reward.iconName}
+      baseDurationMinutes={reward.baseDurationMinutes}
+      price={reward.price}
+      disabled={!canAfford}
+      disabledTitle={
+        !canAfford
+          ? isGamified
+            ? t("insufficientCoinsShort")
+            : t("insufficientCreditsShort")
+          : undefined
+      }
+      actionLabel={isGamified ? t("buy") : t("buyProductivity")}
+      onAction={handleBuy}
+      onContextMenu={handleContextMenu}
+      isCompact={isCompact}
+      dragData={dragData}
     />
   );
 });

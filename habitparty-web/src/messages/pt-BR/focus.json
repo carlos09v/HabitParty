@@ -167,7 +167,19 @@
       "fire": "Crepitar acolhedor de lenha e brasas na lareira."
     },
     "ambientVolumeLabel": "Volume do Ambiente",
-    "unlockAmbientButton": "Liberar Sons de Foco"
+    "unlockAmbientButton": "Liberar Sons de Foco",
+    "toasts": {
+      "notificationsUnsupported": "Notificações não suportadas neste navegador.",
+      "notificationsMuted": "Notificações do navegador silenciadas.",
+      "notificationsEnabled": "Notificações do navegador ativadas para o fim do Pomodoro!",
+      "notificationsBlocked": "Permissão bloqueada no navegador. Habilite as notificações nas configurações do site.",
+      "notificationsGranted": "Notificações permitidas! Você será avisado ao fim de cada Pomodoro.",
+      "notificationsDenied": "Permissão de notificação negada.",
+      "notificationsRequestError": "Não foi possível solicitar permissão para notificações.",
+      "ambientPremiumRequired": "Sons de foco ambiente são exclusivos para assinantes Premium! Faça o upgrade para desbloquear.",
+      "ambientOff": "Som ambiente desligado.",
+      "ambientOn": "Som ambiente ativado: {label}"
+    }
   },
   "targetSelector": {
     "title": "Vincular ao Timer",
@@ -281,6 +293,7 @@
     "couponTimeDepletedToast": "🎉 Tempo do cupom esgotado! Clique no botão de Concluir (Check) para resgatá-lo.",
     "couponTimeDeductedToast": "Tempo do cupom deduzido! (-{time})",
     "sessionCompletedRewardsToast": "Sessão de foco concluída! (+{time} • +{xp} XP • +{coins} 🪙)",
+    "sessionCompletedRewardsToastProductivity": "Sessão de foco concluída! (+{time} • +{xp} Pontos • +{coins} Créditos)",
     "sessionCompletedLoggedToast": "Sessão de foco concluída! (+{time} registrados)",
     "saveSessionFailedToast": "Falha ao salvar sessão de foco.",
     "saveSessionServerErrorToast": "Erro ao salvar sessão de foco no servidor.",
@@ -441,6 +454,7 @@
       "invalidDuration": "A duração precisa ser maior que 0 minutos.",
       "exceedsItemBalance": "A duração não pode exceder o tempo restante do item ({minutes}m).",
       "recordSavedWithRewards": "Registro salvo! (+{xp} XP • +{coins} 🪙)",
+      "recordSavedWithRewardsProductivity": "Registro salvo! (+{xp} Pontos • +{coins} Créditos)",
       "recordSaved": "Registro de foco adicionado com sucesso!",
       "itemTimeLogged": "Tempo do item registrado com sucesso!",
       "saveFailed": "Falha ao registrar sessão de foco.",
@@ -468,7 +482,7 @@
     "editDescription": "Atualize as informações e o modo padrão desta atividade.",
     "nameLabel": "Nome da Atividade",
     "iconPickerTitle": "Ícone da Atividade",
-    "namePlaceholder": "Ex: Estudos para Concurso, Programação, Leitura...",
+    "namePlaceholder": "Ex: Estudos, Programação, Leitura...",
     "iconHint": "Clique no ícone para personalizar ou digite o nome para sugestão automática.",
     "modeLabel": "Tipo de Modo Foco",
     "modePomo": "Pomodoro (Ciclos)",

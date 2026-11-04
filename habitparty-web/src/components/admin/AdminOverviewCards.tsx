@@ -122,6 +122,12 @@ export function AdminOverviewCards({ overview }: AdminOverviewCardsProps) {
                 {t("users.admin", { count: overview.adminUsers })}
               </span>
             )}
+            {overview.verifiedUsers !== undefined && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                <CheckCircle2 size={11} />
+                {t("users.verified", { count: overview.verifiedUsers })}
+              </span>
+            )}
           </div>
         </div>
       </div>

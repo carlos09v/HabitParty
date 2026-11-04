@@ -9,11 +9,14 @@ Um sistema open-core de gamificação e produtividade com uma economia matemáti
 ## ✨ Funcionalidades Principais
 
 * **Gestão de Rotina Completa:** Separação clara do fluxo de trabalho em **Hábitos** (com ofensivas/streak e decaimento biológico), **Tarefas Diárias** (*Dailies* com agendamento por dias da semana) e **Afazeres** (*To-Dos* com checklists de subtarefas e prazos).
-* **Economia Rígida (Farming):** Ganhos de moedas (ouro 🪙) e XP calculados estritamente com base na dificuldade da tarefa:
-  * 🟩 **Trivial** (0,25 🪙 • 2 XP)
-  * 🟦 **Fácil** (0,75 🪙 • 5 XP)
-  * 🟨 **Médio** (2,50 🪙 • 15 XP)
-  * 🟧 **Difícil** (5,00 🪙 • 30 XP)
+* **Dois Modos de Experiência (Essencial vs. Aventura):** Alterne a qualquer momento entre dois perfis visuais e semânticos com paridade matemática `1:1`:
+  * 🎯 **Modo Essencial (Produtividade):** Estética executiva e limpa. Converte entregas em **Créditos** e **Pontos (`pts`)**, utiliza títulos profissionais, indicadores discretos de **Esforço**, recompensas diretas na Loja (sem sorteios RNG), **Prazo Rígido** e **Inventário**.
+  * ⚔️ **Modo Aventura (Imersão RPG):** Experiência gamificada completa com **Moedas de Ouro (🪙)** e **XP**, títulos de aventureiro (`Novato` a `Lenda`), ícones de espadas para **Dificuldade**, **Caixas Misteriosas (Gacha)**, **Modo Hardcore** e **Mochila**.
+* **Economia Rígida (Farming):** Ganhos de Moedas/Créditos e XP/Pontos calculados estritamente com base na dificuldade/esforço da tarefa:
+  * 🟩 **Trivial** (0,25 🪙 / Créditos • 2 XP / pts)
+  * 🟦 **Fácil** (0,75 🪙 / Créditos • 5 XP / pts)
+  * 🟨 **Médio** (2,50 🪙 / Créditos • 15 XP / pts)
+  * 🟧 **Difícil** (5,00 🪙 / Créditos • 30 XP / pts)
 * **Quadro Kanban & Múltiplos Ambientes (Workspaces):** Organize diferentes áreas da sua vida (Trabalho, Estudos, Vida Pessoal) em ambientes independentes, com quadros Kanban interativos e colunas personalizáveis.
 * **Loja de Recompensas da Vida Real:** Cadastre momentos de lazer e descanso categorizados em pacotes (Uso Único, Por Tempo ou Caixas da Sorte) com custos calibrados para o esforço do seu dia.
 * **🎁 Caixas Misteriosas (RNG Opcional):** Sorteios probabilísticos com custos calculados matematicamente (Básica, Premium, Épica e Lendária) para trazer dopamina à sua rotina sem quebrar a economia.
@@ -221,7 +224,7 @@ npm run dev
 
 ### 🎯 Release 1.1 — Internacionalização (i18n) & Modos de Experiência ✅ (Concluído)
 * **Internacionalização (i18n):** Suporte nativo completo à **Língua Inglesa (EN)** e **Português (PT-BR)** em todas as telas, alertas e componentes da plataforma.
-* **Modos de Experiência (RPG vs. Produtividade):** Escolha entre imersão gamificada completa com mecânicas de RPG ou interface minimalista focada em produtividade ágil.
+* **Modos de Experiência (Modo Essencial vs. Modo Aventura):** Escolha entre o **Modo Essencial (Produtividade)** — com Créditos, Pontos (`pts`), Prazo Rígido, Inventário e recompensas diretas — ou o **Modo Aventura (Imersão RPG)** — com Moedas de Ouro (🪙), XP, Modo Hardcore, Mochila e Caixas Misteriosas.
 * **Segurança e Proteção Anti-Bot:** Verificação progressiva de e-mail, limitação de taxa por IP e blindagem contra cadastros automatizados e abusos.
 * **Performance e Otimizações de Infraestrutura:** Reestruturação de tabelas, índices otimizados e respostas mais rápidas em queries frequentes.
 

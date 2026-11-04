@@ -38,7 +38,7 @@ export function FocusWeeklyChart({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-primary/25 bg-surface/50 flex flex-col w-full transition-all",
+        "rounded-2xl border border-neutral-700 dark:border-primary/25 bg-white dark:bg-surface/50 shadow-2xs dark:shadow-none flex flex-col w-full transition-all",
         isCompact ? "p-3 gap-2.5" : "p-4 gap-3",
       )}
     >
@@ -121,7 +121,7 @@ export function FocusWeeklyChart({
       {/* Gráfico de Barras dos 7 Dias da Semana */}
       <div
         className={cn(
-          "w-full flex items-end justify-between gap-2 pt-4 px-1 border-b border-white/10 relative",
+          "w-full flex items-end justify-between gap-2 pt-4 px-1 border-b border-neutral-700 dark:border-white/10 relative",
           isCompact ? "h-24" : "h-28",
         )}
         role="img"
@@ -157,7 +157,7 @@ export function FocusWeeklyChart({
                     ? "bg-gold shadow-glow-gold-xs"
                     : item.minutes > 0
                       ? "bg-primary-light/60 group-hover/bar:bg-primary-light"
-                      : "bg-white/10",
+                      : "bg-neutral-700/80 dark:bg-white/10",
                   isHovered && "brightness-125 scale-y-[1.05] bg-gold",
                 )}
                 style={{ height: `${heightClamped}%` }}

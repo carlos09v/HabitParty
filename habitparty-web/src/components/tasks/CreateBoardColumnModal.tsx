@@ -28,6 +28,7 @@ export function CreateBoardColumnModal({
   isOpen,
   onClose,
   columnToEdit,
+  insertTarget,
   onSuccess,
 }: CreateBoardColumnModalProps) {
   const t = useTranslations("tasks.columnModal");
@@ -116,6 +117,7 @@ export function CreateBoardColumnModal({
         workspaceId: activeWorkspaceId,
         name: trimmedName,
         icon: selectedIcon,
+        ...(insertTarget ? { orderIndex: insertTarget.orderIndex } : {}),
       });
 
       if (!response.success) {
@@ -130,11 +132,11 @@ export function CreateBoardColumnModal({
       const newCol: BoardColumn = {
         id: response.data.id || `col-${Date.now()}`,
         title: response.data.name || trimmedName,
-        order: response.data.orderIndex ?? 0,
+        order: response.data.orderIndex ?? insertTarget?.orderIndex ?? 0,
         icon: response.data.icon || selectedIcon,
         tasks: [],
       };
-      onSuccess?.(newCol, false);
+      onSuccess?.(newCol, false, insertTarget);
       onClose();
     });
   };

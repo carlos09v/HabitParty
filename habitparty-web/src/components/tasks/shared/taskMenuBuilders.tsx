@@ -1,4 +1,6 @@
 import {
+  ArrowLeftToLine,
+  ArrowRightToLine,
   Check,
   Columns3,
   Copy,
@@ -61,10 +63,14 @@ export function buildColumnContextMenuItems(options: {
   columnWidths?: Record<string, ColumnWidthPreset>;
   onEdit: (column: BoardColumn) => void;
   onDelete: (column: BoardColumn) => void;
+  onInsertLeft?: (column: BoardColumn) => void;
+  onInsertRight?: (column: BoardColumn) => void;
   onColumnWidthChange?: (columnId: string, width: ColumnWidthPreset) => void;
   labels?: {
     edit?: string;
     delete?: string;
+    insertLeft?: string;
+    insertRight?: string;
     layout?: string;
     compact?: string;
     normal?: string;
@@ -76,6 +82,8 @@ export function buildColumnContextMenuItems(options: {
     columnWidths,
     onEdit,
     onDelete,
+    onInsertLeft,
+    onInsertRight,
     onColumnWidthChange,
     labels,
   } = options;
@@ -89,6 +97,24 @@ export function buildColumnContextMenuItems(options: {
         if (column) onEdit(column);
       },
     },
+    ...(onInsertLeft && column
+      ? [
+          {
+            label: labels?.insertLeft || "Inserir coluna à esquerda",
+            icon: <ArrowLeftToLine size={14} />,
+            onClick: () => onInsertLeft(column),
+          },
+        ]
+      : []),
+    ...(onInsertRight && column
+      ? [
+          {
+            label: labels?.insertRight || "Inserir coluna à direita",
+            icon: <ArrowRightToLine size={14} />,
+            onClick: () => onInsertRight(column),
+          },
+        ]
+      : []),
     ...(onColumnWidthChange && column
       ? [
           {

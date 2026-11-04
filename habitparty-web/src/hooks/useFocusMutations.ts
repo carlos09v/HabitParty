@@ -26,7 +26,7 @@ interface UseFocusMutationsParams {
   onSelectActivity?: (activityId: string | null) => void;
   onResetTarget: () => void;
   onSelectActivityTarget: (activity: FocusActivity | null) => void;
-  onRefreshData: () => void;
+  onRefreshData?: () => void;
 }
 
 /**
@@ -74,7 +74,7 @@ export function useFocusMutations({
         }
         toast.success(t("deleteActivitySuccess"));
         setDeleteModalActivity(null);
-        onRefreshData();
+        onRefreshData?.();
       } else {
         toast.error(res.error || t("deleteActivityError"));
       }
@@ -112,7 +112,7 @@ export function useFocusMutations({
         }
         toast.success(t("returnItemSuccess"));
         setReturnModalItem(null);
-        onRefreshData();
+        onRefreshData?.();
       } else {
         toast.error(res.error || t("returnItemError"));
       }
@@ -171,7 +171,7 @@ export function useFocusMutations({
             }
           }
 
-          onRefreshData();
+          onRefreshData?.();
         } else {
           toast.error(res.error || t("consumeItemError"));
         }
@@ -208,11 +208,11 @@ export function useFocusMutations({
  */
 export async function executeDeleteFocusRecord(
   recordId: string,
-  onSuccess: () => void,
   messages?: {
     success?: string;
     error?: string;
   },
+  onSuccess?: () => void,
 ) {
   const isEn = getBrowserDocumentLocale() === "en";
   const res = await deleteFocusRecord(recordId);
@@ -223,7 +223,7 @@ export async function executeDeleteFocusRecord(
           ? "Focus record removed successfully!"
           : "Registro de foco removido com sucesso!"),
     );
-    onSuccess();
+    onSuccess?.();
   } else {
     toast.error(
       res.error ||

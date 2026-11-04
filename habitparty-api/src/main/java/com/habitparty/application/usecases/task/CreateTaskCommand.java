@@ -2,6 +2,7 @@ package com.habitparty.application.usecases.task;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 import com.habitparty.core.domain.enums.task.DailyDaysOfWeek;
@@ -34,8 +35,21 @@ public record CreateTaskCommand(
     DailyRepeatMonthlyOption monthlyOption,
     TodoReminderType reminderType,
     LocalDateTime customReminderAt,
-    Boolean sendEmailReminder
+    Boolean sendEmailReminder,
+    LocalTime dueTime
 ) {
+  public CreateTaskCommand(
+      String name, String description, TaskPriority priority, List<String> tags,
+      TaskDifficulty difficulty, TaskType taskType, boolean isHardcoreModeEnabled,
+      LocalDate dueDate, HabitType habitType, HabitResetCounter resetCounter,
+      HabitImportanceType importanceType, LocalDate startDate, DailyRepeatType repeatType,
+      Integer repeatEvery, List<DailyDaysOfWeek> daysOfWeek, DailyRepeatMonthlyOption monthlyOption,
+      TodoReminderType reminderType, LocalDateTime customReminderAt, Boolean sendEmailReminder) {
+    this(name, description, priority, tags, difficulty, taskType, isHardcoreModeEnabled,
+        dueDate, habitType, resetCounter, importanceType, startDate, repeatType,
+        repeatEvery, daysOfWeek, monthlyOption, reminderType, customReminderAt, sendEmailReminder, null);
+  }
+
   public CreateTaskCommand(
       String name, String description, TaskPriority priority, List<String> tags,
       TaskDifficulty difficulty, TaskType taskType, boolean isHardcoreModeEnabled,
@@ -45,6 +59,6 @@ public record CreateTaskCommand(
       TodoReminderType reminderType, LocalDateTime customReminderAt) {
     this(name, description, priority, tags, difficulty, taskType, isHardcoreModeEnabled,
         dueDate, habitType, resetCounter, importanceType, startDate, repeatType,
-        repeatEvery, daysOfWeek, monthlyOption, reminderType, customReminderAt, false);
+        repeatEvery, daysOfWeek, monthlyOption, reminderType, customReminderAt, false, null);
   }
 }

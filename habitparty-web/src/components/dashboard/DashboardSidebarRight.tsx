@@ -45,7 +45,7 @@ export async function DashboardSidebarRight({
       <aside
         data-panel="sidebar-right"
         className={cn(
-          "hidden xl:flex shrink-0 bg-primary-dark/20 border-l border-primary/30 backdrop-blur-md h-full flex-col overflow-y-auto custom-scrollbar transition-[width,padding,gap] duration-200 z-20",
+          "hidden xl:flex shrink-0 bg-background dark:bg-primary-dark/20 border-l border-neutral-700 dark:border-primary/30 backdrop-blur-md h-full flex-col overflow-y-auto custom-scrollbar transition-[width,padding,gap] duration-200 z-20",
           isCompact ? "w-[300px] px-4 py-4 gap-3" : "w-[345px] px-5 py-5 gap-4",
         )}
         aria-label={t("asideAriaLabel")}

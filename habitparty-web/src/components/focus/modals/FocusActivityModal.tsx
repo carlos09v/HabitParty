@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Loader2, Target, X } from "lucide-react";
+import { Check, Loader2, Minus, Plus, Target, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -11,21 +11,18 @@ import {
 import { BaseModal } from "@/components/ui/BaseModal";
 import { IconPickerPopover } from "@/components/ui/IconPickerPopover";
 import { Input } from "@/components/ui/Input";
-import {
-  DEFAULT_POMO_MINUTES,
-  FOCUS_ICON_KEYWORD_MAP,
-  FOCUS_ICONS,
-} from "@/constants/focus";
+import { DEFAULT_POMO_MINUTES, FOCUS_ICONS } from "@/constants/focus";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
 import type { FocusActivity, FocusRecordType } from "@/types/focus";
 import { cn } from "@/utils";
+import { suggestFocusIconFromName } from "@/utils/iconSuggestion";
 import { soundEffects } from "@/utils/soundEffects";
 
 interface FocusActivityModalProps {
   isOpen: boolean;
   onClose: () => void;
   activityToEdit?: FocusActivity | null;
-  onSuccess: () => void;
+  onSuccess?: () => void;
 }
 
 const MAX_FOCUS_ACTIVITY_NAME_LENGTH = 30;
@@ -72,16 +69,9 @@ export function FocusActivityModal({
     setName(newName);
 
     if (!hasManuallyChangedIcon) {
-      const normalized = newName
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "");
-
-      for (const [keyword, iconId] of Object.entries(FOCUS_ICON_KEYWORD_MAP)) {
-        if (normalized.includes(keyword)) {
-          setIcon(iconId);
-          break;
-        }
+      const suggested = suggestFocusIconFromName(newName);
+      if (suggested) {
+        setIcon(suggested);
       }
     }
   };
@@ -113,7 +103,7 @@ export function FocusActivityModal({
               recordType === "POMO" ? targetTimeMinutes : undefined,
           });
           toast.success(t("updateSuccess"));
-          onSuccess();
+          onSuccess?.();
           onClose();
         } else {
           toast.error(res.error || t("updateError"));
@@ -135,7 +125,7 @@ export function FocusActivityModal({
                 ? t("createSuccessPomoDesc", { minutes: targetTimeMinutes })
                 : t("createSuccessStopwatchDesc"),
           });
-          onSuccess();
+          onSuccess?.();
           onClose();
         } else {
           toast.error(res.error || t("createError"));
@@ -241,16 +231,43 @@ export function FocusActivityModal({
 
         {/* Meta de tempo em minutos (apenas se Pomodoro) */}
         {recordType === "POMO" && (
-          <Input
-            id="target-minutes"
-            label={t("cycleDurationLabel")}
-            type="number"
-            min={5}
-            max={180}
-            step={5}
-            value={targetTimeMinutes}
-            onChange={(e) => setTargetTimeMinutes(Number(e.target.value))}
-          />
+          <div className="relative flex items-end">
+            <Input
+              id="target-minutes"
+              label={t("cycleDurationLabel")}
+              type="number"
+              min={5}
+              max={180}
+              step={5}
+              value={targetTimeMinutes}
+              onChange={(e) => setTargetTimeMinutes(Number(e.target.value))}
+              className="pr-20 font-semibold tabular-nums"
+            />
+            <div className="absolute right-2 bottom-2.5 flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() =>
+                  setTargetTimeMinutes((prev) => Math.max(5, prev - 5))
+                }
+                disabled={targetTimeMinutes <= 5 || isSubmitting}
+                className="p-1 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                aria-label="-5m"
+              >
+                <Minus size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setTargetTimeMinutes((prev) => Math.min(180, prev + 5))
+                }
+                disabled={targetTimeMinutes >= 180 || isSubmitting}
+                className="p-1 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                aria-label="+5m"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Botões de Ação */}
@@ -267,7 +284,7 @@ export function FocusActivityModal({
           <button
             type="submit"
             disabled={isSubmitting || !name.trim()}
-            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
           >
             {isSubmitting ? (
               <>

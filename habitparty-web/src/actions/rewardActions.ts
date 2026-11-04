@@ -1,24 +1,15 @@
 "use server";
 
-import { updateTag } from "next/cache";
 import { getTranslations } from "next-intl/server";
-import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
+import type {
+  CreateRewardDTO,
+  RewardResponseDTO,
+  UpdateRewardDTO,
+  UpdateRewardOrderDTO,
+} from "@/types/reward";
+import { invalidateRewardDomainTags } from "./cacheInvalidation";
 import { type ActionState, getErrorMessage } from "./types";
-
-type CreateRewardDTO = components["schemas"]["CreateRewardDTO"];
-type UpdateRewardDTO = components["schemas"]["UpdateRewardDTO"];
-type UpdateRewardOrderDTO = components["schemas"]["UpdateRewardOrderDTO"];
-type RewardResponseDTO = components["schemas"]["RewardResponseDTO"];
-
-function invalidateRewardTags(includeUserAndInventory = false) {
-  updateTag("rewards");
-  if (includeUserAndInventory) {
-    updateTag("inventory");
-    updateTag("user");
-    updateTag("transactions");
-  }
-}
 
 export async function createReward(
   payload: CreateRewardDTO,
@@ -36,7 +27,7 @@ export async function createReward(
       };
     }
 
-    invalidateRewardTags();
+    invalidateRewardDomainTags();
     return { success: true, data };
   } catch (err) {
     console.error("[RewardAction:Create]", err);
@@ -65,7 +56,7 @@ export async function updateReward(
       };
     }
 
-    invalidateRewardTags();
+    invalidateRewardDomainTags();
     return { success: true, data };
   } catch (err) {
     console.error("[RewardAction:Update]", err);
@@ -90,7 +81,7 @@ export async function deleteReward(rewardId: string): Promise<ActionState> {
       };
     }
 
-    invalidateRewardTags();
+    invalidateRewardDomainTags();
     return { success: true };
   } catch (err) {
     console.error("[RewardAction:Delete]", err);
@@ -117,7 +108,7 @@ export async function reorderRewards(
       };
     }
 
-    invalidateRewardTags();
+    invalidateRewardDomainTags();
     return { success: true };
   } catch (err) {
     console.error("[RewardAction:Reorder]", err);
@@ -142,7 +133,7 @@ export async function redeemReward(rewardId: string): Promise<ActionState> {
       };
     }
 
-    invalidateRewardTags(true);
+    invalidateRewardDomainTags(true);
     return { success: true };
   } catch (err) {
     console.error("[RewardAction:Redeem]", err);

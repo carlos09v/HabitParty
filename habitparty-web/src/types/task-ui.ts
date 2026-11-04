@@ -18,12 +18,19 @@ export type BoardAlignment = "left" | "center" | "right";
 export type ColumnWidthPreset = "compact" | "normal" | "wide";
 export type FormatSyntax = "bold" | "italic" | "highlight" | "bullet" | "code";
 
+export interface ColumnInsertTarget {
+  referenceColumnId: string;
+  position: "left" | "right";
+  orderIndex: number;
+}
+
 export interface InitialTaskFormData {
   title?: string;
   taskType?: TaskTypeOption;
   difficulty?: TaskDifficultyOption;
   priority?: TaskPriorityOption;
   dueDate?: string;
+  dueTime?: string;
   habitType?: HabitTypeOption;
   importanceType?: HabitImportanceOption;
   resetCounter?: ResetCounterOption;
@@ -103,12 +110,24 @@ export interface TasksBoardModalsProps {
   visibleColumnIds: string[];
   maxColumns: number;
   isPremium: boolean;
-  columnModalState: { isOpen: boolean; columnToEdit?: BoardColumn | null };
+  columnModalState: {
+    isOpen: boolean;
+    columnToEdit?: BoardColumn | null;
+    insertTarget?: ColumnInsertTarget | null;
+  };
   closeColumnModal: () => void;
   setColumnModalState: Dispatch<
-    SetStateAction<{ isOpen: boolean; columnToEdit?: BoardColumn | null }>
+    SetStateAction<{
+      isOpen: boolean;
+      columnToEdit?: BoardColumn | null;
+      insertTarget?: ColumnInsertTarget | null;
+    }>
   >;
-  handleColumnSaved: (col: BoardColumn, isEdit?: boolean) => void;
+  handleColumnSaved: (
+    col: BoardColumn,
+    isEdit?: boolean,
+    insertTarget?: ColumnInsertTarget | null,
+  ) => void;
   taskModalState: {
     isOpen: boolean;
     columnId?: string;
@@ -343,7 +362,12 @@ export interface CreateBoardColumnModalProps {
   isOpen: boolean;
   onClose: () => void;
   columnToEdit?: BoardColumn | null;
-  onSuccess?: (column: BoardColumn, isEdit?: boolean) => void;
+  insertTarget?: ColumnInsertTarget | null;
+  onSuccess?: (
+    column: BoardColumn,
+    isEdit?: boolean,
+    insertTarget?: ColumnInsertTarget | null,
+  ) => void;
 }
 
 export interface CreateTaskModalProps {

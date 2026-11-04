@@ -8,6 +8,7 @@ public record AdminOverviewProjection(
     long premiumUsers,
     long founderUsers,
     long adminUsers,
+    long verifiedUsers,
     long emailsSentThisMonth,
     long resendMonthlyQuota,
     double resendQuotaPercentage,

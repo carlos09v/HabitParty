@@ -42,13 +42,13 @@ export function Switch({
         isSm ? "h-5 w-9" : "h-6 w-11",
         checked
           ? "bg-amber-400 dark:bg-amber-500 shadow-glow-gold-xs border border-amber-300 dark:border-amber-400"
-          : "bg-surface-hover dark:bg-neutral-800 border border-neutral-600 dark:border-white/10",
+          : "bg-neutral-600 border border-neutral-500/70 dark:bg-neutral-800 dark:border-white/10",
         className,
       )}
     >
       <span
         className={cn(
-          "inline-flex items-center justify-center transform rounded-full shadow-xs transition-transform duration-200",
+          "inline-flex items-center justify-center transform rounded-full shadow-sm transition-transform duration-200",
           isSm ? "h-3.5 w-3.5" : "h-4.5 w-4.5",
           checked
             ? isSm

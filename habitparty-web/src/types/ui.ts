@@ -4,6 +4,7 @@ import type { HTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
 export type ThemeMode = "light" | "dark";
 export type ExperienceMode = "GAMIFIED" | "PRODUCTIVITY";
 export type AppLocale = "en" | "pt-BR";
+export type ViewMode = "card" | "list" | "grid";
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   compact?: boolean;
@@ -46,6 +47,10 @@ export interface TimePickerProps {
   onChange?: (value: string) => void;
   name?: string;
   required?: boolean;
+  variant?: "input" | "badge";
+  badgeLabel?: string;
+  clearLabel?: string;
+  isOverdue?: boolean;
   placeholder?: string;
   disabled?: boolean;
   allowClear?: boolean;
@@ -105,9 +110,9 @@ export interface WelcomeCardStat {
 }
 
 export interface WelcomeCardProps {
-  title: string;
+  title?: string;
   subtitle?: string;
-  bullets: string[];
+  bullets?: string[];
   imageSrc?: string;
   icon?: LucideIcon;
   stats?: WelcomeCardStat[];

@@ -24,14 +24,14 @@ export const HELP_PRODUCTIVITY_STEPS: readonly HelpProductivityStep[] = [
     step: 2,
     title: "Execute com Foco e Constância",
     description:
-      "Conclua tarefas reais. O motor matemático pontua sua consistência, creditando progresso, XP e moedas (🪙) proporcionais ao esforço.",
+      "Conclua tarefas reais. O motor matemático pontua sua consistência, creditando XP e Moedas de Ouro (🪙) no Modo Aventura ou Pontos (pts) e Créditos no Modo Essencial.",
     badgeClassName: "bg-gold/20 border-gold/40 text-gold",
   },
   {
     step: 3,
     title: "Recompense sua Dedicação",
     description:
-      "Defina suas próprias recompensas na Loja: pausas merecidas, momentos de lazer, pacotes de tempo livre ou Caixas Misteriosas.",
+      "Defina suas próprias recompensas na Loja: pausas merecidas, momentos de lazer, pacotes de tempo livre ou Caixas Misteriosas (no Modo Aventura).",
     badgeClassName: "bg-magenta/20 border-magenta/40 text-magenta",
   },
   {
@@ -300,8 +300,16 @@ export const HELP_FAQS: HelpFaqItem[] = [
     category: "OVERVIEW",
     question: "O que é o HabitParty e qual a sua filosofia?",
     answer:
-      "O HabitParty é um motor de produtividade gamificado de economia fechada. Ao contrário de apps tradicionais de to-do, ele converte o esforço real do usuário em moedas de ouro (🪙) e experiência (XP) com regras matemáticas rígidas. As moedas ganhas são usadas para 'comprar' momentos reais de lazer na Loja (jogar videogame, assistir séries, pausas sem culpa), transformando o descanso em algo merecido e sem procrastinação.",
-    tags: ["visão geral", "gamificação", "introdução", "filosofia", "moedas"],
+      "O HabitParty é um motor de produtividade gamificado de economia fechada. Ao contrário de apps tradicionais de to-do, ele converte o esforço real do usuário em Moedas de Ouro (🪙) e Experiência (XP) no Modo Aventura — ou em Créditos e Pontos (pts) no Modo Essencial — com regras matemáticas rígidas. O saldo conquistado é usado para 'comprar' momentos reais de lazer na Loja (jogar videogame, assistir séries, pausas sem culpa), transformando o descanso em algo merecido e sem procrastinação.",
+    tags: [
+      "visão geral",
+      "gamificação",
+      "introdução",
+      "filosofia",
+      "moedas",
+      "créditos",
+      "pontos",
+    ],
     highlightBadge: "Fundamental",
     actionLink: { label: "Ir para o Dashboard", href: "/dashboard" },
   },
@@ -309,20 +317,24 @@ export const HELP_FAQS: HelpFaqItem[] = [
     id: "experience-modes",
     category: "OVERVIEW",
     question:
-      "Qual a diferença entre o Modo Foco em Produtividade e a Imersão Gamificada?",
+      "Qual a diferença entre o Modo Essencial (Produtividade) e o Modo Aventura (RPG)?",
     answer:
-      "O HabitParty oferece duas experiências de uso distintas para se adaptar ao seu momento cognitivo e estilo de trabalho. Ambas compartilham o mesmo motor rígido de consistência, quadros Kanban, Pomodoro e histórico:",
+      "O HabitParty oferece dois perfis de experiência que compartilham o mesmo motor matemático de consistência, quadros Kanban, Pomodoro e extrato, adaptando a linguagem, os indicadores visuais e a mecânica de recompensas ao seu estilo:",
     bullets: [
-      "Modo Foco em Produtividade (Minimalista): Desenvolvido para trabalho executivo, estudos acadêmicos e quem prefere uma interface limpa e sóbria. Oculta prévias de moedas e baús dos formulários, silencia efeitos sonoros e adota termos profissionais (Prazo Rígido em vez de Hardcore, Inventário em vez de Mochila e Pontos em vez de XP).",
-      "Modo Imersão Gamificada (RPG): Desenvolvido para quem sofre com procrastinação e precisa de feedback imediato de dopamina. Transforma afazeres em missões com Moedas de Ouro (🪙), ganho de XP vitalício, Níveis de Usuário (Novice a Legend), Modo Hardcore com riscos reais, Caixas Misteriosas na Loja e efeitos sonoros comemorativos.",
-      "Liberdade de Escolha: Você escolhe seu modo logo no primeiro acesso e pode alternar a qualquer momento em Configurações > Modo de Experiência com 1 clique, sem perder nenhum dado, ponto ou progresso.",
+      "Modo Essencial (Produtividade): Produtividade gamificada com estética executiva e limpa. Substitui Moedas de Ouro por Créditos e XP por Pontos (pts), adota títulos profissionais de evolução, usa indicadores discretos de Esforço (em vez de espadas), foca em recompensas pessoais diretas na Loja (sem sorteios de Caixas Misteriosas) e utiliza termos corporativos/acadêmicos ('Prazo Rígido' em vez de 'Modo Hardcore' e 'Inventário' em vez de 'Mochila').",
+      "Modo Aventura (Imersão RPG): Experiência gamificada completa com feedback imediato de dopamina. Converte suas entregas em Moedas de Ouro (🪙) e XP vitalício, exibe títulos de aventureiro (Novato a Lenda), ícones de espadas para dificuldade, Modo Hardcore com risco disciplinar, Caixas Misteriosas (Gacha/RNG) na Loja, Mochila de itens e efeitos sonoros comemorativos.",
+      "Conversão 1:1 e Troca Livre: 1 Moeda de Ouro equivale exatamente a 1 Crédito, e 1 XP equivale a 1 Ponto (pts). Você escolhe seu perfil no primeiro acesso e pode alternar quando quiser em Configurações > Aparência > Estilo de Experiência com 1 clique, sem perder nenhum saldo, nível ou histórico.",
     ],
     tags: [
       "experiência",
+      "modo essencial",
+      "modo aventura",
       "produtividade",
       "gamificação",
-      "modos",
-      "minimalista",
+      "créditos",
+      "pontos",
+      "moedas",
+      "xp",
       "rpg",
       "configurações",
     ],
@@ -349,10 +361,10 @@ export const HELP_FAQS: HelpFaqItem[] = [
     category: "TASKS",
     question: "O que é o Prazo Rígido / Modo Hardcore nas tarefas?",
     answer:
-      "É um compromisso de alta responsabilidade disponível para Hábitos, Diárias e Afazeres (To-dos). A nomenclatura se adapta ao seu Modo de Experiência: chama-se 'Prazo Rígido (Compromisso Inegociável)' no Modo Produtividade e 'Modo Hardcore' no Modo Gamificado. Ao ativá-lo:",
+      "É um compromisso de alta responsabilidade disponível para Hábitos, Diárias e Afazeres (To-dos). A nomenclatura se adapta ao seu Modo de Experiência: chama-se 'Prazo Rígido (Compromisso Inegociável)' no Modo Essencial (Produtividade) e 'Modo Hardcore' no Modo Aventura (RPG). Ao ativá-lo:",
     bullets: [
       "Afazeres (To-Dos): A data de entrega torna-se obrigatória e fica bloqueada contra adiamentos após o vencimento. Se atrasar, a entrega tardia rende apenas 50% da recompensa.",
-      "Penalidade Noturna: Se a atividade não for cumprida até as 23:59 do dia/prazo, o sistema aplica uma penalidade imediata deduzindo 50% de Moedas/XP (ou pontos de consistência) do seu saldo.",
+      "Penalidade Noturna: Se a atividade não for cumprida até as 23:59 do dia/prazo, o sistema aplica uma penalidade imediata deduzindo 50% de Moedas/XP (no Modo Aventura) ou Créditos/Pontos (no Modo Essencial) do seu saldo.",
       "Hábitos e Diárias: Falhar na rotina marcada como inegociável reseta a ofensiva (Streak) para o Dia 1 e cobra a multa disciplinar.",
       "Quando usar: Reserve exclusivamente para os seus 1 ou 2 compromissos inegociáveis do dia ou da semana, evitando a autossabotagem.",
     ],

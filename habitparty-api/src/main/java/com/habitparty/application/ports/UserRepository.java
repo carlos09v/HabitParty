@@ -24,7 +24,8 @@ public interface UserRepository {
   long countByIsPremium(boolean isPremium);
   long countByRole(UserRole role);
   long countFounders();
-  Page<User> searchUsers(String search, UserRole role, Boolean isPremium, Boolean isFounder, Pageable pageable);
+  long countByEmailVerified(boolean emailVerified);
+  Page<User> searchUsers(String search, UserRole role, Boolean isPremium, Boolean isFounder, Boolean emailVerified, Pageable pageable);
 }
 
 

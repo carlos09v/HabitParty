@@ -110,17 +110,20 @@
       "step1": {
         "tag": "Rotina & Hábitos",
         "title": "Estruture sua Rotina",
-        "description": "Crie hábitos com gatilhos positivos e negativos (+/-), rotinas diárias com ofensivas de consistência e projetos organizados em quadros Kanban ágeis."
+        "description": "Crie hábitos com gatilhos positivos e negativos (+/-), rotinas diárias com ofensivas de consistência e projetos organizados em quadros Kanban ágeis.",
+        "footer": "Kanban Ágil & Streaks Diários"
       },
       "step2": {
         "tag": "Pomodoro & Foco",
         "title": "Ative o Hiperfoco Zen",
-        "description": "Entre em estado de fluxo com o Focus Hero Stage. Cronômetro inteligente, intervalos revigorantes e sons ambientes relaxantes para silenciar o ruído mental."
+        "description": "Entre em estado de fluxo com o Focus Hero Stage. Cronômetro inteligente, intervalos revigorantes e sons ambientes relaxantes para silenciar o ruído mental.",
+        "footer": "Sons Ambientes & Modo Zen"
       },
       "step3": {
         "tag": "Recompensas & Lazer",
         "title": "Recompense sua Dedicação",
-        "description": "Transforme disciplina em momentos merecidos. Desfrute de pausas sem culpa, tempo livre ou itens da sua própria loja pessoal, seja acumulando pontos ou moedas de ouro."
+        "description": "Transforme disciplina em momentos merecidos. Desfrute de pausas sem culpa, tempo livre ou itens da sua própria loja pessoal, seja acumulando pontos ou moedas de ouro.",
+        "footer": "Loja Pessoal & Caixas Misteriosas"
       }
     }
   },

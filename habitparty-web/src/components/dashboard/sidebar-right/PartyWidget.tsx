@@ -17,7 +17,7 @@ export function PartyWidget({ isCompact = false }: PartyWidgetProps) {
   return (
     <div
       className={cn(
-        "w-full flex items-center justify-between rounded-lg border border-dashed border-white/10 bg-white/5 transition-colors",
+        "w-full flex items-center justify-between rounded-lg border border-neutral-700 dark:border-dashed dark:border-white/10 bg-white dark:bg-white/5 shadow-2xs dark:shadow-none transition-colors",
         isCompact ? "px-2.5 py-1.5" : "px-3 py-2",
       )}
     >
@@ -32,8 +32,12 @@ export function PartyWidget({ isCompact = false }: PartyWidgetProps) {
         </span>
       </div>
 
-      <div className="flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-tiny font-medium text-neutral-400">
-        <Sparkles size={11} className="text-gold/80" aria-hidden="true" />
+      <div className="flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-full bg-surface dark:bg-white/5 border border-neutral-700 dark:border-white/10 text-tiny font-medium text-neutral-400">
+        <Sparkles
+          size={11}
+          className="text-amber-600 dark:text-gold/80"
+          aria-hidden="true"
+        />
         <span>{t("comingSoon")}</span>
       </div>
     </div>

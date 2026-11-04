@@ -72,6 +72,17 @@ public class CreateBoardColumnUseCase {
     int maxIndex = port.getMaxOrderIndex(command.workspaceId());
     int newIndex = maxIndex + 1;
 
+    if (command.orderIndex() != null && command.orderIndex() >= 0 && command.orderIndex() <= maxIndex) {
+      newIndex = command.orderIndex();
+      List<BoardColumn> existingColumns = port.findAllByWorkspaceId(command.workspaceId());
+      for (BoardColumn col : existingColumns) {
+        if (col.getOrderIndex() >= newIndex) {
+          col.setOrderIndex(col.getOrderIndex() + 1);
+        }
+      }
+      port.reorderAll(existingColumns);
+    }
+
     // LÓGICA DE UX: Se já existem 4 ou mais listas, a nova vai direto pra mochila (false)
     boolean isDefaultVisible = currentCount < 4;
 

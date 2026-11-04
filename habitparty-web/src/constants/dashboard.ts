@@ -64,7 +64,7 @@ export const DASHBOARD_TASK_FILTERS: readonly {
   label: string;
 }[] = [
   { id: "today", label: "Hoje" },
-  { id: "next7days", label: "Próximos 7 dias..." },
+  { id: "next7days", label: "Próximos 7 dias" },
   { id: "this_month", label: "Este mês" },
   { id: "nodate", label: "Sem prazo" },
   { id: "overdue", label: "Atrasado" },

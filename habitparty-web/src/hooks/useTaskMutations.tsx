@@ -11,6 +11,7 @@ import {
   deleteTask,
   recordHabitScore,
 } from "@/actions/taskActions";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import type { Task } from "@/types/task";
 import {
@@ -53,13 +54,21 @@ export function useTaskMutations({
   const t = useTranslations("dashboard.taskShared.mutations");
   const tLevelUp = useTranslations("dashboard.taskShared.levelUp");
   const locale = useLocale() as AppLocale;
+  const { isGamified } = useExperienceMode();
   const [isPending, startTransition] = useTransition();
   const rewardedTaskIdsRef = useRef<Set<string>>(new Set());
+
+  const xpLabel = isGamified ? t("xpLabel") : t("xpLabelProductivity");
+  const goldLabel = isGamified ? t("goldLabel") : t("goldLabelProductivity");
 
   const handleToggleComplete = useCallback(
     (taskId: string, completed: boolean) => {
       const targetTask = findTask(taskId);
       if (!targetTask) return;
+
+      if (targetTask.completed || targetTask.hasClaimedReward) {
+        rewardedTaskIdsRef.current.add(taskId);
+      }
 
       const alreadyRewarded = Boolean(
         targetTask.hasClaimedReward || rewardedTaskIdsRef.current.has(taskId),
@@ -95,7 +104,14 @@ export function useTaskMutations({
           // Proteção contra ganho múltiplo de Ouro/XP ao marcar e desmarcar a mesma tarefa/diária
           if (alreadyRewarded) {
             soundEffects.playTaskCompleteSound();
-            toast.success(completionLabel);
+            toast.success(
+              <span>
+                {completionLabel}{" "}
+                <span className="text-neutral-300 font-normal">
+                  ({t("rewardAlreadyClaimed")})
+                </span>
+              </span>,
+            );
             return;
           }
 
@@ -135,9 +151,13 @@ export function useTaskMutations({
             if (xp > 0 || gold > 0) {
               toast.success(
                 <span>
-                  {completionLabel} (<strong>+{xp} XP</strong> •{" "}
+                  {completionLabel} (
                   <strong>
-                    +{formatCoins(gold, { locale })} {t("goldLabel")}
+                    +{xp} {xpLabel}
+                  </strong>{" "}
+                  •{" "}
+                  <strong>
+                    +{formatCoins(gold, { locale })} {goldLabel}
                   </strong>
                   )
                   {breakdown.hasDecay && (
@@ -172,6 +192,8 @@ export function useTaskMutations({
       t,
       tLevelUp,
       locale,
+      xpLabel,
+      goldLabel,
     ],
   );
 
@@ -233,9 +255,13 @@ export function useTaskMutations({
             if (xp > 0 || gold > 0) {
               toast.success(
                 <span>
-                  {t("habitRecorded")} (<strong>+{xp} XP</strong> •{" "}
+                  {t("habitRecorded")} (
                   <strong>
-                    +{formatCoins(gold, { locale })} {t("goldLabel")}
+                    +{xp} {xpLabel}
+                  </strong>{" "}
+                  •{" "}
+                  <strong>
+                    +{formatCoins(gold, { locale })} {goldLabel}
                   </strong>
                   )
                   {breakdown.hasDecay && (
@@ -272,10 +298,13 @@ export function useTaskMutations({
           toast.error(
             <span>
               {t("habitPenalty")} (
-              <strong>-{penaltyResult.xpDeducted} XP</strong> •{" "}
+              <strong>
+                -{penaltyResult.xpDeducted} {xpLabel}
+              </strong>{" "}
+              •{" "}
               <strong>
                 -{formatCoins(penaltyResult.coinsDeducted, { locale })}{" "}
-                {t("goldLabel")}
+                {goldLabel}
               </strong>
               )
             </span>,
@@ -283,7 +312,16 @@ export function useTaskMutations({
         }
       });
     },
-    [findTask, onOptimisticHabit, onTaskUpdatedInDetails, t, tLevelUp, locale],
+    [
+      findTask,
+      onOptimisticHabit,
+      onTaskUpdatedInDetails,
+      t,
+      tLevelUp,
+      locale,
+      xpLabel,
+      goldLabel,
+    ],
   );
 
   const handleDeleteTask = useCallback(
@@ -335,6 +373,7 @@ export function useTaskMutations({
         ...task,
         id: newTaskId || `dup-${Date.now()}`,
         completed: false,
+        hasClaimedReward: false,
         streak: 0,
         positiveCount: 0,
         negativeCount: 0,

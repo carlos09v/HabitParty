@@ -43,7 +43,7 @@ export function Input({
           <div
             className={cn(
               "absolute left-4 pointer-events-none transition-colors",
-              "text-neutral-400 peer-focus:text-gold peer-[:not(:placeholder-shown)]:text-gold",
+              "text-neutral-400 peer-focus:text-primary dark:peer-focus:text-gold dark:peer-[:not(:placeholder-shown)]:text-gold",
             )}
           >
             {icon}
@@ -58,14 +58,16 @@ export function Input({
           className={cn(
             "peer w-full rounded-lg transition-all",
             compact ? "py-2 text-body-s" : "py-3 text-body-m",
-            // Tema Claro: Fundo de card limpo, borda sutil e texto escuro de alta legibilidade
-            "bg-card border border-neutral-700 text-neutral-50 focus:border-primary focus:bg-card shadow-xs",
+            // Tema Claro: Fundo de card limpo, borda nítida e texto escuro de alta legibilidade
+            "bg-card border border-neutral-600 hover:border-neutral-500 text-neutral-50 focus:border-primary focus:ring-2 focus:ring-primary/15 focus:bg-card shadow-xs",
             // Tema Escuro: 100% fiel ao original
-            "dark:bg-primary-dark/20 dark:border-primary/30 dark:text-neutral-50 dark:focus:border-primary-light dark:focus:bg-primary-dark/30 dark:shadow-none",
-            // Foco acessível com anel dourado de alto contraste WCAG AA
+            "dark:bg-primary-dark/20 dark:border-primary/30 dark:hover:border-primary/50 dark:text-neutral-50 dark:focus:border-primary-light dark:focus:ring-0 dark:focus:bg-primary-dark/30 dark:shadow-none",
+            // Foco acessível com anel de alto contraste WCAG AA
             "outline-none focus:outline-none",
-            "focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:border-transparent",
+            "focus-visible:ring-2 focus-visible:ring-primary/20 dark:focus-visible:ring-gold dark:focus-visible:ring-offset-2 dark:focus-visible:ring-offset-background dark:focus-visible:border-transparent",
             "placeholder:text-neutral-400",
+            finalType === "number" &&
+              "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
             error &&
               "border-danger-500/80 focus-visible:ring-danger-500 focus:border-danger-500",
             icon ? "pl-11 pr-4" : compact ? "px-3" : "px-4",

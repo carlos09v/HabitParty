@@ -100,6 +100,7 @@ export function mapTaskResponseToTask(
         ? (taskDto.negativeCount ?? 0)
         : 0,
     dueDate: taskDto.dueDate,
+    dueTime: taskDto.dueTime ? taskDto.dueTime.slice(0, 5) : undefined,
     habitType: taskDto.habitType,
     resetCounter: taskDto.resetCounter,
     importanceType: taskDto.importanceType,
@@ -153,6 +154,14 @@ export function buildUpdateTaskPayload(
 
   const priority = (merged.priority as TaskPriorityOption) || "NONE";
   const difficulty = normalizeTaskDifficulty(merged.difficulty);
+  const resolvedDueTime =
+    !isHabit && !isDaily && merged.dueTime
+      ? merged.dueTime.slice(0, 5)
+      : undefined;
+  const resolvedDueDate =
+    !isHabit && !isDaily
+      ? merged.dueDate || (resolvedDueTime ? getTodayDateString() : undefined)
+      : undefined;
 
   const payload: UpdateTaskDTO = {
     name: merged.title,
@@ -161,7 +170,8 @@ export function buildUpdateTaskPayload(
     priority,
     difficulty,
     tags: merged.tags && merged.tags.length > 0 ? merged.tags : undefined,
-    dueDate: !isHabit && !isDaily ? merged.dueDate || undefined : undefined,
+    dueDate: resolvedDueDate,
+    dueTime: resolvedDueDate ? resolvedDueTime : undefined,
     ...(isHabit && {
       habitType: merged.habitType || "POSITIVE",
       resetCounter: merged.resetCounter || "DAILY",
@@ -231,7 +241,9 @@ export function buildCreateTaskPayloadFromTask(task: Task): CreateTaskDTO {
     }),
     ...(isTodo && {
       priority: (task.priority as TaskPriorityOption) || "NONE",
-      dueDate: task.dueDate || undefined,
+      dueDate:
+        task.dueDate || (task.dueTime ? getTodayDateString() : undefined),
+      dueTime: task.dueTime ? task.dueTime.slice(0, 5) : undefined,
       reminderType: task.reminderType || "NONE",
       sendEmailReminder: Boolean(task.sendEmailReminder),
     }),
@@ -394,7 +406,11 @@ export function buildQuickCreateTaskPayload(
 
   const difficulty = extraPayload?.difficulty || "MEDIUM";
   const priority = extraPayload?.priority || "NONE";
-  const dueDate = extraPayload?.dueDate || undefined;
+  const dueTime = extraPayload?.dueTime
+    ? extraPayload.dueTime.slice(0, 5)
+    : undefined;
+  const dueDate =
+    extraPayload?.dueDate || (dueTime ? getTodayDateString() : undefined);
 
   return {
     payload: {
@@ -403,6 +419,7 @@ export function buildQuickCreateTaskPayload(
       priority,
       difficulty,
       ...(dueDate && { dueDate }),
+      ...(dueTime && { dueTime }),
       isHardcoreModeEnabled: false,
       reminderType: "NONE",
     },
@@ -418,6 +435,7 @@ export function buildQuickCreateTaskPayload(
       priority,
       difficulty,
       dueDate,
+      dueTime,
       isHardcoreModeEnabled: false,
       reminderType: "NONE",
       order: 0,

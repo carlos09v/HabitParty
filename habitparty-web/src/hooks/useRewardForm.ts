@@ -4,10 +4,6 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { createReward, updateReward } from "@/actions/rewardActions";
-import {
-  suggestRewardIconFromTitle,
-  toPackageMessageKey,
-} from "@/constants/reward";
 import type {
   PackageLevel,
   Reward,
@@ -17,6 +13,8 @@ import type {
 import {
   mapRewardFormToCreatePayload,
   mapRewardFormToUpdatePayload,
+  suggestRewardIconFromTitle,
+  toPackageMessageKey,
 } from "@/utils/rewardMapper";
 import { soundEffects } from "@/utils/soundEffects";
 

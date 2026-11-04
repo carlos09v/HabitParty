@@ -1,6 +1,15 @@
 "use client";
 
-import { Crown, Database, HardDrive, Mail, Search, Shield } from "lucide-react";
+import {
+  BadgeCheck,
+  Clock,
+  Crown,
+  Database,
+  HardDrive,
+  Mail,
+  Search,
+  Shield,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { TaskPagination } from "@/components/dashboard/TaskPagination";
@@ -152,9 +161,28 @@ export function AdminUsersTable({
                             hasRing={user.isPremium}
                           />
                           <div className="min-w-0">
-                            <p className="font-bold text-neutral-100 truncate">
-                              {user.fullName}
-                            </p>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="font-bold text-neutral-100 truncate">
+                                {user.fullName}
+                              </p>
+                              {user.emailVerified ? (
+                                <span
+                                  title={t("verification.verifiedTitle")}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0"
+                                >
+                                  <BadgeCheck size={11} />
+                                  <span>{t("verification.verified")}</span>
+                                </span>
+                              ) : (
+                                <span
+                                  title={t("verification.unverifiedTitle")}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/25 shrink-0"
+                                >
+                                  <Clock size={10} />
+                                  <span>{t("verification.unverified")}</span>
+                                </span>
+                              )}
+                            </div>
                             <p className="text-[11px] text-neutral-400 truncate">
                               @{user.username} • {user.email}
                             </p>

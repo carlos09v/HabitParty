@@ -106,8 +106,13 @@ public class UserAdapter implements UserRepository {
   }
 
   @Override
-  public Page<User> searchUsers(String search, UserRole role, Boolean isPremium, Boolean isFounder, Pageable pageable) {
-    return userRepository.searchUsers(search, role, isPremium, isFounder, pageable)
+  public long countByEmailVerified(boolean emailVerified) {
+    return userRepository.countByEmailVerified(emailVerified);
+  }
+
+  @Override
+  public Page<User> searchUsers(String search, UserRole role, Boolean isPremium, Boolean isFounder, Boolean emailVerified, Pageable pageable) {
+    return userRepository.searchUsers(search, role, isPremium, isFounder, emailVerified, pageable)
         .map(userMapper::toDomain);
   }
 }

@@ -92,10 +92,14 @@ public class UpdateTaskUseCase {
         }
       }
 
+      java.time.LocalDate effectiveDueDate = command.dueDate() != null
+          ? command.dueDate()
+          : (command.dueTime() != null ? java.time.LocalDate.now() : null);
+
       LocalDateTime newReminderAt = Todo.calculateReminderTime(
-          command.dueDate(), command.reminderType(), command.customReminderAt()
+          effectiveDueDate, command.reminderType(), command.customReminderAt()
       );
-      t.updateTodoDetails(command.dueDate(), command.reminderType(), newReminderAt, command.sendEmailReminder());
+      t.updateTodoDetails(effectiveDueDate, command.dueTime(), command.reminderType(), newReminderAt, command.sendEmailReminder());
     }
 
     return port.save(task);

@@ -90,7 +90,7 @@ export function SubscriptionSettingsCard({
             className={cn(
               "rounded-xl border p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all",
               isPremium
-                ? "bg-gradient-to-r from-gold/10 via-surface/60 to-gold/10 border-gold/40 shadow-glow-gold-xs"
+                ? "bg-gradient-to-r from-gold/10 via-white dark:via-surface/60 to-gold/10 border-gold/40 shadow-glow-gold-xs"
                 : "bg-surface/40 border-neutral-700/60",
             )}
           >

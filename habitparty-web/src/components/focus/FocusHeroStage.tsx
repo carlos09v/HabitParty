@@ -1,11 +1,9 @@
 "use client";
 
 import {
-  ArrowRightLeft,
   CheckCircle2,
   FastForward,
   Lock,
-  Maximize2,
   Pause,
   Play,
   RotateCcw,
@@ -16,7 +14,6 @@ import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { memo, useCallback, useEffect, useState } from "react";
 import { getFocusIcon, MAX_FOCUS_ACTIVITIES_FREE } from "@/constants/focus";
-import { useExperienceMode } from "@/hooks/useExperienceMode";
 import {
   useFocusSessionNotes,
   useFocusTimerControls,
@@ -26,7 +23,7 @@ import type { FocusActivity, FocusRecordType } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn } from "@/utils";
 import { FocusDurationPresets } from "./stage/FocusDurationPresets";
-import { FocusStageAudioControls } from "./stage/FocusStageAudioControls";
+import { FocusStageHeaderBar } from "./stage/FocusStageHeaderBar";
 import { FocusStageTimerCircle } from "./stage/FocusStageTimerCircle";
 
 const FocusZenModeModal = dynamic(
@@ -87,7 +84,6 @@ export function FocusHeroStage({
   isCompact = false,
 }: FocusHeroStageProps) {
   const t = useTranslations("focus.hero");
-  const { isGamified } = useExperienceMode();
   const controls = useFocusTimerControls();
   const isPremium = useUserStore((s) => s.is_Premium);
 
@@ -126,6 +122,14 @@ export function FocusHeroStage({
       : -1;
   const isTargetLocked =
     !isPremium && targetActivityIndex >= MAX_FOCUS_ACTIVITIES_FREE;
+
+  const handleOpenTargetModal = useCallback(() => {
+    setIsTargetModalOpen(true);
+  }, []);
+
+  const handleOpenZenMode = useCallback(() => {
+    setIsZenModeOpen(true);
+  }, []);
 
   const handleSelectActivity = useCallback(
     (act: FocusActivity) => {
@@ -225,10 +229,10 @@ export function FocusHeroStage({
           "group/hero relative w-full shrink-0 min-h-fit rounded-2xl border transition-all duration-300 select-none z-20",
           isCompact ? "p-3 sm:p-3.5" : "p-3.5 sm:p-4",
           isBreak
-            ? "border-emerald-500/40 bg-gradient-to-b from-emerald-500/10 dark:from-emerald-950/30 via-card/90 dark:via-card/80 to-card/80 dark:to-card/50 shadow-sm dark:shadow-[0_4px_24px_rgba(16,185,129,0.12)] hover:border-emerald-500/60 dark:hover:shadow-[0_8px_32px_rgba(16,185,129,0.2)]"
+            ? "border-emerald-500/40 bg-linear-to-b from-emerald-500/10 dark:from-emerald-950/30 via-card/90 dark:via-card/80 to-card/80 dark:to-card/50 shadow-sm dark:shadow-[0_4px_24px_rgba(16,185,129,0.12)] hover:border-emerald-500/60 dark:hover:shadow-[0_8px_32px_rgba(16,185,129,0.2)]"
             : isRunning
-              ? "border-gold/60 bg-gradient-to-b from-gold/10 via-card/80 to-card/50 shadow-glow-gold-xs hover:border-gold/80 hover:shadow-glow-gold-md"
-              : "border-primary/30 bg-card/70 backdrop-blur-md hover:border-gold/50 hover:shadow-[0_8px_32px_rgba(234,179,8,0.12)]",
+              ? "border-gold/60 bg-linear-to-b from-gold/10 via-card/80 to-card/50 shadow-glow-gold-xs hover:border-gold/80 hover:shadow-glow-gold-md"
+              : "border-neutral-700 dark:border-primary/30 bg-linear-to-br from-purple-500/[0.06] via-card to-amber-500/[0.03] dark:bg-none dark:bg-card/70 backdrop-blur-md shadow-xs dark:shadow-none hover:border-gold/50 hover:shadow-[0_8px_32px_rgba(234,179,8,0.12)]",
         )}
       >
         {/* Glow de Fundo Sutil Cósmico que expande suavemente no hover */}
@@ -238,7 +242,7 @@ export function FocusHeroStage({
         >
           <div
             className={cn(
-              "absolute -top-20 left-1/2 -translate-x-1/2 w-96 sm:w-[480px] h-52 rounded-full blur-3xl opacity-25 group-hover/hero:opacity-45 group-hover/hero:scale-110 transition-all duration-700 ease-out",
+              "absolute -top-20 left-1/2 -translate-x-1/2 w-96 sm:w-[480px] h-52 rounded-full blur-3xl opacity-10 dark:opacity-25 group-hover/hero:opacity-20 dark:group-hover/hero:opacity-45 group-hover/hero:scale-110 transition-all duration-700 ease-out",
               isBreak
                 ? "bg-emerald-500"
                 : isRunning
@@ -249,130 +253,25 @@ export function FocusHeroStage({
         </div>
 
         {/* 1. Header do Palco: Alvo Ativo + Switchers + Modo Zen */}
-        <div className="relative z-30 flex flex-wrap items-center justify-between gap-3 mb-2 sm:mb-3">
-          {/* Esquerda: Alvo Ativo / Seleção */}
-          <div className="flex items-center gap-3 min-w-0">
-            <div
-              className={cn(
-                "rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 w-9 h-9 sm:w-10 sm:h-10",
-                isBreak
-                  ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
-                  : isRunning
-                    ? "bg-gold/20 border-gold/70 text-gold shadow-glow-gold-xs animate-pulse"
-                    : "bg-surface/90 border-primary/40 text-neutral-200",
-              )}
-            >
-              <TargetIcon size={18} />
-            </div>
-
-            <div className="flex flex-col min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-bold text-neutral-100 text-subtitle-s sm:text-subtitle-m truncate max-w-[180px] xs:max-w-xs sm:max-w-md">
-                  {target?.name || t("noActivitySelected")}
-                </h3>
-
-                {/* Badge da Fase Atual */}
-                {isBreak ? (
-                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-label-g font-bold animate-pulse shrink-0 whitespace-nowrap">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    {phase === "LONG_BREAK"
-                      ? t("longBreakBadge")
-                      : t("shortBreakBadge")}
-                  </span>
-                ) : isRunning ? (
-                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold/20 border border-gold/50 text-gold text-label-g font-bold animate-pulse shrink-0 whitespace-nowrap">
-                    <span className="w-1.5 h-1.5 rounded-full bg-gold" />
-                    {t("activeFocusBadge")}
-                  </span>
-                ) : null}
-
-                {/* Badge do Tipo de Alvo */}
-                {isTargetLocked ? (
-                  <span className="text-tiny px-2 py-0.5 rounded-full font-bold bg-gold/20 border border-gold/40 text-gold shrink-0 whitespace-nowrap flex items-center gap-1">
-                    <Lock size={10} />
-                    {t("pausedBadge")}
-                  </span>
-                ) : (
-                  <span className="text-tiny px-2 py-0.5 rounded-full font-semibold bg-surface border border-primary/30 text-neutral-300 shrink-0 whitespace-nowrap">
-                    {isInventoryItem
-                      ? isGamified
-                        ? t("modeBackpackCouponGamified")
-                        : t("modeBackpackCouponProductivity")
-                      : mode === "POMO"
-                        ? t("modePomodoro")
-                        : t("modeFreeStopwatch")}
-                  </span>
-                )}
-
-                {/* Botão para Trocar/Vincular Alvo */}
-                <button
-                  type="button"
-                  onClick={() => setIsTargetModalOpen(true)}
-                  className="inline-flex items-center gap-1 text-label-g font-semibold text-gold hover:text-gold-hover hover:underline cursor-pointer ml-1 shrink-0 whitespace-nowrap"
-                >
-                  <ArrowRightLeft size={11} />
-                  <span>{target ? t("switchTarget") : t("linkTarget")}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Direita: Switcher Modo + Áudio + Botão Modo Zen */}
-          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap ml-auto shrink-0">
-            {/* Switcher Pomodoro / Cronômetro */}
-            {!isInventoryItem && !isActive && (
-              <div className="flex items-center rounded-xl bg-surface/90 p-1 border border-primary/35 shadow-inner">
-                <button
-                  type="button"
-                  onClick={() => handleChangeMode("POMO")}
-                  className={cn(
-                    "px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer",
-                    mode === "POMO"
-                      ? "bg-gold text-on-gold shadow-glow-gold-xs"
-                      : "text-neutral-400 hover:text-neutral-200",
-                  )}
-                >
-                  {t("modePomodoro")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleChangeMode("STOPWATCH")}
-                  className={cn(
-                    "px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer",
-                    mode === "STOPWATCH"
-                      ? "bg-gold text-on-gold shadow-glow-gold-xs"
-                      : "text-neutral-400 hover:text-neutral-200",
-                  )}
-                >
-                  {t("modeStopwatch")}
-                </button>
-              </div>
-            )}
-
-            {/* Controles de Som */}
-            <FocusStageAudioControls
-              isSoundEnabled={isSoundEnabled}
-              timerSoundType={timerSoundType}
-              onToggleSound={toggleSound}
-              onChangeSoundType={setTimerSoundType}
-              onOpenUpgradeModal={onOpenUpgradeModal}
-            />
-
-            {/* Botão Modo Zen / Tela Cheia */}
-            <button
-              type="button"
-              onClick={() => setIsZenModeOpen(true)}
-              title={t("zenModeTitle")}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-primary/30 bg-surface/90 hover:bg-gold/15 hover:border-gold/50 text-neutral-200 hover:text-gold text-xs font-bold transition-all cursor-pointer shadow-sm group"
-            >
-              <Maximize2
-                size={14}
-                className="group-hover:scale-110 transition-transform text-gold"
-              />
-              <span className="hidden sm:inline">{t("zenModeButton")}</span>
-            </button>
-          </div>
-        </div>
+        <FocusStageHeaderBar
+          target={target}
+          TargetIcon={TargetIcon}
+          phase={phase}
+          mode={mode}
+          isBreak={isBreak}
+          isRunning={isRunning}
+          isActive={isActive}
+          isInventoryItem={isInventoryItem}
+          isTargetLocked={isTargetLocked}
+          isSoundEnabled={isSoundEnabled}
+          timerSoundType={timerSoundType}
+          onOpenTargetModal={handleOpenTargetModal}
+          onChangeMode={handleChangeMode}
+          onToggleSound={toggleSound}
+          onChangeSoundType={setTimerSoundType}
+          onOpenZenMode={handleOpenZenMode}
+          onOpenUpgradeModal={onOpenUpgradeModal}
+        />
 
         {/* =========================================================================
             2. CORPO DO PALCO: LAYOUT HERÓICO LADO A LADO (COMPACTO)

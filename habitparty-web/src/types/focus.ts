@@ -1,4 +1,7 @@
 import type { components } from "@/api/schema";
+import type { IconOption } from "@/types/ui";
+
+export type FocusIconOption = IconOption;
 
 export type FocusActivityResponseDTO =
   components["schemas"]["FocusActivityResponseDTO"];

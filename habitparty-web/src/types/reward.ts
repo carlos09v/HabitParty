@@ -1,9 +1,76 @@
+import type { LucideIcon } from "lucide-react";
 import type { components } from "@/api/schema";
+import type { IconOption } from "@/types/ui";
 
 // 1. DTOs Base (Direto do backend)
 export type RewardResponseDTO = components["schemas"]["RewardResponseDTO"];
 export type CreateRewardDTO = components["schemas"]["CreateRewardDTO"];
 export type UpdateRewardDTO = components["schemas"]["UpdateRewardDTO"];
+export type UpdateRewardOrderDTO =
+  components["schemas"]["UpdateRewardOrderDTO"];
+
+export type PackageMessageKey =
+  | "NONE"
+  | "BASIC"
+  | "PREMIUM"
+  | "EPIC"
+  | "LEGENDARY";
+
+export type CategoryMessageKey =
+  | "NONE"
+  | "ENTERTAINMENT"
+  | "WELLNESS"
+  | "SHOPPING"
+  | "DEVELOPMENT"
+  | "LUCK"
+  | "HOBBIES";
+
+export type RewardTypeMessageKey = "SingleUse" | "TimeBased" | "MysteryBox";
+
+export interface RewardTypeMeta {
+  label: string;
+  color: string;
+  icon: LucideIcon;
+}
+
+export type RewardIconOption = IconOption;
+
+export interface MysteryBoxDropRate {
+  percentage: number;
+  label: string;
+  description: string;
+  badgeVariant: "emerald" | "amber" | "purple" | "gold";
+}
+
+export interface MysteryBoxTier {
+  id: "Básico" | "Premium" | "Épico" | "Lendário";
+  backendPackageLevel: "BASIC" | "PREMIUM" | "EPIC" | "LEGENDARY";
+  name: string;
+  recommendedPrice: number;
+  subtitle: string;
+  concept: string;
+  colorName: string;
+  icon: LucideIcon;
+  badgeClass: string;
+  borderClass: string;
+  borderSelectedClass: string;
+  bgClass: string;
+  bgSelectedClass: string;
+  textClass: string;
+  glowClass: string;
+  ringClass: string;
+  accentGlow: string;
+  dropRates: MysteryBoxDropRate[];
+}
+
+export interface CouponPackageOption {
+  id: PackageLevel;
+  label: string;
+  suggestedMinutes?: number;
+  dotColor?: string;
+  unselectedClass: string;
+  selectedClass: string;
+}
 
 export type RewardType =
   | NonNullable<RewardResponseDTO["type"]>

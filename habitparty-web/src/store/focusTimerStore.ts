@@ -8,6 +8,7 @@ import {
   DEFAULT_SHORT_BREAK_MINUTES,
 } from "@/constants/focus";
 import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
+import { useUIStore } from "@/store/uiStore";
 import type {
   FocusActivity,
   FocusPhase,
@@ -17,157 +18,22 @@ import type {
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
 import { toLocalISOString } from "@/utils/date";
+import { formatDurationMinSec } from "@/utils/focusFormatters";
 import {
-  getBrowserDocumentLocale,
   optimizedFocusStorage,
   registerFocusTimerWindowListeners,
   sendBrowserNotification,
   updateDocumentTitle,
 } from "@/utils/focusTimerBrowser";
+import {
+  setFocusTimerTranslators,
+  tNotifMsg,
+  tStoreMsg,
+} from "@/utils/focusTimerMessages";
 import { awardUserRewards } from "@/utils/gamification";
 import { soundEffects } from "@/utils/soundEffects";
 
-type StoreTranslateFn = (
-  key: string,
-  values?: Record<string, string | number>,
-) => string;
-
-let customStoreT: StoreTranslateFn | null = null;
-let customNotificationsT: StoreTranslateFn | null = null;
-
-export function setFocusTimerTranslators(translators: {
-  store?: StoreTranslateFn | null;
-  notifications?: StoreTranslateFn | null;
-}) {
-  customStoreT = translators.store ?? null;
-  customNotificationsT = translators.notifications ?? null;
-}
-
-const FALLBACK_STORE_MESSAGES: Record<
-  "en" | "pt-BR",
-  Record<string, string>
-> = {
-  en: {
-    breakCompletedToast: "Break completed! Ready for the next focus cycle?",
-    longBreakLabel: "long (15 min)",
-    shortBreakLabel: "short (5 min)",
-    cycleCompletedToast:
-      "🍅 Cycle {cycles} completed! Starting {breakLabel} break. Relax a little!",
-    selectTargetToStartToast:
-      "Select an activity or backpack item to start focusing.",
-    itemAlreadyCompletedToast:
-      "🎉 This item has already completed its time. Click the Complete (Check) button to redeem it.",
-    breakSkippedToast: "Break skipped. Ready to focus!",
-    linkTargetBeforeSaveToast:
-      "Link your focus to an activity or backpack item before saving.",
-    minDurationWarningToast: "Sessions under 1 minute are not recorded.",
-    couponTimeDepletedToast:
-      "🎉 Coupon time depleted! Click the Complete (Check) button to redeem it.",
-    couponTimeDeductedToast: "Coupon time deducted! (-{time})",
-    sessionCompletedRewardsToast:
-      "Focus session completed! (+{time} • +{xp} XP • +{coins} 🪙)",
-    sessionCompletedLoggedToast: "Focus session completed! (+{time} logged)",
-    saveSessionFailedToast: "Failed to save focus session.",
-    saveSessionServerErrorToast: "Error saving focus session on the server.",
-    couponAlreadyDepletedToast:
-      "This coupon's time is already depleted! Click the Complete (Check) button to redeem it.",
-    defaultItemName: "Focus Item",
-    targetTransferredToast:
-      'Target switched to "{name}". The timer keeps running!',
-  },
-  "pt-BR": {
-    breakCompletedToast:
-      "Pausa concluída! Pronto para o próximo ciclo de foco?",
-    longBreakLabel: "longa (15 min)",
-    shortBreakLabel: "curta (5 min)",
-    cycleCompletedToast:
-      "🍅 Ciclo {cycles} concluído! Iniciando pausa {breakLabel}. Relaxe um pouco!",
-    selectTargetToStartToast:
-      "Selecione uma atividade ou item da mochila para iniciar o foco.",
-    itemAlreadyCompletedToast:
-      "🎉 Este item já concluiu seu tempo. Clique no botão de Concluir (Check) para resgatá-lo.",
-    breakSkippedToast: "Pausa pulada. Pronto para focar!",
-    linkTargetBeforeSaveToast:
-      "Vincule o foco a uma atividade ou item da mochila antes de salvar.",
-    minDurationWarningToast:
-      "Sessões com menos de 1 minuto não são registradas.",
-    couponTimeDepletedToast:
-      "🎉 Tempo do cupom esgotado! Clique no botão de Concluir (Check) para resgatá-lo.",
-    couponTimeDeductedToast: "Tempo do cupom deduzido! (-{time})",
-    sessionCompletedRewardsToast:
-      "Sessão de foco concluída! (+{time} • +{xp} XP • +{coins} 🪙)",
-    sessionCompletedLoggedToast:
-      "Sessão de foco concluída! (+{time} registrados)",
-    saveSessionFailedToast: "Falha ao salvar sessão de foco.",
-    saveSessionServerErrorToast: "Erro ao salvar sessão de foco no servidor.",
-    couponAlreadyDepletedToast:
-      "O tempo deste cupom já está esgotado! Clique no botão de Concluir (Check) para resgatá-lo.",
-    defaultItemName: "Item de Foco",
-    targetTransferredToast:
-      'Vínculo alterado para "{name}". O tempo continua rodando!',
-  },
-};
-
-const FALLBACK_NOTIFICATION_MESSAGES: Record<
-  "en" | "pt-BR",
-  Record<string, string>
-> = {
-  en: {
-    breakEndedTitle: "HabitParty - Break Completed!",
-    breakEndedBody: "Ready for the next focus cycle?",
-    cycleCompletedTitle: "HabitParty - Cycle Completed!",
-    cycleCompletedBody:
-      "🍅 Cycle {cycles} completed! Starting {breakLabel} break. Relax a little!",
-  },
-  "pt-BR": {
-    breakEndedTitle: "HabitParty - Pausa Concluída!",
-    breakEndedBody: "Pronto para o próximo ciclo de foco?",
-    cycleCompletedTitle: "HabitParty - Ciclo Concluído!",
-    cycleCompletedBody:
-      "🍅 Ciclo {cycles} concluído! Iniciando pausa {breakLabel}. Relaxe um pouco!",
-  },
-};
-
-function interpolateFallback(
-  template: string,
-  values?: Record<string, string | number>,
-): string {
-  if (!values) return template;
-  return Object.entries(values).reduce(
-    (acc, [k, v]) => acc.replaceAll(`{${k}}`, String(v)),
-    template,
-  );
-}
-
-function tStoreMsg(
-  key: string,
-  values?: Record<string, string | number>,
-): string {
-  if (customStoreT) {
-    try {
-      return customStoreT(key, values);
-    } catch {
-      // Fallback below
-    }
-  }
-  const dict = FALLBACK_STORE_MESSAGES[getBrowserDocumentLocale()];
-  return interpolateFallback(dict[key] ?? key, values);
-}
-
-function tNotifMsg(
-  key: string,
-  values?: Record<string, string | number>,
-): string {
-  if (customNotificationsT) {
-    try {
-      return customNotificationsT(key, values);
-    } catch {
-      // Fallback below
-    }
-  }
-  const dict = FALLBACK_NOTIFICATION_MESSAGES[getBrowserDocumentLocale()];
-  return interpolateFallback(dict[key] ?? key, values);
-}
+export { setFocusTimerTranslators };
 
 let globalTimerInterval: NodeJS.Timeout | null = null;
 
@@ -580,19 +446,13 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
                 triggerCelebrationConfetti();
                 toast.success(tStoreMsg("couponTimeDepletedToast"));
               } else {
-                const m = Math.floor(exactSeconds / 60);
-                const s = exactSeconds % 60;
-                const timeStr =
-                  m > 0 ? (s > 0 ? `${m}m ${s}s` : `${m}m`) : `${s}s`;
+                const timeStr = formatDurationMinSec(exactSeconds);
                 toast.success(
                   tStoreMsg("couponTimeDeductedToast", { time: timeStr }),
                 );
               }
             } else {
-              const m = Math.floor(exactSeconds / 60);
-              const s = exactSeconds % 60;
-              const timeStr =
-                m === 0 ? `${s}s` : s === 0 ? `${m}m` : `${m}m ${s}s`;
+              const timeStr = formatDurationMinSec(exactSeconds);
               const recordData = res.data as
                 | { xpEarned?: number; coinsEarned?: number }
                 | undefined;
@@ -604,12 +464,19 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
               if (!rewardResult.didLevelUp) {
                 soundEffects.playFocusSessionCompleteSound();
                 if (xp > 0 || coins > 0) {
+                  const isGamified =
+                    useUIStore.getState().experienceMode === "GAMIFIED";
                   toast.success(
-                    tStoreMsg("sessionCompletedRewardsToast", {
-                      time: timeStr,
-                      xp,
-                      coins: Number(coins).toFixed(2),
-                    }),
+                    tStoreMsg(
+                      isGamified
+                        ? "sessionCompletedRewardsToast"
+                        : "sessionCompletedRewardsToastProductivity",
+                      {
+                        time: timeStr,
+                        xp,
+                        coins: Number(coins).toFixed(2),
+                      },
+                    ),
                   );
                 } else {
                   toast.success(

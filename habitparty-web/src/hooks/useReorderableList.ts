@@ -8,6 +8,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { ActionState } from "@/actions/types";
@@ -37,6 +38,7 @@ export function useReorderableList<T extends { id: string }>({
   isFiltering = false,
   maxUnlockedCount,
 }: UseReorderableListOptions<T>) {
+  const t = useTranslations("ui.reorder");
   const [items, setItems] = useState<T[]>(initialItems);
   const itemsRef = useRef<T[]>(initialItems);
   itemsRef.current = items;
@@ -59,7 +61,7 @@ export function useReorderableList<T extends { id: string }>({
       if (!over || active.id === over.id) return;
 
       if (isFiltering) {
-        toast.info("Limpe os filtros para reordenar os itens.");
+        toast.info(t("clearFiltersToReorder"));
         return;
       }
 
@@ -89,14 +91,14 @@ export function useReorderableList<T extends { id: string }>({
         const result = await onReorderServerAction(updates);
         if (!result.success) {
           setItems(previousItems);
-          toast.error(result.error || "Erro ao reordenar itens.");
+          toast.error(result.error || t("reorderError"));
         }
       } catch (_error) {
         setItems(previousItems);
-        toast.error("Erro de comunicação com o servidor.");
+        toast.error(t("communicationError"));
       }
     },
-    [isFiltering, maxUnlockedCount, onReorderServerAction],
+    [isFiltering, maxUnlockedCount, onReorderServerAction, t],
   );
 
   return {

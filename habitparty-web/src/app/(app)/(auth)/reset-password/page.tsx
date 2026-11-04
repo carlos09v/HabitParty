@@ -50,7 +50,7 @@ export default async function ResetPasswordPage({
 
         <Link
           href="/forgot-password"
-          className="w-full py-3.5 px-4 rounded-lg text-base font-bold transition-all text-center flex items-center justify-center bg-primary hover:bg-primary-dark text-white border border-primary-dark/30 shadow-sm active:scale-[0.99] dark:bg-neutral-900/60 dark:hover:bg-neutral-900/80 dark:border-2 dark:border-gold/50 dark:hover:border-gold dark:hover:shadow-glow-gold-md dark:text-neutral-50"
+          className="w-full py-3.5 px-4 rounded-lg text-base font-bold transition-all text-center flex items-center justify-center bg-primary hover:bg-primary-dark text-white border border-primary-dark/30 shadow-sm active:scale-[0.99] dark:bg-primary dark:hover:bg-primary-light dark:border dark:border-primary-light/40 dark:hover:border-gold/60 dark:shadow-[0_0_20px_rgba(124,58,237,0.35)] dark:text-white"
         >
           {t("requestNewLink")}
         </Link>

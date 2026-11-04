@@ -4,9 +4,9 @@ import { Check, HelpCircle } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
-import { MYSTERY_BOX_TIERS, type MysteryBoxTier } from "@/constants/reward";
+import { MYSTERY_BOX_TIERS } from "@/constants/reward";
 import type { AppLocale } from "@/i18n/config";
-import type { PackageLevel } from "@/types/reward";
+import type { MysteryBoxTier, PackageLevel } from "@/types/reward";
 import { cn, formatCoins } from "@/utils";
 import { MysteryBoxTierPopover } from "./MysteryBoxTierPopover";
 
@@ -161,7 +161,7 @@ export function MysteryBoxSelector({
                       "text-body-s font-bold leading-snug transition-colors line-clamp-1 truncate max-w-full",
                       selected
                         ? tier.textClass
-                        : "text-neutral-100 group-hover:text-white",
+                        : "text-neutral-100 group-hover:text-neutral-50 dark:group-hover:text-white",
                     )}
                     title={tierName}
                   >

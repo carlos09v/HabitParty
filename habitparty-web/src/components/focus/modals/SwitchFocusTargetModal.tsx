@@ -13,6 +13,7 @@ import { useState } from "react";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
 import { cn } from "@/utils";
+import { formatDurationMinSec } from "@/utils/focusFormatters";
 
 interface SwitchFocusTargetModalProps {
   isOpen: boolean;
@@ -43,14 +44,7 @@ export function SwitchFocusTargetModal({
 
   if (!isOpen) return null;
 
-  const minutes = Math.floor(elapsedSeconds / 60);
-  const seconds = elapsedSeconds % 60;
-  const timeDisplay =
-    minutes === 0
-      ? `${seconds}s`
-      : seconds === 0
-        ? `${minutes}m`
-        : `${minutes}m ${seconds}s`;
+  const timeDisplay = formatDurationMinSec(elapsedSeconds);
 
   // Transferência direta só é permitida entre atividades normais
   const canTransfer = !isCurrentInventory && !isNewInventory;

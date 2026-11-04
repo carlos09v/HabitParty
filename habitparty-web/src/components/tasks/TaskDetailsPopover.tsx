@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
+import { TaskActionControl } from "@/components/tasks/shared";
 import { useTaskDetailsPopover } from "@/hooks/useTaskDetailsPopover";
 import type { TaskDetailsPopoverProps } from "@/types/task-ui";
 import { cn } from "@/utils";
@@ -40,6 +41,7 @@ export function TaskDetailsPopover({
     description,
     setDescription,
     dueDate,
+    dueTime,
     priority,
     tags,
     isAddingTag,
@@ -63,6 +65,7 @@ export function TaskDetailsPopover({
     handleTitleKeyDown,
     handleDescriptionBlur,
     handleDateChange,
+    handleTimeChange,
     handlePrioritySelect,
     handleAddTag,
     handleRemoveTag,
@@ -109,11 +112,11 @@ export function TaskDetailsPopover({
               }
         }
         className={cn(
-          "fixed z-[120] select-none flex flex-col gap-3.5 backdrop-blur-xl shadow-2xl",
+          "fixed z-[120] select-none flex flex-col gap-3 backdrop-blur-xl shadow-2xl",
           // Mobile (< sm): Bottom Sheet fixado na base com scroll interno
           "max-sm:inset-x-0 max-sm:bottom-0 max-sm:w-full max-sm:rounded-t-2xl max-sm:rounded-b-none max-sm:border-t max-sm:border-x-0 max-sm:border-b-0 max-sm:border-primary/40 max-sm:bg-surface/98 max-sm:p-4 max-sm:max-h-[85vh] max-sm:overflow-y-auto max-sm:animate-in max-sm:slide-in-from-bottom max-sm:duration-200",
           // Desktop (sm+): Popover flutuante ancorado
-          "sm:w-[380px] sm:max-w-[calc(100vw-24px)] sm:rounded-2xl sm:border sm:border-primary/40 sm:bg-card/95 sm:p-4 sm:animate-in sm:fade-in sm:zoom-in-95 sm:duration-150",
+          "sm:w-[390px] sm:max-w-[calc(100vw-24px)] sm:rounded-2xl sm:border sm:border-primary/40 sm:bg-card/98 sm:p-4 sm:animate-in sm:fade-in sm:zoom-in-95 sm:duration-150",
         )}
         role="dialog"
         aria-label={t("dialogAria")}
@@ -121,18 +124,21 @@ export function TaskDetailsPopover({
         {/* Pílula visual de puxar para mobile */}
         <div className="sm:hidden w-12 h-1.5 rounded-full bg-white/25 mx-auto -mt-1 mb-1 shrink-0" />
 
-        {/* 1. TOPO: Checkbox / Tipo + Prazo + Prioridade + Fechar */}
+        {/* 1. TOPO: Coluna + Tipo / Prazo + Hora + Prioridade + Editar + Fechar */}
         <TaskDetailsHeader
           task={task}
+          columnTitle={columnTitle}
           completed={completed}
           isHabit={isHabit}
           isDaily={isDaily}
           isTodo={isTodo}
           dueDate={dueDate}
+          dueTime={dueTime}
           priority={priority}
           onToggleComplete={handleToggleTask}
           onHabitDelta={handleHabitDelta}
           onDateChange={handleDateChange}
+          onTimeChange={handleTimeChange}
           onPrioritySelect={handlePrioritySelect}
           onEdit={handleOpenFullModal}
           onClose={handleCloseWithSave}
@@ -140,42 +146,54 @@ export function TaskDetailsPopover({
 
         {/* 2. ÁREA CENTRAL ROLÁVEL COM CABEÇALHO E RODAPÉ FIXOS */}
         <div className="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 max-h-[min(500px,calc(100vh-200px))]">
-          {/* TÍTULO EDITÁVEL */}
-          <div className="rounded-xl border border-primary/25 bg-surface/50 px-2.5 py-1.5 focus-within:border-gold focus-within:ring-1 focus-within:ring-gold transition-all">
-            <input
-              ref={titleInputRef}
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onBlur={handleTitleBlur}
-              onKeyDown={handleTitleKeyDown}
-              placeholder={t("titlePlaceholder")}
-              className={cn(
-                "w-full bg-transparent border-none outline-none",
-                "text-base font-bold text-neutral-50 placeholder:text-neutral-500",
-                completed && !isHabit && "line-through text-neutral-400",
-              )}
+          {/* HERO: AÇÃO + TÍTULO EDITÁVEL + TAGS */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <TaskActionControl
+                task={task}
+                isHabit={isHabit}
+                isDaily={isDaily}
+                completed={completed}
+                onToggle={handleToggleTask}
+                onDelta={handleHabitDelta}
+              />
+
+              <input
+                ref={titleInputRef}
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onBlur={handleTitleBlur}
+                onKeyDown={handleTitleKeyDown}
+                placeholder={t("titlePlaceholder")}
+                className={cn(
+                  "flex-1 min-w-0 bg-transparent border-b border-transparent hover:border-white/15 focus:border-gold/70 px-1 py-0.5 outline-none transition-colors",
+                  "text-base font-bold text-neutral-50 placeholder:text-neutral-500",
+                  completed && !isHabit && "line-through text-neutral-400",
+                )}
+              />
+            </div>
+
+            {/* TAGS */}
+            <TaskDetailsTags
+              tags={tags}
+              isAddingTag={isAddingTag}
+              newTagText={newTagText}
+              onNewTagTextChange={setNewTagText}
+              onStartAddTag={() => setIsAddingTag(true)}
+              onCancelAddTag={cancelAddTag}
+              onAddTag={handleAddTag}
+              onRemoveTag={handleRemoveTag}
             />
           </div>
 
-          {/* DESCRIÇÃO */}
+          {/* DESCRIÇÃO COM MARKDOWN INTERATIVO E BARRA INTEGRADA */}
           <TaskDescriptionEditor
             description={description}
             onChange={setDescription}
             onBlur={handleDescriptionBlur}
+            onApplyFormat={handleApplyFormat}
             textareaRef={descTextareaRef}
-          />
-
-          {/* TAGS */}
-          <TaskDetailsTags
-            tags={tags}
-            isAddingTag={isAddingTag}
-            newTagText={newTagText}
-            onNewTagTextChange={setNewTagText}
-            onStartAddTag={() => setIsAddingTag(true)}
-            onCancelAddTag={cancelAddTag}
-            onAddTag={handleAddTag}
-            onRemoveTag={handleRemoveTag}
           />
 
           {/* CHECKLIST / SUBTAREFAS */}

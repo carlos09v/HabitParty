@@ -94,8 +94,8 @@ export function FocusZenModeModal({
       className={cn(
         "fixed inset-0 z-50 backdrop-blur-3xl flex flex-col justify-between p-6 sm:p-12 select-none animate-in fade-in duration-200 transition-colors",
         isDimmed
-          ? "zen-dimmed-dark bg-neutral-950/98"
-          : "bg-surface/98 dark:bg-neutral-950/98",
+          ? "zen-dimmed-dark bg-background/98"
+          : "bg-surface/98 dark:bg-background/98",
       )}
     >
       {/* Fundo Cósmico / Santuário Difuso com Aura Radial Suave */}

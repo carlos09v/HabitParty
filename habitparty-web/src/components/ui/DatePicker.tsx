@@ -428,11 +428,11 @@ export function DatePicker({
             className={cn(
               "w-full flex items-center justify-between rounded-lg transition-all select-none",
               compact ? "py-2 px-3 text-body-s" : "py-3 px-4 text-body-m",
-              "bg-card border border-neutral-700 text-neutral-50 shadow-xs",
+              "bg-card border border-neutral-600 text-neutral-50 shadow-xs",
               "dark:bg-primary-dark/20 dark:border-primary/30 dark:text-neutral-50 dark:shadow-none",
               isOpen
-                ? "border-gold bg-gold/10 text-gold ring-1 ring-gold shadow-glow-gold-xs"
-                : "hover:border-gold/40 hover:bg-white/5",
+                ? "border-primary ring-2 ring-primary/15 dark:border-gold bg-card dark:bg-gold/10 text-primary dark:text-gold dark:ring-1 dark:ring-gold dark:shadow-glow-gold-xs"
+                : "hover:border-neutral-500 dark:hover:border-gold/40 dark:hover:bg-white/5",
               error && "border-danger-500/80",
               disabled && "opacity-50 cursor-not-allowed",
               className,
@@ -453,7 +453,11 @@ export function DatePicker({
                 size={compact ? 16 : 18}
                 className={cn(
                   "shrink-0 transition-colors",
-                  isOpen || currentValue ? "text-gold" : "text-neutral-400",
+                  isOpen
+                    ? "text-primary dark:text-gold"
+                    : currentValue
+                      ? "text-neutral-400 dark:text-gold"
+                      : "text-neutral-400",
                 )}
               />
               <span

@@ -177,4 +177,20 @@ class TodoDomainTest {
     assertFalse(todo.isSendEmailReminder());
     assertFalse(todo.isEmailReminderSent());
   }
+
+  @Test
+  @DisplayName("Deve definir a data de hoje automaticamente se informar horário (dueTime) sem data (dueDate)")
+  void shouldAutoSetTodayDueDateWhenDueTimeProvidedWithoutDueDate() {
+    java.time.LocalTime dueTime = java.time.LocalTime.of(14, 30);
+    Todo todo = new Todo(
+        UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+        "Tarefa com Horário", "Descrição", 0, TaskPriority.MEDIUM,
+        List.of(), TaskDifficulty.EASY, TaskStatus.PENDING, TaskType.TODO,
+        false, null, LocalDateTime.now(), List.of(),
+        TodoReminderType.NONE, null, null, false, false, false, dueTime
+    );
+
+    assertEquals(LocalDate.now(), todo.getDueDate().orElse(null));
+    assertEquals(dueTime, todo.getDueTime().orElse(null));
+  }
 }

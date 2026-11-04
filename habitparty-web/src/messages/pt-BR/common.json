@@ -96,9 +96,9 @@
           "pageName": "Quadro de Tarefas",
           "description": "Orientações sobre organização de tarefas, colunas e criação de hábitos no quadro.",
           "subtitle": "Organize seu Layout e mantenha o ritmo.",
-          "bullet0": "Organize seu Layout e arraste colunas para a melhor ordem.",
-          "bullet1": "Crie colunas apropriadas para cada contexto de tarefa.",
-          "bullet2": "Classifique entre Diário, Hábito e Afazer (ToDo)."
+          "bullet0": "Organize seu quadro criando e arrastando colunas para cada contexto de tarefa.",
+          "bullet1": "Classifique suas atividades entre Diária, Hábito e Afazer (ToDo).",
+          "bullet2": "Clique 1x em um card para ver os detalhes ou dê duplo clique (DoubleClick) para abrir o modal de editar tarefa."
         },
         "inventory": {
           "title": "Sua Mochila!",
@@ -324,6 +324,14 @@
         "action": "Ação",
         "priceAndAction": "Preço / Ação"
       }
+    },
+    "reorder": {
+      "clearFiltersToReorder": "Limpe os filtros para reordenar os itens.",
+      "reorderError": "Erro ao reordenar itens.",
+      "communicationError": "Erro de comunicação com o servidor."
+    },
+    "listCard": {
+      "newList": "Nova lista"
     }
   },
   "cookieBanner": {

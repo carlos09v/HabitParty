@@ -1,7 +1,6 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
-@custom-variant light (&:where(.light, .light *));
+@custom-variant dark (&:where(.dark:not(.light), .dark:not(.light) *));
 
 @theme {
   /* ==========================================
@@ -41,18 +40,19 @@
   --color-blue: rgb(64 57 237);
 
   /* Funcionais (XP, Alertas, Erros) */
-  --color-warning-100: rgb(254 243 198);
+  --color-warning-400: rgb(251 191 36);
   --color-warning-500: rgb(254 154 0);
   --color-warning-hover: rgb(255 175 46);
-  --color-danger-100: rgb(255 226 226);
+  --color-danger-300: rgb(252 165 165);
+  --color-danger-400: rgb(248 113 113);
   --color-danger-500: rgb(251 44 54);
   --color-danger-hover: rgb(255 77 85);
-  --color-success-100: rgb(220 252 231);
+  --color-success-300: rgb(110 231 183);
+  --color-success-400: rgb(52 211 153);
   --color-success-500: rgb(0 201 80);
   --color-success-hover: rgb(34 226 110);
   --color-info: rgb(0 194 255);
   --color-info-hover: rgb(56 209 255);
-  --color-blue-hover: rgb(91 84 246);
 
   /* Escala Neutra Contextual */
   --color-neutral-900: rgb(27 24 36);
@@ -67,19 +67,11 @@
   --color-neutral-50: rgb(249 248 252);
 
   /* ==========================================
-     TIPOGRAFIA (Tamanhos Base - Bold & Regular)
+     TIPOGRAFIA (Tamanhos Base em Uso)
      ========================================== */
-  --text-headline-g: 47px;
-  --text-headline-g-regular: 40px;
-  --text-headline-m: 39px;
-  --text-headline-m-regular: 33px;
   --text-headline-s: 33px;
-  --text-headline-s-regular: 28px;
 
-  --text-subtitle-g: 27px;
-  --text-subtitle-g-regular: 23px;
   --text-subtitle-m: 23px;
-  --text-subtitle-m-regular: 19px;
   --text-subtitle-s: 19px;
 
   --text-body-m: 16px;
@@ -89,7 +81,6 @@
   --text-label-m: 9px;
   --text-label-s: 8px;
   --text-tiny: 10px;
-  --text-xs: 12px;
 
   /* Sombras Semânticas (Glows e Cards) */
   --shadow-glow-gold: 0 0 15px rgba(237, 229, 57, 0.3);
@@ -133,18 +124,18 @@ html.light {
   --color-primary: rgb(109 40 217); /* #6D28D9 */
   --color-primary-light: rgb(124 58 237); /* #7C3AED */
 
-  /* Gamificação (Ouro Real para CTAs + Tinta Ouro WCAG AA para textos) */
+  /* Gamificação (Ouro Real para CTAs + Tinta Âmbar Viva para textos/ícones) */
   --color-gold: rgb(245 184 21); /* #F5B815 — 9.15:1 c/ texto #1E1E2A */
   --color-gold-hover: rgb(224 163 11); /* #E0A30B */
   --color-gold-pressed: rgb(
-    154 88 0
-  ); /* #9A5800 — 5.57:1 vs #FFF / 4.73:1 vs surface */
+    200 138 4
+  ); /* #C88A04 — Estado pressionado natural */
   --color-gold-ink: rgb(
-    154 88 0
-  ); /* #9A5800 — Uso exclusivo em texto/ícone/gradiente */
-  --color-gold-warm: rgb(245 184 21);
-  --color-gold-warm-hover: rgb(224 163 11);
-  --color-gold-warm-pressed: rgb(154 88 0);
+    217 119 6
+  ); /* #D97706 — Amber 600 vivo para texto/ícone dourado */
+  --color-gold-warm: var(--color-gold);
+  --color-gold-warm-hover: var(--color-gold-hover);
+  --color-gold-warm-pressed: var(--color-gold-pressed);
   --color-on-gold: rgb(
     30 30 42
   ); /* #1E1E2A — Contraste 9.15:1 sobre botões e badges dourados */
@@ -154,16 +145,23 @@ html.light {
   /* Funcionais calibrados com contraste real WCAG AA (>= 4.6:1 inclusive em surface) */
   --color-info: rgb(3 105 161); /* #0369A1 — 5.93:1 vs #FFF */
   --color-info-hover: rgb(7 89 133); /* #075985 */
-  --color-success-100: rgb(220 252 231);
-  --color-success-500: rgb(20 122 56); /* #147A38 — 5.42:1 vs #FFF */
-  --color-success-hover: rgb(17 99 45); /* #11632D */
-  --color-warning-100: rgb(254 243 198);
-  --color-warning-500: rgb(168 75 7); /* #A84B07 — 5.44:1 vs #FFF */
-  --color-warning-hover: rgb(140 61 5); /* #8C3D05 */
-  --color-danger-100: rgb(254 226 226);
-  --color-danger-500: rgb(200 30 30); /* #C81E1E — 5.90:1 vs #FFF */
-  --color-danger-hover: rgb(153 27 27); /* #991B1B */
-  --color-blue-hover: rgb(55 48 163); /* #3730A3 */
+  --color-success-300: rgb(20 122 56); /* #147A38 — 5.42:1 vs #FFF */
+  --color-success-400: rgb(20 122 56);
+  --color-success-500: rgb(
+    22 163 74
+  ); /* #16A34A — Verde vivo para superfícies/bordas */
+  --color-success-hover: rgb(21 128 61); /* #15803D */
+  --color-warning-400: rgb(
+    180 83 9
+  ); /* #B45309 — Amber 700 para textos de aviso */
+  --color-warning-500: rgb(
+    217 119 6
+  ); /* #D97706 — Amber 600 vivo (nunca marrom escuro) */
+  --color-warning-hover: rgb(180 83 9); /* #B45309 */
+  --color-danger-300: rgb(185 28 28); /* #B91C1C */
+  --color-danger-400: rgb(200 30 30); /* #C81E1E — 5.90:1 vs #FFF */
+  --color-danger-500: rgb(220 38 38); /* #DC2626 */
+  --color-danger-hover: rgb(185 28 28); /* #B91C1C */
 
   /* Escala Neutra Invertida (Slate Cósmico Dessaturado) */
   --color-neutral-50: rgb(30 30 42); /* #1E1E2A — Títulos principais (16.5:1) */
@@ -202,7 +200,7 @@ html.light {
   --shadow-glow-gold-xs: 0 1px 2px rgba(15, 15, 30, 0.05);
   --shadow-glow-magenta: 0 2px 8px -1px rgba(162, 28, 175, 0.14);
   --shadow-card-deep:
-    0 1px 3px rgba(15, 15, 30, 0.04), 0 6px 16px -4px rgba(15, 15, 30, 0.06);
+    0 4px 16px -4px rgba(30, 30, 42, 0.05), 0 1px 3px rgba(30, 30, 42, 0.04);
   --shadow-card-active:
     0 4px 12px -2px rgba(15, 15, 30, 0.08),
     0 12px 24px -6px rgba(15, 15, 30, 0.08);
@@ -287,196 +285,15 @@ html.light .zen-dimmed-dark .timer-display-shadow {
 }
 
 /* ========================================================
-   ADAPTAÇÃO DE UTILITÁRIOS PARA TEMA CLARO
-   Especificidade (0,2,1) fora de @layer vence nativamente @layer utilities.
-   Estados :hover sempre declarados após os estados base.
+   PAINÉIS, ELEMENTOS DECORATIVOS E NATIVOS (MODO CLARO)
    ======================================================== */
-
-/* 1. Tipografia Semântica e Cores de Destaque (Base) */
-html.light .text-gold {
-  color: var(--color-gold-ink);
-}
-html.light .text-emerald-400,
-html.light .text-emerald-300 {
-  color: var(--color-success-500);
-}
-html.light .text-red-400,
-html.light .text-red-300 {
-  color: var(--color-danger-500);
-}
-html.light .text-amber-400,
-html.light .text-amber-300 {
-  color: var(--color-gold-ink);
-}
-html.light .text-rose-400,
-html.light .text-rose-300 {
-  color: rgb(190 18 60); /* Rose-700 #BE123C */
-}
-html.light .text-orange-400,
-html.light .text-orange-300 {
-  color: rgb(194 65 12); /* Orange-700 #C2410C */
-}
-html.light .text-cyan-400,
-html.light .text-cyan-300,
-html.light .text-sky-400,
-html.light .text-sky-300 {
-  color: var(--color-info);
-}
-html.light .text-blue-400,
-html.light .text-blue-300,
-html.light .text-indigo-400,
-html.light .text-indigo-300 {
-  color: var(--color-blue);
-}
-html.light .text-purple-400,
-html.light .text-purple-300,
-html.light .text-violet-400,
-html.light .text-violet-300 {
-  color: var(--color-primary);
-}
-
-/* 1b. Tipografia (:hover declarado após os estados base) */
-html.light .hover\:text-gold:hover,
-html.light .group:hover .group-hover\:text-gold {
-  color: var(--color-gold-ink);
-}
-html.light .hover\:text-on-gold:hover {
-  color: var(--color-on-gold);
-}
-html.light .hover\:text-white:hover {
-  color: var(--color-neutral-50);
-}
-html.light .hover\:bg-danger-500:hover,
-html.light .hover\:bg-red-600:hover,
-html.light .hover\:text-neutral-100:hover {
-  color: #ffffff;
-}
-
-/* 2. Superfícies Translúcidas (Base) */
-html.light .bg-white\/3,
-html.light .bg-white\/4,
-html.light .bg-white\/5,
-html.light .bg-white\/6,
-html.light .bg-white\/8 {
-  background-color: rgba(30, 30, 42, 0.035);
-}
-html.light .bg-white\/10,
-html.light .bg-white\/15,
-html.light .bg-white\/20 {
-  background-color: rgba(30, 30, 42, 0.065);
-}
-html.light .bg-primary-dark\/15,
-html.light .bg-primary-dark\/20,
-html.light .bg-primary-dark\/25,
-html.light .bg-primary-dark\/30,
-html.light .bg-primary-dark\/35,
-html.light .bg-primary-dark\/40 {
-  background-color: #ffffff;
-  box-shadow:
-    0 1px 3px 0 rgba(15, 15, 30, 0.05),
-    0 1px 2px -1px rgba(15, 15, 30, 0.04);
-}
-html.light .bg-primary-dark\/50,
-html.light .bg-primary-dark\/60 {
-  background-color: rgba(109, 40, 217, 0.08);
-}
-
-/* 2b. Superfícies Translúcidas (:hover declarado após os estados base) */
-html.light .hover\:bg-white\/4:hover,
-html.light .hover\:bg-white\/5:hover,
-html.light .hover\:bg-white\/8:hover,
-html.light .hover\:bg-white\/10:hover,
-html.light .hover\:bg-white\/15:hover {
-  background-color: rgba(30, 30, 42, 0.06);
-}
-html.light .hover\:bg-surface-hover:hover {
-  background-color: var(--color-surface-hover);
-}
-html.light .hover\:bg-primary-dark\/30:hover,
-html.light .hover\:bg-primary-dark\/35:hover,
-html.light .hover\:bg-primary-dark\/40:hover {
-  background-color: var(--color-card-hover);
-}
-html.light .hover\:bg-gold:hover {
-  background-color: var(--color-gold);
-}
-html.light .hover\:bg-gold-hover:hover {
-  background-color: var(--color-gold-hover);
-}
-
-/* 3. Bordas Sutis e Primárias (Base) */
-html.light .border-white\/5,
-html.light .border-white\/6,
-html.light .border-white\/8,
-html.light .border-white\/10,
-html.light .border-white\/15,
-html.light .border-white\/20,
-html.light .border-white\/25,
-html.light .border-white\/30 {
-  border-color: rgba(30, 30, 42, 0.09);
-}
-html.light .border-primary\/15,
-html.light .border-primary\/20,
-html.light .border-primary\/25,
-html.light .border-primary\/30,
-html.light .border-primary\/35,
-html.light .border-primary\/40,
-html.light .border-primary\/45,
-html.light .border-primary\/50 {
-  border-color: rgba(109, 40, 217, 0.14);
-}
-html.light .border-primary-light\/30,
-html.light .border-primary-light\/40,
-html.light .border-primary-light\/50 {
-  border-color: rgba(109, 40, 217, 0.22);
-}
-
-/* 3b. Bordas (:hover declarado após os estados base) */
-html.light .hover\:border-white\/10:hover,
-html.light .hover\:border-white\/20:hover {
-  border-color: rgba(30, 30, 42, 0.18);
-}
-html.light .hover\:border-y-primary-light\/40:hover,
-html.light .hover\:border-r-primary-light\/40:hover,
-html.light .hover\:border-primary-light:hover {
-  border-color: rgba(109, 40, 217, 0.32);
-}
-html.light .hover\:border-gold:hover {
-  border-color: var(--color-gold);
-}
-html.light .hover\:border-gold\/40:hover,
-html.light .hover\:border-gold\/50:hover {
-  border-color: rgba(245, 184, 21, 0.5);
-}
-
-/* 4. Painéis Laterais, Gradientes e Elementos Decorativos */
-html.light aside[data-panel="sidebar-right"] {
-  background-color: #ffffff;
-  border-left-color: var(--color-neutral-700);
-}
-html.light aside[data-panel="sidebar-right"] .bg-primary-dark\/20,
-html.light aside[data-panel="sidebar-right"] .bg-white\/5 {
-  background-color: var(--color-background);
-  border-color: var(--color-neutral-700);
-}
-
-html.light .from-primary-dark\/40 {
-  --tw-gradient-from: rgba(109, 40, 217, 0.06);
-}
-html.light .via-surface\/60 {
-  --tw-gradient-via: rgba(236, 236, 242, 0.85);
-}
-html.light .to-primary-dark\/25 {
-  --tw-gradient-to: rgba(109, 40, 217, 0.03);
-}
-
 html.light .cosmic-orb {
   opacity: 0.05;
 }
 
 html.light .sidebar-confetti {
-  opacity: 0.18;
-  filter: saturate(1.4) brightness(0.82);
+  opacity: 0.04;
+  filter: none;
 }
 
 html.light select option {
@@ -485,36 +302,199 @@ html.light select option {
 }
 
 @layer utilities {
+  /* ========================================================
+     ADAPTAÇÃO DE UTILITÁRIOS PARA TEMA CLARO
+     Usa `:where(html.light)` dentro de `@layer utilities` para manter
+     especificidade (0,1,0) idêntica aos utilitários base do Tailwind,
+     permitindo que estados `:hover` / `:focus` nativos (0,2,0) funcionem
+     sem precisar redeclarar regras redundantes.
+     ======================================================== */
+
+  /* 1. Tipografia Semântica e Cores de Destaque */
+  :where(html.light) .text-gold,
+  :where(html.light) .text-amber-400,
+  :where(html.light) .text-amber-300,
+  :where(html.light) .text-amber-200 {
+    color: var(--color-gold-ink);
+  }
+  :where(html.light) .text-emerald-400,
+  :where(html.light) .text-emerald-300 {
+    color: var(--color-success-300);
+  }
+  :where(html.light) .text-red-400,
+  :where(html.light) .text-red-300 {
+    color: var(--color-danger-400);
+  }
+  :where(html.light) .text-rose-400,
+  :where(html.light) .text-rose-300 {
+    color: rgb(225 29 72); /* Rose-600 #E11D48 */
+  }
+  :where(html.light) .text-orange-400,
+  :where(html.light) .text-orange-300 {
+    color: rgb(234 88 12); /* Orange-600 #EA580C */
+  }
+  :where(html.light) .text-cyan-400,
+  :where(html.light) .text-cyan-300,
+  :where(html.light) .text-sky-400,
+  :where(html.light) .text-sky-300 {
+    color: var(--color-info);
+  }
+  :where(html.light) .text-blue-400,
+  :where(html.light) .text-blue-300,
+  :where(html.light) .text-blue-200,
+  :where(html.light) .text-indigo-400,
+  :where(html.light) .text-indigo-300 {
+    color: var(--color-blue);
+  }
+  :where(html.light) .text-purple-400,
+  :where(html.light) .text-purple-300,
+  :where(html.light) .text-violet-400,
+  :where(html.light) .text-violet-300 {
+    color: var(--color-primary);
+  }
+
+  :where(html.light) .hover\:text-gold:hover,
+  :where(html.light) .group:hover .group-hover\:text-gold {
+    color: var(--color-gold-ink);
+  }
+  :where(html.light)
+    .hover\:text-white:hover:not(.hover\:bg-primary):not(
+      .hover\:bg-danger-500
+    ):not(.hover\:bg-red-600),
+  :where(html.light) .group:hover .group-hover\:text-white {
+    color: var(--color-neutral-50);
+  }
+
+  /* 2. Superfícies Translúcidas e Elevação de Cards */
+  :where(html.light) .bg-white\/4,
+  :where(html.light) .bg-white\/5,
+  :where(html.light) .bg-white\/8 {
+    background-color: rgba(30, 30, 42, 0.035);
+  }
+  :where(html.light) .bg-white\/10,
+  :where(html.light) .bg-white\/15,
+  :where(html.light) .bg-white\/20 {
+    background-color: rgba(30, 30, 42, 0.065);
+  }
+  /* Containers de cards externos (ListCard, TaskRow, HistoryRow, etc.) */
+  :where(html.light) .bg-primary-dark\/15,
+  :where(html.light) .bg-primary-dark\/20,
+  :where(html.light) .bg-primary-dark\/25 {
+    background-color: #ffffff;
+    box-shadow:
+      0 1px 3px 0 rgba(15, 15, 30, 0.05),
+      0 1px 2px -1px rgba(15, 15, 30, 0.04);
+  }
+  /* Caixas de ícones internas, badges, cabeçalhos de tabela e controles */
+  :where(html.light) .bg-primary-dark\/30,
+  :where(html.light) .bg-primary-dark\/35,
+  :where(html.light) .bg-primary-dark\/40,
+  :where(html.light) .bg-primary-dark\/50,
+  :where(html.light) .bg-primary-dark\/60 {
+    background-color: rgba(109, 40, 217, 0.07);
+  }
+
+  :where(html.light) .hover\:bg-white\/4:hover,
+  :where(html.light) .hover\:bg-white\/5:hover,
+  :where(html.light) .hover\:bg-white\/8:hover,
+  :where(html.light) .hover\:bg-white\/10:hover,
+  :where(html.light) .hover\:bg-white\/15:hover {
+    background-color: rgba(30, 30, 42, 0.06);
+  }
+  :where(html.light) .hover\:bg-primary-dark\/30:hover,
+  :where(html.light) .hover\:bg-primary-dark\/35:hover,
+  :where(html.light) .hover\:bg-primary-dark\/40:hover {
+    background-color: var(--color-card-hover);
+  }
+
+  /* 3. Bordas Sutis e Primárias */
+  :where(html.light) .border-white\/5,
+  :where(html.light) .border-white\/6,
+  :where(html.light) .border-white\/8,
+  :where(html.light) .border-white\/10,
+  :where(html.light) .border-white\/15,
+  :where(html.light) .border-white\/20,
+  :where(html.light) .border-white\/25,
+  :where(html.light) .border-white\/30 {
+    border-color: rgba(30, 30, 42, 0.09);
+  }
+  :where(html.light) .border-primary\/15,
+  :where(html.light) .border-primary\/20,
+  :where(html.light) .border-primary\/25,
+  :where(html.light) .border-primary\/30,
+  :where(html.light) .border-primary\/35,
+  :where(html.light) .border-primary\/40,
+  :where(html.light) .border-primary\/50 {
+    border-color: rgba(109, 40, 217, 0.14);
+  }
+  :where(html.light) .border-primary-light\/30,
+  :where(html.light) .border-primary-light\/40,
+  :where(html.light) .border-primary-light\/50 {
+    border-color: rgba(109, 40, 217, 0.22);
+  }
+
+  :where(html.light) .hover\:border-white\/10:hover,
+  :where(html.light) .hover\:border-white\/20:hover,
+  :where(html.light) .hover\:border-white\/25:hover,
+  :where(html.light) .hover\:border-white\/30:hover {
+    border-color: rgba(30, 30, 42, 0.18);
+  }
+  :where(html.light) .hover\:border-primary-light:hover {
+    border-color: rgba(109, 40, 217, 0.32);
+  }
+
+  /* Preserva bordas laterais semânticas (border-l-4) contra shorthands border-color */
+  :where(html.light) .border-l-info {
+    border-left-color: var(--color-info);
+  }
+  :where(html.light) .border-l-success-500,
+  :where(html.light) .border-l-emerald-500 {
+    border-left-color: var(--color-success-500);
+  }
+  :where(html.light) .border-l-warning-500,
+  :where(html.light) .border-l-amber-500 {
+    border-left-color: var(--color-warning-500);
+  }
+  :where(html.light) .border-l-purple-500,
+  :where(html.light) .border-l-primary {
+    border-left-color: var(--color-primary);
+  }
+  :where(html.light) .border-l-danger-500,
+  :where(html.light) .border-l-red-500 {
+    border-left-color: var(--color-danger-500);
+  }
+
   .custom-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: rgba(123, 115, 141, 0.3) transparent;
   }
-
   html.light .custom-scrollbar {
-    scrollbar-color: rgba(30, 30, 42, 0.2) transparent;
+    scrollbar-color: rgba(30, 30, 42, 0.14) transparent;
   }
-
-  @supports not (scrollbar-color: auto) {
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: rgba(123, 115, 141, 0.3);
-      border-radius: 9999px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: rgba(237, 229, 57, 0.5);
-    }
-    html.light .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: rgba(30, 30, 42, 0.2);
-    }
-    html.light .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: rgba(154, 88, 0, 0.45);
-    }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(123, 115, 141, 0.3);
+    border-radius: 9999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(237, 229, 57, 0.5);
+  }
+  html.light .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(30, 30, 42, 0.14);
+  }
+  html.light .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(109, 40, 217, 0.35);
   }
 
   /* Borda sutil com gradiente para o Workspace Switcher */

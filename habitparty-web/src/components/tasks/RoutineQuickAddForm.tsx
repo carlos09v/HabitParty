@@ -43,7 +43,23 @@ export function RoutineQuickAddForm({
   const [dailyFreq, setDailyFreq] = useState<"DAILY" | "WEEKDAYS">("DAILY");
   const [difficulty, setDifficulty] = useState<TaskDifficultyOption>("MEDIUM");
   const [dueOffset, setDueOffset] = useState<number | null>(null);
+  const [dueTime, setDueTime] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleDueOffsetChange = (nextOffset: number | null) => {
+    setDueOffset(nextOffset);
+    if (nextOffset === null) {
+      setDueTime("");
+    }
+  };
+
+  const handleDueTimeChange = (nextTime: string) => {
+    const cleanTime = nextTime ? nextTime.slice(0, 5) : "";
+    setDueTime(cleanTime);
+    if (cleanTime && dueOffset === null) {
+      setDueOffset(0);
+    }
+  };
 
   useClickOutside(containerRef, onClose, { onEscape: onClose });
 
@@ -75,10 +91,15 @@ export function RoutineQuickAddForm({
           difficulty,
         };
       } else {
+        const resolvedOffset =
+          dueOffset !== null ? dueOffset : dueTime ? 0 : null;
         extraPayload = {
           difficulty,
-          ...(dueOffset !== null && {
-            dueDate: getOffsetDateString(dueOffset),
+          ...(resolvedOffset !== null && {
+            dueDate: getOffsetDateString(resolvedOffset),
+          }),
+          ...(dueTime && {
+            dueTime,
           }),
         };
       }
@@ -192,7 +213,9 @@ export function RoutineQuickAddForm({
       <QuickAddConfigBar
         taskType={taskType}
         dueOffset={dueOffset}
-        onDueOffsetChange={setDueOffset}
+        onDueOffsetChange={handleDueOffsetChange}
+        dueTime={dueTime}
+        onDueTimeChange={handleDueTimeChange}
         difficulty={difficulty}
         onDifficultyChange={setDifficulty}
         habitType={habitType}
@@ -241,7 +264,10 @@ export function RoutineQuickAddForm({
                 dueDate:
                   dueOffset !== null
                     ? getOffsetDateString(dueOffset)
-                    : undefined,
+                    : dueTime
+                      ? getTodayDateString()
+                      : undefined,
+                dueTime: dueTime || undefined,
               }),
               ...(taskType === "HABIT" && {
                 habitType,

@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import type { ListCardProps } from "@/types/ui";
 import { cn } from "@/utils";
 
@@ -13,6 +14,8 @@ export function ListCard({
   onContextMenu,
   className,
 }: ListCardProps) {
+  const t = useTranslations("ui.listCard");
+
   return (
     <button
       type="button"
@@ -29,7 +32,7 @@ export function ListCard({
           ? "bg-surface/60 dark:bg-neutral-900/40 border border-neutral-700/50 text-neutral-500 cursor-not-allowed opacity-60 shadow-none"
           : isAdd
             ? "cursor-pointer group bg-primary-dark/15 border-2 border-dashed border-primary-light/50 text-primary-light hover:border-gold hover:text-gold hover:bg-primary-dark/30 hover:shadow-[0_0_14px_rgba(237,229,57,0.25)] hover:scale-[1.02]"
-            : "cursor-pointer group bg-primary-dark/20 border border-primary/40 text-neutral-50 hover:bg-primary-dark/40 hover:border-primary-light hover:shadow-[0_0_12px_rgba(124,58,237,0.25)] hover:scale-[1.02]",
+            : "cursor-pointer group bg-primary-dark/20 border border-neutral-700 dark:border-primary/40 text-neutral-50 hover:bg-primary-dark/40 hover:border-primary/40 dark:hover:border-primary-light hover:shadow-card-deep dark:hover:shadow-[0_0_12px_rgba(124,58,237,0.25)] hover:scale-[1.02]",
         className,
       )}
     >
@@ -43,7 +46,7 @@ export function ListCard({
               ? "bg-neutral-800/80 text-neutral-500"
               : isAdd
                 ? "bg-primary-light/10 text-primary-light group-hover:bg-gold/20 group-hover:text-gold"
-                : "bg-primary-dark/30 text-neutral-300 group-hover:text-gold group-hover:bg-primary-dark/50",
+                : "bg-primary/10 dark:bg-primary-dark/30 text-primary dark:text-neutral-300 group-hover:text-primary-dark dark:group-hover:text-gold group-hover:bg-primary/15 dark:group-hover:bg-primary-dark/50",
           )}
         >
           {icon}
@@ -87,7 +90,7 @@ export function ListCard({
           </span>
         ) : isAdd ? (
           <span className="font-medium text-neutral-400 group-hover:text-gold/80 leading-tight text-tiny">
-            Nova lista
+            {t("newList")}
           </span>
         ) : null}
       </div>

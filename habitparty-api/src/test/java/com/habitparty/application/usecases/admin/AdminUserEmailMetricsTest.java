@@ -88,7 +88,7 @@ class AdminUserEmailMetricsTest {
     User user = createTestUser(userId);
 
     Pageable pageable = PageRequest.of(0, 10);
-    when(userRepository.searchUsers(null, null, null, null, pageable))
+    when(userRepository.searchUsers(null, null, null, null, null, pageable))
         .thenReturn(new PageImpl<>(List.of(user), pageable, 1));
 
     when(emailLogPort.countByUserIdsAndStatusAndSentAtAfter(eq(List.of(userId)), eq(EmailDispatchStatus.SENT), any(LocalDateTime.class)))

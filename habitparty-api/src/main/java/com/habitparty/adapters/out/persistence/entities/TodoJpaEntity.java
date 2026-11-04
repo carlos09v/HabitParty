@@ -1,6 +1,7 @@
 package com.habitparty.adapters.out.persistence.entities;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import com.habitparty.core.domain.enums.task.TodoReminderType;
 
@@ -21,6 +22,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TodoJpaEntity extends TaskJpaEntity {
+  @Column(name = "due_time")
+  private LocalTime dueTime;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "reminder_type", nullable = false)
   private TodoReminderType reminderType;

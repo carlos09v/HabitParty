@@ -1,27 +1,25 @@
-import { Check, Flame, Pencil, X } from "lucide-react";
+import { Flame, FolderKanban, Pencil, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import {
-  TaskActionControl,
-  TaskHardcoreBadge,
-  TaskRewardBadges,
-} from "@/components/tasks/shared";
 import type { Task, TaskPriorityOption } from "@/types/task";
 import { cn } from "@/utils";
-import { getTaskDueDateInfo, isTaskHardcoreLocked } from "@/utils/date";
+import { isTaskHardcoreLocked } from "@/utils/date";
 import { TaskDatePicker } from "./TaskDatePicker";
 import { TaskPriorityPicker } from "./TaskPriorityPicker";
 
 interface TaskDetailsHeaderProps {
   task: Task;
+  columnTitle?: string;
   completed: boolean;
   isHabit: boolean;
   isDaily: boolean;
   isTodo: boolean;
   dueDate: string;
+  dueTime?: string;
   priority: string;
   onToggleComplete: () => void;
   onHabitDelta?: (delta: number) => void;
   onDateChange: (newDate: string) => void;
+  onTimeChange?: (newTime: string) => void;
   onPrioritySelect: (p: TaskPriorityOption) => void;
   onEdit?: () => void;
   onClose?: () => void;
@@ -29,15 +27,15 @@ interface TaskDetailsHeaderProps {
 
 export function TaskDetailsHeader({
   task,
-  completed,
+  columnTitle,
   isHabit,
   isDaily,
   isTodo,
   dueDate,
+  dueTime,
   priority,
-  onToggleComplete,
-  onHabitDelta,
   onDateChange,
+  onTimeChange,
   onPrioritySelect,
   onEdit,
   onClose,
@@ -46,25 +44,26 @@ export function TaskDetailsHeader({
   const streak = task.streak ?? task.currentStreak ?? 0;
   const habitScore = (task.positiveCount ?? 0) - (task.negativeCount ?? 0);
   const isDateLocked = isTaskHardcoreLocked(task);
-  const dueDateInfo = getTaskDueDateInfo(dueDate || task.dueDate);
-  const isHardcoreOverdue = Boolean(
-    isTodo && task.isHardcoreModeEnabled && dueDateInfo.isOverdue,
-  );
 
   return (
-    <div className="flex items-center justify-between gap-2 border-b border-primary/20 pb-2.5">
-      <div className="flex items-center gap-2 min-w-0">
-        {/* HÁBITO: Controles +/- diretos + Badge + Reset + Saldo */}
+    <div className="flex items-center justify-between gap-2 border-b border-white/8 pb-2.5">
+      <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+        {columnTitle && (
+          <>
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/6 border border-white/10 text-neutral-300 text-tiny font-semibold truncate max-w-[115px]"
+              title={columnTitle}
+            >
+              <FolderKanban size={11} className="text-gold/80 shrink-0" />
+              <span className="truncate">{columnTitle}</span>
+            </span>
+            <div className="h-3.5 w-px bg-white/12 shrink-0" />
+          </>
+        )}
+
+        {/* HÁBITO: Badge + Reset + Saldo */}
         {isHabit ? (
-          <div className="flex items-center gap-2 min-w-0">
-            <TaskActionControl
-              task={task}
-              isHabit={true}
-              onDelta={onHabitDelta}
-            />
-
-            <div className="h-4 w-px bg-white/15 shrink-0" />
-
+          <div className="flex items-center gap-1.5 min-w-0">
             <span className="px-2 py-0.5 rounded text-tiny font-bold uppercase tracking-wider bg-info/15 border border-info/40 text-info shrink-0">
               {t("habitBadge")}
             </span>
@@ -91,68 +90,37 @@ export function TaskDetailsHeader({
               </span>
             )}
           </div>
-        ) : (
-          <>
-            {/* Checkbox de Conclusão para Diária e To-Do */}
-            <button
-              type="button"
-              onClick={onToggleComplete}
-              aria-label={
-                completed ? t("markPendingAria") : t("markCompletedAria")
-              }
-              className={cn(
-                "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-90",
-                completed
-                  ? "bg-gold border-gold text-on-gold shadow-glow-gold-xs"
-                  : isDaily
-                    ? "border-magenta/60 bg-magenta/10 hover:border-magenta"
-                    : "border-primary-light/55 bg-primary-dark/40 hover:border-gold",
-              )}
-            >
-              {completed && <Check size={12} className="stroke-3" />}
-            </button>
-
-            {/* Separador vertical */}
-            <div className="h-4 w-px bg-white/15 shrink-0" />
-
-            {/* Prazo (To-Do) ou Badge Diária */}
-            {isTodo ? (
-              <TaskDatePicker
-                dueDate={dueDate}
-                onDateChange={onDateChange}
-                disabled={isDateLocked}
-              />
-            ) : isDaily ? (
-              <div className="flex items-center gap-1.5">
-                <span className="text-tiny font-medium text-magenta bg-magenta/15 border border-magenta/40 px-2 py-0.5 rounded uppercase tracking-wider">
-                  {t("dailyBadge")}
-                </span>
-                {streak > 0 && (
-                  <span
-                    className="flex items-center gap-1 text-tiny text-warning-500 font-bold shrink-0"
-                    title={t("streakTitle", { streak })}
-                  >
-                    <Flame
-                      size={12}
-                      className="fill-warning-500 text-warning-500"
-                    />
-                    {streak}d
-                  </span>
-                )}
-              </div>
-            ) : null}
-          </>
-        )}
+        ) : isTodo ? (
+          <TaskDatePicker
+            dueDate={dueDate}
+            dueTime={dueTime}
+            onDateChange={onDateChange}
+            onTimeChange={onTimeChange}
+            disabled={isDateLocked}
+          />
+        ) : isDaily ? (
+          <div className="flex items-center gap-1.5">
+            <span className="text-tiny font-medium text-magenta bg-magenta/15 border border-magenta/40 px-2 py-0.5 rounded uppercase tracking-wider">
+              {t("dailyBadge")}
+            </span>
+            {streak > 0 && (
+              <span
+                className="flex items-center gap-1 text-tiny text-warning-500 font-bold shrink-0"
+                title={t("streakTitle", { streak })}
+              >
+                <Flame
+                  size={12}
+                  className="fill-warning-500 text-warning-500"
+                />
+                {streak}d
+              </span>
+            )}
+          </div>
+        ) : null}
       </div>
 
-      {/* Canto Superior Direito: Hardcore + Dificuldade + Bandeira de Prioridade + Lápis + Fechar X */}
-      <div className="flex items-center gap-1.5 shrink-0">
-        {task.isHardcoreModeEnabled && (
-          <TaskHardcoreBadge isHardcoreOverdue={isHardcoreOverdue} />
-        )}
-
-        <TaskRewardBadges task={task} showStreak={false} showRewards={false} />
-
+      {/* Canto Superior Direito: Bandeira de Prioridade + Lápis + Fechar X */}
+      <div className="flex items-center gap-1 shrink-0">
         <TaskPriorityPicker
           priority={priority}
           onPrioritySelect={onPrioritySelect}

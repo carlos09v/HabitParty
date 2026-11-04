@@ -10,7 +10,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ import {
   updateWorkspaceAction,
 } from "@/actions/workspaceActions";
 import { UpgradePremiumModal } from "@/components/subscription/UpgradePremiumModal";
+import { useProgressStore } from "@/store/progressStore";
 import { useUserStore } from "@/store/userStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { cn } from "@/utils";
@@ -100,13 +101,24 @@ export function WorkspaceSwitcher({
   }, [isOpen]);
 
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const isWorkspaceRoute =
+    pathname?.startsWith("/dashboard") || pathname?.startsWith("/tasks");
+
   const handleSelect = (id: string) => {
-    setActiveWorkspaceId(id);
     setIsOpen(false);
+    if (id === activeWorkspaceId) return;
+
+    setActiveWorkspaceId(id);
     if (typeof document !== "undefined") {
+      // biome-ignore lint/suspicious/noDocumentCookie: Sincroniza workspace ativo no cliente imediatamente
       document.cookie = `activeWorkspaceId=${id}; path=/; max-age=31536000; SameSite=Lax`;
+    }
+    if (isWorkspaceRoute) {
+      useWorkspaceStore.setState({ isSwitchingWorkspace: true });
+      useProgressStore.getState().start("workspace-switch");
     }
     const params = new URLSearchParams(
       searchParams ? searchParams.toString() : "",
@@ -117,17 +129,39 @@ export function WorkspaceSwitcher({
 
   const handleCreate = (name: string) => {
     setIsModalOpen(false);
+    if (isWorkspaceRoute) {
+      useWorkspaceStore.setState({ isSwitchingWorkspace: true });
+      useProgressStore.getState().start("workspace-switch");
+    }
     startTransition(async () => {
       const response = await createWorkspaceAction({ name });
       if (response.success) {
         if (onCreateWorkspace) {
           onCreateWorkspace(name);
         }
-        // Atualiza a store localmente para refletir instantaneamente a criação
+        const newWorkspaceId = response.data.id || null;
+        if (newWorkspaceId && typeof document !== "undefined") {
+          // biome-ignore lint/suspicious/noDocumentCookie: Sincroniza novo workspace ativo no cliente imediatamente
+          document.cookie = `activeWorkspaceId=${newWorkspaceId}; path=/; max-age=31536000; SameSite=Lax`;
+        }
+        // Atualiza a store localmente com o novo workspace já selecionado como ativo
         useWorkspaceStore.setState({
           workspaces: [...workspaces, response.data],
+          activeWorkspaceId: newWorkspaceId ?? activeWorkspaceId,
         });
+        if (newWorkspaceId && isWorkspaceRoute) {
+          const params = new URLSearchParams(
+            searchParams ? searchParams.toString() : "",
+          );
+          params.set("workspaceId", newWorkspaceId);
+          router.push(`?${params.toString()}`);
+        } else {
+          useWorkspaceStore.setState({ isSwitchingWorkspace: false });
+          useProgressStore.getState().done("workspace-switch");
+        }
       } else {
+        useWorkspaceStore.setState({ isSwitchingWorkspace: false });
+        useProgressStore.getState().done("workspace-switch");
         console.error(response.error);
         toast.error(response.error || t("createError"));
       }
@@ -185,6 +219,12 @@ export function WorkspaceSwitcher({
   const handleConfirmDelete = () => {
     if (!workspaceToDelete) return;
     const id = workspaceToDelete.id;
+    const isDeletingActive = activeWorkspaceId === id;
+
+    if (isDeletingActive && isWorkspaceRoute) {
+      useWorkspaceStore.setState({ isSwitchingWorkspace: true });
+      useProgressStore.getState().start("workspace-switch");
+    }
 
     startTransition(async () => {
       const response = await deleteWorkspaceAction(id);
@@ -194,15 +234,27 @@ export function WorkspaceSwitcher({
         }
         // Remove da store localmente
         const newWorkspaces = workspaces.filter((w) => w.id !== id);
+        const nextActiveId = isDeletingActive
+          ? newWorkspaces[0]?.id || null
+          : activeWorkspaceId;
         useWorkspaceStore.setState({
           workspaces: newWorkspaces,
-          activeWorkspaceId:
-            activeWorkspaceId === id
-              ? newWorkspaces[0]?.id || null
-              : activeWorkspaceId,
+          activeWorkspaceId: nextActiveId,
         });
         setWorkspaceToDelete(null);
+        if (isDeletingActive && isWorkspaceRoute && nextActiveId) {
+          const params = new URLSearchParams(
+            searchParams ? searchParams.toString() : "",
+          );
+          params.set("workspaceId", nextActiveId);
+          router.push(`?${params.toString()}`);
+        } else {
+          useWorkspaceStore.setState({ isSwitchingWorkspace: false });
+          useProgressStore.getState().done("workspace-switch");
+        }
       } else {
+        useWorkspaceStore.setState({ isSwitchingWorkspace: false });
+        useProgressStore.getState().done("workspace-switch");
         console.error(response.error);
         toast.error(response.error || t("deleteError"));
       }
@@ -220,11 +272,11 @@ export function WorkspaceSwitcher({
           className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border-gradient-switcher transition-all focus:outline-none focus:ring-2 focus:ring-gold/50 cursor-pointer"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-7 h-7 rounded-lg bg-gold/20 border border-gold/40 flex items-center justify-center text-gold font-bold text-xs shrink-0 shadow-xs">
+            <div className="w-7 h-7 rounded-lg bg-primary/15 dark:bg-gold/20 border border-primary/25 dark:border-gold/40 flex items-center justify-center text-primary dark:text-gold font-bold text-xs shrink-0 shadow-xs">
               {(activeWorkspace?.name || "W").charAt(0).toUpperCase()}
             </div>
             <div className="flex flex-col items-start min-w-0">
-              <span className="text-[10px] uppercase tracking-wider text-gold-pressed font-bold leading-tight">
+              <span className="text-[10px] uppercase tracking-wider text-primary dark:text-gold-pressed font-bold leading-tight">
                 {t("label")}
               </span>
               <span className="text-body-s text-neutral-50 font-bold truncate max-w-[130px]">

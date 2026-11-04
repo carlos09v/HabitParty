@@ -4,6 +4,7 @@ export interface AdminOverviewDTO {
   premiumUsers: number;
   founderUsers?: number;
   adminUsers: number;
+  verifiedUsers?: number;
   emailsSentThisMonth: number;
   resendMonthlyQuota: number;
   resendQuotaPercentage: number;
@@ -23,6 +24,8 @@ export interface AdminUserSummaryDTO {
   role: "USER" | "ADMIN";
   isPremium: boolean;
   isFounder?: boolean;
+  emailVerified?: boolean;
+  emailVerifiedAt?: string | null;
   subscriptionStatus: string;
   createdAt: string;
   emailsSentThisMonth: number;

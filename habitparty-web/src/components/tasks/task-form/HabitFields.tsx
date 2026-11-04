@@ -77,8 +77,8 @@ export function HabitFields({ form }: HabitFieldsProps) {
             className={cn(
               "flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg border text-body-s font-bold transition-all cursor-pointer disabled:opacity-50",
               habitType === "POSITIVE"
-                ? "border-gold bg-gold/20 text-gold shadow-glow-gold-xs"
-                : "border-primary/30 bg-primary-dark/20 text-neutral-300 hover:text-gold hover:border-gold/40",
+                ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-700 dark:border-gold dark:bg-gold/20 dark:text-gold dark:shadow-glow-gold-xs"
+                : "border-neutral-600 bg-card text-neutral-200 hover:border-neutral-500 hover:bg-surface dark:border-primary/30 dark:bg-primary-dark/20 dark:text-neutral-300 dark:hover:text-gold dark:hover:border-gold/40",
             )}
           >
             <Plus size={16} />
@@ -92,8 +92,8 @@ export function HabitFields({ form }: HabitFieldsProps) {
             className={cn(
               "flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg border text-body-s font-bold transition-all cursor-pointer disabled:opacity-50",
               habitType === "NEGATIVE"
-                ? "border-gold bg-gold/20 text-gold shadow-glow-gold-xs"
-                : "border-primary/30 bg-primary-dark/20 text-neutral-300 hover:text-gold hover:border-gold/40",
+                ? "bg-rose-500/10 border-rose-500/40 text-rose-700 dark:border-gold dark:bg-gold/20 dark:text-gold dark:shadow-glow-gold-xs"
+                : "border-neutral-600 bg-card text-neutral-200 hover:border-neutral-500 hover:bg-surface dark:border-primary/30 dark:bg-primary-dark/20 dark:text-neutral-300 dark:hover:text-gold dark:hover:border-gold/40",
             )}
           >
             <Minus size={16} />
@@ -107,8 +107,8 @@ export function HabitFields({ form }: HabitFieldsProps) {
             className={cn(
               "flex items-center justify-center gap-1 py-2 px-2 rounded-lg border text-body-s font-bold transition-all cursor-pointer disabled:opacity-50",
               habitType === "BOTH"
-                ? "border-gold bg-gold/20 text-gold shadow-glow-gold-xs"
-                : "border-primary/30 bg-primary-dark/20 text-neutral-300 hover:text-gold hover:border-gold/40",
+                ? "bg-purple-500/10 border-purple-500/40 text-purple-700 dark:border-gold dark:bg-gold/20 dark:text-gold dark:shadow-glow-gold-xs"
+                : "border-neutral-600 bg-card text-neutral-200 hover:border-neutral-500 hover:bg-surface dark:border-primary/30 dark:bg-primary-dark/20 dark:text-neutral-300 dark:hover:text-gold dark:hover:border-gold/40",
             )}
           >
             <span>{t("bothOption")}</span>

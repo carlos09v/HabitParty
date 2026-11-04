@@ -43,16 +43,16 @@ export function WeekDaysIndicator({
               isCompact ? "w-3.5 h-3.5 text-[8px]" : "w-4.5 h-4.5 text-label-m",
               isActive &&
                 isToday &&
-                "bg-magenta text-white shadow-glow-magenta font-extrabold ring-1 ring-white/40",
+                "bg-primary dark:bg-magenta text-white ring-2 ring-primary/25 dark:ring-1 dark:ring-white/40 dark:shadow-glow-magenta font-extrabold",
               isActive &&
                 !isToday &&
-                "bg-gold text-on-gold shadow-glow-gold-xs font-extrabold",
+                "bg-amber-500/15 text-amber-800 border border-amber-500/30 dark:bg-gold dark:text-on-gold dark:border-transparent dark:shadow-glow-gold-xs font-extrabold",
               !isActive &&
                 isToday &&
-                "border border-magenta/70 text-magenta font-bold bg-magenta/10",
+                "border border-primary/70 dark:border-magenta/70 text-primary dark:text-magenta font-bold bg-primary/10 dark:bg-magenta/10",
               !isActive &&
                 !isToday &&
-                "bg-white/5 text-neutral-500 border border-white/5",
+                "bg-neutral-800 text-neutral-400 border border-neutral-700/60 dark:bg-white/5 dark:text-neutral-500 dark:border-white/5",
             )}
           >
             {shortLabel}

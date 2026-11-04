@@ -102,12 +102,16 @@ public class CreateTaskUseCase {
         );
       }
       case TODO -> {
-        if (command.isHardcoreModeEnabled() && command.dueDate() != null && command.dueDate().isBefore(java.time.LocalDate.now())) {
+        java.time.LocalDate effectiveDueDate = command.dueDate() != null
+            ? command.dueDate()
+            : (command.dueTime() != null ? java.time.LocalDate.now() : null);
+
+        if (command.isHardcoreModeEnabled() && effectiveDueDate != null && effectiveDueDate.isBefore(java.time.LocalDate.now())) {
           throw new DomainValidationException("A data de vencimento de um afazer no modo Hardcore não pode ser no passado.");
         }
 
         LocalDateTime calculatedReminderAt = Todo.calculateReminderTime(
-            command.dueDate(), 
+            effectiveDueDate, 
             command.reminderType(), 
             command.customReminderAt()
         );
@@ -133,8 +137,8 @@ public class CreateTaskUseCase {
         newTask = new Todo(
             newTaskId, boardColumnId, userIdLogado, command.name(), command.description(),
             newOrderIndex, command.priority(), command.tags(), command.difficulty(), TaskStatus.PENDING,
-            command.taskType(), command.isHardcoreModeEnabled(), command.dueDate(), now, emptyChecklist,
-            command.reminderType(), calculatedReminderAt, null, false, sendEmail, false
+            command.taskType(), command.isHardcoreModeEnabled(), effectiveDueDate, now, emptyChecklist,
+            command.reminderType(), calculatedReminderAt, null, false, sendEmail, false, command.dueTime()
         );
       }
       default -> throw new DomainValidationException("Tipo de tarefa inválido: " + command.taskType());

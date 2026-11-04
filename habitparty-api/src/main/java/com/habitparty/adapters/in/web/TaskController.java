@@ -109,7 +109,7 @@ public class TaskController implements TaskApi {
         dto.dueDate(), dto.habitType(), dto.resetCounter(), dto.importanceType(),
         dto.startDate(), dto.repeatType(), dto.repeatEvery(), dto.daysOfWeek(),
         dto.monthlyOption(), dto.reminderType(), dto.customReminderAt(),
-        dto.sendEmailReminder()
+        dto.sendEmailReminder(), dto.dueTime()
     );
     Task createdTask = createTaskUseCase.execute(userId, boardColumnId, command);
     return ResponseEntity.status(HttpStatus.CREATED).body(TaskResponseDTO.fromDomain(createdTask));
@@ -127,7 +127,7 @@ public class TaskController implements TaskApi {
         dto.habitType(), dto.resetCounter(), dto.importanceType(),
         dto.startDate(), dto.repeatType(), dto.repeatEvery(), dto.daysOfWeek(),
         dto.monthlyOption(), dto.reminderType(), dto.customReminderAt(),
-        dto.sendEmailReminder()
+        dto.sendEmailReminder(), dto.dueTime()
     );
     Task updatedTask = updateTaskUseCase.execute(taskId, userId, command);
     return ResponseEntity.ok(TaskResponseDTO.fromDomain(updatedTask));

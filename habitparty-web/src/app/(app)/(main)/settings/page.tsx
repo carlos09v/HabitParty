@@ -72,7 +72,7 @@ export default async function SettingsPage({
         <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto pb-16">
           {/* HEADER */}
           <header className="flex flex-col gap-1 border-b border-primary/20 pb-4">
-            <h1 className="text-headline-s font-bold text-neutral-50 drop-shadow-md">
+            <h1 className="text-headline-s font-bold text-neutral-50 dark:drop-shadow-md">
               {t("headerTitle")}
             </h1>
             <p className="text-body-m text-neutral-300">

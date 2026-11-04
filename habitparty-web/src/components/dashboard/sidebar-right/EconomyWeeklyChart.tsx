@@ -30,7 +30,7 @@ export function EconomyWeeklyChart({
   return (
     <div
       className={cn(
-        "rounded-lg border border-primary/30 bg-primary-dark/20 flex flex-col",
+        "rounded-lg border border-neutral-700 dark:border-primary/30 bg-white dark:bg-primary-dark/20 shadow-2xs dark:shadow-none flex flex-col",
         isCompact ? "p-2.5 gap-2" : "p-3 gap-3",
       )}
     >
@@ -40,21 +40,21 @@ export function EconomyWeeklyChart({
         <span className="font-semibold text-xs transition-colors">
           {activeHoveredBar ? (
             <span className="flex items-center gap-1.5">
-              <span className="text-gold">
+              <span className="text-emerald-600 dark:text-gold">
                 +{formatCoins(activeHoveredBar.gold, { locale })}
               </span>
               <span className="text-neutral-500">/</span>
-              <span className="text-rose-400">
+              <span className="text-rose-600 dark:text-rose-400">
                 -{formatCoins(activeHoveredBar.spent ?? 0, { locale })}
               </span>
             </span>
           ) : (
             <span className="flex items-center gap-1.5">
-              <span className="text-gold">
+              <span className="text-emerald-600 dark:text-gold">
                 +{formatCoins(weeklyEarnings, { locale })}
               </span>
               <span className="text-neutral-500">/</span>
-              <span className="text-rose-400">
+              <span className="text-rose-600 dark:text-rose-400">
                 -{formatCoins(weeklySpent, { locale })}
               </span>
             </span>

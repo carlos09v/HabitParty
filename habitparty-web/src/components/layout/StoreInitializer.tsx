@@ -69,6 +69,21 @@ export function StoreInitializer({
   }
 
   useEffect(() => {
+    if (workspaces.length > 0) {
+      const currentState = useWorkspaceStore.getState();
+      const resolvedActiveId =
+        activeWorkspaceId ||
+        currentState.activeWorkspaceId ||
+        workspaces[0]?.id ||
+        null;
+      useWorkspaceStore.setState({
+        workspaces,
+        activeWorkspaceId: resolvedActiveId,
+      });
+    }
+  }, [workspaces, activeWorkspaceId]);
+
+  useEffect(() => {
     if (!user) return;
 
     const currentStoreUser = useUserStore.getState().user;

@@ -86,20 +86,23 @@ export function FocusMetricsGrid({
       {/* 1. Hero Card: Tempo Total de Foco */}
       <div
         className={cn(
-          "w-full rounded-xl border border-gold/30 bg-gradient-to-br from-gold/10 via-surface/60 to-primary-dark/30 flex items-center justify-between transition-all hover:border-gold/50 shadow-xs relative overflow-hidden",
+          "w-full rounded-xl border border-amber-500/25 dark:border-gold/30 bg-linear-to-br from-amber-500/[0.08] via-white to-amber-500/[0.03] dark:from-gold/10 dark:via-surface/60 dark:to-primary-dark/30 flex items-center justify-between transition-all hover:border-amber-500/45 dark:hover:border-gold/50 shadow-xs relative overflow-hidden",
           isCompact ? "p-2.5" : "p-3",
         )}
       >
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-1.5 text-neutral-400 mb-0.5">
-            <Timer size={13} className="text-gold shrink-0" />
+            <Timer
+              size={13}
+              className="text-amber-600 dark:text-gold shrink-0"
+            />
             <span className="text-tiny font-bold uppercase tracking-wider text-neutral-300">
               {isToday ? t("focusedTodayLabel") : t("totalFocusTimeLabel")}
             </span>
           </div>
           <span
             className={cn(
-              "font-extrabold text-gold tracking-tight",
+              "font-extrabold text-amber-700 dark:text-gold tracking-tight",
               isCompact ? "text-xl" : "text-2xl",
             )}
           >
@@ -113,7 +116,7 @@ export function FocusMetricsGrid({
               : t("accumulatedTotal", { time: formatFocusMinutes(focusTime) })}
           </span>
         </div>
-        <div className="w-10 h-10 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center text-gold shrink-0 shadow-glow-gold-xs">
+        <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 border border-amber-500/25 dark:bg-gold/15 dark:border-gold/30 dark:text-gold flex items-center justify-center shrink-0 dark:shadow-glow-gold-xs">
           <Timer size={20} />
         </div>
       </div>
@@ -123,7 +126,7 @@ export function FocusMetricsGrid({
         {/* Sessões / Registros */}
         <div
           className={cn(
-            "rounded-xl border border-primary/25 bg-surface/50 flex flex-col justify-between transition-all hover:border-gold/30",
+            "rounded-xl border border-neutral-700 dark:border-primary/25 bg-white dark:bg-surface/50 shadow-2xs dark:shadow-none flex flex-col justify-between transition-all hover:border-gold/30",
             isCompact ? "p-2 gap-1" : "p-2.5 gap-1.5",
           )}
         >
@@ -131,10 +134,13 @@ export function FocusMetricsGrid({
             <span className="text-tiny font-medium truncate">
               {isToday ? t("sessionsTodayLabel") : t("totalSessionsLabel")}
             </span>
-            <ListChecks size={13} className="text-primary-light shrink-0" />
+            <ListChecks
+              size={13}
+              className="text-primary dark:text-primary-light shrink-0"
+            />
           </div>
           <div className="flex flex-col">
-            <span className="text-body-m font-bold text-neutral-100">
+            <span className="text-body-m font-bold text-neutral-50 dark:text-neutral-100">
               {recordsCount}
             </span>
             <span className="text-tiny text-neutral-400 truncate">
@@ -148,7 +154,7 @@ export function FocusMetricsGrid({
         {/* Constância / Dias Ativos */}
         <div
           className={cn(
-            "rounded-xl border border-primary/25 bg-surface/50 flex flex-col justify-between transition-all hover:border-gold/30",
+            "rounded-xl border border-neutral-700 dark:border-primary/25 bg-white dark:bg-surface/50 shadow-2xs dark:shadow-none flex flex-col justify-between transition-all hover:border-gold/30",
             isCompact ? "p-2 gap-1" : "p-2.5 gap-1.5",
           )}
         >
@@ -156,14 +162,20 @@ export function FocusMetricsGrid({
             <span className="text-tiny font-medium truncate">
               {isToday ? t("consistencyLabel") : t("activeDaysLabel")}
             </span>
-            <Flame size={13} className="text-amber-400 shrink-0" />
+            <Flame
+              size={13}
+              className="text-orange-500 dark:text-amber-400 shrink-0"
+            />
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-1">
-              <span className="text-body-m font-bold text-neutral-100">
+              <span className="text-body-m font-bold text-neutral-50 dark:text-neutral-100">
                 {streakDays}
               </span>
-              <Flame size={14} className="text-amber-400 fill-amber-400/20" />
+              <Flame
+                size={14}
+                className="text-orange-500 fill-orange-500/20 dark:text-amber-400 dark:fill-amber-400/20"
+              />
             </div>
             <span className="text-tiny text-neutral-400 truncate">
               {isToday
@@ -178,7 +190,7 @@ export function FocusMetricsGrid({
         {/* Ganho de XP / Pontos */}
         <div
           className={cn(
-            "rounded-xl border border-primary/25 bg-surface/50 flex flex-col justify-between transition-all hover:border-gold/30",
+            "rounded-xl border border-neutral-700 dark:border-primary/25 bg-white dark:bg-surface/50 shadow-2xs dark:shadow-none flex flex-col justify-between transition-all hover:border-gold/30",
             isCompact ? "p-2 gap-1" : "p-2.5 gap-1.5",
           )}
           title={isGamified ? t("xpTooltip") : t("pointsTooltip")}
@@ -193,10 +205,13 @@ export function FocusMetricsGrid({
                   ? t("totalXpLabel")
                   : t("totalPointsLabel")}
             </span>
-            <Award size={13} className="text-purple-400 shrink-0" />
+            <Award
+              size={13}
+              className="text-primary dark:text-purple-400 shrink-0"
+            />
           </div>
           <div className="flex flex-col">
-            <span className="text-body-m font-bold text-neutral-100">
+            <span className="text-body-m font-bold text-primary dark:text-neutral-100">
               +{xpCount} {isGamified ? "" : "pts"}
             </span>
             <span className="text-tiny text-neutral-400 truncate">
@@ -208,7 +223,7 @@ export function FocusMetricsGrid({
         {/* Ganho de Ouro / Créditos */}
         <div
           className={cn(
-            "rounded-xl border border-primary/25 bg-surface/50 flex flex-col justify-between transition-all hover:border-gold/30",
+            "rounded-xl border border-neutral-700 dark:border-primary/25 bg-white dark:bg-surface/50 shadow-2xs dark:shadow-none flex flex-col justify-between transition-all hover:border-gold/30",
             isCompact ? "p-2 gap-1" : "p-2.5 gap-1.5",
           )}
           title={isGamified ? t("goldTooltip") : t("creditsTooltip")}
@@ -226,7 +241,14 @@ export function FocusMetricsGrid({
             <CoinIcon size={13} />
           </div>
           <div className="flex flex-col">
-            <span className="text-body-m font-bold text-gold">
+            <span
+              className={cn(
+                "text-body-m font-bold",
+                isGamified
+                  ? "text-amber-600 dark:text-gold"
+                  : "text-sky-600 dark:text-sky-400",
+              )}
+            >
               +{formatCoins(goldCount, { locale })}
             </span>
             <span className="text-tiny text-neutral-400 truncate">

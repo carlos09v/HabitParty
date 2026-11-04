@@ -41,7 +41,8 @@
       "free": "Free: {count}",
       "vip": "VIP: {count}",
       "founders": "Founders: {count}/30",
-      "admin": "Admin: {count}"
+      "admin": "Admin: {count}",
+      "verified": "Verified: {count}"
     },
     "tasks": {
       "title": "Tasks & Habits",
@@ -57,10 +58,18 @@
   "usersTable": {
     "filterTabs": {
       "ALL": "All Users",
+      "VERIFIED": "Verified",
+      "UNVERIFIED": "Unverified",
       "FREE": "Free Plan",
       "PREMIUM": "Premium VIP",
       "FOUNDER": "Founders 👑",
       "ADMIN": "Administrators"
+    },
+    "verification": {
+      "verified": "Verified",
+      "unverified": "Unverified",
+      "verifiedTitle": "Account with verified email",
+      "unverifiedTitle": "Email verification pending"
     },
     "searchPlaceholder": "Search by name, @user, or email...",
     "loading": "Loading data...",
@@ -116,7 +125,9 @@
       "founder": "Founder 👑",
       "premiumVip": "Premium VIP",
       "free": "Free",
-      "admin": "ADMIN"
+      "admin": "ADMIN",
+      "verified": "Verified Email",
+      "unverified": "Unverified"
     },
     "closeAriaLabel": "Close modal",
     "closeButton": "Close",

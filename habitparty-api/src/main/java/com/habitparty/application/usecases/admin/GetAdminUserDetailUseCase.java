@@ -67,6 +67,8 @@ public class GetAdminUserDetailUseCase {
         u.getRole(),
         u.isPremium(),
         u.isFounder(),
+        u.isEmailVerified(),
+        u.getEmailVerifiedAt(),
         u.getSubscriptionStatus(),
         u.getCreatedAt(),
         emailsSentThisMonth,

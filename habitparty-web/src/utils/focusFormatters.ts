@@ -96,6 +96,18 @@ export function formatFocusDate(
 }
 
 /**
+ * Formata uma duração em segundos no formato compacto "Xm Ys", "Xm" ou "Ys".
+ */
+export function formatDurationMinSec(seconds: number): string {
+  const safeSeconds = Math.max(0, Math.floor(seconds));
+  const m = Math.floor(safeSeconds / 60);
+  const s = safeSeconds % 60;
+  if (m === 0) return `${s}s`;
+  if (s === 0) return `${m}m`;
+  return `${m}m ${s}s`;
+}
+
+/**
  * Formata o tempo restante de um item da mochila (ex: 29m 55s restantes, 30m restantes, 45s restantes).
  */
 export function formatBackpackItemRemainingTime(
@@ -107,14 +119,10 @@ export function formatBackpackItemRemainingTime(
     if (remainingSeconds <= 1) {
       return isEn ? "Time completed!" : "Tempo concluído!";
     }
-    const m = Math.floor(remainingSeconds / 60);
-    const s = remainingSeconds % 60;
-    const suffix = isEn ? "remaining" : "restantes";
-    if (m > 0 && s > 0) return `${m}m ${s}s ${suffix}`;
-    if (m > 0) return `${m}m ${suffix}`;
-    return `${s}s ${suffix}`;
+    const suffix = isEn ? "left" : "restantes";
+    return `${formatDurationMinSec(remainingSeconds)} ${suffix}`;
   }
-  return isEn ? "Active Voucher" : "Cupom Ativo";
+  return isEn ? "Active Coupon" : "Cupom Ativo";
 }
 
 /**

@@ -1,7 +1,8 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { create } from "zustand";
 import {
   DASHBOARD_TASK_FILTERS,
   DEFAULT_DASHBOARD_ADVANCED_FILTERS,
@@ -22,6 +23,42 @@ import { formatDateParts } from "@/utils/date";
 
 function isValidTaskFilter(val: string | null): val is TaskFilterType {
   return DASHBOARD_TASK_FILTERS.some((f) => f.id === val);
+}
+
+interface DashboardFilterStoreState {
+  activeFilter: TaskFilterType;
+  selectedDate: string | null;
+  setFilter: (filter: TaskFilterType) => void;
+  setSelectedDate: (date: string | null) => void;
+}
+
+export const useDashboardFilterStore = create<DashboardFilterStoreState>(
+  (set) => ({
+    activeFilter: "today",
+    selectedDate: null,
+    setFilter: (activeFilter) => set({ activeFilter, selectedDate: null }),
+    setSelectedDate: (selectedDate) => set({ selectedDate }),
+  }),
+);
+
+export function syncDashboardFilterUrl(
+  nextFilter: TaskFilterType,
+  nextDate: string | null,
+) {
+  if (typeof window === "undefined") return;
+  const params = new URLSearchParams(window.location.search);
+  if (nextDate) {
+    params.set("date", nextDate);
+  } else {
+    params.delete("date");
+  }
+  params.set("filter", nextFilter);
+  params.set("page", "1");
+  const query = params.toString();
+  const nextUrl = query
+    ? `${window.location.pathname}?${query}`
+    : window.location.pathname;
+  window.history.replaceState(window.history.state, "", nextUrl);
 }
 
 function isDailyScheduledBetween(
@@ -45,42 +82,48 @@ function isDailyScheduledBetween(
 }
 
 export function useDashboardTaskFilters(tasks: Task[]) {
-  const router = useRouter();
   const searchParams = useSearchParams();
+  const activeFilter = useDashboardFilterStore((s) => s.activeFilter);
+  const selectedDate = useDashboardFilterStore((s) => s.selectedDate);
+  const setStoreFilter = useDashboardFilterStore((s) => s.setFilter);
+  const setStoreSelectedDate = useDashboardFilterStore(
+    (s) => s.setSelectedDate,
+  );
 
-  const urlFilterParam = searchParams.get("filter");
-  const initialFilter: TaskFilterType = isValidTaskFilter(urlFilterParam)
-    ? urlFilterParam
-    : "today";
-
-  const [activeFilter, setActiveFilterState] =
-    useState<TaskFilterType>(initialFilter);
   const [advancedFilters, setAdvancedFilters] =
     useState<DashboardAdvancedFilters>(DEFAULT_DASHBOARD_ADVANCED_FILTERS);
 
-  const selectedDate = searchParams.get("date");
-  const effectiveFilter = isValidTaskFilter(urlFilterParam)
-    ? urlFilterParam
-    : activeFilter;
+  // Inicializa a partir da URL na montagem (ou quando a URL muda externamente)
+  const urlFilterParam = searchParams.get("filter");
+  const urlDateParam = searchParams.get("date");
+
+  useEffect(() => {
+    const todayIso = getTodayDateString();
+    const resolvedFilter: TaskFilterType = isValidTaskFilter(urlFilterParam)
+      ? urlFilterParam
+      : "today";
+
+    if (urlDateParam && urlDateParam !== todayIso) {
+      setStoreSelectedDate(urlDateParam);
+    } else {
+      setStoreFilter(urlDateParam === todayIso ? "today" : resolvedFilter);
+    }
+  }, [urlFilterParam, urlDateParam, setStoreFilter, setStoreSelectedDate]);
+
+  const effectiveFilter = activeFilter;
 
   const setActiveFilter = useCallback(
     (newFilter: TaskFilterType) => {
-      setActiveFilterState(newFilter);
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("date");
-      params.set("filter", newFilter);
-      params.set("page", "1");
-      router.push(`?${params.toString()}`, { scroll: false });
+      setStoreFilter(newFilter);
+      syncDashboardFilterUrl(newFilter, null);
     },
-    [router, searchParams],
+    [setStoreFilter],
   );
 
   const handleClearDate = useCallback(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("date");
-    params.set("page", "1");
-    router.push(`?${params.toString()}`, { scroll: false });
-  }, [router, searchParams]);
+    setStoreSelectedDate(null);
+    syncDashboardFilterUrl(activeFilter, null);
+  }, [activeFilter, setStoreSelectedDate]);
 
   const filteredTasks = useMemo(() => {
     const today = new Date();

@@ -57,7 +57,7 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
       }}
       title={t("rowTooltip")}
       className={cn(
-        "group/row rounded-xl border border-primary/20 bg-surface/40 flex items-center justify-between gap-2.5 hover:border-gold/40 hover:bg-surface/70 transition-all cursor-pointer select-none",
+        "group/row rounded-xl border border-neutral-700 dark:border-primary/20 bg-white dark:bg-surface/40 shadow-2xs dark:shadow-none flex items-center justify-between gap-2.5 hover:border-gold/40 hover:bg-card-hover dark:hover:bg-surface/70 transition-all cursor-pointer select-none",
         isCompact ? "p-2" : "p-2.5",
       )}
     >
@@ -138,7 +138,6 @@ interface FocusRecentRecordsProps {
   onAddRecord?: () => void;
   onOptionsClick?: () => void;
   onDeleteRecord?: (recordId: string) => void;
-  onRecordUpdated?: () => void;
   isCompact?: boolean;
 }
 
@@ -147,7 +146,6 @@ export function FocusRecentRecords({
   onAddRecord,
   onOptionsClick,
   onDeleteRecord,
-  onRecordUpdated,
   isCompact = false,
 }: FocusRecentRecordsProps) {
   const t = useTranslations("focus.records");
@@ -273,7 +271,6 @@ export function FocusRecentRecords({
         record={selectedRecordForEdit}
         anchorRect={editAnchorRect}
         onDeleteRecord={onDeleteRecord}
-        onRecordUpdated={onRecordUpdated}
       />
 
       {/* Menu de Contexto (Clique com Botão Direito) */}

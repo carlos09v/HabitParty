@@ -6,7 +6,10 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
-import { CONFIGURABLE_WELCOME_CARDS } from "@/constants/welcomeCards";
+import {
+  CONFIGURABLE_WELCOME_CARDS,
+  WELCOME_CARD_DETAILS,
+} from "@/constants/welcomeCards";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useWelcomeCards } from "@/store/welcomeCardsStore";
 import type { WelcomeCardProps } from "@/types/ui";
@@ -59,8 +62,25 @@ export function WelcomeCard({
     return fallback;
   };
 
-  const resolvedTitle = getCardText("title", title) || title;
-  const resolvedSubtitle = getCardText("subtitle", subtitle) || subtitle;
+  const defaultDetail = storageKey
+    ? WELCOME_CARD_DETAILS[storageKey]
+    : undefined;
+  const fallbackTitle = title ?? defaultDetail?.title ?? "";
+  const fallbackSubtitle = subtitle ?? defaultDetail?.subtitle;
+  const fallbackBullets = bullets ?? defaultDetail?.bullets ?? [];
+  const resolvedImageSrc = imageSrc ?? defaultDetail?.imageSrc;
+  const resolvedImageWidth =
+    imageWidth ??
+    (compact ? defaultDetail?.compactWidth : defaultDetail?.normalWidth) ??
+    (compact ? 130 : 165);
+  const resolvedImageHeight =
+    imageHeight ??
+    (compact ? defaultDetail?.compactHeight : defaultDetail?.normalHeight) ??
+    (compact ? 75 : 95);
+
+  const resolvedTitle = getCardText("title", fallbackTitle) || fallbackTitle;
+  const resolvedSubtitle =
+    getCardText("subtitle", fallbackSubtitle) || fallbackSubtitle;
   const hasLocalizedBullets =
     storageKey &&
     (t.has(`cards.${storageKey}.bullet0` as Parameters<typeof t.has>[0]) ||
@@ -69,11 +89,11 @@ export function WelcomeCard({
       ));
   const resolvedBullets = hasLocalizedBullets
     ? [
-        getCardText("bullet0", bullets[0]) || bullets[0],
-        getCardText("bullet1", bullets[1]) || bullets[1],
-        getCardText("bullet2", bullets[2]) || bullets[2],
+        getCardText("bullet0", fallbackBullets[0]) || fallbackBullets[0] || "",
+        getCardText("bullet1", fallbackBullets[1]) || fallbackBullets[1] || "",
+        getCardText("bullet2", fallbackBullets[2]) || fallbackBullets[2] || "",
       ]
-    : bullets;
+    : fallbackBullets;
 
   const HeaderIcon =
     icon ??
@@ -142,7 +162,7 @@ export function WelcomeCard({
     <>
       <section
         className={cn(
-          "w-full shrink-0 bg-linear-to-br from-primary-dark/40 via-surface/60 to-primary-dark/25 border border-primary/35 shadow-[0_0_20px_rgba(124,58,237,0.1)] backdrop-blur-md relative overflow-hidden transition-all duration-300",
+          "w-full shrink-0 bg-linear-to-br from-purple-500/[0.05] via-white to-amber-500/[0.04] dark:from-primary-dark/40 dark:via-surface/60 dark:to-primary-dark/25 border border-purple-500/15 dark:border-primary/35 shadow-card-deep dark:shadow-[0_0_20px_rgba(124,58,237,0.1)] backdrop-blur-md relative overflow-hidden transition-all duration-300",
           isExpanded
             ? compact
               ? "rounded-xl p-3.5 sm:p-4"
@@ -166,7 +186,7 @@ export function WelcomeCard({
             <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
               <div
                 className={cn(
-                  "text-neutral-400 group-hover:text-gold transition-transform duration-300 shrink-0 flex items-center justify-center",
+                  "text-neutral-400 group-hover:text-primary dark:group-hover:text-gold transition-transform duration-300 shrink-0 flex items-center justify-center",
                   !isExpanded && "-rotate-90",
                 )}
                 aria-hidden="true"
@@ -176,7 +196,7 @@ export function WelcomeCard({
 
               <div
                 className={cn(
-                  "rounded-lg bg-gold/15 border border-gold/30 flex items-center justify-center text-gold shrink-0 transition-colors group-hover:bg-gold/25",
+                  "rounded-lg bg-primary/10 dark:bg-gold/15 border border-primary/25 dark:border-gold/30 flex items-center justify-center text-primary dark:text-gold shrink-0 transition-colors group-hover:bg-primary/15 dark:group-hover:bg-gold/25",
                   compact ? "w-6 h-6" : "w-7 h-7 sm:w-8 sm:h-8",
                 )}
                 aria-hidden="true"
@@ -186,7 +206,7 @@ export function WelcomeCard({
 
               <h2
                 className={cn(
-                  "font-extrabold text-neutral-50 group-hover:text-gold transition-colors truncate shrink-0 tracking-tight",
+                  "font-extrabold text-neutral-50 group-hover:text-primary dark:group-hover:text-gold transition-colors truncate shrink-0 tracking-tight",
                   isExpanded
                     ? compact
                       ? "text-base sm:text-lg"
@@ -217,16 +237,16 @@ export function WelcomeCard({
                         className={cn(
                           "text-xs font-semibold px-2.5 py-0.5 rounded-md border flex items-center gap-1.5 transition-colors whitespace-nowrap",
                           stat.variant === "gold"
-                            ? "text-gold border-gold/30 bg-gold/10"
+                            ? "text-amber-600 dark:text-gold border-amber-500/25 dark:border-gold/30 bg-amber-500/10 dark:bg-gold/10"
                             : stat.variant === "success"
-                              ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10"
+                              ? "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 dark:border-emerald-500/30 bg-emerald-500/10"
                               : stat.variant === "info"
                                 ? "text-info dark:text-sky-300 border-info/35 dark:border-sky-400/40 bg-info/10 dark:bg-sky-500/15"
                                 : stat.variant === "primary"
-                                  ? "text-primary-dark dark:text-white border-primary/35 dark:border-primary-light/40 bg-primary/15 dark:bg-primary/25"
+                                  ? "text-indigo-600 dark:text-white border-indigo-500/25 dark:border-primary-light/40 bg-indigo-500/10 dark:bg-primary/25"
                                   : stat.variant === "warning"
-                                    ? "text-amber-400 border-amber-500/30 bg-amber-500/10"
-                                    : "text-neutral-200 border-white/10 bg-white/5",
+                                    ? "text-orange-600 dark:text-amber-400 border-orange-500/25 dark:border-amber-500/30 bg-orange-500/10 dark:bg-amber-500/10"
+                                    : "text-neutral-200 border-neutral-700 dark:border-white/10 bg-white dark:bg-white/5",
                         )}
                         title={`${stat.label}: ${stat.value}`}
                       >
@@ -238,7 +258,7 @@ export function WelcomeCard({
                 </div>
               )}
 
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-neutral-300 group-hover:text-gold group-hover:border-gold/30 transition-colors flex items-center gap-1">
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-white dark:bg-white/5 border border-neutral-700 dark:border-white/10 text-neutral-300 group-hover:text-primary dark:group-hover:text-gold group-hover:border-primary/30 dark:group-hover:border-gold/30 transition-colors flex items-center gap-1">
                 {isExpanded ? t("collapse") : t("expand")}
               </span>
             </div>
@@ -246,7 +266,7 @@ export function WelcomeCard({
 
           {/* Botão de Fechar / Ocultar Permanentemente (apenas para cards dismissíveis) */}
           {isDismissible && (
-            <div className="flex items-center pl-1.5 sm:pl-2 border-l border-white/10 shrink-0">
+            <div className="flex items-center pl-1.5 sm:pl-2 border-l border-neutral-700 dark:border-white/10 shrink-0">
               <button
                 type="button"
                 onClick={(e) => {
@@ -280,7 +300,7 @@ export function WelcomeCard({
                   {resolvedSubtitle && (
                     <p
                       className={cn(
-                        "text-gold font-semibold leading-snug",
+                        "text-primary dark:text-gold font-semibold leading-snug",
                         compact ? "text-body-s" : "text-body-s sm:text-body-m",
                       )}
                     >
@@ -295,7 +315,7 @@ export function WelcomeCard({
                         className="flex items-start gap-2.5 leading-relaxed"
                       >
                         <span
-                          className="w-1.5 h-1.5 rounded-full bg-gold/80 mt-2 shrink-0 shadow-glow-gold-xs"
+                          className="w-1.5 h-1.5 rounded-full bg-primary/70 dark:bg-gold/80 mt-2 shrink-0 dark:shadow-glow-gold-xs"
                           aria-hidden="true"
                         />
                         <span>{bullet}</span>
@@ -304,26 +324,26 @@ export function WelcomeCard({
                   </ul>
                 </div>
 
-                {imageSrc && (
+                {resolvedImageSrc && (
                   <div
                     className={cn(
-                      "shrink-0 flex items-center justify-center self-center relative rounded-xl bg-surface/60 dark:bg-white/[0.03] border border-neutral-700 dark:border-white/10 p-2.5",
+                      "shrink-0 flex items-center justify-center self-center relative rounded-xl bg-white dark:bg-white/[0.03] border border-neutral-700 dark:border-white/10 shadow-2xs dark:shadow-none p-2.5",
                       compact
                         ? "w-28 h-20 sm:w-36 sm:h-22"
                         : "w-36 h-24 sm:w-44 sm:h-28",
                     )}
                   >
                     <div
-                      className="absolute inset-0 bg-primary-light/15 rounded-full blur-xl pointer-events-none"
+                      className="absolute inset-0 bg-primary-light/10 dark:bg-primary-light/15 rounded-full blur-xl pointer-events-none"
                       aria-hidden="true"
                     />
                     <Image
-                      src={imageSrc}
+                      src={resolvedImageSrc}
                       alt={t("illustrationAlt", { title: resolvedTitle })}
-                      width={imageWidth || (compact ? 130 : 165)}
-                      height={imageHeight || (compact ? 75 : 95)}
+                      width={resolvedImageWidth}
+                      height={resolvedImageHeight}
                       priority
-                      className="object-contain max-h-full w-auto drop-shadow-[0_6px_14px_rgba(0,0,0,0.35)] relative z-10"
+                      className="object-contain max-h-full w-auto drop-shadow-none dark:drop-shadow-[0_6px_14px_rgba(0,0,0,0.35)] relative z-10"
                     />
                   </div>
                 )}
@@ -331,7 +351,7 @@ export function WelcomeCard({
 
               {/* Bloco Inferior: 3 Cards de Indicadores em Largura Total (w-full), nunca espremidos */}
               {stats && stats.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full pt-3.5 border-t border-white/10">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full pt-3.5 border-t border-neutral-700 dark:border-white/10">
                   {stats.map((stat) => {
                     const Icon = stat.icon;
                     return (
@@ -341,16 +361,16 @@ export function WelcomeCard({
                           "flex items-center gap-3.5 rounded-xl border backdrop-blur-xs transition-all duration-200 min-w-0",
                           compact ? "p-2.5 sm:p-3" : "p-3 sm:p-3.5",
                           stat.variant === "gold"
-                            ? "bg-gold/10 border-gold/30 hover:border-gold/50 shadow-glow-gold-xs"
+                            ? "bg-white dark:bg-gold/10 border-neutral-700 dark:border-gold/30 hover:border-amber-500/40 dark:hover:border-gold/50 shadow-xs dark:shadow-glow-gold-xs"
                             : stat.variant === "success"
-                              ? "bg-emerald-500/10 border-emerald-500/30 hover:border-emerald-500/50"
+                              ? "bg-white dark:bg-emerald-500/10 border-neutral-700 dark:border-emerald-500/30 hover:border-emerald-500/40 dark:hover:border-emerald-500/50 shadow-xs dark:shadow-none"
                               : stat.variant === "info"
-                                ? "bg-info/10 dark:bg-sky-500/15 border-info/35 dark:border-sky-400/40 hover:border-info/55 dark:hover:border-sky-400/60 shadow-2xs dark:shadow-[0_0_12px_rgba(56,189,248,0.12)]"
+                                ? "bg-white dark:bg-sky-500/15 border-neutral-700 dark:border-sky-400/40 hover:border-info/55 dark:hover:border-sky-400/60 shadow-xs dark:shadow-[0_0_12px_rgba(56,189,248,0.12)]"
                                 : stat.variant === "primary"
-                                  ? "bg-primary/5 dark:bg-white/5 border-primary/30 dark:border-primary-light/40 hover:border-primary/50 dark:hover:border-primary-light/60 shadow-xs"
+                                  ? "bg-white dark:bg-white/5 border-neutral-700 dark:border-primary-light/40 hover:border-indigo-500/40 dark:hover:border-primary-light/60 shadow-xs"
                                   : stat.variant === "warning"
-                                    ? "bg-amber-500/10 border-amber-500/30 hover:border-amber-500/50"
-                                    : "bg-white/5 border-white/10 hover:border-primary/40",
+                                    ? "bg-white dark:bg-amber-500/10 border-neutral-700 dark:border-amber-500/30 hover:border-orange-500/40 dark:hover:border-amber-500/50 shadow-xs dark:shadow-none"
+                                    : "bg-white dark:bg-white/5 border-neutral-700 dark:border-white/10 hover:border-primary/40 shadow-xs dark:shadow-none",
                         )}
                       >
                         {Icon && (
@@ -359,16 +379,16 @@ export function WelcomeCard({
                               "rounded-lg shrink-0 flex items-center justify-center border",
                               compact ? "w-9 h-9" : "w-10 h-10",
                               stat.variant === "gold"
-                                ? "bg-gold/20 border-gold/30 text-gold"
+                                ? "bg-amber-500/10 dark:bg-gold/20 border-amber-500/20 dark:border-gold/30 text-amber-600 dark:text-gold"
                                 : stat.variant === "success"
-                                  ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400"
+                                  ? "bg-emerald-500/10 dark:bg-emerald-500/20 border-emerald-500/20 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
                                   : stat.variant === "info"
-                                    ? "bg-info/15 dark:bg-sky-500/25 border-info/30 dark:border-sky-400/30 text-info dark:text-sky-300"
+                                    ? "bg-info/10 dark:bg-sky-500/25 border-info/25 dark:border-sky-400/30 text-info dark:text-sky-300"
                                     : stat.variant === "primary"
-                                      ? "bg-primary/15 dark:bg-primary/30 border-primary/30 dark:border-primary-light/30 text-primary-dark dark:text-white"
+                                      ? "bg-indigo-500/10 dark:bg-primary/30 border-indigo-500/20 dark:border-primary-light/30 text-indigo-600 dark:text-white"
                                       : stat.variant === "warning"
-                                        ? "bg-amber-500/20 border-amber-500/30 text-amber-400"
-                                        : "bg-white/10 border-white/15 text-neutral-200",
+                                        ? "bg-orange-500/10 dark:bg-amber-500/20 border-orange-500/20 dark:border-amber-500/30 text-orange-600 dark:text-amber-400"
+                                        : "bg-surface dark:bg-white/10 border-neutral-700 dark:border-white/15 text-neutral-200",
                             )}
                           >
                             <Icon size={compact ? 18 : 20} />
@@ -385,15 +405,15 @@ export function WelcomeCard({
                                 ? "text-sm sm:text-base"
                                 : "text-base sm:text-lg",
                               stat.variant === "gold"
-                                ? "text-gold"
+                                ? "text-amber-600 dark:text-gold"
                                 : stat.variant === "success"
-                                  ? "text-emerald-400"
+                                  ? "text-emerald-600 dark:text-emerald-400"
                                   : stat.variant === "info"
                                     ? "text-info dark:text-sky-300"
                                     : stat.variant === "primary"
-                                      ? "text-primary-dark dark:text-neutral-50"
+                                      ? "text-indigo-600 dark:text-neutral-50"
                                       : stat.variant === "warning"
-                                        ? "text-amber-400"
+                                        ? "text-orange-600 dark:text-amber-400"
                                         : "text-neutral-50",
                             )}
                           >

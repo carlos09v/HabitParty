@@ -3,7 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardColumn, Task, TaskTypeOption } from "@/types/task";
-import type { InitialTaskFormData } from "@/types/task-ui";
+import type { ColumnInsertTarget, InitialTaskFormData } from "@/types/task-ui";
 
 interface UseBoardModalsOptions {
   initialOpenCreateColumn?: boolean;
@@ -26,9 +26,11 @@ export function useBoardModals({
   const [columnModalState, setColumnModalState] = useState<{
     isOpen: boolean;
     columnToEdit?: BoardColumn | null;
+    insertTarget?: ColumnInsertTarget | null;
   }>({
     isOpen: initialOpenCreateColumn,
     columnToEdit: null,
+    insertTarget: null,
   });
 
   useEffect(() => {
@@ -36,7 +38,11 @@ export function useBoardModals({
       initialOpenCreateColumn ||
       searchParams.get("createColumn") === "true"
     ) {
-      setColumnModalState({ isOpen: true, columnToEdit: null });
+      setColumnModalState({
+        isOpen: true,
+        columnToEdit: null,
+        insertTarget: null,
+      });
     }
   }, [initialOpenCreateColumn, searchParams]);
 
@@ -202,7 +208,11 @@ export function useBoardModals({
   );
 
   const closeColumnModal = useCallback(() => {
-    setColumnModalState({ isOpen: false, columnToEdit: null });
+    setColumnModalState({
+      isOpen: false,
+      columnToEdit: null,
+      insertTarget: null,
+    });
     if (searchParams.get("createColumn") === "true") {
       const nextParams = new URLSearchParams(searchParams.toString());
       nextParams.delete("createColumn");

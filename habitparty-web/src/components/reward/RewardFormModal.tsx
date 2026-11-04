@@ -15,14 +15,16 @@ import {
   REWARD_FORM_TYPE_KEYS,
   REWARD_ICONS,
   REWARD_TYPE_META,
-  toCategoryMessageKey,
-  toPackageMessageKey,
-  toRewardTypeMessageKey,
 } from "@/constants/reward";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useRewardForm } from "@/hooks/useRewardForm";
 import type { Reward, RewardCategory, RewardType } from "@/types/reward";
 import { cn } from "@/utils";
+import {
+  toCategoryMessageKey,
+  toPackageMessageKey,
+  toRewardTypeMessageKey,
+} from "@/utils/rewardMapper";
 import { MysteryBoxSelector } from "./MysteryBoxSelector";
 
 interface RewardFormModalProps {
@@ -83,11 +85,17 @@ export function RewardFormModal({
       ).map((typeKey) => {
         const meta = REWARD_TYPE_META[typeKey];
         const Icon = meta?.icon;
+        const iconColorClass =
+          typeKey === "TimeBased"
+            ? "text-emerald-600 dark:text-emerald-400"
+            : typeKey === "SingleUse"
+              ? "text-primary dark:text-purple-400"
+              : "text-amber-600 dark:text-gold";
         return {
           value: typeKey,
           label: tOptions(`types.${toRewardTypeMessageKey(typeKey)}`),
           icon: Icon ? (
-            <Icon size={15} className="text-gold shrink-0" />
+            <Icon size={15} className={cn("shrink-0", iconColorClass)} />
           ) : undefined,
         };
       }),
@@ -250,7 +258,7 @@ export function RewardFormModal({
 
         {/* Seção Condicional se for TimeBased (Cupom - Opção C) */}
         {type === "TimeBased" && (
-          <div className="flex flex-col gap-3 p-3.5 rounded-xl bg-surface/30 border border-white/10 animate-in fade-in duration-150">
+          <div className="flex flex-col gap-3 p-3.5 rounded-xl bg-background border border-neutral-700 dark:bg-surface/30 dark:border-white/10 animate-in fade-in duration-150">
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
                 <label
@@ -393,7 +401,7 @@ export function RewardFormModal({
           <button
             type="submit"
             disabled={isPending || !title.trim()}
-            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
           >
             {isPending ? (
               <>

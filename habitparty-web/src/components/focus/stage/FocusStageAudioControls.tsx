@@ -104,16 +104,16 @@ export function FocusStageAudioControls({
 
   return (
     <>
-      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface/80 border border-primary/30 text-xs relative">
+      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface dark:bg-surface/80 border border-neutral-700 dark:border-primary/30 text-xs relative">
         {/* Som do Timer On/Off */}
         <button
           type="button"
           onClick={handleToggleSound}
           className={cn(
-            "flex items-center gap-1 px-2 py-1 rounded-lg transition-all cursor-pointer",
+            "flex items-center gap-1 px-2 py-1 rounded-lg transition-all cursor-pointer border",
             isSoundEnabled
-              ? "text-gold bg-gold/15 border border-gold/30 font-bold"
-              : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5",
+              ? "bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-gold dark:bg-gold/15 dark:border-gold/30 font-bold"
+              : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5 border-transparent",
           )}
           title={isSoundEnabled ? t("soundEnabledTitle") : t("soundMutedTitle")}
         >
@@ -128,10 +128,10 @@ export function FocusStageAudioControls({
           type="button"
           onClick={() => toggleBrowserNotifications()}
           className={cn(
-            "flex items-center gap-1 px-2 py-1 rounded-lg transition-all cursor-pointer",
+            "flex items-center gap-1 px-2 py-1 rounded-lg transition-all cursor-pointer border",
             browserNotificationsEnabled && hasNotificationPermission
-              ? "text-gold bg-gold/15 border border-gold/30 font-bold"
-              : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5",
+              ? "bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-gold dark:bg-gold/15 dark:border-gold/30 font-bold"
+              : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5 border-transparent",
           )}
           title={
             browserNotificationsEnabled && hasNotificationPermission
@@ -154,7 +154,7 @@ export function FocusStageAudioControls({
 
         {/* Tipo de Som do Alarme (Zen ou Arcade) */}
         {isSoundEnabled && (
-          <div className="flex items-center rounded-lg bg-primary-dark/30 p-0.5 border border-primary/30">
+          <div className="flex items-center rounded-lg bg-card dark:bg-primary-dark/30 p-0.5 border border-neutral-700 dark:border-primary/30">
             <button
               type="button"
               onClick={() => handleSelectSoundType("zen")}

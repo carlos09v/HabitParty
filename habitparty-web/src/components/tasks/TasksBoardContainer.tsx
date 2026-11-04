@@ -6,8 +6,9 @@ import { Crown, Lock } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { RouteLoading } from "@/components/layout/RouteLoading";
 import { RoutineBoard } from "@/components/tasks/RoutineBoard";
 import { RoutineColumn } from "@/components/tasks/RoutineColumn";
 import { RoutineFilters } from "@/components/tasks/RoutineFilters";
@@ -24,6 +25,7 @@ import { useRoutineBoardLayout } from "@/hooks/useRoutineBoardLayout";
 import { useRoutineColumns } from "@/hooks/useRoutineColumns";
 import { useViewMode } from "@/hooks/useViewMode";
 import type { AppLocale } from "@/i18n/config";
+import { useProgressStore } from "@/store/progressStore";
 import { useUserStore } from "@/store/userStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import type { CreateTaskDTO, Task, TaskTypeOption } from "@/types/task";
@@ -74,10 +76,24 @@ export function TasksBoardContainer({
   const activeWorkspaceIdFromStore = useWorkspaceStore(
     (state) => state.activeWorkspaceId,
   );
+  const isSwitchingWorkspace = useWorkspaceStore(
+    (state) => state.isSwitchingWorkspace,
+  );
   const workspaces = useWorkspaceStore((state) => state.workspaces);
   const is_Premium = isPremiumProp ?? userStorePremium;
   const activeWorkspaceId = workspaceIdProp ?? activeWorkspaceIdFromStore;
   const { isCompact } = useCompactMode(isCompactProp);
+
+  useEffect(() => {
+    if (
+      isSwitchingWorkspace &&
+      (!activeWorkspaceIdFromStore ||
+        workspaceIdProp === activeWorkspaceIdFromStore)
+    ) {
+      useWorkspaceStore.setState({ isSwitchingWorkspace: false });
+      useProgressStore.getState().done("workspace-switch");
+    }
+  }, [workspaceIdProp, activeWorkspaceIdFromStore, isSwitchingWorkspace]);
   const [viewMode, setViewMode] = useViewMode("tasks", "card");
   const [isColumnsDrawerOpen, setIsColumnsDrawerOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
@@ -332,6 +348,10 @@ export function TasksBoardContainer({
   };
 
   const welcomeDetails = WELCOME_CARD_DETAILS.tasks;
+
+  if (isSwitchingWorkspace) {
+    return <RouteLoading route="tasks" />;
+  }
 
   return (
     <>

@@ -129,10 +129,10 @@ export function ExperienceModeSelector({
               disabled={disabled}
               onClick={() => onToggleCompact(false)}
               className={cn(
-                "px-2 py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer",
+                "px-2 py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer border",
                 !isCompact
-                  ? "bg-gold text-neutral-950"
-                  : "text-neutral-400 hover:text-neutral-200",
+                  ? "bg-primary/15 text-primary-dark border-primary/30 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
+                  : "border-transparent text-neutral-400 hover:text-neutral-200",
               )}
             >
               {t("densityStandard")}
@@ -142,10 +142,10 @@ export function ExperienceModeSelector({
               disabled={disabled}
               onClick={() => onToggleCompact(true)}
               className={cn(
-                "px-2 py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer",
+                "px-2 py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer border",
                 isCompact
-                  ? "bg-gold text-neutral-950"
-                  : "text-neutral-400 hover:text-neutral-200",
+                  ? "bg-primary/15 text-primary-dark border-primary/30 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
+                  : "border-transparent text-neutral-400 hover:text-neutral-200",
               )}
             >
               {t("densityCompact")}
@@ -171,10 +171,10 @@ export function ExperienceModeSelector({
               disabled={disabled}
               onClick={() => onToggleSounds(true)}
               className={cn(
-                "px-2 py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer",
+                "px-2 py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer border",
                 uiSoundsEnabled
-                  ? "bg-gold text-neutral-950"
-                  : "text-neutral-400 hover:text-neutral-200",
+                  ? "bg-primary/15 text-primary-dark border-primary/30 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
+                  : "border-transparent text-neutral-400 hover:text-neutral-200",
               )}
             >
               {t("soundsActive")}
@@ -184,10 +184,10 @@ export function ExperienceModeSelector({
               disabled={disabled}
               onClick={() => onToggleSounds(false)}
               className={cn(
-                "px-2 py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer",
+                "px-2 py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer border",
                 !uiSoundsEnabled
-                  ? "bg-gold text-neutral-950"
-                  : "text-neutral-400 hover:text-neutral-200",
+                  ? "bg-primary/15 text-primary-dark border-primary/30 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
+                  : "border-transparent text-neutral-400 hover:text-neutral-200",
               )}
             >
               {t("soundsMuted")}

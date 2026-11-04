@@ -14,7 +14,7 @@ import { useChecklist } from "@/hooks/useChecklist";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import type { ChecklistItem, Task, TaskPriorityOption } from "@/types/task";
 import type { FormatSyntax, TaskDetailsPopoverProps } from "@/types/task-ui";
-import { isTaskHardcoreLocked } from "@/utils/date";
+import { getTodayDateString, isTaskHardcoreLocked } from "@/utils/date";
 import { calculateTaskReward } from "@/utils/economy";
 import { applyMarkdownFormat } from "@/utils/markdown";
 import {
@@ -53,6 +53,9 @@ export function useTaskDetailsPopover({
   const [title, setTitle] = useState(task?.title || "");
   const [description, setDescription] = useState(task?.description || "");
   const [dueDate, setDueDate] = useState(task?.dueDate || "");
+  const [dueTime, setDueTime] = useState(
+    task?.dueTime ? task.dueTime.slice(0, 5) : "",
+  );
   const [priority, setPriority] = useState<string>(task?.priority || "NONE");
   const [tags, setTags] = useState<string[]>(task?.tags || []);
 
@@ -116,6 +119,7 @@ export function useTaskDetailsPopover({
       setDescription(task.description || "");
       descRef.current = task.description || "";
       setDueDate(task.dueDate || "");
+      setDueTime(task.dueTime ? task.dueTime.slice(0, 5) : "");
       setPriority(task.priority || "NONE");
       setTags(task.tags || []);
       const initialChecklist = task.checklist || [];
@@ -224,8 +228,6 @@ export function useTaskDetailsPopover({
 
   const handleApplyFormat = useCallback((syntax: FormatSyntax) => {
     const textarea = descTextareaRef.current;
-    if (!textarea) return;
-
     const { nextDesc, nextCursorPos } = applyMarkdownFormat(
       textarea,
       descRef.current,
@@ -236,8 +238,11 @@ export function useTaskDetailsPopover({
     descRef.current = nextDesc;
 
     setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(nextCursorPos, nextCursorPos);
+      const targetTextarea = descTextareaRef.current;
+      if (targetTextarea) {
+        targetTextarea.focus();
+        targetTextarea.setSelectionRange(nextCursorPos, nextCursorPos);
+      }
     }, 50);
   }, []);
 
@@ -295,7 +300,27 @@ export function useTaskDetailsPopover({
       return;
     }
     setDueDate(newDate);
-    saveTaskField({ dueDate: newDate || undefined });
+    if (!newDate) {
+      setDueTime("");
+      saveTaskField({ dueDate: undefined, dueTime: undefined });
+    } else {
+      saveTaskField({ dueDate: newDate });
+    }
+  };
+
+  const handleTimeChange = (newTime: string) => {
+    if (!task || isTaskHardcoreLocked(task)) {
+      return;
+    }
+    const cleanTime = newTime ? newTime.slice(0, 5) : "";
+    setDueTime(cleanTime);
+    if (cleanTime && !dueDate) {
+      const todayIso = getTodayDateString();
+      setDueDate(todayIso);
+      saveTaskField({ dueDate: todayIso, dueTime: cleanTime });
+    } else {
+      saveTaskField({ dueTime: cleanTime || undefined });
+    }
   };
 
   const handlePrioritySelect = (p: TaskPriorityOption) => {
@@ -420,6 +445,7 @@ export function useTaskDetailsPopover({
       descRef.current = val;
     },
     dueDate,
+    dueTime,
     priority,
     tags,
     isAddingTag,
@@ -455,6 +481,7 @@ export function useTaskDetailsPopover({
     handleTitleKeyDown,
     handleDescriptionBlur,
     handleDateChange,
+    handleTimeChange,
     handlePrioritySelect,
     handleAddTag,
     handleRemoveTag,

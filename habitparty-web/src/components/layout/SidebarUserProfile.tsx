@@ -57,7 +57,7 @@ export function SidebarUserProfile({
   const formattedCoins = formatCoins(coins, { locale });
 
   return (
-    <footer className="p-3.5 border-t border-primary/30 bg-primary-dark/20 z-10">
+    <footer className="px-3.5 pt-3.5 pb-4 border-t border-neutral-700 dark:border-primary/30 bg-surface/40 dark:bg-primary-dark/20 z-10">
       <Link
         href="/settings"
         onClick={onClose}
@@ -74,7 +74,7 @@ export function SidebarUserProfile({
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex items-center gap-1.5 min-w-0">
             <span
-              className="text-body-s font-bold text-neutral-50 truncate group-hover:text-gold transition-colors"
+              className="text-body-s font-bold text-neutral-50 truncate group-hover:text-primary dark:group-hover:text-gold transition-colors"
               title={displayName}
             >
               {displayName}
@@ -128,7 +128,7 @@ export function SidebarUserProfile({
         </div>
 
         <div
-          className="h-2 w-full bg-surface-hover/80 dark:bg-neutral-900 border border-primary/15 dark:border-white/5 rounded-full overflow-hidden"
+          className="h-2 w-full bg-neutral-700 dark:bg-neutral-900 border border-neutral-600/70 dark:border-white/5 rounded-full overflow-hidden"
           role="progressbar"
           aria-valuenow={currentXp}
           aria-valuemin={0}

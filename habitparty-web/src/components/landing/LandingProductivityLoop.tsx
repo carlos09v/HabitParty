@@ -41,17 +41,22 @@ export function LandingProductivityLoop() {
               >
                 <div>
                   <div className="flex items-center justify-between mb-6">
-                    <span className="text-4xl font-black text-neutral-500/35 dark:text-white/10 group-hover:text-primary/40 dark:group-hover:text-white/20 transition-colors font-mono">
+                    <span
+                      className={cn(
+                        "text-4xl font-black transition-colors font-mono",
+                        step.numberColor,
+                      )}
+                    >
                       {step.number}
                     </span>
                     <div
                       className={cn(
-                        "w-12 h-12 rounded-xl bg-gradient-to-br p-0.5 shadow-md flex items-center justify-center",
-                        step.color,
+                        "w-12 h-12 rounded-xl shadow-xs dark:shadow-md flex items-center justify-center",
+                        step.iconBoxClass,
                       )}
                     >
-                      <div className="w-full h-full rounded-[10px] bg-card dark:bg-surface flex items-center justify-center">
-                        <Icon className="w-6 h-6 text-neutral-50" />
+                      <div className="w-full h-full rounded-[10px] bg-transparent dark:bg-surface flex items-center justify-center">
+                        <Icon className={cn("w-6 h-6", step.iconColor)} />
                       </div>
                     </div>
                   </div>
@@ -69,7 +74,7 @@ export function LandingProductivityLoop() {
 
                 <div className="mt-6 pt-4 border-t border-neutral-700/60 dark:border-white/5 flex items-center gap-2 text-xs font-semibold text-neutral-400 group-hover:text-neutral-200">
                   <Sparkles className="w-3.5 h-3.5 text-gold" />
-                  <span>{t("cardFooter")}</span>
+                  <span>{t(`steps.${step.id}.footer`)}</span>
                 </div>
               </div>
             );

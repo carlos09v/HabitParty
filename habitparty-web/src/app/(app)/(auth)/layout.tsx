@@ -25,7 +25,7 @@ export default async function AuthLayout({
         {/* LADO ESQUERDO: Branding + Formulário Centralizado na Metade (50% do viewport) */}
         <div className="w-full lg:w-1/2 min-h-[100dvh] flex flex-col justify-between p-4 sm:p-8 lg:p-16 relative z-10">
           {/* Top bar: Logo HabitParty e Alternadores de Idioma e Tema */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between w-full max-w-[487px] mx-auto">
             <Link
               href={`/${locale}`}
               className="inline-block transition-opacity hover:opacity-90"
@@ -50,7 +50,7 @@ export default async function AuthLayout({
           </main>
 
           {/* Rodapé sutil */}
-          <footer className="text-[12px] text-neutral-400 text-center lg:text-left">
+          <footer className="w-full max-w-[487px] mx-auto text-[12px] text-neutral-400 text-center lg:text-left">
             {t("copyright", { year: new Date().getFullYear() })}
           </footer>
         </div>

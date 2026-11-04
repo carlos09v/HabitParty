@@ -45,14 +45,14 @@ export function TaskChecklistSection({ form }: TaskChecklistSectionProps) {
             }
           }}
           placeholder={t("inputPlaceholder")}
-          className="flex-1 bg-background/50 border border-primary/40 rounded-lg px-3 py-1.5 text-neutral-50 placeholder:text-neutral-500 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s"
+          className="flex-1 bg-card border border-neutral-600 hover:border-neutral-500 rounded-lg px-3 py-1.5 text-neutral-50 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 shadow-xs focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-primary-dark/20 dark:border-primary/30 dark:hover:border-primary/50 dark:shadow-none dark:focus:border-gold dark:focus:ring-1 dark:focus:ring-gold transition-all text-body-s"
           disabled={isPending}
         />
         <button
           type="button"
           onClick={handleAddChecklistItem}
           disabled={!newChecklistText.trim() || isPending}
-          className="px-3 py-1.5 bg-primary hover:bg-primary-dark text-neutral-50 rounded-lg text-body-s font-semibold transition-colors disabled:opacity-50 cursor-pointer shrink-0"
+          className="px-3 py-1.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-body-s font-semibold transition-colors disabled:opacity-50 cursor-pointer shrink-0"
         >
           {t("addButton")}
         </button>
@@ -64,7 +64,7 @@ export function TaskChecklistSection({ form }: TaskChecklistSectionProps) {
           {checklist.map((item, idx) => (
             <li
               key={item.id || `item-${idx}-${item.name}`}
-              className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-background/40 border border-primary/20 text-body-s text-neutral-200"
+              className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-surface/70 border border-neutral-700 dark:bg-background/40 dark:border-primary/20 text-body-s text-neutral-200"
             >
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 <button

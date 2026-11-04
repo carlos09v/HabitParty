@@ -52,6 +52,8 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
   @Query("SELECT COUNT(u) FROM UserJpaEntity u LEFT JOIN u.subscription s WHERE s.isFounder = true")
   long countByIsFounderTrue();
 
+  long countByEmailVerified(boolean emailVerified);
+
   @EntityGraph(attributePaths = {"stats", "subscription"})
   @Query("""
       SELECT u FROM UserJpaEntity u
@@ -65,6 +67,7 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
              OR (:isPremium = true AND s.isPremium = true AND (s.subscriptionEndsAt IS NULL OR s.subscriptionEndsAt > CURRENT_TIMESTAMP))
              OR (:isPremium = false AND (s IS NULL OR s.isPremium = false OR (s.subscriptionEndsAt IS NOT NULL AND s.subscriptionEndsAt <= CURRENT_TIMESTAMP))))
         AND (:isFounder IS NULL OR s.isFounder = :isFounder)
+        AND (:emailVerified IS NULL OR u.emailVerified = :emailVerified)
       ORDER BY u.createdAt DESC
   """)
   Page<UserJpaEntity> searchUsers(
@@ -72,6 +75,7 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
       @Param("role") UserRole role,
       @Param("isPremium") Boolean isPremium,
       @Param("isFounder") Boolean isFounder,
+      @Param("emailVerified") Boolean emailVerified,
       Pageable pageable
   );
 }

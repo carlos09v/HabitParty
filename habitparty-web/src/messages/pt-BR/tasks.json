@@ -149,6 +149,7 @@
     "optionsTitle": "Opções da coluna",
     "addTaskHeaderTitle": "Adicionar tarefa rápida nesta coluna",
     "completedProgressTitle": "{completed} de {total} concluídas",
+    "completedSectionLabel": "Concluído",
     "emptyState": "Nenhuma tarefa aqui",
     "emptyStateCta": "Clique para criar a primeira tarefa",
     "addTaskFooterButton": "Adicionar tarefa"
@@ -169,6 +170,7 @@
     "dueToday": "Hoje",
     "dueTomorrow": "Amanhã",
     "due7Days": "+7d",
+    "dueTimePlaceholder": "Hora",
     "effortLabel": "Esforço:",
     "directionLabel": "Direção:",
     "positiveTitle": "Hábito positivo (+)",
@@ -364,6 +366,8 @@
       "dueDateHardcorePlaceholder": "Selecione o prazo obrigatório...",
       "dueDatePlaceholder": "Definir prazo...",
       "dueDateFrozenHint": "🔒 Data congelada: prazo expirado no Modo Hardcore.",
+      "dueTimeLabel": "Horário (Opcional)",
+      "dueTimePlaceholder": "Definir hora...",
       "reminderLabel": "Lembrete",
       "reminders": {
         "NONE": "Sem lembrete",
@@ -431,7 +435,11 @@
   "detailsPopover": {
     "dialogAria": "Detalhes rápidos da tarefa",
     "titlePlaceholder": "Título da tarefa...",
+    "descriptionLabel": "Descrição",
     "descriptionPlaceholder": "Adicione uma descrição ou anotações...",
+    "previewLabel": "Visualização",
+    "doneEditing": "Concluir",
+    "clickToEditDescription": "Clique para editar a descrição",
     "header": {
       "habitBadge": "Hábito",
       "resetWeekly": "Reset semanal",
@@ -449,6 +457,8 @@
       "closeTitle": "Fechar",
       "dateFrozenTitle": "Data congelada: prazo expirado no Modo Hardcore",
       "noDueDate": "Sem prazo",
+      "dueTimeBadge": "Hora",
+      "clearDueTime": "Sem hora",
       "priorityButtonTitle": "Prioridade: {label} (clique para alterar)",
       "priorityHeader": "Prioridade"
     },

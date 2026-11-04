@@ -128,7 +128,12 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
       </svg>
 
       {/* Tempo Centralizado */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 transition-transform duration-200">
+      <div
+        className={cn(
+          "absolute inset-0 flex flex-col items-center justify-center transition-transform duration-200",
+          size === "sm" ? "gap-1" : "gap-1.5",
+        )}
+      >
         <span
           className={cn(
             "font-mono font-black tracking-tight timer-display-shadow transition-colors duration-500",
@@ -144,7 +149,10 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
         {/* Badge de Status / Fase */}
         <span
           className={cn(
-            "text-xs font-bold uppercase tracking-wider px-3 py-0.5 rounded-full border transition-all duration-300",
+            "font-bold uppercase rounded-full border transition-all duration-300",
+            size === "sm"
+              ? "text-[10px] px-2.5 py-0.5 tracking-wider"
+              : "text-xs px-3 py-0.5 tracking-wider",
             isBreak
               ? "bg-emerald-500/15 dark:bg-emerald-950/70 border-emerald-500/40 text-emerald-400 dark:text-emerald-300 shadow-2xs dark:shadow-[0_0_12px_rgba(16,185,129,0.25)]"
               : "bg-white/10 border-white/15 text-neutral-300",
@@ -167,7 +175,12 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
 
         {/* Ciclos de Pomodoro */}
         {mode === "POMO" && !isInventoryItem && (
-          <div className="flex items-center gap-1.5 mt-1.5">
+          <div
+            className={cn(
+              "flex items-center gap-1.5",
+              size === "sm" ? "mt-1" : "mt-1.5",
+            )}
+          >
             {[1, 2, 3, 4].map((cycle) => (
               <div
                 key={cycle}

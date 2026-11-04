@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { memo, useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
   buildColumnContextMenuItems,
   buildTaskContextMenuItems,
@@ -93,6 +94,7 @@ export const TasksBoardModals = memo(function TasksBoardModals({
   onColumnWidthChange,
 }: TasksBoardModalsProps) {
   const t = useTranslations("tasks.container");
+  const tFilters = useTranslations("tasks.filters");
   const tMenus = useTranslations("dashboard.taskShared.contextMenu");
   const [taskToDelete, setTaskToDelete] = useState<{
     task: Task;
@@ -149,6 +151,32 @@ export const TasksBoardModals = memo(function TasksBoardModals({
     ],
   );
 
+  const handleInsertColumnRelative = useCallback(
+    (refColumn: (typeof columns)[number], position: "left" | "right") => {
+      if (columns.length >= maxColumns) {
+        toast.info(
+          isPremium
+            ? tFilters("newColumnMaxReachedTitle", { max: maxColumns })
+            : tFilters("newColumnFreeLimitTitle", { max: maxColumns }),
+        );
+        return;
+      }
+      const refIdx = columns.findIndex((c) => c.id === refColumn.id);
+      const baseIndex = refIdx >= 0 ? refIdx : columns.length;
+      const orderIndex = position === "left" ? baseIndex : baseIndex + 1;
+      setColumnModalState({
+        isOpen: true,
+        columnToEdit: null,
+        insertTarget: {
+          referenceColumnId: refColumn.id,
+          position,
+          orderIndex,
+        },
+      });
+    },
+    [columns, maxColumns, isPremium, setColumnModalState, tFilters],
+  );
+
   const columnContextMenuItems = useMemo(
     () =>
       buildColumnContextMenuItems({
@@ -159,11 +187,16 @@ export const TasksBoardModals = memo(function TasksBoardModals({
           setColumnModalState({
             isOpen: true,
             columnToEdit: col,
+            insertTarget: null,
           }),
+        onInsertLeft: (col) => handleInsertColumnRelative(col, "left"),
+        onInsertRight: (col) => handleInsertColumnRelative(col, "right"),
         onDelete: (col) => setColumnToDelete(col),
         labels: {
           edit: tMenus("edit"),
           delete: tMenus("delete"),
+          insertLeft: tMenus("insertLeft"),
+          insertRight: tMenus("insertRight"),
           layout: tMenus("layout"),
           compact: tMenus("compact"),
           normal: tMenus("normal"),
@@ -175,6 +208,7 @@ export const TasksBoardModals = memo(function TasksBoardModals({
       columnWidths,
       onColumnWidthChange,
       setColumnModalState,
+      handleInsertColumnRelative,
       setColumnToDelete,
       tMenus,
     ],
@@ -258,6 +292,7 @@ export const TasksBoardModals = memo(function TasksBoardModals({
         <CreateBoardColumnModal
           isOpen={columnModalState.isOpen}
           columnToEdit={columnModalState.columnToEdit}
+          insertTarget={columnModalState.insertTarget}
           onClose={closeColumnModal}
           onSuccess={handleColumnSaved}
         />

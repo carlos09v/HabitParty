@@ -50,7 +50,7 @@ async function HelpStaticContent({
           <div>
             <div className="flex items-center gap-2.5 mb-1">
               <HelpCircle className="text-gold" size={28} />
-              <h1 className="text-headline-s font-bold text-neutral-50 drop-shadow-md">
+              <h1 className="text-headline-s font-bold text-neutral-50 dark:drop-shadow-md">
                 {t("title")}
               </h1>
             </div>

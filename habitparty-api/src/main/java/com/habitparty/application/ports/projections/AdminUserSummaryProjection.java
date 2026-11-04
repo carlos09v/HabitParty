@@ -15,6 +15,8 @@ public record AdminUserSummaryProjection(
     UserRole role,
     boolean isPremium,
     boolean isFounder,
+    boolean emailVerified,
+    LocalDateTime emailVerifiedAt,
     SubscriptionStatus subscriptionStatus,
     LocalDateTime createdAt,
     long emailsSentThisMonth,

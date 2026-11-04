@@ -101,7 +101,7 @@ export function Sidebar({
             className="flex flex-col gap-0.5"
           >
             {section.titleKey && (
-              <h2 className="px-3 text-label-m uppercase tracking-wider text-gold-pressed font-bold mb-0.5">
+              <h2 className="px-3 text-label-m uppercase tracking-wider text-neutral-400 dark:text-gold-pressed font-bold mb-0.5">
                 {t(section.titleKey)}
               </h2>
             )}

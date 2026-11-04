@@ -1,6 +1,6 @@
 "use client";
 
-import { Crown, Database, Mail, X } from "lucide-react";
+import { BadgeCheck, Clock, Crown, Database, Mail, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import {
@@ -174,6 +174,17 @@ export function AdminUserDetailModal({
                 <h3 className="text-lg font-bold text-neutral-100">
                   {summary.fullName}
                 </h3>
+                {summary.emailVerified ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    <BadgeCheck size={12} />
+                    {t("badges.verified")}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/25">
+                    <Clock size={11} />
+                    {t("badges.unverified")}
+                  </span>
+                )}
                 {summary.isFounder && (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gold/20 text-gold border border-gold/40 shadow-glow-gold-xs">
                     <Crown size={12} className="fill-gold" />

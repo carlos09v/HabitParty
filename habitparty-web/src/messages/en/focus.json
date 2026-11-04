@@ -167,7 +167,19 @@
       "fire": "Cozy crackling of firewood and embers in the fireplace."
     },
     "ambientVolumeLabel": "Ambient Volume",
-    "unlockAmbientButton": "Unlock Focus Sounds"
+    "unlockAmbientButton": "Unlock Focus Sounds",
+    "toasts": {
+      "notificationsUnsupported": "Notifications are not supported in this browser.",
+      "notificationsMuted": "Browser notifications muted.",
+      "notificationsEnabled": "Browser notifications enabled for the end of each Pomodoro!",
+      "notificationsBlocked": "Permission blocked in browser. Enable notifications in your site settings.",
+      "notificationsGranted": "Notifications allowed! You'll be notified at the end of each Pomodoro.",
+      "notificationsDenied": "Notification permission denied.",
+      "notificationsRequestError": "Could not request notification permission.",
+      "ambientPremiumRequired": "Focus ambient sounds are exclusive to Premium subscribers! Upgrade to unlock.",
+      "ambientOff": "Ambient sound turned off.",
+      "ambientOn": "Ambient sound enabled: {label}"
+    }
   },
   "targetSelector": {
     "title": "Link to Timer",
@@ -281,6 +293,7 @@
     "couponTimeDepletedToast": "🎉 Coupon time depleted! Click the Complete (Check) button to redeem it.",
     "couponTimeDeductedToast": "Coupon time deducted! (-{time})",
     "sessionCompletedRewardsToast": "Focus session completed! (+{time} • +{xp} XP • +{coins} 🪙)",
+    "sessionCompletedRewardsToastProductivity": "Focus session completed! (+{time} • +{xp} Points • +{coins} Credits)",
     "sessionCompletedLoggedToast": "Focus session completed! (+{time} logged)",
     "saveSessionFailedToast": "Failed to save focus session.",
     "saveSessionServerErrorToast": "Error saving focus session on the server.",
@@ -441,6 +454,7 @@
       "invalidDuration": "Duration must be greater than 0 minutes.",
       "exceedsItemBalance": "Duration cannot exceed the item's remaining time ({minutes}m).",
       "recordSavedWithRewards": "Record saved! (+{xp} XP • +{coins} 🪙)",
+      "recordSavedWithRewardsProductivity": "Record saved! (+{xp} Points • +{coins} Credits)",
       "recordSaved": "Focus record added successfully!",
       "itemTimeLogged": "Item time logged successfully!",
       "saveFailed": "Failed to log focus session.",

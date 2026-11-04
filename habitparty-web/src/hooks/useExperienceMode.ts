@@ -9,6 +9,7 @@ import type { ExperienceMode } from "@/types/ui";
  * sincronizado com o banco de dados via Server Action (PUT /users).
  */
 export function useExperienceMode(propMode?: ExperienceMode) {
+  const hydrated = useUIStore((state) => state.hydrated);
   const uiExperienceMode = useUIStore((state) => state.experienceMode);
   const userExperienceMode = useUserStore(
     (state) => state.user?.experienceMode,
@@ -16,7 +17,8 @@ export function useExperienceMode(propMode?: ExperienceMode) {
   const setExperienceMode = useUIStore((state) => state.setExperienceMode);
 
   const effectiveMode: ExperienceMode =
-    propMode ?? userExperienceMode ?? uiExperienceMode;
+    propMode ??
+    (hydrated ? uiExperienceMode : (userExperienceMode ?? uiExperienceMode));
   const isGamified = effectiveMode === "GAMIFIED";
   const isProductivity = effectiveMode === "PRODUCTIVITY";
 

@@ -95,18 +95,18 @@ export const EXPERIENCE_MODE_OPTIONS: readonly SettingsOptionItem<ExperienceMode
   [
     {
       value: "PRODUCTIVITY",
-      title: "Foco & Produtividade (Minimalista)",
+      title: "Modo Essencial (Produtividade)",
       badge: "Padrão",
       icon: Target,
       description:
-        "Interface limpa e executiva focada em entregas. Oculta as estimativas de recompensa dos modais e popovers, usa indicadores discretos de esforço e mantém a gamificação rodando silenciosamente nos bastidores.",
+        "Produtividade gamificada com estética executiva. Utiliza Créditos e Pontos (pts), títulos profissionais, indicadores discretos de esforço e recompensas diretas sem sorteios.",
     },
     {
       value: "GAMIFIED",
-      title: "Imersão RPG (Gamificado)",
+      title: "Modo Aventura (Imersão RPG)",
       icon: Swords,
       description:
-        "Painel de estimativa de recompensa sempre aberto e visível nos formulários, ícones de espadas para representar a dificuldade das tarefas e exibição de ganhos de XP e Ouro nas listagens.",
+        "Aventura completa com moedas de ouro, XP, títulos de aventureiro, ícones de espadas para dificuldade e Caixas Misteriosas na Loja.",
     },
   ] as const;
 

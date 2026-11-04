@@ -159,13 +159,13 @@ const TaskRowContent = memo(function TaskRowContent({
           ? "gap-2.5 px-3 py-2 text-xs"
           : "gap-4 px-4 py-2.5 text-body-s",
         isTodo && dueDateInfo.isOverdue && !isDone
-          ? "bg-danger-500/[0.03] border-danger-500/40 hover:border-danger-500/60 hover:bg-danger-500/[0.06] hover:shadow-card-deep focus:outline-none focus-visible:ring-1 focus-visible:ring-danger-500/60"
-          : "bg-primary-dark/20 border-primary/30 hover:border-gold/50 hover:bg-primary-dark/35 hover:shadow-card-deep focus:outline-none focus-visible:ring-1 focus-visible:ring-gold/60",
+          ? "bg-danger-500/[0.03] border-y-danger-500/40 border-r-danger-500/40 hover:border-y-danger-500/60 hover:border-r-danger-500/60 hover:bg-danger-500/[0.06] hover:shadow-card-deep focus:outline-none focus-visible:ring-1 focus-visible:ring-danger-500/60"
+          : "bg-card dark:bg-primary-dark/20 border-y-neutral-700 border-r-neutral-700 dark:border-y-primary/30 dark:border-r-primary/30 hover:border-y-primary/40 hover:border-r-primary/40 dark:hover:border-y-gold/50 dark:hover:border-r-gold/50 hover:bg-card-hover dark:hover:bg-primary-dark/35 shadow-2xs dark:shadow-none hover:shadow-card-deep focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 dark:focus-visible:ring-gold/60",
         borderClass,
         "border-l-4",
         isHardcoreOverdue &&
-          "border-danger-500/70 hover:border-danger-500/80 shadow-[0_0_10px_rgba(239,68,68,0.25)]",
-        isDone && "opacity-60",
+          "border-y-danger-500/70 border-r-danger-500/70 hover:border-y-danger-500/80 hover:border-r-danger-500/80 shadow-[0_0_10px_rgba(239,68,68,0.25)]",
+        isDone && "dark:opacity-60 bg-card/80 dark:bg-primary-dark/15",
         isDragging &&
           "!transition-none opacity-30 border-dashed border-primary-light scale-95",
         isOverlay &&

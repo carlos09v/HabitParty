@@ -44,7 +44,7 @@ interface FocusManualRecordModalProps {
   records?: FocusRecord[];
   initialActivityId?: string;
   initialItemId?: string;
-  onSuccess: () => void;
+  onSuccess?: () => void;
 }
 
 export function FocusManualRecordModal({
@@ -253,31 +253,70 @@ export function FocusManualRecordModal({
           {/* ========================================================
               COLUNA 2 (DIREITA): PAINEL UNIFICADO DE TEMPO & HORÁRIO
               ======================================================== */}
-          <div className="p-3.5 rounded-xl border border-primary/25 bg-primary-dark/15 flex flex-col justify-between gap-3">
+          <div className="p-3.5 rounded-xl border border-neutral-700 bg-background dark:border-primary/25 dark:bg-primary-dark/15 flex flex-col justify-between gap-3">
             <div className="flex flex-col gap-3">
               {form.targetType === "ITEM" ? (
                 <div className="flex flex-col gap-1.5">
-                  <Input
-                    id="duration-minutes"
-                    label={t("durationToDeductLabel", {
-                      minutes: form.selectedItemMinutes,
-                    })}
-                    type="number"
-                    compact
-                    min={1}
-                    max={
-                      form.selectedItemMinutes > 0
-                        ? form.selectedItemMinutes
-                        : undefined
-                    }
-                    value={form.durationMinutes}
-                    onChange={(e) =>
-                      form.setDurationMinutes(
-                        Math.max(1, Number.parseInt(e.target.value, 10) || 1),
-                      )
-                    }
-                    icon={<Clock size={16} className="text-gold" />}
-                  />
+                  <div className="relative flex items-end">
+                    <Input
+                      id="duration-minutes"
+                      label={t("durationToDeductLabel", {
+                        minutes: form.selectedItemMinutes,
+                      })}
+                      type="number"
+                      compact
+                      min={1}
+                      max={
+                        form.selectedItemMinutes > 0
+                          ? form.selectedItemMinutes
+                          : undefined
+                      }
+                      value={form.durationMinutes}
+                      onChange={(e) =>
+                        form.setDurationMinutes(
+                          Math.max(1, Number.parseInt(e.target.value, 10) || 1),
+                        )
+                      }
+                      icon={<Clock size={16} />}
+                      className="pr-16 font-bold tabular-nums"
+                    />
+                    <div className="absolute right-1.5 bottom-1.5 flex items-center gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          form.setDurationMinutes(
+                            Math.max(1, form.durationMinutes - 5),
+                          )
+                        }
+                        disabled={form.durationMinutes <= 1}
+                        className="p-1 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                        aria-label="-5m"
+                      >
+                        <Minus size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          form.setDurationMinutes(
+                            form.selectedItemMinutes > 0
+                              ? Math.min(
+                                  form.selectedItemMinutes,
+                                  form.durationMinutes + 5,
+                                )
+                              : form.durationMinutes + 5,
+                          )
+                        }
+                        disabled={
+                          form.selectedItemMinutes > 0 &&
+                          form.durationMinutes >= form.selectedItemMinutes
+                        }
+                        className="p-1 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                        aria-label="+5m"
+                      >
+                        <Plus size={13} />
+                      </button>
+                    </div>
+                  </div>
                   <span className="text-caption text-neutral-400 pl-0.5">
                     {t("remainingBalanceAfterLog")}{" "}
                     <strong className="text-gold font-semibold">
@@ -294,7 +333,10 @@ export function FocusManualRecordModal({
                   {/* Cabeçalho de Duração + Presets rápidos */}
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <span className="text-body-s text-neutral-100 font-semibold flex items-center gap-1.5">
-                      <Clock size={14} className="text-gold" />
+                      <Clock
+                        size={14}
+                        className="text-primary dark:text-gold"
+                      />
                       {t("focusTimeLabel")}
                     </span>
                     <div className="flex items-center gap-1">
@@ -307,7 +349,7 @@ export function FocusManualRecordModal({
                             "px-2 py-0.5 rounded-md text-tiny font-semibold border transition-all cursor-pointer",
                             form.durationMinutes === mins
                               ? "bg-gold/25 border-gold text-gold font-bold shadow-glow-gold-xs"
-                              : "bg-surface/60 border-primary/25 text-neutral-400 hover:text-gold hover:border-gold/40",
+                              : "bg-card dark:bg-surface/60 border-neutral-600 dark:border-primary/25 text-neutral-400 hover:text-gold hover:border-gold/40",
                           )}
                         >
                           {mins}m
@@ -325,21 +367,55 @@ export function FocusManualRecordModal({
                         : "grid-cols-1",
                     )}
                   >
-                    <Input
-                      id="duration-minutes"
-                      label={t("totalMinutesLabel")}
-                      type="number"
-                      compact
-                      min={1}
-                      max={600}
-                      value={form.durationMinutes}
-                      onChange={(e) =>
-                        form.setDurationMinutes(
-                          Math.max(1, Number.parseInt(e.target.value, 10) || 1),
-                        )
-                      }
-                      icon={<Clock size={16} className="text-gold" />}
-                    />
+                    <div className="relative flex items-end">
+                      <Input
+                        id="duration-minutes"
+                        label={t("totalMinutesLabel")}
+                        type="number"
+                        compact
+                        min={1}
+                        max={600}
+                        value={form.durationMinutes}
+                        onChange={(e) =>
+                          form.setDurationMinutes(
+                            Math.max(
+                              1,
+                              Number.parseInt(e.target.value, 10) || 1,
+                            ),
+                          )
+                        }
+                        icon={<Clock size={16} />}
+                        className="pr-16 font-bold tabular-nums"
+                      />
+                      <div className="absolute right-1.5 bottom-1.5 flex items-center gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            form.setDurationMinutes(
+                              Math.max(1, form.durationMinutes - 5),
+                            )
+                          }
+                          disabled={form.durationMinutes <= 1}
+                          className="p-1 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                          aria-label="-5m"
+                        >
+                          <Minus size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            form.setDurationMinutes(
+                              Math.min(600, form.durationMinutes + 5),
+                            )
+                          }
+                          disabled={form.durationMinutes >= 600}
+                          className="p-1 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                          aria-label="+5m"
+                        >
+                          <Plus size={13} />
+                        </button>
+                      </div>
+                    </div>
 
                     {form.recordType === "POMO" && (
                       <div className="flex flex-col gap-1.5">
@@ -348,7 +424,10 @@ export function FocusManualRecordModal({
                           className="font-medium text-neutral-100 select-none text-body-s flex items-center justify-between"
                         >
                           <span className="flex items-center gap-1">
-                            <Flame size={13} className="text-gold" />
+                            <Flame
+                              size={13}
+                              className="text-orange-500 dark:text-gold"
+                            />
                             {t("cyclesLabel")}
                           </span>
                           <span className="text-tiny text-neutral-400 font-normal">
@@ -360,13 +439,13 @@ export function FocusManualRecordModal({
 
                         <div
                           id="pomo-stepper"
-                          className="flex items-center justify-between py-2 px-2.5 rounded-lg border border-neutral-700 bg-card dark:bg-primary-dark/20 dark:border-primary/30"
+                          className="flex items-center justify-between py-2 px-2.5 rounded-lg border border-neutral-600 bg-card shadow-xs dark:bg-primary-dark/20 dark:border-primary/30 dark:shadow-none"
                         >
                           <button
                             type="button"
                             onClick={() => form.handleCompletedPomosStep(-1)}
                             disabled={form.completedPomos <= 1}
-                            className="p-0.5 rounded-md text-neutral-400 hover:text-gold hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                            className="p-0.5 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                             aria-label={t("decreaseCyclesAria")}
                           >
                             <Minus size={14} />
@@ -380,7 +459,7 @@ export function FocusManualRecordModal({
                             type="button"
                             onClick={() => form.handleCompletedPomosStep(1)}
                             disabled={form.completedPomos >= 50}
-                            className="p-0.5 rounded-md text-neutral-400 hover:text-gold hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                            className="p-0.5 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                             aria-label={t("increaseCyclesAria")}
                           >
                             <Plus size={14} />
@@ -468,7 +547,7 @@ export function FocusManualRecordModal({
               (form.targetType === "ACTIVITY" && !form.selectedActivityId) ||
               (form.targetType === "ITEM" && !form.selectedItemId)
             }
-            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
           >
             {form.isSubmitting ? (
               <>

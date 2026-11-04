@@ -5,6 +5,7 @@ import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { createFocusRecord } from "@/actions/focusActions";
 import { MAX_FOCUS_ACTIVITIES_FREE } from "@/constants/focus";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import type {
@@ -37,7 +38,7 @@ interface UseFocusManualRecordFormParams {
   records?: FocusRecord[];
   initialActivityId?: string;
   initialItemId?: string;
-  onSuccess: () => void;
+  onSuccess?: () => void;
   onClose: () => void;
 }
 
@@ -56,6 +57,7 @@ export function useFocusManualRecordForm({
 }: UseFocusManualRecordFormParams) {
   const t = useTranslations("focus.manualRecord");
   const locale = useLocale() as AppLocale;
+  const { isGamified } = useExperienceMode();
   const isPremium = useUserStore((s) => s.is_Premium);
   const [isPending, startTransition] = useTransition();
 
@@ -378,10 +380,15 @@ export function useFocusManualRecordForm({
               soundEffects.playCreateSound();
               if (xp > 0 || coins > 0) {
                 toast.success(
-                  t("toasts.recordSavedWithRewards", {
-                    xp,
-                    coins: coins.toFixed(2),
-                  }),
+                  t(
+                    isGamified
+                      ? "toasts.recordSavedWithRewards"
+                      : "toasts.recordSavedWithRewardsProductivity",
+                    {
+                      xp,
+                      coins: coins.toFixed(2),
+                    },
+                  ),
                 );
               } else {
                 toast.success(t("toasts.recordSaved"));
@@ -392,7 +399,7 @@ export function useFocusManualRecordForm({
             toast.success(t("toasts.itemTimeLogged"));
           }
 
-          onSuccess();
+          onSuccess?.();
           onClose();
         } else {
           toast.error(res.error || t("toasts.saveFailed"));

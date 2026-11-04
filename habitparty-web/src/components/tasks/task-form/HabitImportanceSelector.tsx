@@ -13,19 +13,25 @@ import { formatCoins } from "@/utils/economy";
 
 export const HABIT_IMPORTANCE_META: Record<
   HabitImportanceOption,
-  { color: string; dotColor: string }
+  { color: string; dotColor: string; activeClass: string }
 > = {
   LOW: {
     color: "text-info",
     dotColor: "bg-info",
+    activeClass:
+      "bg-sky-500/10 border-sky-500/40 text-sky-700 dark:bg-info/15 dark:border-info/50 dark:text-info font-bold",
   },
   NORMAL: {
     color: "text-success-500",
     dotColor: "bg-success-500",
+    activeClass:
+      "bg-emerald-500/10 border-emerald-500/40 text-emerald-700 dark:bg-success-500/15 dark:border-success-500/50 dark:text-success-500 font-bold",
   },
   HIGH: {
     color: "text-purple-400",
     dotColor: "bg-purple-400",
+    activeClass:
+      "bg-purple-500/10 border-purple-500/40 text-purple-700 dark:bg-purple-500/15 dark:border-purple-400/50 dark:text-purple-300 font-bold",
   },
 };
 
@@ -127,8 +133,8 @@ export function HabitImportanceSelector({
               className={cn(
                 "py-1.5 px-2 rounded-lg border text-body-s font-semibold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5",
                 value === imp.id
-                  ? "border-gold bg-gold/20 text-gold shadow-glow-gold-xs font-bold"
-                  : "border-primary/30 bg-surface/60 text-neutral-300 hover:text-gold hover:border-gold/40",
+                  ? meta.activeClass
+                  : "border-neutral-600 bg-card text-neutral-200 hover:border-neutral-500 hover:bg-surface dark:border-primary/30 dark:bg-surface/60 dark:text-neutral-300 dark:hover:text-gold dark:hover:border-gold/40",
               )}
             >
               <span

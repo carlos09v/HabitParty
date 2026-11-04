@@ -1,6 +1,5 @@
 "use server";
 
-import { updateTag } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { serverApi } from "@/api/server";
 import type {
@@ -12,25 +11,8 @@ import type {
   UpdateFocusActivityOrderDTO,
   UpdateFocusRecordDTO,
 } from "@/types/focus";
+import { invalidateFocusDomainTags } from "./cacheInvalidation";
 import { type ActionState, getErrorMessage } from "./types";
-
-function invalidateFocusTags(options?: {
-  activities?: boolean;
-  records?: boolean;
-  rewardsAndInventory?: boolean;
-}) {
-  if (options?.activities) {
-    updateTag("focus-activities");
-  }
-  if (options?.records) {
-    updateTag("focus-records");
-  }
-  if (options?.rewardsAndInventory) {
-    updateTag("inventory");
-    updateTag("user");
-    updateTag("transactions");
-  }
-}
 
 /**
  * Cria uma nova atividade de foco
@@ -51,7 +33,7 @@ export async function createFocusActivity(
       };
     }
 
-    invalidateFocusTags({ activities: true });
+    invalidateFocusDomainTags({ activities: true });
     return { success: true, data: data as FocusActivityResponseDTO };
   } catch (err) {
     console.error("[FocusAction:CreateActivity]", err);
@@ -86,7 +68,7 @@ export async function updateFocusActivity(
       };
     }
 
-    invalidateFocusTags({ activities: true });
+    invalidateFocusDomainTags({ activities: true });
     return { success: true, data: data as FocusActivityResponseDTO };
   } catch (err) {
     console.error("[FocusAction:UpdateActivity]", err);
@@ -120,7 +102,7 @@ export async function deleteFocusActivity(
       };
     }
 
-    invalidateFocusTags({ activities: true, records: true });
+    invalidateFocusDomainTags({ activities: true, records: true });
     return { success: true };
   } catch (err) {
     console.error("[FocusAction:DeleteActivity]", err);
@@ -150,7 +132,7 @@ export async function reorderFocusActivities(
       };
     }
 
-    invalidateFocusTags({ activities: true });
+    invalidateFocusDomainTags({ activities: true });
     return { success: true };
   } catch (err) {
     console.error("[FocusAction:ReorderActivities]", err);
@@ -180,7 +162,7 @@ export async function createFocusRecord(
       };
     }
 
-    invalidateFocusTags({ records: true, rewardsAndInventory: true });
+    invalidateFocusDomainTags({ records: true, rewardsAndInventory: true });
     return { success: true, data: data as FocusRecordResponseDTO };
   } catch (err) {
     console.error("[FocusAction:CreateRecord]", err);
@@ -212,7 +194,7 @@ export async function updateFocusRecord(
       };
     }
 
-    invalidateFocusTags({ records: true });
+    invalidateFocusDomainTags({ records: true });
     return { success: true, data: data as FocusRecordResponseDTO };
   } catch (err) {
     console.error("[FocusAction:UpdateRecord]", err);
@@ -242,7 +224,7 @@ export async function deleteFocusRecord(
       };
     }
 
-    invalidateFocusTags({ records: true, rewardsAndInventory: true });
+    invalidateFocusDomainTags({ records: true, rewardsAndInventory: true });
     return { success: true };
   } catch (err) {
     console.error("[FocusAction:DeleteRecord]", err);

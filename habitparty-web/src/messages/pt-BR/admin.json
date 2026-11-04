@@ -41,7 +41,8 @@
       "free": "Gratuito: {count}",
       "vip": "VIP: {count}",
       "founders": "Fundadores: {count}/30",
-      "admin": "Admin: {count}"
+      "admin": "Admin: {count}",
+      "verified": "Verificados: {count}"
     },
     "tasks": {
       "title": "Tarefas & Hábitos",
@@ -57,10 +58,18 @@
   "usersTable": {
     "filterTabs": {
       "ALL": "Todos os Usuários",
+      "VERIFIED": "Verificados",
+      "UNVERIFIED": "Não Verificados",
       "FREE": "Plano Gratuito",
       "PREMIUM": "Premium VIP",
       "FOUNDER": "Fundadores 👑",
       "ADMIN": "Administradores"
+    },
+    "verification": {
+      "verified": "Verificado",
+      "unverified": "Não verificado",
+      "verifiedTitle": "Conta com e-mail verificado",
+      "unverifiedTitle": "E-mail pendente de verificação"
     },
     "searchPlaceholder": "Buscar por nome, @user ou e-mail...",
     "loading": "Carregando dados...",
@@ -116,7 +125,9 @@
       "founder": "Fundador 👑",
       "premiumVip": "Premium VIP",
       "free": "Gratuito",
-      "admin": "ADMIN"
+      "admin": "ADMIN",
+      "verified": "E-mail Verificado",
+      "unverified": "Não Verificado"
     },
     "closeAriaLabel": "Fechar modal",
     "closeButton": "Fechar",

@@ -32,6 +32,9 @@ export interface LandingProductivityStepConfig {
   number: string;
   icon: LucideIcon;
   color: string;
+  numberColor: string;
+  iconBoxClass: string;
+  iconColor: string;
   borderColor: string;
 }
 
@@ -48,6 +51,7 @@ export interface LandingFeatureConfig {
   id: LandingFeatureKey;
   icon: LucideIcon;
   badgeColor: string;
+  iconBoxColor: string;
 }
 
 export type LandingRoadmapKey = "r11" | "r12" | "r13" | "r14" | "r20";
@@ -58,6 +62,8 @@ export interface LandingRoadmapConfig {
   status: "completed" | "in_progress" | "next" | "planned" | "epic";
   statusBadgeColor: string;
   icon: LucideIcon;
+  iconBoxColor: string;
+  checkColor: string;
   accentColor: string;
   borderGlowColor: string;
   hasExtras?: boolean;

@@ -4,6 +4,21 @@ import type { Reward } from "@/types/reward";
 // 1. DTOs Base (Direto do backend)
 export type InventoryItemResponseDTO =
   components["schemas"]["InventoryItemResponseDTO"];
+export type UpdateInventoryOrderDTO =
+  components["schemas"]["UpdateInventoryOrderDTO"];
+
+export interface MysteryBoxOpenResult {
+  inventoryItemId?: string;
+  rewardId?: string;
+  rewardName?: string;
+  rewardIcon?: string;
+  rewardPrice?: number;
+  rewardType?: string;
+  rewardPackageLevel?: string;
+  status?: string;
+  remainingMinutes?: number;
+  remainingSeconds?: number;
+}
 
 export type InventoryItemType =
   | NonNullable<InventoryItemResponseDTO["rewardType"]>

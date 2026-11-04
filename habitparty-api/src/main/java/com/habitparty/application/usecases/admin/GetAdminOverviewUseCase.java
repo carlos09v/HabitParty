@@ -45,6 +45,7 @@ public class GetAdminOverviewUseCase {
     long premiumUsers = userRepository.countByIsPremium(true);
     long founderUsers = userRepository.countFounders();
     long adminUsers = userRepository.countByRole(UserRole.ADMIN);
+    long verifiedUsers = userRepository.countByEmailVerified(true);
 
     LocalDate today = LocalDate.now();
     LocalDate cycleStartDate = resolveCycleStartDate(today, resendResetDay);
@@ -67,6 +68,7 @@ public class GetAdminOverviewUseCase {
         premiumUsers,
         founderUsers,
         adminUsers,
+        verifiedUsers,
         emailsSentThisMonth,
         resendMonthlyQuota,
         resendQuotaPercentage,

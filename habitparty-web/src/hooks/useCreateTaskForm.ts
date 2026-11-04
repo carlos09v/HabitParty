@@ -82,8 +82,24 @@ export function useCreateTaskForm({
   const [difficulty, setDifficulty] = useState<TaskDifficultyOption>("MEDIUM");
   const [priority, setPriority] = useState<TaskPriorityOption>("NONE");
   const [dueDate, setDueDate] = useState("");
+  const [dueTime, setDueTime] = useState("");
   const [reminderType, setReminderType] = useState<ReminderTypeOption>("NONE");
   const [sendEmailReminder, setSendEmailReminder] = useState(false);
+
+  const handleDueDateChange = (nextDate: string) => {
+    setDueDate(nextDate);
+    if (!nextDate) {
+      setDueTime("");
+    }
+  };
+
+  const handleDueTimeChange = (nextTime: string) => {
+    const cleanTime = nextTime ? nextTime.slice(0, 5) : "";
+    setDueTime(cleanTime);
+    if (cleanTime && !dueDate) {
+      setDueDate(getTodayDateString());
+    }
+  };
 
   // Campos específicos de Daily
   const [startDate, setStartDate] = useState("");
@@ -156,6 +172,7 @@ export function useCreateTaskForm({
       setPriority((taskToEdit.priority as TaskPriorityOption) || "NONE");
 
       setDueDate(taskToEdit.dueDate || "");
+      setDueTime(taskToEdit.dueTime ? taskToEdit.dueTime.slice(0, 5) : "");
       setReminderType(taskToEdit.reminderType || "NONE");
       setSendEmailReminder(Boolean(taskToEdit.sendEmailReminder));
       setStartDate(taskToEdit.startDate || getTodayDateString());
@@ -185,7 +202,13 @@ export function useCreateTaskForm({
       setImportanceType(initialValues?.importanceType || "NORMAL");
       setDifficulty(initialValues?.difficulty || "MEDIUM");
       setPriority(initialValues?.priority || "NONE");
-      setDueDate(initialValues?.dueDate || "");
+      setDueDate(
+        initialValues?.dueDate ||
+          (initialValues?.dueTime ? getTodayDateString() : ""),
+      );
+      setDueTime(
+        initialValues?.dueTime ? initialValues.dueTime.slice(0, 5) : "",
+      );
       setReminderType("NONE");
       setSendEmailReminder(false);
       setStartDate(initialValues?.startDate || getTodayDateString());
@@ -313,7 +336,9 @@ export function useCreateTaskForm({
         streak: taskToEdit?.streak ?? 0,
         positiveCount: taskToEdit?.positiveCount ?? 0,
         negativeCount: taskToEdit?.negativeCount ?? 0,
-        dueDate: dueDate || undefined,
+        dueDate:
+          dueDate || (dueTime ? getTodayDateString() : undefined) || undefined,
+        dueTime: dueTime || undefined,
         columnId,
         order: taskToEdit?.order ?? 0,
         daysOfWeek:
@@ -439,7 +464,9 @@ export function useCreateTaskForm({
     priority,
     setPriority,
     dueDate,
-    setDueDate,
+    setDueDate: handleDueDateChange,
+    dueTime,
+    setDueTime: handleDueTimeChange,
     reminderType,
     setReminderType,
     sendEmailReminder,

@@ -54,6 +54,8 @@ export function formatStorageBytes(bytes: number): string {
 /** Abas de filtro da tabela de usuários */
 export const ADMIN_USER_FILTER_TABS = [
   { id: "ALL", label: "Todos os Usuários" },
+  { id: "VERIFIED", label: "Verificados" },
+  { id: "UNVERIFIED", label: "Não Verificados" },
   { id: "FREE", label: "Plano Gratuito" },
   { id: "PREMIUM", label: "Premium VIP" },
   { id: "FOUNDER", label: "Fundadores 👑" },

@@ -44,7 +44,7 @@ export function LandingHero() {
             {/* Headline Principal — Reduzida e balanceada ao lado do card preview */}
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.15] text-balance text-neutral-50 mb-5">
               {t("titleLine1")}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-gold-ink via-primary to-magenta dark:from-gold dark:via-primary-light dark:to-magenta drop-shadow-none dark:drop-shadow-[0_0_35px_rgba(237,229,57,0.35)]">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-dark via-primary-light to-magenta dark:from-gold dark:via-primary-light dark:to-magenta drop-shadow-none dark:drop-shadow-[0_0_35px_rgba(237,229,57,0.35)]">
                 {t("titleHighlight")}
               </span>
             </h1>
@@ -107,7 +107,7 @@ export function LandingHero() {
                       alt="HabitParty"
                       width={36}
                       height={36}
-                      className="w-9 h-9 rounded-xl object-cover shrink-0 shadow-xs"
+                      className="w-9 h-9 object-contain shrink-0 drop-shadow-xs"
                     />
                     <div className="text-left">
                       <span className="text-xs font-extrabold text-neutral-50 tracking-tight block">

@@ -35,6 +35,7 @@ export interface Task extends Omit<TaskResponseDTO, "id" | "difficulty"> {
   title: string;
   category?: string;
   dueDate?: string;
+  dueTime?: string;
   completed?: boolean;
   rewardXp?: number;
   rewardGold?: number;

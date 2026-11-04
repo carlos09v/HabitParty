@@ -1125,6 +1125,7 @@ export interface components {
       )[];
       /** @enum {string} */
       monthlyOption?: "DAY_OF_THE_WEEK" | "DAY_OF_THE_MONTH";
+      dueTime?: string;
       /** @enum {string} */
       reminderType?:
         | "NONE"
@@ -1253,6 +1254,7 @@ export interface components {
       /** Format: date-time */
       customReminderAt?: string;
       sendEmailReminder?: boolean;
+      dueTime?: string;
     };
     UpdateTaskOrderDTO: {
       /** Format: uuid */
@@ -1466,6 +1468,7 @@ export interface components {
       /** Format: date-time */
       customReminderAt?: string;
       sendEmailReminder?: boolean;
+      dueTime?: string;
     };
     CreateRewardDTO: {
       name: string;
@@ -1517,6 +1520,8 @@ export interface components {
       workspaceId: string;
       name: string;
       icon?: string;
+      /** Format: int32 */
+      orderIndex?: number;
     };
     RefreshTokenRequestDTO: {
       refreshToken: string;

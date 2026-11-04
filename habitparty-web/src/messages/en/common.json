@@ -96,9 +96,9 @@
           "pageName": "Tasks Board",
           "description": "Guidance on organizing tasks, columns, and creating habits on the board.",
           "subtitle": "Organize your layout and keep your momentum.",
-          "bullet0": "Organize your layout and drag columns into the best order.",
-          "bullet1": "Create dedicated columns for each task context.",
-          "bullet2": "Classify activities into Daily, Habit, and To-Do."
+          "bullet0": "Organize your board by creating and dragging columns for each task context.",
+          "bullet1": "Classify activities into Daily, Habit, and To-Do.",
+          "bullet2": "Single-click a card to view details or double-click (DoubleClick) to open the edit task modal."
         },
         "inventory": {
           "title": "Your Backpack!",
@@ -324,6 +324,14 @@
         "action": "Action",
         "priceAndAction": "Price / Action"
       }
+    },
+    "reorder": {
+      "clearFiltersToReorder": "Clear filters to reorder items.",
+      "reorderError": "Error reordering items.",
+      "communicationError": "Server communication error."
+    },
+    "listCard": {
+      "newList": "New list"
     }
   },
   "cookieBanner": {

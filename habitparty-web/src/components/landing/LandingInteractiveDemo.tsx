@@ -137,7 +137,7 @@ export function LandingInteractiveDemo() {
             </div>
             <div className="flex items-center gap-4 text-xs font-medium text-neutral-200">
               <span className="flex items-center gap-1 text-gold font-bold">
-                <Coins className="w-4 h-4 fill-gold text-gold" />
+                <Coins className="w-4 h-4 text-gold" />
                 {t("goldStatus", { gold })}
               </span>
               <span className="flex items-center gap-1 text-primary dark:text-primary-light font-bold">
@@ -174,7 +174,10 @@ export function LandingInteractiveDemo() {
           {/* Banner inferior dentro da janela */}
           <div className="px-6 py-3.5 bg-surface/90 dark:bg-neutral-900/70 border-t border-neutral-700 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-neutral-300">
             <div className="flex items-center gap-2">
-              <span className="inline-block w-2 h-2 rounded-full bg-success-500 animate-ping" />
+              <span className="relative flex h-2.5 w-2.5 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary dark:bg-success-500 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary dark:bg-success-500" />
+              </span>
               <span>{t("footerHint")}</span>
             </div>
             <span className="text-gold font-semibold">

@@ -106,6 +106,12 @@ export function CreateTaskModal({
         : Target;
 
   const typeMeta = TASK_TYPE_META[form.taskType] || TASK_TYPE_META.TODO;
+  const headerIconClassName =
+    form.taskType === "HABIT"
+      ? "bg-sky-500/10 border-sky-500/30 text-sky-600 shadow-none dark:bg-info/15 dark:border-info/30 dark:text-info"
+      : form.taskType === "DAILY"
+        ? "bg-purple-500/10 border-purple-500/30 text-purple-600 shadow-none dark:bg-magenta/15 dark:border-magenta/30 dark:text-magenta"
+        : "bg-amber-500/10 border-amber-500/30 text-amber-600 shadow-none dark:bg-gold/15 dark:border-gold/30 dark:text-gold dark:shadow-glow-gold-xs";
 
   return (
     <BaseModal
@@ -113,6 +119,7 @@ export function CreateTaskModal({
       onClose={onClose}
       title={isEditing ? t("editTitle") : t("createTitle")}
       headerIcon={<TypeHeaderIcon size={20} />}
+      headerIconClassName={headerIconClassName}
       headerBadge={
         <span
           className={cn(

@@ -44,7 +44,7 @@ export async function LandingPricing() {
           <div className="mt-8 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-gold/15 via-surface dark:via-surface/90 to-gold/15 border-2 border-gold/50 shadow-glow-gold-sm flex flex-col md:flex-row items-center justify-between gap-4 text-left">
             <div className="flex items-center gap-3.5">
               <div className="w-11 h-11 rounded-2xl bg-gold/20 border border-gold/40 flex items-center justify-center shrink-0 text-gold shadow-glow-gold-xs">
-                <Flame className="w-6 h-6 fill-gold text-gold-ink dark:text-neutral-950" />
+                <Flame className="w-6 h-6 fill-gold text-gold-ink dark:text-gold" />
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -189,13 +189,13 @@ export async function LandingPricing() {
                           className={cn(
                             "w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5",
                             plan.isFounder
-                              ? "bg-gold/20 text-gold"
-                              : plan.highlight
-                                ? "bg-primary-light/20 text-primary-light"
-                                : "bg-surface text-neutral-300 border border-neutral-700 dark:border-white/10",
+                              ? "bg-amber-500/15 text-amber-700 dark:bg-gold/20 dark:text-gold"
+                              : plan.id === "guardian"
+                                ? "bg-primary/15 text-primary dark:bg-primary-light/20 dark:text-primary-light"
+                                : "bg-emerald-500/15 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400",
                           )}
                         >
-                          <Check className="w-3.5 h-3.5" />
+                          <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                         </div>
                         <span className="text-xs sm:text-sm text-neutral-200 leading-tight">
                           {feature}

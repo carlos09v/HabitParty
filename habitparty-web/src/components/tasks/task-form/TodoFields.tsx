@@ -3,6 +3,7 @@ import { useTranslations } from "next-intl";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Select } from "@/components/ui/Select";
 import { Switch } from "@/components/ui/Switch";
+import { TimePicker } from "@/components/ui/TimePicker";
 import { TODO_REMINDER_OPTIONS } from "@/constants/task";
 import type { CreateTaskFormReturn } from "@/hooks/useCreateTaskForm";
 import { useUserStore } from "@/store/userStore";
@@ -23,6 +24,8 @@ export function TodoFields({ form }: TodoFieldsProps) {
   const {
     dueDate,
     setDueDate,
+    dueTime,
+    setDueTime,
     reminderType,
     setReminderType,
     sendEmailReminder,
@@ -39,7 +42,7 @@ export function TodoFields({ form }: TodoFieldsProps) {
 
   return (
     <div className="flex flex-col gap-3.5 animate-in fade-in duration-150">
-      {/* Prazo */}
+      {/* Prazo de Entrega (Largura completa) */}
       <DatePicker
         id="todoDue"
         label={isHardcore ? t("dueDateHardcoreLabel") : t("dueDateLabel")}
@@ -55,18 +58,31 @@ export function TodoFields({ form }: TodoFieldsProps) {
         hint={isOverdueHardcoreLocked ? t("dueDateFrozenHint") : undefined}
       />
 
-      {/* Lembrete */}
-      <Select
-        label={t("reminderLabel")}
-        options={TODO_REMINDER_OPTIONS.map((opt) => ({
-          value: opt.id,
-          label: t(`reminders.${opt.id}`),
-        }))}
-        value={reminderType}
-        onChange={(val) => setReminderType(val as ReminderTypeOption)}
-        disabled={isPending}
-        compact
-      />
+      {/* Horário e Lembrete lado a lado */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
+        <TimePicker
+          id="todoDueTime"
+          label={t("dueTimeLabel")}
+          value={dueTime}
+          disabled={isPending || isOverdueHardcoreLocked}
+          onChange={setDueTime}
+          placeholder={t("dueTimePlaceholder")}
+          compact
+          allowClear={!isOverdueHardcoreLocked}
+        />
+
+        <Select
+          label={t("reminderLabel")}
+          options={TODO_REMINDER_OPTIONS.map((opt) => ({
+            value: opt.id,
+            label: t(`reminders.${opt.id}`),
+          }))}
+          value={reminderType}
+          onChange={(val) => setReminderType(val as ReminderTypeOption)}
+          disabled={isPending}
+          compact
+        />
+      </div>
 
       {/* Opção de Enviar Lembrete por E-mail (Exibida somente se houver lembrete ativo) */}
       {reminderType !== "NONE" && (

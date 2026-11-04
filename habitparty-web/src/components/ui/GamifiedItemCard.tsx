@@ -7,21 +7,10 @@ import { useLocale, useTranslations } from "next-intl";
 import { memo, type default as React, useState } from "react";
 import { MysteryBoxTierPopover } from "@/components/reward/MysteryBoxTierPopover";
 import { CoinIcon } from "@/components/ui/CoinIcon";
-import {
-  getMysteryBoxTier,
-  getRewardIcon,
-  isMysteryBoxReward,
-  PACKAGE_LEVEL_COLOR,
-  PACKAGE_LEVEL_GLOW,
-  PACKAGE_LEVEL_ICON_THEME,
-  REWARD_TYPE_META,
-  toCategoryMessageKey,
-  toPackageMessageKey,
-  toRewardTypeMessageKey,
-} from "@/constants/reward";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
-import type { PackageLevel, RewardType } from "@/types/reward";
 import { cn, formatCoins } from "@/utils";
+import { resolveCatalogItemVisuals } from "@/utils/catalogItemVisuals";
 import {
   formatBackpackItemRemainingTime,
   formatFocusMinutes,
@@ -51,17 +40,6 @@ export interface GamifiedItemCardProps {
   isActiveFocusSession?: boolean;
 }
 
-const RARITY_TOP_BAR: Partial<Record<PackageLevel, string>> = {
-  Lendário: "via-gold opacity-90",
-  LEGENDARY: "via-gold opacity-90",
-  Épico: "via-magenta opacity-90",
-  EPIC: "via-magenta opacity-90",
-  Premium: "via-info opacity-90",
-  PREMIUM: "via-info opacity-90",
-  Básico: "via-success-500 opacity-70",
-  BASIC: "via-success-500 opacity-70",
-};
-
 /**
  * Card gamificado unificado e memoizado para itens da Vitrine (Rewards) e da Mochila (Inventory).
  */
@@ -90,11 +68,30 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
 }: GamifiedItemCardProps) {
   const t = useTranslations("ui.itemCatalog");
   const locale = useLocale() as AppLocale;
-  const typeKey = toRewardTypeMessageKey(type);
-  const typeMeta = REWARD_TYPE_META[typeKey as RewardType];
-  const RewardIcon = getRewardIcon(iconName, type);
-  const isMystery = isMysteryBoxReward(type, iconName);
-  const mysteryTier = isMystery ? getMysteryBoxTier(packageLevel) : null;
+  const { isGamified } = useExperienceMode();
+  const {
+    typeKey,
+    typeMeta,
+    RewardIcon,
+    isMystery,
+    mysteryTier,
+    hasValidPackage,
+    hasValidCategory,
+    packageMessageKey,
+    categoryMessageKey,
+    packageBadgeColor,
+    packageGlow,
+    packageIconTheme,
+    topBarClass,
+    isFocusNavigate,
+  } = resolveCatalogItemVisuals({
+    type,
+    iconName,
+    packageLevel,
+    category,
+    isActiveFocusSession,
+    includeMysteryTier: true,
+  });
 
   const [isHovered, setIsHovered] = useState(false);
   const [popoverPlacement, setPopoverPlacement] = useState<{
@@ -116,16 +113,6 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
     setIsHovered(true);
   };
 
-  const packageGlow = packageLevel
-    ? PACKAGE_LEVEL_GLOW[packageLevel as PackageLevel]
-    : undefined;
-  const packageIconTheme = packageLevel
-    ? PACKAGE_LEVEL_ICON_THEME[packageLevel as PackageLevel]
-    : undefined;
-  const topBarClass = packageLevel
-    ? RARITY_TOP_BAR[packageLevel as PackageLevel]
-    : undefined;
-
   const {
     attributes,
     listeners,
@@ -143,13 +130,6 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
     transition: isDragging ? undefined : transition,
   };
 
-  const isFocusNavigate =
-    Boolean(isActiveFocusSession) ||
-    (inUse &&
-      (actionLabel === "Abrir no Foco" ||
-        actionLabel === "Ir para o Foco" ||
-        actionLabel === "Open in Focus" ||
-        actionLabel === "Go to Focus"));
   const isPrimaryDisabled = !canAfford || (inUse && !isFocusNavigate);
 
   return (
@@ -166,23 +146,26 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
       }
       onBlur={() => setIsHovered(false)}
       className={cn(
-        "relative flex flex-col justify-between rounded-xl bg-gradient-to-b from-surface via-surface to-popover/95 border transition-[border-color,background-color,box-shadow,transform] duration-150 group select-none shadow-sm hover:shadow-card-deep hover:-translate-y-0.5",
+        "relative flex flex-col justify-between rounded-xl bg-card dark:bg-linear-to-b dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,box-shadow,transform] duration-150 group select-none shadow-xs dark:shadow-sm hover:shadow-card-deep hover:-translate-y-0.5",
         isHovered && isMystery && !isDragging
           ? "overflow-visible z-40"
           : "overflow-hidden",
         inUse
-          ? "border-amber-500/40 bg-amber-500/5"
-          : packageGlow || "border-white/15 hover:border-gold/50",
+          ? "border-amber-500/45 bg-card dark:border-amber-500/40 dark:bg-amber-500/5"
+          : packageGlow ||
+              "border-neutral-700 hover:border-amber-500/50 dark:border-white/15 dark:hover:border-gold/50",
         isCompact ? "p-2.5 gap-2" : "p-3.5 gap-2.5",
-        isDragging && "!transition-none opacity-50 ring-2 ring-gold z-50",
+        isDragging && "transition-none! opacity-50 ring-2 ring-gold z-50",
       )}
     >
-      {/* Detalhe de Raridade no Topo do Card */}
-      {topBarClass && (
+      {/* Detalhe de Raridade / Status no Topo do Card */}
+      {(inUse || topBarClass) && (
         <div
           className={cn(
-            "absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent to-transparent pointer-events-none",
-            topBarClass,
+            "absolute top-0 inset-x-0 h-1 bg-linear-to-r pointer-events-none",
+            inUse
+              ? "from-amber-500 to-yellow-500 opacity-95"
+              : cn("from-transparent to-transparent", topBarClass),
           )}
         />
       )}
@@ -194,7 +177,9 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
             className={cn(
               "rounded-xl border flex items-center justify-center transition-all duration-200 shrink-0 group-hover:scale-105",
               packageIconTheme ||
-                "bg-white/10 border-white/15 text-primary-light group-hover:text-gold group-hover:border-gold/40",
+                (typeKey === "TimeBased"
+                  ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 group-hover:border-emerald-500/40 dark:bg-white/10 dark:border-white/15 dark:text-primary-light dark:group-hover:text-gold dark:group-hover:border-gold/40"
+                  : "bg-primary/10 text-primary border-primary/20 group-hover:border-primary/40 dark:bg-white/10 dark:border-white/15 dark:text-primary-light dark:group-hover:text-gold dark:group-hover:border-gold/40"),
               isCompact ? "w-9 h-9" : "w-10 h-10",
             )}
           >
@@ -325,38 +310,38 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
             ) : null
           ) : null}
 
-          {Boolean(
-            packageLevel &&
-              packageLevel !== "Nenhum" &&
-              packageLevel !== "NONE",
-          ) && (
+          {hasValidPackage && (
             <span
               className={cn(
                 "font-semibold rounded border text-tiny px-1.5 py-0.5 leading-none",
-                PACKAGE_LEVEL_COLOR[packageLevel as PackageLevel] ||
-                  "text-neutral-300 bg-white/10 border-white/15",
+                packageBadgeColor,
               )}
             >
-              {t(`packages.${toPackageMessageKey(packageLevel)}`)}
+              {t(`packages.${packageMessageKey}`)}
             </span>
           )}
-          {Boolean(
-            category && category !== "Nenhum" && category !== "NONE",
-          ) && (
+          {hasValidCategory && (
             <span className="font-medium rounded bg-white/8 border border-white/10 text-neutral-300 text-tiny px-1.5 py-0.5 leading-none">
-              {t(`categories.${toCategoryMessageKey(category)}`)}
+              {t(`categories.${categoryMessageKey}`)}
             </span>
           )}
         </div>
       </div>
 
       {/* BASE: Preço (na Loja) ou Status + Botões de Ação */}
-      <footer className="flex items-center justify-between pt-2.5 border-t border-white/10 w-full gap-2">
+      <footer className="flex items-center justify-between pt-2.5 border-t border-neutral-700 dark:border-white/10 w-full gap-2">
         <div className="flex items-center min-w-0">
           {typeof price === "number" ? (
-            <div className="flex items-center gap-1.5 bg-gold/10 border border-gold/25 px-2.5 py-1 rounded-lg">
+            <div
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border",
+                isGamified
+                  ? "bg-amber-500/10 border-amber-500/25 text-neutral-50 dark:bg-gold/10 dark:border-gold/25 dark:text-neutral-100"
+                  : "bg-sky-500/10 border-sky-500/25 text-sky-900 dark:bg-sky-500/15 dark:border-sky-400/30 dark:text-sky-100",
+              )}
+            >
               <CoinIcon size={15} withGlow />
-              <span className="text-xs font-extrabold text-neutral-100">
+              <span className="text-xs font-extrabold">
                 {formatCoins(price, { locale })}
               </span>
             </div>
@@ -398,7 +383,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                 "rounded-lg font-semibold transition-all shadow-xs border text-neutral-200",
                 inUse
                   ? "bg-white/5 border-white/10 text-neutral-400 cursor-not-allowed opacity-60"
-                  : "border-primary/40 bg-surface/80 hover:bg-gold/15 hover:border-gold/60 hover:text-gold active:scale-95 cursor-pointer",
+                  : "border-neutral-600 dark:border-primary/40 bg-surface/80 hover:bg-gold/15 hover:border-gold/60 hover:text-gold active:scale-95 cursor-pointer",
                 isCompact ? "px-2.5 py-1 text-label-g" : "px-3 py-1.5 text-xs",
               )}
             >
@@ -429,16 +414,14 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                         })
             }
             className={cn(
-              "rounded-lg font-bold transition-all shadow-xs",
+              "rounded-lg font-semibold dark:font-bold transition-all shadow-xs",
               typeof price !== "number" &&
                 secondaryActionLabel &&
                 onSecondaryAction &&
                 "flex-1 sm:flex-initial text-center",
-              isFocusNavigate
-                ? "bg-gold hover:bg-gold-hover text-on-gold border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95"
-                : canAfford && !inUse
-                  ? "bg-warning-500 hover:bg-warning-400 focus:outline-none focus:ring-2 focus:ring-warning-300 focus:ring-offset-1 focus:ring-offset-surface active:scale-95 text-on-gold cursor-pointer"
-                  : "bg-white/10 text-neutral-400 border border-white/10 cursor-not-allowed opacity-60",
+              isFocusNavigate || (canAfford && !inUse)
+                ? "bg-gold hover:bg-gold-hover active:bg-gold-pressed text-on-gold border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1 focus-visible:ring-offset-card"
+                : "bg-neutral-700/70 dark:bg-white/10 text-neutral-400 border border-neutral-600 dark:border-white/10 cursor-not-allowed opacity-75 dark:opacity-60",
               isCompact ? "px-2.5 py-1 text-label-g" : "px-3.5 py-1.5 text-xs",
             )}
           >

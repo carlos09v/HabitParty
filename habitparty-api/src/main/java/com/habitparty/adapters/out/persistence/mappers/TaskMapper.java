@@ -55,7 +55,7 @@ public class TaskMapper {
                 t.getOrderIndex(), t.getPriority(), t.getTags(), t.getDifficulty(),
                 t.getStatus(), t.getTaskType(), t.isHardcoreModeEnabled(), t.getDueDate(), t.getCreatedAt(), checklist,
                 t.getReminderType(), t.getReminderAt(), t.getCompletedAt(), t.isPenaltyApplied(),
-                t.isSendEmailReminder(), t.isEmailReminderSent()
+                t.isSendEmailReminder(), t.isEmailReminderSent(), t.getDueTime()
             );
         }
 
@@ -89,6 +89,7 @@ public class TaskMapper {
         } 
         else if (domain instanceof Todo t) {
             TodoJpaEntity todoEntity = new TodoJpaEntity();
+            todoEntity.setDueTime(t.getDueTime().orElse(null));
             todoEntity.setReminderType(t.getReminderType());
             todoEntity.setReminderAt(t.getReminderAt().orElse(null));
             todoEntity.setCompletedAt(t.getCompletedAt());

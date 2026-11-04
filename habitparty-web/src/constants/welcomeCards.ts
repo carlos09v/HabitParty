@@ -110,9 +110,9 @@ export const WELCOME_CARD_DETAILS: Record<string, WelcomeCardDetail> = {
     title: "Gerencie suas Tarefas!",
     subtitle: "Organize seu Layout e mantenha o ritmo.",
     bullets: [
-      "Organize seu Layout e arraste colunas para a melhor ordem.",
-      "Crie colunas apropriadas para cada contexto de tarefa.",
-      "Classifique entre Diário, Hábito e Afazer (ToDo).",
+      "Organize seu quadro criando e arrastando colunas para cada contexto de tarefa.",
+      "Classifique suas atividades entre Diária, Hábito e Afazer (ToDo).",
+      "Clique 1x em um card para ver os detalhes ou dê duplo clique (DoubleClick) para abrir o modal de editar tarefa.",
     ],
     imageSrc: "/assets/undraw/task/undraw_next-task_jtbr 1.svg",
     compactWidth: 115,

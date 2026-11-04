@@ -2,6 +2,7 @@ package com.habitparty.adapters.in.web.dtos.request;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 import com.habitparty.core.domain.enums.task.DailyDaysOfWeek;
@@ -52,6 +53,7 @@ public record UpdateTaskDTO(
                 DailyRepeatMonthlyOption monthlyOption,
 
                 // Todo
+                LocalTime dueTime,
                 TodoReminderType reminderType,
                 LocalDateTime customReminderAt,
                 Boolean sendEmailReminder) {

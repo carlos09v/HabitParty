@@ -11,6 +11,7 @@ export interface BaseModalProps {
   title?: React.ReactNode;
   description?: React.ReactNode;
   headerIcon?: React.ReactNode;
+  headerIconClassName?: string;
   headerBadge?: React.ReactNode;
   children: React.ReactNode;
   maxWidth?: string;
@@ -28,6 +29,7 @@ export function BaseModal({
   title,
   description,
   headerIcon,
+  headerIconClassName,
   headerBadge,
   children,
   maxWidth = "max-w-md",
@@ -111,7 +113,12 @@ export function BaseModal({
 
         {headerIcon ? (
           <div className="flex items-center gap-3 mb-4 pr-8">
-            <div className="w-10 h-10 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center text-gold shadow-glow-gold-xs shrink-0">
+            <div
+              className={cn(
+                "w-10 h-10 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center text-gold shadow-glow-gold-xs shrink-0 transition-colors",
+                headerIconClassName,
+              )}
+            >
               {headerIcon}
             </div>
             {headerExtra}
@@ -135,7 +142,7 @@ export function BaseModal({
               <div className="flex items-center gap-2 mb-4 pr-8">
                 {headerExtra}
                 {title && (
-                  <h2 className="text-label-l uppercase tracking-wider text-gold-pressed font-bold flex items-center gap-2 flex-wrap">
+                  <h2 className="text-label-g uppercase tracking-wider text-gold-pressed font-bold flex items-center gap-2 flex-wrap">
                     <span>{title}</span>
                     {headerBadge}
                   </h2>

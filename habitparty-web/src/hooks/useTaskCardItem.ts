@@ -61,6 +61,7 @@ export function useTaskItemMeta({
     activeFilter,
     selectedDate,
     locale,
+    dueTime: task.dueTime,
   });
   const isTodoOverdue = Boolean(isTodo && dueDateInfo.isOverdue && !isDone);
   const borderClass = isTodoOverdue

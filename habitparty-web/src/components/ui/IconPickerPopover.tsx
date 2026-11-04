@@ -173,10 +173,10 @@ export function IconPickerPopover({
             title={t("compactButtonTitle", { label: selectedLabel })}
             className={cn(
               "flex items-center justify-center gap-1.5 h-[42px] px-3 rounded-lg border transition-all cursor-pointer select-none shrink-0",
-              "focus:outline-none focus:ring-1 focus:ring-gold",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 dark:focus:ring-1 dark:focus:ring-gold",
               isOpen
-                ? "border-gold bg-gold/15 text-gold shadow-glow-gold-xs"
-                : "border-primary/40 bg-background/50 hover:bg-white/5 text-neutral-200 hover:text-gold hover:border-gold/40",
+                ? "border-primary ring-2 ring-primary/15 bg-card text-primary dark:border-gold dark:bg-gold/15 dark:text-gold dark:ring-0 dark:shadow-glow-gold-xs"
+                : "border-neutral-600 bg-card hover:border-neutral-500 text-neutral-50 shadow-xs dark:border-primary/40 dark:bg-background/50 dark:hover:bg-white/5 dark:text-neutral-200 dark:hover:text-gold dark:hover:border-gold/40 dark:shadow-none",
               disabled && "opacity-50 cursor-not-allowed",
               className,
             )}
@@ -192,7 +192,7 @@ export function IconPickerPopover({
               size={13}
               className={cn(
                 "text-neutral-400 transition-transform duration-150 shrink-0",
-                isOpen && "rotate-180 text-gold",
+                isOpen && "rotate-180 text-primary dark:text-gold",
               )}
             />
           </button>
@@ -206,10 +206,10 @@ export function IconPickerPopover({
             aria-haspopup="dialog"
             className={cn(
               "w-full flex items-center justify-between gap-3 h-[42px] px-3.5 rounded-lg border transition-all cursor-pointer select-none",
-              "focus:outline-none focus:ring-1 focus:ring-gold",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 dark:focus:ring-1 dark:focus:ring-gold",
               isOpen
-                ? "border-gold bg-gold/15 text-gold shadow-glow-gold-xs"
-                : "border-primary/40 bg-background/50 hover:bg-white/5 text-neutral-200 hover:border-gold/40",
+                ? "border-primary ring-2 ring-primary/15 bg-card text-primary dark:border-gold dark:bg-gold/15 dark:text-gold dark:ring-0 dark:shadow-glow-gold-xs"
+                : "border-neutral-600 bg-card hover:border-neutral-500 text-neutral-50 shadow-xs dark:border-primary/40 dark:bg-background/50 dark:hover:bg-white/5 dark:text-neutral-200 dark:hover:border-gold/40 dark:shadow-none",
               disabled && "opacity-50 cursor-not-allowed",
               className,
             )}

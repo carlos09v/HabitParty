@@ -3,14 +3,14 @@
 import { BarChart2, Timer } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { MAX_FOCUS_ACTIVITIES_FREE } from "@/constants/focus";
 import { useCompactMode } from "@/hooks/useCompactMode";
+import { useFocusAnalytics } from "@/hooks/useFocusAnalytics";
 import { executeDeleteFocusRecord } from "@/hooks/useFocusMutations";
 import { useFocusTimerControls } from "@/hooks/useFocusTimer";
-import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import type {
   FocusActivity,
@@ -19,7 +19,6 @@ import type {
 } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn } from "@/utils";
-import { calculateFocusMetrics } from "@/utils/focusMetrics";
 import { FocusMain } from "./FocusMain";
 import { FocusSidebarRight } from "./sidebar-right/FocusSidebarRight";
 
@@ -65,7 +64,6 @@ export function FocusContainer({
   isCompact: propIsCompact,
 }: FocusContainerProps) {
   const t = useTranslations("focus.container");
-  const locale = useLocale() as AppLocale;
   const router = useRouter();
   const is_Premium = useUserStore((s) => s.is_Premium);
   const { isCompact: storeIsCompact } = useCompactMode();
@@ -79,9 +77,6 @@ export function FocusContainer({
 
   // Aba mobile ativa (< xl): "timer" para Timer & Sessão, "metrics" para Métricas & Histórico
   const [mobileTab, setMobileTab] = useState<"timer" | "metrics">("timer");
-
-  // Deslocamento da semana para o gráfico semanal (0 = Esta semana, -1 = semana passada...)
-  const [weekOffset, setWeekOffset] = useState(0);
 
   // Modal centralizado de registro manual compartilhado entre Main e Sidebar
   const [manualRecordModalOpen, setManualRecordModalOpen] = useState(false);
@@ -124,6 +119,24 @@ export function FocusContainer({
     onSessionSaved: () => {
       setSelectedActivityId(null);
     },
+  });
+
+  const {
+    weekOffset,
+    handlePrevWeek,
+    handleNextWeek,
+    handleResetWeek,
+    selectedActivity,
+    recentRecords,
+    metrics,
+    weeklyDays,
+    totalWeekMinutes,
+    weekLabel,
+    weekDateRange,
+  } = useFocusAnalytics({
+    initialActivities,
+    initialRecords,
+    selectedActivityId,
   });
 
   // Há tempo de foco real pendente de decisão apenas na fase WORK com segundos decorridos (> 0s)
@@ -319,7 +332,7 @@ export function FocusContainer({
   };
 
   const handleDeleteRecord = async (recordId: string) => {
-    await executeDeleteFocusRecord(recordId, () => {}, {
+    await executeDeleteFocusRecord(recordId, {
       success: t("deleteRecordSuccess"),
       error: t("deleteRecordError"),
     });
@@ -335,28 +348,6 @@ export function FocusContainer({
     setManualInitialItemId(params?.itemId);
     setManualRecordModalOpen(true);
   };
-
-  const selectedActivity = useMemo(() => {
-    if (!selectedActivityId) return null;
-    return initialActivities.find((a) => a.id === selectedActivityId) || null;
-  }, [initialActivities, selectedActivityId]);
-
-  const relevantRecords = useMemo(() => {
-    if (!selectedActivityId) return initialRecords;
-    return initialRecords.filter(
-      (r) => r.focusActivityId === selectedActivityId,
-    );
-  }, [initialRecords, selectedActivityId]);
-
-  const { metrics, weeklyDays, totalWeekMinutes, weekLabel, weekDateRange } =
-    useMemo(() => {
-      return calculateFocusMetrics(
-        relevantRecords,
-        weekOffset,
-        undefined,
-        locale,
-      );
-    }, [relevantRecords, weekOffset, locale]);
 
   return (
     <div className="flex flex-col xl:flex-row h-full w-full overflow-hidden bg-background">
@@ -414,7 +405,6 @@ export function FocusContainer({
           onStartFocusItem={handleStartFocusItem}
           onChangeMode={handleChangeMode}
           onOpenManualRecord={handleOpenManualRecordModal}
-          onRefreshData={() => {}}
           initialCreateActivity={initialCreateActivity}
           isCompact={isCompact}
         />
@@ -425,17 +415,16 @@ export function FocusContainer({
         metrics={metrics}
         weeklyDays={weeklyDays}
         totalWeekMinutes={totalWeekMinutes}
-        recentRecords={relevantRecords.slice(0, 10)}
+        recentRecords={recentRecords}
         weekOffset={weekOffset}
         weekLabel={weekLabel}
         weekDateRange={weekDateRange}
-        onPrevWeek={() => setWeekOffset((prev) => prev - 1)}
-        onNextWeek={() => setWeekOffset((prev) => Math.min(0, prev + 1))}
-        onResetWeek={() => setWeekOffset(0)}
+        onPrevWeek={handlePrevWeek}
+        onNextWeek={handleNextWeek}
+        onResetWeek={handleResetWeek}
         onAddRecord={() => handleOpenManualRecordModal()}
         onOptionsClick={() => router.push("/history?tab=FOCUS")}
         onDeleteRecord={handleDeleteRecord}
-        onRecordUpdated={() => {}}
         selectedActivityName={selectedActivity?.name}
         onClearSelectedActivity={() => handleSelectActivity(null)}
         isCompact={isCompact}
@@ -458,7 +447,6 @@ export function FocusContainer({
           records={initialRecords}
           initialActivityId={manualInitialActivityId}
           initialItemId={manualInitialItemId}
-          onSuccess={() => {}}
         />
       )}
 

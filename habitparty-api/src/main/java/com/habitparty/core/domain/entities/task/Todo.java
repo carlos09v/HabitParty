@@ -3,6 +3,7 @@ package com.habitparty.core.domain.entities.task;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,6 +16,7 @@ import com.habitparty.core.domain.enums.task.TodoReminderType;
 import com.habitparty.core.exceptions.DomainValidationException;
 
 public class Todo extends Task {
+  private LocalTime dueTime;
   private TodoReminderType reminderType;
   private LocalDateTime reminderAt;
   private LocalDateTime completedAt;
@@ -32,10 +34,13 @@ public class Todo extends Task {
 
       // --- Campos Específicos (Todo) ---
       TodoReminderType reminderType, LocalDateTime reminderAt, LocalDateTime completedAt,
-      boolean isPenaltyApplied, boolean sendEmailReminder, boolean emailReminderSent) {
+      boolean isPenaltyApplied, boolean sendEmailReminder, boolean emailReminderSent,
+      LocalTime dueTime) {
 
     super(id, boardColumnId, userId, name, description, orderIndex, priority,
-        tags, difficulty, status, taskType, isHardcoreModeEnabled, dueDate, createdAt, checklist);
+        tags, difficulty, status, taskType, isHardcoreModeEnabled,
+        dueDate != null ? dueDate : (dueTime != null ? LocalDate.now() : null),
+        createdAt, checklist);
 
     // --- VALIDAÇÕES DE DOMÍNIO ---
     if (reminderType == null) {
@@ -49,16 +54,33 @@ public class Todo extends Task {
     }
 
     // Regra Hardcore: To-Do no modo Hardcore exige prazo de entrega
-    if (isHardcoreModeEnabled && dueDate == null) {
+    if (isHardcoreModeEnabled && this.dueDate == null) {
       throw new DomainValidationException("Afazeres no modo Hardcore exigem uma data de vencimento.");
     }
    
+    this.dueTime = this.dueDate != null ? dueTime : null;
     this.reminderType = reminderType;
     this.reminderAt = reminderAt;
     this.completedAt = completedAt;
     this.isPenaltyApplied = isPenaltyApplied;
     this.sendEmailReminder = sendEmailReminder;
     this.emailReminderSent = emailReminderSent;
+  }
+
+  public Todo(
+      // --- Campos da Base (Task) ---
+      UUID id, UUID boardColumnId, UUID userId, String name,
+      String description, int orderIndex, TaskPriority priority,
+      List<String> tags, TaskDifficulty difficulty, TaskStatus status,
+      TaskType taskType, boolean isHardcoreModeEnabled, LocalDate dueDate,
+      LocalDateTime createdAt, List<ChecklistItem> checklist,
+
+      // --- Campos Específicos (Todo) ---
+      TodoReminderType reminderType, LocalDateTime reminderAt, LocalDateTime completedAt,
+      boolean isPenaltyApplied, boolean sendEmailReminder, boolean emailReminderSent) {
+    this(id, boardColumnId, userId, name, description, orderIndex, priority,
+        tags, difficulty, status, taskType, isHardcoreModeEnabled, dueDate, createdAt, checklist,
+        reminderType, reminderAt, completedAt, isPenaltyApplied, sendEmailReminder, emailReminderSent, null);
   }
 
   // Construtores de conveniência (compatibilidade)
@@ -110,16 +132,22 @@ public class Todo extends Task {
     };
   }
 
-  public void updateTodoDetails(LocalDate newDueDate, TodoReminderType newReminderType, LocalDateTime newReminderAt, Boolean sendEmailReminder) {
-    if (newDueDate != null && !newDueDate.equals(this.dueDate)) {
+  public void updateTodoDetails(LocalDate newDueDate, LocalTime newDueTime, TodoReminderType newReminderType, LocalDateTime newReminderAt, Boolean sendEmailReminder) {
+    LocalDate effectiveDueDate = newDueDate != null ? newDueDate : (newDueTime != null ? LocalDate.now() : null);
+
+    if (effectiveDueDate != null && !effectiveDueDate.equals(this.dueDate)) {
       // Trava anti-burla: se o afazer é hardcore e já está vencido, a data não pode ser alterada
       if (this.isHardcoreModeEnabled() && this.isOverdue()) {
         throw new DomainValidationException("Não é permitido alterar a data de um afazer hardcore com prazo vencido.");
       }
-      this.dueDate = newDueDate; // Acessa o atributo protected herdado de Task
-    } else if (newDueDate == null && this.isHardcoreModeEnabled()) {
+      this.dueDate = effectiveDueDate; // Acessa o atributo protected herdado de Task
+    } else if (effectiveDueDate == null && this.isHardcoreModeEnabled()) {
       throw new DomainValidationException("Afazeres no modo Hardcore exigem uma data de vencimento.");
+    } else if (effectiveDueDate == null) {
+      this.dueDate = null;
     }
+
+    this.dueTime = (this.dueDate != null) ? newDueTime : null;
 
     if (newReminderType != null) {
       this.reminderType = newReminderType;
@@ -139,8 +167,12 @@ public class Todo extends Task {
     }
   }
 
+  public void updateTodoDetails(LocalDate newDueDate, TodoReminderType newReminderType, LocalDateTime newReminderAt, Boolean sendEmailReminder) {
+    updateTodoDetails(newDueDate, this.dueTime, newReminderType, newReminderAt, sendEmailReminder);
+  }
+
   public void updateTodoDetails(LocalDate newDueDate, TodoReminderType newReminderType, LocalDateTime newReminderAt) {
-    updateTodoDetails(newDueDate, newReminderType, newReminderAt, null);
+    updateTodoDetails(newDueDate, this.dueTime, newReminderType, newReminderAt, null);
   }
 
   public TaskReward calculateBaseReward() {
@@ -228,6 +260,10 @@ public class Todo extends Task {
   }
 
   // Apenas Getters (Sem Setters!)
+  public Optional<LocalTime> getDueTime() {
+    return Optional.ofNullable(dueTime);
+  }
+
   public TodoReminderType getReminderType() {
     return reminderType;
   }

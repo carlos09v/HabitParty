@@ -227,11 +227,14 @@ export function getTaskDueDateInfo(
     activeFilter?: string;
     selectedDate?: string | null;
     locale?: AppLocale;
+    dueTime?: string | null;
   },
 ): TaskDueDateInfo {
   const activeFilter = options?.activeFilter;
-  const selectedDate = options?.selectedDate;
   const locale = options?.locale ?? "pt-BR";
+  const formattedDueTime = options?.dueTime
+    ? options.dueTime.slice(0, 5)
+    : null;
   const isEn = locale === "en";
   const todayLabel = isEn ? "Today" : "Hoje";
   const tomorrowLabel = isEn ? "Tomorrow" : "Amanhã";
@@ -240,7 +243,7 @@ export function getTaskDueDateInfo(
   if (!dueDate) {
     if (activeFilter === "today") {
       return {
-        label: todayLabel,
+        label: formattedDueTime || todayLabel,
         isToday: true,
         isTomorrow: false,
         isOverdue: false,
@@ -272,34 +275,29 @@ export function getTaskDueDateInfo(
     }
 
     const targetDate = new Date(y, m - 1, d);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     const diffMs = targetDate.getTime() - today.getTime();
     const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+    const dueMinutes = parseTimeToMinutes(formattedDueTime);
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const isTodayTimeOverdue =
+      diffDays === 0 && dueMinutes !== null && dueMinutes < currentMinutes;
 
     const monthName = getShortMonths(locale)[targetDate.getMonth()];
     const dayStr = String(d).padStart(2, "0");
     const shortDayMonth = isEn
       ? `${monthName} ${dayStr}`
       : `${dayStr} ${monthName}`;
+    const appendTime = (baseLabel: string) =>
+      formattedDueTime ? `${baseLabel}, ${formattedDueTime}` : baseLabel;
 
-    // Se estiver no filtro de hoje ou se a data selecionada coincidir com hoje
-    if (activeFilter === "today" || (selectedDate && diffDays === 0)) {
-      return {
-        label: todayLabel,
-        isToday: true,
-        isTomorrow: false,
-        isOverdue: false,
-        hasDueDate: true,
-        diffDays: 0,
-      };
-    }
-
-    // Atrasada
+    // Atrasada (data anterior a hoje)
     if (diffDays < 0) {
       return {
-        label: shortDayMonth,
+        label: appendTime(shortDayMonth),
         isToday: false,
         isTomorrow: false,
         isOverdue: true,
@@ -308,13 +306,13 @@ export function getTaskDueDateInfo(
       };
     }
 
-    // Hoje
+    // Hoje (ou filtro de hoje para uma tarefa de hoje) -> exibe a hora se houver dueTime, senão "Hoje"
     if (diffDays === 0) {
       return {
-        label: todayLabel,
+        label: formattedDueTime || todayLabel,
         isToday: true,
         isTomorrow: false,
-        isOverdue: false,
+        isOverdue: isTodayTimeOverdue,
         hasDueDate: true,
         diffDays: 0,
       };
@@ -323,7 +321,7 @@ export function getTaskDueDateInfo(
     // Amanhã
     if (diffDays === 1) {
       return {
-        label: tomorrowLabel,
+        label: appendTime(tomorrowLabel),
         isToday: false,
         isTomorrow: true,
         isOverdue: false,
@@ -336,7 +334,7 @@ export function getTaskDueDateInfo(
     if (diffDays <= 7) {
       const weekDay = getCapitalizedWeekDays(locale)[targetDate.getDay()];
       return {
-        label: weekDay,
+        label: appendTime(weekDay),
         isToday: false,
         isTomorrow: false,
         isOverdue: false,
@@ -345,9 +343,9 @@ export function getTaskDueDateInfo(
       };
     }
 
-    // Além dos 7 dias: Dia + Mês abreviado (ex: "17 Nov" / "Nov 17")
+    // Além dos 7 dias: Dia + Mês abreviado (ex: "17 Nov, 14:30" / "Nov 17, 14:30")
     return {
-      label: shortDayMonth,
+      label: appendTime(shortDayMonth),
       isToday: false,
       isTomorrow: false,
       isOverdue: false,
@@ -385,6 +383,7 @@ export interface PopoverDueDateInfo {
 export function getPopoverDueDateInfo(
   dueDate?: string | null,
   locale: AppLocale = "pt-BR",
+  dueTime?: string | null,
 ): PopoverDueDateInfo {
   const isEn = locale === "en";
   if (!dueDate) {
@@ -408,11 +407,16 @@ export function getPopoverDueDateInfo(
     }
 
     const targetDate = new Date(y, m - 1, d);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     const diffMs = targetDate.getTime() - today.getTime();
     const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+    const dueMinutes = parseTimeToMinutes(dueTime ? dueTime.slice(0, 5) : null);
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const isTodayTimeOverdue =
+      diffDays === 0 && dueMinutes !== null && dueMinutes < currentMinutes;
 
     const monthName = getShortMonths(locale)[targetDate.getMonth()];
     const dayStr = String(d).padStart(2, "0");
@@ -448,7 +452,7 @@ export function getPopoverDueDateInfo(
     if (diffDays === 0) {
       return {
         label: isEn ? `Today, ${shortDayMonth}` : `Hoje, ${shortDayMonth}`,
-        isOverdue: false,
+        isOverdue: isTodayTimeOverdue,
         isToday: true,
         hasDueDate: true,
       };

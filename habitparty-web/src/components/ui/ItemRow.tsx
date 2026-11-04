@@ -6,19 +6,10 @@ import { Clock, GripVertical } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { memo, type default as React } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
-import {
-  getRewardIcon,
-  isMysteryBoxReward,
-  PACKAGE_LEVEL_COLOR,
-  PACKAGE_LEVEL_ICON_THEME,
-  REWARD_TYPE_META,
-  toCategoryMessageKey,
-  toPackageMessageKey,
-  toRewardTypeMessageKey,
-} from "@/constants/reward";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
-import type { PackageLevel, RewardType } from "@/types/reward";
 import { cn, formatCoins } from "@/utils";
+import { resolveCatalogItemVisuals } from "@/utils/catalogItemVisuals";
 import {
   formatBackpackItemRemainingTime,
   formatFocusMinutes,
@@ -48,17 +39,6 @@ export interface ItemRowProps {
   inUse?: boolean;
   isActiveFocusSession?: boolean;
 }
-
-const RARITY_LEFT_ACCENT: Record<string, string> = {
-  Lendário: "border-l-4 border-l-gold",
-  LEGENDARY: "border-l-4 border-l-gold",
-  Épico: "border-l-4 border-l-magenta",
-  EPIC: "border-l-4 border-l-magenta",
-  Premium: "border-l-4 border-l-info",
-  PREMIUM: "border-l-4 border-l-info",
-  Básico: "border-l-4 border-l-success-500",
-  BASIC: "border-l-4 border-l-success-500",
-};
 
 /**
  * Linha de lista reordenável e memoizada para Vitrine (Rewards) e Mochila (Inventory).
@@ -90,16 +70,27 @@ export const ItemRow = memo(function ItemRow({
 }: ItemRowProps) {
   const t = useTranslations("ui.itemCatalog");
   const locale = useLocale() as AppLocale;
-  const typeKey = toRewardTypeMessageKey(type);
-  const typeMeta = REWARD_TYPE_META[typeKey as RewardType];
-  const RewardIcon = getRewardIcon(iconName, type);
-  const isMystery = isMysteryBoxReward(type, iconName);
-  const packageIconTheme = packageLevel
-    ? PACKAGE_LEVEL_ICON_THEME[packageLevel as PackageLevel]
-    : undefined;
-  const leftAccent =
-    (packageLevel && RARITY_LEFT_ACCENT[packageLevel]) ||
-    "border-l-4 border-l-transparent";
+  const { isGamified } = useExperienceMode();
+  const {
+    typeKey,
+    typeMeta,
+    RewardIcon,
+    isMystery,
+    hasValidPackage,
+    hasValidCategory,
+    packageMessageKey,
+    categoryMessageKey,
+    packageBadgeColor,
+    packageIconTheme,
+    leftAccentClass,
+    isFocusNavigate,
+  } = resolveCatalogItemVisuals({
+    type,
+    iconName,
+    packageLevel,
+    category,
+    isActiveFocusSession,
+  });
 
   const {
     attributes,
@@ -118,21 +109,7 @@ export const ItemRow = memo(function ItemRow({
     transition: isDragging ? undefined : transition,
   };
 
-  const isFocusNavigate =
-    Boolean(isActiveFocusSession) ||
-    (inUse &&
-      (actionLabel === "Abrir no Foco" ||
-        actionLabel === "Ir para o Foco" ||
-        actionLabel === "Open in Focus" ||
-        actionLabel === "Go to Focus"));
   const isPrimaryDisabled = disabled || (inUse && !isFocusNavigate);
-
-  const hasValidPackage = Boolean(
-    packageLevel && packageLevel !== "Nenhum" && packageLevel !== "NONE",
-  );
-  const hasValidCategory = Boolean(
-    category && category !== "Nenhum" && category !== "NONE",
-  );
 
   return (
     <li
@@ -142,15 +119,17 @@ export const ItemRow = memo(function ItemRow({
       {...listeners}
       onContextMenu={onContextMenu}
       className={cn(
-        "relative rounded-xl bg-gradient-to-r from-surface via-surface to-popover/95 border transition-[border-color,background-color,box-shadow,transform] duration-150 select-none group overflow-hidden",
+        "relative rounded-xl bg-card dark:bg-linear-to-r dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,box-shadow,transform] duration-150 select-none group overflow-hidden shadow-2xs dark:shadow-none",
         inUse
-          ? "border-amber-500/40 bg-amber-500/5"
-          : "border-white/10 hover:border-gold/50 hover:shadow-card-deep hover:-translate-y-0.5",
-        leftAccent,
+          ? "border-amber-500/45 bg-card dark:border-amber-500/40 dark:bg-amber-500/5 border-l-4 border-l-amber-500"
+          : cn(
+              "border-neutral-700 dark:border-white/10 hover:border-gold/50 hover:shadow-card-deep hover:-translate-y-0.5",
+              leftAccentClass,
+            ),
         "flex flex-col gap-2.5 p-3 sm:p-3.5",
         "md:grid md:grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)_minmax(0,1.8fr)_minmax(0,1.2fr)_auto] md:items-center",
         isCompact ? "md:gap-3 md:px-3 md:py-2" : "md:gap-4 md:px-4 md:py-2.5",
-        isDragging && "!transition-none opacity-50 ring-2 ring-gold z-50",
+        isDragging && "transition-none! opacity-50 ring-2 ring-gold z-50",
       )}
     >
       {/* Coluna 1: Grip + Ícone + [Qtd] + Título/Descrição (+ Preço rápido no mobile) */}
@@ -168,7 +147,9 @@ export const ItemRow = memo(function ItemRow({
             className={cn(
               "rounded-xl border flex items-center justify-center transition-all duration-200 shrink-0 group-hover:scale-105",
               packageIconTheme ||
-                "bg-white/10 border-white/15 text-primary-light group-hover:text-gold group-hover:border-gold/40",
+                (typeKey === "TimeBased"
+                  ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 group-hover:border-emerald-500/40 dark:bg-white/10 dark:border-white/15 dark:text-primary-light dark:group-hover:text-gold dark:group-hover:border-gold/40"
+                  : "bg-primary/10 text-primary border-primary/20 group-hover:border-primary/40 dark:bg-white/10 dark:border-white/15 dark:text-primary-light dark:group-hover:text-gold dark:group-hover:border-gold/40"),
               isCompact ? "w-8.5 h-8.5" : "w-9 h-9 md:w-10 md:h-10",
             )}
           >
@@ -216,9 +197,16 @@ export const ItemRow = memo(function ItemRow({
 
         {/* Preço visível no topo direito apenas no Mobile (< md) */}
         {typeof price === "number" && (
-          <div className="flex md:hidden items-center gap-1.5 shrink-0 bg-gold/10 border border-gold/25 px-2 py-0.5 rounded-lg">
+          <div
+            className={cn(
+              "flex md:hidden items-center gap-1.5 shrink-0 px-2 py-0.5 rounded-lg border",
+              isGamified
+                ? "bg-amber-500/10 border-amber-500/25 text-neutral-50 dark:bg-gold/10 dark:border-gold/25 dark:text-neutral-100"
+                : "bg-sky-500/10 border-sky-500/25 text-sky-900 dark:bg-sky-500/15 dark:border-sky-400/30 dark:text-sky-100",
+            )}
+          >
             <CoinIcon size={14} withGlow />
-            <span className="font-bold text-neutral-100 text-xs">
+            <span className="font-bold text-xs">
               {formatCoins(price, { locale })}
             </span>
           </div>
@@ -265,11 +253,10 @@ export const ItemRow = memo(function ItemRow({
               className={cn(
                 "text-label-m font-semibold border truncate rounded",
                 isCompact ? "px-1.5 py-0.5" : "px-2 py-0.5",
-                PACKAGE_LEVEL_COLOR[packageLevel as PackageLevel] ||
-                  "text-neutral-300 bg-white/10 border-white/15",
+                packageBadgeColor,
               )}
             >
-              {t(`packages.${toPackageMessageKey(packageLevel)}`)}
+              {t(`packages.${packageMessageKey}`)}
             </span>
           )}
           {hasValidCategory && (
@@ -279,7 +266,7 @@ export const ItemRow = memo(function ItemRow({
                 isCompact ? "px-1.5 py-0.5" : "px-2 py-0.5",
               )}
             >
-              {t(`categories.${toCategoryMessageKey(category)}`)}
+              {t(`categories.${categoryMessageKey}`)}
             </span>
           )}
         </div>
@@ -344,15 +331,19 @@ export const ItemRow = memo(function ItemRow({
       </div>
 
       {/* Coluna 5: Preço (Desktop) & Botões de Ação */}
-      <div className="flex items-center justify-end gap-2 md:gap-3.5 pt-1 md:pt-0 border-t border-white/5 md:border-t-0 shrink-0">
+      <div className="flex items-center justify-end gap-2 md:gap-3.5 pt-1 md:pt-0 border-t border-neutral-700 dark:border-white/5 md:border-t-0 shrink-0">
         {typeof price === "number" && (
-          <div className="hidden md:flex items-center gap-1.5">
-            <CoinIcon size={isCompact ? 15 : 17} withGlow />
+          <div
+            className={cn(
+              "hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border",
+              isGamified
+                ? "bg-amber-500/10 border-amber-500/25 text-neutral-50 dark:bg-gold/10 dark:border-gold/25 dark:text-neutral-100"
+                : "bg-sky-500/10 border-sky-500/25 text-sky-900 dark:bg-sky-500/15 dark:border-sky-400/30 dark:text-sky-100",
+            )}
+          >
+            <CoinIcon size={isCompact ? 15 : 16} withGlow />
             <span
-              className={cn(
-                "font-bold text-neutral-100",
-                isCompact ? "text-xs" : "text-sm",
-              )}
+              className={cn("font-bold", isCompact ? "text-xs" : "text-xs")}
             >
               {formatCoins(price, { locale })}
             </span>
@@ -377,7 +368,7 @@ export const ItemRow = memo(function ItemRow({
               "rounded-md font-semibold transition-all shadow-xs border text-neutral-200",
               disabled || inUse
                 ? "bg-white/5 border-white/10 text-neutral-400 cursor-not-allowed opacity-60"
-                : "border-primary/40 bg-surface/80 hover:bg-gold/15 hover:border-gold/60 hover:text-gold active:scale-95 cursor-pointer",
+                : "border-neutral-600 dark:border-primary/40 bg-surface/80 hover:bg-gold/15 hover:border-gold/60 hover:text-gold active:scale-95 cursor-pointer",
               isCompact ? "px-2 py-0.5 text-label-g" : "px-2.5 py-1 text-xs",
             )}
           >
@@ -403,12 +394,10 @@ export const ItemRow = memo(function ItemRow({
                     })
           }
           className={cn(
-            "rounded-md font-bold transition-all shadow-xs",
-            isFocusNavigate
-              ? "bg-gold hover:bg-gold-hover text-on-gold border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95"
-              : disabled || inUse
-                ? "bg-white/10 text-neutral-400 border border-white/10 cursor-not-allowed opacity-60"
-                : "bg-warning-500 hover:bg-warning-400 focus:outline-none focus:ring-2 focus:ring-warning-300 focus:ring-offset-1 focus:ring-offset-surface active:scale-95 text-on-gold cursor-pointer",
+            "rounded-md font-semibold dark:font-bold transition-all shadow-xs",
+            isFocusNavigate || (!disabled && !inUse)
+              ? "bg-gold hover:bg-gold-hover active:bg-gold-pressed text-on-gold border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1 focus-visible:ring-offset-card"
+              : "bg-neutral-700/70 dark:bg-white/10 text-neutral-400 border border-neutral-600 dark:border-white/10 cursor-not-allowed opacity-75 dark:opacity-60",
             isCompact
               ? "px-2.5 py-1 text-label-g"
               : "px-3 py-1.5 text-xs sm:py-1",

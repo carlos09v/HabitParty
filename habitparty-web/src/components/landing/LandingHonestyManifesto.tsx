@@ -20,7 +20,7 @@ export function LandingHonestyManifesto() {
           {/* Frase Central em Destaque */}
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-neutral-50 tracking-tight leading-snug max-w-3xl mx-auto mb-6">
             {t("quoteStart")}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-gold-ink via-amber-700 to-gold-ink dark:from-gold dark:via-yellow-200 dark:to-gold">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-700 dark:from-gold dark:via-yellow-200 dark:to-gold">
               {t("quoteHighlight")}
             </span>
             {t("quoteEnd")}

@@ -30,8 +30,8 @@ export function LandingNavbar() {
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         isScrolled
-          ? "bg-background/85 backdrop-blur-md border-b border-neutral-700/80 dark:border-white/10 shadow-xs dark:shadow-lg dark:shadow-black/20 py-3"
-          : "bg-transparent py-5",
+          ? "bg-card/85 dark:bg-background/85 backdrop-blur-md border-b border-neutral-700/80 dark:border-white/10 shadow-xs dark:shadow-lg dark:shadow-black/20 py-3"
+          : "bg-card/80 dark:bg-transparent backdrop-blur-md dark:backdrop-blur-none border-b border-neutral-700/60 dark:border-transparent py-4 md:py-5",
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
@@ -76,9 +76,9 @@ export function LandingNavbar() {
             href="/signUp"
             className="relative group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-light text-white font-semibold text-sm shadow-sm dark:shadow-[0_0_20px_rgba(124,58,237,0.4)] hover:shadow-glow-gold hover:border-gold/50 transition-all duration-300 hover:scale-[1.02] border border-primary-light/40"
           >
-            <Sparkles className="w-4 h-4 text-yellow-200 dark:text-gold animate-pulse" />
+            <Sparkles className="w-4 h-4 text-white dark:text-gold animate-pulse" />
             <span>{t("startFree")}</span>
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            <ArrowRight className="w-4 h-4 text-white transition-transform group-hover:translate-x-1" />
           </Link>
         </div>
 

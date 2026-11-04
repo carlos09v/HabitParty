@@ -2,8 +2,8 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { CoinIcon } from "@/components/ui/CoinIcon";
-import type { MysteryBoxTier } from "@/constants/reward";
 import type { AppLocale } from "@/i18n/config";
+import type { MysteryBoxTier } from "@/types/reward";
 import { cn, formatCoins } from "@/utils";
 
 interface MysteryBoxTierPopoverProps {

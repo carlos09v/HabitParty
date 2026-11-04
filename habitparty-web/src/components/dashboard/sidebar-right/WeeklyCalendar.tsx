@@ -7,10 +7,13 @@ import {
   Flame,
   RotateCcw,
 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { useCompactMode } from "@/hooks/useCompactMode";
+import {
+  syncDashboardFilterUrl,
+  useDashboardFilterStore,
+} from "@/hooks/useDashboardTaskFilters";
 import type { AppLocale } from "@/i18n/config";
 import type { WeeklyCalendarProps } from "@/types/dashboard";
 import { cn } from "@/utils";
@@ -34,12 +37,16 @@ export function WeeklyCalendar({
 }: WeeklyCalendarProps) {
   const t = useTranslations("dashboard.sidebarRight.weeklyCalendar");
   const locale = useLocale() as AppLocale;
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const { isCompact: hookIsCompact } = useCompactMode();
   const isCompact = propIsCompact ?? hookIsCompact;
 
-  const urlDate = searchParams.get("date");
+  const activeFilter = useDashboardFilterStore((s) => s.activeFilter);
+  const urlDate = useDashboardFilterStore((s) => s.selectedDate);
+  const setStoreFilter = useDashboardFilterStore((s) => s.setFilter);
+  const setStoreSelectedDate = useDashboardFilterStore(
+    (s) => s.setSelectedDate,
+  );
+
   const [weekOffset, setWeekOffset] = useState(0);
 
   const todayIso = useMemo(() => getTodayDateString(), []);
@@ -58,25 +65,28 @@ export function WeeklyCalendar({
   );
 
   const handleDayClick = (isoString: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (params.get("date") === isoString) {
-      params.delete("date");
-    } else {
-      params.set("date", isoString);
+    // Se clicar no dia de hoje, mantém o filtro padrão "Hoje" sem exibir pílula avulsa de data
+    if (isoString === todayIso) {
+      setStoreFilter("today");
+      syncDashboardFilterUrl("today", null);
+      onSelectDay?.(isoString);
+      return;
     }
-    params.set("page", "1");
-    router.push(`?${params.toString()}`, { scroll: false });
+
+    if (urlDate === isoString) {
+      setStoreSelectedDate(null);
+      syncDashboardFilterUrl(activeFilter, null);
+    } else {
+      setStoreSelectedDate(isoString);
+      syncDashboardFilterUrl(activeFilter, isoString);
+    }
     onSelectDay?.(isoString);
   };
 
   const handleResetToToday = () => {
     setWeekOffset(0);
-    if (urlDate) {
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("date");
-      params.set("page", "1");
-      router.push(`?${params.toString()}`, { scroll: false });
-    }
+    setStoreFilter("today");
+    syncDashboardFilterUrl("today", null);
   };
 
   const showResetToday = weekOffset !== 0 || Boolean(urlDate);
@@ -89,8 +99,11 @@ export function WeeklyCalendar({
           <h4 className="text-subtitle-s font-bold text-neutral-100 truncate">
             {t("title")}
           </h4>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-tiny font-semibold text-neutral-300 shrink-0">
-            <CalendarIcon size={11} className="text-gold shrink-0" />
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-white/5 border border-neutral-700 dark:border-white/10 shadow-2xs dark:shadow-none text-tiny font-semibold text-neutral-300 shrink-0">
+            <CalendarIcon
+              size={11}
+              className="text-primary dark:text-gold shrink-0"
+            />
             <span>{weekRangeLabel}</span>
           </span>
         </div>

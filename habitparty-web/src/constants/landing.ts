@@ -72,21 +72,36 @@ export const LANDING_PRODUCTIVITY_STEP_CONFIGS: readonly LandingProductivityStep
       number: "01",
       icon: CheckSquare,
       color: "from-primary to-primary-light",
-      borderColor: "border-primary-light/30",
+      numberColor:
+        "text-primary/25 dark:text-white/10 group-hover:text-primary/45 dark:group-hover:text-white/20",
+      iconBoxClass:
+        "bg-purple-500/10 border border-purple-500/25 dark:border-transparent dark:bg-gradient-to-br dark:from-primary dark:to-primary-light dark:p-0.5",
+      iconColor: "text-primary dark:text-neutral-50",
+      borderColor: "border-purple-500/25 dark:border-primary-light/30",
     },
     {
       id: "step2",
       number: "02",
       icon: Timer,
       color: "from-blue to-info",
-      borderColor: "border-info/30",
+      numberColor:
+        "text-sky-600/25 dark:text-white/10 group-hover:text-sky-600/45 dark:group-hover:text-white/20",
+      iconBoxClass:
+        "bg-sky-500/10 border border-sky-500/25 dark:border-transparent dark:bg-gradient-to-br dark:from-blue dark:to-info dark:p-0.5",
+      iconColor: "text-sky-700 dark:text-neutral-50",
+      borderColor: "border-sky-500/25 dark:border-info/30",
     },
     {
       id: "step3",
       number: "03",
       icon: Gift,
       color: "from-gold via-warning-500 to-gold",
-      borderColor: "border-gold/40",
+      numberColor:
+        "text-amber-600/25 dark:text-white/10 group-hover:text-amber-600/45 dark:group-hover:text-white/20",
+      iconBoxClass:
+        "bg-amber-500/10 border border-amber-500/30 dark:border-transparent dark:bg-gradient-to-br dark:from-gold dark:via-warning-500 dark:to-gold dark:p-0.5",
+      iconColor: "text-amber-700 dark:text-neutral-50",
+      borderColor: "border-amber-500/35 dark:border-gold/40",
     },
   ] as const;
 
@@ -95,32 +110,44 @@ export const LANDING_FEATURE_CONFIGS: readonly LandingFeatureConfig[] = [
     id: "experienceMode",
     icon: SlidersHorizontal,
     badgeColor: "bg-gold/15 text-gold border-gold/30",
+    iconBoxColor:
+      "bg-amber-500/10 text-amber-700 border-amber-500/20 dark:bg-card dark:text-gold dark:border-white/10",
   },
   {
     id: "rewardShop",
     icon: ShoppingBag,
     badgeColor:
       "bg-primary-light/15 text-primary-light border-primary-light/30",
+    iconBoxColor:
+      "bg-purple-500/10 text-purple-700 border-purple-500/20 dark:bg-card dark:text-primary-light dark:border-white/10",
   },
   {
     id: "hardcoreMode",
     icon: Flame,
     badgeColor: "bg-danger-500/15 text-danger-500 border-danger-500/30",
+    iconBoxColor:
+      "bg-rose-500/10 text-rose-700 border-rose-500/20 dark:bg-card dark:text-danger-500 dark:border-white/10",
   },
   {
     id: "workspaces",
     icon: Layers,
     badgeColor: "bg-info/15 text-info border-info/30",
+    iconBoxColor:
+      "bg-sky-500/10 text-sky-700 border-sky-500/20 dark:bg-card dark:text-info dark:border-white/10",
   },
   {
     id: "analytics",
     icon: LineChart,
     badgeColor: "bg-magenta/15 text-magenta border-magenta/30",
+    iconBoxColor:
+      "bg-fuchsia-500/10 text-fuchsia-700 border-fuchsia-500/20 dark:bg-card dark:text-magenta dark:border-white/10",
   },
   {
     id: "soundEffects",
     icon: Swords,
     badgeColor: "bg-gold/15 text-gold border-gold/30",
+    iconBoxColor:
+      "bg-amber-500/10 text-amber-700 border-amber-500/20 dark:bg-card dark:text-gold dark:border-white/10",
   },
 ] as const;
 
@@ -132,6 +159,9 @@ export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] = [
     statusBadgeColor:
       "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
     icon: Languages,
+    iconBoxColor:
+      "bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]",
+    checkColor: "text-emerald-600 dark:text-emerald-400",
     accentColor: "from-emerald-400 via-teal-400 to-emerald-500",
     borderGlowColor: "hover:border-emerald-500/50",
     hasExtras: true,
@@ -142,6 +172,9 @@ export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] = [
     status: "next",
     statusBadgeColor: "bg-gold/15 text-gold border-gold/30",
     icon: Trophy,
+    iconBoxColor:
+      "bg-amber-500/10 border-amber-500/25 text-amber-700 dark:bg-card dark:border-white/15 dark:text-gold",
+    checkColor: "text-amber-600 dark:text-gold",
     accentColor: "from-gold to-warning-500",
     borderGlowColor: "hover:border-gold/40",
   },
@@ -151,6 +184,9 @@ export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] = [
     status: "planned",
     statusBadgeColor: "bg-purple-500/15 text-purple-300 border-purple-500/30",
     icon: Award,
+    iconBoxColor:
+      "bg-indigo-500/10 border-indigo-500/25 text-indigo-700 dark:bg-card dark:border-white/15 dark:text-purple-300",
+    checkColor: "text-indigo-600 dark:text-purple-300",
     accentColor: "from-purple-500 to-indigo-500",
     borderGlowColor: "hover:border-purple-500/40",
   },
@@ -160,6 +196,9 @@ export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] = [
     status: "planned",
     statusBadgeColor: "bg-magenta/15 text-magenta border-magenta/30",
     icon: Users2,
+    iconBoxColor:
+      "bg-fuchsia-500/10 border-fuchsia-500/25 text-fuchsia-700 dark:bg-card dark:border-white/15 dark:text-magenta",
+    checkColor: "text-fuchsia-600 dark:text-magenta",
     accentColor: "from-magenta to-primary-light",
     borderGlowColor: "hover:border-magenta/40",
   },
@@ -169,6 +208,9 @@ export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] = [
     status: "epic",
     statusBadgeColor: "bg-danger-500/15 text-danger-500 border-danger-500/30",
     icon: Swords,
+    iconBoxColor:
+      "bg-rose-500/10 border-rose-500/25 text-rose-700 dark:bg-card dark:border-white/15 dark:text-danger-500",
+    checkColor: "text-rose-600 dark:text-danger-500",
     accentColor: "from-danger-500 to-warning-500",
     borderGlowColor: "hover:border-danger-500/40",
   },

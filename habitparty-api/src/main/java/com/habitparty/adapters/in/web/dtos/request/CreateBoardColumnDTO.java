@@ -14,6 +14,11 @@ public record CreateBoardColumnDTO(
   @Size(max = 30, message = "O nome deve ter até 30 caracteres")
   String name,
 
-  String icon
+  String icon,
+
+  Integer orderIndex
 ) {
+  public CreateBoardColumnDTO(UUID workspaceId, String name, String icon) {
+    this(workspaceId, name, icon, null);
+  }
 }

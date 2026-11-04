@@ -51,6 +51,7 @@ public class ListAdminUsersUseCase {
     UserRole roleFilter = null;
     Boolean isPremiumFilter = null;
     Boolean isFounderFilter = null;
+    Boolean emailVerifiedFilter = null;
 
     if ("ADMIN".equalsIgnoreCase(filter)) {
       roleFilter = UserRole.ADMIN;
@@ -60,9 +61,20 @@ public class ListAdminUsersUseCase {
       isFounderFilter = true;
     } else if ("FREE".equalsIgnoreCase(filter)) {
       isPremiumFilter = false;
+    } else if ("VERIFIED".equalsIgnoreCase(filter)) {
+      emailVerifiedFilter = true;
+    } else if ("UNVERIFIED".equalsIgnoreCase(filter)) {
+      emailVerifiedFilter = false;
     }
 
-    Page<User> usersPage = userRepository.searchUsers(cleanSearch, roleFilter, isPremiumFilter, isFounderFilter, pageable);
+    Page<User> usersPage = userRepository.searchUsers(
+        cleanSearch,
+        roleFilter,
+        isPremiumFilter,
+        isFounderFilter,
+        emailVerifiedFilter,
+        pageable
+    );
     if (usersPage.isEmpty()) {
       return usersPage.map(u -> null);
     }
@@ -95,6 +107,8 @@ public class ListAdminUsersUseCase {
           u.getRole(),
           u.isPremium(),
           u.isFounder(),
+          u.isEmailVerified(),
+          u.getEmailVerifiedAt(),
           u.getSubscriptionStatus(),
           u.getCreatedAt(),
           emailsSentThisMonth,

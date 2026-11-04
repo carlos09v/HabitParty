@@ -42,18 +42,39 @@ export function TaskRewardBadges({
   const hasRewards =
     effectiveShowRewards &&
     (task.rewardXp !== undefined || task.rewardGold !== undefined);
-  const showDifficultyIndicator = !isHabit;
+  const showDifficultyIndicator = true;
 
   if (!hasStreak && !hasRewards && !showDifficultyIndicator) {
     return null;
   }
 
-  const normalizedDiff = normalizeTaskDifficulty(task.difficulty);
+  const rawImportance = (
+    task.importanceType ||
+    task.importance ||
+    "NORMAL"
+  ).toUpperCase();
+  const normalizedImportance: "LOW" | "NORMAL" | "HIGH" =
+    rawImportance === "LOW" || rawImportance === "HIGH"
+      ? rawImportance
+      : "NORMAL";
+
+  const normalizedDiff = isHabit
+    ? normalizedImportance === "LOW"
+      ? "TRIVIAL"
+      : normalizedImportance === "HIGH"
+        ? "HARD"
+        : "EASY"
+    : normalizeTaskDifficulty(task.difficulty);
   const diffMeta =
     TASK_DIFFICULTY_META[normalizedDiff] || TASK_DIFFICULTY_META.MEDIUM;
   const DifficultySwordIcon =
     normalizedDiff === "MEDIUM" || normalizedDiff === "HARD" ? Swords : Sword;
-  const diffLabel = t(`difficulties.${normalizedDiff}`);
+  const diffLabel = isHabit
+    ? t(`importances.${normalizedImportance}`)
+    : t(`difficulties.${normalizedDiff}`);
+  const gamifiedIndicatorTitle = isHabit
+    ? t("badges.importanceTitle", { label: diffLabel })
+    : t("badges.difficultyTitle", { label: diffLabel });
 
   return (
     <div
@@ -63,7 +84,7 @@ export function TaskRewardBadges({
         className,
       )}
     >
-      {/* Indicador de Dificuldade: Espada no modo Gamificado ou Ponto Luminoso no modo Produtividade */}
+      {/* Indicador de Dificuldade/Importância: Espada no modo Gamificado ou Ponto Luminoso no modo Produtividade */}
       {showDifficultyIndicator &&
         (isGamified ? (
           <span
@@ -71,7 +92,7 @@ export function TaskRewardBadges({
               "flex items-center gap-0.5 font-medium",
               DIFFICULTY_SWORD_COLORS[normalizedDiff] || diffMeta.color,
             )}
-            title={t("badges.difficultyTitle", { label: diffLabel })}
+            title={gamifiedIndicatorTitle}
           >
             <DifficultySwordIcon
               size={isCompact ? 10 : 12}

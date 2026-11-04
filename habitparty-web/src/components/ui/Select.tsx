@@ -199,7 +199,7 @@ export function Select({
                       ? "py-2 px-3 text-body-s"
                       : "py-2.5 px-4 text-body-s",
                 isSelected
-                  ? "bg-primary/20 text-gold font-bold"
+                  ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-gold font-bold"
                   : "text-neutral-200 hover:bg-surface-hover hover:text-neutral-50 dark:text-neutral-100 dark:hover:bg-primary/20 dark:hover:text-neutral-50",
               )}
             >
@@ -281,11 +281,11 @@ export function Select({
               : cn(
                   "w-full rounded-lg text-left justify-between",
                   compact ? "py-2 px-3 text-body-s" : "py-3 px-4 text-body-m",
-                  "bg-card border border-neutral-700 text-neutral-50 shadow-xs",
+                  "bg-card border border-neutral-600 text-neutral-50 shadow-xs",
                   "dark:bg-primary-dark/20 dark:border-primary/30 dark:shadow-none",
-                  "outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                  "outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 dark:focus-visible:ring-gold dark:focus-visible:ring-offset-2 dark:focus-visible:ring-offset-background",
                   isOpen
-                    ? "border-primary dark:border-primary-light bg-card dark:bg-primary-dark/30 shadow-[0_0_8px_rgba(168,99,255,0.3)]"
+                    ? "border-primary ring-2 ring-primary/15 dark:ring-0 dark:border-primary-light bg-card dark:bg-primary-dark/30 dark:shadow-[0_0_8px_rgba(168,99,255,0.3)]"
                     : "hover:border-neutral-500 dark:hover:border-primary/50",
                   error && "border-danger-500/80",
                   currentOption ? "text-neutral-50" : "text-neutral-400",

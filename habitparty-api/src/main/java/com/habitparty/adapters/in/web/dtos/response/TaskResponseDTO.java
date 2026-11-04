@@ -2,9 +2,11 @@ package com.habitparty.adapters.in.web.dtos.response;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.habitparty.core.domain.entities.task.Daily;
 import com.habitparty.core.domain.entities.task.Habit;
@@ -54,6 +56,8 @@ public record TaskResponseDTO(
         DailyRepeatMonthlyOption monthlyOption,
 
         // --- Campos específicos de Todo ---
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
+        LocalTime dueTime,
         TodoReminderType reminderType,
         LocalDateTime reminderAt,
         Boolean isPenaltyApplied,
@@ -104,6 +108,7 @@ public record TaskResponseDTO(
                 task instanceof Daily d ? d.getMonthlyOpt().orElse(null) : null,
 
                 // Específicos do Todo
+                task instanceof Todo t ? t.getDueTime().orElse(null) : null,
                 task instanceof Todo t ? t.getReminderType() : null,
                 task instanceof Todo t ? t.getReminderAt().orElse(null) : null,
                 task instanceof Todo t ? t.isPenaltyApplied() : null,

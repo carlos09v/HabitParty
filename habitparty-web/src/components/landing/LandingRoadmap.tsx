@@ -83,8 +83,8 @@ export function LandingRoadmap() {
                 className={cn(
                   "relative rounded-3xl p-6 sm:p-8 flex flex-col justify-between transition-all duration-300 group",
                   isCompleted
-                    ? "bg-gradient-to-b from-emerald-950/20 via-card/95 to-card/90 dark:from-emerald-950/30 dark:via-surface/70 dark:to-surface/50 border border-emerald-500/40 hover:border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.08)] hover:shadow-[0_0_35px_rgba(16,185,129,0.18)] hover:-translate-y-1"
-                    : "bg-card/90 dark:bg-surface/60 border border-neutral-700/80 dark:border-white/10 hover:border-neutral-500 dark:hover:border-white/25 shadow-sm dark:shadow-card-deep hover:-translate-y-1",
+                    ? "bg-gradient-to-b from-emerald-500/[0.06] via-card to-card dark:from-emerald-950/30 dark:via-surface/70 dark:to-surface/50 border border-emerald-500/30 dark:border-emerald-500/40 hover:border-emerald-500/60 dark:hover:border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.06)] hover:shadow-[0_0_35px_rgba(16,185,129,0.16)] hover:-translate-y-1"
+                    : "bg-card/95 dark:bg-surface/60 border border-neutral-700/80 dark:border-white/10 hover:border-neutral-500 dark:hover:border-white/25 shadow-sm dark:shadow-card-deep hover:-translate-y-1",
                   item.borderGlowColor,
                   index === 4 && "md:col-span-2",
                 )}
@@ -140,17 +140,10 @@ export function LandingRoadmap() {
                     <div
                       className={cn(
                         "w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-xs",
-                        isCompleted
-                          ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
-                          : "bg-surface dark:bg-card border-neutral-700 dark:border-white/15 text-gold",
+                        item.iconBoxColor,
                       )}
                     >
-                      <Icon
-                        className={cn(
-                          "w-6 h-6",
-                          isCompleted ? "text-emerald-400" : "text-neutral-50",
-                        )}
-                      />
+                      <Icon className="w-6 h-6" />
                     </div>
                     <div>
                       <h3
@@ -194,7 +187,7 @@ export function LandingRoadmap() {
                           <CheckCircle2
                             className={cn(
                               "w-4 h-4 shrink-0 mt-0.5",
-                              isCompleted ? "text-emerald-400" : "text-gold",
+                              item.checkColor,
                             )}
                           />
                           <span className="text-xs sm:text-sm text-neutral-200 leading-tight">

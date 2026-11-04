@@ -32,7 +32,7 @@ export default async function SignUpPage() {
         {t("hasAccount")}{" "}
         <Link
           href="/signIn"
-          className="text-gold font-bold hover:underline transition-colors outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded px-1"
+          className="text-primary dark:text-gold font-bold hover:underline transition-colors outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded px-1"
         >
           {t("signInLink")}
         </Link>

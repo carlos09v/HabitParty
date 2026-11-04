@@ -110,17 +110,20 @@
       "step1": {
         "tag": "Routine & Habits",
         "title": "Structure your Routine",
-        "description": "Build habits with positive and negative triggers (+/-), daily routines with consistency streaks, and projects organized in agile Kanban boards."
+        "description": "Build habits with positive and negative triggers (+/-), daily routines with consistency streaks, and projects organized in agile Kanban boards.",
+        "footer": "Agile Kanban & Daily Streaks"
       },
       "step2": {
         "tag": "Pomodoro & Focus",
         "title": "Activate Zen Hyperfocus",
-        "description": "Enter flow state with Focus Hero Stage. Intelligent stopwatch, refreshing breaks, and ambient sounds to silence mental noise."
+        "description": "Enter flow state with Focus Hero Stage. Intelligent stopwatch, refreshing breaks, and ambient sounds to silence mental noise.",
+        "footer": "Ambient Sounds & Zen Mode"
       },
       "step3": {
         "tag": "Rewards & Leisure",
         "title": "Reward your Dedication",
-        "description": "Turn discipline into well-earned downtime. Enjoy guilt-free breaks, free-time blocks, or custom rewards from your store, using consistency points or gold coins."
+        "description": "Turn discipline into well-earned downtime. Enjoy guilt-free breaks, free-time blocks, or custom rewards from your store, using consistency points or gold coins.",
+        "footer": "Personal Shop & Mystery Boxes"
       }
     }
   },

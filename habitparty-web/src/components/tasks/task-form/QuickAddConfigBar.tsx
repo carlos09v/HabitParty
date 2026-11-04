@@ -1,5 +1,6 @@
 import { CalendarClock, Sword, Swords } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { TimePicker } from "@/components/ui/TimePicker";
 import {
   DIFFICULTY_DOT_COLORS,
   DIFFICULTY_SWORD_COLORS,
@@ -20,6 +21,8 @@ interface QuickAddConfigBarProps {
   taskType: TaskTypeOption;
   dueOffset: number | null;
   onDueOffsetChange: (offset: number | null) => void;
+  dueTime?: string;
+  onDueTimeChange?: (time: string) => void;
   difficulty: TaskDifficultyOption;
   onDifficultyChange: (difficulty: TaskDifficultyOption) => void;
   habitType: HabitTypeOption;
@@ -37,6 +40,8 @@ export function QuickAddConfigBar({
   taskType,
   dueOffset,
   onDueOffsetChange,
+  dueTime = "",
+  onDueTimeChange,
   difficulty,
   onDifficultyChange,
   habitType,
@@ -136,6 +141,19 @@ export function QuickAddConfigBar({
                 </button>
               );
             })}
+            {onDueTimeChange && (
+              <TimePicker
+                value={dueTime}
+                onChange={(val) => {
+                  onDueTimeChange(val);
+                  onFocusInput?.();
+                }}
+                variant="badge"
+                badgeLabel={t("dueTimePlaceholder")}
+                allowClear
+                className="text-tiny px-1 py-0.5"
+              />
+            )}
           </div>
         </div>
 

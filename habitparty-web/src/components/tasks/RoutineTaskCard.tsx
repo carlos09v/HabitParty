@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, ClockAlert } from "lucide-react";
+import { Calendar, Clock, ClockAlert } from "lucide-react";
 import { memo, useEffect, useRef } from "react";
 import {
   TaskActionControl,
@@ -143,11 +143,11 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
           "border-y-danger-500/40 border-r-danger-500/40 hover:border-y-danger-500/60 hover:border-r-danger-500/60 bg-danger-500/[0.04]",
         isHardcoreOverdue &&
           "border-y-danger-500/70 border-r-danger-500/70 hover:border-y-danger-500/80 hover:border-r-danger-500/80 shadow-[0_0_12px_rgba(239,68,68,0.28)]",
-        isDone && "opacity-65 hover:translate-y-0",
+        isDone && "dark:opacity-65 bg-card/85 dark:bg-card hover:translate-y-0",
         isDragging &&
-          "!transition-none opacity-30 border-dashed border-primary-light scale-95",
+          "!transition-none opacity-30 border-dashed border-y-primary-light border-r-primary-light scale-95",
         isOverlay &&
-          "!transition-none shadow-card-active border-gold/70 bg-card scale-102 rotate-1 cursor-grabbing z-50",
+          "!transition-none shadow-card-active border-y-gold/70 border-r-gold/70 bg-card scale-102 rotate-1 cursor-grabbing z-50",
       )}
     >
       {/* 1. TOPO: Badge do Tipo + Tag Opcional + Indicadores */}
@@ -244,6 +244,11 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
                 <ClockAlert
                   size={isCompact ? 10 : 12}
                   className="shrink-0 text-danger-500"
+                />
+              ) : dueDateInfo.isToday && task.dueTime ? (
+                <Clock
+                  size={isCompact ? 10 : 12}
+                  className="shrink-0 text-gold"
                 />
               ) : (
                 <Calendar

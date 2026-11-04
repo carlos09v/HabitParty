@@ -1,27 +1,15 @@
 "use server";
 
-import { updateTag } from "next/cache";
 import { getTranslations } from "next-intl/server";
-import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
+import type {
+  MysteryBoxOpenResult,
+  UpdateInventoryOrderDTO,
+} from "@/types/inventory";
+import { invalidateInventoryDomainTags } from "./cacheInvalidation";
 import { type ActionState, getErrorMessage } from "./types";
 
-type UpdateInventoryOrderDTO = components["schemas"]["UpdateInventoryOrderDTO"];
-
-function invalidateInventoryTags(
-  includeFocus = false,
-  includeUserAndTransactions = false,
-) {
-  updateTag("inventory");
-  if (includeFocus) {
-    updateTag("focus-activities");
-    updateTag("focus-records");
-  }
-  if (includeUserAndTransactions) {
-    updateTag("user");
-    updateTag("transactions");
-  }
-}
+export type { MysteryBoxOpenResult };
 
 export async function reorderInventory(
   updates: UpdateInventoryOrderDTO[],
@@ -39,7 +27,7 @@ export async function reorderInventory(
       };
     }
 
-    invalidateInventoryTags();
+    invalidateInventoryDomainTags();
     return { success: true };
   } catch (err) {
     console.error("[InventoryAction:Reorder]", err);
@@ -66,7 +54,7 @@ export async function consumeInventoryItem(
       };
     }
 
-    invalidateInventoryTags(false, true);
+    invalidateInventoryDomainTags(false, true);
     return { success: true };
   } catch (err) {
     console.error("[InventoryAction:Consume]", err);
@@ -93,7 +81,7 @@ export async function discardInventoryItem(
       };
     }
 
-    invalidateInventoryTags();
+    invalidateInventoryDomainTags();
     return { success: true };
   } catch (err) {
     console.error("[InventoryAction:Discard]", err);
@@ -123,7 +111,7 @@ export async function sendItemToFocus(
       };
     }
 
-    invalidateInventoryTags(true);
+    invalidateInventoryDomainTags(true);
     return { success: true };
   } catch (err) {
     console.error("[InventoryAction:SendToFocus]", err);
@@ -153,7 +141,7 @@ export async function returnItemToBackpack(
       };
     }
 
-    invalidateInventoryTags(true);
+    invalidateInventoryDomainTags(true);
     return { success: true };
   } catch (err) {
     console.error("[InventoryAction:ReturnToBackpack]", err);
@@ -162,19 +150,6 @@ export async function returnItemToBackpack(
       error: t("communicationError"),
     };
   }
-}
-
-export interface MysteryBoxOpenResult {
-  inventoryItemId?: string;
-  rewardId?: string;
-  rewardName?: string;
-  rewardIcon?: string;
-  rewardPrice?: number;
-  rewardType?: string;
-  rewardPackageLevel?: string;
-  status?: string;
-  remainingMinutes?: number;
-  remainingSeconds?: number;
 }
 
 export async function openMysteryBox(
@@ -195,7 +170,7 @@ export async function openMysteryBox(
     }
 
     if (!skipImmediateRevalidate) {
-      invalidateInventoryTags(true, true);
+      invalidateInventoryDomainTags(true, true);
     }
     return { success: true, data: data as MysteryBoxOpenResult };
   } catch (err) {
@@ -208,5 +183,5 @@ export async function openMysteryBox(
 }
 
 export async function revalidateInventoryAfterRoulette(): Promise<void> {
-  invalidateInventoryTags(true, true);
+  invalidateInventoryDomainTags(true, true);
 }

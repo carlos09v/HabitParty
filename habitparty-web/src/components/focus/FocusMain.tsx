@@ -2,19 +2,20 @@
 
 import { Timer } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
-import { WELCOME_CARD_DETAILS } from "@/constants/welcomeCards";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useFocusContextMenu } from "@/hooks/useFocusContextMenu";
 import { useFocusMutations } from "@/hooks/useFocusMutations";
 import { useFocusTimerControls } from "@/hooks/useFocusTimer";
+import type { AppLocale } from "@/i18n/config";
 import type { FocusActivity, FocusRecordType } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn } from "@/utils";
 import { calculateFocusWelcomeStats } from "@/utils/catalogMetrics";
+import { formatBackpackItemRemainingTime } from "@/utils/focusFormatters";
 import { FocusActivitiesSection } from "./FocusActivitiesSection";
 import { FocusBackpackSection } from "./FocusBackpackSection";
 import { FocusHeroStage } from "./FocusHeroStage";
@@ -53,7 +54,6 @@ interface FocusMainProps {
     activityId?: string;
     itemId?: string;
   }) => void;
-  onRefreshData: () => void;
   initialCreateActivity?: boolean;
   isCompact?: boolean;
   onChangeMode?: (mode: FocusRecordType) => void;
@@ -68,7 +68,6 @@ export function FocusMain({
   onStartFocusActivity,
   onStartFocusItem,
   onOpenManualRecord,
-  onRefreshData,
   initialCreateActivity = false,
   isCompact = false,
   onChangeMode,
@@ -133,7 +132,6 @@ export function FocusMain({
     onSelectActivity,
     onResetTarget: controls.resetTarget,
     onSelectActivityTarget: controls.selectActivityTarget,
-    onRefreshData,
   });
 
   // Hook desacoplado de menu de contexto
@@ -180,55 +178,13 @@ export function FocusMain({
     return () => window.removeEventListener("pointerdown", handlePointerDown);
   }, [selectedActivityId, onSelectActivity]);
 
-  const focusWelcomeStats = useMemo(() => {
-    const baseStats = calculateFocusWelcomeStats(activities, backpackItems);
-    const activitiesCount = activities.length;
-    const backpackCount = backpackItems.length;
-    return [
-      {
-        ...baseStats[0],
-        label: t("welcomeStats.activitiesLabel"),
-        value: t("welcomeStats.activitiesValue", { count: activitiesCount }),
-        hint:
-          activitiesCount > 0
-            ? t("welcomeStats.activitiesHintReady")
-            : t("welcomeStats.activitiesHintEmpty"),
-      },
-      {
-        ...baseStats[1],
-        label: isGamified
-          ? t("welcomeStats.stageItemsLabelGamified")
-          : t("welcomeStats.stageItemsLabelProductivity"),
-        value: t("welcomeStats.stageItemsValue", { count: backpackCount }),
-        hint:
-          backpackCount > 0
-            ? t("welcomeStats.stageItemsHintReady")
-            : isGamified
-              ? t("welcomeStats.stageItemsHintEmptyGamified")
-              : t("welcomeStats.stageItemsHintEmptyProductivity"),
-      },
-      {
-        ...baseStats[2],
-        label: t("welcomeStats.modesLabel"),
-        value: t("welcomeStats.modesValue"),
-        hint: isGamified
-          ? t("welcomeStats.modesHintGamified")
-          : t("welcomeStats.modesHintProductivity"),
-      },
-    ];
-  }, [activities, backpackItems, isGamified, t]);
+  const locale = useLocale() as AppLocale;
 
-  const formatRemainingTime = (remainingSeconds?: number | null): string => {
-    if (remainingSeconds !== undefined && remainingSeconds !== null) {
-      if (remainingSeconds <= 1) return t("returnModal.timeCompleted");
-      const m = Math.floor(remainingSeconds / 60);
-      const s = remainingSeconds % 60;
-      if (m > 0 && s > 0) return t("returnModal.remainingMinSec", { m, s });
-      if (m > 0) return t("returnModal.remainingMin", { m });
-      return t("returnModal.remainingSec", { s });
-    }
-    return t("returnModal.activeCoupon");
-  };
+  const focusWelcomeStats = useMemo(
+    () =>
+      calculateFocusWelcomeStats(activities, backpackItems, locale, isGamified),
+    [activities, backpackItems, locale, isGamified],
+  );
 
   return (
     <div className="relative flex-1 min-w-0 h-full flex flex-col overflow-hidden transition-all duration-200">
@@ -243,22 +199,8 @@ export function FocusMain({
       >
         {/* 1. Card de Boas-Vindas (inicia colapsado por padrão para priorizar o Palco Heróico) */}
         <WelcomeCard
-          title={WELCOME_CARD_DETAILS.focus.title}
-          subtitle={WELCOME_CARD_DETAILS.focus.subtitle}
-          bullets={WELCOME_CARD_DETAILS.focus.bullets}
-          imageSrc={WELCOME_CARD_DETAILS.focus.imageSrc}
-          stats={focusWelcomeStats}
-          imageWidth={
-            isCompact
-              ? WELCOME_CARD_DETAILS.focus.compactWidth
-              : WELCOME_CARD_DETAILS.focus.normalWidth
-          }
-          imageHeight={
-            isCompact
-              ? WELCOME_CARD_DETAILS.focus.compactHeight
-              : WELCOME_CARD_DETAILS.focus.normalHeight
-          }
           storageKey="focus"
+          stats={focusWelcomeStats}
           compact={isCompact}
           defaultExpanded={false}
         />
@@ -320,7 +262,6 @@ export function FocusMain({
           isOpen={activityModalOpen}
           onClose={() => setActivityModalOpen(false)}
           activityToEdit={editingActivity}
-          onSuccess={onRefreshData}
         />
       )}
 
@@ -366,8 +307,9 @@ export function FocusMain({
                     <Timer size={12} className="text-gold" />
                     <span>
                       {t("returnModal.remainingBalance", {
-                        time: formatRemainingTime(
+                        time: formatBackpackItemRemainingTime(
                           returnModalItem.remainingSeconds,
+                          locale,
                         ),
                       })}
                     </span>

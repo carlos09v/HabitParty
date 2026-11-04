@@ -167,7 +167,7 @@ export function ActivitiesWidget({
         </div>
 
         <fieldset
-          className="inline-flex items-center rounded-lg bg-white/5 border border-white/10 p-0.5 shrink-0 m-0"
+          className="inline-flex items-center rounded-lg bg-surface dark:bg-white/5 border border-neutral-700 dark:border-white/10 p-0.5 shrink-0 m-0"
           aria-label={t("periodAriaLabel")}
         >
           {ACTIVITY_PERIOD_OPTIONS.map((opt) => {
@@ -195,7 +195,7 @@ export function ActivitiesWidget({
       {/* Lista de Atividades */}
       <div className="flex flex-col gap-1.5 w-full">
         {activeActivities.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-white/10 bg-white/5 p-3 text-center text-xs text-neutral-400">
+          <div className="rounded-lg border border-dashed border-neutral-700 dark:border-white/10 bg-white dark:bg-white/5 shadow-2xs dark:shadow-none p-3 text-center text-xs text-neutral-400">
             {t("empty")}
           </div>
         ) : (
@@ -221,7 +221,7 @@ export function ActivitiesWidget({
                 className={cn(
                   "group flex items-center justify-between rounded-lg border transition-all",
                   isCompact ? "p-1.5" : "p-2",
-                  "bg-primary-dark/20 border-primary/30 hover:bg-primary-dark/40 hover:border-primary-light/50",
+                  "bg-white dark:bg-primary-dark/20 border-neutral-700 dark:border-primary/30 shadow-2xs dark:shadow-none hover:bg-card-hover dark:hover:bg-primary-dark/40 hover:border-primary/35 dark:hover:border-primary-light/50",
                 )}
               >
                 <div
@@ -230,12 +230,12 @@ export function ActivitiesWidget({
                     isCompact ? "gap-1.5" : "gap-2",
                   )}
                 >
-                  <div className="p-1 rounded bg-primary-dark/40 text-neutral-300 group-hover:text-gold transition-colors shrink-0">
+                  <div className="p-1 rounded bg-primary/10 dark:bg-primary-dark/40 text-primary dark:text-neutral-300 group-hover:text-primary-dark dark:group-hover:text-gold transition-colors shrink-0">
                     <Icon size={isCompact ? 13 : 15} />
                   </div>
                   <span
                     className={cn(
-                      "font-medium text-neutral-100 truncate group-hover:text-gold transition-colors",
+                      "font-medium text-neutral-100 truncate group-hover:text-primary dark:group-hover:text-gold transition-colors",
                       isCompact ? "text-xs" : "text-body-s",
                     )}
                   >
@@ -244,12 +244,12 @@ export function ActivitiesWidget({
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                  <span className="text-xs font-bold text-neutral-200 group-hover:text-gold transition-colors">
+                  <span className="text-xs font-bold text-neutral-200 group-hover:text-primary dark:group-hover:text-gold transition-colors">
                     {formatFocusMinutes(minutes)}
                   </span>
                   <ChevronRight
                     size={14}
-                    className="text-neutral-500 group-hover:text-gold transition-colors"
+                    className="text-neutral-500 group-hover:text-primary dark:group-hover:text-gold transition-colors"
                   />
                 </div>
               </Link>

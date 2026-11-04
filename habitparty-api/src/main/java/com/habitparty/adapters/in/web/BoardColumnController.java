@@ -39,7 +39,7 @@ public class BoardColumnController implements BoardColumnApi {
       CreateBoardColumnDTO requestDTO,
       AuthenticatedUser usuarioLogado) {
     UUID userId = usuarioLogado.id();
-    var command = new CreateBoardColumnCommand(requestDTO.workspaceId(), requestDTO.name(), requestDTO.icon());
+    var command = new CreateBoardColumnCommand(requestDTO.workspaceId(), requestDTO.name(), requestDTO.icon(), requestDTO.orderIndex());
     BoardColumn createdColumn = createBoardColumnUseCase.execute(command, userId);
 
     return ResponseEntity.status(HttpStatus.CREATED).body(BoardColumnResponseDTO.fromDomain(createdColumn));

@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
+import type { ViewMode } from "@/types/ui";
 
-export type ViewMode = "card" | "list" | "grid";
+export type { ViewMode };
 
 export function useViewMode(
   key: string,

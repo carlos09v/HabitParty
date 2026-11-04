@@ -112,6 +112,7 @@ export const SCOPE_CLIENT_PATHS: Record<MessageScope, readonly string[]> = {
     "ui.pagination",
     "ui.rewardPreview",
     "ui.select",
+    "ui.timePicker",
   ],
   tasks: [
     ...MAIN_PAGE_SHARED_PATHS,
@@ -122,6 +123,7 @@ export const SCOPE_CLIENT_PATHS: Record<MessageScope, readonly string[]> = {
     "ui.iconPicker",
     "ui.rewardPreview",
     "ui.select",
+    "ui.timePicker",
     "ui.viewMode",
     "ui.welcomeCard",
   ],

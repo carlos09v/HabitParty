@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   deleteBoardColumn,
@@ -13,6 +13,7 @@ import {
   resolveVisibleColumnIds,
 } from "@/constants/routine";
 import type { BoardColumn } from "@/types/task";
+import type { ColumnInsertTarget } from "@/types/task-ui";
 
 /**
  * Estado do quadro de rotina: colunas, visibilidade e mutações de colunas.
@@ -45,6 +46,12 @@ export function useRoutineColumns(
       targetColumnId,
     ),
   );
+
+  const columnsRef = useRef(columns);
+  columnsRef.current = columns;
+
+  const visibleColumnIdsRef = useRef(visibleColumnIds);
+  visibleColumnIdsRef.current = visibleColumnIds;
 
   // Função dedicada para persistir somente sob ações do usuário
   const persistVisibleColumns = useCallback(
@@ -154,65 +161,137 @@ export function useRoutineColumns(
 
   const toggleColumnVisibility = useCallback(
     (columnId: string) => {
-      setVisibleColumnIds((prev) => {
-        let next: string[];
-        if (prev.includes(columnId)) {
-          next = prev.length > 1 ? prev.filter((id) => id !== columnId) : prev;
-        } else if (prev.length < maxAllowed) {
-          next = [...prev, columnId];
-        } else {
-          next = [...prev.slice(0, maxAllowed - 1), columnId];
-          if (!isPremium) {
-            toast.info(t("freeColumnLimitToast", { max: maxAllowed }));
-          }
-        }
+      const prev = visibleColumnIdsRef.current;
+      let next: string[];
+      let reachedLimit = false;
 
-        persistVisibleColumns(next);
-        return next;
-      });
+      if (prev.includes(columnId)) {
+        next = prev.length > 1 ? prev.filter((id) => id !== columnId) : prev;
+      } else if (prev.length < maxAllowed) {
+        next = [...prev, columnId];
+      } else {
+        next = [...prev.slice(0, maxAllowed - 1), columnId];
+        reachedLimit = !isPremium;
+      }
+
+      setVisibleColumnIds(next);
+      visibleColumnIdsRef.current = next;
+      persistVisibleColumns(next);
+
+      if (reachedLimit) {
+        toast.info(t("freeColumnLimitToast", { max: maxAllowed }));
+      }
     },
     [maxAllowed, isPremium, persistVisibleColumns, t],
   );
 
   const showAllColumns = useCallback(() => {
-    const next = columns.slice(0, maxAllowed).map((c) => c.id);
+    const next = columnsRef.current.slice(0, maxAllowed).map((c) => c.id);
     setVisibleColumnIds(next);
+    visibleColumnIdsRef.current = next;
     persistVisibleColumns(next);
-  }, [columns, maxAllowed, persistVisibleColumns]);
+  }, [maxAllowed, persistVisibleColumns]);
 
   const ensureColumnVisible = useCallback(
     (columnId: string) => {
-      setVisibleColumnIds((prev) => {
-        if (prev.includes(columnId)) return prev;
-        const next =
-          prev.length < maxAllowed
-            ? [...prev, columnId]
-            : [...prev.slice(0, maxAllowed - 1), columnId];
-        persistVisibleColumns(next);
-        return next;
-      });
+      const prev = visibleColumnIdsRef.current;
+      if (prev.includes(columnId)) return;
+      const next =
+        prev.length < maxAllowed
+          ? [...prev, columnId]
+          : [...prev.slice(0, maxAllowed - 1), columnId];
+      setVisibleColumnIds(next);
+      visibleColumnIdsRef.current = next;
+      persistVisibleColumns(next);
     },
     [maxAllowed, persistVisibleColumns],
   );
 
   const handleColumnSaved = useCallback(
-    (savedCol: BoardColumn, isEdit?: boolean) => {
+    (
+      savedCol: BoardColumn,
+      isEdit?: boolean,
+      insertTarget?: ColumnInsertTarget | null,
+    ) => {
       if (isEdit) {
-        setColumns((prev) =>
-          prev.map((c) =>
+        setColumns((prev) => {
+          const next = prev.map((c) =>
             c.id === savedCol.id
               ? { ...c, title: savedCol.title, icon: savedCol.icon }
               : c,
-          ),
+          );
+          columnsRef.current = next;
+          return next;
+        });
+      } else if (insertTarget) {
+        const currentCols = columnsRef.current;
+        const refIdx = currentCols.findIndex(
+          (c) => c.id === insertTarget.referenceColumnId,
         );
+        let nextCols: BoardColumn[];
+        if (refIdx < 0) {
+          nextCols = [...currentCols, savedCol];
+        } else {
+          const insertIdx =
+            insertTarget.position === "left" ? refIdx : refIdx + 1;
+          nextCols = [
+            ...currentCols.slice(0, insertIdx),
+            savedCol,
+            ...currentCols.slice(insertIdx),
+          ].map((c, idx) => ({ ...c, order: idx }));
+        }
+
+        setColumns(nextCols);
+        columnsRef.current = nextCols;
+
+        if (workspaceId) {
+          const payload = nextCols.map((c, idx) => ({
+            board_column_id: c.id,
+            newIndex: idx,
+          }));
+          startTransition(async () => {
+            const res = await updateBoardColumnOrder(workspaceId, payload);
+            if (!res?.success) {
+              toast.error(res?.error || t("reorderColumnsError"));
+            }
+          });
+        }
+
+        const currentVis = visibleColumnIdsRef.current;
+        if (!currentVis.includes(savedCol.id)) {
+          const visRefIdx = currentVis.indexOf(insertTarget.referenceColumnId);
+          let nextVis: string[];
+          if (visRefIdx >= 0) {
+            const visInsertIdx =
+              insertTarget.position === "left" ? visRefIdx : visRefIdx + 1;
+            const withInserted = [
+              ...currentVis.slice(0, visInsertIdx),
+              savedCol.id,
+              ...currentVis.slice(visInsertIdx),
+            ];
+            nextVis = withInserted.slice(0, maxAllowed);
+          } else {
+            nextVis =
+              currentVis.length < maxAllowed
+                ? [...currentVis, savedCol.id]
+                : [...currentVis.slice(0, maxAllowed - 1), savedCol.id];
+          }
+          setVisibleColumnIds(nextVis);
+          visibleColumnIdsRef.current = nextVis;
+          persistVisibleColumns(nextVis);
+        }
       } else {
-        setColumns((prev) => [...prev, savedCol]);
-        if (visibleColumnIds.length < maxAllowed) {
+        setColumns((prev) => {
+          const next = [...prev, savedCol];
+          columnsRef.current = next;
+          return next;
+        });
+        if (visibleColumnIdsRef.current.length < maxAllowed) {
           toggleColumnVisibility(savedCol.id);
         }
       }
     },
-    [visibleColumnIds.length, maxAllowed, toggleColumnVisibility],
+    [maxAllowed, toggleColumnVisibility, workspaceId, persistVisibleColumns, t],
   );
 
   const handleDeleteColumn = useCallback(
@@ -225,8 +304,12 @@ export function useRoutineColumns(
           return false;
         }
 
-        setColumns((prev) => prev.filter((c) => c.id !== column.id));
-        if (visibleColumnIds.includes(column.id)) {
+        setColumns((prev) => {
+          const next = prev.filter((c) => c.id !== column.id);
+          columnsRef.current = next;
+          return next;
+        });
+        if (visibleColumnIdsRef.current.includes(column.id)) {
           toggleColumnVisibility(column.id);
         }
 
@@ -239,7 +322,7 @@ export function useRoutineColumns(
         setIsDeletingColumn(false);
       }
     },
-    [visibleColumnIds, toggleColumnVisibility, t],
+    [toggleColumnVisibility, t],
   );
 
   const handleColumnReorder = useCallback(

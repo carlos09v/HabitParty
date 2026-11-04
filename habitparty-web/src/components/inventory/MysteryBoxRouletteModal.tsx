@@ -2,12 +2,11 @@
 
 import { Check, Dices, Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { MysteryBoxOpenResult } from "@/actions/inventoryActions";
 import { BaseModal } from "@/components/ui/BaseModal";
-import { getRewardIcon } from "@/constants/reward";
 import { useMysteryBoxRoulette } from "@/hooks/useMysteryBoxRoulette";
-import type { InventoryItem } from "@/types/inventory";
+import type { InventoryItem, MysteryBoxOpenResult } from "@/types/inventory";
 import { cn } from "@/utils";
+import { getRewardIcon } from "@/utils/rewardMapper";
 
 interface MysteryBoxRouletteModalProps {
   isOpen: boolean;
@@ -90,7 +89,7 @@ export function MysteryBoxRouletteModal({
         </div>
 
         {/* Linha Laser Guia Central */}
-        <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-gradient-to-b from-gold via-gold/60 to-gold z-20 pointer-events-none shadow-[0_0_12px_rgba(255,184,0,0.8)]" />
+        <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-linear-to-b from-gold via-gold/60 to-gold z-20 pointer-events-none shadow-[0_0_12px_rgba(255,184,0,0.8)]" />
 
         {/* Viewport com overflow oculto e bordas degradê */}
         <div
@@ -98,8 +97,8 @@ export function MysteryBoxRouletteModal({
           className="relative w-full h-[164px] bg-surface/80 dark:bg-neutral-950/80 border-2 border-primary/40 rounded-2xl overflow-hidden shadow-inner flex items-center"
         >
           {/* Sombras de vinheta esquerda e direita */}
-          <div className="absolute left-0 inset-y-0 w-16 bg-gradient-to-r from-card via-card/70 dark:from-neutral-950 dark:via-neutral-950/70 to-transparent z-10 pointer-events-none" />
-          <div className="absolute right-0 inset-y-0 w-16 bg-gradient-to-l from-card via-card/70 dark:from-neutral-950 dark:via-neutral-950/70 to-transparent z-10 pointer-events-none" />
+          <div className="absolute left-0 inset-y-0 w-16 bg-linear-to-r from-card via-card/70 dark:from-neutral-950 dark:via-neutral-950/70 to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 inset-y-0 w-16 bg-linear-to-l from-card via-card/70 dark:from-neutral-950 dark:via-neutral-950/70 to-transparent z-10 pointer-events-none" />
 
           {/* Fita deslizante com os cards */}
           <div
@@ -218,7 +217,7 @@ export function MysteryBoxRouletteModal({
             type="button"
             disabled={isOpeningServer}
             onClick={handleSpin}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 via-gold to-orange-500 rounded-xl text-on-gold font-black text-body-m hover:brightness-110 active:scale-95 transition-all shadow-glow-gold-sm cursor-pointer disabled:opacity-50"
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-linear-to-r from-amber-500 via-gold to-orange-500 rounded-xl text-on-gold font-black text-body-m hover:brightness-110 active:scale-95 transition-all shadow-glow-gold-sm cursor-pointer disabled:opacity-50"
           >
             <Dices size={20} className="text-on-gold" />
             <span>
@@ -238,7 +237,7 @@ export function MysteryBoxRouletteModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-primary to-primary-dark border border-primary-light/40 rounded-xl text-neutral-50 font-bold text-body-s hover:brightness-110 active:scale-95 transition-all shadow-md cursor-pointer"
+            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-linear-to-r from-primary to-primary-dark border border-primary-light/40 rounded-xl text-neutral-50 font-bold text-body-s hover:brightness-110 active:scale-95 transition-all shadow-md cursor-pointer"
           >
             <Check size={18} />
             <span>{t("storeInBackpackButton")}</span>

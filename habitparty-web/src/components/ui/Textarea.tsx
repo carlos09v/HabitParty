@@ -50,10 +50,10 @@ export function Textarea({
           className={cn(
             "peer w-full rounded-lg transition-all resize-none",
             compact ? "py-2 px-3 text-body-s" : "py-2.5 px-3.5 text-body-s",
-            "bg-card border border-neutral-700 text-neutral-50 focus:border-primary focus:bg-card shadow-xs",
-            "dark:bg-primary-dark/20 dark:border-primary/30 dark:text-neutral-50 dark:focus:border-primary-light dark:focus:bg-primary-dark/30",
+            "bg-card border border-neutral-600 hover:border-neutral-500 text-neutral-50 focus:border-primary focus:ring-2 focus:ring-primary/15 focus:bg-card shadow-xs",
+            "dark:bg-primary-dark/20 dark:border-primary/30 dark:hover:border-primary/50 dark:text-neutral-50 dark:focus:border-primary-light dark:focus:ring-0 dark:focus:bg-primary-dark/30 dark:shadow-none",
             "outline-none focus:outline-none",
-            "focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:border-transparent",
+            "focus-visible:ring-2 focus-visible:ring-primary/20 dark:focus-visible:ring-gold dark:focus-visible:ring-offset-2 dark:focus-visible:ring-offset-background dark:focus-visible:border-transparent",
             "placeholder:text-neutral-500",
             error &&
               "border-danger-500/80 focus-visible:ring-danger-500 focus:border-danger-500",

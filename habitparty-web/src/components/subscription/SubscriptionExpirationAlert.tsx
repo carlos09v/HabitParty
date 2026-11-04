@@ -96,7 +96,7 @@ export function SubscriptionExpirationAlert({
           className={cn(
             "w-full py-1.5 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98",
             isLastDay
-              ? "bg-danger-500 hover:bg-danger-600 text-white"
+              ? "bg-danger-500 hover:bg-danger-hover text-white"
               : isUrgent
                 ? "bg-orange-500 hover:bg-orange-600 text-white"
                 : "bg-gold hover:bg-gold-hover text-on-gold",

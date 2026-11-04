@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AMBIENT_SOUND_OPTIONS } from "@/constants/settings";
@@ -21,6 +22,8 @@ export function useFocusAudioControls({
   onRequirePremiumUpgrade,
   restoreAmbientOnMount = false,
 }: UseFocusAudioControlsOptions = {}) {
+  const t = useTranslations("focus.audio.toasts");
+  const tWidget = useTranslations("focusWidget");
   const isPremium = useUserStore((s) => s.is_Premium);
   const {
     uiSoundsEnabled,
@@ -76,7 +79,7 @@ export function useFocusAudioControls({
   const toggleBrowserNotifications = useCallback(
     async (explicitNextState?: boolean) => {
       if (typeof window === "undefined" || !("Notification" in window)) {
-        toast.error("Notificações não suportadas neste navegador.");
+        toast.error(t("notificationsUnsupported"));
         return;
       }
 
@@ -90,25 +93,21 @@ export function useFocusAudioControls({
 
       if (!targetEnabled) {
         setBrowserNotificationsEnabled(false);
-        toast.info("Notificações do navegador silenciadas.");
+        toast.info(t("notificationsMuted"));
         return;
       }
 
       if (Notification.permission === "granted") {
         setNotificationPermission("granted");
         setBrowserNotificationsEnabled(true);
-        toast.success(
-          "Notificações do navegador ativadas para o fim do Pomodoro!",
-        );
+        toast.success(t("notificationsEnabled"));
         return;
       }
 
       if (Notification.permission === "denied") {
         setNotificationPermission("denied");
         setBrowserNotificationsEnabled(false);
-        toast.error(
-          "Permissão bloqueada no navegador. Habilite as notificações nas configurações do site.",
-        );
+        toast.error(t("notificationsBlocked"));
         return;
       }
 
@@ -118,28 +117,24 @@ export function useFocusAudioControls({
 
         if (permission === "granted") {
           setBrowserNotificationsEnabled(true);
-          toast.success(
-            "Notificações permitidas! Você será avisado ao fim de cada Pomodoro.",
-          );
+          toast.success(t("notificationsGranted"));
         } else {
           setBrowserNotificationsEnabled(false);
           if (permission === "denied") {
-            toast.error("Permissão de notificação negada.");
+            toast.error(t("notificationsDenied"));
           }
         }
       } catch (_e) {
-        toast.error("Não foi possível solicitar permissão para notificações.");
+        toast.error(t("notificationsRequestError"));
       }
     },
-    [browserNotificationsEnabled, setBrowserNotificationsEnabled],
+    [browserNotificationsEnabled, setBrowserNotificationsEnabled, t],
   );
 
   const selectAmbientSound = useCallback(
     (type: AmbientSoundType) => {
       if (type !== "none" && !isPremium) {
-        toast.info(
-          "Sons de foco ambiente são exclusivos para assinantes Premium! Faça o upgrade para desbloquear.",
-        );
+        toast.info(t("ambientPremiumRequired"));
         onRequirePremiumUpgrade?.();
         return;
       }
@@ -148,7 +143,7 @@ export function useFocusAudioControls({
         soundEffects.stopAmbientSound();
         setAmbientSoundType("none");
         setIsAmbientPlaying(false);
-        toast.info("Som ambiente desligado.");
+        toast.info(t("ambientOff"));
         return;
       }
 
@@ -156,9 +151,12 @@ export function useFocusAudioControls({
       setIsAmbientPlaying(true);
       soundEffects.startAmbientSound(type, ambientVolume);
 
-      const soundLabel =
-        AMBIENT_SOUND_OPTIONS.find((s) => s.id === type)?.label || type;
-      toast.success(`Som ambiente ativado: ${soundLabel}`);
+      const soundLabel = tWidget.has(
+        `ambientSounds.${type}` as Parameters<typeof tWidget.has>[0],
+      )
+        ? tWidget(`ambientSounds.${type}` as Parameters<typeof tWidget>[0])
+        : AMBIENT_SOUND_OPTIONS.find((s) => s.id === type)?.label || type;
+      toast.success(t("ambientOn", { label: soundLabel }));
     },
     [
       isPremium,
@@ -166,6 +164,8 @@ export function useFocusAudioControls({
       onRequirePremiumUpgrade,
       setAmbientSoundType,
       setIsAmbientPlaying,
+      t,
+      tWidget,
     ],
   );
 

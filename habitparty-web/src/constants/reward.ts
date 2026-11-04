@@ -12,7 +12,6 @@ import {
   Headphones,
   Heart,
   Key,
-  type LucideIcon,
   Medal,
   Music,
   Package,
@@ -22,12 +21,10 @@ import {
   Shield,
   ShoppingBag,
   Skull,
-  Smile,
   Sparkles,
   Star,
   Swords,
   Ticket,
-  Timer,
   Trophy,
   Tv,
   UtensilsCrossed,
@@ -35,14 +32,32 @@ import {
   Zap,
 } from "lucide-react";
 import type {
+  CategoryMessageKey,
+  CouponPackageOption,
+  MysteryBoxDropRate,
+  MysteryBoxTier,
   PackageLevel,
+  PackageMessageKey,
   RewardCategory,
+  RewardIconOption,
   RewardType,
+  RewardTypeMessageKey,
+  RewardTypeMeta,
   RouletteItem,
 } from "@/types/reward";
 import type { IconOption, SelectOption } from "@/types/ui";
 
-export type RewardIconOption = IconOption;
+export type {
+  CategoryMessageKey,
+  CouponPackageOption,
+  MysteryBoxDropRate,
+  MysteryBoxTier,
+  PackageMessageKey,
+  RewardIconOption,
+  RewardTypeMessageKey,
+  RewardTypeMeta,
+  SelectOption,
+};
 
 export const REWARD_ICONS: readonly IconOption[] = [
   // Ícones Gratuitos Base
@@ -81,37 +96,10 @@ export const REWARD_ICONS: readonly IconOption[] = [
   { id: "skull", label: "Relíquia Sombria", icon: Skull, isPremium: true },
 ] as const;
 
-export function getRewardIcon(
-  iconId?: string | null,
-  rewardType?: string | null,
-): LucideIcon {
-  if (iconId) {
-    const normalized = iconId.trim().toLowerCase();
-    if (normalized === "joystick") return Gamepad2;
-    if (normalized === "book_open") return BookOpen;
-    if (normalized === "smile") return Smile;
-    if (normalized === "timer") return Timer;
-    if (normalized === "star") return Star;
-    if (normalized === "mystery_box" || normalized === "package")
-      return Package;
-    const found = REWARD_ICONS.find(
-      (item) => item.id.toLowerCase() === normalized,
-    );
-    if (found) return found.icon;
-  }
-  if (rewardType === "MysteryBox" || rewardType === "MISTERY_BOX") {
-    return Package;
-  }
-  return Gamepad2;
-}
-
-export type { SelectOption };
-
-export interface RewardTypeMeta {
-  label: string;
-  color: string;
-  icon: LucideIcon;
-}
+/** Índice O(1) para resolução rápida de ícones de recompensa */
+export const REWARD_ICON_MAP = new Map(
+  REWARD_ICONS.map((item) => [item.id.toLowerCase(), item.icon]),
+);
 
 export const REWARD_TYPE_META: Record<string, RewardTypeMeta> = {
   SingleUse: {
@@ -134,145 +122,58 @@ export const REWARD_TYPE_META: Record<string, RewardTypeMeta> = {
 export const PACKAGE_LEVEL_COLOR: Partial<Record<string, string>> = {
   Nenhum: "text-neutral-400 bg-white/5 border-white/10",
   NONE: "text-neutral-400 bg-white/5 border-white/10",
-  Básico: "text-success-500 bg-success-500/15 border-success-500/30",
-  BASIC: "text-success-500 bg-success-500/15 border-success-500/30",
-  Premium: "text-info bg-info/15 border-info/30",
-  PREMIUM: "text-info bg-info/15 border-info/30",
-  Épico: "text-magenta bg-magenta/15 border-magenta/30",
-  EPIC: "text-magenta bg-magenta/15 border-magenta/30",
-  Lendário: "text-gold bg-gold/15 border-gold/30",
-  LEGENDARY: "text-gold bg-gold/15 border-gold/30",
+  Básico:
+    "text-emerald-700 bg-emerald-500/10 border-emerald-500/25 dark:text-success-500 dark:bg-success-500/15 dark:border-success-500/30",
+  BASIC:
+    "text-emerald-700 bg-emerald-500/10 border-emerald-500/25 dark:text-success-500 dark:bg-success-500/15 dark:border-success-500/30",
+  Premium:
+    "text-sky-700 bg-sky-500/10 border-sky-500/25 dark:text-info dark:bg-info/15 dark:border-info/30",
+  PREMIUM:
+    "text-sky-700 bg-sky-500/10 border-sky-500/25 dark:text-info dark:bg-info/15 dark:border-info/30",
+  Épico:
+    "text-magenta bg-magenta/10 border-magenta/25 dark:bg-magenta/15 dark:border-magenta/30",
+  EPIC: "text-magenta bg-magenta/10 border-magenta/25 dark:bg-magenta/15 dark:border-magenta/30",
+  Lendário:
+    "text-amber-700 bg-amber-500/10 border-amber-500/30 dark:text-gold dark:bg-gold/15 dark:border-gold/30",
+  LEGENDARY:
+    "text-amber-700 bg-amber-500/10 border-amber-500/30 dark:text-gold dark:bg-gold/15 dark:border-gold/30",
 };
 
 export const PACKAGE_LEVEL_GLOW: Partial<Record<string, string>> = {
-  Básico: "border-success-500/30 group-hover:border-success-500/50",
-  BASIC: "border-success-500/30 group-hover:border-success-500/50",
-  Premium: "border-info/30 group-hover:border-info/50",
-  PREMIUM: "border-info/30 group-hover:border-info/50",
-  Épico: "border-magenta/30 group-hover:border-magenta/50",
-  EPIC: "border-magenta/30 group-hover:border-magenta/50",
-  Lendário: "border-gold/40 group-hover:border-gold/70 shadow-glow-gold-xs",
-  LEGENDARY: "border-gold/40 group-hover:border-gold/70 shadow-glow-gold-xs",
+  Básico:
+    "border-neutral-700 group-hover:border-emerald-500/45 dark:border-success-500/30 dark:group-hover:border-success-500/50",
+  BASIC:
+    "border-neutral-700 group-hover:border-emerald-500/45 dark:border-success-500/30 dark:group-hover:border-success-500/50",
+  Premium:
+    "border-neutral-700 group-hover:border-sky-500/45 dark:border-info/30 dark:group-hover:border-info/50",
+  PREMIUM:
+    "border-neutral-700 group-hover:border-sky-500/45 dark:border-info/30 dark:group-hover:border-info/50",
+  Épico:
+    "border-neutral-700 group-hover:border-magenta/45 dark:border-magenta/30 dark:group-hover:border-magenta/50",
+  EPIC: "border-neutral-700 group-hover:border-magenta/45 dark:border-magenta/30 dark:group-hover:border-magenta/50",
+  Lendário:
+    "border-neutral-700 group-hover:border-amber-500/55 dark:border-gold/40 dark:group-hover:border-gold/70 dark:shadow-glow-gold-xs",
+  LEGENDARY:
+    "border-neutral-700 group-hover:border-amber-500/55 dark:border-gold/40 dark:group-hover:border-gold/70 dark:shadow-glow-gold-xs",
 };
 
 export const PACKAGE_LEVEL_ICON_THEME: Partial<Record<string, string>> = {
   Básico:
-    "bg-success-500/15 border-success-500/30 text-success-400 group-hover:border-success-500/50",
+    "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 group-hover:border-emerald-500/40 dark:bg-success-500/15 dark:border-success-500/30 dark:text-success-400 dark:group-hover:border-success-500/50",
   BASIC:
-    "bg-success-500/15 border-success-500/30 text-success-400 group-hover:border-success-500/50",
-  Premium: "bg-info/15 border-info/30 text-info group-hover:border-info/50",
-  PREMIUM: "bg-info/15 border-info/30 text-info group-hover:border-info/50",
+    "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 group-hover:border-emerald-500/40 dark:bg-success-500/15 dark:border-success-500/30 dark:text-success-400 dark:group-hover:border-success-500/50",
+  Premium:
+    "bg-sky-500/10 text-sky-700 border-sky-500/20 group-hover:border-sky-500/40 dark:bg-info/15 dark:border-info/30 dark:text-info dark:group-hover:border-info/50",
+  PREMIUM:
+    "bg-sky-500/10 text-sky-700 border-sky-500/20 group-hover:border-sky-500/40 dark:bg-info/15 dark:border-info/30 dark:text-info dark:group-hover:border-info/50",
   Épico:
-    "bg-magenta/15 border-magenta/30 text-magenta group-hover:border-magenta/50",
-  EPIC: "bg-magenta/15 border-magenta/30 text-magenta group-hover:border-magenta/50",
+    "bg-magenta/10 text-magenta border-magenta/20 group-hover:border-magenta/40 dark:bg-magenta/15 dark:border-magenta/30 dark:group-hover:border-magenta/50",
+  EPIC: "bg-magenta/10 text-magenta border-magenta/20 group-hover:border-magenta/40 dark:bg-magenta/15 dark:border-magenta/30 dark:group-hover:border-magenta/50",
   Lendário:
-    "bg-gold/15 border-gold/40 text-gold group-hover:border-gold/60 shadow-glow-gold-xs",
+    "bg-amber-500/10 text-amber-700 border-amber-500/25 group-hover:border-amber-500/50 dark:bg-gold/15 dark:border-gold/40 dark:text-gold dark:group-hover:border-gold/60 dark:shadow-glow-gold-xs",
   LEGENDARY:
-    "bg-gold/15 border-gold/40 text-gold group-hover:border-gold/60 shadow-glow-gold-xs",
+    "bg-amber-500/10 text-amber-700 border-amber-500/25 group-hover:border-amber-500/50 dark:bg-gold/15 dark:border-gold/40 dark:text-gold dark:group-hover:border-gold/60 dark:shadow-glow-gold-xs",
 };
-
-export type PackageMessageKey =
-  | "NONE"
-  | "BASIC"
-  | "PREMIUM"
-  | "EPIC"
-  | "LEGENDARY";
-export type CategoryMessageKey =
-  | "NONE"
-  | "ENTERTAINMENT"
-  | "WELLNESS"
-  | "SHOPPING"
-  | "DEVELOPMENT"
-  | "LUCK"
-  | "HOBBIES";
-export type RewardTypeMessageKey = "SingleUse" | "TimeBased" | "MysteryBox";
-
-export function toPackageMessageKey(pkg?: string | null): PackageMessageKey {
-  switch (pkg) {
-    case "Básico":
-    case "BASIC":
-      return "BASIC";
-    case "Premium":
-    case "PREMIUM":
-      return "PREMIUM";
-    case "Épico":
-    case "EPIC":
-      return "EPIC";
-    case "Lendário":
-    case "LEGENDARY":
-      return "LEGENDARY";
-    default:
-      return "NONE";
-  }
-}
-
-export function toCategoryMessageKey(cat?: string | null): CategoryMessageKey {
-  switch (cat) {
-    case "Entretenimento":
-    case "ENTERTAINMENT":
-      return "ENTERTAINMENT";
-    case "Bem-estar":
-    case "WELLNESS":
-      return "WELLNESS";
-    case "Compras":
-    case "SHOPPING":
-      return "SHOPPING";
-    case "Desenvolvimento":
-    case "DEVELOPMENT":
-      return "DEVELOPMENT";
-    case "Sorte":
-    case "LUCK":
-      return "LUCK";
-    case "Hobbies":
-    case "HOBBIES":
-      return "HOBBIES";
-    default:
-      return "NONE";
-  }
-}
-
-export function toRewardTypeMessageKey(
-  type?: string | null,
-): RewardTypeMessageKey {
-  switch (type) {
-    case "TimeBased":
-    case "TIME_BASED":
-      return "TimeBased";
-    case "MysteryBox":
-    case "MISTERY_BOX":
-      return "MysteryBox";
-    default:
-      return "SingleUse";
-  }
-}
-
-export interface MysteryBoxDropRate {
-  percentage: number;
-  label: string;
-  description: string;
-  badgeVariant: "emerald" | "amber" | "purple" | "gold";
-}
-
-export interface MysteryBoxTier {
-  id: "Básico" | "Premium" | "Épico" | "Lendário";
-  backendPackageLevel: "BASIC" | "PREMIUM" | "EPIC" | "LEGENDARY";
-  name: string;
-  recommendedPrice: number;
-  subtitle: string;
-  concept: string;
-  colorName: string;
-  icon: LucideIcon;
-  badgeClass: string;
-  borderClass: string;
-  borderSelectedClass: string;
-  bgClass: string;
-  bgSelectedClass: string;
-  textClass: string;
-  glowClass: string;
-  ringClass: string;
-  accentGlow: string;
-  dropRates: MysteryBoxDropRate[];
-}
 
 export const MYSTERY_BOX_TIERS: readonly MysteryBoxTier[] = [
   {
@@ -467,50 +368,34 @@ export const REWARD_CATEGORY_OPTIONS: SelectOption[] = [
   })),
 ];
 
-export const REWARD_TAG_OPTIONS: SelectOption[] = [
-  { label: "Todas as Tags", value: "" },
-  { label: "Tempo", value: "Tempo" },
-  { label: "Digital", value: "Digital" },
-  { label: "Físico", value: "Físico" },
-];
-
-export interface CouponPackageOption {
-  id: PackageLevel;
-  label: string;
-  suggestedMinutes?: number;
-  dotColor?: string;
-  unselectedClass: string;
-  selectedClass: string;
-}
-
 export const COUPON_PACKAGE_OPTIONS: readonly CouponPackageOption[] = [
   {
     id: "Nenhum",
     label: "Nenhum",
     unselectedClass:
-      "bg-white/5 border-white/10 text-neutral-400 hover:text-neutral-200 hover:bg-white/10 hover:border-white/20",
+      "bg-surface/70 border-neutral-600 text-neutral-300 hover:text-neutral-100 hover:bg-surface hover:border-neutral-500 dark:bg-white/5 dark:border-white/10 dark:text-neutral-400 dark:hover:text-neutral-200 dark:hover:bg-white/10 dark:hover:border-white/20",
     selectedClass:
-      "bg-white/15 border-white/40 text-neutral-100 ring-2 ring-white/20 shadow-xs",
+      "bg-neutral-700/60 border-neutral-500 text-neutral-50 ring-2 ring-neutral-500/20 shadow-2xs dark:bg-white/15 dark:border-white/40 dark:text-neutral-100 dark:ring-white/20",
   },
   {
     id: "Básico",
     label: "Básico (30m)",
     suggestedMinutes: 30,
-    dotColor: "bg-success-500",
+    dotColor: "bg-emerald-500 dark:bg-success-500",
     unselectedClass:
-      "bg-success-500/5 border-success-500/30 text-success-400 hover:bg-success-500/10 hover:border-success-500/60",
+      "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/15 hover:border-emerald-500/50 dark:bg-success-500/5 dark:border-success-500/30 dark:text-success-400 dark:hover:bg-success-500/10 dark:hover:border-success-500/60",
     selectedClass:
-      "bg-success-500/20 border-success-500 text-success-300 ring-2 ring-success-500/40 shadow-[0_0_10px_rgba(0,201,80,0.25)]",
+      "bg-emerald-500/15 border-emerald-600 text-emerald-800 ring-2 ring-emerald-500/20 dark:bg-success-500/20 dark:border-success-500 dark:text-success-300 dark:ring-success-500/40 dark:shadow-[0_0_10px_rgba(0,201,80,0.25)]",
   },
   {
     id: "Premium",
     label: "Premium (60m)",
     suggestedMinutes: 60,
-    dotColor: "bg-info",
+    dotColor: "bg-sky-500 dark:bg-info",
     unselectedClass:
-      "bg-info/5 border-info/30 text-info hover:bg-info/10 hover:border-info/60",
+      "bg-sky-500/10 border-sky-500/30 text-sky-700 hover:bg-sky-500/15 hover:border-sky-500/50 dark:bg-info/5 dark:border-info/30 dark:text-info dark:hover:bg-info/10 dark:hover:border-info/60",
     selectedClass:
-      "bg-info/20 border-info text-info ring-2 ring-info/40 shadow-[0_0_10px_rgba(0,194,255,0.25)]",
+      "bg-sky-500/15 border-sky-600 text-sky-800 ring-2 ring-sky-500/20 dark:bg-info/20 dark:border-info dark:text-info dark:ring-info/40 dark:shadow-[0_0_10px_rgba(0,194,255,0.25)]",
   },
   {
     id: "Épico",
@@ -518,19 +403,19 @@ export const COUPON_PACKAGE_OPTIONS: readonly CouponPackageOption[] = [
     suggestedMinutes: 120,
     dotColor: "bg-magenta",
     unselectedClass:
-      "bg-magenta/5 border-magenta/30 text-magenta hover:bg-magenta/10 hover:border-magenta/60",
+      "bg-magenta/10 border-magenta/30 text-magenta hover:bg-magenta/15 hover:border-magenta/50 dark:bg-magenta/5 dark:border-magenta/30 dark:hover:bg-magenta/10 dark:hover:border-magenta/60",
     selectedClass:
-      "bg-magenta/20 border-magenta text-magenta ring-2 ring-magenta/40 shadow-[0_0_12px_rgba(237,43,229,0.3)]",
+      "bg-magenta/15 border-magenta text-magenta ring-2 ring-magenta/20 dark:bg-magenta/20 dark:border-magenta dark:text-magenta dark:ring-magenta/40 dark:shadow-[0_0_12px_rgba(237,43,229,0.3)]",
   },
   {
     id: "Lendário",
     label: "Lendário (240m)",
     suggestedMinutes: 240,
-    dotColor: "bg-gold",
+    dotColor: "bg-amber-500 dark:bg-gold",
     unselectedClass:
-      "bg-gold/5 border-gold/30 text-gold hover:bg-gold/10 hover:border-gold/60",
+      "text-amber-700 border-amber-500/35 bg-amber-500/10 hover:bg-amber-500/15 hover:border-amber-500/60 dark:bg-gold/5 dark:border-gold/30 dark:text-gold dark:hover:bg-gold/10 dark:hover:border-gold/60",
     selectedClass:
-      "bg-gold/20 border-gold text-gold ring-2 ring-gold/40 shadow-glow-gold-xs",
+      "bg-amber-500/15 border-amber-600 text-amber-800 ring-2 ring-amber-500/20 dark:bg-gold/20 dark:border-gold dark:text-gold dark:ring-gold/40 dark:shadow-glow-gold-xs",
   },
 ] as const;
 
@@ -757,47 +642,6 @@ export const REWARD_PACKAGE_OPTIONS: SelectOption[] = [
     value: level,
   })),
 ];
-
-export function suggestRewardIconFromTitle(title: string): string | null {
-  if (!title.trim()) return null;
-  const normalized = title
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-
-  for (const [keyword, iconId] of Object.entries(REWARD_ICON_KEYWORD_MAP)) {
-    if (normalized.includes(keyword)) {
-      return iconId;
-    }
-  }
-  return null;
-}
-
-export function isMysteryBoxReward(
-  type?: string | null,
-  iconName?: string | null,
-): boolean {
-  return (
-    iconName === "mystery_box" ||
-    type === "MysteryBox" ||
-    type === "MISTERY_BOX"
-  );
-}
-
-export function getMysteryBoxTier(
-  packageLevel?: string | null,
-): MysteryBoxTier {
-  if (!packageLevel) return MYSTERY_BOX_TIERS[0];
-  return (
-    MYSTERY_BOX_TIERS.find(
-      (t) =>
-        t.id === packageLevel ||
-        t.backendPackageLevel === packageLevel ||
-        t.id.toLowerCase() === packageLevel.toLowerCase() ||
-        t.backendPackageLevel === packageLevel.toUpperCase(),
-    ) || MYSTERY_BOX_TIERS[0]
-  );
-}
 
 export const REWARD_FORM_CATEGORY_OPTIONS: SelectOption[] = (
   Object.keys(CATEGORY_LABELS) as RewardCategory[]

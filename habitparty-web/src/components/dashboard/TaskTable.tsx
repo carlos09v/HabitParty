@@ -91,11 +91,11 @@ export function TaskTable({
       {paginatedTasks.length === 0 ? (
         <div
           className={cn(
-            "w-full flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-primary/30 bg-primary-dark/20 backdrop-blur-sm",
+            "w-full flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-neutral-700 dark:border-primary/30 bg-primary-dark/20 backdrop-blur-sm",
             isCompact ? "py-8 px-4 gap-2.5" : "py-12 px-6 gap-3.5",
           )}
         >
-          <div className="w-12 h-12 rounded-full bg-primary/25 border border-primary/40 flex items-center justify-center text-gold shadow-xs">
+          <div className="w-12 h-12 rounded-full bg-primary/10 dark:bg-primary/25 border border-primary/25 dark:border-primary/40 flex items-center justify-center text-primary dark:text-gold shadow-xs">
             <EmptyIcon size={24} aria-hidden="true" />
           </div>
           <div className="flex flex-col gap-1">

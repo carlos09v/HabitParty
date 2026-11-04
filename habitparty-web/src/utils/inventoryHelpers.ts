@@ -1,4 +1,5 @@
 import type { InventoryItem } from "@/types/inventory";
+import { isMysteryBoxReward } from "@/utils/rewardMapper";
 
 export interface InventoryItemActionMeta {
   isMystery: boolean;
@@ -28,10 +29,7 @@ export function getInventoryItemActionMeta(
 
   const rawType = reward?.type || item.itemType;
   const isMystery =
-    rawType === "MysteryBox" ||
-    rawType === "MISTERY_BOX" ||
-    reward?.icon === "mystery_box" ||
-    reward?.iconName === "mystery_box" ||
+    isMysteryBoxReward(rawType, reward?.icon || reward?.iconName) ||
     item.iconName === "mystery_box";
 
   const isCoupon =

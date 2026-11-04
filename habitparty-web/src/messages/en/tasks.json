@@ -149,6 +149,7 @@
     "optionsTitle": "Column options",
     "addTaskHeaderTitle": "Quick add task to this column",
     "completedProgressTitle": "{completed} of {total} completed",
+    "completedSectionLabel": "Completed",
     "emptyState": "No tasks here",
     "emptyStateCta": "Click to create your first task",
     "addTaskFooterButton": "Add task"
@@ -169,6 +170,7 @@
     "dueToday": "Today",
     "dueTomorrow": "Tomorrow",
     "due7Days": "+7d",
+    "dueTimePlaceholder": "Time",
     "effortLabel": "Effort:",
     "directionLabel": "Direction:",
     "positiveTitle": "Positive habit (+)",
@@ -364,6 +366,8 @@
       "dueDateHardcorePlaceholder": "Select required due date...",
       "dueDatePlaceholder": "Set due date...",
       "dueDateFrozenHint": "🔒 Date frozen: deadline expired in Hardcore Mode.",
+      "dueTimeLabel": "Time (Optional)",
+      "dueTimePlaceholder": "Set time...",
       "reminderLabel": "Reminder",
       "reminders": {
         "NONE": "No reminder",
@@ -431,7 +435,11 @@
   "detailsPopover": {
     "dialogAria": "Quick task details",
     "titlePlaceholder": "Task title...",
+    "descriptionLabel": "Description",
     "descriptionPlaceholder": "Add a description or notes...",
+    "previewLabel": "Preview",
+    "doneEditing": "Done",
+    "clickToEditDescription": "Click to edit description",
     "header": {
       "habitBadge": "Habit",
       "resetWeekly": "Weekly reset",
@@ -449,6 +457,8 @@
       "closeTitle": "Close",
       "dateFrozenTitle": "Date frozen: deadline expired in Hardcore Mode",
       "noDueDate": "No due date",
+      "dueTimeBadge": "Time",
+      "clearDueTime": "No time",
       "priorityButtonTitle": "Priority: {label} (click to change)",
       "priorityHeader": "Priority"
     },

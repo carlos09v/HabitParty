@@ -32,7 +32,6 @@ interface FocusRecordDetailsPopoverProps {
   record: FocusRecord | null;
   anchorRect: DOMRect | null;
   onDeleteRecord?: (recordId: string) => void;
-  onRecordUpdated?: () => void;
 }
 
 const POPOVER_OPTIONS = {
@@ -48,7 +47,6 @@ export function FocusRecordDetailsPopover({
   record,
   anchorRect,
   onDeleteRecord,
-  onRecordUpdated,
 }: FocusRecordDetailsPopoverProps) {
   const t = useTranslations("focus.recordDetails");
   const { isGamified } = useExperienceMode();
@@ -104,7 +102,6 @@ export function FocusRecordDetailsPopover({
 
       if (res.success) {
         toast.success(t("toasts.notesUpdated"));
-        onRecordUpdated?.();
         onClose();
       } else {
         toast.error(res.error || t("toasts.updateFailed"));

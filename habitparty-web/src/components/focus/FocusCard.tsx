@@ -12,17 +12,21 @@ import {
   Sparkles,
   Timer,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { type CSSProperties, type HTMLAttributes, memo } from "react";
 import { getFocusIcon } from "@/constants/focus";
-import { getRewardIcon, PACKAGE_LEVEL_COLOR } from "@/constants/reward";
+import { PACKAGE_LEVEL_COLOR } from "@/constants/reward";
+import type { AppLocale } from "@/i18n/config";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
 import type { FocusActivity } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn } from "@/utils";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
-import { isBackpackItemTimeDepleted } from "@/utils/focusFormatters";
-import { BACKEND_TO_UI_PACKAGE } from "@/utils/rewardMapper";
+import {
+  formatBackpackItemRemainingTime,
+  isBackpackItemTimeDepleted,
+} from "@/utils/focusFormatters";
+import { BACKEND_TO_UI_PACKAGE, getRewardIcon } from "@/utils/rewardMapper";
 
 export interface FocusCardBaseProps {
   isActiveTarget?: boolean;
@@ -65,6 +69,7 @@ export type FocusCardProps =
  */
 export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
   const t = useTranslations("focus.card");
+  const locale = useLocale() as AppLocale;
   const {
     isActiveTarget = false,
     isTimerRunning = false,
@@ -103,15 +108,6 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
   const title = isActivity
     ? activity?.name || ""
     : item?.rewardName || t("defaultItemName");
-
-  const formatLocalizedRemainingTime = (seconds: number): string => {
-    if (seconds <= 0) return t("timeCompleted");
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    if (m > 0 && s > 0) return t("remainingMinSec", { m, s });
-    if (m > 0) return t("remainingMin", { m });
-    return t("remainingSec", { s });
-  };
 
   const handleCardClick = (e?: React.MouseEvent) => {
     if (isLocked) {
@@ -189,7 +185,7 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
       }}
       onContextMenu={handleContextMenu}
       className={cn(
-        "group relative flex items-center justify-between rounded-xl border bg-card/60 backdrop-blur-sm transition-[border-color,background-color,box-shadow,opacity] duration-200 select-none",
+        "group relative flex items-center justify-between rounded-xl border bg-card dark:bg-card/60 backdrop-blur-sm shadow-2xs dark:shadow-none transition-[border-color,background-color,box-shadow,opacity] duration-200 select-none",
         isActivity
           ? isLocked
             ? "cursor-pointer"
@@ -204,9 +200,9 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
             ? "border-gold/80 bg-gold/10 shadow-glow-gold-xs"
             : isLocked
               ? "border-white/5 bg-surface/30 opacity-75 hover:opacity-100 hover:border-gold/30"
-              : "border-primary/30 hover:border-gold/40 hover:bg-card-hover/80",
+              : "border-neutral-700 dark:border-primary/30 hover:border-gold/40 hover:bg-card-hover dark:hover:bg-card-hover/80",
         isDragging &&
-          "!transition-none opacity-60 ring-2 ring-gold shadow-glow-gold-md z-50 will-change-transform",
+          "transition-none! opacity-60 ring-2 ring-gold shadow-glow-gold-md z-50 will-change-transform",
       )}
     >
       {/* Esquerda: Ícone + Detalhes */}
@@ -296,7 +292,7 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
                 size={11}
                 className={isTimeDepleted ? "text-emerald-400" : "text-gold"}
               />
-              {formatLocalizedRemainingTime(item.remainingSeconds)}
+              {formatBackpackItemRemainingTime(item.remainingSeconds, locale)}
             </span>
           ) : (
             <span className="flex items-center gap-1 text-tiny text-neutral-400 leading-none mt-0.5">
@@ -370,11 +366,11 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
                 : t("startFocusTitle")
             }
             className={cn(
-              "flex items-center justify-center rounded-lg border transition-all cursor-pointer",
+              "flex items-center justify-center rounded-lg border transition-colors cursor-pointer",
               isCompact ? "w-8 h-8" : "w-9 h-9",
               isActiveTarget
                 ? "bg-gold text-on-gold border-gold font-bold shadow-glow-gold-xs hover:bg-gold-hover"
-                : "bg-surface/80 hover:bg-gold/20 text-neutral-200 hover:text-gold border-primary/30 hover:border-gold/50",
+                : "bg-primary/10 text-primary hover:bg-primary hover:text-white border-primary/20 hover:border-primary dark:bg-surface/80 dark:hover:bg-gold/20 dark:text-neutral-200 dark:hover:text-gold dark:border-primary/30 dark:hover:border-gold/50",
             )}
           >
             {isActiveTarget && isTimerRunning ? (

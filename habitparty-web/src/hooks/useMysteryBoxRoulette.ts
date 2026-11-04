@@ -3,21 +3,19 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import {
-  type MysteryBoxOpenResult,
   openMysteryBox,
   revalidateInventoryAfterRoulette,
 } from "@/actions/inventoryActions";
 import {
-  getMysteryBoxTier,
   MYSTERY_BOX_ROULETTE_POOLS,
   ROULETTE_CARD_WIDTH,
   ROULETTE_TOTAL_CARD_WIDTH,
   ROULETTE_TRACK_LENGTH,
   ROULETTE_WINNING_INDEX,
-  toPackageMessageKey,
 } from "@/constants/reward";
-import type { InventoryItem } from "@/types/inventory";
+import type { InventoryItem, MysteryBoxOpenResult } from "@/types/inventory";
 import type { PackageLevel, RouletteItem } from "@/types/reward";
+import { getMysteryBoxTier, toPackageMessageKey } from "@/utils/rewardMapper";
 import { soundEffects } from "@/utils/soundEffects";
 
 export type { RouletteItem };
