@@ -128,7 +128,7 @@ export async function getFoundersQuotaAction(): Promise<
   try {
     const res = await fetch(`${API_BASE_URL}/api/v1/payments/founders-quota`, {
       method: "GET",
-      cache: "no-store",
+      next: { tags: ["founders-quota"] },
     });
 
     if (!res.ok) {
@@ -217,6 +217,7 @@ export async function confirmPaymentAction(
       updateTag("user");
       updateTag("admin-overview");
       updateTag("admin-users");
+      updateTag("founders-quota");
     }
     return {
       success: true,

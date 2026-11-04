@@ -47,8 +47,11 @@
   },
   "container": {
     "addProduct": "Add Product",
+    "addProductProductivity": "New Reward",
     "buy": "Buy",
+    "buyProductivity": "Redeem",
     "insufficientCoinsShort": "Insufficient coins",
+    "insufficientCreditsShort": "Insufficient credits",
     "filters": {
       "category": "Categories",
       "type": "Type",
@@ -58,6 +61,7 @@
     "empty": {
       "showcaseEmptyTitle": "Your rewards showcase is empty! 🛍️",
       "showcaseEmptyDescription": "Register your first treats, leisure vouchers, or mystery boxes to redeem with the coins you earn completing tasks!",
+      "showcaseEmptyDescriptionProductivity": "Register your first treats or leisure vouchers to redeem with the credits you earn completing tasks!",
       "noResultsTitle": "No rewards found",
       "noResultsDescription": "We couldn't find any rewards matching the applied filters.",
       "createFirstReward": "Create First Reward",
@@ -75,6 +79,7 @@
     },
     "toasts": {
       "insufficientCoins": "Insufficient coins to redeem this item!",
+      "insufficientCredits": "Insufficient credits to redeem this item!",
       "redeemError": "Error redeeming reward.",
       "buySuccess": "You bought \"{title}\"! The item was sent to your Backpack.",
       "buySuccessGamified": "You bought \"{title}\"! The item was sent to your Backpack.",
@@ -86,14 +91,18 @@
   },
   "card": {
     "buy": "Buy",
+    "buyProductivity": "Redeem",
     "addRewardAria": "Add new reward",
-    "addProduct": "Add Product"
+    "addProduct": "Add Product",
+    "addProductProductivity": "New Reward"
   },
   "formModal": {
     "editTitle": "Edit Reward",
     "createTitle": "New Reward",
     "editDescription": "Update the name, cost, and rules of this reward in your Store.",
+    "editDescriptionProductivity": "Update the name, credit cost, and rules of this reward.",
     "createDescription": "Register a prize, time voucher, or mystery box in the Store.",
+    "createDescriptionProductivity": "Register a single-use reward or free-time voucher.",
     "titleLabel": "Reward Name",
     "iconPickerTitle": "Reward Icon",
     "titlePlaceholder": "E.g., 1h of video games, Specialty coffee, Watch a movie...",
@@ -108,6 +117,7 @@
     "packageLevelLabel": "Package Level",
     "packageLevelHint": "(optional • click to apply suggested time)",
     "priceLabel": "Cost in Coins",
+    "priceLabelProductivity": "Cost in Credits",
     "suggestedPriceByRarity": "(Suggested price by rarity)",
     "pricePlaceholder": "E.g., 5, 15, 35, or 80",
     "mysteryBoxPriceHelper": "You can keep the calibrated price for the package or customize it freely.",

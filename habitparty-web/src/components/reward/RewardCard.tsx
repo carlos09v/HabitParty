@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { memo } from "react";
 import { GamifiedItemCard } from "@/components/ui/GamifiedItemCard";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AddRewardCardProps, RewardCardProps } from "@/types/reward";
 import { cn } from "@/utils";
 
@@ -15,6 +16,7 @@ export const RewardCard = memo(function RewardCard({
   canAfford = true,
 }: RewardCardProps) {
   const t = useTranslations("rewards.card");
+  const { isGamified } = useExperienceMode();
 
   return (
     <GamifiedItemCard
@@ -29,7 +31,7 @@ export const RewardCard = memo(function RewardCard({
       isCompact={isCompact}
       price={reward.price}
       canAfford={canAfford}
-      actionLabel={t("buy")}
+      actionLabel={isGamified ? t("buy") : t("buyProductivity")}
       onAction={() => onBuy?.(reward)}
       onContextMenu={(e) => onContextMenu?.(e, reward)}
       dragData={{ type: "Reward", reward }}
@@ -43,6 +45,8 @@ export const AddRewardCard = memo(function AddRewardCard({
   isCompact = false,
 }: AddRewardCardProps) {
   const t = useTranslations("rewards.card");
+  const { isGamified } = useExperienceMode();
+  const addLabel = isGamified ? t("addProduct") : t("addProductProductivity");
 
   if (viewMode === "list") {
     return (
@@ -57,7 +61,7 @@ export const AddRewardCard = memo(function AddRewardCard({
         )}
       >
         <Plus size={15} aria-hidden="true" />
-        <span>{t("addProduct")}</span>
+        <span>{addLabel}</span>
       </button>
     );
   }
@@ -76,7 +80,7 @@ export const AddRewardCard = memo(function AddRewardCard({
       <div className="p-2 rounded-xl bg-white/10 group-hover:bg-gold/20 text-primary-light group-hover:text-gold transition-colors">
         <Plus size={isCompact ? 15 : 18} aria-hidden="true" />
       </div>
-      <span className="text-xs font-semibold">{t("addProduct")}</span>
+      <span className="text-xs font-semibold">{addLabel}</span>
     </button>
   );
 });

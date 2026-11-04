@@ -206,7 +206,7 @@ export function RewardPreview({
               {estimate.breakdown.map((item) => (
                 <div
                   key={item.label}
-                  className="flex items-center justify-between text-caption py-0.5"
+                  className="flex items-center justify-between text-xs py-0.5"
                 >
                   <span className="text-neutral-400">{item.label}</span>
                   <span className="font-semibold text-neutral-200">
@@ -239,12 +239,10 @@ export function RewardPreview({
                     <Info size={14} className="shrink-0 text-blue-400 mt-0.5" />
                   )}
                   <div className="flex flex-col gap-0.5">
-                    <strong className="font-bold text-[11px]">
+                    <strong className="font-bold text-label-g">
                       {notice.title}
                     </strong>
-                    <span className="text-caption opacity-90">
-                      {notice.message}
-                    </span>
+                    <span className="text-xs opacity-90">{notice.message}</span>
                   </div>
                 </div>
               ))}

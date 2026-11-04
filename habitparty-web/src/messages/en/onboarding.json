@@ -1,122 +1,120 @@
 {
-  "onboarding": {
-    "metadata": {
-      "title": "Initial Setup — HabitParty",
-      "description": "Customize your usage mode, create your first workspace, and set your initial interface style."
+  "metadata": {
+    "title": "Initial Setup — HabitParty",
+    "description": "Customize your usage mode, create your first workspace, and set your initial interface style."
+  },
+  "layout": {
+    "headerBadge": "Initial Setup",
+    "stepIndicator": "Step {current} of {total}",
+    "copyright": "© {year} HabitParty. All rights reserved."
+  },
+  "wizard": {
+    "badge": "Personalization",
+    "title": "Customize Your Experience",
+    "subtitle": "Let's calibrate your HabitParty journey. Choose your main goal so we can prepare your first space.",
+    "submit": "Create Workspace & Start My Journey",
+    "submitting": "Preparing your workspace and dashboard...",
+    "redirectHint": "You will be redirected directly to the main dashboard upon completion.",
+    "validation": {
+      "nameRequired": "Please enter a name for your first workspace.",
+      "nameMaxLength": "The workspace name must be up to 25 characters.",
+      "createFailed": "Could not create the workspace. Please try again in a moment.",
+      "invalidId": "The workspace was created without a valid identifier."
     },
-    "layout": {
-      "headerBadge": "Initial Setup",
-      "stepIndicator": "Step {current} of {total}",
-      "copyright": "© {year} HabitParty. All rights reserved."
-    },
-    "wizard": {
-      "badge": "Personalization",
-      "title": "Customize Your Experience",
-      "subtitle": "Let's calibrate your HabitParty journey. Choose your main goal so we can prepare your first space.",
-      "submit": "Create Workspace & Start My Journey",
-      "submitting": "Preparing your workspace and dashboard...",
-      "redirectHint": "You will be redirected directly to the main dashboard upon completion.",
-      "validation": {
-        "nameRequired": "Please enter a name for your first workspace.",
-        "nameMaxLength": "The workspace name must be up to 25 characters.",
-        "createFailed": "Could not create the workspace. Please try again in a moment.",
-        "invalidId": "The workspace was created without a valid identifier."
+    "successToast": "Workspace \"{name}\" created successfully! Welcome to HabitParty!"
+  },
+  "usageModes": {
+    "sectionTitle": "What will be your primary usage mode?",
+    "modes": {
+      "personal": {
+        "title": "Personal & Routine",
+        "description": "Healthy habits, self-care, and daily goals.",
+        "defaultWorkspace": "Personal Life & Routine",
+        "chips": [
+          "Personal Life & Routine",
+          "Health & Wellness",
+          "Habits & Self-Care",
+          "Personal Finance",
+          "Daily Goals",
+          "Home & Family"
+        ]
       },
-      "successToast": "Workspace \"{name}\" created successfully! Welcome to HabitParty!"
-    },
-    "usageModes": {
-      "sectionTitle": "What will be your primary usage mode?",
-      "modes": {
-        "personal": {
-          "title": "Personal & Routine",
-          "description": "Healthy habits, self-care, and daily goals.",
-          "defaultWorkspace": "Personal Life & Routine",
-          "chips": [
-            "Personal Life & Routine",
-            "Health & Wellness",
-            "Habits & Self-Care",
-            "Personal Finance",
-            "Daily Goals",
-            "Home & Family"
-          ]
-        },
-        "studies": {
-          "title": "Studies & Learning",
-          "description": "Subjects, reviews, readings, and academic courses.",
-          "defaultWorkspace": "Studies & Learning",
-          "chips": [
-            "Studies & Learning",
-            "College & Courses",
-            "Exams & Certifications",
-            "Languages & Reading",
-            "Tech Development",
-            "Research & Papers"
-          ]
-        },
-        "work": {
-          "title": "Work & Projects",
-          "description": "Professional tasks, goals, and career deliverables.",
-          "defaultWorkspace": "Work & Career",
-          "chips": [
-            "Work & Career",
-            "Projects & Tasks",
-            "Freelance & Clients",
-            "Business & Strategy",
-            "Company Goals",
-            "Creative Studio"
-          ]
-        },
-        "all": {
-          "title": "General & Balance",
-          "description": "Everything in a single integrated space for your day.",
-          "defaultWorkspace": "My General Space",
-          "chips": [
-            "My General Space",
-            "Daily Focus & Goals",
-            "Balance & Routine",
-            "Personal Projects",
-            "Peak Productivity",
-            "Day-to-Day Habits"
-          ]
-        }
+      "studies": {
+        "title": "Studies & Learning",
+        "description": "Subjects, reviews, readings, and academic courses.",
+        "defaultWorkspace": "Studies & Learning",
+        "chips": [
+          "Studies & Learning",
+          "College & Courses",
+          "Exams & Certifications",
+          "Languages & Reading",
+          "Tech Development",
+          "Research & Papers"
+        ]
+      },
+      "work": {
+        "title": "Work & Projects",
+        "description": "Professional tasks, goals, and career deliverables.",
+        "defaultWorkspace": "Work & Career",
+        "chips": [
+          "Work & Career",
+          "Projects & Tasks",
+          "Freelance & Clients",
+          "Business & Strategy",
+          "Company Goals",
+          "Creative Studio"
+        ]
+      },
+      "all": {
+        "title": "General & Balance",
+        "description": "Everything in a single integrated space for your day.",
+        "defaultWorkspace": "My General Space",
+        "chips": [
+          "My General Space",
+          "Daily Focus & Goals",
+          "Balance & Routine",
+          "Personal Projects",
+          "Peak Productivity",
+          "Day-to-Day Habits"
+        ]
       }
-    },
-    "workspaceSetup": {
-      "title": "Your First Workspace",
-      "badge": "⭐ Essential",
-      "description": "Workspaces organize your tasks, routines, and habits by context. You can create more workspaces later in the dashboard.",
-      "label": "Workspace Name",
-      "placeholder": "E.g. Personal, Studies...",
-      "hint": "Maximum of 25 characters.",
-      "suggestionsLabel": "Quick suggestions for your focus:"
-    },
-    "experienceMode": {
-      "title": "Experience & Interface Style",
-      "settingsHint": "Change anytime in settings",
-      "densityLabel": "Density:",
-      "densityStandard": "Standard",
-      "densityCompact": "Compact",
-      "soundsLabel": "UI Sounds:",
-      "soundsActive": "On",
-      "soundsMuted": "Muted",
-      "modes": {
-        "PRODUCTIVITY": {
-          "title": "Focus & Productivity",
-          "badge": "Executive",
-          "description": "Clean, minimalist interface. Hides coins, loot boxes, and sound effects for pure focus."
-        },
-        "GAMIFIED": {
-          "title": "RPG Immersion (Gamified)",
-          "badge": "RPG & Dopamine",
-          "description": "Earn coins, XP, and take on Hardcore Mode. Unlock real-life rewards and defeat inertia."
-        }
-      }
-    },
-    "workspaceActions": {
-      "createError": "Failed to create workspace. Please try again.",
-      "updateError": "Failed to update workspace.",
-      "deleteError": "Failed to delete workspace.",
-      "serverError": "Internal server communication error."
     }
+  },
+  "workspaceSetup": {
+    "title": "Your First Workspace",
+    "badge": "⭐ Essential",
+    "description": "Workspaces organize your tasks, routines, and habits by context. You can create more workspaces later in the dashboard.",
+    "label": "Workspace Name",
+    "placeholder": "E.g. Personal, Studies...",
+    "hint": "Maximum of 25 characters.",
+    "suggestionsLabel": "Quick suggestions for your focus:"
+  },
+  "experienceMode": {
+    "title": "Experience & Interface Style",
+    "settingsHint": "Change anytime in settings",
+    "densityLabel": "Density:",
+    "densityStandard": "Standard",
+    "densityCompact": "Compact",
+    "soundsLabel": "UI Sounds:",
+    "soundsActive": "On",
+    "soundsMuted": "Muted",
+    "modes": {
+      "PRODUCTIVITY": {
+        "title": "Essential Mode",
+        "badge": "Immersive Productivity",
+        "description": "Clean executive interface with credits, consistency points, and direct focus on deliverables."
+      },
+      "GAMIFIED": {
+        "title": "Adventure Mode (RPG)",
+        "badge": "Gamification & Dopamine",
+        "description": "Earn gold coins, XP, open mystery boxes, and take on Hardcore Mode to defeat inertia."
+      }
+    }
+  },
+  "workspaceActions": {
+    "createError": "Failed to create workspace. Please try again.",
+    "updateError": "Failed to update workspace.",
+    "deleteError": "Failed to delete workspace.",
+    "serverError": "Internal server communication error."
   }
 }

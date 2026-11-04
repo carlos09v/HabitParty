@@ -5,7 +5,6 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { updateTask } from "@/actions/taskActions";
 import {
-  MAX_TAG_LENGTH,
   MAX_TASK_TAGS,
   normalizeTaskType,
   TASK_DETAILS_POPOVER_OPTIONS,
@@ -21,6 +20,7 @@ import { applyMarkdownFormat } from "@/utils/markdown";
 import {
   buildUpdateTaskPayload,
   computeOptimisticHabitDelta,
+  parseTaskTags,
 } from "@/utils/taskMapper";
 
 export function useTaskDetailsPopover({
@@ -71,6 +71,7 @@ export function useTaskDetailsPopover({
     resetChecklist,
     addItem: addChecklistItem,
     toggleItem: toggleChecklistItem,
+    updateItem: updateChecklistItem,
     deleteItem: deleteChecklistItem,
   } = useChecklist({
     initialItems: task?.checklist,
@@ -194,16 +195,17 @@ export function useTaskDetailsPopover({
     const descChanged = trimmedDesc !== originalDesc;
 
     let nextTags = [...(task.tags || tags)];
-    const pendingTag = newTagRef.current.trim().slice(0, MAX_TAG_LENGTH);
+    const parsedPendingTags = parseTaskTags(newTagRef.current);
     let tagsChanged = false;
 
-    if (
-      pendingTag &&
-      nextTags.length < MAX_TASK_TAGS &&
-      !nextTags.some((t) => t.toLowerCase() === pendingTag.toLowerCase())
-    ) {
-      nextTags = [...nextTags, pendingTag];
-      tagsChanged = true;
+    for (const pendingTag of parsedPendingTags) {
+      if (
+        nextTags.length < MAX_TASK_TAGS &&
+        !nextTags.some((t) => t.toLowerCase() === pendingTag.toLowerCase())
+      ) {
+        nextTags = [...nextTags, pendingTag];
+        tagsChanged = true;
+      }
     }
 
     if (titleChanged || descChanged || tagsChanged) {
@@ -302,8 +304,8 @@ export function useTaskDetailsPopover({
   };
 
   const handleAddTag = () => {
-    const trimmed = newTagText.trim().slice(0, MAX_TAG_LENGTH);
-    if (!trimmed) {
+    const parsedNewTags = parseTaskTags(newTagText);
+    if (parsedNewTags.length === 0) {
       setIsAddingTag(false);
       return;
     }
@@ -314,10 +316,28 @@ export function useTaskDetailsPopover({
       setIsAddingTag(false);
       return;
     }
-    const alreadyExists = tags.some(
-      (tagItem) => tagItem.toLowerCase() === trimmed.toLowerCase(),
-    );
-    if (alreadyExists) {
+
+    const nextTags = [...tags];
+    let addedAny = false;
+    let hadDuplicate = false;
+
+    for (const candidate of parsedNewTags) {
+      if (nextTags.length >= MAX_TASK_TAGS) {
+        toast.error(t("maxTagsError", { max: MAX_TASK_TAGS }));
+        break;
+      }
+      const alreadyExists = nextTags.some(
+        (tagItem) => tagItem.toLowerCase() === candidate.toLowerCase(),
+      );
+      if (alreadyExists) {
+        hadDuplicate = true;
+        continue;
+      }
+      nextTags.push(candidate);
+      addedAny = true;
+    }
+
+    if (!addedAny && hadDuplicate) {
       toast.error(t("tagAlreadyAdded"));
       setNewTagText("");
       newTagRef.current = "";
@@ -325,9 +345,10 @@ export function useTaskDetailsPopover({
       return;
     }
 
-    const nextTags = [...tags, trimmed];
-    setTags(nextTags);
-    saveTaskField({ tags: nextTags });
+    if (addedAny) {
+      setTags(nextTags);
+      saveTaskField({ tags: nextTags });
+    }
     setNewTagText("");
     newTagRef.current = "";
     setIsAddingTag(false);
@@ -439,6 +460,7 @@ export function useTaskDetailsPopover({
     handleRemoveTag,
     handleAddCheckItem,
     handleToggleCheckItem: toggleChecklistItem,
+    handleUpdateCheckItem: updateChecklistItem,
     handleDeleteCheckItem: deleteChecklistItem,
     handleApplyFormat,
     handleDeleteTask,

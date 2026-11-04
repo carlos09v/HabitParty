@@ -1,509 +1,510 @@
 {
-  "settings": {
-    "metadata": {
-      "title": "Configurações | HabitParty",
-      "description": "Gerencie seu perfil, aparência, alertas sonoros, assinatura e segurança da conta."
+  "metadata": {
+    "title": "Configurações | HabitParty",
+    "description": "Gerencie seu perfil, aparência, alertas sonoros, assinatura e segurança da conta."
+  },
+  "loading": {
+    "label": "Carregando configurações..."
+  },
+  "headerTitle": "Configurações",
+  "headerSubtitle": "Gerencie seu perfil, assinatura, aparência e segurança da conta.",
+  "tabs": {
+    "profile": "Perfil",
+    "profileDesc": "Identidade cósmica, fotos e molduras",
+    "appearance": "Aparência",
+    "appearanceDesc": "Tema claro/escuro, idioma, densidade e cards",
+    "audio": "Áudio & Avisos",
+    "audioDesc": "Sons de clique, alarmes e ambiente VIP",
+    "subscription": "Assinatura",
+    "subscriptionDesc": "Plano, limites e cobrança",
+    "security": "Segurança",
+    "securityDesc": "Senha, sessões e exclusão",
+    "navAria": "Navegação de Configurações"
+  },
+  "cards": {
+    "profile": "Meu Perfil",
+    "profileDesc": "Gerencie seu nome, data de nascimento e identidade na plataforma.",
+    "avatarFrames": "Molduras de Avatar",
+    "avatarFramesDesc": "Personalize o anel de luz e efeitos visuais ao redor da sua foto de perfil.",
+    "appearanceTheme": "Aparência & Tema",
+    "appearanceThemeDesc": "Alterne entre o tema escuro cósmico tradicional e o tema claro Cosmic Daylight de conforto visual.",
+    "experienceMode": "Perfil de Experiência (Modo Essencial vs. Modo Aventura)",
+    "experienceModeDesc": "Escolha o estilo da sua gamificação: interface executiva com créditos e pontos no Modo Essencial ou imersão RPG com moedas de ouro, XP e caixas misteriosas no Modo Aventura.",
+    "language": "Idioma da Interface",
+    "languageDesc": "Escolha o idioma de exibição dos menus, painéis e mensagens do HabitParty.",
+    "compact": "Densidade da Interface",
+    "compactDesc": "Ajuste o espaçamento de elementos na tela para seu estilo de uso.",
+    "welcomeCards": "Cards Introdutórios das Telas",
+    "welcomeCardsDesc": "Gerencie quais cartões de boas-vindas e guias rápidos permanecem visíveis nas telas do aplicativo.",
+    "audioTitle": "Sons de Interface & Notificações",
+    "audioDesc": "Personalize os efeitos sonoros de cliques, alarmes de conclusão de Pomodoro e paisagens sonoras.",
+    "subscription": "Assinatura & Plano",
+    "subscriptionDesc": "Gerencie seu plano ativo, cotas cósmicas, renovações e forma de pagamento.",
+    "changePassword": "Alterar Senha",
+    "changePasswordDesc": "Atualize a senha de acesso à sua conta. Utilize uma senha forte com letras, números e símbolos.",
+    "dangerZone": "Zona de Perigo",
+    "dangerZoneDesc": "A exclusão da sua conta apagará permanentemente todos os seus dados, tarefas, moedas, itens e histórico no HabitParty. Esta ação é irreversível."
+  },
+  "profileHeader": {
+    "changePhoto": "Alterar foto",
+    "uploading": "Enviando...",
+    "currentLevel": "Nível {level} • {title}",
+    "coins": "{amount} Moedas",
+    "xp": "{amount} XP Vitalício",
+    "vipBadge": "Guardião Cósmico",
+    "founderBadge": "Membro Fundador",
+    "invalidImageToast": "Por favor, selecione um arquivo de imagem válido.",
+    "imageSizeToast": "A imagem deve ter no máximo 5MB.",
+    "photoSuccessToast": "Foto de perfil atualizada com sucesso!",
+    "photoErrorToast": "Erro ao atualizar foto de perfil.",
+    "changePhotoAria": "Alterar foto de perfil",
+    "dropzoneTitle": "Clique ou solte uma imagem aqui para alterar sua foto de perfil",
+    "dropzoneActive": "Solte a imagem aqui",
+    "dropzoneDefault": "Arraste uma foto aqui",
+    "dropzoneHint": "ou clique para anexar (máx. 5MB)",
+    "uploadingPhoto": "Enviando foto...",
+    "premiumBadge": "PREMIUM",
+    "freeBadge": "GRATUITO",
+    "adminBadge": "ADMIN",
+    "adventurer": "Aventureiro",
+    "member": "Membro",
+    "novice": "Novato",
+    "premiumMember": "Membro Premium",
+    "coinsLabel": "moedas",
+    "creditsLabel": "créditos",
+    "xpLabel": "XP acumulado",
+    "pointsLabel": "pts acumulados"
+  },
+  "profileForm": {
+    "fullNameLabel": "Nome Completo",
+    "fullNamePlaceholder": "Seu nome ou apelido",
+    "birthdayLabel": "Data de Nascimento",
+    "birthdayOptional": "(opcional)",
+    "genderLabel": "Gênero",
+    "save": "Salvar Alterações",
+    "saving": "Salvando...",
+    "successToast": "Perfil atualizado com sucesso!",
+    "nameRequired": "O nome completo é obrigatório.",
+    "genderOptions": {
+      "MALE": "Masculino",
+      "FEMALE": "Feminino",
+      "NON_BINARY": "Não-binário",
+      "PREFER_NOT_TO_SAY": "Prefiro não informar"
     },
-    "loading": {
-      "label": "Carregando configurações..."
-    },
-    "headerTitle": "Configurações",
-    "headerSubtitle": "Gerencie seu perfil, assinatura, aparência e segurança da conta.",
-    "tabs": {
-      "profile": "Perfil",
-      "profileDesc": "Identidade cósmica, fotos e molduras",
-      "appearance": "Aparência",
-      "appearanceDesc": "Tema claro/escuro, idioma, densidade e cards",
-      "audio": "Áudio & Avisos",
-      "audioDesc": "Sons de clique, alarmes e ambiente VIP",
-      "subscription": "Assinatura",
-      "subscriptionDesc": "Plano, limites e cobrança",
-      "security": "Segurança",
-      "securityDesc": "Senha, sessões e exclusão",
-      "navAria": "Navegação de Configurações"
-    },
-    "cards": {
-      "profile": "Meu Perfil",
-      "profileDesc": "Gerencie seu nome, data de nascimento e identidade na plataforma.",
-      "avatarFrames": "Molduras de Avatar",
-      "avatarFramesDesc": "Personalize o anel de luz e efeitos visuais ao redor da sua foto de perfil.",
-      "appearanceTheme": "Aparência & Tema",
-      "appearanceThemeDesc": "Alterne entre o tema escuro cósmico tradicional e o tema claro Cosmic Daylight de conforto visual.",
-      "experienceMode": "Perfil de Experiência (Gamificação vs. Produtividade)",
-      "experienceModeDesc": "Escolha como os elementos de RPG, ícones de dificuldade e estimativas de recompensa são exibidos na sua interface.",
-      "language": "Idioma da Interface",
-      "languageDesc": "Escolha o idioma de exibição dos menus, painéis e mensagens do HabitParty.",
-      "compact": "Densidade da Interface",
-      "compactDesc": "Ajuste o espaçamento de elementos na tela para seu estilo de uso.",
-      "welcomeCards": "Cards Introdutórios das Telas",
-      "welcomeCardsDesc": "Gerencie quais cartões de boas-vindas e guias rápidos permanecem visíveis nas telas do aplicativo.",
-      "audioTitle": "Sons de Interface & Notificações",
-      "audioDesc": "Personalize os efeitos sonoros de cliques, alarmes de conclusão de Pomodoro e paisagens sonoras.",
-      "subscription": "Assinatura & Plano",
-      "subscriptionDesc": "Gerencie seu plano ativo, cotas cósmicas, renovações e forma de pagamento.",
-      "changePassword": "Alterar Senha",
-      "changePasswordDesc": "Atualize a senha de acesso à sua conta. Utilize uma senha forte com letras, números e símbolos.",
-      "dangerZone": "Zona de Perigo",
-      "dangerZoneDesc": "A exclusão da sua conta apagará permanentemente todos os seus dados, tarefas, moedas, itens e histórico no HabitParty. Esta ação é irreversível."
-    },
-    "profileHeader": {
-      "changePhoto": "Alterar foto",
-      "uploading": "Enviando...",
-      "currentLevel": "Nível {level} • {title}",
-      "coins": "{amount} Moedas",
-      "xp": "{amount} XP Vitalício",
-      "vipBadge": "Guardião Cósmico",
-      "founderBadge": "Membro Fundador",
-      "invalidImageToast": "Por favor, selecione um arquivo de imagem válido.",
-      "imageSizeToast": "A imagem deve ter no máximo 5MB.",
-      "photoSuccessToast": "Foto de perfil atualizada com sucesso!",
-      "photoErrorToast": "Erro ao atualizar foto de perfil.",
-      "changePhotoAria": "Alterar foto de perfil",
-      "dropzoneTitle": "Clique ou solte uma imagem aqui para alterar sua foto de perfil",
-      "dropzoneActive": "Solte a imagem aqui",
-      "dropzoneDefault": "Arraste uma foto aqui",
-      "dropzoneHint": "ou clique para anexar (máx. 5MB)",
-      "uploadingPhoto": "Enviando foto...",
-      "premiumBadge": "PREMIUM",
-      "freeBadge": "GRATUITO",
-      "adminBadge": "ADMIN",
-      "adventurer": "Aventureiro",
-      "novice": "Novato",
-      "premiumMember": "Membro Premium",
-      "coinsLabel": "moedas",
-      "xpLabel": "XP acumulado"
-    },
-    "profileForm": {
-      "fullNameLabel": "Nome Completo",
-      "fullNamePlaceholder": "Seu nome ou apelido",
-      "birthdayLabel": "Data de Nascimento",
-      "birthdayOptional": "(opcional)",
-      "genderLabel": "Gênero",
-      "save": "Salvar Alterações",
-      "saving": "Salvando...",
-      "successToast": "Perfil atualizado com sucesso!",
-      "nameRequired": "O nome completo é obrigatório.",
-      "genderOptions": {
-        "MALE": "Masculino",
-        "FEMALE": "Feminino",
-        "NON_BINARY": "Não-binário",
-        "PREFER_NOT_TO_SAY": "Prefiro não informar"
+    "cardTitle": "Dados Pessoais",
+    "cardDesc": "Atualize seus dados públicos e identificação no HabitParty.",
+    "noChangesToast": "Nenhuma alteração foi realizada.",
+    "noChangesTitle": "Nenhuma alteração para salvar",
+    "nameMaxToast": "O nome deve ter no máximo 30 caracteres.",
+    "charCounter": "{current}/{max} caracteres",
+    "birthdayPlaceholder": "Selecione sua data de nascimento",
+    "genderPlaceholder": "Selecione o gênero (opcional)",
+    "errorToast": "Erro ao salvar perfil."
+  },
+  "theme": {
+    "dark": "Tema Escuro",
+    "darkDesc": "Atmosfera noturna cósmica inspirada em RPG e galáxias. Fundo roxo profundo com orbes etéreos, ideal para ambientes escuros e menor fadiga visual.",
+    "light": "Tema Claro",
+    "lightDesc": "Paleta Cosmic Daylight de conforto ocular. Fundo em alabastro frio neutro, cards brancos com bordas nítidas e tipografia em slate editorial.",
+    "defaultBadge": "Padrão",
+    "statusDark": "Tema Escuro Cósmico está ativo como padrão visual do sistema.",
+    "statusLight": "Tema Claro Cosmic Daylight está ativo para maior conforto visual diurno.",
+    "statusActiveLabel": "Tema ativo: "
+  },
+  "experienceMode": {
+    "gamified": "Modo Aventura (Imersão RPG)",
+    "gamifiedDesc": "Aventura completa com moedas de ouro, XP, títulos de aventureiro, ícones de espadas para dificuldade e Caixas Misteriosas na Loja.",
+    "productivity": "Modo Essencial (Produtividade)",
+    "productivityDesc": "Produtividade gamificada com estética executiva. Utiliza Créditos e Pontos (pts), títulos profissionais, indicadores discretos de esforço e recompensas diretas sem sorteios.",
+    "defaultBadge": "Padrão",
+    "statusGamified": "Modo Aventura (Imersão RPG) — Recompensas em destaque, Caixas Misteriosas, ícones de espadas e economia em XP e Moedas de Ouro.",
+    "statusProductivity": "Modo Essencial (Produtividade) — Interface executiva limpa com economia de Créditos e Pontos (pts) e foco direto nas entregas.",
+    "activeLabel": "Perfil de Experiência Ativo:",
+    "toastSuccess": "Perfil de experiência alterado para {mode}!"
+  },
+  "languageCard": {
+    "title": "Idioma da Interface",
+    "description": "Escolha o idioma de exibição de todos os menus, painéis e mensagens do HabitParty.",
+    "enLabel": "English (US)",
+    "enDesc": "Exibir toda a interface em inglês.",
+    "ptLabel": "Português (Brasil)",
+    "ptDesc": "Exibir toda a interface em português brasileiro.",
+    "statusEn": "English (US) está ativo como idioma principal da interface.",
+    "statusPt": "Português (Brasil) está ativo como idioma principal da interface.",
+    "activeLabel": "Idioma ativo: ",
+    "statusDesc": "O Português (Brasil) está ativo em toda a sua interface."
+  },
+  "compactMode": {
+    "compact": "Modo Compacto",
+    "compactDesc": "Cards, calendários e listas menores. Otimiza o espaço de tela para visualização simultânea de mais tarefas e itens de recompensa. Recomendado para maior produtividade.",
+    "comfortable": "Modo Confortável",
+    "comfortableDesc": "Paddings mais generosos e tipografia padrão. Ideal para telas grandes ou para quem prefere espaçamentos mais relaxados e elementos maiores.",
+    "defaultBadge": "Padrão",
+    "statusCompact": "Modo Compacto está ativo para máxima densidade de conteúdo.",
+    "statusComfortable": "Modo Confortável está ativo com espaçamentos ampliados.",
+    "statusLabel": "Status atual: "
+  },
+  "avatarFrames": {
+    "upgradeToast": "Molduras animadas são exclusivas para membros Premium! Faça o upgrade para desbloquear.",
+    "vipBadge": "VIP Cósmico",
+    "defaultBadge": "Padrão",
+    "equipped": "Equipada",
+    "equip": "Equipar",
+    "locked": "Exclusivo VIP",
+    "previewLabel": "Prévia do Avatar:",
+    "successToast": "Moldura \"{name}\" equipada com sucesso!",
+    "frames": {
+      "none": {
+        "name": "Sem Moldura",
+        "badge": "Padrão",
+        "description": "Visual clássico limpo sem efeitos de borda adicionais."
       },
-      "cardTitle": "Dados Pessoais",
-      "cardDesc": "Atualize seus dados públicos e identificação no HabitParty.",
-      "noChangesToast": "Nenhuma alteração foi realizada.",
-      "noChangesTitle": "Nenhuma alteração para salvar",
-      "nameMaxToast": "O nome deve ter no máximo 30 caracteres.",
-      "charCounter": "{current}/{max} caracteres",
-      "birthdayPlaceholder": "Selecione sua data de nascimento",
-      "genderPlaceholder": "Selecione o gênero (opcional)",
-      "errorToast": "Erro ao salvar perfil."
-    },
-    "theme": {
-      "dark": "Tema Escuro",
-      "darkDesc": "Atmosfera noturna cósmica inspirada em RPG e galáxias. Fundo roxo profundo com orbes etéreos, ideal para ambientes escuros e menor fadiga visual.",
-      "light": "Tema Claro",
-      "lightDesc": "Paleta Cosmic Daylight de conforto ocular. Fundo em alabastro frio neutro, cards brancos com bordas nítidas e tipografia em slate editorial.",
-      "defaultBadge": "Padrão",
-      "statusDark": "Tema Escuro Cósmico está ativo como padrão visual do sistema.",
-      "statusLight": "Tema Claro Cosmic Daylight está ativo para maior conforto visual diurno.",
-      "statusActiveLabel": "Tema ativo: "
-    },
-    "experienceMode": {
-      "gamified": "Imersão RPG (Gamificado)",
-      "gamifiedDesc": "Painel de estimativa de recompensa sempre aberto e visível nos formulários, ícones de espadas para representar a dificuldade das tarefas e exibição de ganhos de XP e Ouro nas listagens.",
-      "productivity": "Foco & Produtividade (Minimalista)",
-      "productivityDesc": "Interface limpa e executiva focada em entregas. Oculta as estimativas de recompensa dos modais e popovers, usa indicadores discretos de esforço e mantém a gamificação rodando silenciosamente nos bastidores.",
-      "defaultBadge": "Padrão",
-      "statusGamified": "Imersão RPG (Gamificado) — Recompensas em amostra, ícones de espadas para dificuldade e destaque total para XP e Moedas.",
-      "statusProductivity": "Foco & Produtividade (Minimalista) — Interface limpa com estimativas de recompensa ocultas e foco direto nas tarefas.",
-      "activeLabel": "Perfil de Experiência Ativo:",
-      "toastSuccess": "Perfil de experiência alterado para {mode}!"
-    },
-    "languageCard": {
-      "title": "Idioma da Interface",
-      "description": "Escolha o idioma de exibição de todos os menus, painéis e mensagens do HabitParty.",
-      "enLabel": "English (US)",
-      "enDesc": "Exibir toda a interface em inglês.",
-      "ptLabel": "Português (Brasil)",
-      "ptDesc": "Exibir toda a interface em português brasileiro.",
-      "statusEn": "English (US) está ativo como idioma principal da interface.",
-      "statusPt": "Português (Brasil) está ativo como idioma principal da interface.",
-      "activeLabel": "Idioma ativo: ",
-      "statusDesc": "O Português (Brasil) está ativo em toda a sua interface."
-    },
-    "compactMode": {
-      "compact": "Modo Compacto",
-      "compactDesc": "Cards, calendários e listas menores. Otimiza o espaço de tela para visualização simultânea de mais tarefas e itens de recompensa. Recomendado para maior produtividade.",
-      "comfortable": "Modo Confortável",
-      "comfortableDesc": "Paddings mais generosos e tipografia padrão. Ideal para telas grandes ou para quem prefere espaçamentos mais relaxados e elementos maiores.",
-      "defaultBadge": "Padrão",
-      "statusCompact": "Modo Compacto está ativo para máxima densidade de conteúdo.",
-      "statusComfortable": "Modo Confortável está ativo com espaçamentos ampliados.",
-      "statusLabel": "Status atual: "
-    },
-    "avatarFrames": {
-      "upgradeToast": "Molduras animadas são exclusivas para membros Premium! Faça o upgrade para desbloquear.",
-      "vipBadge": "VIP Cósmico",
-      "defaultBadge": "Padrão",
-      "equipped": "Equipada",
-      "equip": "Equipar",
-      "locked": "Exclusivo VIP",
-      "previewLabel": "Prévia do Avatar:",
-      "successToast": "Moldura \"{name}\" equipada com sucesso!",
-      "frames": {
-        "none": {
-          "name": "Sem Moldura",
-          "badge": "Padrão",
-          "description": "Visual clássico limpo sem efeitos de borda adicionais."
-        },
-        "cosmic_gold": {
-          "name": "Guardião Cósmico",
-          "badge": "VIP Cósmico",
-          "description": "Aura de ouro estelar radiante com rotação de luz cósmica e brilho dourado."
-        },
-        "cyber_neon": {
-          "name": "Cyberpunk Neon",
-          "badge": "VIP Tech",
-          "description": "Pulso neon eletrizante alternando tons de ciano futurista e magenta laser."
-        },
-        "fire_phoenix": {
-          "name": "Fogo da Fênix",
-          "badge": "VIP Fênix",
-          "description": "Chamas ardentes em vermelho escarlate e âmbar com efeito de combustão."
-        },
-        "emerald_mystic": {
-          "name": "Aura Esmeralda",
-          "badge": "VIP Místico",
-          "description": "Anel de energia natural verde esmeralda com pulsação suave e mística."
-        },
-        "amethyst_void": {
-          "name": "Vácuo Ametista",
-          "badge": "VIP Arcano",
-          "description": "Energia dimensional violeta escura com brilho estelar etéreo e misterioso."
-        }
+      "cosmic_gold": {
+        "name": "Guardião Cósmico",
+        "badge": "VIP Cósmico",
+        "description": "Aura de ouro estelar radiante com rotação de luz cósmica e brilho dourado."
       },
-      "subtitle": "Escolha uma moldura animada com luz cósmica para destacar seu perfil na Party, no ranking e no painel.",
-      "unlockAll": "Desbloquear Todas",
-      "freeBadge": "Grátis",
-      "lockedTitle": "Exclusivo Premium"
-    },
-    "welcomeCards": {
-      "hiddenCount": "{count, plural, one {# card ocultado} other {# cards ocultados}}",
-      "allVisible": "Todos os cards estão visíveis",
-      "restoreAll": "Restaurar todos os cards",
-      "restoreAllSuccess": "Todos os cards de boas-vindas foram restaurados!",
-      "cardReactivatedToast": "Card \"{title}\" reativado! Ele voltará a aparecer na tela.",
-      "cardHiddenToast": "Card \"{title}\" foi ocultado.",
-      "ariaToggle": "Visibilidade do card {title}",
-      "items": {
-        "tasks": {
-          "title": "Gerencie suas Tarefas!",
-          "pageName": "Quadro de Tarefas",
-          "description": "Orientações sobre organização de tarefas, colunas e criação de hábitos no quadro."
-        },
-        "inventory": {
-          "title": "Sua Mochila!",
-          "titleGamified": "Sua Mochila!",
-          "titleProductivity": "Seu Inventário!",
-          "pageName": "Mochila / Inventário",
-          "pageNameGamified": "Mochila",
-          "pageNameProductivity": "Inventário",
-          "description": "Instruções sobre itens adquiridos na loja e consumo no inventário."
-        },
-        "rewards": {
-          "title": "Colete sua recompensa!",
-          "pageName": "Vitrine de Recompensas",
-          "description": "Dicas sobre troca de moedas por cupons e recompensas personalizadas."
-        },
-        "focus": {
-          "title": "Seu ambiente de Foco!",
-          "pageName": "Sessão de Foco",
-          "description": "Instruções do timer Pomodoro, cronômetro contínuo e sessões guiadas."
-        },
-        "history": {
-          "title": "Extrato de Transações",
-          "titleGamified": "Cofre do Aventureiro",
-          "titleProductivity": "Extrato de Transações",
-          "pageName": "Histórico de Transações",
-          "pageNameGamified": "Cofre do Aventureiro",
-          "pageNameProductivity": "Histórico de Transações",
-          "description": "Resumo sobre moedas, XP e auditoria de transações realizadas.",
-          "descriptionGamified": "Resumo sobre moedas, XP e auditoria de recompensas guardadas no cofre.",
-          "descriptionProductivity": "Resumo sobre moedas, XP e auditoria de transações realizadas."
-        }
+      "cyber_neon": {
+        "name": "Cyberpunk Neon",
+        "badge": "VIP Tech",
+        "description": "Pulso neon eletrizante alternando tons de ciano futurista e magenta laser."
       },
-      "statusLabel": "Status: ",
-      "statusSummary": "{count} de {total} cards informativos estão ocultados.",
-      "restoreAllBtn": "Reativar Todos",
-      "hiddenBadge": "Oculto",
-      "visibleBadge": "Visível",
-      "reactivateBtn": "Reativar na Tela",
-      "cardAria": "Alternar visibilidade do card de boas-vindas da página {pageName}"
-    },
-    "soundNotifications": {
-      "soundEffectsTitle": "Efeitos Sonoros de Interface",
-      "soundEffectsDesc": "Sons de clique, conclusão de tarefas, subida de nível e ações do sistema.",
-      "alarmTonesTitle": "Toque do Alarme de Conclusão (Pomodoro)",
-      "alarmTonesDesc": "Escolha o toque reproduzido quando um ciclo de foco ou intervalo chega ao fim.",
-      "testSound": "Testar som",
-      "tones": {
-        "zen": {
-          "label": "Sino Zen Suave",
-          "description": "Harmônico 528Hz focado em calma"
-        },
-        "arcade": {
-          "label": "Arcade Retrô",
-          "description": "Bips eletrônicos ascendentes gamificados"
-        },
-        "digital": {
-          "label": "Digital Moderno",
-          "description": "Chime minimalista executivo de alta frequência"
-        },
-        "harp": {
-          "label": "Harpa Etérea",
-          "description": "Acorde clássico de harpa suave e espacial"
-        }
+      "fire_phoenix": {
+        "name": "Fogo da Fênix",
+        "badge": "VIP Fênix",
+        "description": "Chamas ardentes em vermelho escarlate e âmbar com efeito de combustão."
       },
-      "ambientSounds": {
-        "none": {
-          "label": "Desligado",
-          "description": "Sem ruído ambiente de fundo."
-        },
-        "rain": {
-          "label": "Chuva Suave",
-          "description": "Som relaxante de chuva leve e contínua."
-        },
-        "cafe": {
-          "label": "Cafeteria",
-          "description": "Murmúrio acolhedor e aconchegante de café."
-        },
-        "lofi": {
-          "label": "Lofi Zen",
-          "description": "Acorde harmônico etéreo e meditativo para foco profundo."
-        },
-        "fire": {
-          "label": "Fogueira",
-          "description": "Crepitar acolhedor de lenha e brasas na lareira."
-        }
+      "emerald_mystic": {
+        "name": "Aura Esmeralda",
+        "badge": "VIP Místico",
+        "description": "Anel de energia natural verde esmeralda com pulsação suave e mística."
       },
-      "volume": "Volume:",
-      "vipLockedBadge": "Exclusivo VIP",
-      "upgradeBannerTitle": "Desbloqueie Sons Ambientes com o Plano Guardião Cósmico",
-      "upgradeBannerDesc": "Entre no estado de fluxo com Chuva Suave, Cafeteria, Lofi Zen e Fogueira tocando diretamente no seu Pomodoro.",
-      "upgradeButton": "Ver Planos Premium",
-      "cardTitle": "Preferências de Notificações & Sons",
-      "cardDesc": "Personalize o feedback auditivo das suas ações no aplicativo, alarmes do Pomodoro e ruídos ambientes de foco.",
-      "browserTitle": "Notificações de Foco do Navegador",
-      "browserDesc": "Receba um aviso na área de trabalho quando uma sessão de foco ou pausa terminar, mesmo em outra aba.",
-      "browserDenied": "Bloqueado pelo Navegador",
-      "statusActive": "Ativado",
-      "statusInactive": "Desativado",
-      "statusMuted": "Silenciado",
-      "statusSilent": "Mudo",
-      "browserDeniedHelp": "As notificações estão bloqueadas nas permissões do seu navegador. Para reativar, clique no ícone de cadeado na barra de endereços e permita notificações para o HabitParty.",
-      "browserAria": "Ativar notificações do navegador para término de sessões",
-      "uiSoundsTitle": "Sons de Cliques & Conquistas",
-      "uiSoundsDesc": "Feedback de áudio ao completar tarefas, avançar hábitos e comprar recompensas.",
-      "uiSoundsAria": "Ativar ou silenciar sons de clique e gamificação",
-      "pomodoroTitle": "Alarmes do Pomodoro & Pausas",
-      "pomodoroDesc": "Tocar sinos sonoros ao iniciar o foco, nas pausas e ao concluir os ciclos.",
-      "pomodoroAria": "Ativar ou desativar alarmes do Pomodoro",
-      "alarmVolume": "Volume dos Alarmes",
-      "testBtn": "Testar",
-      "volumeAria": "Volume do alarme do Pomodoro",
-      "toneLabel": "Tom do Alarme:",
-      "vipBadge": "VIP",
-      "ambientTitle": "Sons de Foco Ambiente",
-      "ambientDesc": "Ruídos procedurais e atmosferas relaxantes geradas pelo navegador para bloquear distrações.",
-      "unlockVip": "Liberar VIP",
-      "ambientVolumeTitle": "Volume do Som Ambiente",
-      "ambientVolumeAria": "Volume padrão do som ambiente"
+      "amethyst_void": {
+        "name": "Vácuo Ametista",
+        "badge": "VIP Arcano",
+        "description": "Energia dimensional violeta escura com brilho estelar etéreo e misterioso."
+      }
     },
-    "subscriptionCard": {
-      "currentPlan": "Plano Atual:",
-      "statusActive": "Ativo",
-      "statusFree": "Gratuito",
-      "freePlanTitle": "Aventureiro Cósmico (Gratuito)",
-      "freePlanDesc": "Acesso completo a tarefas, hábitos, economia matemática e loja pessoal.",
-      "premiumPlanTitle": "Guardião Cósmico (Premium VIP)",
-      "founderPlanTitle": "Membro Fundador (VIP Vitalício)",
-      "renewsOn": "Renovação em {date}",
-      "expiresOn": "Válido até {date}",
-      "managePortal": "Gerenciar Assinatura (Portal Stripe)",
-      "upgradeCta": "Fazer Upgrade para Guardião Cósmico",
-      "redirectingPortal": "Redirecionando para o Portal de Assinatura do Stripe...",
-      "portalError": "Erro ao abrir o portal de assinaturas.",
-      "cardTitle": "Plano & Assinatura",
-      "cardDesc": "Gerencie seu status VIP, renovação, faturas e cancelamento seguro pelo Stripe.",
-      "founderActiveTitle": "Membro Fundador (Premium VIP)",
-      "founderExpiredTitle": "Membro Fundador (Acesso Gratuito)",
-      "guardianTitle": "Guardião Cósmico (Premium VIP)",
-      "adventurerTitle": "Aventureiro (Gratuito)",
-      "vipActiveBadge": "VIP Ativo",
-      "premiumAccessDesc": "Você possui acesso irrestrito a 4 ambientes, 6 colunas, sons ambientes e molduras exclusivas.",
-      "founderExpiredDesc": "Seu período anual de lançamento expirou. Você mantém sua insígnia vitalícia de Fundador, com os recursos do plano gratuito.",
-      "freeAccessDesc": "Você está usando a versão gratuita com até 2 ambientes e 4 colunas por quadro.",
-      "validUntil": "Acesso válido até: {date}",
-      "portalTooltip": "Acesse o portal da Stripe para atualizar cartão, ver faturas ou cancelar",
-      "openingStripe": "Abrindo Stripe...",
-      "manageOrCancel": "Gerenciar ou Cancelar Assinatura",
-      "viewPerks": "Ver Benefícios",
-      "renewPlan": "Renovar Plano Premium 👑",
-      "upgradePlan": "Evoluir para Premium 👑",
-      "transparentNoteTitle": "Cancelamento e Renovação Descomplicados:",
-      "transparentNoteDesc": "Se você assinou no cartão recorrente, pode cancelar a qualquer momento pelo portal com 1 clique (o acesso continuará liberado até o fim do ciclo pago). Se pagou via Pix, não há cobrança automática e o acesso simplesmente expira ao final dos dias contratados.",
-      "missingPortalUrl": "URL do portal não encontrada.",
-      "unexpectedStripeError": "Erro inesperado ao conectar ao Stripe."
-    },
-    "changePassword": {
-      "unverifiedEmailWarning": "Confirme seu e-mail para alterar a senha:",
-      "unverifiedEmailDesc": "Por motivos de segurança, a alteração direta de senha requer que o seu endereço de e-mail ({email}) esteja verificado. Utilize o aviso no topo da tela para reenviar o link de confirmação.",
-      "googleNoticeTitle": "Conta vinculada via Google",
-      "googleNoticeDesc": "Se você faz login com o Google e ainda não cadastrou uma senha tradicional, envie um link para definir sua primeira senha por e-mail.",
-      "sendSetupEmail": "Enviar link de definição de senha",
-      "sendingEmail": "Enviando...",
-      "currentPasswordLabel": "Senha Atual",
-      "newPasswordLabel": "Nova Senha",
-      "confirmPasswordLabel": "Confirmar Nova Senha",
-      "submitButton": "Salvar Nova Senha",
-      "submittingButton": "Alterando...",
-      "successToast": "Senha alterada com sucesso!",
-      "emailSentToast": "Link de definição de senha enviado para seu e-mail!",
-      "samePasswordError": "A nova senha não pode ser igual à senha atual.",
-      "cardTitle": "Segurança & Senha",
-      "cardDesc": "Mantenha sua conta protegida atualizando sua senha periodicamente.",
-      "userEmailNotFound": "E-mail do usuário não encontrado.",
-      "setupLinkSent": "Enviamos um link para {email} para você definir ou redefinir sua senha!",
-      "setupLinkError": "Não foi possível enviar o e-mail de definição de senha.",
-      "currentPasswordRequired": "Informe a sua senha atual.",
-      "newPasswordDifferent": "A nova senha deve ser diferente da sua senha atual.",
-      "requirementsNotMet": "A nova senha deve atender a todos os requisitos de segurança.",
-      "passwordsDoNotMatch": "A confirmação de senha não confere.",
-      "changePasswordError": "Erro ao alterar senha. Verifique sua senha atual.",
-      "googleNoticeTitleFull": "Criou sua conta com o Google ou não sabe sua senha atual?",
-      "googleNoticeDescFull": "Contas criadas via Google não possuem uma senha manual inicial. Se desejar definir uma senha própria para também entrar com e-mail e senha, solicite um link de definição no seu e-mail.",
-      "linkSent": "Link enviado no e-mail",
-      "receiveLink": "Receber link por e-mail",
-      "currentPasswordPlaceholder": "Digite sua senha atual",
-      "newPasswordPlaceholder": "Digite a nova senha",
-      "confirmPasswordPlaceholder": "Confirme a nova senha",
-      "requirementsTitle": "Requisitos da senha:",
-      "ruleMinLength": "Mínimo de 8 caracteres",
-      "ruleUpperCase": "1 letra maiúscula",
-      "ruleSpecialChar": "1 caractere especial (@$!%*?&#)",
-      "ruleMatch": "Senhas coincidem",
-      "ruleDifferent": "Diferente da senha atual",
-      "submitBtn": "Alterar Senha",
-      "submittingBtn": "Alterando..."
-    },
-    "dangerZone": {
-      "deleteButton": "Excluir Conta",
-      "modalTitle": "Excluir permanentemente sua conta?",
-      "modalConfirm": "Sim, excluir minha conta",
-      "modalCancel": "Não, manter conta",
-      "modalDesc": "Tem certeza de que deseja excluir sua conta no HabitParty? Todo o seu progresso, histórico, conquistas e configurações serão excluídos imediatamente e não poderão ser recuperados.",
-      "cardTitle": "Zona de Perigo",
-      "cardDesc": "A exclusão da sua conta apagará permanentemente todos os seus dados, tarefas, moedas, itens e histórico no HabitParty. Esta ação é irreversível.",
-      "errorToast": "Erro ao excluir conta."
-    },
-    "subscribeButton": {
-      "defaultLabel": "Seja Premium"
-    },
-    "upgradeModal": {
-      "title": "Eleve sua Jornada ao Nível Cósmico",
-      "subtitle": "Desbloqueie personalizações exclusivas, sons ambiente relaxantes e capacidade expandida para dominar sua rotina.",
-      "founderBadge": "Cota de Fundador ({remaining}/30)",
-      "plans": {
-        "founder": "Membro Fundador (Anual)",
-        "founderDesc": "Acesso anual com desconto histórico de pioneiro.",
-        "monthly": "Plano Mensal",
-        "monthlyDesc": "Cobrança mensal com cancelamento a qualquer momento.",
-        "annual": "Plano Anual (~17% OFF)",
-        "annualDesc": "12 meses pelo preço de 10. Maior economia para consistência."
+    "subtitle": "Escolha uma moldura animada com luz cósmica para destacar seu perfil na Party, no ranking e no painel.",
+    "unlockAll": "Desbloquear Todas",
+    "freeBadge": "Grátis",
+    "lockedTitle": "Exclusivo Premium"
+  },
+  "welcomeCards": {
+    "hiddenCount": "{count, plural, one {# card ocultado} other {# cards ocultados}}",
+    "allVisible": "Todos os cards estão visíveis",
+    "restoreAll": "Restaurar todos os cards",
+    "restoreAllSuccess": "Todos os cards de boas-vindas foram restaurados!",
+    "cardReactivatedToast": "Card \"{title}\" reativado! Ele voltará a aparecer na tela.",
+    "cardHiddenToast": "Card \"{title}\" foi ocultado.",
+    "ariaToggle": "Visibilidade do card {title}",
+    "items": {
+      "tasks": {
+        "title": "Gerencie suas Tarefas!",
+        "pageName": "Quadro de Tarefas",
+        "description": "Orientações sobre organização de tarefas, colunas e criação de hábitos no quadro."
       },
-      "paymentMethods": {
-        "creditCard": "Cartão de Crédito",
-        "pix": "Pix Avulso (Sem renovação automática)"
+      "inventory": {
+        "title": "Sua Mochila!",
+        "titleGamified": "Sua Mochila!",
+        "titleProductivity": "Seu Inventário!",
+        "pageName": "Mochila / Inventário",
+        "pageNameGamified": "Mochila",
+        "pageNameProductivity": "Inventário",
+        "description": "Instruções sobre itens adquiridos na loja e consumo no inventário."
       },
-      "benefits": {
-        "frames": "5 Molduras Animadas de Avatar",
-        "sounds": "4 Sons Ambientes Nativos no Pomodoro",
-        "icons": "Pacote Completo de Ícones VIP Dourados",
-        "workspaces": "Até 4 Workspaces & 6 Colunas por Quadro",
-        "focus": "Até 6 Atividades Personalizadas no Foco",
-        "backpack": "Mochila Expandida para 100 Itens & 100 Recompensas"
+      "rewards": {
+        "title": "Colete sua recompensa!",
+        "pageName": "Vitrine de Recompensas",
+        "description": "Dicas sobre troca de moedas por cupons e recompensas personalizadas."
       },
-      "checkoutButton": "Assinar Agora",
-      "checkoutButtonPix": "Gerar QR Code Pix",
-      "startingCheckout": "Iniciando checkout...",
-      "portalRedirect": "Redirecionando para o portal de assinaturas...",
-      "portalError": "Não foi possível abrir o portal de assinaturas.",
-      "unverifiedWarning": "Confirme seu e-mail antes de assinar.",
-      "perks": [
-        "Molduras animadas exclusivas para seu perfil e avatar",
-        "Sons ambiente no Pomodoro (Chuva, Cafeteria, Fogueira, Lofi)",
-        "Pacote exclusivo de ícones VIP para atividades e colunas",
-        "Até 4 Ambientes (Workspaces) independentes — o dobro do free",
-        "Até 6 Listas/Colunas por quadro para fluxos completos",
-        "Até 6 Atividades personalizadas no Modo Foco",
-        "Mochila de Inventário expandida para 100 itens",
-        "Emblema VIP de Guardião Cósmico no perfil e anel dourado"
-      ],
-      "modalTitle": "Evoluir para Guardião Cósmico",
-      "modalSubtitle": "Desbloqueie todo o poder da produtividade gamificada sem barreiras.",
-      "alreadyAcquired": "Já Adquirido 👑",
-      "remainingSlots": "{count} vagas",
-      "founderAnnual": "Fundador",
-      "founderPeriod": "/ano + Insígnia",
-      "monthlyPlan": "Mensal",
-      "monthlyPeriod": "ou 30 dias Pix",
-      "annualPlan": "Anual",
-      "annualPeriod": "ou 365 dias Pix",
-      "founderCalloutTitle": "Insígnia Vitalícia de Membro Fundador",
-      "founderCalloutDesc": "Você receberá o selo permanente gravado no perfil e 1 ano completo de Guardião Cósmico com 40% de desconto.",
-      "paymentMethodTitle": "Forma de Pagamento",
-      "creditCardTitle": "Cartão de Crédito",
-      "creditCardDesc": "Assinatura recorrente com renovação automática. Cancele quando quiser.",
-      "pixTitle": "Pix Avulso",
-      "pixBadge": "Sem recorrência",
-      "pixDesc": "Pagamento único via QR Code. Libera {days} dias de Premium imediatamente.",
-      "whatYouGet": "O que você recebe:",
-      "emailWarningTitle": "Confirme seu e-mail antes de assinar:",
-      "emailWarningDesc": "Por segurança, confirme o link enviado para {email} para liberar pagamentos e assinaturas.",
-      "activeSubscriptionNotice": "Você já possui uma assinatura ativa no Cartão!",
-      "activeSubscriptionDesc": "Para trocar de plano com desconto proporcional automático, atualizar seu cartão ou cancelar sem gerar cobranças duplicadas, acesse o Portal Oficial do Stripe.",
-      "manageStripeBtn": "Gerenciar Assinatura ou Trocar de Plano no Stripe",
-      "openingStripeBtn": "Abrindo Stripe...",
-      "generatingSession": "Gerando sessão segura no Stripe...",
-      "payWithPix": "Pagar com Pix {price}",
-      "subscribePlan": "Assinar {plan} ({price})",
-      "planFounderAnnual": "Membro Fundador",
-      "planAnnual": "Plano Anual",
-      "planMonthly": "Plano Mensal",
-      "securityNote": "Pagamento processado com segurança de ponta a ponta pela Stripe.",
-      "redirectingStripe": "Redirecionando para o ambiente seguro do Stripe...",
-      "checkoutErrorToast": "Erro ao gerar sessão de pagamento."
+      "focus": {
+        "title": "Seu ambiente de Foco!",
+        "pageName": "Sessão de Foco",
+        "description": "Instruções do timer Pomodoro, cronômetro contínuo e sessões guiadas."
+      },
+      "history": {
+        "title": "Extrato de Transações",
+        "titleGamified": "Diário de Jornada",
+        "titleProductivity": "Extrato de Transações",
+        "pageName": "Histórico de Transações",
+        "pageNameGamified": "Diário de Jornada",
+        "pageNameProductivity": "Histórico de Transações",
+        "description": "Resumo sobre moedas, XP e auditoria de transações realizadas.",
+        "descriptionGamified": "Resumo sobre moedas, XP e auditoria de recompensas registradas no diário.",
+        "descriptionProductivity": "Resumo sobre créditos, pontos e auditoria de transações realizadas."
+      }
     },
-    "userActions": {
-      "updateProfileError": "Falha ao atualizar o perfil. Verifique os dados.",
-      "updateProfileNetworkError": "Erro de comunicação ao atualizar perfil.",
-      "unauthorizedSession": "Sessão não autenticada. Faça login novamente.",
-      "uploadPhotoError": "Não foi possível enviar a foto. Tente novamente.",
-      "uploadPhotoNetworkError": "Erro de rede ao enviar foto de perfil.",
-      "updatePasswordError": "Falha ao alterar senha. Verifique a senha atual.",
-      "updatePasswordNetworkError": "Erro ao comunicar com o servidor para troca de senha.",
-      "deleteAccountError": "Não foi possível excluir a conta. Tente novamente.",
-      "deleteAccountNetworkError": "Erro de comunicação ao excluir conta."
+    "statusLabel": "Status: ",
+    "statusSummary": "{count} de {total} cards informativos estão ocultados.",
+    "restoreAllBtn": "Reativar Todos",
+    "hiddenBadge": "Oculto",
+    "visibleBadge": "Visível",
+    "reactivateBtn": "Reativar na Tela",
+    "cardAria": "Alternar visibilidade do card de boas-vindas da página {pageName}"
+  },
+  "soundNotifications": {
+    "soundEffectsTitle": "Efeitos Sonoros de Interface",
+    "soundEffectsDesc": "Sons de clique, conclusão de tarefas, subida de nível e ações do sistema.",
+    "alarmTonesTitle": "Toque do Alarme de Conclusão (Pomodoro)",
+    "alarmTonesDesc": "Escolha o toque reproduzido quando um ciclo de foco ou intervalo chega ao fim.",
+    "testSound": "Testar som",
+    "tones": {
+      "zen": {
+        "label": "Sino Zen Suave",
+        "description": "Harmônico 528Hz focado em calma"
+      },
+      "arcade": {
+        "label": "Arcade Retrô",
+        "description": "Bips eletrônicos ascendentes gamificados"
+      },
+      "digital": {
+        "label": "Digital Moderno",
+        "description": "Chime minimalista executivo de alta frequência"
+      },
+      "harp": {
+        "label": "Harpa Etérea",
+        "description": "Acorde clássico de harpa suave e espacial"
+      }
     },
-    "paymentActions": {
-      "unauthorized": "Você precisa estar conectado para realizar esta ação.",
-      "checkoutError": "Falha ao iniciar o checkout. Tente novamente.",
-      "invalidCheckoutUrl": "URL de checkout inválida retornada pelo servidor.",
-      "networkError": "Erro de comunicação ao conectar com o serviço de pagamentos.",
-      "portalError": "Não foi possível abrir o portal de assinaturas.",
-      "invalidPortalUrl": "URL do portal não encontrada.",
-      "foundersQuotaError": "Falha ao consultar cota de fundadores."
-    }
+    "ambientSounds": {
+      "none": {
+        "label": "Desligado",
+        "description": "Sem ruído ambiente de fundo."
+      },
+      "rain": {
+        "label": "Chuva Suave",
+        "description": "Som relaxante de chuva leve e contínua."
+      },
+      "cafe": {
+        "label": "Cafeteria",
+        "description": "Murmúrio acolhedor e aconchegante de café."
+      },
+      "lofi": {
+        "label": "Lofi Zen",
+        "description": "Acorde harmônico etéreo e meditativo para foco profundo."
+      },
+      "fire": {
+        "label": "Fogueira",
+        "description": "Crepitar acolhedor de lenha e brasas na lareira."
+      }
+    },
+    "volume": "Volume:",
+    "vipLockedBadge": "Exclusivo VIP",
+    "upgradeBannerTitle": "Desbloqueie Sons Ambientes com o Plano Guardião Cósmico",
+    "upgradeBannerDesc": "Entre no estado de fluxo com Chuva Suave, Cafeteria, Lofi Zen e Fogueira tocando diretamente no seu Pomodoro.",
+    "upgradeButton": "Ver Planos Premium",
+    "cardTitle": "Preferências de Notificações & Sons",
+    "cardDesc": "Personalize o feedback auditivo das suas ações no aplicativo, alarmes do Pomodoro e ruídos ambientes de foco.",
+    "browserTitle": "Notificações de Foco do Navegador",
+    "browserDesc": "Receba um aviso na área de trabalho quando uma sessão de foco ou pausa terminar, mesmo em outra aba.",
+    "browserDenied": "Bloqueado pelo Navegador",
+    "statusActive": "Ativado",
+    "statusInactive": "Desativado",
+    "statusMuted": "Silenciado",
+    "statusSilent": "Mudo",
+    "browserDeniedHelp": "As notificações estão bloqueadas nas permissões do seu navegador. Para reativar, clique no ícone de cadeado na barra de endereços e permita notificações para o HabitParty.",
+    "browserAria": "Ativar notificações do navegador para término de sessões",
+    "uiSoundsTitle": "Sons de Cliques & Conquistas",
+    "uiSoundsDesc": "Feedback de áudio ao completar tarefas, avançar hábitos e comprar recompensas.",
+    "uiSoundsAria": "Ativar ou silenciar sons de clique e gamificação",
+    "pomodoroTitle": "Alarmes do Pomodoro & Pausas",
+    "pomodoroDesc": "Tocar sinos sonoros ao iniciar o foco, nas pausas e ao concluir os ciclos.",
+    "pomodoroAria": "Ativar ou desativar alarmes do Pomodoro",
+    "alarmVolume": "Volume dos Alarmes",
+    "testBtn": "Testar",
+    "volumeAria": "Volume do alarme do Pomodoro",
+    "toneLabel": "Tom do Alarme:",
+    "vipBadge": "VIP",
+    "ambientTitle": "Sons de Foco Ambiente",
+    "ambientDesc": "Ruídos procedurais e atmosferas relaxantes geradas pelo navegador para bloquear distrações.",
+    "unlockVip": "Liberar VIP",
+    "ambientVolumeTitle": "Volume do Som Ambiente",
+    "ambientVolumeAria": "Volume padrão do som ambiente"
+  },
+  "subscriptionCard": {
+    "currentPlan": "Plano Atual:",
+    "statusActive": "Ativo",
+    "statusFree": "Gratuito",
+    "freePlanTitle": "Aventureiro Cósmico (Gratuito)",
+    "freePlanDesc": "Acesso completo a tarefas, hábitos, economia matemática e loja pessoal.",
+    "premiumPlanTitle": "Guardião Cósmico (Premium VIP)",
+    "founderPlanTitle": "Membro Fundador (VIP Vitalício)",
+    "renewsOn": "Renovação em {date}",
+    "expiresOn": "Válido até {date}",
+    "managePortal": "Gerenciar Assinatura (Portal Stripe)",
+    "upgradeCta": "Fazer Upgrade para Guardião Cósmico",
+    "redirectingPortal": "Redirecionando para o Portal de Assinatura do Stripe...",
+    "portalError": "Erro ao abrir o portal de assinaturas.",
+    "cardTitle": "Plano & Assinatura",
+    "cardDesc": "Gerencie seu status VIP, renovação, faturas e cancelamento seguro pelo Stripe.",
+    "founderActiveTitle": "Membro Fundador (Premium VIP)",
+    "founderExpiredTitle": "Membro Fundador (Acesso Gratuito)",
+    "guardianTitle": "Guardião Cósmico (Premium VIP)",
+    "adventurerTitle": "Aventureiro (Gratuito)",
+    "vipActiveBadge": "VIP Ativo",
+    "premiumAccessDesc": "Você possui acesso irrestrito a 4 ambientes, 6 colunas, sons ambientes e molduras exclusivas.",
+    "founderExpiredDesc": "Seu período anual de lançamento expirou. Você mantém sua insígnia vitalícia de Fundador, com os recursos do plano gratuito.",
+    "freeAccessDesc": "Você está usando a versão gratuita com até 2 ambientes e 4 colunas por quadro.",
+    "validUntil": "Acesso válido até: {date}",
+    "portalTooltip": "Acesse o portal da Stripe para atualizar cartão, ver faturas ou cancelar",
+    "openingStripe": "Abrindo Stripe...",
+    "manageOrCancel": "Gerenciar ou Cancelar Assinatura",
+    "viewPerks": "Ver Benefícios",
+    "renewPlan": "Renovar Plano Premium 👑",
+    "upgradePlan": "Evoluir para Premium 👑",
+    "transparentNoteTitle": "Cancelamento e Renovação Descomplicados:",
+    "transparentNoteDesc": "Se você assinou no cartão recorrente, pode cancelar a qualquer momento pelo portal com 1 clique (o acesso continuará liberado até o fim do ciclo pago). Se pagou via Pix, não há cobrança automática e o acesso simplesmente expira ao final dos dias contratados.",
+    "missingPortalUrl": "URL do portal não encontrada.",
+    "unexpectedStripeError": "Erro inesperado ao conectar ao Stripe."
+  },
+  "changePassword": {
+    "unverifiedEmailWarning": "Confirme seu e-mail para alterar a senha:",
+    "unverifiedEmailDesc": "Por motivos de segurança, a alteração direta de senha requer que o seu endereço de e-mail ({email}) esteja verificado. Utilize o aviso no topo da tela para reenviar o link de confirmação.",
+    "googleNoticeTitle": "Conta vinculada via Google",
+    "googleNoticeDesc": "Se você faz login com o Google e ainda não cadastrou uma senha tradicional, envie um link para definir sua primeira senha por e-mail.",
+    "sendSetupEmail": "Enviar link de definição de senha",
+    "sendingEmail": "Enviando...",
+    "currentPasswordLabel": "Senha Atual",
+    "newPasswordLabel": "Nova Senha",
+    "confirmPasswordLabel": "Confirmar Nova Senha",
+    "submitButton": "Salvar Nova Senha",
+    "submittingButton": "Alterando...",
+    "successToast": "Senha alterada com sucesso!",
+    "emailSentToast": "Link de definição de senha enviado para seu e-mail!",
+    "samePasswordError": "A nova senha não pode ser igual à senha atual.",
+    "cardTitle": "Segurança & Senha",
+    "cardDesc": "Mantenha sua conta protegida atualizando sua senha periodicamente.",
+    "userEmailNotFound": "E-mail do usuário não encontrado.",
+    "setupLinkSent": "Enviamos um link para {email} para você definir ou redefinir sua senha!",
+    "setupLinkError": "Não foi possível enviar o e-mail de definição de senha.",
+    "currentPasswordRequired": "Informe a sua senha atual.",
+    "newPasswordDifferent": "A nova senha deve ser diferente da sua senha atual.",
+    "requirementsNotMet": "A nova senha deve atender a todos os requisitos de segurança.",
+    "passwordsDoNotMatch": "A confirmação de senha não confere.",
+    "changePasswordError": "Erro ao alterar senha. Verifique sua senha atual.",
+    "googleNoticeTitleFull": "Criou sua conta com o Google ou não sabe sua senha atual?",
+    "googleNoticeDescFull": "Contas criadas via Google não possuem uma senha manual inicial. Se desejar definir uma senha própria para também entrar com e-mail e senha, solicite um link de definição no seu e-mail.",
+    "linkSent": "Link enviado no e-mail",
+    "receiveLink": "Receber link por e-mail",
+    "currentPasswordPlaceholder": "Digite sua senha atual",
+    "newPasswordPlaceholder": "Digite a nova senha",
+    "confirmPasswordPlaceholder": "Confirme a nova senha",
+    "requirementsTitle": "Requisitos da senha:",
+    "ruleMinLength": "Mínimo de 8 caracteres",
+    "ruleUpperCase": "1 letra maiúscula",
+    "ruleSpecialChar": "1 caractere especial (@$!%*?&#)",
+    "ruleMatch": "Senhas coincidem",
+    "ruleDifferent": "Diferente da senha atual",
+    "submitBtn": "Alterar Senha",
+    "submittingBtn": "Alterando..."
+  },
+  "dangerZone": {
+    "deleteButton": "Excluir Conta",
+    "modalTitle": "Excluir permanentemente sua conta?",
+    "modalConfirm": "Sim, excluir minha conta",
+    "modalCancel": "Não, manter conta",
+    "modalDesc": "Tem certeza de que deseja excluir sua conta no HabitParty? Todo o seu progresso, histórico, conquistas e configurações serão excluídos imediatamente e não poderão ser recuperados.",
+    "cardTitle": "Zona de Perigo",
+    "cardDesc": "A exclusão da sua conta apagará permanentemente todos os seus dados, tarefas, moedas, itens e histórico no HabitParty. Esta ação é irreversível.",
+    "errorToast": "Erro ao excluir conta."
+  },
+  "subscribeButton": {
+    "defaultLabel": "Seja Premium"
+  },
+  "upgradeModal": {
+    "title": "Eleve sua Jornada ao Nível Cósmico",
+    "subtitle": "Desbloqueie personalizações exclusivas, sons ambiente relaxantes e capacidade expandida para dominar sua rotina.",
+    "founderBadge": "Cota de Fundador ({remaining}/30)",
+    "plans": {
+      "founder": "Membro Fundador (Anual)",
+      "founderDesc": "Acesso anual com desconto histórico de pioneiro.",
+      "monthly": "Plano Mensal",
+      "monthlyDesc": "Cobrança mensal com cancelamento a qualquer momento.",
+      "annual": "Plano Anual (~17% OFF)",
+      "annualDesc": "12 meses pelo preço de 10. Maior economia para consistência."
+    },
+    "paymentMethods": {
+      "creditCard": "Cartão de Crédito",
+      "pix": "Pix Avulso (Sem renovação automática)"
+    },
+    "benefits": {
+      "frames": "5 Molduras Animadas de Avatar",
+      "sounds": "4 Sons Ambientes Nativos no Pomodoro",
+      "icons": "Pacote Completo de Ícones VIP Dourados",
+      "workspaces": "Até 4 Workspaces & 6 Colunas por Quadro",
+      "focus": "Até 6 Atividades Personalizadas no Foco",
+      "backpack": "Mochila Expandida para 100 Itens & 100 Recompensas"
+    },
+    "checkoutButton": "Assinar Agora",
+    "checkoutButtonPix": "Gerar QR Code Pix",
+    "startingCheckout": "Iniciando checkout...",
+    "portalRedirect": "Redirecionando para o portal de assinaturas...",
+    "portalError": "Não foi possível abrir o portal de assinaturas.",
+    "unverifiedWarning": "Confirme seu e-mail antes de assinar.",
+    "perks": [
+      "Molduras animadas exclusivas para seu perfil e avatar",
+      "Sons ambiente no Pomodoro (Chuva, Cafeteria, Fogueira, Lofi)",
+      "Pacote exclusivo de ícones VIP para atividades e colunas",
+      "Até 4 Ambientes (Workspaces) independentes — o dobro do free",
+      "Até 6 Listas/Colunas por quadro para fluxos completos",
+      "Até 6 Atividades personalizadas no Modo Foco",
+      "Mochila de Inventário expandida para 100 itens",
+      "Emblema VIP de Guardião Cósmico no perfil e anel dourado"
+    ],
+    "modalTitle": "Evoluir para Guardião Cósmico",
+    "modalSubtitle": "Desbloqueie todo o poder da produtividade gamificada sem barreiras.",
+    "alreadyAcquired": "Já Adquirido 👑",
+    "remainingSlots": "{count} vagas",
+    "founderAnnual": "Fundador",
+    "founderPeriod": "/ano + Insígnia",
+    "monthlyPlan": "Mensal",
+    "monthlyPeriod": "ou 30 dias Pix",
+    "annualPlan": "Anual",
+    "annualPeriod": "ou 365 dias Pix",
+    "founderCalloutTitle": "Insígnia Vitalícia de Membro Fundador",
+    "founderCalloutDesc": "Você receberá o selo permanente gravado no perfil e 1 ano completo de Guardião Cósmico com 40% de desconto.",
+    "paymentMethodTitle": "Forma de Pagamento",
+    "creditCardTitle": "Cartão de Crédito",
+    "creditCardDesc": "Assinatura recorrente com renovação automática. Cancele quando quiser.",
+    "pixTitle": "Pix Avulso",
+    "pixBadge": "Sem recorrência",
+    "pixDesc": "Pagamento único via QR Code. Libera {days} dias de Premium imediatamente.",
+    "whatYouGet": "O que você recebe:",
+    "emailWarningTitle": "Confirme seu e-mail antes de assinar:",
+    "emailWarningDesc": "Por segurança, confirme o link enviado para {email} para liberar pagamentos e assinaturas.",
+    "activeSubscriptionNotice": "Você já possui uma assinatura ativa no Cartão!",
+    "activeSubscriptionDesc": "Para trocar de plano com desconto proporcional automático, atualizar seu cartão ou cancelar sem gerar cobranças duplicadas, acesse o Portal Oficial do Stripe.",
+    "manageStripeBtn": "Gerenciar Assinatura ou Trocar de Plano no Stripe",
+    "openingStripeBtn": "Abrindo Stripe...",
+    "generatingSession": "Gerando sessão segura no Stripe...",
+    "payWithPix": "Pagar com Pix {price}",
+    "subscribePlan": "Assinar {plan} ({price})",
+    "planFounderAnnual": "Membro Fundador",
+    "planAnnual": "Plano Anual",
+    "planMonthly": "Plano Mensal",
+    "securityNote": "Pagamento processado com segurança de ponta a ponta pela Stripe.",
+    "redirectingStripe": "Redirecionando para o ambiente seguro do Stripe...",
+    "checkoutErrorToast": "Erro ao gerar sessão de pagamento."
+  },
+  "userActions": {
+    "updateProfileError": "Falha ao atualizar o perfil. Verifique os dados.",
+    "updateProfileNetworkError": "Erro de comunicação ao atualizar perfil.",
+    "unauthorizedSession": "Sessão não autenticada. Faça login novamente.",
+    "uploadPhotoError": "Não foi possível enviar a foto. Tente novamente.",
+    "uploadPhotoNetworkError": "Erro de rede ao enviar foto de perfil.",
+    "updatePasswordError": "Falha ao alterar senha. Verifique a senha atual.",
+    "updatePasswordNetworkError": "Erro ao comunicar com o servidor para troca de senha.",
+    "deleteAccountError": "Não foi possível excluir a conta. Tente novamente.",
+    "deleteAccountNetworkError": "Erro de comunicação ao excluir conta."
+  },
+  "paymentActions": {
+    "unauthorized": "Você precisa estar conectado para realizar esta ação.",
+    "checkoutError": "Falha ao iniciar o checkout. Tente novamente.",
+    "invalidCheckoutUrl": "URL de checkout inválida retornada pelo servidor.",
+    "networkError": "Erro de comunicação ao conectar com o serviço de pagamentos.",
+    "portalError": "Não foi possível abrir o portal de assinaturas.",
+    "invalidPortalUrl": "URL do portal não encontrada.",
+    "foundersQuotaError": "Falha ao consultar cota de fundadores."
   }
 }

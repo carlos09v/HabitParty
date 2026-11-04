@@ -28,8 +28,15 @@ export interface ProfileFormProps extends ProfileCardBaseProps {
   initialUser: UserResponseDTO | null;
 }
 
+export type WelcomeCardStorageKey =
+  | "tasks"
+  | "inventory"
+  | "rewards"
+  | "focus"
+  | "history";
+
 export interface WelcomeCardConfig {
-  key: string;
+  key: WelcomeCardStorageKey;
   title: string;
   pageName: string;
   route: string;

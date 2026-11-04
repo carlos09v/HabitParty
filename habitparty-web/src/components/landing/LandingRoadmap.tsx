@@ -68,9 +68,13 @@ export function LandingRoadmap() {
           {LANDING_ROADMAP_CONFIGS.map((item, index) => {
             const Icon = item.icon;
             const features = t.raw(`items.${item.id}.features`) as string[];
-            const extras = item.hasExtras
-              ? (t.raw(`items.${item.id}.extras`) as string[])
-              : undefined;
+            const extrasKey = `items.${item.id}.extras` as Parameters<
+              typeof t.has
+            >[0];
+            const extras =
+              item.hasExtras && t.has(extrasKey)
+                ? (t.raw(extrasKey as Parameters<typeof t.raw>[0]) as string[])
+                : undefined;
             const isCompleted = item.status === "completed";
 
             return (
@@ -263,7 +267,7 @@ export function LandingRoadmap() {
                         : "text-neutral-400",
                     )}
                   >
-                    {isCompleted ? "Disponível v1.1" : "RPG System"}
+                    {isCompleted ? "Disponível v1.1" : "Gamification System"}
                   </span>
                 </div>
               </div>

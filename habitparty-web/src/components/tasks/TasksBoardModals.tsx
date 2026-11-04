@@ -10,6 +10,7 @@ import {
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import type { Task } from "@/types/task";
 import type { TasksBoardModalsProps } from "@/types/task-ui";
+import { resolveTaskColumnTitle } from "@/utils/taskMapper";
 import { shouldConfirmTaskDeletion } from "@/utils/validators";
 
 const CreateBoardColumnModal = dynamic(
@@ -291,9 +292,12 @@ export const TasksBoardModals = memo(function TasksBoardModals({
           isOpen={!!selectedTaskDetails}
           onClose={() => setSelectedTaskDetails(null)}
           task={selectedTaskDetails?.task ?? null}
-          columnTitle={
-            columns.find((c) => c.id === selectedTaskDetails?.columnId)?.title
-          }
+          columnTitle={resolveTaskColumnTitle(
+            selectedTaskDetails?.task,
+            columns,
+            t("defaultColumnTitle"),
+            selectedTaskDetails?.columnId,
+          )}
           anchorRect={selectedTaskDetails?.anchorRect}
           onTaskUpdate={handleTaskDetailsUpdate}
           onEdit={(task) => {

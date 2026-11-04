@@ -1,47 +1,54 @@
 import { create } from "zustand";
-import {
-  setCompactModeCookie,
-  setLocaleCookie,
-  setThemeCookie,
-} from "@/actions/ui";
 import { updateUserExperienceModeAction } from "@/actions/userActions";
 import { useUserStore } from "@/store/userStore";
-import type { AppLocale, ExperienceMode, ThemeMode } from "@/types/ui";
+import type { ExperienceMode, ThemeMode } from "@/types/ui";
 
+const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
+
+function setClientCookie(name: string, value: string) {
+  if (typeof document === "undefined") return;
+  // biome-ignore lint/suspicious/noDocumentCookie: Preferências puramente visuais persistidas localmente sem Server Action roundtrip
+  document.cookie = `${name}=${value}; path=/; max-age=${ONE_YEAR_SECONDS}; samesite=lax`;
+}
+
+/**
+ * Observação: o idioma NÃO vive neste store. A fonte de verdade é o
+ * `useLocale()` do next-intl; a troca é feita por `useLocaleSwitcher`
+ * (ver `hooks/useLocaleSwitcher.ts` e `store/localeSwitchStore.ts`).
+ */
 export interface UIState {
+  hydrated: boolean;
   compactMode: boolean;
   setCompactMode: (compact: boolean) => void;
   toggleCompactMode: () => void;
   theme: ThemeMode;
   setTheme: (theme: ThemeMode) => void;
   toggleTheme: () => void;
-  locale: AppLocale;
-  setLocale: (locale: AppLocale) => void;
-  toggleLocale: () => void;
   experienceMode: ExperienceMode;
   setExperienceMode: (mode: ExperienceMode) => void;
 }
 
 export const useUIStore = create<UIState>()((set) => ({
+  hydrated: false,
   compactMode: false,
   setCompactMode: (compactMode) => {
-    set({ compactMode });
-    setCompactModeCookie(compactMode);
+    set({ compactMode, hydrated: true });
+    setClientCookie("compactMode", String(compactMode));
   },
   toggleCompactMode: () =>
     set((state) => {
       const newMode = !state.compactMode;
-      setCompactModeCookie(newMode);
-      return { compactMode: newMode };
+      setClientCookie("compactMode", String(newMode));
+      return { compactMode: newMode, hydrated: true };
     }),
   theme: "dark",
   setTheme: (theme) => {
-    set({ theme });
+    set({ theme, hydrated: true });
     if (typeof document !== "undefined") {
       document.documentElement.classList.remove("light", "dark");
       document.documentElement.classList.add(theme);
     }
-    setThemeCookie(theme);
+    setClientCookie("theme", theme);
   },
   toggleTheme: () =>
     set((state) => {
@@ -50,25 +57,8 @@ export const useUIStore = create<UIState>()((set) => ({
         document.documentElement.classList.remove("light", "dark");
         document.documentElement.classList.add(newTheme);
       }
-      setThemeCookie(newTheme);
-      return { theme: newTheme };
-    }),
-  locale: "en",
-  setLocale: (locale) => {
-    set({ locale });
-    if (typeof document !== "undefined") {
-      document.documentElement.lang = locale;
-    }
-    setLocaleCookie(locale);
-  },
-  toggleLocale: () =>
-    set((state) => {
-      const newLocale: AppLocale = state.locale === "pt-BR" ? "en" : "pt-BR";
-      if (typeof document !== "undefined") {
-        document.documentElement.lang = newLocale;
-      }
-      setLocaleCookie(newLocale);
-      return { locale: newLocale };
+      setClientCookie("theme", newTheme);
+      return { theme: newTheme, hydrated: true };
     }),
   experienceMode: "PRODUCTIVITY",
   setExperienceMode: (experienceMode) => {

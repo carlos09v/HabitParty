@@ -3,38 +3,15 @@
     "title": "HabitParty | Produtividade e Gamificação",
     "description": "Sistema inteligente de gestão de rotinas, hábitos, tarefas e recompensas com foco e gamificação opcional."
   },
-  "common": {
-    "language": "Idioma",
-    "english": "English",
-    "portuguese": "Português (BR)",
-    "save": "Salvar",
-    "saving": "Salvando...",
-    "cancel": "Cancelar",
-    "confirm": "Confirmar",
-    "close": "Fechar",
-    "edit": "Editar",
-    "delete": "Excluir",
-    "create": "Criar",
-    "add": "Adicionar",
-    "search": "Buscar...",
-    "loading": "Carregando...",
-    "back": "Voltar",
-    "next": "Continuar",
-    "optional": "opcional",
-    "free": "Free",
-    "premium": "Premium",
-    "yes": "Sim",
-    "no": "Não",
-    "all": "Todas",
-    "none": "Nenhuma"
-  },
   "ui": {
     "languageToggle": {
       "label": "Idioma",
       "switchToPtAria": "Mudar idioma para Português (BR)",
       "switchToEnAria": "Mudar idioma para Inglês (US)",
       "switchToPtTitle": "Alternar para Português (Brasil)",
-      "switchToEnTitle": "Alternar para English (US)"
+      "switchToEnTitle": "Alternar para English (US)",
+      "switching": "Alterando idioma…",
+      "error": "Não foi possível alterar o idioma. Tente novamente."
     },
     "themeToggle": {
       "labelLight": "Tema Claro",
@@ -164,20 +141,20 @@
         },
         "history": {
           "title": "Extrato de Transações",
-          "titleGamified": "Cofre do Aventureiro",
+          "titleGamified": "Diário de Jornada",
           "titleProductivity": "Extrato de Transações",
           "pageName": "Histórico de Transações",
-          "pageNameGamified": "Cofre do Aventureiro",
+          "pageNameGamified": "Diário de Jornada",
           "pageNameProductivity": "Histórico de Transações",
           "description": "Resumo sobre moedas, XP e auditoria de transações realizadas.",
           "subtitle": "Consulte o histórico detalhado de moedas, XP e resgates.",
           "subtitleGamified": "Consulte seu histórico de ouro, XP e itens conquistados em suas aventuras.",
-          "subtitleProductivity": "Consulte o histórico detalhado de moedas, XP e resgates.",
+          "subtitleProductivity": "Consulte o histórico detalhado de créditos, pontos e resgates.",
           "bullet0": "Conclusões de tarefas, diárias e hábitos registram ganhos de moedas e XP.",
           "bullet1": "Penalidades de hábitos negativos e falhas computam deduções no saldo.",
           "bullet2": "Resgates na loja e consumo de itens da mochila ficam arquivados neste extrato.",
-          "bullet2Gamified": "Resgates na loja e consumo de itens da mochila ficam arquivados neste cofre.",
-          "bullet2Productivity": "Resgates na loja e consumo de itens do inventário ficam arquivados neste extrato."
+          "bullet2Gamified": "Resgates na loja e consumo de itens da mochila ficam arquivados neste diário.",
+          "bullet2Productivity": "Resgates na vitrine e consumo de itens do inventário ficam arquivados neste extrato."
         }
       }
     },
@@ -196,8 +173,10 @@
     },
     "viewMode": {
       "groupAria": "Modo de visualização",
-      "gridTitle": "Visualização em cards",
-      "gridAria": "Visualização em Grade",
+      "gridLabel": "Cards",
+      "gridTitle": "Visualização em cards (Quadro)",
+      "gridAria": "Visualização em Cards",
+      "listLabel": "Lista",
       "listTitle": "Visualização em lista",
       "listAria": "Visualização em Lista"
     },
@@ -355,18 +334,5 @@
     "description": "Utilizamos apenas cookies essenciais para manter sua sessão segura, autenticar sua conta e preservar preferências como tema, idioma e workspace. Não coletamos dados para anúncios ou rastreamento de terceiros.",
     "privacyLink": "Política de Privacidade e LGPD",
     "acceptButton": "Entendi e Concordo"
-  },
-  "levels": {
-    "NOVICE": "Novato",
-    "APPRENTICE": "Aprendiz",
-    "ADVENTURER": "Aventureiro",
-    "CHALLENGER": "Desafiante",
-    "AMATEUR": "Amador",
-    "PROFESSIONAL": "Profissional",
-    "EXPERT": "Especialista",
-    "VETERAN": "Veterano",
-    "MASTER": "Mestre",
-    "LEGEND": "Lenda",
-    "PREMIUM_MEMBER": "Membro Premium"
   }
 }

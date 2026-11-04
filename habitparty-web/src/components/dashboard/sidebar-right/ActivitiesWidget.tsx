@@ -3,7 +3,6 @@
 import { ChevronRight, Crown, Lock, Pencil, Plus, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -52,7 +51,6 @@ export function ActivitiesWidget({
   isCompact = false,
 }: ActivitiesWidgetProps) {
   const t = useTranslations("dashboard.sidebarRight.activitiesWidget");
-  const router = useRouter();
   const [period, setPeriod] = useState<ActivityPeriodOption>("today");
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const isPremium = useUserStore((s) => s.is_Premium);
@@ -126,7 +124,6 @@ export function ActivitiesWidget({
         prev.filter((a) => a.id !== activityToDelete.id),
       );
       setActivityToDelete(null);
-      router.refresh();
     } catch {
       toast.error(t("deleteUnexpectedError"));
     } finally {
@@ -182,7 +179,7 @@ export function ActivitiesWidget({
                 onClick={() => setPeriod(opt.id)}
                 aria-pressed={isActive}
                 className={cn(
-                  "px-1.5 py-0.5 rounded-md text-[11px] font-semibold transition-all cursor-pointer",
+                  "px-1.5 py-0.5 rounded-md text-label-g font-semibold transition-all cursor-pointer",
                   isActive
                     ? "bg-gold text-on-gold font-bold shadow-xs"
                     : "text-neutral-400 hover:text-neutral-200",
@@ -292,7 +289,7 @@ export function ActivitiesWidget({
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0 ml-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-gold px-1.5 py-0.5 rounded bg-gold/15 border border-gold/30 flex items-center gap-1">
+              <span className="text-tiny font-bold uppercase tracking-wider text-gold px-1.5 py-0.5 rounded bg-gold/15 border border-gold/30 flex items-center gap-1">
                 VIP 👑
               </span>
             </div>
@@ -397,7 +394,6 @@ export function ActivitiesWidget({
           onSuccess={() => {
             setIsEditModalOpen(false);
             setActivityToEdit(null);
-            router.refresh();
           }}
         />
       )}

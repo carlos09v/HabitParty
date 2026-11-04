@@ -7,6 +7,7 @@ import {
   addChecklistItem,
   deleteChecklistItem,
   toggleChecklistItem,
+  updateChecklistItem,
 } from "@/actions/checklistActions";
 import type { ChecklistItem } from "@/types/task";
 
@@ -104,6 +105,38 @@ export function useChecklist({
     [taskId, updateList, t],
   );
 
+  const updateItem = useCallback(
+    async (itemId?: string, newName?: string) => {
+      const trimmed = newName?.trim();
+      if (!itemId || !trimmed) return;
+
+      const currentItem = checklistRef.current.find((i) => i.id === itemId);
+      if (!currentItem || currentItem.name === trimmed) return;
+
+      const previous = [...checklistRef.current];
+      const next = checklistRef.current.map((item) =>
+        item.id === itemId ? { ...item, name: trimmed } : item,
+      );
+      updateList(next);
+
+      if (taskId && !itemId.startsWith("temp-")) {
+        startTransition(async () => {
+          const res = await updateChecklistItem(itemId, { name: trimmed });
+          if (!res.success) {
+            toast.error(res.error || t("checklistUpdateError"));
+            updateList(previous);
+          } else if (res.data) {
+            const confirmed = checklistRef.current.map((item) =>
+              item.id === itemId ? (res.data as ChecklistItem) : item,
+            );
+            updateList(confirmed);
+          }
+        });
+      }
+    },
+    [taskId, updateList, t],
+  );
+
   const deleteItem = useCallback(
     async (itemId?: string) => {
       if (!itemId) return;
@@ -131,6 +164,7 @@ export function useChecklist({
     resetChecklist,
     addItem,
     toggleItem,
+    updateItem,
     deleteItem,
     isPending,
   };

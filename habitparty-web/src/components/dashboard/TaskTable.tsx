@@ -1,7 +1,10 @@
 import { CalendarCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { TaskRow } from "@/components/tasks/shared/TaskRow";
-import { DASHBOARD_EMPTY_MESSAGES } from "@/constants/dashboard";
+import {
+  DASHBOARD_EMPTY_MESSAGES,
+  isDashboardStandardFilterId,
+} from "@/constants/dashboard";
 import { TASK_TABLE_GRID_COLS } from "@/constants/task";
 import type { AppLocale } from "@/i18n/config";
 import type { TaskTableProps } from "@/types/dashboard";
@@ -18,6 +21,7 @@ export function TaskTable({
   onHabitChange,
   onContextMenu,
   onOpenDetails,
+  onEditTask,
   selectedDate,
   onPageChange,
   isCompact = false,
@@ -33,8 +37,9 @@ export function TaskTable({
 
   const formattedDate = formatShortDate(selectedDate, { locale });
 
-  const EmptyIcon =
-    DASHBOARD_EMPTY_MESSAGES[activeFilter]?.icon || CalendarCheck;
+  const EmptyIcon = isDashboardStandardFilterId(activeFilter)
+    ? DASHBOARD_EMPTY_MESSAGES[activeFilter].icon
+    : CalendarCheck;
 
   const emptyMeta = selectedDate
     ? {
@@ -42,7 +47,7 @@ export function TaskTable({
         description: t("emptyDateDesc", { date: formattedDate }),
         icon: CalendarCheck,
       }
-    : DASHBOARD_EMPTY_MESSAGES[activeFilter]
+    : isDashboardStandardFilterId(activeFilter)
       ? {
           title: t(`empty.${activeFilter}.title`),
           description: t(`empty.${activeFilter}.description`),
@@ -114,6 +119,7 @@ export function TaskTable({
                 onHabitChange={onHabitChange}
                 onContextMenu={onContextMenu}
                 onOpenDetails={onOpenDetails}
+                onEditTask={onEditTask}
                 isCompact={isCompact}
               />
             </li>

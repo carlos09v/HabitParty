@@ -247,6 +247,7 @@ export function calculateHistoryWelcomeStats(
   input: TransactionHistoryResponseDTO[] | HistoryPageSummary,
   totalElementsOrLocale?: number | AppLocale,
   localeArg: AppLocale = "pt-BR",
+  isGamified = true,
 ): WelcomeCardStat[] {
   const totalElements =
     typeof totalElementsOrLocale === "number"
@@ -262,29 +263,56 @@ export function calculateHistoryWelcomeStats(
     ? summarizeHistoryPage(input, totalElements)
     : input;
 
+  const currencyLabel = isGamified
+    ? isEn
+      ? "Coins"
+      : "Moedas"
+    : isEn
+      ? "Credits"
+      : "Créditos";
+  const currencyLower = isGamified
+    ? isEn
+      ? "coins"
+      : "moedas"
+    : isEn
+      ? "credits"
+      : "créditos";
+
   return [
     {
-      label: isEn ? "Coins on Page" : "Moedas na Página",
-      value: `+${formatCoins(summary.goldEarned, { locale })} ${isEn ? "Coins" : "Moedas"}`,
+      label: isEn ? `${currencyLabel} on Page` : `${currencyLabel} na Página`,
+      value: `+${formatCoins(summary.goldEarned, { locale })} ${currencyLabel}`,
       icon: Coins,
       variant: "gold",
       hint:
         summary.goldSpent > 0
           ? isEn
-            ? `−${formatCoins(summary.goldSpent, { locale })} coins spent on this page`
-            : `−${formatCoins(summary.goldSpent, { locale })} moedas gastas nesta página`
+            ? `−${formatCoins(summary.goldSpent, { locale })} ${currencyLower} spent on this page`
+            : `−${formatCoins(summary.goldSpent, { locale })} ${currencyLower} ${isGamified ? "gastas" : "usados"} nesta página`
           : isEn
             ? "earned in visible records"
-            : "ganhas nos registros visíveis",
+            : isGamified
+              ? "ganhas nos registros visíveis"
+              : "acumulados nos registros visíveis",
     },
     {
-      label: isEn ? "XP on Page" : "XP na Página",
-      value: `+${summary.xpEarned} XP`,
+      label: isGamified
+        ? isEn
+          ? "XP on Page"
+          : "XP na Página"
+        : isEn
+          ? "Points on Page"
+          : "Pontos na Página",
+      value: `+${summary.xpEarned} ${isGamified ? "XP" : "pts"}`,
       icon: Sparkles,
       variant: "info",
-      hint: isEn
-        ? "experience in visible records"
-        : "experiência nos registros visíveis",
+      hint: isGamified
+        ? isEn
+          ? "experience in visible records"
+          : "experiência nos registros visíveis"
+        : isEn
+          ? "points in visible records"
+          : "pontos nos registros visíveis",
     },
     {
       label: isEn ? "Total Records" : "Total de Registros",

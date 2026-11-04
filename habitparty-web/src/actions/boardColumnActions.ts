@@ -1,9 +1,9 @@
 "use server";
 
-import { updateTag } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
+import { invalidateTaskDomainTags } from "./cacheInvalidation";
 import { type ActionState, getErrorMessage } from "./types";
 
 type CreateBoardColumnDTO = components["schemas"]["CreateBoardColumnDTO"];
@@ -13,10 +13,7 @@ type UpdateBoardColumnOrderDTO =
 type BoardColumnResponseDTO = components["schemas"]["BoardColumnResponseDTO"];
 
 function invalidateBoardColumnTags() {
-  updateTag("kanban");
-  updateTag("board_columns");
-  updateTag("dashboard-columns");
-  updateTag("dashboard-tasks");
+  invalidateTaskDomainTags({ includeColumnSummaries: true });
 }
 
 /**

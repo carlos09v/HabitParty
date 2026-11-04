@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { serverApi } from "@/api/server";
 import type { PageTransactionHistoryResponseDTO } from "@/types/history";
 
@@ -12,10 +13,15 @@ export interface GetHistoryParams {
 /**
  * Consulta o histórico paginado de transações do usuário diretamente no servidor,
  * aplicando filtros de aba, período e busca textual.
+ * Cacheado de forma privada no cliente por 30s (`private30`) e nunca em memória compartilhada.
  */
 export async function getHistoryData(
   params?: GetHistoryParams,
 ): Promise<PageTransactionHistoryResponseDTO> {
+  "use cache: private";
+  cacheLife("private30");
+  cacheTag("transactions");
+
   const currentTab =
     params?.tab && params.tab !== "ALL" ? params.tab : undefined;
   const currentPeriod =

@@ -8,11 +8,12 @@ import { useUIStore } from "@/store/uiStore";
  * sem provocar segundo ciclo de renderização (`useEffect`) após a hidratação.
  */
 export function useCompactMode(propIsCompact?: boolean) {
+  const hydrated = useUIStore((state) => state.hydrated);
   const compactMode = useUIStore((state) => state.compactMode);
   const toggleCompactMode = useUIStore((state) => state.toggleCompactMode);
   const setCompactMode = useUIStore((state) => state.setCompactMode);
 
-  const isCompact = propIsCompact ?? compactMode;
+  const isCompact = hydrated ? compactMode : (propIsCompact ?? compactMode);
 
   return {
     isCompact,

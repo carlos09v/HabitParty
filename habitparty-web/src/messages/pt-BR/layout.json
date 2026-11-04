@@ -10,7 +10,7 @@
     "inventoryGamified": "Mochila",
     "inventoryProductivity": "Inventário",
     "history": "Histórico",
-    "historyGamified": "Cofre do Aventureiro",
+    "historyGamified": "Diário de Jornada",
     "historyProductivity": "Histórico",
     "settings": "Configurações",
     "help": "Ajuda",
@@ -95,11 +95,16 @@
     "defaultNameProductivity": "Membro",
     "settingsTitle": "Ver configurações de perfil ({name})",
     "remainingXpTitle": "Faltam {xp} XP para {nextTitle}",
+    "remainingPtsTitle": "Faltam {xp} pts para {nextTitle}",
     "maxLevelTitle": "Nível Máximo",
     "xpMaxLabel": "{xp} XP • Máx",
+    "ptsMaxLabel": "{xp} pts • Máx",
     "coinsTitle": "{coins} moedas",
+    "creditsTitle": "{coins} créditos",
     "progressTitle": "Progresso: {currentXp}/{targetXp} XP ({percent}%). Faltam {remainingXp} XP para {nextTitle}.",
-    "progressMaxTitle": "Progresso: {currentXp} XP (Nível Máximo - {levelTitle})"
+    "progressPtsTitle": "Progresso: {currentXp}/{targetXp} pts ({percent}%). Faltam {remainingXp} pts para {nextTitle}.",
+    "progressMaxTitle": "Progresso: {currentXp} XP (Nível Máximo - {levelTitle})",
+    "progressPtsMaxTitle": "Progresso: {currentXp} pts (Nível Máximo - {levelTitle})"
   },
   "focusWidget": {
     "ambientSounds": {

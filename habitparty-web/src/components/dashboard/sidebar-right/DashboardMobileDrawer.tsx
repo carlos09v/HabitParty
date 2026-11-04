@@ -49,7 +49,7 @@ export function DashboardMobileDrawer({
           />
           <span className="font-bold text-neutral-100">{t("fabLabel")}</span>
           {balance > 0 && (
-            <span className="text-[11px] font-semibold text-gold bg-gold/15 border border-gold/30 px-1.5 py-0.5 rounded-full">
+            <span className="text-label-g font-semibold text-gold bg-gold/15 border border-gold/30 px-1.5 py-0.5 rounded-full">
               {balance} H
             </span>
           )}

@@ -4,7 +4,6 @@ import {
   Award,
   Calendar,
   Clock,
-  Coins,
   Pencil,
   Sparkles,
   Timer,
@@ -16,10 +15,12 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { updateFocusRecord } from "@/actions/focusActions";
+import { CoinIcon } from "@/components/ui/CoinIcon";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { getFocusIcon } from "@/constants/focus";
 import { useAnchoredPopoverPosition } from "@/hooks/useAnchoredPopoverPosition";
 import { useClickOutside } from "@/hooks/useClickOutside";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import type { FocusRecord } from "@/types/focus";
 import { formatCoins, formatDateTime } from "@/utils";
@@ -50,6 +51,7 @@ export function FocusRecordDetailsPopover({
   onRecordUpdated,
 }: FocusRecordDetailsPopoverProps) {
   const t = useTranslations("focus.recordDetails");
+  const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
   const [mounted, setMounted] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -187,19 +189,26 @@ export function FocusRecordDetailsPopover({
           </span>
           <div className="flex items-center gap-2.5 font-bold">
             <span className="text-purple-400 flex items-center gap-1">
-              <Award size={13} />+{record.xpEarned ?? 0} XP
+              <Award size={13} />+{record.xpEarned ?? 0}{" "}
+              {isGamified ? "XP" : "pts"}
             </span>
             <span className="text-neutral-500">•</span>
             <span className="text-gold flex items-center gap-1">
-              <Coins size={13} />+
+              <CoinIcon size={13} />+
               {formatCoins(record.coinsEarned ?? 0, { locale })}
             </span>
           </div>
         </div>
       ) : (
         <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-neutral-400">
-          <span>{t("leisureBackpackLabel")}</span>
-          <span className="text-tiny text-neutral-400">{t("noXpOrGold")}</span>
+          <span>
+            {isGamified
+              ? t("leisureBackpackLabel")
+              : t("leisureInventoryLabel")}
+          </span>
+          <span className="text-tiny text-neutral-400">
+            {isGamified ? t("noXpOrGold") : t("noPointsOrCredits")}
+          </span>
         </div>
       )}
 

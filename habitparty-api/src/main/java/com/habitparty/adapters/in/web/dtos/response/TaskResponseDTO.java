@@ -59,6 +59,7 @@ public record TaskResponseDTO(
         Boolean isPenaltyApplied,
         Boolean sendEmailReminder,
         Boolean emailReminderSent,
+        Boolean isRewardClaimed,
 
         // --- A lista de Checklist ---
         List<ChecklistItemResponseDTO> checklist) {
@@ -108,6 +109,7 @@ public record TaskResponseDTO(
                 task instanceof Todo t ? t.isPenaltyApplied() : null,
                 task instanceof Todo t ? t.isSendEmailReminder() : null,
                 task instanceof Todo t ? t.isEmailReminderSent() : null,
+                task.isRewardAlreadyClaimed(),
 
                 checklistDTOs);
     }

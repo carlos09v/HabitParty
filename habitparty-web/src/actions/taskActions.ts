@@ -1,9 +1,9 @@
 "use server";
 
-import { updateTag } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
+import { invalidateTaskDomainTags } from "./cacheInvalidation";
 import { type ActionState, getErrorMessage } from "./types";
 
 type CreateTaskDTO = components["schemas"]["CreateTaskDTO"];
@@ -16,27 +16,6 @@ type TaskStatus =
   | "COMPLETED"
   | "FAILED"
   | "CANCELED";
-
-function invalidateTaskTags(
-  options: {
-    includeUserAndTransactions?: boolean;
-    includeColumnSummaries?: boolean;
-  } = {},
-) {
-  updateTag("tasks");
-  updateTag("dashboard-tasks");
-  updateTag("kanban");
-
-  if (options.includeColumnSummaries) {
-    updateTag("dashboard-columns");
-    updateTag("board_columns");
-  }
-
-  if (options.includeUserAndTransactions) {
-    updateTag("user");
-    updateTag("transactions");
-  }
-}
 
 export async function createTask(
   boardColumnId: string,
@@ -59,7 +38,7 @@ export async function createTask(
       };
     }
 
-    invalidateTaskTags({ includeColumnSummaries: true });
+    invalidateTaskDomainTags({ includeColumnSummaries: true });
     return { success: true, data: data as TaskResponseDTO };
   } catch (err) {
     console.error("[TaskAction:Create]", err);
@@ -88,7 +67,7 @@ export async function updateTask(
       };
     }
 
-    invalidateTaskTags();
+    invalidateTaskDomainTags();
     return { success: true, data };
   } catch (err) {
     console.error("[TaskAction:Update]", err);
@@ -113,7 +92,7 @@ export async function deleteTask(taskId: string): Promise<ActionState> {
       };
     }
 
-    invalidateTaskTags({ includeColumnSummaries: true });
+    invalidateTaskDomainTags({ includeColumnSummaries: true });
     return { success: true, data };
   } catch (err) {
     console.error("[TaskAction:Delete]", err);
@@ -156,7 +135,7 @@ export async function recordHabitScore(
       };
     }
 
-    invalidateTaskTags({ includeUserAndTransactions: true });
+    invalidateTaskDomainTags({ includeUserAndTransactions: true });
     return { success: true, data: data as TaskResponseDTO };
   } catch (err) {
     console.error("[TaskAction:RecordHabitScore]", err);
@@ -187,7 +166,7 @@ export async function changeTaskStatus(
       };
     }
 
-    invalidateTaskTags({
+    invalidateTaskDomainTags({
       includeUserAndTransactions: true,
       includeColumnSummaries: true,
     });
@@ -217,7 +196,7 @@ export async function moveTasks(
       };
     }
 
-    invalidateTaskTags();
+    invalidateTaskDomainTags({ includeColumnSummaries: true });
     return { success: true, data };
   } catch (err) {
     console.error("[TaskAction:MoveTasks]", err);

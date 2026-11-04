@@ -202,6 +202,11 @@ public class Todo extends Task {
     this.completedAt = LocalDateTime.now();
   }
 
+  @Override
+  public boolean isRewardAlreadyClaimed() {
+    return this.completedAt != null;
+  }
+
   public void markPenaltyApplied() {
     this.isPenaltyApplied = true;
   }

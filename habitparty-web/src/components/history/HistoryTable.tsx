@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { deleteTransactionAction } from "@/actions/historyActions";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { HISTORY_GRID_COLS } from "@/constants/history";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import type { TransactionHistoryResponseDTO } from "@/types/history";
 import { cn, groupTransactionsByDay } from "@/utils";
@@ -25,6 +26,7 @@ export function HistoryTable({
   onDelete,
 }: HistoryTableProps) {
   const t = useTranslations("history.table");
+  const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
   const [selectedTransaction, setSelectedTransaction] =
     useState<TransactionHistoryResponseDTO | null>(null);
@@ -100,9 +102,17 @@ export function HistoryTable({
           >
             <span>{t("headers.eventItem")}</span>
             <span>{t("headers.eventType")}</span>
-            <span>{t("headers.difficultyTags")}</span>
-            <span>{t("headers.coins")}</span>
-            <span>{t("headers.xp")}</span>
+            <span>
+              {isGamified
+                ? t("headers.difficultyTags")
+                : t("headers.difficultyTagsProductivity")}
+            </span>
+            <span>
+              {isGamified ? t("headers.coins") : t("headers.coinsProductivity")}
+            </span>
+            <span>
+              {isGamified ? t("headers.xp") : t("headers.xpProductivity")}
+            </span>
             <span className="text-right">{t("headers.time")}</span>
             <span className="sr-only">{t("headers.actions")}</span>
           </div>
@@ -123,7 +133,9 @@ export function HistoryTable({
                   {t("emptyTitle")}
                 </h4>
                 <p className="text-body-s text-neutral-400">
-                  {t("emptyDescription")}
+                  {isGamified
+                    ? t("emptyDescription")
+                    : t("emptyDescriptionProductivity")}
                 </p>
               </div>
             </div>

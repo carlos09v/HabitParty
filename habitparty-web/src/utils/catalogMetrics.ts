@@ -28,6 +28,7 @@ export function calculateRewardWelcomeStats(
   rewards: Reward[],
   currentCoins: number,
   locale: AppLocale = "pt-BR",
+  isGamified = true,
 ): {
   stats: WelcomeCardStat[];
   redeemableCount: number;
@@ -58,7 +59,7 @@ export function calculateRewardWelcomeStats(
         ? `${singleUseCount} single-use`
         : `${singleUseCount} ${singleUseCount === 1 ? "único" : "únicos"}`,
     );
-  if (mysteryCount > 0)
+  if (isGamified && mysteryCount > 0)
     breakdownParts.push(
       isEn
         ? `${mysteryCount} ${mysteryCount === 1 ? "box" : "boxes"}`
@@ -71,10 +72,18 @@ export function calculateRewardWelcomeStats(
         ? "no options registered"
         : "nenhuma opção cadastrada";
 
+  const currencyLabel = isGamified
+    ? isEn
+      ? "Coins"
+      : "Moedas"
+    : isEn
+      ? "Credits"
+      : "Créditos";
+
   const stats: WelcomeCardStat[] = [
     {
       label: isEn ? "Current Balance" : "Saldo Atual",
-      value: `${formatCoins(currentCoins, { locale })} ${isEn ? "Coins" : "Moedas"}`,
+      value: `${formatCoins(currentCoins, { locale })} ${currencyLabel}`,
       icon: Coins,
       variant: "gold",
       hint: isEn ? "available to redeem" : "disponíveis para troca",
@@ -89,9 +98,13 @@ export function calculateRewardWelcomeStats(
           ? isEn
             ? "within reach today"
             : "ao seu alcance hoje"
-          : isEn
-            ? "earn more coins"
-            : "junte mais moedas",
+          : isGamified
+            ? isEn
+              ? "earn more coins"
+              : "junte mais moedas"
+            : isEn
+              ? "earn more credits"
+              : "acumule mais créditos",
     },
     {
       label: isEn ? "In Showcase" : "Na Vitrine",
@@ -111,6 +124,7 @@ export function calculateRewardWelcomeStats(
 export function calculateInventoryWelcomeStats(
   items: InventoryItem[],
   locale: AppLocale = "pt-BR",
+  isGamified = true,
 ): {
   stats: WelcomeCardStat[];
   totalQuantity: number;
@@ -137,7 +151,13 @@ export function calculateInventoryWelcomeStats(
 
   const stats: WelcomeCardStat[] = [
     {
-      label: isEn ? "Total in Backpack" : "Total na Mochila",
+      label: isGamified
+        ? isEn
+          ? "Total in Backpack"
+          : "Total na Mochila"
+        : isEn
+          ? "Total in Inventory"
+          : "Total no Inventário",
       value: `${totalQuantity} ${totalQuantity === 1 ? "item" : isEn ? "items" : "itens"}`,
       icon: Backpack,
       variant: "primary",

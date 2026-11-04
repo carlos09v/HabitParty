@@ -1,4 +1,7 @@
+"use client";
+
 import { Sparkles } from "lucide-react";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { cn } from "@/utils";
 
 export interface XpAmountProps {
@@ -25,7 +28,7 @@ const ICON_SIZE_MAP = {
 };
 
 /**
- * Exibe um valor de experiência (XP) com a cor e tipografia padronizadas do HabitParty.
+ * Exibe um valor de experiência (XP no Modo Aventura ou pts no Modo Essencial) com a cor e tipografia padronizadas do HabitParty.
  */
 export function XpAmount({
   amount,
@@ -35,6 +38,7 @@ export function XpAmount({
   withIcon = false,
   className,
 }: XpAmountProps) {
+  const { isGamified } = useExperienceMode();
   const isPositive = amount > 0;
   const isNegative = amount < 0;
   const isZero = amount === 0;
@@ -70,7 +74,9 @@ export function XpAmount({
         {signPrefix}
         {Math.abs(amount)}
       </span>
-      <span className="text-tiny font-semibold opacity-90">XP</span>
+      <span className="text-tiny font-semibold opacity-90">
+        {isGamified ? "XP" : "pts"}
+      </span>
     </span>
   );
 }

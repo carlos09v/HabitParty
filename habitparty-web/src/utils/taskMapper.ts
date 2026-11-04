@@ -68,9 +68,10 @@ export function mapTaskResponseToTask(
     resetCounter: taskDto.resetCounter,
     isHardcoreModeEnabled: taskDto.isHardcoreModeEnabled,
     dueDate: taskDto.dueDate,
-    isPenaltyApplied: (taskDto as { isPenaltyApplied?: boolean })
-      .isPenaltyApplied,
+    isPenaltyApplied: taskDto.isPenaltyApplied,
   });
+
+  const isCompleted = taskDto.status === "COMPLETED";
 
   return {
     id: taskDto.id || "",
@@ -84,7 +85,8 @@ export function mapTaskResponseToTask(
     importance: normalizedImportance,
     rewardXp: reward.xp,
     rewardGold: reward.gold,
-    completed: taskDto.status === "COMPLETED",
+    completed: isCompleted,
+    hasClaimedReward: Boolean(taskDto.isRewardClaimed || isCompleted),
     streak:
       (taskDto.taskType?.toLowerCase() as TaskType) === "todo"
         ? undefined
@@ -108,13 +110,10 @@ export function mapTaskResponseToTask(
     monthlyOption: taskDto.monthlyOption,
     priority: taskDto.priority,
     reminderType: taskDto.reminderType,
-    sendEmailReminder: (taskDto as { sendEmailReminder?: boolean })
-      .sendEmailReminder,
-    emailReminderSent: (taskDto as { emailReminderSent?: boolean })
-      .emailReminderSent,
+    sendEmailReminder: taskDto.sendEmailReminder,
+    emailReminderSent: taskDto.emailReminderSent,
     isHardcoreModeEnabled: taskDto.isHardcoreModeEnabled,
-    isPenaltyApplied: (taskDto as { isPenaltyApplied?: boolean })
-      .isPenaltyApplied,
+    isPenaltyApplied: taskDto.isPenaltyApplied,
     columnId: columnId,
     order: taskDto.orderIndex || 0,
     checklist: taskDto.checklist || [],
@@ -267,18 +266,37 @@ export function computeOptimisticHabitDelta(
 }
 
 /**
- * Realiza o parsing e sanitização de tags separadas por vírgula, limitando o tamanho
- * individual e deduplicando sem distinção entre maiúsculas e minúsculas.
+ * Realiza o parsing e sanitização de tags separadas por vírgula (,) ou ponto e vírgula (;),
+ * limitando o tamanho individual e deduplicando sem distinção entre maiúsculas e minúsculas.
  */
 export function parseTaskTags(tagsInput: string): string[] {
   if (!tagsInput || !tagsInput.trim()) return [];
 
   const rawTags = tagsInput
-    .split(",")
+    .split(/[,;]+/)
     .map((t) => t.trim().slice(0, MAX_TAG_LENGTH))
     .filter(Boolean);
 
   return Array.from(new Map(rawTags.map((t) => [t.toLowerCase(), t])).values());
+}
+
+/**
+ * Resolve de forma unificada o título da coluna/lista de uma tarefa,
+ * compatível tanto com `BoardColumn` (`title`) quanto com `ColumnSummaryDTO` (`name`).
+ */
+export function resolveTaskColumnTitle(
+  task: Pick<Task, "columnId" | "category"> | null | undefined,
+  columns: ReadonlyArray<{ id?: string; name?: string; title?: string }>,
+  fallbackTitle = "",
+  explicitColumnId?: string,
+): string {
+  const targetColumnId = explicitColumnId || task?.columnId;
+  if (targetColumnId) {
+    const matched = columns.find((col) => col.id === targetColumnId);
+    const resolvedName = matched?.title || matched?.name;
+    if (resolvedName) return resolvedName;
+  }
+  return task?.category || fallbackTitle;
 }
 
 /**

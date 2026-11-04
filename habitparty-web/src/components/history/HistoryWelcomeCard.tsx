@@ -31,13 +31,19 @@ export function HistoryWelcomeCard({
   if (!welcomeDetails) return null;
 
   const stats = summary
-    ? calculateHistoryWelcomeStats(summary, locale)
-    : calculateHistoryWelcomeStats(transactions, totalElements, locale);
+    ? calculateHistoryWelcomeStats(summary, locale, locale, isGamified)
+    : calculateHistoryWelcomeStats(
+        transactions,
+        totalElements,
+        locale,
+        isGamified,
+      );
 
   const title = isGamified ? t("titleGamified") : t("titleProductivity");
   const subtitle = isGamified
     ? t("subtitleGamified")
     : t("subtitleProductivity");
+  const bullet0 = isGamified ? t("bullet0") : t("bullet0Productivity");
   const bullet2 = isGamified ? t("bullet2Gamified") : t("bullet2Productivity");
 
   return (
@@ -45,7 +51,7 @@ export function HistoryWelcomeCard({
       compact={isCompact}
       title={title}
       subtitle={subtitle}
-      bullets={[t("bullet0"), t("bullet1"), bullet2]}
+      bullets={[bullet0, t("bullet1"), bullet2]}
       imageSrc={welcomeDetails.imageSrc}
       stats={stats}
       imageWidth={

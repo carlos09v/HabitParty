@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Sparkles } from "lucide-react";
+import { Check, Loader2, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
 import type { SettingsOptionItem } from "@/types/settings";
 import { cn } from "@/utils";
@@ -11,6 +11,10 @@ interface SettingsOptionGridProps<T extends string | boolean> {
   selectedValue: T;
   onSelect: (value: T) => void;
   isCompact?: boolean;
+  /** Bloqueia todas as opções (ex.: enquanto uma troca está em andamento). */
+  disabled?: boolean;
+  /** Opção cuja aplicação está em andamento — exibe um spinner no lugar do check. */
+  pendingValue?: T | null;
 }
 
 /**
@@ -23,6 +27,8 @@ export function SettingsOptionGrid<T extends string | boolean>({
   selectedValue,
   onSelect,
   isCompact = false,
+  disabled = false,
+  pendingValue = null,
 }: SettingsOptionGridProps<T>) {
   return (
     <div className="flex flex-col gap-4">
@@ -42,6 +48,8 @@ export function SettingsOptionGrid<T extends string | boolean>({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
         {options.map((option) => {
           const isSelected = option.value === selectedValue;
+          const isPending =
+            pendingValue !== null && option.value === pendingValue;
           const Icon = option.icon;
 
           return (
@@ -49,12 +57,16 @@ export function SettingsOptionGrid<T extends string | boolean>({
               key={String(option.value)}
               type="button"
               onClick={() => onSelect(option.value)}
+              disabled={disabled}
+              aria-pressed={isSelected}
+              aria-busy={isPending || undefined}
               className={cn(
-                "rounded-xl border text-left flex items-start justify-between gap-4 transition-all cursor-pointer h-full",
+                "rounded-xl border text-left flex items-start justify-between gap-4 transition-all cursor-pointer h-full disabled:cursor-wait",
                 isCompact ? "p-3" : "p-4",
                 isSelected
                   ? "bg-primary-dark/60 border-gold shadow-glow-gold-sm ring-1 ring-gold"
                   : "bg-surface/40 border-primary/20 hover:border-primary/40",
+                disabled && !isSelected && "opacity-60",
               )}
             >
               <div className="flex flex-col gap-2 min-w-0 flex-1">
@@ -79,10 +91,20 @@ export function SettingsOptionGrid<T extends string | boolean>({
                 </p>
               </div>
 
-              {isSelected && (
-                <div className="w-6 h-6 rounded-full bg-gold text-on-gold flex items-center justify-center shrink-0 mt-0.5">
-                  <Check size={14} className="stroke-3" />
+              {isPending ? (
+                <div className="w-6 h-6 rounded-full bg-gold/20 text-gold flex items-center justify-center shrink-0 mt-0.5">
+                  <Loader2
+                    size={14}
+                    className="animate-spin"
+                    aria-hidden="true"
+                  />
                 </div>
+              ) : (
+                isSelected && (
+                  <div className="w-6 h-6 rounded-full bg-gold text-on-gold flex items-center justify-center shrink-0 mt-0.5">
+                    <Check size={14} className="stroke-3" />
+                  </div>
+                )
               )}
             </button>
           );

@@ -1,7 +1,9 @@
 "use client";
 
-import { Award, Coins, Flame, ListChecks, Timer } from "lucide-react";
+import { Award, Flame, ListChecks, Timer } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { CoinIcon } from "@/components/ui/CoinIcon";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import type { FocusMetrics, FocusPeriodTab } from "@/types/focus";
 import { cn, formatCoins } from "@/utils";
@@ -21,6 +23,7 @@ export function FocusMetricsGrid({
   isCompact = false,
 }: FocusMetricsGridProps) {
   const t = useTranslations("focus.metrics");
+  const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
   const isToday = period === "HOJE";
 
@@ -172,23 +175,29 @@ export function FocusMetricsGrid({
           </div>
         </div>
 
-        {/* Ganho de XP */}
+        {/* Ganho de XP / Pontos */}
         <div
           className={cn(
             "rounded-xl border border-primary/25 bg-surface/50 flex flex-col justify-between transition-all hover:border-gold/30",
             isCompact ? "p-2 gap-1" : "p-2.5 gap-1.5",
           )}
-          title={t("xpTooltip")}
+          title={isGamified ? t("xpTooltip") : t("pointsTooltip")}
         >
           <div className="flex items-center justify-between text-neutral-400">
             <span className="text-tiny font-medium truncate">
-              {isToday ? t("focusXpLabel") : t("totalXpLabel")}
+              {isToday
+                ? isGamified
+                  ? t("focusXpLabel")
+                  : t("focusPointsLabel")
+                : isGamified
+                  ? t("totalXpLabel")
+                  : t("totalPointsLabel")}
             </span>
             <Award size={13} className="text-purple-400 shrink-0" />
           </div>
           <div className="flex flex-col">
             <span className="text-body-m font-bold text-neutral-100">
-              +{xpCount}
+              +{xpCount} {isGamified ? "" : "pts"}
             </span>
             <span className="text-tiny text-neutral-400 truncate">
               {t("focusActivitiesSub")}
@@ -196,19 +205,25 @@ export function FocusMetricsGrid({
           </div>
         </div>
 
-        {/* Ganho de Ouro */}
+        {/* Ganho de Ouro / Créditos */}
         <div
           className={cn(
             "rounded-xl border border-primary/25 bg-surface/50 flex flex-col justify-between transition-all hover:border-gold/30",
             isCompact ? "p-2 gap-1" : "p-2.5 gap-1.5",
           )}
-          title={t("goldTooltip")}
+          title={isGamified ? t("goldTooltip") : t("creditsTooltip")}
         >
           <div className="flex items-center justify-between text-neutral-400">
             <span className="text-tiny font-medium truncate">
-              {isToday ? t("goldEarnedLabel") : t("totalGoldLabel")}
+              {isToday
+                ? isGamified
+                  ? t("goldEarnedLabel")
+                  : t("creditsEarnedLabel")
+                : isGamified
+                  ? t("totalGoldLabel")
+                  : t("totalCreditsLabel")}
             </span>
-            <Coins size={13} className="text-gold shrink-0" />
+            <CoinIcon size={13} />
           </div>
           <div className="flex flex-col">
             <span className="text-body-m font-bold text-gold">

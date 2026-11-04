@@ -56,10 +56,11 @@
     "newColumnButton": "Criar coluna",
     "newTaskButton": "Adicionar Tarefa",
     "alignment": {
-      "ariaLabel": "Alinhamento do quadro Kanban",
-      "left": "Alinhar à esquerda",
-      "center": "Centralizar quadro",
-      "right": "Alinhar à direita"
+      "ariaLabel": "Alinhamento das colunas no quadro",
+      "prefixLabel": "Alinhar",
+      "left": "Alinhar colunas à esquerda",
+      "center": "Centralizar colunas no quadro",
+      "right": "Alinhar colunas à direita"
     },
     "popover": {
       "triggerLabel": "Filtrar",
@@ -262,7 +263,9 @@
       "importanceTooltipTitle": "Como escolher a Importância?",
       "stillInDoubt": "Ainda em dúvida?",
       "importanceTooltipAria": "Entenda como escolher a Importância do Hábito e suas recompensas",
+      "importanceTooltipAriaProductivity": "Entenda como escolher a Importância do Hábito",
       "importanceTooltipIntro": "Define o peso deste hábito na sua evolução e a recompensa a cada registro:",
+      "importanceTooltipIntroProductivity": "Define o impacto e a prioridade deste hábito na sua rotina diária:",
       "importanceRuleTitle": "🤔 Regra de bolso:",
       "importanceRuleBody": "Se leva menos de 2 minutos, use <bold>Baixa</bold>. Se faz parte da sua rotina padrão, use <bold>Normal</bold>. Reserve <bold>Alta</bold> apenas para os 1 ou 2 hábitos mais desafiadores do seu dia.",
       "importanceDescriptions": {
@@ -290,7 +293,8 @@
       "difficultyGuideMedium": "• <bold>30 a 60 min</bold> de foco moderado → <bold>Médio</bold>",
       "difficultyGuideHard": "• <bold>+1 hora</bold> ou alta exigência mental → <bold>Difícil</bold>",
       "tagsLabel": "Tags",
-      "tagsPlaceholder": "Ex: saúde, estudos (máx. {max})",
+      "tagsHint": "Separe por , ou ;",
+      "tagsPlaceholder": "Ex: saúde, estudos; foco (máx. {max})",
       "priorityLabel": "Prioridade"
     },
     "habitFields": {
@@ -369,6 +373,8 @@
         "ONE_WEEK_EARLY": "1 semana antes"
       },
       "emailReminderTitle": "Receber lembrete por e-mail?",
+      "emailReminderQuotaFree": "Até 5 e-mails",
+      "emailReminderQuotaVip": "Até 30 e-mails (VIP)",
       "emailReminderQuotaBadge": "Free: até 5 ativos (20/mês) • VIP: até 30 ativos (100/mês)",
       "emailUnverifiedDesc": "Confirme seu e-mail da conta para ativar alertas por e-mail.",
       "emailVerifiedDesc": "Enviaremos um alerta por e-mail quando o momento do alarme chegar.",
@@ -456,6 +462,7 @@
     },
     "checklist": {
       "title": "Subtarefas",
+      "editItemAria": "Editar item {name}",
       "deleteItemAria": "Excluir item {name}",
       "newItemPlaceholder": "Nome da subtarefa...",
       "okButton": "OK",

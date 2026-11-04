@@ -3,7 +3,6 @@
 import { Crown, Plus } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -39,6 +38,9 @@ const ConfirmationModal = dynamic(
 
 export function DashboardListSummary({
   initialColumns,
+  columns: controlledColumns,
+  onColumnsChange,
+  onColumnDeleted,
   maxColumns,
   activeWorkspaceId,
   isCompact = false,
@@ -48,12 +50,14 @@ export function DashboardListSummary({
   const t = useTranslations("dashboard.listSummary");
   const tMenu = useTranslations("dashboard.taskShared.contextMenu");
   const { isGamified } = useExperienceMode();
-  const router = useRouter();
-  const [columns, setColumns] = useState<ColumnSummaryDTO[]>(initialColumns);
+  const [internalColumns, setInternalColumns] =
+    useState<ColumnSummaryDTO[]>(initialColumns);
+  const columns = controlledColumns ?? internalColumns;
+  const setColumns = onColumnsChange ?? setInternalColumns;
   const [savedVisibleIds, setSavedVisibleIds] = useState<string[] | null>(null);
 
   useEffect(() => {
-    setColumns(initialColumns);
+    setInternalColumns(initialColumns);
   }, [initialColumns]);
 
   useEffect(() => {
@@ -161,9 +165,10 @@ export function DashboardListSummary({
         return;
       }
       toast.success(t("deleteColumnSuccess", { title: columnToDelete.title }));
-      setColumns((prev) => prev.filter((c) => c.id !== columnToDelete.id));
+      const deletedId = columnToDelete.id;
+      setColumns((prev) => prev.filter((c) => c.id !== deletedId));
+      onColumnDeleted?.(deletedId);
       setColumnToDelete(null);
-      router.refresh();
     } catch {
       toast.error(t("deleteColumnUnexpectedError"));
     } finally {
@@ -332,7 +337,6 @@ export function DashboardListSummary({
             );
             setIsEditModalOpen(false);
             setColumnToEdit(null);
-            router.refresh();
           }}
         />
       )}

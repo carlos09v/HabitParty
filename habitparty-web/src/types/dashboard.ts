@@ -52,6 +52,9 @@ export interface DashboardDailyBriefingProps {
 
 export interface DashboardListSummaryProps {
   initialColumns: ColumnSummaryDTO[];
+  columns?: ColumnSummaryDTO[];
+  onColumnsChange?: React.Dispatch<React.SetStateAction<ColumnSummaryDTO[]>>;
+  onColumnDeleted?: (columnId: string) => void;
   maxColumns: number;
   activeWorkspaceId?: string;
   isCompact?: boolean;
@@ -118,6 +121,7 @@ export interface TaskTableProps {
   onHabitChange?: (id: string, delta: number) => void;
   onContextMenu?: (e: React.MouseEvent, task: Task) => void;
   onOpenDetails?: (task: Task, anchorRect?: DOMRect) => void;
+  onEditTask?: (task: Task) => void;
   selectedDate?: string | null;
   onPageChange?: (page: number) => void;
 }

@@ -1,0 +1,60 @@
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
+import {
+  getAdminOverviewAction,
+  listAdminUsersAction,
+} from "@/actions/adminActions";
+import { AdminDashboardView } from "@/components/admin/AdminDashboardView";
+
+import { PageWrapper } from "@/components/layout/PageWrapper";
+import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
+import { getCurrentUser } from "@/services/userService";
+import { getCompactMode } from "@/utils/cookies";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("admin.metadata");
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
+
+export default async function AdminPage() {
+  const [isCompact, user] = await Promise.all([
+    getCompactMode(),
+    getCurrentUser(),
+  ]);
+
+  // Trava de segurança: Se não for ADMIN, redireciona imediatamente
+  if (!user || user.role !== "ADMIN") {
+    redirect("/dashboard");
+  }
+
+  const [overviewRes, usersRes] = await Promise.all([
+    getAdminOverviewAction(),
+    listAdminUsersAction("", "ALL", 0, 15),
+  ]);
+
+  const overview = overviewRes.success ? overviewRes.data || null : null;
+  const users = usersRes.success && usersRes.data ? usersRes.data.content : [];
+  const totalPages =
+    usersRes.success && usersRes.data ? usersRes.data.totalPages : 0;
+  const totalElements =
+    usersRes.success && usersRes.data ? usersRes.data.totalElements : 0;
+
+  return (
+    <ScopedIntlProvider scope="admin">
+      <PageWrapper isCompact={isCompact}>
+        <div className="max-w-7xl mx-auto w-full">
+          <AdminDashboardView
+            initialOverview={overview}
+            initialUsers={users}
+            initialTotalPages={totalPages}
+            initialTotalElements={totalElements}
+          />
+        </div>
+      </PageWrapper>
+    </ScopedIntlProvider>
+  );
+}

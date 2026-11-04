@@ -6,7 +6,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, MoreHorizontal } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { type CSSProperties, memo } from "react";
+import { type CSSProperties, memo, useEffect, useMemo, useRef } from "react";
 import {
   TaskActionControl,
   TaskChecklistBadge,
@@ -47,6 +47,7 @@ const TaskRowContent = memo(function TaskRowContent({
   onHabitChange,
   onContextMenu,
   onOpenDetails,
+  onEditTask,
   setNodeRef,
   style,
   attributes,
@@ -55,6 +56,15 @@ const TaskRowContent = memo(function TaskRowContent({
 }: TaskRowContentProps) {
   const t = useTranslations("dashboard.taskShared");
   const effectiveToggle = onToggleCompleted || onToggle;
+  const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const {
     isCompact,
@@ -87,11 +97,37 @@ const TaskRowContent = memo(function TaskRowContent({
   });
 
   const handleClick = (e: React.MouseEvent<HTMLElement>) => {
-    if (!isDragging && onOpenDetails) {
-      e.stopPropagation();
-      const anchor = getClickAnchorRect(e);
-      onOpenDetails(task, anchor, columnId);
+    if (isDragging) return;
+    e.stopPropagation();
+    if (e.detail >= 2) {
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
+        clickTimeoutRef.current = null;
+      }
+      return;
     }
+    if (onOpenDetails) {
+      const anchor = getClickAnchorRect(e);
+      if (onEditTask) {
+        if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
+        clickTimeoutRef.current = setTimeout(() => {
+          clickTimeoutRef.current = null;
+          onOpenDetails(task, anchor, columnId);
+        }, 180);
+      } else {
+        onOpenDetails(task, anchor, columnId);
+      }
+    }
+  };
+
+  const handleDoubleClick = (e: React.MouseEvent<HTMLElement>) => {
+    if (isDragging || !onEditTask) return;
+    e.stopPropagation();
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+      clickTimeoutRef.current = null;
+    }
+    onEditTask(task, columnId);
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -111,6 +147,7 @@ const TaskRowContent = memo(function TaskRowContent({
       {...(isSortable ? attributes : {})}
       {...(isSortable ? listeners : {})}
       onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
       onContextMenu={handleContextMenu}
       className={cn(
         "relative grid items-center rounded-xl border transition-[background-color,border-color,opacity,box-shadow] duration-150 select-none group overflow-hidden",
@@ -149,6 +186,7 @@ const TaskRowContent = memo(function TaskRowContent({
         {/* biome-ignore lint/a11y/noStaticElementInteractions: Evita propagação de clique para o pai */}
         <div
           onClick={(e) => e.stopPropagation()}
+          onDoubleClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
         >
           <TaskActionControl
@@ -285,6 +323,7 @@ const TaskRowContent = memo(function TaskRowContent({
         <button
           type="button"
           onPointerDown={(e) => e.stopPropagation()}
+          onDoubleClick={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
             if (onContextMenu) {
@@ -304,6 +343,14 @@ const TaskRowContent = memo(function TaskRowContent({
 
 function SortableTaskRow(props: TaskRowProps) {
   const { task, columnId = task.columnId, isOverlay = false } = props;
+  const sortableData = useMemo(
+    () => ({
+      type: "Task" as const,
+      task,
+      columnId,
+    }),
+    [task, columnId],
+  );
   const {
     attributes,
     listeners,
@@ -313,11 +360,7 @@ function SortableTaskRow(props: TaskRowProps) {
     isDragging,
   } = useSortable({
     id: task.id,
-    data: {
-      type: "Task",
-      task,
-      columnId,
-    },
+    data: sortableData,
     disabled: isOverlay,
   });
 

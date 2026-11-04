@@ -120,13 +120,15 @@ export function RewardsContainer({
 
   const typeOptions = useMemo(
     () =>
-      REWARD_TYPE_OPTIONS.map((opt) => ({
+      REWARD_TYPE_OPTIONS.filter(
+        (opt) => isGamified || opt.value !== "MysteryBox",
+      ).map((opt) => ({
         value: opt.value,
         label: opt.value
           ? tOptions(`types.${toRewardTypeMessageKey(opt.value)}`)
           : tOptions("types.all"),
       })),
-    [tOptions],
+    [isGamified, tOptions],
   );
 
   const packageOptions = useMemo(
@@ -156,7 +158,11 @@ export function RewardsContainer({
       if (isRedeeming) return;
 
       if (typeof currentCoins === "number" && currentCoins < reward.price) {
-        toast.error(t("toasts.insufficientCoins"));
+        toast.error(
+          isGamified
+            ? t("toasts.insufficientCoins")
+            : t("toasts.insufficientCredits"),
+        );
         return;
       }
 
@@ -243,8 +249,18 @@ export function RewardsContainer({
     });
   };
 
+  const visibleRewardsForMode = useMemo(
+    () =>
+      isGamified
+        ? rewards
+        : rewards.filter(
+            (r) => r.type !== "MysteryBox" && r.type !== "MISTERY_BOX",
+          ),
+    [isGamified, rewards],
+  );
+
   const filteredRewards = useMemo(() => {
-    let result = rewards.filter((r) => {
+    let result = visibleRewardsForMode.filter((r) => {
       if (
         filters.search &&
         !r.title.toLowerCase().includes(filters.search.toLowerCase()) &&
@@ -270,13 +286,18 @@ export function RewardsContainer({
     }
 
     return result;
-  }, [rewards, filters]);
+  }, [visibleRewardsForMode, filters]);
 
   const resolvedCoins = currentCoins ?? 0;
 
   const { stats: welcomeStats } = useMemo(() => {
-    return calculateRewardWelcomeStats(rewards, resolvedCoins, locale);
-  }, [rewards, resolvedCoins, locale]);
+    return calculateRewardWelcomeStats(
+      visibleRewardsForMode,
+      resolvedCoins,
+      locale,
+      isGamified,
+    );
+  }, [visibleRewardsForMode, resolvedCoins, locale, isGamified]);
 
   return (
     <>
@@ -340,7 +361,7 @@ export function RewardsContainer({
           onClearDropdowns={handleClearFilters}
           rightActions={
             <PrimaryActionButton
-              label={t("addProduct")}
+              label={isGamified ? t("addProduct") : t("addProductProductivity")}
               onClick={handleAddProduct}
               isCompact={isCompact}
             />
@@ -354,19 +375,21 @@ export function RewardsContainer({
             )}
             <CatalogEmptyState
               isCompact={isCompact}
-              icon={rewards.length === 0 ? Store : SearchX}
+              icon={visibleRewardsForMode.length === 0 ? Store : SearchX}
               title={
-                rewards.length === 0
+                visibleRewardsForMode.length === 0
                   ? t("empty.showcaseEmptyTitle")
                   : t("empty.noResultsTitle")
               }
               description={
-                rewards.length === 0
-                  ? t("empty.showcaseEmptyDescription")
+                visibleRewardsForMode.length === 0
+                  ? isGamified
+                    ? t("empty.showcaseEmptyDescription")
+                    : t("empty.showcaseEmptyDescriptionProductivity")
                   : t("empty.noResultsDescription")
               }
               action={
-                rewards.length === 0 ? (
+                visibleRewardsForMode.length === 0 ? (
                   <button
                     type="button"
                     onClick={handleAddProduct}
@@ -460,9 +483,15 @@ export function RewardsContainer({
                           price={reward.price}
                           disabled={!canAfford}
                           disabledTitle={
-                            !canAfford ? t("insufficientCoinsShort") : undefined
+                            !canAfford
+                              ? isGamified
+                                ? t("insufficientCoinsShort")
+                                : t("insufficientCreditsShort")
+                              : undefined
                           }
-                          actionLabel={t("buy")}
+                          actionLabel={
+                            isGamified ? t("buy") : t("buyProductivity")
+                          }
                           onAction={() => handleBuy(reward)}
                           onContextMenu={(e) => handleContextMenu(e, reward)}
                           isCompact={isCompact}

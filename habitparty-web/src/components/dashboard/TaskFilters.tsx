@@ -74,9 +74,9 @@ export function TaskFilters({
   const taskTypeOptions = useMemo(
     () => [
       { value: "all", label: t("allTypes") },
-      { value: "habit", label: t("habits") },
-      { value: "daily", label: t("dailies") },
-      { value: "todo", label: t("todos") },
+      { value: "HABIT", label: t("habits") },
+      { value: "DAILY", label: t("dailies") },
+      { value: "TODO", label: t("todos") },
     ],
     [t],
   );
@@ -95,9 +95,9 @@ export function TaskFilters({
   const sortOptions = useMemo(
     () => [
       { value: "default", label: t("sortDefault") },
-      { value: "difficulty_desc", label: t("sortDifficulty") },
-      { value: "priority_desc", label: t("sortPriority") },
-      { value: "reward_desc", label: t("sortReward") },
+      { value: "difficulty", label: t("sortDifficulty") },
+      { value: "priority", label: t("sortPriority") },
+      { value: "reward", label: t("sortReward") },
     ],
     [t],
   );

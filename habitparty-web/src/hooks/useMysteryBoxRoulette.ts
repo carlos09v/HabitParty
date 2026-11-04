@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   type MysteryBoxOpenResult,
   openMysteryBox,
+  revalidateInventoryAfterRoulette,
 } from "@/actions/inventoryActions";
 import {
   getMysteryBoxTier,
@@ -55,6 +56,8 @@ export function useMysteryBoxRoulette({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const soundIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const winTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const initializedItemKeyRef = useRef<string | null>(null);
 
   const tierId: PackageLevel =
     (item?.reward.packageLevel as PackageLevel) || "Básico";
@@ -63,39 +66,51 @@ export function useMysteryBoxRoulette({
     MYSTERY_BOX_ROULETTE_POOLS[tierConfig.id] ||
     MYSTERY_BOX_ROULETTE_POOLS.Básico;
 
-  // Monta a fita de itens aleatórios ao abrir a modal
+  // Monta a fita de itens aleatórios apenas uma vez por abertura da modal/item
   useEffect(() => {
-    if (isOpen && item) {
-      setPhase("idle");
-      setWonResult(null);
-      setTranslateX(0);
-
-      const generated: RouletteItem[] = [];
-      for (let i = 0; i < ROULETTE_TRACK_LENGTH; i++) {
-        const randomItem = pool[Math.floor(Math.random() * pool.length)];
-        const poolKey = `poolItems.${randomItem.id as PoolItemId}` as const;
-        const localizedName = t.has(poolKey) ? t(poolKey) : randomItem.name;
-        const percentMatch = randomItem.badgeLabel.match(/^(\d+)%/);
-        const localizedBadge = percentMatch
-          ? t("dropBadge", { percent: percentMatch[1] })
-          : randomItem.badgeLabel;
-
-        generated.push({
-          ...randomItem,
-          id: `${randomItem.id}-${i}`,
-          name: localizedName,
-          badgeLabel: localizedBadge,
-        });
-      }
-      setTrackItems(generated);
+    if (!isOpen || !item) {
+      initializedItemKeyRef.current = null;
+      return;
     }
-  }, [isOpen, item, pool, t]);
 
-  // Limpeza de intervalos sonoros ao desmontar ou fechar
+    const currentKey = `${item.inventoryItemId || item.id}-${tierConfig.id}`;
+    if (initializedItemKeyRef.current === currentKey) {
+      return;
+    }
+    initializedItemKeyRef.current = currentKey;
+
+    setPhase("idle");
+    setWonResult(null);
+    setTranslateX(0);
+
+    const generated: RouletteItem[] = [];
+    for (let i = 0; i < ROULETTE_TRACK_LENGTH; i++) {
+      const randomItem = pool[Math.floor(Math.random() * pool.length)];
+      const poolKey = `poolItems.${randomItem.id as PoolItemId}` as const;
+      const localizedName = t.has(poolKey) ? t(poolKey) : randomItem.name;
+      const percentMatch = randomItem.badgeLabel.match(/^(\d+)%/);
+      const localizedBadge = percentMatch
+        ? t("dropBadge", { percent: percentMatch[1] })
+        : randomItem.badgeLabel;
+
+      generated.push({
+        ...randomItem,
+        id: `${randomItem.id}-${i}`,
+        name: localizedName,
+        badgeLabel: localizedBadge,
+      });
+    }
+    setTrackItems(generated);
+  }, [isOpen, item, pool, tierConfig.id, t]);
+
+  // Limpeza de intervalos sonoros e timers ao desmontar ou fechar
   useEffect(() => {
     return () => {
       if (soundIntervalRef.current) {
         clearTimeout(soundIntervalRef.current);
+      }
+      if (winTimeoutRef.current) {
+        clearTimeout(winTimeoutRef.current);
       }
     };
   }, []);
@@ -107,7 +122,7 @@ export function useMysteryBoxRoulette({
     const targetItemId = item.inventoryItemId || item.id;
 
     try {
-      const res = await openMysteryBox(targetItemId);
+      const res = await openMysteryBox(targetItemId, true);
       if (!res.success || !res.data) {
         setIsOpeningServer(false);
         return;
@@ -154,11 +169,17 @@ export function useMysteryBoxRoulette({
         randomJitter
       );
 
+      setTranslateX(0);
       setPhase("spinning");
       setIsOpeningServer(false);
 
+      // Duplo rAF + leitura de layout garante que o frame inicial (translateX = 0)
+      // seja comitado no compositor antes de disparar a transição CSS de 4.5s em produção
       requestAnimationFrame(() => {
-        setTranslateX(finalTranslate);
+        void containerRef.current?.offsetWidth;
+        requestAnimationFrame(() => {
+          setTranslateX(finalTranslate);
+        });
       });
 
       // Efeito sonoro de catraca: acelerado no início e desacelerando gradualmente
@@ -177,13 +198,14 @@ export function useMysteryBoxRoulette({
       };
       runTicks();
 
-      setTimeout(() => {
+      winTimeoutRef.current = setTimeout(() => {
         if (soundIntervalRef.current) {
           clearTimeout(soundIntervalRef.current);
         }
         setPhase("won");
         soundEffects.playRouletteWinSound();
         onSuccess?.(winData);
+        void revalidateInventoryAfterRoulette();
       }, 4600);
     } catch (_err) {
       setIsOpeningServer(false);

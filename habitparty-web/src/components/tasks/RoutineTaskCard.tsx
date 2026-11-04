@@ -1,7 +1,7 @@
 "use client";
 
 import { Calendar, ClockAlert } from "lucide-react";
-import { memo } from "react";
+import { memo, useEffect, useRef } from "react";
 import {
   TaskActionControl,
   TaskChecklistBadge,
@@ -27,11 +27,21 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
   columnId,
   isCompact: propIsCompact,
   onOpenDetails,
+  onEditTask,
   onToggleCompleted,
   onHabitChange,
   onContextMenu,
   isOverlay = false,
 }: RoutineTaskCardProps) {
+  const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
+      }
+    };
+  }, []);
   const {
     isCompact,
     completed,
@@ -74,11 +84,36 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
       {...attributes}
       {...listeners}
       onClick={(e) => {
-        if (!isDragging && onOpenDetails) {
-          e.stopPropagation();
-          const rect = e.currentTarget.getBoundingClientRect();
-          onOpenDetails(task, columnId, rect);
+        if (isDragging) return;
+        e.stopPropagation();
+        if (e.detail >= 2) {
+          if (clickTimeoutRef.current) {
+            clearTimeout(clickTimeoutRef.current);
+            clickTimeoutRef.current = null;
+          }
+          return;
         }
+        if (onOpenDetails) {
+          const rect = e.currentTarget.getBoundingClientRect();
+          if (onEditTask) {
+            if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
+            clickTimeoutRef.current = setTimeout(() => {
+              clickTimeoutRef.current = null;
+              onOpenDetails(task, columnId, rect);
+            }, 180);
+          } else {
+            onOpenDetails(task, columnId, rect);
+          }
+        }
+      }}
+      onDoubleClick={(e) => {
+        if (isDragging || !onEditTask) return;
+        e.stopPropagation();
+        if (clickTimeoutRef.current) {
+          clearTimeout(clickTimeoutRef.current);
+          clickTimeoutRef.current = null;
+        }
+        onEditTask(task, columnId);
       }}
       onContextMenu={(e) => {
         if (onContextMenu) {

@@ -90,9 +90,11 @@ export function awardUserRewards(
         ? "en"
         : "pt-BR");
 
+    const isGamified = user.experienceMode === "GAMIFIED";
     const localizedNewTitle = localizeLevelTitle(
       newLevel.title,
       detectedLocale,
+      isGamified,
     );
     const titleText =
       options?.levelUpTitle ||

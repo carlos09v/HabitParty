@@ -24,6 +24,7 @@ export function RoutineBoard({
   onAddColumn,
   onAddTaskToColumn,
   onOpenDetails,
+  onEditTask,
   onContextMenu,
   onOpenColumnMenu,
   onToggleComplete,
@@ -146,6 +147,7 @@ export function RoutineBoard({
                   onAddTaskToColumn={onAddTaskToColumn}
                   onQuickCreateTask={onQuickCreateTask}
                   onOpenDetails={onOpenDetails}
+                  onEditTask={onEditTask}
                   onContextMenu={onContextMenu}
                   onOpenColumnMenu={onOpenColumnMenu}
                   onToggleComplete={onToggleComplete}

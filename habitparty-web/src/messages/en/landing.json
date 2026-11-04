@@ -1,411 +1,423 @@
 {
-  "landing": {
-    "metadata": {
-      "title": "HabitParty — Gamified Productivity & RPG Habits",
-      "description": "Turn your daily routine into an epic journey. Earn XP, stack gold coins, beat procrastination in Focus Mode, and trade effort for real-life rewards."
+  "metadata": {
+    "title": "HabitParty — Gamified Productivity",
+    "description": "Turn your daily routine into an epic journey. Earn XP, stack gold coins, beat procrastination in Focus Mode, and trade effort for real-life rewards."
+  },
+  "navbar": {
+    "links": {
+      "howItWorks": "How It Works",
+      "gamification": "Gamification",
+      "features": "Features",
+      "roadmap": "Roadmap",
+      "pricing": "Pricing",
+      "faq": "FAQ"
     },
-    "navbar": {
-      "links": {
-        "howItWorks": "How It Works",
-        "gamification": "Gamification",
-        "features": "Features",
-        "roadmap": "Roadmap",
-        "pricing": "Pricing",
-        "faq": "FAQ"
-      },
-      "signIn": "Sign In",
-      "startFree": "Start Free",
-      "signInAccount": "Sign In to Account",
-      "startFreeAdventure": "Start for Free ✨",
-      "openMenu": "Open menu",
-      "closeMenu": "Close menu"
+    "signIn": "Sign In",
+    "startFree": "Start Free",
+    "signInAccount": "Sign In to Account",
+    "startFreeAdventure": "Start for Free ✨",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "hero": {
+    "badge": "Choose between Immersive Productivity or Gamification (RPG)",
+    "titleLine1": "Your routine doesn't have to be a burden. ",
+    "titleHighlight": "Make it legendary and consistent.",
+    "subtitle": "Manage tasks, habits, and projects on agile Kanban boards. Choose between Essential Mode with an executive aesthetic or Adventure Mode with gold coins, XP, and real rewards.",
+    "primaryCta": "Start for Free",
+    "secondaryCta": "Explore Live Interactive Demo",
+    "highlights": {
+      "levels": "Focus Levels & XP",
+      "streaks": "Streaks & Dailies",
+      "pomodoro": "Pomodoro & Zen Mode",
+      "shop": "Reward Shop"
     },
-    "hero": {
-      "badge": "Purposeful Productivity • Choose between Executive Focus or RPG Immersion",
-      "titleLine1": "Your routine doesn't have to be a burden. ",
-      "titleHighlight": "Make it legendary and consistent.",
-      "subtitle": "Manage tasks, habits, and projects on agile Kanban boards. Choose between a clean executive interface for work or turn your routine into a game with coins, XP, and real rewards.",
-      "primaryCta": "Start for Free",
-      "secondaryCta": "Explore Live Interactive Demo",
-      "highlights": {
-        "levels": "Focus Levels & XP",
-        "streaks": "Streaks & Dailies",
-        "pomodoro": "Pomodoro & Zen Mode",
-        "shop": "Reward Shop"
-      }
-    },
-    "demo": {
-      "badge": "Interactive Demo",
-      "title": "Feel the satisfaction of leveling up in practice.",
-      "subtitle": "Click the buttons and tasks below. In HabitParty, every real effort triggers instant rewards with sound, XP, and gold coins.",
-      "windowTitle": "HabitParty Cosmic Studio • Live Demo",
-      "goldStatus": "{gold} Gold",
-      "levelStatus": "Level {level}",
-      "footerHint": "Interactive simulation: click the buttons to experience the immediate reward feedback.",
-      "footerHighlight": "In HabitParty: your daily habits turn into real gold and progress ✨",
-      "toasts": {
-        "habitLevelUp": "🎉 LEVEL UP! Level {level} reached!",
-        "habitScored": "+15 XP • +5 Gold Coins!",
-        "habitDecremented": "Habit decremented",
-        "dailyLevelUp": "🎉 LEVEL UP! Level {level}!",
-        "dailyCompleted": "⚔️ Quest Completed! +60 XP • +25 Gold!",
-        "dailyReopened": "Quest reopened",
-        "timerStarted": "⏱️ Hyperfocus Mode Started! Take a deep breath.",
-        "timerPaused": "Timer paused."
-      },
-      "playerHeader": {
-        "levelBadge": "Lv.{level}",
-        "name": "Cosmic Explorer",
-        "titleBadge": "Focus Warrior",
-        "xpNextLevel": "{xp} / {maxXp} XP to next level",
-        "xpProgressLabel": "XP Progress"
-      },
-      "habitCard": {
-        "badge": "Daily Habit",
-        "title": "💧 Drink 2L of Water",
-        "logsLabel": "Today's logs: ",
-        "glassesCount": "{count, plural, one {# glass} other {# glasses}}",
-        "clickToScore": "Click to score:",
-        "decreaseAria": "Decrease glass"
-      },
-      "dailyCard": {
-        "streakBadge": "{count, plural, one {#-day Streak} other {#-day Streak}}",
-        "title": "💻 1h Deep Study",
-        "resetNote": "Resets at midnight if not completed.",
-        "statusDone": "Completed!",
-        "statusPending": "Complete Quest:",
-        "buttonDone": "Done!",
-        "buttonPending": "Complete (+60 XP)"
-      },
-      "focusCard": {
-        "badge": "Zen Focus",
-        "duration": "25 min",
-        "descriptionRunning": "Hyperfocus active • Notifications muted",
-        "descriptionIdle": "Eliminate distractions and focus on the task",
-        "statusRunning": "Running",
-        "statusIdle": "Start session:",
-        "pause": "Pause",
-        "start": "Start Focus"
-      }
-    },
-    "productivityLoop": {
-      "badge": "HabitParty Methodology",
-      "title": "The continuous loop of personal consistency.",
-      "subtitle": "We combine neuroscience, agile workflows, and behavioral psychology to turn discipline into daily excitement.",
-      "cardFooter": "Personalized & Automated",
-      "steps": {
-        "step1": {
-          "tag": "Routine & Habits",
-          "title": "Structure your Routine",
-          "description": "Build habits with positive and negative triggers (+/-), daily routines with consistency streaks, and projects organized in agile Kanban boards."
-        },
-        "step2": {
-          "tag": "Pomodoro & Focus",
-          "title": "Activate Zen Hyperfocus",
-          "description": "Enter flow state with Focus Hero Stage. Intelligent stopwatch, refreshing breaks, and ambient sounds to silence mental noise."
-        },
-        "step3": {
-          "tag": "Rewards & Leisure",
-          "title": "Reward your Dedication",
-          "description": "Turn discipline into well-earned downtime. Enjoy guilt-free breaks, free-time blocks, or custom rewards from your store, using consistency points or gold coins."
-        }
-      }
-    },
-    "manifesto": {
-      "badge": "The Honesty Pact",
-      "quoteStart": "“Cheating on your tasks is only cheating yourself: ",
-      "quoteHighlight": "here, every coin and every level carries the weight of your sincerity.",
-      "quoteEnd": "”",
-      "description": "You are the one who stocks the reward shop. Gold is earned through your own sweat, and rewards are enjoyed by you in real life. In HabitParty, you don't play against an algorithm — you play for your own future. Checking off a task you didn't do only sabotages who you want to become.",
-      "pillars": {
-        "p1": "No cheating yourself",
-        "p2": "Truly earned rewards",
-        "p3": "Clean, guilt-free dopamine"
-      }
-    },
-    "features": {
-      "badge": "Complete Arsenal",
-      "title": "Everything you need to master your routine.",
-      "subtitle": "Every feature was designed to eliminate friction and reward your dedication with elegance and consistency.",
-      "items": {
-        "experienceMode": {
-          "badge": "Total Flexibility",
-          "title": "Two Experiences: Productivity or RPG",
-          "description": "Choose how to experience your day: adopt Productivity Mode for a clean, executive interface focused on deliverables; or activate RPG Immersion to earn gold coins, XP, and lucky chests. Switch anytime with 1 click."
-        },
-        "rewardShop": {
-          "badge": "Real Economy",
-          "title": "Reward Shop & Mystery Boxes",
-          "description": "Register your real-life treats (e.g., 'Movie Night', '1h Gaming') or test your luck opening Mystery Boxes with epic rewards."
-        },
-        "partyGuild": {
-          "badge": "Coming Soon",
-          "title": "Party & Guild System",
-          "description": "Coming soon: invite friends to your guild in your workspace, track mutual progress, and celebrate victories together."
-        },
-        "hardcoreMode": {
-          "badge": "Real Discipline",
-          "title": "Strict Deadline & Hardcore Mode",
-          "description": "For non-negotiable commitments. Missing daily routines or overdue tasks locks postponement and applies an immediate 50% penalty, reinforcing your discipline."
-        },
-        "workspaces": {
-          "badge": "Organization",
-          "title": "Independent Workspaces",
-          "description": "Isolate Work, Study, and Personal Life projects with 1 click, each with its own Kanban boards and metrics."
-        },
-        "analytics": {
-          "badge": "Analytics",
-          "title": "History & Economy Analytics",
-          "description": "Track visual weekly reports: accumulated focus hours, gold flow, and consistency evolution."
-        },
-        "soundEffects": {
-          "badge": "Immersion",
-          "title": "Gratifying Sound Effects",
-          "description": "Feel the dopamine with every achievement: satisfying victory chimes, clinking coins, and a relaxing focus bell."
-        }
-      }
-    },
-    "roadmap": {
-      "badge": "Journey Map",
-      "title": "From Solo Journey to Social MMO.",
-      "subtitle": "Discover the next chapters of HabitParty's evolution. Every update adds deeper immersion, co-op features, and tools to supercharge your consistency.",
-      "founderBanner": {
-        "title": "Early Access for Founding Members",
-        "spotsBadge": "30 Spots",
-        "description": "Pioneer subscribers test every phase first and earn a prestigious lifetime badge on their profile.",
-        "cta": "View Offer"
-      },
-      "phaseLabel": "Phase 0{index}",
-      "highlightsLabel": "Release highlights:",
-      "extrasLabel": "Release extras:",
-      "cardFooter": "Continuous ecosystem delivery",
-      "cardFooterCompleted": "Delivered and live in the ecosystem",
-      "feedbackPrompt": "Have suggestions for upcoming releases or found a bug? Take part directly in HabitParty's evolution:",
-      "reportBugCta": "Report Bug or Suggest Idea (GitHub)",
-      "contactCreatorCta": "Talk to the Creator ({email})",
-      "items": {
-        "r11": {
-          "statusLabel": "Completed",
-          "title": "Internationalization & Experience Modes",
-          "tagline": "Bilingual global expansion, adaptive productivity profiles, and structural security and performance hardening.",
-          "features": [
-            "Internationalization (i18n): Full support for English (EN) and Portuguese (PT-BR)",
-            "Instant language switching across all screens without reloading the app",
-            "Experience Modes (RPG vs. Productivity): choose between gamified immersion or a minimalist execution layout",
-            "Progressive email verification for account security and alert activation"
-          ],
-          "extras": [
-            "Multi-layer Anti-Bot protection (IP Rate Limiting, invisible Honeypot, and disposable email blocking)",
-            "Database architectural refactoring and high-performance indexes",
-            "Interface density controls (Compact Mode) and layout customization"
-          ]
-        },
-        "r12": {
-          "statusLabel": "Next Milestone",
-          "title": "Light Theme, VIP Themes & Achievements",
-          "tagline": "Crisp high-contrast daytime mode, exclusive VIP visual atmospheres, task-linked deep work, and your first discipline trophies.",
-          "features": [
-            "Light Theme with high contrast and crisp readability for daytime productivity",
-            "Dynamic theme switcher (Cosmic Dark vs. Cosmic Daylight)",
-            "Exclusive VIP Themes (Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold)",
-            "Direct linking of Pomodoro/Focus sessions to specific Kanban tasks",
-            "Effort metrics per card with dedicated time history and auto-completion",
-            "Personal Achievements system with dozens of automated trophies and medals",
-            "New 'My Achievements' screen to track your adventurer progression"
-          ]
-        },
-        "r13": {
-          "statusLabel": "Planned",
-          "title": "Public Profile & Trophy Showcase",
-          "tagline": "Share your epic journey, connect with friends, and display your rare badges at the top of your profile.",
-          "features": [
-            "Public Adventurer Pages to share level, consistency, and streaks",
-            "Highlight Showcase to pin your Founding Member Badge at the top of your profile",
-            "Friend Network with player search by username and friend code",
-            "Granular privacy controls for stats and routines"
-          ]
-        },
-        "r14": {
-          "statusLabel": "Planned",
-          "title": "Real-Time Party & Co-op",
-          "tagline": "Strength in numbers: small mutual focus groups, cooperative goals, and built-in chat.",
-          "features": [
-            "Party formation (focus groups) via quick invite code",
-            "Cooperative Daily Quests with collective gold bonuses when everyone succeeds",
-            "Built-in Real-Time Chat with focus alerts and mutual celebrations",
-            "Sleek sound and visual notifications for team milestones"
-          ]
-        },
-        "r20": {
-          "statusLabel": "Major MMO & Mobile Milestone",
-          "title": "Mobile App, Guilds & Full Social MMO",
-          "tagline": "The pinnacle of HabitParty: native app in your pocket, mega guilds, co-op boss raids, and global leaderboards.",
-          "features": [
-            "Official Mobile App (iOS & Android) with widgets, quick check-in, and native push notifications",
-            "Real-time Focus Mode and Pomodoro synchronization between PC and smartphone",
-            "Large Thematic Guilds (Exams, Devs, Health, Fitness, Languages)",
-            "World Boss Quests & Raids that lose HP as you study and focus",
-            "Global Consistency Leaderboards (Global, Friends, and Rival Guilds)",
-            "Competitive seasons with legendary cosmetic titles and rewards"
-          ]
-        }
-      }
-    },
-    "pricing": {
-      "founderPrice": "$10.90",
-      "founderDiscountBadge": "~45% OFF",
-      "badge": "Choose Your Tier",
-      "title": "Plans designed for your pace.",
-      "subtitle": "Start 100% free or claim one of the <gold>{remainingSlots} Founder spots</gold> with full access and a lifetime badge on your profile.",
-      "promoBanner": {
-        "tag": "Special Early Adopter",
-        "spotsRemaining": "Spots Remaining: Only {remainingSlots} of 30",
-        "soldOut": "Promotional Batch Sold Out",
-        "headline": "Get the Annual Plan for only <gold>{founderPrice}</gold> plus a Lifetime Founding Member Badge.",
-        "cta": "Claim My Spot"
-      },
-      "cardBadges": {
-        "spotsLeft": "Only {remainingSlots} spots left",
-        "soldOut": "Batch Sold Out",
-        "mostPopular": "Most Popular"
-      },
-      "lifetimeBadge": {
-        "title": "Lifetime Badge",
-        "description": "Permanently engraved on your profile, even after the annual cycle."
-      },
-      "includedLabel": "What's included:",
-      "plans": {
-        "adventurer": {
-          "name": "Adventurer",
-          "badge": "Free",
-          "price": "$0",
-          "period": "forever",
-          "description": "Everything you need to beat procrastination and transform your routine with gamification.",
-          "ctaText": "Start for Free",
-          "features": [
-            "Up to 2 independent Workspaces",
-            "Up to 4 Lists/Columns per board in each workspace",
-            "Up to 4 custom Activities in Focus Mode",
-            "Up to 25 Rewards listed in your shop",
-            "Backpack capacity for up to 20 stored items",
-            "Email reminders for to-dos (up to 5 active & 20 sends/month)",
-            "Unlimited Pomodoro & Zen Mode",
-            "Habit & Daily Task Streaks",
-            "Hardcore Mode for Tasks, Habits, and Dailies",
-            "Sound effects and confetti celebrations"
-          ]
-        },
-        "founder": {
-          "name": "Founding Member",
-          "badge": "Limited Edition",
-          "price": "$10.90",
-          "originalPrice": "$19.90",
-          "period": "year (annual billing)",
-          "description": "Only for the first 30 subscribers: annual plan with ~45% discount and a Lifetime Founding Member Badge on your profile.",
-          "ctaText": "Claim Founder Spot 🛡️✨",
-          "features": [
-            "🛡️ Exclusive Lifetime Founding Member Badge on your profile forever",
-            "👑 1 full year of Cosmic Guardian for $10.90 (down from $19.90/yr)",
-            "⭐ Eternal recognition as a pioneer in HabitParty history",
-            "🚀 Priority access to all Roadmap releases (Themes, Showcase, Party & Guilds)",
-            "Exclusive animated frames for your profile and avatar",
-            "Ambient sounds in Pomodoro (Rain, Coffee Shop, Campfire, Lofi)",
-            "Exclusive VIP icon pack for activities, columns, and shop",
-            "Up to 4 independent Workspaces — double the free plan!",
-            "Up to 6 Lists/Columns per board for complete workflows",
-            "Up to 6 custom Activities in Focus Mode",
-            "Up to 100 Rewards listed in your shop",
-            "Expanded Backpack with capacity for up to 100 items",
-            "Expanded Email Reminders (up to 30 active & 100 sends/month)"
-          ]
-        },
-        "guardian": {
-          "name": "Cosmic Guardian",
-          "badge": "Regular Subscription",
-          "price": "$1.99",
-          "period": "month (or $19.90/year)",
-          "description": "Expanded capacity for managing multiple projects, advanced studies, and limitless focus.",
-          "ctaText": "Unlock Monthly Plan 👑",
-          "features": [
-            "Expanded Email Reminders (up to 30 active & 100 sends/month)",
-            "Exclusive animated frames for your profile and avatar",
-            "Ambient sounds in Pomodoro (Rain, Coffee Shop, Campfire, Lofi)",
-            "Exclusive VIP icon pack for activities, columns, and shop",
-            "Up to 4 independent Workspaces — double the free plan!",
-            "Up to 6 Lists/Columns per board for complete workflows",
-            "Up to 6 custom Activities in Focus Mode",
-            "Up to 100 Rewards listed in your shop",
-            "Expanded Backpack with capacity for up to 100 items",
-            "VIP Cosmic Guardian emblem on profile and golden ring",
-            "Early access to new features (such as Guild/Party)"
-          ]
-        }
-      },
-      "securityStrip": {
-        "stripe": "100% secure payment via Stripe",
-        "methods": "We accept major <card>Credit & Debit Cards</card>",
-        "cancel": "Cancel your recurring subscription anytime with 1 click"
-      }
-    },
-    "faq": {
-      "badge": "Got Questions?",
-      "title": "Frequently Asked Questions",
-      "subtitle": "Everything you need to know before starting your first quest.",
-      "items": {
-        "founderPromo": {
-          "question": "How does the 'Founding Members' launch promotion work?",
-          "answer": "The Founding Members promotion is a limited edition exclusive to the first 30 HabitParty subscribers. By claiming your spot, you unlock the Annual plan with roughly 45% off ($10.90 instead of $19.90) and receive the exclusive, lifetime 'Founding Member' badge engraved on your profile. This badge is permanent: it stays on your profile forever, even if you choose not to renew after 1 year."
-        },
-        "freeVsPremium": {
-          "question": "Is HabitParty free? What does the Premium plan offer?",
-          "answer": "HabitParty has a 100% free plan with everything you need: up to 2 independent workspaces, 4 columns per workspace, 4 Focus Mode activities, up to 25 rewards, a 20-item backpack, and up to 5 active email reminders simultaneously (with 20 monthly sends) for your to-dos. For those managing multiple projects and seeking deep focus, the Cosmic Guardian plan brings expanded email reminders (up to 30 active & 100 monthly sends), animated profile frames, ambient sound generators (Rain, Cafe, Lofi, Campfire), VIP icon packs, expansion to 4 workspaces, 6 columns, 6 focus activities, up to 100 rewards, and a 100-item backpack."
-        },
-        "honestyShop": {
-          "question": "How does the Shop work and why is it based on honesty?",
-          "answer": "You stock the reward shop with your own real-life treats (e.g., watching a movie, ordering pizza, 1 hour of gaming). HabitParty is a game of sincerity: you can't cheat yourself. If you check off tasks you didn't actually complete, the reward loses all its meaning. When you play fair, every achievement brings genuine, guilt-free satisfaction."
-        },
-        "hardcoreMode": {
-          "question": "What is Hardcore Mode?",
-          "answer": "Hardcore Mode can be enabled for To-dos, Habits, and Dailies. If you fail your daily commitment or let a task's deadline expire, the game deducts gold coins from your balance and reduces your XP at midnight. Additionally, overdue tasks have their due date locked and late rewards reduced, creating a real consequence that strengthens your discipline."
-        },
-        "partyGuild": {
-          "question": "Is the Party / Guild system with friends available yet?",
-          "answer": "Currently, you can use HabitParty with full solo focus. The team Guild and Party system is in its final stages of development and will launch soon so you can level up alongside friends in the same workspace."
-        },
-        "dataPreservation": {
-          "question": "What happens to my columns and data if Premium expires?",
-          "answer": "No data or task is ever deleted! At HabitParty we guarantee zero data loss. If you created up to 6 columns or 4 workspaces during Premium and return to the Free plan, everything remains 100% preserved. The board displays up to 4 active columns simultaneously while extra columns stay safely stored and can be swapped via the column manager anytime. Additional workspaces enter a safe read-only mode. Plus, you receive advance notices in the sidebar (7, 3, and 1 day before) so you can renew with peace of mind."
-        },
-        "experienceMode": {
-          "question": "Is HabitParty just a game or is it suitable for serious work and studies?",
-          "answer": "HabitParty was crafted to excel in both environments. During your first steps (and anytime in Settings with 1 click), you can choose your experience mode: if you want a clean executive tool, 'Focus & Productivity Mode' gives you a minimalist interface free from coin clutter or loot chests, using professional terms like Strict Deadlines and Inventory Management; if you need immediate dopamine to crush procrastination, 'RPG Immersion' turns tasks into quests with gold coins, lifetime XP, Hardcore Mode, and victory sounds. All your tasks, boards, and history are 100% preserved in both modes."
-        },
-        "mobileApp": {
-          "question": "Does it work well on mobile? Will there be a Mobile App?",
-          "answer": "Yes! Today the HabitParty web app features a 100% responsive design for any smartphone, tablet, or computer. Furthermore, the native iOS and Android app (with widgets and push notifications) is already mapped on our Roadmap starting in version 2.0."
-        }
-      }
-    },
-    "ctaBanner": {
-      "badge": "Your Journey Starts Now",
-      "title": "Ready to turn your routine into results?",
-      "subtitle": "Join HabitParty for free. Choose between executive focus or RPG immersion, and feel the genuine satisfaction of daily progress.",
-      "primaryCta": "Create Free Account",
-      "secondaryCta": "I already have an account"
-    },
-    "footer": {
-      "brandDescription": "The ultimate gamified productivity system. Turn your daily goals and routines into a cosmic journey with XP, Gold, and real-life rewards.",
-      "githubAria": "GitHub Repository",
-      "exploreTitle": "Explore",
-      "accessTitle": "Access",
-      "signInLink": "Sign In",
-      "signUpFreeLink": "Sign Up for Free",
-      "helpCenterLink": "Help Center",
-      "supportTitle": "Support & Contact",
-      "reportBugLink": "Report a Bug (GitHub)",
-      "officialRepoLink": "Official Repository",
-      "copyright": "© {year} HabitParty. All rights reserved.",
-      "tagline": "Built for those who choose to take their discipline seriously."
+    "preview": {
+      "modeEssential": "Essential Mode",
+      "modeAdventure": "Adventure Mode",
+      "dailyTag": "Daily • Hardcore",
+      "dailyTitle": "1h Deep Study & Focus",
+      "streakBadge": "14 days 🔥",
+      "xpReward": "+60 XP",
+      "coinReward": "+25",
+      "focusTag": "Zen Pomodoro",
+      "focusStatus": "Cycle 03 • Focusing",
+      "rewardTag": "Personal Reward",
+      "rewardTitle": "Gaming / Movie Session (1h)",
+      "rewardAction": "Redeemed ✓"
     }
+  },
+  "demo": {
+    "badge": "Interactive Demo",
+    "title": "Feel the satisfaction of leveling up in practice.",
+    "subtitle": "Click the buttons and tasks below. In HabitParty, every real effort triggers instant rewards with sound, XP, and gold coins.",
+    "windowTitle": "HabitParty Cosmic Studio • Live Demo",
+    "goldStatus": "{gold} Gold",
+    "levelStatus": "Level {level}",
+    "footerHint": "Interactive simulation: click the buttons to experience the immediate reward feedback.",
+    "footerHighlight": "In HabitParty: your daily habits turn into real gold and progress ✨",
+    "toasts": {
+      "habitLevelUp": "🎉 LEVEL UP! Level {level} reached!",
+      "habitScored": "+15 XP • +5 Gold Coins!",
+      "habitDecremented": "Habit decremented",
+      "dailyLevelUp": "🎉 LEVEL UP! Level {level}!",
+      "dailyCompleted": "⚔️ Quest Completed! +60 XP • +25 Gold!",
+      "dailyReopened": "Quest reopened",
+      "timerStarted": "⏱️ Hyperfocus Mode Started! Take a deep breath.",
+      "timerPaused": "Timer paused."
+    },
+    "playerHeader": {
+      "levelBadge": "Lv.{level}",
+      "name": "Cosmic Explorer",
+      "titleBadge": "Focus Warrior",
+      "xpNextLevel": "{xp} / {maxXp} XP to next level",
+      "xpProgressLabel": "XP Progress"
+    },
+    "habitCard": {
+      "badge": "Daily Habit",
+      "title": "💧 Drink 2L of Water",
+      "logsLabel": "Today's logs: ",
+      "glassesCount": "{count, plural, one {# glass} other {# glasses}}",
+      "clickToScore": "Click to score:",
+      "decreaseAria": "Decrease glass"
+    },
+    "dailyCard": {
+      "streakBadge": "{count, plural, one {#-day Streak} other {#-day Streak}}",
+      "title": "💻 1h Deep Study",
+      "resetNote": "Resets at midnight if not completed.",
+      "statusDone": "Completed!",
+      "statusPending": "Complete Quest:",
+      "buttonDone": "Done!",
+      "buttonPending": "Complete (+60 XP)"
+    },
+    "focusCard": {
+      "badge": "Zen Focus",
+      "duration": "25 min",
+      "descriptionRunning": "Hyperfocus active • Notifications muted",
+      "descriptionIdle": "Eliminate distractions and focus on the task",
+      "statusRunning": "Running",
+      "statusIdle": "Start session:",
+      "pause": "Pause",
+      "start": "Start Focus"
+    }
+  },
+  "productivityLoop": {
+    "badge": "HabitParty Methodology",
+    "title": "The continuous loop of personal consistency.",
+    "subtitle": "We combine neuroscience, agile workflows, and behavioral psychology to turn discipline into daily excitement.",
+    "cardFooter": "Personalized & Automated",
+    "steps": {
+      "step1": {
+        "tag": "Routine & Habits",
+        "title": "Structure your Routine",
+        "description": "Build habits with positive and negative triggers (+/-), daily routines with consistency streaks, and projects organized in agile Kanban boards."
+      },
+      "step2": {
+        "tag": "Pomodoro & Focus",
+        "title": "Activate Zen Hyperfocus",
+        "description": "Enter flow state with Focus Hero Stage. Intelligent stopwatch, refreshing breaks, and ambient sounds to silence mental noise."
+      },
+      "step3": {
+        "tag": "Rewards & Leisure",
+        "title": "Reward your Dedication",
+        "description": "Turn discipline into well-earned downtime. Enjoy guilt-free breaks, free-time blocks, or custom rewards from your store, using consistency points or gold coins."
+      }
+    }
+  },
+  "manifesto": {
+    "badge": "The Honesty Pact",
+    "quoteStart": "“Cheating on your tasks is only cheating yourself: ",
+    "quoteHighlight": "here, every coin and every level carries the weight of your sincerity.",
+    "quoteEnd": "”",
+    "description": "You are the one who stocks the reward shop. Gold is earned through your own sweat, and rewards are enjoyed by you in real life. In HabitParty, you don't play against an algorithm — you play for your own future. Checking off a task you didn't do only sabotages who you want to become.",
+    "pillars": {
+      "p1": "No cheating yourself",
+      "p2": "Truly earned rewards",
+      "p3": "Clean, guilt-free dopamine"
+    }
+  },
+  "features": {
+    "badge": "Complete Arsenal",
+    "title": "Everything you need to master your routine.",
+    "subtitle": "Every feature was designed to eliminate friction and reward your dedication with elegance and consistency.",
+    "items": {
+      "experienceMode": {
+        "badge": "Total Flexibility",
+        "title": "Two Styles: Essential Mode or Adventure Mode",
+        "description": "All the power of gamified productivity at your pace: adopt Essential Mode for a clean executive interface with Credits, Points, and direct focus on deliverables; or activate Adventure Mode with gold coins, XP, and Mystery Boxes. Switch anytime with 1 click."
+      },
+      "rewardShop": {
+        "badge": "Real Economy",
+        "title": "Reward Shop & Mystery Boxes",
+        "description": "Register your real-life treats (e.g., 'Movie Night', '1h Gaming') or test your luck opening Mystery Boxes with epic rewards."
+      },
+      "partyGuild": {
+        "badge": "Coming Soon",
+        "title": "Party & Guild System",
+        "description": "Coming soon: invite friends to your guild in your workspace, track mutual progress, and celebrate victories together."
+      },
+      "hardcoreMode": {
+        "badge": "Real Discipline",
+        "title": "Strict Deadline & Hardcore Mode",
+        "description": "For non-negotiable commitments. Missing daily routines or overdue tasks locks postponement and applies an immediate 50% penalty, reinforcing your discipline."
+      },
+      "workspaces": {
+        "badge": "Organization",
+        "title": "Independent Workspaces",
+        "description": "Isolate Work, Study, and Personal Life projects with 1 click, each with its own Kanban boards and metrics."
+      },
+      "analytics": {
+        "badge": "Analytics",
+        "title": "History & Economy Analytics",
+        "description": "Track visual weekly reports: accumulated focus hours, gold flow, and consistency evolution."
+      },
+      "soundEffects": {
+        "badge": "Immersion",
+        "title": "Gratifying Sound Effects",
+        "description": "Feel the dopamine with every achievement: satisfying victory chimes, clinking coins, and a relaxing focus bell."
+      }
+    }
+  },
+  "roadmap": {
+    "badge": "Journey Map",
+    "title": "From Solo Journey to Social MMO.",
+    "subtitle": "Discover the next chapters of HabitParty's evolution. Every update adds deeper immersion, co-op features, and tools to supercharge your consistency.",
+    "founderBanner": {
+      "title": "Early Access for Founding Members",
+      "spotsBadge": "30 Spots",
+      "description": "Pioneer subscribers test every phase first and earn a prestigious lifetime badge on their profile.",
+      "cta": "View Offer"
+    },
+    "phaseLabel": "Phase 0{index}",
+    "highlightsLabel": "Release highlights:",
+    "extrasLabel": "Release extras:",
+    "cardFooter": "Continuous ecosystem delivery",
+    "cardFooterCompleted": "Delivered and live in the ecosystem",
+    "feedbackPrompt": "Have suggestions for upcoming releases or found a bug? Take part directly in HabitParty's evolution:",
+    "reportBugCta": "Report Bug or Suggest Idea (GitHub)",
+    "contactCreatorCta": "Talk to the Creator ({email})",
+    "items": {
+      "r11": {
+        "statusLabel": "Completed",
+        "title": "Internationalization & Experience Modes",
+        "tagline": "Bilingual global expansion, adaptive productivity profiles, and structural security and performance hardening.",
+        "features": [
+          "Internationalization (i18n): Full support for English (EN) and Portuguese (PT-BR)",
+          "Instant language switching across all screens without reloading the app",
+          "Experience Modes (Essential Mode vs. Adventure Mode): choose between an executive aesthetic with credits and points or a gamified adventure with gold coins and mystery boxes",
+          "Progressive email verification for account security and alert activation"
+        ],
+        "extras": [
+          "Multi-layer Anti-Bot protection (IP Rate Limiting, invisible Honeypot, and disposable email blocking)",
+          "Database architectural refactoring and high-performance indexes",
+          "Interface density controls (Compact Mode) and layout customization"
+        ]
+      },
+      "r12": {
+        "statusLabel": "Next Milestone",
+        "title": "Light Theme, VIP Themes & Achievements",
+        "tagline": "Crisp high-contrast daytime mode, exclusive VIP visual atmospheres, task-linked deep work, and your first discipline trophies.",
+        "features": [
+          "Light Theme with high contrast and crisp readability for daytime productivity",
+          "Dynamic theme switcher (Cosmic Dark vs. Cosmic Daylight)",
+          "Exclusive VIP Themes (Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold)",
+          "Direct linking of Pomodoro/Focus sessions to specific Kanban tasks",
+          "Effort metrics per card with dedicated time history and auto-completion",
+          "Personal Achievements system with dozens of automated trophies and medals",
+          "New 'My Achievements' screen to track your adventurer progression"
+        ]
+      },
+      "r13": {
+        "statusLabel": "Planned",
+        "title": "Public Profile & Trophy Showcase",
+        "tagline": "Share your epic journey, connect with friends, and display your rare badges at the top of your profile.",
+        "features": [
+          "Public Adventurer Pages to share level, consistency, and streaks",
+          "Highlight Showcase to pin your Founding Member Badge at the top of your profile",
+          "Friend Network with player search by username and friend code",
+          "Granular privacy controls for stats and routines"
+        ]
+      },
+      "r14": {
+        "statusLabel": "Planned",
+        "title": "Real-Time Party & Co-op",
+        "tagline": "Strength in numbers: small mutual focus groups, cooperative goals, and built-in chat.",
+        "features": [
+          "Party formation (focus groups) via quick invite code",
+          "Cooperative Daily Quests with collective gold bonuses when everyone succeeds",
+          "Built-in Real-Time Chat with focus alerts and mutual celebrations",
+          "Sleek sound and visual notifications for team milestones"
+        ]
+      },
+      "r20": {
+        "statusLabel": "Major MMO & Mobile Milestone",
+        "title": "Mobile App, Guilds & Full Social MMO",
+        "tagline": "The pinnacle of HabitParty: native app in your pocket, mega guilds, co-op boss raids, and global leaderboards.",
+        "features": [
+          "Official Mobile App (iOS & Android) with widgets, quick check-in, and native push notifications",
+          "Real-time Focus Mode and Pomodoro synchronization between PC and smartphone",
+          "Large Thematic Guilds (Exams, Devs, Health, Fitness, Languages)",
+          "World Boss Quests & Raids that lose HP as you study and focus",
+          "Global Consistency Leaderboards (Global, Friends, and Rival Guilds)",
+          "Competitive seasons with legendary cosmetic titles and rewards"
+        ]
+      }
+    }
+  },
+  "pricing": {
+    "founderPrice": "$10.90",
+    "founderDiscountBadge": "~45% OFF",
+    "badge": "Choose Your Tier",
+    "title": "Plans designed for your pace.",
+    "subtitle": "Start 100% free or claim one of the <gold>{remainingSlots} Founder spots</gold> with full access and a lifetime badge on your profile.",
+    "promoBanner": {
+      "tag": "Special Early Adopter",
+      "spotsRemaining": "Spots Remaining: Only {remainingSlots} of 30",
+      "soldOut": "Promotional Batch Sold Out",
+      "headline": "Get the Annual Plan for only <gold>{founderPrice}</gold> plus a Lifetime Founding Member Badge.",
+      "cta": "Claim My Spot"
+    },
+    "cardBadges": {
+      "spotsLeft": "Only {remainingSlots} spots left",
+      "soldOut": "Batch Sold Out",
+      "mostPopular": "Most Popular"
+    },
+    "lifetimeBadge": {
+      "title": "Lifetime Badge",
+      "description": "Permanently engraved on your profile, even after the annual cycle."
+    },
+    "includedLabel": "What's included:",
+    "plans": {
+      "adventurer": {
+        "name": "Adventurer",
+        "badge": "Free",
+        "price": "$0",
+        "period": "forever",
+        "description": "Everything you need to beat procrastination and transform your routine with gamification.",
+        "ctaText": "Start for Free",
+        "features": [
+          "Up to 2 independent Workspaces",
+          "Up to 4 Lists/Columns per board in each workspace",
+          "Up to 4 custom Activities in Focus Mode",
+          "Up to 25 Rewards listed in your shop",
+          "Backpack capacity for up to 20 stored items",
+          "Email reminders for to-dos (up to 5 active & 20 sends/month)",
+          "Unlimited Pomodoro & Zen Mode",
+          "Habit & Daily Task Streaks",
+          "Hardcore Mode for Tasks, Habits, and Dailies",
+          "Sound effects and confetti celebrations"
+        ]
+      },
+      "founder": {
+        "name": "Founding Member",
+        "badge": "Limited Edition",
+        "price": "$10.90",
+        "originalPrice": "$19.90",
+        "period": "year (annual billing)",
+        "description": "Only for the first 30 subscribers: annual plan with ~45% discount and a Lifetime Founding Member Badge on your profile.",
+        "ctaText": "Claim Founder Spot 🛡️✨",
+        "features": [
+          "🛡️ Exclusive Lifetime Founding Member Badge on your profile forever",
+          "👑 1 full year of Cosmic Guardian for $10.90 (down from $19.90/yr)",
+          "⭐ Eternal recognition as a pioneer in HabitParty history",
+          "🚀 Priority access to all Roadmap releases (Themes, Showcase, Party & Guilds)",
+          "Exclusive animated frames for your profile and avatar",
+          "Ambient sounds in Pomodoro (Rain, Coffee Shop, Campfire, Lofi)",
+          "Exclusive VIP icon pack for activities, columns, and shop",
+          "Up to 4 independent Workspaces — double the free plan!",
+          "Up to 6 Lists/Columns per board for complete workflows",
+          "Up to 6 custom Activities in Focus Mode",
+          "Up to 100 Rewards listed in your shop",
+          "Expanded Backpack with capacity for up to 100 items",
+          "Expanded Email Reminders (up to 30 active & 100 sends/month)"
+        ]
+      },
+      "guardian": {
+        "name": "Cosmic Guardian",
+        "badge": "Regular Subscription",
+        "price": "$1.99",
+        "period": "month (or $19.90/year)",
+        "description": "Expanded capacity for managing multiple projects, advanced studies, and limitless focus.",
+        "ctaText": "Unlock Monthly Plan 👑",
+        "features": [
+          "Expanded Email Reminders (up to 30 active & 100 sends/month)",
+          "Exclusive animated frames for your profile and avatar",
+          "Ambient sounds in Pomodoro (Rain, Coffee Shop, Campfire, Lofi)",
+          "Exclusive VIP icon pack for activities, columns, and shop",
+          "Up to 4 independent Workspaces — double the free plan!",
+          "Up to 6 Lists/Columns per board for complete workflows",
+          "Up to 6 custom Activities in Focus Mode",
+          "Up to 100 Rewards listed in your shop",
+          "Expanded Backpack with capacity for up to 100 items",
+          "VIP Cosmic Guardian emblem on profile and golden ring",
+          "Early access to new features (such as Guild/Party)"
+        ]
+      }
+    },
+    "securityStrip": {
+      "stripe": "100% secure payment via Stripe",
+      "methods": "We accept major <card>Credit & Debit Cards</card>",
+      "cancel": "Cancel your recurring subscription anytime with 1 click"
+    }
+  },
+  "faq": {
+    "badge": "Got Questions?",
+    "title": "Frequently Asked Questions",
+    "subtitle": "Everything you need to know before starting your first quest.",
+    "items": {
+      "founderPromo": {
+        "question": "How does the 'Founding Members' launch promotion work?",
+        "answer": "The Founding Members promotion is a limited edition exclusive to the first 30 HabitParty subscribers. By claiming your spot, you unlock the Annual plan with roughly 45% off ($10.90 instead of $19.90) and receive the exclusive, lifetime 'Founding Member' badge engraved on your profile. This badge is permanent: it stays on your profile forever, even if you choose not to renew after 1 year."
+      },
+      "freeVsPremium": {
+        "question": "Is HabitParty free? What does the Premium plan offer?",
+        "answer": "HabitParty has a 100% free plan with everything you need: up to 2 independent workspaces, 4 columns per workspace, 4 Focus Mode activities, up to 25 rewards, a 20-item backpack, and up to 5 active email reminders simultaneously (with 20 monthly sends) for your to-dos. For those managing multiple projects and seeking deep focus, the Cosmic Guardian plan brings expanded email reminders (up to 30 active & 100 monthly sends), animated profile frames, ambient sound generators (Rain, Cafe, Lofi, Campfire), VIP icon packs, expansion to 4 workspaces, 6 columns, 6 focus activities, up to 100 rewards, and a 100-item backpack."
+      },
+      "honestyShop": {
+        "question": "How does the Shop work and why is it based on honesty?",
+        "answer": "You stock the reward shop with your own real-life treats (e.g., watching a movie, ordering pizza, 1 hour of gaming). HabitParty is a game of sincerity: you can't cheat yourself. If you check off tasks you didn't actually complete, the reward loses all its meaning. When you play fair, every achievement brings genuine, guilt-free satisfaction."
+      },
+      "hardcoreMode": {
+        "question": "What is Hardcore Mode?",
+        "answer": "Hardcore Mode can be enabled for To-dos, Habits, and Dailies. If you fail your daily commitment or let a task's deadline expire, the game deducts gold coins from your balance and reduces your XP at midnight. Additionally, overdue tasks have their due date locked and late rewards reduced, creating a real consequence that strengthens your discipline."
+      },
+      "partyGuild": {
+        "question": "Is the Party / Guild system with friends available yet?",
+        "answer": "Currently, you can use HabitParty with full solo focus. The team Guild and Party system is in its final stages of development and will launch soon so you can level up alongside friends in the same workspace."
+      },
+      "dataPreservation": {
+        "question": "What happens to my columns and data if Premium expires?",
+        "answer": "No data or task is ever deleted! At HabitParty we guarantee zero data loss. If you created up to 6 columns or 4 workspaces during Premium and return to the Free plan, everything remains 100% preserved. The board displays up to 4 active columns simultaneously while extra columns stay safely stored and can be swapped via the column manager anytime. Additional workspaces enter a safe read-only mode. Plus, you receive advance notices in the sidebar (7, 3, and 1 day before) so you can renew with peace of mind."
+      },
+      "experienceMode": {
+        "question": "Is HabitParty just a game or is it suitable for serious work and studies?",
+        "answer": "HabitParty blends serious productivity and smart gamification into two styles you can switch anytime with 1 click in Settings: 'Essential Mode' delivers a clean executive interface with a Credits & Points economy, Strict Deadlines, and Inventory Management; while 'Adventure Mode' brings the full gamified experience with gold coins, lifetime XP, Mystery Boxes, Hardcore Mode, and victory sound effects. All your tasks, boards, and history are 100% preserved in both modes."
+      },
+      "mobileApp": {
+        "question": "Does it work well on mobile? Will there be a Mobile App?",
+        "answer": "Yes! Today the HabitParty web app features a 100% responsive design for any smartphone, tablet, or computer. Furthermore, the native iOS and Android app (with widgets and push notifications) is already mapped on our Roadmap starting in version 2.0."
+      }
+    }
+  },
+  "ctaBanner": {
+    "badge": "Your Journey Starts Now",
+    "title": "Ready to turn your routine into results?",
+    "subtitle": "Join HabitParty for free. Choose between Essential Mode or Adventure Mode, and feel the genuine satisfaction of daily progress.",
+    "primaryCta": "Create Free Account",
+    "secondaryCta": "I already have an account"
+  },
+  "footer": {
+    "brandDescription": "The ultimate gamified productivity system. Turn your daily goals and routines into a cosmic journey with XP, Gold, and real-life rewards.",
+    "githubAria": "GitHub Repository",
+    "exploreTitle": "Explore",
+    "accessTitle": "Access",
+    "signInLink": "Sign In",
+    "signUpFreeLink": "Sign Up for Free",
+    "helpCenterLink": "Help Center",
+    "supportTitle": "Support & Contact",
+    "reportBugLink": "Report a Bug (GitHub)",
+    "officialRepoLink": "Official Repository",
+    "copyright": "© {year} HabitParty. All rights reserved.",
+    "tagline": "Built for those who choose to take their discipline seriously."
   }
 }

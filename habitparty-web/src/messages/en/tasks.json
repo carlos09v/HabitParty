@@ -56,10 +56,11 @@
     "newColumnButton": "Create column",
     "newTaskButton": "Add Task",
     "alignment": {
-      "ariaLabel": "Kanban board alignment",
-      "left": "Align left",
-      "center": "Center board",
-      "right": "Align right"
+      "ariaLabel": "Board columns alignment",
+      "prefixLabel": "Align",
+      "left": "Align columns left",
+      "center": "Center columns on board",
+      "right": "Align columns right"
     },
     "popover": {
       "triggerLabel": "Filter",
@@ -262,7 +263,9 @@
       "importanceTooltipTitle": "How to choose Importance?",
       "stillInDoubt": "Still unsure?",
       "importanceTooltipAria": "Learn how to choose Habit Importance and its rewards",
+      "importanceTooltipAriaProductivity": "Learn how to choose Habit Importance",
       "importanceTooltipIntro": "Defines the weight of this habit in your progression and the reward per check-in:",
+      "importanceTooltipIntroProductivity": "Defines the impact and priority of this habit in your daily routine:",
       "importanceRuleTitle": "🤔 Rule of thumb:",
       "importanceRuleBody": "If it takes under 2 minutes, use <bold>Low</bold>. If it's part of your standard routine, use <bold>Normal</bold>. Save <bold>High</bold> for the 1 or 2 most challenging habits of your day.",
       "importanceDescriptions": {
@@ -290,7 +293,8 @@
       "difficultyGuideMedium": "• <bold>30 to 60 min</bold> moderate focus → <bold>Medium</bold>",
       "difficultyGuideHard": "• <bold>+1 hour</bold> or high mental demand → <bold>Hard</bold>",
       "tagsLabel": "Tags",
-      "tagsPlaceholder": "E.g., health, studies (max {max})",
+      "tagsHint": "Separate with , or ;",
+      "tagsPlaceholder": "E.g., health, studies; focus (max {max})",
       "priorityLabel": "Priority"
     },
     "habitFields": {
@@ -369,6 +373,8 @@
         "ONE_WEEK_EARLY": "1 week before"
       },
       "emailReminderTitle": "Receive email reminder?",
+      "emailReminderQuotaFree": "Up to 5 emails",
+      "emailReminderQuotaVip": "Up to 30 emails (VIP)",
       "emailReminderQuotaBadge": "Free: up to 5 active (20/mo) • VIP: up to 30 active (100/mo)",
       "emailUnverifiedDesc": "Verify your account email to enable email alerts.",
       "emailVerifiedDesc": "We'll send an email alert when the reminder time arrives.",
@@ -456,6 +462,7 @@
     },
     "checklist": {
       "title": "Subtasks",
+      "editItemAria": "Edit item {name}",
       "deleteItemAria": "Delete item {name}",
       "newItemPlaceholder": "Subtask name...",
       "okButton": "OK",

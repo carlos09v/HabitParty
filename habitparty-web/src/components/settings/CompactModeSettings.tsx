@@ -13,8 +13,7 @@ export function CompactModeSettings({
   isCompact: propIsCompact,
 }: CompactModeSettingsProps = {}) {
   const t = useTranslations("settings.compactMode");
-  const { isCompact: storeIsCompact, setCompactMode } = useCompactMode();
-  const isCompact = propIsCompact ?? storeIsCompact;
+  const { isCompact, setCompactMode } = useCompactMode(propIsCompact);
 
   const statusMessage = (
     <>

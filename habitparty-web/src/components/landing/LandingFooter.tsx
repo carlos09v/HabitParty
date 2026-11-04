@@ -1,6 +1,6 @@
 import { Bug, GitBranch, Mail } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { LanguageToggleBtn } from "@/components/layout/LanguageToggleBtn";
 import { ThemeToggleBtn } from "@/components/layout/ThemeToggleBtn";
 import { BrandLogo } from "@/components/ui/BrandLogo";
@@ -8,6 +8,7 @@ import { LANDING_NAV_LINK_CONFIGS, SUPPORT_LINKS } from "@/constants/landing";
 
 export function LandingFooter() {
   const currentYear = new Date().getFullYear();
+  const locale = useLocale();
   const t = useTranslations("landing.footer");
   const tNav = useTranslations("landing.navbar");
 
@@ -17,7 +18,7 @@ export function LandingFooter() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
           {/* Coluna 1: Marca */}
           <div className="lg:col-span-2 space-y-4">
-            <Link href="/" className="inline-block">
+            <Link href={`/${locale}`} className="inline-block">
               <BrandLogo
                 alt="HabitParty"
                 width={160}

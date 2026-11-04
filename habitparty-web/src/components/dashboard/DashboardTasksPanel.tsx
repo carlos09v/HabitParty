@@ -14,6 +14,7 @@ import { useDashboardTaskFilters } from "@/hooks/useDashboardTaskFilters";
 import type { DashboardTasksPanelProps } from "@/types/dashboard";
 import type { Task } from "@/types/task";
 import { cn } from "@/utils";
+import { resolveTaskColumnTitle } from "@/utils/taskMapper";
 import { shouldConfirmTaskDeletion } from "@/utils/validators";
 
 const TaskDetailsPopover = dynamic(
@@ -168,6 +169,18 @@ export function DashboardTasksPanel({
     setSelectedTaskDetails({ task, anchorRect });
   }, []);
 
+  const handleEditTask = useCallback(
+    (task: Task) => {
+      setSelectedTaskDetails(null);
+      setTaskModalState({
+        isOpen: true,
+        taskToEdit: task,
+        columnId: task.columnId || defaultColumnId,
+      });
+    },
+    [defaultColumnId],
+  );
+
   const formColumns = useMemo(
     () =>
       columns.map((c) => ({
@@ -227,6 +240,7 @@ export function DashboardTasksPanel({
         onHabitChange={handleHabitChange}
         onContextMenu={handleOpenContextMenu}
         onOpenDetails={handleOpenDetails}
+        onEditTask={handleEditTask}
         selectedDate={selectedDate}
         isCompact={isCompact}
       />
@@ -245,10 +259,11 @@ export function DashboardTasksPanel({
           isOpen={Boolean(selectedTaskDetails)}
           onClose={() => setSelectedTaskDetails(null)}
           task={selectedTaskDetails?.task ?? null}
-          columnTitle={
-            columns.find((c) => c.id === selectedTaskDetails?.task?.columnId)
-              ?.name || selectedTaskDetails?.task?.category
-          }
+          columnTitle={resolveTaskColumnTitle(
+            selectedTaskDetails?.task,
+            columns,
+            t("defaultList"),
+          )}
           anchorRect={selectedTaskDetails?.anchorRect}
           onTaskUpdate={(updated) => {
             handleTaskDetailsUpdate(updated);

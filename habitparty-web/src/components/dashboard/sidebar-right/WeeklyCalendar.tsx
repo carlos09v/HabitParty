@@ -212,7 +212,7 @@ export function WeeklyCalendar({
       </div>
 
       {/* Micro-legenda de leitura rápida */}
-      <div className="flex items-center justify-center gap-4 text-[11px] text-neutral-400 pt-0.5">
+      <div className="flex items-center justify-center gap-4 text-label-g text-neutral-400 pt-0.5">
         <span className="inline-flex items-center gap-1">
           <Flame
             size={11}

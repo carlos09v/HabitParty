@@ -248,6 +248,11 @@ public class Daily extends Task {
     this.currentStreak++;
   }
 
+  @Override
+  public boolean isRewardAlreadyClaimed() {
+    return this.lastCompletedAt != null && !this.lastCompletedAt.toLocalDate().isBefore(LocalDate.now());
+  }
+
   public void breakStreak() {
     this.currentStreak = 0;
   }

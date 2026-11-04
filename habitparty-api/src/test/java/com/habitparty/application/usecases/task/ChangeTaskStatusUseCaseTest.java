@@ -230,6 +230,34 @@ class ChangeTaskStatusUseCaseTest {
     // 2 transações: 1 de penalidade (TASK_FAILED) e 1 de conclusão tardia (TASK_COMPLETED)
     verify(transactionPort, times(2)).save(any(TransactionHistory.class));
     // Saldo: 10.00 - 1.25 (multa de 50% de 2.50) + 1.25 (ganho tardio de 50%) = 10.00
-    assertEquals(new BigDecimal("10.00"), user.getCurrentCoins());
+    assertEquals(new BigDecimal("1.00").add(new BigDecimal("9.00")), user.getCurrentCoins());
+  }
+
+  @Test
+  @DisplayName("Não deve conceder XP/Ouro novamente se uma Todo já concluída for desmarcada para PENDING e concluída de novo")
+  void testTodoUncheckedAndRecompletedDoesNotAwardRewardTwice() {
+    when(taskPort.findById(taskId)).thenReturn(Optional.of(todoTask));
+    when(userPort.findById(userId)).thenReturn(Optional.of(user));
+    when(transactionPort.countCompletedTasksToday(userId)).thenReturn(0);
+    when(taskPort.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+    // 1ª conclusão: concede recompensa
+    changeTaskStatusUseCase.execute(taskId, userId, TaskStatus.COMPLETED);
+    int xpAfterFirstCompletion = user.getTotalXp();
+    BigDecimal coinsAfterFirstCompletion = user.getCurrentCoins();
+    assertTrue(xpAfterFirstCompletion > 0);
+    assertTrue(todoTask.isRewardAlreadyClaimed());
+
+    // Desmarca para PENDING
+    changeTaskStatusUseCase.execute(taskId, userId, TaskStatus.PENDING);
+    assertEquals(TaskStatus.PENDING, todoTask.getStatus());
+    assertTrue(todoTask.isRewardAlreadyClaimed());
+
+    // Conclui novamente: status vai para COMPLETED, mas NÃO soma XP/Ouro de novo
+    changeTaskStatusUseCase.execute(taskId, userId, TaskStatus.COMPLETED);
+    assertEquals(TaskStatus.COMPLETED, todoTask.getStatus());
+    assertEquals(xpAfterFirstCompletion, user.getTotalXp());
+    assertEquals(coinsAfterFirstCompletion, user.getCurrentCoins());
+    verify(transactionPort, times(1)).save(any(TransactionHistory.class));
   }
 }

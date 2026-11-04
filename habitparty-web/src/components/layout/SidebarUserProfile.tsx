@@ -40,7 +40,7 @@ export function SidebarUserProfile({
     user?.currentLevelTitle ||
     progress.currentLevel.title ||
     (user?.isPremium ? "PREMIUM_MEMBER" : "NOVICE");
-  const levelTitle = localizeLevelTitle(rawLevelTitle, locale);
+  const levelTitle = localizeLevelTitle(rawLevelTitle, locale, isGamified);
 
   const targetXp = progress.targetXp;
   const remainingXp =
@@ -51,8 +51,10 @@ export function SidebarUserProfile({
   const nextLevelTitle = localizeLevelTitle(
     user?.nextLevelTitle || progress.nextLevel.title,
     locale,
+    isGamified,
   );
   const coins = user?.currentCoins ?? 0;
+  const formattedCoins = formatCoins(coins, { locale });
 
   return (
     <footer className="p-3.5 border-t border-primary/30 bg-primary-dark/20 z-10">
@@ -91,23 +93,32 @@ export function SidebarUserProfile({
             className="text-tiny font-semibold text-neutral-300 tabular-nums leading-none truncate"
             title={
               !progress.isMaxLevel
-                ? t("remainingXpTitle", {
-                    xp: remainingXp,
-                    nextTitle: nextLevelTitle,
-                  })
+                ? isGamified
+                  ? t("remainingXpTitle", {
+                      xp: remainingXp,
+                      nextTitle: nextLevelTitle,
+                    })
+                  : t("remainingPtsTitle", {
+                      xp: remainingXp,
+                      nextTitle: nextLevelTitle,
+                    })
                 : t("maxLevelTitle")
             }
           >
             {!progress.isMaxLevel
-              ? `${currentXp} / ${targetXp} XP`
-              : t("xpMaxLabel", { xp: currentXp })}
+              ? `${currentXp} / ${targetXp} ${isGamified ? "XP" : "pts"}`
+              : isGamified
+                ? t("xpMaxLabel", { xp: currentXp })
+                : t("ptsMaxLabel", { xp: currentXp })}
           </span>
 
           <div
             className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold/10 border border-gold/25 shrink-0 max-w-[105px]"
-            title={t("coinsTitle", {
-              coins: formatCoins(coins, { locale }),
-            })}
+            title={
+              isGamified
+                ? t("coinsTitle", { coins: formattedCoins })
+                : t("creditsTitle", { coins: formattedCoins })
+            }
           >
             <CoinIcon size={13} withGlow className="shrink-0" />
             <span className="text-xs font-bold text-neutral-50 leading-none tabular-nums truncate">
@@ -124,14 +135,24 @@ export function SidebarUserProfile({
           aria-valuemax={targetXp}
           title={
             !progress.isMaxLevel
-              ? t("progressTitle", {
-                  currentXp,
-                  targetXp,
-                  percent: xpPercent,
-                  remainingXp,
-                  nextTitle: nextLevelTitle,
-                })
-              : t("progressMaxTitle", { currentXp, levelTitle })
+              ? isGamified
+                ? t("progressTitle", {
+                    currentXp,
+                    targetXp,
+                    percent: xpPercent,
+                    remainingXp,
+                    nextTitle: nextLevelTitle,
+                  })
+                : t("progressPtsTitle", {
+                    currentXp,
+                    targetXp,
+                    percent: xpPercent,
+                    remainingXp,
+                    nextTitle: nextLevelTitle,
+                  })
+              : isGamified
+                ? t("progressMaxTitle", { currentXp, levelTitle })
+                : t("progressPtsMaxTitle", { currentXp, levelTitle })
           }
         >
           <div

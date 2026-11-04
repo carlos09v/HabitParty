@@ -6,7 +6,10 @@ export function downloadBlob(
   filename: string,
   mimeType = "text/csv;charset=utf-8;",
 ): void {
-  const blob = new Blob([content], { type: mimeType });
+  const isCsv = mimeType.toLowerCase().includes("csv");
+  const normalizedContent =
+    isCsv && !content.startsWith("\uFEFF") ? `\uFEFF${content}` : content;
+  const blob = new Blob([normalizedContent], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;

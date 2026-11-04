@@ -120,14 +120,16 @@ export function RoutineFilters({
   const { isCompact } = useCompactMode(propIsCompact);
 
   const leftActions = (
-    <>
-      <RoutineFilterPopover
-        filters={filters}
-        onFilterChange={onFilterChange}
-        availableTags={availableTags}
-        isCompact={isCompact}
-      />
+    <RoutineFilterPopover
+      filters={filters}
+      onFilterChange={onFilterChange}
+      availableTags={availableTags}
+      isCompact={isCompact}
+    />
+  );
 
+  const rightActions = (
+    <>
       {onAlignmentChange && viewMode?.value === "card" && (
         <BoardAlignmentSelector
           value={alignment}
@@ -135,11 +137,7 @@ export function RoutineFilters({
           isCompact={isCompact}
         />
       )}
-    </>
-  );
 
-  const rightActions = (
-    <>
       {enableDroppable ? (
         <DroppableStoreColumnButton
           onOpenColumnsDrawer={onOpenColumnsDrawer}

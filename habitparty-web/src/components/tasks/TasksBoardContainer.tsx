@@ -257,6 +257,21 @@ export function TasksBoardContainer({
     });
   }, [ensureWriteAccess, setTaskModalState, t]);
 
+  const handleEditTask = useCallback(
+    (task: Task, columnId: string) => {
+      if (!ensureWriteAccess(t("readOnlyCreateTaskToast"))) {
+        return;
+      }
+      setSelectedTaskDetails(null);
+      setTaskModalState({
+        isOpen: true,
+        columnId: columnId || task.columnId || columnsRef.current[0]?.id,
+        taskToEdit: task,
+      });
+    },
+    [ensureWriteAccess, setSelectedTaskDetails, setTaskModalState, t],
+  );
+
   const handleAddTaskToColumnSafe = useCallback(
     (
       colId: string,
@@ -407,6 +422,7 @@ export function TasksBoardContainer({
               onAddTaskToColumn={handleAddTaskToColumnSafe}
               onQuickCreateTask={handleQuickCreateTaskSafe}
               onOpenDetails={handleOpenDetails}
+              onEditTask={handleEditTask}
               onContextMenu={handleOpenTaskContextMenu}
               onOpenColumnMenu={handleOpenColumnContextMenu}
               onTaskMove={handleTaskMove}
@@ -469,6 +485,7 @@ export function TasksBoardContainer({
               isCompact={isCompact}
               onAddTaskToColumn={handleAddTaskToColumnSafe}
               onOpenDetails={handleOpenDetails}
+              onEditTask={handleEditTask}
               onContextMenu={handleOpenTaskContextMenu}
               onTaskMove={handleTaskMove}
               onColumnReorder={handleColumnReorder}

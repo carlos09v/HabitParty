@@ -31,7 +31,15 @@ export function useDashboardTaskActions({
   const onOptimisticToggle = useCallback(
     (taskId: string, completed: boolean) => {
       setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? { ...t, completed } : t)),
+        prev.map((t) =>
+          t.id === taskId
+            ? {
+                ...t,
+                completed,
+                hasClaimedReward: completed ? true : t.hasClaimedReward,
+              }
+            : t,
+        ),
       );
     },
     [setTasks],

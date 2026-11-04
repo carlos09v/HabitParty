@@ -44,7 +44,8 @@ export function IconPickerPopover({
 
   const getOptionLabel = (item?: IconOption) => {
     if (!item) return "";
-    return t.has(`icons.${item.id}`) ? t(`icons.${item.id}`) : item.label;
+    const key = `icons.${item.id}` as Parameters<typeof t.has>[0];
+    return t.has(key) ? t(key as Parameters<typeof t>[0]) : item.label;
   };
 
   const {

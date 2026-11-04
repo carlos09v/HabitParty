@@ -25,6 +25,7 @@ export const RoutineColumn = memo(function RoutineColumn({
   onAddTaskToColumn,
   onQuickCreateTask,
   onOpenDetails,
+  onEditTask,
   onContextMenu,
   onOpenColumnMenu,
   onToggleComplete,
@@ -293,6 +294,7 @@ export const RoutineColumn = memo(function RoutineColumn({
                 columnId={column.id}
                 isCompact={isCompact || widthPreset === "compact"}
                 onOpenDetails={onOpenDetails}
+                onEditTask={onEditTask}
                 onContextMenu={onContextMenu}
                 onToggleCompleted={onToggleComplete}
                 onHabitChange={onHabitChange}

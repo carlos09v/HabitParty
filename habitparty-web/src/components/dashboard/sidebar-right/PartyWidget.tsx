@@ -32,7 +32,7 @@ export function PartyWidget({ isCompact = false }: PartyWidgetProps) {
         </span>
       </div>
 
-      <div className="flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-medium text-neutral-400">
+      <div className="flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-tiny font-medium text-neutral-400">
         <Sparkles size={11} className="text-gold/80" aria-hidden="true" />
         <span>{t("comingSoon")}</span>
       </div>

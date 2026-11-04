@@ -49,6 +49,8 @@ export interface Task extends Omit<TaskResponseDTO, "id" | "difficulty"> {
   monthlyOption?: DailyRepeatMonthlyOption;
   sendEmailReminder?: boolean;
   emailReminderSent?: boolean;
+  /** Indica se a recompensa de conclusão (XP/Ouro) já foi resgatada no ciclo/tarefa atual. */
+  hasClaimedReward?: boolean;
 }
 
 export type HabitImportance = "low" | "normal" | "high";

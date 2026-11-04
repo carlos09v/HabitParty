@@ -31,6 +31,7 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
   selectedColumnId,
   onAddTaskToColumn,
   onOpenDetails,
+  onEditTask,
   onContextMenu,
   onToggleComplete,
   onHabitChange,
@@ -90,6 +91,13 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
       onContextMenu(e, task, colId || column.id);
     },
     [onContextMenu, column.id],
+  );
+
+  const handleEditRowTask = useCallback(
+    (task: Task, colId?: string) => {
+      onEditTask?.(task, colId || column.id);
+    },
+    [onEditTask, column.id],
   );
 
   return (
@@ -175,6 +183,7 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
                 isCompact={isCompact}
                 isSortable={true}
                 onOpenDetails={handleOpenRowDetails}
+                onEditTask={onEditTask ? handleEditRowTask : undefined}
                 onContextMenu={handleRowContextMenu}
                 onToggleCompleted={onToggleComplete}
                 onHabitChange={onHabitChange}
@@ -194,6 +203,7 @@ export function RoutineTaskList({
   isCompact: propIsCompact,
   onAddTaskToColumn,
   onOpenDetails,
+  onEditTask,
   onContextMenu,
   onToggleComplete,
   onHabitChange,
@@ -264,6 +274,7 @@ export function RoutineTaskList({
               selectedColumnId={selectedColumnId}
               onAddTaskToColumn={onAddTaskToColumn}
               onOpenDetails={onOpenDetails}
+              onEditTask={onEditTask}
               onContextMenu={onContextMenu}
               onToggleComplete={onToggleComplete}
               onHabitChange={onHabitChange}

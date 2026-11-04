@@ -44,27 +44,36 @@ export function WelcomeCard({
   ): string | undefined => {
     if (!storageKey) return fallback;
     const modeKey = isGamified ? `${field}Gamified` : `${field}Productivity`;
-    if (t.has(`cards.${storageKey}.${modeKey}`)) {
-      return t(`cards.${storageKey}.${modeKey}`);
+    const modePath = `cards.${storageKey}.${modeKey}` as Parameters<
+      typeof t.has
+    >[0];
+    if (t.has(modePath)) {
+      return t(modePath as Parameters<typeof t>[0]);
     }
-    if (t.has(`cards.${storageKey}.${field}`)) {
-      return t(`cards.${storageKey}.${field}`);
+    const basePath = `cards.${storageKey}.${field}` as Parameters<
+      typeof t.has
+    >[0];
+    if (t.has(basePath)) {
+      return t(basePath as Parameters<typeof t>[0]);
     }
     return fallback;
   };
 
   const resolvedTitle = getCardText("title", title) || title;
   const resolvedSubtitle = getCardText("subtitle", subtitle) || subtitle;
-  const resolvedBullets =
+  const hasLocalizedBullets =
     storageKey &&
-    (t.has(`cards.${storageKey}.bullet0`) ||
-      t.has(`cards.${storageKey}.bullet0Gamified`))
-      ? [
-          getCardText("bullet0", bullets[0]) || bullets[0],
-          getCardText("bullet1", bullets[1]) || bullets[1],
-          getCardText("bullet2", bullets[2]) || bullets[2],
-        ]
-      : bullets;
+    (t.has(`cards.${storageKey}.bullet0` as Parameters<typeof t.has>[0]) ||
+      t.has(
+        `cards.${storageKey}.bullet0Gamified` as Parameters<typeof t.has>[0],
+      ));
+  const resolvedBullets = hasLocalizedBullets
+    ? [
+        getCardText("bullet0", bullets[0]) || bullets[0],
+        getCardText("bullet1", bullets[1]) || bullets[1],
+        getCardText("bullet2", bullets[2]) || bullets[2],
+      ]
+    : bullets;
 
   const HeaderIcon =
     icon ??

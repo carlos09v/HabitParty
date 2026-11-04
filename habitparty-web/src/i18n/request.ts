@@ -1,6 +1,7 @@
 import { cookies, headers } from "next/headers";
-import type { AbstractIntlMessages } from "next-intl";
-import { getRequestConfig } from "next-intl/server";
+import { type AbstractIntlMessages, IntlErrorCode } from "next-intl";
+import { getRequestConfig, setRequestLocale } from "next-intl/server";
+import { cache } from "react";
 import {
   type AppLocale,
   DEFAULT_LOCALE,
@@ -8,8 +9,33 @@ import {
   isValidLocale,
   LOCALE_COOKIE_NAME,
 } from "./config";
+import { type MessageScope, pickScopedClientMessages } from "./scopes";
 
-export async function getRequestLocale(): Promise<AppLocale> {
+const localeMessagesCache = new Map<AppLocale, AbstractIntlMessages>();
+
+const getStaticLocaleStore = cache((): { locale?: AppLocale } => ({}));
+
+/**
+ * Fixa o idioma da renderização atual de forma estática (sem ler `cookies()` ou `headers()`).
+ * Usado nas rotas estáticas sob `app/(public)/[locale]`.
+ */
+export function setStaticLocale(locale: AppLocale): void {
+  getStaticLocaleStore().locale = locale;
+  setRequestLocale(locale);
+}
+
+export async function getRequestLocale(
+  explicitLocale?: string,
+): Promise<AppLocale> {
+  if (isValidLocale(explicitLocale)) {
+    return explicitLocale;
+  }
+
+  const staticLocale = getStaticLocaleStore().locale;
+  if (isValidLocale(staticLocale)) {
+    return staticLocale;
+  }
+
   const cookieStore = await cookies();
   const cookieLocale = cookieStore.get(LOCALE_COOKIE_NAME)?.value;
 
@@ -29,6 +55,11 @@ export async function getRequestLocale(): Promise<AppLocale> {
 export async function loadLocaleMessages(
   locale: AppLocale,
 ): Promise<AbstractIntlMessages> {
+  const cached = localeMessagesCache.get(locale);
+  if (cached) {
+    return cached;
+  }
+
   const [
     common,
     layout,
@@ -61,14 +92,14 @@ export async function loadLocaleMessages(
     import(`../messages/${locale}/admin.json`),
   ]);
 
-  return {
+  const messages: AbstractIntlMessages = Object.freeze({
     ...common.default,
     ...layout.default,
-    ...landing.default,
-    ...auth.default,
-    ...onboarding.default,
-    ...dashboard.default,
-    ...settings.default,
+    landing: landing.default,
+    auth: auth.default,
+    onboarding: onboarding.default,
+    dashboard: dashboard.default,
+    settings: settings.default,
     tasks: tasks.default,
     focus: focus.default,
     rewards: rewards.default,
@@ -76,26 +107,41 @@ export async function loadLocaleMessages(
     history: history.default,
     help: help.default,
     admin: admin.default,
-  };
+  });
+
+  localeMessagesCache.set(locale, messages);
+  return messages;
 }
 
 /**
- * Remove namespaces estritamente exclusivos de servidor (SEO / generateMetadata)
- * antes de serializar o dicionário para o NextIntlClientProvider.
+ * Extrai e filtra as mensagens necessárias para o cliente conforme o escopo.
+ * Por padrão (no root layout), retorna apenas o escopo `base`.
  */
 export function pickClientMessages(
   messages: AbstractIntlMessages,
+  scope: MessageScope = "base",
+  locale?: AppLocale,
 ): AbstractIntlMessages {
-  const { metadata: _metadata, ...rest } = messages;
-  return rest;
+  return pickScopedClientMessages(messages, scope, locale);
 }
 
-export default getRequestConfig(async () => {
-  const locale = await getRequestLocale();
+export default getRequestConfig(async ({ locale: explicitLocale }) => {
+  const locale = await getRequestLocale(explicitLocale);
   const messages = await loadLocaleMessages(locale);
 
   return {
     locale,
     messages,
+    onError(error) {
+      if (
+        process.env.NODE_ENV === "development" &&
+        error.code === IntlErrorCode.MISSING_MESSAGE
+      ) {
+        throw error;
+      }
+      if (process.env.NODE_ENV === "development") {
+        console.error(error);
+      }
+    },
   };
 });

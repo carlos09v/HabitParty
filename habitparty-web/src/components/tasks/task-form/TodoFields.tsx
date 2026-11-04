@@ -16,6 +16,9 @@ interface TodoFieldsProps {
 export function TodoFields({ form }: TodoFieldsProps) {
   const t = useTranslations("tasks.taskModal.todoFields");
   const user = useUserStore((s) => s.user);
+  const isPremium = useUserStore((s) =>
+    Boolean(s.user?.isPremium ?? s.is_Premium),
+  );
   const isEmailUnverified = user?.emailVerified === false;
   const {
     dueDate,
@@ -73,16 +76,15 @@ export function TodoFields({ form }: TodoFieldsProps) {
               <Mail size={16} />
             </div>
             <div className="flex flex-col">
-              <span className="text-body-xs font-semibold text-neutral-100 flex items-center gap-1.5 flex-wrap">
+              <span className="text-xs font-semibold text-neutral-100">
                 {t("emailReminderTitle")}
-                <span className="text-tiny font-normal px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                  {t("emailReminderQuotaBadge")}
-                </span>
               </span>
               <span className="text-label-g text-neutral-400">
                 {isEmailUnverified
                   ? t("emailUnverifiedDesc")
-                  : t("emailVerifiedDesc")}
+                  : isPremium
+                    ? t("emailReminderQuotaVip")
+                    : t("emailReminderQuotaFree")}
               </span>
             </div>
           </div>

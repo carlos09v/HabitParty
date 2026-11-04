@@ -1,24 +1,11 @@
 "use client";
 
-import {
-  Calendar,
-  CalendarClock,
-  Repeat,
-  SlidersHorizontal,
-  Sword,
-  Swords,
-  Target,
-} from "lucide-react";
+import { Calendar, Repeat, SlidersHorizontal, Target } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
-import {
-  ALL_WEEK_DAYS,
-  HABIT_IMPORTANCE_OPTIONS,
-  TASK_DIFFICULTY_OPTIONS,
-  WEEKDAYS_ONLY,
-} from "@/constants/task";
+import { QuickAddConfigBar } from "@/components/tasks/task-form/QuickAddConfigBar";
+import { ALL_WEEK_DAYS, WEEKDAYS_ONLY } from "@/constants/task";
 import { useClickOutside } from "@/hooks/useClickOutside";
-import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type {
   CreateTaskDTO,
   HabitImportanceOption,
@@ -33,26 +20,6 @@ import type {
 import { cn } from "@/utils";
 import { getOffsetDateString, getTodayDateString } from "@/utils/date";
 
-const DIFFICULTY_DOT: Record<TaskDifficultyOption, string> = {
-  TRIVIAL: "bg-info",
-  EASY: "bg-success-500",
-  MEDIUM: "bg-warning-500",
-  HARD: "bg-purple-400",
-};
-
-const DIFFICULTY_SWORD_TEXT: Record<TaskDifficultyOption, string> = {
-  TRIVIAL: "text-info",
-  EASY: "text-success-500",
-  MEDIUM: "text-warning-500",
-  HARD: "text-purple-400",
-};
-
-const IMPORTANCE_DOT: Record<HabitImportanceOption, string> = {
-  LOW: "bg-info",
-  NORMAL: "bg-success-500",
-  HIGH: "bg-purple-400",
-};
-
 export function RoutineQuickAddForm({
   columnId,
   isCompact = false,
@@ -62,12 +29,10 @@ export function RoutineQuickAddForm({
   onOpenDetailedForm,
 }: RoutineQuickAddFormProps) {
   const t = useTranslations("tasks.quickAdd");
-  const tOptions = useTranslations("tasks.options");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const isCompactMode = isColumnCompact || isCompact;
-  const { isGamified } = useExperienceMode();
 
   const [title, setTitle] = useState("");
   const [taskType, setTaskType] = useState<TaskTypeOption>("TODO");
@@ -224,309 +189,24 @@ export function RoutineQuickAddForm({
         className="w-full bg-transparent text-neutral-100 placeholder:text-neutral-500 text-xs sm:text-sm font-medium outline-none px-1"
       />
 
-      {/* Micro-opções contextuais para A Fazer (To-Do): Prazo rápido + Dificuldade */}
-      {taskType === "TODO" && (
-        <div className="flex flex-col gap-1.5 text-label-g px-2 py-1.5 bg-white/5 rounded-md border border-white/5">
-          {/* Linha 1: Prazo Rápido */}
-          <div className="flex items-center justify-between gap-1 flex-wrap">
-            <span className="text-neutral-400 font-medium text-tiny flex items-center gap-1 shrink-0">
-              <CalendarClock size={11} className="text-gold" />
-              {t("dueLabel")}
-            </span>
-            <div className="flex items-center gap-1">
-              {[
-                { label: t("dueNoDate"), offset: null },
-                { label: t("dueToday"), offset: 0 },
-                { label: t("dueTomorrow"), offset: 1 },
-                { label: t("due7Days"), offset: 7 },
-              ].map((opt) => {
-                const isSelected = dueOffset === opt.offset;
-                return (
-                  <button
-                    key={String(opt.offset)}
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => {
-                      setDueOffset(opt.offset);
-                      inputRef.current?.focus();
-                    }}
-                    className={cn(
-                      "px-1.5 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
-                      isSelected
-                        ? "bg-gold/20 text-gold border border-gold/40"
-                        : "text-neutral-400 hover:text-neutral-200",
-                    )}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Linha 2: Dificuldade */}
-          <div className="flex items-center justify-between gap-1 border-t border-white/5 pt-1 flex-wrap">
-            <span className="text-neutral-400 font-medium text-tiny shrink-0">
-              {t("effortLabel")}
-            </span>
-            <div className="flex items-center gap-1">
-              {TASK_DIFFICULTY_OPTIONS.map((opt) => {
-                const isSelected = difficulty === opt.id;
-                const DifficultyIcon =
-                  opt.id === "MEDIUM" || opt.id === "HARD" ? Swords : Sword;
-                return (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => {
-                      setDifficulty(opt.id);
-                      inputRef.current?.focus();
-                    }}
-                    className={cn(
-                      "flex items-center gap-1 px-1.5 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
-                      isSelected
-                        ? "bg-white/15 text-neutral-100 border border-white/25"
-                        : "text-neutral-400 hover:text-neutral-200",
-                    )}
-                  >
-                    {isGamified ? (
-                      <DifficultyIcon
-                        size={10}
-                        className={cn(
-                          "shrink-0",
-                          DIFFICULTY_SWORD_TEXT[opt.id],
-                        )}
-                      />
-                    ) : (
-                      <span
-                        className={cn(
-                          "w-1.5 h-1.5 rounded-full shrink-0",
-                          DIFFICULTY_DOT[opt.id],
-                        )}
-                      />
-                    )}
-                    <span>{tOptions(`difficulties.${opt.id}`)}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Micro-opções contextuais para Hábito: Direção + Importância + Reset */}
-      {taskType === "HABIT" && (
-        <div className="flex flex-col gap-1.5 text-label-g px-2 py-1.5 bg-white/5 rounded-md border border-white/5">
-          <div className="flex items-center justify-between gap-1 flex-wrap">
-            <span className="text-neutral-400 font-medium text-tiny shrink-0">
-              {t("directionLabel")}
-            </span>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  setHabitType("POSITIVE");
-                  inputRef.current?.focus();
-                }}
-                className={cn(
-                  "px-1.5 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
-                  habitType === "POSITIVE"
-                    ? "bg-success-500/20 text-success-500 border border-success-500/40"
-                    : "text-neutral-400 hover:text-neutral-200",
-                )}
-                title={t("positiveTitle")}
-              >
-                {t("positiveLabel")}
-              </button>
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  setHabitType("NEGATIVE");
-                  inputRef.current?.focus();
-                }}
-                className={cn(
-                  "px-1.5 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
-                  habitType === "NEGATIVE"
-                    ? "bg-danger-500/20 text-danger-500 border border-danger-500/40"
-                    : "text-neutral-400 hover:text-neutral-200",
-                )}
-                title={t("negativeTitle")}
-              >
-                {t("negativeLabel")}
-              </button>
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  setHabitType("BOTH");
-                  inputRef.current?.focus();
-                }}
-                className={cn(
-                  "px-1.5 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
-                  habitType === "BOTH"
-                    ? "bg-purple-500/20 text-purple-300 border border-purple-500/40"
-                    : "text-neutral-400 hover:text-neutral-200",
-                )}
-                title={t("bothTitle")}
-              >
-                {t("bothLabel")}
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between gap-1 border-t border-white/5 pt-1 flex-wrap">
-            <span className="text-neutral-400 font-medium text-tiny shrink-0">
-              {t("importanceLabel")}
-            </span>
-            <div className="flex items-center gap-1">
-              {HABIT_IMPORTANCE_OPTIONS.map((imp) => {
-                const isSelected = importanceType === imp.id;
-                return (
-                  <button
-                    key={imp.id}
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => {
-                      setImportanceType(imp.id);
-                      inputRef.current?.focus();
-                    }}
-                    className={cn(
-                      "flex items-center gap-1 px-1.5 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
-                      isSelected
-                        ? "bg-white/15 text-neutral-100 border border-white/25"
-                        : "text-neutral-400 hover:text-neutral-200",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "w-1.5 h-1.5 rounded-full shrink-0",
-                        IMPORTANCE_DOT[imp.id],
-                      )}
-                    />
-                    <span>{tOptions(`importances.${imp.id}`)}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between border-t border-white/5 pt-1">
-            <span className="text-neutral-400 font-medium text-tiny shrink-0">
-              {t("resetLabel")}
-            </span>
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
-                setResetCounter((prev) =>
-                  prev === "DAILY" ? "WEEKLY" : "DAILY",
-                );
-                inputRef.current?.focus();
-              }}
-              className="text-tiny text-neutral-300 hover:text-gold transition-colors font-medium cursor-pointer px-1 py-0.5 rounded hover:bg-white/5"
-              title={t("toggleResetTitle")}
-            >
-              {resetCounter === "DAILY" ? t("resetDaily") : t("resetWeekly")}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Micro-opções contextuais para Diária: Frequência + Dificuldade */}
-      {taskType === "DAILY" && (
-        <div className="flex flex-col gap-1.5 text-label-g px-2 py-1.5 bg-white/5 rounded-md border border-white/5">
-          <div className="flex items-center justify-between gap-1 flex-wrap">
-            <span className="text-neutral-400 font-medium text-tiny shrink-0">
-              {t("frequencyLabel")}
-            </span>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  setDailyFreq("DAILY");
-                  inputRef.current?.focus();
-                }}
-                className={cn(
-                  "px-2 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
-                  dailyFreq === "DAILY"
-                    ? "bg-gold/20 text-gold border border-gold/40"
-                    : "text-neutral-400 hover:text-neutral-200",
-                )}
-              >
-                {t("everyDay")}
-              </button>
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  setDailyFreq("WEEKDAYS");
-                  inputRef.current?.focus();
-                }}
-                className={cn(
-                  "px-2 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
-                  dailyFreq === "WEEKDAYS"
-                    ? "bg-gold/20 text-gold border border-gold/40"
-                    : "text-neutral-400 hover:text-neutral-200",
-                )}
-              >
-                {t("weekdays")}
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between gap-1 border-t border-white/5 pt-1 flex-wrap">
-            <span className="text-neutral-400 font-medium text-tiny shrink-0">
-              {t("effortLabel")}
-            </span>
-            <div className="flex items-center gap-1">
-              {TASK_DIFFICULTY_OPTIONS.map((opt) => {
-                const isSelected = difficulty === opt.id;
-                const DifficultyIcon =
-                  opt.id === "MEDIUM" || opt.id === "HARD" ? Swords : Sword;
-                return (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => {
-                      setDifficulty(opt.id);
-                      inputRef.current?.focus();
-                    }}
-                    className={cn(
-                      "flex items-center gap-1 px-1.5 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
-                      isSelected
-                        ? "bg-white/15 text-neutral-100 border border-white/25"
-                        : "text-neutral-400 hover:text-neutral-200",
-                    )}
-                  >
-                    {isGamified ? (
-                      <DifficultyIcon
-                        size={10}
-                        className={cn(
-                          "shrink-0",
-                          DIFFICULTY_SWORD_TEXT[opt.id],
-                        )}
-                      />
-                    ) : (
-                      <span
-                        className={cn(
-                          "w-1.5 h-1.5 rounded-full shrink-0",
-                          DIFFICULTY_DOT[opt.id],
-                        )}
-                      />
-                    )}
-                    <span>{tOptions(`difficulties.${opt.id}`)}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+      <QuickAddConfigBar
+        taskType={taskType}
+        dueOffset={dueOffset}
+        onDueOffsetChange={setDueOffset}
+        difficulty={difficulty}
+        onDifficultyChange={setDifficulty}
+        habitType={habitType}
+        onHabitTypeChange={setHabitType}
+        importanceType={importanceType}
+        onImportanceChange={setImportanceType}
+        resetCounter={resetCounter}
+        onToggleResetCounter={() =>
+          setResetCounter((prev) => (prev === "DAILY" ? "WEEKLY" : "DAILY"))
+        }
+        dailyFreq={dailyFreq}
+        onDailyFreqChange={setDailyFreq}
+        onFocusInput={() => inputRef.current?.focus()}
+      />
 
       {/* Rodapé com Ações */}
       <div className="flex items-center justify-between pt-1.5 border-t border-white/5 gap-2">

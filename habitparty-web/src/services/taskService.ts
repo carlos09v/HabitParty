@@ -1,4 +1,6 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { serverApi } from "@/api/server";
+import { getWorkspaces } from "@/services/workspaceService";
 import type { ColumnSummaryDTO } from "@/types/dashboard";
 import type { BoardColumn } from "@/types/task";
 import type { WorkspaceResponseDTO } from "@/types/workspace";
@@ -14,39 +16,74 @@ export interface TasksBoardData {
 }
 
 /**
+ * Busca o catálogo/resumo de colunas de um workspace.
+ * Cacheado de forma privada no Router Cache do navegador por 5 minutos (`catalog`).
+ */
+export async function getWorkspaceColumnsSummary(
+  workspaceId: string,
+): Promise<ColumnSummaryDTO[]> {
+  "use cache: private";
+  cacheLife("catalog");
+  cacheTag(
+    "kanban",
+    "board_columns",
+    "dashboard-columns",
+    `workspace-${workspaceId}`,
+  );
+
+  const { data } = await serverApi.GET(
+    "/board_columns/workspace/{workspaceId}",
+    {
+      params: { path: { workspaceId } },
+      next: {
+        tags: [
+          "kanban",
+          "board_columns",
+          "dashboard-columns",
+          `workspace-${workspaceId}`,
+        ],
+      },
+    },
+  );
+
+  return data || [];
+}
+
+/**
  * Busca todas as colunas (visíveis no Kanban e ocultas) de um workspace com suas respectivas tarefas,
  * além do resumo de colunas retornado pelo backend.
+ * Cacheado de forma privada no cliente por 30s (`private30`).
  */
 export async function fetchWorkspaceBoardColumns(workspaceId: string): Promise<{
   columns: BoardColumn[];
   summaries: ColumnSummaryDTO[];
 }> {
-  const [{ data: kanbanBoard }, { data: allColumnsSummary }] =
-    await Promise.all([
-      serverApi.GET("/workspaces/{workspaceId}/kanban", {
-        params: { path: { workspaceId } },
-        next: {
-          tags: [
-            "kanban",
-            "board_columns",
-            "tasks",
-            "dashboard-tasks",
-            `workspace-${workspaceId}`,
-          ],
-        },
-      }),
-      serverApi.GET("/board_columns/workspace/{workspaceId}", {
-        params: { path: { workspaceId } },
-        next: {
-          tags: [
-            "kanban",
-            "board_columns",
-            "dashboard-columns",
-            `workspace-${workspaceId}`,
-          ],
-        },
-      }),
-    ]);
+  "use cache: private";
+  cacheLife("private30");
+  cacheTag(
+    "kanban",
+    "board_columns",
+    "tasks",
+    "dashboard-tasks",
+    "dashboard-columns",
+    `workspace-${workspaceId}`,
+  );
+
+  const [{ data: kanbanBoard }, allColumnsSummary] = await Promise.all([
+    serverApi.GET("/workspaces/{workspaceId}/kanban", {
+      params: { path: { workspaceId } },
+      next: {
+        tags: [
+          "kanban",
+          "board_columns",
+          "tasks",
+          "dashboard-tasks",
+          `workspace-${workspaceId}`,
+        ],
+      },
+    }),
+    getWorkspaceColumnsSummary(workspaceId),
+  ]);
 
   const kanbanColumns = kanbanBoard
     ? mapWorkspaceToBoardColumns(kanbanBoard)
@@ -61,6 +98,7 @@ export async function fetchWorkspaceBoardColumns(workspaceId: string): Promise<{
   const missingColumnsWithTasks = await Promise.all(
     missingSummaries.map(async (col) => {
       const columnId = col.id || "";
+      cacheTag(`column-${columnId}`);
       const { data: tasksDto } = await serverApi.GET(
         "/tasks/column/{boardColumnId}",
         {
@@ -96,11 +134,9 @@ export async function fetchWorkspaceBoardColumns(workspaceId: string): Promise<{
 export async function getTasksBoardData(
   requestedWorkspaceId?: string,
 ): Promise<TasksBoardData> {
-  const { data: workspaces, error } = await serverApi.GET("/workspaces", {
-    next: { tags: ["workspaces"] },
-  });
+  const workspaces = await getWorkspaces();
 
-  if (error || !workspaces || workspaces.length === 0) {
+  if (workspaces.length === 0) {
     return {
       workspaces: [],
       activeWorkspace: null,

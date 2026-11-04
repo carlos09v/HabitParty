@@ -1,5 +1,6 @@
 import { cookies, headers } from "next/headers";
 import createClient, { type Middleware } from "openapi-fetch";
+import { cache } from "react";
 import { getLocaleMode } from "@/utils/cookies";
 import type { paths } from "./schema";
 
@@ -7,8 +8,10 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 /**
  * Obtém ou renova silenciosamente o token JWT nas requisições do lado do servidor.
+ * Envolvido por `React.cache()` para garantir que chamadas paralelas em um mesmo
+ * ciclo de renderização reutilizem o mesmo token (e nunca disparem múltiplos `/auth/refresh`).
  */
-export async function getServerAuthToken(): Promise<string | null> {
+export const getServerAuthToken = cache(async (): Promise<string | null> => {
   const cookieStore = await cookies();
   let token = cookieStore.get("habitparty_token")?.value;
 
@@ -48,7 +51,7 @@ export async function getServerAuthToken(): Promise<string | null> {
   }
 
   return token || null;
-}
+});
 
 /**
  * Middleware para injetar automaticamente o token JWT nas requisições do lado do servidor.

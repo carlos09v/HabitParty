@@ -3,38 +3,15 @@
     "title": "HabitParty | Productivity & Gamification",
     "description": "Smart routine, habit, task, and reward management system with deep focus and optional gamification."
   },
-  "common": {
-    "language": "Language",
-    "english": "English",
-    "portuguese": "Português (BR)",
-    "save": "Save",
-    "saving": "Saving...",
-    "cancel": "Cancel",
-    "confirm": "Confirm",
-    "close": "Close",
-    "edit": "Edit",
-    "delete": "Delete",
-    "create": "Create",
-    "add": "Add",
-    "search": "Search...",
-    "loading": "Loading...",
-    "back": "Back",
-    "next": "Continue",
-    "optional": "optional",
-    "free": "Free",
-    "premium": "Premium",
-    "yes": "Yes",
-    "no": "No",
-    "all": "All",
-    "none": "None"
-  },
   "ui": {
     "languageToggle": {
       "label": "Language",
       "switchToPtAria": "Switch language to Portuguese (BR)",
       "switchToEnAria": "Switch language to English (US)",
       "switchToPtTitle": "Switch to Português (Brasil)",
-      "switchToEnTitle": "Switch to English (US)"
+      "switchToEnTitle": "Switch to English (US)",
+      "switching": "Changing language…",
+      "error": "Could not change the language. Please try again."
     },
     "themeToggle": {
       "labelLight": "Light Theme",
@@ -164,20 +141,20 @@
         },
         "history": {
           "title": "Transaction History",
-          "titleGamified": "Adventurer's Vault",
+          "titleGamified": "Journey Journal",
           "titleProductivity": "Transaction Statement",
           "pageName": "Transaction History",
-          "pageNameGamified": "Adventurer's Vault",
+          "pageNameGamified": "Journey Journal",
           "pageNameProductivity": "Transaction History",
           "description": "Summary of coins, XP, and audit log of completed transactions.",
           "subtitle": "Browse your detailed history of coins, XP, and redemptions.",
           "subtitleGamified": "Browse your history of gold, XP, and items earned on your adventures.",
-          "subtitleProductivity": "Browse your detailed history of coins, XP, and redemptions.",
+          "subtitleProductivity": "Browse your detailed history of credits, points, and redemptions.",
           "bullet0": "Completing tasks, dailies, and habits logs coin and XP gains.",
           "bullet1": "Negative habit penalties and failures record balance deductions.",
           "bullet2": "Shop redemptions and backpack item usage are archived in this statement.",
-          "bullet2Gamified": "Shop redemptions and backpack item usage are archived in this vault.",
-          "bullet2Productivity": "Shop redemptions and inventory item usage are archived in this statement."
+          "bullet2Gamified": "Shop redemptions and backpack item usage are archived in this journal.",
+          "bullet2Productivity": "Showcase redemptions and inventory item usage are archived in this statement."
         }
       }
     },
@@ -196,8 +173,10 @@
     },
     "viewMode": {
       "groupAria": "View mode",
-      "gridTitle": "Card view",
-      "gridAria": "Grid View",
+      "gridLabel": "Cards",
+      "gridTitle": "Card view (Board)",
+      "gridAria": "Card View",
+      "listLabel": "List",
       "listTitle": "List view",
       "listAria": "List View"
     },
@@ -355,18 +334,5 @@
     "description": "We only use essential cookies to keep your session secure, authenticate your account, and preserve preferences such as theme, language, and workspace. We do not collect data for ads or third-party tracking.",
     "privacyLink": "Privacy Policy & Data Protection",
     "acceptButton": "Got it, I Agree"
-  },
-  "levels": {
-    "NOVICE": "Novice",
-    "APPRENTICE": "Apprentice",
-    "ADVENTURER": "Adventurer",
-    "CHALLENGER": "Challenger",
-    "AMATEUR": "Amateur",
-    "PROFESSIONAL": "Professional",
-    "EXPERT": "Expert",
-    "VETERAN": "Veteran",
-    "MASTER": "Master",
-    "LEGEND": "Legend",
-    "PREMIUM_MEMBER": "Premium Member"
   }
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { Camera, Crown, Shield, Sparkles, UploadCloud } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
   type ChangeEvent,
@@ -14,17 +13,18 @@ import {
 import { toast } from "sonner";
 import { updateUserProfilePhotoAction } from "@/actions/userActions";
 import { UserAvatar } from "@/components/ui/UserAvatar";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import type { ProfileHeaderCardProps } from "@/types/settings";
-import { cn, formatCoins, getCurrentLevel } from "@/utils";
+import { cn, formatCoins, getCurrentLevel, localizeLevelTitle } from "@/utils";
 
 export function ProfileHeaderCard({
   initialUser,
   isCompact,
 }: ProfileHeaderCardProps) {
-  const router = useRouter();
   const t = useTranslations("settings.profileHeader");
+  const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
 
   const storeUser = useUserStore((s) => s.user);
@@ -71,7 +71,6 @@ export function ProfileHeaderCard({
       if (res.success) {
         toast.success(t("photoSuccessToast"));
         updateUserPartial({ profilePhotoUrl: objectUrl });
-        router.refresh();
       } else {
         toast.error(res.error || t("photoErrorToast"));
         URL.revokeObjectURL(objectUrl);
@@ -114,12 +113,16 @@ export function ProfileHeaderCard({
     }
   };
 
-  const displayName = user?.fullName || user?.username || t("adventurer");
+  const displayName =
+    user?.fullName ||
+    user?.username ||
+    (isGamified ? t("adventurer") : t("member"));
   const displayPhoto = previewUrl || user?.profilePhotoUrl;
-  const levelTitle =
+  const rawLevelTitle =
     user?.currentLevelTitle ||
     getCurrentLevel(user?.totalXp ?? 0).title ||
-    (user?.isPremium ? t("premiumMember") : t("novice"));
+    (user?.isPremium ? "PREMIUM_MEMBER" : "NOVICE");
+  const levelTitle = localizeLevelTitle(rawLevelTitle, locale, isGamified);
 
   return (
     <div
@@ -230,14 +233,14 @@ export function ProfileHeaderCard({
               <span className="text-gold font-bold">
                 {formatCoins(user?.currentCoins ?? 0, { locale })}
               </span>
-              <span>{t("coinsLabel")}</span>
+              <span>{isGamified ? t("coinsLabel") : t("creditsLabel")}</span>
             </div>
 
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface/60 border border-primary/20 text-xs text-neutral-200">
               <span className="text-magenta font-bold">
                 {user?.totalXp ?? 0}
               </span>
-              <span>{t("xpLabel")}</span>
+              <span>{isGamified ? t("xpLabel") : t("pointsLabel")}</span>
             </div>
           </div>
         </div>

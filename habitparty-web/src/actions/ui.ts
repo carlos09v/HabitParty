@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath, updateTag } from "next/cache";
+import { updateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { serverApi } from "@/api/server";
 import {
@@ -15,8 +15,8 @@ export async function setCompactModeCookie(compact: boolean) {
   cookieStore.set("compactMode", String(compact), {
     path: "/",
     maxAge: 60 * 60 * 24 * 365, // 1 year
+    sameSite: "lax",
   });
-  revalidatePath("/", "layout");
 }
 
 export async function setThemeCookie(theme: "light" | "dark") {
@@ -26,9 +26,17 @@ export async function setThemeCookie(theme: "light" | "dark") {
     maxAge: 60 * 60 * 24 * 365, // 1 year
     sameSite: "lax",
   });
-  revalidatePath("/", "layout");
 }
 
+/**
+ * Persiste o idioma escolhido.
+ *
+ * Não chama `revalidatePath` nem exige `router.refresh()` no cliente:
+ * setar um cookie dentro de uma Server Action já faz o Next re-renderizar a
+ * rota atual (layouts + página) e devolver a nova árvore RSC na MESMA resposta,
+ * além de invalidar o Router Cache das demais rotas. Assim a troca de idioma
+ * custa uma única ida e volta ao servidor.
+ */
 export async function setLocaleCookie(locale: AppLocale) {
   const validLocale: AppLocale = isValidLocale(locale) ? locale : "en";
   const cookieStore = await cookies();
@@ -37,7 +45,6 @@ export async function setLocaleCookie(locale: AppLocale) {
     maxAge: 60 * 60 * 24 * 365, // 1 year
     sameSite: "lax",
   });
-  revalidatePath("/", "layout");
 }
 
 export async function setFirstStepPreferencesAction(

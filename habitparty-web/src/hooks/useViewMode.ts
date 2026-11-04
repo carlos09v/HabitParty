@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 
 export type ViewMode = "card" | "list" | "grid";
 
@@ -9,6 +9,7 @@ export function useViewMode(
   defaultMode: ViewMode = "card",
 ): [ViewMode, (mode: ViewMode) => void] {
   const [viewMode, setViewModeState] = useState<ViewMode>(defaultMode);
+  const [, startTransition] = useTransition();
 
   useEffect(() => {
     try {
@@ -21,14 +22,19 @@ export function useViewMode(
     }
   }, [key]);
 
-  const setViewMode = (mode: ViewMode) => {
-    setViewModeState(mode);
-    try {
-      localStorage.setItem(`habitparty_view_mode_${key}`, mode);
-    } catch {
-      // ignore
-    }
-  };
+  const setViewMode = useCallback(
+    (mode: ViewMode) => {
+      startTransition(() => {
+        setViewModeState(mode);
+      });
+      try {
+        localStorage.setItem(`habitparty_view_mode_${key}`, mode);
+      } catch {
+        // ignore
+      }
+    },
+    [key],
+  );
 
   return [viewMode, setViewMode];
 }

@@ -207,8 +207,11 @@ export function CreateBoardColumnModal({
               <div className="flex items-center gap-1.5 flex-wrap">
                 {QUICK_COLUMN_TEMPLATES.map((tpl) => {
                   const TplIcon = tpl.icon;
-                  const localizedLabel = tIcons.has(`icons.${tpl.id}`)
-                    ? tIcons(`icons.${tpl.id}`)
+                  const tplKey = `icons.${tpl.id}` as Parameters<
+                    typeof tIcons.has
+                  >[0];
+                  const localizedLabel = tIcons.has(tplKey)
+                    ? tIcons(tplKey as Parameters<typeof tIcons>[0])
                     : tpl.label;
                   const isActive =
                     name.trim().toLowerCase() ===

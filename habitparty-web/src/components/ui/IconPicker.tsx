@@ -29,8 +29,10 @@ export function IconPicker({
         ? "grid-cols-6"
         : "grid-cols-5";
 
-  const getOptionLabel = (item: IconOption) =>
-    t.has(`icons.${item.id}`) ? t(`icons.${item.id}`) : item.label;
+  const getOptionLabel = (item: IconOption) => {
+    const key = `icons.${item.id}` as Parameters<typeof t.has>[0];
+    return t.has(key) ? t(key as Parameters<typeof t>[0]) : item.label;
+  };
 
   const handleSelect = (item: IconOption) => {
     const label = getOptionLabel(item);

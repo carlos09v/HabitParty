@@ -10,7 +10,7 @@
     "inventoryGamified": "Backpack",
     "inventoryProductivity": "Inventory",
     "history": "History",
-    "historyGamified": "Adventurer's Vault",
+    "historyGamified": "Journey Journal",
     "historyProductivity": "History",
     "settings": "Settings",
     "help": "Help",
@@ -95,11 +95,16 @@
     "defaultNameProductivity": "Member",
     "settingsTitle": "View profile settings ({name})",
     "remainingXpTitle": "{xp} XP left to {nextTitle}",
+    "remainingPtsTitle": "{xp} pts left to {nextTitle}",
     "maxLevelTitle": "Max Level",
     "xpMaxLabel": "{xp} XP • Max",
+    "ptsMaxLabel": "{xp} pts • Max",
     "coinsTitle": "{coins} coins",
+    "creditsTitle": "{coins} credits",
     "progressTitle": "Progress: {currentXp}/{targetXp} XP ({percent}%). {remainingXp} XP left to {nextTitle}.",
-    "progressMaxTitle": "Progress: {currentXp} XP (Max Level - {levelTitle})"
+    "progressPtsTitle": "Progress: {currentXp}/{targetXp} pts ({percent}%). {remainingXp} pts left to {nextTitle}.",
+    "progressMaxTitle": "Progress: {currentXp} XP (Max Level - {levelTitle})",
+    "progressPtsMaxTitle": "Progress: {currentXp} pts (Max Level - {levelTitle})"
   },
   "focusWidget": {
     "ambientSounds": {

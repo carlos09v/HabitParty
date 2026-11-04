@@ -1138,6 +1138,7 @@ export interface components {
       isPenaltyApplied?: boolean;
       sendEmailReminder?: boolean;
       emailReminderSent?: boolean;
+      isRewardClaimed?: boolean;
       checklist?: components["schemas"]["ChecklistItemResponseDTO"][];
     };
     WorkspaceResponseDTO: {

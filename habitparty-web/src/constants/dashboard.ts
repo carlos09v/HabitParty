@@ -3,7 +3,6 @@ import type {
   DashboardAdvancedFilters,
   EconomyBarData,
 } from "@/types/dashboard";
-import type { TaskFilterType } from "@/types/task";
 
 /** Barras padrão para o gráfico de Economia do Dashboard. */
 export const DEFAULT_ECONOMY_BARS: readonly EconomyBarData[] = [
@@ -53,8 +52,15 @@ export const DEFAULT_DASHBOARD_ADVANCED_FILTERS: DashboardAdvancedFilters = {
   sortBy: "default",
 };
 
+export type DashboardStandardFilterId =
+  | "today"
+  | "next7days"
+  | "this_month"
+  | "nodate"
+  | "overdue";
+
 export const DASHBOARD_TASK_FILTERS: readonly {
-  id: TaskFilterType;
+  id: DashboardStandardFilterId;
   label: string;
 }[] = [
   { id: "today", label: "Hoje" },
@@ -64,11 +70,21 @@ export const DASHBOARD_TASK_FILTERS: readonly {
   { id: "overdue", label: "Atrasado" },
 ] as const;
 
-export const DASHBOARD_EMPTY_MESSAGES: Partial<
-  Record<
-    TaskFilterType,
-    { title: string; description: string; icon: typeof CalendarCheck }
-  >
+export function isDashboardStandardFilterId(
+  value: string,
+): value is DashboardStandardFilterId {
+  return (
+    value === "today" ||
+    value === "next7days" ||
+    value === "this_month" ||
+    value === "nodate" ||
+    value === "overdue"
+  );
+}
+
+export const DASHBOARD_EMPTY_MESSAGES: Record<
+  DashboardStandardFilterId,
+  { title: string; description: string; icon: typeof CalendarCheck }
 > = {
   today: {
     title: "Tudo limpo por hoje! 🎉",
@@ -96,23 +112,6 @@ export const DASHBOARD_EMPTY_MESSAGES: Partial<
     icon: CalendarCheck,
   },
 };
-
-export { TASK_TYPE_FILTER_OPTIONS } from "@/constants/task";
-
-export const TASK_DIFFICULTY_FILTER_OPTIONS = [
-  { value: "all", label: "Todas as dificuldades" },
-  { value: "TRIVIAL", label: "Trivial" },
-  { value: "EASY", label: "Fácil" },
-  { value: "MEDIUM", label: "Médio" },
-  { value: "HARD", label: "Difícil" },
-] as const;
-
-export const TASK_SORT_FILTER_OPTIONS = [
-  { value: "default", label: "Padrão (Data / Prazo)" },
-  { value: "difficulty", label: "Dificuldade (Maior primeiro)" },
-  { value: "priority", label: "Prioridade (Alta primeiro)" },
-  { value: "reward", label: "Maior Recompensa (XP/Gold)" },
-] as const;
 
 export type ActivityPeriodOption = "today" | "this_week" | "this_month";
 

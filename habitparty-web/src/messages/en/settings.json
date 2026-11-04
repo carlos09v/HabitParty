@@ -1,509 +1,510 @@
 {
-  "settings": {
-    "metadata": {
-      "title": "Settings | HabitParty",
-      "description": "Manage your profile, appearance, audio alerts, subscription, and account security."
+  "metadata": {
+    "title": "Settings | HabitParty",
+    "description": "Manage your profile, appearance, audio alerts, subscription, and account security."
+  },
+  "loading": {
+    "label": "Loading settings..."
+  },
+  "headerTitle": "Settings",
+  "headerSubtitle": "Manage your profile, subscription, appearance, and account security.",
+  "tabs": {
+    "profile": "Profile",
+    "profileDesc": "Cosmic identity, photos, and frames",
+    "appearance": "Appearance",
+    "appearanceDesc": "Theme, language, density, and experience",
+    "audio": "Audio & Alerts",
+    "audioDesc": "Click sounds, alarms, and VIP ambient audio",
+    "subscription": "Subscription",
+    "subscriptionDesc": "Plan, limits, and billing",
+    "security": "Security",
+    "securityDesc": "Password, sessions, and deletion",
+    "navAria": "Settings Navigation"
+  },
+  "cards": {
+    "profile": "My Profile",
+    "profileDesc": "Manage your name, birth date, and platform identity.",
+    "avatarFrames": "Avatar Frames",
+    "avatarFramesDesc": "Customize the light ring and visual effects around your profile picture.",
+    "appearanceTheme": "Appearance & Theme",
+    "appearanceThemeDesc": "Switch between the classic cosmic dark theme and the Cosmic Daylight light theme.",
+    "experienceMode": "Experience Profile (Essential Mode vs. Adventure Mode)",
+    "experienceModeDesc": "Choose your gamification style: clean executive interface with credits and points in Essential Mode, or RPG immersion with gold coins, XP, and mystery boxes in Adventure Mode.",
+    "language": "Interface Language",
+    "languageDesc": "Choose the display language for all menus, dashboards, and notifications across HabitParty.",
+    "compact": "Interface Density",
+    "compactDesc": "Adjust screen spacing and element density for your preferred workflow.",
+    "welcomeCards": "Introductory Screen Cards",
+    "welcomeCardsDesc": "Manage which welcome cards and quick guides remain visible across app screens.",
+    "audioTitle": "Interface Sounds & Notifications",
+    "audioDesc": "Customize click sound effects, Pomodoro completion alarms, and relaxing soundscapes.",
+    "subscription": "Subscription & Plan",
+    "subscriptionDesc": "Manage your active plan, cosmic quotas, renewals, and payment method.",
+    "changePassword": "Change Password",
+    "changePasswordDesc": "Update your account password. Choose a strong password with letters, numbers, and symbols.",
+    "dangerZone": "Danger Zone",
+    "dangerZoneDesc": "Deleting your account will permanently wipe all your data, tasks, coins, items, and history on HabitParty. This action is irreversible."
+  },
+  "profileHeader": {
+    "changePhoto": "Change photo",
+    "uploading": "Uploading...",
+    "currentLevel": "Level {level} • {title}",
+    "coins": "{amount} Coins",
+    "xp": "{amount} Lifetime XP",
+    "vipBadge": "Cosmic Guardian",
+    "founderBadge": "Founding Member",
+    "invalidImageToast": "Please select a valid image file.",
+    "imageSizeToast": "Image must be at most 5MB.",
+    "photoSuccessToast": "Profile photo updated successfully!",
+    "photoErrorToast": "Error updating profile photo.",
+    "changePhotoAria": "Change profile photo",
+    "dropzoneTitle": "Click or drop an image here to change your profile photo",
+    "dropzoneActive": "Drop image here",
+    "dropzoneDefault": "Drag a photo here",
+    "dropzoneHint": "or click to upload (max 5MB)",
+    "uploadingPhoto": "Uploading photo...",
+    "premiumBadge": "PREMIUM",
+    "freeBadge": "FREE",
+    "adminBadge": "ADMIN",
+    "adventurer": "Adventurer",
+    "member": "Member",
+    "novice": "Novice",
+    "premiumMember": "Premium Member",
+    "coinsLabel": "coins",
+    "creditsLabel": "credits",
+    "xpLabel": "Lifetime XP",
+    "pointsLabel": "Lifetime pts"
+  },
+  "profileForm": {
+    "fullNameLabel": "Full Name",
+    "fullNamePlaceholder": "Your name or nickname",
+    "birthdayLabel": "Birth Date",
+    "birthdayOptional": "(optional)",
+    "genderLabel": "Gender",
+    "save": "Save Changes",
+    "saving": "Saving...",
+    "successToast": "Profile updated successfully!",
+    "nameRequired": "Full name is required.",
+    "genderOptions": {
+      "MALE": "Male",
+      "FEMALE": "Female",
+      "NON_BINARY": "Non-binary",
+      "PREFER_NOT_TO_SAY": "Prefer not to say"
     },
-    "loading": {
-      "label": "Loading settings..."
-    },
-    "headerTitle": "Settings",
-    "headerSubtitle": "Manage your profile, subscription, appearance, and account security.",
-    "tabs": {
-      "profile": "Profile",
-      "profileDesc": "Cosmic identity, photos, and frames",
-      "appearance": "Appearance",
-      "appearanceDesc": "Theme, language, density, and experience",
-      "audio": "Audio & Alerts",
-      "audioDesc": "Click sounds, alarms, and VIP ambient audio",
-      "subscription": "Subscription",
-      "subscriptionDesc": "Plan, limits, and billing",
-      "security": "Security",
-      "securityDesc": "Password, sessions, and deletion",
-      "navAria": "Settings Navigation"
-    },
-    "cards": {
-      "profile": "My Profile",
-      "profileDesc": "Manage your name, birth date, and platform identity.",
-      "avatarFrames": "Avatar Frames",
-      "avatarFramesDesc": "Customize the light ring and visual effects around your profile picture.",
-      "appearanceTheme": "Appearance & Theme",
-      "appearanceThemeDesc": "Switch between the classic cosmic dark theme and the Cosmic Daylight light theme.",
-      "experienceMode": "Experience Profile (Gamification vs. Productivity)",
-      "experienceModeDesc": "Choose how RPG elements, difficulty icons, and reward estimates are displayed across your interface.",
-      "language": "Interface Language",
-      "languageDesc": "Choose the display language for all menus, dashboards, and notifications across HabitParty.",
-      "compact": "Interface Density",
-      "compactDesc": "Adjust screen spacing and element density for your preferred workflow.",
-      "welcomeCards": "Introductory Screen Cards",
-      "welcomeCardsDesc": "Manage which welcome cards and quick guides remain visible across app screens.",
-      "audioTitle": "Interface Sounds & Notifications",
-      "audioDesc": "Customize click sound effects, Pomodoro completion alarms, and relaxing soundscapes.",
-      "subscription": "Subscription & Plan",
-      "subscriptionDesc": "Manage your active plan, cosmic quotas, renewals, and payment method.",
-      "changePassword": "Change Password",
-      "changePasswordDesc": "Update your account password. Choose a strong password with letters, numbers, and symbols.",
-      "dangerZone": "Danger Zone",
-      "dangerZoneDesc": "Deleting your account will permanently wipe all your data, tasks, coins, items, and history on HabitParty. This action is irreversible."
-    },
-    "profileHeader": {
-      "changePhoto": "Change photo",
-      "uploading": "Uploading...",
-      "currentLevel": "Level {level} • {title}",
-      "coins": "{amount} Coins",
-      "xp": "{amount} Lifetime XP",
-      "vipBadge": "Cosmic Guardian",
-      "founderBadge": "Founding Member",
-      "invalidImageToast": "Please select a valid image file.",
-      "imageSizeToast": "Image must be at most 5MB.",
-      "photoSuccessToast": "Profile photo updated successfully!",
-      "photoErrorToast": "Error updating profile photo.",
-      "changePhotoAria": "Change profile photo",
-      "dropzoneTitle": "Click or drop an image here to change your profile photo",
-      "dropzoneActive": "Drop image here",
-      "dropzoneDefault": "Drag a photo here",
-      "dropzoneHint": "or click to upload (max 5MB)",
-      "uploadingPhoto": "Uploading photo...",
-      "premiumBadge": "PREMIUM",
-      "freeBadge": "FREE",
-      "adminBadge": "ADMIN",
-      "adventurer": "Adventurer",
-      "novice": "Novice",
-      "premiumMember": "Premium Member",
-      "coinsLabel": "coins",
-      "xpLabel": "Lifetime XP"
-    },
-    "profileForm": {
-      "fullNameLabel": "Full Name",
-      "fullNamePlaceholder": "Your name or nickname",
-      "birthdayLabel": "Birth Date",
-      "birthdayOptional": "(optional)",
-      "genderLabel": "Gender",
-      "save": "Save Changes",
-      "saving": "Saving...",
-      "successToast": "Profile updated successfully!",
-      "nameRequired": "Full name is required.",
-      "genderOptions": {
-        "MALE": "Male",
-        "FEMALE": "Female",
-        "NON_BINARY": "Non-binary",
-        "PREFER_NOT_TO_SAY": "Prefer not to say"
+    "cardTitle": "Personal Information",
+    "cardDesc": "Update your public profile and platform identity on HabitParty.",
+    "noChangesToast": "No changes were made.",
+    "noChangesTitle": "No changes to save",
+    "nameMaxToast": "Name must be at most 30 characters.",
+    "charCounter": "{current}/{max} characters",
+    "birthdayPlaceholder": "Select your birth date",
+    "genderPlaceholder": "Select gender (optional)",
+    "errorToast": "Error saving profile."
+  },
+  "theme": {
+    "dark": "Dark Theme",
+    "darkDesc": "Cosmic night atmosphere inspired by RPGs and galaxies. Deep purple background with ethereal orbs, ideal for dim environments and lower eye strain.",
+    "light": "Light Theme",
+    "lightDesc": "Cosmic Daylight palette for visual comfort. Cool neutral alabaster background, crisp white cards, and editorial slate typography.",
+    "defaultBadge": "Default",
+    "statusDark": "Cosmic Dark Theme is active as your primary visual theme.",
+    "statusLight": "Cosmic Daylight Light Theme is active for comfortable daytime use.",
+    "statusActiveLabel": "Active Theme: "
+  },
+  "experienceMode": {
+    "gamified": "Adventure Mode (RPG Immersion)",
+    "gamifiedDesc": "Full RPG adventure with gold coins, XP, adventurer ranks, sword difficulty icons, and Mystery Boxes in the Store.",
+    "productivity": "Essential Mode (Productivity)",
+    "productivityDesc": "Gamified productivity with an executive aesthetic. Uses Credits and Points (pts), professional ranks, discreet effort dots, and direct rewards without loot boxes.",
+    "defaultBadge": "Default",
+    "statusGamified": "Adventure Mode (RPG Immersion) — Prominent rewards, Mystery Boxes, sword difficulty icons, and XP & Gold Coins economy.",
+    "statusProductivity": "Essential Mode (Productivity) — Clean executive interface with Credits & Points (pts) economy and direct focus on deliverables.",
+    "activeLabel": "Active Experience Profile:",
+    "toastSuccess": "Experience profile changed to {mode}!"
+  },
+  "languageCard": {
+    "title": "Interface Language",
+    "description": "Choose the display language for all menus, dashboards, and messages across HabitParty.",
+    "enLabel": "English (US)",
+    "enDesc": "Display the entire interface in English.",
+    "ptLabel": "Português (Brasil)",
+    "ptDesc": "Display the entire interface in Brazilian Portuguese.",
+    "statusEn": "English (US) is active as your primary interface language.",
+    "statusPt": "Português (Brasil) is active as your primary interface language.",
+    "activeLabel": "Active language: ",
+    "statusDesc": "English (US) is currently active across your interface."
+  },
+  "compactMode": {
+    "compact": "Compact Mode",
+    "compactDesc": "Smaller cards, calendars, and lists. Optimizes screen space to view more tasks and reward items at once. Recommended for higher productivity.",
+    "comfortable": "Comfortable Mode",
+    "comfortableDesc": "Generous paddings and standard typography. Ideal for large screens or those who prefer relaxed spacing and larger elements.",
+    "defaultBadge": "Default",
+    "statusCompact": "Compact Mode is active for maximum content density.",
+    "statusComfortable": "Comfortable Mode is active with generous spacing.",
+    "statusLabel": "Current status: "
+  },
+  "avatarFrames": {
+    "upgradeToast": "Animated frames are exclusive to Premium members! Upgrade to unlock.",
+    "vipBadge": "Cosmic VIP",
+    "defaultBadge": "Default",
+    "equipped": "Equipped",
+    "equip": "Equip",
+    "locked": "VIP Exclusive",
+    "previewLabel": "Avatar Preview:",
+    "successToast": "Frame \"{name}\" equipped successfully!",
+    "frames": {
+      "none": {
+        "name": "No Frame",
+        "badge": "Default",
+        "description": "Classic clean look with no additional border effects."
       },
-      "cardTitle": "Personal Information",
-      "cardDesc": "Update your public profile and platform identity on HabitParty.",
-      "noChangesToast": "No changes were made.",
-      "noChangesTitle": "No changes to save",
-      "nameMaxToast": "Name must be at most 30 characters.",
-      "charCounter": "{current}/{max} characters",
-      "birthdayPlaceholder": "Select your birth date",
-      "genderPlaceholder": "Select gender (optional)",
-      "errorToast": "Error saving profile."
-    },
-    "theme": {
-      "dark": "Dark Theme",
-      "darkDesc": "Cosmic night atmosphere inspired by RPGs and galaxies. Deep purple background with ethereal orbs, ideal for dim environments and lower eye strain.",
-      "light": "Light Theme",
-      "lightDesc": "Cosmic Daylight palette for visual comfort. Cool neutral alabaster background, crisp white cards, and editorial slate typography.",
-      "defaultBadge": "Default",
-      "statusDark": "Cosmic Dark Theme is active as your primary visual theme.",
-      "statusLight": "Cosmic Daylight Light Theme is active for comfortable daytime use.",
-      "statusActiveLabel": "Active Theme: "
-    },
-    "experienceMode": {
-      "gamified": "RPG Immersion (Gamified)",
-      "gamifiedDesc": "Reward estimate panel always visible in forms, sword icons for task difficulty, and prominent XP and Gold earnings across lists.",
-      "productivity": "Focus & Productivity (Minimalist)",
-      "productivityDesc": "Clean executive interface focused on execution. Hides reward estimates from modals and popovers, uses discreet effort dots, and runs gamification silently in the background.",
-      "defaultBadge": "Default",
-      "statusGamified": "RPG Immersion (Gamified) — Visible rewards, sword difficulty icons, and prominent XP and Coins.",
-      "statusProductivity": "Focus & Productivity (Minimalist) — Clean interface with hidden reward estimates and direct task focus.",
-      "activeLabel": "Active Experience Profile:",
-      "toastSuccess": "Experience profile changed to {mode}!"
-    },
-    "languageCard": {
-      "title": "Interface Language",
-      "description": "Choose the display language for all menus, dashboards, and messages across HabitParty.",
-      "enLabel": "English (US)",
-      "enDesc": "Display the entire interface in English.",
-      "ptLabel": "Português (Brasil)",
-      "ptDesc": "Display the entire interface in Brazilian Portuguese.",
-      "statusEn": "English (US) is active as your primary interface language.",
-      "statusPt": "Português (Brasil) is active as your primary interface language.",
-      "activeLabel": "Active language: ",
-      "statusDesc": "English (US) is currently active across your interface."
-    },
-    "compactMode": {
-      "compact": "Compact Mode",
-      "compactDesc": "Smaller cards, calendars, and lists. Optimizes screen space to view more tasks and reward items at once. Recommended for higher productivity.",
-      "comfortable": "Comfortable Mode",
-      "comfortableDesc": "Generous paddings and standard typography. Ideal for large screens or those who prefer relaxed spacing and larger elements.",
-      "defaultBadge": "Default",
-      "statusCompact": "Compact Mode is active for maximum content density.",
-      "statusComfortable": "Comfortable Mode is active with generous spacing.",
-      "statusLabel": "Current status: "
-    },
-    "avatarFrames": {
-      "upgradeToast": "Animated frames are exclusive to Premium members! Upgrade to unlock.",
-      "vipBadge": "Cosmic VIP",
-      "defaultBadge": "Default",
-      "equipped": "Equipped",
-      "equip": "Equip",
-      "locked": "VIP Exclusive",
-      "previewLabel": "Avatar Preview:",
-      "successToast": "Frame \"{name}\" equipped successfully!",
-      "frames": {
-        "none": {
-          "name": "No Frame",
-          "badge": "Default",
-          "description": "Classic clean look with no additional border effects."
-        },
-        "cosmic_gold": {
-          "name": "Cosmic Guardian",
-          "badge": "Cosmic VIP",
-          "description": "Radiant stellar gold aura with rotating cosmic light and golden glow."
-        },
-        "cyber_neon": {
-          "name": "Cyberpunk Neon",
-          "badge": "Tech VIP",
-          "description": "Electrifying neon pulse alternating between futuristic cyan and laser magenta."
-        },
-        "fire_phoenix": {
-          "name": "Phoenix Fire",
-          "badge": "Phoenix VIP",
-          "description": "Blazing flames in scarlet red and amber with ember combustion glow."
-        },
-        "emerald_mystic": {
-          "name": "Emerald Aura",
-          "badge": "Mystic VIP",
-          "description": "Emerald green natural energy ring with a soft, mystic pulse."
-        },
-        "amethyst_void": {
-          "name": "Amethyst Void",
-          "badge": "Arcane VIP",
-          "description": "Deep violet dimensional energy with ethereal, mysterious stellar glow."
-        }
+      "cosmic_gold": {
+        "name": "Cosmic Guardian",
+        "badge": "Cosmic VIP",
+        "description": "Radiant stellar gold aura with rotating cosmic light and golden glow."
       },
-      "subtitle": "Choose an animated frame with cosmic light to highlight your profile in Party, leaderboard, and dashboard.",
-      "unlockAll": "Unlock All",
-      "freeBadge": "Free",
-      "lockedTitle": "VIP Exclusive"
-    },
-    "welcomeCards": {
-      "hiddenCount": "{count, plural, one {# card hidden} other {# cards hidden}}",
-      "allVisible": "All cards are visible",
-      "restoreAll": "Restore all cards",
-      "restoreAllSuccess": "All welcome cards have been restored!",
-      "cardReactivatedToast": "Card \"{title}\" reactivated! It will appear on screen again.",
-      "cardHiddenToast": "Card \"{title}\" has been hidden.",
-      "ariaToggle": "Visibility for card {title}",
-      "items": {
-        "tasks": {
-          "title": "Manage your Tasks!",
-          "pageName": "Task Board",
-          "description": "Guidance on task organization, columns, and building habits on the board."
-        },
-        "inventory": {
-          "title": "Your Backpack!",
-          "titleGamified": "Your Backpack!",
-          "titleProductivity": "Your Inventory!",
-          "pageName": "Backpack / Inventory",
-          "pageNameGamified": "Backpack",
-          "pageNameProductivity": "Inventory",
-          "description": "Instructions on items redeemed from the store and backpack consumption."
-        },
-        "rewards": {
-          "title": "Claim your reward!",
-          "pageName": "Rewards Showcase",
-          "description": "Tips on redeeming coins for vouchers and personalized rewards."
-        },
-        "focus": {
-          "title": "Your Focus environment!",
-          "pageName": "Focus Session",
-          "description": "Instructions for Pomodoro timer, continuous stopwatch, and guided sessions."
-        },
-        "history": {
-          "title": "Transaction Statement",
-          "titleGamified": "Adventurer's Vault",
-          "titleProductivity": "Transaction Statement",
-          "pageName": "Transaction History",
-          "pageNameGamified": "Adventurer's Vault",
-          "pageNameProductivity": "Transaction History",
-          "description": "Summary of coins, XP, and audit of transactions performed.",
-          "descriptionGamified": "Summary of coins, XP, and audit of rewards stored in the vault.",
-          "descriptionProductivity": "Summary of coins, XP, and audit of transactions performed."
-        }
+      "cyber_neon": {
+        "name": "Cyberpunk Neon",
+        "badge": "Tech VIP",
+        "description": "Electrifying neon pulse alternating between futuristic cyan and laser magenta."
       },
-      "statusLabel": "Status: ",
-      "statusSummary": "{count} of {total} informative cards are hidden.",
-      "restoreAllBtn": "Restore All",
-      "hiddenBadge": "Hidden",
-      "visibleBadge": "Visible",
-      "reactivateBtn": "Reactivate on Screen",
-      "cardAria": "Toggle visibility for welcome card on page {pageName}"
-    },
-    "soundNotifications": {
-      "soundEffectsTitle": "Interface Sound Effects",
-      "soundEffectsDesc": "Click sounds, task completion, level ups, and system actions.",
-      "alarmTonesTitle": "Pomodoro Completion Alarm",
-      "alarmTonesDesc": "Choose the chime played when a focus cycle or break finishes.",
-      "testSound": "Test sound",
-      "tones": {
-        "zen": {
-          "label": "Gentle Zen Chime",
-          "description": "528Hz harmonic designed for calm focus"
-        },
-        "arcade": {
-          "label": "Retro Arcade",
-          "description": "Gamified ascending electronic chimes"
-        },
-        "digital": {
-          "label": "Modern Digital",
-          "description": "Minimalist high-frequency executive chime"
-        },
-        "harp": {
-          "label": "Ethereal Harp",
-          "description": "Soft, spatial classic harp chord"
-        }
+      "fire_phoenix": {
+        "name": "Phoenix Fire",
+        "badge": "Phoenix VIP",
+        "description": "Blazing flames in scarlet red and amber with ember combustion glow."
       },
-      "ambientTitle": "Ambient Focus Sounds",
-      "ambientDesc": "Procedural soundscapes and relaxing atmospheres generated in the browser to block distractions.",
-      "ambientSounds": {
-        "none": {
-          "label": "Off",
-          "description": "No background noise."
-        },
-        "rain": {
-          "label": "Gentle Rain",
-          "description": "Relaxing continuous rain sound."
-        },
-        "cafe": {
-          "label": "Coffee Shop",
-          "description": "Warm, cozy murmur of a café."
-        },
-        "lofi": {
-          "label": "Zen Lofi",
-          "description": "Ethereal, meditative harmonic chord for deep focus."
-        },
-        "fire": {
-          "label": "Campfire",
-          "description": "Cozy crackle of wood and embers in a fireplace."
-        }
+      "emerald_mystic": {
+        "name": "Emerald Aura",
+        "badge": "Mystic VIP",
+        "description": "Emerald green natural energy ring with a soft, mystic pulse."
       },
-      "volume": "Volume:",
-      "vipLockedBadge": "VIP Exclusive",
-      "upgradeBannerTitle": "Unlock Ambient Sounds with the Cosmic Guardian Plan",
-      "upgradeBannerDesc": "Enter a flow state with Gentle Rain, Coffee Shop, Zen Lofi, and Campfire playing right in your Pomodoro.",
-      "upgradeButton": "View Premium Plans",
-      "cardTitle": "Sound & Notification Preferences",
-      "cardDesc": "Customize audio feedback for app actions, Pomodoro alarms, and focus ambient sounds.",
-      "browserTitle": "Browser Focus Notifications",
-      "browserDesc": "Receive desktop alerts when a focus session or break ends, even in another tab.",
-      "browserDenied": "Blocked by Browser",
-      "statusActive": "Enabled",
-      "statusInactive": "Disabled",
-      "statusMuted": "Muted",
-      "statusSilent": "Mute",
-      "browserDeniedHelp": "Notifications are blocked in your browser settings. To reactivate, click the lock icon in the address bar and allow notifications for HabitParty.",
-      "browserAria": "Enable browser notifications for session completion",
-      "uiSoundsTitle": "Click Sounds & Achievements",
-      "uiSoundsDesc": "Audio feedback when completing tasks, advancing habits, and claiming rewards.",
-      "uiSoundsAria": "Enable or mute click and gamification sounds",
-      "pomodoroTitle": "Pomodoro Alarms & Breaks",
-      "pomodoroDesc": "Play chime alerts when starting focus, taking breaks, and completing cycles.",
-      "pomodoroAria": "Enable or disable Pomodoro alarms",
-      "alarmVolume": "Alarm Volume",
-      "testBtn": "Test",
-      "volumeAria": "Pomodoro alarm volume",
-      "toneLabel": "Alarm Tone:",
-      "vipBadge": "VIP",
-      "unlockVip": "Unlock VIP",
-      "ambientVolumeTitle": "Ambient Sound Volume",
-      "ambientVolumeAria": "Default ambient sound volume"
+      "amethyst_void": {
+        "name": "Amethyst Void",
+        "badge": "Arcane VIP",
+        "description": "Deep violet dimensional energy with ethereal, mysterious stellar glow."
+      }
     },
-    "subscriptionCard": {
-      "currentPlan": "Current Plan:",
-      "statusActive": "Active",
-      "statusFree": "Free",
-      "freePlanTitle": "Cosmic Adventurer (Free)",
-      "freePlanDesc": "Full access to tasks, habits, mathematical economy, and personal store.",
-      "premiumPlanTitle": "Cosmic Guardian (Premium VIP)",
-      "founderPlanTitle": "Founding Member (VIP Lifetime)",
-      "renewsOn": "Renews on {date}",
-      "expiresOn": "Valid until {date}",
-      "managePortal": "Manage Subscription (Stripe Portal)",
-      "upgradeCta": "Upgrade to Cosmic Guardian",
-      "redirectingPortal": "Redirecting to Stripe Subscription Portal...",
-      "portalError": "Error opening subscription portal.",
-      "cardTitle": "Plan & Subscription",
-      "cardDesc": "Manage your VIP status, renewal, invoices, and secure cancellation via Stripe.",
-      "founderActiveTitle": "Founding Member (Premium VIP)",
-      "founderExpiredTitle": "Founding Member (Free Access)",
-      "guardianTitle": "Cosmic Guardian (Premium VIP)",
-      "adventurerTitle": "Adventurer (Free)",
-      "vipActiveBadge": "VIP Active",
-      "premiumAccessDesc": "You have unlimited access to 4 workspaces, 6 columns, ambient sounds, and exclusive frames.",
-      "founderExpiredDesc": "Your launch annual period has expired. You keep your lifetime Founder badge with free tier limits.",
-      "freeAccessDesc": "You are using the free version with up to 2 workspaces and 4 columns per board.",
-      "validUntil": "Access valid until: {date}",
-      "portalTooltip": "Access the Stripe portal to update payment methods, view invoices, or cancel",
-      "openingStripe": "Opening Stripe...",
-      "manageOrCancel": "Manage or Cancel Subscription",
-      "viewPerks": "View Benefits",
-      "renewPlan": "Renew Premium Plan 👑",
-      "upgradePlan": "Upgrade to Premium 👑",
-      "transparentNoteTitle": "Hassle-Free Cancellation & Renewal:",
-      "transparentNoteDesc": "If you subscribed with a recurring credit card, cancel anytime in the portal with 1 click (access remains until the end of the billing period). If you paid via Pix, there is no automatic charge and access simply expires when the purchased period ends.",
-      "missingPortalUrl": "Portal URL not found.",
-      "unexpectedStripeError": "Unexpected error connecting to Stripe."
-    },
-    "changePassword": {
-      "unverifiedEmailWarning": "Confirm your email to change password:",
-      "unverifiedEmailDesc": "For security reasons, changing your password requires your email address ({email}) to be verified. Use the banner at the top of the screen to resend the confirmation link.",
-      "googleNoticeTitle": "Account linked with Google",
-      "googleNoticeDesc": "If you sign in with Google and haven't created a traditional password yet, send a link to set your first password via email.",
-      "sendSetupEmail": "Send password setup link",
-      "sendingEmail": "Sending...",
-      "currentPasswordLabel": "Current Password",
-      "newPasswordLabel": "New Password",
-      "confirmPasswordLabel": "Confirm New Password",
-      "submitButton": "Save New Password",
-      "submittingButton": "Saving...",
-      "successToast": "Password changed successfully!",
-      "emailSentToast": "Password setup link sent to your email!",
-      "samePasswordError": "The new password cannot be the same as your current password.",
-      "cardTitle": "Security & Password",
-      "cardDesc": "Keep your account secure by updating your password periodically.",
-      "userEmailNotFound": "User email not found.",
-      "setupLinkSent": "We sent a link to {email} to set or reset your password!",
-      "setupLinkError": "Could not send password setup email.",
-      "currentPasswordRequired": "Please enter your current password.",
-      "newPasswordDifferent": "New password must be different from current password.",
-      "requirementsNotMet": "New password must meet all security requirements.",
-      "passwordsDoNotMatch": "Passwords do not match.",
-      "changePasswordError": "Error changing password. Please verify your current password.",
-      "googleNoticeTitleFull": "Created your account with Google or forgot your password?",
-      "googleNoticeDescFull": "Accounts created via Google don't have an initial manual password. If you want to set a password to sign in with email and password too, request a setup link via email.",
-      "linkSent": "Link sent to email",
-      "receiveLink": "Receive link via email",
-      "currentPasswordPlaceholder": "Enter your current password",
-      "newPasswordPlaceholder": "Enter new password",
-      "confirmPasswordPlaceholder": "Confirm new password",
-      "requirementsTitle": "Password requirements:",
-      "ruleMinLength": "Minimum 8 characters",
-      "ruleUpperCase": "1 uppercase letter",
-      "ruleSpecialChar": "1 special character (@$!%*?&#)",
-      "ruleMatch": "Passwords match",
-      "ruleDifferent": "Different from current password",
-      "submitBtn": "Change Password",
-      "submittingBtn": "Changing..."
-    },
-    "dangerZone": {
-      "deleteButton": "Delete Account",
-      "modalTitle": "Permanently delete your account?",
-      "modalConfirm": "Yes, delete my account",
-      "modalCancel": "No, keep my account",
-      "modalDesc": "Are you sure you want to delete your HabitParty account? All your progress, history, achievements, and settings will be deleted immediately and cannot be recovered.",
-      "cardTitle": "Danger Zone",
-      "cardDesc": "Deleting your account will permanently erase all your progress, tasks, coins, items, and history in HabitParty. This action cannot be undone.",
-      "errorToast": "Error deleting account."
-    },
-    "subscribeButton": {
-      "defaultLabel": "Go Premium"
-    },
-    "upgradeModal": {
-      "title": "Elevate your Journey to Cosmic Level",
-      "subtitle": "Unlock exclusive customizations, relaxing soundscapes, and expanded capacity to master your routine.",
-      "founderBadge": "Founder Quota ({remaining}/30)",
-      "plans": {
-        "founder": "Founding Member (Annual)",
-        "founderDesc": "Annual access with a historic pioneer discount.",
-        "monthly": "Monthly Plan",
-        "monthlyDesc": "Monthly billing with cancellation at any time.",
-        "annual": "Annual Plan (~17% OFF)",
-        "annualDesc": "12 months for the price of 10. Maximum savings for consistency."
+    "subtitle": "Choose an animated frame with cosmic light to highlight your profile in Party, leaderboard, and dashboard.",
+    "unlockAll": "Unlock All",
+    "freeBadge": "Free",
+    "lockedTitle": "VIP Exclusive"
+  },
+  "welcomeCards": {
+    "hiddenCount": "{count, plural, one {# card hidden} other {# cards hidden}}",
+    "allVisible": "All cards are visible",
+    "restoreAll": "Restore all cards",
+    "restoreAllSuccess": "All welcome cards have been restored!",
+    "cardReactivatedToast": "Card \"{title}\" reactivated! It will appear on screen again.",
+    "cardHiddenToast": "Card \"{title}\" has been hidden.",
+    "ariaToggle": "Visibility for card {title}",
+    "items": {
+      "tasks": {
+        "title": "Manage your Tasks!",
+        "pageName": "Task Board",
+        "description": "Guidance on task organization, columns, and building habits on the board."
       },
-      "paymentMethods": {
-        "creditCard": "Credit Card",
-        "pix": "Pix Instant (No auto-renewal)"
+      "inventory": {
+        "title": "Your Backpack!",
+        "titleGamified": "Your Backpack!",
+        "titleProductivity": "Your Inventory!",
+        "pageName": "Backpack / Inventory",
+        "pageNameGamified": "Backpack",
+        "pageNameProductivity": "Inventory",
+        "description": "Instructions on items redeemed from the store and backpack consumption."
       },
-      "benefits": {
-        "frames": "5 Animated Avatar Frames",
-        "sounds": "4 Native Ambient Sounds in Pomodoro",
-        "icons": "Complete Golden VIP Icon Pack",
-        "workspaces": "Up to 4 Workspaces & 6 Columns per Board",
-        "focus": "Up to 6 Custom Focus Activities",
-        "backpack": "Backpack Expanded to 100 Items & 100 Rewards"
+      "rewards": {
+        "title": "Claim your reward!",
+        "pageName": "Rewards Showcase",
+        "description": "Tips on redeeming coins for vouchers and personalized rewards."
       },
-      "checkoutButton": "Subscribe Now",
-      "checkoutButtonPix": "Generate Pix QR Code",
-      "startingCheckout": "Starting checkout...",
-      "portalRedirect": "Redirecting to subscription portal...",
-      "portalError": "Could not open subscription portal.",
-      "unverifiedWarning": "Please confirm your email before subscribing.",
-      "perks": [
-        "Exclusive animated frames for your profile and avatar",
-        "Pomodoro ambient sounds (Gentle Rain, Coffee Shop, Campfire, Zen Lofi)",
-        "Exclusive VIP icon pack for activities and columns",
-        "Up to 4 independent Workspaces — double the free tier",
-        "Up to 6 Lists/Columns per board for complete workflows",
-        "Up to 6 custom Focus activities",
-        "Backpack expanded to 100 items",
-        "VIP Cosmic Guardian badge on profile and golden ring"
-      ],
-      "modalTitle": "Upgrade to Cosmic Guardian",
-      "modalSubtitle": "Unlock the full power of gamified productivity with no barriers.",
-      "alreadyAcquired": "Already Claimed 👑",
-      "remainingSlots": "{count} spots",
-      "founderAnnual": "Founder",
-      "founderPeriod": "/year + Badge",
-      "monthlyPlan": "Monthly",
-      "monthlyPeriod": "/month",
-      "annualPlan": "Annual",
-      "annualPeriod": "/year",
-      "founderCalloutTitle": "Lifetime Founding Member Badge",
-      "founderCalloutDesc": "You will receive a permanent badge on your profile and 1 full year of Cosmic Guardian with a 40% discount.",
-      "paymentMethodTitle": "Payment Method",
-      "creditCardTitle": "Credit Card",
-      "creditCardDesc": "Recurring subscription with automatic renewal. Cancel anytime.",
-      "pixTitle": "One-Time Pix",
-      "pixBadge": "No recurrence",
-      "pixDesc": "Single payment via QR Code. Instantly unlocks {days} days of Premium.",
-      "whatYouGet": "What you receive:",
-      "emailWarningTitle": "Confirm your email before subscribing:",
-      "emailWarningDesc": "For security, confirm the link sent to {email} to unlock payments and subscriptions.",
-      "activeSubscriptionNotice": "You already have an active Credit Card subscription!",
-      "activeSubscriptionDesc": "To switch plans with automatic prorated discount, update your card, or cancel without duplicate charges, access the official Stripe Portal.",
-      "manageStripeBtn": "Manage Subscription or Switch Plan on Stripe",
-      "openingStripeBtn": "Opening Stripe...",
-      "generatingSession": "Generating secure Stripe session...",
-      "payWithPix": "Pay with Pix {price}",
-      "subscribePlan": "Subscribe to {plan} ({price})",
-      "planFounderAnnual": "Founding Member",
-      "planAnnual": "Annual Plan",
-      "planMonthly": "Monthly Plan",
-      "securityNote": "End-to-end payment securely processed by Stripe.",
-      "redirectingStripe": "Redirecting to Stripe secure checkout...",
-      "checkoutErrorToast": "Error generating checkout session."
+      "focus": {
+        "title": "Your Focus environment!",
+        "pageName": "Focus Session",
+        "description": "Instructions for Pomodoro timer, continuous stopwatch, and guided sessions."
+      },
+      "history": {
+        "title": "Transaction Statement",
+        "titleGamified": "Journey Journal",
+        "titleProductivity": "Transaction Statement",
+        "pageName": "Transaction History",
+        "pageNameGamified": "Journey Journal",
+        "pageNameProductivity": "Transaction History",
+        "description": "Summary of coins, XP, and audit of transactions performed.",
+        "descriptionGamified": "Summary of coins, XP, and audit of rewards logged in the journal.",
+        "descriptionProductivity": "Summary of credits, points, and audit of transactions performed."
+      }
     },
-    "userActions": {
-      "updateProfileError": "Failed to update profile. Please verify your data.",
-      "updateProfileNetworkError": "Communication error while updating profile.",
-      "unauthorizedSession": "Unauthenticated session. Please sign in again.",
-      "uploadPhotoError": "Could not upload photo. Please try again.",
-      "uploadPhotoNetworkError": "Network error while uploading profile photo.",
-      "updatePasswordError": "Failed to change password. Please verify current password.",
-      "updatePasswordNetworkError": "Error communicating with server to change password.",
-      "deleteAccountError": "Could not delete account. Please try again.",
-      "deleteAccountNetworkError": "Communication error while deleting account."
+    "statusLabel": "Status: ",
+    "statusSummary": "{count} of {total} informative cards are hidden.",
+    "restoreAllBtn": "Restore All",
+    "hiddenBadge": "Hidden",
+    "visibleBadge": "Visible",
+    "reactivateBtn": "Reactivate on Screen",
+    "cardAria": "Toggle visibility for welcome card on page {pageName}"
+  },
+  "soundNotifications": {
+    "soundEffectsTitle": "Interface Sound Effects",
+    "soundEffectsDesc": "Click sounds, task completion, level ups, and system actions.",
+    "alarmTonesTitle": "Pomodoro Completion Alarm",
+    "alarmTonesDesc": "Choose the chime played when a focus cycle or break finishes.",
+    "testSound": "Test sound",
+    "tones": {
+      "zen": {
+        "label": "Gentle Zen Chime",
+        "description": "528Hz harmonic designed for calm focus"
+      },
+      "arcade": {
+        "label": "Retro Arcade",
+        "description": "Gamified ascending electronic chimes"
+      },
+      "digital": {
+        "label": "Modern Digital",
+        "description": "Minimalist high-frequency executive chime"
+      },
+      "harp": {
+        "label": "Ethereal Harp",
+        "description": "Soft, spatial classic harp chord"
+      }
     },
-    "paymentActions": {
-      "unauthorized": "You must be signed in to perform this action.",
-      "checkoutError": "Failed to start checkout. Please try again.",
-      "invalidCheckoutUrl": "Invalid checkout URL returned by the server.",
-      "networkError": "Network error connecting to payment service.",
-      "portalError": "Failed to open subscription portal.",
-      "invalidPortalUrl": "Invalid portal URL returned by the server.",
-      "foundersQuotaError": "Failed to check founding members quota."
-    }
+    "ambientTitle": "Ambient Focus Sounds",
+    "ambientDesc": "Procedural soundscapes and relaxing atmospheres generated in the browser to block distractions.",
+    "ambientSounds": {
+      "none": {
+        "label": "Off",
+        "description": "No background noise."
+      },
+      "rain": {
+        "label": "Gentle Rain",
+        "description": "Relaxing continuous rain sound."
+      },
+      "cafe": {
+        "label": "Coffee Shop",
+        "description": "Warm, cozy murmur of a café."
+      },
+      "lofi": {
+        "label": "Zen Lofi",
+        "description": "Ethereal, meditative harmonic chord for deep focus."
+      },
+      "fire": {
+        "label": "Campfire",
+        "description": "Cozy crackle of wood and embers in a fireplace."
+      }
+    },
+    "volume": "Volume:",
+    "vipLockedBadge": "VIP Exclusive",
+    "upgradeBannerTitle": "Unlock Ambient Sounds with the Cosmic Guardian Plan",
+    "upgradeBannerDesc": "Enter a flow state with Gentle Rain, Coffee Shop, Zen Lofi, and Campfire playing right in your Pomodoro.",
+    "upgradeButton": "View Premium Plans",
+    "cardTitle": "Sound & Notification Preferences",
+    "cardDesc": "Customize audio feedback for app actions, Pomodoro alarms, and focus ambient sounds.",
+    "browserTitle": "Browser Focus Notifications",
+    "browserDesc": "Receive desktop alerts when a focus session or break ends, even in another tab.",
+    "browserDenied": "Blocked by Browser",
+    "statusActive": "Enabled",
+    "statusInactive": "Disabled",
+    "statusMuted": "Muted",
+    "statusSilent": "Mute",
+    "browserDeniedHelp": "Notifications are blocked in your browser settings. To reactivate, click the lock icon in the address bar and allow notifications for HabitParty.",
+    "browserAria": "Enable browser notifications for session completion",
+    "uiSoundsTitle": "Click Sounds & Achievements",
+    "uiSoundsDesc": "Audio feedback when completing tasks, advancing habits, and claiming rewards.",
+    "uiSoundsAria": "Enable or mute click and gamification sounds",
+    "pomodoroTitle": "Pomodoro Alarms & Breaks",
+    "pomodoroDesc": "Play chime alerts when starting focus, taking breaks, and completing cycles.",
+    "pomodoroAria": "Enable or disable Pomodoro alarms",
+    "alarmVolume": "Alarm Volume",
+    "testBtn": "Test",
+    "volumeAria": "Pomodoro alarm volume",
+    "toneLabel": "Alarm Tone:",
+    "vipBadge": "VIP",
+    "unlockVip": "Unlock VIP",
+    "ambientVolumeTitle": "Ambient Sound Volume",
+    "ambientVolumeAria": "Default ambient sound volume"
+  },
+  "subscriptionCard": {
+    "currentPlan": "Current Plan:",
+    "statusActive": "Active",
+    "statusFree": "Free",
+    "freePlanTitle": "Cosmic Adventurer (Free)",
+    "freePlanDesc": "Full access to tasks, habits, mathematical economy, and personal store.",
+    "premiumPlanTitle": "Cosmic Guardian (Premium VIP)",
+    "founderPlanTitle": "Founding Member (VIP Lifetime)",
+    "renewsOn": "Renews on {date}",
+    "expiresOn": "Valid until {date}",
+    "managePortal": "Manage Subscription (Stripe Portal)",
+    "upgradeCta": "Upgrade to Cosmic Guardian",
+    "redirectingPortal": "Redirecting to Stripe Subscription Portal...",
+    "portalError": "Error opening subscription portal.",
+    "cardTitle": "Plan & Subscription",
+    "cardDesc": "Manage your VIP status, renewal, invoices, and secure cancellation via Stripe.",
+    "founderActiveTitle": "Founding Member (Premium VIP)",
+    "founderExpiredTitle": "Founding Member (Free Access)",
+    "guardianTitle": "Cosmic Guardian (Premium VIP)",
+    "adventurerTitle": "Adventurer (Free)",
+    "vipActiveBadge": "VIP Active",
+    "premiumAccessDesc": "You have unlimited access to 4 workspaces, 6 columns, ambient sounds, and exclusive frames.",
+    "founderExpiredDesc": "Your launch annual period has expired. You keep your lifetime Founder badge with free tier limits.",
+    "freeAccessDesc": "You are using the free version with up to 2 workspaces and 4 columns per board.",
+    "validUntil": "Access valid until: {date}",
+    "portalTooltip": "Access the Stripe portal to update payment methods, view invoices, or cancel",
+    "openingStripe": "Opening Stripe...",
+    "manageOrCancel": "Manage or Cancel Subscription",
+    "viewPerks": "View Benefits",
+    "renewPlan": "Renew Premium Plan 👑",
+    "upgradePlan": "Upgrade to Premium 👑",
+    "transparentNoteTitle": "Hassle-Free Cancellation & Renewal:",
+    "transparentNoteDesc": "If you subscribed with a recurring credit card, cancel anytime in the portal with 1 click (access remains until the end of the billing period). If you paid via Pix, there is no automatic charge and access simply expires when the purchased period ends.",
+    "missingPortalUrl": "Portal URL not found.",
+    "unexpectedStripeError": "Unexpected error connecting to Stripe."
+  },
+  "changePassword": {
+    "unverifiedEmailWarning": "Confirm your email to change password:",
+    "unverifiedEmailDesc": "For security reasons, changing your password requires your email address ({email}) to be verified. Use the banner at the top of the screen to resend the confirmation link.",
+    "googleNoticeTitle": "Account linked with Google",
+    "googleNoticeDesc": "If you sign in with Google and haven't created a traditional password yet, send a link to set your first password via email.",
+    "sendSetupEmail": "Send password setup link",
+    "sendingEmail": "Sending...",
+    "currentPasswordLabel": "Current Password",
+    "newPasswordLabel": "New Password",
+    "confirmPasswordLabel": "Confirm New Password",
+    "submitButton": "Save New Password",
+    "submittingButton": "Saving...",
+    "successToast": "Password changed successfully!",
+    "emailSentToast": "Password setup link sent to your email!",
+    "samePasswordError": "The new password cannot be the same as your current password.",
+    "cardTitle": "Security & Password",
+    "cardDesc": "Keep your account secure by updating your password periodically.",
+    "userEmailNotFound": "User email not found.",
+    "setupLinkSent": "We sent a link to {email} to set or reset your password!",
+    "setupLinkError": "Could not send password setup email.",
+    "currentPasswordRequired": "Please enter your current password.",
+    "newPasswordDifferent": "New password must be different from current password.",
+    "requirementsNotMet": "New password must meet all security requirements.",
+    "passwordsDoNotMatch": "Passwords do not match.",
+    "changePasswordError": "Error changing password. Please verify your current password.",
+    "googleNoticeTitleFull": "Created your account with Google or forgot your password?",
+    "googleNoticeDescFull": "Accounts created via Google don't have an initial manual password. If you want to set a password to sign in with email and password too, request a setup link via email.",
+    "linkSent": "Link sent to email",
+    "receiveLink": "Receive link via email",
+    "currentPasswordPlaceholder": "Enter your current password",
+    "newPasswordPlaceholder": "Enter new password",
+    "confirmPasswordPlaceholder": "Confirm new password",
+    "requirementsTitle": "Password requirements:",
+    "ruleMinLength": "Minimum 8 characters",
+    "ruleUpperCase": "1 uppercase letter",
+    "ruleSpecialChar": "1 special character (@$!%*?&#)",
+    "ruleMatch": "Passwords match",
+    "ruleDifferent": "Different from current password",
+    "submitBtn": "Change Password",
+    "submittingBtn": "Changing..."
+  },
+  "dangerZone": {
+    "deleteButton": "Delete Account",
+    "modalTitle": "Permanently delete your account?",
+    "modalConfirm": "Yes, delete my account",
+    "modalCancel": "No, keep my account",
+    "modalDesc": "Are you sure you want to delete your HabitParty account? All your progress, history, achievements, and settings will be deleted immediately and cannot be recovered.",
+    "cardTitle": "Danger Zone",
+    "cardDesc": "Deleting your account will permanently erase all your progress, tasks, coins, items, and history in HabitParty. This action cannot be undone.",
+    "errorToast": "Error deleting account."
+  },
+  "subscribeButton": {
+    "defaultLabel": "Go Premium"
+  },
+  "upgradeModal": {
+    "title": "Elevate your Journey to Cosmic Level",
+    "subtitle": "Unlock exclusive customizations, relaxing soundscapes, and expanded capacity to master your routine.",
+    "founderBadge": "Founder Quota ({remaining}/30)",
+    "plans": {
+      "founder": "Founding Member (Annual)",
+      "founderDesc": "Annual access with a historic pioneer discount.",
+      "monthly": "Monthly Plan",
+      "monthlyDesc": "Monthly billing with cancellation at any time.",
+      "annual": "Annual Plan (~17% OFF)",
+      "annualDesc": "12 months for the price of 10. Maximum savings for consistency."
+    },
+    "paymentMethods": {
+      "creditCard": "Credit Card",
+      "pix": "Pix Instant (No auto-renewal)"
+    },
+    "benefits": {
+      "frames": "5 Animated Avatar Frames",
+      "sounds": "4 Native Ambient Sounds in Pomodoro",
+      "icons": "Complete Golden VIP Icon Pack",
+      "workspaces": "Up to 4 Workspaces & 6 Columns per Board",
+      "focus": "Up to 6 Custom Focus Activities",
+      "backpack": "Backpack Expanded to 100 Items & 100 Rewards"
+    },
+    "checkoutButton": "Subscribe Now",
+    "checkoutButtonPix": "Generate Pix QR Code",
+    "startingCheckout": "Starting checkout...",
+    "portalRedirect": "Redirecting to subscription portal...",
+    "portalError": "Could not open subscription portal.",
+    "unverifiedWarning": "Please confirm your email before subscribing.",
+    "perks": [
+      "Exclusive animated frames for your profile and avatar",
+      "Pomodoro ambient sounds (Gentle Rain, Coffee Shop, Campfire, Zen Lofi)",
+      "Exclusive VIP icon pack for activities and columns",
+      "Up to 4 independent Workspaces — double the free tier",
+      "Up to 6 Lists/Columns per board for complete workflows",
+      "Up to 6 custom Focus activities",
+      "Backpack expanded to 100 items",
+      "VIP Cosmic Guardian badge on profile and golden ring"
+    ],
+    "modalTitle": "Upgrade to Cosmic Guardian",
+    "modalSubtitle": "Unlock the full power of gamified productivity with no barriers.",
+    "alreadyAcquired": "Already Claimed 👑",
+    "remainingSlots": "{count} spots",
+    "founderAnnual": "Founder",
+    "founderPeriod": "/year + Badge",
+    "monthlyPlan": "Monthly",
+    "monthlyPeriod": "/month",
+    "annualPlan": "Annual",
+    "annualPeriod": "/year",
+    "founderCalloutTitle": "Lifetime Founding Member Badge",
+    "founderCalloutDesc": "You will receive a permanent badge on your profile and 1 full year of Cosmic Guardian with a 40% discount.",
+    "paymentMethodTitle": "Payment Method",
+    "creditCardTitle": "Credit Card",
+    "creditCardDesc": "Recurring subscription with automatic renewal. Cancel anytime.",
+    "pixTitle": "One-Time Pix",
+    "pixBadge": "No recurrence",
+    "pixDesc": "Single payment via QR Code. Instantly unlocks {days} days of Premium.",
+    "whatYouGet": "What you receive:",
+    "emailWarningTitle": "Confirm your email before subscribing:",
+    "emailWarningDesc": "For security, confirm the link sent to {email} to unlock payments and subscriptions.",
+    "activeSubscriptionNotice": "You already have an active Credit Card subscription!",
+    "activeSubscriptionDesc": "To switch plans with automatic prorated discount, update your card, or cancel without duplicate charges, access the official Stripe Portal.",
+    "manageStripeBtn": "Manage Subscription or Switch Plan on Stripe",
+    "openingStripeBtn": "Opening Stripe...",
+    "generatingSession": "Generating secure Stripe session...",
+    "payWithPix": "Pay with Pix {price}",
+    "subscribePlan": "Subscribe to {plan} ({price})",
+    "planFounderAnnual": "Founding Member",
+    "planAnnual": "Annual Plan",
+    "planMonthly": "Monthly Plan",
+    "securityNote": "End-to-end payment securely processed by Stripe.",
+    "redirectingStripe": "Redirecting to Stripe secure checkout...",
+    "checkoutErrorToast": "Error generating checkout session."
+  },
+  "userActions": {
+    "updateProfileError": "Failed to update profile. Please verify your data.",
+    "updateProfileNetworkError": "Communication error while updating profile.",
+    "unauthorizedSession": "Unauthenticated session. Please sign in again.",
+    "uploadPhotoError": "Could not upload photo. Please try again.",
+    "uploadPhotoNetworkError": "Network error while uploading profile photo.",
+    "updatePasswordError": "Failed to change password. Please verify current password.",
+    "updatePasswordNetworkError": "Error communicating with server to change password.",
+    "deleteAccountError": "Could not delete account. Please try again.",
+    "deleteAccountNetworkError": "Communication error while deleting account."
+  },
+  "paymentActions": {
+    "unauthorized": "You must be signed in to perform this action.",
+    "checkoutError": "Failed to start checkout. Please try again.",
+    "invalidCheckoutUrl": "Invalid checkout URL returned by the server.",
+    "networkError": "Network error connecting to payment service.",
+    "portalError": "Failed to open subscription portal.",
+    "invalidPortalUrl": "Invalid portal URL returned by the server.",
+    "foundersQuotaError": "Failed to check founding members quota."
   }
 }

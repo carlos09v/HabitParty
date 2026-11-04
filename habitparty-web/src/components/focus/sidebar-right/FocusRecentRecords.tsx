@@ -13,6 +13,7 @@ import { memo, useCallback, useState } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { getFocusIcon } from "@/constants/focus";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import type { FocusRecord } from "@/types/focus";
 import { cn, formatCoins, formatDateTime } from "@/utils";
@@ -35,6 +36,7 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
   onDeleteRecord,
 }: FocusRecentRecordItemProps) {
   const t = useTranslations("focus.records");
+  const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
   const IconComp = rec.activityIcon ? getFocusIcon(rec.activityIcon) : Timer;
   const durationLabel = formatFocusRecordDuration(
@@ -91,7 +93,9 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
           {!rec.inventoryItemId &&
           ((rec.xpEarned ?? 0) > 0 || (rec.coinsEarned ?? 0) > 0) ? (
             <span className="text-tiny text-neutral-400 font-medium inline-flex items-center gap-1">
-              <span>+{rec.xpEarned ?? 0} XP</span>
+              <span>
+                +{rec.xpEarned ?? 0} {isGamified ? "XP" : "pts"}
+              </span>
               <span>•</span>
               <span className="inline-flex items-center gap-0.5 text-gold font-semibold">
                 +{formatCoins(rec.coinsEarned ?? 0, { locale })}

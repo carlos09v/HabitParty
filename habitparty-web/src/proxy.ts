@@ -18,6 +18,14 @@ const ACCESS_COOKIE_NAME = "habitparty_token";
 const REFRESH_COOKIE_NAME = "habitparty_refresh_token";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
+function resolveRequestLocale(request: NextRequest): "en" | "pt-BR" {
+  const existingLocale = request.cookies.get(LOCALE_COOKIE_NAME)?.value;
+  if (isValidLocale(existingLocale)) {
+    return existingLocale;
+  }
+  return detectLocaleFromAcceptLanguage(request.headers.get("accept-language"));
+}
+
 function attachLocaleCookieIfMissing(
   request: NextRequest,
   response: NextResponse,
@@ -38,6 +46,11 @@ function attachLocaleCookieIfMissing(
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Rotas públicas estáticas (/en e /pt-BR) passam direto sem silent refresh
+  if (pathname === "/en" || pathname === "/pt-BR") {
+    return NextResponse.next();
+  }
 
   // 1. Lendo os cookies de autenticação
   let token = request.cookies.get(ACCESS_COOKIE_NAME)?.value;
@@ -132,8 +145,21 @@ export async function proxy(request: NextRequest) {
     return attachLocaleCookieIfMissing(request, redirectResponse);
   }
 
-  // 4. Visitante acessando a raiz (Landing Page) ou telas de login/cadastro -> permite visualização
-  if (isRootRoute || isAuthRoute) {
+  // 4. Visitante não autenticado acessando a raiz `/` -> redireciona para `/{locale}` estático
+  if (isRootRoute) {
+    const targetLocale = resolveRequestLocale(request);
+    const localeUrl = new URL(
+      `/${targetLocale}${request.nextUrl.search}`,
+      request.url,
+    );
+    return attachLocaleCookieIfMissing(
+      request,
+      NextResponse.redirect(localeUrl),
+    );
+  }
+
+  // 5. Visitante acessando telas de login/cadastro -> permite visualização
+  if (isAuthRoute) {
     return attachLocaleCookieIfMissing(
       request,
       responseToPass || NextResponse.next(),
@@ -172,6 +198,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|manifest.json|assets|.*\\.svg|.*\\.png).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|manifest.json|sitemap.xml|robots.txt|en$|pt-BR$|assets|.*\\.svg|.*\\.png).*)",
   ],
 };

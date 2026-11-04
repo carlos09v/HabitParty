@@ -2,7 +2,7 @@
 
 import { ArrowRight, Menu, Sparkles, X } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { LanguageToggleBtn } from "@/components/layout/LanguageToggleBtn";
 import { ThemeToggleBtn } from "@/components/layout/ThemeToggleBtn";
@@ -13,6 +13,7 @@ import { cn } from "@/utils";
 export function LandingNavbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const locale = useLocale();
   const t = useTranslations("landing.navbar");
 
   useEffect(() => {
@@ -36,7 +37,7 @@ export function LandingNavbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         {/* Logo */}
         <Link
-          href="/"
+          href={`/${locale}`}
           className="flex items-center gap-2 group transition-opacity hover:opacity-95"
         >
           <BrandLogo

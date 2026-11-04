@@ -3,7 +3,7 @@
 import { Globe, Languages } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCompactMode } from "@/hooks/useCompactMode";
-import { useLocaleMode } from "@/hooks/useLocaleMode";
+import { useLocaleSwitcher } from "@/hooks/useLocaleSwitcher";
 import type { SettingsOptionItem } from "@/types/settings";
 import type { AppLocale } from "@/types/ui";
 import { SettingsOptionGrid } from "./SettingsOptionGrid";
@@ -16,7 +16,8 @@ export function LanguageSettings({
   isCompact: propIsCompact,
 }: LanguageSettingsProps = {}) {
   const t = useTranslations("settings.languageCard");
-  const { locale, setLocale, isEnglish } = useLocaleMode();
+  const { locale, setLocale, isEnglish, isSwitching, pendingLocale } =
+    useLocaleSwitcher();
   const { isCompact: storeIsCompact } = useCompactMode();
   const isCompact = propIsCompact ?? storeIsCompact;
 
@@ -46,9 +47,11 @@ export function LanguageSettings({
     <SettingsOptionGrid
       statusMessage={statusMessage}
       options={options}
-      selectedValue={locale}
+      selectedValue={pendingLocale ?? locale}
       onSelect={(val) => setLocale(val)}
       isCompact={isCompact}
+      disabled={isSwitching}
+      pendingValue={pendingLocale}
     />
   );
 }

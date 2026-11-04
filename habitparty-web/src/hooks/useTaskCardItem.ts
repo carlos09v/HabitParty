@@ -3,6 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useLocale } from "next-intl";
+import { useMemo } from "react";
 import {
   getTaskBorderClass,
   normalizeTaskType,
@@ -142,6 +143,15 @@ export function useTaskCardItem({
     selectedDate,
   });
 
+  const sortableData = useMemo(
+    () => ({
+      type: "Task" as const,
+      task,
+      columnId,
+    }),
+    [task, columnId],
+  );
+
   const {
     attributes,
     listeners,
@@ -151,11 +161,7 @@ export function useTaskCardItem({
     isDragging,
   } = useSortable({
     id: task.id,
-    data: {
-      type: "Task",
-      task,
-      columnId,
-    },
+    data: sortableData,
     disabled: isOverlay || !isSortable,
   });
 

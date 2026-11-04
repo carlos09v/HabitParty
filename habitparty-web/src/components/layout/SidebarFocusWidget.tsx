@@ -245,10 +245,7 @@ export function SidebarFocusWidget() {
               type="button"
               onClick={async (e) => {
                 e.stopPropagation();
-                const success = await completeSession();
-                if (success) {
-                  router.refresh();
-                }
+                await completeSession();
               }}
               title={
                 mode === "POMO" && secondsRemaining > 0 && !isInventory
@@ -273,7 +270,6 @@ export function SidebarFocusWidget() {
               onClick={(e) => {
                 e.stopPropagation();
                 resetTimer();
-                router.refresh();
               }}
               title={t("stopResetTitle")}
               aria-label={t("stopAria")}

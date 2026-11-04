@@ -179,6 +179,7 @@ export interface MysteryBoxOpenResult {
 
 export async function openMysteryBox(
   itemId: string,
+  skipImmediateRevalidate = false,
 ): Promise<ActionState<MysteryBoxOpenResult>> {
   const t = await getTranslations("inventory.actions");
   try {
@@ -193,7 +194,9 @@ export async function openMysteryBox(
       };
     }
 
-    invalidateInventoryTags(true, true);
+    if (!skipImmediateRevalidate) {
+      invalidateInventoryTags(true, true);
+    }
     return { success: true, data: data as MysteryBoxOpenResult };
   } catch (err) {
     console.error("[InventoryAction:OpenMysteryBox]", err);
@@ -202,4 +205,8 @@ export async function openMysteryBox(
       error: t("communicationError"),
     };
   }
+}
+
+export async function revalidateInventoryAfterRoulette(): Promise<void> {
+  invalidateInventoryTags(true, true);
 }

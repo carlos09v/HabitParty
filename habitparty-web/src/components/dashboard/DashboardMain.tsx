@@ -27,10 +27,21 @@ export function DashboardMain({
 }: DashboardMainProps) {
   const t = useTranslations("dashboard.dailyBriefing");
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [columns, setColumns] = useState(initialColumns);
 
   useEffect(() => {
     setTasks(initialTasks);
   }, [initialTasks]);
+
+  useEffect(() => {
+    setColumns(initialColumns);
+  }, [initialColumns]);
+
+  const handleColumnDeleted = (deletedColumnId: string) => {
+    setTasks((prev) =>
+      prev.filter((task) => task.columnId !== deletedColumnId),
+    );
+  };
 
   const isPremium = user?.isPremium ?? false;
   const maxColumns = isPremium ? MAX_COLUMNS_PREMIUM : MAX_VISIBLE_COLUMNS;
@@ -60,6 +71,9 @@ export function DashboardMain({
       {/* Seção: Resumo de Listas (Interativo com Menu de Contexto e contadores sincronizados) */}
       <DashboardListSummary
         initialColumns={initialColumns}
+        columns={columns}
+        onColumnsChange={setColumns}
+        onColumnDeleted={handleColumnDeleted}
         maxColumns={maxColumns}
         activeWorkspaceId={activeWorkspaceId}
         isCompact={isCompact}
@@ -73,7 +87,7 @@ export function DashboardMain({
         initialTasks={initialTasks}
         tasks={tasks}
         onTasksChange={setTasks}
-        columns={initialColumns}
+        columns={columns}
         isCompact={isCompact}
       />
     </div>

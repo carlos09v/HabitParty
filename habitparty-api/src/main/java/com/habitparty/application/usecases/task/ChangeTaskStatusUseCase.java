@@ -36,8 +36,10 @@ public class ChangeTaskStatusUseCase {
         .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada."));
     task.validateOwnership(userIdLogado);
 
-    // 2. Só gera extrato se o status realmente mudou para COMPLETED (evita cliques duplos)
-    if (newStatus == TaskStatus.COMPLETED && task.getStatus() != TaskStatus.COMPLETED) {
+    // 2. Só gera extrato e recompensa se o status mudou para COMPLETED e a recompensa ainda não foi resgatada
+    if (newStatus == TaskStatus.COMPLETED
+        && task.getStatus() != TaskStatus.COMPLETED
+        && !task.isRewardAlreadyClaimed()) {
       User user = userPort.findById(userIdLogado)
           .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
 

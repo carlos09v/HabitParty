@@ -48,9 +48,8 @@ export function useBoardFilters(columns: BoardColumn[]) {
 
     const q = deferredSearchQuery.toLowerCase().trim();
 
-    return columns.map((col) => ({
-      ...col,
-      tasks: col.tasks.filter((task) => {
+    return columns.map((col) => {
+      const nextTasks = col.tasks.filter((task) => {
         // 1. Busca textual
         if (q) {
           const matchesTitle = task.title.toLowerCase().includes(q);
@@ -93,8 +92,17 @@ export function useBoardFilters(columns: BoardColumn[]) {
         }
 
         return true;
-      }),
-    }));
+      });
+
+      if (nextTasks.length === col.tasks.length) {
+        return col;
+      }
+
+      return {
+        ...col,
+        tasks: nextTasks,
+      };
+    });
   }, [columns, deferredSearchQuery, filters]);
 
   return {

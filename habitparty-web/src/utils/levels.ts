@@ -59,11 +59,41 @@ export const LEVEL_TITLES_EN: Record<LevelInfo["tier"], string> = {
   LEGEND: "Legend",
 };
 
+export const LEVEL_TITLES_PRODUCTIVITY_PT: Record<LevelInfo["tier"], string> = {
+  NOVICE: "Iniciante",
+  APPRENTICE: "Praticante",
+  ADVENTURER: "Consistente",
+  CHALLENGER: "Focado",
+  AMATEUR: "Organizado",
+  PROFESSIONAL: "Produtivo",
+  EXPERT: "Especialista",
+  VETERAN: "Sênior",
+  MASTER: "Executivo",
+  LEGEND: "Alta Performance",
+};
+
+export const LEVEL_TITLES_PRODUCTIVITY_EN: Record<LevelInfo["tier"], string> = {
+  NOVICE: "Beginner",
+  APPRENTICE: "Practitioner",
+  ADVENTURER: "Consistent",
+  CHALLENGER: "Focused",
+  AMATEUR: "Organized",
+  PROFESSIONAL: "Productive",
+  EXPERT: "Specialist",
+  VETERAN: "Senior",
+  MASTER: "Executive",
+  LEGEND: "High Performance",
+};
+
 const NORMALIZED_TIER_LOOKUP: Record<string, LevelInfo["tier"]> = {};
 for (const lvl of USER_LEVELS) {
   NORMALIZED_TIER_LOOKUP[lvl.tier.toLowerCase()] = lvl.tier;
   NORMALIZED_TIER_LOOKUP[LEVEL_TITLES_PT[lvl.tier].toLowerCase()] = lvl.tier;
   NORMALIZED_TIER_LOOKUP[LEVEL_TITLES_EN[lvl.tier].toLowerCase()] = lvl.tier;
+  NORMALIZED_TIER_LOOKUP[LEVEL_TITLES_PRODUCTIVITY_PT[lvl.tier].toLowerCase()] =
+    lvl.tier;
+  NORMALIZED_TIER_LOOKUP[LEVEL_TITLES_PRODUCTIVITY_EN[lvl.tier].toLowerCase()] =
+    lvl.tier;
 }
 
 export function resolveLevelTier(
@@ -76,9 +106,13 @@ export function resolveLevelTier(
 export function localizeLevelTitle(
   titleOrTier: string | undefined | null,
   locale: AppLocale,
+  isGamified = true,
 ): string {
   const isEn = locale === "en";
-  if (!titleOrTier) return isEn ? "Novice" : "Novato";
+  if (!titleOrTier) {
+    if (!isGamified) return isEn ? "Beginner" : "Iniciante";
+    return isEn ? "Novice" : "Novato";
+  }
 
   const trimmed = titleOrTier.trim();
   const lower = trimmed.toLowerCase();
@@ -92,6 +126,11 @@ export function localizeLevelTitle(
 
   const tier = resolveLevelTier(trimmed);
   if (tier) {
+    if (!isGamified) {
+      return isEn
+        ? LEVEL_TITLES_PRODUCTIVITY_EN[tier]
+        : LEVEL_TITLES_PRODUCTIVITY_PT[tier];
+    }
     return isEn ? LEVEL_TITLES_EN[tier] : LEVEL_TITLES_PT[tier];
   }
 

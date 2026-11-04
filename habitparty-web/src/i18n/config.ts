@@ -3,6 +3,8 @@ export type AppLocale = (typeof LOCALES)[number];
 
 export const DEFAULT_LOCALE: AppLocale = "en";
 export const LOCALE_COOKIE_NAME = "habitparty_locale";
+export const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://www.habitparty.app";
 
 export function isValidLocale(value?: string | null): value is AppLocale {
   return value === "en" || value === "pt-BR";

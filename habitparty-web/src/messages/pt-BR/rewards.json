@@ -47,8 +47,11 @@
   },
   "container": {
     "addProduct": "Adicionar Produto",
+    "addProductProductivity": "Nova Recompensa",
     "buy": "Comprar",
+    "buyProductivity": "Resgatar",
     "insufficientCoinsShort": "Moedas insuficientes",
+    "insufficientCreditsShort": "Créditos insuficientes",
     "filters": {
       "category": "Categorias",
       "type": "Tipo",
@@ -58,6 +61,7 @@
     "empty": {
       "showcaseEmptyTitle": "Sua vitrine de recompensas está vazia! 🛍️",
       "showcaseEmptyDescription": "Cadastre seus primeiros mimos, cupons de lazer ou caixas misteriosas para trocar pelas moedas que você ganha completando tarefas!",
+      "showcaseEmptyDescriptionProductivity": "Cadastre seus primeiros mimos ou cupons de lazer para resgatar com os créditos que você acumula completando tarefas!",
       "noResultsTitle": "Nenhuma recompensa encontrada",
       "noResultsDescription": "Não encontramos nenhuma recompensa que corresponda aos filtros aplicados.",
       "createFirstReward": "Criar Primeira Recompensa",
@@ -75,6 +79,7 @@
     },
     "toasts": {
       "insufficientCoins": "Moedas insuficientes para resgatar este item!",
+      "insufficientCredits": "Créditos insuficientes para resgatar este item!",
       "redeemError": "Erro ao resgatar recompensa.",
       "buySuccess": "Você comprou \"{title}\"! O item foi enviado para a sua Mochila.",
       "buySuccessGamified": "Você comprou \"{title}\"! O item foi enviado para a sua Mochila.",
@@ -86,14 +91,18 @@
   },
   "card": {
     "buy": "Comprar",
+    "buyProductivity": "Resgatar",
     "addRewardAria": "Adicionar nova recompensa",
-    "addProduct": "Adicionar Produto"
+    "addProduct": "Adicionar Produto",
+    "addProductProductivity": "Nova Recompensa"
   },
   "formModal": {
     "editTitle": "Editar Recompensa",
     "createTitle": "Nova Recompensa",
     "editDescription": "Atualize o nome, custo e regras desta recompensa na sua Loja.",
+    "editDescriptionProductivity": "Atualize o nome, custo em créditos e regras desta recompensa.",
     "createDescription": "Cadastre um prêmio, cupom de tempo ou caixa misteriosa na Loja.",
+    "createDescriptionProductivity": "Cadastre uma recompensa de uso único ou cupom de tempo livre.",
     "titleLabel": "Nome da Recompensa",
     "iconPickerTitle": "Ícone da Recompensa",
     "titlePlaceholder": "Ex: 1h de videogame, Café especial, Assistir filme...",
@@ -108,6 +117,7 @@
     "packageLevelLabel": "Nível do Pacote",
     "packageLevelHint": "(opcional • clique para aplicar tempo sugerido)",
     "priceLabel": "Custo em Moedas",
+    "priceLabelProductivity": "Custo em Créditos",
     "suggestedPriceByRarity": "(Preço sugerido por raridade)",
     "pricePlaceholder": "Ex: 5, 15, 35 ou 80",
     "mysteryBoxPriceHelper": "Você pode manter o preço calibrado para o pacote ou personalizá-lo livremente.",

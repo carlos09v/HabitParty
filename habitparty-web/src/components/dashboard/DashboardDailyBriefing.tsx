@@ -162,7 +162,7 @@ export function DashboardDailyBriefing({
             <Flame size={22} aria-hidden="true" />
           </div>
           <div className="flex flex-col min-w-0 flex-1">
-            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+            <span className="text-tiny font-bold text-neutral-400 uppercase tracking-wider">
               {t("streakLabel")}
             </span>
             <span className="text-base sm:text-lg font-extrabold text-neutral-100 truncate">
@@ -192,7 +192,7 @@ export function DashboardDailyBriefing({
             <Target size={22} aria-hidden="true" />
           </div>
           <div className="flex flex-col min-w-0 flex-1">
-            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+            <span className="text-tiny font-bold text-neutral-400 uppercase tracking-wider">
               {t("dailyTasksLabel")}
             </span>
             <span
@@ -233,7 +233,7 @@ export function DashboardDailyBriefing({
             <Sparkles size={22} aria-hidden="true" />
           </div>
           <div className="flex flex-col min-w-0 flex-1">
-            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+            <span className="text-tiny font-bold text-neutral-400 uppercase tracking-wider">
               {isGamified
                 ? t("xpEarnedLabelGamified")
                 : t("xpEarnedLabelProductivity")}

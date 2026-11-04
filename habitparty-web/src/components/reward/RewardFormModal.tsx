@@ -19,6 +19,7 @@ import {
   toPackageMessageKey,
   toRewardTypeMessageKey,
 } from "@/constants/reward";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useRewardForm } from "@/hooks/useRewardForm";
 import type { Reward, RewardCategory, RewardType } from "@/types/reward";
 import { cn } from "@/utils";
@@ -42,6 +43,7 @@ export function RewardFormModal({
   const t = useTranslations("rewards.formModal");
   const tOptions = useTranslations("rewards.options");
   const tMystery = useTranslations("rewards.mysteryBox");
+  const { isGamified, isProductivity } = useExperienceMode();
 
   const {
     isEditing,
@@ -73,7 +75,12 @@ export function RewardFormModal({
 
   const rewardTypeOptions = useMemo(
     () =>
-      REWARD_FORM_TYPE_KEYS.map((typeKey) => {
+      REWARD_FORM_TYPE_KEYS.filter(
+        (typeKey) =>
+          !isProductivity ||
+          typeKey !== "MysteryBox" ||
+          rewardToEdit?.type === "MysteryBox",
+      ).map((typeKey) => {
         const meta = REWARD_TYPE_META[typeKey];
         const Icon = meta?.icon;
         return {
@@ -84,7 +91,7 @@ export function RewardFormModal({
           ) : undefined,
         };
       }),
-    [tOptions],
+    [isProductivity, rewardToEdit?.type, tOptions],
   );
 
   const categoryOptions = useMemo(
@@ -102,7 +109,15 @@ export function RewardFormModal({
       onClose={onClose}
       headerIcon={<Gift size={20} />}
       title={isEditing ? t("editTitle") : t("createTitle")}
-      description={isEditing ? t("editDescription") : t("createDescription")}
+      description={
+        isEditing
+          ? isGamified
+            ? t("editDescription")
+            : t("editDescriptionProductivity")
+          : isGamified
+            ? t("createDescription")
+            : t("createDescriptionProductivity")
+      }
       maxWidth="max-w-lg"
       preventClose={isPending}
     >
@@ -326,14 +341,15 @@ export function RewardFormModal({
           </div>
         )}
 
-        {/* Custo em Moedas/Pontos */}
+        {/* Custo em Moedas/Créditos */}
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
             <label
               htmlFor="rewardPrice"
               className="text-body-s text-neutral-100 font-medium"
             >
-              {t("priceLabel")} <span className="text-gold">*</span>
+              {isGamified ? t("priceLabel") : t("priceLabelProductivity")}{" "}
+              <span className="text-gold">*</span>
             </label>
             {type === "MysteryBox" && (
               <span className="text-label-m text-gold font-medium">

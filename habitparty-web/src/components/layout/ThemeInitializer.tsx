@@ -2,26 +2,33 @@
 
 import { useEffect, useRef } from "react";
 import { useUIStore } from "@/store/uiStore";
-import type { AppLocale, ThemeMode } from "@/types/ui";
+import type { ThemeMode } from "@/types/ui";
 
 interface ThemeInitializerProps {
-  theme: ThemeMode;
-  locale?: AppLocale;
+  theme?: ThemeMode;
 }
 
-export function ThemeInitializer({
-  theme,
-  locale = "en",
-}: ThemeInitializerProps) {
+export function ThemeInitializer({ theme }: ThemeInitializerProps = {}) {
   const initialized = useRef(false);
 
   if (!initialized.current) {
-    useUIStore.setState({ theme, locale });
+    if (typeof document !== "undefined") {
+      const isHtmlLight = document.documentElement.classList.contains("light");
+      useUIStore.setState({ theme: isHtmlLight ? "light" : "dark" });
+    } else if (theme) {
+      useUIStore.setState({ theme });
+    }
     initialized.current = true;
   }
 
   useEffect(() => {
     if (typeof document !== "undefined") {
+      const cookieMatch = document.cookie.match(/(?:^|;\s*)theme=(light|dark)/);
+      const cookieTheme = cookieMatch?.[1] as ThemeMode | undefined;
+      if (cookieTheme) {
+        document.documentElement.classList.remove("light", "dark");
+        document.documentElement.classList.add(cookieTheme);
+      }
       const isHtmlLight = document.documentElement.classList.contains("light");
       const currentTheme: ThemeMode = isHtmlLight ? "light" : "dark";
       if (useUIStore.getState().theme !== currentTheme) {
@@ -29,12 +36,6 @@ export function ThemeInitializer({
       }
     }
   }, []);
-
-  useEffect(() => {
-    if (useUIStore.getState().locale !== locale) {
-      useUIStore.setState({ locale });
-    }
-  }, [locale]);
 
   return null;
 }

@@ -38,6 +38,7 @@ export function StoreInitializer({
 
   if (!initialized.current) {
     useUIStore.setState({
+      hydrated: true,
       compactMode,
       theme,
       experienceMode: resolvedExperienceMode,

@@ -81,9 +81,12 @@ export async function LandingPricing() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch max-w-7xl mx-auto">
           {LANDING_PLAN_CONFIGS.map((plan) => {
             const features = t.raw(`plans.${plan.id}.features`) as string[];
-            const originalPrice = plan.hasOriginalPrice
-              ? t(`plans.${plan.id}.originalPrice`)
-              : undefined;
+            const originalPriceKey =
+              `plans.${plan.id}.originalPrice` as Parameters<typeof t.has>[0];
+            const originalPrice =
+              plan.hasOriginalPrice && t.has(originalPriceKey)
+                ? t(originalPriceKey as Parameters<typeof t>[0])
+                : undefined;
 
             return (
               <div
@@ -113,16 +116,18 @@ export async function LandingPricing() {
                 ) : null}
 
                 <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-2xl font-bold text-neutral-50 flex items-center gap-2">
-                      {t(`plans.${plan.id}.name`)}
+                  <div className="flex items-center justify-between gap-2 mb-4">
+                    <h3 className="text-xl sm:text-2xl font-bold text-neutral-50 flex items-center gap-2 min-w-0">
+                      <span className="truncate">
+                        {t(`plans.${plan.id}.name`)}
+                      </span>
                       {plan.isFounder && (
-                        <Crown className="w-5 h-5 text-gold fill-gold" />
+                        <Crown className="w-5 h-5 text-gold fill-gold shrink-0" />
                       )}
                     </h3>
                     <span
                       className={cn(
-                        "text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border",
+                        "text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border whitespace-nowrap shrink-0",
                         plan.badgeColor,
                       )}
                     >
@@ -138,16 +143,16 @@ export async function LandingPricing() {
                   <div className="flex flex-col gap-1 mb-6 pb-6 border-b border-neutral-700 dark:border-white/10">
                     {originalPrice && (
                       <div className="flex items-center gap-2">
-                        <span className="text-xs sm:text-sm text-neutral-400 line-through font-mono">
+                        <span className="text-xs sm:text-sm text-neutral-400 line-through font-mono whitespace-nowrap">
                           {originalPrice}
                         </span>
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-danger-500/20 text-danger-500 border border-danger-500/30">
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-danger-500/20 text-danger-500 border border-danger-500/30 whitespace-nowrap">
                           {founderDiscountBadge}
                         </span>
                       </div>
                     )}
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-4xl sm:text-5xl font-black text-neutral-50 font-mono">
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <span className="text-3xl sm:text-4xl xl:text-5xl font-black text-neutral-50 font-mono whitespace-nowrap shrink-0">
                         {t(`plans.${plan.id}.price`)}
                       </span>
                       <span className="text-xs sm:text-sm text-neutral-400">

@@ -13,9 +13,13 @@ import type { AppLocale } from "@/i18n/config";
 import type { AdminUserDetailDTO, EmailDispatchLogDTO } from "@/types/admin";
 import { cn, formatDateTime } from "@/utils";
 
+type AdminModalTranslator = ReturnType<
+  typeof useTranslations<"admin.userModal">
+>;
+
 function getLocalizedSubject(
   log: EmailDispatchLogDTO,
-  t: (key: string, values?: Record<string, string | number>) => string,
+  t: AdminModalTranslator,
 ): string {
   if (
     log.emailType === "EMAIL_VERIFICATION" ||
@@ -53,7 +57,7 @@ function getLocalizedSubject(
 
 function getLocalizedErrorMessage(
   rawError: string | null | undefined,
-  t: (key: string, values?: Record<string, string | number>) => string,
+  t: AdminModalTranslator,
 ): string | null {
   if (!rawError) return null;
 

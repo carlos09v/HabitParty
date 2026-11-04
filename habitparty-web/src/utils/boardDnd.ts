@@ -53,7 +53,7 @@ export function reorderColumns(
 ): BoardColumn[] {
   const oldIndex = cols.findIndex((c) => c.id === activeId);
   const newIndex = cols.findIndex((c) => c.id === overId);
-  if (oldIndex === -1 || newIndex === -1) return cols;
+  if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return cols;
 
   return arrayMove(cols, oldIndex, newIndex).map((col, order) => ({
     ...col,

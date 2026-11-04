@@ -1,5 +1,6 @@
 import { Plus, X } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useEffect, useRef } from "react";
 import { MAX_TAG_LENGTH, MAX_TASK_TAGS } from "@/constants/task";
 
 interface TaskDetailsTagsProps {
@@ -25,6 +26,14 @@ export function TaskDetailsTags({
 }: TaskDetailsTagsProps) {
   const t = useTranslations("tasks.detailsPopover.tags");
   const isLimitReached = tags.length >= MAX_TASK_TAGS;
+  const tagInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isAddingTag) {
+      tagInputRef.current?.focus();
+      tagInputRef.current?.select();
+    }
+  }, [isAddingTag]);
 
   return (
     <div className="flex items-center gap-1.5 flex-wrap min-h-6">
@@ -50,9 +59,10 @@ export function TaskDetailsTags({
       {isAddingTag ? (
         <div className="flex items-center gap-1">
           <input
+            ref={tagInputRef}
             type="text"
             value={newTagText}
-            maxLength={MAX_TAG_LENGTH}
+            maxLength={MAX_TAG_LENGTH * 2}
             onChange={(e) => onNewTagTextChange(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") onAddTag();
@@ -60,7 +70,7 @@ export function TaskDetailsTags({
             }}
             onBlur={onAddTag}
             placeholder={t("tagPlaceholder")}
-            className="w-20 bg-background/60 border border-primary/40 rounded px-1.5 py-0.5 text-tiny text-neutral-50 focus:outline-none focus:border-gold"
+            className="w-28 bg-background/60 border border-primary/40 rounded px-1.5 py-0.5 text-tiny text-neutral-50 focus:outline-none focus:border-gold"
           />
         </div>
       ) : isLimitReached ? (

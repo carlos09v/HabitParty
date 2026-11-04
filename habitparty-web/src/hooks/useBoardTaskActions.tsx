@@ -195,7 +195,13 @@ export function useBoardTaskActions({
         prev.map((col) => ({
           ...col,
           tasks: col.tasks.map((t) =>
-            t.id === taskId ? { ...t, completed } : t,
+            t.id === taskId
+              ? {
+                  ...t,
+                  completed,
+                  hasClaimedReward: completed ? true : t.hasClaimedReward,
+                }
+              : t,
           ),
         })),
       );

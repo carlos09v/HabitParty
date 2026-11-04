@@ -47,6 +47,7 @@ export interface TaskRowProps {
   onHabitChange?: (id: string, delta: number) => void;
   onContextMenu?: (e: React.MouseEvent, task: Task, columnId?: string) => void;
   onOpenDetails?: (task: Task, anchorRect?: DOMRect, columnId?: string) => void;
+  onEditTask?: (task: Task, columnId?: string) => void;
 }
 
 export interface TaskDetailsPopoverProps {
@@ -202,6 +203,7 @@ export interface RoutineBoardProps {
     initialValues?: InitialTaskFormData,
   ) => void;
   onOpenDetails?: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
+  onEditTask?: (task: Task, columnId: string) => void;
   onContextMenu?: (e: React.MouseEvent, task: Task, columnId: string) => void;
   onTaskMove?: (
     taskId: string,
@@ -241,6 +243,7 @@ export interface RoutineColumnProps {
     extraPayload?: Partial<CreateTaskDTO>,
   ) => Promise<void>;
   onOpenDetails?: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
+  onEditTask?: (task: Task, columnId: string) => void;
   onContextMenu?: (e: React.MouseEvent, task: Task, columnId: string) => void;
   onOpenColumnMenu?: (e: React.MouseEvent, column: BoardColumn) => void;
   onToggleComplete?: (taskId: string, completed: boolean) => void;
@@ -261,6 +264,7 @@ export interface RoutineTaskListProps {
     initialValues?: InitialTaskFormData,
   ) => void;
   onOpenDetails: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
+  onEditTask?: (task: Task, columnId: string) => void;
   onContextMenu: (e: React.MouseEvent, task: Task, columnId: string) => void;
   onTaskMove?: (
     taskId: string,
@@ -296,6 +300,7 @@ export interface RoutineTaskListSectionProps {
     initialValues?: InitialTaskFormData,
   ) => void;
   onOpenDetails: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
+  onEditTask?: (task: Task, columnId: string) => void;
   onContextMenu: (e: React.MouseEvent, task: Task, columnId: string) => void;
   onToggleComplete: (taskId: string, completed: boolean) => void;
   onHabitChange: (taskId: string, delta: number) => void;
@@ -394,6 +399,7 @@ export interface RoutineTaskCardProps {
   columnId: string;
   isCompact?: boolean;
   onOpenDetails?: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
+  onEditTask?: (task: Task, columnId: string) => void;
   onToggleCompleted?: (taskId: string, completed: boolean) => void;
   onHabitChange?: (taskId: string, delta: number) => void;
   onContextMenu?: (e: React.MouseEvent, task: Task, columnId: string) => void;

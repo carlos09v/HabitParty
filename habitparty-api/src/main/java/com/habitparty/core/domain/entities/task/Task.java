@@ -72,6 +72,13 @@ public abstract class Task {
 
   public abstract void registerCompletion();
 
+  /**
+   * Indica se a recompensa de conclusão já foi resgatada (para evitar ganho infinito ao marcar e desmarcar).
+   */
+  public boolean isRewardAlreadyClaimed() {
+    return false;
+  }
+
   public void moveTo(UUID newBoardColumnId, int newOrderIndex) {
     this.boardColumnId = newBoardColumnId;
     this.orderIndex = newOrderIndex;

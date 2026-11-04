@@ -123,7 +123,6 @@ export function FocusContainer({
   } = useFocusTimerControls({
     onSessionSaved: () => {
       setSelectedActivityId(null);
-      router.refresh();
     },
   });
 
@@ -320,7 +319,7 @@ export function FocusContainer({
   };
 
   const handleDeleteRecord = async (recordId: string) => {
-    await executeDeleteFocusRecord(recordId, () => router.refresh(), {
+    await executeDeleteFocusRecord(recordId, () => {}, {
       success: t("deleteRecordSuccess"),
       error: t("deleteRecordError"),
     });
@@ -415,7 +414,7 @@ export function FocusContainer({
           onStartFocusItem={handleStartFocusItem}
           onChangeMode={handleChangeMode}
           onOpenManualRecord={handleOpenManualRecordModal}
-          onRefreshData={() => router.refresh()}
+          onRefreshData={() => {}}
           initialCreateActivity={initialCreateActivity}
           isCompact={isCompact}
         />
@@ -436,7 +435,7 @@ export function FocusContainer({
         onAddRecord={() => handleOpenManualRecordModal()}
         onOptionsClick={() => router.push("/history?tab=FOCUS")}
         onDeleteRecord={handleDeleteRecord}
-        onRecordUpdated={() => router.refresh()}
+        onRecordUpdated={() => {}}
         selectedActivityName={selectedActivity?.name}
         onClearSelectedActivity={() => handleSelectActivity(null)}
         isCompact={isCompact}
@@ -459,7 +458,7 @@ export function FocusContainer({
           records={initialRecords}
           initialActivityId={manualInitialActivityId}
           initialItemId={manualInitialItemId}
-          onSuccess={() => router.refresh()}
+          onSuccess={() => {}}
         />
       )}
 

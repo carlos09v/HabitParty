@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useTransition } from "react";
+import { useCallback, useRef, useTransition } from "react";
 import { toast } from "sonner";
 import { cloneTaskChecklistItems } from "@/actions/checklistActions";
 import {
@@ -54,14 +54,23 @@ export function useTaskMutations({
   const tLevelUp = useTranslations("dashboard.taskShared.levelUp");
   const locale = useLocale() as AppLocale;
   const [isPending, startTransition] = useTransition();
+  const rewardedTaskIdsRef = useRef<Set<string>>(new Set());
 
   const handleToggleComplete = useCallback(
     (taskId: string, completed: boolean) => {
       const targetTask = findTask(taskId);
       if (!targetTask) return;
 
+      const alreadyRewarded = Boolean(
+        targetTask.hasClaimedReward || rewardedTaskIdsRef.current.has(taskId),
+      );
+
       onOptimisticToggle(taskId, completed);
-      onTaskUpdatedInDetails?.({ ...targetTask, completed });
+      onTaskUpdatedInDetails?.({
+        ...targetTask,
+        completed,
+        hasClaimedReward: completed ? true : targetTask.hasClaimedReward,
+      });
 
       startTransition(async () => {
         const res = completed
@@ -76,6 +85,22 @@ export function useTaskMutations({
         }
 
         if (completed) {
+          const completionLabel =
+            targetTask.type?.toLowerCase() === "habit"
+              ? t("habitCompleted")
+              : targetTask.type?.toLowerCase() === "daily"
+                ? t("dailyCompleted")
+                : t("todoCompleted");
+
+          // Proteção contra ganho múltiplo de Ouro/XP ao marcar e desmarcar a mesma tarefa/diária
+          if (alreadyRewarded) {
+            soundEffects.playTaskCompleteSound();
+            toast.success(completionLabel);
+            return;
+          }
+
+          rewardedTaskIdsRef.current.add(taskId);
+
           const breakdown = getTaskRewardBreakdown({
             taskType: targetTask.type,
             difficulty: targetTask.difficulty,
@@ -106,12 +131,6 @@ export function useTaskMutations({
           // Se não subiu de nível, executa o som e o toast padrão contextual ao tipo da atividade
           if (!rewardResult.didLevelUp) {
             soundEffects.playTaskCompleteSound();
-            const completionLabel =
-              targetTask.type?.toLowerCase() === "habit"
-                ? t("habitCompleted")
-                : targetTask.type?.toLowerCase() === "daily"
-                  ? t("dailyCompleted")
-                  : t("todoCompleted");
 
             if (xp > 0 || gold > 0) {
               toast.success(
@@ -122,7 +141,7 @@ export function useTaskMutations({
                   </strong>
                   )
                   {breakdown.hasDecay && (
-                    <span className="block text-[11px] text-neutral-400 mt-0.5 font-normal">
+                    <span className="block text-label-g text-neutral-400 mt-0.5 font-normal">
                       {targetTask.type?.toLowerCase() === "todo"
                         ? t("decayOverdue", {
                             stage: breakdown.stageLabel,
@@ -220,7 +239,7 @@ export function useTaskMutations({
                   </strong>
                   )
                   {breakdown.hasDecay && (
-                    <span className="block text-[11px] text-neutral-400 mt-0.5 font-normal">
+                    <span className="block text-label-g text-neutral-400 mt-0.5 font-normal">
                       {t("decayHabit", {
                         stage: breakdown.stageLabel,
                         percent: breakdown.decayPercentage,

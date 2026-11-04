@@ -1,7 +1,13 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { serverApi } from "@/api/server";
 import { getRequestLocale } from "@/i18n/request";
-import { getFocusInitialRecords } from "@/services/focusService";
+import {
+  getFocusInitialRecords,
+  getRawFocusActivities,
+} from "@/services/focusService";
 import { fetchWorkspaceBoardColumns } from "@/services/taskService";
+import { getCurrentUser } from "@/services/userService";
+import { getWorkspaces } from "@/services/workspaceService";
 import type {
   ColumnSummaryDTO,
   TransactionHistoryDTO,
@@ -28,6 +34,24 @@ export interface DashboardData {
   user: UserResponseDTO | null;
 }
 
+async function getDashboardTransactions(): Promise<TransactionHistoryDTO[]> {
+  "use cache: private";
+  cacheLife("private30");
+  cacheTag("transactions");
+
+  const { data } = await serverApi.GET("/transactions", {
+    params: {
+      query: {
+        tab: "ALL",
+        size: 100,
+      },
+    },
+    next: { tags: ["transactions"] },
+  });
+
+  return data?.content || [];
+}
+
 /**
  * Busca todos os dados necessários para renderizar a página do Dashboard e sua Sidebar.
  * Paraleliza chamadas independentes logo na primeira onda para reduzir latência (RTT)
@@ -36,29 +60,14 @@ export interface DashboardData {
 export async function getDashboardData(
   requestedWorkspaceId?: string,
 ): Promise<DashboardData | null> {
-  const [workspacesRes, userRes, transactionsRes, focusActivitiesRes] =
+  const [workspaces, user, transactions, rawFocusActivities] =
     await Promise.all([
-      serverApi.GET("/workspaces", {
-        next: { tags: ["workspaces"] },
-      }),
-      serverApi.GET("/users/me", {
-        next: { tags: ["user"] },
-      }),
-      serverApi.GET("/transactions", {
-        params: {
-          query: {
-            tab: "ALL",
-            size: 100,
-          },
-        },
-        next: { tags: ["transactions"] },
-      }),
-      serverApi.GET("/focus-activities", {
-        next: { tags: ["focus-activities"] },
-      }),
+      getWorkspaces(),
+      getCurrentUser(),
+      getDashboardTransactions(),
+      getRawFocusActivities(),
     ]);
 
-  const workspaces = workspacesRes.data;
   if (!workspaces || workspaces.length === 0) {
     return null;
   }
@@ -73,7 +82,7 @@ export async function getDashboardData(
 
   const locale = await getRequestLocale();
   const focusActivities: FocusActivity[] = mapFocusActivities(
-    focusActivitiesRes.data,
+    rawFocusActivities,
     locale,
   );
 
@@ -96,8 +105,7 @@ export async function getDashboardData(
     }
   }
 
-  const userBalance = userRes.data?.currentCoins ?? 0;
-  const transactions = transactionsRes.data?.content || [];
+  const userBalance = user?.currentCoins ?? 0;
   const { bars, currentWeekEarnings, currentWeekSpent } =
     calculateWeeklyTaskEarnings(transactions, new Date(), locale);
 
@@ -113,6 +121,6 @@ export async function getDashboardData(
     bars,
     focusActivities,
     focusRecords,
-    user: userRes.data ?? null,
+    user,
   };
 }

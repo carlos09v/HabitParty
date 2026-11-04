@@ -1,7 +1,7 @@
 "use client";
 
-import { Coins } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { CoinIcon } from "@/components/ui/CoinIcon";
 import type { MysteryBoxTier } from "@/constants/reward";
 import type { AppLocale } from "@/i18n/config";
 import { cn, formatCoins } from "@/utils";
@@ -126,7 +126,7 @@ export function MysteryBoxTierPopover({
             {customPrice !== undefined ? t("priceInCoins") : t("balancedPrice")}
           </span>
           <span className="font-bold text-gold flex items-center gap-1">
-            <Coins size={12} />
+            <CoinIcon size={12} withGlow />
             {formatCoins(displayPrice, { locale })} {t("coinsUnit")}
           </span>
         </div>

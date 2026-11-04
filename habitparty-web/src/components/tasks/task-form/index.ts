@@ -1,7 +1,9 @@
 export { DailyFields } from "./DailyFields";
 export { HabitFields } from "./HabitFields";
+export { HabitImportanceSelector } from "./HabitImportanceSelector";
 export { HardcoreModeToggle } from "./HardcoreModeToggle";
 export { TaskBasicFields } from "./TaskBasicFields";
 export { TaskChecklistSection } from "./TaskChecklistSection";
+export { TaskDifficultySelector } from "./TaskDifficultySelector";
 export { TaskTypeTabs } from "./TaskTypeTabs";
 export { TodoFields } from "./TodoFields";

@@ -2,7 +2,6 @@
 
 import { ArrowRight, LayoutDashboard, Plus, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -14,7 +13,6 @@ import { useWorkspaceStore } from "@/store/workspaceStore";
 export function DashboardEmptyWorkspace() {
   const t = useTranslations("dashboard.emptyWorkspace");
   const { isGamified } = useExperienceMode();
-  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -34,8 +32,6 @@ export function DashboardEmptyWorkspace() {
           workspaces: [...state.workspaces, response.data],
           activeWorkspaceId: response.data.id || null,
         }));
-
-        router.refresh();
       } else {
         toast.error(!response.success ? response.error : t("createErrorToast"));
       }

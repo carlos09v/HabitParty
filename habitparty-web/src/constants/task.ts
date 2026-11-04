@@ -425,8 +425,10 @@ export const DAILY_MONTHLY_OPTIONS: readonly {
 ] as const;
 
 /** Opções de lembrete para Afazeres (ToDo). */
+export type StandardReminderTypeOption = Exclude<ReminderTypeOption, "CUSTOM">;
+
 export const TODO_REMINDER_OPTIONS: readonly {
-  id: ReminderTypeOption;
+  id: StandardReminderTypeOption;
   label: string;
 }[] = [
   { id: "NONE", label: "Nenhum" },

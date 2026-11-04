@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/Switch";
 import { CONFIGURABLE_WELCOME_CARDS } from "@/constants/welcomeCards";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useWelcomeCards } from "@/store/welcomeCardsStore";
+import type { WelcomeCardStorageKey } from "@/types/settings";
 import { cn } from "@/utils";
 
 interface WelcomeCardsSettingsProps {
@@ -27,10 +28,16 @@ export function WelcomeCardsSettings({
     mounted,
   } = useWelcomeCards();
 
-  const getItemText = (key: string, field: string): string => {
-    const modeKey = isGamified ? `${field}Gamified` : `${field}Productivity`;
-    if (t.has(`items.${key}.${modeKey}`)) {
-      return t(`items.${key}.${modeKey}`);
+  const getItemText = (
+    key: WelcomeCardStorageKey,
+    field: "title" | "pageName" | "description",
+  ): string => {
+    const modeKey = isGamified
+      ? (`${field}Gamified` as const)
+      : (`${field}Productivity` as const);
+    const modePath = `items.${key}.${modeKey}` as Parameters<typeof t.has>[0];
+    if (t.has(modePath)) {
+      return t(modePath as Parameters<typeof t>[0]);
     }
     return t(`items.${key}.${field}`);
   };
@@ -43,7 +50,10 @@ export function WelcomeCardsSettings({
 
   const totalCards = CONFIGURABLE_WELCOME_CARDS.length;
 
-  const handleToggle = (key: string, currentlyHidden: boolean) => {
+  const handleToggle = (
+    key: WelcomeCardStorageKey,
+    currentlyHidden: boolean,
+  ) => {
     const cardTitle = getItemText(key, "title");
     if (currentlyHidden) {
       showCard(key);

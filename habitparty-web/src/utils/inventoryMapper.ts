@@ -27,7 +27,11 @@ export function mapAndGroupInventory(
       dto.rewardType === "TIME_BASED" ||
       (dto.remainingSeconds !== undefined && dto.remainingSeconds !== null);
 
-    // Cupons com tempos restantes diferentes NÃO devem ser agrupados juntos
+    const rawType = dto.rewardType || "SINGLE_USE";
+    const pkgKey = dto.rewardPackageLevel || "NONE";
+    const normalizedName = (dto.rewardName || "").trim().toLowerCase();
+
+    // Cupons com tempos restantes diferentes e Caixas Misteriosas lacradas vs itens abertos NÃO devem ser agrupados juntos
     const remKey =
       isCoupon &&
       dto.remainingSeconds !== undefined &&
@@ -37,7 +41,7 @@ export function mapAndGroupInventory(
           ? "_rem_full"
           : "";
 
-    const groupKey = `${rewardId}_${statusKey}${remKey}`;
+    const groupKey = `${rewardId}_${rawType}_${pkgKey}_${normalizedName}_${statusKey}${remKey}`;
 
     if (grouped.has(groupKey)) {
       const existing = grouped.get(groupKey);
@@ -45,7 +49,6 @@ export function mapAndGroupInventory(
         existing.quantity += 1;
       }
     } else {
-      const rawType = dto.rewardType || "SINGLE_USE";
       const mappedType = BACKEND_TO_UI_REWARD_TYPE[rawType] || "SingleUse";
       const packageLevel = dto.rewardPackageLevel
         ? BACKEND_TO_UI_PACKAGE[dto.rewardPackageLevel]

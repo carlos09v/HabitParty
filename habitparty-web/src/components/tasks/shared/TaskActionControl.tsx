@@ -45,6 +45,7 @@ export function TaskActionControl({
           <button
             type="button"
             onPointerDown={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               onDelta?.(1);
@@ -63,6 +64,7 @@ export function TaskActionControl({
           <button
             type="button"
             onPointerDown={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               onDelta?.(-1);
@@ -91,6 +93,7 @@ export function TaskActionControl({
     <button
       type="button"
       onPointerDown={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.stopPropagation();
         onToggle?.();

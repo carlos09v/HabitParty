@@ -11,6 +11,7 @@ import {
   normalizeTaskDifficulty,
 } from "@/constants/task";
 import { useChecklist } from "@/hooks/useChecklist";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import type {
   DailyDaysOfWeek,
@@ -55,6 +56,7 @@ export function useCreateTaskForm({
 }: UseCreateTaskFormOptions) {
   const t = useTranslations("tasks.hooks");
   const locale = useLocale() as AppLocale;
+  const { isGamified } = useExperienceMode();
   const [isPending, startTransition] = useTransition();
   const isEditing = !!taskToEdit;
 
@@ -397,10 +399,14 @@ export function useCreateTaskForm({
       const typeLabel = t(`typeLabels.${taskType}`);
       soundEffects.playCreateSound();
       toast.success(t("createTaskSuccess", { typeLabel, title: trimmedName }), {
-        description: t("createTaskRewardDesc", {
-          xp: calculatedRewards.xp,
-          gold: formatCoins(calculatedRewards.gold, { locale }),
-        }),
+        ...(isGamified
+          ? {
+              description: t("createTaskRewardDesc", {
+                xp: calculatedRewards.xp,
+                gold: formatCoins(calculatedRewards.gold, { locale }),
+              }),
+            }
+          : {}),
       });
       onSuccess?.(mappedTask, columnId);
       onClose();

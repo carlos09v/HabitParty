@@ -23,6 +23,7 @@ import { XpAmount } from "@/components/ui/reward/XpAmount";
 import { getTransactionContextRoute } from "@/constants/history";
 import { useAnchoredPopoverPosition } from "@/hooks/useAnchoredPopoverPosition";
 import { useClickOutside } from "@/hooks/useClickOutside";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import type { TransactionHistoryResponseDTO } from "@/types/history";
 import { cn, formatCoins, formatDateTime } from "@/utils";
@@ -55,6 +56,7 @@ export function TransactionDetailPopover({
   suspendDismiss = false,
 }: TransactionDetailPopoverProps) {
   const t = useTranslations("history.detailPopover");
+  const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
   const [mounted, setMounted] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
@@ -190,7 +192,7 @@ export function TransactionDetailPopover({
         <div className="p-4 flex flex-col gap-3.5 overflow-y-auto max-h-[calc(100vh-200px)]">
           {/* PAINEL DE IMPACTO FINANCEIRO / XP */}
           <div className="grid grid-cols-2 gap-2.5 p-3 rounded-xl bg-surface/70 border border-white/10">
-            {/* Moedas */}
+            {/* Moedas / Créditos */}
             <div className="flex flex-col gap-0.5">
               <span className="text-label-g font-semibold text-neutral-400 flex items-center gap-1">
                 {gold > 0 ? (
@@ -198,17 +200,19 @@ export function TransactionDetailPopover({
                 ) : gold < 0 ? (
                   <ArrowDownLeft size={12} className="text-danger-500" />
                 ) : null}
-                {t("coinBalanceLabel")}
+                {isGamified
+                  ? t("coinBalanceLabel")
+                  : t("coinBalanceLabelProductivity")}
               </span>
               <div className="flex items-center gap-1">
                 <CoinAmount amount={gold} size="lg" />
               </div>
             </div>
 
-            {/* Experiência (XP) */}
+            {/* Experiência (XP) / Pontos */}
             <div className="flex flex-col gap-0.5">
               <span className="text-label-g font-semibold text-neutral-400">
-                {t("xpLabel")}
+                {isGamified ? t("xpLabel") : t("xpLabelProductivity")}
               </span>
               <div className="flex items-center gap-1">
                 <XpAmount amount={xp} size="lg" withIcon />
@@ -231,11 +235,13 @@ export function TransactionDetailPopover({
               </div>
             )}
 
-            {/* Dificuldade ou Raridade */}
+            {/* Dificuldade ou Esforço */}
             {metadata.difficultyLabel && (
               <div className="flex items-center justify-between py-1 border-b border-white/5">
                 <span className="text-neutral-400">
-                  {t("taskDifficultyLabel")}
+                  {isGamified
+                    ? t("taskDifficultyLabel")
+                    : t("taskDifficultyLabelProductivity")}
                 </span>
                 <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/10 border border-white/15 text-neutral-100 font-semibold text-label-g">
                   {metadata.difficultyLabel}

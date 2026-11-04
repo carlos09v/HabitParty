@@ -22,7 +22,10 @@ export function ViewModeSelector({
 
   return (
     <fieldset
-      className={cn("flex items-center gap-3 border-none p-0 m-0", className)}
+      className={cn(
+        "inline-flex items-center gap-0.5 rounded-lg bg-surface border border-white/15 p-0.5 m-0 shadow-xs shrink-0",
+        className,
+      )}
       aria-label={t("groupAria")}
     >
       <button
@@ -32,14 +35,15 @@ export function ViewModeSelector({
         title={t("gridTitle")}
         aria-label={t("gridAria")}
         className={cn(
-          "rounded-[6px] transition-all cursor-pointer flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-gold/50",
-          isCompact ? "p-1" : "p-1.5",
+          "rounded-md transition-all cursor-pointer flex items-center justify-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-gold/50 select-none",
+          isCompact ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-xs",
           activeMode === "card"
-            ? "bg-background border border-gold/50 text-neutral-100 shadow-xs"
-            : "border border-transparent text-neutral-400 hover:text-neutral-100 hover:bg-surface-hover/50",
+            ? "bg-gold/20 border border-gold/50 text-gold font-bold shadow-glow-gold-xs"
+            : "border border-transparent text-neutral-400 font-medium hover:text-neutral-100 hover:bg-white/5",
         )}
       >
-        <LayoutGrid size={isCompact ? 16 : 18} aria-hidden="true" />
+        <LayoutGrid size={isCompact ? 14 : 15} aria-hidden="true" />
+        <span className="hidden sm:inline">{t("gridLabel")}</span>
       </button>
 
       <button
@@ -49,14 +53,15 @@ export function ViewModeSelector({
         title={t("listTitle")}
         aria-label={t("listAria")}
         className={cn(
-          "rounded-[6px] transition-all cursor-pointer flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-gold/50",
-          isCompact ? "p-1" : "p-1.5",
+          "rounded-md transition-all cursor-pointer flex items-center justify-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-gold/50 select-none",
+          isCompact ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-xs",
           activeMode === "list"
-            ? "bg-background border border-gold/50 text-neutral-100 shadow-xs"
-            : "border border-transparent text-neutral-400 hover:text-neutral-100 hover:bg-surface-hover/50",
+            ? "bg-gold/20 border border-gold/50 text-gold font-bold shadow-glow-gold-xs"
+            : "border border-transparent text-neutral-400 font-medium hover:text-neutral-100 hover:bg-white/5",
         )}
       >
-        <List size={isCompact ? 16 : 18} aria-hidden="true" />
+        <List size={isCompact ? 14 : 15} aria-hidden="true" />
+        <span className="hidden sm:inline">{t("listLabel")}</span>
       </button>
     </fieldset>
   );

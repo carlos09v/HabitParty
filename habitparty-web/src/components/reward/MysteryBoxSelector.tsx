@@ -1,8 +1,9 @@
 "use client";
 
-import { Check, Coins, HelpCircle } from "lucide-react";
+import { Check, HelpCircle } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
+import { CoinIcon } from "@/components/ui/CoinIcon";
 import { MYSTERY_BOX_TIERS, type MysteryBoxTier } from "@/constants/reward";
 import type { AppLocale } from "@/i18n/config";
 import type { PackageLevel } from "@/types/reward";
@@ -180,7 +181,7 @@ export function MysteryBoxSelector({
                       : "bg-white/5 border-white/10 text-neutral-300 group-hover:border-gold/30 group-hover:text-gold",
                   )}
                 >
-                  <Coins size={11} className="text-gold shrink-0" />
+                  <CoinIcon size={12} withGlow={selected} />
                   <span>{formatCoins(tier.recommendedPrice, { locale })}</span>
                 </div>
               </button>

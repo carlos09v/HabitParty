@@ -68,6 +68,7 @@ export function TaskDetailsPopover({
     handleRemoveTag,
     handleAddCheckItem,
     handleToggleCheckItem,
+    handleUpdateCheckItem,
     handleDeleteCheckItem,
     handleApplyFormat,
     handleDeleteTask,
@@ -188,6 +189,7 @@ export function TaskDetailsPopover({
               onCancelAddItem={cancelAddItem}
               onAddItem={handleAddCheckItem}
               onToggleItem={handleToggleCheckItem}
+              onUpdateItem={handleUpdateCheckItem}
               onDeleteItem={handleDeleteCheckItem}
             />
           )}

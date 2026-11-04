@@ -237,14 +237,13 @@ export function InventoryContainer({
         toast.success(
           t("toasts.sendToFocusSuccess", { title: item.reward.title }),
         );
-        router.refresh();
       } catch (_error) {
         toast.error(t("toasts.serverError"));
       } finally {
         setIsSendingToFocus(false);
       }
     },
-    [isSendingToFocus, setItems, router, t],
+    [isSendingToFocus, setItems, t],
   );
 
   const [contextMenu, setContextMenu] = useState<{
@@ -299,12 +298,11 @@ export function InventoryContainer({
             i.id === item.id ? { ...i, status: "AVAILABLE" } : i,
           ),
         );
-        router.refresh();
       } catch (_error) {
         toast.error(t("toasts.serverError"));
       }
     },
-    [isGamified, setItems, router, t],
+    [isGamified, setItems, t],
   );
 
   const handleConfirmDiscard = () => {
@@ -410,8 +408,8 @@ export function InventoryContainer({
   ]);
 
   const { stats: welcomeStats } = useMemo(() => {
-    return calculateInventoryWelcomeStats(items, locale);
-  }, [items, locale]);
+    return calculateInventoryWelcomeStats(items, locale, isGamified);
+  }, [items, locale, isGamified]);
 
   return (
     <>
@@ -649,12 +647,8 @@ export function InventoryContainer({
           isOpen={Boolean(openingBoxItem)}
           onClose={() => {
             setOpeningBoxItem(null);
-            router.refresh();
           }}
           item={openingBoxItem}
-          onSuccess={() => {
-            router.refresh();
-          }}
         />
       )}
     </>

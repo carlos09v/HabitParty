@@ -46,7 +46,6 @@ export function PaymentFeedbackListener() {
               setUser(res.data.user);
               triggerCelebrationConfetti();
               toast.success(t("successToast"), { duration: 6000 });
-              router.refresh();
               cleanupUrl();
               return;
             }
@@ -62,7 +61,6 @@ export function PaymentFeedbackListener() {
             } else {
               toast.dismiss("payment-checking");
               toast.info(t("processingPixToast"), { duration: 6000 });
-              router.refresh();
               cleanupUrl();
             }
           } catch {

@@ -1,9 +1,9 @@
 "use server";
 
-import { updateTag } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
+import { invalidateTaskDomainTags } from "./cacheInvalidation";
 import { type ActionState, getErrorMessage } from "./types";
 
 type CreateChecklistItemDTO = components["schemas"]["CreateChecklistItemDTO"];
@@ -11,9 +11,7 @@ type ChecklistItemResponseDTO =
   components["schemas"]["ChecklistItemResponseDTO"];
 
 function invalidateChecklistTags() {
-  updateTag("tasks");
-  updateTag("dashboard-tasks");
-  updateTag("kanban");
+  invalidateTaskDomainTags();
 }
 
 /**
