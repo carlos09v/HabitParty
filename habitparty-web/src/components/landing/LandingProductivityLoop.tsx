@@ -12,7 +12,7 @@ export function LandingProductivityLoop() {
       className="py-20 md:py-28 relative overflow-hidden"
     >
       {/* Glow de fundo */}
-      <div className="cosmic-orb absolute top-1/2 left-1/4 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-primary/20 blur-[220px] pointer-events-none -z-10" />
+      <div className="cosmic-orb absolute top-1/2 left-1/4 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-[radial-gradient(circle,rgba(124,58,237,0.18)_0%,transparent_70%)] pointer-events-none -z-10" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
@@ -35,7 +35,7 @@ export function LandingProductivityLoop() {
               <div
                 key={step.id}
                 className={cn(
-                  "relative p-8 rounded-2xl bg-card dark:bg-surface/80 border border-neutral-700 dark:border-white/10 shadow-sm dark:shadow-card-deep backdrop-blur-md flex flex-col justify-between group hover:scale-[1.02] transition-all duration-300",
+                  "relative p-8 rounded-2xl bg-card dark:bg-surface/90 border border-neutral-700 dark:border-white/10 shadow-sm dark:shadow-card-deep flex flex-col justify-between group hover:scale-[1.02] transition-[transform,border-color,box-shadow] duration-300",
                   step.borderColor,
                 )}
               >
@@ -64,7 +64,7 @@ export function LandingProductivityLoop() {
                   <span className="inline-block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">
                     {t(`steps.${step.id}.tag`)}
                   </span>
-                  <h3 className="text-xl font-bold text-neutral-50 mb-3 group-hover:text-gold transition-colors">
+                  <h3 className="text-xl font-bold text-neutral-50 mb-3 group-hover:text-primary dark:group-hover:text-gold transition-colors">
                     {t(`steps.${step.id}.title`)}
                   </h3>
                   <p className="text-sm text-neutral-300 leading-relaxed">
@@ -72,8 +72,8 @@ export function LandingProductivityLoop() {
                   </p>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-neutral-700/60 dark:border-white/5 flex items-center gap-2 text-xs font-semibold text-neutral-400 group-hover:text-neutral-200">
-                  <Sparkles className="w-3.5 h-3.5 text-gold" />
+                <div className="mt-6 pt-4 border-t border-neutral-700/60 dark:border-white/5 flex items-center gap-2 text-xs font-semibold text-neutral-400 group-hover:text-neutral-100 dark:group-hover:text-neutral-200 transition-colors">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-gold" />
                   <span>{t(`steps.${step.id}.footer`)}</span>
                 </div>
               </div>

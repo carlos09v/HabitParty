@@ -7,6 +7,7 @@ import { CoinIcon } from "@/components/ui/CoinIcon";
 import { CoinAmount } from "@/components/ui/reward/CoinAmount";
 import { XpAmount } from "@/components/ui/reward/XpAmount";
 import { HISTORY_GRID_COLS } from "@/constants/history";
+import { useDateFormat } from "@/hooks/useDateFormat";
 import type { AppLocale } from "@/i18n/config";
 import type {
   TransactionHistoryResponseDTO,
@@ -81,7 +82,13 @@ function TransactionMetaBadges({
   return (
     <>
       {secondaryBadge && (
-        <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/10 border border-white/15 text-neutral-200 text-label-g font-semibold">
+        <span
+          className={cn(
+            "inline-flex items-center px-1.5 py-0.5 rounded-md border text-label-g font-semibold",
+            metadata.secondaryBadgeClass ||
+              "bg-white/10 border-white/15 text-neutral-200",
+          )}
+        >
           {secondaryBadge}
         </span>
       )}
@@ -112,7 +119,8 @@ export const HistoryRow = memo(function HistoryRow({
 }: HistoryRowProps) {
   const t = useTranslations("history.row");
   const locale = useLocale() as AppLocale;
-  const metadata = resolveTransactionMetadata(transaction, locale);
+  const { dateFormat } = useDateFormat();
+  const metadata = resolveTransactionMetadata(transaction, locale, dateFormat);
   const IconComponent = metadata.icon;
 
   const gold = transaction.goldAmount ?? 0;
@@ -144,10 +152,9 @@ export const HistoryRow = memo(function HistoryRow({
         }
       }}
       className={cn(
-        "group w-full rounded-xl border transition-colors cursor-pointer select-none text-left",
-        "bg-primary-dark/20 border-primary/25 hover:border-primary-light/40 hover:bg-primary-dark/35 hover:shadow-xs",
+        "group w-full rounded-xl border border-l-4 transition-colors cursor-pointer select-none text-left",
+        "bg-card dark:bg-primary-dark/20 border-y-neutral-700 border-r-neutral-700 dark:border-y-primary/25 dark:border-r-primary/25 hover:border-y-primary/35 hover:border-r-primary/35 dark:hover:border-y-primary-light/40 dark:hover:border-r-primary-light/40 hover:bg-card-hover dark:hover:bg-primary-dark/35 shadow-2xs dark:shadow-none hover:shadow-xs",
         metadata.borderClass,
-        "border-l-4",
         // Mobile Layout: flex column
         "flex flex-col gap-2 p-3",
         // Desktop Layout (md+): Grid perfeitamente alinhado com o cabeçalho
@@ -240,7 +247,7 @@ export const HistoryRow = memo(function HistoryRow({
         </div>
         <div className="flex flex-col min-w-0">
           <span
-            className="font-bold text-neutral-100 truncate group-hover:text-gold transition-colors"
+            className="font-bold text-neutral-100 truncate group-hover:text-primary dark:group-hover:text-gold transition-colors"
             title={transaction.name || t("defaultEventTitle")}
           >
             {transaction.name || t("defaultTransactionName")}
@@ -309,7 +316,7 @@ export const HistoryRow = memo(function HistoryRow({
             onClick={handleDeleteClick}
             title={t("deleteRecordTitle")}
             aria-label={t("deleteRecordAria")}
-            className="text-neutral-500 hover:text-red-400 p-1 rounded-md hover:bg-red-500/10 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-all cursor-pointer"
+            className="text-neutral-500 hover:text-red-400 p-1 rounded-md hover:bg-red-500/10 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-[opacity,color,background-color] duration-150 cursor-pointer"
           >
             <Trash2 size={13} />
           </button>

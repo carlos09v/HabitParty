@@ -1,4 +1,5 @@
 import {
+  Calendar,
   Eye,
   Languages,
   MonitorSmartphone,
@@ -13,6 +14,7 @@ import { AvatarFrameSettings } from "@/components/settings/AvatarFrameSettings";
 import { ChangePasswordCard } from "@/components/settings/ChangePasswordCard";
 import { CompactModeSettings } from "@/components/settings/CompactModeSettings";
 import { DangerZoneCard } from "@/components/settings/DangerZoneCard";
+import { DateFormatSettings } from "@/components/settings/DateFormatSettings";
 import { ExperienceModeSettings } from "@/components/settings/ExperienceModeSettings";
 import { LanguageSettings } from "@/components/settings/LanguageSettings";
 import { ProfileForm } from "@/components/settings/ProfileForm";
@@ -23,9 +25,9 @@ import { SoundNotificationSettings } from "@/components/settings/SoundNotificati
 import { SubscriptionSettingsCard } from "@/components/settings/SubscriptionSettingsCard";
 import { ThemeSettings } from "@/components/settings/ThemeSettings";
 import { WelcomeCardsSettings } from "@/components/settings/WelcomeCardsSettings";
+import { resolveSettingsTab } from "@/constants/settings";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getCurrentUser } from "@/services/userService";
-import type { SettingsTabId } from "@/types/settings";
 import { getCompactMode } from "@/utils/cookies";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -43,28 +45,14 @@ type SettingsPageProps = {
 export default async function SettingsPage({
   searchParams,
 }: SettingsPageProps) {
-  const [isCompact, t, resolvedParams] = await Promise.all([
+  const [isCompact, t, resolvedParams, user] = await Promise.all([
     getCompactMode(),
     getTranslations("settings"),
     searchParams,
+    getCurrentUser(),
   ]);
 
-  const validTabs: SettingsTabId[] = [
-    "profile",
-    "appearance",
-    "audio",
-    "security",
-  ];
-  const activeTab: SettingsTabId = validTabs.includes(
-    resolvedParams.tab as SettingsTabId,
-  )
-    ? (resolvedParams.tab as SettingsTabId)
-    : "profile";
-
-  const user =
-    activeTab === "profile" || activeTab === "appearance"
-      ? await getCurrentUser()
-      : null;
+  const activeTab = resolveSettingsTab(resolvedParams.tab);
 
   return (
     <ScopedIntlProvider scope="settings">
@@ -80,113 +68,117 @@ export default async function SettingsPage({
             </p>
           </header>
 
-          {/* NAVEGAÇÃO DE ABAS */}
-          <SettingsNavTabs activeTab={activeTab} isCompact={isCompact} />
-
-          {/* CONTEÚDO DA ABA ATIVA */}
-          <div className="flex flex-col gap-6 mt-1">
-            {/* ABA 1: PERFIL */}
-            {activeTab === "profile" && (
-              <>
-                {/* Cartão de Identidade & Foto */}
-                <ProfileHeaderCard
-                  initialUser={user || null}
-                  isCompact={isCompact}
-                />
-
-                {/* Status de Plano & Assinatura (Gerenciar/Cancelar Cartão ou Evoluir) */}
-                <SubscriptionSettingsCard isCompact={isCompact} />
-
-                {/* Molduras Animadas de Avatar */}
-                <SettingsCard
-                  title={t("cards.avatarFrames")}
-                  description={t("cards.avatarFramesDesc")}
-                  icon={<Sparkles size={18} className="text-gold" />}
-                  isCompact={isCompact}
-                >
-                  <AvatarFrameSettings isCompact={isCompact} />
-                </SettingsCard>
-
-                {/* Formulário de Dados Pessoais (com SettingsCard integrado) */}
-                <ProfileForm initialUser={user || null} isCompact={isCompact} />
-              </>
-            )}
-
-            {/* ABA 2: APARÊNCIA */}
-            {activeTab === "appearance" && (
-              <>
-                {/* TEMA DA INTERFACE */}
-                <SettingsCard
-                  title={t("cards.appearanceTheme")}
-                  description={t("cards.appearanceThemeDesc")}
-                  icon={<Palette size={18} className="text-gold" />}
-                  isCompact={isCompact}
-                  className="hidden"
-                >
-                  <ThemeSettings isCompact={isCompact} className="hidden" />
-                </SettingsCard>
-
-                {/* MODO DE EXPERIÊNCIA: GAMIFICADO VS PRODUTIVIDADE */}
-                <SettingsCard
-                  title={t("cards.experienceMode")}
-                  description={t("cards.experienceModeDesc")}
-                  icon={<Swords size={18} className="text-gold" />}
-                  isCompact={isCompact}
-                >
-                  <ExperienceModeSettings
+          {/* NAVEGAÇÃO DE ABAS E CONTEÚDO COM TROCA INSTANTÂNEA NO CLIENTE */}
+          <SettingsNavTabs
+            activeTab={activeTab}
+            isCompact={isCompact}
+            panels={{
+              profile: (
+                <>
+                  {/* Cartão de Identidade & Foto */}
+                  <ProfileHeaderCard
+                    initialUser={user || null}
                     isCompact={isCompact}
-                    initialMode={user?.experienceMode}
                   />
-                </SettingsCard>
 
-                {/* IDIOMA DA INTERFACE */}
-                <SettingsCard
-                  title={t("cards.language")}
-                  description={t("cards.languageDesc")}
-                  icon={<Languages size={18} className="text-gold" />}
-                  isCompact={isCompact}
-                >
-                  <LanguageSettings isCompact={isCompact} />
-                </SettingsCard>
+                  {/* Status de Plano & Assinatura (Gerenciar/Cancelar Cartão ou Evoluir) */}
+                  <SubscriptionSettingsCard isCompact={isCompact} />
 
-                {/* DENSIDADE DA INTERFACE */}
-                <SettingsCard
-                  title={t("cards.compact")}
-                  description={t("cards.compactDesc")}
-                  icon={<MonitorSmartphone size={18} className="text-gold" />}
-                  isCompact={isCompact}
-                >
-                  <CompactModeSettings isCompact={isCompact} />
-                </SettingsCard>
+                  {/* Molduras Animadas de Avatar */}
+                  <SettingsCard
+                    title={t("cards.avatarFrames")}
+                    description={t("cards.avatarFramesDesc")}
+                    icon={<Sparkles size={18} className="text-gold" />}
+                    isCompact={isCompact}
+                  >
+                    <AvatarFrameSettings isCompact={isCompact} />
+                  </SettingsCard>
 
-                {/* CARDS DE BOAS-VINDAS */}
-                <SettingsCard
-                  title={t("cards.welcomeCards")}
-                  description={t("cards.welcomeCardsDesc")}
-                  icon={<Eye size={18} className="text-gold" />}
-                  isCompact={isCompact}
-                >
-                  <WelcomeCardsSettings isCompact={isCompact} />
-                </SettingsCard>
-              </>
-            )}
+                  {/* Formulário de Dados Pessoais (com SettingsCard integrado) */}
+                  <ProfileForm
+                    initialUser={user || null}
+                    isCompact={isCompact}
+                  />
+                </>
+              ),
+              appearance: (
+                <>
+                  {/* TEMA DA INTERFACE */}
+                  <SettingsCard
+                    title={t("cards.appearanceTheme")}
+                    description={t("cards.appearanceThemeDesc")}
+                    icon={<Palette size={18} className="text-gold" />}
+                    isCompact={isCompact}
+                  >
+                    <ThemeSettings isCompact={isCompact} />
+                  </SettingsCard>
 
-            {/* ABA 3: ÁUDIO & NOTIFICAÇÕES */}
-            {activeTab === "audio" && (
-              <SoundNotificationSettings isCompact={isCompact} />
-            )}
+                  {/* MODO DE EXPERIÊNCIA: GAMIFICADO VS PRODUTIVIDADE */}
+                  <SettingsCard
+                    title={t("cards.experienceMode")}
+                    description={t("cards.experienceModeDesc")}
+                    icon={<Swords size={18} className="text-gold" />}
+                    isCompact={isCompact}
+                  >
+                    <ExperienceModeSettings
+                      isCompact={isCompact}
+                      initialMode={user?.experienceMode}
+                    />
+                  </SettingsCard>
 
-            {/* ABA 4: SEGURANÇA */}
-            {activeTab === "security" && (
-              <>
-                {/* Formulário de Alteração de Senha */}
-                <ChangePasswordCard isCompact={isCompact} />
+                  {/* IDIOMA DA INTERFACE */}
+                  <SettingsCard
+                    title={t("cards.language")}
+                    description={t("cards.languageDesc")}
+                    icon={<Languages size={18} className="text-gold" />}
+                    isCompact={isCompact}
+                  >
+                    <LanguageSettings isCompact={isCompact} />
+                  </SettingsCard>
 
-                {/* Zona de Perigo / Exclusão de Conta */}
-                <DangerZoneCard isCompact={isCompact} />
-              </>
-            )}
-          </div>
+                  {/* FORMATO DE DATA */}
+                  <SettingsCard
+                    title={t("cards.dateFormat")}
+                    description={t("cards.dateFormatDesc")}
+                    icon={<Calendar size={18} className="text-gold" />}
+                    isCompact={isCompact}
+                  >
+                    <DateFormatSettings isCompact={isCompact} />
+                  </SettingsCard>
+
+                  {/* DENSIDADE DA INTERFACE */}
+                  <SettingsCard
+                    title={t("cards.compact")}
+                    description={t("cards.compactDesc")}
+                    icon={<MonitorSmartphone size={18} className="text-gold" />}
+                    isCompact={isCompact}
+                  >
+                    <CompactModeSettings isCompact={isCompact} />
+                  </SettingsCard>
+
+                  {/* CARDS DE BOAS-VINDAS */}
+                  <SettingsCard
+                    title={t("cards.welcomeCards")}
+                    description={t("cards.welcomeCardsDesc")}
+                    icon={<Eye size={18} className="text-gold" />}
+                    isCompact={isCompact}
+                  >
+                    <WelcomeCardsSettings isCompact={isCompact} />
+                  </SettingsCard>
+                </>
+              ),
+              audio: <SoundNotificationSettings isCompact={isCompact} />,
+              security: (
+                <>
+                  {/* Formulário de Alteração de Senha */}
+                  <ChangePasswordCard isCompact={isCompact} />
+
+                  {/* Zona de Perigo / Exclusão de Conta */}
+                  <DangerZoneCard isCompact={isCompact} />
+                </>
+              ),
+            }}
+          />
         </div>
       </PageWrapper>
     </ScopedIntlProvider>

@@ -18,7 +18,25 @@ export function getGreeting(
   now: Date = new Date(),
   locale: AppLocale = "pt-BR",
 ): string {
-  const hour = now.getHours();
+  let hour = now.getHours();
+  if (typeof window === "undefined") {
+    try {
+      const parts = new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        hourCycle: "h23",
+        timeZone: "America/Sao_Paulo",
+      }).formatToParts(now);
+      const hourPart = parts.find((p) => p.type === "hour")?.value;
+      if (hourPart !== undefined) {
+        const parsed = Number.parseInt(hourPart, 10);
+        if (!Number.isNaN(parsed)) {
+          hour = parsed;
+        }
+      }
+    } catch {
+      // Fallback para getHours() local caso Intl falhe
+    }
+  }
   if (locale === "en") {
     if (hour < 12) return "Good morning";
     if (hour < 18) return "Good afternoon";

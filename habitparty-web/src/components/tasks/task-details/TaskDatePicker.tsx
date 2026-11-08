@@ -2,6 +2,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { TimePicker } from "@/components/ui/TimePicker";
+import { useDateFormat } from "@/hooks/useDateFormat";
 import type { AppLocale } from "@/i18n/config";
 import { getPopoverDueDateInfo } from "@/utils/date";
 
@@ -26,9 +27,10 @@ export function TaskDatePicker({
 }: TaskDatePickerProps) {
   const t = useTranslations("tasks.detailsPopover.header");
   const locale = useLocale() as AppLocale;
+  const { dateFormat } = useDateFormat();
   const dateInfo = useMemo(
-    () => getPopoverDueDateInfo(dueDate, locale, dueTime),
-    [dueDate, locale, dueTime],
+    () => getPopoverDueDateInfo(dueDate, locale, dueTime, dateFormat),
+    [dueDate, locale, dueTime, dateFormat],
   );
 
   return (

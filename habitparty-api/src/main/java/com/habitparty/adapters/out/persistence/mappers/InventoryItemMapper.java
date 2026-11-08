@@ -30,6 +30,7 @@ public class InventoryItemMapper {
         entity.setOrderIndex(domain.getOrderIndex());
         entity.setRemainingSeconds(domain.getRemainingSeconds().orElse(null));
         entity.setAcquiredAt(domain.getAcquiredAt());
+        entity.setLootItemsSnapshot(domain.getLootItemsSnapshot());
 
         return entity;
     }
@@ -47,7 +48,8 @@ public class InventoryItemMapper {
             entity.getIconSnapshot(),
             entity.getPackageLevelSnapshot(),
             entity.getRemainingSeconds(),
-            entity.getAcquiredAt()
+            entity.getAcquiredAt(),
+            entity.getLootItemsSnapshot()
         );
     }
 }

@@ -1,5 +1,6 @@
 package com.habitparty.adapters.out.persistence;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -14,6 +15,7 @@ import com.habitparty.adapters.out.persistence.mappers.UserMapper;
 import com.habitparty.adapters.out.persistence.repository.UserJpaRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.domain.enums.TransactionType;
 import com.habitparty.core.domain.enums.UserRole;
 
 @Component
@@ -114,5 +116,12 @@ public class UserAdapter implements UserRepository {
   public Page<User> searchUsers(String search, UserRole role, Boolean isPremium, Boolean isFounder, Boolean emailVerified, Pageable pageable) {
     return userRepository.searchUsers(search, role, isPremium, isFounder, emailVerified, pageable)
         .map(userMapper::toDomain);
+  }
+
+  @Override
+  public List<User> findUsersWithExpiredStreak(LocalDateTime since) {
+    return userRepository.findUsersWithExpiredStreak(TransactionHistoryAdapter.COMPLETED_TASK_TYPES, since).stream()
+        .map(userMapper::toDomain)
+        .toList();
   }
 }

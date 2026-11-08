@@ -112,7 +112,7 @@ export function WeeklyCalendar({
           <button
             type="button"
             onClick={handleResetToToday}
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gold/15 hover:bg-gold/25 border border-gold/30 text-gold text-tiny font-bold transition-colors cursor-pointer shrink-0"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-800 dark:bg-gold/15 dark:hover:bg-gold/25 dark:border-gold/30 dark:text-gold text-tiny font-bold transition-colors cursor-pointer shrink-0"
             title={t("todayButtonTitle")}
           >
             <RotateCcw size={10} />
@@ -126,7 +126,7 @@ export function WeeklyCalendar({
         <button
           type="button"
           onClick={() => setWeekOffset((prev) => prev - 1)}
-          className="p-1 rounded hover:bg-white/10 text-neutral-400 hover:text-neutral-100 transition-colors cursor-pointer shrink-0"
+          className="p-1 rounded hover:bg-surface dark:hover:bg-white/10 text-neutral-400 hover:text-neutral-100 transition-colors cursor-pointer shrink-0"
           title={t("prevWeek")}
           aria-label={t("prevWeek")}
         >
@@ -144,15 +144,15 @@ export function WeeklyCalendar({
                 aria-pressed={isSelected}
                 title={day.tooltipText}
                 className={cn(
-                  "flex flex-col items-center justify-between rounded-lg transition-all flex-1 min-w-0 cursor-pointer relative group/day",
+                  "flex flex-col items-center justify-between rounded-lg transition-colors flex-1 min-w-0 cursor-pointer relative group/day",
                   isCompact ? "h-12 py-1 px-0.5" : "h-14 py-1.5 px-1",
                   isSelected
                     ? "bg-gold text-on-gold font-bold shadow-glow-gold-xs"
                     : day.isToday
-                      ? "border border-gold/60 bg-gold/10 text-gold hover:bg-gold/15"
+                      ? "border border-amber-500/50 bg-amber-500/10 text-amber-800 hover:bg-amber-500/15 dark:border-gold/60 dark:bg-gold/10 dark:text-gold dark:hover:bg-gold/15"
                       : day.hasStreak
-                        ? "bg-emerald-500/10 border border-emerald-500/30 text-neutral-100 hover:border-emerald-400/50"
-                        : "text-neutral-100 hover:bg-white/5 border border-transparent hover:border-white/10",
+                        ? "bg-emerald-500/10 border border-emerald-500/30 text-neutral-100 hover:border-emerald-600/50 dark:hover:border-emerald-400/50"
+                        : "text-neutral-100 hover:bg-surface dark:hover:bg-white/5 border border-transparent hover:border-neutral-700 dark:hover:border-white/10",
                 )}
               >
                 <span
@@ -161,7 +161,7 @@ export function WeeklyCalendar({
                     isSelected
                       ? "text-on-gold font-semibold"
                       : day.isToday
-                        ? "text-gold font-semibold"
+                        ? "text-amber-700 dark:text-gold font-semibold"
                         : "text-neutral-400",
                   )}
                 >
@@ -175,7 +175,7 @@ export function WeeklyCalendar({
                     isSelected
                       ? "text-on-gold"
                       : day.isToday
-                        ? "text-gold"
+                        ? "text-amber-700 dark:text-gold"
                         : "text-neutral-100",
                   )}
                 >
@@ -216,7 +216,7 @@ export function WeeklyCalendar({
         <button
           type="button"
           onClick={() => setWeekOffset((prev) => prev + 1)}
-          className="p-1 rounded hover:bg-white/10 text-neutral-400 hover:text-neutral-100 transition-colors cursor-pointer shrink-0"
+          className="p-1 rounded hover:bg-surface dark:hover:bg-white/10 text-neutral-400 hover:text-neutral-100 transition-colors cursor-pointer shrink-0"
           title={t("nextWeek")}
           aria-label={t("nextWeek")}
         >

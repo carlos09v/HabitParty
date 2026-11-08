@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +13,7 @@ import com.habitparty.application.ports.FocusRecordRepository;
 import com.habitparty.application.ports.InventoryItemRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsUseCase;
 import com.habitparty.core.domain.entities.InventoryItem;
 import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.entities.User;
@@ -30,6 +32,7 @@ public class CreateFocusRecordUseCase {
   private final FocusActivityRepository focusActivityPort;
   private final TransactionHistoryRepository transactionHistoryPort;
   private final UserRepository userPort;
+  private EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
 
   public CreateFocusRecordUseCase(
       FocusRecordRepository port,
@@ -42,6 +45,11 @@ public class CreateFocusRecordUseCase {
     this.focusActivityPort = focusActivityPort;
     this.transactionHistoryPort = transactionHistoryPort;
     this.userPort = userPort;
+  }
+
+  @Autowired(required = false)
+  public void setEvaluateUserAchievementsUseCase(EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
+    this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
   }
 
   @Transactional
@@ -96,12 +104,30 @@ public class CreateFocusRecordUseCase {
       item.validateOwnership(userIdLogado);
 
       long secondsSpent = java.time.Duration.between(record.getStartTime(), record.getEndTime()).toSeconds();
+      int secondsBefore = item.getRemainingSeconds().orElse(0);
       if (secondsSpent > 0) {
         item.deductSeconds((int) secondsSpent);
       }
+      int secondsAfter = item.getRemainingSeconds().orElse(0);
 
       inventoryItemPort.save(item);
-      return port.save(record);
+      FocusRecord savedInventoryRecord = port.save(record);
+
+      // Cupom de tempo esgotado nesta sessão (saldo cruzou para <= 1s): conta para a conquista "Alquimista do Tempo"
+      boolean isTimeBasedCoupon = item.getRemainingSeconds().isPresent();
+      if (isTimeBasedCoupon && secondsBefore > 1 && secondsAfter <= 1) {
+        User couponOwner = userPort.findById(userIdLogado)
+            .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+        if (couponOwner.getStats() != null) {
+          couponOwner.getStats().recordCouponDepleted();
+          userPort.save(couponOwner);
+          if (evaluateUserAchievementsUseCase != null) {
+            evaluateUserAchievementsUseCase.execute(couponOwner);
+          }
+        }
+      }
+
+      return savedInventoryRecord;
     }
 
     // 3. Atividade produtiva ou foco livre: calcula recompensas matemáticas calibradas
@@ -136,7 +162,28 @@ public class CreateFocusRecordUseCase {
       if (reward.coins().compareTo(BigDecimal.ZERO) > 0) {
         user.addCoins(reward.coins());
       }
+      long focusDurationMinutes = Math.max(0, java.time.Duration.between(savedRecord.getStartTime(), savedRecord.getEndTime()).toMinutes());
+      int completedPomos = savedRecord.getCompletedPomos().orElse(0);
+      if (user.getStats() != null) {
+        user.getStats().recordFocusCompleted((int) focusDurationMinutes, completedPomos);
+        user.getStats().recordFocusTimeOfDay(
+            savedRecord.getStartTime(), savedRecord.getEndTime(), (int) focusDurationMinutes);
+        if (savedRecord.getFocusActivityId().isPresent()) {
+          FocusActivity targetActivity = loadedActivity != null
+              ? loadedActivity
+              : focusActivityPort.findById(savedRecord.getFocusActivityId().get()).orElse(null);
+          int activityTargetMinutes = targetActivity != null
+              ? targetActivity.getPomoDurationMinutes().orElse(25)
+              : 25;
+          if (completedPomos >= 1 || focusDurationMinutes >= activityTargetMinutes) {
+            user.getStats().recordActivityGoalMet();
+          }
+        }
+      }
       userPort.save(user);
+      if (evaluateUserAchievementsUseCase != null) {
+        evaluateUserAchievementsUseCase.execute(user);
+      }
     }
 
     // 5. Registra a transação no extrato financeiro (reutilizando loadedActivity sem segunda query)

@@ -31,7 +31,7 @@ export async function HelpProductivityCycle({
           <div
             key={stepItem.step}
             className={cn(
-              "rounded-xl bg-surface/40 border border-primary/25 backdrop-blur-md flex flex-col",
+              "rounded-xl bg-card dark:bg-surface/40 border border-neutral-700 dark:border-primary/25 shadow-xs dark:shadow-none flex flex-col",
               isCompact ? "p-3 gap-1.5" : "p-4 gap-2",
             )}
           >

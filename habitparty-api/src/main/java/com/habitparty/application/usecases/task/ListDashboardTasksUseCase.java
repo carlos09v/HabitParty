@@ -1,8 +1,10 @@
 package com.habitparty.application.usecases.task;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,10 +20,17 @@ import com.habitparty.core.exceptions.ResourceNotFoundException;
 public class ListDashboardTasksUseCase {
   private final WorkspaceRepository workspacePort;
   private final TaskRepository port;
+  private final Clock clock;
 
-  public ListDashboardTasksUseCase(WorkspaceRepository workspacePort, TaskRepository port) {
+  @Autowired
+  public ListDashboardTasksUseCase(WorkspaceRepository workspacePort, TaskRepository port, Clock clock) {
     this.workspacePort = workspacePort;
     this.port = port;
+    this.clock = clock != null ? clock : Clock.systemDefaultZone();
+  }
+
+  public ListDashboardTasksUseCase(WorkspaceRepository workspacePort, TaskRepository port) {
+    this(workspacePort, port, Clock.systemDefaultZone());
   }
 
   @Transactional(readOnly = true)
@@ -30,8 +39,8 @@ public class ListDashboardTasksUseCase {
         .orElseThrow(() -> new ResourceNotFoundException("Workspace não encontrado."));
     workspace.validateOwnership(userIdLogado);
 
-    // Captura o dia exato da consulta (para cruzar com o status OVERDUE e TODAY)
-    LocalDate today = LocalDate.now();
+    // Captura o dia exato da consulta no fuso de negócio (para cruzar com o status OVERDUE e TODAY)
+    LocalDate today = LocalDate.now(clock);
 
     // 4. Solicita a lista paginada à Porta
     // O Adapter já converterá a Projection nativa do banco para o DashboardTaskDTO

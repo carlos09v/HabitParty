@@ -18,10 +18,12 @@ import {
   useFocusSessionNotes,
   useFocusTimerControls,
 } from "@/hooks/useFocusTimer";
+import { useIdlePreload } from "@/hooks/useIdlePreload";
 import { useUserStore } from "@/store/userStore";
 import type { FocusActivity, FocusRecordType } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn } from "@/utils";
+import { getRewardIcon } from "@/utils/rewardMapper";
 import { FocusDurationPresets } from "./stage/FocusDurationPresets";
 import { FocusStageHeaderBar } from "./stage/FocusStageHeaderBar";
 import { FocusStageTimerCircle } from "./stage/FocusStageTimerCircle";
@@ -38,6 +40,11 @@ const FocusStageTargetSelectorModal = dynamic(
     ),
   { ssr: false },
 );
+
+function preloadFocusHeroModalChunks() {
+  void import("./hero/FocusZenModeModal");
+  void import("./stage/FocusStageTargetSelectorModal");
+}
 
 /**
  * Componente-folha isolado para anotações da sessão.
@@ -86,6 +93,7 @@ export function FocusHeroStage({
   const t = useTranslations("focus.hero");
   const controls = useFocusTimerControls();
   const isPremium = useUserStore((s) => s.is_Premium);
+  useIdlePreload(preloadFocusHeroModalChunks);
 
   const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
   const [isZenModeOpen, setIsZenModeOpen] = useState(false);
@@ -114,7 +122,11 @@ export function FocusHeroStage({
   const handleChangeMode = propOnChangeMode ?? controls.changeMode;
   const isBreak = phase === "SHORT_BREAK" || phase === "LONG_BREAK";
   const isInventoryItem = target?.type === "inventory";
-  const TargetIcon = target?.icon ? getFocusIcon(target.icon) : Timer;
+  const TargetIcon = isInventoryItem
+    ? getRewardIcon(target?.icon, "TimeBased")
+    : target?.icon
+      ? getFocusIcon(target.icon)
+      : Timer;
 
   const targetActivityIndex =
     target?.type === "activity"
@@ -226,28 +238,28 @@ export function FocusHeroStage({
       <section
         aria-label={t("sectionAria")}
         className={cn(
-          "group/hero relative w-full shrink-0 min-h-fit rounded-2xl border transition-all duration-300 select-none z-20",
+          "group/hero relative w-full shrink-0 min-h-fit rounded-2xl border transition-colors duration-200 select-none z-20",
           isCompact ? "p-3 sm:p-3.5" : "p-3.5 sm:p-4",
           isBreak
-            ? "border-emerald-500/40 bg-linear-to-b from-emerald-500/10 dark:from-emerald-950/30 via-card/90 dark:via-card/80 to-card/80 dark:to-card/50 shadow-sm dark:shadow-[0_4px_24px_rgba(16,185,129,0.12)] hover:border-emerald-500/60 dark:hover:shadow-[0_8px_32px_rgba(16,185,129,0.2)]"
+            ? "border-emerald-500/40 bg-linear-to-b from-emerald-500/10 dark:from-emerald-950/30 via-card/90 dark:via-card/85 to-card/80 dark:to-card/65 shadow-sm dark:shadow-[0_4px_24px_rgba(16,185,129,0.12)] hover:border-emerald-500/60 dark:hover:shadow-[0_8px_32px_rgba(16,185,129,0.2)]"
             : isRunning
-              ? "border-gold/60 bg-linear-to-b from-gold/10 via-card/80 to-card/50 shadow-glow-gold-xs hover:border-gold/80 hover:shadow-glow-gold-md"
-              : "border-neutral-700 dark:border-primary/30 bg-linear-to-br from-purple-500/[0.06] via-card to-amber-500/[0.03] dark:bg-none dark:bg-card/70 backdrop-blur-md shadow-xs dark:shadow-none hover:border-gold/50 hover:shadow-[0_8px_32px_rgba(234,179,8,0.12)]",
+              ? "border-gold/60 bg-linear-to-b from-gold/10 via-card/85 to-card/65 shadow-glow-gold-xs hover:border-gold/80 hover:shadow-glow-gold-md"
+              : "border-neutral-700 dark:border-primary/30 bg-linear-to-br from-purple-500/[0.06] via-card to-amber-500/[0.03] dark:bg-none dark:bg-card/85 shadow-xs dark:shadow-none hover:border-gold/50 hover:shadow-[0_8px_32px_rgba(234,179,8,0.12)]",
         )}
       >
-        {/* Glow de Fundo Sutil Cósmico que expande suavemente no hover */}
+        {/* Glow de Fundo Sutil Cósmico pré-composto que expande suavemente no hover */}
         <div
           aria-hidden="true"
           className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none"
         >
           <div
             className={cn(
-              "absolute -top-20 left-1/2 -translate-x-1/2 w-96 sm:w-[480px] h-52 rounded-full blur-3xl opacity-10 dark:opacity-25 group-hover/hero:opacity-20 dark:group-hover/hero:opacity-45 group-hover/hero:scale-110 transition-all duration-700 ease-out",
+              "absolute -top-24 left-1/2 -translate-x-1/2 w-[480px] sm:w-[580px] h-64 rounded-full opacity-25 dark:opacity-50 group-hover/hero:opacity-45 dark:group-hover/hero:opacity-75 group-hover/hero:scale-110 transition-[transform,opacity] duration-500 ease-out",
               isBreak
-                ? "bg-emerald-500"
+                ? "bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.28)_0%,transparent_70%)]"
                 : isRunning
-                  ? "bg-gold"
-                  : "bg-primary group-hover/hero:bg-gold/40",
+                  ? "bg-[radial-gradient(ellipse_at_center,rgba(237,229,57,0.26)_0%,transparent_70%)]"
+                  : "bg-[radial-gradient(ellipse_at_center,rgba(124,58,237,0.32)_0%,transparent_70%)]",
             )}
           />
         </div>
@@ -290,7 +302,7 @@ export function FocusHeroStage({
                 type="button"
                 onClick={onOpenUpgradeModal}
                 title={t("lockedActivityTitle")}
-                className="w-full py-3 px-5 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md bg-gold hover:bg-gold-hover text-on-gold shadow-glow-gold-md hover:scale-[1.01]"
+                className="w-full py-3 px-5 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-[transform,background-color,color] duration-150 cursor-pointer shadow-md bg-gold hover:bg-gold-hover text-on-gold shadow-glow-gold-md hover:scale-[1.01]"
               >
                 <Lock size={18} />
                 <span>{t("lockedActivityButton")}</span>
@@ -301,7 +313,7 @@ export function FocusHeroStage({
                 onClick={handleToggleTimer}
                 title={t("spaceShortcutTitle")}
                 className={cn(
-                  "w-full py-3 px-5 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md",
+                  "w-full py-3 px-5 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-[transform,background-color,color] duration-150 cursor-pointer shadow-md",
                   isBreak
                     ? "bg-emerald-500 hover:bg-emerald-400 text-neutral-950 shadow-sm dark:shadow-[0_0_16px_rgba(16,185,129,0.4)]"
                     : isRunning
@@ -333,7 +345,7 @@ export function FocusHeroStage({
                     ? t("savePartialTitle")
                     : t("completeSessionTitle")
                 }
-                className="w-full py-2.5 px-5 rounded-xl border border-emerald-500/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm hover:scale-[1.01]"
+                className="w-full py-2.5 px-5 rounded-xl border border-emerald-500/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-bold text-sm flex items-center justify-center gap-2 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shadow-sm hover:scale-[1.01]"
               >
                 <CheckCircle2 size={17} />
                 <span>
@@ -360,7 +372,7 @@ export function FocusHeroStage({
                     type="button"
                     onClick={resetTimer}
                     title={t("resetTitle")}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/30 bg-surface/80 text-neutral-300 hover:text-gold hover:border-gold/50 text-xs font-semibold transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/30 bg-surface/80 text-neutral-300 hover:text-gold hover:border-gold/50 text-xs font-semibold transition-colors cursor-pointer"
                   >
                     <RotateCcw size={14} />
                     <span>{t("resetButton")}</span>
@@ -375,7 +387,7 @@ export function FocusHeroStage({
                     type="button"
                     onClick={skipBreak}
                     title={t("skipBreakTitle")}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 text-emerald-400 dark:text-emerald-300 text-xs font-semibold transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 text-emerald-400 dark:text-emerald-300 text-xs font-semibold transition-colors cursor-pointer"
                   >
                     <FastForward size={14} />
                     <span>{t("skipBreakButton")}</span>

@@ -18,8 +18,8 @@ export function FounderBadge({
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full font-black uppercase tracking-wider transition-all select-none",
-        "bg-gradient-to-r from-gold/25 via-amber-400/20 to-gold/25 text-gold border border-gold/50 shadow-glow-gold-xs hover:shadow-glow-gold",
+        "inline-flex items-center gap-1.5 rounded-full font-black uppercase tracking-wider transition-colors select-none",
+        "bg-gradient-to-r from-gold/25 via-amber-400/20 to-gold/25 text-amber-700 dark:text-gold border border-gold/50 shadow-glow-gold-xs hover:shadow-glow-gold",
         size === "sm" ? "px-2 py-0.5 text-[9px]" : "px-2.5 py-1 text-[11px]",
         className,
       )}
@@ -28,13 +28,13 @@ export function FounderBadge({
       <div className="relative flex items-center justify-center shrink-0">
         <Shield
           className={cn(
-            "fill-gold text-neutral-950",
+            "fill-gold text-on-gold dark:text-neutral-950",
             size === "sm" ? "w-2.5 h-2.5" : "w-3.5 h-3.5",
           )}
         />
         <Sparkles
           className={cn(
-            "absolute -top-1 -right-1 text-white animate-pulse",
+            "absolute -top-1 -right-1 text-amber-600 dark:text-white animate-pulse",
             size === "sm" ? "w-1.5 h-1.5" : "w-2 h-2",
           )}
         />

@@ -61,7 +61,7 @@ export function FocusSidebarRight({
     <aside
       data-panel="sidebar-right"
       className={cn(
-        "shrink-0 bg-background dark:bg-primary-dark/20 border-t xl:border-t-0 xl:border-l border-neutral-700 dark:border-primary/30 backdrop-blur-md h-full flex flex-col overflow-y-auto custom-scrollbar transition-all duration-200",
+        "shrink-0 bg-background dark:bg-primary-dark/25 border-t xl:border-t-0 xl:border-l border-neutral-700 dark:border-primary/30 h-full flex flex-col overflow-y-auto custom-scrollbar",
         isCompact
           ? "w-full xl:w-[300px] p-3.5 gap-3"
           : "w-full xl:w-[345px] p-4 gap-4",

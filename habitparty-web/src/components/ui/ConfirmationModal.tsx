@@ -35,22 +35,26 @@ export function ConfirmationModal({
   const isWarning = variant === "warning";
 
   const borderColor = isDanger
-    ? "border-red-500/30"
+    ? "border-red-500/35 dark:border-red-500/30"
     : isWarning
-      ? "border-amber-500/30"
-      : "border-primary/30";
+      ? "border-amber-500/40 dark:border-amber-500/30"
+      : "border-neutral-700 dark:border-primary/30";
 
   const headerExtra = (
     <AlertTriangle
       size={20}
       className={
-        isDanger ? "text-red-400" : isWarning ? "text-amber-400" : "text-gold"
+        isDanger
+          ? "text-red-600 dark:text-red-400"
+          : isWarning
+            ? "text-amber-600 dark:text-amber-400"
+            : "text-amber-600 dark:text-gold"
       }
     />
   );
 
   const confirmBtnClasses = isDanger
-    ? "bg-red-500 hover:bg-red-600 text-white shadow-xs"
+    ? "bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white shadow-xs"
     : isWarning
       ? "bg-amber-500 hover:bg-amber-400 text-on-gold shadow-glow-gold-xs"
       : "bg-gold hover:bg-gold-hover text-on-gold shadow-glow-gold-xs";
@@ -67,9 +71,9 @@ export function ConfirmationModal({
         <span
           className={
             isDanger
-              ? "text-red-400"
+              ? "text-red-600 dark:text-red-400"
               : isWarning
-                ? "text-amber-400"
+                ? "text-amber-700 dark:text-amber-400"
                 : "text-neutral-100"
           }
         >
@@ -82,12 +86,12 @@ export function ConfirmationModal({
           {description}
         </div>
 
-        <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-white/10">
+        <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-neutral-700 dark:border-white/10">
           <button
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="px-4 py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50"
+            className="px-4 py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:bg-surface-hover dark:hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50"
           >
             {resolvedCancelText}
           </button>
@@ -95,7 +99,7 @@ export function ConfirmationModal({
             type="button"
             onClick={onConfirm}
             disabled={isLoading}
-            className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer disabled:opacity-50 ${confirmBtnClasses}`}
+            className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-50 ${confirmBtnClasses}`}
           >
             {isLoading ? (
               <>

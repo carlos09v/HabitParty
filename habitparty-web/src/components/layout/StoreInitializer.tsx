@@ -2,10 +2,12 @@
 
 import { useEffect, useRef } from "react";
 import type { components } from "@/api/schema";
+import { AVATAR_FRAMES, type AvatarFrameId } from "@/constants/avatarFrames";
+import { useAvatarFrameStore } from "@/store/avatarFrameStore";
 import { useUIStore } from "@/store/uiStore";
 import { useUserStore } from "@/store/userStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
-import type { ExperienceMode, ThemeMode } from "@/types/ui";
+import type { DateFormat, ExperienceMode, ThemeMode } from "@/types/ui";
 import { getLevelProgress } from "@/utils/levels";
 
 type Workspace = components["schemas"]["WorkspaceResponseDTO"];
@@ -14,6 +16,7 @@ type User = components["schemas"]["UserResponseDTO"];
 interface StoreInitializerProps {
   compactMode: boolean;
   theme?: ThemeMode;
+  dateFormat?: DateFormat;
   experienceMode?: ExperienceMode;
   workspaces?: Workspace[];
   activeWorkspaceId?: string | null;
@@ -23,6 +26,7 @@ interface StoreInitializerProps {
 export function StoreInitializer({
   compactMode,
   theme = "dark",
+  dateFormat = "DD/MM/YYYY",
   experienceMode = "PRODUCTIVITY",
   workspaces = [],
   activeWorkspaceId = null,
@@ -41,6 +45,7 @@ export function StoreInitializer({
       hydrated: true,
       compactMode,
       theme,
+      dateFormat,
       experienceMode: resolvedExperienceMode,
     });
     if (workspaces.length > 0) {
@@ -51,6 +56,14 @@ export function StoreInitializer({
     }
     if (user) {
       const progress = getLevelProgress(user.totalXp ?? 0);
+      if (
+        user.avatarFrame &&
+        AVATAR_FRAMES.some((f) => f.id === user.avatarFrame)
+      ) {
+        useAvatarFrameStore.setState({
+          frameId: user.avatarFrame as AvatarFrameId,
+        });
+      }
       useUserStore.setState({
         user: {
           ...user,

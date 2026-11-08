@@ -92,10 +92,10 @@ export function FocusZenModeModal({
       aria-modal="true"
       aria-label={t("dialogAria")}
       className={cn(
-        "fixed inset-0 z-50 backdrop-blur-3xl flex flex-col justify-between p-6 sm:p-12 select-none animate-in fade-in duration-200 transition-colors",
+        "fixed inset-0 z-50 flex flex-col justify-between p-6 sm:p-12 select-none animate-in fade-in duration-200 transition-colors",
         isDimmed
-          ? "zen-dimmed-dark bg-background/98"
-          : "bg-surface/98 dark:bg-background/98",
+          ? "zen-dimmed-dark bg-background"
+          : "bg-surface dark:bg-background",
       )}
     >
       {/* Fundo Cósmico / Santuário Difuso com Aura Radial Suave */}
@@ -153,7 +153,7 @@ export function FocusZenModeModal({
               onClick={() => setIsLightsOff((prev) => !prev)}
               aria-pressed={isLightsOff}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-colors cursor-pointer",
                 isLightsOff
                   ? "border-gold/50 bg-gold/15 text-gold hover:bg-gold/25"
                   : "border-neutral-700 bg-card/80 text-neutral-300 hover:text-neutral-50 hover:border-neutral-500 shadow-2xs",
@@ -170,7 +170,7 @@ export function FocusZenModeModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-neutral-700 bg-card/80 dark:bg-surface/80 text-neutral-300 hover:text-neutral-50 dark:hover:text-white hover:border-neutral-500 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-neutral-700 bg-card/80 dark:bg-surface/80 text-neutral-300 hover:text-neutral-50 dark:hover:text-white hover:border-neutral-500 transition-colors cursor-pointer"
             title={t("exitTitle")}
           >
             <Minimize2 size={16} />
@@ -191,7 +191,7 @@ export function FocusZenModeModal({
               onClick={onResetTimer}
               title={t("resetTitle")}
               aria-label={t("resetTitle")}
-              className="w-14 h-14 rounded-2xl border border-neutral-700 bg-card/80 dark:bg-surface/80 text-neutral-300 hover:text-gold hover:border-gold/50 flex items-center justify-center transition-all cursor-pointer shadow-lg opacity-60 hover:opacity-100 focus-visible:opacity-100"
+              className="w-14 h-14 rounded-2xl border border-neutral-700 bg-card/80 dark:bg-surface/80 text-neutral-300 hover:text-gold hover:border-gold/50 flex items-center justify-center transition-[opacity,color,border-color,background-color] duration-150 cursor-pointer shadow-lg opacity-60 hover:opacity-100 focus-visible:opacity-100"
             >
               <RotateCcw size={22} />
             </button>
@@ -201,7 +201,7 @@ export function FocusZenModeModal({
             type="button"
             onClick={onToggleTimer}
             className={cn(
-              "px-10 py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-xl",
+              "px-10 py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2.5 transition-[transform,background-color,color] duration-150 cursor-pointer shadow-xl",
               isBreak
                 ? "bg-emerald-500 hover:bg-emerald-400 text-neutral-950 shadow-md dark:shadow-[0_0_24px_rgba(16,185,129,0.5)]"
                 : isRunning
@@ -227,7 +227,7 @@ export function FocusZenModeModal({
               type="button"
               onClick={onSkipBreak}
               title={t("skipBreakTitle")}
-              className="px-5 py-4 rounded-2xl border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-400 dark:text-emerald-300 font-bold text-sm flex items-center gap-2 cursor-pointer shadow-lg opacity-60 hover:opacity-100 focus-visible:opacity-100 transition-all"
+              className="px-5 py-4 rounded-2xl border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-400 dark:text-emerald-300 font-bold text-sm flex items-center gap-2 cursor-pointer shadow-lg opacity-60 hover:opacity-100 focus-visible:opacity-100 transition-[opacity,background-color,border-color,color] duration-150"
             >
               <FastForward size={18} />
               <span>{t("skipBreak")}</span>
@@ -240,7 +240,7 @@ export function FocusZenModeModal({
               onClick={onComplete}
               title={t("completeTitle")}
               aria-label={t("completeTitle")}
-              className="w-14 h-14 rounded-2xl border border-emerald-500/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 dark:text-emerald-300 flex items-center justify-center transition-all cursor-pointer shadow-lg opacity-60 hover:opacity-100 focus-visible:opacity-100"
+              className="w-14 h-14 rounded-2xl border border-emerald-500/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 dark:text-emerald-300 flex items-center justify-center transition-[opacity,background-color,border-color,color] duration-150 cursor-pointer shadow-lg opacity-60 hover:opacity-100 focus-visible:opacity-100"
             >
               <CheckCircle2 size={24} />
             </button>

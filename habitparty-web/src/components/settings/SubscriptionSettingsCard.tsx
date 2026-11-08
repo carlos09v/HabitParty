@@ -14,8 +14,10 @@ import { toast } from "sonner";
 import { createCustomerPortalSessionAction } from "@/actions/paymentActions";
 import { SettingsCard } from "@/components/settings/SettingsCard";
 import { FounderBadge } from "@/components/ui/FounderBadge";
+import { useDateFormat } from "@/hooks/useDateFormat";
+import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
-import { cn, parseServerDate } from "@/utils";
+import { cn, formatShortDate } from "@/utils";
 
 const UpgradePremiumModal = dynamic(
   () =>
@@ -33,7 +35,8 @@ export function SubscriptionSettingsCard({
   isCompact = false,
 }: SubscriptionSettingsCardProps) {
   const t = useTranslations("settings.subscriptionCard");
-  const locale = useLocale();
+  const locale = useLocale() as AppLocale;
+  const { dateFormat } = useDateFormat();
 
   const user = useUserStore((s) => s.user);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
@@ -63,16 +66,13 @@ export function SubscriptionSettingsCard({
   const isPremium = Boolean(user?.isPremium);
   const isFounder = Boolean(user?.isFounder);
 
-  // Formata data de expiração se disponível
-  const endsAtDate = user?.subscriptionEndsAt
-    ? (parseServerDate(user.subscriptionEndsAt) ??
-      new Date(user.subscriptionEndsAt))
-    : null;
-  const endsAtFormatted = endsAtDate
-    ? endsAtDate.toLocaleDateString(locale, {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
+  // Formata data de expiração se disponível (formatShortDate converte UTC -> fuso local automaticamente)
+  const endsAtFormatted = user?.subscriptionEndsAt
+    ? formatShortDate(user.subscriptionEndsAt, {
+        includeYear: true,
+        monthFormat: "short",
+        locale,
+        dateFormat,
       })
     : null;
 
@@ -88,10 +88,10 @@ export function SubscriptionSettingsCard({
           {/* BLOCO DE STATUS DO PLANO */}
           <div
             className={cn(
-              "rounded-xl border p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all",
+              "rounded-xl border p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors",
               isPremium
                 ? "bg-gradient-to-r from-gold/10 via-white dark:via-surface/60 to-gold/10 border-gold/40 shadow-glow-gold-xs"
-                : "bg-surface/40 border-neutral-700/60",
+                : "bg-surface/40 border-neutral-700 dark:border-neutral-700/60",
             )}
           >
             <div className="flex items-start gap-3.5">
@@ -123,7 +123,7 @@ export function SubscriptionSettingsCard({
                   </h4>
                   {isFounder && <FounderBadge size="sm" />}
                   {isPremium && !isFounder && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gold text-neutral-950">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gold text-on-gold dark:text-neutral-950">
                       {t("vipActiveBadge")}
                     </span>
                   )}
@@ -155,7 +155,7 @@ export function SubscriptionSettingsCard({
                     disabled={isPendingPortal}
                     onClick={handleOpenPortal}
                     className={cn(
-                      "px-4 py-2.5 rounded-xl border border-gold/40 bg-gold/15 text-xs sm:text-sm font-bold text-gold hover:bg-gold/25 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs",
+                      "px-4 py-2.5 rounded-xl border border-gold/40 bg-gold/15 text-xs sm:text-sm font-bold text-gold hover:bg-gold/25 transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs",
                       "disabled:opacity-60 disabled:cursor-not-allowed",
                     )}
                     title={t("portalTooltip")}
@@ -171,7 +171,7 @@ export function SubscriptionSettingsCard({
                   <button
                     type="button"
                     onClick={() => setIsUpgradeModalOpen(true)}
-                    className="px-3.5 py-2.5 rounded-xl border border-white/10 bg-surface hover:bg-surface-hover text-xs font-semibold text-neutral-200 transition-colors text-center cursor-pointer"
+                    className="px-3.5 py-2.5 rounded-xl border border-neutral-700 bg-card hover:bg-surface-hover dark:border-white/10 dark:bg-surface text-xs font-semibold text-neutral-200 transition-colors text-center cursor-pointer"
                   >
                     {t("viewPerks")}
                   </button>
@@ -180,9 +180,12 @@ export function SubscriptionSettingsCard({
                 <button
                   type="button"
                   onClick={() => setIsUpgradeModalOpen(true)}
-                  className="px-5 py-2.5 rounded-xl bg-gold hover:bg-gold-hover text-neutral-950 text-xs sm:text-sm font-extrabold uppercase tracking-wider transition-all shadow-glow-gold flex items-center justify-center gap-2 cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-gold hover:bg-gold-hover text-on-gold dark:text-neutral-950 text-xs sm:text-sm font-extrabold uppercase tracking-wider transition-colors shadow-glow-gold flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <Crown size={15} className="fill-neutral-950" />
+                  <Crown
+                    size={15}
+                    className="fill-on-gold dark:fill-neutral-950"
+                  />
                   <span>{isFounder ? t("renewPlan") : t("upgradePlan")}</span>
                 </button>
               )}
@@ -190,7 +193,7 @@ export function SubscriptionSettingsCard({
           </div>
 
           {/* NOTA TRANSPARENTE SOBRE PAGAMENTOS */}
-          <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 text-tiny text-neutral-300 leading-relaxed flex items-start gap-2.5">
+          <div className="p-3.5 rounded-xl bg-surface/45 border border-neutral-700 dark:bg-white/5 dark:border-white/10 text-tiny text-neutral-300 leading-relaxed flex items-start gap-2.5">
             <CheckCircle2 size={15} className="text-gold shrink-0 mt-0.5" />
             <div>
               <span className="font-bold text-neutral-200">

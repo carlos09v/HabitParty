@@ -150,7 +150,7 @@ const TaskRowContent = memo(function TaskRowContent({
       onDoubleClick={handleDoubleClick}
       onContextMenu={handleContextMenu}
       className={cn(
-        "relative grid items-center rounded-xl border transition-[background-color,border-color,opacity,box-shadow] duration-150 select-none group overflow-hidden",
+        "relative grid items-center rounded-xl border transition-[background-color,border-color,opacity] duration-150 select-none group overflow-hidden",
         TASK_TABLE_GRID_COLS,
         isSortable
           ? "cursor-grab active:cursor-grabbing touch-none"
@@ -176,7 +176,7 @@ const TaskRowContent = memo(function TaskRowContent({
       <div className="flex items-center gap-2.5 min-w-0">
         {isSortable && (
           <div
-            className="w-5 h-5 flex items-center justify-center shrink-0 text-neutral-400 group-hover:text-gold transition-colors p-0.5 pointer-events-none"
+            className="w-5 h-5 flex items-center justify-center shrink-0 text-neutral-400 group-hover:text-primary dark:group-hover:text-gold transition-colors p-0.5 pointer-events-none"
             aria-hidden="true"
           >
             <GripVertical size={isCompact ? 13 : 15} />
@@ -204,7 +204,7 @@ const TaskRowContent = memo(function TaskRowContent({
           <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
             <span
               className={cn(
-                "font-medium text-neutral-100 truncate group-hover:text-gold transition-colors",
+                "font-medium text-neutral-100 truncate group-hover:text-primary dark:group-hover:text-gold transition-colors",
                 isCompact ? "text-xs" : "text-sm",
                 isDone && "line-through text-neutral-400",
               )}

@@ -131,7 +131,7 @@ export function HabitImportanceSelector({
               disabled={disabled}
               onClick={() => onChange(imp.id)}
               className={cn(
-                "py-1.5 px-2 rounded-lg border text-body-s font-semibold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5",
+                "py-1.5 px-2 rounded-lg border text-body-s font-semibold transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5",
                 value === imp.id
                   ? meta.activeClass
                   : "border-neutral-600 bg-card text-neutral-200 hover:border-neutral-500 hover:bg-surface dark:border-primary/30 dark:bg-surface/60 dark:text-neutral-300 dark:hover:text-gold dark:hover:border-gold/40",

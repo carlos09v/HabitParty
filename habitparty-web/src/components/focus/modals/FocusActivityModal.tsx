@@ -1,6 +1,15 @@
 "use client";
 
-import { Check, Loader2, Minus, Plus, Target, X } from "lucide-react";
+import {
+  Check,
+  Hourglass,
+  Loader2,
+  Minus,
+  Plus,
+  Target,
+  Timer,
+  X,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -11,6 +20,7 @@ import {
 import { BaseModal } from "@/components/ui/BaseModal";
 import { IconPickerPopover } from "@/components/ui/IconPickerPopover";
 import { Input } from "@/components/ui/Input";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { DEFAULT_POMO_MINUTES, FOCUS_ICONS } from "@/constants/focus";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
 import type { FocusActivity, FocusRecordType } from "@/types/focus";
@@ -22,7 +32,7 @@ interface FocusActivityModalProps {
   isOpen: boolean;
   onClose: () => void;
   activityToEdit?: FocusActivity | null;
-  onSuccess?: () => void;
+  onSuccess?: (savedActivity?: FocusActivity, isEditing?: boolean) => void;
 }
 
 const MAX_FOCUS_ACTIVITY_NAME_LENGTH = 30;
@@ -103,7 +113,17 @@ export function FocusActivityModal({
               recordType === "POMO" ? targetTimeMinutes : undefined,
           });
           toast.success(t("updateSuccess"));
-          onSuccess?.();
+          onSuccess?.(
+            {
+              ...activityToEdit,
+              name: res.data?.name || name.trim(),
+              icon: res.data?.icon || icon,
+              recordType: res.data?.recordType || recordType,
+              targetTimeMinutes:
+                recordType === "POMO" ? targetTimeMinutes : undefined,
+            },
+            true,
+          );
           onClose();
         } else {
           toast.error(res.error || t("updateError"));
@@ -125,7 +145,20 @@ export function FocusActivityModal({
                 ? t("createSuccessPomoDesc", { minutes: targetTimeMinutes })
                 : t("createSuccessStopwatchDesc"),
           });
-          onSuccess?.();
+          onSuccess?.(
+            {
+              id: res.data?.id || `act-${Date.now()}`,
+              name: res.data?.name || name.trim(),
+              icon: res.data?.icon || icon,
+              orderIndex: res.data?.orderIndex ?? 0,
+              recordType: res.data?.recordType || recordType,
+              targetTimeMinutes:
+                recordType === "POMO"
+                  ? (res.data?.targetTimeMinutes ?? targetTimeMinutes)
+                  : undefined,
+            },
+            false,
+          );
           onClose();
         } else {
           toast.error(res.error || t("createError"));
@@ -201,32 +234,22 @@ export function FocusActivityModal({
           <span className="text-body-s text-neutral-100 font-medium">
             {t("modeLabel")}
           </span>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setRecordType("POMO")}
-              className={cn(
-                "py-2 px-3 rounded-lg border text-xs font-semibold transition-all cursor-pointer",
-                recordType === "POMO"
-                  ? "bg-gold/20 border-gold text-gold shadow-glow-gold-xs font-bold"
-                  : "bg-surface/80 border-primary/30 text-neutral-300 hover:text-neutral-100 hover:border-gold/40",
-              )}
-            >
-              {t("modePomo")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setRecordType("STOPWATCH")}
-              className={cn(
-                "py-2 px-3 rounded-lg border text-xs font-semibold transition-all cursor-pointer",
-                recordType === "STOPWATCH"
-                  ? "bg-gold/20 border-gold text-gold shadow-glow-gold-xs font-bold"
-                  : "bg-surface/80 border-primary/30 text-neutral-300 hover:text-neutral-100 hover:border-gold/40",
-              )}
-            >
-              {t("modeStopwatch")}
-            </button>
-          </div>
+          <SegmentedControl
+            value={recordType}
+            onChange={setRecordType}
+            options={[
+              {
+                value: "POMO",
+                label: t("modePomo"),
+                icon: Timer,
+              },
+              {
+                value: "STOPWATCH",
+                label: t("modeStopwatch"),
+                icon: Hourglass,
+              },
+            ]}
+          />
         </div>
 
         {/* Meta de tempo em minutos (apenas se Pomodoro) */}
@@ -271,12 +294,12 @@ export function FocusActivityModal({
         )}
 
         {/* Botões de Ação */}
-        <div className="flex items-center justify-end gap-2.5 pt-3.5 border-t border-white/10 mt-1">
+        <div className="flex items-center justify-end gap-2.5 pt-3.5 border-t border-neutral-700 dark:border-white/10 mt-1">
           <button
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-4 py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:text-neutral-50 hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+            className="px-4 py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:text-neutral-50 hover:bg-surface dark:hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
           >
             <X size={14} />
             {t("cancel")}
@@ -284,7 +307,7 @@ export function FocusActivityModal({
           <button
             type="submit"
             disabled={isSubmitting || !name.trim()}
-            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-colors cursor-pointer disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
           >
             {isSubmitting ? (
               <>

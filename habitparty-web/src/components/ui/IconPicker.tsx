@@ -65,7 +65,7 @@ export function IconPicker({
               onClick={() => handleSelect(item)}
               disabled={disabled}
               className={cn(
-                "relative flex flex-col items-center justify-center gap-1 rounded-lg border transition-all cursor-pointer select-none focus:outline-none focus:ring-1 focus:ring-gold",
+                "relative flex flex-col items-center justify-center gap-1 rounded-lg border transition-colors cursor-pointer select-none focus:outline-none focus:ring-1 focus:ring-gold",
                 isCompact ? "p-1.5 min-h-[50px]" : "p-2 min-h-[56px]",
                 isSelected
                   ? "border-gold bg-gold/20 text-gold shadow-glow-gold-xs font-bold"
@@ -90,10 +90,12 @@ export function IconPicker({
         })}
       </fieldset>
 
-      <UpgradePremiumModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-      />
+      {isUpgradeModalOpen && (
+        <UpgradePremiumModal
+          isOpen={isUpgradeModalOpen}
+          onClose={() => setIsUpgradeModalOpen(false)}
+        />
+      )}
     </>
   );
 }

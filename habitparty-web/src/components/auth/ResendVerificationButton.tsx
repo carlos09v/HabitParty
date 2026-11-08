@@ -40,10 +40,10 @@ export function ResendVerificationButton({
       onClick={handleResend}
       disabled={isPending || resentSuccess}
       className={cn(
-        "shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border",
+        "shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer border",
         resentSuccess
-          ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 cursor-default"
-          : "border-gold/40 bg-gold text-neutral-950 hover:bg-gold-hover",
+          ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 cursor-default"
+          : "border-gold/40 bg-gold text-on-gold hover:bg-gold-hover",
         "disabled:opacity-60 disabled:cursor-not-allowed",
       )}
     >

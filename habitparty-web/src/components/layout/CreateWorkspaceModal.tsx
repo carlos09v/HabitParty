@@ -86,18 +86,18 @@ export function CreateWorkspaceModal({
             }
             placeholder={t("placeholder")}
             disabled={isLoading}
-            className="w-full bg-background/50 border border-primary/40 rounded-lg px-3 py-2 text-neutral-50 placeholder:text-neutral-500 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s disabled:opacity-50"
+            className="w-full bg-card dark:bg-background/50 border border-neutral-600 dark:border-primary/40 rounded-lg px-3 py-2 text-neutral-50 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:focus:border-gold dark:focus:ring-1 dark:focus:ring-gold transition-colors text-body-s disabled:opacity-50"
             required
             maxLength={MAX_WORKSPACE_NAME_LENGTH}
           />
         </div>
 
-        <div className="flex items-center justify-end gap-2.5 pt-3.5 border-t border-white/10 mt-1">
+        <div className="flex items-center justify-end gap-2.5 pt-3.5 border-t border-neutral-700 dark:border-white/10 mt-1">
           <button
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="px-4 py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:text-neutral-50 hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:text-neutral-50 hover:bg-surface-hover dark:hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <X size={14} />
             {t("cancel")}
@@ -105,7 +105,7 @@ export function CreateWorkspaceModal({
           <button
             type="submit"
             disabled={!workspaceName.trim() || isLoading}
-            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-colors cursor-pointer disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
           >
             {isLoading ? (
               <Loader2 size={15} className="animate-spin" />

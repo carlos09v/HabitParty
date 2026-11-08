@@ -6,6 +6,7 @@ import type { ThemeMode } from "@/types/ui";
 
 export function useThemeMode() {
   const theme = useUIStore((state) => state.theme);
+  const hydrated = useUIStore((state) => state.hydrated);
   const setTheme = useUIStore((state) => state.setTheme);
   const toggleTheme = useUIStore((state) => state.toggleTheme);
   const [mounted, setMounted] = useState(false);
@@ -21,10 +22,12 @@ export function useThemeMode() {
     setMounted(true);
   }, []);
 
+  const resolvedTheme: ThemeMode = mounted || hydrated ? theme : "dark";
+
   return {
-    theme: mounted ? theme : ("dark" as ThemeMode),
-    isLight: mounted ? theme === "light" : false,
-    isDark: mounted ? theme === "dark" : true,
+    theme: resolvedTheme,
+    isLight: resolvedTheme === "light",
+    isDark: resolvedTheme === "dark",
     setTheme,
     toggleTheme,
     mounted,

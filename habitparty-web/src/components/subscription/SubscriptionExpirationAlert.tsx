@@ -38,7 +38,7 @@ export function SubscriptionExpirationAlert({
       <aside
         aria-label={t("ariaLabel")}
         className={cn(
-          "rounded-xl p-2.5 border transition-all duration-300 flex flex-col gap-1.5",
+          "rounded-xl p-2.5 border transition-colors duration-300 flex flex-col gap-1.5",
           isLastDay
             ? "bg-danger-500/10 border-danger-500/40 shadow-glow-danger-xs"
             : isUrgent
@@ -94,7 +94,7 @@ export function SubscriptionExpirationAlert({
           type="button"
           onClick={() => setIsUpgradeModalOpen(true)}
           className={cn(
-            "w-full py-1.5 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98",
+            "w-full py-1.5 px-2.5 rounded-lg text-xs font-bold transition-[transform,background-color,color] flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98",
             isLastDay
               ? "bg-danger-500 hover:bg-danger-hover text-white"
               : isUrgent
@@ -107,10 +107,12 @@ export function SubscriptionExpirationAlert({
         </button>
       </aside>
 
-      <UpgradePremiumModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-      />
+      {isUpgradeModalOpen && (
+        <UpgradePremiumModal
+          isOpen={isUpgradeModalOpen}
+          onClose={() => setIsUpgradeModalOpen(false)}
+        />
+      )}
     </>
   );
 }

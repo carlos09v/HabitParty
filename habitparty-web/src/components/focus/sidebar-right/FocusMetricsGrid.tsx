@@ -55,12 +55,12 @@ export function FocusMetricsGrid({
           {t("title")}
         </h3>
 
-        <div className="flex items-center rounded-lg bg-surface/80 p-0.5 border border-primary/30">
+        <div className="flex items-center rounded-lg bg-white dark:bg-surface/80 p-0.5 border border-neutral-700 dark:border-primary/30">
           <button
             type="button"
             onClick={() => onPeriodChange("HOJE")}
             className={cn(
-              "px-2.5 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer",
+              "px-2.5 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer",
               isToday
                 ? "bg-gold text-on-gold shadow-glow-gold-xs font-bold"
                 : "text-neutral-400 hover:text-neutral-200",
@@ -72,7 +72,7 @@ export function FocusMetricsGrid({
             type="button"
             onClick={() => onPeriodChange("TOTAL")}
             className={cn(
-              "px-2.5 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer",
+              "px-2.5 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer",
               !isToday
                 ? "bg-gold text-on-gold shadow-glow-gold-xs font-bold"
                 : "text-neutral-400 hover:text-neutral-200",
@@ -86,7 +86,7 @@ export function FocusMetricsGrid({
       {/* 1. Hero Card: Tempo Total de Foco */}
       <div
         className={cn(
-          "w-full rounded-xl border border-amber-500/25 dark:border-gold/30 bg-linear-to-br from-amber-500/[0.08] via-white to-amber-500/[0.03] dark:from-gold/10 dark:via-surface/60 dark:to-primary-dark/30 flex items-center justify-between transition-all hover:border-amber-500/45 dark:hover:border-gold/50 shadow-xs relative overflow-hidden",
+          "w-full rounded-xl border border-amber-500/25 dark:border-gold/30 bg-linear-to-br from-amber-500/[0.08] via-white to-amber-500/[0.03] dark:from-gold/10 dark:via-surface/60 dark:to-primary-dark/30 flex items-center justify-between transition-colors hover:border-amber-500/45 dark:hover:border-gold/50 shadow-xs relative overflow-hidden",
           isCompact ? "p-2.5" : "p-3",
         )}
       >
@@ -126,7 +126,7 @@ export function FocusMetricsGrid({
         {/* Sessões / Registros */}
         <div
           className={cn(
-            "rounded-xl border border-neutral-700 dark:border-primary/25 bg-white dark:bg-surface/50 shadow-2xs dark:shadow-none flex flex-col justify-between transition-all hover:border-gold/30",
+            "rounded-xl border border-neutral-700 dark:border-primary/25 bg-white dark:bg-surface/50 shadow-2xs dark:shadow-none flex flex-col justify-between transition-colors hover:border-primary/40 dark:hover:border-gold/30",
             isCompact ? "p-2 gap-1" : "p-2.5 gap-1.5",
           )}
         >
@@ -154,7 +154,7 @@ export function FocusMetricsGrid({
         {/* Constância / Dias Ativos */}
         <div
           className={cn(
-            "rounded-xl border border-neutral-700 dark:border-primary/25 bg-white dark:bg-surface/50 shadow-2xs dark:shadow-none flex flex-col justify-between transition-all hover:border-gold/30",
+            "rounded-xl border border-neutral-700 dark:border-primary/25 bg-white dark:bg-surface/50 shadow-2xs dark:shadow-none flex flex-col justify-between transition-colors hover:border-primary/40 dark:hover:border-gold/30",
             isCompact ? "p-2 gap-1" : "p-2.5 gap-1.5",
           )}
         >
@@ -190,7 +190,7 @@ export function FocusMetricsGrid({
         {/* Ganho de XP / Pontos */}
         <div
           className={cn(
-            "rounded-xl border border-neutral-700 dark:border-primary/25 bg-white dark:bg-surface/50 shadow-2xs dark:shadow-none flex flex-col justify-between transition-all hover:border-gold/30",
+            "rounded-xl border border-neutral-700 dark:border-primary/25 bg-white dark:bg-surface/50 shadow-2xs dark:shadow-none flex flex-col justify-between transition-colors hover:border-primary/40 dark:hover:border-gold/30",
             isCompact ? "p-2 gap-1" : "p-2.5 gap-1.5",
           )}
           title={isGamified ? t("xpTooltip") : t("pointsTooltip")}
@@ -223,7 +223,7 @@ export function FocusMetricsGrid({
         {/* Ganho de Ouro / Créditos */}
         <div
           className={cn(
-            "rounded-xl border border-neutral-700 dark:border-primary/25 bg-white dark:bg-surface/50 shadow-2xs dark:shadow-none flex flex-col justify-between transition-all hover:border-gold/30",
+            "rounded-xl border border-neutral-700 dark:border-primary/25 bg-white dark:bg-surface/50 shadow-2xs dark:shadow-none flex flex-col justify-between transition-colors hover:border-primary/40 dark:hover:border-gold/30",
             isCompact ? "p-2 gap-1" : "p-2.5 gap-1.5",
           )}
           title={isGamified ? t("goldTooltip") : t("creditsTooltip")}

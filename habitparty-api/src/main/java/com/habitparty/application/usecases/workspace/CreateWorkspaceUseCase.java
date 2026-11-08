@@ -3,10 +3,12 @@ package com.habitparty.application.usecases.workspace;
 import java.util.UUID;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.ports.WorkspaceRepository;
+import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsUseCase;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.Workspace;
 import com.habitparty.core.exceptions.LimitExceededException;
@@ -17,10 +19,16 @@ import com.habitparty.core.exceptions.ResourceNotFoundException;
 public class CreateWorkspaceUseCase {
   private final WorkspaceRepository workspacePort;
   private final UserRepository userPort;
+  private EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
 
   public CreateWorkspaceUseCase(WorkspaceRepository workspacePort, UserRepository userPort) {
     this.workspacePort = workspacePort;
     this.userPort = userPort;
+  }
+
+  @Autowired(required = false)
+  public void setEvaluateUserAchievementsUseCase(EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
+    this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
   }
 
   public Workspace execute(CreateWorkspaceCommand command, UUID userIdLogado) {
@@ -50,6 +58,17 @@ public class CreateWorkspaceUseCase {
       name
     );
 
-    return workspacePort.save(newWorkspace);
+    Workspace savedWorkspace = workspacePort.save(newWorkspace);
+
+    // Contador vitalício para a conquista "Arquiteto de Mundos"
+    if (user.getStats() != null) {
+      user.getStats().recordWorkspaceCreated();
+      userPort.save(user);
+      if (evaluateUserAchievementsUseCase != null) {
+        evaluateUserAchievementsUseCase.execute(user);
+      }
+    }
+
+    return savedWorkspace;
   }
 }

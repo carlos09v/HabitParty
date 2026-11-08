@@ -45,6 +45,7 @@ export function useTaskItemMeta({
 >) {
   const locale = useLocale() as AppLocale;
   const storeCompact = useUIStore((state) => state.compactMode);
+  const dateFormat = useUIStore((state) => state.dateFormat);
   const isCompact = propIsCompact ?? storeCompact;
 
   const { completed, habitScore, toggleCompleted, changeHabit, isDone } =
@@ -62,6 +63,7 @@ export function useTaskItemMeta({
     selectedDate,
     locale,
     dueTime: task.dueTime,
+    dateFormat,
   });
   const isTodoOverdue = Boolean(isTodo && dueDateInfo.isOverdue && !isDone);
   const borderClass = isTodoOverdue

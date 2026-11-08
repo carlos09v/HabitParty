@@ -3,6 +3,7 @@
 import { ChevronDown } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useIsClient } from "@/hooks/useIsClient";
 import type { ContextMenuItem, ContextMenuProps } from "@/types/ui";
 import { cn } from "@/utils";
 
@@ -15,14 +16,10 @@ export function ContextMenu({
   items,
   className,
 }: ContextMenuProps) {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsClient();
   const menuRef = useRef<HTMLDivElement>(null);
   const [adjustedPos, setAdjustedPos] = useState(position);
   const [openSubmenuKey, setOpenSubmenuKey] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Adjust coordinates to avoid viewport overflow
   useLayoutEffect(() => {
@@ -87,7 +84,7 @@ export function ContextMenu({
         left: `${adjustedPos.x}px`,
       }}
       className={cn(
-        "fixed z-[999] min-w-[150px] bg-popover/95 border border-primary/40 rounded-lg p-1.5 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-100",
+        "fixed z-[999] min-w-[150px] bg-popover border border-primary/40 rounded-lg p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-100",
         className,
       )}
       role="menu"

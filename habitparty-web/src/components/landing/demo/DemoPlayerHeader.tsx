@@ -40,12 +40,14 @@ export function DemoPlayerHeader({ level, xp, maxXp }: DemoPlayerHeaderProps) {
       <div className="w-full sm:w-72">
         <div className="flex justify-between text-xs font-semibold mb-1">
           <span className="text-neutral-400">{t("xpProgressLabel")}</span>
-          <span className="text-gold font-bold">{xpPercent}%</span>
+          <span className="text-amber-700 dark:text-gold font-bold">
+            {xpPercent}%
+          </span>
         </div>
         <div className="w-full h-3 rounded-full bg-neutral-700/60 dark:bg-neutral-900/80 border border-neutral-700 dark:border-white/10 overflow-hidden relative">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-primary via-primary-light to-gold transition-all duration-500 shadow-glow-gold-sm"
-            style={{ width: `${xpPercent}%` }}
+            className="h-full w-full origin-left rounded-full bg-gradient-to-r from-primary via-primary-light to-gold transition-transform duration-500 dark:shadow-glow-gold-sm"
+            style={{ transform: `scaleX(${xpPercent / 100})` }}
           />
         </div>
       </div>

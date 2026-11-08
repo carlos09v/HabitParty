@@ -40,7 +40,7 @@ export default async function AuthLayout({
             </Link>
             <div className="flex items-center gap-2">
               <LanguageToggleBtn variant="icon" />
-              <ThemeToggleBtn variant="icon" className="hidden" />
+              <ThemeToggleBtn variant="icon" />
             </div>
           </div>
 
@@ -57,11 +57,11 @@ export default async function AuthLayout({
 
         {/* LADO DIREITO: Ilustração Cósmica da Galáxia (50% do viewport) */}
         <div className="hidden lg:flex lg:w-1/2 relative min-h-screen items-center justify-end overflow-hidden pointer-events-none">
-          {/* Elipse Azul na base do Figma (brilho suave, etéreo e atmosférico) */}
-          <div className="cosmic-orb absolute -bottom-16 -right-16 w-[500px] h-[420px] rounded-full bg-blue/30 blur-[180px] z-0 pointer-events-none opacity-30 dark:opacity-100" />
-
-          {/* Glow roxo suave adicional */}
-          <div className="cosmic-orb absolute top-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-primary/25 blur-[160px] z-0 pointer-events-none opacity-30 dark:opacity-100" />
+          {/* Glow cósmico suave pré-composto na base e centro da galáxia */}
+          <div
+            aria-hidden="true"
+            className="cosmic-ambient-auth absolute inset-0 z-0 pointer-events-none"
+          />
 
           {/* Galáxia em escala generosa que ocupa a metade da tela (z-10 sobre a elipse azul) */}
           <div className="absolute top-0 right-0 w-full h-full max-w-[850px] flex items-start justify-end z-10 opacity-95 dark:opacity-100">

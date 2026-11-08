@@ -60,7 +60,7 @@ export function DemoFocusCard({
           type="button"
           onClick={onToggleTimer}
           className={cn(
-            "px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer",
+            "px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-[transform,background-color,border-color,color] active:scale-95 cursor-pointer",
             isRunning
               ? "bg-warning-500/20 text-warning-500 border border-warning-500/40"
               : "bg-primary hover:bg-primary-light text-white shadow-xs dark:shadow-[0_0_12px_rgba(124,58,237,0.4)]",

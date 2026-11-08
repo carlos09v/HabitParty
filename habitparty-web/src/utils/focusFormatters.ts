@@ -5,7 +5,8 @@
 export { parseLocalDate, parseServerDate, toLocalISOString } from "./date";
 
 import type { AppLocale } from "@/i18n/config";
-import { parseLocalDate } from "./date";
+import type { DateFormat } from "@/types/ui";
+import { formatShortDate, parseLocalDate } from "./date";
 
 /**
  * Formata segundos no padrão MM:SS (ex: 25:00 ou 04:05).
@@ -70,21 +71,24 @@ export function formatFocusMinutes(minutes: number): string {
 }
 
 /**
- * Formata data de término de registro de foco no formato legível (DD/MM às HH:MM ou MM/DD at HH:MM).
+ * Formata data de término de registro de foco no formato legível respeitando `dateFormat` (ex: DD/MM às HH:MM ou MM/DD at HH:MM).
  */
 export function formatFocusDate(
   dateStr?: string | null,
   locale: AppLocale = "pt-BR",
+  dateFormat?: DateFormat,
 ): string {
   if (!dateStr) return "-";
   try {
     const d = parseLocalDate(dateStr);
     if (!d) return dateStr;
     const intlLocale = locale === "en" ? "en-US" : "pt-BR";
-    const day = new Intl.DateTimeFormat(intlLocale, {
-      day: "2-digit",
-      month: "2-digit",
-    }).format(d);
+    const day = formatShortDate(dateStr, {
+      includeYear: false,
+      isLocal: true,
+      locale,
+      dateFormat,
+    });
     const time = new Intl.DateTimeFormat(intlLocale, {
       hour: "2-digit",
       minute: "2-digit",

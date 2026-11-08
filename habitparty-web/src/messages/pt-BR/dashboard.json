@@ -234,9 +234,9 @@
     "badges": {
       "checklistTitle": "Subtarefas: {completed} de {total} concluídas",
       "hardcoreOverdueTitle": "Modo Hardcore: Prazo fatal expirado! Penalidade de 50% ativa!",
-      "hardcoreOverdueTitleProductivity": "Prazo Rígido: Prazo fatal expirado! Penalidade de 50% ativa!",
+      "hardcoreOverdueTitleProductivity": "Prazo Rígido: Prazo expirado! Penalidade de 50% ativa!",
       "hardcoreActiveTitle": "Modo Hardcore Ativo",
-      "hardcoreActiveTitleProductivity": "Prazo Rígido Ativo (Compromisso Inegociável)",
+      "hardcoreActiveTitleProductivity": "Prazo Rígido / Compromisso Diário Ativo",
       "descriptionTitle": "Possui descrição detalhada",
       "priorityTitle": "Prioridade: {label}",
       "habitScoreCardTitle": "Saldo de repetições realizadas no ciclo atual: {score}",

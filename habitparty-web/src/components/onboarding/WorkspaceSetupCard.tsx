@@ -21,15 +21,15 @@ export function WorkspaceSetupCard({
   const t = useTranslations("onboarding.workspaceSetup");
 
   return (
-    <div className="flex flex-col gap-2.5 p-3.5 rounded-xl border border-neutral-700 bg-card/90 shadow-xs dark:border-primary/30 dark:bg-surface/50 dark:shadow-card-deep backdrop-blur-md">
+    <div className="flex flex-col gap-2.5 p-3.5 rounded-xl border border-neutral-700 bg-card shadow-xs dark:border-primary/30 dark:bg-surface/50 dark:shadow-card-deep">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="text-body-s font-bold text-neutral-100 flex items-center gap-2">
-          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-gold/20 text-gold text-[11px] font-bold">
+          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/15 text-amber-700 dark:bg-gold/20 dark:text-gold text-[11px] font-bold">
             2
           </span>
           {t("title")}
         </h2>
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold/15 border border-gold/40 text-gold text-[10px] font-bold uppercase tracking-wider">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 dark:bg-gold/15 border border-amber-500/35 dark:border-gold/40 text-amber-800 dark:text-gold text-[10px] font-bold uppercase tracking-wider">
           {t("badge")}
         </span>
       </div>
@@ -67,9 +67,9 @@ export function WorkspaceSetupCard({
                   onClick={() => onSelectChip(chip)}
                   disabled={disabled}
                   className={cn(
-                    "px-2.5 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer border",
+                    "px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors cursor-pointer border",
                     isChipActive
-                      ? "bg-gold/20 border-gold/60 text-gold font-bold shadow-sm"
+                      ? "bg-amber-500/15 border-amber-500/50 text-amber-800 dark:bg-gold/20 dark:border-gold/60 dark:text-gold font-bold shadow-2xs dark:shadow-sm"
                       : "bg-surface hover:bg-surface-hover border-neutral-700 text-neutral-200 hover:text-neutral-50 dark:bg-primary-dark/20 dark:border-primary/30 dark:text-neutral-300 dark:hover:text-neutral-100 dark:hover:bg-primary-dark/40",
                   )}
                 >

@@ -77,13 +77,16 @@ export function WelcomeCardsSettings({
           "rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors",
           isCompact ? "p-3" : "p-4",
           hiddenCount > 0
-            ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
+            ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300"
             : "bg-gold/10 border-gold/30 text-gold",
         )}
       >
         <div className="flex items-center gap-3">
           {hiddenCount > 0 ? (
-            <EyeOff size={20} className="shrink-0 text-amber-400" />
+            <EyeOff
+              size={20}
+              className="shrink-0 text-amber-700 dark:text-amber-400"
+            />
           ) : (
             <Sparkles size={20} className="shrink-0 text-gold" />
           )}
@@ -99,7 +102,7 @@ export function WelcomeCardsSettings({
           <button
             type="button"
             onClick={handleRestoreAll}
-            className="self-end sm:self-center px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 border border-amber-400/30 transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+            className="self-end sm:self-center px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 border-amber-500/35 dark:bg-amber-400/20 dark:hover:bg-amber-400/30 dark:text-amber-200 border dark:border-amber-400/30 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
           >
             <RotateCcw size={13} />
             <span>{t("restoreAllBtn")}</span>
@@ -117,11 +120,11 @@ export function WelcomeCardsSettings({
             <div
               key={card.key}
               className={cn(
-                "rounded-xl border transition-all flex flex-col justify-between gap-3.5",
+                "rounded-xl border transition-colors flex flex-col justify-between gap-3.5",
                 isCompact ? "p-3.5" : "p-4",
                 isHidden
-                  ? "bg-surface/30 border-amber-500/30 shadow-[0_0_12px_rgba(245,158,11,0.06)]"
-                  : "bg-surface/50 border-white/10 hover:border-white/20",
+                  ? "bg-card dark:bg-surface/30 border-amber-500/40 dark:border-amber-500/30 shadow-xs dark:shadow-[0_0_12px_rgba(245,158,11,0.06)]"
+                  : "bg-card dark:bg-surface/50 border-neutral-700 dark:border-white/10 hover:border-primary/40 dark:hover:border-white/20 shadow-2xs dark:shadow-none",
               )}
             >
               {/* Header do Mini Card: Ícone + Rota + Switch de Visibilidade */}
@@ -131,8 +134,8 @@ export function WelcomeCardsSettings({
                     className={cn(
                       "w-9 h-9 rounded-lg flex items-center justify-center border shrink-0 transition-colors",
                       isHidden
-                        ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
-                        : "bg-surface border-white/10 text-gold",
+                        ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400"
+                        : "bg-surface border-neutral-700 dark:border-white/10 text-amber-600 dark:text-gold",
                     )}
                   >
                     <Icon size={18} />
@@ -153,7 +156,9 @@ export function WelcomeCardsSettings({
                   <span
                     className={cn(
                       "text-tiny font-semibold flex items-center gap-1",
-                      isHidden ? "text-amber-400" : "text-emerald-400",
+                      isHidden
+                        ? "text-amber-700 dark:text-amber-400"
+                        : "text-emerald-700 dark:text-emerald-400",
                     )}
                   >
                     {isHidden ? (
@@ -185,7 +190,7 @@ export function WelcomeCardsSettings({
 
               {/* Informações do Banner */}
               <div className="flex flex-col gap-1">
-                <p className="text-xs font-semibold text-gold/90 truncate">
+                <p className="text-xs font-semibold text-amber-700 dark:text-gold/90 truncate">
                   "{getItemText(card.key, "title")}"
                 </p>
                 <p className="text-xs text-neutral-300 leading-relaxed">
@@ -198,7 +203,7 @@ export function WelcomeCardsSettings({
                 <button
                   type="button"
                   onClick={() => handleToggle(card.key, true)}
-                  className="w-full py-1.5 px-3 rounded-lg text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 transition-colors flex items-center justify-center gap-1.5 cursor-pointer mt-1"
+                  className="w-full py-1.5 px-3 rounded-lg text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 transition-colors flex items-center justify-center gap-1.5 cursor-pointer mt-1"
                 >
                   <RotateCcw size={13} />
                   <span>{t("reactivateBtn")}</span>

@@ -10,6 +10,7 @@ import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useFocusContextMenu } from "@/hooks/useFocusContextMenu";
 import { useFocusMutations } from "@/hooks/useFocusMutations";
 import { useFocusTimerControls } from "@/hooks/useFocusTimer";
+import { useIdlePreload } from "@/hooks/useIdlePreload";
 import type { AppLocale } from "@/i18n/config";
 import type { FocusActivity, FocusRecordType } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
@@ -42,12 +43,18 @@ const UpgradePremiumModal = dynamic(
   { ssr: false },
 );
 
+function preloadFocusMainModalChunks() {
+  void import("./modals/FocusActivityModal");
+}
+
 interface FocusMainProps {
   activities: FocusActivity[];
   backpackItems: InventoryItemResponseDTO[];
   isPremium?: boolean;
   selectedActivityId?: string | null;
+  selectedBackpackItemId?: string | null;
   onSelectActivity?: (activityId: string | null) => void;
+  onSelectBackpackItem?: (item: InventoryItemResponseDTO) => void;
   onStartFocusActivity: (act: FocusActivity) => void;
   onStartFocusItem: (item: InventoryItemResponseDTO) => void;
   onOpenManualRecord?: (params: {
@@ -64,7 +71,9 @@ export function FocusMain({
   backpackItems,
   isPremium = false,
   selectedActivityId,
+  selectedBackpackItemId,
   onSelectActivity,
+  onSelectBackpackItem,
   onStartFocusActivity,
   onStartFocusItem,
   onOpenManualRecord,
@@ -75,6 +84,7 @@ export function FocusMain({
   const t = useTranslations("focus.main");
   const { isGamified } = useExperienceMode();
   const controls = useFocusTimerControls();
+  useIdlePreload(preloadFocusMainModalChunks);
 
   const { isActive, isPaused, target } = controls;
   const isTimerRunning = isActive && !isPaused;
@@ -158,7 +168,13 @@ export function FocusMain({
   useEffect(() => {
     if (!selectedActivityId) return;
 
+    let isReady = false;
+    const timer = setTimeout(() => {
+      isReady = true;
+    }, 150);
+
     const handlePointerDown = (e: MouseEvent) => {
+      if (!isReady) return;
       const targetEl = e.target as HTMLElement | null;
       if (!targetEl) return;
       if (
@@ -175,7 +191,10 @@ export function FocusMain({
     };
 
     window.addEventListener("pointerdown", handlePointerDown);
-    return () => window.removeEventListener("pointerdown", handlePointerDown);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("pointerdown", handlePointerDown);
+    };
   }, [selectedActivityId, onSelectActivity]);
 
   const locale = useLocale() as AppLocale;
@@ -187,7 +206,7 @@ export function FocusMain({
   );
 
   return (
-    <div className="relative flex-1 min-w-0 h-full flex flex-col overflow-hidden transition-all duration-200">
+    <div className="relative flex-1 min-w-0 h-full flex flex-col overflow-hidden">
       {/* Área Rolável de Conteúdo */}
       <div
         className={cn(
@@ -238,6 +257,8 @@ export function FocusMain({
         <FocusBackpackSection
           items={backpackItems}
           activeTargetId={target?.id}
+          selectedItemId={selectedBackpackItemId}
+          onSelectItem={onSelectBackpackItem}
           isTimerActive={isActive}
           isTimerRunning={isTimerRunning}
           onToggleTimer={controls.toggleTimer}

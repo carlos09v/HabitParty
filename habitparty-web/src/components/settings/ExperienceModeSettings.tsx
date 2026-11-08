@@ -25,11 +25,12 @@ export function ExperienceModeSettings({
   );
 
   const options = EXPERIENCE_MODE_OPTIONS.map((opt) => ({
-    ...opt,
+    value: opt.value,
+    icon: opt.icon,
     title: opt.value === "GAMIFIED" ? t("gamified") : t("productivity"),
     description:
       opt.value === "GAMIFIED" ? t("gamifiedDesc") : t("productivityDesc"),
-    badge: opt.badge ? t("defaultBadge") : undefined,
+    badge: opt.hasDefaultBadge ? t("defaultBadge") : undefined,
   }));
 
   return (

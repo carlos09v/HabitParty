@@ -293,10 +293,10 @@ export const DIFFICULTY_DOT_COLORS: Record<TaskDifficultyOption, string> = {
 
 /** Cores de ícone de espada por dificuldade (Modo Gamificado). */
 export const DIFFICULTY_SWORD_COLORS: Record<TaskDifficultyOption, string> = {
-  TRIVIAL: "text-info drop-shadow-[0_0_5px_rgba(56,189,248,0.45)]",
-  EASY: "text-success-500 drop-shadow-[0_0_5px_rgba(34,197,94,0.45)]",
-  MEDIUM: "text-warning-500 drop-shadow-[0_0_5px_rgba(245,158,11,0.45)]",
-  HARD: "text-purple-400 drop-shadow-[0_0_5px_rgba(192,132,252,0.55)]",
+  TRIVIAL: "text-info",
+  EASY: "text-success-500",
+  MEDIUM: "text-warning-500",
+  HARD: "text-purple-400",
 };
 
 /** Metadados e cores de prioridade de tarefas. */

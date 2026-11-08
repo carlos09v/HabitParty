@@ -276,3 +276,54 @@ export function checkLevelUp(
     newLevel,
   };
 }
+
+export interface ResolvedUserLevelState {
+  currentXp: number;
+  currentLevelNumber: number;
+  progress: LevelProgress;
+  levelTitle: string;
+  nextLevelTitle: string;
+  remainingXp: number;
+}
+
+/**
+ * Centraliza a resolução de nível, barra de progresso e títulos localizados do usuário.
+ */
+export function resolveUserLevelState(
+  user?: {
+    totalXp?: number | null;
+    currentLevel?: number | null;
+    currentLevelTitle?: string | null;
+    nextLevelTitle?: string | null;
+    xpToNextLevel?: number | null;
+  } | null,
+  locale: AppLocale = "pt-BR",
+  isGamified = true,
+  fallbackXp = 0,
+): ResolvedUserLevelState {
+  const currentXp = user?.totalXp ?? fallbackXp;
+  const progress = getLevelProgress(currentXp);
+  const currentLevelIdx = USER_LEVELS.findIndex(
+    (l) => l.tier === progress.currentLevel.tier,
+  );
+  const currentLevelNumber =
+    user?.currentLevel ?? (currentLevelIdx >= 0 ? currentLevelIdx + 1 : 1);
+  const rawLevelTitle =
+    user?.currentLevelTitle ||
+    USER_LEVELS[currentLevelNumber - 1]?.title ||
+    progress.currentLevel.title;
+  const rawNextLevelTitle = user?.nextLevelTitle || progress.nextLevel.title;
+  const remainingXp =
+    user?.xpToNextLevel !== undefined && user?.xpToNextLevel !== null
+      ? user.xpToNextLevel
+      : progress.remainingXp;
+
+  return {
+    currentXp,
+    currentLevelNumber,
+    progress,
+    levelTitle: localizeLevelTitle(rawLevelTitle, locale, isGamified),
+    nextLevelTitle: localizeLevelTitle(rawNextLevelTitle, locale, isGamified),
+    remainingXp,
+  };
+}

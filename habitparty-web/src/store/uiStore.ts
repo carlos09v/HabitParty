@@ -1,14 +1,15 @@
 import { create } from "zustand";
 import { updateUserExperienceModeAction } from "@/actions/userActions";
 import { useUserStore } from "@/store/userStore";
-import type { ExperienceMode, ThemeMode } from "@/types/ui";
+import type { DateFormat, ExperienceMode, ThemeMode } from "@/types/ui";
+import { detectBrowserDateFormat } from "@/utils/date";
 
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
 function setClientCookie(name: string, value: string) {
   if (typeof document === "undefined") return;
   // biome-ignore lint/suspicious/noDocumentCookie: Preferências puramente visuais persistidas localmente sem Server Action roundtrip
-  document.cookie = `${name}=${value}; path=/; max-age=${ONE_YEAR_SECONDS}; samesite=lax`;
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${ONE_YEAR_SECONDS}; samesite=lax`;
 }
 
 /**
@@ -26,6 +27,8 @@ export interface UIState {
   toggleTheme: () => void;
   experienceMode: ExperienceMode;
   setExperienceMode: (mode: ExperienceMode) => void;
+  dateFormat: DateFormat;
+  setDateFormat: (format: DateFormat) => void;
 }
 
 export const useUIStore = create<UIState>()((set) => ({
@@ -65,5 +68,10 @@ export const useUIStore = create<UIState>()((set) => ({
     set({ experienceMode });
     useUserStore.getState().updateUserPartial({ experienceMode });
     updateUserExperienceModeAction(experienceMode);
+  },
+  dateFormat: detectBrowserDateFormat(),
+  setDateFormat: (dateFormat) => {
+    set({ dateFormat, hydrated: true });
+    setClientCookie("dateFormat", dateFormat);
   },
 }));

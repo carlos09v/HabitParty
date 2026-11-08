@@ -1,10 +1,12 @@
 package com.habitparty.application.usecases.admin;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,18 +31,31 @@ public class GetAdminUserDetailUseCase {
   private final TaskRepository taskPort;
   private final AdminMetricsRepository adminMetricsPort;
   private final int resendResetDay;
+  private final Clock clock;
+
+  @Autowired
+  public GetAdminUserDetailUseCase(
+      UserRepository userRepository,
+      EmailDispatchLogRepository emailLogPort,
+      TaskRepository taskPort,
+      AdminMetricsRepository adminMetricsPort,
+      @Value("${resend.quota.reset-day:16}") int resendResetDay,
+      Clock clock) {
+    this.userRepository = userRepository;
+    this.emailLogPort = emailLogPort;
+    this.taskPort = taskPort;
+    this.adminMetricsPort = adminMetricsPort;
+    this.resendResetDay = Math.max(1, Math.min(31, resendResetDay));
+    this.clock = clock != null ? clock : Clock.systemDefaultZone();
+  }
 
   public GetAdminUserDetailUseCase(
       UserRepository userRepository,
       EmailDispatchLogRepository emailLogPort,
       TaskRepository taskPort,
       AdminMetricsRepository adminMetricsPort,
-      @Value("${resend.quota.reset-day:16}") int resendResetDay) {
-    this.userRepository = userRepository;
-    this.emailLogPort = emailLogPort;
-    this.taskPort = taskPort;
-    this.adminMetricsPort = adminMetricsPort;
-    this.resendResetDay = Math.max(1, Math.min(31, resendResetDay));
+      int resendResetDay) {
+    this(userRepository, emailLogPort, taskPort, adminMetricsPort, resendResetDay, Clock.systemDefaultZone());
   }
 
   public AdminUserDetailProjection execute(UUID userId) {
@@ -48,7 +63,7 @@ public class GetAdminUserDetailUseCase {
         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
 
     LocalDateTime cycleStart = GetAdminOverviewUseCase
-        .resolveCycleStartDate(LocalDate.now(), resendResetDay)
+        .resolveCycleStartDate(LocalDate.now(clock), resendResetDay)
         .atStartOfDay();
     long emailsSentThisMonth = emailLogPort.countByUserIdAndStatusAndSentAtAfter(
         u.getId(),
@@ -70,6 +85,7 @@ public class GetAdminUserDetailUseCase {
         u.isEmailVerified(),
         u.getEmailVerifiedAt(),
         u.getSubscriptionStatus(),
+        u.getSubscriptionEndsAt(),
         u.getCreatedAt(),
         emailsSentThisMonth,
         activeEmailReminders,

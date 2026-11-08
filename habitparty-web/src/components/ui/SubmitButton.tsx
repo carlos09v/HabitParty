@@ -21,7 +21,7 @@ export function SubmitButton({
       type="submit"
       disabled={isPending || disabled}
       className={cn(
-        "w-full py-3.5 px-4 rounded-lg text-base font-bold transition-all cursor-pointer flex items-center justify-center gap-2 select-none",
+        "w-full py-3.5 px-4 rounded-lg text-base font-bold transition-[transform,background-color,border-color,color,opacity] duration-150 cursor-pointer flex items-center justify-center gap-2 select-none",
         // Tema Claro: Botão Roxo Primário vibrante com texto branco de alto contraste e sombra suave
         "bg-primary hover:bg-primary-dark text-white border border-primary-dark/30 shadow-sm active:scale-[0.99]",
         // Tema Escuro: Preenchimento primário de alto impacto visual com brilho sutil

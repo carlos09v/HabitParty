@@ -2,6 +2,7 @@ package com.habitparty.application.usecases.user;
 
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,11 +11,13 @@ import com.habitparty.application.ports.EmailDispatchLogRepository;
 import com.habitparty.application.ports.FocusActivityRepository;
 import com.habitparty.application.ports.FocusRecordRepository;
 import com.habitparty.application.ports.InventoryItemRepository;
+import com.habitparty.application.ports.ProfileHighlightRepository;
 import com.habitparty.application.ports.RefreshTokenRepository;
 import com.habitparty.application.ports.RewardRepository;
 import com.habitparty.application.ports.StoragePort;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
+import com.habitparty.application.ports.UserAchievementRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.ports.UserTokenRepository;
 import com.habitparty.application.ports.WorkspaceRepository;
@@ -37,6 +40,8 @@ public class DeleteUserUseCase {
     private final RefreshTokenRepository refreshTokenPort;
     private final UserTokenRepository userTokenPort;
     private final EmailDispatchLogRepository emailDispatchLogPort;
+    private UserAchievementRepository userAchievementPort;
+    private ProfileHighlightRepository profileHighlightPort;
 
     public DeleteUserUseCase(UserRepository port,
             StoragePort storagePort,
@@ -66,6 +71,14 @@ public class DeleteUserUseCase {
         this.emailDispatchLogPort = emailDispatchLogPort;
     }
 
+    @Autowired(required = false)
+    public void setShowcaseCleanupPorts(
+        UserAchievementRepository userAchievementPort,
+        ProfileHighlightRepository profileHighlightPort) {
+        this.userAchievementPort = userAchievementPort;
+        this.profileHighlightPort = profileHighlightPort;
+    }
+
     public void execute(UUID id) {
         // 1. O Caso de Uso pergunta à Port se o usuário existe
         User user = port.findById(id)
@@ -83,6 +96,12 @@ public class DeleteUserUseCase {
         refreshTokenPort.deleteAllByUserId(id);
         userTokenPort.deleteAllByUserId(id);
         emailDispatchLogPort.deleteAllByUserId(id);
+        if (profileHighlightPort != null) {
+            profileHighlightPort.deleteAllByUserId(id);
+        }
+        if (userAchievementPort != null) {
+            userAchievementPort.deleteAllByUserId(id);
+        }
 
         // 3. Remove o usuário (e por cascade 1:1 remove user_stats e user_subscriptions)
         port.deleteById(id);

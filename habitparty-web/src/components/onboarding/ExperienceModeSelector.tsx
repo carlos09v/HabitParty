@@ -32,10 +32,10 @@ export function ExperienceModeSelector({
   const t = useTranslations("onboarding.experienceMode");
 
   return (
-    <div className="flex flex-col gap-2.5 p-3 sm:p-3.5 rounded-xl border border-neutral-700 bg-card/90 shadow-xs dark:border-primary/25 dark:bg-surface/40 backdrop-blur-md">
+    <div className="flex flex-col gap-2.5 p-3 sm:p-3.5 rounded-xl border border-neutral-700 bg-card shadow-xs dark:border-primary/25 dark:bg-surface/40">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h3 className="text-body-s font-bold text-neutral-50 flex items-center gap-2">
-          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-gold/20 text-gold text-[11px] font-bold">
+          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/15 text-amber-700 dark:bg-gold/20 dark:text-gold text-[11px] font-bold">
             3
           </span>
           {t("title")}
@@ -59,7 +59,7 @@ export function ExperienceModeSelector({
               disabled={disabled}
               onClick={() => onSelectExperienceMode(option.id)}
               className={cn(
-                "flex flex-col items-start p-2.5 sm:p-3 rounded-xl border text-left transition-all cursor-pointer relative",
+                "flex flex-col items-start p-2.5 sm:p-3 rounded-xl border text-left transition-colors cursor-pointer relative",
                 "outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
                 isSelected
                   ? "border-primary bg-primary/10 shadow-sm text-neutral-50 ring-1 ring-primary/30 dark:border-gold dark:bg-primary-dark/60 dark:shadow-[0_0_14px_rgba(237,229,57,0.18)] dark:ring-1 dark:ring-gold/40 dark:text-neutral-50"
@@ -118,7 +118,10 @@ export function ExperienceModeSelector({
         {/* Densidade Visual */}
         <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-surface border border-neutral-700 dark:bg-white/5 dark:border-white/10">
           <div className="flex items-center gap-1.5 min-w-0">
-            <MonitorSmartphone size={13} className="text-gold shrink-0" />
+            <MonitorSmartphone
+              size={13}
+              className="text-amber-600 dark:text-gold shrink-0"
+            />
             <span className="text-[11px] font-medium text-neutral-200 truncate">
               {t("densityLabel")}
             </span>
@@ -157,7 +160,10 @@ export function ExperienceModeSelector({
         <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-surface border border-neutral-700 dark:bg-white/5 dark:border-white/10">
           <div className="flex items-center gap-1.5 min-w-0">
             {uiSoundsEnabled ? (
-              <Volume2 size={13} className="text-gold shrink-0" />
+              <Volume2
+                size={13}
+                className="text-amber-600 dark:text-gold shrink-0"
+              />
             ) : (
               <VolumeX size={13} className="text-neutral-400 shrink-0" />
             )}

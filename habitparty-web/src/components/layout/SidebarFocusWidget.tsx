@@ -95,7 +95,7 @@ export function SidebarFocusWidget() {
         }}
         title={t("activeAmbientTitle")}
         aria-label={t("activeAmbientAria")}
-        className="group relative flex flex-col gap-1.5 p-2 rounded-lg border border-gold/60 bg-gold/10 hover:border-gold hover:bg-gold/15 transition-all cursor-pointer select-none text-left shadow-glow-gold-xs mb-2.5"
+        className="group relative flex flex-col gap-1.5 p-2 rounded-lg border border-gold/60 bg-gold/10 hover:border-gold hover:bg-gold/15 transition-colors cursor-pointer select-none text-left shadow-glow-gold-xs mb-2.5"
       >
         <div className="flex items-center justify-between gap-1 min-w-0">
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
@@ -121,7 +121,7 @@ export function SidebarFocusWidget() {
               onClick={handleStopAmbient}
               title={t("turnOffAmbient")}
               aria-label={t("turnOffAmbient")}
-              className="w-5 h-5 rounded flex items-center justify-center border border-primary/30 bg-surface/80 text-neutral-400 hover:text-red-400 hover:border-red-500/40 hover:bg-red-500/10 transition-all cursor-pointer shadow-xs ml-0.5"
+              className="w-5 h-5 rounded flex items-center justify-center border border-primary/30 bg-surface/80 text-neutral-400 hover:text-red-400 hover:border-red-500/40 hover:bg-red-500/10 transition-colors cursor-pointer shadow-xs ml-0.5"
             >
               <VolumeX size={10} />
             </button>
@@ -155,10 +155,10 @@ export function SidebarFocusWidget() {
       title={t("activeSessionTitle")}
       aria-label={t("activeSessionAria")}
       className={cn(
-        "group relative flex flex-col gap-1.5 p-2 rounded-lg border transition-all cursor-pointer select-none text-left shadow-xs mb-2.5",
+        "group relative flex flex-col gap-1.5 p-2 rounded-lg border transition-colors cursor-pointer select-none text-left shadow-xs mb-2.5",
         isRunning
-          ? "border-gold/70 bg-gold/10 hover:border-gold hover:bg-gold/15 shadow-glow-gold-xs"
-          : "border-primary/40 bg-surface/70 hover:border-gold/40 hover:bg-surface/90",
+          ? "border-amber-500/60 bg-amber-500/10 hover:border-amber-500 hover:bg-amber-500/15 dark:border-gold/70 dark:bg-gold/10 dark:hover:border-gold dark:hover:bg-gold/15 shadow-glow-gold-xs"
+          : "border-primary/25 bg-surface/70 hover:border-primary/45 hover:bg-surface/90 dark:border-primary/40 dark:hover:border-gold/40",
       )}
     >
       {/* Linha Superior: Ícone, Nome e Badge */}
@@ -166,16 +166,16 @@ export function SidebarFocusWidget() {
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
           <div
             className={cn(
-              "w-5 h-5 rounded-md flex items-center justify-center shrink-0 border transition-all",
+              "w-5 h-5 rounded-md flex items-center justify-center shrink-0 border transition-colors",
               isRunning
-                ? "bg-gold/20 border-gold/50 text-gold animate-pulse"
+                ? "bg-amber-500/15 border-amber-500/40 text-amber-700 dark:bg-gold/20 dark:border-gold/50 dark:text-gold animate-pulse"
                 : "bg-primary-dark/40 border-primary/30 text-neutral-300",
             )}
           >
             <TargetIcon size={11} />
           </div>
 
-          <span className="text-label-g font-bold text-neutral-100 group-hover:text-gold transition-colors truncate">
+          <span className="text-label-g font-bold text-neutral-100 group-hover:text-primary dark:group-hover:text-gold transition-colors truncate">
             {target?.name || t("defaultModeName")}
           </span>
         </div>
@@ -184,10 +184,10 @@ export function SidebarFocusWidget() {
           className={cn(
             "text-label-s px-1 py-0.5 rounded font-semibold shrink-0 uppercase tracking-wider",
             isInventory
-              ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+              ? "bg-amber-500/15 text-amber-800 border border-amber-500/35 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40"
               : mode === "POMO"
-                ? "bg-gold/20 text-gold border border-gold/40"
-                : "bg-surface border border-primary/40 text-neutral-300",
+                ? "bg-amber-500/15 text-amber-800 border border-amber-500/35 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
+                : "bg-surface border border-neutral-600 dark:border-primary/40 text-neutral-300",
           )}
         >
           {isInventory
@@ -204,13 +204,13 @@ export function SidebarFocusWidget() {
           <span
             className={cn(
               "font-mono font-black text-xs tracking-tight transition-colors",
-              isRunning ? "text-gold" : "text-neutral-200",
+              isRunning ? "text-amber-700 dark:text-gold" : "text-neutral-200",
             )}
           >
             {displayTime}
           </span>
           {isRunning && (
-            <span className="w-1 h-1 rounded-full bg-gold animate-ping inline-block" />
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-gold inline-block shrink-0" />
           )}
         </div>
 
@@ -226,10 +226,10 @@ export function SidebarFocusWidget() {
             title={isRunning ? t("pauseTitle") : t("resumeTitle")}
             aria-label={isRunning ? t("pauseAria") : t("resumeAria")}
             className={cn(
-              "w-5 h-5 rounded flex items-center justify-center border transition-all cursor-pointer shadow-xs",
+              "w-5 h-5 rounded flex items-center justify-center border transition-colors cursor-pointer shadow-xs",
               isRunning
                 ? "bg-gold text-on-gold border-gold hover:bg-gold-hover"
-                : "bg-surface hover:bg-gold/20 text-neutral-200 hover:text-gold border-primary/30",
+                : "bg-surface hover:bg-primary/15 text-neutral-200 hover:text-primary border-neutral-600 dark:hover:bg-gold/20 dark:hover:text-gold dark:border-primary/30",
             )}
           >
             {isRunning ? (
@@ -257,7 +257,7 @@ export function SidebarFocusWidget() {
                   ? t("savePartialAria")
                   : t("completeSaveAria")
               }
-              className="w-5 h-5 rounded flex items-center justify-center border border-emerald-500/40 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 hover:border-emerald-400 transition-all cursor-pointer shadow-xs"
+              className="w-5 h-5 rounded flex items-center justify-center border border-emerald-500/35 bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25 hover:border-emerald-600 dark:border-emerald-500/40 dark:bg-emerald-500/20 dark:text-emerald-300 dark:hover:bg-emerald-500/30 dark:hover:border-emerald-400 transition-colors cursor-pointer shadow-xs"
             >
               <Check size={10} className="stroke-[2.5]" />
             </button>
@@ -273,7 +273,7 @@ export function SidebarFocusWidget() {
               }}
               title={t("stopResetTitle")}
               aria-label={t("stopAria")}
-              className="w-5 h-5 rounded flex items-center justify-center border border-primary/30 bg-surface/80 text-neutral-400 hover:text-red-400 hover:border-red-500/40 hover:bg-red-500/10 transition-all cursor-pointer shadow-xs"
+              className="w-5 h-5 rounded flex items-center justify-center border border-primary/30 bg-surface/80 text-neutral-400 hover:text-red-400 hover:border-red-500/40 hover:bg-red-500/10 transition-colors cursor-pointer shadow-xs"
             >
               <RotateCcw size={9} />
             </button>

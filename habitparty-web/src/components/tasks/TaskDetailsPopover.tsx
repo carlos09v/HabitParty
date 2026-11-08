@@ -96,7 +96,7 @@ export function TaskDetailsPopover({
     <>
       {/* Backdrop para mobile (< sm) */}
       <div
-        className="fixed inset-0 bg-neutral-950/75 backdrop-blur-xs z-[119] sm:hidden animate-in fade-in duration-200"
+        className="fixed inset-0 bg-neutral-950/80 z-[119] sm:hidden animate-in fade-in duration-200"
         onClick={handleCloseWithSave}
         aria-hidden="true"
       />
@@ -112,11 +112,11 @@ export function TaskDetailsPopover({
               }
         }
         className={cn(
-          "fixed z-[120] select-none flex flex-col gap-3 backdrop-blur-xl shadow-2xl",
+          "fixed z-[120] select-none flex flex-col gap-3 shadow-2xl",
           // Mobile (< sm): Bottom Sheet fixado na base com scroll interno
-          "max-sm:inset-x-0 max-sm:bottom-0 max-sm:w-full max-sm:rounded-t-2xl max-sm:rounded-b-none max-sm:border-t max-sm:border-x-0 max-sm:border-b-0 max-sm:border-primary/40 max-sm:bg-surface/98 max-sm:p-4 max-sm:max-h-[85vh] max-sm:overflow-y-auto max-sm:animate-in max-sm:slide-in-from-bottom max-sm:duration-200",
+          "max-sm:inset-x-0 max-sm:bottom-0 max-sm:w-full max-sm:rounded-t-2xl max-sm:rounded-b-none max-sm:border-t max-sm:border-x-0 max-sm:border-b-0 max-sm:border-primary/40 max-sm:bg-surface max-sm:p-4 max-sm:max-h-[85vh] max-sm:overflow-y-auto max-sm:animate-in max-sm:slide-in-from-bottom max-sm:duration-200",
           // Desktop (sm+): Popover flutuante ancorado
-          "sm:w-[390px] sm:max-w-[calc(100vw-24px)] sm:rounded-2xl sm:border sm:border-primary/40 sm:bg-card/98 sm:p-4 sm:animate-in sm:fade-in sm:zoom-in-95 sm:duration-150",
+          "sm:w-[390px] sm:max-w-[calc(100vw-24px)] sm:rounded-2xl sm:border sm:border-primary/40 sm:bg-card dark:sm:bg-popover sm:p-4 sm:animate-in sm:fade-in sm:zoom-in-95 sm:duration-150",
         )}
         role="dialog"
         aria-label={t("dialogAria")}

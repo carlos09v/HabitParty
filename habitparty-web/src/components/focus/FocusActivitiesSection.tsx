@@ -124,7 +124,7 @@ export function FocusActivitiesSection({
 
           {/* Chip de Filtro Ativo (Visível, Discreto e Imediato) */}
           {selectedActivity && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gold/15 border border-gold/40 text-xs text-gold font-medium animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-800 dark:bg-gold/15 dark:border-gold/40 text-xs dark:text-gold font-medium animate-in fade-in zoom-in-95 duration-150">
               <span className="text-label-g text-neutral-400 hidden sm:inline">
                 {t("filteringLabel")}
               </span>
@@ -134,7 +134,7 @@ export function FocusActivitiesSection({
               <button
                 type="button"
                 onClick={() => onSelectActivity?.(null)}
-                className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-gold/30 text-gold transition-colors cursor-pointer ml-0.5"
+                className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-amber-500/25 dark:hover:bg-gold/30 text-amber-800 dark:text-gold transition-colors cursor-pointer ml-0.5"
                 title={t("clearFilterTitle")}
                 aria-label={t("clearFilterAria", {
                   name: selectedActivity.name,
@@ -153,8 +153,8 @@ export function FocusActivitiesSection({
             className={cn(
               "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium",
               isLimitReached
-                ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
-                : "border-primary/30 bg-surface/60 text-neutral-300",
+                ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                : "border-neutral-700 bg-surface dark:border-primary/30 dark:bg-surface/60 text-neutral-300",
             )}
             title={
               isLimitReached
@@ -186,12 +186,12 @@ export function FocusActivitiesSection({
             onClick={isLimitReached ? onOpenUpgradeModal : onOpenCreateModal}
             disabled={isLimitReached && isPremium}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer",
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer",
               isLimitReached
                 ? isPremium
-                  ? "border-neutral-700 bg-neutral-800/40 text-neutral-500 cursor-not-allowed"
-                  : "border-gold/40 bg-gold/15 text-gold hover:bg-gold/25 hover:border-gold shadow-glow-gold-xs"
-                : "border-gold/40 bg-gold/15 text-gold hover:bg-gold/25 hover:border-gold shadow-glow-gold-xs",
+                  ? "border-neutral-700 bg-surface dark:bg-neutral-800/40 text-neutral-400 dark:text-neutral-500 cursor-not-allowed"
+                  : "border-amber-500/40 bg-amber-500/15 text-amber-800 hover:bg-amber-500/25 hover:border-amber-600 dark:border-gold/40 dark:bg-gold/15 dark:text-gold dark:hover:bg-gold/25 dark:hover:border-gold shadow-glow-gold-xs"
+                : "border-amber-500/40 bg-amber-500/15 text-amber-800 hover:bg-amber-500/25 hover:border-amber-600 dark:border-gold/40 dark:bg-gold/15 dark:text-gold dark:hover:bg-gold/25 dark:hover:border-gold shadow-glow-gold-xs",
             )}
             title={
               isLimitReached
@@ -220,13 +220,13 @@ export function FocusActivitiesSection({
 
       {/* Lista de Atividades com Reordenação Otimizada */}
       {orderedActivities.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-primary/30 bg-surface/30 p-6 flex flex-col items-center justify-center text-center gap-2">
+        <div className="rounded-2xl border border-dashed border-neutral-700 dark:border-primary/30 bg-card/60 dark:bg-surface/30 p-6 flex flex-col items-center justify-center text-center gap-2">
           <p className="text-body-s text-neutral-400">{t("emptyState")}</p>
           {!isLimitReached && (
             <button
               type="button"
               onClick={onOpenCreateModal}
-              className="text-xs font-bold text-gold hover:underline cursor-pointer"
+              className="text-xs font-bold text-amber-700 dark:text-gold hover:underline cursor-pointer"
             >
               {t("createFirstButton")}
             </button>

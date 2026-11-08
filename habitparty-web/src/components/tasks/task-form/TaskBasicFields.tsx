@@ -86,7 +86,7 @@ export function TaskBasicFields({ form, columns }: TaskBasicFieldsProps) {
           value={name}
           onChange={(e) => setName(e.target.value.slice(0, 50))}
           placeholder={t("titlePlaceholder")}
-          className="w-full bg-card border border-neutral-600 hover:border-neutral-500 rounded-lg px-3 py-2 text-neutral-50 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 shadow-xs focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-primary-dark/20 dark:border-primary/30 dark:hover:border-primary/50 dark:shadow-none dark:focus:border-gold dark:focus:ring-1 dark:focus:ring-gold transition-all text-body-s"
+          className="w-full bg-card border border-neutral-600 hover:border-neutral-500 rounded-lg px-3 py-2 text-neutral-50 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 shadow-xs focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-primary-dark/20 dark:border-primary/30 dark:hover:border-primary/50 dark:shadow-none dark:focus:border-gold dark:focus:ring-1 dark:focus:ring-gold transition-colors text-body-s"
           required
           maxLength={50}
           disabled={isPending}
@@ -120,7 +120,7 @@ export function TaskBasicFields({ form, columns }: TaskBasicFieldsProps) {
           value={description}
           onChange={(e) => setDescription(e.target.value.slice(0, 500))}
           placeholder={t("descriptionPlaceholder")}
-          className="w-full bg-card border border-neutral-600 hover:border-neutral-500 rounded-lg px-3 py-2 text-neutral-50 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 shadow-xs focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-primary-dark/20 dark:border-primary/30 dark:hover:border-primary/50 dark:shadow-none dark:focus:border-gold dark:focus:ring-1 dark:focus:ring-gold transition-all text-body-s resize-none"
+          className="w-full bg-card border border-neutral-600 hover:border-neutral-500 rounded-lg px-3 py-2 text-neutral-50 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 shadow-xs focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-primary-dark/20 dark:border-primary/30 dark:hover:border-primary/50 dark:shadow-none dark:focus:border-gold dark:focus:ring-1 dark:focus:ring-gold transition-colors text-body-s resize-none"
           maxLength={500}
           disabled={isPending}
         />
@@ -167,7 +167,7 @@ export function TaskBasicFields({ form, columns }: TaskBasicFieldsProps) {
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
               placeholder={t("tagsPlaceholder", { max: MAX_TASK_TAGS })}
-              className="w-full rounded-lg text-left transition-all py-2 pl-8 pr-3 text-body-s h-[38px] bg-card border border-neutral-600 hover:border-neutral-500 text-neutral-50 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 shadow-xs focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-primary-dark/20 dark:border-primary/30 dark:hover:border-primary/50 dark:shadow-none dark:focus:border-gold dark:focus:ring-1 dark:focus:ring-gold disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full rounded-lg text-left transition-colors py-2 pl-8 pr-3 text-body-s h-[38px] bg-card border border-neutral-600 hover:border-neutral-500 text-neutral-50 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 shadow-xs focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-primary-dark/20 dark:border-primary/30 dark:hover:border-primary/50 dark:shadow-none dark:focus:border-gold dark:focus:ring-1 dark:focus:ring-gold disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isPending}
             />
           </div>

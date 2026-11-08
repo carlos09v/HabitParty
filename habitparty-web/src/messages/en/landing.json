@@ -217,26 +217,25 @@
         ]
       },
       "r12": {
-        "statusLabel": "Next Milestone",
-        "title": "Light Theme, VIP Themes & Achievements",
-        "tagline": "Crisp high-contrast daytime mode, exclusive VIP visual atmospheres, task-linked deep work, and your first discipline trophies.",
+        "statusLabel": "Completed",
+        "title": "Light Theme, Achievements & Public Profiles",
+        "tagline": "Crisp high-contrast daytime mode, discipline trophies, public adventurer profiles, and highlight showcase.",
         "features": [
           "Light Theme with high contrast and crisp readability for daytime productivity",
           "Dynamic theme switcher (Cosmic Dark vs. Cosmic Daylight)",
-          "Exclusive VIP Themes (Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold)",
-          "Direct linking of Pomodoro/Focus sessions to specific Kanban tasks",
-          "Effort metrics per card with dedicated time history and auto-completion",
           "Personal Achievements system with dozens of automated trophies and medals",
-          "New 'My Achievements' screen to track your adventurer progression"
+          "New 'My Achievements' screen to track your adventurer progression",
+          "Public Adventurer Pages to share level, consistency, and streaks",
+          "Highlight Showcase to organize and pin your favorite badges and trophies at the top of your profile"
         ]
       },
       "r13": {
-        "statusLabel": "Planned",
-        "title": "Public Profile & Trophy Showcase",
-        "tagline": "Share your epic journey, connect with friends, and display your rare badges at the top of your profile.",
+        "statusLabel": "Next Milestone",
+        "title": "Task-Linked Focus, VIP Themes & Friendships",
+        "tagline": "Link focus timers to tasks with effort metrics, customize your VIP visual atmosphere, and connect with friends.",
         "features": [
-          "Public Adventurer Pages to share level, consistency, and streaks",
-          "Highlight Showcase to pin your Founding Member Badge at the top of your profile",
+          "Task-Linked Focus Sessions & Effort Metrics: 1-click timer launch, card-level time tracking, and auto-completion",
+          "Exclusive VIP Themes (Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold)",
           "Friend Network with player search by username and friend code",
           "Granular privacy controls for stats and routines"
         ]

@@ -12,9 +12,7 @@ export async function getWorkspaces(): Promise<WorkspaceResponseDTO[]> {
   cacheLife("catalog");
   cacheTag("workspaces");
 
-  const { data, error } = await serverApi.GET("/workspaces", {
-    next: { tags: ["workspaces"] },
-  });
+  const { data, error } = await serverApi.GET("/workspaces");
 
   if (error || !data) {
     return [];

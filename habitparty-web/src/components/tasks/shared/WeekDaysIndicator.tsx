@@ -39,7 +39,7 @@ export function WeekDaysIndicator({
             key={day.enumValue}
             title={`${fullName}${isToday ? t("todaySuffix") : ""}: ${isActive ? t("activeStatus") : t("inactiveStatus")}`}
             className={cn(
-              "rounded-full flex items-center justify-center font-bold transition-all shrink-0",
+              "rounded-full flex items-center justify-center font-bold transition-colors shrink-0",
               isCompact ? "w-3.5 h-3.5 text-[8px]" : "w-4.5 h-4.5 text-label-m",
               isActive &&
                 isToday &&

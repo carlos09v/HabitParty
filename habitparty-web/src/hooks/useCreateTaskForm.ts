@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { cloneTaskChecklistItems } from "@/actions/checklistActions";
 import { createTask, moveTasks, updateTask } from "@/actions/taskActions";
@@ -43,6 +43,98 @@ import { validateHardcoreTodo } from "@/utils/validators";
 
 export type { UseCreateTaskFormOptions };
 
+function buildInitialTaskFormValues({
+  columns,
+  defaultColumnId,
+  defaultTaskType,
+  initialTitle,
+  initialValues,
+  taskToEdit,
+}: Pick<
+  UseCreateTaskFormOptions,
+  | "columns"
+  | "defaultColumnId"
+  | "defaultTaskType"
+  | "initialTitle"
+  | "initialValues"
+  | "taskToEdit"
+>) {
+  if (taskToEdit) {
+    const rawType = (taskToEdit.type || "todo").toString().toUpperCase();
+    const mappedType: TaskTypeOption =
+      rawType === "HABIT" ? "HABIT" : rawType === "DAILY" ? "DAILY" : "TODO";
+
+    return {
+      taskType: mappedType,
+      columnId: taskToEdit.columnId || defaultColumnId || columns[0]?.id || "",
+      name: taskToEdit.title || "",
+      description: taskToEdit.description || "",
+      tagsInput:
+        Array.isArray(taskToEdit.tags) && taskToEdit.tags.length > 0
+          ? taskToEdit.tags.join(", ")
+          : taskToEdit.category && taskToEdit.category !== "Geral"
+            ? taskToEdit.category
+            : "",
+      isHardcore: Boolean(taskToEdit.isHardcoreModeEnabled),
+      habitType: (taskToEdit.habitType || "POSITIVE") as HabitTypeOption,
+      resetCounter: (taskToEdit.resetCounter || "DAILY") as ResetCounterOption,
+      importanceType:
+        taskToEdit.importanceType ||
+        (taskToEdit.importance?.toUpperCase() as HabitImportanceOption) ||
+        "NORMAL",
+      difficulty: normalizeTaskDifficulty(taskToEdit.difficulty),
+      priority: ((taskToEdit.priority as TaskPriorityOption) ||
+        "NONE") as TaskPriorityOption,
+      dueDate: taskToEdit.dueDate || "",
+      dueTime: taskToEdit.dueTime ? taskToEdit.dueTime.slice(0, 5) : "",
+      reminderType: (taskToEdit.reminderType || "NONE") as ReminderTypeOption,
+      sendEmailReminder: Boolean(taskToEdit.sendEmailReminder),
+      startDate: taskToEdit.startDate || getTodayDateString(),
+      repeatType: (taskToEdit.repeatType || "DAILY") as DailyRepeatTypeOption,
+      repeatEvery: taskToEdit.repeatEvery || 1,
+      selectedDays:
+        taskToEdit.daysOfWeek && taskToEdit.daysOfWeek.length > 0
+          ? taskToEdit.daysOfWeek
+          : ALL_WEEK_DAYS,
+      monthlyOption: (taskToEdit.monthlyOption ||
+        "DAY_OF_THE_MONTH") as DailyRepeatMonthlyOption,
+      checklist: taskToEdit.checklist
+        ? taskToEdit.checklist.map((item) => ({ ...item }))
+        : [],
+    };
+  }
+
+  return {
+    taskType: (initialValues?.taskType ||
+      defaultTaskType ||
+      "TODO") as TaskTypeOption,
+    columnId: defaultColumnId || columns[0]?.id || "",
+    name: initialValues?.title || initialTitle || "",
+    description: "",
+    tagsInput: "",
+    isHardcore: false,
+    habitType: (initialValues?.habitType || "POSITIVE") as HabitTypeOption,
+    resetCounter: (initialValues?.resetCounter ||
+      "DAILY") as ResetCounterOption,
+    importanceType: (initialValues?.importanceType ||
+      "NORMAL") as HabitImportanceOption,
+    difficulty: (initialValues?.difficulty || "MEDIUM") as TaskDifficultyOption,
+    priority: (initialValues?.priority || "NONE") as TaskPriorityOption,
+    dueDate:
+      initialValues?.dueDate ||
+      (initialValues?.dueTime ? getTodayDateString() : ""),
+    dueTime: initialValues?.dueTime ? initialValues.dueTime.slice(0, 5) : "",
+    reminderType: "NONE" as ReminderTypeOption,
+    sendEmailReminder: false,
+    startDate: initialValues?.startDate || getTodayDateString(),
+    repeatType: (initialValues?.repeatType || "DAILY") as DailyRepeatTypeOption,
+    repeatEvery: initialValues?.repeatEvery ?? 1,
+    selectedDays: initialValues?.daysOfWeek || ALL_WEEK_DAYS,
+    monthlyOption: "DAY_OF_THE_MONTH" as DailyRepeatMonthlyOption,
+    checklist: [],
+  };
+}
+
 export function useCreateTaskForm({
   isOpen,
   columns,
@@ -60,31 +152,55 @@ export function useCreateTaskForm({
   const [isPending, startTransition] = useTransition();
   const isEditing = !!taskToEdit;
 
+  const [initialForm] = useState(() =>
+    buildInitialTaskFormValues({
+      columns,
+      defaultColumnId,
+      defaultTaskType,
+      initialTitle,
+      initialValues,
+      taskToEdit,
+    }),
+  );
+
   // Tipo de tarefa ativo
   const [taskType, setTaskType] = useState<TaskTypeOption>(
-    initialValues?.taskType || defaultTaskType || "TODO",
+    initialForm.taskType,
   );
 
   // Campos Comuns
-  const [columnId, setColumnId] = useState(defaultColumnId || "");
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [tagsInput, setTagsInput] = useState("");
-  const [isHardcore, setIsHardcore] = useState(false);
+  const [columnId, setColumnId] = useState(initialForm.columnId);
+  const [name, setName] = useState(initialForm.name);
+  const [description, setDescription] = useState(initialForm.description);
+  const [tagsInput, setTagsInput] = useState(initialForm.tagsInput);
+  const [isHardcore, setIsHardcore] = useState(initialForm.isHardcore);
 
   // Campos de Hábito
-  const [habitType, setHabitType] = useState<HabitTypeOption>("POSITIVE");
-  const [resetCounter, setResetCounter] = useState<ResetCounterOption>("DAILY");
-  const [importanceType, setImportanceType] =
-    useState<HabitImportanceOption>("NORMAL");
+  const [habitType, setHabitType] = useState<HabitTypeOption>(
+    initialForm.habitType,
+  );
+  const [resetCounter, setResetCounter] = useState<ResetCounterOption>(
+    initialForm.resetCounter,
+  );
+  const [importanceType, setImportanceType] = useState<HabitImportanceOption>(
+    initialForm.importanceType,
+  );
 
   // Campos de Diária (Daily) & ToDo
-  const [difficulty, setDifficulty] = useState<TaskDifficultyOption>("MEDIUM");
-  const [priority, setPriority] = useState<TaskPriorityOption>("NONE");
-  const [dueDate, setDueDate] = useState("");
-  const [dueTime, setDueTime] = useState("");
-  const [reminderType, setReminderType] = useState<ReminderTypeOption>("NONE");
-  const [sendEmailReminder, setSendEmailReminder] = useState(false);
+  const [difficulty, setDifficulty] = useState<TaskDifficultyOption>(
+    initialForm.difficulty,
+  );
+  const [priority, setPriority] = useState<TaskPriorityOption>(
+    initialForm.priority,
+  );
+  const [dueDate, setDueDate] = useState(initialForm.dueDate);
+  const [dueTime, setDueTime] = useState(initialForm.dueTime);
+  const [reminderType, setReminderType] = useState<ReminderTypeOption>(
+    initialForm.reminderType,
+  );
+  const [sendEmailReminder, setSendEmailReminder] = useState(
+    initialForm.sendEmailReminder,
+  );
 
   const handleDueDateChange = (nextDate: string) => {
     setDueDate(nextDate);
@@ -102,13 +218,17 @@ export function useCreateTaskForm({
   };
 
   // Campos específicos de Daily
-  const [startDate, setStartDate] = useState("");
-  const [repeatType, setRepeatType] = useState<DailyRepeatTypeOption>("DAILY");
-  const [repeatEvery, setRepeatEvery] = useState(1);
-  const [selectedDays, setSelectedDays] =
-    useState<DailyDaysOfWeek[]>(ALL_WEEK_DAYS);
-  const [monthlyOption, setMonthlyOption] =
-    useState<DailyRepeatMonthlyOption>("DAY_OF_THE_MONTH");
+  const [startDate, setStartDate] = useState(initialForm.startDate);
+  const [repeatType, setRepeatType] = useState<DailyRepeatTypeOption>(
+    initialForm.repeatType,
+  );
+  const [repeatEvery, setRepeatEvery] = useState(initialForm.repeatEvery);
+  const [selectedDays, setSelectedDays] = useState<DailyDaysOfWeek[]>(
+    initialForm.selectedDays,
+  );
+  const [monthlyOption, setMonthlyOption] = useState<DailyRepeatMonthlyOption>(
+    initialForm.monthlyOption,
+  );
 
   // Checklist de subtarefas gerenciado pelo hook central useChecklist
   const {
@@ -116,9 +236,10 @@ export function useCreateTaskForm({
     resetChecklist,
     addItem: addChecklistItem,
     toggleItem: toggleChecklistItem,
+    updateItem: updateChecklistItem,
     deleteItem: deleteChecklistItem,
   } = useChecklist({
-    initialItems: taskToEdit?.checklist,
+    initialItems: initialForm.checklist,
     taskId: taskToEdit?.id,
   });
   const [newChecklistText, setNewChecklistText] = useState("");
@@ -129,102 +250,60 @@ export function useCreateTaskForm({
     setTaskType(type);
   };
 
-  const isInitializedRef = useRef(false);
+  const sessionKey = isOpen
+    ? `${taskToEdit?.id ?? "new"}:${defaultColumnId ?? ""}:${defaultTaskType ?? ""}:${initialTitle ?? ""}`
+    : "closed";
+  const activeSessionKeyRef = useRef(sessionKey);
 
-  // Reset e inicialização ao abrir o modal
+  // Foco diferido para o término da animação CSS de entrada (150ms), evitando layout thrash no meio do zoom-in
+  const handleModalAnimationEnd = useCallback(() => {
+    nameInputRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  // Sincroniza apenas caso o modal permaneça montado e troque de sessão/tarefa (no mount inicial: zero setState)
   useEffect(() => {
     if (!isOpen) {
-      isInitializedRef.current = false;
+      activeSessionKeyRef.current = "closed";
       return;
     }
 
-    // Se já inicializou para esta sessão do modal com esta tarefa, preserva as alterações locais
-    if (isInitializedRef.current) return;
-    isInitializedRef.current = true;
+    if (activeSessionKeyRef.current === sessionKey) return;
+    activeSessionKeyRef.current = sessionKey;
 
-    if (taskToEdit) {
-      const rawType = (taskToEdit.type || "todo").toString().toUpperCase();
-      const mappedType: TaskTypeOption =
-        rawType === "HABIT" ? "HABIT" : rawType === "DAILY" ? "DAILY" : "TODO";
+    const next = buildInitialTaskFormValues({
+      columns,
+      defaultColumnId,
+      defaultTaskType,
+      initialTitle,
+      initialValues,
+      taskToEdit,
+    });
 
-      setTaskType(mappedType);
-      setColumnId(
-        taskToEdit.columnId || defaultColumnId || columns[0]?.id || "",
-      );
-      setName(taskToEdit.title || "");
-      setDescription(taskToEdit.description || "");
-      setTagsInput(
-        Array.isArray(taskToEdit.tags) && taskToEdit.tags.length > 0
-          ? taskToEdit.tags.join(", ")
-          : taskToEdit.category && taskToEdit.category !== "Geral"
-            ? taskToEdit.category
-            : "",
-      );
-      setIsHardcore(Boolean(taskToEdit.isHardcoreModeEnabled));
-      setHabitType(taskToEdit.habitType || "POSITIVE");
-      setResetCounter(taskToEdit.resetCounter || "DAILY");
-      setImportanceType(
-        taskToEdit.importanceType ||
-          (taskToEdit.importance?.toUpperCase() as HabitImportanceOption) ||
-          "NORMAL",
-      );
-      setDifficulty(normalizeTaskDifficulty(taskToEdit.difficulty));
-      setPriority((taskToEdit.priority as TaskPriorityOption) || "NONE");
-
-      setDueDate(taskToEdit.dueDate || "");
-      setDueTime(taskToEdit.dueTime ? taskToEdit.dueTime.slice(0, 5) : "");
-      setReminderType(taskToEdit.reminderType || "NONE");
-      setSendEmailReminder(Boolean(taskToEdit.sendEmailReminder));
-      setStartDate(taskToEdit.startDate || getTodayDateString());
-      setRepeatType(taskToEdit.repeatType || "DAILY");
-      setRepeatEvery(taskToEdit.repeatEvery || 1);
-      setSelectedDays(
-        taskToEdit.daysOfWeek && taskToEdit.daysOfWeek.length > 0
-          ? taskToEdit.daysOfWeek
-          : ALL_WEEK_DAYS,
-      );
-      setMonthlyOption(taskToEdit.monthlyOption || "DAY_OF_THE_MONTH");
-      resetChecklist(
-        taskToEdit.checklist
-          ? taskToEdit.checklist.map((item) => ({ ...item }))
-          : [],
-      );
-      setNewChecklistText("");
-    } else {
-      setTaskType(initialValues?.taskType || defaultTaskType || "TODO");
-      setColumnId(defaultColumnId || columns[0]?.id || "");
-      setName(initialValues?.title || initialTitle || "");
-      setDescription("");
-      setTagsInput("");
-      setIsHardcore(false);
-      setHabitType(initialValues?.habitType || "POSITIVE");
-      setResetCounter(initialValues?.resetCounter || "DAILY");
-      setImportanceType(initialValues?.importanceType || "NORMAL");
-      setDifficulty(initialValues?.difficulty || "MEDIUM");
-      setPriority(initialValues?.priority || "NONE");
-      setDueDate(
-        initialValues?.dueDate ||
-          (initialValues?.dueTime ? getTodayDateString() : ""),
-      );
-      setDueTime(
-        initialValues?.dueTime ? initialValues.dueTime.slice(0, 5) : "",
-      );
-      setReminderType("NONE");
-      setSendEmailReminder(false);
-      setStartDate(initialValues?.startDate || getTodayDateString());
-      setRepeatType(initialValues?.repeatType || "DAILY");
-      setRepeatEvery(initialValues?.repeatEvery ?? 1);
-      setSelectedDays(initialValues?.daysOfWeek || ALL_WEEK_DAYS);
-      setMonthlyOption("DAY_OF_THE_MONTH");
-      resetChecklist([]);
-      setNewChecklistText("");
-    }
-
-    setTimeout(() => {
-      nameInputRef.current?.focus();
-    }, 50);
+    setTaskType(next.taskType);
+    setColumnId(next.columnId);
+    setName(next.name);
+    setDescription(next.description);
+    setTagsInput(next.tagsInput);
+    setIsHardcore(next.isHardcore);
+    setHabitType(next.habitType);
+    setResetCounter(next.resetCounter);
+    setImportanceType(next.importanceType);
+    setDifficulty(next.difficulty);
+    setPriority(next.priority);
+    setDueDate(next.dueDate);
+    setDueTime(next.dueTime);
+    setReminderType(next.reminderType);
+    setSendEmailReminder(next.sendEmailReminder);
+    setStartDate(next.startDate);
+    setRepeatType(next.repeatType);
+    setRepeatEvery(next.repeatEvery);
+    setSelectedDays(next.selectedDays);
+    setMonthlyOption(next.monthlyOption);
+    resetChecklist(next.checklist);
+    setNewChecklistText("");
   }, [
     isOpen,
+    sessionKey,
     taskToEdit,
     defaultColumnId,
     defaultTaskType,
@@ -252,6 +331,13 @@ export function useCreateTaskForm({
     const target = checklist[index];
     if (target?.id) {
       toggleChecklistItem(target.id);
+    }
+  };
+
+  const handleUpdateChecklistItem = (index: number, newName: string) => {
+    const target = checklist[index];
+    if (target?.id) {
+      updateChecklistItem(target.id, newName);
     }
   };
 
@@ -485,9 +571,11 @@ export function useCreateTaskForm({
     newChecklistText,
     setNewChecklistText,
     nameInputRef,
+    handleModalAnimationEnd,
     handleAddChecklistItem,
     handleRemoveChecklistItem,
     handleToggleChecklistItem,
+    handleUpdateChecklistItem,
     taskToEdit,
     handleSubmit,
   };

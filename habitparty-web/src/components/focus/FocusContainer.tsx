@@ -2,15 +2,16 @@
 
 import { BarChart2, Timer } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { MAX_FOCUS_ACTIVITIES_FREE } from "@/constants/focus";
 import { useCompactMode } from "@/hooks/useCompactMode";
 import { useFocusAnalytics } from "@/hooks/useFocusAnalytics";
 import { executeDeleteFocusRecord } from "@/hooks/useFocusMutations";
 import { useFocusTimerControls } from "@/hooks/useFocusTimer";
+import { useIdlePreload } from "@/hooks/useIdlePreload";
 import { useUserStore } from "@/store/userStore";
 import type {
   FocusActivity,
@@ -46,6 +47,12 @@ const SwitchTimerModeModal = dynamic(
   { ssr: false },
 );
 
+function preloadFocusContainerModalChunks() {
+  void import("./modals/FocusManualRecordModal");
+  void import("./modals/SwitchFocusTargetModal");
+  void import("./modals/SwitchTimerModeModal");
+}
+
 interface FocusContainerProps {
   initialActivities: FocusActivity[];
   initialBackpackItems: InventoryItemResponseDTO[];
@@ -65,15 +72,37 @@ export function FocusContainer({
 }: FocusContainerProps) {
   const t = useTranslations("focus.container");
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const is_Premium = useUserStore((s) => s.is_Premium);
   const { isCompact: storeIsCompact } = useCompactMode();
+  useIdlePreload(preloadFocusContainerModalChunks);
 
   const isCompact = propIsCompact ?? storeIsCompact;
 
+  const urlActivityId =
+    searchParams.get("activityId") || initialSelectedActivityId || null;
+
   // Atividade selecionada para filtro de métricas (não interfere no timer ativo)
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(
-    initialSelectedActivityId,
+    urlActivityId,
   );
+  const [selectedBackpackItemId, setSelectedBackpackItemId] = useState<
+    string | null
+  >(null);
+  const lastAppliedUrlActivityIdRef = useRef<string | null>(null);
+
+  const clearActivityQueryParam = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("activityId")) {
+      url.searchParams.delete("activityId");
+      const nextUrl = url.search
+        ? `${pathname}?${url.searchParams.toString()}`
+        : pathname;
+      window.history.replaceState(null, "", nextUrl);
+    }
+  }, [pathname]);
 
   // Aba mobile ativa (< xl): "timer" para Timer & Sessão, "metrics" para Métricas & Histórico
   const [mobileTab, setMobileTab] = useState<"timer" | "metrics">("timer");
@@ -111,6 +140,7 @@ export function FocusContainer({
     startFocusActivity,
     startFocusItem,
     selectActivityTarget,
+    selectItemTarget,
     resetTarget,
     transferTarget,
     syncTargetMetadata,
@@ -118,6 +148,7 @@ export function FocusContainer({
   } = useFocusTimerControls({
     onSessionSaved: () => {
       setSelectedActivityId(null);
+      setSelectedBackpackItemId(null);
     },
   });
 
@@ -142,12 +173,59 @@ export function FocusContainer({
   // Há tempo de foco real pendente de decisão apenas na fase WORK com segundos decorridos (> 0s)
   const hasUnsavedWorkSession = phase === "WORK" && hasElapsedSeconds;
 
+  // Sincroniza atividade vinda da URL (ex: clique no widget do Dashboard /focus?activityId=...)
+  useEffect(() => {
+    if (!urlActivityId) {
+      lastAppliedUrlActivityIdRef.current = null;
+      return;
+    }
+
+    if (lastAppliedUrlActivityIdRef.current === urlActivityId) {
+      return;
+    }
+
+    const actIndex = initialActivities.findIndex((a) => a.id === urlActivityId);
+    if (actIndex === -1) return;
+
+    const isActLocked = !is_Premium && actIndex >= MAX_FOCUS_ACTIVITIES_FREE;
+    if (isActLocked) return;
+
+    lastAppliedUrlActivityIdRef.current = urlActivityId;
+    setSelectedActivityId(urlActivityId);
+    setSelectedBackpackItemId(null);
+
+    if (!isActive && !hasElapsedSeconds) {
+      selectActivityTarget(initialActivities[actIndex]);
+    }
+  }, [
+    urlActivityId,
+    initialActivities,
+    is_Premium,
+    isActive,
+    hasElapsedSeconds,
+    selectActivityTarget,
+  ]);
+
   // Sincroniza o alvo com os dados reais do servidor
   useEffect(() => {
+    const preferredIndex = urlActivityId
+      ? initialActivities.findIndex((a) => a.id === urlActivityId)
+      : -1;
+    const isPreferredValid =
+      preferredIndex !== -1 &&
+      (is_Premium || preferredIndex < MAX_FOCUS_ACTIVITIES_FREE);
+    const defaultActivity = isPreferredValid
+      ? initialActivities[preferredIndex]
+      : initialActivities[0];
+
     if (!target) {
-      if (!isActive && !hasElapsedSeconds && initialActivities.length > 0) {
-        selectActivityTarget(initialActivities[0]);
-        setSelectedActivityId(initialActivities[0].id);
+      if (!isActive && !hasElapsedSeconds && defaultActivity) {
+        selectActivityTarget(defaultActivity);
+        setSelectedActivityId(
+          isPreferredValid
+            ? defaultActivity.id
+            : (prev) => prev ?? defaultActivity.id,
+        );
       }
       return;
     }
@@ -158,9 +236,9 @@ export function FocusContainer({
       );
       if (!currentItem) {
         resetTarget();
-        if (initialActivities.length > 0) {
-          selectActivityTarget(initialActivities[0]);
-          setSelectedActivityId(initialActivities[0].id);
+        if (defaultActivity) {
+          selectActivityTarget(defaultActivity);
+          setSelectedActivityId(defaultActivity.id);
         }
       } else {
         syncTargetMetadata({
@@ -178,9 +256,9 @@ export function FocusContainer({
 
       if (!existsInActivities || isActLocked) {
         resetTarget();
-        if (initialActivities.length > 0) {
-          selectActivityTarget(initialActivities[0]);
-          setSelectedActivityId(initialActivities[0].id);
+        if (defaultActivity) {
+          selectActivityTarget(defaultActivity);
+          setSelectedActivityId(defaultActivity.id);
         }
       } else {
         const currentAct = initialActivities[actIndex];
@@ -194,6 +272,7 @@ export function FocusContainer({
     }
   }, [
     target,
+    urlActivityId,
     isActive,
     hasElapsedSeconds,
     initialBackpackItems,
@@ -206,6 +285,14 @@ export function FocusContainer({
 
   const handleSelectActivity = (activityId: string | null) => {
     setSelectedActivityId(activityId);
+    if (activityId) {
+      setSelectedBackpackItemId(null);
+      if (urlActivityId && activityId !== urlActivityId) {
+        clearActivityQueryParam();
+      }
+    } else {
+      clearActivityQueryParam();
+    }
 
     if (!isActive && !hasElapsedSeconds && activityId) {
       const actIndex = initialActivities.findIndex((a) => a.id === activityId);
@@ -213,6 +300,23 @@ export function FocusContainer({
       if (actIndex !== -1 && !isActLocked) {
         selectActivityTarget(initialActivities[actIndex]);
       }
+    }
+  };
+
+  const handleSelectBackpackItem = (item: InventoryItemResponseDTO) => {
+    const itemId = item.inventoryItemId || null;
+    const isDeselecting = itemId !== null && selectedBackpackItemId === itemId;
+
+    if (isDeselecting) {
+      setSelectedBackpackItemId(null);
+      return;
+    }
+
+    setSelectedActivityId(null);
+    setSelectedBackpackItemId(itemId);
+
+    if (!isActive && !hasElapsedSeconds) {
+      selectItemTarget(item);
     }
   };
 
@@ -225,6 +329,7 @@ export function FocusContainer({
 
     if (target?.id === act.id && hasUnsavedWorkSession) {
       setSelectedActivityId(act.id);
+      setSelectedBackpackItemId(null);
       syncTargetMetadata({
         id: act.id,
         name: act.name,
@@ -242,12 +347,14 @@ export function FocusContainer({
       return;
     }
     setSelectedActivityId(act.id);
+    setSelectedBackpackItemId(null);
     startFocusActivity(act);
   };
 
   const handleStartFocusItem = (item: InventoryItemResponseDTO) => {
     if (target?.id === item.inventoryItemId && hasUnsavedWorkSession) {
       setSelectedActivityId(null);
+      setSelectedBackpackItemId(item.inventoryItemId || null);
       syncTargetMetadata({
         id: item.inventoryItemId,
         name: item.rewardName,
@@ -264,6 +371,7 @@ export function FocusContainer({
       return;
     }
     setSelectedActivityId(null);
+    setSelectedBackpackItemId(item.inventoryItemId || null);
     startFocusItem(item);
   };
 
@@ -358,7 +466,7 @@ export function FocusContainer({
             type="button"
             onClick={() => setMobileTab("timer")}
             className={cn(
-              "flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+              "flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg text-xs font-semibold transition-colors cursor-pointer",
               mobileTab === "timer"
                 ? "bg-primary text-white shadow-sm"
                 : "text-neutral-400 hover:text-white hover:bg-white/5",
@@ -374,7 +482,7 @@ export function FocusContainer({
             type="button"
             onClick={() => setMobileTab("metrics")}
             className={cn(
-              "flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+              "flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg text-xs font-semibold transition-colors cursor-pointer",
               mobileTab === "metrics"
                 ? "bg-primary text-white shadow-sm"
                 : "text-neutral-400 hover:text-white hover:bg-white/5",
@@ -400,7 +508,9 @@ export function FocusContainer({
           backpackItems={initialBackpackItems}
           isPremium={is_Premium}
           selectedActivityId={selectedActivityId}
+          selectedBackpackItemId={selectedBackpackItemId}
           onSelectActivity={handleSelectActivity}
+          onSelectBackpackItem={handleSelectBackpackItem}
           onStartFocusActivity={handleStartFocusActivity}
           onStartFocusItem={handleStartFocusItem}
           onChangeMode={handleChangeMode}

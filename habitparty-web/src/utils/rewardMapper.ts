@@ -11,6 +11,7 @@ import { MYSTERY_BOX_TIERS, REWARD_ICON_MAP } from "@/constants/reward";
 import type {
   CategoryMessageKey,
   CreateRewardDTO,
+  MysteryBoxLootItem,
   MysteryBoxTier,
   PackageLevel,
   PackageMessageKey,
@@ -237,6 +238,7 @@ export function mapRewardDtoToReward(dto: RewardResponseDTO): Reward {
     icon,
     iconName: icon,
     orderIndex: dto.orderIndex,
+    lootItems: dto.lootItems,
   };
 }
 
@@ -249,6 +251,7 @@ export interface RewardFormInput {
   packageLevel?: PackageLevel;
   baseDurationMinutes?: number;
   icon?: string;
+  lootItems?: MysteryBoxLootItem[];
 }
 
 /**
@@ -275,6 +278,7 @@ export function mapRewardFormToCreatePayload(
       input.icon || (input.type === "MysteryBox" ? "mystery_box" : "gamepad"),
     baseDurationMinutes:
       input.type === "TimeBased" ? input.baseDurationMinutes : undefined,
+    lootItems: input.type === "MysteryBox" ? input.lootItems : undefined,
   };
 }
 

@@ -87,7 +87,7 @@ export function FocusManualRecordModal({
       headerIcon={<History size={20} />}
       title={t("title")}
       headerBadge={
-        <span className="text-tiny uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/30">
+        <span className="text-tiny uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-800 border border-amber-500/30 dark:bg-gold/15 dark:text-gold dark:border-gold/30">
           {t("manualBadge")}
         </span>
       }
@@ -137,7 +137,7 @@ export function FocusManualRecordModal({
                       <span className="flex items-center justify-between w-full">
                         <span>{t("activitySelectLabel")}</span>
                         {form.selectedActivity?.targetTimeMinutes && (
-                          <span className="text-tiny font-semibold text-gold bg-gold/10 px-2 py-0.5 rounded-md border border-gold/25">
+                          <span className="text-tiny font-semibold text-amber-800 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30 dark:text-gold dark:bg-gold/10 dark:border-gold/25">
                             {t("targetBadge", {
                               minutes: form.selectedActivity.targetTimeMinutes,
                             })}
@@ -161,7 +161,7 @@ export function FocusManualRecordModal({
 
                   {!form.isPremium &&
                     activities.length > MAX_FOCUS_ACTIVITIES_FREE && (
-                      <span className="text-label-g text-gold/90 font-medium px-1 flex items-center gap-1.5">
+                      <span className="text-label-g text-amber-700 dark:text-gold/90 font-medium px-1 flex items-center gap-1.5">
                         <span>👑</span>
                         <span>
                           {t("pausedFreePlanNotice", {
@@ -182,7 +182,7 @@ export function FocusManualRecordModal({
                       <span className="flex items-center justify-between w-full">
                         <span>{t("backpackItemSelectLabel")}</span>
                         {form.selectedItem && (
-                          <span className="text-tiny font-semibold text-gold bg-gold/10 px-2 py-0.5 rounded-md border border-gold/25">
+                          <span className="text-tiny font-semibold text-amber-800 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30 dark:text-gold dark:bg-gold/10 dark:border-gold/25">
                             {t("balanceBadge", {
                               minutes: form.selectedItemMinutes,
                             })}
@@ -256,7 +256,38 @@ export function FocusManualRecordModal({
           <div className="p-3.5 rounded-xl border border-neutral-700 bg-background dark:border-primary/25 dark:bg-primary-dark/15 flex flex-col justify-between gap-3">
             <div className="flex flex-col gap-3">
               {form.targetType === "ITEM" ? (
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-body-s text-neutral-100 font-semibold flex items-center gap-1.5">
+                      <Clock
+                        size={14}
+                        className="text-primary dark:text-gold"
+                      />
+                      {t("focusTimeLabel")}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      {FOCUS_MANUAL_PRESETS.filter(
+                        (mins) =>
+                          form.selectedItemMinutes <= 0 ||
+                          mins <= form.selectedItemMinutes,
+                      ).map((mins) => (
+                        <button
+                          key={mins}
+                          type="button"
+                          onClick={() => form.handlePresetSelect(mins)}
+                          className={cn(
+                            "px-2 py-0.5 rounded-md text-tiny font-semibold border transition-colors cursor-pointer",
+                            form.durationMinutes === mins
+                              ? "bg-amber-500/20 border-amber-500 text-amber-800 dark:bg-gold/25 dark:border-gold dark:text-gold font-bold shadow-glow-gold-xs"
+                              : "bg-card dark:bg-surface/60 border-neutral-600 dark:border-primary/25 text-neutral-400 hover:text-amber-700 dark:hover:text-gold hover:border-amber-500/40 dark:hover:border-gold/40",
+                          )}
+                        >
+                          {mins}m
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="relative flex items-end">
                     <Input
                       id="duration-minutes"
@@ -265,17 +296,15 @@ export function FocusManualRecordModal({
                       })}
                       type="number"
                       compact
-                      min={1}
+                      min={0}
                       max={
                         form.selectedItemMinutes > 0
                           ? form.selectedItemMinutes
                           : undefined
                       }
-                      value={form.durationMinutes}
+                      value={form.durationInput}
                       onChange={(e) =>
-                        form.setDurationMinutes(
-                          Math.max(1, Number.parseInt(e.target.value, 10) || 1),
-                        )
+                        form.handleDurationInputChange(e.target.value)
                       }
                       icon={<Clock size={16} />}
                       className="pr-16 font-bold tabular-nums"
@@ -317,16 +346,16 @@ export function FocusManualRecordModal({
                       </button>
                     </div>
                   </div>
-                  <span className="text-caption text-neutral-400 pl-0.5">
-                    {t("remainingBalanceAfterLog")}{" "}
-                    <strong className="text-gold font-semibold">
+                  <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-card dark:bg-white/5 border border-neutral-700 dark:border-white/10 text-caption text-neutral-300">
+                    <span>{t("remainingBalanceAfterLog")}</span>
+                    <strong className="text-amber-700 dark:text-gold font-semibold tabular-nums">
                       {Math.max(
                         0,
                         form.selectedItemMinutes - form.durationMinutes,
                       )}
                       m
                     </strong>
-                  </span>
+                  </div>
                 </div>
               ) : (
                 <>
@@ -346,10 +375,10 @@ export function FocusManualRecordModal({
                           type="button"
                           onClick={() => form.handlePresetSelect(mins)}
                           className={cn(
-                            "px-2 py-0.5 rounded-md text-tiny font-semibold border transition-all cursor-pointer",
+                            "px-2 py-0.5 rounded-md text-tiny font-semibold border transition-colors cursor-pointer",
                             form.durationMinutes === mins
-                              ? "bg-gold/25 border-gold text-gold font-bold shadow-glow-gold-xs"
-                              : "bg-card dark:bg-surface/60 border-neutral-600 dark:border-primary/25 text-neutral-400 hover:text-gold hover:border-gold/40",
+                              ? "bg-amber-500/20 border-amber-500 text-amber-800 dark:bg-gold/25 dark:border-gold dark:text-gold font-bold shadow-glow-gold-xs"
+                              : "bg-card dark:bg-surface/60 border-neutral-600 dark:border-primary/25 text-neutral-400 hover:text-amber-700 dark:hover:text-gold hover:border-amber-500/40 dark:hover:border-gold/40",
                           )}
                         >
                           {mins}m
@@ -373,16 +402,11 @@ export function FocusManualRecordModal({
                         label={t("totalMinutesLabel")}
                         type="number"
                         compact
-                        min={1}
+                        min={0}
                         max={600}
-                        value={form.durationMinutes}
+                        value={form.durationInput}
                         onChange={(e) =>
-                          form.setDurationMinutes(
-                            Math.max(
-                              1,
-                              Number.parseInt(e.target.value, 10) || 1,
-                            ),
-                          )
+                          form.handleDurationInputChange(e.target.value)
                         }
                         icon={<Clock size={16} />}
                         className="pr-16 font-bold tabular-nums"
@@ -471,53 +495,57 @@ export function FocusManualRecordModal({
                 </>
               )}
 
-              {/* Divisor sutil integrando Data e Janela de Horário no mesmo painel */}
-              <div className="border-t border-white/10 pt-3 flex flex-col gap-2.5">
-                <DatePicker
-                  id="session-date"
-                  label={t("sessionDateLabel")}
-                  value={form.sessionDate}
-                  onChange={form.setSessionDate}
-                  maxDate={getTodayDateString()}
-                  placeholder={t("todayPlaceholder")}
-                  compact
-                  allowClear={false}
-                  align="left"
-                />
-
-                <div className="grid grid-cols-2 gap-2.5 items-start">
-                  <TimePicker
-                    id="session-start-time"
-                    label={t("startTimeLabel")}
-                    value={form.startTimeStr}
-                    onChange={form.handleStartTimeChange}
+              {/* Divisor sutil integrando Data e Janela de Horário apenas para Atividades */}
+              {form.targetType !== "ITEM" && (
+                <div className="border-t border-neutral-700 dark:border-white/10 pt-3 flex flex-col gap-2.5">
+                  <DatePicker
+                    id="session-date"
+                    label={t("sessionDateLabel")}
+                    value={form.sessionDate}
+                    onChange={form.setSessionDate}
+                    maxDate={getTodayDateString()}
+                    placeholder={t("todayPlaceholder")}
                     compact
+                    allowClear={false}
                     align="left"
                   />
 
-                  <TimePicker
-                    id="session-end-time"
-                    label={t("endTimeLabel")}
-                    value={form.endTimeStr}
-                    onChange={form.handleEndTimeChange}
-                    compact
-                    align="right"
-                  />
+                  <div className="grid grid-cols-2 gap-2.5 items-start">
+                    <TimePicker
+                      id="session-start-time"
+                      label={t("startTimeLabel")}
+                      value={form.startTimeStr}
+                      onChange={form.handleStartTimeChange}
+                      compact
+                      align="left"
+                    />
+
+                    <TimePicker
+                      id="session-end-time"
+                      label={t("endTimeLabel")}
+                      value={form.endTimeStr}
+                      onChange={form.handleEndTimeChange}
+                      compact
+                      align="right"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
-            {/* Resumo sincronizado compacto na base do painel de tempo */}
-            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-tiny text-neutral-300">
-              <span>{t("syncedWindowLabel")}</span>
-              <strong className="text-gold font-semibold tabular-nums">
-                {t("syncedWindowSummary", {
-                  start: form.startTimeStr,
-                  end: form.endTimeStr,
-                  minutes: form.durationMinutes,
-                })}
-              </strong>
-            </div>
+            {/* Resumo sincronizado compacto na base do painel de tempo (apenas para Atividades) */}
+            {form.targetType !== "ITEM" && (
+              <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-card dark:bg-white/5 border border-neutral-700 dark:border-white/10 text-tiny text-neutral-300">
+                <span>{t("syncedWindowLabel")}</span>
+                <strong className="text-amber-700 dark:text-gold font-semibold tabular-nums">
+                  {t("syncedWindowSummary", {
+                    start: form.startTimeStr,
+                    end: form.endTimeStr,
+                    minutes: form.durationMinutes,
+                  })}
+                </strong>
+              </div>
+            )}
           </div>
         </div>
 
@@ -530,12 +558,12 @@ export function FocusManualRecordModal({
         {/* ========================================================
             RODAPÉ DE AÇÕES DO MODAL
             ======================================================== */}
-        <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-white/10">
+        <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-neutral-700 dark:border-white/10">
           <button
             type="button"
             onClick={onClose}
             disabled={form.isSubmitting}
-            className="px-4 py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-1.5"
+            className="px-4 py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:bg-surface dark:hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-1.5"
           >
             <X size={14} />
             {t("cancelButton")}
@@ -544,10 +572,11 @@ export function FocusManualRecordModal({
             type="submit"
             disabled={
               form.isSubmitting ||
+              form.durationMinutes <= 0 ||
               (form.targetType === "ACTIVITY" && !form.selectedActivityId) ||
               (form.targetType === "ITEM" && !form.selectedItemId)
             }
-            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-colors cursor-pointer disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
           >
             {form.isSubmitting ? (
               <>

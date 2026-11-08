@@ -32,5 +32,10 @@ public interface TransactionHistoryRepository {
   // Pra validar o incrementStreak do user
   int countCompletedTasksToday(UUID userId);
 
+  // Verifica se o usuário completou pelo menos 1 tarefa ontem (evita manter streak vencido)
+  default boolean hasCompletedTasksYesterday(UUID userId) {
+    return true;
+  }
+
   void deleteAllByUserId(UUID userId);
 }

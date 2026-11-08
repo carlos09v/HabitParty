@@ -29,6 +29,7 @@ public class RewardMapper {
     entity.setCategory(domain.getCategory().orElse(null));
     entity.setPackageLevel(domain.getPackageLevel().orElse(null));
     entity.setBaseDurationMinutes(domain.getBaseDurationMinutes().orElse(null));
+    entity.setLootItems(domain.getLootItems());
 
     return entity;
   }
@@ -49,7 +50,8 @@ public class RewardMapper {
         entity.getDescription(),
         entity.getCategory(),
         entity.getBaseDurationMinutes(),
-        entity.getPackageLevel()
+        entity.getPackageLevel(),
+        entity.getLootItems()
     );
   }
 }

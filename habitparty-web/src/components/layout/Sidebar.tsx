@@ -1,7 +1,8 @@
 "use client";
 
-import { LogOut, Package, Shield, X } from "lucide-react";
+import { Loader2, LogOut, Package, Shield, X } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useTransition } from "react";
 import { signOut } from "@/actions/auth";
 import type { components } from "@/api/schema";
 import { BrandLogo } from "@/components/ui/BrandLogo";
@@ -42,13 +43,22 @@ export function Sidebar({
 }: SidebarProps) {
   const t = useTranslations("nav");
   const { isGamified } = useExperienceMode();
+  const [isSigningOut, startSignOutTransition] = useTransition();
+
+  const handleSignOut = () => {
+    if (isSigningOut) return;
+    startSignOutTransition(async () => {
+      await signOut();
+      onClose?.();
+    });
+  };
 
   return (
     <aside
       className={cn(
         isMobile
           ? "w-full h-full flex-col relative z-20 flex"
-          : "hidden lg:flex w-64 shrink-0 h-screen border-r border-neutral-700 dark:border-primary/30 bg-card/75 dark:bg-background/80 backdrop-blur-xl flex-col relative z-20",
+          : "hidden lg:flex w-64 shrink-0 h-screen border-r border-neutral-700 dark:border-primary/30 bg-card dark:bg-background flex-col relative z-20",
         className,
       )}
       aria-label={isMobile ? t("sidebarMobileAria") : t("sidebarAria")}
@@ -78,7 +88,7 @@ export function Sidebar({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 text-neutral-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 cursor-pointer"
+                className="p-1.5 text-neutral-300 dark:text-neutral-400 hover:text-neutral-50 dark:hover:text-white rounded-lg hover:bg-surface dark:hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 cursor-pointer"
                 aria-label={t("closeMenu")}
               >
                 <X size={20} />
@@ -141,7 +151,7 @@ export function Sidebar({
         <div className="flex-1 min-h-1" />
 
         {/* ÁREA INFERIOR: UTILIDADES, SISTEMA E SUPORTE */}
-        <div className="flex flex-col gap-1.5 pb-1 shrink-0 pt-2 border-t border-neutral-700 dark:border-white/10">
+        <div className="flex flex-col gap-1.5 pb-3 shrink-0 pt-2 border-t border-neutral-700 dark:border-white/10">
           {/* Widget de Foco Ativo */}
           <SidebarFocusWidget />
 
@@ -150,7 +160,7 @@ export function Sidebar({
             <SidebarNotificationsPopover className="flex-1 min-w-0" />
             <ThemeToggleBtn
               variant="icon"
-              className="hidden shrink-0 rounded-lg border-neutral-700/80 dark:border-white/10"
+              className="shrink-0 rounded-lg border-neutral-700/80 dark:border-white/10"
             />
           </div>
 
@@ -190,20 +200,28 @@ export function Sidebar({
             })}
 
             <li className="mt-0.5">
-              <form action={signOut}>
-                <button
-                  type="submit"
-                  onClick={onClose}
-                  className="flex w-full items-center gap-3 px-3 py-2 rounded-lg transition-all text-body-s font-medium outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 text-neutral-400 hover:text-red-400 hover:bg-red-500/10 border-r-2 border-transparent text-left cursor-pointer group"
-                >
-                  <LogOut
+              <button
+                type="button"
+                onClick={handleSignOut}
+                disabled={isSigningOut}
+                aria-busy={isSigningOut}
+                className="flex w-full items-center gap-3 px-3 py-2 rounded-lg transition-colors text-body-s font-medium outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 text-neutral-400 hover:text-red-400 hover:bg-red-500/10 disabled:opacity-60 disabled:pointer-events-none border-r-2 border-transparent text-left cursor-pointer group"
+              >
+                {isSigningOut ? (
+                  <Loader2
                     size={18}
-                    className="group-hover:translate-x-0.5 transition-transform"
+                    className="animate-spin text-red-400 shrink-0"
                     aria-hidden="true"
                   />
-                  {t("signOut")}
-                </button>
-              </form>
+                ) : (
+                  <LogOut
+                    size={18}
+                    className="group-hover:translate-x-0.5 transition-transform shrink-0"
+                    aria-hidden="true"
+                  />
+                )}
+                <span>{isSigningOut ? t("signingOut") : t("signOut")}</span>
+              </button>
             </li>
           </ul>
         </div>

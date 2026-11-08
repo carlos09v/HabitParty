@@ -22,9 +22,7 @@ export async function getRawInventoryItems(): Promise<
   cacheLife("private30");
   cacheTag("inventory");
 
-  const { data, error } = await serverApi.GET("/inventory", {
-    next: { tags: ["inventory"] },
-  });
+  const { data, error } = await serverApi.GET("/inventory");
 
   if (error || !data) {
     return [];

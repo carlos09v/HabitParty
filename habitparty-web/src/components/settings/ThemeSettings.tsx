@@ -29,14 +29,15 @@ export function ThemeSettings({
   );
 
   const options = THEME_OPTIONS.map((opt) => ({
-    ...opt,
+    value: opt.value,
+    icon: opt.icon,
     title: opt.value === "dark" ? t("dark") : t("light"),
     description: opt.value === "dark" ? t("darkDesc") : t("lightDesc"),
-    badge: opt.badge ? t("defaultBadge") : undefined,
+    badge: opt.hasDefaultBadge ? t("defaultBadge") : undefined,
   }));
 
   return (
-    <div className={cn("hidden", className)}>
+    <div className={cn(className)}>
       <SettingsOptionGrid
         statusMessage={statusMessage}
         options={options}

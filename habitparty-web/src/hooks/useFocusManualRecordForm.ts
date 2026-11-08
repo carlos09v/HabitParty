@@ -106,6 +106,10 @@ export function useFocusManualRecordForm({
     return act?.targetTimeMinutes || 35;
   });
 
+  const [durationInput, setDurationInput] = useState<string>(() =>
+    String(durationMinutes),
+  );
+
   const [completedPomos, setCompletedPomos] = useState<number>(() => {
     const validInitId =
       initialActivityId &&
@@ -131,11 +135,35 @@ export function useFocusManualRecordForm({
   const [notes, setNotes] = useState("");
 
   const syncDurationWithWindow = (nextDuration: number) => {
-    const clamped = Math.max(1, Math.min(1439, nextDuration));
+    const clamped = Math.max(0, Math.min(1439, nextDuration));
     setDurationMinutes(clamped);
-    const window = computeTimeWindowFromDuration(endTimeStr, clamped);
-    setStartTimeStr(window.startTimeStr);
-    setEndTimeStr(window.endTimeStr);
+    setDurationInput(String(clamped));
+    if (clamped >= 1) {
+      const window = computeTimeWindowFromDuration(endTimeStr, clamped);
+      setStartTimeStr(window.startTimeStr);
+      setEndTimeStr(window.endTimeStr);
+    }
+  };
+
+  const handleDurationInputChange = (raw: string) => {
+    if (raw === "") {
+      setDurationInput("");
+      setDurationMinutes(0);
+      return;
+    }
+    const parsed = Number.parseInt(raw, 10);
+    if (Number.isNaN(parsed)) {
+      return;
+    }
+    const clamped = Math.max(0, Math.min(1439, parsed));
+    setDurationInput(String(clamped));
+    setDurationMinutes(clamped);
+    if (clamped >= 1) {
+      const window = computeTimeWindowFromDuration(endTimeStr, clamped);
+      setStartTimeStr(window.startTimeStr);
+      setEndTimeStr(window.endTimeStr);
+      syncPomosFromMinutes(clamped);
+    }
   };
 
   const syncPomosFromMinutes = (mins: number) => {
@@ -159,12 +187,14 @@ export function useFocusManualRecordForm({
     if (endMins > startMins) {
       const diff = endMins - startMins;
       setDurationMinutes(diff);
+      setDurationInput(String(diff));
       syncPomosFromMinutes(diff);
     } else {
       const nextEndMins = Math.min(1439, startMins + durationMinutes);
       const safeDiff = Math.max(1, nextEndMins - startMins);
       setEndTimeStr(minutesToTimeHHMM(startMins + safeDiff));
       setDurationMinutes(safeDiff);
+      setDurationInput(String(safeDiff));
     }
   };
 
@@ -177,12 +207,14 @@ export function useFocusManualRecordForm({
     if (endMins > startMins) {
       const diff = endMins - startMins;
       setDurationMinutes(diff);
+      setDurationInput(String(diff));
       syncPomosFromMinutes(diff);
     } else {
       const nextStartMins = Math.max(0, endMins - durationMinutes);
       const safeDiff = Math.max(1, endMins - nextStartMins);
       setStartTimeStr(minutesToTimeHHMM(endMins - safeDiff));
       setDurationMinutes(safeDiff);
+      setDurationInput(String(safeDiff));
     }
   };
 
@@ -319,40 +351,47 @@ export function useFocusManualRecordForm({
         let startDate: Date;
         let endDate: Date;
 
-        const baseDateStr = sessionDate || getTodayDateString(now);
-        const [y, m, d] = baseDateStr.split("-").map(Number);
-        const startMins = parseTimeToMinutes(startTimeStr);
-        const endMins = parseTimeToMinutes(endTimeStr);
-
-        if (startMins !== null && endMins !== null && endMins > startMins) {
-          startDate = new Date(
-            y,
-            m - 1,
-            d,
-            Math.floor(startMins / 60),
-            startMins % 60,
-            0,
-          );
-          endDate = new Date(
-            y,
-            m - 1,
-            d,
-            Math.floor(endMins / 60),
-            endMins % 60,
-            0,
-          );
+        if (targetType === "ITEM") {
+          endDate = now;
+          startDate = new Date(now.getTime() - durationMinutes * 60 * 1000);
         } else {
-          const fallbackEndMins =
-            endMins ?? now.getHours() * 60 + now.getMinutes();
-          endDate = new Date(
-            y,
-            m - 1,
-            d,
-            Math.floor(fallbackEndMins / 60),
-            fallbackEndMins % 60,
-            0,
-          );
-          startDate = new Date(endDate.getTime() - durationMinutes * 60 * 1000);
+          const baseDateStr = sessionDate || getTodayDateString(now);
+          const [y, m, d] = baseDateStr.split("-").map(Number);
+          const startMins = parseTimeToMinutes(startTimeStr);
+          const endMins = parseTimeToMinutes(endTimeStr);
+
+          if (startMins !== null && endMins !== null && endMins > startMins) {
+            startDate = new Date(
+              y,
+              m - 1,
+              d,
+              Math.floor(startMins / 60),
+              startMins % 60,
+              0,
+            );
+            endDate = new Date(
+              y,
+              m - 1,
+              d,
+              Math.floor(endMins / 60),
+              endMins % 60,
+              0,
+            );
+          } else {
+            const fallbackEndMins =
+              endMins ?? now.getHours() * 60 + now.getMinutes();
+            endDate = new Date(
+              y,
+              m - 1,
+              d,
+              Math.floor(fallbackEndMins / 60),
+              fallbackEndMins % 60,
+              0,
+            );
+            startDate = new Date(
+              endDate.getTime() - durationMinutes * 60 * 1000,
+            );
+          }
         }
 
         const startTime = toLocalISOString(startDate);
@@ -422,6 +461,8 @@ export function useFocusManualRecordForm({
     recordType,
     setRecordType,
     durationMinutes,
+    durationInput,
+    handleDurationInputChange,
     setDurationMinutes: handleDurationChange,
     startTimeStr,
     endTimeStr,

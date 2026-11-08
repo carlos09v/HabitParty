@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import com.habitparty.core.domain.enums.SubscriptionStatus;
@@ -15,6 +16,15 @@ import com.habitparty.core.domain.enums.UserRole;
 import com.habitparty.core.exceptions.DomainValidationException;
 
 public class User {
+  public static final Set<String> VALID_AVATAR_FRAMES = Set.of(
+      "none",
+      "cosmic_gold",
+      "neon_arcane",
+      "emerald_nature",
+      "crimson_ember",
+      "celestial_diamond"
+  );
+
   private UUID id;
   private UserRole role;
   private String fullName;
@@ -25,6 +35,8 @@ public class User {
   private LocalDateTime emailVerifiedAt;
   private LocalDate birthDate;
   private String profilePhotoUrl;
+  private String bio;
+  private String avatarFrame = "none";
   private UserGender gender;
   private UserExperienceMode experienceMode = UserExperienceMode.PRODUCTIVITY;
   private LocalDateTime createdAt;
@@ -500,6 +512,41 @@ public class User {
 
   public void setProfilePhotoUrl(String profilePhotoUrl) {
     this.profilePhotoUrl = profilePhotoUrl;
+  }
+
+  public Optional<String> getBio() {
+    return Optional.ofNullable(bio).filter(b -> !b.isBlank());
+  }
+
+  public void setBio(String bio) {
+    if (bio != null && bio.trim().length() > 160) {
+      throw new DomainValidationException("A bio do perfil deve ter no máximo 160 caracteres.");
+    }
+    this.bio = (bio != null && !bio.isBlank()) ? bio.trim() : null;
+  }
+
+  public String getAvatarFrame() {
+    return (avatarFrame != null && !avatarFrame.isBlank()) ? avatarFrame : "none";
+  }
+
+  public void setAvatarFrame(String avatarFrame) {
+    this.avatarFrame = (avatarFrame != null && !avatarFrame.isBlank()) ? avatarFrame.trim() : "none";
+  }
+
+  public void updateShowcaseProfile(String bio, String avatarFrame) {
+    if (bio != null) {
+      setBio(bio);
+    }
+    if (avatarFrame != null && !avatarFrame.isBlank()) {
+      String cleanFrame = avatarFrame.trim().toLowerCase();
+      if (!VALID_AVATAR_FRAMES.contains(cleanFrame)) {
+        throw new DomainValidationException("Moldura de avatar inválida: " + avatarFrame);
+      }
+      if (!"none".equalsIgnoreCase(cleanFrame) && !this.isPremium()) {
+        throw new DomainValidationException("Molduras animadas exclusivas requerem o plano Guardião Cósmico (Premium).");
+      }
+      this.avatarFrame = cleanFrame;
+    }
   }
 
   public LocalDateTime getCreatedAt() {

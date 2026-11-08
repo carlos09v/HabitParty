@@ -1,0 +1,604 @@
+{
+  "metadata": {
+    "title": "Vitrine & Conquistas | HabitParty",
+    "description": "Exiba suas insígnias, medalhas desbloqueadas, recordes de ofensiva e conquistas na sua vitrine de perfil."
+  },
+  "loading": {
+    "ariaLabel": "Carregando vitrine do perfil e conquistas"
+  },
+  "actions": {
+    "unauthorized": "Sua sessão expirou. Faça login novamente.",
+    "updateHighlightsError": "Não foi possível salvar os destaques da vitrine.",
+    "updateProfileError": "Não foi possível atualizar sua vitrine.",
+    "networkError": "Erro de conexão com o servidor. Tente novamente."
+  },
+  "header": {
+    "badgeGamified": "Vitrine do Aventureiro",
+    "badgeEssential": "Vitrine de Desempenho",
+    "visitorModeActive": "Visão de Visitante",
+    "ownerModeActive": "Editar Vitrine",
+    "visitorBanner": "Você está visualizando sua vitrine exatamente como outros usuários a verão.",
+    "editBio": "Editar Bio",
+    "addBio": "Adicionar uma frase ou bio ao seu perfil...",
+    "bioPlaceholder": "Escreva seu lema de jornada, metas atuais ou especialidade (máx. 160 caracteres)...",
+    "emptyBioVisitor": "Este aventureiro prefere deixar suas conquistas falarem por si.",
+    "emptyBioVisitorEssential": "Focado na consistência diária e evolução contínua.",
+    "saveBio": "Salvar Bio",
+    "cancelBio": "Cancelar",
+    "bioSaved": "Bio atualizada na vitrine!",
+    "memberSince": "Na jornada desde {date}",
+    "settingsButton": "Configurações",
+    "changeFrameButton": "Moldura",
+    "achievementPointsLabel": "Pontos de Conquista",
+    "unlockedCountLabel": "{unlocked} de {total} medalhas",
+    "xpProgressLabel": "{xp} XP acumulados • Faltam {remaining} XP para {nextTitle}",
+    "maxLevelReached": "Nível Máximo Alcançado ({xp} XP)"
+  },
+  "highlights": {
+    "titleGamified": "Estante de Troféus em Destaque",
+    "titleEssential": "Destaques Principais do Perfil",
+    "subtitleGamified": "Escolha até 4 insígnias, medalhas ou recordes para exibir no topo do seu cartão de aventureiro.",
+    "subtitleEssential": "Selecione até 4 marcos, selos ou métricas para destacar no topo do seu perfil.",
+    "customizeButton": "Personalizar Destaques",
+    "slotLabel": "Espaço {index}",
+    "emptySlotTitle": "Espaço de Destaque Vazio",
+    "emptySlotCta": "Clique para fixar uma conquista, insígnia ou métrica",
+    "emptyVisitorText": "Nenhum destaque selecionado ainda.",
+    "typeBadge": {
+      "ACHIEVEMENT": "Conquista",
+      "ACCOUNT_BADGE": "Insígnia",
+      "STAT_METRIC": "Recorde"
+    }
+  },
+  "pickerModal": {
+    "title": "Personalizar Vitrine de Destaques",
+    "subtitle": "Selecione o slot acima e escolha qual conquista desbloqueada, insígnia especial ou recorde deseja exibir.",
+    "activeSlotLabel": "Editando Espaço #{slot}",
+    "clearSlot": "Limpar espaço",
+    "saveButton": "Salvar Vitrine",
+    "savingButton": "Salvando...",
+    "cancelButton": "Cancelar",
+    "savedToast": "Destaques da vitrine atualizados com sucesso!",
+    "alreadyEquipped": "Em uso no Espaço #{slot}",
+    "tabs": {
+      "achievements": "Conquistas ({count})",
+      "badges": "Insígnias da Conta",
+      "metrics": "Métricas & Recordes"
+    },
+    "noUnlockedAchievements": "Você ainda não desbloqueou conquistas. Complete tarefas ou sessões de foco para ganhar sua primeira medalha!",
+    "lockedBadgeHint": "Bloqueado para sua conta no momento"
+  },
+  "accountBadges": {
+    "FOUNDER": {
+      "title": "Fundador Pioneiro",
+      "essentialTitle": "Membro Fundador",
+      "description": "Apoiador pioneiro presente desde a fundação do HabitParty.",
+      "essentialDescription": "Conta pioneira registrada na fase inaugural da plataforma.",
+      "lockedHint": "Exclusivo para membros Fundadores"
+    },
+    "PREMIUM_GUARDIAN": {
+      "title": "Guardião VIP Cósmico",
+      "essentialTitle": "Assinante PRO",
+      "description": "Membro com assinatura Premium ativa desbloqueando todo o arsenal.",
+      "essentialDescription": "Conta com plano PRO ativo e recursos avançados habilitados.",
+      "lockedHint": "Requer assinatura Premium ativa"
+    },
+    "VERIFIED_ADVENTURER": {
+      "title": "Identidade Verificada",
+      "essentialTitle": "Conta Verificada",
+      "description": "E-mail e credenciais de aventureiro autenticados com segurança.",
+      "essentialDescription": "Endereço de e-mail autenticado e verificado na plataforma.",
+      "lockedHint": "Verifique seu e-mail para liberar esta insígnia"
+    },
+    "LEVEL_RANK": {
+      "title": "Patente: {levelTitle}",
+      "essentialTitle": "Nível: {levelTitle}",
+      "description": "Título alcançado com {xp} XP totais acumulados na jornada.",
+      "essentialDescription": "Marco de evolução atingido com {xp} pontos de experiência.",
+      "lockedHint": "Disponível para todos os usuários"
+    }
+  },
+  "statMetrics": {
+    "HIGHEST_STREAK": {
+      "title": "Recorde Histórico de Ofensiva",
+      "essentialTitle": "Maior Sequência de Dias",
+      "valueFormat": "{value} dias seguidos"
+    },
+    "CURRENT_STREAK": {
+      "title": "Chama de Ofensiva Atual",
+      "essentialTitle": "Sequência Atual",
+      "valueFormat": "{value} dias ativos"
+    },
+    "TOTAL_TASKS": {
+      "title": "Missões Concluídas",
+      "essentialTitle": "Tarefas Finalizadas",
+      "valueFormat": "{value} concluídas"
+    },
+    "FOCUS_HOURS": {
+      "title": "Tempo em Imersão Profunda",
+      "essentialTitle": "Horas de Foco Acumuladas",
+      "valueFormat": "{value}h de foco"
+    },
+    "TOTAL_XP": {
+      "title": "Experiência Total (XP)",
+      "essentialTitle": "Pontuação de Evolução",
+      "valueFormat": "{value} XP"
+    },
+    "ACHIEVEMENT_POINTS": {
+      "title": "Pontuação de Troféus",
+      "essentialTitle": "Pontos de Conquista",
+      "valueFormat": "{value} pts"
+    }
+  },
+  "statsGrid": {
+    "sectionTitleGamified": "Resumo de Feitos & Consistência",
+    "sectionTitleEssential": "Indicadores Vitalícios de Produtividade",
+    "highestStreak": {
+      "label": "Maior Ofensiva",
+      "essentialLabel": "Recorde de Sequência",
+      "sub": "Atual: {current} dias"
+    },
+    "tasksCompleted": {
+      "label": "Missões Cumpridas",
+      "essentialLabel": "Tarefas Concluídas",
+      "sub": "{hardcore} no modo Hardcore • {hard} difíceis"
+    },
+    "focusTime": {
+      "label": "Imersão em Foco",
+      "essentialLabel": "Tempo Total de Foco",
+      "sub": "{sessions} sessões concluídas ({minutes} min)"
+    },
+    "achievementsProgress": {
+      "label": "Domínio de Conquistas",
+      "essentialLabel": "Progresso de Medalhas",
+      "sub": "{points} / {maxPoints} pontos de conquista"
+    }
+  },
+  "gallery": {
+    "titleGamified": "Galeria de Conquistas & Medalhas",
+    "titleEssential": "Catálogo de Marcos & Conquistas",
+    "subtitleGamified": "Desbloqueie as 63 medalhas cumprindo missões, mantendo sua ofensiva acesa, dominando o foco profundo e descobrindo segredos.",
+    "subtitleEssential": "Acompanhe seu progresso nos 63 marcos de consistência, execução de tarefas, foco e organização.",
+    "searchPlaceholder": "Buscar conquista por nome ou descrição...",
+    "testSoundButton": "Testar Som de Conquista",
+    "statusFilter": {
+      "ALL": "Todas ({count})",
+      "UNLOCKED": "Desbloqueadas ({count})",
+      "LOCKED": "Bloqueadas ({count})"
+    },
+    "rarityFilterAll": "Todas as Raridades",
+    "unlockedBadge": "Desbloqueada",
+    "unlockedOn": "Conquistada em {date}",
+    "lockedBadge": "Bloqueada",
+    "secretTitle": "Conquista Secreta ???",
+    "secretDescription": "Continue explorando a plataforma e superando seus limites para revelar este mistério oculto.",
+    "pointsBadge": "+{points} pts",
+    "progressLabel": "Progresso: {current} / {target}",
+    "pinToShowcase": "Fixar na Vitrine",
+    "pinnedInShowcase": "Na Vitrine",
+    "emptySearch": "Nenhuma conquista encontrada para os filtros selecionados."
+  },
+  "rarities": {
+    "COMMON": "Comum",
+    "UNCOMMON": "Incomum",
+    "RARE": "Rara",
+    "EPIC": "Épica",
+    "LEGENDARY": "Lendária"
+  },
+  "categories": {
+    "ALL": {
+      "gamified": "Todas",
+      "essential": "Todas"
+    },
+    "TASKS": {
+      "gamified": "Missões & Execução",
+      "essential": "Tarefas & Execução"
+    },
+    "STREAKS": {
+      "gamified": "Ofensiva & Chama",
+      "essential": "Consistência"
+    },
+    "FOCUS": {
+      "gamified": "Imersão & Foco",
+      "essential": "Foco & Tempo"
+    },
+    "ECONOMY": {
+      "gamified": "Tesouros & Loja",
+      "essential": "Recompensas & Metas"
+    },
+    "PROGRESSION": {
+      "gamified": "Evolução & Nível",
+      "essential": "Marcos de Evolução"
+    },
+    "SPECIAL": {
+      "gamified": "Especiais & Secretas",
+      "essential": "Especiais & Ocultas"
+    }
+  },
+  "unlockToast": {
+    "headerGamified": "Nova Conquista Desbloqueada!",
+    "headerEssential": "Novo Marco Alcançado!",
+    "pointsEarned": "+{points} Pontos de Conquista",
+    "viewShowcase": "Ver na Vitrine"
+  },
+  "catalog": {
+    "TASK_FIRST": {
+      "title": "Primeira Missão",
+      "essentialTitle": "Primeira Entrega",
+      "description": "Conclua sua primeira tarefa na plataforma.",
+      "essentialDescription": "Conclua sua primeira tarefa no quadro de atividades."
+    },
+    "TASK_10": {
+      "title": "Ritmo de Caçada",
+      "essentialTitle": "Ritmo Inicial (10)",
+      "description": "Conclua 10 tarefas acumuladas.",
+      "essentialDescription": "Conclua um total de 10 tarefas."
+    },
+    "TASK_50": {
+      "title": "Exterminador de Pendências",
+      "essentialTitle": "Executor Consistente (50)",
+      "description": "Conclua 50 tarefas acumuladas.",
+      "essentialDescription": "Conclua um total de 50 tarefas."
+    },
+    "TASK_250": {
+      "title": "Veterano de Batalha",
+      "essentialTitle": "Marco de 250 Tarefas",
+      "description": "Conclua 250 tarefas acumuladas.",
+      "essentialDescription": "Conclua um total de 250 tarefas."
+    },
+    "TASK_1000": {
+      "title": "Imparável",
+      "essentialTitle": "Mestre da Execução (1.000)",
+      "description": "Conclua 1.000 tarefas acumuladas na sua jornada.",
+      "essentialDescription": "Conclua um total de 1.000 tarefas."
+    },
+    "TASK_HARD_25": {
+      "title": "Caçador de Chefões",
+      "essentialTitle": "25 Entregas Complexas",
+      "description": "Conclua 25 tarefas de dificuldade Difícil.",
+      "essentialDescription": "Conclua 25 tarefas de alta complexidade (Difícil)."
+    },
+    "STREAK_3": {
+      "title": "Faísca Acesa",
+      "essentialTitle": "Sequência de 3 Dias",
+      "description": "Alcance uma ofensiva de 3 dias consecutivos.",
+      "essentialDescription": "Mantenha 3 dias consecutivos de atividade."
+    },
+    "STREAK_7": {
+      "title": "Chama Semanal",
+      "essentialTitle": "Semana Completa (7 Dias)",
+      "description": "Alcance uma ofensiva de 7 dias consecutivos.",
+      "essentialDescription": "Mantenha 7 dias consecutivos de atividade."
+    },
+    "STREAK_21": {
+      "title": "Hábito Forjado",
+      "essentialTitle": "Hábito Consolidado (21 Dias)",
+      "description": "Alcance 21 dias consecutivos de ofensiva (marco de consolidação cerebral).",
+      "essentialDescription": "Mantenha 21 dias consecutivos de atividade consistente."
+    },
+    "STREAK_30": {
+      "title": "Guardião do Mês",
+      "essentialTitle": "Mês de Consistência (30 Dias)",
+      "description": "Alcance uma ofensiva de 30 dias consecutivos.",
+      "essentialDescription": "Mantenha 30 dias consecutivos de atividade."
+    },
+    "STREAK_90": {
+      "title": "Vontade de Ferro",
+      "essentialTitle": "Trimestre Impecável (90 Dias)",
+      "description": "Alcance uma ofensiva de 90 dias consecutivos.",
+      "essentialDescription": "Mantenha 90 dias consecutivos de atividade."
+    },
+    "STREAK_365": {
+      "title": "Chama Imortal",
+      "essentialTitle": "Ano Ininterrupto (365 Dias)",
+      "description": "Alcance uma ofensiva histórica de 365 dias consecutivos.",
+      "essentialDescription": "Mantenha 365 dias consecutivos de atividade."
+    },
+    "FOCUS_FIRST": {
+      "title": "Mente Presente",
+      "essentialTitle": "Primeira Sessão de Foco",
+      "description": "Conclua sua primeira sessão produtiva no Palco de Foco.",
+      "essentialDescription": "Finalize sua primeira sessão produtiva no Timer de Foco."
+    },
+    "FOCUS_DEEP_WORK": {
+      "title": "Mergulho Profundo",
+      "essentialTitle": "Sessão Deep Work (45m)",
+      "description": "Conclua uma sessão contínua de foco com pelo menos 45 minutos.",
+      "essentialDescription": "Finalize uma sessão contínua de foco de 45 minutos ou mais."
+    },
+    "FOCUS_POMO_25": {
+      "title": "Mestre do Relógio",
+      "essentialTitle": "25 Ciclos Pomodoro",
+      "description": "Complete 25 ciclos de Pomodoro.",
+      "essentialDescription": "Conclua um total de 25 ciclos de Pomodoro."
+    },
+    "FOCUS_HOURS_10": {
+      "title": "Aprendiz do Templo",
+      "essentialTitle": "10 Horas de Foco",
+      "description": "Acumule 10 horas (600 minutos) de foco produtivo.",
+      "essentialDescription": "Acumule 600 minutos totais de foco."
+    },
+    "FOCUS_HOURS_50": {
+      "title": "Monge da Concentração",
+      "essentialTitle": "50 Horas de Foco",
+      "description": "Acumule 50 horas (3.000 minutos) de foco produtivo.",
+      "essentialDescription": "Acumule 3.000 minutos totais de foco."
+    },
+    "FOCUS_HOURS_200": {
+      "title": "Senhor do Tempo",
+      "essentialTitle": "200 Horas de Foco Profundo",
+      "description": "Acumule 200 horas (12.000 minutos) de foco produtivo.",
+      "essentialDescription": "Acumule 12.000 minutos totais de foco."
+    },
+    "GOLD_100": {
+      "title": "Bolsa de Moedas",
+      "essentialTitle": "100 Créditos Acumulados",
+      "description": "Acumule 100 moedas/créditos ganhos através do seu esforço.",
+      "essentialDescription": "Acumule um total de 100 créditos ganhos."
+    },
+    "GOLD_1000": {
+      "title": "Tesouro da Guilda",
+      "essentialTitle": "1.000 Créditos Acumulados",
+      "description": "Acumule 1.000 moedas/créditos ganhos na carreira.",
+      "essentialDescription": "Acumule um total de 1.000 créditos ganhos."
+    },
+    "GOLD_5000": {
+      "title": "Magnata Cósmico",
+      "essentialTitle": "5.000 Créditos Acumulados",
+      "description": "Acumule 5.000 moedas/créditos ganhos na carreira.",
+      "essentialDescription": "Acumule um total de 5.000 créditos ganhos."
+    },
+    "REWARD_FIRST": {
+      "title": "Descanso Merecido",
+      "essentialTitle": "Primeira Recompensa Resgatada",
+      "description": "Resgate sua primeira recompensa na Loja.",
+      "essentialDescription": "Realize o resgate da sua primeira recompensa pessoal."
+    },
+    "REWARD_25": {
+      "title": "Vida Equilibrada",
+      "essentialTitle": "25 Recompensas Resgatadas",
+      "description": "Resgate 25 recompensas na Loja para celebrar suas entregas.",
+      "essentialDescription": "Realize o resgate de 25 recompensas pessoais."
+    },
+    "LEVEL_ADVENTURER": {
+      "title": "Jornada Iniciada",
+      "essentialTitle": "Marco de 300 XP",
+      "description": "Alcance 300 XP/pts (Nível Aventureiro / Consistente).",
+      "essentialDescription": "Alcance 300 pontos de evolução (Nível Consistente)."
+    },
+    "LEVEL_PROFESSIONAL": {
+      "title": "Força Reconhecida",
+      "essentialTitle": "Marco de 3.000 XP",
+      "description": "Alcance 3.000 XP/pts (Nível Profissional / Produtivo).",
+      "essentialDescription": "Alcance 3.000 pontos de evolução (Nível Produtivo)."
+    },
+    "LEVEL_MASTER": {
+      "title": "Grão-Mestre",
+      "essentialTitle": "Marco de 25.000 XP",
+      "description": "Alcance 25.000 XP/pts (Nível Mestre / Executivo).",
+      "essentialDescription": "Alcance 25.000 pontos de evolução (Nível Executivo)."
+    },
+    "LEVEL_LEGEND": {
+      "title": "Lenda Viva",
+      "essentialTitle": "Alta Performance (60.000 XP)",
+      "description": "Alcance o patamar supremo de 60.000 XP/pts (Nível Lenda / Alta Performance).",
+      "essentialDescription": "Alcance o patamar máximo de 60.000 pontos de evolução."
+    },
+    "HARDCORE_SURVIVOR": {
+      "title": "Sangue Frio",
+      "essentialTitle": "10 Entregas em Prazo Rígido",
+      "description": "Conclua 10 tarefas com Modo Hardcore / Prazo Rígido ativado.",
+      "essentialDescription": "Conclua 10 tarefas com Prazo Rígido (Hardcore) ativado."
+    },
+    "MYSTERY_BOX_LUCK": {
+      "title": "Aposta do Destino",
+      "essentialTitle": "5 Caixas Misteriosas Abertas",
+      "description": "Abra 5 Caixas Misteriosas na sua Mochila.",
+      "essentialDescription": "Abra um total de 5 Caixas Misteriosas no seu inventário."
+    },
+    "SHOWCASE_CURATOR": {
+      "title": "Identidade Forjada",
+      "essentialTitle": "Vitrine Personalizada",
+      "description": "Personalize sua Vitrine de Destaques ou ostente a Insígnia de Fundador.",
+      "essentialDescription": "Personalize sua Vitrine de Perfil com destaques, bio ou moldura."
+    },
+    "TASK_100": {
+      "title": "Centurião da Rotina",
+      "essentialTitle": "Marco de 100 Tarefas",
+      "description": "Conclua 100 tarefas acumuladas na sua jornada.",
+      "essentialDescription": "Conclua um total de 100 tarefas."
+    },
+    "TASK_500": {
+      "title": "Conquistador de Reinos",
+      "essentialTitle": "Marco de 500 Tarefas",
+      "description": "Conclua 500 tarefas acumuladas.",
+      "essentialDescription": "Conclua um total de 500 tarefas."
+    },
+    "TASK_HARD_5": {
+      "title": "Primeira Provação",
+      "essentialTitle": "5 Entregas Complexas",
+      "description": "Conclua 5 tarefas de dificuldade Difícil.",
+      "essentialDescription": "Conclua 5 tarefas de alta complexidade (Difícil)."
+    },
+    "TASK_HARD_100": {
+      "title": "Domador de Titãs",
+      "essentialTitle": "100 Entregas Complexas",
+      "description": "Conclua 100 tarefas de dificuldade Difícil.",
+      "essentialDescription": "Conclua 100 tarefas de alta complexidade (Difícil)."
+    },
+    "CHECKLIST_PERFECTIONIST": {
+      "title": "Checklist Impecável",
+      "essentialTitle": "20 Checklists Completos",
+      "description": "Conclua 20 tarefas com todos os itens do checklist marcados.",
+      "essentialDescription": "Conclua 20 tarefas com 100% dos subitens do checklist concluídos."
+    },
+    "STREAK_14": {
+      "title": "Quinzena Inabalável",
+      "essentialTitle": "Duas Semanas (14 Dias)",
+      "description": "Mantenha sua chama acesa por 14 dias consecutivos.",
+      "essentialDescription": "Mantenha 14 dias consecutivos de atividade."
+    },
+    "STREAK_60": {
+      "title": "Disciplina Blindada",
+      "essentialTitle": "Bimestre Consistente (60 Dias)",
+      "description": "Alcance uma ofensiva de 60 dias consecutivos.",
+      "essentialDescription": "Mantenha 60 dias consecutivos de atividade."
+    },
+    "STREAK_180": {
+      "title": "Guardião do Solstício",
+      "essentialTitle": "Semestre de Consistência (180 Dias)",
+      "description": "Alcance meio ano (180 dias) de ofensiva ininterrupta.",
+      "essentialDescription": "Mantenha 180 dias consecutivos de atividade."
+    },
+    "FOCUS_SESSIONS_10": {
+      "title": "Ritual de Concentração",
+      "essentialTitle": "10 Sessões de Foco",
+      "description": "Conclua 10 sessões produtivas no Palco de Foco.",
+      "essentialDescription": "Finalize 10 sessões produtivas no Timer de Foco."
+    },
+    "FOCUS_MARATHON_90": {
+      "title": "Estado de Fluxo",
+      "essentialTitle": "Imersão Extrema (90m)",
+      "description": "Conclua uma única sessão contínua de pelo menos 90 minutos.",
+      "essentialDescription": "Finalize uma sessão contínua de foco de 90 minutos ou mais."
+    },
+    "FOCUS_POMO_100": {
+      "title": "Arquiteto do Tempo",
+      "essentialTitle": "100 Ciclos Pomodoro",
+      "description": "Complete 100 ciclos de Pomodoro acumulados.",
+      "essentialDescription": "Conclua um total de 100 ciclos de Pomodoro."
+    },
+    "FOCUS_HOURS_100": {
+      "title": "Sábio da Imersão",
+      "essentialTitle": "100 Horas de Foco",
+      "description": "Acumule 100 horas (6.000 minutos) de foco produtivo.",
+      "essentialDescription": "Acumule 6.000 minutos totais de foco."
+    },
+    "GOLD_500": {
+      "title": "Cofre Cheio",
+      "essentialTitle": "500 Créditos Acumulados",
+      "description": "Acumule 500 moedas/créditos ganhos pelo seu esforço.",
+      "essentialDescription": "Acumule um total de 500 créditos ganhos."
+    },
+    "WALLET_SAVER_500": {
+      "title": "Dragão Guardião",
+      "essentialTitle": "Reserva de 500 Créditos",
+      "description": "Mantenha um saldo disponível de 500 moedas na carteira sem gastar.",
+      "essentialDescription": "Acumule um saldo simultâneo de 500 créditos disponíveis."
+    },
+    "COUPON_MASTER": {
+      "title": "Alquimista do Tempo",
+      "essentialTitle": "5 Cupons de Tempo Esgotados",
+      "description": "Esgote 5 cupons de tempo da Mochila até o fim no Palco de Foco.",
+      "essentialDescription": "Utilize integralmente 5 recompensas de tempo cronometrado no Timer de Foco."
+    },
+    "REWARD_100": {
+      "title": "Mestre do Equilíbrio",
+      "essentialTitle": "100 Recompensas Resgatadas",
+      "description": "Resgate 100 recompensas na Loja.",
+      "essentialDescription": "Realize o resgate de 100 recompensas pessoais."
+    },
+    "GOLD_15000": {
+      "title": "Imperador Dourado",
+      "essentialTitle": "15.000 Créditos Acumulados",
+      "description": "Acumule 15.000 moedas/créditos ganhos na sua jornada.",
+      "essentialDescription": "Acumule um total de 15.000 créditos ganhos."
+    },
+    "LEVEL_APPRENTICE": {
+      "title": "Primeiros Passos",
+      "essentialTitle": "Marco de 100 XP",
+      "description": "Alcance 100 XP (Patente Aprendiz).",
+      "essentialDescription": "Alcance 100 pontos de evolução."
+    },
+    "LEVEL_CHALLENGER": {
+      "title": "Espírito Desafiante",
+      "essentialTitle": "Marco de 750 XP",
+      "description": "Alcance 750 XP (Patente Desafiante).",
+      "essentialDescription": "Alcance 750 pontos de evolução."
+    },
+    "LEVEL_EXPERT": {
+      "title": "Mestre de Ofício",
+      "essentialTitle": "Marco de 6.000 XP",
+      "description": "Alcance 6.000 XP (Patente Especialista).",
+      "essentialDescription": "Alcance 6.000 pontos de evolução."
+    },
+    "LEVEL_VETERAN": {
+      "title": "Veterano de Guerra",
+      "essentialTitle": "Marco de 12.000 XP",
+      "description": "Alcance 12.000 XP (Patente Veterano).",
+      "essentialDescription": "Alcance 12.000 pontos de evolução."
+    },
+    "WORKSPACE_ARCHITECT": {
+      "title": "Arquiteto de Mundos",
+      "essentialTitle": "Múltiplos Ambientes",
+      "description": "Crie 2 ambientes (Workspaces) para separar suas áreas de vida.",
+      "essentialDescription": "Crie 2 ambientes de trabalho (Workspaces) para organizar seus contextos."
+    },
+    "TROPHY_HUNTER_1000": {
+      "title": "Colecionador de Glórias",
+      "essentialTitle": "1.000 Pontos de Conquista",
+      "description": "Acumule 1.000 Pontos de Conquista desbloqueando medalhas.",
+      "essentialDescription": "Acumule 1.000 Pontos de Conquista no seu perfil."
+    },
+    "HARDCORE_FIRST": {
+      "title": "Sem Margem para Erro",
+      "essentialTitle": "Primeira Entrega em Prazo Rígido",
+      "description": "Conclua sua primeira tarefa com Modo Hardcore ativado.",
+      "essentialDescription": "Conclua 1 tarefa com Prazo Rígido (Hardcore) ativado."
+    },
+    "HARDCORE_MASTER_50": {
+      "title": "Imune ao Caos",
+      "essentialTitle": "50 Entregas em Prazo Rígido",
+      "description": "Conclua 50 tarefas com Modo Hardcore ativado.",
+      "essentialDescription": "Conclua 50 tarefas com Prazo Rígido (Hardcore) ativado."
+    },
+    "MYSTERY_BOX_FIRST": {
+      "title": "Curiosidade Premiada",
+      "essentialTitle": "Primeira Caixa Misteriosa",
+      "description": "Abra sua primeira Caixa Misteriosa na Mochila.",
+      "essentialDescription": "Abra sua primeira Caixa Misteriosa no inventário."
+    },
+    "MYSTERY_BOX_25": {
+      "title": "Senhor da Fortuna",
+      "essentialTitle": "25 Caixas Misteriosas Abertas",
+      "description": "Abra 25 Caixas Misteriosas na Mochila.",
+      "essentialDescription": "Abra um total de 25 Caixas Misteriosas no inventário."
+    },
+    "NIGHT_OWL": {
+      "title": "Coruja da Meia-Noite",
+      "essentialTitle": "Foco Noturno (5 Sessões)",
+      "description": "Conclua 5 sessões de foco (10+ min) terminando entre 23h e 5h.",
+      "essentialDescription": "Finalize 5 sessões de foco de 10+ minutos encerradas entre 23h e 5h."
+    },
+    "EARLY_BIRD": {
+      "title": "Madrugador",
+      "essentialTitle": "Foco Matinal (5 Sessões)",
+      "description": "Conclua 5 sessões de foco (10+ min) iniciadas entre 5h e 7h.",
+      "essentialDescription": "Finalize 5 sessões de foco de 10+ minutos iniciadas entre 5h e 7h."
+    },
+    "PUNCTUAL_EXECUTOR_20": {
+      "title": "Pontualidade Real",
+      "essentialTitle": "20 Entregas no Prazo",
+      "description": "Conclua 20 Afazeres com data de vencimento dentro do prazo.",
+      "essentialDescription": "Conclua 20 afazeres (To-Dos) com prazo definido antes do vencimento."
+    },
+    "IMPULSE_CONTROL_7": {
+      "title": "Domínio do Impulso",
+      "essentialTitle": "Controle de Impulsos (7 Ciclos)",
+      "description": "Complete 7 ciclos em Hábitos Negativos ou Mistos sem registrar recaídas.",
+      "essentialDescription": "Complete 7 ciclos em hábitos com controle negativo sem ocorrências negativas."
+    },
+    "FOCUS_ACTIVITY_GOAL_10": {
+      "title": "Mira Certeira",
+      "essentialTitle": "10 Metas de Atividade Batidas",
+      "description": "Atinja a meta de tempo configurada em uma Atividade de Foco em 10 sessões.",
+      "essentialDescription": "Atinja o tempo-alvo configurado de uma Atividade de Foco em 10 sessões."
+    },
+    "SHOWCASE_FULL_SLOTS": {
+      "title": "Estante Real Completa",
+      "essentialTitle": "Vitrine Completa (4 Destaques)",
+      "description": "Preencha todos os 4 espaços de destaque na sua Vitrine de Perfil.",
+      "essentialDescription": "Configure todos os 4 espaços de destaque na sua Vitrine de Perfil."
+    }
+  }
+}

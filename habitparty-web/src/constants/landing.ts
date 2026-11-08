@@ -1,5 +1,4 @@
 import {
-  Award,
   CheckSquare,
   Flame,
   Gift,
@@ -109,7 +108,8 @@ export const LANDING_FEATURE_CONFIGS: readonly LandingFeatureConfig[] = [
   {
     id: "experienceMode",
     icon: SlidersHorizontal,
-    badgeColor: "bg-gold/15 text-gold border-gold/30",
+    badgeColor:
+      "bg-amber-500/15 text-amber-800 border-amber-500/30 dark:bg-gold/15 dark:text-gold dark:border-gold/30",
     iconBoxColor:
       "bg-amber-500/10 text-amber-700 border-amber-500/20 dark:bg-card dark:text-gold dark:border-white/10",
   },
@@ -117,35 +117,39 @@ export const LANDING_FEATURE_CONFIGS: readonly LandingFeatureConfig[] = [
     id: "rewardShop",
     icon: ShoppingBag,
     badgeColor:
-      "bg-primary-light/15 text-primary-light border-primary-light/30",
+      "bg-primary/10 text-primary border-primary/25 dark:bg-primary-light/15 dark:text-primary-light dark:border-primary-light/30",
     iconBoxColor:
       "bg-purple-500/10 text-purple-700 border-purple-500/20 dark:bg-card dark:text-primary-light dark:border-white/10",
   },
   {
     id: "hardcoreMode",
     icon: Flame,
-    badgeColor: "bg-danger-500/15 text-danger-500 border-danger-500/30",
+    badgeColor:
+      "bg-rose-500/10 text-rose-700 border-rose-500/25 dark:bg-danger-500/15 dark:text-danger-500 dark:border-danger-500/30",
     iconBoxColor:
       "bg-rose-500/10 text-rose-700 border-rose-500/20 dark:bg-card dark:text-danger-500 dark:border-white/10",
   },
   {
     id: "workspaces",
     icon: Layers,
-    badgeColor: "bg-info/15 text-info border-info/30",
+    badgeColor:
+      "bg-info/10 text-info border-info/25 dark:bg-info/15 dark:border-info/30",
     iconBoxColor:
       "bg-sky-500/10 text-sky-700 border-sky-500/20 dark:bg-card dark:text-info dark:border-white/10",
   },
   {
     id: "analytics",
     icon: LineChart,
-    badgeColor: "bg-magenta/15 text-magenta border-magenta/30",
+    badgeColor:
+      "bg-magenta/10 text-magenta border-magenta/25 dark:bg-magenta/15 dark:border-magenta/30",
     iconBoxColor:
       "bg-fuchsia-500/10 text-fuchsia-700 border-fuchsia-500/20 dark:bg-card dark:text-magenta dark:border-white/10",
   },
   {
     id: "soundEffects",
     icon: Swords,
-    badgeColor: "bg-gold/15 text-gold border-gold/30",
+    badgeColor:
+      "bg-amber-500/15 text-amber-800 border-amber-500/30 dark:bg-gold/15 dark:text-gold dark:border-gold/30",
     iconBoxColor:
       "bg-amber-500/10 text-amber-700 border-amber-500/20 dark:bg-card dark:text-gold dark:border-white/10",
   },
@@ -157,10 +161,10 @@ export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] = [
     release: "Release 1.1",
     status: "completed",
     statusBadgeColor:
-      "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+      "bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
     icon: Languages,
     iconBoxColor:
-      "bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]",
+      "bg-emerald-500/15 border-emerald-500/35 text-emerald-700 dark:border-emerald-500/40 dark:text-emerald-400 dark:shadow-[0_0_15px_rgba(16,185,129,0.15)]",
     checkColor: "text-emerald-600 dark:text-emerald-400",
     accentColor: "from-emerald-400 via-teal-400 to-emerald-500",
     borderGlowColor: "hover:border-emerald-500/50",
@@ -169,9 +173,23 @@ export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] = [
   {
     id: "r12",
     release: "Release 1.2",
-    status: "next",
-    statusBadgeColor: "bg-gold/15 text-gold border-gold/30",
+    status: "completed",
+    statusBadgeColor:
+      "bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
     icon: Trophy,
+    iconBoxColor:
+      "bg-emerald-500/15 border-emerald-500/35 text-emerald-700 dark:border-emerald-500/40 dark:text-emerald-400 dark:shadow-[0_0_15px_rgba(16,185,129,0.15)]",
+    checkColor: "text-emerald-600 dark:text-emerald-400",
+    accentColor: "from-emerald-400 via-teal-400 to-emerald-500",
+    borderGlowColor: "hover:border-emerald-500/50",
+  },
+  {
+    id: "r13",
+    release: "Release 1.3",
+    status: "next",
+    statusBadgeColor:
+      "bg-amber-500/15 text-amber-800 border-amber-500/30 dark:bg-gold/15 dark:text-gold dark:border-gold/30",
+    icon: Timer,
     iconBoxColor:
       "bg-amber-500/10 border-amber-500/25 text-amber-700 dark:bg-card dark:border-white/15 dark:text-gold",
     checkColor: "text-amber-600 dark:text-gold",
@@ -179,22 +197,11 @@ export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] = [
     borderGlowColor: "hover:border-gold/40",
   },
   {
-    id: "r13",
-    release: "Release 1.3",
-    status: "planned",
-    statusBadgeColor: "bg-purple-500/15 text-purple-300 border-purple-500/30",
-    icon: Award,
-    iconBoxColor:
-      "bg-indigo-500/10 border-indigo-500/25 text-indigo-700 dark:bg-card dark:border-white/15 dark:text-purple-300",
-    checkColor: "text-indigo-600 dark:text-purple-300",
-    accentColor: "from-purple-500 to-indigo-500",
-    borderGlowColor: "hover:border-purple-500/40",
-  },
-  {
     id: "r14",
     release: "Release 1.4",
     status: "planned",
-    statusBadgeColor: "bg-magenta/15 text-magenta border-magenta/30",
+    statusBadgeColor:
+      "bg-magenta/10 text-magenta border-magenta/25 dark:bg-magenta/15 dark:border-magenta/30",
     icon: Users2,
     iconBoxColor:
       "bg-fuchsia-500/10 border-fuchsia-500/25 text-fuchsia-700 dark:bg-card dark:border-white/15 dark:text-magenta",
@@ -206,7 +213,8 @@ export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] = [
     id: "r20",
     release: "Release 2.0+",
     status: "epic",
-    statusBadgeColor: "bg-danger-500/15 text-danger-500 border-danger-500/30",
+    statusBadgeColor:
+      "bg-danger-500/10 text-danger-400 border-danger-500/25 dark:bg-danger-500/15 dark:text-danger-500 dark:border-danger-500/30",
     icon: Swords,
     iconBoxColor:
       "bg-rose-500/10 border-rose-500/25 text-rose-700 dark:bg-card dark:border-white/15 dark:text-danger-500",
@@ -226,7 +234,8 @@ export const LANDING_PLAN_CONFIGS: readonly LandingPlanConfig[] = [
   },
   {
     id: "founder",
-    badgeColor: "bg-gold/20 border-gold/60 text-gold",
+    badgeColor:
+      "bg-amber-500/15 border-amber-500/40 text-amber-800 dark:bg-gold/20 dark:border-gold/60 dark:text-gold",
     highlight: true,
     isFounder: true,
     hasOriginalPrice: true,

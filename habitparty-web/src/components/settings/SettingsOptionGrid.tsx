@@ -37,15 +37,23 @@ export function SettingsOptionGrid<T extends string | boolean>({
         className={cn(
           "rounded-xl border flex items-center gap-3 w-fit transition-colors",
           isCompact ? "p-3" : "p-4",
-          "bg-gold/10 border-gold/30 text-gold",
+          "bg-amber-500/10 dark:bg-gold/10 border-amber-500/30 dark:border-gold/30 text-amber-800 dark:text-gold",
         )}
       >
-        <Sparkles size={20} className="shrink-0 text-gold" />
+        <Sparkles
+          size={20}
+          className="shrink-0 text-amber-600 dark:text-gold"
+        />
         <div className="text-body-s">{statusMessage}</div>
       </div>
 
       {/* Grade de Seleção de Opções */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
+      <div
+        className={cn(
+          "grid grid-cols-1 gap-4 mt-1",
+          options.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2",
+        )}
+      >
         {options.map((option) => {
           const isSelected = option.value === selectedValue;
           const isPending =
@@ -61,18 +69,18 @@ export function SettingsOptionGrid<T extends string | boolean>({
               aria-pressed={isSelected}
               aria-busy={isPending || undefined}
               className={cn(
-                "rounded-xl border text-left flex items-start justify-between gap-4 transition-all cursor-pointer h-full disabled:cursor-wait",
+                "rounded-xl border text-left flex items-start justify-between gap-4 transition-colors cursor-pointer h-full disabled:cursor-wait",
                 isCompact ? "p-3" : "p-4",
                 isSelected
-                  ? "bg-primary-dark/60 border-gold shadow-glow-gold-sm ring-1 ring-gold"
-                  : "bg-surface/40 border-primary/20 hover:border-primary/40",
+                  ? "bg-amber-500/[0.08] dark:bg-primary-dark/60 border-gold shadow-glow-gold-sm ring-1 ring-gold"
+                  : "bg-surface/45 border-neutral-700 hover:border-primary/40 dark:bg-surface/40 dark:border-primary/20",
                 disabled && !isSelected && "opacity-60",
               )}
             >
               <div className="flex flex-col gap-2 min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   {Icon && (
-                    <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-gold border border-primary/20 shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-gold border border-neutral-700 dark:border-primary/20 shrink-0">
                       <Icon size={18} />
                     </div>
                   )}
@@ -80,7 +88,7 @@ export function SettingsOptionGrid<T extends string | boolean>({
                     {option.title}
                   </span>
                   {option.badge && (
-                    <span className="text-tiny font-bold px-2 py-0.5 rounded bg-gold/20 text-gold uppercase tracking-wider">
+                    <span className="text-tiny font-bold px-2 py-0.5 rounded bg-amber-500/15 dark:bg-gold/20 text-amber-800 dark:text-gold uppercase tracking-wider">
                       {option.badge}
                     </span>
                   )}

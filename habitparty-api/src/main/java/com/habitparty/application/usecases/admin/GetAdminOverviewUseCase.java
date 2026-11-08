@@ -1,9 +1,11 @@
 package com.habitparty.application.usecases.admin;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,18 +27,31 @@ public class GetAdminOverviewUseCase {
   private final AdminMetricsRepository adminMetricsPort;
   private final long resendMonthlyQuota;
   private final int resendResetDay;
+  private final Clock clock;
 
+  @Autowired
   public GetAdminOverviewUseCase(
       UserRepository userRepository,
       EmailDispatchLogRepository emailLogPort,
       AdminMetricsRepository adminMetricsPort,
       @Value("${resend.quota.monthly-limit:3000}") long resendMonthlyQuota,
-      @Value("${resend.quota.reset-day:16}") int resendResetDay) {
+      @Value("${resend.quota.reset-day:16}") int resendResetDay,
+      Clock clock) {
     this.userRepository = userRepository;
     this.emailLogPort = emailLogPort;
     this.adminMetricsPort = adminMetricsPort;
     this.resendMonthlyQuota = resendMonthlyQuota > 0 ? resendMonthlyQuota : 3000L;
     this.resendResetDay = Math.max(1, Math.min(31, resendResetDay));
+    this.clock = clock != null ? clock : Clock.systemDefaultZone();
+  }
+
+  public GetAdminOverviewUseCase(
+      UserRepository userRepository,
+      EmailDispatchLogRepository emailLogPort,
+      AdminMetricsRepository adminMetricsPort,
+      long resendMonthlyQuota,
+      int resendResetDay) {
+    this(userRepository, emailLogPort, adminMetricsPort, resendMonthlyQuota, resendResetDay, Clock.systemDefaultZone());
   }
 
   public AdminOverviewProjection execute() {
@@ -47,7 +62,7 @@ public class GetAdminOverviewUseCase {
     long adminUsers = userRepository.countByRole(UserRole.ADMIN);
     long verifiedUsers = userRepository.countByEmailVerified(true);
 
-    LocalDate today = LocalDate.now();
+    LocalDate today = LocalDate.now(clock);
     LocalDate cycleStartDate = resolveCycleStartDate(today, resendResetDay);
     LocalDate cycleResetDate = resolveCycleResetDate(today, resendResetDay);
     LocalDateTime cycleStart = cycleStartDate.atStartOfDay();

@@ -110,7 +110,7 @@ export function FocusStageAudioControls({
           type="button"
           onClick={handleToggleSound}
           className={cn(
-            "flex items-center gap-1 px-2 py-1 rounded-lg transition-all cursor-pointer border",
+            "flex items-center gap-1 px-2 py-1 rounded-lg transition-colors cursor-pointer border",
             isSoundEnabled
               ? "bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-gold dark:bg-gold/15 dark:border-gold/30 font-bold"
               : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5 border-transparent",
@@ -128,7 +128,7 @@ export function FocusStageAudioControls({
           type="button"
           onClick={() => toggleBrowserNotifications()}
           className={cn(
-            "flex items-center gap-1 px-2 py-1 rounded-lg transition-all cursor-pointer border",
+            "flex items-center gap-1 px-2 py-1 rounded-lg transition-colors cursor-pointer border",
             browserNotificationsEnabled && hasNotificationPermission
               ? "bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-gold dark:bg-gold/15 dark:border-gold/30 font-bold"
               : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5 border-transparent",
@@ -159,7 +159,7 @@ export function FocusStageAudioControls({
               type="button"
               onClick={() => handleSelectSoundType("zen")}
               className={cn(
-                "px-2 py-0.5 text-label-g font-semibold rounded-md transition-all cursor-pointer",
+                "px-2 py-0.5 text-label-g font-semibold rounded-md transition-colors cursor-pointer",
                 timerSoundType === "zen"
                   ? "bg-gold text-on-gold shadow-glow-gold-xs font-bold"
                   : "text-neutral-400 hover:text-neutral-200",
@@ -172,7 +172,7 @@ export function FocusStageAudioControls({
               type="button"
               onClick={() => handleSelectSoundType("arcade")}
               className={cn(
-                "px-2 py-0.5 text-label-g font-semibold rounded-md transition-all cursor-pointer",
+                "px-2 py-0.5 text-label-g font-semibold rounded-md transition-colors cursor-pointer",
                 timerSoundType === "arcade"
                   ? "bg-gold text-on-gold shadow-glow-gold-xs font-bold"
                   : "text-neutral-400 hover:text-neutral-200",
@@ -193,10 +193,10 @@ export function FocusStageAudioControls({
             type="button"
             onClick={() => setIsAmbientPopoverOpen((prev) => !prev)}
             className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all cursor-pointer",
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-colors cursor-pointer border",
               isAmbientPlaying && ambientSoundType !== "none"
-                ? "text-gold bg-gold/15 border border-gold/40 shadow-glow-gold-xs font-bold"
-                : "text-neutral-300 hover:text-gold hover:bg-white/5 border border-transparent",
+                ? "bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-gold dark:bg-gold/15 dark:border-gold/40 shadow-glow-gold-xs font-bold"
+                : "text-neutral-300 hover:text-amber-700 dark:hover:text-gold hover:bg-card dark:hover:bg-white/5 border-transparent",
             )}
             title={t("ambientButtonTitle")}
             aria-expanded={isAmbientPopoverOpen}
@@ -205,7 +205,7 @@ export function FocusStageAudioControls({
               size={15}
               className={
                 isAmbientPlaying && ambientSoundType !== "none"
-                  ? "animate-pulse text-gold"
+                  ? "animate-pulse text-amber-700 dark:text-gold"
                   : "text-neutral-300"
               }
             />
@@ -218,7 +218,7 @@ export function FocusStageAudioControls({
             {!isPremium && (
               <Crown
                 size={11}
-                className="text-gold fill-gold shrink-0 ml-0.5"
+                className="text-amber-600 dark:text-gold fill-amber-500/30 dark:fill-gold shrink-0 ml-0.5"
               />
             )}
           </button>
@@ -229,23 +229,23 @@ export function FocusStageAudioControls({
               role="dialog"
               aria-label={t("ambientDialogAria")}
               className={cn(
-                "absolute top-full right-0 mt-2 z-50 p-3.5 rounded-2xl border border-primary/40 bg-surface/98 dark:bg-card/98 backdrop-blur-xl shadow-2xl drop-shadow-2xl",
+                "absolute top-full right-0 mt-2 z-50 p-3.5 rounded-2xl border border-neutral-700 dark:border-primary/40 bg-card dark:bg-popover shadow-2xl",
                 "w-72 sm:w-80 max-w-[calc(100vw-2rem)] animate-in fade-in zoom-in-95 duration-150",
               )}
             >
-              <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-white/10">
+              <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-neutral-700 dark:border-white/10">
                 <div className="flex items-center gap-1.5">
                   <span className="text-caption font-bold text-neutral-100 uppercase tracking-wider">
                     {t("ambientHeaderTitle")}
                   </span>
-                  <span className="px-1.5 py-0.5 rounded-full text-tiny font-black uppercase tracking-wider bg-gold/20 text-gold border border-gold/40">
+                  <span className="px-1.5 py-0.5 rounded-full text-tiny font-black uppercase tracking-wider bg-amber-500/15 text-amber-800 border border-amber-500/35 dark:bg-gold/20 dark:text-gold dark:border-gold/40">
                     {t("vipBadge")}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsAmbientPopoverOpen(false)}
-                  className="text-neutral-400 hover:text-neutral-200 p-1 rounded-md hover:bg-white/5 transition-colors cursor-pointer"
+                  className="text-neutral-400 hover:text-neutral-200 p-1 rounded-md hover:bg-surface dark:hover:bg-white/5 transition-colors cursor-pointer"
                   aria-label={t("closeAria")}
                 >
                   <X size={14} />
@@ -269,12 +269,12 @@ export function FocusStageAudioControls({
                       type="button"
                       onClick={() => selectAmbientSound(sound.id)}
                       className={cn(
-                        "w-full flex items-center justify-between p-2 rounded-xl border text-left transition-all cursor-pointer",
+                        "w-full flex items-center justify-between p-2 rounded-xl border text-left transition-colors cursor-pointer",
                         isSelected
-                          ? "border-gold bg-gold/20 text-gold font-bold shadow-glow-gold-xs"
+                          ? "border-amber-500/50 bg-amber-500/10 text-amber-800 dark:border-gold dark:bg-gold/20 dark:text-gold font-bold shadow-glow-gold-xs"
                           : isLocked
-                            ? "border-primary/20 bg-primary-dark/20 text-neutral-300 hover:border-gold/30 hover:bg-white/5"
-                            : "border-primary/20 bg-primary-dark/20 text-neutral-200 hover:border-primary/40 hover:bg-white/5",
+                            ? "border-neutral-700 bg-background/60 dark:border-primary/20 dark:bg-primary-dark/20 text-neutral-300 hover:border-amber-500/40 dark:hover:border-gold/30 hover:bg-surface dark:hover:bg-white/5"
+                            : "border-neutral-700 bg-background/60 dark:border-primary/20 dark:bg-primary-dark/20 text-neutral-200 hover:border-primary/40 hover:bg-surface dark:hover:bg-white/5",
                       )}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
@@ -282,7 +282,7 @@ export function FocusStageAudioControls({
                           className={cn(
                             "p-1.5 rounded-lg shrink-0",
                             isSelected
-                              ? "bg-gold text-neutral-950"
+                              ? "bg-gold text-on-gold"
                               : "bg-surface text-neutral-300",
                           )}
                         >
@@ -299,9 +299,12 @@ export function FocusStageAudioControls({
                       </div>
 
                       {isLocked ? (
-                        <Lock size={13} className="text-gold shrink-0 ml-2" />
+                        <Lock
+                          size={13}
+                          className="text-amber-600 dark:text-gold shrink-0 ml-2"
+                        />
                       ) : isSelected ? (
-                        <div className="w-2 h-2 rounded-full bg-gold animate-ping shrink-0 ml-2" />
+                        <div className="w-2 h-2 rounded-full bg-amber-600 dark:bg-gold shrink-0 ml-2" />
                       ) : null}
                     </button>
                   );
@@ -310,13 +313,16 @@ export function FocusStageAudioControls({
 
               {/* CONTROLE DE VOLUME DO RUÍDO */}
               {isPremium && ambientSoundType !== "none" && (
-                <div className="pt-2 border-t border-white/10 flex flex-col gap-1.5">
+                <div className="pt-2 border-t border-neutral-700 dark:border-white/10 flex flex-col gap-1.5">
                   <div className="flex items-center justify-between text-label-g text-neutral-300">
                     <span className="flex items-center gap-1">
-                      <Sliders size={12} className="text-gold" />
+                      <Sliders
+                        size={12}
+                        className="text-amber-600 dark:text-gold"
+                      />
                       {t("ambientVolumeLabel")}
                     </span>
-                    <span className="font-mono font-bold text-gold">
+                    <span className="font-mono font-bold text-amber-700 dark:text-gold">
                       {Math.round(ambientVolume * 100)}%
                     </span>
                   </div>
@@ -336,11 +342,11 @@ export function FocusStageAudioControls({
 
               {/* CALL-TO-ACTION PARA FREE */}
               {!isPremium && (
-                <div className="pt-2 border-t border-white/10">
+                <div className="pt-2 border-t border-neutral-700 dark:border-white/10">
                   <button
                     type="button"
                     onClick={triggerUpgradeModal}
-                    className="w-full py-2 px-3 rounded-xl bg-gold text-neutral-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-glow-gold-xs hover:bg-gold-hover transition-all cursor-pointer"
+                    className="w-full py-2 px-3 rounded-xl bg-gold text-on-gold font-bold text-xs flex items-center justify-center gap-1.5 shadow-glow-gold-xs hover:bg-gold-hover transition-colors cursor-pointer"
                   >
                     <Crown size={14} />
                     <span>{t("unlockAmbientButton")}</span>

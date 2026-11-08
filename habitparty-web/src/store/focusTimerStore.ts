@@ -101,6 +101,7 @@ export interface FocusTimerStoreState extends FocusTimerState {
   startFocusActivity: (activity: FocusActivity) => void;
   startFocusItem: (item: InventoryItemResponseDTO) => void;
   selectActivityTarget: (activity: FocusActivity | null) => void;
+  selectItemTarget: (item: InventoryItemResponseDTO | null) => void;
   syncTargetMetadata: (metadata: {
     id?: string;
     name?: string;
@@ -650,6 +651,47 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
                 name: activity.name,
                 icon: activity.icon,
                 targetMinutes: minutes,
+              },
+            }),
+          };
+        });
+      },
+
+      selectItemTarget: (item: InventoryItemResponseDTO | null) => {
+        set((prev) => {
+          if (prev.isActive || prev.elapsedSeconds > 0) {
+            return prev;
+          }
+
+          if (!item) {
+            return {
+              ...prev,
+              ...buildIdleTimerPatch(DEFAULT_POMO_MINUTES * 60, {
+                mode: "POMO",
+                target: null,
+              }),
+            };
+          }
+
+          const totalSecs =
+            item.remainingSeconds !== undefined &&
+            item.remainingSeconds !== null
+              ? item.remainingSeconds
+              : DEFAULT_POMO_MINUTES * 60;
+
+          return {
+            ...prev,
+            ...buildIdleTimerPatch(totalSecs, {
+              mode: "POMO",
+              completedCycles: 0,
+              target: {
+                type: "inventory",
+                id: item.inventoryItemId || "",
+                name: item.rewardName || tStoreMsg("defaultItemName"),
+                icon: item.rewardIcon,
+                remainingSeconds: totalSecs,
+                targetMinutes: Math.max(1, Math.ceil(totalSecs / 60)),
+                packageLevel: item.rewardPackageLevel,
               },
             }),
           };

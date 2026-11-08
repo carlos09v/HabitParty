@@ -7,8 +7,9 @@ import {
   getTransactionTypeLabel,
   TRANSACTION_TYPE_CONFIG,
 } from "@/constants/history";
-import { REWARD_ICONS } from "@/constants/reward";
+import { PACKAGE_BADGE_COLORS, REWARD_ICONS } from "@/constants/reward";
 import { COLUMN_ICONS } from "@/constants/routine";
+import { DIFFICULTY_BORDER, TASK_DIFFICULTY_META } from "@/constants/task";
 import type { AppLocale } from "@/i18n/config";
 import type {
   HistoryPageSummary,
@@ -16,11 +17,11 @@ import type {
   TransactionHistoryResponseDTO,
   TransactionMetadata,
 } from "@/types/history";
-import type { WelcomeCardStat } from "@/types/ui";
+import type { DateFormat, WelcomeCardStat } from "@/types/ui";
 import {
   formatDateTime,
+  formatShortDate,
   getCapitalizedWeekDays,
-  getShortMonths,
   parseServerDate,
 } from "./date";
 import { formatCoins } from "./economy";
@@ -83,6 +84,13 @@ function formatTransactionTime(
   }).format(d);
 }
 
+const PACKAGE_BORDER_MAP: Record<string, string> = {
+  BASIC: "border-l-emerald-500",
+  PREMIUM: "border-l-sky-500",
+  EPIC: "border-l-purple-500",
+  LEGENDARY: "border-l-amber-500",
+};
+
 /**
  * Resolve e normaliza todos os metadados visuais e contextuais de uma transação
  * do histórico (tipo resolvido, rótulos, ícone correto e classes Tailwind).
@@ -90,6 +98,7 @@ function formatTransactionTime(
 export function resolveTransactionMetadata(
   transaction: TransactionHistoryResponseDTO,
   locale: AppLocale = "pt-BR",
+  dateFormat?: DateFormat,
 ): TransactionMetadata {
   const isFocus = transaction.transactionType === "FOCUS_COMPLETED";
   const rawType = transaction.transactionType || "TASK_COMPLETED";
@@ -99,25 +108,41 @@ export function resolveTransactionMetadata(
   const typeConfig =
     TRANSACTION_TYPE_CONFIG[resolvedType] || DEFAULT_TRANSACTION_STYLE;
 
-  const difficultyLabel = transaction.difficulty
-    ? getDifficultyLabel(transaction.difficulty, locale)
+  const normalizedDiff = transaction.difficulty?.trim().toUpperCase();
+  const difficultyLabel = normalizedDiff
+    ? getDifficultyLabel(normalizedDiff, locale)
     : null;
 
+  const normalizedPkg = transaction.packageLevel?.trim().toUpperCase();
   const packageLabel =
-    transaction.packageLevel && transaction.packageLevel !== "NONE"
-      ? getPackageLabel(transaction.packageLevel, locale)
+    normalizedPkg && normalizedPkg !== "NONE"
+      ? getPackageLabel(normalizedPkg, locale)
       : null;
+
+  const borderClass =
+    (normalizedDiff && DIFFICULTY_BORDER[normalizedDiff]) ||
+    (normalizedPkg && PACKAGE_BORDER_MAP[normalizedPkg]) ||
+    typeConfig.borderClass;
+
+  const secondaryBadgeClass =
+    (normalizedDiff && TASK_DIFFICULTY_META[normalizedDiff]?.badgeColor) ||
+    (normalizedPkg && PACKAGE_BADGE_COLORS[normalizedPkg]) ||
+    "bg-white/10 border-white/15 text-neutral-200";
 
   return {
     label: getTransactionTypeLabel(resolvedType, locale),
     badgeClass: typeConfig.badgeClass,
-    borderClass: typeConfig.borderClass,
+    borderClass,
+    secondaryBadgeClass,
     icon: resolveTransactionIcon(transaction, isFocus, typeConfig.icon),
     isFocus,
     resolvedType,
     difficultyLabel,
     packageLabel,
-    formattedDate: formatDateTime(transaction.createdAt, { locale }),
+    formattedDate: formatDateTime(transaction.createdAt, {
+      locale,
+      dateFormat,
+    }),
     formattedTime: formatTransactionTime(transaction.createdAt, locale),
   };
 }
@@ -129,6 +154,7 @@ export function formatTransactionDayLabel(
   dateKey: string,
   referenceDateOrLocale: Date | AppLocale = new Date(),
   localeArg: AppLocale = "pt-BR",
+  dateFormat?: DateFormat,
 ): string {
   const referenceDate =
     typeof referenceDateOrLocale === "string"
@@ -157,17 +183,18 @@ export function formatTransactionDayLabel(
 
   const dateObj = new Date(y, m - 1, d);
   const weekDay = getCapitalizedWeekDays(locale)[dateObj.getDay()];
-  const monthName = getShortMonths(locale)[dateObj.getMonth()];
-  const dayStr = String(d).padStart(2, "0");
+  const includeYear = y !== referenceDate.getFullYear();
+  const formattedDate = formatShortDate(dateKey, {
+    includeYear,
+    monthFormat: "short",
+    locale,
+    dateFormat,
+  });
 
-  if (y !== referenceDate.getFullYear()) {
-    return isEn
-      ? `${monthName} ${dayStr}, ${y}`
-      : `${dayStr} ${monthName} ${y}`;
+  if (includeYear) {
+    return formattedDate;
   }
-  return isEn
-    ? `${weekDay}, ${monthName} ${dayStr}`
-    : `${weekDay}, ${dayStr} ${monthName}`;
+  return `${weekDay}, ${formattedDate}`;
 }
 
 /**
@@ -177,6 +204,7 @@ export function groupTransactionsByDay(
   transactions: TransactionHistoryResponseDTO[],
   referenceDateOrLocale: Date | AppLocale = new Date(),
   localeArg: AppLocale = "pt-BR",
+  dateFormat?: DateFormat,
 ): TransactionDayGroup[] {
   const referenceDate =
     typeof referenceDateOrLocale === "string"
@@ -198,7 +226,12 @@ export function groupTransactionsByDay(
     if (!group) {
       group = {
         dateKey,
-        label: formatTransactionDayLabel(dateKey, referenceDate, locale),
+        label: formatTransactionDayLabel(
+          dateKey,
+          referenceDate,
+          locale,
+          dateFormat,
+        ),
         items: [],
       };
       groupMap.set(dateKey, group);

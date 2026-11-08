@@ -4,66 +4,46 @@ import { DIFFICULTY_REWARDS } from "@/constants/task";
 import type { AppLocale } from "@/i18n/config";
 import type {
   HelpCategory,
-  HelpCategoryTab,
   HelpFaqItem,
   HelpProductivityStep,
   HelpTableEntry,
 } from "@/types/help";
 import { formatCoins } from "@/utils";
-import { USER_LEVELS } from "@/utils/levels";
+import { LEVEL_TITLES_PRODUCTIVITY_PT, USER_LEVELS } from "@/utils/levels";
 
 export const HELP_PRODUCTIVITY_STEPS: readonly HelpProductivityStep[] = [
   {
     step: 1,
-    title: "Planeje sua Rotina",
-    description:
-      "Organize seus afazeres em Hábitos contínuos, Diárias recorrentes e Afazeres (To-Dos) pontuais com checklists e prazos.",
-    badgeClassName: "bg-primary/20 border-primary/40 text-primary-light",
+    badgeClassName:
+      "bg-primary/15 dark:bg-primary/20 border-primary/30 dark:border-primary/40 text-primary dark:text-primary-light",
   },
   {
     step: 2,
-    title: "Execute com Foco e Constância",
-    description:
-      "Conclua tarefas reais. O motor matemático pontua sua consistência, creditando XP e Moedas de Ouro (🪙) no Modo Aventura ou Pontos (pts) e Créditos no Modo Essencial.",
-    badgeClassName: "bg-gold/20 border-gold/40 text-gold",
+    badgeClassName:
+      "bg-amber-500/15 dark:bg-gold/20 border-amber-500/35 dark:border-gold/40 text-amber-700 dark:text-gold",
   },
   {
     step: 3,
-    title: "Recompense sua Dedicação",
-    description:
-      "Defina suas próprias recompensas na Loja: pausas merecidas, momentos de lazer, pacotes de tempo livre ou Caixas Misteriosas (no Modo Aventura).",
-    badgeClassName: "bg-magenta/20 border-magenta/40 text-magenta",
+    badgeClassName:
+      "bg-magenta/15 dark:bg-magenta/20 border-magenta/35 dark:border-magenta/40 text-magenta",
   },
   {
     step: 4,
-    title: "Desfrute sem Procrastinação",
-    description:
-      "Consulte seu Inventário/Mochila, usufrua do descanso merecido com a mente tranquila e mantenha sua disciplina sustentável.",
-    badgeClassName: "bg-success-500/20 border-success-500/40 text-success-500",
+    badgeClassName:
+      "bg-emerald-500/15 dark:bg-success-500/20 border-emerald-500/35 dark:border-success-500/40 text-emerald-700 dark:text-success-500",
   },
 ] as const;
 
-export const HELP_CATEGORIES: HelpCategoryTab[] = [
-  { id: "ALL", label: "Tudo" },
-  { id: "OVERVIEW", label: "Visão Geral" },
-  { id: "TASKS", label: "Tarefas & Hábitos" },
-  { id: "ECONOMY", label: "Economia & Ouro" },
-  { id: "REWARDS", label: "Loja & Caixas" },
-  { id: "INVENTORY", label: "Mochila" },
-  { id: "FOCUS", label: "Foco & Pomodoro" },
-  { id: "LEVELS", label: "Níveis & XP" },
-];
-
-export const HELP_CATEGORY_LABELS: Record<HelpCategory, string> = {
-  ALL: "Tudo",
-  OVERVIEW: "Visão Geral",
-  TASKS: "Tarefas & Hábitos",
-  ECONOMY: "Economia & Ouro",
-  REWARDS: "Loja & Caixas",
-  INVENTORY: "Mochila",
-  FOCUS: "Foco & Pomodoro",
-  LEVELS: "Níveis & XP",
-};
+export const HELP_CATEGORY_IDS: readonly HelpCategory[] = [
+  "ALL",
+  "OVERVIEW",
+  "TASKS",
+  "ECONOMY",
+  "REWARDS",
+  "INVENTORY",
+  "FOCUS",
+  "LEVELS",
+] as const;
 
 const LEVEL_PROGRESSION_META: Record<
   string,
@@ -230,11 +210,12 @@ export const HELP_TABLES: Record<string, HelpTableEntry> = {
   userLevels: {
     title: "🏆 Níveis de Usuário (UserLevel & XP Vitalício)",
     description:
-      "Seu XP total acumulado nunca é gasto ou resetado ao comprar recompensas. Ele serve como marco de consistência e maturidade.",
+      "Seu XP/Pontos total acumulado nunca é gasto ou resetado ao comprar recompensas. O título exibido adapta-se automaticamente ao seu estilo (Modo Aventura vs. Modo Essencial).",
     category: "LEVELS",
     columns: [
-      "Nível",
-      "XP Necessário",
+      "Modo Aventura (RPG)",
+      "Modo Essencial (Produtividade)",
+      "XP / Pontos Necessários",
       "Tarefas Médias Estimadas",
       "Tempo Estimado",
     ],
@@ -242,7 +223,8 @@ export const HELP_TABLES: Record<string, HelpTableEntry> = {
       const meta = LEVEL_PROGRESSION_META[lvl.tier];
       return [
         `${lvl.title} (${meta?.englishName || lvl.tier})`,
-        `${lvl.minXpRequired.toLocaleString("pt-BR")} XP`,
+        LEVEL_TITLES_PRODUCTIVITY_PT[lvl.tier],
+        `${lvl.minXpRequired.toLocaleString("pt-BR")} XP / pts`,
         meta?.tasksEstimate || "-",
         meta?.timeEstimate || "-",
       ];
@@ -292,6 +274,50 @@ export const HELP_TABLES: Record<string, HelpTableEntry> = {
       ],
     ],
   },
+  achievementRarities: {
+    title: "🏅 Catálogo de Conquistas, Raridades & Pontos de Troféu (/profile)",
+    description:
+      "As 63 conquistas permanentes (4.170 pts no total) premiam marcos de execução, ofensivas, foco, economia, organização e comportamentos secretos com Pontos de Conquista (Trophy Score) e podem ser exibidas nos 4 espaços de destaque da sua Vitrine.",
+    category: "LEVELS",
+    columns: [
+      "Raridade / Tier",
+      "Pontos de Conquista",
+      "Medalhas no Catálogo",
+      "Exemplos de Marcos Desbloqueáveis",
+    ],
+    rows: [
+      [
+        "⚪ Comum (Common)",
+        "+10 pts",
+        "12 conquistas",
+        "1ª Tarefa, 10 Tarefas, Ofensivas de 3 e 7 dias, 1ª e 10 Sessões de Foco, 100 Moedas, 1º Resgate, 100 / 300 / 750 XP, 1ª Caixa Misteriosa (Secreta).",
+      ],
+      [
+        "🟢 Incomum (Uncommon)",
+        "+25 pts",
+        "14 conquistas",
+        "50 e 100 Tarefas, 5 Tarefas Difíceis, Ofensivas de 14 e 21 dias, Deep Work de 45m, 25 Pomodoros, 500 Moedas, 25 Resgates, 3.000 XP, 2 Workspaces, Estante Real Completa (4 Destaques), 1º Hardcore (Secreta), 5 Caixas Misteriosas (Secreta).",
+      ],
+      [
+        "🔵 Rara (Rare)",
+        "+50 pts",
+        "18 conquistas",
+        "250 Tarefas, Checklist Impecável (20), Pontualidade Real (20 To-Dos no Prazo), Ofensivas de 30 e 60 dias, Domínio do Impulso (7 Ciclos sem Recaída), Estado de Fluxo (90m), 10h de Foco, Mira Certeira (10 Metas de Atividade), 1.000 Moedas, Carteira com 500 Moedas, 5 Cupons de Tempo Esgotados, 6.000 / 12.000 XP, Vitrine Personalizada, 10 Hardcore, Coruja da Meia-Noite e Madrugador (Secretas).",
+      ],
+      [
+        "🟣 Épica (Epic)",
+        "+100 pts",
+        "13 conquistas",
+        "500 Tarefas, 25 Tarefas Difíceis, Ofensivas de 90 e 180 dias, 50h / 100h de Foco, 100 Pomodoros, 5.000 Moedas, 100 Resgates, 25.000 XP, 1.000 Pontos de Conquista, 50 Hardcore e 25 Caixas Misteriosas (Secretas).",
+      ],
+      [
+        "🟡 Lendária (Legendary)",
+        "+250 pts",
+        "6 conquistas",
+        "1.000 Tarefas, 100 Tarefas Difíceis, Ofensiva de 365 dias, 200h de Foco, 15.000 Moedas Acumuladas, Patente Lenda (60.000 XP).",
+      ],
+    ],
+  },
 };
 
 export const HELP_FAQS: HelpFaqItem[] = [
@@ -321,7 +347,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
     answer:
       "O HabitParty oferece dois perfis de experiência que compartilham o mesmo motor matemático de consistência, quadros Kanban, Pomodoro e extrato, adaptando a linguagem, os indicadores visuais e a mecânica de recompensas ao seu estilo:",
     bullets: [
-      "Modo Essencial (Produtividade): Produtividade gamificada com estética executiva e limpa. Substitui Moedas de Ouro por Créditos e XP por Pontos (pts), adota títulos profissionais de evolução, usa indicadores discretos de Esforço (em vez de espadas), foca em recompensas pessoais diretas na Loja (sem sorteios de Caixas Misteriosas) e utiliza termos corporativos/acadêmicos ('Prazo Rígido' em vez de 'Modo Hardcore' e 'Inventário' em vez de 'Mochila').",
+      "Modo Essencial (Produtividade): Produtividade gamificada com estética executiva e limpa. Substitui Moedas de Ouro por Créditos e XP por Pontos (pts), adota títulos profissionais de evolução (Iniciante a Alta Performance), usa indicadores discretos de Esforço (em vez de espadas), foca em recompensas pessoais diretas na Loja (sem sorteios de Caixas Misteriosas) e utiliza termos corporativos/acadêmicos ('Prazo Rígido' em vez de 'Modo Hardcore' e 'Inventário' em vez de 'Mochila').",
       "Modo Aventura (Imersão RPG): Experiência gamificada completa com feedback imediato de dopamina. Converte suas entregas em Moedas de Ouro (🪙) e XP vitalício, exibe títulos de aventureiro (Novato a Lenda), ícones de espadas para dificuldade, Modo Hardcore com risco disciplinar, Caixas Misteriosas (Gacha/RNG) na Loja, Mochila de itens e efeitos sonoros comemorativos.",
       "Conversão 1:1 e Troca Livre: 1 Moeda de Ouro equivale exatamente a 1 Crédito, e 1 XP equivale a 1 Ponto (pts). Você escolhe seu perfil no primeiro acesso e pode alternar quando quiser em Configurações > Aparência > Estilo de Experiência com 1 clique, sem perder nenhum saldo, nível ou histórico.",
     ],
@@ -359,9 +385,10 @@ export const HELP_FAQS: HelpFaqItem[] = [
   {
     id: "hardcore-mode",
     category: "TASKS",
-    question: "O que é o Prazo Rígido / Modo Hardcore nas tarefas?",
+    question:
+      "O que é o Prazo Rígido / Compromisso Diário / Modo Hardcore nas tarefas?",
     answer:
-      "É um compromisso de alta responsabilidade disponível para Hábitos, Diárias e Afazeres (To-dos). A nomenclatura se adapta ao seu Modo de Experiência: chama-se 'Prazo Rígido (Compromisso Inegociável)' no Modo Essencial (Produtividade) e 'Modo Hardcore' no Modo Aventura (RPG). Ao ativá-lo:",
+      "É um compromisso de alta responsabilidade disponível para Hábitos, Diárias e Afazeres (To-dos). A nomenclatura se adapta ao seu Modo de Experiência e ao tipo da atividade: chama-se 'Prazo Rígido' (em Afazeres) ou 'Compromisso Diário' (em Hábitos/Diárias) no Modo Essencial (Produtividade), e 'Modo Hardcore' no Modo Aventura (RPG). Ao ativá-lo:",
     bullets: [
       "Afazeres (To-Dos): A data de entrega torna-se obrigatória e fica bloqueada contra adiamentos após o vencimento. Se atrasar, a entrega tardia rende apenas 50% da recompensa.",
       "Penalidade Noturna: Se a atividade não for cumprida até as 23:59 do dia/prazo, o sistema aplica uma penalidade imediata deduzindo 50% de Moedas/XP (no Modo Aventura) ou Créditos/Pontos (no Modo Essencial) do seu saldo.",
@@ -612,12 +639,57 @@ export const HELP_FAQS: HelpFaqItem[] = [
     ],
     highlightBadge: "Transparência",
   },
+  {
+    id: "profile-showcase",
+    category: "LEVELS",
+    question:
+      "Como funciona a Vitrine do Perfil (/profile) e os 4 Espaços de Destaque?",
+    answer:
+      "Ao clicar no seu cartão de perfil no rodapé da barra lateral (Sidebar), você acessa sua Vitrine de Aventureiro (/profile). Ela funciona como seu cartão de visitas oficial, reunindo sua identidade visual, estatísticas vitalícias e uma estante personalizável no topo:",
+    bullets: [
+      "Identidade & Bio: Exiba seu Avatar com Moldura Animada, selo de Fundador Pioneiro ou VIP, patente de nível atual, pontuação total de conquistas (🏆 pts) e uma frase/bio personalizada de até 160 caracteres.",
+      "4 Espaços de Destaque (Trophy Shelf): Escolha livremente até 4 itens para fixar no topo da sua vitrine — combinando Conquistas Desbloqueadas, Insígnias da Conta (Fundador, Guardião VIP, Conta Verificada, Patente de Nível) ou Recordes em Tempo Real (Maior Ofensiva, Horas de Foco, Tarefas Concluídas, XP Total).",
+      "Modo Visão de Visitante: Alterne com 1 clique no botão 'Visão de Visitante' no topo da vitrine para pré-visualizar exatamente como seu perfil é exibido sem os botões de edição.",
+    ],
+    tags: [
+      "vitrine",
+      "perfil",
+      "showcase",
+      "destaques",
+      "badges",
+      "insígnias",
+      "bio",
+      "fundador",
+    ],
+    highlightBadge: "Novo • 1.2",
+    actionLink: { label: "Abrir Minha Vitrine", href: "/profile" },
+  },
+  {
+    id: "achievements-system",
+    category: "LEVELS",
+    question:
+      "Como funcionam as 63 Conquistas, os Pontos de Conquista e as Medalhas Secretas?",
+    answer:
+      "O sistema de Conquistas do HabitParty conta com 63 medalhas permanentes (4.170 pts no total) distribuídas em 6 categorias (Missões & Execução, Ofensiva, Foco, Economia & Loja, Evolução e Especiais) e 5 graus de raridade (Comum a Lendária):",
+    bullets: [
+      "Desbloqueio Automático em Tempo Real: Sempre que você conclui uma tarefa, faz check-in em hábito, registra uma sessão de foco, resgata uma recompensa, abre uma Caixa Misteriosa ou cria um novo Workspace, o servidor avalia seu progresso e desbloqueia novas medalhas automaticamente com efeito sonoro cristalino de troféu.",
+      "Pontos de Conquista (Trophy Score): Cada medalha concede de +10 pts (Comum) a +250 pts (Lendária), compondo seu placar de prestígio exibido na Sidebar e na Vitrine (sem alterar o equilíbrio de moedas da loja). Ao somar 1.000 pts você ainda desbloqueia a medalha 'Colecionador de Glórias'.",
+      "Conquistas Comportamentais: Além de volume, algumas medalhas premiam como você trabalha — entregar 20 Afazeres antes do prazo (Pontualidade Real), concluir 7 ciclos de Hábitos Negativos/Mistos sem recaídas (Domínio do Impulso), bater 10 metas de tempo de Atividades no Focus (Mira Certeira), concluir tarefas com 100% do checklist marcado, esgotar cupons de tempo da Mochila, manter 500 moedas na carteira, preencher os 4 espaços da Vitrine ou criar 2 Workspaces.",
+      "Conquistas Secretas (???): 8 medalhas especiais (Hardcore, Caixas Misteriosas, Coruja da Meia-Noite e Madrugador) permanecem ocultas com título e descrição mascarados até que você descubra e cumpra seu requisito especial na jornada. Os horários das sessões de foco usam o relógio local do seu dispositivo.",
+    ],
+    tags: [
+      "conquistas",
+      "medalhas",
+      "troféus",
+      "pontos de conquista",
+      "secretas",
+      "raridade",
+      "som",
+    ],
+    highlightBadge: "Novo • 1.2",
+    actionLink: { label: "Ver Galeria de Conquistas", href: "/profile" },
+  },
 ];
-
-/** IDs das categorias exibidas como abas no FAQ (rótulos vêm de `help.faq.categories`). */
-export const HELP_CATEGORY_IDS: readonly HelpCategory[] = HELP_CATEGORIES.map(
-  (c) => c.id,
-);
 
 /** Retorna as perguntas frequentes no idioma solicitado. */
 export function getHelpFaqs(locale: AppLocale): HelpFaqItem[] {

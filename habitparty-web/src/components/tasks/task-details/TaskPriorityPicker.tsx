@@ -64,7 +64,7 @@ export function TaskPriorityPicker({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         className={cn(
-          "p-1.5 rounded-md border flex items-center justify-center transition-all cursor-pointer shadow-2xs hover:scale-105",
+          "p-1.5 rounded-md border flex items-center justify-center transition-[transform,color,background-color,border-color] cursor-pointer shadow-2xs hover:scale-105",
           priorityMeta.badgeColor,
         )}
         title={t("priorityButtonTitle", {
@@ -86,7 +86,7 @@ export function TaskPriorityPicker({
             data-select-for={pickerId}
             style={floatingStyle}
             className={cn(
-              "bg-popover/98 border border-primary/40 rounded-lg p-1.5 shadow-xl flex flex-col gap-1 w-32 animate-in fade-in zoom-in-95 duration-100 backdrop-blur-md",
+              "bg-popover border border-neutral-700 dark:border-primary/40 rounded-lg p-1.5 shadow-xl flex flex-col gap-1 w-32 animate-in fade-in zoom-in-95 duration-100",
               coords.placement === "top" ? "origin-bottom" : "origin-top",
             )}
           >
@@ -103,15 +103,15 @@ export function TaskPriorityPicker({
                 className={cn(
                   "flex items-center justify-between px-2 py-1 rounded text-xs transition-colors cursor-pointer text-left",
                   priority === opt.id
-                    ? "bg-white/15 font-bold text-neutral-50"
-                    : "text-neutral-300 hover:bg-white/8 hover:text-neutral-100",
+                    ? "bg-primary/10 font-bold text-primary dark:bg-white/15 dark:text-neutral-50"
+                    : "text-neutral-200 dark:text-neutral-300 hover:bg-surface dark:hover:bg-white/8 hover:text-neutral-50 dark:hover:text-neutral-100",
                 )}
               >
                 <span>
                   {tOptions(`priorities.${toPriorityMessageKey(opt.id)}`)}
                 </span>
                 {priority === opt.id && (
-                  <Check size={11} className="text-gold" />
+                  <Check size={11} className="text-primary dark:text-gold" />
                 )}
               </button>
             ))}

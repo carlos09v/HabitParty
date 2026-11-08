@@ -19,7 +19,7 @@ export function LandingRoadmap() {
   return (
     <section id="roadmap" className="py-20 md:py-28 relative overflow-hidden">
       {/* Orbe cósmico de fundo */}
-      <div className="cosmic-orb absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-primary-dark/25 blur-[220px] pointer-events-none -z-10" />
+      <div className="cosmic-orb absolute top-1/3 left-1/2 -translate-x-1/2 w-[780px] h-[780px] rounded-full bg-[radial-gradient(circle,rgba(73,22,166,0.18)_0%,transparent_70%)] pointer-events-none -z-10" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Cabeçalho da Seção */}
@@ -36,10 +36,10 @@ export function LandingRoadmap() {
           </p>
 
           {/* Banner Chamativo de Conexão com Membros Fundadores */}
-          <div className="mt-8 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-gold/10 via-card to-gold/10 border border-gold/40 shadow-glow-gold-sm flex flex-col sm:flex-row items-center justify-between gap-4 text-left">
+          <div className="mt-8 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-card to-amber-500/10 dark:from-gold/10 dark:via-card dark:to-gold/10 border border-amber-500/35 dark:border-gold/40 shadow-xs dark:shadow-glow-gold-sm flex flex-col sm:flex-row items-center justify-between gap-4 text-left">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gold/20 border border-gold/40 flex items-center justify-center shrink-0 text-gold shadow-glow-gold-xs">
-                <Crown className="w-5 h-5 fill-gold" />
+              <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/35 text-amber-700 dark:bg-gold/20 dark:border-gold/40 flex items-center justify-center shrink-0 dark:text-gold shadow-none dark:shadow-glow-gold-xs">
+                <Crown className="w-5 h-5 fill-amber-500 dark:fill-gold" />
               </div>
               <div>
                 <h3 className="text-sm sm:text-base font-bold text-neutral-50 flex items-center gap-1.5">
@@ -55,7 +55,7 @@ export function LandingRoadmap() {
             </div>
             <a
               href="#planos"
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gold hover:bg-gold-hover text-neutral-950 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all active:scale-95 shrink-0 shadow-sm"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gold hover:bg-gold-hover text-neutral-950 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-[transform,background-color] active:scale-95 shrink-0 shadow-sm"
             >
               <span>{t("founderBanner.cta")}</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -81,7 +81,7 @@ export function LandingRoadmap() {
               <div
                 key={item.id}
                 className={cn(
-                  "relative rounded-3xl p-6 sm:p-8 flex flex-col justify-between transition-all duration-300 group",
+                  "relative rounded-3xl p-6 sm:p-8 flex flex-col justify-between transition-[transform,border-color,box-shadow] duration-300 group",
                   isCompleted
                     ? "bg-gradient-to-b from-emerald-500/[0.06] via-card to-card dark:from-emerald-950/30 dark:via-surface/70 dark:to-surface/50 border border-emerald-500/30 dark:border-emerald-500/40 hover:border-emerald-500/60 dark:hover:border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.06)] hover:shadow-[0_0_35px_rgba(16,185,129,0.16)] hover:-translate-y-1"
                     : "bg-card/95 dark:bg-surface/60 border border-neutral-700/80 dark:border-white/10 hover:border-neutral-500 dark:hover:border-white/25 shadow-sm dark:shadow-card-deep hover:-translate-y-1",
@@ -108,12 +108,12 @@ export function LandingRoadmap() {
                         className={cn(
                           "text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full border flex items-center gap-1.5",
                           isCompleted
-                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300"
                             : "bg-surface dark:bg-white/5 border-neutral-700 dark:border-white/10 text-neutral-200",
                         )}
                       >
                         {isCompleted && (
-                          <Check className="w-3.5 h-3.5 text-emerald-400 stroke-3" />
+                          <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-3" />
                         )}
                         <span>{item.release}</span>
                       </span>
@@ -129,7 +129,7 @@ export function LandingRoadmap() {
                       )}
                     >
                       {isCompleted && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                       )}
                       <span>{t(`items.${item.id}.statusLabel`)}</span>
                     </span>
@@ -150,14 +150,14 @@ export function LandingRoadmap() {
                         className={cn(
                           "text-xl sm:text-2xl font-bold transition-colors leading-snug flex items-center gap-2",
                           isCompleted
-                            ? "text-neutral-50 group-hover:text-emerald-400"
-                            : "text-neutral-50 group-hover:text-gold",
+                            ? "text-neutral-50 group-hover:text-emerald-700 dark:group-hover:text-emerald-400"
+                            : "text-neutral-50 group-hover:text-primary dark:group-hover:text-gold",
                         )}
                       >
                         <span>{t(`items.${item.id}.title`)}</span>
                         {isCompleted && (
                           <span
-                            className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold shrink-0"
+                            className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold shrink-0"
                             title={t(`items.${item.id}.statusLabel`)}
                           >
                             ✓
@@ -203,8 +203,8 @@ export function LandingRoadmap() {
                           className={cn(
                             "inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border",
                             isCompleted
-                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                              : "text-gold bg-gold/10 border-gold/30",
+                              ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
+                              : "text-amber-800 dark:text-gold bg-amber-500/10 dark:bg-gold/10 border-amber-500/30 dark:border-gold/30",
                           )}
                         >
                           <PlusCircle className="w-3 h-3" />
@@ -220,7 +220,7 @@ export function LandingRoadmap() {
                                 className={cn(
                                   "w-3.5 h-3.5 shrink-0 mt-0.5",
                                   isCompleted
-                                    ? "text-emerald-400"
+                                    ? "text-emerald-600 dark:text-emerald-400"
                                     : "text-info",
                                 )}
                               />
@@ -240,14 +240,14 @@ export function LandingRoadmap() {
                   <span className="flex items-center gap-1.5 font-medium">
                     {isCompleted ? (
                       <>
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                        <span className="text-emerald-400 font-semibold">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
                           {t("cardFooterCompleted")}
                         </span>
                       </>
                     ) : (
                       <>
-                        <Sparkles className="w-3.5 h-3.5 text-gold/80 shrink-0" />
+                        <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-gold/80 shrink-0" />
                         <span>{t("cardFooter")}</span>
                       </>
                     )}
@@ -256,7 +256,7 @@ export function LandingRoadmap() {
                     className={cn(
                       "uppercase font-semibold tracking-wider text-[10px]",
                       isCompleted
-                        ? "text-emerald-400/90 font-bold"
+                        ? "text-emerald-700 dark:text-emerald-400/90 font-bold"
                         : "text-neutral-400",
                     )}
                   >
@@ -276,14 +276,14 @@ export function LandingRoadmap() {
               href={SUPPORT_LINKS.githubIssues}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-card hover:bg-surface dark:bg-surface/80 dark:hover:bg-surface border border-neutral-700 dark:border-white/15 hover:border-gold/40 text-xs font-semibold text-neutral-200 hover:text-gold shadow-2xs dark:shadow-none transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-card hover:bg-surface dark:bg-surface/80 dark:hover:bg-surface border border-neutral-700 dark:border-white/15 hover:border-primary/40 dark:hover:border-gold/40 text-xs font-semibold text-neutral-200 hover:text-primary dark:hover:text-gold shadow-2xs dark:shadow-none transition-colors"
             >
-              <Bug className="w-3.5 h-3.5 text-gold" />
+              <Bug className="w-3.5 h-3.5 text-amber-600 dark:text-gold" />
               <span>{t("reportBugCta")}</span>
             </a>
             <a
               href={SUPPORT_LINKS.contactMailto}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-card hover:bg-surface dark:bg-surface/80 dark:hover:bg-surface border border-neutral-700 dark:border-white/15 hover:border-gold/40 text-xs font-semibold text-neutral-200 hover:text-gold shadow-2xs dark:shadow-none transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-card hover:bg-surface dark:bg-surface/80 dark:hover:bg-surface border border-neutral-700 dark:border-white/15 hover:border-primary/40 dark:hover:border-gold/40 text-xs font-semibold text-neutral-200 hover:text-primary dark:hover:text-gold shadow-2xs dark:shadow-none transition-colors"
             >
               <Mail className="w-3.5 h-3.5 text-info" />
               <span>

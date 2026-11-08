@@ -60,7 +60,8 @@ public class RewardController implements RewardApi {
         requestDTO.tags(),
         requestDTO.type(),
         requestDTO.packageLevel(),
-        requestDTO.baseDurationMinutes()
+        requestDTO.baseDurationMinutes(),
+        requestDTO.lootItems()
     );
     Reward createdReward = createRewardUseCase.execute(command, userId);
 
@@ -105,7 +106,8 @@ public class RewardController implements RewardApi {
         dto.tags(),
         dto.type(),
         dto.packageLevel(),
-        dto.baseDurationMinutes()
+        dto.baseDurationMinutes(),
+        dto.lootItems()
     );
     Reward updatedReward = updateRewardUseCase.execute(rewardId, command, userId);
     return ResponseEntity.ok(RewardResponseDTO.fromDomain(updatedReward));

@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { reorderRewards } from "@/actions/rewardActions";
-import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { PrimaryActionButton } from "@/components/ui/PrimaryActionButton";
@@ -76,6 +75,7 @@ export function RewardsContainer({
     contextMenu,
     closeContextMenu,
     handleContextMenu,
+    handleEditReward,
     handleEditFromContextMenu,
     handleDeleteFromContextMenu,
     isFormModalOpen,
@@ -83,10 +83,6 @@ export function RewardsContainer({
     handleAddProduct,
     handleCloseFormModal,
     handleRewardSuccess,
-    rewardToDelete,
-    setRewardToDelete,
-    isDeleting,
-    handleConfirmDelete,
     handleBuy,
   } = useRewardCatalogActions({ rewards, setRewards });
 
@@ -248,6 +244,7 @@ export function RewardsContainer({
           sensors={sensors}
           onDragEnd={handleDragEnd}
           onBuy={handleBuy}
+          onEdit={handleEditReward}
           onContextMenu={handleContextMenu}
           onAddProduct={handleAddProduct}
           onClearFilters={handleClearFilters}
@@ -274,35 +271,12 @@ export function RewardsContainer({
         ]}
       />
 
-      {/* Modal de Confirmação de Exclusão */}
-      <ConfirmationModal
-        isOpen={Boolean(rewardToDelete)}
-        onClose={() => !isDeleting && setRewardToDelete(null)}
-        onConfirm={handleConfirmDelete}
-        title={t("deleteModal.title")}
-        description={
-          rewardToDelete ? (
-            <span>
-              {t.rich("deleteModal.description", {
-                title: rewardToDelete.title,
-                bold: (chunks) => (
-                  <strong className="text-neutral-100">{chunks}</strong>
-                ),
-              })}
-            </span>
-          ) : null
-        }
-        confirmText={t("deleteModal.confirmText")}
-        cancelText={t("deleteModal.cancelText")}
-        variant="danger"
-        isLoading={isDeleting}
-      />
-
       {/* Modal de Formulário (Criação / Edição de Recompensa com Lazy Loading) */}
       {isFormModalOpen && (
         <RewardFormModal
           isOpen={isFormModalOpen}
           rewardToEdit={editingReward}
+          existingRewards={rewards}
           onSuccess={handleRewardSuccess}
           onClose={handleCloseFormModal}
         />

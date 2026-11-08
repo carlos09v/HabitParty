@@ -6,11 +6,4 @@ export type UpdateUserDTO = components["schemas"]["UpdateUserDTO"];
 export type UpdateUserPasswordDTO =
   components["schemas"]["UpdateUserPasswordDTO"];
 
-export type {
-  GenderOption,
-  GenderType,
-  PasswordValidationResult,
-  ProfileCardBaseProps,
-  ProfileFormProps,
-  ProfileHeaderCardProps,
-} from "./settings";
+export type GenderType = "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_TO_SAY";

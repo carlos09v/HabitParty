@@ -74,11 +74,11 @@ export function ActivitiesWidget({
     activity: null,
   });
 
-  // Modal de edição da atividade
+  // Modal de criação/edição da atividade
   const [activityToEdit, setActivityToEdit] = useState<FocusActivity | null>(
     null,
   );
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
 
   // Modal de exclusão da atividade
   const [activityToDelete, setActivityToDelete] =
@@ -99,6 +99,11 @@ export function ActivitiesWidget({
     () => calculateActivityDurationMap(records, period),
     [records, period],
   );
+
+  const handleOpenCreateModal = () => {
+    setActivityToEdit(null);
+    setIsActivityModalOpen(true);
+  };
 
   const handleContextMenu = (e: React.MouseEvent, act: FocusActivity) => {
     e.preventDefault();
@@ -139,7 +144,7 @@ export function ActivitiesWidget({
         icon: <Pencil size={14} />,
         onClick: () => {
           setActivityToEdit(contextMenu.activity);
-          setIsEditModalOpen(true);
+          setIsActivityModalOpen(true);
         },
       },
       {
@@ -155,15 +160,18 @@ export function ActivitiesWidget({
 
   return (
     <div className="flex flex-col gap-2.5 w-full">
-      {/* Header com Seletor Independente de Período */}
+      {/* Header com Contador Padronizado e Seletor Independente de Período */}
       <div className="flex items-center justify-between gap-2 w-full">
-        <div className="flex items-center gap-1.5 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           <h4 className="text-subtitle-s font-bold text-neutral-100 truncate">
             {t("title")}
           </h4>
-          <span className="text-tiny font-semibold text-neutral-400">
-            ({activitiesList.length}/{maxActivities})
-          </span>
+          <output
+            className="px-2 py-0.5 rounded-md bg-surface/80 dark:bg-surface/60 border border-neutral-700/70 dark:border-primary/30 text-xs text-neutral-300 font-bold tabular-nums shrink-0"
+            aria-label={t("title")}
+          >
+            {activeActivities.length}/{maxActivities}
+          </output>
         </div>
 
         <fieldset
@@ -179,7 +187,7 @@ export function ActivitiesWidget({
                 onClick={() => setPeriod(opt.id)}
                 aria-pressed={isActive}
                 className={cn(
-                  "px-1.5 py-0.5 rounded-md text-label-g font-semibold transition-all cursor-pointer",
+                  "px-1.5 py-0.5 rounded-md text-label-g font-semibold transition-colors cursor-pointer",
                   isActive
                     ? "bg-gold text-on-gold font-bold shadow-xs"
                     : "text-neutral-400 hover:text-neutral-200",
@@ -219,7 +227,7 @@ export function ActivitiesWidget({
                   type: typeLabel,
                 })}
                 className={cn(
-                  "group flex items-center justify-between rounded-lg border transition-all",
+                  "group flex items-center justify-between rounded-lg border transition-colors",
                   isCompact ? "p-1.5" : "p-2",
                   "bg-white dark:bg-primary-dark/20 border-neutral-700 dark:border-primary/30 shadow-2xs dark:shadow-none hover:bg-card-hover dark:hover:bg-primary-dark/40 hover:border-primary/35 dark:hover:border-primary-light/50",
                 )}
@@ -264,9 +272,9 @@ export function ActivitiesWidget({
             onClick={() => setIsUpgradeModalOpen(true)}
             title={t("lockedPreservedTitle", { count: blockedActivitiesCount })}
             className={cn(
-              "group flex items-center justify-between rounded-lg border transition-all text-left w-full cursor-pointer",
+              "group flex items-center justify-between rounded-lg border transition-colors text-left w-full cursor-pointer",
               isCompact ? "p-1.5" : "p-2",
-              "bg-gold/5 border-gold/25 hover:bg-gold/15 hover:border-gold/50",
+              "bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/15 hover:border-amber-500/50 dark:bg-gold/5 dark:border-gold/25 dark:hover:bg-gold/15 dark:hover:border-gold/50",
             )}
           >
             <div
@@ -275,7 +283,7 @@ export function ActivitiesWidget({
                 isCompact ? "gap-1.5" : "gap-2",
               )}
             >
-              <div className="p-1 rounded bg-gold/15 text-gold shrink-0">
+              <div className="p-1 rounded bg-amber-500/15 text-amber-700 dark:bg-gold/15 dark:text-gold shrink-0">
                 <Lock size={isCompact ? 12 : 14} />
               </div>
               <span
@@ -289,14 +297,14 @@ export function ActivitiesWidget({
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0 ml-2">
-              <span className="text-tiny font-bold uppercase tracking-wider text-gold px-1.5 py-0.5 rounded bg-gold/15 border border-gold/30 flex items-center gap-1">
+              <span className="text-tiny font-bold uppercase tracking-wider text-amber-800 bg-amber-500/15 border border-amber-500/35 dark:text-gold dark:bg-gold/15 dark:border-gold/30 px-1.5 py-0.5 rounded flex items-center gap-1">
                 VIP 👑
               </span>
             </div>
           </button>
         )}
 
-        {/* Botão de Adicionar ou Limite Atingido (apenas se não houver itens bloqueados exibidos) */}
+        {/* Botão de Adicionar ou Limite Atingido padronizado com alto contraste */}
         {blockedActivitiesCount === 0 &&
           (isLimitReached ? (
             !isPremium ? (
@@ -305,20 +313,13 @@ export function ActivitiesWidget({
                 onClick={() => setIsUpgradeModalOpen(true)}
                 title={t("upgradeTitle")}
                 className={cn(
-                  "flex items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-all cursor-pointer group",
-                  isCompact ? "py-1" : "p-1.5",
-                  "border-gold/40 bg-gold/5 text-gold hover:bg-gold/15 hover:border-gold hover:shadow-glow-gold-xs",
+                  "flex items-center justify-center gap-1.5 rounded-lg border transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer font-bold w-full",
+                  isCompact ? "py-1.5 text-label-g" : "py-2 text-xs",
+                  "border-amber-500/40 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 hover:border-amber-600 dark:border-gold/40 dark:bg-gold/10 dark:text-gold dark:hover:bg-gold/20 dark:hover:border-gold hover:shadow-glow-gold-xs active:scale-[0.99]",
                 )}
               >
-                <Crown size={14} className="fill-gold/20" />
-                <span
-                  className={cn(
-                    "font-bold",
-                    isCompact ? "text-label-g" : "text-xs",
-                  )}
-                >
-                  {t("upgradeLabel")}
-                </span>
+                <Crown size={14} className="fill-gold/20 shrink-0" />
+                <span>{t("upgradeLabel")}</span>
               </button>
             ) : (
               <button
@@ -326,51 +327,38 @@ export function ActivitiesWidget({
                 disabled
                 title={t("limitReachedTitle", { max: maxActivities })}
                 className={cn(
-                  "flex items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-all cursor-not-allowed opacity-60",
-                  isCompact ? "py-1" : "p-1.5",
-                  "border-neutral-700 bg-neutral-800/30 text-neutral-400",
+                  "flex items-center justify-center gap-1.5 rounded-lg border transition-colors cursor-not-allowed opacity-60 font-semibold w-full",
+                  isCompact ? "py-1.5 text-label-g" : "py-2 text-xs",
+                  "border-neutral-700 dark:border-neutral-700/60 bg-surface/60 dark:bg-surface/40 text-neutral-400 dark:text-neutral-500",
                 )}
               >
-                <Lock size={14} />
-                <span
-                  className={cn(
-                    "font-semibold",
-                    isCompact ? "text-label-g" : "text-xs",
-                  )}
-                >
-                  {t("limitReachedLabel", { max: maxActivities })}
-                </span>
+                <Lock size={13} className="shrink-0" />
+                <span>{t("limitReachedLabel", { max: maxActivities })}</span>
               </button>
             )
           ) : (
-            <Link
-              href="/focus?createActivity=true"
+            <button
+              type="button"
+              onClick={handleOpenCreateModal}
               className={cn(
-                "flex items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-all cursor-pointer group",
-                isCompact ? "py-1" : "p-1.5",
-                "border-primary-light/40 bg-primary-dark/15 text-primary-light hover:border-gold hover:text-gold hover:bg-primary-dark/30 hover:shadow-glow-gold-sm",
+                "flex items-center justify-center gap-1.5 rounded-lg border font-bold transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer w-full",
+                isCompact ? "py-1.5 text-xs" : "py-2 text-xs",
+                "bg-primary/15 dark:bg-primary/25 text-primary dark:text-neutral-100 border-primary/35 dark:border-primary-light/45",
+                "hover:bg-gold hover:text-on-gold hover:border-gold dark:hover:bg-gold dark:hover:text-on-gold dark:hover:border-gold hover:shadow-glow-gold-xs active:scale-[0.99]",
               )}
             >
-              <Plus
-                size={14}
-                className="group-hover:scale-110 transition-transform"
-              />
-              <span
-                className={cn(
-                  "font-semibold",
-                  isCompact ? "text-label-g" : "text-xs",
-                )}
-              >
-                {t("addButton")}
-              </span>
-            </Link>
+              <Plus size={14} strokeWidth={2.5} className="shrink-0" />
+              <span>{t("addButton")}</span>
+            </button>
           ))}
       </div>
 
-      <UpgradePremiumModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-      />
+      {isUpgradeModalOpen && (
+        <UpgradePremiumModal
+          isOpen={isUpgradeModalOpen}
+          onClose={() => setIsUpgradeModalOpen(false)}
+        />
+      )}
 
       {/* Popover / Context Menu com Editar e Excluir */}
       <ContextMenu
@@ -382,17 +370,28 @@ export function ActivitiesWidget({
         items={contextMenuItems}
       />
 
-      {/* Modal: Editar Atividade */}
-      {isEditModalOpen && (
+      {/* Modal: Criar ou Editar Atividade */}
+      {isActivityModalOpen && (
         <FocusActivityModal
-          isOpen={isEditModalOpen}
+          isOpen={isActivityModalOpen}
           activityToEdit={activityToEdit}
           onClose={() => {
-            setIsEditModalOpen(false);
+            setIsActivityModalOpen(false);
             setActivityToEdit(null);
           }}
-          onSuccess={() => {
-            setIsEditModalOpen(false);
+          onSuccess={(savedActivity, isEditing) => {
+            if (savedActivity) {
+              if (isEditing) {
+                setActivitiesList((prev) =>
+                  prev.map((a) =>
+                    a.id === savedActivity.id ? savedActivity : a,
+                  ),
+                );
+              } else {
+                setActivitiesList((prev) => [...prev, savedActivity]);
+              }
+            }
+            setIsActivityModalOpen(false);
             setActivityToEdit(null);
           }}
         />

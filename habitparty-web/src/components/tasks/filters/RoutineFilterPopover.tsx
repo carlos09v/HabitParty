@@ -62,7 +62,7 @@ export function RoutineFilterPopover({
         onClick={() => setShowFilterPopover(!showFilterPopover)}
         aria-expanded={showFilterPopover}
         className={cn(
-          "flex items-center gap-1.5 rounded-lg border font-medium transition-all cursor-pointer select-none",
+          "flex items-center gap-1.5 rounded-lg border font-medium transition-colors cursor-pointer select-none",
           isCompact ? "px-2.5 py-1.5 text-xs" : "px-3 py-2 text-body-s",
           activeFiltersCount > 0
             ? "bg-gold/15 border-gold/60 text-gold-pressed shadow-glow-gold-xs"
@@ -93,7 +93,7 @@ export function RoutineFilterPopover({
             onClick={() => setShowFilterPopover(false)}
           />
 
-          <div className="absolute left-0 top-full mt-2 w-80 rounded-xl bg-popover border border-white/20 p-4 shadow-popover-dark z-50 animate-in fade-in zoom-in-95 backdrop-blur-md">
+          <div className="absolute left-0 top-full mt-2 w-80 rounded-xl bg-popover border border-white/20 p-4 shadow-popover-dark z-50 animate-in fade-in zoom-in-95 duration-150">
             {/* Cabeçalho do Popover */}
             <div className="flex items-center justify-between pb-2 border-b border-white/10 mb-3">
               <span className="text-xs font-bold text-neutral-100 flex items-center gap-1.5">
@@ -130,7 +130,7 @@ export function RoutineFilterPopover({
                         )
                       }
                       className={cn(
-                        "px-2 py-1 rounded-md text-xs font-medium transition-all text-center cursor-pointer",
+                        "px-2 py-1 rounded-md text-xs font-medium transition-colors text-center cursor-pointer",
                         filters.taskType === opt.id
                           ? "bg-gold text-on-gold font-bold shadow-xs"
                           : "bg-white/5 text-neutral-300 hover:bg-white/10",
@@ -152,7 +152,7 @@ export function RoutineFilterPopover({
                     type="button"
                     onClick={() => updateFilter("difficulty", "all")}
                     className={cn(
-                      "px-2 py-0.5 rounded-md text-xs font-medium transition-all cursor-pointer",
+                      "px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer",
                       filters.difficulty === "all"
                         ? "bg-gold text-on-gold font-bold"
                         : "bg-white/5 text-neutral-300 hover:bg-white/10",
@@ -171,7 +171,7 @@ export function RoutineFilterPopover({
                         )
                       }
                       className={cn(
-                        "px-2 py-0.5 rounded-md text-xs font-medium transition-all cursor-pointer",
+                        "px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer",
                         filters.difficulty === diff.id
                           ? "bg-gold text-on-gold font-bold"
                           : "bg-white/5 text-neutral-300 hover:bg-white/10",
@@ -193,7 +193,7 @@ export function RoutineFilterPopover({
                     type="button"
                     onClick={() => updateFilter("priority", "all")}
                     className={cn(
-                      "px-2 py-0.5 rounded-md text-xs font-medium transition-all cursor-pointer",
+                      "px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer",
                       filters.priority === "all"
                         ? "bg-gold text-on-gold font-bold"
                         : "bg-white/5 text-neutral-300 hover:bg-white/10",
@@ -209,7 +209,7 @@ export function RoutineFilterPopover({
                         updateFilter("priority", p.id as TaskPriorityOption)
                       }
                       className={cn(
-                        "px-2 py-0.5 rounded-md text-xs font-medium transition-all cursor-pointer",
+                        "px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer",
                         filters.priority === p.id
                           ? "bg-gold text-on-gold font-bold"
                           : "bg-white/5 text-neutral-300 hover:bg-white/10",
@@ -238,7 +238,7 @@ export function RoutineFilterPopover({
                         )
                       }
                       className={cn(
-                        "px-2 py-1 rounded-md text-xs font-medium transition-all text-center cursor-pointer",
+                        "px-2 py-1 rounded-md text-xs font-medium transition-colors text-center cursor-pointer",
                         filters.status === st.id
                           ? "bg-gold text-on-gold font-bold shadow-xs"
                           : "bg-white/5 text-neutral-300 hover:bg-white/10",
@@ -263,7 +263,7 @@ export function RoutineFilterPopover({
                       type="button"
                       onClick={() => updateFilter("tag", null)}
                       className={cn(
-                        "px-2 py-0.5 rounded-full text-tiny font-medium transition-all cursor-pointer",
+                        "px-2 py-0.5 rounded-full text-tiny font-medium transition-colors cursor-pointer",
                         filters.tag === null
                           ? "bg-gold text-on-gold font-bold"
                           : "bg-white/5 text-neutral-300 hover:bg-white/10",
@@ -282,7 +282,7 @@ export function RoutineFilterPopover({
                           )
                         }
                         className={cn(
-                          "px-2 py-0.5 rounded-full text-tiny font-medium transition-all cursor-pointer truncate max-w-[120px]",
+                          "px-2 py-0.5 rounded-full text-tiny font-medium transition-colors cursor-pointer truncate max-w-[120px]",
                           filters.tag === tagItem
                             ? "bg-gold text-on-gold font-bold"
                             : "bg-white/5 text-neutral-300 hover:bg-white/10",

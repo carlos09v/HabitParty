@@ -26,7 +26,8 @@ export type MessageScope =
   | "history"
   | "help"
   | "admin"
-  | "settings";
+  | "settings"
+  | "showcase";
 
 /**
  * Caminhos (dot-notation) necessários em cada escopo de cliente.
@@ -48,6 +49,9 @@ const MAIN_PAGE_SHARED_PATHS = [
   "ui.confirmationModal",
   "ui.founderBadge",
   "ui.input",
+  "showcase.unlockToast",
+  "showcase.rarities",
+  "showcase.catalog",
 ] as const;
 
 const MAIN_SHELL_PATHS = [
@@ -70,6 +74,7 @@ const MAIN_SHELL_PATHS = [
   "help.loading",
   "admin.loading",
   "settings.loading",
+  "showcase.loading",
 ] as const;
 
 export const SCOPE_CLIENT_PATHS: Record<MessageScope, readonly string[]> = {
@@ -109,6 +114,7 @@ export const SCOPE_CLIENT_PATHS: Record<MessageScope, readonly string[]> = {
     "upgradeColumnLimitCard",
     "ui.datePicker",
     "ui.iconPicker",
+    "ui.listCard",
     "ui.pagination",
     "ui.rewardPreview",
     "ui.select",
@@ -189,6 +195,15 @@ export const SCOPE_CLIENT_PATHS: Record<MessageScope, readonly string[]> = {
     "ui.datePicker",
     "ui.select",
   ],
+  showcase: [
+    ...MAIN_PAGE_SHARED_PATHS,
+    "showcase",
+    "settings.avatarFrames",
+    "settings.upgradeModal",
+    "ui.filterBar",
+    "ui.pagination",
+    "ui.select",
+  ],
 };
 
 /**
@@ -238,6 +253,8 @@ export const SERVER_ONLY_PATHS: readonly string[] = [
   "help.cycle",
   "admin.metadata",
   "admin.actions",
+  "showcase.metadata",
+  "showcase.actions",
 ];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -304,9 +321,10 @@ export function pickScopedClientMessages(
   scope: MessageScope | readonly MessageScope[],
   locale?: AppLocale,
 ): AbstractIntlMessages {
+  const isProd = process.env.NODE_ENV === "production";
   const scopes: readonly MessageScope[] =
     typeof scope === "string" ? [scope] : scope;
-  const cacheKey = locale ? `${locale}:${scopes.join(",")}` : null;
+  const cacheKey = isProd && locale ? `${locale}:${scopes.join(",")}` : null;
 
   if (cacheKey) {
     const cached = scopedMessagesCache.get(cacheKey);

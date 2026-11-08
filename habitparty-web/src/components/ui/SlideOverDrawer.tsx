@@ -15,7 +15,7 @@ export interface SlideOverDrawerProps {
 
 /**
  * Primitivo reutilizável de Gaveta Lateral Deslizante (Slide-over Drawer).
- * Centraliza o tratamento de tecla `Escape`, backdrop com `backdrop-blur-xs`
+ * Centraliza o tratamento de tecla `Escape`, backdrop escuro
  * e animação de entrada pela direita.
  */
 export function SlideOverDrawer({
@@ -53,12 +53,12 @@ export function SlideOverDrawer({
         type="button"
         aria-label={backdropAriaLabel}
         onClick={onClose}
-        className="fixed inset-0 bg-neutral-950/75 backdrop-blur-xs transition-opacity animate-in fade-in duration-200 cursor-default border-none p-0 m-0 w-full h-full"
+        className="fixed inset-0 bg-neutral-950/80 transition-opacity animate-in fade-in duration-200 cursor-default border-none p-0 m-0 w-full h-full"
       />
 
       <aside
         className={cn(
-          "fixed inset-y-0 right-0 max-w-full bg-surface border-l border-white/10 shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-300 ease-out",
+          "fixed inset-y-0 right-0 max-w-full bg-card dark:bg-surface border-l border-neutral-700 dark:border-white/10 shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-300 ease-out",
           panelClassName,
         )}
       >

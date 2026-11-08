@@ -27,6 +27,7 @@ export interface TransactionMetadata {
   label: string;
   badgeClass: string;
   borderClass: string;
+  secondaryBadgeClass?: string;
   icon: LucideIcon;
   isFocus: boolean;
   resolvedType: string;

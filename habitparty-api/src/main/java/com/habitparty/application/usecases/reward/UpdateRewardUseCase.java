@@ -26,7 +26,8 @@ public class UpdateRewardUseCase {
     reward.updateDetails(
         command.name(), command.description(), command.price(), command.icon(),
         command.category(), command.tags(), command.type(),
-        command.packageLevel(), command.baseDurationMinutes());
+        command.packageLevel(), command.baseDurationMinutes(),
+        command.lootItems());
 
     return port.save(reward);
   }

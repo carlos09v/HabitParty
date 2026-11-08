@@ -69,10 +69,26 @@ export function SidebarNotificationsPopover({
     });
   }, []);
 
-  // Carrega alertas ao montar / recarregar a página ou mudar idioma e toca som de notificação se houver alertas
+  // Adia o carregamento inicial de alertas para o período ocioso pós-hidratação,
+  // evitando que 4 buscas concorram com a renderização inicial da rota
   useEffect(() => {
     void locale;
-    loadNotifications(true);
+    if (typeof window === "undefined") return;
+
+    if ("requestIdleCallback" in window) {
+      const idleId = window.requestIdleCallback(
+        () => {
+          loadNotifications(true);
+        },
+        { timeout: 2000 },
+      );
+      return () => window.cancelIdleCallback(idleId);
+    }
+
+    const timerId = globalThis.setTimeout(() => {
+      loadNotifications(true);
+    }, 1500);
+    return () => globalThis.clearTimeout(timerId);
   }, [loadNotifications, locale]);
 
   const togglePopover = () => {
@@ -137,13 +153,13 @@ export function SidebarNotificationsPopover({
   ) => {
     switch (severity) {
       case "danger":
-        return "border-red-500/30 bg-red-500/10 text-red-300";
+        return "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300";
       case "warning":
-        return "border-amber-500/30 bg-amber-500/10 text-amber-300";
+        return "border-amber-500/35 bg-amber-500/10 text-amber-800 dark:text-amber-300";
       case "gold":
-        return "border-gold/30 bg-gold/10 text-gold";
+        return "border-amber-500/35 bg-amber-500/10 text-amber-800 dark:border-gold/30 dark:bg-gold/10 dark:text-gold";
       default:
-        return "border-sky-500/30 bg-sky-500/10 text-sky-300";
+        return "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300";
     }
   };
 
@@ -158,7 +174,7 @@ export function SidebarNotificationsPopover({
         aria-expanded={isOpen}
         aria-label={t("triggerAria", { count: unreadCount })}
         className={cn(
-          "flex w-full h-9 items-center justify-between px-3 py-2 rounded-lg transition-all text-body-s font-medium outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 border-r-2 border-transparent text-left cursor-pointer group select-none",
+          "flex w-full h-9 items-center justify-between px-3 py-2 rounded-lg transition-colors text-body-s font-medium outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 border-r-2 border-transparent text-left cursor-pointer group select-none",
           isOpen
             ? "bg-primary-dark/50 text-neutral-50 border-gold font-bold"
             : "text-neutral-300 hover:bg-neutral-500/10 hover:text-neutral-50",
@@ -211,10 +227,10 @@ export function SidebarNotificationsPopover({
             maxHeight: `${POPOVER_OPTIONS.popoverHeight}px`,
             zIndex: 9999,
           }}
-          className="max-w-[calc(100vw-24px)] flex flex-col rounded-2xl border border-primary/40 bg-card/95 backdrop-blur-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+          className="max-w-[calc(100vw-24px)] flex flex-col rounded-2xl border border-neutral-700 dark:border-primary/40 bg-card dark:bg-popover shadow-popover-dark dark:shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
         >
           {/* Header do Popover */}
-          <header className="p-3.5 border-b border-primary/20 flex items-center justify-between gap-2 shrink-0 bg-surface/50">
+          <header className="p-3.5 border-b border-neutral-700 dark:border-primary/20 flex items-center justify-between gap-2 shrink-0 bg-surface/60 dark:bg-surface/50">
             <div className="flex items-center gap-2">
               <span className="font-bold text-neutral-100 text-body-s">
                 {t("headerTitle")}
@@ -224,8 +240,8 @@ export function SidebarNotificationsPopover({
                   className={cn(
                     "px-1.5 py-0.5 rounded-full text-[10px] font-bold border",
                     hasCritical
-                      ? "border-red-500/40 bg-red-500/15 text-red-300"
-                      : "border-gold/40 bg-gold/15 text-gold",
+                      ? "border-red-500/40 bg-red-500/15 text-red-700 dark:text-red-300"
+                      : "border-amber-500/40 bg-amber-500/15 text-amber-800 dark:border-gold/40 dark:bg-gold/15 dark:text-gold",
                   )}
                 >
                   {unreadCount}
@@ -240,7 +256,7 @@ export function SidebarNotificationsPopover({
                   onClick={handleDismissAll}
                   title={t("markAllRead")}
                   aria-label={t("markAllRead")}
-                  className="p-1 rounded-md text-neutral-400 hover:text-neutral-100 hover:bg-white/10 transition-colors cursor-pointer"
+                  className="p-1 rounded-md text-neutral-400 hover:text-neutral-100 hover:bg-surface-hover dark:hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   <CheckCheck size={14} />
                 </button>
@@ -249,7 +265,7 @@ export function SidebarNotificationsPopover({
                 type="button"
                 onClick={closePopover}
                 aria-label={t("closeAria")}
-                className="p-1 rounded-md text-neutral-400 hover:text-neutral-100 hover:bg-white/10 transition-colors cursor-pointer"
+                className="p-1 rounded-md text-neutral-400 hover:text-neutral-100 hover:bg-surface-hover dark:hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <X size={14} />
               </button>
@@ -262,10 +278,10 @@ export function SidebarNotificationsPopover({
               type="button"
               onClick={() => setActiveTab("ALL")}
               className={cn(
-                "flex-1 py-1 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                "flex-1 py-1 px-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer",
                 activeTab === "ALL"
                   ? "bg-gold text-on-gold font-bold shadow-xs"
-                  : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5",
+                  : "text-neutral-400 hover:text-neutral-200 hover:bg-surface dark:hover:bg-white/5",
               )}
             >
               {t("tabAll", { count: activeNotifications.length })}
@@ -274,10 +290,10 @@ export function SidebarNotificationsPopover({
               type="button"
               onClick={() => setActiveTab("CRITICAL")}
               className={cn(
-                "flex-1 py-1 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                "flex-1 py-1 px-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer",
                 activeTab === "CRITICAL"
                   ? "bg-red-500 text-white font-bold shadow-xs"
-                  : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5",
+                  : "text-neutral-400 hover:text-neutral-200 hover:bg-surface dark:hover:bg-white/5",
               )}
             >
               {t("tabCritical", { count: criticalNotifications.length })}
@@ -292,7 +308,7 @@ export function SidebarNotificationsPopover({
               </div>
             ) : displayedNotifications.length === 0 ? (
               <div className="p-6 text-center flex flex-col items-center justify-center gap-2">
-                <div className="w-9 h-9 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                <div className="w-9 h-9 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-700 dark:text-emerald-400">
                   <CheckCheck size={18} />
                 </div>
                 <p className="text-body-s font-semibold text-neutral-200">
@@ -308,12 +324,12 @@ export function SidebarNotificationsPopover({
                   key={n.id}
                   href={n.href}
                   onClick={closePopover}
-                  className="group/item flex items-start gap-2.5 p-2.5 rounded-xl border border-primary/20 bg-surface/50 hover:bg-card-hover/90 hover:border-gold/40 transition-all text-left block"
+                  className="group/item flex items-start gap-2.5 p-2.5 rounded-xl border border-neutral-700 dark:border-primary/20 bg-surface/50 hover:bg-card-hover/90 hover:border-primary/40 dark:hover:border-gold/40 transition-colors text-left"
                 >
                   <div className="mt-0.5">{getNotificationIcon(n.type)}</div>
                   <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                     <div className="flex items-center justify-between gap-1">
-                      <span className="font-semibold text-xs text-neutral-100 group-hover/item:text-gold transition-colors truncate">
+                      <span className="font-semibold text-xs text-neutral-100 group-hover/item:text-primary dark:group-hover/item:text-gold transition-colors truncate">
                         {n.title}
                       </span>
                       <span

@@ -37,7 +37,7 @@ export function DashboardMobileDrawer({
           type="button"
           onClick={() => setIsOpen(true)}
           className={cn(
-            "flex items-center gap-2 rounded-full border border-gold/40 bg-card hover:bg-surface dark:bg-neutral-900/95 dark:hover:bg-neutral-900 text-gold shadow-glow-gold-xs hover:shadow-glow-gold hover:scale-105 active:scale-95 transition-all backdrop-blur-md cursor-pointer group",
+            "flex items-center gap-2 rounded-full border border-neutral-700 bg-card hover:bg-surface dark:border-gold/40 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-amber-700 dark:text-gold shadow-sm dark:shadow-glow-gold-xs hover:shadow-md dark:hover:shadow-glow-gold hover:scale-105 active:scale-95 transition-[transform,scale,box-shadow,background-color,border-color] cursor-pointer group",
             isCompact ? "px-3.5 py-2 text-xs" : "px-4 py-2.5 text-sm",
           )}
           title={t("fabTitle")}
@@ -45,11 +45,11 @@ export function DashboardMobileDrawer({
         >
           <Calendar
             size={isCompact ? 16 : 18}
-            className="text-gold group-hover:rotate-12 transition-transform"
+            className="text-amber-600 dark:text-gold group-hover:rotate-12 transition-transform"
           />
           <span className="font-bold text-neutral-100">{t("fabLabel")}</span>
           {balance > 0 && (
-            <span className="text-label-g font-semibold text-gold bg-gold/15 border border-gold/30 px-1.5 py-0.5 rounded-full">
+            <span className="text-label-g font-semibold text-amber-800 bg-amber-500/15 border border-amber-500/30 dark:text-gold dark:bg-gold/15 dark:border-gold/30 px-1.5 py-0.5 rounded-full">
               {balance} H
             </span>
           )}
@@ -65,9 +65,9 @@ export function DashboardMobileDrawer({
         containerClassName="xl:hidden"
         panelClassName="w-full sm:w-[380px]"
       >
-        <header className="p-4 border-b border-white/10 flex items-center justify-between bg-surface-hover/30 shrink-0">
+        <header className="p-4 border-b border-neutral-700 dark:border-white/10 flex items-center justify-between bg-surface/60 dark:bg-surface-hover/30 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gold/15 border border-gold/30 flex items-center justify-center text-gold">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:bg-gold/15 dark:border-gold/30 flex items-center justify-center dark:text-gold">
               <Calendar size={17} />
             </div>
             <div>
@@ -83,7 +83,7 @@ export function DashboardMobileDrawer({
           <button
             type="button"
             onClick={() => setIsOpen(false)}
-            className="text-neutral-400 hover:text-neutral-100 p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+            className="text-neutral-400 hover:text-neutral-100 p-1.5 rounded-lg hover:bg-surface-hover dark:hover:bg-white/10 transition-colors cursor-pointer"
             aria-label={t("closeAriaLabel")}
           >
             <X size={18} />

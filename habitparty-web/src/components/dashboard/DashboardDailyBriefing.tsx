@@ -29,15 +29,18 @@ export function DashboardDailyBriefing({
   const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
   const [now, setNow] = useState<Date>(() => new Date());
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
     setNow(new Date());
+    setIsHydrated(true);
     const interval = setInterval(() => {
       setNow(new Date());
     }, 60_000);
     return () => clearInterval(interval);
   }, []);
 
+  const tzRenderKey = isHydrated ? "local-tz" : "ssr-tz";
   const greeting = getGreeting(now, locale);
 
   const todayDateStr = getTodayDateString(now);
@@ -82,7 +85,7 @@ export function DashboardDailyBriefing({
   return (
     <section
       aria-label={t("ariaLabel")}
-      className="w-full shrink-0 min-h-fit rounded-2xl border border-purple-500/15 dark:border-primary/35 bg-linear-to-br from-purple-500/[0.05] via-white to-amber-500/[0.04] dark:from-primary-dark/40 dark:via-surface/60 dark:to-primary-dark/25 shadow-card-deep dark:shadow-[0_0_20px_rgba(124,58,237,0.1)] backdrop-blur-md transition-all duration-200 relative overflow-hidden flex flex-col p-5 sm:p-6 gap-5"
+      className="w-full shrink-0 min-h-fit rounded-2xl border border-neutral-700 dark:border-primary/35 bg-linear-to-br from-purple-500/[0.04] via-white to-amber-500/[0.03] dark:from-primary-dark/50 dark:via-surface/80 dark:to-primary-dark/35 shadow-xs dark:shadow-[0_0_20px_rgba(124,58,237,0.1)] relative overflow-hidden flex flex-col p-5 sm:p-6 gap-5"
     >
       {/* Bloco Superior: Saudação, Mensagem Contextual e Progresso Diário */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -93,12 +96,17 @@ export function DashboardDailyBriefing({
               className="text-primary dark:text-gold shrink-0"
               aria-hidden="true"
             />
-            <span className="capitalize" suppressHydrationWarning>
+            <span
+              key={`day-${tzRenderKey}`}
+              className="capitalize"
+              suppressHydrationWarning
+            >
               {capitalizedDay}
             </span>
           </div>
 
           <h2
+            key={`greeting-${tzRenderKey}`}
             className="font-extrabold text-neutral-50 tracking-tight text-2xl sm:text-3xl"
             suppressHydrationWarning
           >
@@ -108,6 +116,7 @@ export function DashboardDailyBriefing({
           </h2>
 
           <p
+            key={`motivation-${tzRenderKey}`}
             className="text-body-s text-neutral-300 font-medium leading-relaxed"
             suppressHydrationWarning
           >
@@ -117,12 +126,13 @@ export function DashboardDailyBriefing({
 
         {/* Progresso Diário no Topo Direito (se houver tarefas agendadas hoje) */}
         {totalTodayTasks > 0 && (
-          <div className="flex flex-col gap-1.5 sm:w-64 shrink-0 p-3 rounded-xl bg-white dark:bg-white/5 border border-neutral-700 dark:border-white/10 shadow-xs dark:shadow-none backdrop-blur-xs">
+          <div className="flex flex-col gap-1.5 sm:w-64 shrink-0 p-3 rounded-xl bg-white dark:bg-white/5 border border-neutral-700 dark:border-white/10 shadow-xs dark:shadow-none">
             <div className="flex items-center justify-between text-xs">
               <span className="text-neutral-300 font-medium">
                 {t("todayGoal")}
               </span>
               <span
+                key={`goal-${tzRenderKey}`}
                 className={cn(
                   "font-bold",
                   isAllCompleted
@@ -146,12 +156,12 @@ export function DashboardDailyBriefing({
             >
               <div
                 className={cn(
-                  "h-full rounded-full transition-all duration-500 ease-out",
+                  "h-full w-full origin-left transition-transform duration-500 ease-out",
                   isAllCompleted
                     ? "bg-linear-to-r from-emerald-500 to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
                     : "bg-linear-to-r from-gold to-amber-400 shadow-glow-gold-xs",
                 )}
-                style={{ width: `${completionPercent}%` }}
+                style={{ transform: `scaleX(${completionPercent / 100})` }}
               />
             </div>
           </div>
@@ -161,7 +171,7 @@ export function DashboardDailyBriefing({
       {/* Bloco Inferior: 3 Cards de Indicadores Chave em Largura Total (w-full) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
         {/* Card 1: Ofensiva */}
-        <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-white dark:bg-white/5 border border-neutral-700 dark:border-white/10 shadow-xs dark:shadow-none hover:border-orange-500/30 transition-colors backdrop-blur-xs min-w-0">
+        <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-white dark:bg-white/5 border border-neutral-700 dark:border-white/10 shadow-xs dark:shadow-none hover:border-orange-500/30 transition-colors min-w-0">
           <div className="w-11 h-11 rounded-lg bg-orange-500/10 dark:bg-orange-500/15 border border-orange-500/20 dark:border-orange-500/30 flex items-center justify-center text-orange-600 dark:text-orange-400 shrink-0">
             <Flame size={22} aria-hidden="true" />
           </div>
@@ -193,7 +203,7 @@ export function DashboardDailyBriefing({
         </div>
 
         {/* Card 2: Meta Diária */}
-        <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-white dark:bg-white/5 border border-neutral-700 dark:border-white/10 shadow-xs dark:shadow-none hover:border-indigo-500/30 dark:hover:border-emerald-500/30 transition-colors backdrop-blur-xs min-w-0">
+        <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-white dark:bg-white/5 border border-neutral-700 dark:border-white/10 shadow-xs dark:shadow-none hover:border-indigo-500/30 dark:hover:border-emerald-500/30 transition-colors min-w-0">
           <div
             className={cn(
               "w-11 h-11 rounded-lg flex items-center justify-center shrink-0 border",
@@ -254,7 +264,7 @@ export function DashboardDailyBriefing({
         </div>
 
         {/* Card 3: XP / Pontos Acumulados Hoje */}
-        <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-white dark:bg-white/5 border border-neutral-700 dark:border-white/10 shadow-xs dark:shadow-none hover:border-amber-500/30 dark:hover:border-gold/30 transition-colors backdrop-blur-xs min-w-0">
+        <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-white dark:bg-white/5 border border-neutral-700 dark:border-white/10 shadow-xs dark:shadow-none hover:border-amber-500/30 dark:hover:border-gold/30 transition-colors min-w-0">
           <div className="w-11 h-11 rounded-lg bg-amber-500/10 dark:bg-gold/15 border border-amber-500/20 dark:border-gold/30 flex items-center justify-center text-amber-600 dark:text-gold shrink-0">
             <Sparkles size={22} aria-hidden="true" />
           </div>

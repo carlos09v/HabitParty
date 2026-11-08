@@ -1,7 +1,7 @@
 "use client";
 
-import { Globe, Languages } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { LANGUAGE_OPTIONS } from "@/constants/settings";
 import { useCompactMode } from "@/hooks/useCompactMode";
 import { useLocaleSwitcher } from "@/hooks/useLocaleSwitcher";
 import type { SettingsOptionItem } from "@/types/settings";
@@ -21,20 +21,14 @@ export function LanguageSettings({
   const { isCompact: storeIsCompact } = useCompactMode();
   const isCompact = propIsCompact ?? storeIsCompact;
 
-  const options: SettingsOptionItem<AppLocale>[] = [
-    {
-      value: "en",
-      title: t("enLabel"),
-      description: t("enDesc"),
-      icon: Globe,
-    },
-    {
-      value: "pt-BR",
-      title: t("ptLabel"),
-      description: t("ptDesc"),
-      icon: Languages,
-    },
-  ];
+  const options: SettingsOptionItem<AppLocale>[] = LANGUAGE_OPTIONS.map(
+    (opt) => ({
+      value: opt.value,
+      title: t(`${opt.i18nPrefix}Label`),
+      description: t(`${opt.i18nPrefix}Desc`),
+      icon: opt.icon,
+    }),
+  );
 
   const statusMessage = (
     <>

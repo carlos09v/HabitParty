@@ -35,7 +35,7 @@ export function ViewModeSelector({
         title={t("gridTitle")}
         aria-label={t("gridAria")}
         className={cn(
-          "rounded-md transition-all cursor-pointer flex items-center justify-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-gold/50 select-none",
+          "rounded-md transition-colors cursor-pointer flex items-center justify-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-gold/50 select-none",
           isCompact ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-xs",
           activeMode === "card"
             ? "bg-gold/20 border border-gold/50 text-gold font-bold shadow-glow-gold-xs"
@@ -53,7 +53,7 @@ export function ViewModeSelector({
         title={t("listTitle")}
         aria-label={t("listAria")}
         className={cn(
-          "rounded-md transition-all cursor-pointer flex items-center justify-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-gold/50 select-none",
+          "rounded-md transition-colors cursor-pointer flex items-center justify-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-gold/50 select-none",
           isCompact ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-xs",
           activeMode === "list"
             ? "bg-gold/20 border border-gold/50 text-gold font-bold shadow-glow-gold-xs"

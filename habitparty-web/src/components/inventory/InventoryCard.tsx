@@ -81,6 +81,7 @@ export const InventoryCard = memo(function InventoryCard({
       onSecondaryAction={handleSecondaryAction}
       onContextMenu={handleContextMenu}
       dragData={dragData}
+      lootItems={reward.lootItems}
     />
   );
 });

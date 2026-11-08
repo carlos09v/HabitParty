@@ -1,9 +1,9 @@
 "use client";
 
 import { Download } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { exportTransactionsCsvAction } from "@/actions/historyActions";
 import { FilterBar } from "@/components/ui/FilterBar";
@@ -20,6 +20,27 @@ interface HistoryFiltersProps {
   isCompact?: boolean;
 }
 
+function buildHistoryUrl(
+  pathname: string,
+  tab: string,
+  period: string,
+  search: string,
+): string {
+  const params = new URLSearchParams();
+  if (tab && tab !== "ALL") {
+    params.set("tab", tab);
+  }
+  if (period && period !== "ALL") {
+    params.set("period", period);
+  }
+  const trimmedSearch = search.trim();
+  if (trimmedSearch) {
+    params.set("search", trimmedSearch);
+  }
+  const qs = params.toString();
+  return qs ? `${pathname}?${qs}` : pathname;
+}
+
 export function HistoryFilters({
   currentTab,
   currentPeriod,
@@ -30,11 +51,26 @@ export function HistoryFilters({
   const { isGamified } = useExperienceMode();
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
+  const [optimisticTab, setOptimisticTab] = useState(currentTab || "ALL");
+  const [optimisticPeriod, setOptimisticPeriod] = useState<HistoryPeriodFilter>(
+    currentPeriod || "ALL",
+  );
   const [searchInput, setSearchInput] = useState(currentSearch || "");
   const [isExporting, startExport] = useTransition();
   const [, startTransition] = useTransition();
+
+  // Refs para evitar disparos duplicados e leitura de closures obsoletas
+  const latestStateRef = useRef({
+    tab: optimisticTab,
+    period: optimisticPeriod,
+    search: searchInput,
+  });
+  latestStateRef.current = {
+    tab: optimisticTab,
+    period: optimisticPeriod,
+    search: searchInput,
+  };
 
   const localizedPeriodOptions = useMemo(
     () =>
@@ -45,7 +81,15 @@ export function HistoryFilters({
     [t],
   );
 
-  // Sincroniza o input com alterações vindas da URL
+  // Sincroniza estados locais quando os parâmetros do servidor mudam externamente
+  useEffect(() => {
+    setOptimisticTab(currentTab || "ALL");
+  }, [currentTab]);
+
+  useEffect(() => {
+    setOptimisticPeriod(currentPeriod || "ALL");
+  }, [currentPeriod]);
+
   useEffect(() => {
     setSearchInput(currentSearch || "");
   }, [currentSearch]);
@@ -57,56 +101,68 @@ export function HistoryFilters({
       const activeSearch = currentSearch || "";
 
       if (trimmed !== activeSearch) {
-        const params = new URLSearchParams(searchParams.toString());
-        if (trimmed) {
-          params.set("search", trimmed);
-        } else {
-          params.delete("search");
-        }
-        params.set("page", "1");
-
+        const nextUrl = buildHistoryUrl(
+          pathname,
+          latestStateRef.current.tab,
+          latestStateRef.current.period,
+          trimmed,
+        );
         startTransition(() => {
-          router.push(`${pathname}?${params.toString()}`, { scroll: false });
+          router.replace(nextUrl, { scroll: false });
         });
       }
     }, 350);
 
     return () => clearTimeout(timer);
-  }, [searchInput, currentSearch, pathname, router, searchParams]);
+  }, [searchInput, currentSearch, pathname, router]);
 
   const handlePeriodChange = (val: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (val === "ALL") {
-      params.delete("period");
-    } else {
-      params.set("period", val);
+    const nextPeriod = (val as HistoryPeriodFilter) || "ALL";
+    if (nextPeriod === latestStateRef.current.period) {
+      return;
     }
-    params.set("page", "1");
+
+    setOptimisticPeriod(nextPeriod);
+    latestStateRef.current.period = nextPeriod;
+
+    const nextUrl = buildHistoryUrl(
+      pathname,
+      latestStateRef.current.tab,
+      nextPeriod,
+      latestStateRef.current.search,
+    );
 
     startTransition(() => {
-      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+      router.replace(nextUrl, { scroll: false });
     });
   };
 
   const handleTabChange = (tabId: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (tabId === "ALL") {
-      params.delete("tab");
-    } else {
-      params.set("tab", tabId);
+    const nextTab = tabId || "ALL";
+    if (nextTab === latestStateRef.current.tab) {
+      return;
     }
-    params.set("page", "1");
+
+    setOptimisticTab(nextTab);
+    latestStateRef.current.tab = nextTab;
+
+    const nextUrl = buildHistoryUrl(
+      pathname,
+      nextTab,
+      latestStateRef.current.period,
+      latestStateRef.current.search,
+    );
 
     startTransition(() => {
-      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+      router.replace(nextUrl, { scroll: false });
     });
   };
 
   const handleExportCsv = () => {
     startExport(async () => {
       const res = await exportTransactionsCsvAction({
-        tab: currentTab,
-        period: currentPeriod,
+        tab: optimisticTab,
+        period: optimisticPeriod,
         search: searchInput.trim() || currentSearch,
       });
       if (!res.success) {
@@ -118,12 +174,12 @@ export function HistoryFilters({
         try {
           const dateStr = new Date().toISOString().split("T")[0];
           const tabSuffix =
-            currentTab && currentTab !== "ALL"
-              ? `_${currentTab.toLowerCase()}`
+            optimisticTab && optimisticTab !== "ALL"
+              ? `_${optimisticTab.toLowerCase()}`
               : "";
           const periodSuffix =
-            currentPeriod && currentPeriod !== "ALL"
-              ? `_${currentPeriod.toLowerCase()}`
+            optimisticPeriod && optimisticPeriod !== "ALL"
+              ? `_${optimisticPeriod.toLowerCase()}`
               : "";
           const prefix = t("csvFilenamePrefix");
           downloadBlob(
@@ -152,18 +208,18 @@ export function HistoryFilters({
           </span>
           <Select
             options={localizedPeriodOptions}
-            value={currentPeriod}
+            value={optimisticPeriod}
             onChange={handlePeriodChange}
             compact
             className="w-36 sm:w-44"
-            triggerClassName="py-1.5 text-xs bg-surface border-white/15"
+            triggerClassName="py-1.5 text-xs bg-card dark:bg-surface border-neutral-600 dark:border-white/15"
           />
         </div>
       }
       leftActions={
-        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface/60 border border-white/10 shrink-0 overflow-x-auto max-w-full">
+        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface dark:bg-surface/60 border border-neutral-700 dark:border-white/10 shrink-0 overflow-x-auto max-w-full">
           {HISTORY_TABS.map((tab) => {
-            const isActive = (currentTab || "ALL") === tab.id;
+            const isActive = optimisticTab === tab.id;
             const tabLabel =
               tab.id === "BACKPACK"
                 ? isGamified
@@ -181,11 +237,11 @@ export function HistoryFilters({
                 type="button"
                 onClick={() => handleTabChange(tab.id)}
                 className={cn(
-                  "px-3 rounded-lg font-semibold transition-all cursor-pointer select-none whitespace-nowrap",
+                  "px-3 rounded-lg font-semibold transition-colors cursor-pointer select-none whitespace-nowrap",
                   isCompact ? "py-1 text-xs" : "py-1.5 text-xs",
                   isActive
                     ? "bg-gold text-on-gold shadow-xs font-bold"
-                    : "text-neutral-300 hover:text-neutral-50 hover:bg-white/5",
+                    : "text-neutral-300 hover:text-neutral-50 hover:bg-card dark:hover:bg-white/5",
                 )}
               >
                 {tabLabel}
@@ -200,7 +256,7 @@ export function HistoryFilters({
           onClick={handleExportCsv}
           disabled={isExporting}
           className={cn(
-            "rounded-xl border border-gold/40 bg-gold/15 text-gold hover:bg-gold hover:text-on-gold transition-all font-bold flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed shrink-0",
+            "rounded-xl border border-amber-500/40 bg-amber-500/15 text-amber-800 hover:bg-gold hover:text-on-gold dark:border-gold/40 dark:bg-gold/15 dark:text-gold transition-colors font-bold flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed shrink-0",
             isCompact
               ? "px-2.5 py-1.5 text-xs"
               : "px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm",
@@ -209,7 +265,7 @@ export function HistoryFilters({
         >
           <Download
             size={isCompact ? 14 : 16}
-            className={isExporting ? "animate-bounce" : ""}
+            className={isExporting ? "opacity-60" : ""}
           />
           <span className="hidden sm:inline">
             {isExporting ? t("exporting") : t("exportCsvButton")}

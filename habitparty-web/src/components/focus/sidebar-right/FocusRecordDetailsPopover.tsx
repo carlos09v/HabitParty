@@ -20,7 +20,9 @@ import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { getFocusIcon } from "@/constants/focus";
 import { useAnchoredPopoverPosition } from "@/hooks/useAnchoredPopoverPosition";
 import { useClickOutside } from "@/hooks/useClickOutside";
+import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useIsClient } from "@/hooks/useIsClient";
 import type { AppLocale } from "@/i18n/config";
 import type { FocusRecord } from "@/types/focus";
 import { formatCoins, formatDateTime } from "@/utils";
@@ -51,15 +53,12 @@ export function FocusRecordDetailsPopover({
   const t = useTranslations("focus.recordDetails");
   const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
-  const [mounted, setMounted] = useState(false);
+  const { dateFormat } = useDateFormat();
+  const mounted = useIsClient();
   const popoverRef = useRef<HTMLDivElement>(null);
   const [notes, setNotes] = useState(record?.notes || "");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Sincroniza as notas quando o registro selecionado mudar
   useEffect(() => {
@@ -120,15 +119,15 @@ export function FocusRecordDetailsPopover({
         top: `${position.top}px`,
         left: `${position.left}px`,
       }}
-      className="fixed z-[100] w-[340px] max-w-[calc(100vw-24px)] rounded-2xl border border-primary/40 bg-card/95 backdrop-blur-xl p-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150 select-none flex flex-col gap-3.5"
+      className="fixed z-[100] w-[340px] max-w-[calc(100vw-24px)] rounded-2xl border border-neutral-700 dark:border-primary/40 bg-card dark:bg-popover p-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150 select-none flex flex-col gap-3.5"
       role="dialog"
       aria-modal="true"
       aria-label={t("dialogAriaLabel")}
     >
       {/* Header com Ícone, Título e Fechar */}
-      <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-primary/20">
+      <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-neutral-700 dark:border-primary/20">
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          <div className="w-9 h-9 rounded-xl bg-gold/15 border border-gold/40 flex items-center justify-center shrink-0 text-gold shadow-glow-gold-xs">
+          <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-700 dark:bg-gold/15 dark:border-gold/40 flex items-center justify-center shrink-0 dark:text-gold shadow-glow-gold-xs">
             <IconComp size={18} />
           </div>
 
@@ -138,7 +137,11 @@ export function FocusRecordDetailsPopover({
             </h3>
             <span className="text-label-g text-neutral-400 flex items-center gap-1">
               <Calendar size={11} className="text-neutral-500" />
-              {formatDateTime(record.endTime, { isLocal: true, locale })}
+              {formatDateTime(record.endTime, {
+                isLocal: true,
+                locale,
+                dateFormat,
+              })}
             </span>
           </div>
         </div>
@@ -146,7 +149,7 @@ export function FocusRecordDetailsPopover({
         <button
           type="button"
           onClick={onClose}
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-neutral-100 hover:bg-white/10 transition-colors cursor-pointer"
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-neutral-100 hover:bg-surface dark:hover:bg-white/10 transition-colors cursor-pointer"
           aria-label={t("closeAria")}
         >
           <X size={16} />
@@ -154,19 +157,21 @@ export function FocusRecordDetailsPopover({
       </div>
 
       {/* Resumo da Sessão (Somente leitura) */}
-      <div className="grid grid-cols-2 gap-2 bg-surface/50 border border-primary/20 rounded-xl p-2.5">
+      <div className="grid grid-cols-2 gap-2 bg-surface/60 dark:bg-surface/50 border border-neutral-700 dark:border-primary/20 rounded-xl p-2.5">
         <div className="flex flex-col gap-0.5">
           <span className="text-tiny text-neutral-400 uppercase tracking-wider font-semibold flex items-center gap-1">
-            <Clock size={10} className="text-gold" /> {t("durationLabel")}
+            <Clock size={10} className="text-amber-600 dark:text-gold" />{" "}
+            {t("durationLabel")}
           </span>
-          <span className="text-body-s font-bold text-gold font-mono">
+          <span className="text-body-s font-bold text-amber-700 dark:text-gold font-mono">
             {durationLabel}
           </span>
         </div>
 
         <div className="flex flex-col gap-0.5">
           <span className="text-tiny text-neutral-400 uppercase tracking-wider font-semibold flex items-center gap-1">
-            <Timer size={10} className="text-gold" /> {t("modeLabel")}
+            <Timer size={10} className="text-amber-600 dark:text-gold" />{" "}
+            {t("modeLabel")}
           </span>
           <span className="text-body-s font-semibold text-neutral-200">
             {record.recordType === "POMO"
@@ -180,24 +185,24 @@ export function FocusRecordDetailsPopover({
 
       {/* Recompensas da Sessão (Atividades pontuam, itens de lazer da mochila pontuam 0) */}
       {!record.inventoryItemId ? (
-        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-gold/10 border border-gold/30 text-xs">
+        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 dark:bg-gold/10 dark:border-gold/30 text-xs">
           <span className="text-neutral-400 font-medium">
             {t("rewardsLabel")}
           </span>
           <div className="flex items-center gap-2.5 font-bold">
-            <span className="text-purple-400 flex items-center gap-1">
+            <span className="text-primary dark:text-purple-400 flex items-center gap-1">
               <Award size={13} />+{record.xpEarned ?? 0}{" "}
               {isGamified ? "XP" : "pts"}
             </span>
             <span className="text-neutral-500">•</span>
-            <span className="text-gold flex items-center gap-1">
+            <span className="text-amber-700 dark:text-gold flex items-center gap-1">
               <CoinIcon size={13} />+
               {formatCoins(record.coinsEarned ?? 0, { locale })}
             </span>
           </div>
         </div>
       ) : (
-        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-neutral-400">
+        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-surface border border-neutral-700 dark:bg-white/5 dark:border-white/10 text-xs text-neutral-400">
           <span>
             {isGamified
               ? t("leisureBackpackLabel")
@@ -216,7 +221,7 @@ export function FocusRecordDetailsPopover({
             htmlFor="focus-record-notes-edit"
             className="text-xs font-semibold text-neutral-200 flex items-center gap-1.5"
           >
-            <Pencil size={12} className="text-gold" />
+            <Pencil size={12} className="text-amber-600 dark:text-gold" />
             {t("sessionNotesLabel")}
           </label>
           <span className="text-tiny text-neutral-400 font-mono">
@@ -224,7 +229,7 @@ export function FocusRecordDetailsPopover({
           </span>
         </div>
 
-        <div className="relative rounded-xl border border-primary/30 bg-surface/60 p-2.5 focus-within:border-gold focus-within:ring-1 focus-within:ring-gold transition-all">
+        <div className="relative rounded-xl border border-neutral-600 dark:border-primary/30 bg-card dark:bg-surface/60 p-2.5 focus-within:border-primary dark:focus-within:border-gold focus-within:ring-1 focus-within:ring-primary dark:focus-within:ring-gold transition-colors">
           <textarea
             id="focus-record-notes-edit"
             rows={3}
@@ -238,14 +243,14 @@ export function FocusRecordDetailsPopover({
       </div>
 
       {/* Ações do Rodapé */}
-      <div className="flex items-center justify-between gap-2 pt-2 border-t border-primary/20">
+      <div className="flex items-center justify-between gap-2 pt-2 border-t border-neutral-700 dark:border-primary/20">
         {/* Botão de Excluir */}
         {onDeleteRecord ? (
           <>
             <button
               type="button"
               onClick={() => setIsDeleteConfirmOpen(true)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/15 transition-colors cursor-pointer"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-500/15 transition-colors cursor-pointer"
               title={t("deleteRecordTitle")}
             >
               <Trash2 size={13} />
@@ -284,7 +289,7 @@ export function FocusRecordDetailsPopover({
           <button
             type="button"
             onClick={onClose}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-neutral-300 hover:bg-white/10 transition-colors cursor-pointer"
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-neutral-300 hover:bg-surface dark:hover:bg-white/10 transition-colors cursor-pointer"
           >
             {t("cancelButton")}
           </button>
@@ -293,7 +298,7 @@ export function FocusRecordDetailsPopover({
             type="button"
             onClick={handleSaveNotes}
             disabled={isSaving}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-colors cursor-pointer disabled:opacity-50"
           >
             <Sparkles size={13} />
             <span>{isSaving ? t("savingButton") : t("saveButton")}</span>

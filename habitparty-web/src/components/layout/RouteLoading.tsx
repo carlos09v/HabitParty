@@ -12,7 +12,8 @@ export type MainRouteLoadingId =
   | "history"
   | "help"
   | "admin"
-  | "settings";
+  | "settings"
+  | "showcase";
 
 interface RouteLoadingProps {
   route?: MainRouteLoadingId;
@@ -29,6 +30,7 @@ const ROUTE_LABEL_KEYS = {
   help: "help.loading.label",
   admin: "admin.loading.label",
   settings: "settings.loading.label",
+  showcase: "showcase.loading.ariaLabel",
 } as const;
 
 /**

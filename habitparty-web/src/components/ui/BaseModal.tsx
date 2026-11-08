@@ -1,13 +1,15 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useIsClient } from "@/hooks/useIsClient";
 import { cn } from "@/utils";
 
 export interface BaseModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenAnimationEnd?: () => void;
   title?: React.ReactNode;
   description?: React.ReactNode;
   headerIcon?: React.ReactNode;
@@ -26,6 +28,7 @@ export interface BaseModalProps {
 export function BaseModal({
   isOpen,
   onClose,
+  onOpenAnimationEnd,
   title,
   description,
   headerIcon,
@@ -40,11 +43,20 @@ export function BaseModal({
   containerClassName,
   headerExtra,
 }: BaseModalProps) {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsClient();
+  const onOpenAnimationEndRef = useRef(onOpenAnimationEnd);
+  onOpenAnimationEndRef.current = onOpenAnimationEnd;
 
+  // Em modo prefers-reduced-motion (.animate-in desativado via CSS), dispara o callback no 1º frame pós-abertura
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    if (!isOpen || !onOpenAnimationEndRef.current) return;
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const frameId = window.requestAnimationFrame(() => {
+      onOpenAnimationEndRef.current?.();
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [isOpen]);
 
   // Control body scroll lock and escape key
   useEffect(() => {
@@ -78,7 +90,7 @@ export function BaseModal({
   return createPortal(
     <div
       className={cn(
-        "fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-3 sm:p-4 animate-in fade-in duration-150",
+        "fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-3 sm:p-4 animate-in fade-in duration-150",
         containerClassName,
       )}
       onClick={handleOverlayClick}
@@ -92,6 +104,11 @@ export function BaseModal({
       role="dialog"
     >
       <div
+        onAnimationEnd={(e) => {
+          if (e.target === e.currentTarget) {
+            onOpenAnimationEnd?.();
+          }
+        }}
         className={cn(
           "bg-popover border rounded-xl w-full p-4 sm:p-6 shadow-2xl relative animate-in zoom-in-95 duration-150 max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2rem)] overflow-y-auto custom-scrollbar",
           borderColor,

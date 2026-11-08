@@ -3,7 +3,6 @@
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AMBIENT_SOUND_OPTIONS } from "@/constants/settings";
 import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
 import { useUserStore } from "@/store/userStore";
 import type { AmbientSoundType } from "@/types/settings";
@@ -25,24 +24,36 @@ export function useFocusAudioControls({
   const t = useTranslations("focus.audio.toasts");
   const tWidget = useTranslations("focusWidget");
   const isPremium = useUserStore((s) => s.is_Premium);
-  const {
-    uiSoundsEnabled,
-    timerSoundsEnabled,
-    timerVolume,
-    timerSoundType,
-    browserNotificationsEnabled,
-    ambientSoundType,
-    ambientVolume,
-    isAmbientPlaying,
-    toggleUiSounds,
-    toggleTimerSounds,
-    setTimerVolume,
-    setTimerSoundType,
-    setBrowserNotificationsEnabled,
-    setAmbientSoundType,
-    setAmbientVolume,
-    setIsAmbientPlaying,
-  } = useSoundPreferencesStore();
+  const uiSoundsEnabled = useSoundPreferencesStore((s) => s.uiSoundsEnabled);
+  const timerSoundsEnabled = useSoundPreferencesStore(
+    (s) => s.timerSoundsEnabled,
+  );
+  const timerVolume = useSoundPreferencesStore((s) => s.timerVolume);
+  const timerSoundType = useSoundPreferencesStore((s) => s.timerSoundType);
+  const browserNotificationsEnabled = useSoundPreferencesStore(
+    (s) => s.browserNotificationsEnabled,
+  );
+  const ambientSoundType = useSoundPreferencesStore((s) => s.ambientSoundType);
+  const ambientVolume = useSoundPreferencesStore((s) => s.ambientVolume);
+  const isAmbientPlaying = useSoundPreferencesStore((s) => s.isAmbientPlaying);
+  const toggleUiSounds = useSoundPreferencesStore((s) => s.toggleUiSounds);
+  const toggleTimerSounds = useSoundPreferencesStore(
+    (s) => s.toggleTimerSounds,
+  );
+  const setTimerVolume = useSoundPreferencesStore((s) => s.setTimerVolume);
+  const setTimerSoundType = useSoundPreferencesStore(
+    (s) => s.setTimerSoundType,
+  );
+  const setBrowserNotificationsEnabled = useSoundPreferencesStore(
+    (s) => s.setBrowserNotificationsEnabled,
+  );
+  const setAmbientSoundType = useSoundPreferencesStore(
+    (s) => s.setAmbientSoundType,
+  );
+  const setAmbientVolume = useSoundPreferencesStore((s) => s.setAmbientVolume);
+  const setIsAmbientPlaying = useSoundPreferencesStore(
+    (s) => s.setIsAmbientPlaying,
+  );
 
   const [notificationPermission, setNotificationPermission] =
     useState<NotificationPermission>("default");
@@ -155,7 +166,7 @@ export function useFocusAudioControls({
         `ambientSounds.${type}` as Parameters<typeof tWidget.has>[0],
       )
         ? tWidget(`ambientSounds.${type}` as Parameters<typeof tWidget>[0])
-        : AMBIENT_SOUND_OPTIONS.find((s) => s.id === type)?.label || type;
+        : type;
       toast.success(t("ambientOn", { label: soundLabel }));
     },
     [

@@ -20,7 +20,7 @@ export function DemoDailyCard({
   return (
     <div
       className={cn(
-        "p-4 rounded-xl border flex flex-col justify-between transition-all",
+        "p-4 rounded-xl border flex flex-col justify-between transition-colors",
         isStudyDone
           ? "bg-success-500/10 border-success-500/40"
           : "bg-card dark:bg-card/70 border-neutral-700 dark:border-white/10 hover:border-primary-light/40 shadow-xs dark:shadow-sm",
@@ -28,11 +28,11 @@ export function DemoDailyCard({
     >
       <div>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-bold text-warning-500 uppercase tracking-wider bg-warning-500/10 px-2 py-0.5 rounded flex items-center gap-1">
-            <Flame className="w-3 h-3 fill-warning-500" />
+          <span className="text-[11px] font-bold text-amber-700 dark:text-warning-500 uppercase tracking-wider bg-amber-500/10 dark:bg-warning-500/10 px-2 py-0.5 rounded flex items-center gap-1">
+            <Flame className="w-3 h-3 fill-current" />
             {t("streakBadge", { count: studyStreak })}
           </span>
-          <span className="text-xs font-bold text-gold flex items-center gap-1">
+          <span className="text-xs font-bold text-amber-700 dark:text-gold flex items-center gap-1">
             <Coins className="w-3.5 h-3.5" /> +25
           </span>
         </div>
@@ -55,7 +55,7 @@ export function DemoDailyCard({
           type="button"
           onClick={onToggle}
           className={cn(
-            "px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer",
+            "px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-[transform,background-color,border-color,color] active:scale-95 cursor-pointer",
             isStudyDone
               ? "bg-success-500/20 text-success-500 border border-success-500/30"
               : "bg-gold hover:bg-gold-hover text-on-gold shadow-sm dark:shadow-glow-gold hover:scale-105",

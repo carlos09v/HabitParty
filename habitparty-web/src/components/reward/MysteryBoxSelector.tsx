@@ -49,7 +49,7 @@ export function MysteryBoxSelector({
             {t("hoverHint")}
           </span>
         </label>
-        <span className="text-label-m text-primary-light flex items-center gap-1">
+        <span className="text-label-m text-primary dark:text-primary-light flex items-center gap-1">
           <HelpCircle size={12} />
           <span>{t("raritiesCount")}</span>
         </span>
@@ -94,11 +94,15 @@ export function MysteryBoxSelector({
                 onFocus={() => setHoveredTierId(tier.id)}
                 onBlur={() => setHoveredTierId(null)}
                 className={cn(
-                  "relative w-full h-[160px] flex flex-col items-center justify-between p-2.5 sm:p-3 rounded-xl border transition-all duration-200 cursor-pointer select-none text-left group overflow-hidden",
+                  "relative w-full h-[160px] flex flex-col items-center justify-between p-2.5 sm:p-3 rounded-xl border transition-[transform,translate,scale,border-color,background-color,box-shadow] duration-200 cursor-pointer select-none text-left group overflow-hidden",
                   "hover:-translate-y-1 hover:scale-[1.02] active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold",
                   selected
                     ? cn(tier.borderSelectedClass, tier.bgSelectedClass)
-                    : cn(tier.borderClass, tier.bgClass, "bg-popover/40"),
+                    : cn(
+                        tier.borderClass,
+                        tier.bgClass,
+                        "bg-card dark:bg-popover/40",
+                      ),
                   disabled &&
                     "opacity-50 cursor-not-allowed hover:translate-y-0 hover:scale-100",
                 )}
@@ -132,11 +136,11 @@ export function MysteryBoxSelector({
                 {/* Ícone Heroico Gamificado da Caixa */}
                 <div
                   className={cn(
-                    "w-12 h-12 rounded-xl flex items-center justify-center border transition-all duration-300 mt-0.5 shrink-0 shadow-inner group-hover:scale-110",
+                    "w-12 h-12 rounded-xl flex items-center justify-center border transition-[transform,scale,background-color,box-shadow] duration-300 mt-0.5 shrink-0 shadow-inner group-hover:scale-110",
                     tier.borderClass,
                     selected
-                      ? "bg-white/15 shadow-md"
-                      : "bg-white/5 group-hover:bg-white/10",
+                      ? "bg-surface dark:bg-white/15 shadow-sm dark:shadow-md"
+                      : "bg-surface/60 dark:bg-white/5 group-hover:bg-surface dark:group-hover:bg-white/10",
                   )}
                   style={{
                     boxShadow:
@@ -177,8 +181,8 @@ export function MysteryBoxSelector({
                   className={cn(
                     "flex items-center justify-center gap-1 mt-auto px-2 py-0.5 rounded-full border text-tiny font-bold w-full shrink-0",
                     selected
-                      ? "bg-gold/20 border-gold/40 text-gold shadow-glow-gold-xs"
-                      : "bg-white/5 border-white/10 text-neutral-300 group-hover:border-gold/30 group-hover:text-gold",
+                      ? "bg-amber-500/15 border-amber-500/40 text-amber-800 dark:bg-gold/20 dark:border-gold/40 dark:text-gold shadow-glow-gold-xs"
+                      : "bg-surface dark:bg-white/5 border-neutral-700 dark:border-white/10 text-neutral-300 group-hover:border-amber-500/40 group-hover:text-amber-700 dark:group-hover:border-gold/30 dark:group-hover:text-gold",
                   )}
                 >
                   <CoinIcon size={12} withGlow={selected} />

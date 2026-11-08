@@ -29,7 +29,7 @@ export function PasswordStrengthIndicator({
   const levelLabel = t(`levels.${analysis.levelKey}`);
 
   return (
-    <div className="flex flex-col gap-2.5 p-3 rounded-xl bg-surface/50 border border-neutral-700 dark:bg-white/5 dark:border-white/10 text-xs transition-all">
+    <div className="flex flex-col gap-2.5 p-3 rounded-xl bg-surface/60 border border-neutral-700 dark:bg-white/5 dark:border-white/10 text-xs">
       {/* Medidor Segmentado em 4 Barras */}
       <div className="flex flex-col gap-1.5">
         <div
@@ -61,7 +61,7 @@ export function PasswordStrengthIndicator({
               <div
                 key={step}
                 className={cn(
-                  "h-1.5 rounded-full transition-all duration-300",
+                  "h-1.5 rounded-full transition-colors duration-300",
                   isFilled
                     ? analysis.barBgClass
                     : "bg-neutral-700 dark:bg-white/10",

@@ -4,6 +4,7 @@ import type { HTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
 export type ThemeMode = "light" | "dark";
 export type ExperienceMode = "GAMIFIED" | "PRODUCTIVITY";
 export type AppLocale = "en" | "pt-BR";
+export type DateFormat = "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD";
 export type ViewMode = "card" | "list" | "grid";
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {

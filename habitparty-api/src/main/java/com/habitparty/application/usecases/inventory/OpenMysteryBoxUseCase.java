@@ -3,13 +3,17 @@ package com.habitparty.application.usecases.inventory;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.InventoryItemRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
+import com.habitparty.application.ports.UserRepository;
+import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsUseCase;
 import com.habitparty.core.domain.entities.InventoryItem;
 import com.habitparty.core.domain.entities.TransactionHistory;
+import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.reward.MysteryBoxLootTable;
 import com.habitparty.core.domain.entities.reward.MysteryBoxResult;
 import com.habitparty.core.domain.enums.InventoryItemStatus;
@@ -23,11 +27,23 @@ import com.habitparty.core.exceptions.ResourceNotFoundException;
 public class OpenMysteryBoxUseCase {
   private final InventoryItemRepository port;
   private final TransactionHistoryRepository transactionHistoryRepositoryPort;
+  private UserRepository userPort;
+  private EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
 
   public OpenMysteryBoxUseCase(InventoryItemRepository port,
       TransactionHistoryRepository transactionHistoryRepositoryPort) {
     this.port = port;
     this.transactionHistoryRepositoryPort = transactionHistoryRepositoryPort;
+  }
+
+  @Autowired(required = false)
+  public void setUserPort(UserRepository userPort) {
+    this.userPort = userPort;
+  }
+
+  @Autowired(required = false)
+  public void setEvaluateUserAchievementsUseCase(EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
+    this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
   }
 
   @Transactional
@@ -45,11 +61,12 @@ public class OpenMysteryBoxUseCase {
     }
 
     RewardPackageLevel level = item.getPackageLevelSnapshot().orElse(RewardPackageLevel.BASIC);
-    MysteryBoxResult result = MysteryBoxLootTable.roll(level);
+    MysteryBoxResult result = MysteryBoxLootTable.roll(level, item.getLootItemsSnapshot());
 
     item.setNameSnapshot(result.name());
     item.setIconSnapshot(result.icon());
     item.setPackageLevelSnapshot(level);
+    item.setLootItemsSnapshot(null);
 
     if (result.minutes() != null && result.minutes() > 0) {
       item.setRewardTypeSnapshot(RewardType.TIME_BASED);
@@ -77,6 +94,18 @@ public class OpenMysteryBoxUseCase {
         null);
 
     transactionHistoryRepositoryPort.save(transaction);
+
+    if (userPort != null) {
+      userPort.findById(userIdLogado).ifPresent((User user) -> {
+        if (user.getStats() != null) {
+          user.getStats().recordMysteryBoxOpened();
+        }
+        userPort.save(user);
+        if (evaluateUserAchievementsUseCase != null) {
+          evaluateUserAchievementsUseCase.execute(user);
+        }
+      });
+    }
 
     return item;
   }

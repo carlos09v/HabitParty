@@ -89,7 +89,7 @@ export function InventoryCatalogView({
             isInventoryEmpty ? (
               <Link
                 href="/rewards"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gold text-on-gold font-bold text-xs hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gold text-on-gold font-bold text-xs hover:bg-gold-hover shadow-glow-gold-xs transition-colors cursor-pointer"
               >
                 <Store size={15} />
                 <span>{t("emptyState.exploreStore")}</span>
@@ -98,7 +98,7 @@ export function InventoryCatalogView({
               <button
                 type="button"
                 onClick={onClearFilters}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-primary/40 bg-surface/80 text-xs font-semibold text-gold hover:border-gold hover:bg-gold/10 transition-all cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-primary/40 bg-surface/80 text-xs font-semibold text-gold hover:border-gold hover:bg-gold/10 transition-colors cursor-pointer"
               >
                 <span>{t("emptyState.clearFilters")}</span>
               </button>
@@ -128,7 +128,7 @@ export function InventoryCatalogView({
         {viewMode === "card" ? (
           <div
             className={cn(
-              "w-full transition-all duration-200 pb-8",
+              "w-full pb-8",
               isCompact
                 ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5"
                 : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4",

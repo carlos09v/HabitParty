@@ -8,12 +8,6 @@ export type HelpCategory =
   | "FOCUS"
   | "LEVELS";
 
-export interface HelpCategoryTab {
-  id: HelpCategory;
-  label: string;
-  iconName?: string;
-}
-
 export interface HelpFaqActionLink {
   label: string;
   href: string;
@@ -39,8 +33,6 @@ export interface HelpTableEntry {
 }
 
 export interface HelpProductivityStep {
-  step: number;
-  title: string;
-  description: string;
+  step: 1 | 2 | 3 | 4;
   badgeClassName: string;
 }

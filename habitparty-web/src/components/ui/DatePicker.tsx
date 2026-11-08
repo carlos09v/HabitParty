@@ -10,6 +10,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useId, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Select } from "@/components/ui/Select";
+import { useDateFormat } from "@/hooks/useDateFormat";
 import { useFloatingPopover } from "@/hooks/useFloatingPopover";
 import { isValidLocale } from "@/i18n/config";
 import type { DatePickerProps } from "@/types/ui";
@@ -59,6 +60,7 @@ export function DatePicker({
   const t = useTranslations("ui.datePicker");
   const rawLocale = useLocale();
   const locale = isValidLocale(rawLocale) ? rawLocale : "en";
+  const { dateFormat } = useDateFormat();
   const resolvedPlaceholder = placeholder ?? t("placeholder");
 
   const monthOptions = useMemo(
@@ -209,10 +211,13 @@ export function DatePicker({
     if (currentValue === today.isoString) return t("today");
     if (currentValue === today.tomorrowIso) return t("tomorrow");
     return (
-      formatShortDate(currentValue, { includeYear: true, locale }) ||
-      currentValue
+      formatShortDate(currentValue, {
+        includeYear: true,
+        locale,
+        dateFormat,
+      }) || currentValue
     );
-  }, [currentValue, today.isoString, today.tomorrowIso, locale, t]);
+  }, [currentValue, today.isoString, today.tomorrowIso, locale, dateFormat, t]);
 
   const resolvedClearLabel =
     clearLabel ?? (variant === "badge" ? t("noDueDate") : t("clear"));
@@ -231,7 +236,7 @@ export function DatePicker({
             data-select-for={pickerId}
             style={floatingStyle}
             className={cn(
-              "p-3 rounded-xl border border-primary/40 bg-popover/98 backdrop-blur-md shadow-2xl",
+              "p-3 rounded-xl border border-primary/40 bg-popover shadow-2xl",
               "w-72 max-w-[calc(100vw-1rem)] animate-in fade-in zoom-in-95 duration-150 select-none",
               coords.placement === "top" ? "origin-bottom" : "origin-top",
             )}
@@ -302,7 +307,7 @@ export function DatePicker({
                     handleSelectDay(cell.year, cell.month, cell.day)
                   }
                   className={cn(
-                    "h-7 w-7 mx-auto rounded-lg text-xs font-medium flex items-center justify-center transition-all cursor-pointer relative",
+                    "h-7 w-7 mx-auto rounded-lg text-xs font-medium flex items-center justify-center transition-[color,background-color,border-color,opacity] duration-150 cursor-pointer relative",
                     !cell.isCurrentMonth &&
                       "text-neutral-500 opacity-40 hover:opacity-100",
                     cell.isCurrentMonth && "text-neutral-100",
@@ -426,7 +431,7 @@ export function DatePicker({
         ) : (
           <div
             className={cn(
-              "w-full flex items-center justify-between rounded-lg transition-all select-none",
+              "w-full flex items-center justify-between rounded-lg transition-colors select-none",
               compact ? "py-2 px-3 text-body-s" : "py-3 px-4 text-body-m",
               "bg-card border border-neutral-600 text-neutral-50 shadow-xs",
               "dark:bg-primary-dark/20 dark:border-primary/30 dark:text-neutral-50 dark:shadow-none",

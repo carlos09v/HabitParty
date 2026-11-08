@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { deleteTransactionAction } from "@/actions/historyActions";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { HISTORY_GRID_COLS } from "@/constants/history";
+import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import type { TransactionHistoryResponseDTO } from "@/types/history";
@@ -28,6 +29,7 @@ export function HistoryTable({
   const t = useTranslations("history.table");
   const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
+  const { dateFormat } = useDateFormat();
   const [selectedTransaction, setSelectedTransaction] =
     useState<TransactionHistoryResponseDTO | null>(null);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
@@ -36,8 +38,8 @@ export function HistoryTable({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const groupedTransactions = useMemo(
-    () => groupTransactionsByDay(transactions, locale),
-    [transactions, locale],
+    () => groupTransactionsByDay(transactions, new Date(), locale, dateFormat),
+    [transactions, locale, dateFormat],
   );
 
   const handleRowClick = useCallback(
@@ -121,7 +123,7 @@ export function HistoryTable({
           {transactions.length === 0 ? (
             <div
               className={cn(
-                "w-full flex flex-col items-center justify-center text-center rounded-2xl border border-dashed border-primary/30 bg-primary-dark/20 backdrop-blur-xs",
+                "w-full flex flex-col items-center justify-center text-center rounded-2xl border border-dashed border-primary/30 bg-primary-dark/20",
                 isCompact ? "py-10 px-4 gap-2.5" : "py-16 px-6 gap-3.5",
               )}
             >
@@ -141,8 +143,14 @@ export function HistoryTable({
             </div>
           ) : (
             <div className="flex flex-col gap-4 min-h-[350px]">
-              {groupedTransactions.map((group) => (
-                <div key={group.dateKey} className="flex flex-col gap-2">
+              {groupedTransactions.map((group, groupIdx) => (
+                <div
+                  key={group.dateKey}
+                  className={cn(
+                    "flex flex-col gap-2",
+                    groupIdx > 0 && "deferred-history-group",
+                  )}
+                >
                   {/* Divisor de Dia ("Hoje", "Ontem", "Ter, 12 Out") */}
                   <div className="flex items-center gap-2 px-1 pt-1">
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface/80 border border-primary/30 text-label-g font-bold text-neutral-200 shadow-xs">

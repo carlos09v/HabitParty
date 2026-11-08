@@ -70,6 +70,7 @@ export function useFocusTimerControls({
   const selectActivityTarget = useFocusTimerStore(
     (s) => s.selectActivityTarget,
   );
+  const selectItemTarget = useFocusTimerStore((s) => s.selectItemTarget);
   const resetTarget = useFocusTimerStore((s) => s.resetTarget);
   const transferTarget = useFocusTimerStore((s) => s.transferTarget);
   const syncTargetMetadata = useFocusTimerStore((s) => s.syncTargetMetadata);
@@ -148,6 +149,7 @@ export function useFocusTimerControls({
     startFocusActivity,
     startFocusItem,
     selectActivityTarget,
+    selectItemTarget,
     resetTarget,
     transferTarget,
     syncTargetMetadata,

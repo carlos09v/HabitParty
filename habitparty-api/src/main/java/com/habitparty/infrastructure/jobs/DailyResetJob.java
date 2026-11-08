@@ -23,17 +23,22 @@ public class DailyResetJob {
     this.clock = clock;
   }
 
-  // Roda na inicialização do servidor para recuperar afazeres hardcore vencidos caso a aplicação estivesse offline à meia-noite
+  // Roda na inicialização do servidor para recuperar afazeres hardcore vencidos e streaks expirados caso a aplicação estivesse offline à meia-noite
   @EventListener(ApplicationReadyEvent.class)
   public void catchUpOverdueHardcoreTodosOnStartup() {
     try {
+      LocalDate today = LocalDate.now(clock);
       // Usa o relógio no fuso de negócio (evita penalizar antes da hora quando a JVM está em UTC)
-      int processedCount = dailyResetUseCase.processOverdueHardcoreTodos(LocalDate.now(clock));
+      int processedCount = dailyResetUseCase.processOverdueHardcoreTodos(today);
       if (processedCount > 0) {
         logger.info("[Startup] {} afazer(es) hardcore vencido(s) processado(s) com aplicação de penalidade.", processedCount);
       }
+      int expiredStreaks = dailyResetUseCase.resetInactiveUserStreaks(today);
+      if (expiredStreaks > 0) {
+        logger.info("[Startup] {} ofensiva(s) de usuário(s) inativo(s) zerada(s).", expiredStreaks);
+      }
     } catch (Exception e) {
-      logger.error("[Startup] Erro ao processar afazeres hardcore pendentes no startup: {}", e.getMessage(), e);
+      logger.error("[Startup] Erro ao processar rotina de recuperação no startup: {}", e.getMessage(), e);
     }
   }
 
@@ -43,7 +48,8 @@ public class DailyResetJob {
     logger.info("Iniciando rotina de reset diário de tarefas e hábitos...");
     try {
       dailyResetUseCase.executeDailyRollover();
-      logger.info("Rotina de reset diário concluída com sucesso!");
+      int expiredStreaks = dailyResetUseCase.resetInactiveUserStreaks(LocalDate.now(clock));
+      logger.info("Rotina de reset diário concluída com sucesso! ({} ofensiva(s) de usuários zerada(s))", expiredStreaks);
     } catch (Exception e) {
       logger.error("Erro durante a execução do reset diário: {}", e.getMessage(), e);
     }

@@ -54,6 +54,8 @@ export interface FocusActivityCardVariantProps extends FocusCardBaseProps {
 export interface FocusBackpackCardVariantProps extends FocusCardBaseProps {
   variant: "backpack";
   item: InventoryItemResponseDTO;
+  isSelected?: boolean;
+  onSelect?: (item: InventoryItemResponseDTO) => void;
   onStartFocus: (item: InventoryItemResponseDTO) => void;
   onContextMenu: (e: React.MouseEvent, item: InventoryItemResponseDTO) => void;
   onConsume?: (item: InventoryItemResponseDTO) => void;
@@ -86,7 +88,7 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
   const activity = isActivity ? props.activity : null;
   const isLocked = isActivity ? Boolean(props.isLocked) : false;
   const item = !isActivity ? props.item : null;
-  const isSelected = isActivity ? Boolean(props.isSelected) : false;
+  const isSelected = Boolean(props.isSelected);
   const isDraggable = isActivity && !isLocked && Boolean(sortableListeners);
 
   // Resolução do ícone
@@ -116,15 +118,19 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
     }
     if (isActivity && props.onSelect && activity) {
       props.onSelect(activity);
-    } else if (!isActivity && isTimeDepleted && item) {
-      if (e) {
-        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        triggerCelebrationConfetti(
-          rect.left + rect.width / 2,
-          rect.top + rect.height / 2,
-        );
+    } else if (!isActivity && item) {
+      if (isTimeDepleted) {
+        if (e) {
+          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          triggerCelebrationConfetti(
+            rect.left + rect.width / 2,
+            rect.top + rect.height / 2,
+          );
+        }
+        props.onConsume?.(item);
+      } else if (props.onSelect) {
+        props.onSelect(item);
       }
-      props.onConsume?.(item);
     }
   };
 
@@ -185,14 +191,14 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
       }}
       onContextMenu={handleContextMenu}
       className={cn(
-        "group relative flex items-center justify-between rounded-xl border bg-card dark:bg-card/60 backdrop-blur-sm shadow-2xs dark:shadow-none transition-[border-color,background-color,box-shadow,opacity] duration-200 select-none",
+        "group relative flex items-center justify-between rounded-xl border bg-card dark:bg-card/85 shadow-2xs dark:shadow-none transition-[border-color,background-color,opacity,transform] duration-150 select-none",
         isActivity
           ? isLocked
             ? "cursor-pointer"
             : isDraggable
               ? "cursor-grab active:cursor-grabbing"
               : "cursor-pointer"
-          : "",
+          : "cursor-pointer",
         isCompact ? "p-3 gap-2.5" : "p-3.5 sm:p-4 gap-3",
         isSelected
           ? "ring-2 ring-gold border-gold/80 bg-gold/15 shadow-glow-gold-xs"
@@ -200,7 +206,7 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
             ? "border-gold/80 bg-gold/10 shadow-glow-gold-xs"
             : isLocked
               ? "border-white/5 bg-surface/30 opacity-75 hover:opacity-100 hover:border-gold/30"
-              : "border-neutral-700 dark:border-primary/30 hover:border-gold/40 hover:bg-card-hover dark:hover:bg-card-hover/80",
+              : "border-neutral-700 dark:border-primary/30 hover:border-gold/40 hover:bg-card-hover dark:hover:bg-card-hover/90",
         isDragging &&
           "transition-none! opacity-60 ring-2 ring-gold shadow-glow-gold-md z-50 will-change-transform",
       )}
@@ -217,13 +223,13 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
 
         <div
           className={cn(
-            "rounded-lg flex items-center justify-center shrink-0 border transition-all",
+            "rounded-lg flex items-center justify-center shrink-0 border transition-colors",
             isCompact ? "w-9 h-9" : "w-10 h-10",
             isActiveTarget
-              ? "bg-gold/20 border-gold/60 text-gold"
+              ? "bg-amber-500/15 border-amber-500/50 text-amber-700 dark:bg-gold/20 dark:border-gold/60 dark:text-gold"
               : isLocked
-                ? "bg-white/5 border-white/10 text-neutral-500 group-hover:text-gold"
-                : "bg-primary-dark/30 border-primary/40 text-primary-light group-hover:text-gold group-hover:border-gold/40",
+                ? "bg-neutral-800 border-neutral-700 text-neutral-400 group-hover:text-primary dark:bg-white/5 dark:border-white/10 dark:text-neutral-500 dark:group-hover:text-gold"
+                : "bg-primary/10 border-primary/25 text-primary group-hover:text-primary-dark group-hover:border-primary/40 dark:bg-primary-dark/30 dark:border-primary/40 dark:text-primary-light dark:group-hover:text-gold dark:group-hover:border-gold/40",
           )}
         >
           <IconComponent size={isCompact ? 18 : 20} />
@@ -233,7 +239,7 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
           <div className="flex items-center gap-2 min-w-0">
             <h4
               className={cn(
-                "font-semibold text-neutral-100 group-hover:text-gold transition-colors truncate",
+                "font-semibold text-neutral-100 group-hover:text-primary dark:group-hover:text-gold transition-colors truncate",
                 isCompact ? "text-body-s" : "text-body-m",
               )}
             >
@@ -241,7 +247,7 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
             </h4>
 
             {isLocked && (
-              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gold/15 text-gold border border-gold/30 text-tiny font-bold shrink-0">
+              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-800 border border-amber-500/35 dark:bg-gold/15 dark:text-gold dark:border-gold/30 text-tiny font-bold shrink-0">
                 <Lock size={10} />
                 {t("pausedBadge")}
               </span>
@@ -325,7 +331,7 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
             aria-label={t("completeItemAria", { title })}
             title={t("completeItemTitle")}
             className={cn(
-              "flex items-center justify-center rounded-lg border transition-all cursor-pointer bg-emerald-500 hover:bg-emerald-400 text-neutral-950 border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] animate-pulse",
+              "flex items-center justify-center rounded-lg border transition-colors cursor-pointer bg-emerald-500 hover:bg-emerald-400 text-neutral-950 border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] animate-pulse",
               isCompact ? "w-8 h-8" : "w-9 h-9",
             )}
           >
@@ -341,7 +347,7 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
             aria-label={t("lockedActivityAria", { title })}
             title={t("lockedActivityTitle")}
             className={cn(
-              "flex items-center justify-center rounded-lg border transition-all cursor-pointer bg-gold/10 hover:bg-gold/20 text-gold border-gold/30 hover:border-gold hover:shadow-glow-gold-xs active:scale-95",
+              "flex items-center justify-center rounded-lg border transition-[transform,background-color,border-color,color] duration-150 cursor-pointer bg-gold/10 hover:bg-gold/20 text-gold border-gold/30 hover:border-gold hover:shadow-glow-gold-xs active:scale-95",
               isCompact ? "w-8 h-8" : "w-9 h-9",
             )}
           >

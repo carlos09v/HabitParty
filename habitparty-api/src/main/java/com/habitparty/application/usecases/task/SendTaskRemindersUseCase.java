@@ -1,5 +1,6 @@
 package com.habitparty.application.usecases.task;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -12,6 +13,7 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.habitparty.application.ports.EmailDispatchLogRepository;
@@ -33,21 +35,34 @@ public class SendTaskRemindersUseCase {
   private final UserRepository userPort;
   private final EmailSenderPort emailPort;
   private final EmailDispatchLogRepository emailLogPort;
+  private final Clock clock;
+
+  @Autowired
+  public SendTaskRemindersUseCase(
+      TaskRepository taskPort,
+      UserRepository userPort,
+      EmailSenderPort emailPort,
+      EmailDispatchLogRepository emailLogPort,
+      Clock clock) {
+    this.taskPort = taskPort;
+    this.userPort = userPort;
+    this.emailPort = emailPort;
+    this.emailLogPort = emailLogPort;
+    this.clock = clock != null ? clock : Clock.systemDefaultZone();
+  }
 
   public SendTaskRemindersUseCase(
       TaskRepository taskPort,
       UserRepository userPort,
       EmailSenderPort emailPort,
       EmailDispatchLogRepository emailLogPort) {
-    this.taskPort = taskPort;
-    this.userPort = userPort;
-    this.emailPort = emailPort;
-    this.emailLogPort = emailLogPort;
+    this(taskPort, userPort, emailPort, emailLogPort, Clock.systemDefaultZone());
   }
 
   public int execute() {
-    LocalDateTime now = LocalDateTime.now();
-    LocalDate today = LocalDate.now();
+    Clock effectiveClock = clock != null ? clock : Clock.systemDefaultZone();
+    LocalDateTime now = LocalDateTime.now(effectiveClock);
+    LocalDate today = LocalDate.now(effectiveClock);
 
     List<Task> pendingReminders = taskPort.findPendingEmailReminders(now, today);
     if (pendingReminders.isEmpty()) {

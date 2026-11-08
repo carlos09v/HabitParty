@@ -135,7 +135,7 @@ export function Select({
       style={floatingStyle}
       className={cn(
         shouldRenderPortal ? "fixed z-[150]" : "absolute z-50",
-        "bg-card dark:bg-popover/98 border border-neutral-700 dark:border-primary/40 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100",
+        "bg-card dark:bg-popover border border-neutral-700 dark:border-primary/40 rounded-xl shadow-2xl overflow-hidden overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100",
         coords?.placement === "top" ? "origin-bottom" : "origin-top",
         isInline
           ? cn(
@@ -262,7 +262,7 @@ export function Select({
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
         className={cn(
-          "transition-all flex items-center cursor-pointer select-none",
+          "transition-colors flex items-center cursor-pointer select-none",
           isInline
             ? cn(
                 "px-2 py-0.5 rounded-md text-xs font-bold gap-1.5",

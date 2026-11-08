@@ -20,7 +20,7 @@ export default function MainError({
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] px-4 w-full">
-      <div className="bg-card border border-surface-hover p-8 rounded-xl shadow-lg max-w-md w-full text-center flex flex-col items-center gap-6 animate-in fade-in zoom-in-95 duration-300">
+      <div className="bg-card border border-neutral-700 dark:border-surface-hover p-8 rounded-xl shadow-lg max-w-md w-full text-center flex flex-col items-center gap-6 animate-in fade-in zoom-in-95 duration-300">
         {/* Ícone Contextual de Erro (Vermelho Danger) */}
         <div className="w-16 h-16 rounded-full bg-danger-500/20 flex items-center justify-center mb-2">
           <svg
@@ -50,14 +50,14 @@ export default function MainError({
           <button
             type="button"
             onClick={() => reset()}
-            className="w-full py-3.5 rounded-lg bg-primary hover:bg-primary-dark text-neutral-50 font-bold transition-all shadow-[0_0_15px_rgba(124,58,237,0.2)] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+            className="w-full py-3.5 rounded-lg bg-primary hover:bg-primary-dark text-white font-bold transition-colors shadow-sm dark:shadow-[0_0_15px_rgba(124,58,237,0.2)] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background cursor-pointer"
           >
             {t("retryButton")}
           </button>
 
           <Link
             href="/dashboard"
-            className="w-full py-3.5 rounded-lg border border-surface hover:border-surface-hover bg-surface hover:bg-surface-hover text-neutral-100 font-semibold transition-all flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-surface focus:ring-offset-2 focus:ring-offset-background"
+            className="w-full py-3.5 rounded-lg border border-neutral-700 dark:border-surface hover:border-neutral-600 dark:hover:border-surface-hover bg-surface hover:bg-surface-hover text-neutral-100 font-semibold transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-surface focus:ring-offset-2 focus:ring-offset-background"
           >
             {t("backButton")}
           </Link>

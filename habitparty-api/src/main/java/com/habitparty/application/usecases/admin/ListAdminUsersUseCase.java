@@ -1,11 +1,13 @@
 package com.habitparty.application.usecases.admin;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,18 +33,31 @@ public class ListAdminUsersUseCase {
   private final TaskRepository taskPort;
   private final AdminMetricsRepository adminMetricsPort;
   private final int resendResetDay;
+  private final Clock clock;
+
+  @Autowired
+  public ListAdminUsersUseCase(
+      UserRepository userRepository,
+      EmailDispatchLogRepository emailLogPort,
+      TaskRepository taskPort,
+      AdminMetricsRepository adminMetricsPort,
+      @Value("${resend.quota.reset-day:16}") int resendResetDay,
+      Clock clock) {
+    this.userRepository = userRepository;
+    this.emailLogPort = emailLogPort;
+    this.taskPort = taskPort;
+    this.adminMetricsPort = adminMetricsPort;
+    this.resendResetDay = Math.max(1, Math.min(31, resendResetDay));
+    this.clock = clock != null ? clock : Clock.systemDefaultZone();
+  }
 
   public ListAdminUsersUseCase(
       UserRepository userRepository,
       EmailDispatchLogRepository emailLogPort,
       TaskRepository taskPort,
       AdminMetricsRepository adminMetricsPort,
-      @Value("${resend.quota.reset-day:16}") int resendResetDay) {
-    this.userRepository = userRepository;
-    this.emailLogPort = emailLogPort;
-    this.taskPort = taskPort;
-    this.adminMetricsPort = adminMetricsPort;
-    this.resendResetDay = Math.max(1, Math.min(31, resendResetDay));
+      int resendResetDay) {
+    this(userRepository, emailLogPort, taskPort, adminMetricsPort, resendResetDay, Clock.systemDefaultZone());
   }
 
   public Page<AdminUserSummaryProjection> execute(String search, String filter, Pageable pageable) {
@@ -81,7 +96,7 @@ public class ListAdminUsersUseCase {
 
     List<UUID> userIds = usersPage.getContent().stream().map(User::getId).toList();
     LocalDateTime cycleStart = GetAdminOverviewUseCase
-        .resolveCycleStartDate(LocalDate.now(), resendResetDay)
+        .resolveCycleStartDate(LocalDate.now(clock), resendResetDay)
         .atStartOfDay();
 
     // Consultas em lote (eliminam o N+1 por usuário da página)
@@ -110,6 +125,7 @@ public class ListAdminUsersUseCase {
           u.isEmailVerified(),
           u.getEmailVerifiedAt(),
           u.getSubscriptionStatus(),
+          u.getSubscriptionEndsAt(),
           u.getCreatedAt(),
           emailsSentThisMonth,
           activeEmailReminders,

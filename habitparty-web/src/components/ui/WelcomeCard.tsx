@@ -162,7 +162,7 @@ export function WelcomeCard({
     <>
       <section
         className={cn(
-          "w-full shrink-0 bg-linear-to-br from-purple-500/[0.05] via-white to-amber-500/[0.04] dark:from-primary-dark/40 dark:via-surface/60 dark:to-primary-dark/25 border border-purple-500/15 dark:border-primary/35 shadow-card-deep dark:shadow-[0_0_20px_rgba(124,58,237,0.1)] backdrop-blur-md relative overflow-hidden transition-all duration-300",
+          "w-full shrink-0 bg-linear-to-br from-purple-500/[0.04] via-white to-amber-500/[0.03] dark:from-primary-dark/50 dark:via-surface/80 dark:to-primary-dark/35 border border-neutral-700 dark:border-primary/35 shadow-xs dark:shadow-[0_0_20px_rgba(124,58,237,0.1)] relative overflow-hidden",
           isExpanded
             ? compact
               ? "rounded-xl p-3.5 sm:p-4"
@@ -286,7 +286,7 @@ export function WelcomeCard({
         {/* Conteúdo Expansível em 2 Andares (Topo: Texto + Ilustração | Base: 3 Cards de Indicadores em Largura Total) */}
         <div
           className={cn(
-            "grid transition-all duration-300 ease-in-out",
+            "grid transition-[grid-template-rows,opacity,margin] duration-300 ease-in-out",
             isExpanded
               ? "grid-rows-[1fr] opacity-100 mt-3.5 sm:mt-4"
               : "grid-rows-[0fr] opacity-0 mt-0 pointer-events-none",
@@ -334,7 +334,7 @@ export function WelcomeCard({
                     )}
                   >
                     <div
-                      className="absolute inset-0 bg-primary-light/10 dark:bg-primary-light/15 rounded-full blur-xl pointer-events-none"
+                      className="absolute inset-0 bg-radial from-primary-light/12 to-transparent dark:from-primary-light/18 rounded-full pointer-events-none"
                       aria-hidden="true"
                     />
                     <Image
@@ -358,7 +358,7 @@ export function WelcomeCard({
                       <div
                         key={stat.label}
                         className={cn(
-                          "flex items-center gap-3.5 rounded-xl border backdrop-blur-xs transition-all duration-200 min-w-0",
+                          "flex items-center gap-3.5 rounded-xl border transition-colors duration-150 min-w-0",
                           compact ? "p-2.5 sm:p-3" : "p-3 sm:p-3.5",
                           stat.variant === "gold"
                             ? "bg-white dark:bg-gold/10 border-neutral-700 dark:border-gold/30 hover:border-amber-500/40 dark:hover:border-gold/50 shadow-xs dark:shadow-glow-gold-xs"

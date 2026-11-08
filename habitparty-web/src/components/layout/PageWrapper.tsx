@@ -17,7 +17,7 @@ export function PageWrapper({
   return (
     <div
       className={cn(
-        "flex-1 min-w-0 h-full flex flex-col custom-scrollbar transition-[padding,gap] duration-200",
+        "flex-1 min-w-0 h-full flex flex-col custom-scrollbar",
         noScroll ? "overflow-hidden" : "overflow-y-auto overflow-x-hidden",
         isCompact
           ? "p-3.5 sm:p-4 md:p-5 gap-3.5 sm:gap-4 md:gap-5"

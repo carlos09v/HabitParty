@@ -142,8 +142,8 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
     >
       <div className="flex flex-col gap-5">
         {isEmailUnverified && (
-          <div className="p-3.5 sm:p-4 rounded-xl bg-gold/10 border border-gold/30 text-xs sm:text-body-s text-neutral-200 leading-relaxed">
-            <strong className="text-gold font-bold">
+          <div className="p-3.5 sm:p-4 rounded-xl bg-amber-500/10 dark:bg-gold/10 border border-amber-500/35 dark:border-gold/30 text-xs sm:text-body-s text-neutral-200 leading-relaxed">
+            <strong className="text-amber-700 dark:text-gold font-bold">
               {t("unverifiedEmailWarning")}
             </strong>{" "}
             {t("unverifiedEmailDesc", { email: user?.email ?? "" })}
@@ -151,9 +151,9 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
         )}
 
         {/* Aviso informativo para contas criadas/vinculadas via Google */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 p-3.5 sm:p-4 rounded-xl bg-surface/60 border border-primary/25">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 p-3.5 sm:p-4 rounded-xl bg-surface/60 border border-neutral-700 dark:border-primary/25">
           <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center shrink-0 mt-0.5">
+            <div className="w-8 h-8 rounded-lg bg-white dark:bg-white/10 border border-neutral-700 dark:border-white/15 shadow-2xs dark:shadow-none flex items-center justify-center shrink-0 mt-0.5">
               <GoogleLogoIcon />
             </div>
             <div className="flex flex-col gap-0.5">
@@ -171,10 +171,10 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
             onClick={handleSendPasswordSetupEmail}
             disabled={isSendingReset || resetEmailSent || !user?.email}
             className={cn(
-              "shrink-0 rounded-xl border font-semibold transition-all flex items-center gap-1.5 cursor-pointer",
+              "shrink-0 rounded-xl border font-semibold transition-colors flex items-center gap-1.5 cursor-pointer",
               resetEmailSent
-                ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 cursor-default"
-                : "border-gold/40 bg-gold/10 text-gold hover:bg-gold hover:text-neutral-950",
+                ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 cursor-default"
+                : "border-gold/45 bg-gold/10 text-amber-700 dark:text-gold hover:bg-gold hover:text-on-gold dark:hover:text-neutral-950",
               "disabled:opacity-50 disabled:cursor-not-allowed",
               isCompact ? "px-3 py-1.5 text-xs" : "px-3.5 py-2 text-xs",
             )}
@@ -223,7 +223,7 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
             />
 
             {/* Indicador de requisitos */}
-            <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-surface/60 border border-primary/20 text-xs">
+            <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-surface/60 border border-neutral-700 dark:border-primary/20 text-xs">
               <span className="font-semibold text-neutral-300">
                 {t("requirementsTitle")}
               </span>
@@ -270,14 +270,14 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-primary/20">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-neutral-700 dark:border-primary/20">
             <button
               type="submit"
               disabled={isPending || !canSubmit}
               className={cn(
-                "rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md",
+                "rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-xs dark:shadow-md",
                 "bg-gold text-on-gold hover:bg-gold-hover active:bg-gold-pressed",
-                "disabled:opacity-40 disabled:cursor-not-allowed",
+                "disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-40 disabled:cursor-not-allowed",
                 isCompact ? "px-4 py-2 text-xs" : "px-6 py-2.5 text-sm",
               )}
             >

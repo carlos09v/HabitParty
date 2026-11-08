@@ -150,7 +150,7 @@ export function LandingFooter() {
             <p className="text-center sm:text-right">{t("tagline")}</p>
             <div className="flex items-center gap-2">
               <LanguageToggleBtn variant="icon" />
-              <ThemeToggleBtn variant="icon" className="hidden" />
+              <ThemeToggleBtn variant="icon" />
             </div>
           </div>
         </div>

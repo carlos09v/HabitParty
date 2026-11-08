@@ -1,174 +1,176 @@
-# 👥 HabitParty (Motor de Produtividade Gamificado)
+# 👥 HabitParty (Gamified Productivity Engine)
 
-Um sistema open-core de gamificação e produtividade com uma economia matemática rígida na aquisição de moedas, mas flexível e amigável nas recompensas. O HabitParty foi construído para aumentar sua produtividade, garantindo que o esforço real do usuário seja convertido em valor exato para resgatar suas próprias recompensas na vida real.
+> 🌐 **Language / Idioma:** **English** | [Português (PT-BR)](README_pt-BR.md)
 
-> **Filosofia central:** É um sistema baseado primariamente na sua honestidade e comprometimento! Não há como burlar a si mesmo: cada conquista gera satisfação genuína e descanso sem culpa.
+An open-core productivity and gamification system featuring a strict mathematical economy for earning coins, combined with a flexible and friendly reward system. HabitParty is built to boost your productivity by ensuring that real-world effort is converted into exact currency value to redeem personal real-life rewards.
 
----
-
-## ✨ Funcionalidades Principais
-
-* **Gestão de Rotina Completa:** Separação clara do fluxo de trabalho em **Hábitos** (com ofensivas/streak e decaimento biológico), **Tarefas Diárias** (*Dailies* com agendamento por dias da semana) e **Afazeres** (*To-Dos* com checklists de subtarefas e prazos).
-* **Dois Modos de Experiência (Essencial vs. Aventura):** Alterne a qualquer momento entre dois perfis visuais e semânticos com paridade matemática `1:1`:
-  * 🎯 **Modo Essencial (Produtividade):** Estética executiva e limpa. Converte entregas em **Créditos** e **Pontos (`pts`)**, utiliza títulos profissionais, indicadores discretos de **Esforço**, recompensas diretas na Loja (sem sorteios RNG), **Prazo Rígido** e **Inventário**.
-  * ⚔️ **Modo Aventura (Imersão RPG):** Experiência gamificada completa com **Moedas de Ouro (🪙)** e **XP**, títulos de aventureiro (`Novato` a `Lenda`), ícones de espadas para **Dificuldade**, **Caixas Misteriosas (Gacha)**, **Modo Hardcore** e **Mochila**.
-* **Economia Rígida (Farming):** Ganhos de Moedas/Créditos e XP/Pontos calculados estritamente com base na dificuldade/esforço da tarefa:
-  * 🟩 **Trivial** (0,25 🪙 / Créditos • 2 XP / pts)
-  * 🟦 **Fácil** (0,75 🪙 / Créditos • 5 XP / pts)
-  * 🟨 **Médio** (2,50 🪙 / Créditos • 15 XP / pts)
-  * 🟧 **Difícil** (5,00 🪙 / Créditos • 30 XP / pts)
-* **Quadro Kanban & Múltiplos Ambientes (Workspaces):** Organize diferentes áreas da sua vida (Trabalho, Estudos, Vida Pessoal) em ambientes independentes, com quadros Kanban interativos e colunas personalizáveis.
-* **Loja de Recompensas da Vida Real:** Cadastre momentos de lazer e descanso categorizados em pacotes (Uso Único, Por Tempo ou Caixas da Sorte) com custos calibrados para o esforço do seu dia.
-* **🎁 Caixas Misteriosas (RNG Opcional):** Sorteios probabilísticos com custos calculados matematicamente (Básica, Premium, Épica e Lendária) para trazer dopamina à sua rotina sem quebrar a economia.
-* **🎒 Mochila de Inventário:** Todos os itens comprados ficam guardados na sua mochila para serem consumidos no momento ideal ou vinculados a uma sessão de descanso cronometrada.
-* **⏱️ Palco de Foco (Pomodoro & Cronômetro):** Ferramenta nativa de imersão com rendimento decrescente diário (*daily soft cap* de até 6h), salvaguardas anti-AFK (teto de 90 min) e trava de lazer (itens de mochila não geram moeda).
-* **👑 Personalização VIP & Sons Ambientes:** Molduras animadas cósmicas para avatar, sons ambientes relaxantes sintetizados nativamente no navegador via Web Audio API (Chuva Suave, Cafeteria, Lofi Zen e Fogueira) e pacote exclusivo de ícones VIP.
-* **🛡️ Painel Administrativo & Telemetria (`/admin`):** Módulo exclusivo para administradores (`ROLE_ADMIN`) com telemetria em tempo real da cota de e-mails no **Resend**, volume global de tarefas, estimativa da pegada de armazenamento do PostgreSQL por usuário, governança de papéis e histórico de logs de auditoria de disparos (`EmailDispatchLog`).
-* **✉️ Notificações e Lembretes por E-mail (Resend):** Disparo automatizado de lembretes para tarefas com prazo próximo e recuperação de conta segura, com travas de cota por usuário para prevenir abusos.
-* **🔑 Autenticação Híbrida & Segurança:** Suporte nativo a login social via **Google OAuth 2.0** e fluxo tradicional via e-mail e senha com JWT stateless, Refresh Tokens, BCrypt e controle de acesso baseado em papéis (RBAC).
-* **📊 Auditoria & Exportação de Dados (CSV):** Histórico detalhado de produtividade diária e possibilidade de exportar todo o extrato financeiro de transações (moedas, XP e compras) para planilhas.
+> **Core Philosophy:** HabitParty is built primarily on your honesty and commitment! There is no way to cheat yourself: every completed task brings genuine satisfaction and guilt-free rest.
 
 ---
 
-## 🎮 Motor de Gamificação (Economia e Progressão)
+## ✨ Key Features
 
-O sistema de progressão é baseado na conquista de Pontos de Experiência (XP), obtidos através da conclusão de tarefas. A curva de evolução foi desenhada para ser exponencial: níveis iniciais garantem vitórias rápidas para engajamento, enquanto níveis avançados exigem consistência de longo prazo.
+* **Complete Routine Management:** Clear workflow division into **Habits** (with positive/negative streaks and biological decay), **Dailies** (recurring routines with day-of-week scheduling), and **To-Dos** (single-run tasks with subtask checklists and due dates).
+* **Two Experience Modes (Essential vs. Adventure):** Switch anytime between two visual and semantic profiles with `1:1` mathematical parity:
+  * 🎯 **Essential Mode (Productivity):** Clean, executive aesthetic. Converts deliverables into **Credits** and **Points (`pts`)**, uses professional progression titles (`Beginner` to `High Performance`), discreet **Effort** indicators, direct personal rewards in the Store (without RNG draws), **Strict Deadline**, and **Inventory**.
+  * ⚔️ **Adventure Mode (RPG Immersion):** Full RPG gamification with **Gold Coins (🪙)** and **XP**, adventurer ranks (`Novice` to `Legend`), sword icons for **Difficulty**, **Mystery Boxes (Gacha)**, **Hardcore Mode**, and **Backpack**.
+* **Strict Farming Economy:** Coin/Credit and XP/Point earnings are strictly calculated based on task difficulty/effort:
+  * 🟩 **Trivial** (0.25 🪙 / Credits • 2 XP / pts)
+  * 🟦 **Easy** (0.75 🪙 / Credits • 5 XP / pts)
+  * 🟨 **Medium** (2.50 🪙 / Credits • 15 XP / pts)
+  * 🟧 **Hard** (5.00 🪙 / Credits • 30 XP / pts)
+* **Kanban Board & Multiple Workspaces:** Segregate different areas of your life (Work, Studies, Personal Routine) into isolated workspaces featuring customizable Kanban boards and columns.
+* **Real-Life Reward Store:** Build your own catalog of leisure and recovery rewards categorized into packages (Single Use, Time-Based Coupons, or Mystery Boxes) balanced with your daily effort.
+* **🎁 Mystery Boxes (Optional RNG):** Weighted probability loot boxes calibrated mathematically across 4 tiers (Basic, Premium, Epic, Legendary) to bring excitement without breaking your personal economy.
+* **🎒 Inventory Backpack:** Purchased rewards are stored in your backpack to be consumed whenever you take your break or linked directly to a timed leisure focus session.
+* **⏱️ Focus Hero Stage (Pomodoro & Free Stopwatch):** Native immersion timer featuring daily diminishing returns (*daily soft cap* up to 6h), anti-AFK safeguards (90 min cap per session), and leisure safeguards (backpack leisure sessions yield zero coins).
+* **👑 VIP Personalization & Ambient Sound:** Animated cosmic avatar frames, procedural ambient noise synthesized natively in the browser via Web Audio API (Gentle Rain, Cozy Cafe, Lofi Zen, Fireplace), and an exclusive VIP icon package.
+* **🛡️ Admin Dashboard & Observability (`/admin`):** Dedicated administrative panel for users with `ROLE_ADMIN` featuring real-time **Resend** monthly email quota telemetry, platform-wide task volume tracking, estimated PostgreSQL database storage footprint breakdown per user, role management, and email dispatch audit logs (`EmailDispatchLog`).
+* **✉️ Email Reminders & Notifications (Resend):** Automated task deadline reminders and password reset flows with per-user quota controls to prevent email flooding.
+* **🔑 Hybrid Authentication & Security:** Native support for social login via **Google OAuth 2.0** and standard email/password authentication using stateless JWT, Refresh Tokens, BCrypt password hashing, and Role-Based Access Control (RBAC).
+* **📊 Data Audit & Export (CSV):** Detailed daily productivity history with the ability to export full transaction ledgers (coins, XP, purchases) to CSV spreadsheets.
 
-### 📊 Dificuldade das Tarefas e Recompensas (XP e Moedas)
+---
 
-A quantidade de XP e Moedas recebidas reflete a carga de esforço e o tempo investido em cada atividade:
+## 🎮 Gamification Engine (Economy & Progression)
 
-| Nível | Dificuldade | Ganho | Descrição e Exemplos de Uso |
+The progression system is driven by lifetime Experience Points (XP / Points) earned from completing tasks. The leveling curve is exponential: early levels grant quick wins for onboarding and momentum, while advanced ranks demand long-term consistency.
+
+### 📊 Task Difficulties & Rewards (XP & Coins)
+
+Rewards reflect real effort and estimated time required for each activity:
+
+| Tier | Difficulty | Reward | Description & Typical Examples |
 | :---: | :--- | :--- | :--- |
-| 🟩 | **Trivial** | 2 XP <br> 0,25 🪙 | Tarefas automáticas e de curtíssima duração. <br>*Ex: Beber água, tomar um remédio, arrumar a cama.* |
-| 🟦 | **Fácil** | 5 XP <br> 0,75 🪙 | Tarefas rápidas que exigem intenção ou organização básica. <br>*Ex: Responder e-mails, leitura de 10 minutos, lavar a louça.* |
-| 🟨 | **Médio** (Padrão) | 15 XP <br> 2,50 🪙 | A base da economia. Exige foco moderado (30 a 60 minutos). <br>*Ex: Treino na academia, focar em uma tarefa do trabalho, limpar a casa.* |
-| 🟧 | **Difícil** | 30 XP <br> 5,00 🪙 | Esforço físico ou cognitivo intenso (1 a 2 horas de trabalho profundo). <br>*Ex: Sessão de estudo focada, desenvolvimento de módulo complexo.* |
+| 🟩 | **Trivial** | 2 XP <br> 0.25 🪙 | Almost automatic, short actions. <br>*Ex: Drinking water, taking vitamins, making the bed.* |
+| 🟦 | **Easy** | 5 XP <br> 0.75 🪙 | Quick tasks requiring basic intent or organization. <br>*Ex: Replying to emails, 10 min reading, washing dishes.* |
+| 🟨 | **Medium** (Standard) | 15 XP <br> 2.50 🪙 | The backbone of the economy. Moderate focus (30 to 60 minutes). <br>*Ex: Gym workout, focusing on a work deliverable, cleaning the house.* |
+| 🟧 | **Hard** | 30 XP <br> 5.00 🪙 | Intense cognitive or physical effort (1 to 2 hours of deep work). <br>*Ex: Focused study session, complex software engineering task.* |
 
 ---
 
-### 🔄 Hábitos: Importância e Decaimento de Recompensas
+### 🔄 Habits: Importance & Reward Decay
 
-Diferente das Tarefas (Todo/Daily) que possuem "Dificuldade", os Hábitos são medidos pela sua **Importância** (Baixa, Normal, Alta). O objetivo de um hábito é a automação cerebral: quando você repete um comportamento muitas vezes, ele exige menos energia cognitiva.
+Unlike To-Dos and Dailies which use "Difficulty", Habits are measured by **Importance** (Low, Normal, High). The biological purpose of a habit is mental automation: repeated behaviors demand less cognitive activation over time.
 
-Para refletir isso na economia e evitar a inflação de moedas, os hábitos sofrem um **decaimento de recompensa** conforme a sua ofensiva (*streak*) avança. Caso a sequência seja quebrada, a ofensiva reseta e a recompensa volta a 100%.
+To simulate this and prevent coin hyperinflation, habits feature **reward decay** based on your active streak. If the streak is broken, it resets to Day 1, restoring the reward to 100% as an incentive boost.
 
-| Nível | Recompensa Base (Streak Inicial) | Descrição e Exemplos de Uso |
+| Level | Base Reward (Initial Streak) | Description & Examples |
 | :--- | :---: | :--- |
-| 🟩 **Baixa (Low)** | 5 XP • 0,75 🪙 | Hábitos de manutenção simples e rápida. <br>*Ex: Tomar creatina, arrumar a mesa de trabalho.* |
-| 🟨 **Normal** (Padrão) | 10 XP • 1,75 🪙 | A base da rotina com esforço moderado. <br>*Ex: Praticar instrumento musical por 15 min, ler 10 páginas.* |
-| 🟧 **Alta (High)** | 25 XP • 3,75 🪙 | Hábitos de alta energia de ativação. <br>*Ex: Resolver 30 questões de concurso, treino físico pesado.* |
+| 🟩 **Low** | 5 XP • 0.75 🪙 | Simple daily maintenance habits. <br>*Ex: Taking daily creatine, tidying your desk.* |
+| 🟨 **Normal** (Standard) | 10 XP • 1.75 🪙 | The core of routine building. Moderate effort. <br>*Ex: Practicing an instrument for 15 min, reading 10 pages.* |
+| 🟧 **High** | 25 XP • 3.75 🪙 | High activation energy habits. <br>*Ex: Solving 30 exam questions, high-intensity workout.* |
 
-#### Tabela de Decaimento por Ofensiva (Streak)
-* **Dias 1 a 6 (Fase de Resistência):** 100% da Recompensa (estímulo máximo para vencer a inércia).
-* **Dias 7 a 20 (Fase de Adaptação):** 75% da Recompensa (consolidação de rotina).
-* **Dias 21+ (Hábito Formado):** 50% da Recompensa (hábito automatizado; incentivo para buscar novos desafios).
+#### Streak Decay Table
+* **Days 1 to 6 (Resistance Phase):** 100% Reward (maximum incentive to overcome initial inertia).
+* **Days 7 to 20 (Adaptation Phase):** 75% Reward (routine stabilization).
+* **Days 21+ (Formed Habit):** 50% Reward (automated behavior; encouragement to adopt new challenges).
 
 ---
 
-### 🛒 Exemplo de Loja de Recompensas (Economia Balanceada)
+### 🛒 Example Reward Store (Balanced Economy)
 
-Para manter a motivação sustentável, os custos devem ser equilibrados com o rendimento diário. Em um dia produtivo típico gerando de 60 a 80 moedas, a loja pode ser estruturada assim:
+To sustain motivation, store prices must align with daily earnings. In a typical productive day generating 60 to 80 coins, a sample catalog looks like:
 
-| Recompensa | Custo | Tipo | Proposta |
+| Reward | Cost | Type | Concept |
 | :--- | :---: | :--- | :--- |
-| **Pausa para o Café** | 3,75 🪙 | Tempo (15 min) | Pausa rápida e sem culpa no meio do expediente. |
-| **Episódio de Série** | 7,50 🪙 | Uso Único | Assistir a um episódio de série no streaming. |
-| **Sessão de Jogos** | 15,00 🪙 | Tempo (1h) | Tempo livre liberado para jogar no PC ou console. |
-| **Noite da Pizza** | 25,00 🪙 | Uso Único | Pedir um delivery especial no fim de semana. |
-| **Caixa Misteriosa Épica** | 35,00 🪙 | Sorteio RNG | Sorteio de prêmios de alto valor ou tempos estendidos! |
-| **Comprar um Livro/Jogo** | 62,50 🪙 | Uso Único | Recompensa de longo prazo para um item material desejado. |
+| **Coffee Break** | 3.75 🪙 | Time (15 min) | A quick guilt-free coffee break during work. |
+| **TV Episode** | 7.50 🪙 | Single Use | Watching an episode of your favorite show. |
+| **Gaming Session** | 15.00 🪙 | Time (1h) | Guilt-free PC or console gaming block. |
+| **Pizza Night** | 25.00 🪙 | Single Use | Weekend delivery treat. |
+| **Epic Mystery Box** | 35.00 🪙 | RNG Drop | Roll the dice for high-tier or extended rewards! |
+| **Buy a Book/Game** | 62.50 🪙 | Single Use | Long-term milestone to purchase a desired real-world item. |
 
 ---
 
-### 🎁 Caixas Misteriosas (Loot Tables RNG)
+### 🎁 Mystery Boxes (RNG Loot Tables)
 
-Ao comprar uma Caixa Misteriosa, o sistema realiza um sorteio ponderado com base em 4 níveis calibrados:
+When purchasing a Mystery Box, the system rolls a weighted probability table based on 4 balanced tiers:
 
-| Pacote | Custo | Distribuição de Prêmios e Chances |
+| Tier | Cost | Drop Probabilities & Perks |
 | :--- | :---: | :--- |
-| 📦 **Básica (Basic)** | 5,00 🪙 | **60%** Pausa Curta (10-15min) <br> **30%** Lazer Médio (30min) <br> **10%** Sessão Focada (45min + 1 🪙 bônus) |
-| 🎁 **Premium** | 15,00 🪙 | **50%** Lazer Padrão (45-60min) <br> **35%** Lazer Estendido (75-90min) <br> **15%** Noite Gamer / Cinema (120min) |
-| 💎 **Épica (Epic)** | 35,00 🪙 | **50%** Bloco Estendido (120min) <br> **35%** Noite Livre (180min) <br> **15%** Tarde de Desconexão (240min) |
-| 👑 **Lendária (Legendary)** | 80,00 🪙 | **60%** Day-Off Parcial (240min) <br> **30%** Day-Off Integral <br> **10%** O Santo Graal (Final de Semana Livre) |
+| 📦 **Basic** | 5.00 🪙 | **60%** Short Break (10-15m) <br> **30%** Medium Leisure (30m) <br> **10%** Focused Session (45m + 1 🪙 bonus) |
+| 🎁 **Premium** | 15.00 🪙 | **50%** Standard Leisure (45-60m) <br> **35%** Extended Leisure (75-90m) <br> **15%** Gaming / Cinema Night (120m) |
+| 💎 **Epic** | 35.00 🪙 | **50%** Extended Block (120m) <br> **35%** Free Evening (180m) <br> **15%** Full Afternoon Disconnect (240m) |
+| 👑 **Legendary** | 80.00 🪙 | **60%** Elite Partial Day-Off (240m) <br> **30%** Full Day-Off <br> **10%** The Holy Grail (Free Weekend + Ultimate Treat) |
 
 ---
 
-### 🏆 Níveis de Usuário (`UserLevel`)
+### 🏆 User Levels (`UserLevel`)
 
-A progressão do usuário acompanha o acúmulo total de XP vitalício (`totalXp`), que **nunca é consumido** ao adquirir recompensas:
+Player progression is tracked by lifetime cumulative XP (`totalXp`), which is **never spent or reset** when buying rewards. Rank titles automatically adapt to your active Experience Mode (Adventure Mode vs. Essential Mode):
 
-| Nível (EN / PT-BR) | XP Necessário | Esforço Estimado |
-| :--- | :---: | :--- |
-| `NOVICE` (Novato) | 0 XP | Ponto de partida. |
-| `APPRENTICE` (Aprendiz) | 100 XP | ~7 tarefas médias (1º ou 2º dia). |
-| `ADVENTURER` (Aventureiro) | 300 XP | ~20 tarefas médias (1ª semana). |
-| `CHALLENGER` (Desafiante) | 750 XP | ~50 tarefas médias (2 a 3 semanas). |
-| `AMATEUR` (Amador) | 1.500 XP | ~100 tarefas médias (~1 mês de consistência). |
-| `PROFESSIONAL` (Profissional) | 3.000 XP | Exige consistência trimestral. |
-| `EXPERT` (Especialista) | 6.000 XP | Usuário focado de médio/longo prazo. |
-| `VETERAN` (Veterano) | 12.000 XP | Alta maturidade no sistema. |
-| `MASTER` (Mestre) | 25.000 XP | Mais de 1.600 tarefas médias concluídas. |
-| `LEGEND` (Lenda) | 60.000 XP | O marco final. Exige mais de 1 ano de disciplina diária. |
+| Tier | Adventure Mode (EN / PT-BR) | Essential Mode (EN / PT-BR) | Required XP / Points | Estimated Effort |
+| :--- | :--- | :--- | :---: | :--- |
+| `NOVICE` | Novice / Novato | Beginner / Iniciante | 0 XP / pts | Starting point. |
+| `APPRENTICE` | Apprentice / Aprendiz | Practitioner / Praticante | 100 XP / pts | ~7 medium tasks (1st to 2nd day). |
+| `ADVENTURER` | Adventurer / Aventureiro | Consistent / Consistente | 300 XP / pts | ~20 medium tasks (1st week). |
+| `CHALLENGER` | Challenger / Desafiante | Focused / Focado | 750 XP / pts | ~50 medium tasks (2 to 3 weeks). |
+| `AMATEUR` | Amateur / Amador | Organized / Organizado | 1,500 XP / pts | ~100 medium tasks (~1 month of consistency). |
+| `PROFESSIONAL` | Professional / Profissional | Productive / Produtivo | 3,000 XP / pts | Demands quarterly consistency. |
+| `EXPERT` | Expert / Especialista | Specialist / Especialista | 6,000 XP / pts | Mid-to-long term dedicated user. |
+| `VETERAN` | Veteran / Veterano | Senior / Sênior | 12,000 XP / pts | High discipline maturity. |
+| `MASTER` | Master / Mestre | Executive / Executivo | 25,000 XP / pts | Over 1,600 medium tasks completed. |
+| `LEGEND` | Legend / Lenda | High Performance / Alta Performance | 60,000 XP / pts | The ultimate milestone (>1 year of daily discipline). |
 
 ---
 
-### ⏱️ Ferramentas de Foco: Pomodoro, Cronômetro & Salvaguardas
+### ⏱️ Focus Tools: Pomodoro, Stopwatch & Anti-Abuse Rules
 
-Enquanto as tarefas recompensam a entrega de resultados (*output*), a tela de foco premia a imersão de tempo (*input*) com regras que blindam a economia contra abusos:
+While tasks reward the completion of outputs, focus tools reward time immersion (*input*) governed by safeguards against idle mining:
 
-| Modalidade | Duração / Ciclo | Recompensa Base | Equivalência e Regras |
+| Mode | Duration / Cycle | Base Reward | Rules & Equivalencies |
 | :--- | :---: | :---: | :--- |
-| **Pomodoro Curto** | 15 a 24 min | **4 XP • 0,10 🪙** | Quebra rápida de inércia. Requer ciclo completado. |
-| **Pomodoro Padrão** | 25 a 40 min | **8 XP • 0,25 🪙** | O padrão clássico. Equivale a pouco mais de 1 Tarefa Fácil. |
-| **Pomodoro Deep Work** | Mais de 40 min | **15 XP • 0,50 🪙** | Sessão de imersão profunda. Equivale ao XP de 1 Tarefa Média. |
-| **Cronômetro Livre** | Por bloco de 30 min | **~7 XP • 0,20 🪙** | Bonificação contínua proporcional (teto de 90 min/sessão). |
+| **Short Pomodoro** | 15 to 24 min | **4 XP • 0.10 🪙** | Fast inertia breaker. Requires completed cycle. |
+| **Standard Pomodoro** | 25 to 40 min | **8 XP • 0.25 🪙** | The classic standard. Equivalent to slightly over 1 Easy Task. |
+| **Deep Work Pomodoro** | > 40 min | **15 XP • 0.50 🪙** | Deep immersion block. Equivalent to 1 Medium Task XP. |
+| **Free Stopwatch** | Per 30 min block | **~7 XP • 0.20 🪙** | Continuous proportional reward (capped at 90 min/session). |
 
-#### 🛡️ Travas de Segurança & Regras Anti-Abuso
-1. **Tempo Mínimo para Pontuar:** Sessões com menos de **10 minutos** geram 0 XP e 0 moedas, prevenindo cliques acidentais ou farm artificial.
-2. **Teto Máximo por Sessão (Anti-AFK):** Qualquer sessão contínua tem sua recompensa limitada a **no máximo 90 minutos** de cálculo (mesmo se o cronômetro for esquecido ligado).
-3. **Teto Diário & Rendimentos Decrescentes (*Daily Soft Cap*):**
-   * **0h a 4h diárias (até 240 min):** 100% da recompensa.
-   * **4h a 6h diárias (240 a 360 min):** 50% da recompensa (zona de fadiga natural).
-   * **Acima de 6h diárias (> 360 min):** 0% de XP e moedas adicionais (os minutos continuam computados nos relatórios, protegendo o usuário de burnout e a economia de hiperinflação).
-4. **Trava de Lazer (Itens de Mochila):** Quando uma recompensa da mochila é executada no cronômetro (ex: "Jogar 30min"), o rendimento é **obrigatoriamente ZERO** (lazer consome tempo, não gera dinheiro).
+#### 🛡️ Anti-Abuse Safeguards
+1. **Minimum Session Duration:** Sessions under **10 minutes** grant 0 XP and 0 coins to prevent accidental triggers or artificial farm transactions.
+2. **Session Maximum Cap (Anti-AFK):** Any continuous session is capped at **90 minutes** of reward calculation (even if left running for hours).
+3. **Daily Diminishing Returns (*Daily Soft Cap*):**
+   * **0h to 4h daily (up to 240 min):** 100% of rewards.
+   * **4h to 6h daily (240 to 360 min):** 50% of rewards (natural cognitive fatigue zone).
+   * **Over 6h daily (> 360 min):** 0% additional XP/coins (minutes are still tracked in statistics, shielding the user from burnout and the economy from inflation).
+4. **Leisure Safeguard (Backpack Items):** Running a leisure item from your backpack (e.g. "Play Video Games 30m") yields **strictly ZERO coins and ZERO XP**.
 
 ---
 
-## 🛠️ Stack Tecnológica & Arquitetura
+## 🛠️ Tech Stack & Architecture
 
-O sistema foi desenhado visando escalabilidade, manutenibilidade e rigor arquitetural:
+Built with a focus on high scalability, clean domain modeling, and testability:
 
 * **Backend (`habitparty-api`):**
   * **Java 25 & Spring Boot 3.3+**
-  * **Arquitetura Hexagonal (Ports & Adapters)** isolando regras de negócio e cálculo matemático de dependências externas.
-  * *Design Patterns:* Strategy (cálculo de recompensas e decaimentos), Factory Method (instanciação polimórfica de tarefas) e Port-Adapter Pattern.
-  * **Segurança & RBAC:** Spring Security com controle de papéis (`ROLE_USER`, `ROLE_ADMIN`), autenticação stateless via JWT e Refresh Tokens criptografados com BCrypt.
-  * **Autenticação Social:** Google OAuth 2.0 integrado.
-  * **Comunicação Transacional:** Resend API para envio de lembretes e recuperação de senhas.
-  * **Bancos de Dados:** PostgreSQL (persistência relacional principal) e Redis (cache).
-  * **Pagamentos & Assinaturas:** Integração com Stripe (Checkout, Customer Portal e Webhooks para Cartão e Pix avulso).
-  * **Documentação:** Swagger / OpenAPI 3.0 para exploração visual interativa de endpoints.
+  * **Hexagonal Architecture (Ports and Adapters)** isolating core business logic and economic math from framework concerns.
+  * *Design Patterns:* Strategy (reward & decay calculations), Factory Method (polymorphic tasks), Port-Adapter pattern.
+  * **Security & RBAC:** Spring Security with role controls (`ROLE_USER`, `ROLE_ADMIN`), stateless JWT authentication, and BCrypt-hashed credentials.
+  * **Social Authentication:** Google OAuth 2.0 integration.
+  * **Transactional Emailing:** Resend API for task reminders and account recovery.
+  * **Databases:** PostgreSQL (primary relational database) & Redis (caching).
+  * **Payments & Subscriptions:** Stripe Checkout, Customer Portal, and Webhooks for card subscriptions and Pix.
+  * **Documentation:** Swagger / OpenAPI 3.0 visual REST documentation.
 * **Frontend (`habitparty-web`):**
   * **Next.js 15+ (App Router) & React 19**
-  * **Tailwind CSS v4** com design tokens semânticos e modo claro/escuro nativo.
-  * **Biome** para linting e formatação com máxima performance.
-  * **Web Audio API** nativo para sintetizadores sonoros procedurais (áudio de cliques, alarmes de fim de ciclo e 4 geradores de som ambiente).
-  * **Lucide Icons & Zustand** para gerenciamento de estado cliente ágil e reativo.
+  * **Tailwind CSS v4** with semantic design tokens and native light/dark mode support.
+  * **Biome** for fast formatting and linting.
+  * **Web Audio API** native procedural sound synthesizers (click feedback, timers, and 4 ambient noise generators).
+  * **Lucide Icons & Zustand** for lightweight client state management.
 
 ---
 
-## 🚀 Como Rodar o Projeto
+## 🚀 Getting Started
 
-### Pré-requisitos
+### Prerequisites
 * [Docker & Docker Compose](https://docs.docker.com/get-docker/)
-* [Java 25](https://adoptium.net/) (ou uso exclusivo dos containers)
-* [Node.js 20+](https://nodejs.org/) e npm
+* [Java 25](https://adoptium.net/) (or running via Docker)
+* [Node.js 20+](https://nodejs.org/) and npm
 
 ---
 
-### 1. Configuração de Variáveis de Ambiente (.env)
-Copie os modelos de exemplo nas respectivas pastas e preencha as variáveis necessárias:
+### 1. Environment Variables Configuration (.env)
+Copy the example files and configure your local credentials:
 
 ```bash
 # Backend
@@ -180,8 +182,8 @@ cp habitparty-web/.env.example habitparty-web/.env.local
 
 ---
 
-### 2. Banco de Dados (PostgreSQL via Docker)
-Navegue até o diretório da API e inicie o banco de dados:
+### 2. Database (PostgreSQL via Docker)
+Navigate to the API folder and launch the PostgreSQL container:
 
 ```bash
 cd habitparty-api
@@ -190,22 +192,22 @@ docker compose up -d
 
 ---
 
-### 3. Servidor Backend (Spring Boot API)
-Com o banco de dados ativo:
+### 3. Backend Server (Spring Boot API)
+With PostgreSQL running:
 
 ```bash
 cd habitparty-api
 ./mvnw spring-boot:run
 ```
-*(No Windows, utilize `mvnw.cmd spring-boot:run` ou `mvn spring-boot:run`).*
+*(On Windows, use `mvnw.cmd spring-boot:run` or `mvn spring-boot:run`).*
 
-* **Swagger UI (Documentação Interativa):** `http://localhost:8080/swagger-ui.html`
-* **OpenAPI 3.0 Docs:** `http://localhost:8080/v3/api-docs`
+* **Interactive Swagger UI:** `http://localhost:8080/swagger-ui.html`
+* **OpenAPI 3.0 Contract:** `http://localhost:8080/v3/api-docs`
 
 ---
 
-### 4. Interface Web (Frontend Next.js)
-Em outro terminal, instale as dependências e inicie o servidor de desenvolvimento:
+### 4. Web Frontend (Next.js App)
+In a separate terminal, install dependencies and start the dev server:
 
 ```bash
 cd habitparty-web
@@ -213,61 +215,59 @@ npm install
 npm run dev
 ```
 
-* **Aplicação Web:** `http://localhost:3000`
-* **Painel Administrativo:** `http://localhost:3000/admin` *(requer conta com cargo `ROLE_ADMIN`)*
+* **Web Application:** `http://localhost:3000`
+* **Admin Dashboard:** `http://localhost:3000/admin` *(requires account with `ROLE_ADMIN`)*
 
-> 💡 **Guia do Desenvolvedor:** Para comandos auxiliares de manutenção do Docker, dicas de importação de rotas em clientes HTTP (Bruno, Postman) e checklist de concepção, consulte o documento [docs/DEV_NOTES.md](file:///home/carlosvinicius/github-projects/HabitParty/docs/DEV_NOTES.md).
-
----
-
-## 🗺️ Roadmap de Lançamentos
-
-### 🎯 Release 1.1 — Internacionalização (i18n) & Modos de Experiência ✅ (Concluído)
-* **Internacionalização (i18n):** Suporte nativo completo à **Língua Inglesa (EN)** e **Português (PT-BR)** em todas as telas, alertas e componentes da plataforma.
-* **Modos de Experiência (Modo Essencial vs. Modo Aventura):** Escolha entre o **Modo Essencial (Produtividade)** — com Créditos, Pontos (`pts`), Prazo Rígido, Inventário e recompensas diretas — ou o **Modo Aventura (Imersão RPG)** — com Moedas de Ouro (🪙), XP, Modo Hardcore, Mochila e Caixas Misteriosas.
-* **Segurança e Proteção Anti-Bot:** Verificação progressiva de e-mail, limitação de taxa por IP e blindagem contra cadastros automatizados e abusos.
-* **Performance e Otimizações de Infraestrutura:** Reestruturação de tabelas, índices otimizados e respostas mais rápidas em queries frequentes.
+> 💡 **Developer Notes:** For advanced Docker maintenance commands, terminal environment variable loading, and HTTP client collection tips (Bruno, Postman), see [docs/DEV_NOTES.md](docs/DEV_NOTES.md).
 
 ---
 
-### 🏆 Release 1.2 — Modo Claro, Temas VIP, Conquistas & Foco Vinculado a Tarefas
-* **Modo Claro (Light Theme):** Nova interface visual arejada, luminosa e com alto contraste, projetada para uso diurno confortável e excelente legibilidade.
-* **Temas Exclusivos VIP:** Seletor dinâmico de atmosferas visuais para membros Premium (ex: *Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold*).
-* **Vinculação de Foco a Tarefas:** Possibilidade de associar sessões de Pomodoro/Foco diretamente a tarefas específicas do seu quadro Kanban/rotina.
-* **Métricas de Esforço por Tarefa:** Registro do tempo acumulado dedicado por card (ex: `⏱️ 2h 15m`), histórico de ciclos de foco e opção de concluir a tarefa ao término do timer.
-* **Ação Rápida "Focar nesta Tarefa":** Inicie o timer de foco diretamente pelo menu de contexto de qualquer tarefa em 1 clique.
-* **Sistema de Conquistas Pessoais:** Dezenas de medalhas e troféus desbloqueados automaticamente ao manter ofensivas de hábitos, bater metas de foco em tarefas e acumular moedas.
-* **Painel de Conquistas:** Nova tela *"Minhas Conquistas"* para acompanhar a evolução e os marcos da sua jornada.
+## 🗺️ Release Roadmap
+
+### 🎯 Release 1.1 — Internationalization (i18n) & Experience Modes ✅ (Completed)
+* **Native Internationalization (i18n):** Full native support for **English (EN)** and **Portuguese (PT-BR)** across all platform views, dialogs, and alerts.
+* **Experience Modes (Essential vs. Adventure):** Choose between **Essential Mode (Productivity)** — with Credits, Points (`pts`), Strict Deadline, Inventory, and direct rewards — or **Adventure Mode (RPG Immersion)** — with Gold Coins (🪙), XP, Hardcore Mode, Backpack, and Mystery Boxes.
+* **Security & Anti-Bot Protection:** Progressive email verification, IP rate limiting, and robust shields against bot registrations and abuse.
+* **Performance & Infrastructure Hardening:** Database table refactoring, high-speed indexes, and accelerated response times on frequent queries.
 
 ---
 
-### 🛡️ Release 1.3 — Perfil Público, Vitrine de Conquistas e Amizades
-* **Perfis Públicos de Aventureiro:** Página pública personalizável para compartilhar sua jornada, nível e consistência na plataforma.
-* **Vitrine de Destaques:** Painel interativo para organizar e destacar suas insígnias (inclusive a de Membro Fundador!), títulos e troféus favoritos no topo do seu perfil.
-* **Rede de Amizades:** Busca de jogadores por nome de usuário ou código de amigo, envio de solicitações e lista de amigos conectados.
-* **Controles de Privacidade:** Configurações granulares para escolher quais dados (tarefas, ofensivas ou estatísticas) deseja manter públicos ou privados.
+### 🏆 Release 1.2 — Light Theme, Personal Achievements & Public Profiles ✅ (Completed)
+* **Light Theme:** Fresh, clean, high-contrast visual mode designed for comfortable daytime productivity and effortless readability.
+* **Personal Achievement System:** Milestone badges and trophies automatically unlocked by maintaining streaks, achieving consistency milestones, and earning gold.
+* **Achievements Panel:** Dedicated *"My Achievements"* screen to track milestones, trophies, and journey progression.
+* **Public Adventurer Profiles:** Shareable profile pages to showcase rank, level progression, and consistency on the platform.
+* **Profile Highlights Showcase:** Interactive showcase to organize and highlight your rarest badges (including Founder Member 👑!), titles, and achievements at the top of your profile.
 
 ---
 
-### ⚔️ Release 1.4 — Party (Grupos Pequenos) & Comunicação Instantânea
-* **Formação de Parties:** Crie pequenos grupos com amigos ou parceiros de estudo via código de convite rápido.
-* **Missões Diárias Cooperativas:** Metas coletivas onde todo o grupo recebe bônus de moedas e recompensas se todos cumprirem seus compromissos.
-* **Chat Integrado em Tempo Real:** Conversas diretas entre amigos e canal exclusivo de bate-papo da Party para manter a motivação em alta.
-* **Notificações de Atividade:** Alertas sonoros e visuais elegantes para mensagens e conquistas de amigos em tempo real.
+### 🛡️ Release 1.3 — Task-Linked Focus, VIP Themes & Friendships
+* **Task-Linked Focus Sessions & Effort Metrics:** Connect Pomodoro/Deep Work timer sessions directly to Kanban tasks in 1 click, track accumulated focus time per card (e.g., `⏱️ 2h 15m focused`), view session history, and auto-complete tasks upon timer completion.
+* **VIP Atmospheric Themes:** Dynamic color schemes exclusive to Premium subscribers (e.g., *Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold*).
+* **Friendship Network:** Find players via username or friend codes, send invites, and build your connected accountability circle.
+* **Privacy Controls:** Granular settings to choose which data (tasks, active streaks, or stats) remain public or private.
 
 ---
 
-### 🏰 Release 2.0 — Guildas & O MMO Social Completo
-* **Guildas Temáticas:** Crie ou participe de clãs com dezenas de membros organizados por interesses (Estudos, Saúde, Programação, Concursos).
-* **Quests & Raids de Guilda:** Batalhas cooperativas épicas contra chefões mundiais que perdem pontos de vida à medida que a guilda cumpre tarefas e horas de foco.
-* **Leaderboards Globais:** Tabelas de classificação e rankings de consistência (Global, entre Amigos e entre Guildas rivais).
+### ⚔️ Release 1.4 — Parties (Small Accountability Squads) & Live Chat
+* **Party Squads:** Form small accountability groups with friends or study partners using fast invite codes.
+* **Cooperative Daily Quests:** Collective daily goals granting coin bonuses and rewards when all squad members complete their commitments.
+* **Real-Time Integrated Chat:** Direct messaging between friends and dedicated Party chat rooms to maintain motivation.
+* **Activity Notifications:** Elegant audio and visual alerts for incoming messages and friend milestones in real time.
 
 ---
 
-## 📄 Licença
+### 🏰 Release 2.0 — Guilds & Full Social MMO
+* **Thematic Guilds:** Join or found large communities centered around shared ambitions (Academics, Fitness, Coding, Public Exams).
+* **Guild Quests & Boss Raids:** Epic cooperative boss battles where world raid bosses lose health as members complete habits and deep work hours.
+* **Global Leaderboards:** Competitive ranking ladders for individuals, friend circles, and rival guilds.
+
+---
+
+## 📄 License
 
 **Copyright (c) 2026 Carlos Vinicius / HabitParty. All rights reserved.**
 
-O código-fonte deste projeto é disponibilizado publicamente (*"Source-Available"*) com o propósito de transparência, estudo e uso pessoal. É **estritamente proibido** o uso, cópia, redistribuição ou modificação deste software para qualquer finalidade comercial, monetização ou oferta como serviço (SaaS) por terceiros.
+The source code of this project is made publicly available (*"Source-Available"*) for transparency, study, and strictly personal, private use. It is **strictly prohibited** to use, copy, modify, distribute, or host this software for any commercial purpose, monetization, or as a service (SaaS) by third parties.
 
-Para visualizar as regras completas de uso pessoal, consulte o arquivo [LICENSE](file:///home/carlosvinicius/github-projects/HabitParty/LICENSE) na raiz deste repositório.
+For complete personal use permissions and restrictions, please consult the [LICENSE](LICENSE) file in the root directory of this repository.

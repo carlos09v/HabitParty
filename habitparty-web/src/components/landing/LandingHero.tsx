@@ -20,9 +20,9 @@ export function LandingHero() {
   return (
     <section className="relative pt-28 pb-16 md:pt-36 md:pb-24 overflow-hidden">
       {/* Orbes Cósmicos no Fundo */}
-      <div className="cosmic-orb absolute top-10 left-1/2 -translate-x-1/2 w-[700px] h-[350px] rounded-full bg-primary/30 blur-[180px] pointer-events-none -z-10 opacity-25 dark:opacity-100" />
-      <div className="cosmic-orb absolute top-40 right-10 w-[450px] h-[450px] rounded-full bg-magenta/20 blur-[200px] pointer-events-none -z-10 opacity-25 dark:opacity-100" />
-      <div className="cosmic-orb absolute top-60 left-10 w-[500px] h-[500px] rounded-full bg-blue/25 blur-[200px] pointer-events-none -z-10 opacity-25 dark:opacity-100" />
+      <div className="cosmic-orb absolute -top-20 left-1/2 -translate-x-1/2 w-[900px] h-[550px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(124,58,237,0.28)_0%,transparent_70%)] pointer-events-none -z-10 opacity-30 dark:opacity-100" />
+      <div className="cosmic-orb absolute top-20 -right-10 w-[680px] h-[680px] rounded-full bg-[radial-gradient(circle,rgba(237,43,229,0.2)_0%,transparent_70%)] pointer-events-none -z-10 opacity-25 dark:opacity-100" />
+      <div className="cosmic-orb absolute top-40 -left-10 w-[720px] h-[720px] rounded-full bg-[radial-gradient(circle,rgba(64,57,237,0.24)_0%,transparent_70%)] pointer-events-none -z-10 opacity-25 dark:opacity-100" />
 
       {/* Galáxia Suave no Topo */}
       <div className="absolute top-0 right-0 w-full max-w-[800px] h-[600px] opacity-60 dark:opacity-25 pointer-events-none -z-10 overflow-hidden">
@@ -34,8 +34,8 @@ export function LandingHero() {
           {/* Coluna Esquerda: Copy & CTAs (Tamanho equilibrado e escaneável) */}
           <div className="lg:col-span-7 text-center lg:text-left">
             {/* Pill Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-card/80 dark:bg-surface/80 border border-neutral-700 dark:border-primary-light/30 shadow-xs dark:shadow-[0_0_15px_rgba(124,58,237,0.3)] mb-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
-              <Sparkles className="w-4 h-4 text-gold animate-bounce shrink-0" />
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-card dark:bg-surface/80 border border-neutral-700 dark:border-primary-light/30 shadow-xs dark:shadow-[0_0_15px_rgba(124,58,237,0.3)] mb-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
+              <Sparkles className="w-4 h-4 text-amber-600 dark:text-gold shrink-0" />
               <span className="text-xs sm:text-sm font-semibold text-neutral-200">
                 {t("badge")}
               </span>
@@ -58,16 +58,16 @@ export function LandingHero() {
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 sm:gap-4 mb-10">
               <Link
                 href="/signUp"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-7 py-3.5 rounded-xl bg-gold hover:bg-gold-hover text-on-gold font-bold text-base shadow-sm dark:shadow-glow-gold hover:shadow-md dark:hover:shadow-[0_0_25px_rgba(237,229,57,0.6)] transition-all duration-300 hover:scale-105 active:scale-95"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-7 py-3.5 rounded-xl bg-gold hover:bg-gold-hover text-on-gold font-bold text-base shadow-sm dark:shadow-glow-gold hover:shadow-md dark:hover:shadow-[0_0_25px_rgba(237,229,57,0.6)] transition-[transform,background-color,box-shadow] duration-300 hover:scale-105 active:scale-95"
               >
                 <span>{t("primaryCta")}</span>
                 <ArrowRight className="w-5 h-5 text-on-gold" />
               </Link>
               <a
                 href="#gamificacao"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-card hover:bg-surface text-neutral-100 hover:text-neutral-50 border border-neutral-700 shadow-sm dark:bg-surface/90 dark:hover:bg-surface-hover dark:text-neutral-200 dark:hover:text-white dark:border-white/10 dark:hover:border-primary-light/40 font-semibold text-base transition-all duration-200 dark:shadow-card-deep"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-card hover:bg-surface text-neutral-100 hover:text-neutral-50 border border-neutral-700 shadow-sm dark:bg-surface/90 dark:hover:bg-surface-hover dark:text-neutral-200 dark:hover:text-white dark:border-white/10 dark:hover:border-primary-light/40 font-semibold text-base transition-colors duration-200 dark:shadow-card-deep"
               >
-                <Trophy className="w-5 h-5 text-gold" />
+                <Trophy className="w-5 h-5 text-amber-600 dark:text-gold" />
                 <span>{t("secondaryCta")}</span>
               </a>
             </div>
@@ -79,7 +79,7 @@ export function LandingHero() {
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center justify-center lg:justify-start gap-2 p-2.5 rounded-lg bg-card/80 dark:bg-surface/40 border border-neutral-700 dark:border-white/5 shadow-xs dark:shadow-none"
+                    className="flex items-center justify-center lg:justify-start gap-2 p-2.5 rounded-lg bg-card dark:bg-surface/40 border border-neutral-700 dark:border-white/5 shadow-xs dark:shadow-none"
                   >
                     <Icon className={`w-4 h-4 shrink-0 ${item.colorClass}`} />
                     <span className="text-xs font-medium text-neutral-200 truncate">
@@ -94,11 +94,11 @@ export function LandingHero() {
           {/* Coluna Direita: Preview Visual dos Cards do Ecossistema */}
           <div className="lg:col-span-5 relative">
             <div className="relative mx-auto max-w-md lg:max-w-none">
-              {/* Glow Cósmico Traseiro */}
-              <div className="absolute -inset-3 rounded-3xl bg-gradient-to-tr from-primary/25 via-gold/10 to-magenta/20 blur-2xl -z-10 opacity-75" />
+              {/* Glow Cósmico Traseiro (pré-composto com gradiente radial, sem blur-2xl) */}
+              <div className="absolute -inset-6 rounded-[2rem] bg-[radial-gradient(ellipse_at_center,rgba(124,58,237,0.16)_0%,rgba(237,43,229,0.08)_45%,transparent_72%)] dark:bg-[radial-gradient(ellipse_at_center,rgba(124,58,237,0.28)_0%,rgba(237,229,57,0.1)_42%,rgba(237,43,229,0.18)_58%,transparent_75%)] -z-10 pointer-events-none" />
 
               {/* Painel Principal Flutuante */}
-              <div className="rounded-3xl bg-card/95 dark:bg-surface/90 border border-neutral-700/90 dark:border-white/12 p-5 sm:p-6 shadow-xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.55)] backdrop-blur-md space-y-4">
+              <div className="rounded-3xl bg-card dark:bg-surface/95 border border-neutral-700/90 dark:border-white/12 p-5 sm:p-6 shadow-xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.55)] space-y-4">
                 {/* Topo do Card: Emblema + Modos de Experiência */}
                 <div className="flex items-center justify-between gap-3 pb-3.5 border-b border-neutral-700/80 dark:border-white/10">
                   <div className="flex items-center gap-2.5">
@@ -125,7 +125,7 @@ export function LandingHero() {
                       <CoinIcon size={11} variant="credit" />
                       {t("preview.modeEssential")}
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-gold bg-gold/15 border border-gold/30 flex items-center gap-1">
+                    <span className="px-2 py-0.5 rounded-full text-amber-800 bg-amber-500/15 border border-amber-500/35 dark:text-gold dark:bg-gold/15 dark:border-gold/30 flex items-center gap-1">
                       <CoinIcon size={11} variant="coin" />
                       {t("preview.modeAdventure")}
                     </span>
@@ -143,7 +143,7 @@ export function LandingHero() {
                         <span className="text-[10px] font-bold uppercase tracking-wider text-magenta">
                           {t("preview.dailyTag")}
                         </span>
-                        <span className="text-[10px] font-semibold text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded-full border border-amber-500/25">
+                        <span className="text-[10px] font-semibold text-amber-800 bg-amber-500/10 border border-amber-500/25 dark:text-amber-400 px-1.5 py-0.2 rounded-full">
                           {t("preview.streakBadge")}
                         </span>
                       </div>
@@ -156,7 +156,7 @@ export function LandingHero() {
                     <span className="text-[11px] font-extrabold text-info font-mono bg-info/10 px-2 py-0.5 rounded-md border border-info/25">
                       {t("preview.xpReward")}
                     </span>
-                    <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-gold font-mono bg-gold/10 px-2 py-0.5 rounded-md border border-gold/25">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-amber-800 bg-amber-500/10 border border-amber-500/30 dark:text-gold font-mono dark:bg-gold/10 px-2 py-0.5 rounded-md dark:border-gold/25">
                       <CoinIcon size={11} variant="coin" />
                       {t("preview.coinReward")}
                     </span>
@@ -179,7 +179,7 @@ export function LandingHero() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Flame className="w-4 h-4 text-gold animate-pulse" />
+                    <Flame className="w-4 h-4 text-amber-600 dark:text-gold animate-pulse" />
                     <span className="text-base sm:text-lg font-black font-mono text-neutral-50 tracking-wider">
                       24:59
                     </span>
@@ -189,11 +189,11 @@ export function LandingHero() {
                 {/* Card 3: Recompensa / Loja */}
                 <div className="p-3.5 rounded-2xl bg-background/70 dark:bg-background/60 border border-neutral-700/80 dark:border-white/10 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0 text-left">
-                    <div className="w-8 h-8 rounded-xl bg-gold/15 border border-gold/35 flex items-center justify-center text-gold shrink-0">
+                    <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/35 text-amber-700 dark:bg-gold/15 dark:border-gold/35 dark:text-gold flex items-center justify-center shrink-0">
                       <Gift className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-gold block">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-gold block">
                         {t("preview.rewardTag")}
                       </span>
                       <p className="text-xs sm:text-sm font-bold text-neutral-50 truncate">

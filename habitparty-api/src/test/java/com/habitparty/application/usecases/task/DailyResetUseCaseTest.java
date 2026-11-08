@@ -291,4 +291,19 @@ class DailyResetUseCaseTest {
     verify(transactionPort, times(1)).save(any(TransactionHistory.class));
     verify(port, times(1)).saveAll(List.of(todo));
   }
+
+  @Test
+  @DisplayName("Deve zerar a ofensiva global do usuário se não completou nenhuma tarefa no dia anterior")
+  void testResetInactiveUserStreaksZerosStreak() {
+    user.setCurrentStreak(7);
+    LocalDate today = LocalDate.now();
+    when(userPort.findUsersWithExpiredStreak(today.minusDays(1).atStartOfDay()))
+        .thenReturn(List.of(user));
+
+    int resetCount = dailyResetUseCase.resetInactiveUserStreaks(today);
+
+    assertEquals(1, resetCount);
+    assertEquals(0, user.getCurrentStreak());
+    verify(userPort, times(1)).save(user);
+  }
 }

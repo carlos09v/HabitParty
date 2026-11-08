@@ -1,9 +1,12 @@
 package com.habitparty.application.usecases.task;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +37,23 @@ public class CreateTaskUseCase {
   private final UserRepository userPort;
   private final EmailDispatchLogRepository emailLogPort;
   private final WorkspaceRepository workspacePort;
+  private final Clock clock;
+
+  @Autowired
+  public CreateTaskUseCase(
+      TaskRepository taskPort,
+      BoardColumnRepository boardColumnPort,
+      UserRepository userPort,
+      EmailDispatchLogRepository emailLogPort,
+      WorkspaceRepository workspacePort,
+      Clock clock) {
+    this.taskPort = taskPort;
+    this.boardColumnPort = boardColumnPort;
+    this.userPort = userPort;
+    this.emailLogPort = emailLogPort;
+    this.workspacePort = workspacePort;
+    this.clock = clock != null ? clock : Clock.systemDefaultZone();
+  }
 
   public CreateTaskUseCase(
       TaskRepository taskPort,
@@ -41,11 +61,7 @@ public class CreateTaskUseCase {
       UserRepository userPort,
       EmailDispatchLogRepository emailLogPort,
       WorkspaceRepository workspacePort) {
-    this.taskPort = taskPort;
-    this.boardColumnPort = boardColumnPort;
-    this.userPort = userPort;
-    this.emailLogPort = emailLogPort;
-    this.workspacePort = workspacePort;
+    this(taskPort, boardColumnPort, userPort, emailLogPort, workspacePort, Clock.systemDefaultZone());
   }
 
   public Task execute(UUID userIdLogado, UUID boardColumnId, CreateTaskCommand command) {
@@ -102,11 +118,12 @@ public class CreateTaskUseCase {
         );
       }
       case TODO -> {
-        java.time.LocalDate effectiveDueDate = command.dueDate() != null
+        LocalDate today = LocalDate.now(clock);
+        LocalDate effectiveDueDate = command.dueDate() != null
             ? command.dueDate()
-            : (command.dueTime() != null ? java.time.LocalDate.now() : null);
+            : (command.dueTime() != null ? today : null);
 
-        if (command.isHardcoreModeEnabled() && effectiveDueDate != null && effectiveDueDate.isBefore(java.time.LocalDate.now())) {
+        if (command.isHardcoreModeEnabled() && effectiveDueDate != null && effectiveDueDate.isBefore(today)) {
           throw new DomainValidationException("A data de vencimento de um afazer no modo Hardcore não pode ser no passado.");
         }
 
@@ -124,7 +141,7 @@ public class CreateTaskUseCase {
           long activeReminders = taskPort.countActiveEmailRemindersByUserId(userIdLogado);
           com.habitparty.core.domain.entities.task.EmailReminderQuotas.validateActiveRemindersQuota(isPremium, activeReminders);
 
-          LocalDateTime startOfMonth = java.time.LocalDate.now().withDayOfMonth(1).atStartOfDay();
+          LocalDateTime startOfMonth = today.withDayOfMonth(1).atStartOfDay();
           long sentThisMonth = emailLogPort.countByUserIdAndEmailTypeAndStatusAndSentAtAfter(
               userIdLogado,
               com.habitparty.core.domain.enums.EmailType.TASK_REMINDER,

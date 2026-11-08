@@ -48,7 +48,7 @@ export function Textarea({
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
           className={cn(
-            "peer w-full rounded-lg transition-all resize-none",
+            "peer w-full rounded-lg transition-colors resize-none",
             compact ? "py-2 px-3 text-body-s" : "py-2.5 px-3.5 text-body-s",
             "bg-card border border-neutral-600 hover:border-neutral-500 text-neutral-50 focus:border-primary focus:ring-2 focus:ring-primary/15 focus:bg-card shadow-xs",
             "dark:bg-primary-dark/20 dark:border-primary/30 dark:hover:border-primary/50 dark:text-neutral-50 dark:focus:border-primary-light dark:focus:ring-0 dark:focus:bg-primary-dark/30 dark:shadow-none",

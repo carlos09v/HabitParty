@@ -2,9 +2,13 @@ package com.habitparty.adapters.out.persistence.entities;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
+import com.habitparty.core.domain.entities.reward.MysteryBoxLootItem;
 import com.habitparty.core.domain.enums.InventoryItemStatus;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
@@ -70,6 +74,10 @@ public class InventoryItemJpaEntity {
 
   @Column(name = "remaining_seconds")
   private Integer remainingSeconds;
+
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "loot_items_snapshot")
+  private List<MysteryBoxLootItem> lootItemsSnapshot;
 
   // @CreationTimestamp => O usecase irá gerar
   @Column(name = "acquired_at", nullable = false, updatable = false)

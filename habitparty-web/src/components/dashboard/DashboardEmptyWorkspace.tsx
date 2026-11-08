@@ -41,9 +41,9 @@ export function DashboardEmptyWorkspace() {
   return (
     <div className="flex h-full w-full overflow-hidden items-center justify-center p-6 select-none relative">
       {/* CARD PRINCIPAL CONVIDATIVO */}
-      <div className="relative z-10 w-full max-w-lg p-8 sm:p-10 rounded-2xl bg-surface/60 border border-primary/30 backdrop-blur-md shadow-card-deep text-center flex flex-col items-center gap-6 animate-in fade-in zoom-in-95 duration-300">
+      <div className="relative z-10 w-full max-w-lg p-8 sm:p-10 rounded-2xl bg-card dark:bg-surface/90 border border-neutral-700 dark:border-primary/30 shadow-sm dark:shadow-card-deep text-center flex flex-col items-center gap-6 animate-in fade-in zoom-in-95 duration-300">
         {/* Ícone Cósmico / Produtividade Iluminado */}
-        <div className="w-16 h-16 rounded-2xl bg-gold/15 border border-gold/40 text-gold shadow-glow-gold-sm flex items-center justify-center mb-1">
+        <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/35 text-amber-700 dark:bg-gold/15 dark:border-gold/40 dark:text-gold shadow-glow-gold-sm flex items-center justify-center mb-1">
           {isGamified ? (
             <Sparkles size={28} className="animate-pulse" />
           ) : (
@@ -73,7 +73,7 @@ export function DashboardEmptyWorkspace() {
             type="button"
             onClick={() => setIsModalOpen(true)}
             disabled={isPending}
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gold hover:bg-gold-hover text-on-gold font-bold text-body-m shadow-glow-gold-sm hover:shadow-glow-gold-md transition-all flex items-center justify-center gap-2 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50"
+            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gold hover:bg-gold-hover text-on-gold font-bold text-body-m shadow-glow-gold-sm hover:shadow-glow-gold-md transition-[background-color,box-shadow] flex items-center justify-center gap-2 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50"
           >
             <Plus size={18} strokeWidth={2.5} />
             <span>{t("createButton")}</span>
@@ -81,10 +81,10 @@ export function DashboardEmptyWorkspace() {
 
           <Link
             href="/firstStep"
-            className="text-xs sm:text-body-s text-neutral-400 hover:text-gold transition-colors inline-flex items-center gap-1.5 pt-1 outline-none focus-visible:ring-2 focus-visible:ring-gold rounded group"
+            className="text-xs sm:text-body-s text-neutral-400 hover:text-amber-700 dark:hover:text-gold transition-colors inline-flex items-center gap-1.5 pt-1 outline-none focus-visible:ring-2 focus-visible:ring-gold rounded group"
           >
             <span>{t("wizardQuestion")}</span>
-            <span className="text-neutral-200 group-hover:text-gold font-semibold underline underline-offset-4 flex items-center gap-1">
+            <span className="text-neutral-200 group-hover:text-amber-700 dark:group-hover:text-gold font-semibold underline underline-offset-4 flex items-center gap-1">
               {t("wizardLink")}
               <ArrowRight
                 size={13}

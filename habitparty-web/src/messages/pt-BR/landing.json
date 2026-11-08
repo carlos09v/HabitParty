@@ -217,26 +217,25 @@
         ]
       },
       "r12": {
-        "statusLabel": "Próximo Marco",
-        "title": "Modo Claro, Temas VIP & Conquistas",
-        "tagline": "Interface luminosa com alto contraste, atmosferas visuais exclusivas, deep work em tarefas e os primeiros troféus da disciplina.",
+        "statusLabel": "Concluído",
+        "title": "Modo Claro, Conquistas & Perfis Públicos",
+        "tagline": "Interface luminosa com alto contraste, troféus da disciplina, perfil público e vitrine de destaques.",
         "features": [
           "Modo Claro (Light Theme) com alto contraste e legibilidade impecável para uso diurno",
           "Alternância dinâmica de tema (Dark Cósmico vs. Cosmic Daylight)",
-          "Temas Exclusivos VIP (Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold)",
-          "Vinculação direta de sessões de Pomodoro/Foco a tarefas específicas do Kanban",
-          "Métricas de esforço por card com histórico de tempo dedicado e conclusão automática",
           "Sistema de Conquistas Pessoais com dezenas de troféus e medalhas automáticas",
-          "Nova tela 'Minhas Conquistas' para acompanhar sua evolução de aventureiro"
+          "Nova tela 'Minhas Conquistas' para acompanhar sua evolução de aventureiro",
+          "Páginas Públicas de Aventureiro para compartilhar nível, consistência e streaks",
+          "Vitrine de Destaques para organizar e fixar suas insígnias e troféus favoritos no topo do perfil"
         ]
       },
       "r13": {
-        "statusLabel": "Planejado",
-        "title": "Perfil Público & Vitrine de Troféus",
-        "tagline": "Compartilhe sua jornada épica, conecte-se com amigos e exiba suas insígnias raras no topo do perfil.",
+        "statusLabel": "Próximo Marco",
+        "title": "Foco em Tarefas, Temas VIP & Amizades",
+        "tagline": "Associe o timer de foco a tarefas com métricas de esforço, personalize sua atmosfera visual VIP e conecte-se com amigos.",
         "features": [
-          "Páginas Públicas de Aventureiro para compartilhar nível, consistência e streaks",
-          "Vitrine de Destaques para fixar sua Insígnia de Membro Fundador no topo do perfil",
+          "Foco Vinculado a Tarefas & Métricas de Esforço: timer integrado em 1 clique, histórico de tempo por card e conclusão automática",
+          "Temas Exclusivos VIP (Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold)",
           "Rede de Amizades com busca de jogadores por nome e código de amigo",
           "Controles granulares de privacidade para estatísticas e rotinas"
         ]

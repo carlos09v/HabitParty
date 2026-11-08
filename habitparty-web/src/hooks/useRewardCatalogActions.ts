@@ -34,7 +34,6 @@ export function useRewardCatalogActions({
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingReward, setEditingReward] = useState<Reward | null>(null);
-  const [rewardToDelete, setRewardToDelete] = useState<Reward | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
 
   const [contextMenu, setContextMenu] = useState<{
@@ -117,18 +116,34 @@ export function useRewardCatalogActions({
     setContextMenu((prev) => ({ ...prev, isOpen: false }));
   }, []);
 
+  const handleEditReward = useCallback((reward: Reward) => {
+    setEditingReward(reward);
+    setIsFormModalOpen(true);
+  }, []);
+
   const handleEditFromContextMenu = useCallback(() => {
     if (contextMenu.reward) {
-      setEditingReward(contextMenu.reward);
-      setIsFormModalOpen(true);
+      handleEditReward(contextMenu.reward);
     }
-  }, [contextMenu.reward]);
+  }, [contextMenu.reward, handleEditReward]);
 
   const handleDeleteFromContextMenu = useCallback(() => {
-    if (contextMenu.reward) {
-      setRewardToDelete(contextMenu.reward);
-    }
-  }, [contextMenu.reward]);
+    const target = contextMenu.reward;
+    if (!target || isDeleting) return;
+
+    const previousRewards = [...rewards];
+    setRewards((prev) => prev.filter((r) => r.id !== target.id));
+
+    startDeleteTransition(async () => {
+      const res = await deleteReward(target.id);
+      if (res.success) {
+        toast.success(t("toasts.deleteSuccess", { title: target.title }));
+      } else {
+        setRewards(previousRewards);
+        toast.error(res.error || t("toasts.deleteError"));
+      }
+    });
+  }, [contextMenu.reward, isDeleting, rewards, setRewards, t]);
 
   const handleRewardSuccess = useCallback(
     (savedReward: Reward) => {
@@ -143,30 +158,12 @@ export function useRewardCatalogActions({
     [setRewards],
   );
 
-  const handleConfirmDelete = useCallback(() => {
-    if (!rewardToDelete) return;
-    const target = rewardToDelete;
-    const previousRewards = [...rewards];
-
-    setRewards((prev) => prev.filter((r) => r.id !== target.id));
-    setRewardToDelete(null);
-
-    startDeleteTransition(async () => {
-      const res = await deleteReward(target.id);
-      if (res.success) {
-        toast.success(t("toasts.deleteSuccess", { title: target.title }));
-      } else {
-        setRewards(previousRewards);
-        toast.error(res.error || t("toasts.deleteError"));
-      }
-    });
-  }, [rewardToDelete, rewards, setRewards, t]);
-
   return {
     currentCoins,
     contextMenu,
     closeContextMenu,
     handleContextMenu,
+    handleEditReward,
     handleEditFromContextMenu,
     handleDeleteFromContextMenu,
     isFormModalOpen,
@@ -174,10 +171,7 @@ export function useRewardCatalogActions({
     handleAddProduct,
     handleCloseFormModal,
     handleRewardSuccess,
-    rewardToDelete,
-    setRewardToDelete,
     isDeleting,
-    handleConfirmDelete,
     handleBuy,
   };
 }

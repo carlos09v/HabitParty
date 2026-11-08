@@ -141,7 +141,8 @@ export const RoutineColumn = memo(function RoutineColumn({
       data-column-id={column.id}
       style={style}
       className={cn(
-        "flex flex-col w-full h-full min-h-0 flex-1 min-w-0 transition-[background-color,border-color,box-shadow,opacity] duration-150 select-none rounded-2xl border bg-surface/65 dark:bg-surface/35 border-neutral-700/70 dark:border-white/8 shadow-2xs",
+        "flex flex-col w-full h-full min-h-0 flex-1 min-w-0 transition-[background-color,border-color,opacity] duration-150 select-none rounded-2xl border bg-surface/65 dark:bg-surface/35 border-neutral-700/70 dark:border-white/8 shadow-2xs",
+        !isDragging && !isOverlay && "kanban-column-contain",
         isSelected &&
           "ring-2 ring-inset ring-gold/90 shadow-glow-gold bg-gold/[0.04]",
         isDragging &&
@@ -163,15 +164,15 @@ export const RoutineColumn = memo(function RoutineColumn({
           <div className="flex items-center gap-1.5 min-w-0">
             <GripVertical
               size={isCompact ? 13 : 15}
-              className="text-neutral-500/70 group-hover/header:text-gold transition-colors shrink-0 -mr-0.5"
+              className="text-neutral-500/70 group-hover/header:text-primary dark:group-hover/header:text-gold transition-colors shrink-0 -mr-0.5"
             />
             <div
               className={cn(
-                "rounded-lg border transition-all shrink-0 flex items-center justify-center",
+                "rounded-lg border transition-colors shrink-0 flex items-center justify-center",
                 isCompact ? "p-1" : "p-1.5",
                 isAllDone
                   ? "bg-success-500/15 border-success-500/40 text-success-500"
-                  : "bg-primary/20 border-primary/35 text-gold group-hover/header:border-gold/50 group-hover/header:bg-gold/15",
+                  : "bg-primary/10 dark:bg-primary/20 border-primary/25 dark:border-primary/35 text-primary dark:text-gold group-hover/header:border-primary/40 dark:group-hover/header:border-gold/50 group-hover/header:bg-primary/15 dark:group-hover/header:bg-gold/15",
               )}
             >
               <ColumnIcon size={isCompact ? 14 : 16} />
@@ -257,12 +258,12 @@ export const RoutineColumn = memo(function RoutineColumn({
           >
             <div
               className={cn(
-                "h-full rounded-full transition-[width,background-color] duration-300",
+                "h-full w-full origin-left transition-[transform,background-color] duration-300",
                 isAllDone
                   ? "bg-success-500"
                   : "bg-gradient-to-r from-primary-light via-gold to-gold",
               )}
-              style={{ width: `${progressPercent}%` }}
+              style={{ transform: `scaleX(${progressPercent / 100})` }}
             />
           </div>
         )}
@@ -281,13 +282,13 @@ export const RoutineColumn = memo(function RoutineColumn({
               type="button"
               onClick={handleTriggerAdd}
               className={cn(
-                "group/empty w-full flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-primary/35 bg-card/30 hover:bg-card/60 hover:border-gold/50 transition-all cursor-pointer",
+                "group/empty w-full flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-primary/35 bg-card/30 hover:bg-card/60 hover:border-primary/45 dark:hover:border-gold/50 transition-colors cursor-pointer",
                 isCompact ? "py-5 px-3 gap-1.5" : "py-7 px-4 gap-2",
               )}
             >
               <div
                 className={cn(
-                  "rounded-xl bg-primary/15 border border-primary/30 text-neutral-300 group-hover/empty:bg-gold/15 group-hover/empty:border-gold/40 group-hover/empty:text-gold group-hover/empty:scale-105 transition-all flex items-center justify-center",
+                  "rounded-xl bg-primary/15 border border-primary/30 text-neutral-300 group-hover/empty:bg-primary/15 dark:group-hover/empty:bg-gold/15 group-hover/empty:border-primary/40 dark:group-hover/empty:border-gold/40 group-hover/empty:text-primary dark:group-hover/empty:text-gold group-hover/empty:scale-105 transition-[transform,background-color,border-color,color] duration-150 flex items-center justify-center",
                   isCompact ? "w-7 h-7" : "w-8 h-8",
                 )}
               >
@@ -302,7 +303,7 @@ export const RoutineColumn = memo(function RoutineColumn({
                 >
                   {t("emptyState")}
                 </span>
-                <span className="text-tiny text-neutral-400 group-hover/empty:text-gold transition-colors">
+                <span className="text-tiny text-neutral-400 group-hover/empty:text-primary dark:group-hover/empty:text-gold transition-colors">
                   {t("emptyStateCta")}
                 </span>
               </div>
@@ -401,7 +402,7 @@ export const RoutineColumn = memo(function RoutineColumn({
             type="button"
             onClick={handleTriggerAdd}
             className={cn(
-              "w-full flex items-center justify-center border border-dashed transition-all cursor-pointer",
+              "w-full flex items-center justify-center border border-dashed transition-[transform,background-color,border-color,color] duration-150 cursor-pointer",
               "border-neutral-600 dark:border-primary/40 bg-card/80 dark:bg-card/50 font-semibold text-neutral-200",
               "hover:border-primary dark:hover:border-gold hover:text-primary dark:hover:text-gold hover:bg-card hover:shadow-glow-gold-sm active:scale-98",
               isCompact

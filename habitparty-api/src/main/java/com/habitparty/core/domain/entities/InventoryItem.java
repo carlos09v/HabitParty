@@ -2,9 +2,11 @@ package com.habitparty.core.domain.entities;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.habitparty.core.domain.entities.reward.MysteryBoxLootItem;
 import com.habitparty.core.domain.enums.InventoryItemStatus;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
@@ -26,11 +28,20 @@ public class InventoryItem {
   private String iconSnapshot;
   private RewardPackageLevel packageLevelSnapshot;
   private Integer remainingSeconds;
+  private List<MysteryBoxLootItem> lootItemsSnapshot;
 
   public InventoryItem(UUID id, UUID userId, UUID rewardId, String nameSnapshot, BigDecimal priceSnapshot,
       RewardType rewardTypeSnapshot, InventoryItemStatus status, int orderIndex,
       String iconSnapshot, RewardPackageLevel packageLevelSnapshot, Integer remainingSeconds,
       LocalDateTime acquiredAt) {
+    this(id, userId, rewardId, nameSnapshot, priceSnapshot, rewardTypeSnapshot, status, orderIndex,
+        iconSnapshot, packageLevelSnapshot, remainingSeconds, acquiredAt, null);
+  }
+
+  public InventoryItem(UUID id, UUID userId, UUID rewardId, String nameSnapshot, BigDecimal priceSnapshot,
+      RewardType rewardTypeSnapshot, InventoryItemStatus status, int orderIndex,
+      String iconSnapshot, RewardPackageLevel packageLevelSnapshot, Integer remainingSeconds,
+      LocalDateTime acquiredAt, List<MysteryBoxLootItem> lootItemsSnapshot) {
     this.id = id;
     this.userId = userId;
     this.rewardId = rewardId;
@@ -43,6 +54,7 @@ public class InventoryItem {
     this.iconSnapshot = iconSnapshot;
     this.packageLevelSnapshot = packageLevelSnapshot;
     this.remainingSeconds = remainingSeconds;
+    this.lootItemsSnapshot = lootItemsSnapshot;
   }
 
   public void validateOwnership(UUID userIdLogado) {
@@ -246,5 +258,13 @@ public class InventoryItem {
 
   public void setPackageLevelSnapshot(RewardPackageLevel packageLevelSnapshot) {
     this.packageLevelSnapshot = packageLevelSnapshot;
+  }
+
+  public List<MysteryBoxLootItem> getLootItemsSnapshot() {
+    return lootItemsSnapshot;
+  }
+
+  public void setLootItemsSnapshot(List<MysteryBoxLootItem> lootItemsSnapshot) {
+    this.lootItemsSnapshot = lootItemsSnapshot;
   }
 }

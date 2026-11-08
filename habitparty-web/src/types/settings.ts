@@ -1,11 +1,10 @@
 import type { LucideIcon } from "lucide-react";
-import type { UserResponseDTO } from "./user";
+import type { GenderType, UserResponseDTO } from "./user";
 
-export type GenderType = "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_TO_SAY";
+export type { GenderType };
 
 export interface GenderOption {
   value: NonNullable<GenderType>;
-  label: string;
 }
 
 export interface PasswordValidationResult {
@@ -44,6 +43,12 @@ export interface WelcomeCardConfig {
   icon: LucideIcon;
 }
 
+export interface SettingsOptionConfig<T extends string | boolean> {
+  value: T;
+  hasDefaultBadge?: boolean;
+  icon?: LucideIcon;
+}
+
 export interface SettingsOptionItem<T extends string | boolean> {
   value: T;
   title: string;
@@ -56,10 +61,7 @@ export type SettingsTabId = "profile" | "appearance" | "audio" | "security";
 
 export interface SettingsTabItem {
   id: SettingsTabId;
-  label: string;
-  description: string;
   icon: LucideIcon;
-  badge?: string;
 }
 
 export type TimerSoundType = "zen" | "arcade";
@@ -67,7 +69,5 @@ export type AmbientSoundType = "none" | "rain" | "cafe" | "lofi" | "fire";
 
 export interface AmbientSoundOption {
   id: AmbientSoundType;
-  label: string;
-  description: string;
-  icon?: LucideIcon;
+  icon: LucideIcon;
 }

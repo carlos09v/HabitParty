@@ -19,27 +19,27 @@ export function AppToaster() {
       position="top-right"
       icons={{
         success: (
-          <div className="w-6 h-6 rounded-lg bg-emerald-500/15 dark:bg-emerald-500/20 border border-emerald-500/35 dark:border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0 shadow-2xs dark:shadow-[0_0_10px_rgba(16,185,129,0.25)]">
+          <div className="w-6 h-6 rounded-lg bg-emerald-500/15 dark:bg-emerald-500/20 border border-emerald-500/35 dark:border-emerald-500/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs dark:shadow-[0_0_10px_rgba(16,185,129,0.25)]">
             <CheckCircle2 size={15} />
           </div>
         ),
         error: (
-          <div className="w-6 h-6 rounded-lg bg-red-500/15 dark:bg-red-500/20 border border-red-500/35 dark:border-red-500/40 flex items-center justify-center text-red-400 shrink-0 shadow-2xs dark:shadow-[0_0_10px_rgba(239,68,68,0.25)]">
+          <div className="w-6 h-6 rounded-lg bg-red-500/15 dark:bg-red-500/20 border border-red-500/35 dark:border-red-500/40 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0 shadow-2xs dark:shadow-[0_0_10px_rgba(239,68,68,0.25)]">
             <XCircle size={15} />
           </div>
         ),
         warning: (
-          <div className="w-6 h-6 rounded-lg bg-amber-500/15 dark:bg-amber-500/20 border border-amber-500/35 dark:border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 shadow-2xs dark:shadow-[0_0_10px_rgba(245,158,11,0.25)]">
+          <div className="w-6 h-6 rounded-lg bg-amber-500/15 dark:bg-amber-500/20 border border-amber-500/35 dark:border-amber-500/40 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 shadow-2xs dark:shadow-[0_0_10px_rgba(245,158,11,0.25)]">
             <AlertTriangle size={15} />
           </div>
         ),
         info: (
-          <div className="w-6 h-6 rounded-lg bg-sky-500/15 dark:bg-sky-500/20 border border-sky-500/35 dark:border-sky-500/40 flex items-center justify-center text-sky-400 shrink-0 shadow-2xs dark:shadow-[0_0_10px_rgba(56,189,248,0.25)]">
+          <div className="w-6 h-6 rounded-lg bg-sky-500/15 dark:bg-sky-500/20 border border-sky-500/35 dark:border-sky-500/40 flex items-center justify-center text-sky-600 dark:text-sky-400 shrink-0 shadow-2xs dark:shadow-[0_0_10px_rgba(56,189,248,0.25)]">
             <Info size={15} />
           </div>
         ),
         loading: (
-          <div className="w-6 h-6 rounded-lg bg-gold/20 border border-gold/40 flex items-center justify-center text-gold shrink-0">
+          <div className="w-6 h-6 rounded-lg bg-amber-500/15 dark:bg-gold/20 border border-amber-500/35 dark:border-gold/40 flex items-center justify-center text-amber-600 dark:text-gold shrink-0">
             <Loader2 size={15} className="animate-spin" />
           </div>
         ),
@@ -47,7 +47,7 @@ export function AppToaster() {
       toastOptions={{
         classNames: {
           toast:
-            "!bg-card dark:!bg-surface/95 !border-neutral-700 dark:!border-primary/35 !text-neutral-50 shadow-card-active dark:shadow-2xl rounded-2xl border backdrop-blur-xl text-sm font-medium !py-3.5 !px-4 !gap-3",
+            "!bg-card dark:!bg-surface !border-neutral-700 dark:!border-primary/35 !text-neutral-50 shadow-card-active dark:shadow-2xl rounded-2xl border text-sm font-medium !py-3.5 !px-4 !gap-3",
           title: "!text-neutral-50 font-bold text-sm leading-tight",
           description: "!text-neutral-300 text-xs mt-0.5 leading-snug",
           actionButton:

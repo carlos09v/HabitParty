@@ -36,6 +36,7 @@ interface RewardsCatalogViewProps {
   sensors: SensorDescriptor<SensorOptions>[];
   onDragEnd: (event: DragEndEvent) => void;
   onBuy: (reward: Reward) => void;
+  onEdit: (reward: Reward) => void;
   onContextMenu: (e: MouseEvent, reward: Reward) => void;
   onAddProduct: () => void;
   onClearFilters: () => void;
@@ -50,6 +51,7 @@ export function RewardsCatalogView({
   sensors,
   onDragEnd,
   onBuy,
+  onEdit,
   onContextMenu,
   onAddProduct,
   onClearFilters,
@@ -84,7 +86,7 @@ export function RewardsCatalogView({
               <button
                 type="button"
                 onClick={onAddProduct}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gold text-on-gold font-bold text-xs hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gold text-on-gold font-bold text-xs hover:bg-gold-hover shadow-glow-gold-xs transition-colors cursor-pointer"
               >
                 <Plus size={15} />
                 <span>{t("empty.createFirstReward")}</span>
@@ -93,7 +95,7 @@ export function RewardsCatalogView({
               <button
                 type="button"
                 onClick={onClearFilters}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-primary/40 bg-surface/80 text-xs font-semibold text-gold hover:border-gold hover:bg-gold/10 transition-all cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-primary/40 bg-surface/80 text-xs font-semibold text-gold hover:border-gold hover:bg-gold/10 transition-colors cursor-pointer"
               >
                 <span>{t("empty.clearFilters")}</span>
               </button>
@@ -123,7 +125,7 @@ export function RewardsCatalogView({
         {viewMode === "card" ? (
           <div
             className={cn(
-              "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 transition-all duration-200 w-full pb-8",
+              "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 w-full pb-8",
               isCompact
                 ? "lg:grid-cols-3 xl:grid-cols-4 gap-3.5"
                 : "lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4",
@@ -140,6 +142,7 @@ export function RewardsCatalogView({
                   key={reward.id}
                   reward={reward}
                   onBuy={onBuy}
+                  onEdit={onEdit}
                   onContextMenu={onContextMenu}
                   isCompact={isCompact}
                   canAfford={canAfford}
@@ -168,6 +171,7 @@ export function RewardsCatalogView({
                     key={reward.id}
                     reward={reward}
                     onBuy={onBuy}
+                    onEdit={onEdit}
                     onContextMenu={onContextMenu}
                     isCompact={isCompact}
                     canAfford={canAfford}

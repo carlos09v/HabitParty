@@ -16,9 +16,7 @@ export async function getRewardsData(): Promise<RewardsPageData> {
   cacheLife("catalog");
   cacheTag("rewards");
 
-  const { data: rewardsData, error } = await serverApi.GET("/rewards", {
-    next: { tags: ["rewards"] },
-  });
+  const { data: rewardsData, error } = await serverApi.GET("/rewards");
 
   if (error || !rewardsData) {
     return { rewards: [] };

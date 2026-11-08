@@ -95,7 +95,7 @@ function TimeScrollColumn({
             data-active={isSelected}
             onClick={() => onSelect(item)}
             className={cn(
-              "py-1 rounded-lg text-xs font-medium tabular-nums transition-all cursor-pointer text-center",
+              "py-1 rounded-lg text-xs font-medium tabular-nums transition-colors cursor-pointer text-center",
               isSelected
                 ? "bg-gold text-on-gold font-bold shadow-glow-gold-xs"
                 : "text-neutral-200 hover:bg-white/10 hover:text-gold",
@@ -226,7 +226,7 @@ export function TimePicker({
             data-select-for={pickerId}
             style={floatingStyle}
             className={cn(
-              "p-3 rounded-xl border border-primary/40 bg-popover/98 backdrop-blur-md shadow-2xl",
+              "p-3 rounded-xl border border-primary/40 bg-popover shadow-2xl",
               "w-60 max-w-[calc(100vw-1rem)] animate-in fade-in zoom-in-95 duration-150 select-none",
               coords.placement === "top" ? "origin-bottom" : "origin-top",
             )}
@@ -409,7 +409,7 @@ export function TimePicker({
         ) : (
           <div
             className={cn(
-              "w-full flex items-center justify-between rounded-lg transition-all select-none",
+              "w-full flex items-center justify-between rounded-lg transition-colors select-none",
               compact ? "py-2 px-3 text-body-s" : "py-3 px-4 text-body-m",
               "bg-card border border-neutral-600 text-neutral-50 shadow-xs",
               "dark:bg-primary-dark/20 dark:border-primary/30 dark:text-neutral-50 dark:shadow-none",

@@ -72,11 +72,13 @@ export function RewardPreview({
           aria-expanded={isExpanded}
           aria-controls={contentId}
           className={cn(
-            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold transition-all cursor-pointer select-none active:scale-95 shrink-0 outline-none",
+            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold transition-colors cursor-pointer select-none active:scale-95 shrink-0 outline-none",
             isExpanded
-              ? "bg-gold/15 border-gold/50 text-gold shadow-glow-gold-xs font-bold"
-              : "bg-surface border-white/15 text-neutral-300 hover:text-gold hover:border-gold/40 hover:bg-surface-hover",
-            hasWarning && !isExpanded && "border-amber-400/50 text-amber-300",
+              ? "bg-amber-500/15 border-amber-500/50 text-amber-800 dark:bg-gold/15 dark:border-gold/50 dark:text-gold shadow-glow-gold-xs font-bold"
+              : "bg-card dark:bg-surface border-neutral-700 dark:border-white/15 text-neutral-300 hover:text-amber-700 dark:hover:text-gold hover:border-amber-500/40 dark:hover:border-gold/40 hover:bg-surface-hover",
+            hasWarning &&
+              !isExpanded &&
+              "border-amber-500/50 text-amber-700 dark:border-amber-400/50 dark:text-amber-300",
             "focus-visible:ring-2 focus-visible:ring-gold",
           )}
         >
@@ -85,9 +87,9 @@ export function RewardPreview({
             className={cn(
               "shrink-0",
               isExpanded
-                ? "text-gold"
+                ? "text-amber-600 dark:text-gold"
                 : hasWarning
-                  ? "text-amber-400"
+                  ? "text-amber-600 dark:text-amber-400"
                   : "text-neutral-400",
             )}
           />
@@ -96,7 +98,9 @@ export function RewardPreview({
             size={13}
             className={cn(
               "transition-transform duration-200",
-              isExpanded ? "rotate-180 text-gold" : "text-neutral-400",
+              isExpanded
+                ? "rotate-180 text-amber-700 dark:text-gold"
+                : "text-neutral-400",
             )}
           />
         </button>
@@ -106,7 +110,7 @@ export function RewardPreview({
             id={contentId}
             className="flex items-center gap-2 animate-in fade-in zoom-in-95 duration-150 flex-wrap"
           >
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-gold/15 border border-gold/40 shadow-glow-gold-xs">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-500/15 dark:bg-gold/15 border border-amber-500/35 dark:border-gold/40 shadow-glow-gold-xs">
               <CoinAmount amount={estimate.gold} size="xs" />
             </div>
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-magenta/15 border border-magenta/40">
@@ -114,7 +118,7 @@ export function RewardPreview({
             </div>
 
             {estimate.stageLabel && (
-              <span className="text-[10px] font-bold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-1.5 py-0.5 rounded">
+              <span className="text-[10px] font-bold text-primary dark:text-purple-300 bg-primary/10 dark:bg-purple-500/15 border border-primary/25 dark:border-purple-500/30 px-1.5 py-0.5 rounded">
                 {estimate.stageLabel}
               </span>
             )}
@@ -134,10 +138,10 @@ export function RewardPreview({
           aria-expanded={isExpanded}
           aria-controls={contentId}
           className={cn(
-            "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer select-none active:scale-98 outline-none",
+            "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer select-none active:scale-98 outline-none",
             isExpanded
-              ? "bg-gold/15 border-gold/50 text-gold shadow-glow-gold-xs font-bold"
-              : "bg-surface/70 border-white/15 text-neutral-300 hover:text-gold hover:border-gold/40 hover:bg-surface",
+              ? "bg-amber-500/15 border-amber-500/50 text-amber-800 dark:bg-gold/15 dark:border-gold/50 dark:text-gold shadow-glow-gold-xs font-bold"
+              : "bg-card dark:bg-surface/70 border-neutral-700 dark:border-white/15 text-neutral-300 hover:text-amber-700 dark:hover:text-gold hover:border-amber-500/40 dark:hover:border-gold/40 hover:bg-surface",
             isZero && !isExpanded && "opacity-80 text-neutral-400",
             "focus-visible:ring-2 focus-visible:ring-gold",
           )}
@@ -147,16 +151,16 @@ export function RewardPreview({
             className={cn(
               "shrink-0",
               isExpanded
-                ? "text-gold"
+                ? "text-amber-600 dark:text-gold"
                 : hasWarning
-                  ? "text-amber-400"
+                  ? "text-amber-600 dark:text-amber-400"
                   : "text-neutral-400",
             )}
           />
           <span>{resolvedLabel}</span>
           {hasWarning && !isExpanded && (
             <span
-              className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"
+              className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse"
               title={t("yieldWarningTitle")}
             />
           )}
@@ -164,7 +168,9 @@ export function RewardPreview({
             size={14}
             className={cn(
               "transition-transform duration-200",
-              isExpanded ? "rotate-180 text-gold" : "text-neutral-400",
+              isExpanded
+                ? "rotate-180 text-amber-700 dark:text-gold"
+                : "text-neutral-400",
             )}
           />
         </button>
@@ -175,12 +181,12 @@ export function RewardPreview({
         <div
           id={contentId}
           className={cn(
-            "rounded-xl border border-primary/30 bg-surface/85 backdrop-blur-md p-3 flex flex-col gap-2.5",
-            "animate-in fade-in zoom-in-95 duration-150 shadow-sm",
+            "rounded-xl border border-neutral-700 dark:border-primary/30 bg-card dark:bg-surface p-3 flex flex-col gap-2.5",
+            "animate-in fade-in zoom-in-95 duration-150 shadow-xs dark:shadow-sm",
           )}
         >
           {/* Cabeçalho com Total Estimado */}
-          <div className="flex items-center justify-between pb-2 border-b border-white/8 gap-2">
+          <div className="flex items-center justify-between pb-2 border-b border-neutral-700 dark:border-white/8 gap-2">
             <span className="text-[11px] uppercase tracking-wider font-bold text-neutral-400">
               {t("expectedYieldHeader")}
             </span>
@@ -226,17 +232,20 @@ export function RewardPreview({
                   className={cn(
                     "flex items-start gap-2 p-2 rounded-lg border text-xs leading-snug",
                     notice.tone === "warning"
-                      ? "bg-amber-500/10 border-amber-500/30 text-amber-200"
-                      : "bg-blue-500/10 border-blue-500/30 text-blue-200",
+                      ? "bg-amber-500/10 border-amber-500/35 text-amber-800 dark:text-amber-200"
+                      : "bg-sky-500/10 dark:bg-blue-500/10 border-sky-500/30 dark:border-blue-500/30 text-sky-800 dark:text-blue-200",
                   )}
                 >
                   {notice.tone === "warning" ? (
                     <AlertTriangle
                       size={14}
-                      className="shrink-0 text-amber-400 mt-0.5"
+                      className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5"
                     />
                   ) : (
-                    <Info size={14} className="shrink-0 text-blue-400 mt-0.5" />
+                    <Info
+                      size={14}
+                      className="shrink-0 text-sky-600 dark:text-blue-400 mt-0.5"
+                    />
                   )}
                   <div className="flex flex-col gap-0.5">
                     <strong className="font-bold text-label-g">

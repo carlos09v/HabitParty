@@ -1,5 +1,6 @@
 package com.habitparty.application.usecases.reward;
 
+import java.util.List;
 import java.util.UUID;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -8,6 +9,8 @@ import org.springframework.stereotype.Service;
 import com.habitparty.application.ports.RewardRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.domain.entities.reward.MysteryBoxLootItem;
+import com.habitparty.core.domain.entities.reward.MysteryBoxLootTable;
 import com.habitparty.core.domain.entities.reward.Reward;
 import com.habitparty.core.domain.enums.RewardCategory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
@@ -53,6 +56,7 @@ public class CreateRewardUseCase {
     // 2. Extrai os valores originais do comando para tratar
     Integer durationFinal = command.baseDurationMinutes();
     RewardPackageLevel packageFinal = command.packageLevel();
+    List<MysteryBoxLootItem> lootItemsFinal = null;
 
     // 3. Aplica a Regra do Tipo (SINGLE_USE vs TIME_BASED)
     if (command.type() == RewardType.SINGLE_USE) {
@@ -72,6 +76,10 @@ public class CreateRewardUseCase {
         if (packageFinal == null || packageFinal == RewardPackageLevel.NONE) {
             throw new DomainValidationException("Precisa ter um nível de pacote selecionado!");
         }
+        lootItemsFinal = MysteryBoxLootTable.validateAndNormalizeLootItems(
+            packageFinal,
+            command.lootItems()
+        );
     }
 
     Reward newReward = new Reward(
@@ -86,7 +94,8 @@ public class CreateRewardUseCase {
         command.description(),
         categoriaFinal,
         durationFinal,
-        packageFinal);
+        packageFinal,
+        lootItemsFinal);
 
     return port.save(newReward);
   }

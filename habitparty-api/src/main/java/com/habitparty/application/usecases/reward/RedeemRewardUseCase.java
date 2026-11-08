@@ -3,6 +3,7 @@ package com.habitparty.application.usecases.reward;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,6 +11,7 @@ import com.habitparty.application.ports.InventoryItemRepository;
 import com.habitparty.application.ports.RewardRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsUseCase;
 import com.habitparty.core.domain.entities.InventoryItem;
 import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.entities.User;
@@ -29,6 +31,7 @@ public class RedeemRewardUseCase {
   private final UserRepository userPort;
   private final InventoryItemRepository inventoryItemRepositoryPort;
   private final TransactionHistoryRepository transactionHistoryRepositoryPort;
+  private EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
 
   public RedeemRewardUseCase(RewardRepository port, UserRepository userPort,
       InventoryItemRepository inventoryItemRepositoryPort,
@@ -37,6 +40,11 @@ public class RedeemRewardUseCase {
     this.userPort = userPort;
     this.inventoryItemRepositoryPort = inventoryItemRepositoryPort;
     this.transactionHistoryRepositoryPort = transactionHistoryRepositoryPort;
+  }
+
+  @Autowired(required = false)
+  public void setEvaluateUserAchievementsUseCase(EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
+    this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
   }
 
   @Transactional
@@ -59,8 +67,11 @@ public class RedeemRewardUseCase {
           : "Sua mochila atingiu o limite de 20 itens do plano gratuito! Consuma alguns itens ou assine o Premium para expandir para 100 itens.");
     }
 
-    // 3. Regra de Negócio: Desconta o dinheiro usando BigDecimal
+    // 3. Regra de Negócio: Desconta o dinheiro usando BigDecimal e incrementa contador de resgates
     user.spendMoney(reward.getPrice());
+    if (user.getStats() != null) {
+      user.getStats().recordRewardRedeemed();
+    }
 
     // 4. Calcula o novo índice da mochila
     int maxIndex = inventoryItemRepositoryPort.getMaxOrderIndex(userIdLogado);
@@ -97,10 +108,14 @@ public class RedeemRewardUseCase {
         finalIcon,
         finalPackageLevel,
         finalMinutes != null ? finalMinutes * 60 : null,
-        LocalDateTime.now()); // acquiredAt puro no domínio
+        LocalDateTime.now(),
+        reward.getLootItems()); // acquiredAt puro no domínio + snapshot dos prêmios da Mystery Box
 
     // 6. Salva usando as portas corretas
     userPort.save(user); // update no price
+    if (evaluateUserAchievementsUseCase != null) {
+      evaluateUserAchievementsUseCase.execute(user);
+    }
 
     // -> Inventory_Item -> cria o item na mochila
     inventoryItemRepositoryPort.save(newItem);

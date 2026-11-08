@@ -11,6 +11,7 @@ import { ContextMenu } from "@/components/ui/ContextMenu";
 import { DASHBOARD_ITEMS_PER_PAGE } from "@/constants/dashboard";
 import { useDashboardTaskActions } from "@/hooks/useDashboardTaskActions";
 import { useDashboardTaskFilters } from "@/hooks/useDashboardTaskFilters";
+import { useIdlePreload } from "@/hooks/useIdlePreload";
 import type { DashboardTasksPanelProps } from "@/types/dashboard";
 import type { Task } from "@/types/task";
 import { cn } from "@/utils";
@@ -41,6 +42,11 @@ const ConfirmationModal = dynamic(
   { ssr: false },
 );
 
+function preloadDashboardTaskModalChunks() {
+  void import("@/components/tasks/CreateTaskModal");
+  void import("@/components/tasks/TaskDetailsPopover");
+}
+
 export function DashboardTasksPanel({
   initialTasks,
   columns,
@@ -51,6 +57,8 @@ export function DashboardTasksPanel({
   const t = useTranslations("dashboard.tasksPanel");
   const tMenu = useTranslations("dashboard.taskShared.contextMenu");
   const searchParams = useSearchParams();
+  useIdlePreload(preloadDashboardTaskModalChunks);
+
   const [internalTasks, setInternalTasks] = useState<Task[]>(initialTasks);
 
   // Sincroniza estado local caso os dados do servidor mudem
@@ -254,17 +262,18 @@ export function DashboardTasksPanel({
       />
 
       {/* Popover Lateral Flutuante de Detalhes Rápidos */}
-      {Boolean(selectedTaskDetails) && (
+      {selectedTaskDetails && (
         <TaskDetailsPopover
-          isOpen={Boolean(selectedTaskDetails)}
+          key={selectedTaskDetails.task.id}
+          isOpen={true}
           onClose={() => setSelectedTaskDetails(null)}
-          task={selectedTaskDetails?.task ?? null}
+          task={selectedTaskDetails.task}
           columnTitle={resolveTaskColumnTitle(
-            selectedTaskDetails?.task,
+            selectedTaskDetails.task,
             columns,
             t("defaultList"),
           )}
-          anchorRect={selectedTaskDetails?.anchorRect}
+          anchorRect={selectedTaskDetails.anchorRect}
           onTaskUpdate={(updated) => {
             handleTaskDetailsUpdate(updated);
             setSelectedTaskDetails((prev) =>
@@ -298,6 +307,10 @@ export function DashboardTasksPanel({
       {/* Modal Completo: Criar / Editar Tarefa */}
       {taskModalState.isOpen && (
         <CreateTaskModal
+          key={
+            taskModalState.taskToEdit?.id ??
+            `new-${taskModalState.columnId ?? defaultColumnId ?? ""}`
+          }
           isOpen={taskModalState.isOpen}
           onClose={() =>
             setTaskModalState({

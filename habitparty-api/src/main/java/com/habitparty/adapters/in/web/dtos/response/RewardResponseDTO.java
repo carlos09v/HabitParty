@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.habitparty.core.domain.entities.reward.MysteryBoxLootItem;
 import com.habitparty.core.domain.entities.reward.Reward;
 import com.habitparty.core.domain.enums.RewardCategory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
@@ -23,7 +24,8 @@ public record RewardResponseDTO(
     String description,
     RewardCategory category,
     RewardPackageLevel packageLevel,
-    Integer baseDurationMinutes
+    Integer baseDurationMinutes,
+    List<MysteryBoxLootItem> lootItems
 ) {
   public static RewardResponseDTO fromDomain(Reward reward) {
     return new RewardResponseDTO(
@@ -38,7 +40,8 @@ public record RewardResponseDTO(
         reward.getDescription().orElse(null),
         reward.getCategory().orElse(null),
         reward.getPackageLevel().orElse(null),
-        reward.getBaseDurationMinutes().orElse(null)
+        reward.getBaseDurationMinutes().orElse(null),
+        reward.getLootItems()
     );
   }
 }

@@ -24,10 +24,10 @@ export function FocusDurationPresets({
           type="button"
           onClick={() => onChangeDuration(m)}
           className={cn(
-            "px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all cursor-pointer",
+            "px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors cursor-pointer",
             totalDurationSeconds === m * 60
               ? "bg-gold text-on-gold border-gold font-bold shadow-glow-gold-xs"
-              : "bg-surface/80 border-primary/30 text-neutral-300 hover:text-gold hover:border-gold/40",
+              : "bg-card dark:bg-surface/80 border-neutral-700 dark:border-primary/30 text-neutral-300 hover:text-amber-700 dark:hover:text-gold hover:border-amber-500/45 dark:hover:border-gold/40",
           )}
         >
           {m}m

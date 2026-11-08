@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
+import com.habitparty.core.domain.entities.reward.MysteryBoxLootItem;
 import com.habitparty.core.domain.enums.RewardCategory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
@@ -39,7 +40,20 @@ public record CreateRewardDTO(
 
   RewardPackageLevel packageLevel,
 
-  Integer baseDurationMinutes
+  Integer baseDurationMinutes,
+
+  List<MysteryBoxLootItem> lootItems
 ) {
-  
+  public CreateRewardDTO(
+      String name,
+      String icon,
+      String description,
+      BigDecimal price,
+      RewardCategory category,
+      List<String> tags,
+      RewardType type,
+      RewardPackageLevel packageLevel,
+      Integer baseDurationMinutes) {
+    this(name, icon, description, price, category, tags, type, packageLevel, baseDurationMinutes, null);
+  }
 }

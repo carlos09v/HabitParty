@@ -59,8 +59,8 @@ export function QuickAddConfigBar({
   const { isGamified } = useExperienceMode();
 
   const renderDifficultyRow = () => (
-    <div className="flex items-center justify-between gap-1 border-t border-white/5 pt-1 flex-wrap">
-      <span className="text-neutral-400 font-medium text-tiny shrink-0">
+    <div className="flex items-center justify-between gap-1 border-t border-neutral-700/50 dark:border-white/5 pt-1 flex-wrap">
+      <span className="text-neutral-300 dark:text-neutral-400 font-medium text-tiny shrink-0">
         {t("effortLabel")}
       </span>
       <div className="flex items-center gap-1">
@@ -80,8 +80,8 @@ export function QuickAddConfigBar({
               className={cn(
                 "flex items-center gap-1 px-1.5 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
                 isSelected
-                  ? "bg-white/15 text-neutral-100 border border-white/25"
-                  : "text-neutral-400 hover:text-neutral-200",
+                  ? "bg-card text-neutral-50 border border-neutral-600 shadow-2xs dark:bg-white/15 dark:text-neutral-100 dark:border-white/25 dark:shadow-none"
+                  : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
               )}
             >
               {isGamified ? (
@@ -107,10 +107,13 @@ export function QuickAddConfigBar({
 
   if (taskType === "TODO") {
     return (
-      <div className="flex flex-col gap-1.5 text-label-g px-2 py-1.5 bg-white/5 rounded-md border border-white/5">
+      <div className="flex flex-col gap-1.5 text-label-g px-2 py-1.5 bg-surface/80 dark:bg-white/5 rounded-md border border-neutral-700/60 dark:border-white/5">
         <div className="flex items-center justify-between gap-1 flex-wrap">
-          <span className="text-neutral-400 font-medium text-tiny flex items-center gap-1 shrink-0">
-            <CalendarClock size={11} className="text-gold" />
+          <span className="text-neutral-300 dark:text-neutral-400 font-medium text-tiny flex items-center gap-1 shrink-0">
+            <CalendarClock
+              size={11}
+              className="text-amber-600 dark:text-gold"
+            />
             {t("dueLabel")}
           </span>
           <div className="flex items-center gap-1">
@@ -133,8 +136,8 @@ export function QuickAddConfigBar({
                   className={cn(
                     "px-1.5 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
                     isSelected
-                      ? "bg-gold/20 text-gold border border-gold/40"
-                      : "text-neutral-400 hover:text-neutral-200",
+                      ? "bg-amber-500/15 text-amber-800 border border-amber-500/35 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
+                      : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
                   )}
                 >
                   {opt.label}
@@ -164,9 +167,9 @@ export function QuickAddConfigBar({
 
   if (taskType === "HABIT") {
     return (
-      <div className="flex flex-col gap-1.5 text-label-g px-2 py-1.5 bg-white/5 rounded-md border border-white/5">
+      <div className="flex flex-col gap-1.5 text-label-g px-2 py-1.5 bg-surface/80 dark:bg-white/5 rounded-md border border-neutral-700/60 dark:border-white/5">
         <div className="flex items-center justify-between gap-1 flex-wrap">
-          <span className="text-neutral-400 font-medium text-tiny shrink-0">
+          <span className="text-neutral-300 dark:text-neutral-400 font-medium text-tiny shrink-0">
             {t("directionLabel")}
           </span>
           <div className="flex items-center gap-1">
@@ -180,8 +183,8 @@ export function QuickAddConfigBar({
               className={cn(
                 "px-1.5 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
                 habitType === "POSITIVE"
-                  ? "bg-success-500/20 text-success-500 border border-success-500/40"
-                  : "text-neutral-400 hover:text-neutral-200",
+                  ? "bg-emerald-500/15 text-emerald-700 border border-emerald-500/35 dark:bg-success-500/20 dark:text-success-500 dark:border-success-500/40"
+                  : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
               )}
               title={t("positiveTitle")}
             >
@@ -197,8 +200,8 @@ export function QuickAddConfigBar({
               className={cn(
                 "px-1.5 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
                 habitType === "NEGATIVE"
-                  ? "bg-danger-500/20 text-danger-500 border border-danger-500/40"
-                  : "text-neutral-400 hover:text-neutral-200",
+                  ? "bg-rose-500/15 text-rose-700 border border-rose-500/35 dark:bg-danger-500/20 dark:text-danger-500 dark:border-danger-500/40"
+                  : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
               )}
               title={t("negativeTitle")}
             >
@@ -214,8 +217,8 @@ export function QuickAddConfigBar({
               className={cn(
                 "px-1.5 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
                 habitType === "BOTH"
-                  ? "bg-purple-500/20 text-purple-300 border border-purple-500/40"
-                  : "text-neutral-400 hover:text-neutral-200",
+                  ? "bg-purple-500/15 text-purple-700 border border-purple-500/35 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/40"
+                  : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
               )}
               title={t("bothTitle")}
             >
@@ -224,8 +227,8 @@ export function QuickAddConfigBar({
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-1 border-t border-white/5 pt-1 flex-wrap">
-          <span className="text-neutral-400 font-medium text-tiny shrink-0">
+        <div className="flex items-center justify-between gap-1 border-t border-neutral-700/50 dark:border-white/5 pt-1 flex-wrap">
+          <span className="text-neutral-300 dark:text-neutral-400 font-medium text-tiny shrink-0">
             {t("importanceLabel")}
           </span>
           <div className="flex items-center gap-1">
@@ -243,8 +246,8 @@ export function QuickAddConfigBar({
                   className={cn(
                     "flex items-center gap-1 px-1.5 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
                     isSelected
-                      ? "bg-white/15 text-neutral-100 border border-white/25"
-                      : "text-neutral-400 hover:text-neutral-200",
+                      ? "bg-card text-neutral-50 border border-neutral-600 shadow-2xs dark:bg-white/15 dark:text-neutral-100 dark:border-white/25 dark:shadow-none"
+                      : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
                   )}
                 >
                   <span
@@ -260,8 +263,8 @@ export function QuickAddConfigBar({
           </div>
         </div>
 
-        <div className="flex items-center justify-between border-t border-white/5 pt-1">
-          <span className="text-neutral-400 font-medium text-tiny shrink-0">
+        <div className="flex items-center justify-between border-t border-neutral-700/50 dark:border-white/5 pt-1">
+          <span className="text-neutral-300 dark:text-neutral-400 font-medium text-tiny shrink-0">
             {t("resetLabel")}
           </span>
           <button
@@ -271,7 +274,7 @@ export function QuickAddConfigBar({
               onToggleResetCounter();
               onFocusInput?.();
             }}
-            className="text-tiny text-neutral-300 hover:text-gold transition-colors font-medium cursor-pointer px-1 py-0.5 rounded hover:bg-white/5"
+            className="text-tiny text-neutral-200 dark:text-neutral-300 hover:text-primary dark:hover:text-gold transition-colors font-medium cursor-pointer px-1 py-0.5 rounded hover:bg-card dark:hover:bg-white/5"
             title={t("toggleResetTitle")}
           >
             {resetCounter === "DAILY" ? t("resetDaily") : t("resetWeekly")}
@@ -282,9 +285,9 @@ export function QuickAddConfigBar({
   }
 
   return (
-    <div className="flex flex-col gap-1.5 text-label-g px-2 py-1.5 bg-white/5 rounded-md border border-white/5">
+    <div className="flex flex-col gap-1.5 text-label-g px-2 py-1.5 bg-surface/80 dark:bg-white/5 rounded-md border border-neutral-700/60 dark:border-white/5">
       <div className="flex items-center justify-between gap-1 flex-wrap">
-        <span className="text-neutral-400 font-medium text-tiny shrink-0">
+        <span className="text-neutral-300 dark:text-neutral-400 font-medium text-tiny shrink-0">
           {t("frequencyLabel")}
         </span>
         <div className="flex items-center gap-1">
@@ -298,8 +301,8 @@ export function QuickAddConfigBar({
             className={cn(
               "px-2 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
               dailyFreq === "DAILY"
-                ? "bg-gold/20 text-gold border border-gold/40"
-                : "text-neutral-400 hover:text-neutral-200",
+                ? "bg-amber-500/15 text-amber-800 border border-amber-500/35 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
+                : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
             )}
           >
             {t("everyDay")}
@@ -314,8 +317,8 @@ export function QuickAddConfigBar({
             className={cn(
               "px-2 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
               dailyFreq === "WEEKDAYS"
-                ? "bg-gold/20 text-gold border border-gold/40"
-                : "text-neutral-400 hover:text-neutral-200",
+                ? "bg-amber-500/15 text-amber-800 border border-amber-500/35 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
+                : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
             )}
           >
             {t("weekdays")}

@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { useIsClient } from "@/hooks/useIsClient";
 import { cn } from "@/utils";
 
 export interface InfoTooltipProps {
@@ -55,16 +56,12 @@ export function InfoTooltip({
   popoverClassName,
 }: InfoTooltipProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsClient();
   const [coords, setCoords] = useState<Coords | null>(null);
 
   const buttonRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const computeCoords = useCallback(
     (measuredHeight?: number): Coords | null => {
@@ -274,7 +271,7 @@ export function InfoTooltip({
               transformOrigin: coords.placement === "top" ? "bottom" : "top",
             }}
             className={cn(
-              "fixed z-[130] p-3.5 rounded-xl bg-surface/98 border border-gold/40 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 transition-none text-neutral-200 text-xs flex flex-col gap-2 pointer-events-auto",
+              "fixed z-[130] p-3.5 rounded-xl bg-surface dark:bg-popover border border-gold/40 shadow-2xl animate-in fade-in zoom-in-95 duration-150 transition-none text-neutral-200 text-xs flex flex-col gap-2 pointer-events-auto",
               popoverClassName,
             )}
           >

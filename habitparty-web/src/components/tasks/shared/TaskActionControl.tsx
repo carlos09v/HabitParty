@@ -53,7 +53,7 @@ export function TaskActionControl({
             title={t("positiveHabitTitle")}
             aria-label={t("positiveHabitAria")}
             className={cn(
-              "rounded-md bg-success-500/20 border border-success-500/50 text-success-500 hover:bg-success-500 hover:border-success-500 hover:text-on-gold hover:shadow-[0_0_10px_rgba(0,201,80,0.35)] flex items-center justify-center font-bold transition-all cursor-pointer shadow-2xs active:scale-90",
+              "rounded-md bg-success-500/20 border border-success-500/50 text-success-500 hover:bg-success-500 hover:border-success-500 hover:text-on-gold hover:shadow-[0_0_10px_rgba(0,201,80,0.35)] flex items-center justify-center font-bold transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shadow-2xs active:scale-90",
               isCompact ? "w-5 h-5 text-label-m" : "w-6 h-6 text-tiny",
             )}
           >
@@ -72,7 +72,7 @@ export function TaskActionControl({
             title={t("negativeHabitTitle")}
             aria-label={t("negativeHabitAria")}
             className={cn(
-              "rounded-md bg-danger-500/20 border border-danger-500/50 text-danger-500 hover:bg-danger-500 hover:border-danger-500 hover:text-white hover:shadow-[0_0_10px_rgba(251,44,54,0.35)] flex items-center justify-center font-bold transition-all cursor-pointer shadow-2xs active:scale-90",
+              "rounded-md bg-danger-500/20 border border-danger-500/50 text-danger-500 hover:bg-danger-500 hover:border-danger-500 hover:text-white hover:shadow-[0_0_10px_rgba(251,44,54,0.35)] flex items-center justify-center font-bold transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shadow-2xs active:scale-90",
               isCompact ? "w-5 h-5 text-label-m" : "w-6 h-6 text-tiny",
             )}
           >
@@ -100,7 +100,7 @@ export function TaskActionControl({
       }}
       aria-label={completed ? t("markPendingAria") : t("markCompletedAria")}
       className={cn(
-        "border-2 flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-90",
+        "border-2 flex items-center justify-center transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shrink-0 active:scale-90",
         isDaily ? "rounded-full" : "rounded-md",
         isCompact ? "w-4 h-4" : "w-5 h-5",
         completed

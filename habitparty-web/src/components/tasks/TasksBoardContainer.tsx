@@ -374,9 +374,9 @@ export function TasksBoardContainer({
 
       {/* Aviso de Ambiente Preservado em Modo Somente Leitura */}
       {isWorkspaceReadOnly && (
-        <div className="shrink-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 sm:px-4 sm:py-3 rounded-xl bg-gold/10 border border-gold/40 shadow-glow-gold-xs">
+        <div className="shrink-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 sm:px-4 sm:py-3 rounded-xl bg-amber-500/10 border border-amber-500/35 shadow-xs dark:bg-gold/10 dark:border-gold/40 dark:shadow-glow-gold-xs">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gold/20 border border-gold/40 flex items-center justify-center text-gold shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/35 flex items-center justify-center text-amber-700 dark:bg-gold/20 dark:border-gold/40 dark:text-gold shrink-0">
               <Lock size={16} />
             </div>
             <div className="flex flex-col">
@@ -384,7 +384,7 @@ export function TasksBoardContainer({
                 <span className="text-body-s font-bold text-neutral-100">
                   {t("readOnlyTitle")}
                 </span>
-                <span className="text-tiny uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-gold/20 text-gold border border-gold/30">
+                <span className="text-tiny uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-800 border border-amber-500/30 dark:bg-gold/20 dark:text-gold dark:border-gold/30">
                   VIP
                 </span>
               </div>
@@ -396,7 +396,7 @@ export function TasksBoardContainer({
           <button
             type="button"
             onClick={() => setIsUpgradeModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold hover:bg-gold-hover text-on-gold font-bold text-xs shadow-glow-gold-xs transition-all cursor-pointer shrink-0"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold hover:bg-gold-hover text-on-gold font-bold text-xs shadow-xs dark:shadow-glow-gold-xs transition-colors cursor-pointer shrink-0"
           >
             <Crown size={14} className="fill-on-gold" />
             <span>{t("reactivatePremium")}</span>
@@ -554,10 +554,12 @@ export function TasksBoardContainer({
         onColumnWidthChange={setColumnWidth}
       />
 
-      <UpgradePremiumModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-      />
+      {isUpgradeModalOpen && (
+        <UpgradePremiumModal
+          isOpen={isUpgradeModalOpen}
+          onClose={() => setIsUpgradeModalOpen(false)}
+        />
+      )}
     </>
   );
 }

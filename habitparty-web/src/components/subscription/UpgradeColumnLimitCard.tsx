@@ -52,7 +52,7 @@ export function UpgradeColumnLimitCard({
         title={title}
         subtitle={subtitle}
         onClick={() => setIsOpen(true)}
-        className="cursor-pointer group border-gold/40 bg-gold/5 hover:bg-gold/15 hover:border-gold hover:shadow-glow-gold transition-all"
+        className="cursor-pointer group border-gold/40 bg-gold/5 hover:bg-gold/15 hover:border-gold transition-[border-color,background-color]"
         icon={
           <Crown
             size={compact ? 16 : 18}
@@ -61,7 +61,9 @@ export function UpgradeColumnLimitCard({
           />
         }
       />
-      <UpgradePremiumModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
+      {isOpen && (
+        <UpgradePremiumModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
+      )}
     </>
   );
 }

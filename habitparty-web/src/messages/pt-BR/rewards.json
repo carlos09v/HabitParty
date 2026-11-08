@@ -130,6 +130,37 @@
     "levelLabel": "Nível da Caixa Misteriosa",
     "hoverHint": "(passe o mouse para ver as chances)",
     "raritiesCount": "4 Raridades",
+    "lootEditor": {
+      "title": "Personalizar Prêmios da Caixa",
+      "subtitle": "Chances fixas pelo Tier • edite ao seu gosto",
+      "presetsLabel": "Presets:",
+      "presets": {
+        "gamer": "Gamer & Streaming",
+        "relax": "Relax & Autocuidado",
+        "gastronomy": "Gastronomia & Lazer",
+        "hobbies": "Hobbies & Leitura"
+      },
+      "pullFromStore": "Puxar da minha Loja",
+      "pullFromStoreHint": "Preenche os 3 slots usando recompensas que você já cadastrou na Loja",
+      "presetAppliedToast": "Preset \"{preset}\" aplicado aos prêmios da caixa!",
+      "pulledFromStoreToast": "Prêmios preenchidos com itens da sua Loja!",
+      "storeEmptyToast": "Cadastre recompensas de Uso Único ou Cupom na Loja para usar este atalho.",
+      "slotRarity": {
+        "0": "Prêmio Comum",
+        "1": "Prêmio Raro",
+        "2": "Jackpot Supremo"
+      },
+      "slotPlaceholder": {
+        "0": "Ex: Café especial, 1 vídeo curto...",
+        "1": "Ex: Episódio de série, Lanche favorito...",
+        "2": "Ex: Sessão longa de jogo, Noite livre..."
+      },
+      "modeSingleUse": "Mimo (Uso Único)",
+      "modeTimeBased": "Tempo (máx {max}m)",
+      "iconPickerTitle": "Ícone do Prêmio",
+      "minutesAriaLabel": "Duração em minutos (máximo {max})",
+      "minutesMaxHint": "Máximo de {max} minutos neste slot para manter o equilíbrio econômico"
+    },
     "tiers": {
       "BASIC": {
         "name": "Caixa Básica",
@@ -219,7 +250,9 @@
     "dropPercentHeader": "% Drop",
     "priceInCoins": "Preço em Moedas:",
     "balancedPrice": "Preço Equilibrado:",
-    "coinsUnit": "moedas"
+    "coinsUnit": "moedas",
+    "customTimePrize": "Cupom de {minutes} min de foco/lazer personalizado.",
+    "customSingleUsePrize": "Recompensa de uso único personalizada."
   },
   "hook": {
     "titleRequired": "O título da recompensa é obrigatório.",

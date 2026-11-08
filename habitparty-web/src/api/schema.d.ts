@@ -1180,6 +1180,10 @@ export interface components {
       experienceMode?: "GAMIFIED" | "PRODUCTIVITY";
       email?: string;
       profilePhotoUrl?: string;
+      bio?: string | null;
+      avatarFrame?: string | null;
+      /** Format: date-time */
+      createdAt?: string | null;
       /** Format: date */
       birthDate?: string;
       /** Format: int32 */
@@ -1196,6 +1200,8 @@ export interface components {
       currentStreak?: number;
       /** Format: int32 */
       highestStreak?: number;
+      /** Format: int32 */
+      achievementPoints?: number;
     };
     /**
      * @example {
@@ -1267,6 +1273,12 @@ export interface components {
     CreateChecklistItemDTO: {
       name: string;
     };
+    MysteryBoxLootItem: {
+      name: string;
+      icon?: string;
+      /** Format: int32 */
+      minutes?: number | null;
+    };
     UpdateRewardDTO: {
       name?: string;
       icon?: string;
@@ -1288,6 +1300,7 @@ export interface components {
       packageLevel?: "NONE" | "BASIC" | "PREMIUM" | "EPIC" | "LEGENDARY";
       /** Format: int32 */
       baseDurationMinutes?: number;
+      lootItems?: components["schemas"]["MysteryBoxLootItem"][];
     };
     RewardResponseDTO: {
       /** Format: uuid */
@@ -1316,6 +1329,7 @@ export interface components {
       packageLevel?: "NONE" | "BASIC" | "PREMIUM" | "EPIC" | "LEGENDARY";
       /** Format: int32 */
       baseDurationMinutes?: number;
+      lootItems?: components["schemas"]["MysteryBoxLootItem"][];
     };
     UpdateRewardOrderDTO: {
       /** Format: uuid */
@@ -1491,6 +1505,7 @@ export interface components {
       packageLevel?: "NONE" | "BASIC" | "PREMIUM" | "EPIC" | "LEGENDARY";
       /** Format: int32 */
       baseDurationMinutes?: number;
+      lootItems?: components["schemas"]["MysteryBoxLootItem"][];
     };
     CreateFocusRecordDTO: {
       /** Format: uuid */
@@ -1673,6 +1688,7 @@ export interface components {
       orderIndex?: number;
       /** Format: int32 */
       remainingSeconds?: number;
+      lootItems?: components["schemas"]["MysteryBoxLootItem"][];
     };
     PageFocusRecordResponseDTO: {
       /** Format: int32 */

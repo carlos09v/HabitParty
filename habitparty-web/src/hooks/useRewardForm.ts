@@ -4,13 +4,19 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { createReward, updateReward } from "@/actions/rewardActions";
+import {
+  calculateSuggestedCouponPrice,
+  DEFAULT_MYSTERY_BOX_LOOT,
+} from "@/constants/reward";
 import type {
+  MysteryBoxLootItem,
   PackageLevel,
   Reward,
   RewardCategory,
   RewardType,
 } from "@/types/reward";
 import {
+  getMysteryBoxTier,
   mapRewardFormToCreatePayload,
   mapRewardFormToUpdatePayload,
   suggestRewardIconFromTitle,
@@ -45,6 +51,14 @@ export function useRewardForm({
   const [baseDurationMinutes, setBaseDurationMinutes] = useState("30");
   const [selectedIcon, setSelectedIcon] = useState("gamepad");
   const [hasManuallyChangedIcon, setHasManuallyChangedIcon] = useState(false);
+  const [lootItems, setLootItems] = useState<
+    [MysteryBoxLootItem, MysteryBoxLootItem, MysteryBoxLootItem]
+  >(() => [
+    { ...DEFAULT_MYSTERY_BOX_LOOT.Básico[0] },
+    { ...DEFAULT_MYSTERY_BOX_LOOT.Básico[1] },
+    { ...DEFAULT_MYSTERY_BOX_LOOT.Básico[2] },
+  ]);
+  const [hasCustomizedLoot, setHasCustomizedLoot] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -57,9 +71,9 @@ export function useRewardForm({
         );
         setType((rewardToEdit.type as RewardType) || "SingleUse");
         setCategory((rewardToEdit.category as RewardCategory) || "Nenhum");
-        setPackageLevel(
-          (rewardToEdit.packageLevel as PackageLevel) || "Nenhum",
-        );
+        const initialPkg =
+          (rewardToEdit.packageLevel as PackageLevel) || "Nenhum";
+        setPackageLevel(initialPkg);
         setBaseDurationMinutes(
           rewardToEdit.baseDurationMinutes !== undefined
             ? String(rewardToEdit.baseDurationMinutes)
@@ -70,6 +84,25 @@ export function useRewardForm({
             (rewardToEdit.iconName as string) ||
             (rewardToEdit.type === "MysteryBox" ? "mystery_box" : "gamepad"),
         );
+        const tierObj = getMysteryBoxTier(initialPkg);
+        const defaultTierLoot =
+          DEFAULT_MYSTERY_BOX_LOOT[tierObj.id] ||
+          DEFAULT_MYSTERY_BOX_LOOT.Básico;
+        if (rewardToEdit.lootItems && rewardToEdit.lootItems.length === 3) {
+          setLootItems([
+            { ...rewardToEdit.lootItems[0] },
+            { ...rewardToEdit.lootItems[1] },
+            { ...rewardToEdit.lootItems[2] },
+          ]);
+          setHasCustomizedLoot(true);
+        } else {
+          setLootItems([
+            { ...defaultTierLoot[0] },
+            { ...defaultTierLoot[1] },
+            { ...defaultTierLoot[2] },
+          ]);
+          setHasCustomizedLoot(false);
+        }
       } else {
         setTitle("");
         setDescription("");
@@ -79,6 +112,12 @@ export function useRewardForm({
         setPackageLevel("Nenhum");
         setBaseDurationMinutes("30");
         setSelectedIcon("gamepad");
+        setLootItems([
+          { ...DEFAULT_MYSTERY_BOX_LOOT.Básico[0] },
+          { ...DEFAULT_MYSTERY_BOX_LOOT.Básico[1] },
+          { ...DEFAULT_MYSTERY_BOX_LOOT.Básico[2] },
+        ]);
+        setHasCustomizedLoot(false);
       }
     }
   }, [isOpen, rewardToEdit]);
@@ -111,6 +150,26 @@ export function useRewardForm({
           ? Math.max(5, parseInt(baseDurationMinutes, 10) || 30)
           : undefined;
 
+      const normalizedLootItems =
+        type === "MysteryBox"
+          ? lootItems.map((slot, idx) => {
+              const tierCap =
+                getMysteryBoxTier(packageLevel).slotMaxMinutes[
+                  idx as 0 | 1 | 2
+                ];
+              return {
+                name:
+                  slot.name.trim() ||
+                  DEFAULT_MYSTERY_BOX_LOOT.Básico[idx as 0 | 1 | 2].name,
+                icon: slot.icon || "gift",
+                minutes:
+                  slot.minutes && slot.minutes > 0
+                    ? Math.min(Math.max(5, slot.minutes), tierCap)
+                    : null,
+              };
+            })
+          : undefined;
+
       const formInput = {
         title: title.trim(),
         description: description.trim(),
@@ -120,6 +179,7 @@ export function useRewardForm({
         packageLevel: type === "SingleUse" ? undefined : packageLevel,
         baseDurationMinutes: parsedDuration,
         icon: selectedIcon,
+        lootItems: normalizedLootItems,
       };
 
       if (isEditing && rewardToEdit) {
@@ -203,6 +263,18 @@ export function useRewardForm({
       if (selectedIcon === "mystery_box") {
         setSelectedIcon("gamepad");
       }
+      if (!isEditing) {
+        if (packageLevel === "Nenhum" || packageLevel === "NONE") {
+          setPackageLevel("Básico");
+          setBaseDurationMinutes("30");
+          setPrice("8");
+        } else {
+          const suggested = calculateSuggestedCouponPrice(
+            Number(baseDurationMinutes) || 30,
+          );
+          setPrice(String(suggested));
+        }
+      }
     }
   };
 
@@ -214,12 +286,74 @@ export function useRewardForm({
     setPackageLevel(tierId);
     setPrice(String(recommendedPrice));
     setSelectedIcon("mystery_box");
+    const tierObj = getMysteryBoxTier(tierId);
+    const defaultTierLoot =
+      DEFAULT_MYSTERY_BOX_LOOT[tierObj.id] || DEFAULT_MYSTERY_BOX_LOOT.Básico;
+    if (!hasCustomizedLoot) {
+      setLootItems([
+        { ...defaultTierLoot[0] },
+        { ...defaultTierLoot[1] },
+        { ...defaultTierLoot[2] },
+      ]);
+    } else {
+      setLootItems((prev) => [
+        {
+          ...prev[0],
+          minutes:
+            prev[0].minutes && prev[0].minutes > 0
+              ? Math.min(prev[0].minutes, tierObj.slotMaxMinutes[0])
+              : null,
+        },
+        {
+          ...prev[1],
+          minutes:
+            prev[1].minutes && prev[1].minutes > 0
+              ? Math.min(prev[1].minutes, tierObj.slotMaxMinutes[1])
+              : null,
+        },
+        {
+          ...prev[2],
+          minutes:
+            prev[2].minutes && prev[2].minutes > 0
+              ? Math.min(prev[2].minutes, tierObj.slotMaxMinutes[2])
+              : null,
+        },
+      ]);
+    }
     if (isDefaultBoxTitle(title)) {
       const key = toPackageMessageKey(tierId);
       const fallbackTierName =
         key !== "NONE" ? tMystery(`tiers.${key}.name`) : `Caixa ${tierId}`;
       setTitle(tierName || fallbackTierName);
     }
+  };
+
+  const handleLootSlotChange = (
+    index: 0 | 1 | 2,
+    updated: MysteryBoxLootItem,
+  ) => {
+    setHasCustomizedLoot(true);
+    setLootItems((prev) => {
+      const next: [MysteryBoxLootItem, MysteryBoxLootItem, MysteryBoxLootItem] =
+        [{ ...prev[0] }, { ...prev[1] }, { ...prev[2] }];
+      next[index] = updated;
+      return next;
+    });
+  };
+
+  const handleApplyLootPreset = (
+    presetItems: readonly [
+      MysteryBoxLootItem,
+      MysteryBoxLootItem,
+      MysteryBoxLootItem,
+    ],
+  ) => {
+    setHasCustomizedLoot(true);
+    setLootItems([
+      { ...presetItems[0] },
+      { ...presetItems[1] },
+      { ...presetItems[2] },
+    ]);
   };
 
   const handleTitleChange = (newTitle: string) => {
@@ -260,6 +394,9 @@ export function useRewardForm({
     selectedIcon,
     setSelectedIcon,
     handleIconSelect,
+    lootItems,
+    handleLootSlotChange,
+    handleApplyLootPreset,
     handleSubmit,
   };
 }

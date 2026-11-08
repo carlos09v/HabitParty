@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 import { FocusContainer } from "@/components/focus/FocusContainer";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getFocusPageData } from "@/services/focusService";
@@ -30,14 +31,16 @@ export default async function FocusPage({ searchParams }: PageProps) {
 
   return (
     <ScopedIntlProvider scope="focus">
-      <FocusContainer
-        initialActivities={activities}
-        initialBackpackItems={backpackItems}
-        initialRecords={initialRecords}
-        initialSelectedActivityId={resolvedSearchParams.activityId || null}
-        initialCreateActivity={resolvedSearchParams.createActivity === "true"}
-        isCompact={isCompact}
-      />
+      <Suspense fallback={null}>
+        <FocusContainer
+          initialActivities={activities}
+          initialBackpackItems={backpackItems}
+          initialRecords={initialRecords}
+          initialSelectedActivityId={resolvedSearchParams.activityId || null}
+          initialCreateActivity={resolvedSearchParams.createActivity === "true"}
+          isCompact={isCompact}
+        />
+      </Suspense>
     </ScopedIntlProvider>
   );
 }

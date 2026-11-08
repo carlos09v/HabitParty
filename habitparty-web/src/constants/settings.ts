@@ -1,7 +1,12 @@
 import {
+  Calendar,
+  CalendarDays,
+  CalendarRange,
   CloudRain,
   Coffee,
   Flame,
+  Globe,
+  Languages,
   type LucideIcon,
   MonitorSmartphone,
   Moon,
@@ -18,129 +23,92 @@ import type {
   AmbientSoundOption,
   AmbientSoundType,
   GenderOption,
-  SettingsOptionItem,
+  SettingsOptionConfig,
+  SettingsTabId,
   SettingsTabItem,
 } from "@/types/settings";
-import type { ExperienceMode } from "@/types/ui";
+import type { AppLocale, DateFormat, ExperienceMode } from "@/types/ui";
 
 export const GENDER_OPTIONS: readonly GenderOption[] = [
-  { value: "MALE", label: "Masculino" },
-  { value: "FEMALE", label: "Feminino" },
-  { value: "NON_BINARY", label: "Não-binário" },
-  { value: "PREFER_NOT_TO_SAY", label: "Prefiro não informar" },
+  { value: "MALE" },
+  { value: "FEMALE" },
+  { value: "NON_BINARY" },
+  { value: "PREFER_NOT_TO_SAY" },
 ] as const;
 
 export const SETTINGS_TABS: readonly SettingsTabItem[] = [
-  {
-    id: "profile",
-    label: "Perfil",
-    description: "Identidade cósmica, fotos e molduras",
-    icon: UserCircle,
-  },
-  {
-    id: "appearance",
-    label: "Aparência",
-    description: "Tema claro/escuro, idioma, densidade e cards",
-    icon: MonitorSmartphone,
-  },
-  {
-    id: "audio",
-    label: "Áudio & Avisos",
-    description: "Sons de clique, alarmes e ambiente VIP",
-    icon: Volume2,
-  },
-  {
-    id: "security",
-    label: "Segurança",
-    description: "Senha da conta e zona de perigo",
-    icon: ShieldAlert,
-  },
+  { id: "profile", icon: UserCircle },
+  { id: "appearance", icon: MonitorSmartphone },
+  { id: "audio", icon: Volume2 },
+  { id: "security", icon: ShieldAlert },
 ] as const;
 
-export const THEME_OPTIONS: readonly SettingsOptionItem<"dark" | "light">[] = [
-  {
-    value: "dark",
-    title: "Tema Escuro",
-    badge: "Padrão",
-    icon: Moon,
-    description:
-      "Atmosfera noturna cósmica inspirada em RPG e galáxias. Fundo roxo profundo com orbes etéreos, ideal para ambientes escuros e menor fadiga visual.",
-  },
-  {
-    value: "light",
-    title: "Tema Claro",
-    icon: Sun,
-    description:
-      "Paleta Cosmic Daylight de conforto ocular. Fundo em alabastro frio neutro, cards brancos com bordas nítidas e tipografia em slate editorial.",
-  },
-] as const;
+export const VALID_SETTINGS_TABS: readonly SettingsTabId[] = SETTINGS_TABS.map(
+  (t) => t.id,
+);
 
-export const COMPACT_OPTIONS: readonly SettingsOptionItem<boolean>[] = [
-  {
-    value: true,
-    title: "Modo Compacto",
-    description:
-      "Cards, calendários e listas menores. Otimiza o espaço de tela para visualização simultânea de mais tarefas e itens de recompensa. Recomendado para maior produtividade.",
-  },
-  {
-    value: false,
-    title: "Modo Confortável",
-    badge: "Padrão",
-    description:
-      "Paddings mais generosos e tipografia padrão. Ideal para telas grandes ou para quem prefere espaçamentos mais relaxados e elementos maiores.",
-  },
-] as const;
+export function isValidSettingsTab(val?: string | null): val is SettingsTabId {
+  return VALID_SETTINGS_TABS.includes(val as SettingsTabId);
+}
 
-export const EXPERIENCE_MODE_OPTIONS: readonly SettingsOptionItem<ExperienceMode>[] =
+export function resolveSettingsTab(val?: string | null): SettingsTabId {
+  return isValidSettingsTab(val) ? val : "profile";
+}
+
+export const THEME_OPTIONS: readonly SettingsOptionConfig<"dark" | "light">[] =
   [
-    {
-      value: "PRODUCTIVITY",
-      title: "Modo Essencial (Produtividade)",
-      badge: "Padrão",
-      icon: Target,
-      description:
-        "Produtividade gamificada com estética executiva. Utiliza Créditos e Pontos (pts), títulos profissionais, indicadores discretos de esforço e recompensas diretas sem sorteios.",
-    },
-    {
-      value: "GAMIFIED",
-      title: "Modo Aventura (Imersão RPG)",
-      icon: Swords,
-      description:
-        "Aventura completa com moedas de ouro, XP, títulos de aventureiro, ícones de espadas para dificuldade e Caixas Misteriosas na Loja.",
-    },
+    { value: "dark", hasDefaultBadge: true, icon: Moon },
+    { value: "light", icon: Sun },
   ] as const;
 
+export const COMPACT_OPTIONS: readonly SettingsOptionConfig<boolean>[] = [
+  { value: true },
+  { value: false, hasDefaultBadge: true },
+] as const;
+
+export const EXPERIENCE_MODE_OPTIONS: readonly SettingsOptionConfig<ExperienceMode>[] =
+  [
+    { value: "PRODUCTIVITY", hasDefaultBadge: true, icon: Target },
+    { value: "GAMIFIED", icon: Swords },
+  ] as const;
+
+export const DATE_FORMAT_OPTIONS: readonly (SettingsOptionConfig<DateFormat> & {
+  i18nPrefix: "ddmmyyyy" | "mmddyyyy" | "yyyymmdd";
+  statusKey: "statusDdmmyyyy" | "statusMmddyyyy" | "statusYyyymmdd";
+})[] = [
+  {
+    value: "DD/MM/YYYY",
+    i18nPrefix: "ddmmyyyy",
+    statusKey: "statusDdmmyyyy",
+    icon: Calendar,
+  },
+  {
+    value: "MM/DD/YYYY",
+    i18nPrefix: "mmddyyyy",
+    statusKey: "statusMmddyyyy",
+    icon: CalendarDays,
+  },
+  {
+    value: "YYYY-MM-DD",
+    i18nPrefix: "yyyymmdd",
+    statusKey: "statusYyyymmdd",
+    icon: CalendarRange,
+  },
+] as const;
+
+export const LANGUAGE_OPTIONS: readonly (SettingsOptionConfig<AppLocale> & {
+  i18nPrefix: "en" | "pt";
+})[] = [
+  { value: "en", i18nPrefix: "en", icon: Globe },
+  { value: "pt-BR", i18nPrefix: "pt", icon: Languages },
+] as const;
+
 export const AMBIENT_SOUND_OPTIONS: readonly AmbientSoundOption[] = [
-  {
-    id: "none",
-    label: "Desligado",
-    description: "Sem ruído ambiente de fundo.",
-    icon: VolumeX,
-  },
-  {
-    id: "rain",
-    label: "Chuva Suave",
-    description: "Som relaxante de chuva leve e contínua.",
-    icon: CloudRain,
-  },
-  {
-    id: "cafe",
-    label: "Cafeteria",
-    description: "Murmúrio acolhedor e aconchegante de café.",
-    icon: Coffee,
-  },
-  {
-    id: "lofi",
-    label: "Lofi Zen",
-    description: "Acorde harmônico etéreo e meditativo para foco profundo.",
-    icon: Music,
-  },
-  {
-    id: "fire",
-    label: "Fogueira",
-    description: "Crepitar acolhedor de lenha e brasas na lareira.",
-    icon: Flame,
-  },
+  { id: "none", icon: VolumeX },
+  { id: "rain", icon: CloudRain },
+  { id: "cafe", icon: Coffee },
+  { id: "lofi", icon: Music },
+  { id: "fire", icon: Flame },
 ] as const;
 
 export const AMBIENT_ICONS: Record<AmbientSoundType, LucideIcon> = {
@@ -150,8 +118,3 @@ export const AMBIENT_ICONS: Record<AmbientSoundType, LucideIcon> = {
   lofi: Music,
   fire: Flame,
 };
-
-export {
-  PASSWORD_MIN_LENGTH,
-  validatePasswordRequirements,
-} from "@/utils/validators";

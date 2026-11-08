@@ -38,14 +38,17 @@ export function FocusWeeklyChart({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-neutral-700 dark:border-primary/25 bg-white dark:bg-surface/50 shadow-2xs dark:shadow-none flex flex-col w-full transition-all",
+        "rounded-2xl border border-neutral-700 dark:border-primary/25 bg-white dark:bg-surface/50 shadow-2xs dark:shadow-none flex flex-col w-full transition-colors",
         isCompact ? "p-3 gap-2.5" : "p-4 gap-3",
       )}
     >
       {/* Header com Título e Navegador de Semanas */}
       <div className="flex items-center justify-between gap-2 w-full min-w-0">
         <div className="flex items-center gap-1.5 text-neutral-300 shrink-0">
-          <BarChart2 size={15} className="text-primary-light" />
+          <BarChart2
+            size={15}
+            className="text-primary dark:text-primary-light"
+          />
           <h4 className="text-body-s font-bold text-neutral-100 whitespace-nowrap">
             {t("title")}
           </h4>
@@ -56,7 +59,7 @@ export function FocusWeeklyChart({
           <button
             type="button"
             onClick={onPrevWeek}
-            className="p-1 rounded-md hover:bg-white/10 text-neutral-400 hover:text-neutral-100 transition-colors cursor-pointer shrink-0"
+            className="p-1 rounded-md hover:bg-surface dark:hover:bg-white/10 text-neutral-400 hover:text-neutral-100 transition-colors cursor-pointer shrink-0"
             title={t("prevWeek")}
             aria-label={t("prevWeek")}
           >
@@ -67,7 +70,7 @@ export function FocusWeeklyChart({
             <button
               type="button"
               onClick={onResetWeek}
-              className="text-label-g font-semibold px-2 py-0.5 rounded-full bg-primary-dark/40 text-primary-light hover:text-gold hover:border-gold/50 hover:bg-gold/10 border border-primary/30 truncate max-w-[90px] text-center transition-all cursor-pointer shadow-xs active:scale-95"
+              className="text-label-g font-semibold px-2 py-0.5 rounded-full bg-primary/10 dark:bg-primary-dark/40 text-primary dark:text-primary-light hover:text-amber-700 dark:hover:text-gold hover:border-amber-500/50 dark:hover:border-gold/50 hover:bg-amber-500/10 dark:hover:bg-gold/10 border border-primary/25 dark:border-primary/30 truncate max-w-[90px] text-center transition-[color,background-color,border-color,transform] cursor-pointer shadow-xs active:scale-95"
               title={t("resetWeekTitle")}
               aria-label={t("resetWeekAria")}
             >
@@ -75,7 +78,7 @@ export function FocusWeeklyChart({
             </button>
           ) : (
             <span
-              className="text-label-g font-semibold px-2 py-0.5 rounded-full bg-primary-dark/40 text-primary-light border border-primary/30 truncate max-w-[90px] text-center"
+              className="text-label-g font-semibold px-2 py-0.5 rounded-full bg-primary/10 dark:bg-primary-dark/40 text-primary dark:text-primary-light border border-primary/25 dark:border-primary/30 truncate max-w-[90px] text-center"
               title={weekDateRange || resolvedWeekLabel}
             >
               {resolvedWeekLabel}
@@ -86,7 +89,7 @@ export function FocusWeeklyChart({
             type="button"
             onClick={onNextWeek}
             disabled={weekOffset >= 0}
-            className="p-1 rounded-md hover:bg-white/10 text-neutral-400 hover:text-neutral-100 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            className="p-1 rounded-md hover:bg-surface dark:hover:bg-white/10 text-neutral-400 hover:text-neutral-100 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
             title={t("nextWeek")}
             aria-label={t("nextWeek")}
           >
@@ -107,7 +110,7 @@ export function FocusWeeklyChart({
         </div>
 
         {activeHovered ? (
-          <span className="text-tiny text-gold font-semibold animate-in fade-in">
+          <span className="text-tiny text-amber-700 dark:text-gold font-semibold animate-in fade-in">
             {activeHovered.dayLabel}:{" "}
             {formatFocusMinutes(activeHovered.minutes)}
           </span>
@@ -144,7 +147,7 @@ export function FocusWeeklyChart({
             >
               {/* Tooltip flutuante */}
               {isHovered && (
-                <div className="tooltip-dark absolute -top-7 px-1.5 py-0.5 rounded-md border border-gold/70 text-gold text-tiny font-bold shadow-glow-gold-xs pointer-events-none whitespace-nowrap z-30 transition-all transform -translate-y-1">
+                <div className="tooltip-dark absolute -top-7 px-1.5 py-0.5 rounded-md border border-gold/70 text-gold text-tiny font-bold shadow-glow-gold-xs pointer-events-none whitespace-nowrap z-30 transform -translate-y-1">
                   {formatFocusMinutes(item.minutes)}
                 </div>
               )}
@@ -152,13 +155,13 @@ export function FocusWeeklyChart({
               {/* Barra */}
               <div
                 className={cn(
-                  "w-full rounded-t-md transition-all duration-300 ease-out origin-bottom",
+                  "w-full rounded-t-md transition-[transform,scale,background-color] duration-300 ease-out origin-bottom",
                   item.isToday
                     ? "bg-gold shadow-glow-gold-xs"
                     : item.minutes > 0
-                      ? "bg-primary-light/60 group-hover/bar:bg-primary-light"
+                      ? "bg-primary/65 dark:bg-primary-light/60 group-hover/bar:bg-primary dark:group-hover/bar:bg-primary-light"
                       : "bg-neutral-700/80 dark:bg-white/10",
-                  isHovered && "brightness-125 scale-y-[1.05] bg-gold",
+                  isHovered && "scale-y-[1.05] bg-gold-hover dark:bg-gold",
                 )}
                 style={{ height: `${heightClamped}%` }}
               />
@@ -168,7 +171,7 @@ export function FocusWeeklyChart({
                 className={cn(
                   "text-tiny leading-tight transition-colors",
                   item.isToday
-                    ? "text-gold font-bold"
+                    ? "text-amber-700 dark:text-gold font-bold"
                     : isHovered
                       ? "text-neutral-100 font-semibold"
                       : "text-neutral-400 font-medium",

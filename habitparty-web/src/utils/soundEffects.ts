@@ -133,6 +133,83 @@ class SoundEffectsManager {
   }
 
   /**
+   * Conquista Desbloqueada: Acorde de troféu cristalino com arpejo ascendente
+   * e cauda cintilante harmônica (adaptada à raridade da conquista).
+   */
+  playAchievementUnlockSound(
+    rarity: "COMMON" | "UNCOMMON" | "RARE" | "EPIC" | "LEGENDARY" = "RARE",
+  ) {
+    if (!this.getPreferences().uiSoundsEnabled) return;
+
+    this.runWithContext((ctx) => {
+      const now = ctx.currentTime;
+      const isHighTier = rarity === "EPIC" || rarity === "LEGENDARY";
+      const isMidTier = rarity === "RARE" || isHighTier;
+
+      // Arpejo base: A5 -> C#6 -> E6 -> A6 (Lá Maior Luminoso)
+      const baseNotes = [880.0, 1108.73, 1318.51, 1760.0];
+      if (isHighTier) {
+        // B6 -> C#7 extra shimmer para Épico/Lendário
+        baseNotes.push(1975.53, 2217.46);
+      }
+      if (rarity === "LEGENDARY") {
+        baseNotes.push(2637.02); // E7 culminante
+      }
+
+      // Pad harmônico quente (A4 + E5)
+      const padFreqs = [440.0, 659.25];
+      padFreqs.forEach((freq) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.linearRampToValueAtTime(0.08, now + 0.04);
+        gain.gain.exponentialRampToValueAtTime(
+          0.0001,
+          now + (isHighTier ? 1.15 : 0.75),
+        );
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + (isHighTier ? 1.2 : 0.8));
+      });
+
+      // Chimes cristalinos de troféu
+      baseNotes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = idx % 2 === 0 ? "triangle" : "sine";
+        const startTime = now + idx * 0.065;
+        const duration =
+          idx >= baseNotes.length - 2 ? (isHighTier ? 0.85 : 0.55) : 0.28;
+
+        osc.frequency.setValueAtTime(freq, startTime);
+        if (idx === baseNotes.length - 1 && isMidTier) {
+          osc.frequency.exponentialRampToValueAtTime(
+            freq * 1.015,
+            startTime + duration * 0.5,
+          );
+        }
+
+        const peakGain = idx === baseNotes.length - 1 ? 0.22 : 0.15;
+        gain.gain.setValueAtTime(0.0001, startTime);
+        gain.gain.linearRampToValueAtTime(peakGain, startTime + 0.018);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(startTime);
+        osc.stop(startTime + duration + 0.02);
+      });
+    });
+  }
+
+  /**
    * Som de Criação (Tarefa, Coluna, Atividade de Foco ou Recompensa)
    * Pop cristalino ascendente de duas notas (Mi5 -> Si5 + harmônico)
    */

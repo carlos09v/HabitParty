@@ -22,7 +22,7 @@ export function TopProgressBar() {
         <div
           role="progressbar"
           aria-label={label || undefined}
-          className="pointer-events-none fixed inset-x-0 top-0 z-[100] h-0.5 overflow-hidden bg-gold/15 animate-in fade-in duration-200 [animation-delay:150ms]"
+          className="pointer-events-none fixed inset-x-0 top-0 z-[100] h-0.5 overflow-hidden bg-gold/15 animate-in fade-in duration-150 [animation-delay:50ms]"
         >
           <div className="animate-top-progress h-full w-1/3 rounded-full bg-gold shadow-[0_0_8px_var(--color-gold)]" />
         </div>

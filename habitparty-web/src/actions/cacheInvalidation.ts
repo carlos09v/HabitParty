@@ -23,6 +23,7 @@ export function invalidateTaskDomainTags(
   if (options.includeUserAndTransactions) {
     updateTag("user");
     updateTag("transactions");
+    updateTag("showcase");
   }
 }
 
@@ -43,11 +44,13 @@ export function invalidateFocusDomainTags(
   }
   if (options.records) {
     updateTag("focus-records");
+    updateTag("showcase");
   }
   if (options.rewardsAndInventory) {
     updateTag("inventory");
     updateTag("user");
     updateTag("transactions");
+    updateTag("showcase");
   }
 }
 
@@ -60,6 +63,7 @@ export function invalidateRewardDomainTags(includeUserAndInventory = false) {
     updateTag("inventory");
     updateTag("user");
     updateTag("transactions");
+    updateTag("showcase");
   }
 }
 
@@ -78,5 +82,16 @@ export function invalidateInventoryDomainTags(
   if (includeUserAndTransactions) {
     updateTag("user");
     updateTag("transactions");
+    updateTag("showcase");
+  }
+}
+
+/**
+ * Invalida as tags de cache RSC da Vitrine de Perfil e Conquistas (/profile).
+ */
+export function invalidateShowcaseDomainTags(includeUser = false) {
+  updateTag("showcase");
+  if (includeUser) {
+    updateTag("user");
   }
 }

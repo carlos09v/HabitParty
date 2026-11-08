@@ -1,10 +1,13 @@
 package com.habitparty.adapters.out.persistence;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
@@ -19,10 +22,20 @@ import com.habitparty.core.domain.entities.focus.FocusRecord;
 public class FocusRecordAdapter implements FocusRecordRepository {
   private final FocusRecordJpaRepository repository;
   private final FocusRecordMapper mapper;
+  private final Clock clock;
 
-  public FocusRecordAdapter(FocusRecordJpaRepository repository, FocusRecordMapper mapper) {
+  @Autowired
+  public FocusRecordAdapter(
+      FocusRecordJpaRepository repository,
+      FocusRecordMapper mapper,
+      Clock clock) {
     this.repository = repository;
     this.mapper = mapper;
+    this.clock = clock != null ? clock : Clock.systemDefaultZone();
+  }
+
+  public FocusRecordAdapter(FocusRecordJpaRepository repository, FocusRecordMapper mapper) {
+    this(repository, mapper, Clock.systemDefaultZone());
   }
 
   @Override
@@ -82,8 +95,9 @@ public class FocusRecordAdapter implements FocusRecordRepository {
 
   @Override
   public int sumFocusMinutesToday(UUID userId) {
-    LocalDateTime startOfDay = LocalDateTime.now().toLocalDate().atStartOfDay();
-    LocalDateTime endOfDay = LocalDateTime.now().toLocalDate().atTime(23, 59, 59, 999999999);
+    LocalDate today = LocalDate.now(clock);
+    LocalDateTime startOfDay = today.atStartOfDay();
+    LocalDateTime endOfDay = today.atTime(23, 59, 59, 999999999);
     return repository.sumTodayFocusMinutesByUserId(userId, startOfDay, endOfDay);
   }
 

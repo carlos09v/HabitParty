@@ -129,6 +129,12 @@
       "verified": "E-mail Verificado",
       "unverified": "Não Verificado"
     },
+    "accountInfo": {
+      "createdAtLabel": "Conta criada em",
+      "premiumExpiresLabel": "Expiração do Premium",
+      "lifetimeAccess": "Vitalício / Sem expiração",
+      "noActiveSubscription": "Sem assinatura ativa"
+    },
     "closeAriaLabel": "Fechar modal",
     "closeButton": "Fechar",
     "storage": {

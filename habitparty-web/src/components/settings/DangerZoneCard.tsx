@@ -39,7 +39,7 @@ export function DangerZoneCard({ isCompact }: ProfileCardBaseProps) {
             type="button"
             onClick={() => setIsModalOpen(true)}
             className={cn(
-              "rounded-xl border border-red-500/50 bg-red-600/20 text-red-300 hover:bg-red-600 hover:text-white transition-all font-bold cursor-pointer shrink-0 flex items-center gap-2 shadow-xs",
+              "rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 hover:bg-red-600 hover:text-white dark:border-red-500/50 dark:bg-red-600/20 dark:text-red-300 transition-colors font-bold cursor-pointer shrink-0 flex items-center gap-2 shadow-xs",
               isCompact ? "px-3.5 py-2 text-xs" : "px-4 py-2.5 text-sm",
             )}
           >

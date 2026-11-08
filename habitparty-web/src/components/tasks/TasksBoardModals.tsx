@@ -9,6 +9,7 @@ import {
   buildTaskContextMenuItems,
 } from "@/components/tasks/shared";
 import { ContextMenu } from "@/components/ui/ContextMenu";
+import { useIdlePreload } from "@/hooks/useIdlePreload";
 import type { Task } from "@/types/task";
 import type { TasksBoardModalsProps } from "@/types/task-ui";
 import { resolveTaskColumnTitle } from "@/utils/taskMapper";
@@ -54,6 +55,11 @@ const TaskDetailsPopover = dynamic(
   { ssr: false },
 );
 
+function preloadTasksBoardModalChunks() {
+  void import("@/components/tasks/CreateTaskModal");
+  void import("@/components/tasks/TaskDetailsPopover");
+}
+
 /**
  * Componente modular que isola todos os modais, popovers e menus de contexto do Kanban,
  * deixando o TasksBoardContainer focado exclusivamente na orquestração dos dados e layout.
@@ -96,6 +102,8 @@ export const TasksBoardModals = memo(function TasksBoardModals({
   const t = useTranslations("tasks.container");
   const tFilters = useTranslations("tasks.filters");
   const tMenus = useTranslations("dashboard.taskShared.contextMenu");
+  useIdlePreload(preloadTasksBoardModalChunks);
+
   const [taskToDelete, setTaskToDelete] = useState<{
     task: Task;
     columnId: string;
@@ -301,6 +309,10 @@ export const TasksBoardModals = memo(function TasksBoardModals({
       {/* Modal: Criar / Editar Tarefa */}
       {taskModalState.isOpen && (
         <CreateTaskModal
+          key={
+            taskModalState.taskToEdit?.id ??
+            `new-${taskModalState.columnId ?? ""}-${taskModalState.defaultTaskType ?? ""}-${taskModalState.initialTitle ?? ""}`
+          }
           isOpen={taskModalState.isOpen}
           onClose={() =>
             setTaskModalState({
@@ -322,18 +334,19 @@ export const TasksBoardModals = memo(function TasksBoardModals({
       )}
 
       {/* Popover Lateral: Detalhes Rápidos da Tarefa */}
-      {Boolean(selectedTaskDetails) && (
+      {selectedTaskDetails && (
         <TaskDetailsPopover
-          isOpen={!!selectedTaskDetails}
+          key={selectedTaskDetails.task.id}
+          isOpen={true}
           onClose={() => setSelectedTaskDetails(null)}
-          task={selectedTaskDetails?.task ?? null}
+          task={selectedTaskDetails.task}
           columnTitle={resolveTaskColumnTitle(
-            selectedTaskDetails?.task,
+            selectedTaskDetails.task,
             columns,
             t("defaultColumnTitle"),
-            selectedTaskDetails?.columnId,
+            selectedTaskDetails.columnId,
           )}
-          anchorRect={selectedTaskDetails?.anchorRect}
+          anchorRect={selectedTaskDetails.anchorRect}
           onTaskUpdate={handleTaskDetailsUpdate}
           onEdit={(task) => {
             if (selectedTaskDetails) {

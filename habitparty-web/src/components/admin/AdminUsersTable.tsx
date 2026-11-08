@@ -66,7 +66,7 @@ export function AdminUsersTable({
       {/* BARRA DE FILTROS & BUSCA */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
         {/* Abas de Filtro */}
-        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface/80 border border-white/10 overflow-x-auto w-full sm:w-auto">
+        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface dark:bg-surface/80 border border-neutral-700 dark:border-white/10 overflow-x-auto w-full sm:w-auto">
           {filterTabs.map((tab) => {
             const isActive = filter === tab.id;
             return (
@@ -75,10 +75,10 @@ export function AdminUsersTable({
                 type="button"
                 onClick={() => onFilterChange(tab.id)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer",
+                  "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer",
                   isActive
-                    ? "bg-gold text-neutral-950 font-bold shadow-sm"
-                    : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5",
+                    ? "bg-gold text-on-gold dark:text-neutral-950 font-bold shadow-sm"
+                    : "text-neutral-300 hover:text-neutral-50 hover:bg-card/70 dark:text-neutral-400 dark:hover:text-neutral-200 dark:hover:bg-white/5",
                 )}
               >
                 {t(`filterTabs.${tab.id}`)}
@@ -101,16 +101,16 @@ export function AdminUsersTable({
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder={t("searchPlaceholder")}
-            className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-surface/80 border border-white/10 text-xs text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:border-gold/50"
+            className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-card dark:bg-surface/80 border border-neutral-600 dark:border-white/10 text-xs text-neutral-50 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 shadow-2xs dark:shadow-none focus:outline-none focus:border-primary dark:focus:border-gold/50"
           />
         </form>
       </div>
 
       {/* TABELA */}
-      <div className="rounded-2xl border border-white/10 bg-surface/80 backdrop-blur-md overflow-hidden relative">
+      <div className="rounded-2xl border border-neutral-700 dark:border-white/10 bg-card dark:bg-surface/80 shadow-xs dark:shadow-none overflow-hidden relative">
         {isLoading && (
-          <div className="absolute inset-0 bg-background/50 backdrop-blur-xs flex items-center justify-center z-10">
-            <span className="text-xs font-semibold text-gold animate-pulse">
+          <div className="absolute inset-0 bg-card/85 dark:bg-background/70 flex items-center justify-center z-10">
+            <span className="text-xs font-semibold text-amber-700 dark:text-gold animate-pulse">
               {t("loading")}
             </span>
           </div>
@@ -119,7 +119,7 @@ export function AdminUsersTable({
         <div className="overflow-x-auto [scrollbar-width:thin] custom-scrollbar">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-white/10 bg-surface-alt/40 text-neutral-400 uppercase tracking-wider text-[11px] font-semibold">
+              <tr className="border-b border-neutral-700 dark:border-white/10 bg-surface/70 dark:bg-white/[0.03] text-neutral-400 uppercase tracking-wider text-[11px] font-semibold">
                 <th className="py-3.5 px-4">{t("headers.user")}</th>
                 <th className="py-3.5 px-4">{t("headers.role")}</th>
                 <th className="py-3.5 px-4">{t("headers.plan")}</th>
@@ -131,7 +131,7 @@ export function AdminUsersTable({
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-neutral-700 dark:divide-white/5">
               {users.length === 0 ? (
                 <tr>
                   <td
@@ -149,7 +149,7 @@ export function AdminUsersTable({
                   return (
                     <tr
                       key={user.id}
-                      className="hover:bg-white/[0.02] transition-colors"
+                      className="hover:bg-surface/60 dark:hover:bg-white/[0.03] transition-colors"
                     >
                       {/* USUÁRIO */}
                       <td className="py-3.5 px-4">
@@ -162,13 +162,13 @@ export function AdminUsersTable({
                           />
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <p className="font-bold text-neutral-100 truncate">
+                              <p className="font-bold text-neutral-50 dark:text-neutral-100 truncate">
                                 {user.fullName}
                               </p>
                               {user.emailVerified ? (
                                 <span
                                   title={t("verification.verifiedTitle")}
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0"
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 shrink-0"
                                 >
                                   <BadgeCheck size={11} />
                                   <span>{t("verification.verified")}</span>
@@ -176,7 +176,7 @@ export function AdminUsersTable({
                               ) : (
                                 <span
                                   title={t("verification.unverifiedTitle")}
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/25 shrink-0"
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/25 shrink-0"
                                 >
                                   <Clock size={10} />
                                   <span>{t("verification.unverified")}</span>
@@ -193,12 +193,12 @@ export function AdminUsersTable({
                       {/* CARGO */}
                       <td className="py-3.5 px-4">
                         {isAdmin ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30">
                             <Shield size={12} />
                             {t("roles.admin")}
                           </span>
                         ) : (
-                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-neutral-800 text-neutral-400 border border-white/5">
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-surface text-neutral-300 border border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:border-white/5">
                             {t("roles.user")}
                           </span>
                         )}
@@ -208,12 +208,15 @@ export function AdminUsersTable({
                       <td className="py-3.5 px-4">
                         {user.isFounder ? (
                           <div className="flex flex-col gap-1 items-start">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gold/20 text-gold border border-gold/40 shadow-glow-gold-xs">
-                              <Crown size={12} className="fill-gold" />
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gold/20 text-amber-700 dark:text-gold border border-gold/40 shadow-glow-gold-xs">
+                              <Crown
+                                size={12}
+                                className="fill-amber-500 dark:fill-gold"
+                              />
                               {t("plans.founder")}
                             </span>
                             {user.isPremium ? (
-                              <span className="text-[10px] font-semibold text-emerald-400">
+                              <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
                                 {t("plans.premiumActive")}
                               </span>
                             ) : (
@@ -223,12 +226,12 @@ export function AdminUsersTable({
                             )}
                           </div>
                         ) : user.isPremium ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gold/15 text-gold border border-gold/30">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gold/15 text-amber-700 dark:text-gold border border-gold/30">
                             <Crown size={12} />
                             {t("plans.premiumVip")}
                           </span>
                         ) : (
-                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-neutral-800 text-neutral-300 border border-white/5">
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-surface text-neutral-200 border border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:border-white/5">
                             {t("plans.free")}
                           </span>
                         )}
@@ -238,18 +241,21 @@ export function AdminUsersTable({
                       <td className="py-3.5 px-4">
                         <div className="flex flex-col">
                           <div className="flex items-center gap-1.5 font-mono">
-                            <Mail size={13} className="text-amber-400" />
-                            <span className="font-bold text-neutral-200">
+                            <Mail
+                              size={13}
+                              className="text-amber-600 dark:text-amber-400"
+                            />
+                            <span className="font-bold text-neutral-100 dark:text-neutral-200">
                               {user.emailsSentThisMonth}
                             </span>
-                            <span className="text-[11px] text-neutral-500">
+                            <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
                               {t("emails.monthlyQuota", {
                                 limit: isFree ? 20 : 100,
                               })}
                             </span>
                           </div>
                           {user.activeEmailReminders > 0 && (
-                            <span className="text-[10px] text-amber-400 mt-0.5">
+                            <span className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">
                               {t("emails.activeReminders", {
                                 active: user.activeEmailReminders,
                                 max: isFree ? 5 : 30,
@@ -261,10 +267,10 @@ export function AdminUsersTable({
 
                       {/* TAREFAS */}
                       <td className="py-3.5 px-4 font-mono">
-                        <span className="font-bold text-neutral-200">
+                        <span className="font-bold text-neutral-100 dark:text-neutral-200">
                           {user.activeTasksCount}
                         </span>
-                        <span className="text-neutral-500 text-[11px]">
+                        <span className="text-neutral-400 dark:text-neutral-500 text-[11px]">
                           {" "}
                           {t("tasks.totalSuffix", {
                             total: user.totalTasksCount,
@@ -285,7 +291,7 @@ export function AdminUsersTable({
                           return (
                             <div className="flex flex-col gap-1 min-w-[130px]">
                               <div className="flex items-center gap-1.5">
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-success-500/10 text-success-500 border border-success-500/25 font-bold text-[11px]">
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-success-500/10 text-emerald-700 dark:text-success-500 border border-success-500/25 font-bold text-[11px]">
                                   <HardDrive size={11} />
                                   {user.estimatedStorageFormatted}
                                 </span>
@@ -294,10 +300,10 @@ export function AdminUsersTable({
                                 </span>
                               </div>
 
-                              <div className="w-full h-1.5 rounded-full bg-neutral-800 overflow-hidden">
+                              <div className="w-full h-1.5 rounded-full bg-neutral-700 dark:bg-neutral-800 overflow-hidden">
                                 <div
                                   className={cn(
-                                    "h-full rounded-full transition-all duration-300",
+                                    "h-full w-full origin-left rounded-full transition-transform duration-300",
                                     storagePct >= 80
                                       ? "bg-danger-500"
                                       : storagePct >= 50
@@ -305,7 +311,7 @@ export function AdminUsersTable({
                                         : "bg-success-500",
                                   )}
                                   style={{
-                                    width: `${Math.max(storagePct, 2)}%`,
+                                    transform: `scaleX(${Math.max(storagePct, 2) / 100})`,
                                   }}
                                 />
                               </div>
@@ -329,7 +335,7 @@ export function AdminUsersTable({
                           <button
                             type="button"
                             onClick={() => onSelectUser(user)}
-                            className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-200 hover:text-white transition-colors text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                            className="px-2.5 py-1 rounded-lg bg-surface hover:bg-surface-hover border border-neutral-700 text-neutral-100 dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10 dark:text-neutral-200 dark:hover:text-white transition-colors text-xs font-semibold flex items-center gap-1 cursor-pointer"
                             title={t("actions.detailsTitle")}
                           >
                             <Database size={13} />
@@ -342,8 +348,8 @@ export function AdminUsersTable({
                             className={cn(
                               "px-2.5 py-1 rounded-lg transition-colors text-xs font-semibold cursor-pointer border",
                               isAdmin
-                                ? "bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border-purple-500/30"
-                                : "bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border-white/10",
+                                ? "bg-purple-500/15 hover:bg-purple-500/25 text-purple-700 border-purple-500/35 dark:bg-purple-500/10 dark:hover:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30"
+                                : "bg-surface hover:bg-surface-hover text-neutral-200 border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-neutral-300 dark:border-white/10",
                             )}
                             title={
                               isAdmin
@@ -367,7 +373,7 @@ export function AdminUsersTable({
 
         {/* PAGINAÇÃO */}
         {totalPages > 1 ? (
-          <div className="border-t border-white/10 bg-surface-alt/10 px-3 py-1">
+          <div className="border-t border-neutral-700 dark:border-white/10 bg-surface/40 dark:bg-white/[0.02] px-3 py-1">
             <TaskPagination
               currentPage={currentPage + 1}
               totalPages={totalPages}
@@ -378,7 +384,7 @@ export function AdminUsersTable({
             />
           </div>
         ) : totalElements > 0 ? (
-          <div className="p-3 border-t border-white/10 bg-surface-alt/10 text-xs text-neutral-400 text-right">
+          <div className="p-3 border-t border-neutral-700 dark:border-white/10 bg-surface/40 dark:bg-white/[0.02] text-xs text-neutral-400 text-right">
             {t("pagination.totalSinglePagePrefix")}{" "}
             <strong className="text-neutral-200">{totalElements}</strong>{" "}
             {t("pagination.totalSinglePageSuffix")}

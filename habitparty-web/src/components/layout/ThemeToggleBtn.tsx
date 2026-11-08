@@ -27,9 +27,8 @@ export function ThemeToggleBtn({
       return (
         <div
           className={cn(
-            "hidden h-9 w-9 rounded-xl border border-neutral-700/60 bg-card/50 dark:border-white/10 dark:bg-white/[0.04] opacity-50",
+            "h-9 w-9 rounded-xl border border-neutral-700/60 bg-card/50 dark:border-white/10 dark:bg-white/[0.04] opacity-50",
             className,
-            "hidden",
           )}
           aria-hidden="true"
         />
@@ -39,9 +38,8 @@ export function ThemeToggleBtn({
     return (
       <div
         className={cn(
-          "hidden flex w-full items-center justify-between px-3 py-2 rounded-lg text-body-s font-medium text-neutral-400 opacity-60",
+          "flex w-full items-center justify-between px-3 py-2 rounded-lg text-body-s font-medium text-neutral-400 opacity-60",
           className,
-          "hidden",
         )}
         aria-hidden="true"
       >
@@ -61,11 +59,10 @@ export function ThemeToggleBtn({
         type="button"
         onClick={toggleTheme}
         className={cn(
-          "hidden relative inline-flex items-center justify-center h-9 w-9 rounded-xl transition-all duration-200 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-gold/50 group",
-          "border border-neutral-700 bg-card/90 hover:bg-surface-hover hover:border-primary/40 text-neutral-200 hover:text-neutral-50 shadow-2xs backdrop-blur-xs",
+          "relative inline-flex items-center justify-center h-9 w-9 rounded-xl transition-colors duration-200 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-gold/50 group",
+          "border border-neutral-700 bg-card hover:bg-surface-hover hover:border-primary/40 text-neutral-200 hover:text-neutral-50 shadow-2xs",
           "dark:border-white/12 dark:bg-white/[0.04] dark:hover:bg-white/[0.09] dark:hover:border-gold/40 dark:text-neutral-200 dark:hover:text-white dark:shadow-none",
           className,
-          "hidden",
         )}
         aria-label={
           isLight ? t("switchToDarkIconAria") : t("switchToLightIconAria")
@@ -74,7 +71,7 @@ export function ThemeToggleBtn({
       >
         {isLight ? (
           <Moon
-            className="w-4 h-4 text-primary group-hover:text-gold transition-all duration-200 group-hover:-rotate-12"
+            className="w-4 h-4 text-primary group-hover:text-gold transition-[transform,color] duration-200 group-hover:-rotate-12"
             aria-hidden="true"
           />
         ) : (
@@ -93,9 +90,8 @@ export function ThemeToggleBtn({
       type="button"
       onClick={toggleTheme}
       className={cn(
-        "hidden flex w-full items-center justify-between px-3 py-2 rounded-lg transition-all text-body-s font-medium outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 text-neutral-200 hover:bg-surface-hover hover:text-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-500/10 dark:hover:text-neutral-50 border-r-2 border-transparent text-left cursor-pointer group select-none",
+        "flex w-full items-center justify-between px-3 py-2 rounded-lg transition-colors text-body-s font-medium outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 text-neutral-200 hover:bg-surface-hover hover:text-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-500/10 dark:hover:text-neutral-50 border-r-2 border-transparent text-left cursor-pointer group select-none",
         className,
-        "hidden",
       )}
       aria-label={
         isLight ? t("switchToDarkRowAria") : t("switchToLightRowAria")

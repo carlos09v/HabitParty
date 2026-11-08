@@ -32,6 +32,8 @@
     "experienceModeDesc": "Escolha o estilo da sua gamificação: interface executiva com créditos e pontos no Modo Essencial ou imersão RPG com moedas de ouro, XP e caixas misteriosas no Modo Aventura.",
     "language": "Idioma da Interface",
     "languageDesc": "Escolha o idioma de exibição dos menus, painéis e mensagens do HabitParty.",
+    "dateFormat": "Formato de Data",
+    "dateFormatDesc": "Escolha como as datas são exibidas em calendários, prazos de tarefas, foco e histórico.",
     "compact": "Densidade da Interface",
     "compactDesc": "Ajuste o espaçamento de elementos na tela para seu estilo de uso.",
     "welcomeCards": "Cards Introdutórios das Telas",
@@ -134,6 +136,22 @@
     "activeLabel": "Idioma ativo: ",
     "statusDesc": "O Português (Brasil) está ativo em toda a sua interface."
   },
+  "dateFormatCard": {
+    "ddmmyyyyLabel": "Dia / Mês / Ano",
+    "ddmmyyyyDesc": "Formato tradicional brasileiro e europeu (DD/MM/AAAA).",
+    "ddmmyyyyExample": "31/12/2026",
+    "mmddyyyyLabel": "Mês / Dia / Ano",
+    "mmddyyyyDesc": "Formato norte-americano com o mês antes do dia (MM/DD/AAAA).",
+    "mmddyyyyExample": "12/31/2026",
+    "yyyymmddLabel": "Ano - Mês - Dia (ISO)",
+    "yyyymmddDesc": "Padrão técnico internacional ISO 8601 (AAAA-MM-DD).",
+    "yyyymmddExample": "2026-12-31",
+    "activeLabel": "Formato ativo: ",
+    "statusDdmmyyyy": "DD/MM/AAAA (Dia / Mês / Ano) aplicado em toda a plataforma.",
+    "statusMmddyyyy": "MM/DD/AAAA (Mês / Dia / Ano) aplicado em toda a plataforma.",
+    "statusYyyymmdd": "AAAA-MM-DD (Padrão ISO) aplicado em toda a plataforma.",
+    "toastSuccess": "Formato de data alterado para {format}!"
+  },
   "compactMode": {
     "compact": "Modo Compacto",
     "compactDesc": "Cards, calendários e listas menores. Otimiza o espaço de tela para visualização simultânea de mais tarefas e itens de recompensa. Recomendado para maior produtividade.",
@@ -145,6 +163,7 @@
     "statusLabel": "Status atual: "
   },
   "avatarFrames": {
+    "title": "Moldura do Avatar",
     "upgradeToast": "Molduras animadas são exclusivas para membros Premium! Faça o upgrade para desbloquear.",
     "vipBadge": "VIP Cósmico",
     "defaultBadge": "Padrão",

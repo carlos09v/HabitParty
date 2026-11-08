@@ -55,9 +55,10 @@ export function WorkspaceSwitcher({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [isPending, startTransition] = useTransition();
 
-  const { workspaces, activeWorkspaceId, setActiveWorkspaceId } =
-    useWorkspaceStore();
-  const { is_Premium } = useUserStore();
+  const workspaces = useWorkspaceStore((s) => s.workspaces);
+  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
+  const setActiveWorkspaceId = useWorkspaceStore((s) => s.setActiveWorkspaceId);
+  const is_Premium = useUserStore((s) => s.is_Premium);
 
   const maxWorkspaces = is_Premium ? 4 : 2;
   const canAddMore = workspaces.length < maxWorkspaces;
@@ -269,7 +270,7 @@ export function WorkspaceSwitcher({
           aria-haspopup="listbox"
           aria-expanded={isOpen}
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border-gradient-switcher transition-all focus:outline-none focus:ring-2 focus:ring-gold/50 cursor-pointer"
+          className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border-gradient-switcher transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 cursor-pointer"
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-7 h-7 rounded-lg bg-primary/15 dark:bg-gold/20 border border-primary/25 dark:border-gold/40 flex items-center justify-center text-primary dark:text-gold font-bold text-xs shrink-0 shadow-xs">
@@ -295,11 +296,11 @@ export function WorkspaceSwitcher({
         </button>
 
         {isOpen && (
-          <div className="absolute top-full right-0 sm:left-0 mt-2 min-w-[210px] w-full bg-popover/95 border border-primary/40 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col backdrop-blur-md animate-in fade-in zoom-in-95 duration-100">
+          <div className="absolute top-full right-0 sm:left-0 mt-2 min-w-[210px] w-full bg-popover border border-neutral-700 dark:border-primary/40 rounded-xl shadow-popover-dark dark:shadow-2xl z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100">
             {/* Cabeçalho com indicador de contagem */}
-            <div className="flex items-center justify-between px-3 py-1.5 border-b border-primary/20 bg-background/40 text-tiny text-neutral-400 font-semibold select-none">
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-neutral-700 dark:border-primary/20 bg-surface/60 dark:bg-background/40 text-tiny text-neutral-400 font-semibold select-none">
               <span>{t("yourWorkspaces")}</span>
-              <span className="text-gold font-bold font-mono">
+              <span className="text-amber-700 dark:text-gold font-bold font-mono">
                 {t("counter", {
                   current: workspaces.length,
                   max: maxWorkspaces,
@@ -332,7 +333,7 @@ export function WorkspaceSwitcher({
                           "w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold shrink-0",
                           isActive
                             ? "bg-gold text-on-gold"
-                            : "bg-white/10 text-neutral-300",
+                            : "bg-surface dark:bg-white/10 text-neutral-300",
                         )}
                       >
                         {(ws.name || "W").charAt(0).toUpperCase()}
@@ -391,13 +392,13 @@ export function WorkspaceSwitcher({
                     title={t("lockedPreservedTitle", {
                       count: blockedWorkspaces.length,
                     })}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gold/90 hover:text-gold bg-gold/5 hover:bg-gold/15 border border-gold/20 hover:border-gold/40 transition-all cursor-pointer group text-left"
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold text-amber-700 dark:text-gold/90 hover:text-amber-800 dark:hover:text-gold bg-amber-500/10 hover:bg-amber-500/15 dark:bg-gold/5 dark:hover:bg-gold/15 border border-amber-500/30 dark:border-gold/20 hover:border-amber-500/50 dark:hover:border-gold/40 transition-colors cursor-pointer group text-left"
                     aria-expanded={isBlockedExpanded}
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <Lock
                         size={13}
-                        className="text-gold/70 group-hover:text-gold shrink-0"
+                        className="text-amber-600 dark:text-gold/70 group-hover:text-amber-700 dark:group-hover:text-gold shrink-0"
                       />
                       <span className="truncate">
                         {t("lockedCount", {
@@ -406,7 +407,7 @@ export function WorkspaceSwitcher({
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0 ml-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-gold px-1.5 py-0.5 rounded bg-gold/15 border border-gold/30">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-gold px-1.5 py-0.5 rounded bg-amber-500/15 dark:bg-gold/15 border border-amber-500/35 dark:border-gold/30">
                         VIP 👑
                       </span>
                       <ChevronDown
@@ -448,7 +449,7 @@ export function WorkspaceSwitcher({
                                   "w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold shrink-0",
                                   isActive
                                     ? "bg-gold text-on-gold"
-                                    : "bg-white/10 text-neutral-300",
+                                    : "bg-surface dark:bg-white/10 text-neutral-300",
                                 )}
                               >
                                 {(ws.name || "W").charAt(0).toUpperCase()}
@@ -513,7 +514,7 @@ export function WorkspaceSwitcher({
               )}
             </ul>
 
-            <div className="border-t border-primary/30 p-2 bg-background/30">
+            <div className="border-t border-neutral-700 dark:border-primary/30 p-2 bg-surface/50 dark:bg-background/30">
               <button
                 type="button"
                 onClick={() => {
@@ -556,37 +557,45 @@ export function WorkspaceSwitcher({
         )}
       </div>
 
-      <CreateWorkspaceModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleCreate}
-      />
+      {isModalOpen && (
+        <CreateWorkspaceModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleCreate}
+        />
+      )}
 
-      <CreateWorkspaceModal
-        isOpen={!!workspaceToEdit}
-        isEdit={true}
-        initialName={workspaceToEdit?.name || ""}
-        isLoading={isPending}
-        onClose={() => {
-          if (!isPending) setWorkspaceToEdit(null);
-        }}
-        onSubmit={handleUpdate}
-      />
+      {workspaceToEdit && (
+        <CreateWorkspaceModal
+          isOpen={true}
+          isEdit={true}
+          initialName={workspaceToEdit.name}
+          isLoading={isPending}
+          onClose={() => {
+            if (!isPending) setWorkspaceToEdit(null);
+          }}
+          onSubmit={handleUpdate}
+        />
+      )}
 
-      <DeleteWorkspaceModal
-        isOpen={!!workspaceToDelete}
-        workspaceName={workspaceToDelete?.name || ""}
-        isLoading={isPending}
-        onClose={() => {
-          if (!isPending) setWorkspaceToDelete(null);
-        }}
-        onConfirm={handleConfirmDelete}
-      />
+      {workspaceToDelete && (
+        <DeleteWorkspaceModal
+          isOpen={true}
+          workspaceName={workspaceToDelete.name}
+          isLoading={isPending}
+          onClose={() => {
+            if (!isPending) setWorkspaceToDelete(null);
+          }}
+          onConfirm={handleConfirmDelete}
+        />
+      )}
 
-      <UpgradePremiumModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-      />
+      {isUpgradeModalOpen && (
+        <UpgradePremiumModal
+          isOpen={isUpgradeModalOpen}
+          onClose={() => setIsUpgradeModalOpen(false)}
+        />
+      )}
     </>
   );
 }

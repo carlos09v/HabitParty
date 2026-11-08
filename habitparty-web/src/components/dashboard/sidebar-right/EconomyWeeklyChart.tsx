@@ -65,7 +65,7 @@ export function EconomyWeeklyChart({
       {/* Barras do gráfico com barras duplas (Ganhos vs Gastos) e tooltip flutuante */}
       <div
         className={cn(
-          "w-full flex items-end justify-between gap-2 sm:gap-3 px-2 border-b border-white/10 relative",
+          "w-full flex items-end justify-between gap-2 sm:gap-3 px-2 border-b border-neutral-700 dark:border-white/10 relative",
           isCompact ? "h-14" : "h-16",
         )}
         role="img"
@@ -97,7 +97,7 @@ export function EconomyWeeklyChart({
             >
               {/* Balãozinho flutuante detalhado no hover */}
               {isHovered && (
-                <div className="tooltip-dark absolute -top-20 px-2.5 py-1.5 rounded-lg border border-white/15 text-neutral-100 shadow-xl pointer-events-none whitespace-nowrap z-30 transition-all transform -translate-y-1 backdrop-blur-md flex flex-col gap-0.5 text-tiny">
+                <div className="tooltip-dark absolute -top-20 px-2.5 py-1.5 rounded-lg border border-white/15 text-neutral-100 shadow-xl pointer-events-none whitespace-nowrap z-30 transform -translate-y-1 flex flex-col gap-0.5 text-tiny">
                   <span className="font-bold text-neutral-300 border-b border-white/10 pb-0.5">
                     {fullLabel}
                   </span>
@@ -136,12 +136,12 @@ export function EconomyWeeklyChart({
                 {/* Barra de Ganhos */}
                 <div
                   className={cn(
-                    "w-2 sm:w-2.5 rounded-t transition-all duration-300 ease-out origin-bottom",
+                    "w-2 sm:w-2.5 rounded-t transition-[transform,scale,background-color,box-shadow] duration-300 ease-out origin-bottom",
                     bar.isHighlight
                       ? "bg-gold shadow-glow-gold-xs"
                       : "bg-gold/80",
                     isHovered &&
-                      "brightness-125 scale-y-[1.05] bg-gold shadow-glow-gold-sm",
+                      "scale-y-[1.05] bg-gold-hover dark:bg-gold shadow-glow-gold-sm",
                   )}
                   style={{ height: `${bar.heightPercent}%` }}
                 />
@@ -149,11 +149,11 @@ export function EconomyWeeklyChart({
                 {/* Barra de Gastos */}
                 <div
                   className={cn(
-                    "w-2 sm:w-2.5 rounded-t transition-all duration-300 ease-out origin-bottom",
+                    "w-2 sm:w-2.5 rounded-t transition-[transform,scale,background-color,box-shadow] duration-300 ease-out origin-bottom",
                     bar.isHighlight
-                      ? "bg-rose-400 shadow-[0_0_8px_rgba(251,113,133,0.3)]"
-                      : "bg-rose-400/80",
-                    isHovered && "brightness-125 scale-y-[1.05] bg-rose-400",
+                      ? "bg-rose-500 dark:bg-rose-400 shadow-[0_0_8px_rgba(251,113,133,0.3)]"
+                      : "bg-rose-500/75 dark:bg-rose-400/80",
+                    isHovered && "scale-y-[1.05] bg-rose-600 dark:bg-rose-400",
                   )}
                   style={{ height: `${bar.spentHeightPercent ?? 6}%` }}
                 />
@@ -163,7 +163,7 @@ export function EconomyWeeklyChart({
                 className={cn(
                   "text-tiny leading-none transition-colors",
                   bar.isHighlight || isHovered
-                    ? "text-gold font-bold"
+                    ? "text-amber-700 dark:text-gold font-bold"
                     : "text-neutral-400 font-medium group-hover/bar:text-neutral-200",
                 )}
               >

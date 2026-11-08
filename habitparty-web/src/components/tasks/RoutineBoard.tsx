@@ -62,7 +62,7 @@ export function RoutineBoard({
   if (columns.length === 0) {
     return (
       <div className="w-full flex-1 flex flex-col items-center justify-center text-center p-6 sm:p-12">
-        <div className="max-w-md w-full flex flex-col items-center gap-4 p-8 rounded-2xl border border-dashed border-primary/35 bg-primary-dark/20 backdrop-blur-xs">
+        <div className="max-w-md w-full flex flex-col items-center gap-4 p-8 rounded-2xl border border-dashed border-primary/35 bg-primary-dark/20">
           <div className="w-16 h-16 rounded-2xl bg-gold/15 border border-gold/30 flex items-center justify-center text-gold shadow-glow-gold-xs">
             <Columns3 size={32} />
           </div>
@@ -78,7 +78,7 @@ export function RoutineBoard({
             <button
               type="button"
               onClick={onAddColumn}
-              className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gold hover:bg-gold-hover text-neutral-950 font-bold text-sm shadow-glow-gold-xs transition-all cursor-pointer"
+              className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gold hover:bg-gold-hover text-neutral-950 font-bold text-sm shadow-glow-gold-xs transition-colors cursor-pointer"
             >
               <Plus size={16} />
               <span>{t("createFirstColumnButton")}</span>
@@ -134,7 +134,7 @@ export function RoutineBoard({
               <div
                 key={column.id}
                 className={cn(
-                  "h-full shrink-0 flex flex-col transition-[width] duration-150",
+                  "h-full shrink-0 flex flex-col",
                   resolveColumnWidthClass(column.id),
                 )}
               >

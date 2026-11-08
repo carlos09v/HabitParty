@@ -108,20 +108,22 @@ export function awardUserRewards(
 
     toast.success(
       <div className="flex flex-col gap-1 py-0.5">
-        <div className="flex items-center gap-1.5 font-bold text-gold">
+        <div className="flex items-center gap-1.5 font-bold text-amber-700 dark:text-gold">
           <span className="text-base leading-none">👑</span>
           <span className="tracking-wide uppercase text-xs">{titleText}</span>
         </div>
         <p className="text-body-s text-neutral-100">
           {prefixText}{" "}
-          <strong className="text-gold font-bold">{localizedNewTitle}</strong>
+          <strong className="text-amber-700 dark:text-gold font-bold">
+            {localizedNewTitle}
+          </strong>
           {suffixText}
         </p>
       </div>,
       {
         duration: 6000,
         className:
-          "border-gold/50 bg-surface/95 backdrop-blur-md shadow-xl shadow-gold/10",
+          "border-amber-500/45 dark:border-gold/50 !bg-card dark:!bg-surface shadow-card-active dark:shadow-xl",
       },
     );
   }

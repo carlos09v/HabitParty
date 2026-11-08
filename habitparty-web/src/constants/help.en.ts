@@ -3,7 +3,11 @@ import { DIFFICULTY_REWARDS } from "@/constants/task";
 import rewardsEn from "@/messages/en/rewards.json";
 import type { HelpFaqItem, HelpTableEntry } from "@/types/help";
 import { formatCoins } from "@/utils";
-import { LEVEL_TITLES_EN, USER_LEVELS } from "@/utils/levels";
+import {
+  LEVEL_TITLES_EN,
+  LEVEL_TITLES_PRODUCTIVITY_EN,
+  USER_LEVELS,
+} from "@/utils/levels";
 
 /**
  * Conteúdo extenso da Central de Ajuda em inglês (FAQ e tabelas de referência).
@@ -169,11 +173,12 @@ export const HELP_TABLES_EN: Record<string, HelpTableEntry> = {
   userLevels: {
     title: "🏆 User Levels (UserLevel & Lifetime XP)",
     description:
-      "Your total accumulated XP is never spent or reset when buying rewards. It serves as a milestone of consistency and maturity.",
+      "Your total accumulated XP/Points is never spent or reset when buying rewards. The displayed rank title automatically adapts to your chosen style (Adventure Mode vs. Essential Mode).",
     category: "LEVELS",
     columns: [
-      "Level",
-      "Required XP",
+      "Adventure Mode (RPG)",
+      "Essential Mode (Productivity)",
+      "Required XP / Points",
       "Estimated Medium Tasks",
       "Estimated Time",
     ],
@@ -181,7 +186,8 @@ export const HELP_TABLES_EN: Record<string, HelpTableEntry> = {
       const meta = LEVEL_PROGRESSION_META_EN[lvl.tier];
       return [
         LEVEL_TITLES_EN[lvl.tier],
-        `${lvl.minXpRequired.toLocaleString("en-US")} XP`,
+        LEVEL_TITLES_PRODUCTIVITY_EN[lvl.tier],
+        `${lvl.minXpRequired.toLocaleString("en-US")} XP / pts`,
         meta?.tasksEstimate || "-",
         meta?.timeEstimate || "-",
       ];
@@ -231,6 +237,50 @@ export const HELP_TABLES_EN: Record<string, HelpTableEntry> = {
       ],
     ],
   },
+  achievementRarities: {
+    title: "🏅 Achievements Catalog, Rarities & Trophy Score (/profile)",
+    description:
+      "All 63 permanent achievements (4,170 pts in total) reward execution milestones, streaks, deep focus, economy goals, organization, and secret behaviors with Achievement Points (Trophy Score) and can be pinned to the 4 highlight slots on your Showcase.",
+    category: "LEVELS",
+    columns: [
+      "Rarity / Tier",
+      "Achievement Points",
+      "Medals in Catalog",
+      "Examples of Unlockable Milestones",
+    ],
+    rows: [
+      [
+        "⚪ Common",
+        "+10 pts",
+        "12 achievements",
+        "1st Task, 10 Tasks, 3 and 7-day Streaks, 1st and 10 Focus Sessions, 100 Coins, 1st Reward, 100 / 300 / 750 XP, 1st Mystery Box (Secret).",
+      ],
+      [
+        "🟢 Uncommon",
+        "+25 pts",
+        "14 achievements",
+        "50 and 100 Tasks, 5 Hard Tasks, 14 and 21-day Streaks, 45m Deep Work, 25 Pomodoros, 500 Coins, 25 Rewards, 3,000 XP, 2 Workspaces, Complete Trophy Shelf (4 Highlights), 1st Hardcore (Secret), 5 Mystery Boxes (Secret).",
+      ],
+      [
+        "🔵 Rare",
+        "+50 pts",
+        "18 achievements",
+        "250 Tasks, Flawless Checklist (20), Royal Punctuality (20 On-Time To-Dos), 30 and 60-day Streaks, Impulse Mastery (7 Clean Habit Cycles), 90m Flow State, 10h Focus, Bullseye Focus (10 Activity Goals Met), 1,000 Coins, 500-coin Wallet, 5 Depleted Time Coupons, 6,000 / 12,000 XP, Curated Showcase, 10 Hardcore, Midnight Owl & Early Bird (Secret).",
+      ],
+      [
+        "🟣 Epic",
+        "+100 pts",
+        "13 achievements",
+        "500 Tasks, 25 Hard Tasks, 90 and 180-day Streaks, 50h / 100h Focus, 100 Pomodoros, 5,000 Coins, 100 Rewards, 25,000 XP, 1,000 Trophy Points, 50 Hardcore & 25 Mystery Boxes (Secret).",
+      ],
+      [
+        "🟡 Legendary",
+        "+250 pts",
+        "6 achievements",
+        "1,000 Tasks, 100 Hard Tasks, 365-day Streak, 200h Focus, 15,000 Coins Earned, Legend Rank (60,000 XP).",
+      ],
+    ],
+  },
 };
 
 export const HELP_FAQS_EN: HelpFaqItem[] = [
@@ -260,7 +310,7 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
     answer:
       "HabitParty offers two experience profiles powered by the exact same mathematical consistency engine, Kanban boards, Pomodoro timer, and transaction history, adapting terminology, visual indicators, and reward mechanics to your workflow:",
     bullets: [
-      "Essential Mode (Productivity): Gamified productivity with a clean, executive aesthetic. It replaces Gold Coins with Credits and XP with Points (pts), uses professional progression titles, shows discreet Effort indicators (instead of swords), focuses on direct personal rewards in the Store (without Mystery Box RNG), and uses executive terminology ('Strict Deadline' instead of 'Hardcore Mode' and 'Inventory' instead of 'Backpack').",
+      "Essential Mode (Productivity): Gamified productivity with a clean, executive aesthetic. It replaces Gold Coins with Credits and XP with Points (pts), uses professional progression titles (Beginner to High Performance), shows discreet Effort indicators (instead of swords), focuses on direct personal rewards in the Store (without Mystery Box RNG), and uses executive terminology ('Strict Deadline' instead of 'Hardcore Mode' and 'Inventory' instead of 'Backpack').",
       "Adventure Mode (RPG Immersion): Full RPG gamification with immediate dopamine feedback. It turns your daily grind into quests with Gold Coins (🪙) and lifetime XP, adventurer ranks (Novice to Legend), sword icons for task difficulty, high-stakes Hardcore Mode, Mystery Boxes (Gacha/RNG) in the Store, an item Backpack, and celebratory sound effects.",
       "1:1 Equivalence & Instant Switching: 1 Gold Coin equals 1 Credit, and 1 XP equals 1 Point (pts). You choose your profile during onboarding and can switch anytime in Settings > Appearance > Experience Style with 1 click, keeping all your balance, level, and history intact.",
     ],
@@ -298,9 +348,10 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
   {
     id: "hardcore-mode",
     category: "TASKS",
-    question: "What is Strict Deadline / Hardcore Mode on tasks?",
+    question:
+      "What is Strict Deadline / Daily Commitment / Hardcore Mode on tasks?",
     answer:
-      "It is a high-accountability commitment available for Habits, Dailies, and To-Dos. Its name adapts to your active Experience Mode: it is called 'Strict Deadline (Non-negotiable)' in Essential Mode (Productivity), and 'Hardcore Mode' in Adventure Mode (RPG). When enabled:",
+      "It is a high-accountability commitment available for Habits, Dailies, and To-Dos. Its name adapts to your active Experience Mode and task type: it is called 'Strict Deadline' (on To-Dos) or 'Daily Commitment' (on Habits/Dailies) in Essential Mode (Productivity), and 'Hardcore Mode' in Adventure Mode (RPG). When enabled:",
     bullets: [
       "To-Dos: The due date becomes mandatory and cannot be postponed once overdue. Completing an overdue task yields only 50% of the normal reward.",
       "Midnight Penalty: If the activity is not finished by 11:59 PM of the due date, the system deducts 50% of Coins/XP (in Adventure Mode) or Credits/Points (in Essential Mode) from your balance.",
@@ -532,5 +583,54 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
       "notice",
     ],
     highlightBadge: "Transparency",
+  },
+  {
+    id: "profile-showcase",
+    category: "LEVELS",
+    question:
+      "How do the Profile Showcase (/profile) and the 4 Highlight Slots work?",
+    answer:
+      "Clicking your profile card in the bottom of the Sidebar opens your Adventurer Showcase (/profile). It acts as your official calling card, combining your visual identity, lifetime statistics, and a customizable trophy shelf at the top:",
+    bullets: [
+      "Identity & Bio: Display your Avatar with an Animated Frame, Pioneer Founder or VIP badge, current level rank, total achievement score (🏆 pts), and a custom motto/bio of up to 160 characters.",
+      "4 Highlight Slots (Trophy Shelf): Freely pick up to 4 items to pin at the top of your showcase — mixing Unlocked Achievements, Account Badges (Founder, VIP Guardian, Verified Account, Level Rank), or Live Stat Records (Highest Streak, Focus Hours, Tasks Completed, Total XP).",
+      "Visitor View Mode: Toggle the 'Visitor View' button at the top of your showcase with 1 click to preview how your profile looks without editing controls.",
+    ],
+    tags: [
+      "showcase",
+      "profile",
+      "highlights",
+      "badges",
+      "bio",
+      "founder",
+      "trophy shelf",
+    ],
+    highlightBadge: "New • 1.2",
+    actionLink: { label: "Open My Showcase", href: "/profile" },
+  },
+  {
+    id: "achievements-system",
+    category: "LEVELS",
+    question:
+      "How do the 63 Achievements, Achievement Points, and Secret Medals work?",
+    answer:
+      "HabitParty's Achievements system features 63 permanent medals (4,170 pts in total) across 6 categories (Quests & Execution, Streaks, Focus, Economy & Shop, Progression, and Special) and 5 rarity tiers (Common to Legendary):",
+    bullets: [
+      "Real-Time Automatic Unlocking: Whenever you complete a task, log a habit check-in, finish a focus session, redeem a reward, open a Mystery Box, or create a new Workspace, the server evaluates your progress and unlocks new medals automatically with a crystalline trophy sound effect.",
+      "Achievement Points (Trophy Score): Each medal grants from +10 pts (Common) to +250 pts (Legendary), building your prestige score displayed in the Sidebar and Showcase (without inflating the shop coin economy). Reaching 1,000 pts also unlocks the 'Glory Collector' medal.",
+      "Behavioral Achievements: Beyond volume, some medals reward how you work — completing 20 To-Dos before their due date (Royal Punctuality), finishing 7 cycles of Negative/Mixed Habits with zero relapses (Impulse Mastery), hitting 10 Focus Activity time goals (Bullseye Focus), completing tasks with 100% of their checklist done, burning Backpack time coupons on the Focus Stage, keeping 500 coins saved in your wallet, filling all 4 Showcase slots, or organizing your life into 2 Workspaces.",
+      "Secret Achievements (???): 8 special medals (Hardcore, Mystery Boxes, Midnight Owl, and Early Bird) remain masked with '???' until you discover and fulfill their secret condition. Focus session times use your device's local clock.",
+    ],
+    tags: [
+      "achievements",
+      "medals",
+      "trophies",
+      "achievement points",
+      "secret",
+      "rarity",
+      "sound",
+    ],
+    highlightBadge: "New • 1.2",
+    actionLink: { label: "View Achievements Gallery", href: "/profile" },
   },
 ];

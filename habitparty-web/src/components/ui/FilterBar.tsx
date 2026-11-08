@@ -43,7 +43,7 @@ export function FilterBar({
   return (
     <nav
       className={cn(
-        "flex flex-col xl:flex-row items-stretch xl:items-center justify-between w-full transition-all",
+        "flex flex-col xl:flex-row items-stretch xl:items-center justify-between w-full",
         isCompact ? "gap-2.5" : "gap-4",
       )}
       aria-label={t("navAria")}
@@ -52,7 +52,7 @@ export function FilterBar({
         {search && (
           <div
             className={cn(
-              "flex items-center gap-2 rounded-lg bg-surface border border-white/15 w-full sm:w-auto sm:max-w-xs flex-1 transition-all focus-within:border-primary-light focus-within:shadow-[0_0_8px_rgba(168,99,255,0.25)]",
+              "flex items-center gap-2 rounded-lg bg-card dark:bg-surface border border-neutral-600 dark:border-white/15 shadow-2xs dark:shadow-none w-full sm:w-auto sm:max-w-xs flex-1 transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 dark:focus-within:ring-0 dark:focus-within:border-primary-light dark:focus-within:shadow-[0_0_8px_rgba(168,99,255,0.25)]",
               isCompact
                 ? "px-2.5 py-1.5 min-w-0 sm:min-w-44"
                 : "px-3 py-2.5 min-w-0 sm:min-w-56",
@@ -131,11 +131,11 @@ export function FilterBar({
               type="button"
               onClick={() => setIsMobileFiltersOpen(true)}
               className={cn(
-                "flex items-center gap-1.5 rounded-lg border font-semibold transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold/50",
+                "flex items-center gap-1.5 rounded-lg border font-semibold transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold/50",
                 isCompact ? "px-2.5 py-1.5 text-xs" : "px-3 py-2 text-sm",
                 activeFiltersCount > 0
-                  ? "border-gold/50 bg-gold/15 text-gold shadow-glow-gold-xs font-bold"
-                  : "border-white/20 bg-surface text-neutral-200 hover:border-white/30",
+                  ? "border-amber-500/45 bg-amber-500/15 text-amber-800 dark:border-gold/50 dark:bg-gold/15 dark:text-gold shadow-glow-gold-xs font-bold"
+                  : "border-neutral-700 dark:border-white/20 bg-card dark:bg-surface text-neutral-200 hover:border-neutral-600 dark:hover:border-white/30",
               )}
               aria-label={t("openFiltersAria")}
             >
@@ -183,29 +183,29 @@ export function FilterBar({
           aria-label={t("mobileDialogAria")}
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
         >
-          {/* Backdrop com blur suave */}
+          {/* Backdrop */}
           <button
             type="button"
             aria-label={t("closeFiltersAria")}
             onClick={() => setIsMobileFiltersOpen(false)}
-            className="fixed inset-0 bg-neutral-950/75 backdrop-blur-xs transition-opacity animate-in fade-in duration-200 cursor-default border-none p-0 m-0 w-full h-full"
+            className="fixed inset-0 bg-neutral-950/80 transition-opacity animate-in fade-in duration-200 cursor-default border-none p-0 m-0 w-full h-full"
           />
 
           {/* Painel do Bottom Sheet */}
-          <div className="relative w-full sm:max-w-md bg-surface border-t sm:border border-white/15 rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl flex flex-col gap-4 z-10 animate-in slide-in-from-bottom duration-300 max-h-[85dvh] overflow-y-auto custom-scrollbar">
+          <div className="relative w-full sm:max-w-md bg-card dark:bg-surface border-t sm:border border-neutral-700 dark:border-white/15 rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl flex flex-col gap-4 z-10 animate-in slide-in-from-bottom duration-300 max-h-[85dvh] overflow-y-auto custom-scrollbar">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+            <div className="flex items-center justify-between border-b border-neutral-700 dark:border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <SlidersHorizontal
                   size={18}
-                  className="text-gold"
+                  className="text-amber-600 dark:text-gold"
                   aria-hidden="true"
                 />
                 <h3 className="font-bold text-neutral-50 text-base">
                   {t("filters")}
                 </h3>
                 {activeFiltersCount > 0 && (
-                  <span className="text-xs bg-gold/20 text-gold font-bold px-2 py-0.5 rounded-full border border-gold/30">
+                  <span className="text-xs bg-amber-500/15 dark:bg-gold/20 text-amber-800 dark:text-gold font-bold px-2 py-0.5 rounded-full border border-amber-500/35 dark:border-gold/30">
                     {activeFiltersCount === 1
                       ? t("activeCountSingular")
                       : t("activeCountPlural", { count: activeFiltersCount })}
@@ -215,7 +215,7 @@ export function FilterBar({
               <button
                 type="button"
                 onClick={() => setIsMobileFiltersOpen(false)}
-                className="text-neutral-400 hover:text-neutral-100 p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                className="text-neutral-400 hover:text-neutral-100 p-1.5 rounded-lg hover:bg-surface-hover dark:hover:bg-white/10 transition-colors cursor-pointer"
                 aria-label={t("closeFiltersAria")}
               >
                 <X size={18} />
@@ -238,7 +238,7 @@ export function FilterBar({
             </div>
 
             {/* Rodapé de Ações */}
-            <div className="flex items-center gap-3 pt-3 border-t border-white/10 mt-1">
+            <div className="flex items-center gap-3 pt-3 border-t border-neutral-700 dark:border-white/10 mt-1">
               {hasActiveDropdowns && onClearDropdowns && (
                 <button
                   type="button"
@@ -246,7 +246,7 @@ export function FilterBar({
                     onClearDropdowns();
                     setIsMobileFiltersOpen(false);
                   }}
-                  className="flex-1 py-2.5 rounded-xl border border-white/15 text-neutral-300 hover:text-neutral-100 text-sm font-semibold hover:bg-white/5 transition-colors text-center cursor-pointer"
+                  className="flex-1 py-2.5 rounded-xl border border-neutral-700 dark:border-white/15 text-neutral-300 hover:text-neutral-100 text-sm font-semibold hover:bg-surface dark:hover:bg-white/5 transition-colors text-center cursor-pointer"
                 >
                   {t("clear")}
                 </button>
@@ -254,7 +254,7 @@ export function FilterBar({
               <button
                 type="button"
                 onClick={() => setIsMobileFiltersOpen(false)}
-                className="flex-1 py-2.5 rounded-xl bg-gold text-neutral-950 font-bold text-sm hover:bg-gold-hover shadow-glow-gold-xs transition-all text-center cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl bg-gold text-on-gold font-bold text-sm hover:bg-gold-hover shadow-glow-gold-xs transition-colors text-center cursor-pointer"
               >
                 {t("apply")}
               </button>

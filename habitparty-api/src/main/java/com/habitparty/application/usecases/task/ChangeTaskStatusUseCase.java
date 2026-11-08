@@ -2,12 +2,14 @@ package com.habitparty.application.usecases.task;
 
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsUseCase;
 import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.task.Task;
@@ -22,12 +24,18 @@ public class ChangeTaskStatusUseCase {
   private final TaskRepository taskPort;
   private final TransactionHistoryRepository transactionPort;
   private final UserRepository userPort;
+  private EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
 
   public ChangeTaskStatusUseCase(TaskRepository taskPort, TransactionHistoryRepository transactionPort,
       UserRepository userPort) {
     this.taskPort = taskPort;
     this.transactionPort = transactionPort;
     this.userPort = userPort;
+  }
+
+  @Autowired(required = false)
+  public void setEvaluateUserAchievementsUseCase(EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
+    this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
   }
 
   @Transactional
@@ -64,6 +72,9 @@ public class ChangeTaskStatusUseCase {
       };
 
       TaskGamificationHelper.awardTaskCompletion(user, task, txType, userPort, transactionPort);
+      if (evaluateUserAchievementsUseCase != null) {
+        evaluateUserAchievementsUseCase.execute(user);
+      }
       task.registerCompletion();
     }
 

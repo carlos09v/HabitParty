@@ -117,6 +117,7 @@ export function CreateTaskModal({
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
+      onOpenAnimationEnd={form.handleModalAnimationEnd}
       title={isEditing ? t("editTitle") : t("createTitle")}
       headerIcon={<TypeHeaderIcon size={20} />}
       headerIconClassName={headerIconClassName}
@@ -213,7 +214,7 @@ export function CreateTaskModal({
           <button
             type="submit"
             disabled={form.isPending || !form.name.trim() || !form.columnId}
-            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
           >
             {form.isPending ? (
               <>

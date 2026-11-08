@@ -23,9 +23,10 @@ export default async function OnboardingLayout({
         ORBES DE LUZ CÓSMICOS SUTIS (Identidade HabitParty)
         ==================================================== 
       */}
-        <div className="cosmic-orb absolute top-[-10%] left-[20%] w-[500px] h-[500px] rounded-full bg-magenta/15 blur-[250px] pointer-events-none z-0 opacity-25 dark:opacity-100" />
-        <div className="cosmic-orb absolute bottom-[-10%] right-[15%] w-[600px] h-[600px] rounded-full bg-blue/20 blur-[280px] pointer-events-none z-0 opacity-25 dark:opacity-100" />
-        <div className="cosmic-orb absolute top-1/3 right-1/4 w-[350px] h-[350px] rounded-full bg-primary/20 blur-[200px] pointer-events-none z-0 opacity-25 dark:opacity-100" />
+        <div
+          aria-hidden="true"
+          className="cosmic-ambient-onboarding absolute inset-0 pointer-events-none z-0"
+        />
 
         {/* TOP HEADER: Branding, Indicador de Etapa e Seletor de Idioma */}
         <header className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-3 sm:pt-4 pb-1.5 flex items-center justify-between shrink-0">
@@ -43,7 +44,7 @@ export default async function OnboardingLayout({
           </Link>
 
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center gap-2 px-2.5 sm:px-3 py-1 rounded-full bg-card/80 border border-neutral-700 text-neutral-300 dark:bg-surface/60 dark:border-primary/30 dark:text-neutral-300 text-[11px] sm:text-xs backdrop-blur-md shadow-xs">
+            <div className="flex items-center gap-2 px-2.5 sm:px-3 py-1 rounded-full bg-card/95 border border-neutral-700 text-neutral-300 dark:bg-surface/90 dark:border-primary/30 dark:text-neutral-300 text-[11px] sm:text-xs shadow-xs">
               <span className="w-2 h-2 rounded-full bg-gold animate-pulse" />
               <span className="font-medium text-neutral-100 dark:text-neutral-200">
                 {t("headerBadge")}
@@ -56,7 +57,7 @@ export default async function OnboardingLayout({
 
             <div className="flex items-center gap-2">
               <LanguageToggleBtn variant="icon" />
-              <ThemeToggleBtn variant="icon" className="hidden" />
+              <ThemeToggleBtn variant="icon" />
             </div>
           </div>
         </header>

@@ -6,6 +6,7 @@ import type {
   FocusActivity,
   FocusActivityResponseDTO,
   FocusRecord,
+  FocusRecordResponseDTO,
 } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { mapFocusActivities, mapFocusRecords } from "@/utils/focusMapper";
@@ -27,9 +28,7 @@ export async function getRawFocusActivities(): Promise<
   cacheLife("catalog");
   cacheTag("focus-activities");
 
-  const { data, error } = await serverApi.GET("/focus-activities", {
-    next: { tags: ["focus-activities"] },
-  });
+  const { data, error } = await serverApi.GET("/focus-activities");
 
   if (error || !data) {
     return [];
@@ -62,40 +61,60 @@ export async function getFocusActivitiesAndItems(): Promise<{
 }
 
 /**
- * Carrega os registros recentes de foco das atividades para visualização na sidebar.
- * Cacheada de forma privada no cliente por 30s (`private30`).
+ * Busca os DTOs brutos de registros recentes de foco usando apenas IDs primitivos ordenados
+ * como chave estável do cache privado (`private30`).
  */
-export async function getFocusInitialRecords(
-  activities: FocusActivity[],
-): Promise<FocusRecord[]> {
+async function fetchRawFocusRecordsByActivityIds(
+  activityIds: string[],
+): Promise<FocusRecordResponseDTO[]> {
   "use cache: private";
   cacheLife("private30");
   cacheTag("focus-records");
 
-  if (!activities || activities.length === 0) {
+  if (activityIds.length === 0) {
     return [];
   }
 
-  const initialRecords: FocusRecord[] = [];
   const recordsResponses = await Promise.all(
-    activities.map((act) =>
+    activityIds.map((activityId) =>
       serverApi
         .GET("/focus-records/activity/{activityId}", {
           params: {
-            path: { activityId: act.id },
+            path: { activityId },
             query: { page: 0 },
           },
-          next: { tags: ["focus-records"] },
         })
         .catch(() => ({ data: null })),
     ),
   );
 
+  const rawRecords: FocusRecordResponseDTO[] = [];
   for (const res of recordsResponses) {
     if (res.data?.content) {
-      initialRecords.push(...mapFocusRecords(res.data.content, activities));
+      rawRecords.push(...res.data.content);
     }
   }
+
+  return rawRecords;
+}
+
+/**
+ * Carrega os registros recentes de foco das atividades para visualização na sidebar.
+ */
+export async function getFocusInitialRecords(
+  activities: FocusActivity[],
+): Promise<FocusRecord[]> {
+  if (!activities || activities.length === 0) {
+    return [];
+  }
+
+  const sortedActivityIds = activities
+    .map((act) => act.id)
+    .filter(Boolean)
+    .sort();
+
+  const rawRecords = await fetchRawFocusRecordsByActivityIds(sortedActivityIds);
+  const initialRecords = mapFocusRecords(rawRecords, activities);
 
   // Ordena do mais recente para o mais antigo
   initialRecords.sort(

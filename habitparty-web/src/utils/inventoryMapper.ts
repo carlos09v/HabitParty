@@ -81,6 +81,7 @@ export function mapAndGroupInventory(
           iconName,
           icon: iconName,
           packageLevel,
+          lootItems: dto.lootItems,
         },
       });
     }

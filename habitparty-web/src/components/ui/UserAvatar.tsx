@@ -156,10 +156,10 @@ export function UserAvatar({
             FRAME_OFFSET_CLASSES[size],
           )}
         />
-        {/* Pulso de aura e brilho cósmico */}
+        {/* Pulso de aura e brilho cósmico (100% compositor via opacity + scale) */}
         <div
           className={cn(
-            "absolute rounded-full animate-frame-pulse blur-[3px] pointer-events-none",
+            "absolute rounded-full animate-frame-pulse pointer-events-none",
             frame.ringClass,
             frame.glowClass,
             FRAME_OFFSET_CLASSES[size],

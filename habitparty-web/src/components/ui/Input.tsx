@@ -56,7 +56,7 @@ export function Input({
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
           className={cn(
-            "peer w-full rounded-lg transition-all",
+            "peer w-full rounded-lg transition-colors",
             compact ? "py-2 text-body-s" : "py-3 text-body-m",
             // Tema Claro: Fundo de card limpo, borda nítida e texto escuro de alta legibilidade
             "bg-card border border-neutral-600 hover:border-neutral-500 text-neutral-50 focus:border-primary focus:ring-2 focus:ring-primary/15 focus:bg-card shadow-xs",

@@ -36,6 +36,8 @@ public class UserMapper {
     entity.setExperienceMode(domain.getExperienceMode() != null ? domain.getExperienceMode() : UserExperienceMode.PRODUCTIVITY);
     entity.setBirthDate(domain.getBirthDate());
     entity.setProfilePhotoUrl(domain.getProfilePhotoUrl().orElse(null));
+    entity.setBio(domain.getBio().orElse(null));
+    entity.setAvatarFrame(domain.getAvatarFrame());
     if (entity.getCreatedAt() == null) {
       entity.setCreatedAt(domain.getCreatedAt() != null ? domain.getCreatedAt() : LocalDateTime.now());
     }
@@ -56,6 +58,24 @@ public class UserMapper {
     statsEntity.setTotalXp(domainStats != null ? domainStats.getTotalXp() : 0);
     statsEntity.setCurrentStreak(domainStats != null ? domainStats.getCurrentStreak() : 0);
     statsEntity.setHighestStreak(domainStats != null ? domainStats.getHighestStreak() : 0);
+    statsEntity.setTotalTasksCompleted(domainStats != null ? domainStats.getTotalTasksCompleted() : 0);
+    statsEntity.setTotalHardTasksCompleted(domainStats != null ? domainStats.getTotalHardTasksCompleted() : 0);
+    statsEntity.setTotalHardcoreTasksCompleted(domainStats != null ? domainStats.getTotalHardcoreTasksCompleted() : 0);
+    statsEntity.setTotalFocusMinutes(domainStats != null ? domainStats.getTotalFocusMinutes() : 0);
+    statsEntity.setTotalFocusSessions(domainStats != null ? domainStats.getTotalFocusSessions() : 0);
+    statsEntity.setLongestFocusSessionMinutes(domainStats != null ? domainStats.getLongestFocusSessionMinutes() : 0);
+    statsEntity.setTotalPomodorosCompleted(domainStats != null ? domainStats.getTotalPomodorosCompleted() : 0);
+    statsEntity.setTotalRewardsRedeemed(domainStats != null ? domainStats.getTotalRewardsRedeemed() : 0);
+    statsEntity.setTotalMysteryBoxesOpened(domainStats != null ? domainStats.getTotalMysteryBoxesOpened() : 0);
+    statsEntity.setAchievementPoints(domainStats != null ? domainStats.getAchievementPoints() : 0);
+    statsEntity.setTotalNightFocusSessions(domainStats != null ? domainStats.getTotalNightFocusSessions() : 0);
+    statsEntity.setTotalEarlyFocusSessions(domainStats != null ? domainStats.getTotalEarlyFocusSessions() : 0);
+    statsEntity.setTotalCouponsDepleted(domainStats != null ? domainStats.getTotalCouponsDepleted() : 0);
+    statsEntity.setTotalWorkspacesCreated(domainStats != null ? domainStats.getTotalWorkspacesCreated() : 0);
+    statsEntity.setTotalChecklistTasksCompleted(domainStats != null ? domainStats.getTotalChecklistTasksCompleted() : 0);
+    statsEntity.setTotalOnTimeTodosCompleted(domainStats != null ? domainStats.getTotalOnTimeTodosCompleted() : 0);
+    statsEntity.setTotalCleanHabitCycles(domainStats != null ? domainStats.getTotalCleanHabitCycles() : 0);
+    statsEntity.setTotalActivityGoalsMet(domainStats != null ? domainStats.getTotalActivityGoalsMet() : 0);
     statsEntity.setUpdatedAt(domainStats != null && domainStats.getUpdatedAt() != null
         ? domainStats.getUpdatedAt()
         : LocalDateTime.now());
@@ -90,8 +110,28 @@ public class UserMapper {
             s.getTotalXp(),
             s.getCurrentStreak(),
             s.getHighestStreak(),
+            s.getTotalTasksCompleted(),
+            s.getTotalHardTasksCompleted(),
+            s.getTotalHardcoreTasksCompleted(),
+            s.getTotalFocusMinutes(),
+            s.getTotalFocusSessions(),
+            s.getLongestFocusSessionMinutes(),
+            s.getTotalPomodorosCompleted(),
+            s.getTotalRewardsRedeemed(),
+            s.getTotalMysteryBoxesOpened(),
+            s.getAchievementPoints(),
             s.getUpdatedAt())
         : UserStats.createInitial(entity.getId());
+    if (s != null) {
+      domainStats.setTotalNightFocusSessions(s.getTotalNightFocusSessions());
+      domainStats.setTotalEarlyFocusSessions(s.getTotalEarlyFocusSessions());
+      domainStats.setTotalCouponsDepleted(s.getTotalCouponsDepleted());
+      domainStats.setTotalWorkspacesCreated(s.getTotalWorkspacesCreated());
+      domainStats.setTotalChecklistTasksCompleted(s.getTotalChecklistTasksCompleted());
+      domainStats.setTotalOnTimeTodosCompleted(s.getTotalOnTimeTodosCompleted());
+      domainStats.setTotalCleanHabitCycles(s.getTotalCleanHabitCycles());
+      domainStats.setTotalActivityGoalsMet(s.getTotalActivityGoalsMet());
+    }
 
     UserSubscriptionJpaEntity sub = entity.getSubscription();
     UserSubscription domainSub = (sub != null)
@@ -106,7 +146,7 @@ public class UserMapper {
             sub.getUpdatedAt())
         : UserSubscription.createInitial(entity.getId());
 
-    return new User(
+    User user = new User(
         entity.getId(),
         entity.getRole(),
         entity.getFullName(),
@@ -123,5 +163,8 @@ public class UserMapper {
         domainStats,
         domainSub
     );
+    user.setBio(entity.getBio());
+    user.setAvatarFrame(entity.getAvatarFrame());
+    return user;
   }
 }

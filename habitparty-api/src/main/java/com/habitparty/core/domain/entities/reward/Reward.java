@@ -26,10 +26,18 @@ public class Reward {
   private RewardCategory category;
   private RewardPackageLevel packageLevel; // Básico, Premium, Premium Plus
   private Integer baseDurationMinutes; // Duração do Cupom (caso seja o RewardType definido)
+  private List<MysteryBoxLootItem> lootItems;
 
   public Reward(UUID id, UUID userId, String name, BigDecimal price, List<String> tags, RewardType type,
       int orderIndex, String icon, String description, RewardCategory category, Integer baseDurationMinutes,
       RewardPackageLevel packageLevel) {
+    this(id, userId, name, price, tags, type, orderIndex, icon, description, category, baseDurationMinutes,
+        packageLevel, null);
+  }
+
+  public Reward(UUID id, UUID userId, String name, BigDecimal price, List<String> tags, RewardType type,
+      int orderIndex, String icon, String description, RewardCategory category, Integer baseDurationMinutes,
+      RewardPackageLevel packageLevel, List<MysteryBoxLootItem> lootItems) {
     this.id = id;
     this.userId = userId;
     this.name = name;
@@ -42,6 +50,7 @@ public class Reward {
     this.category = category;
     this.baseDurationMinutes = baseDurationMinutes;
     this.packageLevel = packageLevel;
+    this.lootItems = type == RewardType.MISTERY_BOX ? lootItems : null;
   }
 
   public void validateOwnership(UUID userIdLogado) {
@@ -53,6 +62,14 @@ public class Reward {
   public void updateDetails(String newName, String newDescription, BigDecimal newPrice, String newIcon,
       RewardCategory newCategory, List<String> newTags, RewardType newType,
       RewardPackageLevel newPackageLevel, Integer newBaseDurationMinutes) {
+    updateDetails(newName, newDescription, newPrice, newIcon, newCategory, newTags, newType,
+        newPackageLevel, newBaseDurationMinutes, null);
+  }
+
+  public void updateDetails(String newName, String newDescription, BigDecimal newPrice, String newIcon,
+      RewardCategory newCategory, List<String> newTags, RewardType newType,
+      RewardPackageLevel newPackageLevel, Integer newBaseDurationMinutes,
+      List<MysteryBoxLootItem> newLootItems) {
     if (newName != null && !newName.trim().isEmpty()) {
       this.name = newName;
     }
@@ -88,7 +105,9 @@ public class Reward {
     if (this.type == RewardType.SINGLE_USE) {
       this.packageLevel = null;
       this.baseDurationMinutes = null;
+      this.lootItems = null;
     } else if (this.type == RewardType.TIME_BASED) {
+      this.lootItems = null;
       if (newPackageLevel != null) {
         this.packageLevel = newPackageLevel;
       }
@@ -102,6 +121,11 @@ public class Reward {
           throw new DomainValidationException("Precisa ter um nível de pacote selecionado!");
         }
         this.packageLevel = newPackageLevel;
+      }
+      if (newLootItems != null) {
+        this.lootItems = MysteryBoxLootTable.validateAndNormalizeLootItems(this.packageLevel, newLootItems);
+      } else if (this.lootItems != null && newPackageLevel != null) {
+        this.lootItems = MysteryBoxLootTable.validateAndNormalizeLootItems(this.packageLevel, this.lootItems);
       }
     }
   }
@@ -161,5 +185,9 @@ public class Reward {
 
   public Optional<RewardPackageLevel> getPackageLevel() {
     return Optional.ofNullable(packageLevel);
+  }
+
+  public List<MysteryBoxLootItem> getLootItems() {
+    return lootItems;
   }
 }

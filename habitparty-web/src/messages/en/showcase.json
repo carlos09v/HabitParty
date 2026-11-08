@@ -1,0 +1,604 @@
+{
+  "metadata": {
+    "title": "Showcase & Achievements | HabitParty",
+    "description": "Display your badges, unlocked medals, streak records, and achievements on your profile showcase."
+  },
+  "loading": {
+    "ariaLabel": "Loading profile showcase and achievements"
+  },
+  "actions": {
+    "unauthorized": "Your session has expired. Please sign in again.",
+    "updateHighlightsError": "Could not save showcase highlights.",
+    "updateProfileError": "Could not update your profile showcase.",
+    "networkError": "Server connection error. Please try again."
+  },
+  "header": {
+    "badgeGamified": "Adventurer Showcase",
+    "badgeEssential": "Performance Showcase",
+    "visitorModeActive": "Visitor View",
+    "ownerModeActive": "Edit Showcase",
+    "visitorBanner": "You are previewing your showcase exactly as other users will see it.",
+    "editBio": "Edit Bio",
+    "addBio": "Add a motto or short bio to your profile...",
+    "bioPlaceholder": "Write your journey motto, current goals, or specialty (max 160 chars)...",
+    "emptyBioVisitor": "This adventurer prefers to let their achievements speak for themselves.",
+    "emptyBioVisitorEssential": "Focused on daily consistency and continuous growth.",
+    "saveBio": "Save Bio",
+    "cancelBio": "Cancel",
+    "bioSaved": "Showcase bio updated!",
+    "memberSince": "On the journey since {date}",
+    "settingsButton": "Settings",
+    "changeFrameButton": "Avatar Frame",
+    "achievementPointsLabel": "Achievement Points",
+    "unlockedCountLabel": "{unlocked} of {total} medals",
+    "xpProgressLabel": "{xp} total XP • {remaining} XP to {nextTitle}",
+    "maxLevelReached": "Max Level Reached ({xp} XP)"
+  },
+  "highlights": {
+    "titleGamified": "Featured Trophy Shelf",
+    "titleEssential": "Featured Profile Highlights",
+    "subtitleGamified": "Choose up to 4 badges, medals, or records to display at the top of your adventurer card.",
+    "subtitleEssential": "Select up to 4 milestones, account badges, or metrics to feature at the top of your profile.",
+    "customizeButton": "Customize Highlights",
+    "slotLabel": "Slot {index}",
+    "emptySlotTitle": "Empty Highlight Slot",
+    "emptySlotCta": "Click to pin an achievement, badge, or metric",
+    "emptyVisitorText": "No highlight selected yet.",
+    "typeBadge": {
+      "ACHIEVEMENT": "Achievement",
+      "ACCOUNT_BADGE": "Badge",
+      "STAT_METRIC": "Record"
+    }
+  },
+  "pickerModal": {
+    "title": "Customize Featured Highlights",
+    "subtitle": "Select a slot above and choose which unlocked achievement, special badge, or record to feature.",
+    "activeSlotLabel": "Editing Slot #{slot}",
+    "clearSlot": "Clear slot",
+    "saveButton": "Save Showcase",
+    "savingButton": "Saving...",
+    "cancelButton": "Cancel",
+    "savedToast": "Showcase highlights updated successfully!",
+    "alreadyEquipped": "Equipped in Slot #{slot}",
+    "tabs": {
+      "achievements": "Achievements ({count})",
+      "badges": "Account Badges",
+      "metrics": "Metrics & Records"
+    },
+    "noUnlockedAchievements": "You haven't unlocked any achievements yet. Complete tasks or focus sessions to earn your first medal!",
+    "lockedBadgeHint": "Currently locked for your account"
+  },
+  "accountBadges": {
+    "FOUNDER": {
+      "title": "Pioneer Founder",
+      "essentialTitle": "Founding Member",
+      "description": "Pioneer supporter present since the foundation of HabitParty.",
+      "essentialDescription": "Early adopter account registered during the inaugural phase.",
+      "lockedHint": "Exclusive to Founding members"
+    },
+    "PREMIUM_GUARDIAN": {
+      "title": "Cosmic VIP Guardian",
+      "essentialTitle": "PRO Subscriber",
+      "description": "Active Premium member unlocking the full cosmic arsenal.",
+      "essentialDescription": "Account with an active PRO plan and advanced features enabled.",
+      "lockedHint": "Requires an active Premium subscription"
+    },
+    "VERIFIED_ADVENTURER": {
+      "title": "Verified Identity",
+      "essentialTitle": "Verified Account",
+      "description": "Authenticated adventurer email and security credentials.",
+      "essentialDescription": "Verified and authenticated email address on the platform.",
+      "lockedHint": "Verify your email to unlock this badge"
+    },
+    "LEVEL_RANK": {
+      "title": "Rank: {levelTitle}",
+      "essentialTitle": "Level: {levelTitle}",
+      "description": "Rank achieved with {xp} total XP earned on the journey.",
+      "essentialDescription": "Progression milestone reached with {xp} experience points.",
+      "lockedHint": "Available to all users"
+    }
+  },
+  "statMetrics": {
+    "HIGHEST_STREAK": {
+      "title": "All-Time Streak Record",
+      "essentialTitle": "Longest Active Streak",
+      "valueFormat": "{value} day streak"
+    },
+    "CURRENT_STREAK": {
+      "title": "Current Streak Flame",
+      "essentialTitle": "Current Streak",
+      "valueFormat": "{value} active days"
+    },
+    "TOTAL_TASKS": {
+      "title": "Quests Completed",
+      "essentialTitle": "Tasks Completed",
+      "valueFormat": "{value} completed"
+    },
+    "FOCUS_HOURS": {
+      "title": "Deep Focus Immersion",
+      "essentialTitle": "Total Focus Hours",
+      "valueFormat": "{value}h focused"
+    },
+    "TOTAL_XP": {
+      "title": "Total Experience (XP)",
+      "essentialTitle": "Progression Score",
+      "valueFormat": "{value} XP"
+    },
+    "ACHIEVEMENT_POINTS": {
+      "title": "Trophy Score",
+      "essentialTitle": "Achievement Points",
+      "valueFormat": "{value} pts"
+    }
+  },
+  "statsGrid": {
+    "sectionTitleGamified": "Deeds & Consistency Summary",
+    "sectionTitleEssential": "Lifetime Productivity Indicators",
+    "highestStreak": {
+      "label": "Highest Streak",
+      "essentialLabel": "Streak Record",
+      "sub": "Current: {current} days"
+    },
+    "tasksCompleted": {
+      "label": "Quests Completed",
+      "essentialLabel": "Tasks Completed",
+      "sub": "{hardcore} Hardcore • {hard} hard tasks"
+    },
+    "focusTime": {
+      "label": "Focus Immersion",
+      "essentialLabel": "Total Focus Time",
+      "sub": "{sessions} sessions completed ({minutes} min)"
+    },
+    "achievementsProgress": {
+      "label": "Achievement Mastery",
+      "essentialLabel": "Medals Progress",
+      "sub": "{points} / {maxPoints} achievement points"
+    }
+  },
+  "gallery": {
+    "titleGamified": "Achievements & Medals Gallery",
+    "titleEssential": "Milestones & Achievements Catalog",
+    "subtitleGamified": "Unlock all 63 medals by completing quests, keeping your streak alive, mastering deep focus, and uncovering secrets.",
+    "subtitleEssential": "Track your progress across 63 milestones of consistency, task execution, focus, and organization.",
+    "searchPlaceholder": "Search achievement by title or description...",
+    "testSoundButton": "Test Unlock Sound",
+    "statusFilter": {
+      "ALL": "All ({count})",
+      "UNLOCKED": "Unlocked ({count})",
+      "LOCKED": "Locked ({count})"
+    },
+    "rarityFilterAll": "All Rarities",
+    "unlockedBadge": "Unlocked",
+    "unlockedOn": "Unlocked on {date}",
+    "lockedBadge": "Locked",
+    "secretTitle": "Secret Achievement ???",
+    "secretDescription": "Keep exploring the platform and pushing your limits to reveal this hidden mystery.",
+    "pointsBadge": "+{points} pts",
+    "progressLabel": "Progress: {current} / {target}",
+    "pinToShowcase": "Pin to Showcase",
+    "pinnedInShowcase": "In Showcase",
+    "emptySearch": "No achievements found for the selected filters."
+  },
+  "rarities": {
+    "COMMON": "Common",
+    "UNCOMMON": "Uncommon",
+    "RARE": "Rare",
+    "EPIC": "Epic",
+    "LEGENDARY": "Legendary"
+  },
+  "categories": {
+    "ALL": {
+      "gamified": "All",
+      "essential": "All"
+    },
+    "TASKS": {
+      "gamified": "Quests & Execution",
+      "essential": "Tasks & Execution"
+    },
+    "STREAKS": {
+      "gamified": "Streak & Flame",
+      "essential": "Consistency"
+    },
+    "FOCUS": {
+      "gamified": "Immersion & Focus",
+      "essential": "Focus & Time"
+    },
+    "ECONOMY": {
+      "gamified": "Treasures & Shop",
+      "essential": "Rewards & Goals"
+    },
+    "PROGRESSION": {
+      "gamified": "Progression & Rank",
+      "essential": "Growth Milestones"
+    },
+    "SPECIAL": {
+      "gamified": "Special & Secret",
+      "essential": "Special & Hidden"
+    }
+  },
+  "unlockToast": {
+    "headerGamified": "New Achievement Unlocked!",
+    "headerEssential": "New Milestone Reached!",
+    "pointsEarned": "+{points} Achievement Points",
+    "viewShowcase": "View in Showcase"
+  },
+  "catalog": {
+    "TASK_FIRST": {
+      "title": "First Quest",
+      "essentialTitle": "First Delivery",
+      "description": "Complete your first task on the platform.",
+      "essentialDescription": "Complete your first task on the activity board."
+    },
+    "TASK_10": {
+      "title": "Hunting Rhythm",
+      "essentialTitle": "Initial Momentum (10)",
+      "description": "Complete 10 cumulative tasks.",
+      "essentialDescription": "Complete a total of 10 tasks."
+    },
+    "TASK_50": {
+      "title": "Backlog Slayer",
+      "essentialTitle": "Consistent Executor (50)",
+      "description": "Complete 50 cumulative tasks.",
+      "essentialDescription": "Complete a total of 50 tasks."
+    },
+    "TASK_250": {
+      "title": "Battle Veteran",
+      "essentialTitle": "250 Tasks Milestone",
+      "description": "Complete 250 cumulative tasks.",
+      "essentialDescription": "Complete a total of 250 tasks."
+    },
+    "TASK_1000": {
+      "title": "Unstoppable",
+      "essentialTitle": "Execution Master (1,000)",
+      "description": "Complete 1,000 cumulative tasks on your journey.",
+      "essentialDescription": "Complete a total of 1,000 tasks."
+    },
+    "TASK_HARD_25": {
+      "title": "Boss Hunter",
+      "essentialTitle": "25 Complex Deliveries",
+      "description": "Complete 25 Hard difficulty tasks.",
+      "essentialDescription": "Complete 25 high-complexity (Hard) tasks."
+    },
+    "STREAK_3": {
+      "title": "Lit Spark",
+      "essentialTitle": "3-Day Streak",
+      "description": "Reach a streak of 3 consecutive days.",
+      "essentialDescription": "Maintain 3 consecutive days of activity."
+    },
+    "STREAK_7": {
+      "title": "Weekly Flame",
+      "essentialTitle": "Full Week (7 Days)",
+      "description": "Reach a streak of 7 consecutive days.",
+      "essentialDescription": "Maintain 7 consecutive days of activity."
+    },
+    "STREAK_21": {
+      "title": "Forged Habit",
+      "essentialTitle": "Consolidated Habit (21 Days)",
+      "description": "Reach 21 consecutive days of streak (neural consolidation milestone).",
+      "essentialDescription": "Maintain 21 consecutive days of consistent activity."
+    },
+    "STREAK_30": {
+      "title": "Guardian of the Month",
+      "essentialTitle": "Month of Consistency (30 Days)",
+      "description": "Reach a streak of 30 consecutive days.",
+      "essentialDescription": "Maintain 30 consecutive days of activity."
+    },
+    "STREAK_90": {
+      "title": "Iron Will",
+      "essentialTitle": "Flawless Quarter (90 Days)",
+      "description": "Reach a streak of 90 consecutive days.",
+      "essentialDescription": "Maintain 90 consecutive days of activity."
+    },
+    "STREAK_365": {
+      "title": "Immortal Flame",
+      "essentialTitle": "Unbroken Year (365 Days)",
+      "description": "Reach a historic streak of 365 consecutive days.",
+      "essentialDescription": "Maintain 365 consecutive days of activity."
+    },
+    "FOCUS_FIRST": {
+      "title": "Present Mind",
+      "essentialTitle": "First Focus Session",
+      "description": "Complete your first productive session on the Focus Stage.",
+      "essentialDescription": "Finish your first productive session in the Focus Timer."
+    },
+    "FOCUS_DEEP_WORK": {
+      "title": "Deep Dive",
+      "essentialTitle": "Deep Work Session (45m)",
+      "description": "Complete a continuous focus session of at least 45 minutes.",
+      "essentialDescription": "Finish a continuous focus session of 45 minutes or more."
+    },
+    "FOCUS_POMO_25": {
+      "title": "Clock Master",
+      "essentialTitle": "25 Pomodoro Cycles",
+      "description": "Complete 25 Pomodoro cycles.",
+      "essentialDescription": "Complete a total of 25 Pomodoro cycles."
+    },
+    "FOCUS_HOURS_10": {
+      "title": "Temple Apprentice",
+      "essentialTitle": "10 Focus Hours",
+      "description": "Accumulate 10 hours (600 minutes) of productive focus.",
+      "essentialDescription": "Accumulate 600 total minutes of focus."
+    },
+    "FOCUS_HOURS_50": {
+      "title": "Concentration Monk",
+      "essentialTitle": "50 Focus Hours",
+      "description": "Accumulate 50 hours (3,000 minutes) of productive focus.",
+      "essentialDescription": "Accumulate 3,000 total minutes of focus."
+    },
+    "FOCUS_HOURS_200": {
+      "title": "Lord of Time",
+      "essentialTitle": "200 Deep Focus Hours",
+      "description": "Accumulate 200 hours (12,000 minutes) of productive focus.",
+      "essentialDescription": "Accumulate 12,000 total minutes of focus."
+    },
+    "GOLD_100": {
+      "title": "Coin Pouch",
+      "essentialTitle": "100 Credits Earned",
+      "description": "Accumulate 100 coins/credits earned through your effort.",
+      "essentialDescription": "Accumulate a total of 100 credits earned."
+    },
+    "GOLD_1000": {
+      "title": "Guild Treasure",
+      "essentialTitle": "1,000 Credits Earned",
+      "description": "Accumulate 1,000 lifetime coins/credits earned.",
+      "essentialDescription": "Accumulate a total of 1,000 credits earned."
+    },
+    "GOLD_5000": {
+      "title": "Cosmic Tycoon",
+      "essentialTitle": "5,000 Credits Earned",
+      "description": "Accumulate 5,000 lifetime coins/credits earned.",
+      "essentialDescription": "Accumulate a total of 5,000 credits earned."
+    },
+    "REWARD_FIRST": {
+      "title": "Well-Deserved Rest",
+      "essentialTitle": "First Reward Redeemed",
+      "description": "Redeem your first reward in the Store.",
+      "essentialDescription": "Redeem your first personal reward."
+    },
+    "REWARD_25": {
+      "title": "Balanced Life",
+      "essentialTitle": "25 Rewards Redeemed",
+      "description": "Redeem 25 rewards in the Store to celebrate your deliveries.",
+      "essentialDescription": "Redeem 25 personal rewards."
+    },
+    "LEVEL_ADVENTURER": {
+      "title": "Journey Begun",
+      "essentialTitle": "300 XP Milestone",
+      "description": "Reach 300 XP/pts (Adventurer / Consistent Level).",
+      "essentialDescription": "Reach 300 progression points (Consistent Level)."
+    },
+    "LEVEL_PROFESSIONAL": {
+      "title": "Recognized Strength",
+      "essentialTitle": "3,000 XP Milestone",
+      "description": "Reach 3,000 XP/pts (Professional / Productive Level).",
+      "essentialDescription": "Reach 3,000 progression points (Productive Level)."
+    },
+    "LEVEL_MASTER": {
+      "title": "Grandmaster",
+      "essentialTitle": "25,000 XP Milestone",
+      "description": "Reach 25,000 XP/pts (Master / Executive Level).",
+      "essentialDescription": "Reach 25,000 progression points (Executive Level)."
+    },
+    "LEVEL_LEGEND": {
+      "title": "Living Legend",
+      "essentialTitle": "High Performance (60,000 XP)",
+      "description": "Reach the supreme milestone of 60,000 XP/pts (Legend / High Performance).",
+      "essentialDescription": "Reach the maximum milestone of 60,000 progression points."
+    },
+    "HARDCORE_SURVIVOR": {
+      "title": "Cold Blood",
+      "essentialTitle": "10 Strict Deadline Deliveries",
+      "description": "Complete 10 tasks with Hardcore Mode / Strict Deadline enabled.",
+      "essentialDescription": "Complete 10 tasks with Strict Deadline (Hardcore) enabled."
+    },
+    "MYSTERY_BOX_LUCK": {
+      "title": "Fate's Gamble",
+      "essentialTitle": "5 Mystery Boxes Opened",
+      "description": "Open 5 Mystery Boxes in your Backpack.",
+      "essentialDescription": "Open a total of 5 Mystery Boxes in your inventory."
+    },
+    "SHOWCASE_CURATOR": {
+      "title": "Forged Identity",
+      "essentialTitle": "Curated Showcase",
+      "description": "Customize your Featured Showcase or wear the Pioneer Founder Badge.",
+      "essentialDescription": "Customize your Profile Showcase with highlights, bio, or avatar frame."
+    },
+    "TASK_100": {
+      "title": "Routine Centurion",
+      "essentialTitle": "100 Tasks Milestone",
+      "description": "Complete 100 tasks on your journey.",
+      "essentialDescription": "Complete a total of 100 tasks."
+    },
+    "TASK_500": {
+      "title": "Realm Conqueror",
+      "essentialTitle": "500 Tasks Milestone",
+      "description": "Complete 500 tasks in total.",
+      "essentialDescription": "Complete a total of 500 tasks."
+    },
+    "TASK_HARD_5": {
+      "title": "First Trial",
+      "essentialTitle": "5 Complex Deliveries",
+      "description": "Complete 5 Hard difficulty tasks.",
+      "essentialDescription": "Complete 5 high-complexity (Hard) tasks."
+    },
+    "TASK_HARD_100": {
+      "title": "Titan Tamer",
+      "essentialTitle": "100 Complex Deliveries",
+      "description": "Complete 100 Hard difficulty tasks.",
+      "essentialDescription": "Complete 100 high-complexity (Hard) tasks."
+    },
+    "CHECKLIST_PERFECTIONIST": {
+      "title": "Flawless Checklist",
+      "essentialTitle": "20 Complete Checklists",
+      "description": "Complete 20 tasks with every checklist item checked.",
+      "essentialDescription": "Complete 20 tasks with 100% of their checklist items done."
+    },
+    "STREAK_14": {
+      "title": "Unshakable Fortnight",
+      "essentialTitle": "Two Weeks (14 Days)",
+      "description": "Keep your flame alive for 14 consecutive days.",
+      "essentialDescription": "Maintain 14 consecutive days of activity."
+    },
+    "STREAK_60": {
+      "title": "Armored Discipline",
+      "essentialTitle": "Consistent Two Months (60 Days)",
+      "description": "Reach a streak of 60 consecutive days.",
+      "essentialDescription": "Maintain 60 consecutive days of activity."
+    },
+    "STREAK_180": {
+      "title": "Solstice Guardian",
+      "essentialTitle": "Half-Year of Consistency (180 Days)",
+      "description": "Reach half a year (180 days) of unbroken streak.",
+      "essentialDescription": "Maintain 180 consecutive days of activity."
+    },
+    "FOCUS_SESSIONS_10": {
+      "title": "Concentration Ritual",
+      "essentialTitle": "10 Focus Sessions",
+      "description": "Complete 10 productive sessions on the Focus Stage.",
+      "essentialDescription": "Finish 10 productive sessions in the Focus Timer."
+    },
+    "FOCUS_MARATHON_90": {
+      "title": "Flow State",
+      "essentialTitle": "Extreme Immersion (90m)",
+      "description": "Complete a single continuous session of at least 90 minutes.",
+      "essentialDescription": "Finish a continuous focus session of 90 minutes or more."
+    },
+    "FOCUS_POMO_100": {
+      "title": "Time Architect",
+      "essentialTitle": "100 Pomodoro Cycles",
+      "description": "Complete 100 Pomodoro cycles in total.",
+      "essentialDescription": "Complete a total of 100 Pomodoro cycles."
+    },
+    "FOCUS_HOURS_100": {
+      "title": "Immersion Sage",
+      "essentialTitle": "100 Focus Hours",
+      "description": "Accumulate 100 hours (6,000 minutes) of productive focus.",
+      "essentialDescription": "Accumulate 6,000 total focus minutes."
+    },
+    "GOLD_500": {
+      "title": "Full Vault",
+      "essentialTitle": "500 Credits Earned",
+      "description": "Earn 500 coins/credits through your effort.",
+      "essentialDescription": "Earn a total of 500 credits."
+    },
+    "WALLET_SAVER_500": {
+      "title": "Hoarding Dragon",
+      "essentialTitle": "500 Credits Reserve",
+      "description": "Hold an available balance of 500 coins in your wallet without spending.",
+      "essentialDescription": "Hold a simultaneous balance of 500 available credits."
+    },
+    "COUPON_MASTER": {
+      "title": "Time Alchemist",
+      "essentialTitle": "5 Time Coupons Depleted",
+      "description": "Burn through 5 Backpack time coupons to the end on the Focus Stage.",
+      "essentialDescription": "Fully use 5 timed rewards in the Focus Timer."
+    },
+    "REWARD_100": {
+      "title": "Master of Balance",
+      "essentialTitle": "100 Rewards Redeemed",
+      "description": "Redeem 100 rewards in the Shop.",
+      "essentialDescription": "Redeem 100 personal rewards."
+    },
+    "GOLD_15000": {
+      "title": "Golden Emperor",
+      "essentialTitle": "15,000 Credits Earned",
+      "description": "Earn 15,000 coins/credits throughout your journey.",
+      "essentialDescription": "Earn a total of 15,000 credits."
+    },
+    "LEVEL_APPRENTICE": {
+      "title": "First Steps",
+      "essentialTitle": "100 XP Milestone",
+      "description": "Reach 100 XP (Apprentice rank).",
+      "essentialDescription": "Reach 100 progression points."
+    },
+    "LEVEL_CHALLENGER": {
+      "title": "Challenger Spirit",
+      "essentialTitle": "750 XP Milestone",
+      "description": "Reach 750 XP (Challenger rank).",
+      "essentialDescription": "Reach 750 progression points."
+    },
+    "LEVEL_EXPERT": {
+      "title": "Master Craftsman",
+      "essentialTitle": "6,000 XP Milestone",
+      "description": "Reach 6,000 XP (Expert rank).",
+      "essentialDescription": "Reach 6,000 progression points."
+    },
+    "LEVEL_VETERAN": {
+      "title": "War Veteran",
+      "essentialTitle": "12,000 XP Milestone",
+      "description": "Reach 12,000 XP (Veteran rank).",
+      "essentialDescription": "Reach 12,000 progression points."
+    },
+    "WORKSPACE_ARCHITECT": {
+      "title": "World Architect",
+      "essentialTitle": "Multiple Workspaces",
+      "description": "Create 2 Workspaces to separate your areas of life.",
+      "essentialDescription": "Create 2 Workspaces to organize your contexts."
+    },
+    "TROPHY_HUNTER_1000": {
+      "title": "Glory Collector",
+      "essentialTitle": "1,000 Achievement Points",
+      "description": "Accumulate 1,000 Achievement Points by unlocking medals.",
+      "essentialDescription": "Accumulate 1,000 Achievement Points on your profile."
+    },
+    "HARDCORE_FIRST": {
+      "title": "No Margin for Error",
+      "essentialTitle": "First Strict-Deadline Delivery",
+      "description": "Complete your first task with Hardcore Mode enabled.",
+      "essentialDescription": "Complete 1 task with Strict Deadline (Hardcore) enabled."
+    },
+    "HARDCORE_MASTER_50": {
+      "title": "Immune to Chaos",
+      "essentialTitle": "50 Strict-Deadline Deliveries",
+      "description": "Complete 50 tasks with Hardcore Mode enabled.",
+      "essentialDescription": "Complete 50 tasks with Strict Deadline (Hardcore) enabled."
+    },
+    "MYSTERY_BOX_FIRST": {
+      "title": "Rewarded Curiosity",
+      "essentialTitle": "First Mystery Box",
+      "description": "Open your first Mystery Box in your Backpack.",
+      "essentialDescription": "Open your first Mystery Box in your inventory."
+    },
+    "MYSTERY_BOX_25": {
+      "title": "Lord of Fortune",
+      "essentialTitle": "25 Mystery Boxes Opened",
+      "description": "Open 25 Mystery Boxes in your Backpack.",
+      "essentialDescription": "Open a total of 25 Mystery Boxes in your inventory."
+    },
+    "NIGHT_OWL": {
+      "title": "Midnight Owl",
+      "essentialTitle": "Night Focus (5 Sessions)",
+      "description": "Complete 5 focus sessions (10+ min) ending between 11 PM and 5 AM.",
+      "essentialDescription": "Finish 5 focus sessions of 10+ minutes ending between 11 PM and 5 AM."
+    },
+    "EARLY_BIRD": {
+      "title": "Early Bird",
+      "essentialTitle": "Morning Focus (5 Sessions)",
+      "description": "Complete 5 focus sessions (10+ min) started between 5 AM and 7 AM.",
+      "essentialDescription": "Finish 5 focus sessions of 10+ minutes started between 5 AM and 7 AM."
+    },
+    "PUNCTUAL_EXECUTOR_20": {
+      "title": "Royal Punctuality",
+      "essentialTitle": "20 On-Time Deliveries",
+      "description": "Complete 20 To-Dos with a due date on or before the deadline.",
+      "essentialDescription": "Complete 20 To-Do tasks with a set due date before they expire."
+    },
+    "IMPULSE_CONTROL_7": {
+      "title": "Impulse Mastery",
+      "essentialTitle": "Impulse Control (7 Cycles)",
+      "description": "Complete 7 cycles in Negative or Mixed Habits without logging a relapse.",
+      "essentialDescription": "Complete 7 cycles in negative-tracking habits with zero negative entries."
+    },
+    "FOCUS_ACTIVITY_GOAL_10": {
+      "title": "Bullseye Focus",
+      "essentialTitle": "10 Activity Goals Met",
+      "description": "Hit the configured time target of a Focus Activity in 10 sessions.",
+      "essentialDescription": "Reach the configured target duration of a Focus Activity across 10 sessions."
+    },
+    "SHOWCASE_FULL_SLOTS": {
+      "title": "Royal Trophy Shelf",
+      "essentialTitle": "Complete Showcase (4 Highlights)",
+      "description": "Fill all 4 highlight slots in your Profile Showcase.",
+      "essentialDescription": "Configure all 4 highlight slots in your Profile Showcase."
+    }
+  }
+}

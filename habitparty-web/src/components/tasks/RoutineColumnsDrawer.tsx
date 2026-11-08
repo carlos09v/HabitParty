@@ -56,10 +56,10 @@ export function RoutineColumnsDrawer({
         panelClassName="w-full sm:w-[420px]"
       >
         {/* Header */}
-        <header className="p-5 border-b border-white/10 flex items-start justify-between gap-3 bg-surface-hover/30">
+        <header className="p-5 border-b border-neutral-700 dark:border-white/10 flex items-start justify-between gap-3 bg-surface/60 dark:bg-surface-hover/30">
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary-light/15 border border-primary-light/30 flex items-center justify-center text-primary-light shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/25 text-primary dark:bg-primary-light/15 dark:border-primary-light/30 flex items-center justify-center dark:text-primary-light shrink-0">
                 <Columns3 size={17} />
               </div>
               <div>
@@ -67,7 +67,7 @@ export function RoutineColumnsDrawer({
                   {t("title")}
                 </h2>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-tiny font-bold text-gold">
+                  <span className="text-tiny font-bold text-amber-700 dark:text-gold">
                     {t("activeCount", {
                       visible: visibleColumnIds.length,
                       max: maxColumns,
@@ -99,12 +99,12 @@ export function RoutineColumnsDrawer({
         </header>
 
         {/* Toolbar de Ações Rápidas */}
-        <div className="px-5 py-3 border-b border-white/8 bg-surface/50 flex items-center justify-between gap-2">
+        <div className="px-5 py-3 border-b border-neutral-700 dark:border-white/8 bg-surface/80 dark:bg-surface/50 flex items-center justify-between gap-2">
           {!allVisible && columns.length > 0 && (
             <button
               type="button"
               onClick={onShowAll}
-              className="text-xs font-semibold text-primary-light hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
+              className="text-xs font-semibold text-primary hover:text-primary-dark dark:text-primary-light dark:hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
             >
               <Eye size={13} />
               <span>
@@ -129,10 +129,10 @@ export function RoutineColumnsDrawer({
                   : t("maxColumnsReachedTitle", { max: maxColumns })
               }
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-[transform,background-color,color,border-color] cursor-pointer",
                 canCreateMore
-                  ? "bg-gold hover:bg-gold-hover text-on-gold shadow-glow-gold-xs active:scale-98"
-                  : "bg-white/5 text-neutral-500 cursor-not-allowed border border-white/10",
+                  ? "bg-gold hover:bg-gold-hover text-on-gold shadow-xs dark:shadow-glow-gold-xs active:scale-98"
+                  : "bg-neutral-700 text-neutral-400 cursor-not-allowed border border-neutral-600 dark:bg-white/5 dark:text-neutral-500 dark:border-white/10",
               )}
             >
               <Plus size={14} className="stroke-3" />
@@ -176,13 +176,13 @@ export function RoutineColumnsDrawer({
                     }
                   }}
                   className={cn(
-                    "p-3 rounded-xl border transition-all flex items-center justify-between gap-3 select-none",
+                    "p-3 rounded-xl border transition-[transform,background-color,border-color,opacity] flex items-center justify-between gap-3 select-none",
                     isOnlyVisible
                       ? "cursor-not-allowed"
-                      : "cursor-pointer hover:border-gold/50 hover:bg-surface-hover/70 active:scale-[0.99]",
+                      : "cursor-pointer hover:border-primary/40 dark:hover:border-gold/50 hover:bg-card-hover dark:hover:bg-surface-hover/70 active:scale-[0.99]",
                     isVisible
-                      ? "bg-card border-white/15 shadow-sm"
-                      : "bg-surface/40 border-white/5 opacity-70 hover:opacity-100",
+                      ? "bg-card border-neutral-700 dark:border-white/15 shadow-xs dark:shadow-sm"
+                      : "bg-surface/60 dark:bg-surface/40 border-neutral-700/60 dark:border-white/5 opacity-75 hover:opacity-100",
                   )}
                 >
                   {/* Ícone e Título da Coluna */}
@@ -191,8 +191,8 @@ export function RoutineColumnsDrawer({
                       className={cn(
                         "w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border transition-colors",
                         isVisible
-                          ? "bg-primary-light/15 border-primary-light/30 text-gold"
-                          : "bg-white/5 border-white/10 text-neutral-500",
+                          ? "bg-primary/10 border-primary/25 text-primary dark:bg-primary-light/15 dark:border-primary-light/30 dark:text-gold"
+                          : "bg-surface border-neutral-700/60 text-neutral-400 dark:bg-white/5 dark:border-white/10 dark:text-neutral-500",
                       )}
                     >
                       <ColumnIconComponent size={18} />
@@ -287,13 +287,16 @@ export function RoutineColumnsDrawer({
         </div>
 
         {/* Rodapé Informativo */}
-        <footer className="p-4 border-t border-white/10 bg-surface-hover/20 flex flex-col gap-3">
+        <footer className="p-4 border-t border-neutral-700 dark:border-white/10 bg-surface/60 dark:bg-surface-hover/20 flex flex-col gap-3">
           {!isPremium && columns.length > maxColumns && (
-            <div className="rounded-xl bg-gold/10 border border-gold/30 p-3 flex flex-col gap-2">
+            <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 dark:bg-gold/10 dark:border-gold/30 p-3 flex flex-col gap-2">
               <div className="flex items-start gap-2">
-                <Crown size={16} className="text-gold shrink-0 mt-0.5" />
+                <Crown
+                  size={16}
+                  className="text-amber-700 dark:text-gold shrink-0 mt-0.5"
+                />
                 <div className="flex flex-col text-label-s">
-                  <span className="font-bold text-gold">
+                  <span className="font-bold text-amber-800 dark:text-gold">
                     {columns.length - maxColumns === 1
                       ? isGamified
                         ? t("storedInBackpackSingular", {
@@ -322,7 +325,7 @@ export function RoutineColumnsDrawer({
               <button
                 type="button"
                 onClick={() => setIsUpgradeModalOpen(true)}
-                className="w-full py-1.5 px-3 rounded-lg bg-gold hover:bg-gold-hover text-on-gold font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-98"
+                className="w-full py-1.5 px-3 rounded-lg bg-gold hover:bg-gold-hover text-on-gold font-bold text-xs flex items-center justify-center gap-1.5 transition-[transform,background-color] shadow-xs cursor-pointer active:scale-98"
               >
                 <Crown size={13} className="shrink-0 stroke-2" />
                 <span>{t("showAllWithPremium")}</span>
@@ -330,7 +333,7 @@ export function RoutineColumnsDrawer({
             </div>
           )}
 
-          <div className="rounded-xl bg-card border border-white/10 p-3 flex items-start gap-2.5">
+          <div className="rounded-xl bg-card border border-neutral-700 dark:border-white/10 p-3 flex items-start gap-2.5">
             <Sparkles size={16} className="text-gold shrink-0 mt-0.5" />
             <div className="flex flex-col gap-0.5 text-label-s text-neutral-300">
               <span className="font-bold text-neutral-100">
@@ -344,10 +347,12 @@ export function RoutineColumnsDrawer({
         </footer>
       </SlideOverDrawer>
 
-      <UpgradePremiumModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-      />
+      {isUpgradeModalOpen && (
+        <UpgradePremiumModal
+          isOpen={isUpgradeModalOpen}
+          onClose={() => setIsUpgradeModalOpen(false)}
+        />
+      )}
     </>
   );
 }

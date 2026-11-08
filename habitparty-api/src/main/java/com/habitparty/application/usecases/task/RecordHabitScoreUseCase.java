@@ -2,12 +2,14 @@ package com.habitparty.application.usecases.task;
 
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsUseCase;
 import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.task.Habit;
@@ -25,6 +27,7 @@ public class RecordHabitScoreUseCase {
   private final TaskRepository taskPort;
   private final TransactionHistoryRepository transactionPort;
   private final UserRepository userPort;
+  private EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
 
   public RecordHabitScoreUseCase(
       TaskRepository taskPort,
@@ -33,6 +36,11 @@ public class RecordHabitScoreUseCase {
     this.taskPort = taskPort;
     this.transactionPort = transactionPort;
     this.userPort = userPort;
+  }
+
+  @Autowired(required = false)
+  public void setEvaluateUserAchievementsUseCase(EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
+    this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
   }
 
   @Transactional
@@ -53,8 +61,19 @@ public class RecordHabitScoreUseCase {
         throw new DomainValidationException("Este hábito é do tipo Negativo e não permite pontuação positiva.");
       }
 
+      // Domínio do Impulso: primeira ação positiva no ciclo de um Hábito Misto (BOTH) sem nenhuma recaída negativa
+      if (habit.getHabitType() == HabitType.BOTH
+          && habit.getPositiveCount() == 0
+          && habit.getNegativeCount() == 0
+          && user.getStats() != null) {
+        user.getStats().recordCleanHabitCycle();
+      }
+
       TaskGamificationHelper.awardTaskCompletion(
           user, habit, TransactionType.HABIT_COMPLETED, userPort, transactionPort);
+      if (evaluateUserAchievementsUseCase != null) {
+        evaluateUserAchievementsUseCase.execute(user);
+      }
 
       habit.registerCompletion();
       habit.changeStatus(TaskStatus.COMPLETED);

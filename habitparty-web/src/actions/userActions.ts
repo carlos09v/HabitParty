@@ -13,8 +13,6 @@ import type {
   UserResponseDTO,
 } from "@/types/user";
 
-export type { UpdateUserDTO, UpdateUserPasswordDTO, UserResponseDTO };
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 /**

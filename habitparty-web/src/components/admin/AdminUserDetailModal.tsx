@@ -1,6 +1,14 @@
 "use client";
 
-import { BadgeCheck, Clock, Crown, Database, Mail, X } from "lucide-react";
+import {
+  BadgeCheck,
+  Calendar,
+  Clock,
+  Crown,
+  Database,
+  Mail,
+  X,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import {
@@ -9,6 +17,7 @@ import {
   formatStorageBytes,
   getUserStorageLimitFormatted,
 } from "@/constants/admin";
+import { useDateFormat } from "@/hooks/useDateFormat";
 import type { AppLocale } from "@/i18n/config";
 import type { AdminUserDetailDTO, EmailDispatchLogDTO } from "@/types/admin";
 import { cn, formatDateTime } from "@/utils";
@@ -114,6 +123,7 @@ export function AdminUserDetailModal({
 }: AdminUserDetailModalProps) {
   const t = useTranslations("admin.userModal");
   const locale = useLocale();
+  const { dateFormat } = useDateFormat();
 
   if (!isOpen || !detail) return null;
 
@@ -158,10 +168,10 @@ export function AdminUserDetailModal({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-3xl max-h-[90vh] bg-surface rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 dark:bg-background/85 animate-in fade-in duration-200">
+      <div className="relative w-full max-w-3xl max-h-[90vh] bg-card dark:bg-surface rounded-2xl border border-neutral-700 dark:border-white/10 shadow-popover-dark dark:shadow-2xl flex flex-col overflow-hidden">
         {/* HEADER */}
-        <div className="flex items-center justify-between p-5 border-b border-white/10 bg-surface/90">
+        <div className="flex items-center justify-between p-5 border-b border-neutral-700 dark:border-white/10 bg-surface/50 dark:bg-surface/90">
           <div className="flex items-center gap-3">
             <UserAvatar
               src={summary.profilePhotoUrl}
@@ -170,39 +180,42 @@ export function AdminUserDetailModal({
               hasRing={summary.isPremium}
             />
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold text-neutral-100">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-lg font-bold text-neutral-50 dark:text-neutral-100">
                   {summary.fullName}
                 </h3>
                 {summary.emailVerified ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
                     <BadgeCheck size={12} />
                     {t("badges.verified")}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/25">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/25">
                     <Clock size={11} />
                     {t("badges.unverified")}
                   </span>
                 )}
                 {summary.isFounder && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gold/20 text-gold border border-gold/40 shadow-glow-gold-xs">
-                    <Crown size={12} className="fill-gold" />
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gold/20 text-amber-700 dark:text-gold border border-gold/40 shadow-glow-gold-xs">
+                    <Crown
+                      size={12}
+                      className="fill-amber-500 dark:fill-gold"
+                    />
                     {t("badges.founder")}
                   </span>
                 )}
                 {summary.isPremium ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-gold/15 text-gold border border-gold/30">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-gold/15 text-amber-700 dark:text-gold border border-gold/30">
                     <Crown size={12} />
                     {t("badges.premiumVip")}
                   </span>
                 ) : (
-                  <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-neutral-800 text-neutral-400 border border-white/5">
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-surface text-neutral-300 border border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:border-white/5">
                     {t("badges.free")}
                   </span>
                 )}
                 {summary.role === "ADMIN" && (
-                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30">
                     {t("badges.admin")}
                   </span>
                 )}
@@ -216,7 +229,7 @@ export function AdminUserDetailModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="p-2 rounded-xl text-neutral-400 hover:text-neutral-50 hover:bg-surface dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
             aria-label={t("closeAriaLabel")}
           >
             <X size={20} />
@@ -224,7 +237,68 @@ export function AdminUserDetailModal({
         </div>
 
         {/* CORPO ROLÁVEL */}
-        <div className="p-6 overflow-y-auto space-y-6 [scrollbar-width:thin] custom-scrollbar">
+        <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
+          {/* DATAS DA CONTA E EXPIRAÇÃO DO PREMIUM */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-3.5 rounded-xl bg-surface/60 dark:bg-white/[0.03] border border-neutral-700 dark:border-white/10 flex items-center gap-3">
+              <div className="p-2 rounded-lg border bg-purple-500/10 border-purple-500/25 text-purple-700 dark:text-purple-300 shrink-0">
+                <Calendar size={16} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+                  {t("accountInfo.createdAtLabel")}
+                </p>
+                <p className="text-xs font-bold text-neutral-100 font-mono truncate">
+                  {summary.createdAt
+                    ? formatDateTime(summary.createdAt, {
+                        includeYearFull: true,
+                        locale: locale as AppLocale,
+                        dateFormat,
+                      })
+                    : "—"}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-surface/60 dark:bg-white/[0.03] border border-neutral-700 dark:border-white/10 flex items-center gap-3">
+              <div
+                className={cn(
+                  "p-2 rounded-lg border shrink-0",
+                  summary.isPremium
+                    ? "bg-gold/15 border-gold/30 text-amber-600 dark:text-gold"
+                    : "bg-surface border-neutral-700 text-neutral-400 dark:bg-neutral-800 dark:border-white/10",
+                )}
+              >
+                <Crown size={16} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+                  {t("accountInfo.premiumExpiresLabel")}
+                </p>
+                <p
+                  className={cn(
+                    "text-xs font-bold truncate",
+                    summary.subscriptionEndsAt
+                      ? "text-amber-600 dark:text-gold font-mono"
+                      : summary.isPremium
+                        ? "text-emerald-700 dark:text-emerald-400"
+                        : "text-neutral-400",
+                  )}
+                >
+                  {summary.subscriptionEndsAt
+                    ? formatDateTime(summary.subscriptionEndsAt, {
+                        includeYearFull: true,
+                        locale: locale as AppLocale,
+                        dateFormat,
+                      })
+                    : summary.isPremium
+                      ? t("accountInfo.lifetimeAccess")
+                      : t("accountInfo.noActiveSubscription")}
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* DETALHAMENTO DE ARMAZENAMENTO */}
           <div>
             {(() => {
@@ -239,11 +313,14 @@ export function AdminUserDetailModal({
               return (
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2 text-sm font-bold text-neutral-200 uppercase tracking-wider">
-                    <Database size={16} className="text-success-500" />
+                    <Database
+                      size={16}
+                      className="text-emerald-600 dark:text-success-500"
+                    />
                     <span>{t("storage.title")}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="px-3 py-1 rounded-full bg-success-500/15 border border-success-500/30 text-success-500 font-mono font-bold text-xs">
+                    <div className="px-3 py-1 rounded-full bg-success-500/15 border border-success-500/30 text-emerald-700 dark:text-success-500 font-mono font-bold text-xs">
                       {t("storage.totalBadge", {
                         used: storage.totalFormatted,
                         limit: storageLimitFormatted,
@@ -263,7 +340,7 @@ export function AdminUserDetailModal({
                 return (
                   <div
                     key={item.key}
-                    className="p-3.5 rounded-xl bg-surface-alt/70 border border-white/5 flex items-center justify-between"
+                    className="p-3.5 rounded-xl bg-surface/60 dark:bg-white/[0.03] border border-neutral-700 dark:border-white/10 flex items-center justify-between"
                   >
                     <div className="flex items-center gap-2.5">
                       <div className={cn("p-2 rounded-lg border", item.color)}>
@@ -280,7 +357,7 @@ export function AdminUserDetailModal({
                         </p>
                       </div>
                     </div>
-                    <span className="font-mono text-xs font-bold text-neutral-300">
+                    <span className="font-mono text-xs font-bold text-neutral-200 dark:text-neutral-300">
                       {formatted}
                     </span>
                   </div>
@@ -293,7 +370,10 @@ export function AdminUserDetailModal({
           <div>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2 text-sm font-bold text-neutral-200 uppercase tracking-wider">
-                <Mail size={16} className="text-amber-400" />
+                <Mail
+                  size={16}
+                  className="text-amber-600 dark:text-amber-400"
+                />
                 <span>{t("emails.title")}</span>
               </div>
               <span className="text-xs text-neutral-400 font-mono">
@@ -304,16 +384,17 @@ export function AdminUserDetailModal({
             </div>
 
             {recentEmailLogs.length === 0 ? (
-              <div className="p-6 rounded-xl bg-surface-alt/40 border border-white/5 text-center text-xs text-neutral-400">
+              <div className="p-6 rounded-xl bg-surface/50 dark:bg-white/[0.02] border border-neutral-700 dark:border-white/10 text-center text-xs text-neutral-400">
                 {t("emails.empty")}
               </div>
             ) : (
-              <div className="border border-white/10 rounded-xl overflow-hidden divide-y divide-white/5 bg-surface-alt/40">
+              <div className="border border-neutral-700 dark:border-white/10 rounded-xl overflow-hidden divide-y divide-neutral-700 dark:divide-white/5 bg-surface/50 dark:bg-white/[0.02]">
                 {recentEmailLogs.map((log) => {
                   const isSent = log.status === "SENT";
                   const dateFormatted = formatDateTime(log.sentAt, {
                     includeYearFull: true,
                     locale: locale as AppLocale,
+                    dateFormat,
                   });
                   const localizedSubject = getLocalizedSubject(log, t);
                   const localizedError = getLocalizedErrorMessage(
@@ -331,8 +412,8 @@ export function AdminUserDetailModal({
                           className={cn(
                             "w-2 h-2 rounded-full shrink-0",
                             isSent
-                              ? "bg-emerald-400 shadow-[0_0_8px_#34d399]"
-                              : "bg-red-400",
+                              ? "bg-emerald-500 dark:bg-emerald-400 dark:shadow-[0_0_8px_#34d399]"
+                              : "bg-red-500 dark:bg-red-400",
                           )}
                         />
                         <div className="truncate">
@@ -345,7 +426,7 @@ export function AdminUserDetailModal({
                             })}
                           </p>
                           {localizedError && (
-                            <p className="text-[10px] text-red-400 mt-0.5">
+                            <p className="text-[10px] text-red-600 dark:text-red-400 mt-0.5">
                               {t("emails.errorPrefix", {
                                 message: localizedError,
                               })}
@@ -359,15 +440,15 @@ export function AdminUserDetailModal({
                           className={cn(
                             "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider",
                             isSent
-                              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                              : "bg-red-500/15 text-red-400 border border-red-500/30",
+                              ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30"
+                              : "bg-red-500/15 text-red-700 dark:text-red-400 border border-red-500/30",
                           )}
                         >
                           {isSent
                             ? t("emails.statusSent")
                             : t("emails.statusFailed")}
                         </span>
-                        <p className="text-[10px] text-neutral-500 mt-1 font-mono">
+                        <p className="text-[10px] text-neutral-400 dark:text-neutral-500 mt-1 font-mono">
                           {dateFormatted}
                         </p>
                       </div>
@@ -380,11 +461,11 @@ export function AdminUserDetailModal({
         </div>
 
         {/* FOOTER */}
-        <div className="p-4 border-t border-white/10 bg-surface/90 flex justify-end">
+        <div className="p-4 border-t border-neutral-700 dark:border-white/10 bg-surface/50 dark:bg-surface/90 flex justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold transition-colors cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-card hover:bg-surface-hover border border-neutral-700 text-neutral-100 dark:bg-white/10 dark:hover:bg-white/15 dark:border-white/10 dark:text-white text-xs font-semibold transition-colors cursor-pointer"
           >
             {t("closeButton")}
           </button>

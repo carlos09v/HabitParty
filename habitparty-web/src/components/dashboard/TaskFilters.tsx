@@ -11,6 +11,7 @@ import {
   DEFAULT_DASHBOARD_ADVANCED_FILTERS,
 } from "@/constants/dashboard";
 import { useCompactMode } from "@/hooks/useCompactMode";
+import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useFloatingPopover } from "@/hooks/useFloatingPopover";
 import type { AppLocale } from "@/i18n/config";
@@ -34,6 +35,7 @@ export function TaskFilters({
 }: TaskFiltersProps) {
   const t = useTranslations("dashboard.taskFilters");
   const locale = useLocale() as AppLocale;
+  const { dateFormat } = useDateFormat();
   const { isCompact: hookIsCompact } = useCompactMode();
   const { isGamified } = useExperienceMode();
   const isCompact = propIsCompact ?? hookIsCompact;
@@ -67,8 +69,12 @@ export function TaskFilters({
 
   const formattedDateLabel = useMemo(() => {
     if (!selectedDate) return null;
-    return formatShortDate(selectedDate, { monthFormat: "short", locale });
-  }, [selectedDate, locale]);
+    return formatShortDate(selectedDate, {
+      monthFormat: "short",
+      locale,
+      dateFormat,
+    });
+  }, [selectedDate, locale, dateFormat]);
 
   const columnOptions = useMemo(() => {
     const opts = [{ value: "all", label: t("allColumns") }];
@@ -141,7 +147,7 @@ export function TaskFilters({
             aria-controls="panel-date"
             onClick={onClearDate}
             className={cn(
-              "flex items-center gap-1.5 rounded-lg font-bold transition-all whitespace-nowrap cursor-pointer shadow-xs bg-gold text-on-gold group shrink-0",
+              "flex items-center gap-1.5 rounded-lg font-bold transition-colors whitespace-nowrap cursor-pointer shadow-xs bg-gold text-on-gold group shrink-0",
               isCompact ? "px-2.5 py-1 text-xs" : "px-3.5 py-1.5 text-sm",
             )}
             title={t("clearDateTitle")}
@@ -169,7 +175,7 @@ export function TaskFilters({
               id={`tab-${f.id}`}
               onClick={() => handleSelectStandardFilter(f.id)}
               className={cn(
-                "rounded-lg font-medium transition-all whitespace-nowrap cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold focus:ring-offset-1 focus:ring-offset-background shrink-0",
+                "rounded-lg font-medium transition-colors whitespace-nowrap cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold focus:ring-offset-1 focus:ring-offset-background shrink-0",
                 isCompact ? "px-2.5 py-1 text-xs" : "px-3.5 py-1.5 text-sm",
                 isSelected
                   ? "bg-gold text-on-gold font-bold border-transparent shadow-xs"
@@ -192,16 +198,18 @@ export function TaskFilters({
           aria-expanded={showPopover}
           aria-label={t("openAdvancedAria")}
           className={cn(
-            "flex items-center gap-1.5 rounded-lg border transition-all shrink-0 focus:outline-none focus:ring-2 focus:ring-gold cursor-pointer",
+            "flex items-center gap-1.5 rounded-lg border transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-gold cursor-pointer",
             isCompact ? "p-1.5 text-xs" : "p-2 text-sm",
             activeFiltersCount > 0
-              ? "bg-gold/15 border-gold/60 text-gold shadow-glow-gold-xs font-semibold"
+              ? "bg-amber-500/15 border-amber-500/50 text-amber-700 dark:bg-gold/15 dark:border-gold/60 dark:text-gold shadow-glow-gold-xs font-semibold"
               : "bg-surface dark:bg-primary-dark/20 hover:bg-surface-hover dark:hover:bg-primary-dark/40 border-neutral-700 dark:border-primary/30 text-neutral-300 hover:text-primary dark:hover:text-gold shadow-none",
           )}
         >
           <SlidersHorizontal
             size={isCompact ? 15 : 18}
-            className={activeFiltersCount > 0 ? "text-gold" : ""}
+            className={
+              activeFiltersCount > 0 ? "text-amber-700 dark:text-gold" : ""
+            }
             aria-hidden="true"
           />
           {activeFiltersCount > 0 && (
@@ -223,14 +231,17 @@ export function TaskFilters({
               aria-label={t("advancedTitle")}
               style={floatingStyle}
               className={cn(
-                "w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] rounded-xl bg-popover/95 border border-primary/40 p-4 shadow-xl animate-in fade-in zoom-in-95 duration-150 backdrop-blur-md flex flex-col gap-3",
+                "w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] rounded-xl bg-popover border border-neutral-700 dark:border-primary/40 p-4 shadow-xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-3",
                 coords.placement === "top" ? "origin-bottom" : "origin-top",
               )}
             >
               {/* Cabeçalho do Popover */}
-              <div className="flex items-center justify-between pb-2 border-b border-white/10">
+              <div className="flex items-center justify-between pb-2 border-b border-neutral-700 dark:border-white/10">
                 <span className="text-xs font-bold text-neutral-100 flex items-center gap-1.5">
-                  <SlidersHorizontal size={13} className="text-gold" />
+                  <SlidersHorizontal
+                    size={13}
+                    className="text-amber-600 dark:text-gold"
+                  />
                   {t("advancedTitle")}
                 </span>
                 {activeFiltersCount > 0 && (
@@ -308,10 +319,10 @@ export function TaskFilters({
               />
 
               {/* Toggle Ocultar Concluídas */}
-              <div className="flex items-center justify-between pt-2 border-t border-white/10 group">
+              <div className="flex items-center justify-between pt-2 border-t border-neutral-700 dark:border-white/10 group">
                 <label
                   htmlFor="filter-hide-completed"
-                  className="text-xs text-neutral-200 group-hover:text-gold transition-colors font-medium cursor-pointer select-none"
+                  className="text-xs text-neutral-200 group-hover:text-primary dark:group-hover:text-gold transition-colors font-medium cursor-pointer select-none"
                 >
                   {t("hideCompletedLabel")}
                 </label>

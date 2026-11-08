@@ -130,6 +130,37 @@
     "levelLabel": "Mystery Box Level",
     "hoverHint": "(hover to view drop rates)",
     "raritiesCount": "4 Rarities",
+    "lootEditor": {
+      "title": "Customize Box Prizes",
+      "subtitle": "Tier-locked odds • tailor prizes to your taste",
+      "presetsLabel": "Presets:",
+      "presets": {
+        "gamer": "Gamer & Streaming",
+        "relax": "Relax & Self-Care",
+        "gastronomy": "Food & Treats",
+        "hobbies": "Hobbies & Reading"
+      },
+      "pullFromStore": "Pull from my Store",
+      "pullFromStoreHint": "Auto-fills the 3 slots using rewards you already created in your Store",
+      "presetAppliedToast": "Applied \"{preset}\" preset to box prizes!",
+      "pulledFromStoreToast": "Prizes populated from your Store rewards!",
+      "storeEmptyToast": "Create Single-Use or Voucher rewards in your Store first to use this shortcut.",
+      "slotRarity": {
+        "0": "Common Prize",
+        "1": "Rare Prize",
+        "2": "Supreme Jackpot"
+      },
+      "slotPlaceholder": {
+        "0": "E.g., Specialty coffee, 1 short video...",
+        "1": "E.g., Series episode, Favorite snack...",
+        "2": "E.g., Extended gaming session, Free evening..."
+      },
+      "modeSingleUse": "Treat (Single-Use)",
+      "modeTimeBased": "Time (max {max}m)",
+      "iconPickerTitle": "Prize Icon",
+      "minutesAriaLabel": "Duration in minutes (max {max})",
+      "minutesMaxHint": "Maximum {max} minutes in this slot to preserve economy balance"
+    },
     "tiers": {
       "BASIC": {
         "name": "Basic Box",
@@ -219,7 +250,9 @@
     "dropPercentHeader": "% Drop",
     "priceInCoins": "Price in Coins:",
     "balancedPrice": "Balanced Price:",
-    "coinsUnit": "coins"
+    "coinsUnit": "coins",
+    "customTimePrize": "Custom {minutes} min leisure/focus voucher.",
+    "customSingleUsePrize": "Custom single-use treat."
   },
   "hook": {
     "titleRequired": "Reward title is required.",

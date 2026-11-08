@@ -55,9 +55,12 @@ export async function getRequestLocale(
 export async function loadLocaleMessages(
   locale: AppLocale,
 ): Promise<AbstractIntlMessages> {
-  const cached = localeMessagesCache.get(locale);
-  if (cached) {
-    return cached;
+  const isProd = process.env.NODE_ENV === "production";
+  if (isProd) {
+    const cached = localeMessagesCache.get(locale);
+    if (cached) {
+      return cached;
+    }
   }
 
   const [
@@ -75,6 +78,7 @@ export async function loadLocaleMessages(
     history,
     help,
     admin,
+    showcase,
   ] = await Promise.all([
     import(`../messages/${locale}/common.json`),
     import(`../messages/${locale}/layout.json`),
@@ -90,6 +94,7 @@ export async function loadLocaleMessages(
     import(`../messages/${locale}/history.json`),
     import(`../messages/${locale}/help.json`),
     import(`../messages/${locale}/admin.json`),
+    import(`../messages/${locale}/showcase.json`),
   ]);
 
   const messages: AbstractIntlMessages = Object.freeze({
@@ -107,9 +112,12 @@ export async function loadLocaleMessages(
     history: history.default,
     help: help.default,
     admin: admin.default,
+    showcase: showcase.default,
   });
 
-  localeMessagesCache.set(locale, messages);
+  if (isProd) {
+    localeMessagesCache.set(locale, messages);
+  }
   return messages;
 }
 

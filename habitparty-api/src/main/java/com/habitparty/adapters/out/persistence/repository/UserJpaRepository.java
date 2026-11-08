@@ -1,5 +1,6 @@
 package com.habitparty.adapters.out.persistence.repository;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -13,6 +14,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.habitparty.adapters.out.persistence.entities.UserJpaEntity;
+import com.habitparty.core.domain.enums.TransactionType;
 import com.habitparty.core.domain.enums.UserRole;
 
 public interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
@@ -77,5 +79,22 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
       @Param("isFounder") Boolean isFounder,
       @Param("emailVerified") Boolean emailVerified,
       Pageable pageable
+  );
+
+  @EntityGraph(attributePaths = {"stats", "subscription"})
+  @Query("""
+      SELECT u FROM UserJpaEntity u
+      JOIN u.stats st
+      WHERE st.currentStreak > 0
+        AND NOT EXISTS (
+          SELECT 1 FROM TransactionHistoryJpaEntity t
+          WHERE t.user.id = u.id
+            AND t.transactionType IN :completedTypes
+            AND t.createdAt >= :since
+        )
+  """)
+  List<UserJpaEntity> findUsersWithExpiredStreak(
+      @Param("completedTypes") Collection<TransactionType> completedTypes,
+      @Param("since") LocalDateTime since
   );
 }

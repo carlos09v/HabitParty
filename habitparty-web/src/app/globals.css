@@ -193,17 +193,17 @@ html.light {
 
   /* Elevação Física Limpa (Zero halos borrados amarelados) */
   --shadow-glow-gold:
-    0 2px 8px -1px rgba(180, 120, 0, 0.18), 0 1px 2px rgba(15, 15, 30, 0.06);
+    0 2px 8px -1px rgba(180, 120, 0, 0.16), 0 1px 2px rgba(15, 15, 30, 0.05);
   --shadow-glow-gold-md:
-    0 2px 6px -1px rgba(180, 120, 0, 0.14), 0 1px 2px rgba(15, 15, 30, 0.05);
-  --shadow-glow-gold-sm: 0 1px 3px rgba(15, 15, 30, 0.06);
-  --shadow-glow-gold-xs: 0 1px 2px rgba(15, 15, 30, 0.05);
-  --shadow-glow-magenta: 0 2px 8px -1px rgba(162, 28, 175, 0.14);
+    0 2px 6px -1px rgba(180, 120, 0, 0.12), 0 1px 2px rgba(15, 15, 30, 0.04);
+  --shadow-glow-gold-sm: 0 1px 3px rgba(15, 15, 30, 0.05);
+  --shadow-glow-gold-xs: 0 1px 2px rgba(15, 15, 30, 0.04);
+  --shadow-glow-magenta: 0 2px 8px -1px rgba(162, 28, 175, 0.12);
   --shadow-card-deep:
-    0 4px 16px -4px rgba(30, 30, 42, 0.05), 0 1px 3px rgba(30, 30, 42, 0.04);
+    0 2px 8px -2px rgba(15, 15, 30, 0.06), 0 1px 2px -1px rgba(15, 15, 30, 0.04);
   --shadow-card-active:
     0 4px 12px -2px rgba(15, 15, 30, 0.08),
-    0 12px 24px -6px rgba(15, 15, 30, 0.08);
+    0 8px 16px -4px rgba(15, 15, 30, 0.06);
   --shadow-popover-dark:
     0 12px 32px -4px rgba(15, 15, 30, 0.12),
     0 2px 6px -1px rgba(15, 15, 30, 0.06);
@@ -227,15 +227,15 @@ html.light {
    CLASSES SEMÂNTICAS DE COMPONENTES (Timer, Tooltips, Zen)
    ======================================================== */
 
-/* Sombra do visor do cronômetro de Foco */
+/* Sombra do visor do cronômetro de Foco (text-shadow sem rasterizar filtro a 1Hz) */
 .timer-display-shadow {
-  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.6));
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
 }
 html.light .timer-display-shadow {
-  filter: drop-shadow(0 2px 8px rgba(109, 40, 217, 0.12));
+  text-shadow: 0 2px 8px rgba(109, 40, 217, 0.12);
 }
 
-/* Tooltips escuros em ambos os temas (FocusWeeklyChart, EconomyWidget) */
+/* Tooltips escuros em ambos os temas (FocusWeeklyChart, EconomyWeeklyChart) */
 .tooltip-dark {
   background-color: rgba(27, 24, 36, 0.96);
   color: rgb(249 248 252);
@@ -249,8 +249,12 @@ html.light .tooltip-dark .text-neutral-300,
 html.light .tooltip-dark .text-neutral-400 {
   color: rgb(212 207 223);
 }
+html.light .tooltip-dark.text-gold,
 html.light .tooltip-dark .text-gold {
   color: rgb(237 229 57);
+}
+html.light .tooltip-dark .text-emerald-400 {
+  color: rgb(52 211 153);
 }
 html.light .tooltip-dark .text-rose-400 {
   color: rgb(251 113 133);
@@ -267,10 +271,15 @@ html.light .zen-dimmed-dark {
   --color-surface: rgb(51 24 102);
   --color-surface-hover: rgb(61 29 122);
   --color-card: rgb(55 29 106);
+  --color-primary: rgb(124 58 237);
+  --color-primary-dark: rgb(73 22 166);
+  --color-primary-light: rgb(168 99 255);
   --color-gold: rgb(237 229 57);
   --color-gold-hover: rgb(213 206 51);
   --color-gold-ink: rgb(237 229 57);
   --color-on-gold: rgb(27 24 36);
+  --color-success-300: rgb(110 231 183);
+  --color-info: rgb(0 194 255);
   --color-neutral-50: rgb(249 248 252);
   --color-neutral-100: rgb(244 242 248);
   --color-neutral-200: rgb(228 224 237);
@@ -281,14 +290,102 @@ html.light .zen-dimmed-dark {
   --color-neutral-700: rgb(60 55 74);
 }
 html.light .zen-dimmed-dark .timer-display-shadow {
-  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.6));
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+}
+
+/* ========================================================
+   LUZES AMBIENTES CÓSMICAS PRÉ-COMPOSTAS (Zero Blur Filter GPU)
+   ======================================================== */
+.cosmic-ambient-main {
+  background:
+    radial-gradient(
+      850px circle at 92% 6%,
+      rgba(237, 43, 229, 0.08),
+      transparent 70%
+    ),
+    radial-gradient(
+      900px circle at 6% 92%,
+      rgba(64, 57, 237, 0.1),
+      transparent 70%
+    ),
+    radial-gradient(
+      800px circle at 28% 4%,
+      rgba(124, 58, 237, 0.15),
+      transparent 70%
+    );
+}
+
+.cosmic-ambient-onboarding {
+  background:
+    radial-gradient(
+      700px circle at 28% 5%,
+      rgba(237, 43, 229, 0.11),
+      transparent 70%
+    ),
+    radial-gradient(
+      800px circle at 80% 92%,
+      rgba(64, 57, 237, 0.15),
+      transparent 70%
+    ),
+    radial-gradient(
+      550px circle at 70% 38%,
+      rgba(124, 58, 237, 0.14),
+      transparent 70%
+    );
+}
+
+.cosmic-ambient-auth {
+  background:
+    radial-gradient(
+      650px 560px at 88% 88%,
+      rgba(64, 57, 237, 0.24),
+      transparent 70%
+    ),
+    radial-gradient(
+      560px circle at 68% 36%,
+      rgba(124, 58, 237, 0.2),
+      transparent 70%
+    );
+}
+
+/* ========================================================
+   CONTENÇÃO CSS E RENDERIZAÇÃO DIFERIDA (Kanban & Listas)
+   ======================================================== */
+.kanban-column-contain {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 20rem auto 40rem;
+}
+
+@supports not (content-visibility: auto) {
+  .kanban-column-contain {
+    contain: layout style paint;
+  }
+}
+
+.deferred-history-group {
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 14rem;
+}
+
+.deferred-list-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 4rem;
 }
 
 /* ========================================================
    PAINÉIS, ELEMENTOS DECORATIVOS E NATIVOS (MODO CLARO)
    ======================================================== */
-html.light .cosmic-orb {
+html.light .cosmic-orb,
+html.light .cosmic-ambient-main {
   opacity: 0.05;
+}
+
+html.light .cosmic-ambient-onboarding {
+  opacity: 0.18;
+}
+
+html.light .cosmic-ambient-auth {
+  opacity: 0.25;
 }
 
 html.light .sidebar-confetti {
@@ -312,6 +409,7 @@ html.light select option {
 
   /* 1. Tipografia Semântica e Cores de Destaque */
   :where(html.light) .text-gold,
+  :where(html.light) .text-amber-500,
   :where(html.light) .text-amber-400,
   :where(html.light) .text-amber-300,
   :where(html.light) .text-amber-200 {
@@ -325,8 +423,7 @@ html.light select option {
   :where(html.light) .text-red-300 {
     color: var(--color-danger-400);
   }
-  :where(html.light) .text-rose-400,
-  :where(html.light) .text-rose-300 {
+  :where(html.light) .text-rose-400 {
     color: rgb(225 29 72); /* Rose-600 #E11D48 */
   }
   :where(html.light) .text-orange-400,
@@ -340,16 +437,12 @@ html.light select option {
     color: var(--color-info);
   }
   :where(html.light) .text-blue-400,
-  :where(html.light) .text-blue-300,
   :where(html.light) .text-blue-200,
-  :where(html.light) .text-indigo-400,
   :where(html.light) .text-indigo-300 {
     color: var(--color-blue);
   }
   :where(html.light) .text-purple-400,
-  :where(html.light) .text-purple-300,
-  :where(html.light) .text-violet-400,
-  :where(html.light) .text-violet-300 {
+  :where(html.light) .text-purple-300 {
     color: var(--color-primary);
   }
 
@@ -372,8 +465,7 @@ html.light select option {
     background-color: rgba(30, 30, 42, 0.035);
   }
   :where(html.light) .bg-white\/10,
-  :where(html.light) .bg-white\/15,
-  :where(html.light) .bg-white\/20 {
+  :where(html.light) .bg-white\/15 {
     background-color: rgba(30, 30, 42, 0.065);
   }
   /* Containers de cards externos (ListCard, TaskRow, HistoryRow, etc.) */
@@ -443,25 +535,100 @@ html.light select option {
     border-color: rgba(109, 40, 217, 0.32);
   }
 
-  /* Preserva bordas laterais semânticas (border-l-4) contra shorthands border-color */
-  :where(html.light) .border-l-info {
+  /* Preserva bordas laterais semânticas (border-l-4) contra shorthands border-color (repouso e hover) */
+  :where(html.light) .border-l-info,
+  :where(html.light) .border-l-info:hover,
+  :where(html.light) .border-l-sky-500,
+  :where(html.light) .border-l-sky-500:hover,
+  :where(html.light) .border-l-cyan-500,
+  :where(html.light) .border-l-cyan-500:hover {
     border-left-color: var(--color-info);
   }
+  :where(html.light) .border-l-indigo-500,
+  :where(html.light) .border-l-indigo-500:hover {
+    border-left-color: var(--color-blue);
+  }
   :where(html.light) .border-l-success-500,
-  :where(html.light) .border-l-emerald-500 {
+  :where(html.light) .border-l-success-500:hover,
+  :where(html.light) .border-l-emerald-500,
+  :where(html.light) .border-l-emerald-500:hover {
     border-left-color: var(--color-success-500);
   }
   :where(html.light) .border-l-warning-500,
-  :where(html.light) .border-l-amber-500 {
+  :where(html.light) .border-l-warning-500:hover,
+  :where(html.light) .border-l-amber-500,
+  :where(html.light) .border-l-amber-500:hover {
     border-left-color: var(--color-warning-500);
   }
+  :where(html.light) .border-l-gold,
+  :where(html.light) .border-l-gold:hover {
+    border-left-color: var(--color-gold-ink);
+  }
   :where(html.light) .border-l-purple-500,
-  :where(html.light) .border-l-primary {
+  :where(html.light) .border-l-purple-500:hover,
+  :where(html.light) .border-l-primary,
+  :where(html.light) .border-l-primary:hover {
     border-left-color: var(--color-primary);
   }
   :where(html.light) .border-l-danger-500,
-  :where(html.light) .border-l-red-500 {
+  :where(html.light) .border-l-danger-500:hover,
+  :where(html.light) .border-l-red-500,
+  :where(html.light) .border-l-red-500:hover {
     border-left-color: var(--color-danger-500);
+  }
+  :where(html.light) .border-l-neutral-500,
+  :where(html.light) .border-l-neutral-500:hover {
+    border-left-color: var(--color-neutral-500);
+  }
+
+  /* 4. Sobrescrita das Sombras Customizadas do @theme no Modo Claro
+     (O Tailwind v4 faz inline do valor de --shadow-* em --tw-shadow no build) */
+  :where(html.light) .shadow-card-deep,
+  :where(html.light) .hover\:shadow-card-deep:hover {
+    --tw-shadow: var(--shadow-card-deep);
+    box-shadow:
+      var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
+      var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  :where(html.light) .shadow-card-active {
+    --tw-shadow: var(--shadow-card-active);
+    box-shadow:
+      var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
+      var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  :where(html.light) .shadow-glow-gold,
+  :where(html.light) .hover\:shadow-glow-gold:hover {
+    --tw-shadow: var(--shadow-glow-gold);
+    box-shadow:
+      var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
+      var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  :where(html.light) .shadow-glow-gold-md,
+  :where(html.light) .hover\:shadow-glow-gold-md:hover {
+    --tw-shadow: var(--shadow-glow-gold-md);
+    box-shadow:
+      var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
+      var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  :where(html.light) .shadow-glow-gold-sm,
+  :where(html.light) .hover\:shadow-glow-gold-sm:hover {
+    --tw-shadow: var(--shadow-glow-gold-sm);
+    box-shadow:
+      var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
+      var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  :where(html.light) .shadow-glow-gold-xs,
+  :where(html.light) .hover\:shadow-glow-gold-xs:hover {
+    --tw-shadow: var(--shadow-glow-gold-xs);
+    box-shadow:
+      var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
+      var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  :where(html.light) .shadow-popover-dark {
+    --tw-shadow: var(--shadow-popover-dark);
+    box-shadow:
+      var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
+      var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
   }
 
   .custom-scrollbar {
@@ -471,30 +638,32 @@ html.light select option {
   html.light .custom-scrollbar {
     scrollbar-color: rgba(30, 30, 42, 0.14) transparent;
   }
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-button {
-    display: none;
-    width: 0;
-    height: 0;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(123, 115, 141, 0.3);
-    border-radius: 9999px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(237, 229, 57, 0.5);
-  }
-  html.light .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(30, 30, 42, 0.14);
-  }
-  html.light .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(109, 40, 217, 0.35);
+  @supports not (scrollbar-color: auto) {
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-button {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(123, 115, 141, 0.3);
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(237, 229, 57, 0.5);
+    }
+    html.light .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(30, 30, 42, 0.14);
+    }
+    html.light .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(109, 40, 217, 0.35);
+    }
   }
 
   /* Borda sutil com gradiente para o Workspace Switcher */
@@ -596,9 +765,6 @@ html.light select option {
   --tw-enter-scale: calc(--value(integer) * 1%);
 }
 
-@utility slide-in-from-top {
-  --tw-enter-translate-y: -100%;
-}
 @utility slide-in-from-top-* {
   --tw-enter-translate-y: calc(--value(number) * var(--spacing) * -1);
 }
@@ -613,15 +779,9 @@ html.light select option {
 @utility slide-in-from-left {
   --tw-enter-translate-x: -100%;
 }
-@utility slide-in-from-left-* {
-  --tw-enter-translate-x: calc(--value(number) * var(--spacing) * -1);
-}
 
 @utility slide-in-from-right {
   --tw-enter-translate-x: 100%;
-}
-@utility slide-in-from-right-* {
-  --tw-enter-translate-x: calc(--value(number) * var(--spacing));
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -670,12 +830,12 @@ html.light select option {
 @keyframes frame-pulse-glow {
   0%,
   100% {
-    opacity: 0.85;
-    filter: brightness(1);
+    opacity: 0.72;
+    transform: scale(0.99);
   }
   50% {
     opacity: 1;
-    filter: brightness(1.25);
+    transform: scale(1.02);
   }
 }
 
@@ -746,4 +906,18 @@ html.light select option {
     #4916a6 85%,
     #7c3aed 100%
   );
+}
+
+/* ========================================================
+   PAINÉIS DE ABAS COM CACHE DE RENDERIZAÇÃO (Settings)
+   ======================================================== */
+.settings-tab-inactive {
+  display: none;
+}
+
+@supports (content-visibility: hidden) {
+  .settings-tab-inactive {
+    display: flex;
+    content-visibility: hidden;
+  }
 }

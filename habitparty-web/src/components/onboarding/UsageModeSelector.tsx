@@ -20,7 +20,7 @@ export function UsageModeSelector({
   return (
     <div className="flex flex-col gap-2">
       <h2 className="text-body-s font-bold text-neutral-100 flex items-center gap-2">
-        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-gold/20 text-gold text-[11px] font-bold">
+        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/15 text-amber-700 dark:bg-gold/20 dark:text-gold text-[11px] font-bold">
           1
         </span>
         {t("sectionTitle")}
@@ -40,7 +40,7 @@ export function UsageModeSelector({
               onClick={() => onSelectMode(mode)}
               disabled={disabled}
               className={cn(
-                "flex flex-col items-start p-3 sm:p-3.5 rounded-xl border text-left transition-all cursor-pointer relative",
+                "flex flex-col items-start p-3 sm:p-3.5 rounded-xl border text-left transition-colors cursor-pointer relative",
                 "outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
                 isSelected
                   ? "border-primary bg-primary/10 shadow-sm text-neutral-50 ring-1 ring-primary/30 dark:border-gold dark:bg-primary-dark/60 dark:shadow-[0_0_14px_rgba(237,229,57,0.18)] dark:ring-1 dark:ring-gold/40 dark:text-neutral-50"

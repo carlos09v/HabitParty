@@ -52,10 +52,12 @@ export function MysteryBoxRouletteModal({
       showCloseButton={!isSpinning}
       className="relative flex flex-col items-center gap-5 overflow-hidden"
     >
-      {/* Aura de fundo temática da raridade */}
+      {/* Aura de fundo temática da raridade (gradiente radial pré-composto, zero blur-3xl) */}
       <div
-        className="absolute -top-24 inset-x-0 h-48 opacity-30 pointer-events-none blur-3xl"
-        style={{ background: tierConfig.accentGlow }}
+        className="absolute -top-24 inset-x-0 h-56 opacity-25 dark:opacity-35 pointer-events-none"
+        style={{
+          background: `radial-gradient(ellipse 75% 85% at 50% 0%, ${tierConfig.accentGlow}, transparent 72%)`,
+        }}
       />
 
       {/* Header do Sorteio */}
@@ -83,18 +85,18 @@ export function MysteryBoxRouletteModal({
       <div className="w-full flex flex-col items-center relative my-2">
         {/* Indicador Central Dourado Superior */}
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-30 pointer-events-none flex flex-col items-center">
-          <span className="text-gold text-xs leading-none drop-shadow-[0_0_8px_rgba(255,184,0,0.8)] animate-pulse">
+          <span className="text-amber-600 dark:text-gold text-xs leading-none dark:drop-shadow-[0_0_8px_rgba(255,184,0,0.8)] animate-pulse">
             ▼
           </span>
         </div>
 
         {/* Linha Laser Guia Central */}
-        <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-linear-to-b from-gold via-gold/60 to-gold z-20 pointer-events-none shadow-[0_0_12px_rgba(255,184,0,0.8)]" />
+        <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-linear-to-b from-amber-500 via-amber-500/60 to-amber-500 dark:from-gold dark:via-gold/60 dark:to-gold z-20 pointer-events-none shadow-xs dark:shadow-[0_0_12px_rgba(255,184,0,0.8)]" />
 
         {/* Viewport com overflow oculto e bordas degradê */}
         <div
           ref={containerRef}
-          className="relative w-full h-[164px] bg-surface/80 dark:bg-neutral-950/80 border-2 border-primary/40 rounded-2xl overflow-hidden shadow-inner flex items-center"
+          className="relative w-full h-[164px] bg-surface/80 dark:bg-neutral-950/80 border-2 border-neutral-700 dark:border-primary/40 rounded-2xl overflow-hidden shadow-inner flex items-center"
         >
           {/* Sombras de vinheta esquerda e direita */}
           <div className="absolute left-0 inset-y-0 w-16 bg-linear-to-r from-card via-card/70 dark:from-neutral-950 dark:via-neutral-950/70 to-transparent z-10 pointer-events-none" />
@@ -119,10 +121,10 @@ export function MysteryBoxRouletteModal({
                 <div
                   key={trackItem.id}
                   className={cn(
-                    "w-[132px] h-[138px] rounded-xl border flex flex-col items-center justify-between p-2.5 transition-all duration-300 shrink-0 relative overflow-hidden",
+                    "w-[132px] h-[138px] rounded-xl border flex flex-col items-center justify-between p-2.5 transition-[transform,scale,border-color,background-color,box-shadow] duration-300 shrink-0 relative overflow-hidden",
                     isSelectedWinningCard
-                      ? "bg-gold/20 border-gold ring-4 ring-gold/40 shadow-[0_0_24px_rgba(255,184,0,0.6)] scale-105"
-                      : "bg-surface/60 border-white/10 hover:border-white/20",
+                      ? "bg-amber-500/15 border-amber-500 ring-4 ring-amber-500/25 shadow-md dark:bg-gold/20 dark:border-gold dark:ring-gold/40 dark:shadow-[0_0_24px_rgba(255,184,0,0.6)] scale-105"
+                      : "bg-card dark:bg-surface/60 border-neutral-700 dark:border-white/10 hover:border-neutral-600 dark:hover:border-white/20 shadow-2xs dark:shadow-none",
                   )}
                 >
                   {/* Badge da porcentagem / raridade */}
@@ -130,12 +132,12 @@ export function MysteryBoxRouletteModal({
                     className={cn(
                       "text-label-m font-bold px-1.5 py-0.5 rounded border leading-none self-end",
                       trackItem.badgeVariant === "emerald"
-                        ? "text-success-400 bg-success-500/15 border-success-500/30"
+                        ? "text-emerald-700 bg-emerald-500/15 border-emerald-500/35 dark:text-success-400 dark:bg-success-500/15 dark:border-success-500/30"
                         : trackItem.badgeVariant === "amber"
-                          ? "text-amber-400 bg-amber-500/15 border-amber-500/30"
+                          ? "text-amber-700 bg-amber-500/15 border-amber-500/35 dark:text-amber-400 dark:bg-amber-500/15 dark:border-amber-500/30"
                           : trackItem.badgeVariant === "purple"
-                            ? "text-magenta bg-magenta/15 border-magenta/30"
-                            : "text-gold bg-gold/15 border-gold/30",
+                            ? "text-magenta bg-magenta/10 border-magenta/30 dark:bg-magenta/15 dark:border-magenta/30"
+                            : "text-amber-800 bg-amber-500/15 border-amber-500/35 dark:text-gold dark:bg-gold/15 dark:border-gold/30",
                     )}
                   >
                     {trackItem.badgeLabel}
@@ -146,8 +148,8 @@ export function MysteryBoxRouletteModal({
                     className={cn(
                       "w-11 h-11 rounded-lg flex items-center justify-center border my-auto transition-transform",
                       isSelectedWinningCard
-                        ? "bg-gold/25 border-gold text-gold scale-110"
-                        : "bg-white/5 border-white/10 text-neutral-200",
+                        ? "bg-amber-500/20 border-amber-500 text-amber-700 dark:bg-gold/25 dark:border-gold dark:text-gold scale-110"
+                        : "bg-surface dark:bg-white/5 border-neutral-700 dark:border-white/10 text-neutral-300 dark:text-neutral-200",
                     )}
                   >
                     <ItemIcon size={22} />
@@ -174,7 +176,7 @@ export function MysteryBoxRouletteModal({
 
         {/* Indicador Central Dourado Inferior */}
         <div className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 z-30 pointer-events-none flex flex-col items-center">
-          <span className="text-gold text-xs leading-none drop-shadow-[0_0_8px_rgba(255,184,0,0.8)] animate-pulse">
+          <span className="text-amber-600 dark:text-gold text-xs leading-none dark:drop-shadow-[0_0_8px_rgba(255,184,0,0.8)] animate-pulse">
             ▲
           </span>
         </div>
@@ -182,13 +184,16 @@ export function MysteryBoxRouletteModal({
 
       {/* Revelação do Prêmio Conquistado */}
       {phase === "won" && wonResult && (
-        <div className="w-full flex flex-col items-center gap-3 p-4 rounded-xl bg-gold/10 border border-gold/40 shadow-glow-gold-xs animate-in zoom-in-95 duration-200">
-          <div className="flex items-center gap-2 text-gold font-bold text-body-m">
-            <Sparkles size={18} className="animate-spin text-gold" />
+        <div className="w-full flex flex-col items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/35 dark:bg-gold/10 dark:border-gold/40 shadow-glow-gold-xs animate-in zoom-in-95 duration-200">
+          <div className="flex items-center gap-2 text-amber-700 dark:text-gold font-bold text-body-m">
+            <Sparkles
+              size={18}
+              className="animate-spin text-amber-600 dark:text-gold"
+            />
             <span>{t("prizeUnlockedTitle")}</span>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gold/20 border border-gold/40 flex items-center justify-center text-gold shadow-md">
+            <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-700 dark:bg-gold/20 dark:border-gold/40 flex items-center justify-center dark:text-gold shadow-sm dark:shadow-md">
               {(() => {
                 const WinIcon = getRewardIcon(wonResult.rewardIcon);
                 return <WinIcon size={24} />;
@@ -217,7 +222,7 @@ export function MysteryBoxRouletteModal({
             type="button"
             disabled={isOpeningServer}
             onClick={handleSpin}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-linear-to-r from-amber-500 via-gold to-orange-500 rounded-xl text-on-gold font-black text-body-m hover:brightness-110 active:scale-95 transition-all shadow-glow-gold-sm cursor-pointer disabled:opacity-50"
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-gold hover:bg-gold-hover active:bg-gold-pressed border border-gold rounded-xl text-on-gold font-bold text-body-m active:scale-95 transition-[transform,background-color,border-color,box-shadow] shadow-glow-gold-xs cursor-pointer disabled:opacity-50"
           >
             <Dices size={20} className="text-on-gold" />
             <span>
@@ -227,7 +232,7 @@ export function MysteryBoxRouletteModal({
         )}
 
         {isSpinning && (
-          <div className="flex items-center gap-2 text-gold font-bold py-2 animate-pulse">
+          <div className="flex items-center gap-2 text-amber-700 dark:text-gold font-bold py-2 animate-pulse">
             <Sparkles size={18} />
             <span>{t("spinningStatus")}</span>
           </div>
@@ -237,9 +242,9 @@ export function MysteryBoxRouletteModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-linear-to-r from-primary to-primary-dark border border-primary-light/40 rounded-xl text-neutral-50 font-bold text-body-s hover:brightness-110 active:scale-95 transition-all shadow-md cursor-pointer"
+            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gold hover:bg-gold-hover active:bg-gold-pressed border border-gold rounded-xl text-on-gold font-bold text-body-s active:scale-95 transition-[transform,background-color,border-color,box-shadow] shadow-glow-gold-xs cursor-pointer"
           >
-            <Check size={18} />
+            <Check size={18} className="text-on-gold" />
             <span>{t("storeInBackpackButton")}</span>
           </button>
         )}

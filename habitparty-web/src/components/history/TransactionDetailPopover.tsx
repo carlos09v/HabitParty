@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { type CSSProperties, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { CoinAmount } from "@/components/ui/reward/CoinAmount";
@@ -23,7 +23,9 @@ import { XpAmount } from "@/components/ui/reward/XpAmount";
 import { getTransactionContextRoute } from "@/constants/history";
 import { useAnchoredPopoverPosition } from "@/hooks/useAnchoredPopoverPosition";
 import { useClickOutside } from "@/hooks/useClickOutside";
+import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useIsClient } from "@/hooks/useIsClient";
 import type { AppLocale } from "@/i18n/config";
 import type { TransactionHistoryResponseDTO } from "@/types/history";
 import { cn, formatCoins, formatDateTime } from "@/utils";
@@ -58,13 +60,10 @@ export function TransactionDetailPopover({
   const t = useTranslations("history.detailPopover");
   const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
-  const [mounted, setMounted] = useState(false);
+  const { dateFormat } = useDateFormat();
+  const mounted = useIsClient();
   const [copiedId, setCopiedId] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const position = useAnchoredPopoverPosition(
     isOpen,
@@ -112,7 +111,7 @@ export function TransactionDetailPopover({
     <>
       {/* Mobile Backdrop */}
       <div
-        className="md:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+        className="md:hidden fixed inset-0 z-50 bg-black/70 animate-in fade-in duration-150"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -127,12 +126,12 @@ export function TransactionDetailPopover({
           "fixed z-60 flex flex-col w-95 max-w-[calc(100vw-32px)] max-h-[calc(100vh-48px)] overflow-hidden",
           "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
           "md:top-(--pop-top) md:left-(--pop-left) md:translate-x-0 md:translate-y-0",
-          "rounded-2xl border border-white/10 bg-card shadow-2xl text-neutral-100",
+          "rounded-2xl border border-neutral-700 dark:border-white/10 bg-card shadow-2xl text-neutral-100",
           "animate-in fade-in zoom-in-95 duration-150",
         )}
       >
         {/* CABEÇALHO DO POPOVER */}
-        <header className="p-4 border-b border-white/10 flex items-start justify-between gap-3 bg-surface/50">
+        <header className="p-4 border-b border-neutral-700 dark:border-white/10 flex items-start justify-between gap-3 bg-surface/50">
           <div className="flex items-start gap-3 min-w-0">
             {/* A cor do tipo de transação fica concentrada no ícone */}
             <div
@@ -160,10 +159,13 @@ export function TransactionDetailPopover({
                     type="button"
                     onClick={handleCopyId}
                     title={t("copyIdTitle")}
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-tiny font-mono text-neutral-400 bg-white/5 hover:bg-white/10 hover:text-neutral-200 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-tiny font-mono text-neutral-400 bg-surface dark:bg-white/5 hover:bg-surface-hover dark:hover:bg-white/10 hover:text-neutral-200 transition-colors cursor-pointer"
                   >
                     {copiedId ? (
-                      <Check size={10} className="text-emerald-400" />
+                      <Check
+                        size={10}
+                        className="text-emerald-600 dark:text-emerald-400"
+                      />
                     ) : (
                       <Copy size={10} />
                     )}
@@ -182,7 +184,7 @@ export function TransactionDetailPopover({
             type="button"
             onClick={onClose}
             aria-label={t("closeAria")}
-            className="p-1 rounded-md text-neutral-400 hover:text-neutral-100 hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+            className="p-1 rounded-md text-neutral-400 hover:text-neutral-100 hover:bg-surface dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0"
           >
             <X size={16} />
           </button>
@@ -191,7 +193,7 @@ export function TransactionDetailPopover({
         {/* CORPO DO POPOVER COM SCROLL SE NECESSÁRIO */}
         <div className="p-4 flex flex-col gap-3.5 overflow-y-auto max-h-[calc(100vh-200px)]">
           {/* PAINEL DE IMPACTO FINANCEIRO / XP */}
-          <div className="grid grid-cols-2 gap-2.5 p-3 rounded-xl bg-surface/70 border border-white/10">
+          <div className="grid grid-cols-2 gap-2.5 p-3 rounded-xl bg-surface/70 border border-neutral-700 dark:border-white/10">
             {/* Moedas / Créditos */}
             <div className="flex flex-col gap-0.5">
               <span className="text-label-g font-semibold text-neutral-400 flex items-center gap-1">
@@ -224,7 +226,7 @@ export function TransactionDetailPopover({
           <div className="flex flex-col gap-2 text-xs text-neutral-300">
             {/* Preço original na loja se houver */}
             {priceSnapshot != null && priceSnapshot > 0 && (
-              <div className="flex items-center justify-between py-1 border-b border-white/5">
+              <div className="flex items-center justify-between py-1 border-b border-neutral-700/70 dark:border-white/5">
                 <span className="text-neutral-400">
                   {t("originalListPriceLabel")}
                 </span>
@@ -237,24 +239,36 @@ export function TransactionDetailPopover({
 
             {/* Dificuldade ou Esforço */}
             {metadata.difficultyLabel && (
-              <div className="flex items-center justify-between py-1 border-b border-white/5">
+              <div className="flex items-center justify-between py-1 border-b border-neutral-700/70 dark:border-white/5">
                 <span className="text-neutral-400">
                   {isGamified
                     ? t("taskDifficultyLabel")
                     : t("taskDifficultyLabelProductivity")}
                 </span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/10 border border-white/15 text-neutral-100 font-semibold text-label-g">
+                <span
+                  className={cn(
+                    "inline-flex items-center px-1.5 py-0.5 rounded-md border font-semibold text-label-g",
+                    metadata.secondaryBadgeClass ||
+                      "bg-surface border-neutral-700 dark:bg-white/10 dark:border-white/15 text-neutral-100",
+                  )}
+                >
                   {metadata.difficultyLabel}
                 </span>
               </div>
             )}
 
             {metadata.packageLabel && (
-              <div className="flex items-center justify-between py-1 border-b border-white/5">
+              <div className="flex items-center justify-between py-1 border-b border-neutral-700/70 dark:border-white/5">
                 <span className="text-neutral-400">
                   {t("packageRarityLabel")}
                 </span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/10 border border-white/15 text-neutral-100 font-semibold text-label-g">
+                <span
+                  className={cn(
+                    "inline-flex items-center px-1.5 py-0.5 rounded-md border font-semibold text-label-g",
+                    metadata.secondaryBadgeClass ||
+                      "bg-surface border-neutral-700 dark:bg-white/10 dark:border-white/15 text-neutral-100",
+                  )}
+                >
                   {metadata.packageLabel}
                 </span>
               </div>
@@ -262,11 +276,11 @@ export function TransactionDetailPopover({
 
             {/* Sessão de Foco: Duração */}
             {metadata.isFocus && tags.length > 0 && (
-              <div className="flex items-center justify-between py-1 border-b border-white/5">
+              <div className="flex items-center justify-between py-1 border-b border-neutral-700/70 dark:border-white/5">
                 <span className="text-neutral-400">
                   {t("sessionDurationLabel")}
                 </span>
-                <span className="inline-flex items-center gap-1 font-bold text-gold bg-gold/15 px-1.5 py-0.5 rounded-md border border-gold/30 text-label-g">
+                <span className="inline-flex items-center gap-1 font-bold text-amber-800 bg-amber-500/15 border-amber-500/35 dark:text-gold dark:bg-gold/15 px-1.5 py-0.5 rounded-md border dark:border-gold/30 text-label-g">
                   <Timer size={12} />
                   {tags[0]}
                 </span>
@@ -274,7 +288,7 @@ export function TransactionDetailPopover({
             )}
 
             {/* Data e Hora Exatas */}
-            <div className="flex items-center justify-between py-1 border-b border-white/5">
+            <div className="flex items-center justify-between py-1 border-b border-neutral-700/70 dark:border-white/5">
               <span className="text-neutral-400 flex items-center gap-1">
                 <Calendar size={12} /> {t("recordedAtLabel")}
               </span>
@@ -283,6 +297,7 @@ export function TransactionDetailPopover({
                   includeSeconds: true,
                   includeYearFull: true,
                   locale,
+                  dateFormat,
                 })}
               </span>
             </div>
@@ -297,7 +312,7 @@ export function TransactionDetailPopover({
                   {(metadata.isFocus ? tags.slice(1) : tags).map((tag) => (
                     <span
                       key={tag}
-                      className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-neutral-300 font-medium text-tiny"
+                      className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-surface border border-neutral-700 dark:bg-white/5 dark:border-white/10 text-neutral-300 font-medium text-tiny"
                     >
                       #{tag}
                     </span>
@@ -311,7 +326,7 @@ export function TransactionDetailPopover({
               <div className="pt-1">
                 <Link
                   href={contextualRoute.href}
-                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-dark/40 border border-primary/40 hover:bg-primary-dark/70 hover:border-gold/40 text-neutral-300 hover:text-gold text-xs font-semibold transition-all group"
+                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface dark:bg-primary-dark/40 border border-neutral-700 dark:border-primary/40 hover:bg-surface-hover dark:hover:bg-primary-dark/70 hover:border-amber-500/40 dark:hover:border-gold/40 text-neutral-200 dark:text-neutral-300 hover:text-amber-700 dark:hover:text-gold text-xs font-semibold transition-colors group"
                   onClick={onClose}
                 >
                   <span>{contextualRoute.label}</span>
@@ -326,12 +341,12 @@ export function TransactionDetailPopover({
         </div>
 
         {/* RODAPÉ DO POPOVER COM AÇÕES */}
-        <footer className="p-3 border-t border-white/10 flex items-center justify-between gap-2 bg-surface/40 shrink-0">
+        <footer className="p-3 border-t border-neutral-700 dark:border-white/10 flex items-center justify-between gap-2 bg-surface/40 shrink-0">
           {onRequestDelete && transaction.id ? (
             <button
               type="button"
               onClick={() => onRequestDelete(transaction)}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors cursor-pointer"
             >
               <Trash2 size={13} />
               {t("deleteButton")}
@@ -343,7 +358,7 @@ export function TransactionDetailPopover({
           <button
             type="button"
             onClick={onClose}
-            className="px-3 py-1.5 rounded-lg bg-surface border border-white/15 text-neutral-200 hover:text-white hover:bg-white/10 transition-colors text-xs font-semibold cursor-pointer"
+            className="px-3 py-1.5 rounded-lg bg-surface border border-neutral-700 dark:border-white/15 text-neutral-200 hover:text-neutral-50 hover:bg-surface-hover dark:hover:text-white dark:hover:bg-white/10 transition-colors text-xs font-semibold cursor-pointer"
           >
             {t("closeButton")}
           </button>

@@ -1,9 +1,13 @@
 package com.habitparty.application.usecases.transaction;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
@@ -14,16 +18,23 @@ import com.habitparty.core.domain.enums.TransactionType;
 @Service
 public class ListUserTransactionsUseCase {
   private final TransactionHistoryRepository port;
+  private final Clock clock;
+
+  @Autowired
+  public ListUserTransactionsUseCase(TransactionHistoryRepository port, Clock clock) {
+    this.port = port;
+    this.clock = clock != null ? clock : Clock.systemDefaultZone();
+  }
 
   public ListUserTransactionsUseCase(TransactionHistoryRepository port) {
-    this.port = port;
+    this(port, Clock.systemDefaultZone());
   }
 
   public Page<TransactionHistory> execute(UUID userId, String tab, String period, String search, int page, int requestedSize) {
     int safePage = Math.max(page, 0);
     int safeSize = Math.min(Math.max(requestedSize, 1), 100);
     List<TransactionType> typesToFilter = resolveTypesForTab(tab);
-    LocalDateTime startDate = resolveStartDateForPeriod(period);
+    LocalDateTime startDate = resolveStartDateForPeriod(period, clock);
 
     return port.findFiltered(userId, typesToFilter, startDate, search, safePage, safeSize);
   }
@@ -40,11 +51,19 @@ public class ListUserTransactionsUseCase {
   }
 
   public static LocalDateTime resolveStartDateForPeriod(String period) {
+    return resolveStartDateForPeriod(period, Clock.systemDefaultZone());
+  }
+
+  public static LocalDateTime resolveStartDateForPeriod(String period, Clock clock) {
     if (period == null || period.trim().isEmpty() || period.equalsIgnoreCase("ALL")) {
       return null;
     }
+    Clock effectiveClock = clock != null ? clock : Clock.systemDefaultZone();
     return switch (period.toUpperCase()) {
-      case "TODAY" -> LocalDateTime.now().toLocalDate().atStartOfDay();
+      case "TODAY" -> LocalDate.now(effectiveClock)
+          .atStartOfDay(effectiveClock.getZone())
+          .withZoneSameInstant(ZoneId.systemDefault())
+          .toLocalDateTime();
       case "7DAYS" -> LocalDateTime.now().minusDays(7);
       case "30DAYS" -> LocalDateTime.now().minusDays(30);
       default -> null;

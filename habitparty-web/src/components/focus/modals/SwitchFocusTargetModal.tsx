@@ -87,7 +87,7 @@ export function SwitchFocusTargetModal({
     >
       <div className="flex flex-col gap-4 mt-2">
         {/* Banner de Comparação Visual */}
-        <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-surface/70 border border-primary/30">
+        <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-surface/70 border border-neutral-700 dark:border-primary/30">
           <div className="flex flex-col min-w-0 flex-1">
             <span className="text-label-g text-neutral-400 font-medium">
               {t("currentSessionLabel")}
@@ -98,22 +98,22 @@ export function SwitchFocusTargetModal({
             >
               {currentName}
             </span>
-            <span className="flex items-center gap-1 text-label-g font-semibold text-gold mt-0.5">
+            <span className="flex items-center gap-1 text-label-g font-semibold text-amber-700 dark:text-gold mt-0.5">
               <Timer size={12} />
               {t("elapsed", { time: timeDisplay })}
             </span>
           </div>
 
-          <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0 text-gold shadow-glow-gold-xs">
+          <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/25 text-primary dark:bg-primary/20 dark:border-primary/30 flex items-center justify-center shrink-0 dark:text-gold shadow-glow-gold-xs">
             <ArrowRight size={15} />
           </div>
 
           <div className="flex flex-col min-w-0 flex-1 text-right">
-            <span className="text-label-g text-gold/90 font-medium">
+            <span className="text-label-g text-amber-700/90 dark:text-gold/90 font-medium">
               {t("newTargetLabel")}
             </span>
             <span
-              className="text-body-s font-bold text-gold truncate"
+              className="text-body-s font-bold text-amber-700 dark:text-gold truncate"
               title={newTargetName}
             >
               {newTargetName}
@@ -134,9 +134,9 @@ export function SwitchFocusTargetModal({
               type="button"
               onClick={handleTransfer}
               disabled={isSaving}
-              className="w-full text-left p-3.5 rounded-xl border border-gold/40 bg-gold/10 hover:bg-gold/20 hover:border-gold transition-all flex items-start gap-3 group cursor-pointer shadow-glow-gold-xs disabled:opacity-50"
+              className="w-full text-left p-3.5 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 hover:border-amber-500 dark:border-gold/40 dark:bg-gold/10 dark:hover:bg-gold/20 dark:hover:border-gold transition-colors flex items-start gap-3 group cursor-pointer shadow-glow-gold-xs disabled:opacity-50"
             >
-              <div className="w-9 h-9 rounded-lg bg-gold/20 text-gold flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+              <div className="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-700 dark:bg-gold/20 dark:text-gold flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
                 <ArrowRightLeft size={18} />
               </div>
               <div className="flex-1 min-w-0">
@@ -153,7 +153,7 @@ export function SwitchFocusTargetModal({
                     time: timeDisplay,
                     target: newTargetName,
                     gold: (chunks) => (
-                      <strong className="text-gold font-semibold">
+                      <strong className="text-amber-700 dark:text-gold font-semibold">
                         {chunks}
                       </strong>
                     ),
@@ -167,8 +167,8 @@ export function SwitchFocusTargetModal({
               </div>
             </button>
           ) : (
-            <div className="w-full text-left p-3 rounded-xl border border-primary/20 bg-surface/40 opacity-60 flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-neutral-800 text-neutral-400 flex items-center justify-center shrink-0 mt-0.5">
+            <div className="w-full text-left p-3 rounded-xl border border-neutral-700 bg-surface/60 dark:border-primary/20 dark:bg-surface/40 opacity-60 flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-surface-hover dark:bg-neutral-800 text-neutral-400 flex items-center justify-center shrink-0 mt-0.5">
                 <ArrowRightLeft size={16} />
               </div>
               <div className="flex-1 min-w-0">
@@ -188,18 +188,18 @@ export function SwitchFocusTargetModal({
             onClick={handleSave}
             disabled={!canSaveCurrent || isSaving}
             className={cn(
-              "w-full text-left p-3.5 rounded-xl border transition-all flex items-start gap-3 group",
+              "w-full text-left p-3.5 rounded-xl border transition-colors flex items-start gap-3 group",
               canSaveCurrent
-                ? "border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 hover:border-emerald-500/60 cursor-pointer disabled:opacity-50"
-                : "border-primary/20 bg-surface/40 opacity-60 cursor-not-allowed",
+                ? "border-emerald-500/35 bg-emerald-500/10 hover:bg-emerald-500/15 hover:border-emerald-500/60 dark:border-emerald-500/30 dark:hover:bg-emerald-500/20 cursor-pointer disabled:opacity-50"
+                : "border-neutral-700 bg-surface/60 dark:border-primary/20 dark:bg-surface/40 opacity-60 cursor-not-allowed",
             )}
           >
             <div
               className={cn(
                 "w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-transform",
                 canSaveCurrent
-                  ? "bg-emerald-500/20 text-emerald-400 group-hover:scale-105"
-                  : "bg-neutral-800 text-neutral-400",
+                  ? "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 group-hover:scale-105"
+                  : "bg-surface-hover dark:bg-neutral-800 text-neutral-400",
               )}
             >
               {isSaving ? (
@@ -219,7 +219,7 @@ export function SwitchFocusTargetModal({
                   {t("saveAndStartTitle")}
                 </span>
                 {!canSaveCurrent && (
-                  <span className="px-1.5 py-0.5 rounded text-tiny font-semibold bg-neutral-800 text-neutral-400 border border-neutral-700">
+                  <span className="px-1.5 py-0.5 rounded text-tiny font-semibold bg-surface dark:bg-neutral-800 text-neutral-400 border border-neutral-700">
                     {t("minOneMinBadge", { seconds: secondsUntilCanSave })}
                   </span>
                 )}
@@ -231,7 +231,7 @@ export function SwitchFocusTargetModal({
                     current: currentName,
                     target: newTargetName,
                     emerald: (chunks) => (
-                      <strong className="text-emerald-400 font-semibold">
+                      <strong className="text-emerald-700 dark:text-emerald-400 font-semibold">
                         {chunks}
                       </strong>
                     ),
@@ -265,9 +265,9 @@ export function SwitchFocusTargetModal({
             type="button"
             onClick={handleDiscard}
             disabled={isSaving}
-            className="w-full text-left p-3.5 rounded-xl border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/15 hover:border-rose-500/40 transition-all flex items-start gap-3 group cursor-pointer disabled:opacity-50"
+            className="w-full text-left p-3.5 rounded-xl border border-rose-500/25 bg-rose-500/5 hover:bg-rose-500/15 hover:border-rose-500/45 transition-colors flex items-start gap-3 group cursor-pointer disabled:opacity-50"
           >
-            <div className="w-9 h-9 rounded-lg bg-rose-500/15 text-rose-400 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+            <div className="w-9 h-9 rounded-lg bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
               <RotateCcw size={18} />
             </div>
             <div className="flex-1 min-w-0">
@@ -289,13 +289,13 @@ export function SwitchFocusTargetModal({
         </div>
 
         {/* Rodapé com botão de Cancelar / Manter Atual */}
-        <div className="flex items-center justify-end pt-3 border-t border-primary/20">
+        <div className="flex items-center justify-end pt-3 border-t border-neutral-700 dark:border-primary/20">
           <button
             type="button"
             onClick={onClose}
             disabled={isSaving}
             className={cn(
-              "px-4 py-2 rounded-lg text-xs font-semibold text-neutral-400 hover:text-neutral-100 hover:bg-white/10 transition-colors cursor-pointer",
+              "px-4 py-2 rounded-lg text-xs font-semibold text-neutral-400 hover:text-neutral-100 hover:bg-surface dark:hover:bg-white/10 transition-colors cursor-pointer",
               isSaving && "opacity-50 cursor-not-allowed",
             )}
           >

@@ -26,7 +26,10 @@ public record UserResponseDTO(
         UserExperienceMode experienceMode,
         String email,
         String profilePhotoUrl,
+        String bio,
+        String avatarFrame,
         LocalDate birthDate,
+        LocalDateTime createdAt,
 
         // Atributos Derivados (Calculados no Domínio)
         Integer age,
@@ -39,7 +42,8 @@ public record UserResponseDTO(
         BigDecimal totalGoldEarned,
         int totalXp,
         int currentStreak,
-        int highestStreak) {
+        int highestStreak,
+        int achievementPoints) {
     public static UserResponseDTO fromDomain(User user) {
         return new UserResponseDTO(
                 user.getId(),
@@ -56,7 +60,10 @@ public record UserResponseDTO(
                 user.getExperienceMode(),
                 user.getEmail(),
                 user.getProfilePhotoUrl().orElse(null),
+                user.getBio().orElse(null),
+                user.getAvatarFrame(),
                 user.getBirthDate(),
+                user.getCreatedAt(),
 
                 user.getAge(),
                 user.getCurrentLevel().getTitle(),
@@ -67,6 +74,7 @@ public record UserResponseDTO(
                 user.getTotalGoldEarned(),
                 user.getTotalXp(),
                 user.getCurrentStreak(),
-                user.getHighestStreak());
+                user.getHighestStreak(),
+                user.getStats() != null ? user.getStats().getAchievementPoints() : 0);
     }
 }

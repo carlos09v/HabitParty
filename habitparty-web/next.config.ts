@@ -18,9 +18,9 @@ const nextConfig: NextConfig = {
       expire: 3600,
     },
     private30: {
-      stale: 30, // 30s (mínimo exigido pelo Next.js 16 para prefetch e Back/Forward instantâneos)
-      revalidate: 30,
-      expire: 60,
+      stale: 180, // 3 min no Router Cache do cliente (mutações invalidam na hora via updateTag)
+      revalidate: 180,
+      expire: 600,
     },
   },
   logging: {

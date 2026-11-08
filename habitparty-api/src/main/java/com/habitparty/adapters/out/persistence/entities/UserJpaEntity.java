@@ -60,6 +60,12 @@ public class UserJpaEntity {
   @Column(name = "profile_photo_url")
   private String profilePhotoUrl;
 
+  @Column(name = "bio", length = 160)
+  private String bio;
+
+  @Column(name = "avatar_frame", nullable = false, length = 40, columnDefinition = "varchar(40) default 'none'")
+  private String avatarFrame = "none";
+
   @Column(name = "birth_date", nullable = true)
   private LocalDate birthDate;
 

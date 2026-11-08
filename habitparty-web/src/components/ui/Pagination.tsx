@@ -47,19 +47,19 @@ export function Pagination({
   const nextPageLabel = t("nextPage");
 
   const navBtnClass = cn(
-    "rounded-lg border border-white/20 bg-surface text-neutral-300 hover:bg-surface-hover hover:text-neutral-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gold flex items-center justify-center cursor-pointer",
+    "rounded-lg border border-neutral-700 dark:border-white/20 bg-card dark:bg-surface text-neutral-300 hover:bg-surface-hover hover:text-neutral-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gold flex items-center justify-center cursor-pointer",
     isCompact ? "p-1" : "p-1.5",
   );
 
   const disabledNavBtnClass = cn(
-    "rounded-lg border border-white/10 bg-surface/50 text-neutral-500 opacity-40 cursor-not-allowed flex items-center justify-center",
+    "rounded-lg border border-neutral-700 dark:border-white/10 bg-surface/50 text-neutral-500 opacity-40 cursor-not-allowed flex items-center justify-center",
     isCompact ? "p-1" : "p-1.5",
   );
 
   return (
     <nav
       className={cn(
-        "flex items-center justify-between gap-4 border-t border-white/10 text-sm",
+        "flex items-center justify-between gap-4 border-t border-neutral-700 dark:border-white/10 text-sm",
         isCompact ? "py-1.5 px-2" : "py-3 px-2",
       )}
       aria-label={t("navAriaLabel", { itemLabel: resolvedItemLabel })}
@@ -126,11 +126,11 @@ export function Pagination({
           const isActive = page === currentPage;
           const pageAriaLabel = t("pageNumber", { page });
           const pageItemClass = cn(
-            "px-2 rounded-lg font-bold transition-all focus:outline-none focus:ring-2 focus:ring-gold focus:ring-offset-1 focus:ring-offset-background flex items-center justify-center cursor-pointer",
+            "px-2 rounded-lg font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-gold focus:ring-offset-1 focus:ring-offset-background flex items-center justify-center cursor-pointer",
             isCompact ? "min-w-7 h-7 text-label-g" : "min-w-8 h-8 text-xs",
             isActive
               ? "bg-gold text-on-gold shadow-sm"
-              : "border border-white/20 bg-surface text-neutral-300 hover:bg-surface-hover hover:text-neutral-100",
+              : "border border-neutral-700 dark:border-white/20 bg-card dark:bg-surface text-neutral-300 hover:bg-surface-hover hover:text-neutral-100",
           );
 
           if (buildHref) {

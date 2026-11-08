@@ -75,7 +75,7 @@ export function HabitFields({ form }: HabitFieldsProps) {
             disabled={isPending}
             onClick={() => setHabitType("POSITIVE")}
             className={cn(
-              "flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg border text-body-s font-bold transition-all cursor-pointer disabled:opacity-50",
+              "flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg border text-body-s font-bold transition-colors cursor-pointer disabled:opacity-50",
               habitType === "POSITIVE"
                 ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-700 dark:border-gold dark:bg-gold/20 dark:text-gold dark:shadow-glow-gold-xs"
                 : "border-neutral-600 bg-card text-neutral-200 hover:border-neutral-500 hover:bg-surface dark:border-primary/30 dark:bg-primary-dark/20 dark:text-neutral-300 dark:hover:text-gold dark:hover:border-gold/40",
@@ -90,7 +90,7 @@ export function HabitFields({ form }: HabitFieldsProps) {
             disabled={isPending}
             onClick={() => setHabitType("NEGATIVE")}
             className={cn(
-              "flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg border text-body-s font-bold transition-all cursor-pointer disabled:opacity-50",
+              "flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg border text-body-s font-bold transition-colors cursor-pointer disabled:opacity-50",
               habitType === "NEGATIVE"
                 ? "bg-rose-500/10 border-rose-500/40 text-rose-700 dark:border-gold dark:bg-gold/20 dark:text-gold dark:shadow-glow-gold-xs"
                 : "border-neutral-600 bg-card text-neutral-200 hover:border-neutral-500 hover:bg-surface dark:border-primary/30 dark:bg-primary-dark/20 dark:text-neutral-300 dark:hover:text-gold dark:hover:border-gold/40",
@@ -105,7 +105,7 @@ export function HabitFields({ form }: HabitFieldsProps) {
             disabled={isPending}
             onClick={() => setHabitType("BOTH")}
             className={cn(
-              "flex items-center justify-center gap-1 py-2 px-2 rounded-lg border text-body-s font-bold transition-all cursor-pointer disabled:opacity-50",
+              "flex items-center justify-center gap-1 py-2 px-2 rounded-lg border text-body-s font-bold transition-colors cursor-pointer disabled:opacity-50",
               habitType === "BOTH"
                 ? "bg-purple-500/10 border-purple-500/40 text-purple-700 dark:border-gold dark:bg-gold/20 dark:text-gold dark:shadow-glow-gold-xs"
                 : "border-neutral-600 bg-card text-neutral-200 hover:border-neutral-500 hover:bg-surface dark:border-primary/30 dark:bg-primary-dark/20 dark:text-neutral-300 dark:hover:text-gold dark:hover:border-gold/40",

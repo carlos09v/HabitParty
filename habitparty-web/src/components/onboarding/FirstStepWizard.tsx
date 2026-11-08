@@ -127,10 +127,10 @@ export function FirstStepWizard() {
         {/* ==================================================== */}
         <section className="w-full lg:w-1/2 flex flex-col gap-4">
           <header className="flex flex-col gap-1.5">
-            <div className="inline-flex items-center gap-1.5 self-start px-2.5 py-0.5 rounded-full bg-gold/10 border border-gold/30 text-gold text-[10px] lg:text-[11px] font-bold uppercase tracking-wider">
+            <div className="inline-flex items-center gap-1.5 self-start px-2.5 py-0.5 rounded-full bg-amber-500/10 dark:bg-gold/10 border border-amber-500/35 dark:border-gold/30 text-amber-700 dark:text-gold text-[10px] lg:text-[11px] font-bold uppercase tracking-wider">
               <Star
                 size={12}
-                className="text-amber-500 fill-amber-500 dark:text-gold dark:fill-gold"
+                className="text-amber-600 fill-amber-500 dark:text-gold dark:fill-gold"
               />
               {t("badge")}
             </div>

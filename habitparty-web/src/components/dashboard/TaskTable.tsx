@@ -6,6 +6,7 @@ import {
   isDashboardStandardFilterId,
 } from "@/constants/dashboard";
 import { TASK_TABLE_GRID_COLS } from "@/constants/task";
+import { useDateFormat } from "@/hooks/useDateFormat";
 import type { AppLocale } from "@/i18n/config";
 import type { TaskTableProps } from "@/types/dashboard";
 import { cn } from "@/utils";
@@ -28,6 +29,7 @@ export function TaskTable({
 }: TaskTableProps) {
   const t = useTranslations("dashboard.taskTable");
   const locale = useLocale() as AppLocale;
+  const { dateFormat } = useDateFormat();
   const totalItems = tasks.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
@@ -35,7 +37,7 @@ export function TaskTable({
   const startIndex = (safeCurrentPage - 1) * itemsPerPage;
   const paginatedTasks = tasks.slice(startIndex, startIndex + itemsPerPage);
 
-  const formattedDate = formatShortDate(selectedDate, { locale });
+  const formattedDate = formatShortDate(selectedDate, { locale, dateFormat });
 
   const EmptyIcon = isDashboardStandardFilterId(activeFilter)
     ? DASHBOARD_EMPTY_MESSAGES[activeFilter].icon
@@ -91,7 +93,7 @@ export function TaskTable({
       {paginatedTasks.length === 0 ? (
         <div
           className={cn(
-            "w-full flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-neutral-700 dark:border-primary/30 bg-primary-dark/20 backdrop-blur-sm",
+            "w-full flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-neutral-700 dark:border-primary/30 bg-primary-dark/20",
             isCompact ? "py-8 px-4 gap-2.5" : "py-12 px-6 gap-3.5",
           )}
         >
@@ -109,8 +111,11 @@ export function TaskTable({
         </div>
       ) : (
         <ul className="flex flex-col gap-2 w-full p-0 m-0 list-none">
-          {paginatedTasks.map((task) => (
-            <li key={task.id} className="list-none">
+          {paginatedTasks.map((task, idx) => (
+            <li
+              key={task.id}
+              className={cn("list-none", idx >= 12 && "deferred-list-row")}
+            >
               <TaskRow
                 task={task}
                 activeFilter={activeFilter}

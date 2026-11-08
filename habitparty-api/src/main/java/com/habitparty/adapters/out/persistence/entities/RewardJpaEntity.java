@@ -10,6 +10,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import com.habitparty.core.domain.entities.reward.MysteryBoxLootItem;
 import com.habitparty.core.domain.enums.RewardCategory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
@@ -79,6 +80,10 @@ public class RewardJpaEntity {
 
   @Column(name = "base_duration_minutes")
   private Integer baseDurationMinutes;
+
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "loot_items")
+  private List<MysteryBoxLootItem> lootItems;
 
   @Column(name = "created_at", nullable = false, updatable = false)
   @CreationTimestamp

@@ -95,7 +95,7 @@ export function IconPickerPopover({
       aria-label={resolvedTitle}
       style={floatingStyle}
       className={cn(
-        "p-3 rounded-xl border border-primary/40 bg-surface/95 backdrop-blur-md shadow-2xl",
+        "p-3 rounded-xl border border-primary/40 bg-surface dark:bg-popover shadow-2xl",
         "w-80 max-w-[calc(100vw-1.5rem)] animate-in fade-in zoom-in-95 duration-150",
         coords.placement === "top" ? "origin-bottom" : "origin-top",
       )}
@@ -133,7 +133,7 @@ export function IconPickerPopover({
               onClick={() => handleSelect(item)}
               title={item.isPremium ? t("exclusiveBadge", { label }) : label}
               className={cn(
-                "relative flex flex-col items-center justify-center gap-1 p-2 rounded-lg border transition-all cursor-pointer select-none",
+                "relative flex flex-col items-center justify-center gap-1 p-2 rounded-lg border transition-colors cursor-pointer select-none",
                 "focus:outline-none focus:ring-1 focus:ring-gold",
                 isSelected
                   ? "border-gold bg-gold/20 text-gold shadow-glow-gold-xs font-bold"
@@ -172,7 +172,7 @@ export function IconPickerPopover({
             aria-haspopup="dialog"
             title={t("compactButtonTitle", { label: selectedLabel })}
             className={cn(
-              "flex items-center justify-center gap-1.5 h-[42px] px-3 rounded-lg border transition-all cursor-pointer select-none shrink-0",
+              "flex items-center justify-center gap-1.5 h-[42px] px-3 rounded-lg border transition-colors cursor-pointer select-none shrink-0",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 dark:focus:ring-1 dark:focus:ring-gold",
               isOpen
                 ? "border-primary ring-2 ring-primary/15 bg-card text-primary dark:border-gold dark:bg-gold/15 dark:text-gold dark:ring-0 dark:shadow-glow-gold-xs"
@@ -205,7 +205,7 @@ export function IconPickerPopover({
             aria-expanded={isOpen}
             aria-haspopup="dialog"
             className={cn(
-              "w-full flex items-center justify-between gap-3 h-[42px] px-3.5 rounded-lg border transition-all cursor-pointer select-none",
+              "w-full flex items-center justify-between gap-3 h-[42px] px-3.5 rounded-lg border transition-colors cursor-pointer select-none",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 dark:focus:ring-1 dark:focus:ring-gold",
               isOpen
                 ? "border-primary ring-2 ring-primary/15 bg-card text-primary dark:border-gold dark:bg-gold/15 dark:text-gold dark:ring-0 dark:shadow-glow-gold-xs"
@@ -247,10 +247,12 @@ export function IconPickerPopover({
           createPortal(popoverContent, document.body)}
       </div>
 
-      <UpgradePremiumModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-      />
+      {isUpgradeModalOpen && (
+        <UpgradePremiumModal
+          isOpen={isUpgradeModalOpen}
+          onClose={() => setIsUpgradeModalOpen(false)}
+        />
+      )}
     </>
   );
 }

@@ -6,19 +6,20 @@ import { EmailVerificationBanner } from "@/components/auth/EmailVerificationBann
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { StoreInitializer } from "@/components/layout/StoreInitializer";
+import { AchievementUnlockListener } from "@/components/showcase/AchievementUnlockListener";
 import { PaymentFeedbackListener } from "@/components/subscription/PaymentFeedbackListener";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getRawInventoryItems } from "@/services/inventoryService";
 import { getCurrentUser } from "@/services/userService";
 import { getWorkspaces } from "@/services/workspaceService";
-import { getCompactMode, getThemeMode } from "@/utils/cookies";
+import { getCompactMode, getDateFormat, getThemeMode } from "@/utils/cookies";
 
 export const instant = false;
 
 async function fetchPendingTasksCount(workspaceId: string): Promise<number> {
   "use cache: private";
   cacheLife("private30");
-  cacheTag("tasks", "dashboard-tasks", `workspace-${workspaceId}`);
+  cacheTag("tasks", "dashboard-tasks");
 
   try {
     const { data: tasksData } = await serverApi.GET(
@@ -28,7 +29,6 @@ async function fetchPendingTasksCount(workspaceId: string): Promise<number> {
           path: { workspaceId },
           query: { filter: "TODAY", size: 1 },
         },
-        next: { tags: ["dashboard-tasks"] },
       },
     );
     if (tasksData?.totalElements !== undefined) {
@@ -50,6 +50,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const [
     isCompact,
     theme,
+    dateFormat,
     workspaces,
     user,
     inventoryData,
@@ -57,6 +58,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   ] = await Promise.all([
     getCompactMode(),
     getThemeMode(),
+    getDateFormat(),
     getWorkspaces(),
     getCurrentUser(),
     getRawInventoryItems(),
@@ -101,11 +103,13 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <div className="relative h-[100dvh] flex flex-col lg:flex-row overflow-hidden">
         <Suspense fallback={null}>
           <PaymentFeedbackListener />
+          <AchievementUnlockListener />
         </Suspense>
 
         <StoreInitializer
           compactMode={isCompact}
           theme={theme}
+          dateFormat={dateFormat}
           experienceMode={user?.experienceMode || "PRODUCTIVITY"}
           workspaces={workspaces || []}
           activeWorkspaceId={activeWorkspaceId}
@@ -113,19 +117,15 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         />
         {/* 
         =========================================
-        ORBES DE LUZ AMBIENTE (Periféricas e Ultra-difusas)
-        Luzes sangrando nas bordas/cantos para criar profundidade cósmica
-        sem gerar "bolas nítidas" e mantendo o miolo legível em todas as telas.
+        LUZ AMBIENTE CÓSMICA PRÉ-COMPOSTA (Zero Blur Filter GPU)
+        Luzes periféricas suaves via radial-gradient nativo sem alocar
+        superfícies gigantes de Gaussian blur na VRAM.
         ========================================= 
       */}
-        {/* Luz Superior Direita (Magenta Suave) */}
-        <div className="cosmic-orb absolute -top-[12%] -right-[8%] w-[650px] h-[650px] rounded-full bg-magenta/10 blur-[280px] transform-gpu will-change-transform pointer-events-none z-0" />
-
-        {/* Luz Inferior Esquerda (Azul Cósmico) */}
-        <div className="cosmic-orb absolute -bottom-[15%] -left-[5%] w-[700px] h-[700px] rounded-full bg-blue/12 blur-[280px] transform-gpu will-change-transform pointer-events-none z-0" />
-
-        {/* Luz Superior Esquerda/Centro (Violeta da Marca - Atmosfera) */}
-        <div className="cosmic-orb absolute -top-[15%] left-[15%] w-[600px] h-[600px] rounded-full bg-primary/20 blur-[260px] transform-gpu will-change-transform pointer-events-none z-0" />
+        <div
+          aria-hidden="true"
+          className="cosmic-ambient-main absolute inset-0 pointer-events-none z-0"
+        />
 
         {/* Barra Lateral Padrão (Desktop: hidden lg:flex) */}
         <Sidebar user={user || null} badgeCounts={badgeCounts} />

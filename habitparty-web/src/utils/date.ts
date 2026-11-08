@@ -1,4 +1,96 @@
 import type { AppLocale } from "@/i18n/config";
+import type { DateFormat } from "@/types/ui";
+
+/**
+ * Detecta o formato de data preferido com base no locale do navegador/SO (ou subtag de Accept-Language).
+ */
+export function detectBrowserDateFormat(
+  localeSubtag?: string | null,
+  fallbackLocale?: AppLocale,
+): DateFormat {
+  const tag =
+    localeSubtag?.trim() ||
+    (typeof navigator !== "undefined" ? navigator.language : undefined);
+  if (tag) {
+    try {
+      const parts = new Intl.DateTimeFormat(tag, {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).formatToParts(new Date(2026, 11, 31));
+      const firstDatePart = parts.find(
+        (p) => p.type === "day" || p.type === "month" || p.type === "year",
+      );
+      if (firstDatePart?.type === "year") return "YYYY-MM-DD";
+      if (firstDatePart?.type === "month") return "MM/DD/YYYY";
+      if (firstDatePart?.type === "day") return "DD/MM/YYYY";
+    } catch {
+      // Fallback caso o subtag seja inválido
+    }
+  }
+  return fallbackLocale === "en" ? "MM/DD/YYYY" : "DD/MM/YYYY";
+}
+
+export function resolveEffectiveDateFormat(
+  dateFormat?: DateFormat,
+  locale?: AppLocale,
+): DateFormat {
+  if (dateFormat) return dateFormat;
+  return detectBrowserDateFormat(undefined, locale);
+}
+
+function formatNumericCalendarDate(
+  year: number,
+  month: number,
+  day: number,
+  format: DateFormat,
+  options?: { includeYear?: boolean; shortYear?: boolean },
+): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const dayStr = pad(day);
+  const monthStr = pad(month);
+  const includeYear = options?.includeYear ?? true;
+  const yearStr = options?.shortYear ? String(year).slice(-2) : String(year);
+
+  if (format === "MM/DD/YYYY") {
+    return includeYear
+      ? `${monthStr}/${dayStr}/${yearStr}`
+      : `${monthStr}/${dayStr}`;
+  }
+  if (format === "YYYY-MM-DD") {
+    return includeYear
+      ? `${year}-${monthStr}-${dayStr}`
+      : `${monthStr}-${dayStr}`;
+  }
+  return includeYear
+    ? `${dayStr}/${monthStr}/${yearStr}`
+    : `${dayStr}/${monthStr}`;
+}
+
+function formatShortMonthCalendarDate(
+  year: number,
+  month: number,
+  day: number,
+  format: DateFormat,
+  locale: AppLocale = "pt-BR",
+  includeYear = false,
+): string {
+  const dayStr = String(day).padStart(2, "0");
+  const monthName = getShortMonths(locale)[month - 1] ?? "";
+  if (format === "MM/DD/YYYY") {
+    return includeYear
+      ? `${monthName} ${dayStr}, ${year}`
+      : `${monthName} ${dayStr}`;
+  }
+  if (format === "YYYY-MM-DD") {
+    return includeYear
+      ? `${year} ${monthName} ${dayStr}`
+      : `${monthName} ${dayStr}`;
+  }
+  return includeYear
+    ? `${dayStr} ${monthName} ${year}`
+    : `${dayStr} ${monthName}`;
+}
 
 /**
  * Converte com precisão uma string de data vinda do servidor (UTC ou local) para Date,
@@ -40,7 +132,8 @@ export function parseLocalDate(dateStr?: string | null): Date | null {
 }
 
 /**
- * Formata strings de data ISO em formato brasileiro DD/MM/AA HH:MM (ou localizado conforme `locale`)
+ * Formata strings de data ISO respeitando a preferência de formato (`DD/MM/YYYY`, `MM/DD/YYYY`, `YYYY-MM-DD`)
+ * ou o padrão localizado conforme `locale`.
  */
 export function formatDateTime(
   dateStr?: string | null,
@@ -49,6 +142,7 @@ export function formatDateTime(
     includeYearFull?: boolean;
     isLocal?: boolean;
     locale?: AppLocale;
+    dateFormat?: DateFormat;
   },
 ): string {
   if (!dateStr) return "-";
@@ -57,14 +151,78 @@ export function formatDateTime(
       ? parseLocalDate(dateStr)
       : parseServerDate(dateStr);
     if (!d) return dateStr;
-    const intlLocale = options?.locale === "en" ? "en-US" : "pt-BR";
-    return d.toLocaleString(intlLocale, {
-      day: "2-digit",
-      month: "2-digit",
-      year: options?.includeYearFull ? "numeric" : "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      ...(options?.includeSeconds ? { second: "2-digit" } : {}),
+    const format = resolveEffectiveDateFormat(
+      options?.dateFormat,
+      options?.locale,
+    );
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const datePart = formatNumericCalendarDate(
+      d.getFullYear(),
+      d.getMonth() + 1,
+      d.getDate(),
+      format,
+      {
+        includeYear: true,
+        shortYear: !options?.includeYearFull && format !== "YYYY-MM-DD",
+      },
+    );
+    const hours = pad(d.getHours());
+    const minutes = pad(d.getMinutes());
+    const seconds = options?.includeSeconds ? `:${pad(d.getSeconds())}` : "";
+    return `${datePart}, ${hours}:${minutes}${seconds}`;
+  } catch {
+    return dateStr;
+  }
+}
+
+/**
+ * Formata uma data YYYY-MM-DD ou timestamp ISO (convertendo UTC -> local quando possui hora)
+ * para exibição curta respeitando `dateFormat` ou `locale`.
+ */
+export function formatShortDate(
+  dateStr?: string | null,
+  options?: {
+    includeYear?: boolean;
+    monthFormat?: "2-digit" | "short";
+    isLocal?: boolean;
+    locale?: AppLocale;
+    dateFormat?: DateFormat;
+  },
+): string {
+  if (!dateStr) return "";
+  try {
+    let y: number;
+    let m: number;
+    let d: number;
+    const trimmed = dateStr.trim();
+    if (trimmed.includes("T") || trimmed.includes(" ")) {
+      const parsed = options?.isLocal
+        ? parseLocalDate(trimmed)
+        : parseServerDate(trimmed);
+      if (!parsed) return dateStr;
+      y = parsed.getFullYear();
+      m = parsed.getMonth() + 1;
+      d = parsed.getDate();
+    } else {
+      [y, m, d] = trimmed.split("-").map(Number);
+    }
+    if (!y || !m || !d) return dateStr;
+    const format = resolveEffectiveDateFormat(
+      options?.dateFormat,
+      options?.locale,
+    );
+    if (options?.monthFormat === "short") {
+      return formatShortMonthCalendarDate(
+        y,
+        m,
+        d,
+        format,
+        options?.locale ?? "pt-BR",
+        Boolean(options?.includeYear),
+      );
+    }
+    return formatNumericCalendarDate(y, m, d, format, {
+      includeYear: Boolean(options?.includeYear),
     });
   } catch {
     return dateStr;
@@ -72,30 +230,19 @@ export function formatDateTime(
 }
 
 /**
- * Formata uma data no padrão YYYY-MM-DD para exibição curta (DD/MM ou DD/MM/AAAA em pt-BR; MM/DD ou MM/DD/YYYY em en)
+ * Formata mês e ano de um timestamp do servidor (ex: "Membro desde Nov 2026"),
+ * convertendo corretamente de UTC para o fuso local do usuário.
  */
-export function formatShortDate(
+export function formatMonthYear(
   dateStr?: string | null,
-  options?: {
-    includeYear?: boolean;
-    monthFormat?: "2-digit" | "short";
-    locale?: AppLocale;
-  },
-): string {
-  if (!dateStr) return "";
-  try {
-    const [y, m, d] = dateStr.split("T")[0].split("-").map(Number);
-    if (!y || !m || !d) return dateStr;
-    const dateObj = new Date(y, m - 1, d);
-    const intlLocale = options?.locale === "en" ? "en-US" : "pt-BR";
-    return dateObj.toLocaleDateString(intlLocale, {
-      day: "2-digit",
-      month: options?.monthFormat ?? "2-digit",
-      ...(options?.includeYear ? { year: "numeric" } : {}),
-    });
-  } catch {
-    return dateStr;
-  }
+  locale: AppLocale = "pt-BR",
+): string | null {
+  if (!dateStr) return null;
+  const parsed = parseServerDate(dateStr);
+  if (!parsed) return null;
+  const monthName = getShortMonths(locale)[parsed.getMonth()] ?? "";
+  const year = parsed.getFullYear();
+  return `${monthName} ${year}`;
 }
 
 /**
@@ -228,6 +375,7 @@ export function getTaskDueDateInfo(
     selectedDate?: string | null;
     locale?: AppLocale;
     dueTime?: string | null;
+    dateFormat?: DateFormat;
   },
 ): TaskDueDateInfo {
   const activeFilter = options?.activeFilter;
@@ -286,11 +434,18 @@ export function getTaskDueDateInfo(
     const isTodayTimeOverdue =
       diffDays === 0 && dueMinutes !== null && dueMinutes < currentMinutes;
 
-    const monthName = getShortMonths(locale)[targetDate.getMonth()];
-    const dayStr = String(d).padStart(2, "0");
-    const shortDayMonth = isEn
-      ? `${monthName} ${dayStr}`
-      : `${dayStr} ${monthName}`;
+    const resolvedFormat = resolveEffectiveDateFormat(
+      options?.dateFormat,
+      locale,
+    );
+    const shortDayMonth = formatShortMonthCalendarDate(
+      y,
+      m,
+      d,
+      resolvedFormat,
+      locale,
+      false,
+    );
     const appendTime = (baseLabel: string) =>
       formattedDueTime ? `${baseLabel}, ${formattedDueTime}` : baseLabel;
 
@@ -384,6 +539,7 @@ export function getPopoverDueDateInfo(
   dueDate?: string | null,
   locale: AppLocale = "pt-BR",
   dueTime?: string | null,
+  dateFormat?: DateFormat,
 ): PopoverDueDateInfo {
   const isEn = locale === "en";
   if (!dueDate) {
@@ -418,13 +574,17 @@ export function getPopoverDueDateInfo(
     const isTodayTimeOverdue =
       diffDays === 0 && dueMinutes !== null && dueMinutes < currentMinutes;
 
-    const monthName = getShortMonths(locale)[targetDate.getMonth()];
-    const dayStr = String(d).padStart(2, "0");
     const capitalizedWeekDay =
       getCapitalizedWeekDays(locale)[targetDate.getDay()];
-    const shortDayMonth = isEn
-      ? `${monthName} ${dayStr}`
-      : `${dayStr} ${monthName}`;
+    const resolvedFormat = resolveEffectiveDateFormat(dateFormat, locale);
+    const shortDayMonth = formatShortMonthCalendarDate(
+      y,
+      m,
+      d,
+      resolvedFormat,
+      locale,
+      false,
+    );
 
     // Atrasada
     if (diffDays < 0) {

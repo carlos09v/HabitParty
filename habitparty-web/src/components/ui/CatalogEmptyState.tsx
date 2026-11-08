@@ -26,7 +26,7 @@ export function CatalogEmptyState({
   return (
     <div
       className={cn(
-        "w-full flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-primary/30 bg-primary-dark/20 backdrop-blur-sm",
+        "w-full flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-primary/30 bg-primary-dark/20",
         isCompact ? "py-8 px-4 gap-2.5" : "py-12 px-6 gap-3.5",
         className,
       )}

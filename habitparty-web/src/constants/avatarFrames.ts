@@ -8,9 +8,6 @@ export type AvatarFrameId =
 
 export interface AvatarFrameOption {
   id: AvatarFrameId;
-  name: string;
-  badge: string;
-  description: string;
   isPremium: boolean;
   ringClass: string;
   glowClass: string;
@@ -20,9 +17,6 @@ export interface AvatarFrameOption {
 export const AVATAR_FRAMES: readonly AvatarFrameOption[] = [
   {
     id: "none",
-    name: "Sem Moldura",
-    badge: "Padrão",
-    description: "Visual clássico limpo sem efeitos de borda adicionais.",
     isPremium: false,
     ringClass: "",
     glowClass: "",
@@ -30,10 +24,6 @@ export const AVATAR_FRAMES: readonly AvatarFrameOption[] = [
   },
   {
     id: "cosmic_gold",
-    name: "Guardião Cósmico",
-    badge: "VIP Cósmico",
-    description:
-      "Aura de ouro estelar radiante com rotação de luz cósmica e brilho dourado.",
     isPremium: true,
     ringClass: "frame-cosmic-gold",
     glowClass: "shadow-[0_0_15px_rgba(237,229,57,0.55)]",
@@ -41,10 +31,6 @@ export const AVATAR_FRAMES: readonly AvatarFrameOption[] = [
   },
   {
     id: "cyber_neon",
-    name: "Cyberpunk Neon",
-    badge: "VIP Tech",
-    description:
-      "Pulso neon eletrizante alternando tons de ciano futurista e magenta laser.",
     isPremium: true,
     ringClass: "frame-cyber-neon",
     glowClass:
@@ -53,10 +39,6 @@ export const AVATAR_FRAMES: readonly AvatarFrameOption[] = [
   },
   {
     id: "fire_phoenix",
-    name: "Fogo da Fênix",
-    badge: "VIP Chamas",
-    description:
-      "Chamas ardentes em tons incandescentes de fogo, rubi e labaredas solares.",
     isPremium: true,
     ringClass: "frame-fire-phoenix",
     glowClass: "shadow-[0_0_15px_rgba(254,154,0,0.6)]",
@@ -64,10 +46,6 @@ export const AVATAR_FRAMES: readonly AvatarFrameOption[] = [
   },
   {
     id: "emerald_mystic",
-    name: "Aura Esmeralda",
-    badge: "VIP Místico",
-    description:
-      "Brilho místico verde esmeralda com pulso arcano suave e sereno.",
     isPremium: true,
     ringClass: "frame-emerald-mystic",
     glowClass: "shadow-[0_0_15px_rgba(34,226,110,0.55)]",
@@ -75,10 +53,6 @@ export const AVATAR_FRAMES: readonly AvatarFrameOption[] = [
   },
   {
     id: "amethyst_void",
-    name: "Vácuo Ametista",
-    badge: "VIP Arcano",
-    description:
-      "Energia cósmica profunda em tons de roxo ametista, fuchsia e prata mística.",
     isPremium: true,
     ringClass: "frame-amethyst-void",
     glowClass: "shadow-[0_0_16px_rgba(168,99,255,0.6)]",

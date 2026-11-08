@@ -31,21 +31,21 @@ export function SettingsCard({
   return (
     <section
       className={cn(
-        "rounded-2xl backdrop-blur-md flex flex-col transition-all",
+        "rounded-2xl flex flex-col",
         isDanger
-          ? "border border-red-500/30 bg-red-950/10"
-          : "border border-primary/20 bg-surface/30",
+          ? "border border-red-500/25 dark:border-red-500/30 bg-red-500/[0.04] dark:bg-red-950/15"
+          : "border border-neutral-700 dark:border-primary/20 bg-card dark:bg-surface/45 shadow-xs dark:shadow-none",
         isCompact ? "p-4 sm:p-5 gap-4" : "p-6 gap-5",
         className,
       )}
     >
       {/* Cabeçalho do Card */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-700 dark:border-white/10 pb-4">
         <div className="flex flex-col gap-1 min-w-0 flex-1">
           <h3
             className={cn(
               "text-body-l font-bold flex items-center gap-2",
-              isDanger ? "text-red-400" : "text-neutral-50",
+              isDanger ? "text-red-600 dark:text-red-400" : "text-neutral-50",
             )}
           >
             {icon}

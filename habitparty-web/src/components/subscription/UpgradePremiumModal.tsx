@@ -55,10 +55,14 @@ export function UpgradePremiumModal({
   const locale = useLocale();
   const isEnglish = locale === "en";
 
-  const user = useUserStore((s) => s.user);
-  const isFounder = Boolean(user?.isFounder);
-  const hasActiveRecurring = Boolean(user?.hasActiveRecurringSubscription);
-  const isEmailUnverified = user?.emailVerified === false;
+  const isFounder = useUserStore((s) => Boolean(s.user?.isFounder));
+  const hasActiveRecurring = useUserStore((s) =>
+    Boolean(s.user?.hasActiveRecurringSubscription),
+  );
+  const isEmailUnverified = useUserStore(
+    (s) => s.user?.emailVerified === false,
+  );
+  const userEmail = useUserStore((s) => s.user?.email ?? "");
 
   const [quota, setQuota] = useState<FoundersQuotaDTO | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<PlanType>(
@@ -145,7 +149,7 @@ export function UpgradePremiumModal({
         {/* SELEÇÃO DO PLANO: MEMBRO FUNDADOR (SE DISPONÍVEL), ANUAL OU MENSAL */}
         <div
           className={cn(
-            "grid gap-2.5 p-1.5 bg-surface/50 border border-primary/20 rounded-2xl",
+            "grid gap-2.5 p-1.5 bg-surface dark:bg-surface/50 border border-neutral-700 dark:border-primary/20 rounded-2xl",
             isFounderAvailable ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2",
           )}
         >
@@ -155,15 +159,15 @@ export function UpgradePremiumModal({
               disabled={isFounder}
               onClick={() => setSelectedPlan("FOUNDER_ANNUAL")}
               className={cn(
-                "flex flex-col items-center justify-center p-3 rounded-xl transition-all relative",
+                "flex flex-col items-center justify-center p-3 rounded-xl transition-colors relative",
                 isFounder
-                  ? "opacity-60 cursor-not-allowed bg-white/5 border border-gold/30"
+                  ? "opacity-60 cursor-not-allowed bg-card dark:bg-white/5 border border-gold/30"
                   : selectedPlan === "FOUNDER_ANNUAL"
-                    ? "bg-gold text-neutral-950 font-bold shadow-glow-gold cursor-pointer"
-                    : "text-neutral-300 hover:text-neutral-50 hover:bg-white/5 cursor-pointer",
+                    ? "bg-gold text-on-gold dark:text-neutral-950 font-bold shadow-glow-gold cursor-pointer"
+                    : "text-neutral-300 hover:text-neutral-50 hover:bg-card/80 dark:hover:bg-white/5 cursor-pointer",
               )}
             >
-              <span className="absolute -top-2.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-gold text-neutral-950 border border-neutral-950/20 shadow-xs flex items-center gap-1">
+              <span className="absolute -top-2.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-gold text-on-gold dark:text-neutral-950 border border-neutral-950/20 shadow-xs flex items-center gap-1">
                 {isFounder ? (
                   t("alreadyAcquired")
                 ) : (
@@ -189,10 +193,10 @@ export function UpgradePremiumModal({
             type="button"
             onClick={() => setSelectedPlan("MONTHLY")}
             className={cn(
-              "flex flex-col items-center justify-center p-3 rounded-xl transition-all cursor-pointer",
+              "flex flex-col items-center justify-center p-3 rounded-xl transition-colors cursor-pointer",
               selectedPlan === "MONTHLY"
-                ? "bg-gold text-neutral-950 font-bold shadow-glow-gold"
-                : "text-neutral-300 hover:text-neutral-50 hover:bg-white/5",
+                ? "bg-gold text-on-gold dark:text-neutral-950 font-bold shadow-glow-gold"
+                : "text-neutral-300 hover:text-neutral-50 hover:bg-card/80 dark:hover:bg-white/5",
             )}
           >
             <span className="text-xs font-semibold">{t("monthlyPlan")}</span>
@@ -206,10 +210,10 @@ export function UpgradePremiumModal({
             type="button"
             onClick={() => setSelectedPlan("ANNUAL")}
             className={cn(
-              "flex flex-col items-center justify-center p-3 rounded-xl transition-all relative cursor-pointer",
+              "flex flex-col items-center justify-center p-3 rounded-xl transition-colors relative cursor-pointer",
               selectedPlan === "ANNUAL"
-                ? "bg-gold text-neutral-950 font-bold shadow-glow-gold"
-                : "text-neutral-300 hover:text-neutral-50 hover:bg-white/5",
+                ? "bg-gold text-on-gold dark:text-neutral-950 font-bold shadow-glow-gold"
+                : "text-neutral-300 hover:text-neutral-50 hover:bg-card/80 dark:hover:bg-white/5",
             )}
           >
             <span className="text-xs font-semibold">{t("annualPlan")}</span>
@@ -253,17 +257,17 @@ export function UpgradePremiumModal({
               type="button"
               onClick={() => setSelectedMethod("CREDIT_CARD")}
               className={cn(
-                "flex items-start gap-3 p-3.5 rounded-xl border text-left transition-all cursor-pointer",
+                "flex items-start gap-3 p-3.5 rounded-xl border text-left transition-colors cursor-pointer",
                 effectiveMethod === "CREDIT_CARD"
                   ? "border-gold bg-gold/10 text-neutral-50 shadow-xs"
-                  : "border-primary/20 bg-surface/30 text-neutral-300 hover:border-primary/40 hover:bg-surface/50",
+                  : "border-neutral-700 bg-card hover:border-primary/40 hover:bg-surface/50 dark:border-primary/20 dark:bg-surface/30 dark:hover:border-primary/40 dark:hover:bg-surface/50 text-neutral-300",
               )}
             >
               <div
                 className={cn(
                   "p-2 rounded-lg shrink-0 mt-0.5",
                   effectiveMethod === "CREDIT_CARD"
-                    ? "bg-gold text-neutral-950"
+                    ? "bg-gold text-on-gold dark:text-neutral-950"
                     : "bg-surface text-neutral-300",
                 )}
               >
@@ -285,17 +289,17 @@ export function UpgradePremiumModal({
                 type="button"
                 onClick={() => setSelectedMethod("PIX")}
                 className={cn(
-                  "flex items-start gap-3 p-3.5 rounded-xl border text-left transition-all cursor-pointer",
+                  "flex items-start gap-3 p-3.5 rounded-xl border text-left transition-colors cursor-pointer",
                   effectiveMethod === "PIX"
                     ? "border-gold bg-gold/10 text-neutral-50 shadow-xs"
-                    : "border-primary/20 bg-surface/30 text-neutral-300 hover:border-primary/40 hover:bg-surface/50",
+                    : "border-neutral-700 bg-card hover:border-primary/40 hover:bg-surface/50 dark:border-primary/20 dark:bg-surface/30 dark:hover:border-primary/40 dark:hover:bg-surface/50 text-neutral-300",
                 )}
               >
                 <div
                   className={cn(
                     "p-2 rounded-lg shrink-0 mt-0.5",
                     effectiveMethod === "PIX"
-                      ? "bg-gold text-neutral-950"
+                      ? "bg-gold text-on-gold dark:text-neutral-950"
                       : "bg-surface text-neutral-300",
                   )}
                 >
@@ -304,7 +308,7 @@ export function UpgradePremiumModal({
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 font-bold text-sm text-neutral-100">
                     {t("pixTitle")}
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary/20 text-primary-light">
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary/15 dark:bg-primary/20 text-primary dark:text-primary-light">
                       {t("pixBadge")}
                     </span>
                   </div>
@@ -320,7 +324,7 @@ export function UpgradePremiumModal({
         </div>
 
         {/* BENEFÍCIOS */}
-        <div className="p-4 rounded-xl bg-surface/30 border border-primary/20 space-y-2.5">
+        <div className="p-4 rounded-xl bg-surface/50 border border-neutral-700 dark:bg-surface/30 dark:border-primary/20 space-y-2.5">
           <span className="text-xs font-bold uppercase tracking-wider text-gold flex items-center gap-1.5">
             <Sparkles size={14} /> {t("whatYouGet")}
           </span>
@@ -345,7 +349,7 @@ export function UpgradePremiumModal({
                 {t("emailWarningTitle")}
               </strong>{" "}
               {t("emailWarningDesc", {
-                email: user?.email ?? "",
+                email: userEmail,
               })}
             </div>
           )}
@@ -368,8 +372,8 @@ export function UpgradePremiumModal({
                 disabled={isPending}
                 onClick={handleOpenPortal}
                 className={cn(
-                  "w-full py-3.5 px-6 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all cursor-pointer",
-                  "bg-gold hover:bg-gold-hover text-neutral-950 shadow-glow-gold hover:shadow-[0_0_30px_rgba(237,229,57,0.5)]",
+                  "w-full py-3.5 px-6 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-[transform,background-color,color,opacity] cursor-pointer",
+                  "bg-gold hover:bg-gold-hover text-neutral-950 shadow-glow-gold",
                   "disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98]",
                 )}
               >
@@ -385,8 +389,8 @@ export function UpgradePremiumModal({
               disabled={isPending || isEmailUnverified}
               onClick={handleCheckout}
               className={cn(
-                "w-full py-3.5 px-6 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all cursor-pointer",
-                "bg-gold hover:bg-gold-hover text-neutral-950 shadow-glow-gold hover:shadow-[0_0_30px_rgba(237,229,57,0.5)]",
+                "w-full py-3.5 px-6 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-[transform,background-color,color,opacity] cursor-pointer",
+                "bg-gold hover:bg-gold-hover text-neutral-950 shadow-glow-gold",
                 "disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98]",
               )}
             >

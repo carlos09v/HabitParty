@@ -30,7 +30,11 @@ export function HardcoreModeToggle({
   const { isGamified } = useExperienceMode();
   const isTodo = (taskType || "").toUpperCase() === "TODO";
 
-  const title = isGamified ? t("title") : t("titleProductivity");
+  const title = isGamified
+    ? t("title")
+    : isTodo
+      ? t("todoTitleProductivity")
+      : t("routineTitleProductivity");
   const tooltipTitle = isTodo
     ? isGamified
       ? t("todoTooltipTitle")

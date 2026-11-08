@@ -14,7 +14,7 @@ export function BoardAlignmentSelector({
   return (
     <fieldset
       className={cn(
-        "inline-flex items-center gap-0.5 rounded-lg bg-surface border border-white/15 p-0.5 m-0 shadow-xs shrink-0",
+        "inline-flex items-center gap-0.5 rounded-lg bg-card dark:bg-surface border border-neutral-700 dark:border-white/15 p-0.5 m-0 shadow-xs shrink-0",
         className,
       )}
       aria-label={t("ariaLabel")}
@@ -39,11 +39,11 @@ export function BoardAlignmentSelector({
             aria-pressed={isActive}
             title={label}
             className={cn(
-              "rounded-md transition-all cursor-pointer flex items-center justify-center focus:outline-none focus:ring-1 focus:ring-gold/60",
+              "rounded-md transition-colors cursor-pointer flex items-center justify-center focus:outline-none focus:ring-1 focus:ring-primary/50 dark:focus:ring-gold/60",
               isCompact ? "p-1" : "p-1.5",
               isActive
-                ? "bg-gold/20 border border-gold/50 text-gold shadow-glow-gold-xs"
-                : "border border-transparent text-neutral-400 hover:text-neutral-100 hover:bg-white/5",
+                ? "bg-primary/10 border border-primary/35 text-primary dark:bg-gold/20 dark:border-gold/50 dark:text-gold dark:shadow-glow-gold-xs"
+                : "border border-transparent text-neutral-400 hover:text-neutral-100 hover:bg-surface dark:hover:bg-white/5",
             )}
           >
             <Icon size={isCompact ? 13 : 15} aria-hidden="true" />

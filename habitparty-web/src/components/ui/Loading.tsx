@@ -70,10 +70,10 @@ export function Loading({
         aria-busy="true"
         style={customStyle}
         className={cn(
-          "animate-pulse transition-all",
+          "animate-pulse",
           isPrimary
-            ? "bg-primary-dark/30 border border-primary/20"
-            : "bg-gold/10 border border-gold/20",
+            ? "bg-surface dark:bg-primary-dark/30 border border-neutral-700 dark:border-primary/20"
+            : "bg-amber-500/15 dark:bg-gold/10 border border-amber-500/30 dark:border-gold/20",
           ROUNDED_MAP[rounded],
           !width && "w-full",
           !height && "h-6",
@@ -90,7 +90,7 @@ export function Loading({
   const spinnerElement = (
     <div
       className={cn(
-        "rounded-full border-solid border-t-transparent animate-spin transition-all",
+        "rounded-full border-solid border-t-transparent animate-spin",
         SPINNER_SIZE_MAP[size],
         isPrimary
           ? "border-primary/25 border-t-primary shadow-[0_0_12px_rgba(124,58,237,0.35)]"
@@ -179,7 +179,7 @@ export function Loading({
   if (variant === "overlay") {
     return (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md animate-in fade-in duration-200"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 dark:bg-background/90 animate-in fade-in duration-200"
         aria-modal="true"
         role="dialog"
       >

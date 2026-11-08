@@ -13,6 +13,7 @@ import { memo, useCallback, useState } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { getFocusIcon } from "@/constants/focus";
+import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import type { FocusRecord } from "@/types/focus";
@@ -38,6 +39,7 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
   const t = useTranslations("focus.records");
   const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
+  const { dateFormat } = useDateFormat();
   const IconComp = rec.activityIcon ? getFocusIcon(rec.activityIcon) : Timer;
   const durationLabel = formatFocusRecordDuration(
     rec.startTime,
@@ -57,7 +59,7 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
       }}
       title={t("rowTooltip")}
       className={cn(
-        "group/row rounded-xl border border-neutral-700 dark:border-primary/20 bg-white dark:bg-surface/40 shadow-2xs dark:shadow-none flex items-center justify-between gap-2.5 hover:border-gold/40 hover:bg-card-hover dark:hover:bg-surface/70 transition-all cursor-pointer select-none",
+        "group/row rounded-xl border border-neutral-700 dark:border-primary/20 bg-white dark:bg-surface/40 shadow-2xs dark:shadow-none flex items-center justify-between gap-2.5 hover:border-gold/40 hover:bg-card-hover dark:hover:bg-surface/70 transition-colors cursor-pointer select-none",
         isCompact ? "p-2" : "p-2.5",
       )}
     >
@@ -67,20 +69,24 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
         </div>
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-body-s font-semibold text-neutral-100 group-hover/row:text-gold transition-colors truncate">
+            <span className="text-body-s font-semibold text-neutral-100 group-hover/row:text-primary dark:group-hover/row:text-gold transition-colors truncate">
               {rec.activityName || rec.itemName || t("freeSession")}
             </span>
             {rec.notes && rec.notes.trim() !== "" && (
               <span
                 title={rec.notes}
-                className="text-neutral-400 group-hover/row:text-gold transition-colors shrink-0 p-0.5"
+                className="text-neutral-400 group-hover/row:text-primary dark:group-hover/row:text-gold transition-colors shrink-0 p-0.5"
               >
                 <MessageSquare size={isCompact ? 10 : 12} />
               </span>
             )}
           </div>
           <span className="text-tiny text-neutral-400 truncate">
-            {formatDateTime(rec.endTime, { isLocal: true, locale })}
+            {formatDateTime(rec.endTime, {
+              isLocal: true,
+              locale,
+              dateFormat,
+            })}
           </span>
         </div>
       </div>
@@ -121,7 +127,7 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
               e.stopPropagation();
               onDeleteRecord(rec.id);
             }}
-            className="w-6 h-6 rounded flex items-center justify-center text-neutral-500 hover:text-red-400 hover:bg-red-500/15 opacity-70 group-hover/row:opacity-100 transition-all cursor-pointer"
+            className="w-6 h-6 rounded flex items-center justify-center text-neutral-500 hover:text-red-400 hover:bg-red-500/15 opacity-70 group-hover/row:opacity-100 transition-[opacity,color,background-color] duration-150 cursor-pointer"
             title={t("deleteRecordAria")}
             aria-label={t("deleteRecordAria")}
           >
@@ -213,7 +219,7 @@ export function FocusRecentRecords({
             onClick={onAddRecord}
             title={t("addRecordAria")}
             aria-label={t("addRecordAria")}
-            className="w-7 h-7 rounded-lg border border-primary/30 bg-surface/70 hover:bg-gold/20 text-neutral-300 hover:text-gold hover:border-gold/50 flex items-center justify-center transition-all cursor-pointer shadow-xs"
+            className="w-7 h-7 rounded-lg border border-neutral-700 dark:border-primary/30 bg-card dark:bg-surface/70 hover:bg-amber-500/15 dark:hover:bg-gold/20 text-neutral-300 hover:text-amber-700 dark:hover:text-gold hover:border-amber-500/40 dark:hover:border-gold/50 flex items-center justify-center transition-colors cursor-pointer shadow-xs"
           >
             <Plus size={14} />
           </button>
@@ -224,7 +230,7 @@ export function FocusRecentRecords({
             onClick={onOptionsClick}
             title={t("viewFullHistoryAria")}
             aria-label={t("viewFullHistoryAria")}
-            className="w-7 h-7 rounded-lg border border-primary/30 bg-surface/70 hover:bg-white/15 text-neutral-400 hover:text-neutral-100 transition-all flex items-center justify-center cursor-pointer shadow-xs"
+            className="w-7 h-7 rounded-lg border border-neutral-700 dark:border-primary/30 bg-card dark:bg-surface/70 hover:bg-surface-hover dark:hover:bg-white/15 text-neutral-400 hover:text-neutral-100 transition-colors flex items-center justify-center cursor-pointer shadow-xs"
           >
             <History size={14} />
           </button>

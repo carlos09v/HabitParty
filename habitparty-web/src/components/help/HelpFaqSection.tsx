@@ -85,7 +85,7 @@ export function HelpFaqSection({
             placeholder: t("searchPlaceholder"),
           }}
           leftActions={
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface/60 border border-white/10 shrink-0 overflow-x-auto max-w-full custom-scrollbar">
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface dark:bg-surface/60 border border-neutral-700 dark:border-white/10 shrink-0 overflow-x-auto max-w-full custom-scrollbar">
               {HELP_CATEGORY_IDS.map((tabId) => {
                 const isActive = activeCategory === tabId;
                 return (
@@ -94,11 +94,11 @@ export function HelpFaqSection({
                     type="button"
                     onClick={() => setActiveCategory(tabId)}
                     className={cn(
-                      "px-3 rounded-lg font-semibold transition-all cursor-pointer select-none whitespace-nowrap",
+                      "px-3 rounded-lg font-semibold transition-colors cursor-pointer select-none whitespace-nowrap",
                       isCompact ? "py-1 text-xs" : "py-1.5 text-xs",
                       isActive
                         ? "bg-gold text-on-gold shadow-sm font-bold"
-                        : "text-neutral-300 hover:text-neutral-50 hover:bg-white/5",
+                        : "text-neutral-300 hover:text-neutral-50 hover:bg-card dark:hover:bg-white/5",
                     )}
                   >
                     {t(`categories.${tabId}`)}
@@ -113,7 +113,7 @@ export function HelpFaqSection({
                 type="button"
                 onClick={() => setSearchQuery("")}
                 className={cn(
-                  "flex items-center gap-1 px-3 rounded-xl border border-white/10 bg-white/5 text-neutral-300 hover:text-neutral-100 hover:bg-white/10 transition-colors text-xs font-semibold cursor-pointer",
+                  "flex items-center gap-1 px-3 rounded-xl border border-neutral-700 dark:border-white/10 bg-card dark:bg-white/5 text-neutral-300 hover:text-neutral-100 hover:bg-surface-hover dark:hover:bg-white/10 transition-colors text-xs font-semibold cursor-pointer",
                   isCompact ? "py-1" : "py-1.5",
                 )}
               >
@@ -135,7 +135,7 @@ export function HelpFaqSection({
             <h2 className="text-body-m sm:text-subtitle-s font-bold text-neutral-100">
               {t("sectionTitle")}
             </h2>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-neutral-300 border border-white/10">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-surface dark:bg-white/10 text-neutral-300 border border-neutral-700 dark:border-white/10">
               {filteredFaqs.length}{" "}
               {filteredFaqs.length === 1
                 ? t("topicSingular")
@@ -163,7 +163,7 @@ export function HelpFaqSection({
         </div>
 
         {filteredFaqs.length === 0 ? (
-          <div className="p-12 rounded-2xl bg-surface/20 border border-primary/20 text-center flex flex-col items-center justify-center gap-3">
+          <div className="p-12 rounded-2xl bg-card dark:bg-surface/20 border border-neutral-700 dark:border-primary/20 shadow-xs dark:shadow-none text-center flex flex-col items-center justify-center gap-3">
             <Search className="text-neutral-400" size={32} />
             <p className="text-body-m font-bold text-neutral-200">
               {t("emptyTitle", { query: searchQuery })}
@@ -192,15 +192,16 @@ export function HelpFaqSection({
                 <div
                   key={faq.id}
                   className={cn(
-                    "rounded-xl border border-primary/20 bg-surface/30 backdrop-blur-md overflow-hidden transition-all duration-200",
-                    isExpanded && "border-gold/40 shadow-glow-gold-xs",
+                    "rounded-xl border border-neutral-700 dark:border-primary/20 bg-card dark:bg-surface/30 shadow-2xs dark:shadow-none overflow-hidden transition-colors duration-200",
+                    isExpanded &&
+                      "border-amber-500/45 dark:border-gold/40 shadow-glow-gold-xs",
                   )}
                 >
                   <button
                     type="button"
                     onClick={() => toggleFaq(faq.id)}
                     className={cn(
-                      "w-full text-left flex items-start justify-between gap-4 cursor-pointer hover:bg-white/5 transition-colors select-none outline-none focus-visible:ring-1 focus-visible:ring-gold",
+                      "w-full text-left flex items-start justify-between gap-4 cursor-pointer hover:bg-surface/50 dark:hover:bg-white/5 transition-colors select-none outline-none focus-visible:ring-1 focus-visible:ring-gold",
                       isCompact ? "p-3.5 sm:p-4" : "p-4 sm:p-5",
                     )}
                     aria-expanded={isExpanded}
@@ -209,7 +210,8 @@ export function HelpFaqSection({
                       <div
                         className={cn(
                           "text-neutral-400 transition-transform duration-200 shrink-0 mt-0.5",
-                          isExpanded && "rotate-180 text-gold",
+                          isExpanded &&
+                            "rotate-180 text-amber-700 dark:text-gold",
                         )}
                       >
                         <ChevronDown size={18} />
@@ -219,18 +221,18 @@ export function HelpFaqSection({
                           <h3
                             className={cn(
                               "text-body-m font-bold text-neutral-100 transition-colors",
-                              isExpanded && "text-gold",
+                              isExpanded && "text-amber-700 dark:text-gold",
                             )}
                           >
                             {faq.question}
                           </h3>
                           {activeCategory === "ALL" && categoryLabel && (
-                            <span className="text-tiny font-semibold px-2 py-0.5 rounded-md bg-primary-dark/40 text-primary-light border border-primary/30">
+                            <span className="text-tiny font-semibold px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/25 dark:bg-primary-dark/40 dark:text-primary-light dark:border-primary/30">
                               {categoryLabel}
                             </span>
                           )}
                           {faq.highlightBadge && (
-                            <span className="text-tiny font-bold px-2 py-0.5 rounded-md bg-gold/15 text-gold border border-gold/30">
+                            <span className="text-tiny font-bold px-2 py-0.5 rounded-md bg-amber-500/15 dark:bg-gold/15 text-amber-800 dark:text-gold border border-amber-500/35 dark:border-gold/30">
                               {faq.highlightBadge}
                             </span>
                           )}
@@ -242,7 +244,7 @@ export function HelpFaqSection({
                   {isExpanded && (
                     <div
                       className={cn(
-                        "pt-1 text-neutral-300 text-body-s flex flex-col gap-3 border-t border-white/5 animate-in fade-in duration-150",
+                        "pt-3 text-neutral-300 text-body-s flex flex-col gap-3 border-t border-neutral-700 dark:border-white/5 animate-in fade-in duration-150",
                         isCompact
                           ? "px-3.5 pb-4 sm:px-4"
                           : "px-4 pb-5 sm:px-5 sm:pb-5",
@@ -251,7 +253,7 @@ export function HelpFaqSection({
                       <p className="leading-relaxed">{faq.answer}</p>
 
                       {faq.bullets && faq.bullets.length > 0 && (
-                        <ul className="flex flex-col gap-1.5 list-disc list-inside bg-primary-dark/20 p-3.5 rounded-lg border border-primary/20 text-neutral-200">
+                        <ul className="flex flex-col gap-1.5 list-disc list-inside bg-surface/60 dark:bg-primary-dark/20 p-3.5 rounded-lg border border-neutral-700 dark:border-primary/20 shadow-none text-neutral-200">
                           {faq.bullets.map((bullet) => (
                             <li key={bullet} className="leading-relaxed">
                               {bullet}
@@ -260,10 +262,10 @@ export function HelpFaqSection({
                         </ul>
                       )}
 
-                      <div className="flex items-center justify-between gap-3 flex-wrap pt-2 border-t border-white/5">
+                      <div className="flex items-center justify-between gap-3 flex-wrap pt-2 border-t border-neutral-700 dark:border-white/5">
                         {faq.tags && faq.tags.length > 0 ? (
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-tiny uppercase text-neutral-500 font-bold mr-1">
+                            <span className="text-tiny uppercase text-neutral-400 dark:text-neutral-500 font-bold mr-1">
                               {t("tagsLabel")}
                             </span>
                             {faq.tags.map((tag) => (
@@ -271,7 +273,7 @@ export function HelpFaqSection({
                                 key={tag}
                                 type="button"
                                 onClick={() => setSearchQuery(tag)}
-                                className="text-label-g px-2 py-0.5 rounded-md bg-white/5 hover:bg-gold/20 hover:text-gold text-neutral-400 border border-white/10 transition-colors cursor-pointer"
+                                className="text-label-g px-2 py-0.5 rounded-md bg-surface/70 dark:bg-white/5 hover:bg-amber-500/15 dark:hover:bg-gold/20 hover:text-amber-800 dark:hover:text-gold text-neutral-300 dark:text-neutral-400 border border-neutral-700 dark:border-white/10 transition-colors cursor-pointer"
                               >
                                 #{tag}
                               </button>
@@ -284,7 +286,7 @@ export function HelpFaqSection({
                         {faq.actionLink && (
                           <Link
                             href={faq.actionLink.href}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold/15 hover:bg-gold/25 border border-gold/40 text-gold text-xs font-bold transition-all shadow-glow-gold-xs group"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 dark:bg-gold/15 dark:hover:bg-gold/25 border border-amber-500/40 dark:border-gold/40 text-amber-800 dark:text-gold text-xs font-bold transition-colors shadow-glow-gold-xs group"
                           >
                             <span>{faq.actionLink.label}</span>
                             <ArrowUpRight

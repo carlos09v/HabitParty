@@ -236,7 +236,7 @@
       "hardcoreOverdueTitle": "Hardcore Mode: Deadline expired! 50% penalty active!",
       "hardcoreOverdueTitleProductivity": "Strict Deadline: Due date expired! 50% penalty active!",
       "hardcoreActiveTitle": "Hardcore Mode Active",
-      "hardcoreActiveTitleProductivity": "Strict Deadline Active (Non-negotiable)",
+      "hardcoreActiveTitleProductivity": "Strict Deadline / Daily Commitment Active",
       "descriptionTitle": "Has detailed description",
       "priorityTitle": "Priority: {label}",
       "habitScoreCardTitle": "Repetitions balance in current cycle: {score}",

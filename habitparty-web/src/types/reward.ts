@@ -8,6 +8,18 @@ export type CreateRewardDTO = components["schemas"]["CreateRewardDTO"];
 export type UpdateRewardDTO = components["schemas"]["UpdateRewardDTO"];
 export type UpdateRewardOrderDTO =
   components["schemas"]["UpdateRewardOrderDTO"];
+export type MysteryBoxLootItem = components["schemas"]["MysteryBoxLootItem"];
+
+export type MysteryBoxPresetId = "gamer" | "relax" | "gastronomy" | "hobbies";
+
+export interface MysteryBoxPreset {
+  id: MysteryBoxPresetId;
+  icon: LucideIcon;
+  tiers: Record<
+    "Básico" | "Premium" | "Épico" | "Lendário",
+    readonly [MysteryBoxLootItem, MysteryBoxLootItem, MysteryBoxLootItem]
+  >;
+}
 
 export type PackageMessageKey =
   | "NONE"
@@ -60,6 +72,7 @@ export interface MysteryBoxTier {
   glowClass: string;
   ringClass: string;
   accentGlow: string;
+  slotMaxMinutes: readonly [number, number, number];
   dropRates: MysteryBoxDropRate[];
 }
 
@@ -67,6 +80,7 @@ export interface CouponPackageOption {
   id: PackageLevel;
   label: string;
   suggestedMinutes?: number;
+  suggestedPrice?: number;
   dotColor?: string;
   unselectedClass: string;
   selectedClass: string;
@@ -118,12 +132,14 @@ export interface Reward
     | "book"
     | "clapperboard"
     | string;
+  lootItems?: MysteryBoxLootItem[];
 }
 
 // 3. Props e Outros Tipos
 export interface RewardCardProps {
   reward: Reward;
   onBuy?: (reward: Reward) => void;
+  onEdit?: (reward: Reward) => void;
   onContextMenu?: (e: React.MouseEvent, reward: Reward) => void;
   isCompact?: boolean;
   canAfford?: boolean;

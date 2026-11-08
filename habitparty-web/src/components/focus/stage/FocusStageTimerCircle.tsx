@@ -108,7 +108,22 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
               : "stroke-neutral-700 dark:stroke-white/10",
           )}
         />
-        {/* Círculo de progresso animado */}
+        {/* Halo sutil estático sem filtro SVG drop-shadow a 1Hz */}
+        <circle
+          cx="140"
+          cy="140"
+          r={radius}
+          strokeWidth="16"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          fill="transparent"
+          className={cn(
+            "transition-colors duration-300",
+            isBreak ? "stroke-emerald-400/20" : "stroke-gold/18",
+          )}
+        />
+        {/* Círculo de progresso animado (1Hz sem rasterizar drop-shadow nem transition-all) */}
         <circle
           cx="140"
           cy="140"
@@ -119,10 +134,8 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
           strokeLinecap="round"
           fill="transparent"
           className={cn(
-            "transition-all duration-500 ease-linear",
-            isBreak
-              ? "stroke-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.5)]"
-              : "stroke-gold drop-shadow-[0_0_12px_rgba(234,179,8,0.3)]",
+            "transition-colors duration-300",
+            isBreak ? "stroke-emerald-400" : "stroke-gold",
           )}
         />
       </svg>
@@ -149,7 +162,7 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
         {/* Badge de Status / Fase */}
         <span
           className={cn(
-            "font-bold uppercase rounded-full border transition-all duration-300",
+            "font-bold uppercase rounded-full border transition-colors duration-300",
             size === "sm"
               ? "text-[10px] px-2.5 py-0.5 tracking-wider"
               : "text-xs px-3 py-0.5 tracking-wider",
@@ -185,7 +198,7 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
               <div
                 key={cycle}
                 className={cn(
-                  "w-2.5 h-2.5 rounded-full border transition-all",
+                  "w-2.5 h-2.5 rounded-full border transition-colors",
                   cycle <= completedCycles
                     ? isBreak
                       ? "bg-emerald-400 border-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]"
@@ -214,7 +227,7 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
         onClick={props.onToggle}
         title={isRunning ? t("clickToPause") : t("clickToStart")}
         className={cn(
-          "group relative flex items-center justify-center select-none transition-all duration-300 cursor-pointer hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 focus-visible:rounded-full bg-transparent border-none p-0",
+          "group relative flex items-center justify-center select-none transition-transform duration-200 cursor-pointer hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 focus-visible:rounded-full bg-transparent border-none p-0",
           sizeClasses,
         )}
       >
@@ -226,7 +239,7 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
   return (
     <div
       className={cn(
-        "group relative flex items-center justify-center select-none transition-all duration-300",
+        "group relative flex items-center justify-center select-none",
         sizeClasses,
       )}
     >

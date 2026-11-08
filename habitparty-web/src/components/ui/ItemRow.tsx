@@ -34,6 +34,7 @@ export interface ItemRowProps {
   onAction: () => void;
   secondaryActionLabel?: string;
   onSecondaryAction?: () => void;
+  onDoubleClick?: (e: React.MouseEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
   dragData?: Record<string, unknown>;
   inUse?: boolean;
@@ -63,6 +64,7 @@ export const ItemRow = memo(function ItemRow({
   onAction,
   secondaryActionLabel,
   onSecondaryAction,
+  onDoubleClick,
   onContextMenu,
   dragData,
   inUse = false,
@@ -117,9 +119,14 @@ export const ItemRow = memo(function ItemRow({
       style={style}
       {...attributes}
       {...listeners}
+      onDoubleClick={(e) => {
+        if (isDragging || !onDoubleClick) return;
+        e.stopPropagation();
+        onDoubleClick(e);
+      }}
       onContextMenu={onContextMenu}
       className={cn(
-        "relative rounded-xl bg-card dark:bg-linear-to-r dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,box-shadow,transform] duration-150 select-none group overflow-hidden shadow-2xs dark:shadow-none",
+        "relative rounded-xl bg-card dark:bg-linear-to-r dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,transform] duration-150 select-none group overflow-hidden shadow-2xs dark:shadow-none",
         inUse
           ? "border-amber-500/45 bg-card dark:border-amber-500/40 dark:bg-amber-500/5 border-l-4 border-l-amber-500"
           : cn(
@@ -129,6 +136,7 @@ export const ItemRow = memo(function ItemRow({
         "flex flex-col gap-2.5 p-3 sm:p-3.5",
         "md:grid md:grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)_minmax(0,1.8fr)_minmax(0,1.2fr)_auto] md:items-center",
         isCompact ? "md:gap-3 md:px-3 md:py-2" : "md:gap-4 md:px-4 md:py-2.5",
+        onDoubleClick && "cursor-pointer",
         isDragging && "transition-none! opacity-50 ring-2 ring-gold z-50",
       )}
     >
@@ -145,7 +153,7 @@ export const ItemRow = memo(function ItemRow({
 
           <div
             className={cn(
-              "rounded-xl border flex items-center justify-center transition-all duration-200 shrink-0 group-hover:scale-105",
+              "rounded-xl border flex items-center justify-center transition-[transform,border-color,color,background-color] duration-200 shrink-0 group-hover:scale-105",
               packageIconTheme ||
                 (typeKey === "TimeBased"
                   ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 group-hover:border-emerald-500/40 dark:bg-white/10 dark:border-white/15 dark:text-primary-light dark:group-hover:text-gold dark:group-hover:border-gold/40"
@@ -155,7 +163,9 @@ export const ItemRow = memo(function ItemRow({
           >
             <RewardIcon
               size={isCompact ? 16 : 19}
-              className={isMystery ? "text-amber-400" : undefined}
+              className={
+                isMystery ? "text-amber-600 dark:text-amber-400" : undefined
+              }
               aria-hidden="true"
             />
           </div>
@@ -163,7 +173,7 @@ export const ItemRow = memo(function ItemRow({
           {typeof quantity === "number" && (
             <span
               className={cn(
-                "font-bold bg-white/10 border border-white/20 text-neutral-100 shrink-0",
+                "font-bold bg-surface border border-neutral-700 dark:bg-white/10 dark:border-white/20 text-neutral-100 shrink-0",
                 isCompact
                   ? "text-tiny px-1.5 py-0.5 rounded"
                   : "text-xs px-2 py-0.5 rounded-md",
@@ -176,7 +186,7 @@ export const ItemRow = memo(function ItemRow({
           <div className="flex flex-col min-w-0 flex-1">
             <h4
               className={cn(
-                "font-bold text-neutral-100 truncate group-hover:text-gold transition-colors leading-tight",
+                "font-bold text-neutral-100 truncate group-hover:text-primary dark:group-hover:text-gold transition-colors leading-tight",
                 isCompact ? "text-xs" : "text-body-s",
               )}
             >
@@ -220,11 +230,11 @@ export const ItemRow = memo(function ItemRow({
           {inUse && (
             <span
               className={cn(
-                "text-label-m font-bold border truncate inline-flex items-center gap-1.5 leading-none shrink-0 border-amber-500/40 bg-amber-500/15 text-amber-300",
+                "text-label-m font-bold border truncate inline-flex items-center gap-1.5 leading-none shrink-0 border-amber-500/40 bg-amber-500/15 text-amber-800 dark:text-amber-300",
                 isCompact ? "px-1.5 py-0.5 rounded" : "px-2 py-0.5 rounded-md",
               )}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
               {t("inFocus")}
             </span>
           )}
@@ -294,13 +304,13 @@ export const ItemRow = memo(function ItemRow({
             ) : baseDurationMinutes ? (
               <span
                 className={cn(
-                  "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg border font-extrabold bg-emerald-500/15 border-emerald-500/40 text-emerald-300",
+                  "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg border font-extrabold bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-300",
                   isCompact ? "text-label-g" : "text-xs",
                 )}
               >
                 <Clock
                   size={isCompact ? 11 : 13}
-                  className="text-emerald-400 shrink-0"
+                  className="text-emerald-600 dark:text-emerald-400 shrink-0"
                   aria-hidden="true"
                 />
                 <span className="truncate">
@@ -354,6 +364,7 @@ export const ItemRow = memo(function ItemRow({
           <button
             type="button"
             onClick={onSecondaryAction}
+            onDoubleClick={(e) => e.stopPropagation()}
             disabled={disabled || inUse}
             aria-label={`${secondaryActionLabel} ${title}`}
             title={
@@ -365,10 +376,10 @@ export const ItemRow = memo(function ItemRow({
                   })
             }
             className={cn(
-              "rounded-md font-semibold transition-all shadow-xs border text-neutral-200",
+              "rounded-md font-semibold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs border text-neutral-200",
               disabled || inUse
                 ? "bg-white/5 border-white/10 text-neutral-400 cursor-not-allowed opacity-60"
-                : "border-neutral-600 dark:border-primary/40 bg-surface/80 hover:bg-gold/15 hover:border-gold/60 hover:text-gold active:scale-95 cursor-pointer",
+                : "border-neutral-600 dark:border-primary/40 bg-surface/80 hover:bg-primary/10 hover:border-primary/40 hover:text-primary dark:hover:bg-gold/15 dark:hover:border-gold/60 dark:hover:text-gold active:scale-95 cursor-pointer",
               isCompact ? "px-2 py-0.5 text-label-g" : "px-2.5 py-1 text-xs",
             )}
           >
@@ -379,6 +390,7 @@ export const ItemRow = memo(function ItemRow({
         <button
           type="button"
           onClick={onAction}
+          onDoubleClick={(e) => e.stopPropagation()}
           disabled={isPrimaryDisabled}
           aria-label={`${actionLabel} ${title}`}
           title={
@@ -394,7 +406,7 @@ export const ItemRow = memo(function ItemRow({
                     })
           }
           className={cn(
-            "rounded-md font-semibold dark:font-bold transition-all shadow-xs",
+            "rounded-md font-semibold dark:font-bold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs",
             isFocusNavigate || (!disabled && !inUse)
               ? "bg-gold hover:bg-gold-hover active:bg-gold-pressed text-on-gold border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1 focus-visible:ring-offset-card"
               : "bg-neutral-700/70 dark:bg-white/10 text-neutral-400 border border-neutral-600 dark:border-white/10 cursor-not-allowed opacity-75 dark:opacity-60",

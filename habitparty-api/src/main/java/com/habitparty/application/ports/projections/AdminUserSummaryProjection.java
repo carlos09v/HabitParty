@@ -18,6 +18,7 @@ public record AdminUserSummaryProjection(
     boolean emailVerified,
     LocalDateTime emailVerifiedAt,
     SubscriptionStatus subscriptionStatus,
+    LocalDateTime subscriptionEndsAt,
     LocalDateTime createdAt,
     long emailsSentThisMonth,
     long activeEmailReminders,

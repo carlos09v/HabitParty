@@ -62,7 +62,7 @@ export function SegmentedControl<T extends string = string>({
             disabled={isDisabled}
             onClick={() => onChange(option.value)}
             className={cn(
-              "rounded-lg font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer outline-none",
+              "rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer outline-none",
               size === "sm" ? "py-2 px-3 text-xs" : "py-2.5 px-3.5 text-body-s",
               isSelected
                 ? "bg-gold/20 border border-gold text-gold font-bold shadow-glow-gold-xs"

@@ -1,5 +1,6 @@
 package com.habitparty.application.ports;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -26,6 +27,8 @@ public interface UserRepository {
   long countFounders();
   long countByEmailVerified(boolean emailVerified);
   Page<User> searchUsers(String search, UserRole role, Boolean isPremium, Boolean isFounder, Boolean emailVerified, Pageable pageable);
+
+  default List<User> findUsersWithExpiredStreak(LocalDateTime since) {
+    return List.of();
+  }
 }
-
-

@@ -51,8 +51,8 @@ export function LanguageToggleBtn({
   const LeadingIcon = isSwitching ? Loader2 : Languages;
 
   const iconClasses = cn(
-    "relative inline-flex items-center justify-center gap-1.5 h-9 px-2.5 rounded-xl transition-all duration-200 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-gold/50 group disabled:cursor-wait disabled:opacity-80",
-    "border border-neutral-700 bg-card/90 hover:bg-surface-hover hover:border-primary/40 text-neutral-200 hover:text-neutral-50 shadow-2xs backdrop-blur-xs",
+    "relative inline-flex items-center justify-center gap-1.5 h-9 px-2.5 rounded-xl transition-colors duration-200 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-gold/50 group disabled:cursor-wait disabled:opacity-80",
+    "border border-neutral-700 bg-card hover:bg-surface-hover hover:border-primary/40 text-neutral-200 hover:text-neutral-50 shadow-2xs",
     "dark:border-white/12 dark:bg-white/[0.04] dark:hover:bg-white/[0.09] dark:hover:border-gold/40 dark:text-neutral-200 dark:hover:text-white dark:shadow-none",
     className,
   );
@@ -104,20 +104,13 @@ export function LanguageToggleBtn({
     );
   }
 
-  // Variante Completa (Row com Label e Switch EN/PT para Sidebar)
-  return (
-    <button
-      type="button"
-      onClick={toggleLocale}
-      disabled={isSwitching}
-      aria-busy={isSwitching}
-      className={cn(
-        "flex w-full items-center justify-between px-3 py-2 rounded-lg transition-all text-body-s font-medium outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 text-neutral-200 hover:bg-surface-hover hover:text-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-500/10 dark:hover:text-neutral-50 border-r-2 border-transparent text-left cursor-pointer group select-none disabled:cursor-wait disabled:opacity-80",
-        className,
-      )}
-      aria-label={ariaLabel}
-      title={titleLabel}
-    >
+  const rowClasses = cn(
+    "flex w-full items-center justify-between px-3 py-2 rounded-lg transition-colors text-body-s font-medium outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 text-neutral-200 hover:bg-surface-hover hover:text-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-500/10 dark:hover:text-neutral-50 border-r-2 border-transparent text-left cursor-pointer group select-none disabled:cursor-wait disabled:opacity-80",
+    className,
+  );
+
+  const rowContent = (
+    <>
       <div className="flex items-center gap-3">
         <span className="transition-colors">
           <LeadingIcon
@@ -160,6 +153,36 @@ export function LanguageToggleBtn({
           PT
         </span>
       </div>
+    </>
+  );
+
+  // Variante Completa (Row com Label e Switch EN/PT para Sidebar)
+  if (staticTargetHref) {
+    return (
+      <Link
+        href={staticTargetHref}
+        scroll={false}
+        onClick={() => persistLocaleCookieClient(targetLocale)}
+        className={rowClasses}
+        aria-label={ariaLabel}
+        title={titleLabel}
+      >
+        {rowContent}
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={toggleLocale}
+      disabled={isSwitching}
+      aria-busy={isSwitching}
+      className={rowClasses}
+      aria-label={ariaLabel}
+      title={titleLabel}
+    >
+      {rowContent}
     </button>
   );
 }

@@ -81,25 +81,53 @@ export function useMysteryBoxRoulette({
     setWonResult(null);
     setTranslateX(0);
 
+    const customLoot = item.reward.lootItems;
+    const hasCustomLoot = Boolean(customLoot && customLoot.length === 3);
+
+    const effectivePool: RouletteItem[] = hasCustomLoot
+      ? (customLoot ?? []).map((slot, idx) => {
+          const dropRate = tierConfig.dropRates[idx] || tierConfig.dropRates[0];
+          return {
+            id: `custom-${idx}`,
+            name: slot.name,
+            icon: slot.icon || "gift",
+            minutes:
+              slot.minutes !== undefined &&
+              slot.minutes !== null &&
+              slot.minutes > 0
+                ? slot.minutes
+                : null,
+            badgeVariant: dropRate.badgeVariant,
+            badgeLabel: t("dropBadge", {
+              percent: String(dropRate.percentage),
+            }),
+          };
+        })
+      : pool.map((poolItem) => {
+          const poolKey = `poolItems.${poolItem.id as PoolItemId}` as const;
+          const localizedName = t.has(poolKey) ? t(poolKey) : poolItem.name;
+          const percentMatch = poolItem.badgeLabel.match(/^(\d+)%/);
+          const localizedBadge = percentMatch
+            ? t("dropBadge", { percent: percentMatch[1] })
+            : poolItem.badgeLabel;
+          return {
+            ...poolItem,
+            name: localizedName,
+            badgeLabel: localizedBadge,
+          };
+        });
+
     const generated: RouletteItem[] = [];
     for (let i = 0; i < ROULETTE_TRACK_LENGTH; i++) {
-      const randomItem = pool[Math.floor(Math.random() * pool.length)];
-      const poolKey = `poolItems.${randomItem.id as PoolItemId}` as const;
-      const localizedName = t.has(poolKey) ? t(poolKey) : randomItem.name;
-      const percentMatch = randomItem.badgeLabel.match(/^(\d+)%/);
-      const localizedBadge = percentMatch
-        ? t("dropBadge", { percent: percentMatch[1] })
-        : randomItem.badgeLabel;
-
+      const randomItem =
+        effectivePool[Math.floor(Math.random() * effectivePool.length)];
       generated.push({
         ...randomItem,
         id: `${randomItem.id}-${i}`,
-        name: localizedName,
-        badgeLabel: localizedBadge,
       });
     }
     setTrackItems(generated);
-  }, [isOpen, item, pool, tierConfig.id, t]);
+  }, [isOpen, item, pool, tierConfig.id, tierConfig.dropRates, t]);
 
   // Limpeza de intervalos sonoros e timers ao desmontar ou fechar
   useEffect(() => {

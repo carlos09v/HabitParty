@@ -27,6 +27,7 @@ export interface AdminUserSummaryDTO {
   emailVerified?: boolean;
   emailVerifiedAt?: string | null;
   subscriptionStatus: string;
+  subscriptionEndsAt?: string | null;
   createdAt: string;
   emailsSentThisMonth: number;
   activeEmailReminders: number;

@@ -28,8 +28,12 @@ export function DeleteWorkspaceModal({
       maxWidth="max-w-sm"
       borderColor="border-red-500/30"
       preventClose={isLoading}
-      headerExtra={<AlertTriangle size={20} className="text-red-400" />}
-      title={<span className="text-red-400">{t("title")}</span>}
+      headerExtra={
+        <AlertTriangle size={20} className="text-red-600 dark:text-red-400" />
+      }
+      title={
+        <span className="text-red-600 dark:text-red-400">{t("title")}</span>
+      }
     >
       <p className="text-body-s text-neutral-300 mb-6 leading-relaxed">
         {t("descriptionPrefix")}{" "}
@@ -52,7 +56,7 @@ export function DeleteWorkspaceModal({
           type="button"
           onClick={onConfirm}
           disabled={isLoading}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600/80 hover:bg-red-600 border border-red-500/50 rounded-lg text-neutral-50 text-body-s font-bold transition-all focus:outline-none focus:ring-2 focus:ring-red-400/50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-600/80 dark:hover:bg-red-600 border border-red-600 dark:border-red-500/50 rounded-lg text-white text-body-s font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-red-400/50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           {isLoading ? (
             <>

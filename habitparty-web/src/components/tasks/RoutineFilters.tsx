@@ -45,22 +45,28 @@ function StoreColumnButtonUI({
           : t("storeColumnManageTitle")
       }
       className={cn(
-        "flex items-center gap-1.5 rounded-lg border font-semibold shadow-xs transition-all cursor-pointer select-none active:scale-98 shrink-0",
+        "flex items-center gap-1.5 rounded-lg border font-semibold shadow-xs transition-[transform,background-color,border-color,color] cursor-pointer select-none active:scale-98 shrink-0",
         isCompact ? "px-2.5 py-1.5 text-xs" : "px-3 py-2.5 text-body-s",
         isOverValid
-          ? "bg-gold/25 border-gold text-white ring-2 ring-gold/70 shadow-glow-gold scale-105"
+          ? "bg-amber-500/20 border-amber-500 text-amber-900 dark:bg-gold/25 dark:border-gold dark:text-white ring-2 ring-amber-500/50 dark:ring-gold/70 dark:shadow-glow-gold scale-105"
           : isDraggingColumn
-            ? "border-dashed border-gold/70 bg-gold/10 text-gold animate-pulse shadow-glow-gold-xs"
-            : "bg-surface border-white/15 text-neutral-200 hover:border-gold/50 hover:bg-surface-hover hover:text-white",
+            ? "border-dashed border-amber-500 bg-amber-500/10 text-amber-800 dark:border-gold/70 dark:bg-gold/10 dark:text-gold animate-pulse dark:shadow-glow-gold-xs"
+            : "bg-card border-neutral-700 text-neutral-200 hover:border-primary/40 hover:bg-surface hover:text-primary dark:bg-surface dark:border-white/15 dark:text-neutral-200 dark:hover:border-gold/50 dark:hover:bg-surface-hover dark:hover:text-white",
       )}
     >
       {isDraggingColumn ? (
         <ArchiveRestore
           size={isCompact ? 14 : 15}
-          className={cn("text-gold", isOverValid && "animate-bounce")}
+          className={cn(
+            "text-amber-700 dark:text-gold transition-transform",
+            isOverValid && "scale-110",
+          )}
         />
       ) : (
-        <Columns3 size={isCompact ? 14 : 15} className="text-primary-light" />
+        <Columns3
+          size={isCompact ? 14 : 15}
+          className="text-primary dark:text-primary-light"
+        />
       )}
       <span>
         {isOverValid
@@ -69,7 +75,7 @@ function StoreColumnButtonUI({
             ? t("storeDragging")
             : t("columnsLabel")}
       </span>
-      <span className="text-gold font-bold">
+      <span className="text-primary dark:text-gold font-bold">
         {visibleCount}/{maxColumns}
       </span>
     </button>
@@ -168,11 +174,11 @@ export function RoutineFilters({
             : t("newColumnCreateTitle")
         }
         className={cn(
-          "flex items-center gap-1.5 rounded-lg bg-surface border font-semibold transition-all shadow-xs shrink-0",
+          "flex items-center gap-1.5 rounded-lg bg-card dark:bg-surface border font-semibold transition-[transform,background-color,border-color,color] shadow-xs shrink-0",
           isCompact ? "px-2.5 py-1.5 text-xs" : "px-3 py-2.5 text-body-s",
           canCreateColumn
-            ? "border-white/15 text-neutral-100 hover:bg-surface-hover hover:border-gold hover:text-gold cursor-pointer active:scale-98"
-            : "border-white/10 text-neutral-500 bg-surface/50 cursor-not-allowed opacity-50",
+            ? "border-neutral-700 text-neutral-100 hover:bg-surface hover:border-primary/40 hover:text-primary dark:border-white/15 dark:text-neutral-100 dark:hover:bg-surface-hover dark:hover:border-gold dark:hover:text-gold cursor-pointer active:scale-98"
+            : "border-neutral-700/60 text-neutral-400 bg-surface dark:border-white/10 dark:text-neutral-500 dark:bg-surface/50 cursor-not-allowed opacity-60",
         )}
       >
         <SquarePlus size={isCompact ? 14 : 16} className="shrink-0" />

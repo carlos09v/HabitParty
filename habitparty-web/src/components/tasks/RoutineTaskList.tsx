@@ -109,7 +109,7 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
       style={style}
       data-column-id={column.id}
       className={cn(
-        "flex flex-col gap-2.5 w-full transition-[background-color,border-color,opacity,box-shadow] duration-150 rounded-xl",
+        "flex flex-col gap-2.5 w-full transition-[background-color,border-color,opacity] duration-150 rounded-xl",
         isSelected &&
           "ring-2 ring-inset ring-gold/90 shadow-glow-gold bg-gold/[0.03] p-2",
         isDragging &&
@@ -126,13 +126,13 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
           title={t("dragListTitle", { title: column.title })}
         >
           {/* Grip de Reordenação da Coluna na Lista */}
-          <div className="flex items-center justify-center p-0.5 text-neutral-500 group-hover/col-header:text-gold transition-colors shrink-0">
+          <div className="flex items-center justify-center p-0.5 text-neutral-500 group-hover/col-header:text-primary dark:group-hover/col-header:text-gold transition-colors shrink-0">
             <GripVertical size={isCompact ? 13 : 15} />
           </div>
 
           <div
             className={cn(
-              "rounded-lg bg-primary-dark/40 border border-white/10 text-gold flex items-center justify-center shrink-0",
+              "rounded-lg bg-primary/10 dark:bg-primary-dark/40 border border-primary/25 dark:border-white/10 text-primary dark:text-gold flex items-center justify-center shrink-0",
               isCompact ? "w-6 h-6" : "w-7 h-7",
             )}
           >
@@ -140,7 +140,7 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
           </div>
           <h3
             className={cn(
-              "font-bold text-neutral-100 group-hover/col-header:text-gold transition-colors truncate min-w-0",
+              "font-bold text-neutral-100 group-hover/col-header:text-primary dark:group-hover/col-header:text-gold transition-colors truncate min-w-0",
               isCompact ? "text-xs" : "text-sm",
             )}
           >
@@ -157,7 +157,7 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
           onClick={() => onAddTaskToColumn(column.id)}
           title={t("addTaskInColumnTitle", { title: column.title })}
           className={cn(
-            "flex items-center gap-1 text-neutral-400 hover:text-gold hover:bg-white/5 rounded-md transition-all cursor-pointer shrink-0",
+            "flex items-center gap-1 text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-white/5 rounded-md transition-colors cursor-pointer shrink-0",
             isCompact ? "px-2 py-1 text-label-g" : "px-2.5 py-1 text-xs",
           )}
         >

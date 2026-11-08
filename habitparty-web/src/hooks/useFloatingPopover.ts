@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { useClickOutside } from "@/hooks/useClickOutside";
+import { useIsClient } from "@/hooks/useIsClient";
 
 export interface FloatingPopoverCoords {
   top?: number;
@@ -63,13 +64,9 @@ export function useFloatingPopover<
   const triggerRef = useRef<TTrigger>(null);
   const popoverRef = useRef<TPopover>(null);
 
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsClient();
   const [isOpen, setIsOpen] = useState(false);
   const [coords, setCoords] = useState<FloatingPopoverCoords | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const close = useCallback(() => {
     setIsOpen(false);

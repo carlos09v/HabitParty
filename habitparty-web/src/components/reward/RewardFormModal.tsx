@@ -11,6 +11,7 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import {
   COUPON_PACKAGE_OPTIONS,
+  calculateSuggestedCouponPrice,
   REWARD_FORM_CATEGORY_OPTIONS,
   REWARD_FORM_TYPE_KEYS,
   REWARD_ICONS,
@@ -25,12 +26,14 @@ import {
   toPackageMessageKey,
   toRewardTypeMessageKey,
 } from "@/utils/rewardMapper";
+import { MysteryBoxLootEditor } from "./MysteryBoxLootEditor";
 import { MysteryBoxSelector } from "./MysteryBoxSelector";
 
 interface RewardFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   rewardToEdit?: Reward | null;
+  existingRewards?: Reward[];
   onSuccess?: (reward: Reward) => void;
 }
 
@@ -40,6 +43,7 @@ export function RewardFormModal({
   isOpen,
   onClose,
   rewardToEdit,
+  existingRewards = [],
   onSuccess,
 }: RewardFormModalProps) {
   const t = useTranslations("rewards.formModal");
@@ -67,6 +71,9 @@ export function RewardFormModal({
     setBaseDurationMinutes,
     selectedIcon,
     handleIconSelect,
+    lootItems,
+    handleLootSlotChange,
+    handleApplyLootPreset,
     handleSubmit,
   } = useRewardForm({
     isOpen,
@@ -241,19 +248,29 @@ export function RewardFormModal({
           />
         </div>
 
-        {/* 4 Caixas Gamificadas Exibidas Imediatamente Abaixo do Tipo de Recompensa */}
+        {/* 4 Caixas Gamificadas + Editor de Prêmios da Caixa Misteriosa */}
         {type === "MysteryBox" && (
-          <MysteryBoxSelector
-            selectedLevel={packageLevel}
-            onSelect={(tier) =>
-              handleMysteryBoxTierSelect(
-                tier.id,
-                tier.recommendedPrice,
-                tMystery(`tiers.${tier.backendPackageLevel}.name`),
-              )
-            }
-            disabled={isPending}
-          />
+          <>
+            <MysteryBoxSelector
+              selectedLevel={packageLevel}
+              onSelect={(tier) =>
+                handleMysteryBoxTierSelect(
+                  tier.id,
+                  tier.recommendedPrice,
+                  tMystery(`tiers.${tier.backendPackageLevel}.name`),
+                )
+              }
+              disabled={isPending}
+            />
+            <MysteryBoxLootEditor
+              packageLevel={packageLevel}
+              lootItems={lootItems}
+              onChangeSlot={handleLootSlotChange}
+              onApplyPreset={handleApplyLootPreset}
+              existingRewards={existingRewards}
+              disabled={isPending}
+            />
+          </>
         )}
 
         {/* Seção Condicional se for TimeBased (Cupom - Opção C) */}
@@ -321,9 +338,18 @@ export function RewardFormModal({
                         if (pkg.suggestedMinutes) {
                           setBaseDurationMinutes(String(pkg.suggestedMinutes));
                         }
+                        if (typeof pkg.suggestedPrice === "number") {
+                          setPrice(String(pkg.suggestedPrice));
+                        } else {
+                          const proportionalPrice =
+                            calculateSuggestedCouponPrice(
+                              Number(baseDurationMinutes) || 30,
+                            );
+                          setPrice(String(proportionalPrice));
+                        }
                       }}
                       className={cn(
-                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-label-g font-semibold transition-all cursor-pointer select-none active:scale-95",
+                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-label-g font-semibold transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer select-none active:scale-95",
                         isSelected ? pkg.selectedClass : pkg.unselectedClass,
                         isPending && "opacity-50 cursor-not-allowed",
                       )}
@@ -360,7 +386,7 @@ export function RewardFormModal({
               <span className="text-gold">*</span>
             </label>
             {type === "MysteryBox" && (
-              <span className="text-label-m text-gold font-medium">
+              <span className="text-label-m text-amber-700 dark:text-gold font-medium">
                 {t("suggestedPriceByRarity")}
               </span>
             )}
@@ -369,7 +395,7 @@ export function RewardFormModal({
             id="rewardPrice"
             type="number"
             step="any"
-            min="0.01"
+            min="0"
             max={99999}
             value={price}
             onChange={(e) => setPrice(e.target.value)}
@@ -388,12 +414,12 @@ export function RewardFormModal({
         </div>
 
         {/* Botões de Ação */}
-        <div className="flex items-center justify-end gap-2.5 pt-3.5 border-t border-white/10 mt-1 flex-wrap">
+        <div className="flex items-center justify-end gap-2.5 pt-3.5 border-t border-neutral-700 dark:border-white/10 mt-1 flex-wrap">
           <button
             type="button"
             onClick={onClose}
             disabled={isPending}
-            className="px-4 py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:text-neutral-50 hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+            className="px-4 py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:text-neutral-50 hover:bg-surface dark:hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
           >
             <X size={14} />
             {t("cancel")}
@@ -401,7 +427,7 @@ export function RewardFormModal({
           <button
             type="submit"
             disabled={isPending || !title.trim()}
-            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-colors cursor-pointer disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
           >
             {isPending ? (
               <>

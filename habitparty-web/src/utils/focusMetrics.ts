@@ -5,7 +5,7 @@ import type {
   FocusRecord,
   WeeklyFocusDayData,
 } from "@/types/focus";
-import { getShortWeekDays, getWeekDateRange, parseServerDate } from "./date";
+import { getShortWeekDays, getWeekDateRange, parseLocalDate } from "./date";
 import { calculateRecordReward } from "./focusRewards";
 
 export { calculateRecordReward };
@@ -19,13 +19,13 @@ export interface FocusMetricsCalculationResult {
 }
 
 /**
- * Converte um Date ou string ISO para chave YYYY-MM-DD no fuso horário local.
+ * Converte um Date ou string ISO local para chave YYYY-MM-DD no fuso horário local.
  */
 export function toLocalDateKey(dateInput: Date | string): string {
   const d =
     typeof dateInput === "string"
       ? dateInput.includes("T")
-        ? parseServerDate(dateInput)
+        ? parseLocalDate(dateInput)
         : new Date(`${dateInput}T12:00:00`)
       : dateInput;
   if (!d || Number.isNaN(d.getTime())) return "";
@@ -53,7 +53,7 @@ export function calculateActivityDurationMap(
   for (const rec of records) {
     if (!rec.focusActivityId || !rec.endTime) continue;
 
-    const recDate = parseServerDate(rec.endTime);
+    const recDate = parseLocalDate(rec.endTime);
     if (!recDate) continue;
     const recDateStr = toLocalDateKey(recDate);
 

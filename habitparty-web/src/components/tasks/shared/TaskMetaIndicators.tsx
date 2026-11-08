@@ -29,7 +29,7 @@ export function TaskChecklistBadge({
         isCompact ? "text-label-s leading-none" : "text-tiny",
         isChecklistAllDone
           ? "text-success-500 bg-success-500/12 border-success-500/35 font-semibold"
-          : "text-neutral-200 bg-white/5 border-white/12",
+          : "text-neutral-200 bg-surface border-neutral-700 dark:bg-white/5 dark:border-white/12",
       )}
       title={t("checklistTitle", {
         completed: checklistCompleted,
@@ -46,16 +46,16 @@ export function TaskChecklistBadge({
       <span
         aria-hidden="true"
         className={cn(
-          "rounded-full bg-white/10 overflow-hidden shrink-0",
+          "rounded-full bg-neutral-700/40 dark:bg-white/10 overflow-hidden shrink-0",
           isCompact ? "w-5 h-1" : "w-7 h-1",
         )}
       >
         <span
           className={cn(
-            "block h-full rounded-full transition-[width] duration-300",
+            "block h-full w-full origin-left rounded-full transition-transform duration-300",
             isChecklistAllDone ? "bg-success-500" : "bg-gold",
           )}
-          style={{ width: `${progressPercent}%` }}
+          style={{ transform: `scaleX(${progressPercent / 100})` }}
         />
       </span>
     </span>
@@ -132,9 +132,10 @@ export function TaskPriorityBadge({
     <span
       title={t("badges.priorityTitle", { label: priorityLabel })}
       className={cn(
-        "flex items-center justify-center transition-all select-none shrink-0 border",
+        "flex items-center justify-center transition-colors select-none shrink-0 border",
         sizeVariant === "card" ? "p-0.5 rounded" : "p-1 rounded-md",
-        meta?.badgeColor || "text-neutral-400 bg-white/5 border-white/10",
+        meta?.badgeColor ||
+          "text-neutral-400 bg-surface border-neutral-700 dark:bg-white/5 dark:border-white/10",
       )}
     >
       <Flag size={isCompact ? 9 : 11} />

@@ -23,10 +23,11 @@ export function CompactModeSettings({
   );
 
   const options = COMPACT_OPTIONS.map((opt) => ({
-    ...opt,
+    value: opt.value,
+    icon: opt.icon,
     title: opt.value ? t("compact") : t("comfortable"),
     description: opt.value ? t("compactDesc") : t("comfortableDesc"),
-    badge: opt.badge ? t("defaultBadge") : undefined,
+    badge: opt.hasDefaultBadge ? t("defaultBadge") : undefined,
   }));
 
   return (

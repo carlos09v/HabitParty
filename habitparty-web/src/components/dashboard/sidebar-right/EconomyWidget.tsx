@@ -42,7 +42,7 @@ export function EconomyWidget({
 
         <Link
           href="/history"
-          className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-gold/15 border border-gold/30 hover:bg-gold/25 hover:border-gold/50 transition-all cursor-pointer group shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50"
+          className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 hover:border-amber-500/50 dark:bg-gold/15 dark:border-gold/30 dark:hover:bg-gold/25 dark:hover:border-gold/50 transition-colors cursor-pointer group shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50"
           title={
             isGamified ? t("walletTitleGamified") : t("walletTitleProductivity")
           }
@@ -56,7 +56,7 @@ export function EconomyWidget({
               withGlow
               className="group-hover:scale-110 transition-transform"
             />
-            <span className="text-body-s font-bold text-gold">
+            <span className="text-body-s font-bold text-amber-700 dark:text-gold">
               {formatCoins(currentBalance, { locale })}
             </span>
           </div>

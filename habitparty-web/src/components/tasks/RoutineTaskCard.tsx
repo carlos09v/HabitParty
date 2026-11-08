@@ -123,7 +123,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
         }
       }}
       className={cn(
-        "group/card flex flex-col transition-[background-color,border-color,opacity,box-shadow,transform] duration-150 select-none touch-none cursor-pointer",
+        "group/card flex flex-col transition-[background-color,border-color,opacity,transform] duration-150 select-none touch-none cursor-pointer",
         isCompact
           ? "gap-2 p-2.5 rounded-lg border border-l-4"
           : "gap-2.5 p-3 rounded-xl border border-l-4",
@@ -134,7 +134,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
             ? "hover:border-y-magenta/45 hover:border-r-magenta/45"
             : isTodo && dueDateInfo.isOverdue && !isDone
               ? "hover:bg-danger-500/[0.06] hover:border-y-danger-500/60 hover:border-r-danger-500/60"
-              : "hover:border-y-gold/45 hover:border-r-gold/45",
+              : "hover:border-y-primary/40 hover:border-r-primary/40 dark:hover:border-y-gold/45 dark:hover:border-r-gold/45",
         borderClass,
         isTodo &&
           dueDateInfo.isOverdue &&
@@ -142,7 +142,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
           !isHardcoreOverdue &&
           "border-y-danger-500/40 border-r-danger-500/40 hover:border-y-danger-500/60 hover:border-r-danger-500/60 bg-danger-500/[0.04]",
         isHardcoreOverdue &&
-          "border-y-danger-500/70 border-r-danger-500/70 hover:border-y-danger-500/80 hover:border-r-danger-500/80 shadow-[0_0_12px_rgba(239,68,68,0.28)]",
+          "border-y-danger-500/70 border-r-danger-500/70 hover:border-y-danger-500/80 hover:border-r-danger-500/80 shadow-sm dark:shadow-[0_0_12px_rgba(239,68,68,0.28)]",
         isDone && "dark:opacity-65 bg-card/85 dark:bg-card hover:translate-y-0",
         isDragging &&
           "!transition-none opacity-30 border-dashed border-y-primary-light border-r-primary-light scale-95",
@@ -183,7 +183,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
           {task.description && (
             <TaskDescriptionBadge
               isCompact={isCompact}
-              className="hover:text-gold transition-colors p-0.5"
+              className="hover:text-primary dark:hover:text-gold transition-colors p-0.5"
             />
           )}
         </div>
@@ -207,7 +207,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
             isCompact ? "text-xs" : "text-sm",
             isDone
               ? "line-through text-neutral-400 font-medium"
-              : "group-hover/card:text-gold",
+              : "group-hover/card:text-primary dark:group-hover/card:text-gold",
           )}
         >
           {task.title}
@@ -217,7 +217,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
       {/* 3. BASE: Frequência/Prazo/Saldo + Ofensiva (Streak) / Indicador de Esforço */}
       <div
         className={cn(
-          "flex items-center justify-between gap-2 text-neutral-400 border-t border-white/8",
+          "flex items-center justify-between gap-2 text-neutral-400 border-t border-neutral-700/60 dark:border-white/8",
           isCompact ? "pt-1.5 text-label-s" : "pt-2 text-tiny",
         )}
       >

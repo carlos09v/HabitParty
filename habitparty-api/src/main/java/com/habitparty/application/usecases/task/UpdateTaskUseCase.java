@@ -1,8 +1,11 @@
 package com.habitparty.application.usecases.task;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,14 +27,25 @@ public class UpdateTaskUseCase {
   private final TaskRepository port;
   private final UserRepository userPort;
   private final EmailDispatchLogRepository emailLogPort;
+  private final Clock clock;
+
+  @Autowired
+  public UpdateTaskUseCase(
+      TaskRepository port,
+      UserRepository userPort,
+      EmailDispatchLogRepository emailLogPort,
+      Clock clock) {
+    this.port = port;
+    this.userPort = userPort;
+    this.emailLogPort = emailLogPort;
+    this.clock = clock != null ? clock : Clock.systemDefaultZone();
+  }
 
   public UpdateTaskUseCase(
       TaskRepository port,
       UserRepository userPort,
       EmailDispatchLogRepository emailLogPort) {
-    this.port = port;
-    this.userPort = userPort;
-    this.emailLogPort = emailLogPort;
+    this(port, userPort, emailLogPort, Clock.systemDefaultZone());
   }
 
   public Task execute(UUID taskId, UUID userIdLogado, UpdateTaskCommand command) {
@@ -39,14 +53,16 @@ public class UpdateTaskUseCase {
         .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada."));
     task.validateOwnership(userIdLogado);
 
+    LocalDate today = LocalDate.now(clock);
+
     // Validação específica para Todo no modo Hardcore antes da atualização
     if (task instanceof Todo t) {
       if (command.isHardcoreModeEnabled()) {
-        java.time.LocalDate effectiveDueDate = command.dueDate() != null ? command.dueDate() : t.getDueDate().orElse(null);
+        LocalDate effectiveDueDate = command.dueDate() != null ? command.dueDate() : t.getDueDate().orElse(null);
         if (effectiveDueDate == null) {
           throw new DomainValidationException("Afazeres no modo Hardcore exigem uma data de vencimento.");
         }
-        if (!t.isHardcoreModeEnabled() && effectiveDueDate.isBefore(java.time.LocalDate.now())) {
+        if (!t.isHardcoreModeEnabled() && effectiveDueDate.isBefore(today)) {
           throw new DomainValidationException("Não é permitido ativar o modo Hardcore com data no passado.");
         }
       }
@@ -81,7 +97,7 @@ public class UpdateTaskUseCase {
           long activeReminders = port.countActiveEmailRemindersByUserId(userIdLogado);
           com.habitparty.core.domain.entities.task.EmailReminderQuotas.validateActiveRemindersQuota(isPremium, activeReminders);
 
-          LocalDateTime startOfMonth = java.time.LocalDate.now().withDayOfMonth(1).atStartOfDay();
+          LocalDateTime startOfMonth = today.withDayOfMonth(1).atStartOfDay();
           long sentThisMonth = emailLogPort.countByUserIdAndEmailTypeAndStatusAndSentAtAfter(
               userIdLogado,
               EmailType.TASK_REMINDER,
@@ -92,9 +108,9 @@ public class UpdateTaskUseCase {
         }
       }
 
-      java.time.LocalDate effectiveDueDate = command.dueDate() != null
+      LocalDate effectiveDueDate = command.dueDate() != null
           ? command.dueDate()
-          : (command.dueTime() != null ? java.time.LocalDate.now() : null);
+          : (command.dueTime() != null ? today : null);
 
       LocalDateTime newReminderAt = Todo.calculateReminderTime(
           effectiveDueDate, command.reminderType(), command.customReminderAt()

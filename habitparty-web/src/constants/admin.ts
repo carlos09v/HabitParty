@@ -74,19 +74,21 @@ export const ADMIN_STORAGE_BREAKDOWN_CONFIG = [
     key: "checklists",
     label: "Itens de Checklist",
     icon: CheckSquare,
-    color: "text-success-500 bg-success-500/10 border-success-500/30",
+    color:
+      "text-emerald-700 dark:text-success-500 bg-success-500/10 border-success-500/30",
   },
   {
     key: "workspaces",
     label: "Ambientes & Quadros",
     icon: Layers,
-    color: "text-primary-light bg-primary/20 border-primary/30",
+    color:
+      "text-primary dark:text-primary-light bg-primary/15 dark:bg-primary/20 border-primary/30",
   },
   {
     key: "history",
     label: "Histórico de Economia (XP & Ouro)",
     icon: History,
-    color: "text-gold bg-gold/10 border-gold/30",
+    color: "text-amber-700 dark:text-gold bg-gold/10 border-gold/30",
   },
   {
     key: "inventory",
@@ -104,6 +106,7 @@ export const ADMIN_STORAGE_BREAKDOWN_CONFIG = [
     key: "userRow",
     label: "Conta, Estatísticas & Assinatura",
     icon: UserIcon,
-    color: "text-neutral-300 bg-surface border-white/10",
+    color:
+      "text-neutral-300 bg-surface border-neutral-700 dark:border-white/10",
   },
 ] as const;

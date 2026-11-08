@@ -1,10 +1,12 @@
 package com.habitparty.adapters.in.web.dtos.response;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.habitparty.core.domain.entities.InventoryItem;
+import com.habitparty.core.domain.entities.reward.MysteryBoxLootItem;
 import com.habitparty.core.domain.enums.InventoryItemStatus;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
@@ -21,7 +23,8 @@ public record InventoryItemResponseDTO(
     InventoryItemStatus status,
     int orderIndex,
     Integer remainingMinutes,
-    Integer remainingSeconds
+    Integer remainingSeconds,
+    List<MysteryBoxLootItem> lootItems
 ) {
     public static InventoryItemResponseDTO fromDomain(InventoryItem domain) {
     return new InventoryItemResponseDTO(
@@ -35,7 +38,8 @@ public record InventoryItemResponseDTO(
         domain.getStatus(),
         domain.getOrderIndex(),
         domain.getRemainingMinutes().orElse(null),
-        domain.getRemainingSeconds().orElse(null)
+        domain.getRemainingSeconds().orElse(null),
+        domain.getLootItemsSnapshot()
     );
 }
 

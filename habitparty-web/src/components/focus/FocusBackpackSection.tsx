@@ -1,4 +1,4 @@
-import { ArrowUpRight, Backpack, Infinity as InfinityIcon } from "lucide-react";
+import { ArrowUpRight, Backpack } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
@@ -8,6 +8,8 @@ import { FocusCard } from "./FocusCard";
 interface FocusBackpackSectionProps {
   items: InventoryItemResponseDTO[];
   activeTargetId?: string;
+  selectedItemId?: string | null;
+  onSelectItem?: (item: InventoryItemResponseDTO) => void;
   isTimerActive?: boolean;
   isTimerRunning?: boolean;
   onToggleTimer?: () => void;
@@ -20,6 +22,8 @@ interface FocusBackpackSectionProps {
 export function FocusBackpackSection({
   items,
   activeTargetId,
+  selectedItemId,
+  onSelectItem,
   isTimerActive = false,
   isTimerRunning = false,
   onToggleTimer,
@@ -48,11 +52,10 @@ export function FocusBackpackSection({
           </h3>
 
           <div
-            className="flex items-center gap-1 px-2 py-0.5 rounded-lg border border-primary/30 bg-surface/60 text-neutral-300 text-xs font-medium"
+            className="flex items-center gap-1 px-2 py-0.5 rounded-lg border border-primary/30 bg-surface/60 text-neutral-300 text-xs font-semibold tabular-nums"
             title={t("counterTitle")}
           >
-            <span>{items.length} /</span>
-            <InfinityIcon size={13} className="text-primary-light" />
+            <span>{items.length}</span>
           </div>
         </div>
 
@@ -91,6 +94,10 @@ export function FocusBackpackSection({
               key={item.inventoryItemId}
               variant="backpack"
               item={item}
+              isSelected={Boolean(
+                selectedItemId && selectedItemId === item.inventoryItemId,
+              )}
+              onSelect={onSelectItem}
               isActiveTarget={Boolean(
                 isTimerActive && activeTargetId === item.inventoryItemId,
               )}

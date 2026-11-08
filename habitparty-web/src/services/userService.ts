@@ -12,9 +12,7 @@ export async function getCurrentUser(): Promise<UserResponseDTO | null> {
   cacheLife("private30");
   cacheTag("user");
 
-  const { data: user, error } = await serverApi.GET("/users/me", {
-    next: { tags: ["user"] },
-  });
+  const { data: user, error } = await serverApi.GET("/users/me");
 
   if (error || !user) {
     return null;

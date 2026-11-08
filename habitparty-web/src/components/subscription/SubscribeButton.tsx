@@ -26,9 +26,9 @@ export function SubscribeButton({
         type="button"
         onClick={() => setIsOpen(true)}
         className={cn(
-          "inline-flex items-center justify-center gap-2 font-bold rounded-xl transition-all cursor-pointer active:scale-95",
+          "inline-flex items-center justify-center gap-2 font-bold rounded-xl transition-[transform,background-color,border-color,color] cursor-pointer active:scale-95",
           variant === "primary" &&
-            "bg-gold hover:bg-gold-hover text-neutral-950 px-4 py-2 text-sm shadow-glow-gold hover:shadow-[0_0_25px_rgba(237,229,57,0.4)]",
+            "bg-gold hover:bg-gold-hover text-neutral-950 px-4 py-2 text-sm shadow-glow-gold",
           variant === "outline" &&
             "border border-gold/40 text-gold hover:bg-gold/10 px-3 py-1.5 text-xs shadow-xs",
           variant === "compact" &&
@@ -43,7 +43,9 @@ export function SubscribeButton({
         <span>{children || t("defaultLabel")}</span>
       </button>
 
-      <UpgradePremiumModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
+      {isOpen && (
+        <UpgradePremiumModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
+      )}
     </>
   );
 }

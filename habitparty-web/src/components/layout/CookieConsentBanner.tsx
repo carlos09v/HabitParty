@@ -43,26 +43,26 @@ export function CookieConsentBanner() {
       aria-label={t("ariaLabel")}
       className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 pointer-events-auto animate-in fade-in slide-in-from-bottom-5 duration-300"
     >
-      <div className="relative p-4 sm:p-5 rounded-2xl bg-surface/95 border border-primary/40 shadow-2xl backdrop-blur-md flex flex-col gap-3.5 text-neutral-100">
+      <div className="relative p-4 sm:p-5 rounded-2xl bg-card dark:bg-surface border border-neutral-700 dark:border-primary/40 shadow-card-active dark:shadow-2xl flex flex-col gap-3.5 text-neutral-100">
         <button
           type="button"
           onClick={handleAccept}
-          className="absolute top-3.5 right-3.5 text-neutral-400 hover:text-neutral-200 transition-colors p-1 rounded-md hover:bg-white/5 cursor-pointer"
+          className="absolute top-3.5 right-3.5 text-neutral-400 hover:text-neutral-200 transition-colors p-1 rounded-md hover:bg-surface-hover dark:hover:bg-white/5 cursor-pointer"
           aria-label={t("closeAriaLabel")}
         >
           <X size={16} />
         </button>
 
         <div className="flex items-start gap-3.5 pr-6">
-          <div className="p-2.5 rounded-xl bg-gold/15 text-gold shrink-0 border border-gold/30 shadow-glow-gold-xs">
-            <Cookie size={22} className="text-gold" />
+          <div className="p-2.5 rounded-xl bg-amber-500/15 dark:bg-gold/15 text-amber-600 dark:text-gold shrink-0 border border-amber-500/30 dark:border-gold/30 shadow-glow-gold-xs">
+            <Cookie size={22} className="text-amber-600 dark:text-gold" />
           </div>
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1.5">
               <h4 className="text-body-s font-bold text-neutral-50">
                 {t("title")}
               </h4>
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full">
                 <ShieldCheck size={11} />
                 {t("badge")}
               </span>
@@ -73,11 +73,11 @@ export function CookieConsentBanner() {
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-white/10">
+        <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-neutral-700 dark:border-white/10">
           <button
             type="button"
             onClick={handleAccept}
-            className="px-4 py-2 rounded-lg bg-gold hover:bg-gold-hover text-on-gold font-bold text-xs transition-all focus:outline-none focus:ring-2 focus:ring-gold/50 shadow-sm cursor-pointer hover:shadow-glow-gold-xs"
+            className="px-4 py-2 rounded-lg bg-gold hover:bg-gold-hover text-on-gold font-bold text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 shadow-sm cursor-pointer"
           >
             {t("acceptButton")}
           </button>

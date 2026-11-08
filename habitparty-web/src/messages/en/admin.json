@@ -129,6 +129,12 @@
       "verified": "Verified Email",
       "unverified": "Unverified"
     },
+    "accountInfo": {
+      "createdAtLabel": "Account created on",
+      "premiumExpiresLabel": "Premium Expiration",
+      "lifetimeAccess": "Lifetime / No expiration",
+      "noActiveSubscription": "No active subscription"
+    },
     "closeAriaLabel": "Close modal",
     "closeButton": "Close",
     "storage": {

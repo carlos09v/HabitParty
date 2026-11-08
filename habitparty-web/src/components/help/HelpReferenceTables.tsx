@@ -18,6 +18,7 @@ interface TableConfig {
   icon: ReactNode;
   highlightColumnIndex: number;
   highlightColorClass: string;
+  secondaryBoldColumnIndex?: number;
 }
 
 export function HelpReferenceTables({
@@ -31,38 +32,55 @@ export function HelpReferenceTables({
     {
       id: "difficulties",
       entry: helpTables.difficulties,
-      icon: <Coins className="text-gold" size={18} />,
+      icon: <Coins className="text-amber-600 dark:text-gold" size={18} />,
       highlightColumnIndex: 2,
-      highlightColorClass: "text-gold",
+      highlightColorClass: "text-amber-700 dark:text-gold",
     },
     {
       id: "habitDecay",
       entry: helpTables.habitDecay,
       icon: <Flame className="text-warning-500" size={18} />,
       highlightColumnIndex: 2,
-      highlightColorClass: "text-gold",
+      highlightColorClass: "text-amber-700 dark:text-gold",
     },
     {
       id: "focusRewards",
       entry: helpTables.focusRewards,
-      icon: <Timer className="text-primary-light" size={18} />,
+      icon: (
+        <Timer className="text-primary dark:text-primary-light" size={18} />
+      ),
       highlightColumnIndex: 2,
-      highlightColorClass: "text-gold",
+      highlightColorClass: "text-amber-700 dark:text-gold",
     },
     {
       id: "mysteryBoxes",
       entry: helpTables.mysteryBoxes,
       icon: <Sparkles className="text-magenta" size={18} />,
       highlightColumnIndex: 1,
-      highlightColorClass: "text-gold",
+      highlightColorClass: "text-amber-700 dark:text-gold",
     },
     {
       id: "userLevels",
       entry: helpTables.userLevels,
-      icon: <Trophy className="text-gold" size={18} />,
-      highlightColumnIndex: 1,
+      icon: <Trophy className="text-amber-600 dark:text-gold" size={18} />,
+      highlightColumnIndex: 2,
       highlightColorClass: "text-magenta",
+      secondaryBoldColumnIndex: 1,
     },
+    ...(helpTables.achievementRarities
+      ? [
+          {
+            id: "achievementRarities",
+            entry: helpTables.achievementRarities,
+            icon: (
+              <Trophy className="text-amber-600 dark:text-gold" size={18} />
+            ),
+            highlightColumnIndex: 1,
+            highlightColorClass: "text-amber-700 dark:text-gold",
+            secondaryBoldColumnIndex: 0,
+          },
+        ]
+      : []),
   ];
 
   const query = searchQuery.trim().toLowerCase();
@@ -114,7 +132,7 @@ export function HelpReferenceTables({
         <h2 className="text-body-m sm:text-subtitle-s font-bold text-neutral-100">
           {t("sectionTitle")}
         </h2>
-        <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-neutral-300 border border-white/10">
+        <span className="text-xs px-2 py-0.5 rounded-full bg-surface dark:bg-white/10 text-neutral-300 border border-neutral-700 dark:border-white/10">
           {filteredTables.length}{" "}
           {filteredTables.length === 1 ? t("tableSingular") : t("tablePlural")}
         </span>
@@ -127,6 +145,7 @@ export function HelpReferenceTables({
           icon={table.icon}
           highlightColumnIndex={table.highlightColumnIndex}
           highlightColorClass={table.highlightColorClass}
+          secondaryBoldColumnIndex={table.secondaryBoldColumnIndex}
           isCompact={isCompact}
         />
       ))}

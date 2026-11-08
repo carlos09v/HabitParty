@@ -190,7 +190,7 @@ export function CreateBoardColumnModal({
               value={name}
               onChange={handleNameChange}
               placeholder={t("namePlaceholder")}
-              className="w-full bg-background/50 border border-primary/40 rounded-lg px-3 py-2 text-neutral-50 placeholder:text-neutral-500 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-body-s h-[42px]"
+              className="w-full bg-card border border-neutral-600 hover:border-neutral-500 rounded-lg px-3 py-2 text-neutral-50 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 shadow-xs focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-background/50 dark:border-primary/40 dark:hover:border-primary/60 dark:shadow-none dark:focus:border-gold dark:focus:ring-1 dark:focus:ring-gold transition-colors text-body-s h-[42px]"
               required
               maxLength={MAX_COLUMN_NAME_LENGTH}
               disabled={isPending}
@@ -232,10 +232,10 @@ export function CreateBoardColumnModal({
                         inputRef.current?.focus();
                       }}
                       className={cn(
-                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-all cursor-pointer active:scale-95",
+                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-[transform,color,background-color,border-color] cursor-pointer active:scale-95",
                         isActive
-                          ? "bg-gold/15 border-gold text-gold font-bold shadow-glow-gold-xs"
-                          : "bg-surface/60 border-white/10 text-neutral-300 hover:border-gold/50 hover:text-gold hover:bg-surface",
+                          ? "bg-amber-500/15 border-amber-500 text-amber-800 font-bold dark:bg-gold/15 dark:border-gold dark:text-gold dark:shadow-glow-gold-xs"
+                          : "bg-surface border-neutral-700 text-neutral-200 hover:border-primary/40 hover:text-primary hover:bg-surface-hover dark:bg-surface/60 dark:border-white/10 dark:text-neutral-300 dark:hover:border-gold/50 dark:hover:text-gold dark:hover:bg-surface",
                       )}
                     >
                       <TplIcon size={13} className="shrink-0" />
@@ -249,12 +249,12 @@ export function CreateBoardColumnModal({
         </div>
 
         {/* Rodapé com botões de ação */}
-        <div className="flex items-center justify-end gap-2.5 pt-3.5 border-t border-white/10 mt-1">
+        <div className="flex items-center justify-end gap-2.5 pt-3.5 border-t border-neutral-700 dark:border-white/10 mt-1">
           <button
             type="button"
             onClick={onClose}
             disabled={isPending}
-            className="px-4 py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:text-neutral-50 hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+            className="px-4 py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:text-neutral-50 hover:bg-surface dark:hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
           >
             <X size={14} />
             {t("cancel")}
@@ -262,7 +262,7 @@ export function CreateBoardColumnModal({
           <button
             type="submit"
             disabled={isPending || !name.trim()}
-            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-xs dark:shadow-glow-gold-xs transition-colors cursor-pointer disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
           >
             {isPending ? (
               <>

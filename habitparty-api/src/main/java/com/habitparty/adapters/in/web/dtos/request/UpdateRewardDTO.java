@@ -3,6 +3,7 @@ package com.habitparty.adapters.in.web.dtos.request;
 import java.math.BigDecimal;
 import java.util.List;
 
+import com.habitparty.core.domain.entities.reward.MysteryBoxLootItem;
 import com.habitparty.core.domain.enums.RewardCategory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
@@ -31,7 +32,20 @@ public record UpdateRewardDTO(
 
   RewardPackageLevel packageLevel,
 
-  Integer baseDurationMinutes
+  Integer baseDurationMinutes,
+
+  List<MysteryBoxLootItem> lootItems
 ) {
-  
+  public UpdateRewardDTO(
+      String name,
+      String icon,
+      String description,
+      BigDecimal price,
+      RewardCategory category,
+      List<String> tags,
+      RewardType type,
+      RewardPackageLevel packageLevel,
+      Integer baseDurationMinutes) {
+    this(name, icon, description, price, category, tags, type, packageLevel, baseDurationMinutes, null);
+  }
 }

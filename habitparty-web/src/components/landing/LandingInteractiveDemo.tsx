@@ -113,7 +113,7 @@ export function LandingInteractiveDemo() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Cabeçalho da Seção */}
         <div className="text-center max-w-2xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-gold/10 border border-gold/30 text-gold text-xs font-semibold uppercase tracking-wider mb-3">
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:bg-gold/10 dark:border-gold/30 dark:text-gold text-xs font-semibold uppercase tracking-wider mb-3">
             <Sparkles className="w-3.5 h-3.5" />
             {t("badge")}
           </div>
@@ -124,7 +124,7 @@ export function LandingInteractiveDemo() {
         </div>
 
         {/* Mockup da Janela do App */}
-        <div className="relative rounded-2xl bg-card dark:bg-surface/90 border border-neutral-700 dark:border-white/15 shadow-xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-xl overflow-hidden">
+        <div className="relative rounded-2xl bg-card dark:bg-surface/95 border border-neutral-700 dark:border-white/15 shadow-xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.6)] overflow-hidden">
           {/* Top Bar estilo Sistema Operacional / App Window */}
           <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 bg-surface/90 dark:bg-neutral-900/60 border-b border-neutral-700 dark:border-white/10">
             <div className="flex items-center gap-2">
@@ -174,13 +174,10 @@ export function LandingInteractiveDemo() {
           {/* Banner inferior dentro da janela */}
           <div className="px-6 py-3.5 bg-surface/90 dark:bg-neutral-900/70 border-t border-neutral-700 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-neutral-300">
             <div className="flex items-center gap-2">
-              <span className="relative flex h-2.5 w-2.5 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary dark:bg-success-500 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary dark:bg-success-500" />
-              </span>
+              <span className="inline-flex rounded-full h-2.5 w-2.5 bg-primary dark:bg-success-500 ring-4 ring-primary/20 dark:ring-success-500/20 shrink-0" />
               <span>{t("footerHint")}</span>
             </div>
-            <span className="text-gold font-semibold">
+            <span className="text-amber-700 dark:text-gold font-semibold">
               {t("footerHighlight")}
             </span>
           </div>

@@ -12,4 +12,5 @@ export * from "./focusMetrics";
 export * from "./focusRewards";
 export * from "./historyUtils";
 export * from "./levels";
+export * from "./showcaseUtils";
 export * from "./taskMapper";

@@ -9,6 +9,7 @@ import { MysteryBoxTierPopover } from "@/components/reward/MysteryBoxTierPopover
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
+import type { MysteryBoxLootItem } from "@/types/reward";
 import { cn, formatCoins } from "@/utils";
 import { resolveCatalogItemVisuals } from "@/utils/catalogItemVisuals";
 import {
@@ -34,10 +35,12 @@ export interface GamifiedItemCardProps {
   onAction?: () => void;
   secondaryActionLabel?: string;
   onSecondaryAction?: () => void;
+  onDoubleClick?: (e: React.MouseEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
   dragData?: Record<string, unknown>;
   inUse?: boolean;
   isActiveFocusSession?: boolean;
+  lootItems?: MysteryBoxLootItem[];
 }
 
 /**
@@ -61,10 +64,12 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
   onAction,
   secondaryActionLabel,
   onSecondaryAction,
+  onDoubleClick,
   onContextMenu,
   dragData,
   inUse = false,
   isActiveFocusSession,
+  lootItems,
 }: GamifiedItemCardProps) {
   const t = useTranslations("ui.itemCatalog");
   const locale = useLocale() as AppLocale;
@@ -99,18 +104,32 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
     vertical: "top" | "bottom";
   }>({ side: "right", vertical: "top" });
 
-  const handleMouseEnter = (e: React.MouseEvent<HTMLElement>) => {
-    if (isMystery) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const spaceRight = window.innerWidth - rect.right;
-      const spaceBelow = window.innerHeight - rect.top;
+  const handleMysteryEnter = (e: React.MouseEvent<HTMLElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const spaceRight = window.innerWidth - rect.right;
+    const spaceBelow = window.innerHeight - rect.top;
 
-      const side = spaceRight < 310 ? "left" : "right";
-      const vertical = spaceBelow < 380 && rect.bottom > 380 ? "bottom" : "top";
+    const side = spaceRight < 310 ? "left" : "right";
+    const vertical = spaceBelow < 380 && rect.bottom > 380 ? "bottom" : "top";
 
-      setPopoverPlacement({ side, vertical });
-    }
+    setPopoverPlacement({ side, vertical });
     setIsHovered(true);
+  };
+
+  const handleMysteryFocus = (e: React.FocusEvent<HTMLElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const spaceRight = window.innerWidth - rect.right;
+    const spaceBelow = window.innerHeight - rect.top;
+
+    const side = spaceRight < 310 ? "left" : "right";
+    const vertical = spaceBelow < 380 && rect.bottom > 380 ? "bottom" : "top";
+
+    setPopoverPlacement({ side, vertical });
+    setIsHovered(true);
+  };
+
+  const handleMysteryLeave = () => {
+    setIsHovered(false);
   };
 
   const {
@@ -138,15 +157,18 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
       style={style}
       {...attributes}
       {...listeners}
+      onDoubleClick={(e) => {
+        if (isDragging || !onDoubleClick) return;
+        e.stopPropagation();
+        onDoubleClick(e);
+      }}
       onContextMenu={onContextMenu}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={() => setIsHovered(false)}
-      onFocus={(e) =>
-        handleMouseEnter(e as unknown as React.MouseEvent<HTMLElement>)
-      }
-      onBlur={() => setIsHovered(false)}
+      onMouseEnter={isMystery ? handleMysteryEnter : undefined}
+      onMouseLeave={isMystery ? handleMysteryLeave : undefined}
+      onFocus={isMystery ? handleMysteryFocus : undefined}
+      onBlur={isMystery ? handleMysteryLeave : undefined}
       className={cn(
-        "relative flex flex-col justify-between rounded-xl bg-card dark:bg-linear-to-b dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,box-shadow,transform] duration-150 group select-none shadow-xs dark:shadow-sm hover:shadow-card-deep hover:-translate-y-0.5",
+        "relative flex flex-col justify-between rounded-xl bg-card dark:bg-linear-to-b dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,transform] duration-150 group select-none shadow-xs dark:shadow-sm hover:shadow-card-deep hover:-translate-y-0.5",
         isHovered && isMystery && !isDragging
           ? "overflow-visible z-40"
           : "overflow-hidden",
@@ -155,6 +177,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
           : packageGlow ||
               "border-neutral-700 hover:border-amber-500/50 dark:border-white/15 dark:hover:border-gold/50",
         isCompact ? "p-2.5 gap-2" : "p-3.5 gap-2.5",
+        onDoubleClick && "cursor-pointer",
         isDragging && "transition-none! opacity-50 ring-2 ring-gold z-50",
       )}
     >
@@ -175,7 +198,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
         <header className="flex items-start gap-2.5 w-full min-w-0">
           <div
             className={cn(
-              "rounded-xl border flex items-center justify-center transition-all duration-200 shrink-0 group-hover:scale-105",
+              "rounded-xl border flex items-center justify-center transition-[transform,border-color,color,background-color] duration-200 shrink-0 group-hover:scale-105",
               packageIconTheme ||
                 (typeKey === "TimeBased"
                   ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 group-hover:border-emerald-500/40 dark:bg-white/10 dark:border-white/15 dark:text-primary-light dark:group-hover:text-gold dark:group-hover:border-gold/40"
@@ -185,7 +208,9 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
           >
             <RewardIcon
               size={isCompact ? 17 : 20}
-              className={isMystery ? "text-amber-400" : undefined}
+              className={
+                isMystery ? "text-amber-600 dark:text-amber-400" : undefined
+              }
               aria-hidden="true"
             />
           </div>
@@ -194,7 +219,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
             <div className="flex items-center justify-between gap-1.5 w-full min-w-0">
               <h4
                 className={cn(
-                  "font-bold text-neutral-100 truncate group-hover:text-gold transition-colors leading-tight",
+                  "font-bold text-neutral-100 truncate group-hover:text-primary dark:group-hover:text-gold transition-colors leading-tight",
                   isCompact ? "text-xs" : "text-body-s",
                 )}
               >
@@ -203,8 +228,8 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
 
               <div className="flex items-center gap-1 shrink-0">
                 {inUse && (
-                  <span className="inline-flex items-center gap-1 font-bold rounded border border-amber-500/40 bg-amber-500/15 text-amber-300 text-tiny px-1.5 py-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  <span className="inline-flex items-center gap-1 font-bold rounded border border-amber-500/40 bg-amber-500/15 text-amber-800 dark:text-amber-300 text-tiny px-1.5 py-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
                     {t("inFocus")}
                   </span>
                 )}
@@ -277,8 +302,8 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                   "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border font-bold tracking-tight leading-none",
                   isCompact ? "text-tiny" : "text-label-g",
                   remainingSeconds <= 1
-                    ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
-                    : "bg-gold/15 border-gold/40 text-gold shadow-glow-gold-xs",
+                    ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-300"
+                    : "bg-amber-500/15 border-amber-500/40 text-amber-800 dark:bg-gold/15 dark:border-gold/40 dark:text-gold dark:shadow-glow-gold-xs",
                 )}
               >
                 <Clock
@@ -293,14 +318,14 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
             ) : baseDurationMinutes ? (
               <span
                 className={cn(
-                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-md border font-extrabold tracking-tight leading-none bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.12)]",
+                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-md border font-extrabold tracking-tight leading-none bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-300 dark:shadow-[0_0_10px_rgba(16,185,129,0.12)]",
                   isCompact ? "text-tiny" : "text-label-g",
                 )}
                 title={t("durationTitle", { minutes: baseDurationMinutes })}
               >
                 <Clock
                   size={isCompact ? 10 : 12}
-                  className="text-emerald-400 shrink-0"
+                  className="text-emerald-600 dark:text-emerald-400 shrink-0"
                   aria-hidden="true"
                 />
                 <span className="truncate">
@@ -369,6 +394,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
             <button
               type="button"
               onClick={onSecondaryAction}
+              onDoubleClick={(e) => e.stopPropagation()}
               disabled={inUse}
               aria-label={`${secondaryActionLabel} ${title}`}
               title={
@@ -380,10 +406,10 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                     })
               }
               className={cn(
-                "rounded-lg font-semibold transition-all shadow-xs border text-neutral-200",
+                "rounded-lg font-semibold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs border text-neutral-200",
                 inUse
                   ? "bg-white/5 border-white/10 text-neutral-400 cursor-not-allowed opacity-60"
-                  : "border-neutral-600 dark:border-primary/40 bg-surface/80 hover:bg-gold/15 hover:border-gold/60 hover:text-gold active:scale-95 cursor-pointer",
+                  : "border-neutral-600 dark:border-primary/40 bg-surface/80 hover:bg-primary/10 hover:border-primary/40 hover:text-primary dark:hover:bg-gold/15 dark:hover:border-gold/60 dark:hover:text-gold active:scale-95 cursor-pointer",
                 isCompact ? "px-2.5 py-1 text-label-g" : "px-3 py-1.5 text-xs",
               )}
             >
@@ -394,6 +420,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
           <button
             type="button"
             onClick={onAction}
+            onDoubleClick={(e) => e.stopPropagation()}
             disabled={isPrimaryDisabled}
             aria-label={`${actionLabel} ${title}`}
             title={
@@ -414,7 +441,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                         })
             }
             className={cn(
-              "rounded-lg font-semibold dark:font-bold transition-all shadow-xs",
+              "rounded-lg font-semibold dark:font-bold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs",
               typeof price !== "number" &&
                 secondaryActionLabel &&
                 onSecondaryAction &&
@@ -435,6 +462,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
         <MysteryBoxTierPopover
           tier={mysteryTier}
           customPrice={price}
+          customLootItems={lootItems}
           alignClass={cn(
             "max-sm:left-1/2 max-sm:-translate-x-1/2 max-sm:top-full max-sm:mt-2",
             popoverPlacement.vertical === "bottom"

@@ -42,7 +42,6 @@ export async function getHistoryData(
         ...(currentSearch ? { search: currentSearch } : {}),
       },
     },
-    next: { tags: ["transactions"] },
   });
 
   if (error || !data) {

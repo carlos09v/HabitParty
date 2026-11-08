@@ -77,7 +77,7 @@ export function TaskDetailsChecklist({
   const isAllDone = totalCount > 0 && completedCount === totalCount;
 
   return (
-    <div className="flex flex-col gap-2 pt-1.5 border-t border-white/8">
+    <div className="flex flex-col gap-2 pt-1.5 border-t border-neutral-700/60 dark:border-white/8">
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between text-tiny font-bold text-neutral-400 uppercase tracking-wider">
           <span>{t("title")}</span>
@@ -85,7 +85,9 @@ export function TaskDetailsChecklist({
             <span
               className={cn(
                 "font-semibold",
-                isAllDone ? "text-success-500" : "text-gold",
+                isAllDone
+                  ? "text-success-500"
+                  : "text-amber-700 dark:text-gold",
               )}
             >
               {completedCount}/{totalCount}
@@ -96,14 +98,14 @@ export function TaskDetailsChecklist({
         {totalCount > 0 && (
           <div
             aria-hidden="true"
-            className="w-full h-1.5 rounded-full bg-white/8 overflow-hidden"
+            className="w-full h-1.5 rounded-full bg-neutral-700/40 dark:bg-white/8 overflow-hidden"
           >
             <div
               className={cn(
-                "h-full rounded-full transition-[width,background-color] duration-300",
+                "h-full w-full origin-left rounded-full transition-[transform,background-color] duration-300",
                 isAllDone ? "bg-success-500" : "bg-gold",
               )}
-              style={{ width: `${progressPercent}%` }}
+              style={{ transform: `scaleX(${progressPercent / 100})` }}
             />
           </div>
         )}
@@ -114,7 +116,7 @@ export function TaskDetailsChecklist({
           return (
             <div
               key={item.id}
-              className="flex items-center justify-between gap-2 py-1 px-1 rounded-md hover:bg-white/4 group/item transition-colors"
+              className="flex items-center justify-between gap-2 py-1 px-1 rounded-md hover:bg-surface/70 dark:hover:bg-white/4 group/item transition-colors"
             >
               {isEditingThis ? (
                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -128,7 +130,7 @@ export function TaskDetailsChecklist({
                       if (e.key === "Escape") handleCancelEdit();
                     }}
                     onBlur={handleConfirmEdit}
-                    className="flex-1 bg-background/60 border border-gold/60 rounded px-1.5 py-0.5 text-xs text-neutral-50 focus:outline-none focus:border-gold min-w-0"
+                    className="flex-1 bg-card border border-primary/50 rounded px-1.5 py-0.5 text-xs text-neutral-50 focus:outline-none focus:border-primary dark:bg-background/60 dark:border-gold/60 dark:focus:border-gold min-w-0"
                   />
                 </div>
               ) : (
@@ -139,10 +141,10 @@ export function TaskDetailsChecklist({
                 >
                   <span
                     className={cn(
-                      "w-3.5 h-3.5 rounded border flex items-center justify-center transition-all shrink-0",
+                      "w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors shrink-0",
                       item.isCompleted
                         ? "bg-gold border-gold text-on-gold"
-                        : "border-primary/50 bg-primary-dark/40 group-hover/toggle:border-gold",
+                        : "border-neutral-500 bg-card group-hover/toggle:border-primary dark:border-primary/50 dark:bg-primary-dark/40 dark:group-hover/toggle:border-gold",
                     )}
                   >
                     {item.isCompleted && (
@@ -153,7 +155,7 @@ export function TaskDetailsChecklist({
                     className={cn(
                       "text-xs text-neutral-200 truncate transition-colors group-hover/toggle:text-neutral-50",
                       item.isCompleted &&
-                        "line-through text-neutral-500 group-hover/toggle:text-neutral-400",
+                        "line-through text-neutral-400 dark:text-neutral-500 group-hover/toggle:text-neutral-300 dark:group-hover/toggle:text-neutral-400",
                     )}
                   >
                     {item.name}
@@ -169,7 +171,7 @@ export function TaskDetailsChecklist({
                       e.stopPropagation();
                       handleStartEdit(item);
                     }}
-                    className="p-0.5 rounded text-neutral-500 hover:text-gold transition-colors cursor-pointer shrink-0"
+                    className="p-0.5 rounded text-neutral-400 dark:text-neutral-500 hover:text-primary dark:hover:text-gold transition-colors cursor-pointer shrink-0"
                     aria-label={t("editItemAria", { name: item.name ?? "" })}
                     title={t("editItemAria", { name: item.name ?? "" })}
                   >
@@ -205,19 +207,19 @@ export function TaskDetailsChecklist({
                 if (e.key === "Escape") onCancelAddItem();
               }}
               placeholder={t("newItemPlaceholder")}
-              className="flex-1 bg-background/50 border border-primary/40 rounded px-2 py-0.5 text-xs text-neutral-50 placeholder:text-neutral-500 focus:outline-none focus:border-gold"
+              className="flex-1 bg-card border border-neutral-600 rounded px-2 py-0.5 text-xs text-neutral-50 placeholder:text-neutral-400 focus:outline-none focus:border-primary dark:bg-background/50 dark:border-primary/40 dark:placeholder:text-neutral-500 dark:focus:border-gold"
             />
             <button
               type="button"
               onClick={onAddItem}
-              className="px-2 py-0.5 rounded bg-gold text-on-gold font-bold text-tiny hover:brightness-110 cursor-pointer"
+              className="px-2 py-0.5 rounded bg-gold text-on-gold font-bold text-tiny hover:bg-gold-hover transition-colors cursor-pointer"
             >
               {t("okButton")}
             </button>
             <button
               type="button"
               onClick={onCancelAddItem}
-              className="p-1 text-neutral-400 hover:text-neutral-200 cursor-pointer"
+              className="p-1 text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200 cursor-pointer"
             >
               <X size={12} />
             </button>
@@ -226,7 +228,7 @@ export function TaskDetailsChecklist({
           <button
             type="button"
             onClick={onStartAddItem}
-            className="flex items-center gap-1 text-tiny text-neutral-400 hover:text-gold transition-colors font-medium cursor-pointer py-0.5"
+            className="flex items-center gap-1 text-tiny text-neutral-300 dark:text-neutral-400 hover:text-primary dark:hover:text-gold transition-colors font-medium cursor-pointer py-0.5"
           >
             <Plus size={12} />
             <span>{t("addItemButton")}</span>

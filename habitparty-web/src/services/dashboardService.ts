@@ -46,7 +46,6 @@ async function getDashboardTransactions(): Promise<TransactionHistoryDTO[]> {
         size: 100,
       },
     },
-    next: { tags: ["transactions"] },
   });
 
   return data?.content || [];
@@ -54,19 +53,29 @@ async function getDashboardTransactions(): Promise<TransactionHistoryDTO[]> {
 
 /**
  * Busca todos os dados necessários para renderizar a página do Dashboard e sua Sidebar.
- * Paraleliza chamadas independentes logo na primeira onda para reduzir latência (RTT)
- * e inclui tarefas de todas as colunas do workspace (mesmo ocultas no Kanban).
+ * Paraleliza chamadas independentes (incluindo busca especulativa do quadro Kanban pelo cookie)
+ * logo na primeira onda para reduzir latência (RTT).
  */
 export async function getDashboardData(
   requestedWorkspaceId?: string,
 ): Promise<DashboardData | null> {
-  const [workspaces, user, transactions, rawFocusActivities] =
-    await Promise.all([
-      getWorkspaces(),
-      getCurrentUser(),
-      getDashboardTransactions(),
-      getRawFocusActivities(),
-    ]);
+  const [
+    workspaces,
+    user,
+    transactions,
+    rawFocusActivities,
+    locale,
+    speculativeBoardData,
+  ] = await Promise.all([
+    getWorkspaces(),
+    getCurrentUser(),
+    getDashboardTransactions(),
+    getRawFocusActivities(),
+    getRequestLocale(),
+    requestedWorkspaceId
+      ? fetchWorkspaceBoardColumns(requestedWorkspaceId)
+      : Promise.resolve(null),
+  ]);
 
   if (!workspaces || workspaces.length === 0) {
     return null;
@@ -80,16 +89,19 @@ export async function getDashboardData(
       ? requestedWorkspaceId
       : workspaces[0].id || "";
 
-  const locale = await getRequestLocale();
   const focusActivities: FocusActivity[] = mapFocusActivities(
     rawFocusActivities,
     locale,
   );
 
   const [boardData, focusRecords] = await Promise.all([
-    activeWorkspaceId
-      ? fetchWorkspaceBoardColumns(activeWorkspaceId)
-      : Promise.resolve({ columns: [], summaries: [] }),
+    activeWorkspaceId &&
+    activeWorkspaceId === requestedWorkspaceId &&
+    speculativeBoardData
+      ? Promise.resolve(speculativeBoardData)
+      : activeWorkspaceId
+        ? fetchWorkspaceBoardColumns(activeWorkspaceId)
+        : Promise.resolve({ columns: [], summaries: [] }),
     getFocusInitialRecords(focusActivities),
   ]);
 

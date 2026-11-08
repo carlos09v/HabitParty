@@ -3,6 +3,8 @@ package com.habitparty.application.usecases.task;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -73,6 +75,7 @@ public class DailyResetUseCase {
 
     List<Task> changedTasks = new ArrayList<>();
     List<Task> failedHardcoreTasks = new ArrayList<>();
+    List<UUID> cleanNegativeHabitUsers = new ArrayList<>();
 
     for (Task task : batch) {
       boolean changed = false;
@@ -87,6 +90,9 @@ public class DailyResetUseCase {
 
         if (isResetBoundary) {
           if (h.getHabitType() == HabitType.NEGATIVE) {
+            if (h.getNegativeCount() == 0) {
+              cleanNegativeHabitUsers.add(h.getUserId());
+            }
             h.resetCycleCounts();
             changed = true;
           } else if (task.getStatus() == TaskStatus.COMPLETED) {
@@ -123,6 +129,7 @@ public class DailyResetUseCase {
     }
 
     applyHardcorePenalties(failedHardcoreTasks, "Falhou: ");
+    rewardCleanNegativeHabits(cleanNegativeHabitUsers);
 
     // Persiste apenas as tarefas efetivamente alteradas
     if (!changedTasks.isEmpty()) {
@@ -150,6 +157,26 @@ public class DailyResetUseCase {
       return overdueTodos.size();
     });
     return processed != null ? processed : 0;
+  }
+
+  /**
+   * Zera a ofensiva global (currentStreak) dos usuários que passaram o dia anterior
+   * sem concluir nenhuma tarefa.
+   */
+  public int resetInactiveUserStreaks(LocalDate today) {
+    LocalDateTime yesterdayStart = today.minusDays(1)
+        .atStartOfDay(clock.getZone())
+        .withZoneSameInstant(ZoneId.systemDefault())
+        .toLocalDateTime();
+    Integer resetCount = transactionOperations.execute(status -> {
+      List<User> expiredUsers = userPort.findUsersWithExpiredStreak(yesterdayStart);
+      for (User user : expiredUsers) {
+        user.resetStreak();
+        userPort.save(user);
+      }
+      return expiredUsers.size();
+    });
+    return resetCount != null ? resetCount : 0;
   }
 
   /**
@@ -182,5 +209,26 @@ public class DailyResetUseCase {
     }
 
     penalizedUsers.values().forEach(userPort::save);
+  }
+
+  private void rewardCleanNegativeHabits(List<UUID> cleanUserIds) {
+    if (cleanUserIds.isEmpty()) {
+      return;
+    }
+
+    Set<UUID> uniqueIds = Set.copyOf(cleanUserIds);
+    Map<UUID, User> usersById = userPort.findAllByIds(uniqueIds).stream()
+        .collect(Collectors.toMap(User::getId, Function.identity()));
+
+    Map<UUID, User> updatedUsers = new LinkedHashMap<>();
+    for (UUID userId : cleanUserIds) {
+      User user = usersById.get(userId);
+      if (user != null && user.getStats() != null) {
+        user.getStats().recordCleanHabitCycle();
+        updatedUsers.put(user.getId(), user);
+      }
+    }
+
+    updatedUsers.values().forEach(userPort::save);
   }
 }

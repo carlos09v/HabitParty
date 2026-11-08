@@ -12,6 +12,7 @@ import {
 import { useAnchoredPopoverPosition } from "@/hooks/useAnchoredPopoverPosition";
 import { useChecklist } from "@/hooks/useChecklist";
 import { useClickOutside } from "@/hooks/useClickOutside";
+import { useIsClient } from "@/hooks/useIsClient";
 import type { ChecklistItem, Task, TaskPriorityOption } from "@/types/task";
 import type { FormatSyntax, TaskDetailsPopoverProps } from "@/types/task-ui";
 import { getTodayDateString, isTaskHardcoreLocked } from "@/utils/date";
@@ -48,7 +49,7 @@ export function useTaskDetailsPopover({
   const newItemRef = useRef("");
   const checklistRef = useRef<ChecklistItem[]>(task?.checklist || []);
 
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsClient();
   const [completed, setCompleted] = useState(Boolean(task?.completed));
   const [title, setTitle] = useState(task?.title || "");
   const [description, setDescription] = useState(task?.description || "");
@@ -87,7 +88,10 @@ export function useTaskDetailsPopover({
   const [newTagText, setNewTagText] = useState("");
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItemText, setNewItemText] = useState("");
-  const [isMobileScreen, setIsMobileScreen] = useState(false);
+  const [isMobileScreen, setIsMobileScreen] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 640 : false,
+  );
+  const syncedTaskIdRef = useRef<string | undefined>(task?.id);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -106,32 +110,33 @@ export function useTaskDetailsPopover({
     mounted,
   );
 
+  // Sincroniza dados locais e refs apenas quando uma tarefa diferente passa a ser exibida
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Sincroniza dados locais e refs quando o task muda
-  useEffect(() => {
-    if (task) {
-      setCompleted(Boolean(task.completed));
-      setTitle(task.title || "");
-      titleRef.current = task.title || "";
-      setDescription(task.description || "");
-      descRef.current = task.description || "";
-      setDueDate(task.dueDate || "");
-      setDueTime(task.dueTime ? task.dueTime.slice(0, 5) : "");
-      setPriority(task.priority || "NONE");
-      setTags(task.tags || []);
-      const initialChecklist = task.checklist || [];
-      resetChecklist(initialChecklist);
-      checklistRef.current = initialChecklist;
-      setIsAddingTag(false);
-      setNewTagText("");
-      newTagRef.current = "";
-      setIsAddingItem(false);
-      setNewItemText("");
-      newItemRef.current = "";
+    if (!task) {
+      syncedTaskIdRef.current = undefined;
+      return;
     }
+    if (syncedTaskIdRef.current === task.id) return;
+    syncedTaskIdRef.current = task.id;
+
+    setCompleted(Boolean(task.completed));
+    setTitle(task.title || "");
+    titleRef.current = task.title || "";
+    setDescription(task.description || "");
+    descRef.current = task.description || "";
+    setDueDate(task.dueDate || "");
+    setDueTime(task.dueTime ? task.dueTime.slice(0, 5) : "");
+    setPriority(task.priority || "NONE");
+    setTags(task.tags || []);
+    const initialChecklist = task.checklist || [];
+    resetChecklist(initialChecklist);
+    checklistRef.current = initialChecklist;
+    setIsAddingTag(false);
+    setNewTagText("");
+    newTagRef.current = "";
+    setIsAddingItem(false);
+    setNewItemText("");
+    newItemRef.current = "";
   }, [task, resetChecklist]);
 
   useEffect(() => {

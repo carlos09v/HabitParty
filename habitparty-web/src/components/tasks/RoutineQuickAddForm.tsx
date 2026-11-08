@@ -116,12 +116,12 @@ export function RoutineQuickAddForm({
     <div
       ref={containerRef}
       className={cn(
-        "flex flex-col gap-2 p-2.5 rounded-xl border border-gold/70 bg-primary-dark/40 shadow-glow-gold-xs animate-in fade-in zoom-in-95 duration-150 shrink-0",
+        "flex flex-col gap-2 p-2.5 rounded-xl border border-primary/45 bg-card shadow-md dark:border-gold/70 dark:bg-primary-dark/40 dark:shadow-glow-gold-xs animate-in fade-in zoom-in-95 duration-150 shrink-0",
         isCompactMode && "p-2 gap-1.5",
       )}
     >
       {/* Seletor Compacto dos 3 Tipos: A Fazer (padrão), Hábito, Diária */}
-      <div className="flex items-center gap-1 p-0.5 rounded-lg bg-surface/80 border border-white/10 w-full">
+      <div className="flex items-center gap-1 p-0.5 rounded-lg bg-surface border border-neutral-700 dark:bg-surface/80 dark:border-white/10 w-full">
         <button
           type="button"
           onMouseDown={(e) => e.preventDefault()}
@@ -130,11 +130,11 @@ export function RoutineQuickAddForm({
             inputRef.current?.focus();
           }}
           className={cn(
-            "flex-1 flex items-center justify-center gap-1 py-1 px-1 rounded-md font-bold transition-all cursor-pointer",
+            "flex-1 flex items-center justify-center gap-1 py-1 px-1 rounded-md font-bold transition-colors cursor-pointer",
             isColumnCompact ? "text-tiny" : "text-label-g",
             taskType === "TODO"
               ? "bg-gold text-on-gold shadow-xs"
-              : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5",
+              : "text-neutral-300 dark:text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200 hover:bg-card dark:hover:bg-white/5",
           )}
           title={t("todoTitle")}
         >
@@ -152,11 +152,11 @@ export function RoutineQuickAddForm({
             inputRef.current?.focus();
           }}
           className={cn(
-            "flex-1 flex items-center justify-center gap-1 py-1 px-1 rounded-md font-bold transition-all cursor-pointer",
+            "flex-1 flex items-center justify-center gap-1 py-1 px-1 rounded-md font-bold transition-colors cursor-pointer",
             isColumnCompact ? "text-tiny" : "text-label-g",
             taskType === "HABIT"
               ? "bg-gold text-on-gold shadow-xs"
-              : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5",
+              : "text-neutral-300 dark:text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200 hover:bg-card dark:hover:bg-white/5",
           )}
           title={t("habitTitle")}
         >
@@ -172,11 +172,11 @@ export function RoutineQuickAddForm({
             inputRef.current?.focus();
           }}
           className={cn(
-            "flex-1 flex items-center justify-center gap-1 py-1 px-1 rounded-md font-bold transition-all cursor-pointer",
+            "flex-1 flex items-center justify-center gap-1 py-1 px-1 rounded-md font-bold transition-colors cursor-pointer",
             isColumnCompact ? "text-tiny" : "text-label-g",
             taskType === "DAILY"
               ? "bg-gold text-on-gold shadow-xs"
-              : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5",
+              : "text-neutral-300 dark:text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200 hover:bg-card dark:hover:bg-white/5",
           )}
           title={t("dailyTitle")}
         >
@@ -207,7 +207,7 @@ export function RoutineQuickAddForm({
           }
         }}
         disabled={isSubmitting}
-        className="w-full bg-transparent text-neutral-100 placeholder:text-neutral-500 text-xs sm:text-sm font-medium outline-none px-1"
+        className="w-full bg-transparent text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 text-xs sm:text-sm font-medium outline-none px-1"
       />
 
       <QuickAddConfigBar
@@ -232,20 +232,20 @@ export function RoutineQuickAddForm({
       />
 
       {/* Rodapé com Ações */}
-      <div className="flex items-center justify-between pt-1.5 border-t border-white/5 gap-2">
+      <div className="flex items-center justify-between pt-1.5 border-t border-neutral-700/60 dark:border-white/5 gap-2">
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             onClick={handleSubmit}
             disabled={!title.trim() || isSubmitting}
-            className="px-2.5 py-1 rounded-md bg-gold hover:bg-gold-hover text-on-gold font-bold text-xs disabled:opacity-50 cursor-pointer shadow-xs transition-all active:scale-95"
+            className="px-2.5 py-1 rounded-md bg-gold hover:bg-gold-hover text-on-gold font-bold text-xs disabled:bg-neutral-700 disabled:text-neutral-400 disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed shadow-xs transition-[transform,background-color] active:scale-95"
           >
             {isSubmitting ? t("creating") : t("createButton")}
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="px-2 py-1 rounded-md text-neutral-400 hover:text-neutral-200 text-xs cursor-pointer transition-colors"
+            className="px-2 py-1 rounded-md text-neutral-300 dark:text-neutral-400 hover:text-neutral-50 dark:hover:text-neutral-200 text-xs cursor-pointer transition-colors"
           >
             {t("cancelButton")}
           </button>
@@ -291,7 +291,7 @@ export function RoutineQuickAddForm({
             );
           }}
           title={t("moreOptionsTitle")}
-          className="text-neutral-400 hover:text-gold flex items-center gap-1 transition-colors cursor-pointer shrink-0 rounded p-1 hover:bg-white/5"
+          className="text-neutral-300 dark:text-neutral-400 hover:text-primary dark:hover:text-gold flex items-center gap-1 transition-colors cursor-pointer shrink-0 rounded p-1 hover:bg-surface dark:hover:bg-white/5"
         >
           <SlidersHorizontal size={13} />
           <span

@@ -28,10 +28,10 @@ export function LandingNavbar() {
   return (
     <header
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+        "fixed top-0 left-0 right-0 z-50 transition-[background-color,border-color,padding,box-shadow] duration-300",
         isScrolled
-          ? "bg-card/85 dark:bg-background/85 backdrop-blur-md border-b border-neutral-700/80 dark:border-white/10 shadow-xs dark:shadow-lg dark:shadow-black/20 py-3"
-          : "bg-card/80 dark:bg-transparent backdrop-blur-md dark:backdrop-blur-none border-b border-neutral-700/60 dark:border-transparent py-4 md:py-5",
+          ? "bg-card/95 dark:bg-background/95 border-b border-neutral-700/80 dark:border-white/10 shadow-xs dark:shadow-lg dark:shadow-black/20 py-3"
+          : "bg-card/95 dark:bg-transparent border-b border-neutral-700/60 dark:border-transparent py-4 md:py-5",
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
@@ -55,7 +55,7 @@ export function LandingNavbar() {
             <a
               key={link.id}
               href={link.href}
-              className="transition-colors hover:text-gold"
+              className="transition-colors hover:text-primary dark:hover:text-gold"
             >
               {t(`links.${link.id}`)}
             </a>
@@ -65,7 +65,7 @@ export function LandingNavbar() {
         {/* Action Buttons */}
         <div className="hidden md:flex items-center gap-2.5">
           <LanguageToggleBtn variant="icon" />
-          <ThemeToggleBtn variant="icon" className="hidden" />
+          <ThemeToggleBtn variant="icon" />
           <Link
             href="/signIn"
             className="px-4 py-2 text-sm font-medium text-neutral-200 hover:text-neutral-50 transition-colors"
@@ -74,7 +74,7 @@ export function LandingNavbar() {
           </Link>
           <Link
             href="/signUp"
-            className="relative group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-light text-white font-semibold text-sm shadow-sm dark:shadow-[0_0_20px_rgba(124,58,237,0.4)] hover:shadow-glow-gold hover:border-gold/50 transition-all duration-300 hover:scale-[1.02] border border-primary-light/40"
+            className="relative group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-light text-white font-semibold text-sm shadow-sm dark:shadow-[0_0_20px_rgba(124,58,237,0.4)] dark:hover:shadow-glow-gold hover:border-primary dark:hover:border-gold/50 transition-[transform,border-color,box-shadow] duration-300 hover:scale-[1.02] border border-primary-light/40"
           >
             <Sparkles className="w-4 h-4 text-white dark:text-gold animate-pulse" />
             <span>{t("startFree")}</span>
@@ -85,7 +85,7 @@ export function LandingNavbar() {
         {/* Mobile Actions & Menu Button */}
         <div className="flex md:hidden items-center gap-2">
           <LanguageToggleBtn variant="icon" />
-          <ThemeToggleBtn variant="icon" className="hidden" />
+          <ThemeToggleBtn variant="icon" />
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -104,14 +104,14 @@ export function LandingNavbar() {
 
       {/* Mobile Dropdown */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-card/95 dark:bg-surface/95 backdrop-blur-xl border-b border-neutral-700 dark:border-white/10 px-6 py-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 shadow-xl">
+        <div className="md:hidden bg-card dark:bg-surface border-b border-neutral-700 dark:border-white/10 px-6 py-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 shadow-xl">
           <nav className="flex flex-col space-y-3 text-base font-medium text-neutral-200">
             {LANDING_NAV_LINK_CONFIGS.map((link) => (
               <a
                 key={link.id}
                 href={link.href}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="py-1 hover:text-gold transition-colors"
+                className="py-1 hover:text-primary dark:hover:text-gold transition-colors"
               >
                 {t(`links.${link.id}`)}
               </a>

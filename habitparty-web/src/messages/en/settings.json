@@ -32,6 +32,8 @@
     "experienceModeDesc": "Choose your gamification style: clean executive interface with credits and points in Essential Mode, or RPG immersion with gold coins, XP, and mystery boxes in Adventure Mode.",
     "language": "Interface Language",
     "languageDesc": "Choose the display language for all menus, dashboards, and notifications across HabitParty.",
+    "dateFormat": "Date Format",
+    "dateFormatDesc": "Choose how dates are formatted across calendars, task deadlines, focus records, and history.",
     "compact": "Interface Density",
     "compactDesc": "Adjust screen spacing and element density for your preferred workflow.",
     "welcomeCards": "Introductory Screen Cards",
@@ -134,6 +136,22 @@
     "activeLabel": "Active language: ",
     "statusDesc": "English (US) is currently active across your interface."
   },
+  "dateFormatCard": {
+    "ddmmyyyyLabel": "Day / Month / Year",
+    "ddmmyyyyDesc": "Standard international & Brazilian format (DD/MM/YYYY).",
+    "ddmmyyyyExample": "31/12/2026",
+    "mmddyyyyLabel": "Month / Day / Year",
+    "mmddyyyyDesc": "North American standard placing month before day (MM/DD/YYYY).",
+    "mmddyyyyExample": "12/31/2026",
+    "yyyymmddLabel": "Year - Month - Day (ISO)",
+    "yyyymmddDesc": "Technical ISO 8601 international standard (YYYY-MM-DD).",
+    "yyyymmddExample": "2026-12-31",
+    "activeLabel": "Active format: ",
+    "statusDdmmyyyy": "DD/MM/YYYY (Day / Month / Year) applied across the platform.",
+    "statusMmddyyyy": "MM/DD/YYYY (Month / Day / Year) applied across the platform.",
+    "statusYyyymmdd": "YYYY-MM-DD (ISO Standard) applied across the platform.",
+    "toastSuccess": "Date format changed to {format}!"
+  },
   "compactMode": {
     "compact": "Compact Mode",
     "compactDesc": "Smaller cards, calendars, and lists. Optimizes screen space to view more tasks and reward items at once. Recommended for higher productivity.",
@@ -145,6 +163,7 @@
     "statusLabel": "Current status: "
   },
   "avatarFrames": {
+    "title": "Avatar Frame",
     "upgradeToast": "Animated frames are exclusive to Premium members! Upgrade to unlock.",
     "vipBadge": "Cosmic VIP",
     "defaultBadge": "Default",
