@@ -39,6 +39,8 @@ export interface FocusRecord {
   activityIcon?: string;
   inventoryItemId?: string;
   itemName?: string;
+  taskId?: string;
+  taskNameSnapshot?: string;
   notes?: string;
   startTime: string;
   endTime: string;
@@ -47,6 +49,17 @@ export interface FocusRecord {
   durationMinutes: number;
   xpEarned?: number;
   coinsEarned?: number;
+}
+
+export interface FocusableTaskItem {
+  id: string;
+  title: string;
+  type: "daily" | "todo";
+  columnTitle?: string;
+  workspaceName?: string;
+  totalFocusMinutes?: number;
+  focusCyclesCount?: number;
+  completed?: boolean;
 }
 
 export type FocusPeriodTab = "HOJE" | "TOTAL";
@@ -77,13 +90,17 @@ export interface WeeklyFocusDayData {
 }
 
 export interface FocusActiveTarget {
-  type: "activity" | "inventory";
+  type: "activity" | "inventory" | "task";
   id: string;
   name: string;
   icon?: string;
   targetMinutes?: number;
   remainingSeconds?: number;
   packageLevel?: string;
+  /** ID da tarefa vinculada (quando Macro Atividade + Micro Tarefa, ou foco direto na Tarefa) */
+  taskId?: string;
+  /** Título da tarefa vinculada */
+  taskName?: string;
 }
 
 export type FocusPhase = "WORK" | "SHORT_BREAK" | "LONG_BREAK";

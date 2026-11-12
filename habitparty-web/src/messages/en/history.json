@@ -74,14 +74,15 @@
     "headers": {
       "eventItem": "Event / Item",
       "eventType": "Event Type",
-      "difficultyTags": "Difficulty / Tags",
-      "difficultyTagsProductivity": "Effort / Tags",
+      "difficultyTags": "Details / Tags",
+      "difficultyTagsProductivity": "Details / Tags",
       "coins": "Coins",
       "coinsProductivity": "Credits",
       "xp": "XP",
       "xpProductivity": "Points",
       "time": "Time",
-      "actions": "Actions"
+      "actions": "Actions",
+      "selectAllAria": "Select all records on this page"
     },
     "emptyTitle": "No transactions found",
     "emptyDescription": "There are no coin or XP movements for the selected filters.",
@@ -99,6 +100,17 @@
       "deleting": "Deleting...",
       "confirmText": "Delete record",
       "cancelText": "Cancel"
+    },
+    "bulk": {
+      "selectedCount": "{count, plural, one {# record selected} other {# records selected}}",
+      "selectAll": "Select all",
+      "clearSelection": "Clear selection",
+      "deleteSelected": "Delete selected ({count})",
+      "modalTitle": "Delete selected records",
+      "modalDescription": "Remove <bold>{count, plural, one {# record} other {# records}}</bold> from your history? This <bold>does not change</bold> your coin balance or XP, it only deletes the records.",
+      "confirmText": "Delete records",
+      "deleteSuccess": "{count, plural, one {# record removed} other {# records removed}} successfully!",
+      "deleteError": "Error deleting the selected records."
     }
   },
   "row": {
@@ -108,7 +120,9 @@
     "durationLabel": "Duration:",
     "listPriceLabel": "List price:",
     "deleteRecordTitle": "Delete statement record",
-    "deleteRecordAria": "Delete statement record"
+    "deleteRecordAria": "Delete statement record",
+    "columnLabel": "List:",
+    "selectRowAria": "Select record {name}"
   },
   "detailPopover": {
     "dialogAria": "Transaction Details",
@@ -127,7 +141,8 @@
     "recordedAtLabel": "Recorded on:",
     "linkedTagsLabel": "Linked tags:",
     "deleteButton": "Delete",
-    "closeButton": "Close"
+    "closeButton": "Close",
+    "columnLabel": "List:"
   },
   "utils": {
     "unknownDate": "Unknown date",
@@ -175,6 +190,7 @@
     "exportCsvFailed": "Failed to export statement CSV file.",
     "exportCsvUnexpectedError": "Error generating CSV file.",
     "deleteFailed": "Failed to remove transaction record.",
-    "deleteUnexpectedError": "Error communicating with server for deletion."
+    "deleteUnexpectedError": "Error communicating with server for deletion.",
+    "deleteBatchFailed": "Failed to remove the selected records."
   }
 }

@@ -8,7 +8,6 @@ import { Columns3, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useMemo, useRef } from "react";
 import { COLUMN_WIDTH_CLASSES } from "@/constants/routine";
-import { useCompactMode } from "@/hooks/useCompactMode";
 import type { RoutineBoardProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 import { RoutineColumn } from "./RoutineColumn";
@@ -17,6 +16,7 @@ export function RoutineBoard({
   columns,
   visibleColumnIds,
   selectedColumnId,
+  selectedTaskId,
   isCompact: propIsCompact,
   alignment = "left",
   columnWidths = {},
@@ -32,7 +32,7 @@ export function RoutineBoard({
   onQuickCreateTask,
 }: RoutineBoardProps) {
   const t = useTranslations("tasks.board");
-  const { isCompact } = useCompactMode(propIsCompact);
+  const isCompact = propIsCompact ?? false;
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const resolveColumnWidthClass = useCallback(
@@ -142,6 +142,7 @@ export function RoutineBoard({
                   column={column}
                   columnIndex={idx}
                   isSelected={selectedColumnId === column.id}
+                  selectedTaskId={selectedTaskId}
                   isCompact={isCompact}
                   widthPreset={columnWidths[column.id] || "normal"}
                   onAddTaskToColumn={onAddTaskToColumn}

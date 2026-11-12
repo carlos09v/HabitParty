@@ -26,6 +26,8 @@
     "streakStartTitle": "Complete a task today to start!",
     "streakActiveBadge": "Pace kept 🔥",
     "streakStartBadge": "Start your streak 🔥",
+    "streakRemainingHours": "⏳ {hours}h left before day ends",
+    "streakSecuredBadge": "Streak secured today! 🔥",
     "dailyTasksLabel": "Today's Tasks",
     "completedCount": "{completed}/{total} Completed",
     "noTasksTodayBadge": "No goals today",
@@ -87,7 +89,9 @@
     "deleteModalDescPrefix": "Are you sure you want to delete the task",
     "deleteModalDescSuffix": "? This task has subtasks, Hardcore Mode, or an active streak history, and deletion cannot be undone.",
     "deleteModalConfirm": "Delete Task",
-    "deleteModalCancel": "Cancel"
+    "deleteModalCancel": "Cancel",
+    "deleteHistoryLabel": "Also delete this task's records from History",
+    "deleteHistoryHint": "Removes completion, failure, and penalty transactions of this task from your history. Coins and XP already earned are not changed."
   },
   "taskFilters": {
     "ariaLabel": "Task Date Filters",
@@ -233,6 +237,22 @@
     },
     "badges": {
       "checklistTitle": "Subtasks: {completed} of {total} completed",
+      "cardDoubleClickHint": "Click: details • Double-click: edit",
+      "quickEditButtonTitle": "Edit task (or double-click card)",
+      "doubleClickEditOneTimeTip": "Tip: double-click any card to open the full edit modal directly!",
+      "eventBadgeLabel": "Event",
+      "eventBadgeTitle": "Scheduled event with set time",
+      "eventInProgressTitle": "In progress • until {end}",
+      "reminderScheduledTitle": "Scheduled reminder ({when})",
+      "reminderWithEmailTitle": "Scheduled reminder ({when}) • Email enabled",
+      "reminderEmailSentTitle": "Reminder email sent ({when})",
+      "reminderTypes": {
+        "ONE_DAY_EARLY": "1 day before",
+        "TWO_DAYS_EARLY": "2 days before",
+        "THREE_DAYS_EARLY": "3 days before",
+        "ONE_WEEK_EARLY": "1 week before",
+        "CUSTOM": "Custom"
+      },
       "hardcoreOverdueTitle": "Hardcore Mode: Deadline expired! 50% penalty active!",
       "hardcoreOverdueTitleProductivity": "Strict Deadline: Due date expired! 50% penalty active!",
       "hardcoreActiveTitle": "Hardcore Mode Active",
@@ -248,7 +268,10 @@
       "streakTitle": "{count}-{count, plural, one {day} other {day}} streak",
       "rewardXpTitle": "Reward: +{xp} XP",
       "rewardGoldTitle": "Reward: +{gold} Gold",
-      "defaultCategory": "General"
+      "defaultCategory": "General",
+      "focusRunningTitle": "Focus timer running on this task",
+      "focusTimeTitle": "Focused time: {time} ({cycles, plural, one {# cycle} other {# cycles}})",
+      "focusActiveShort": "Focus"
     },
     "actions": {
       "positiveHabitTitle": "Log positive habit (+)",
@@ -261,6 +284,7 @@
       "taskOptionsTitle": "Task options (Edit, Duplicate, Delete)"
     },
     "contextMenu": {
+      "startFocus": "Focus on this task",
       "edit": "Edit",
       "duplicate": "Duplicate",
       "delete": "Delete",

@@ -66,6 +66,7 @@ export function useRoutineColumns(
 
       if (workspaceId) {
         try {
+          // biome-ignore lint/suspicious/noDocumentCookie: Persiste colunas visíveis por workspace no cliente
           document.cookie = `hp_visible_cols_${workspaceId}=${encodeURIComponent(
             JSON.stringify(ids),
           )}; path=/; max-age=31536000; SameSite=Lax`;
@@ -155,6 +156,70 @@ export function useRoutineColumns(
       }),
     );
   }, [initialColumns]);
+
+  // Atualiza métricas de foco e conclusão em tempo real quando sessões finalizam no SidebarFocusWidget
+  useEffect(() => {
+    const handleFocusRecorded = (event: Event) => {
+      const detail = (
+        event as CustomEvent<{
+          taskId?: string;
+          durationMinutes?: number;
+          cycles?: number;
+        }>
+      ).detail;
+      if (!detail?.taskId) return;
+      const mins = detail.durationMinutes ?? 0;
+      const cyc = detail.cycles ?? 0;
+      setColumns((prev) =>
+        prev.map((col) => ({
+          ...col,
+          tasks: col.tasks.map((t) =>
+            t.id === detail.taskId
+              ? {
+                  ...t,
+                  totalFocusMinutes: (t.totalFocusMinutes ?? 0) + mins,
+                  focusCyclesCount: (t.focusCyclesCount ?? 0) + cyc,
+                }
+              : t,
+          ),
+        })),
+      );
+    };
+
+    const handleTaskCompleted = (event: Event) => {
+      const detail = (event as CustomEvent<{ taskId?: string }>).detail;
+      if (!detail?.taskId) return;
+      setColumns((prev) =>
+        prev.map((col) => ({
+          ...col,
+          tasks: col.tasks.map((t) =>
+            t.id === detail.taskId
+              ? { ...t, completed: true, hasClaimedReward: true }
+              : t,
+          ),
+        })),
+      );
+    };
+
+    window.addEventListener(
+      "habitparty:task-focus-recorded",
+      handleFocusRecorded,
+    );
+    window.addEventListener(
+      "habitparty:task-completed-from-focus",
+      handleTaskCompleted,
+    );
+    return () => {
+      window.removeEventListener(
+        "habitparty:task-focus-recorded",
+        handleFocusRecorded,
+      );
+      window.removeEventListener(
+        "habitparty:task-completed-from-focus",
+        handleTaskCompleted,
+      );
+    };
+  }, []);
 
   const maxColumns = maxAllowed;
   const canCreateColumn = columns.length < maxColumns;

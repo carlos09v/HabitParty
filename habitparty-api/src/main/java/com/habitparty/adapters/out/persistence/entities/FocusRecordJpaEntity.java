@@ -37,6 +37,12 @@ public class FocusRecordJpaEntity {
   @Column(name = "inventory_item_id")
   private UUID inventoryItemId;
 
+  @Column(name = "task_id")
+  private UUID taskId;
+
+  @Column(name = "task_name_snapshot", length = 255)
+  private String taskNameSnapshot;
+
   @Column(name = "notes", length = 500)
   private String notes;
 

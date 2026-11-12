@@ -2,9 +2,12 @@ import { cacheLife, cacheTag } from "next/cache";
 import { serverApi } from "@/api/server";
 import { getRequestLocale } from "@/i18n/request";
 import { getRawInventoryItems } from "@/services/inventoryService";
+import { fetchWorkspaceBoardColumns } from "@/services/taskService";
+import { getWorkspaces } from "@/services/workspaceService";
 import type {
   FocusActivity,
   FocusActivityResponseDTO,
+  FocusableTaskItem,
   FocusRecord,
   FocusRecordResponseDTO,
 } from "@/types/focus";
@@ -15,6 +18,7 @@ export interface FocusPageData {
   activities: FocusActivity[];
   backpackItems: InventoryItemResponseDTO[];
   initialRecords: FocusRecord[];
+  focusableTasks: FocusableTaskItem[];
 }
 
 /**
@@ -61,15 +65,27 @@ export async function getFocusActivitiesAndItems(): Promise<{
 }
 
 /**
- * Busca os DTOs brutos de registros recentes de foco usando apenas IDs primitivos ordenados
- * como chave estável do cache privado (`private30`).
+ * Busca os DTOs brutos de registros recentes de foco do usuário (atividades e tarefas)
+ * em uma única chamada cacheada (`private30`).
  */
-async function fetchRawFocusRecordsByActivityIds(
+async function fetchRawUserFocusRecords(
   activityIds: string[],
 ): Promise<FocusRecordResponseDTO[]> {
   "use cache: private";
   cacheLife("private30");
   cacheTag("focus-records");
+
+  const { data: myRecordsPage, error } = await serverApi
+    .GET("/focus-records/me", {
+      params: {
+        query: { page: 0, size: 50 },
+      },
+    })
+    .catch(() => ({ data: null, error: true }));
+
+  if (!error && myRecordsPage?.content) {
+    return myRecordsPage.content;
+  }
 
   if (activityIds.length === 0) {
     return [];
@@ -99,21 +115,17 @@ async function fetchRawFocusRecordsByActivityIds(
 }
 
 /**
- * Carrega os registros recentes de foco das atividades para visualização na sidebar.
+ * Carrega os registros recentes de foco (atividades e tarefas) para visualização na sidebar.
  */
 export async function getFocusInitialRecords(
   activities: FocusActivity[],
 ): Promise<FocusRecord[]> {
-  if (!activities || activities.length === 0) {
-    return [];
-  }
-
-  const sortedActivityIds = activities
+  const sortedActivityIds = (activities || [])
     .map((act) => act.id)
     .filter(Boolean)
     .sort();
 
-  const rawRecords = await fetchRawFocusRecordsByActivityIds(sortedActivityIds);
+  const rawRecords = await fetchRawUserFocusRecords(sortedActivityIds);
   const initialRecords = mapFocusRecords(rawRecords, activities);
 
   // Ordena do mais recente para o mais antigo
@@ -125,15 +137,67 @@ export async function getFocusInitialRecords(
 }
 
 /**
+ * Carrega as tarefas Diárias e Afazeres pendentes do usuário para vínculo rápido no Palco de Foco.
+ */
+export async function getFocusableTasks(): Promise<FocusableTaskItem[]> {
+  try {
+    const workspaces = await getWorkspaces();
+    if (!workspaces || workspaces.length === 0) return [];
+
+    const boards = await Promise.all(
+      workspaces
+        .slice(0, 4)
+        .filter((ws) => Boolean(ws.id))
+        .map(async (ws) => {
+          const { columns } = await fetchWorkspaceBoardColumns(ws.id as string);
+          return { workspaceName: ws.name || "", columns };
+        }),
+    );
+
+    const items: FocusableTaskItem[] = [];
+    for (const board of boards) {
+      for (const col of board.columns) {
+        for (const task of col.tasks) {
+          const normalizedType = task.type?.toLowerCase();
+          if (
+            (normalizedType === "daily" || normalizedType === "todo") &&
+            !task.completed
+          ) {
+            items.push({
+              id: task.id,
+              title: task.title,
+              type: normalizedType,
+              columnTitle: col.title,
+              workspaceName: board.workspaceName,
+              totalFocusMinutes: task.totalFocusMinutes ?? 0,
+              focusCyclesCount: task.focusCyclesCount ?? 0,
+              completed: Boolean(task.completed),
+            });
+          }
+        }
+      }
+    }
+
+    return items;
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Obtém todos os dados iniciais necessários para a renderização da tela de Foco.
  */
 export async function getFocusPageData(): Promise<FocusPageData> {
-  const { activities, backpackItems } = await getFocusActivitiesAndItems();
+  const [{ activities, backpackItems }, focusableTasks] = await Promise.all([
+    getFocusActivitiesAndItems(),
+    getFocusableTasks(),
+  ]);
   const initialRecords = await getFocusInitialRecords(activities);
 
   return {
     activities,
     backpackItems,
     initialRecords,
+    focusableTasks,
   };
 }

@@ -13,7 +13,6 @@ import { useIdlePreload } from "@/hooks/useIdlePreload";
 import type { Task } from "@/types/task";
 import type { TasksBoardModalsProps } from "@/types/task-ui";
 import { resolveTaskColumnTitle } from "@/utils/taskMapper";
-import { shouldConfirmTaskDeletion } from "@/utils/validators";
 
 const CreateBoardColumnModal = dynamic(
   () =>
@@ -55,9 +54,18 @@ const TaskDetailsPopover = dynamic(
   { ssr: false },
 );
 
+const TaskFocusHistoryModal = dynamic(
+  () =>
+    import("@/components/tasks/TaskFocusHistoryModal").then((mod) => ({
+      default: mod.TaskFocusHistoryModal,
+    })),
+  { ssr: false },
+);
+
 function preloadTasksBoardModalChunks() {
   void import("@/components/tasks/CreateTaskModal");
   void import("@/components/tasks/TaskDetailsPopover");
+  void import("@/components/tasks/TaskFocusHistoryModal");
 }
 
 /**
@@ -108,17 +116,13 @@ export const TasksBoardModals = memo(function TasksBoardModals({
     task: Task;
     columnId: string;
   } | null>(null);
+  const [deleteHistory, setDeleteHistory] = useState(false);
+  const [focusHistoryTask, setFocusHistoryTask] = useState<Task | null>(null);
 
-  const requestDeleteTask = useCallback(
-    (task: Task, columnId: string) => {
-      if (shouldConfirmTaskDeletion(task)) {
-        setTaskToDelete({ task, columnId });
-      } else {
-        handleDeleteTask(task, columnId);
-      }
-    },
-    [handleDeleteTask],
-  );
+  const requestDeleteTask = useCallback((task: Task, columnId: string) => {
+    setDeleteHistory(false);
+    setTaskToDelete({ task, columnId });
+  }, []);
 
   const taskContextMenuItems = useMemo(
     () =>
@@ -144,6 +148,7 @@ export const TasksBoardModals = memo(function TasksBoardModals({
           }
         },
         labels: {
+          startFocus: tMenus("startFocus"),
           edit: tMenus("edit"),
           duplicate: tMenus("duplicate"),
           delete: tMenus("delete"),
@@ -271,7 +276,7 @@ export const TasksBoardModals = memo(function TasksBoardModals({
         />
       )}
 
-      {/* Modal: Excluir Tarefa Relevante (Checklist, Hardcore ou Ofensiva) */}
+      {/* Modal: Excluir Tarefa */}
       {Boolean(taskToDelete) && (
         <ConfirmationModal
           isOpen={Boolean(taskToDelete)}
@@ -285,10 +290,18 @@ export const TasksBoardModals = memo(function TasksBoardModals({
           confirmText={t("deleteTaskModal.confirmText")}
           cancelText={t("deleteTaskModal.cancelText")}
           variant="danger"
+          checkboxLabel={t("deleteTaskModal.deleteHistoryLabel")}
+          checkboxHint={t("deleteTaskModal.deleteHistoryHint")}
+          checkboxChecked={deleteHistory}
+          onCheckboxChange={setDeleteHistory}
           onClose={() => setTaskToDelete(null)}
           onConfirm={() => {
             if (taskToDelete) {
-              handleDeleteTask(taskToDelete.task, taskToDelete.columnId);
+              handleDeleteTask(
+                taskToDelete.task,
+                taskToDelete.columnId,
+                deleteHistory,
+              );
               setTaskToDelete(null);
             }
           }}
@@ -375,6 +388,17 @@ export const TasksBoardModals = memo(function TasksBoardModals({
           }}
           onToggleComplete={handleToggleComplete}
           onHabitChange={handleHabitChange}
+          onOpenFocusHistory={(task) => setFocusHistoryTask(task)}
+        />
+      )}
+
+      {/* Modal Dedicado de Histórico de Foco da Tarefa */}
+      {focusHistoryTask && (
+        <TaskFocusHistoryModal
+          isOpen={Boolean(focusHistoryTask)}
+          onClose={() => setFocusHistoryTask(null)}
+          task={focusHistoryTask}
+          onTaskUpdate={handleTaskDetailsUpdate}
         />
       )}
 

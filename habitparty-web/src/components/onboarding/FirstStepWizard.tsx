@@ -29,7 +29,6 @@ export function FirstStepWizard() {
   // 2. Estado do Estilo de Experiência (Gamificado vs Produtividade) + Calibragem
   const [experienceMode, setExperienceModeState] =
     useState<ExperienceMode>("PRODUCTIVITY");
-  const [isCompact, setIsCompact] = useState(false);
   const uiSoundsEnabled = useSoundPreferencesStore((s) => s.uiSoundsEnabled);
   const setUiSoundsEnabled = useSoundPreferencesStore(
     (s) => s.setUiSoundsEnabled,
@@ -97,16 +96,14 @@ export function FirstStepWizard() {
       // 2. Atualizar estado local do Zustand imediatamente
       useUIStore.setState({
         experienceMode,
-        compactMode: isCompact,
       });
       useUserStore.getState().updateUserPartial({ experienceMode });
 
-      // 3. Salvar preferências de modo de uso, experiência, densidade e workspace ativa no banco e cookies
+      // 3. Salvar preferências de modo de uso, experiência e workspace ativa no banco e cookies
       await setFirstStepPreferencesAction(
         selectedMode,
         result.data.id,
         experienceMode,
-        isCompact,
       );
 
       toast.success(
@@ -166,8 +163,6 @@ export function FirstStepWizard() {
           <ExperienceModeSelector
             experienceMode={experienceMode}
             onSelectExperienceMode={handleSelectExperienceMode}
-            isCompact={isCompact}
-            onToggleCompact={setIsCompact}
             uiSoundsEnabled={uiSoundsEnabled}
             onToggleSounds={setUiSoundsEnabled}
             disabled={isPending}

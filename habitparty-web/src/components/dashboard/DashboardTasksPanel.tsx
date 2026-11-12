@@ -16,7 +16,6 @@ import type { DashboardTasksPanelProps } from "@/types/dashboard";
 import type { Task } from "@/types/task";
 import { cn } from "@/utils";
 import { resolveTaskColumnTitle } from "@/utils/taskMapper";
-import { shouldConfirmTaskDeletion } from "@/utils/validators";
 
 const TaskDetailsPopover = dynamic(
   () =>
@@ -42,9 +41,18 @@ const ConfirmationModal = dynamic(
   { ssr: false },
 );
 
+const TaskFocusHistoryModal = dynamic(
+  () =>
+    import("@/components/tasks/TaskFocusHistoryModal").then((mod) => ({
+      default: mod.TaskFocusHistoryModal,
+    })),
+  { ssr: false },
+);
+
 function preloadDashboardTaskModalChunks() {
   void import("@/components/tasks/CreateTaskModal");
   void import("@/components/tasks/TaskDetailsPopover");
+  void import("@/components/tasks/TaskFocusHistoryModal");
 }
 
 export function DashboardTasksPanel({
@@ -68,6 +76,84 @@ export function DashboardTasksPanel({
 
   const tasksState = externalTasks ?? internalTasks;
   const setTasksState = onTasksChange ?? setInternalTasks;
+
+  // Atualiza métricas de foco e conclusão em tempo real quando sessões finalizam no SidebarFocusWidget
+  useEffect(() => {
+    const handleFocusRecorded = (event: Event) => {
+      const detail = (
+        event as CustomEvent<{
+          taskId?: string;
+          durationMinutes?: number;
+          cycles?: number;
+        }>
+      ).detail;
+      if (!detail?.taskId) return;
+      const mins = detail.durationMinutes ?? 0;
+      const cyc = detail.cycles ?? 0;
+      setTasksState((prev) =>
+        prev.map((t) =>
+          t.id === detail.taskId
+            ? {
+                ...t,
+                totalFocusMinutes: (t.totalFocusMinutes ?? 0) + mins,
+                focusCyclesCount: (t.focusCyclesCount ?? 0) + cyc,
+              }
+            : t,
+        ),
+      );
+      setSelectedTaskDetails((prev) =>
+        prev && prev.task.id === detail.taskId
+          ? {
+              ...prev,
+              task: {
+                ...prev.task,
+                totalFocusMinutes: (prev.task.totalFocusMinutes ?? 0) + mins,
+                focusCyclesCount: (prev.task.focusCyclesCount ?? 0) + cyc,
+              },
+            }
+          : prev,
+      );
+    };
+
+    const handleTaskCompleted = (event: Event) => {
+      const detail = (event as CustomEvent<{ taskId?: string }>).detail;
+      if (!detail?.taskId) return;
+      setTasksState((prev) =>
+        prev.map((t) =>
+          t.id === detail.taskId
+            ? { ...t, completed: true, hasClaimedReward: true }
+            : t,
+        ),
+      );
+      setSelectedTaskDetails((prev) =>
+        prev && prev.task.id === detail.taskId
+          ? {
+              ...prev,
+              task: { ...prev.task, completed: true, hasClaimedReward: true },
+            }
+          : prev,
+      );
+    };
+
+    window.addEventListener(
+      "habitparty:task-focus-recorded",
+      handleFocusRecorded,
+    );
+    window.addEventListener(
+      "habitparty:task-completed-from-focus",
+      handleTaskCompleted,
+    );
+    return () => {
+      window.removeEventListener(
+        "habitparty:task-focus-recorded",
+        handleFocusRecorded,
+      );
+      window.removeEventListener(
+        "habitparty:task-completed-from-focus",
+        handleTaskCompleted,
+      );
+    };
+  }, [setTasksState]);
 
   const defaultColumnId = columns[0]?.id;
 
@@ -149,17 +235,13 @@ export function DashboardTasksPanel({
   });
 
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [deleteHistory, setDeleteHistory] = useState(false);
+  const [focusHistoryTask, setFocusHistoryTask] = useState<Task | null>(null);
 
-  const requestDeleteTask = useCallback(
-    (task: Task) => {
-      if (shouldConfirmTaskDeletion(task)) {
-        setTaskToDelete(task);
-      } else {
-        handleDeleteTask(task);
-      }
-    },
-    [handleDeleteTask],
-  );
+  const requestDeleteTask = useCallback((task: Task) => {
+    setDeleteHistory(false);
+    setTaskToDelete(task);
+  }, []);
 
   const handleOpenContextMenu = useCallback(
     (e: React.MouseEvent, task: Task) => {
@@ -211,6 +293,7 @@ export function DashboardTasksPanel({
         onDuplicate: (task) => handleDuplicateTask(task),
         onDelete: requestDeleteTask,
         labels: {
+          startFocus: tMenu("startFocus"),
           edit: tMenu("edit"),
           duplicate: tMenu("duplicate"),
           delete: tMenu("delete"),
@@ -301,6 +384,20 @@ export function DashboardTasksPanel({
           }}
           onToggleComplete={handleToggleComplete}
           onHabitChange={handleHabitChange}
+          onOpenFocusHistory={(task) => setFocusHistoryTask(task)}
+        />
+      )}
+
+      {/* Modal Dedicado de Histórico de Foco da Tarefa */}
+      {focusHistoryTask && (
+        <TaskFocusHistoryModal
+          isOpen={Boolean(focusHistoryTask)}
+          onClose={() => setFocusHistoryTask(null)}
+          task={focusHistoryTask}
+          onTaskUpdate={(updated) => {
+            handleTaskDetailsUpdate(updated);
+            setFocusHistoryTask(updated);
+          }}
         />
       )}
 
@@ -350,10 +447,14 @@ export function DashboardTasksPanel({
           confirmText={t("deleteModalConfirm")}
           cancelText={t("deleteModalCancel")}
           variant="danger"
+          checkboxLabel={t("deleteHistoryLabel")}
+          checkboxHint={t("deleteHistoryHint")}
+          checkboxChecked={deleteHistory}
+          onCheckboxChange={setDeleteHistory}
           onClose={() => setTaskToDelete(null)}
           onConfirm={async () => {
             if (taskToDelete) {
-              await handleDeleteTask(taskToDelete);
+              await handleDeleteTask(taskToDelete, undefined, deleteHistory);
               setTaskToDelete(null);
             }
           }}

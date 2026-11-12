@@ -2,18 +2,9 @@
 
 import { Camera, Crown, Shield, Sparkles, UploadCloud } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import {
-  type ChangeEvent,
-  type DragEvent,
-  useEffect,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
-import { toast } from "sonner";
-import { updateUserProfilePhotoAction } from "@/actions/userActions";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useProfilePhotoUpload } from "@/hooks/useProfilePhotoUpload";
 import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import type { ProfileHeaderCardProps } from "@/types/settings";
@@ -29,89 +20,24 @@ export function ProfileHeaderCard({
 
   const storeUser = useUserStore((s) => s.user);
   const user = storeUser || initialUser;
-  const updateUserPartial = useUserStore((s) => s.updateUserPartial);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isPending, startTransition] = useTransition();
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [isDraggingOver, setIsDraggingOver] = useState(false);
-
-  useEffect(() => {
-    return () => {
-      if (previewUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
-
-  const processFile = (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      toast.error(t("invalidImageToast"));
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error(t("imageSizeToast"));
-      return;
-    }
-
-    const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl((prev) => {
-      if (prev?.startsWith("blob:")) {
-        URL.revokeObjectURL(prev);
-      }
-      return objectUrl;
-    });
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    startTransition(async () => {
-      const res = await updateUserProfilePhotoAction(formData);
-      if (res.success) {
-        toast.success(t("photoSuccessToast"));
-        updateUserPartial({ profilePhotoUrl: objectUrl });
-      } else {
-        toast.error(res.error || t("photoErrorToast"));
-        URL.revokeObjectURL(objectUrl);
-        setPreviewUrl(null);
-      }
-    });
-  };
-
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    processFile(file);
-    e.target.value = "";
-  };
-
-  const handleDragOver = (e: DragEvent<HTMLElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!isPending) {
-      setIsDraggingOver(true);
-    }
-  };
-
-  const handleDragLeave = (e: DragEvent<HTMLElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingOver(false);
-  };
-
-  const handleDrop = (e: DragEvent<HTMLElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingOver(false);
-
-    if (isPending) return;
-
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      processFile(file);
-    }
-  };
+  const {
+    fileInputRef,
+    isPending,
+    previewUrl,
+    isDraggingOver,
+    handleFileChange,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop,
+  } = useProfilePhotoUpload({
+    messages: {
+      invalidImageToast: t("invalidImageToast"),
+      imageSizeToast: t("imageSizeToast"),
+      photoSuccessToast: t("photoSuccessToast"),
+      photoErrorToast: t("photoErrorToast"),
+    },
+  });
 
   const displayName =
     user?.fullName ||

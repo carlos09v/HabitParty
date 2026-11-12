@@ -1,32 +1,53 @@
 "use client";
 
 import {
+  CalendarClock,
   Calendar as CalendarIcon,
+  Check,
   ChevronLeft,
   ChevronRight,
+  Clock,
+  Crown,
   X,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { toast } from "sonner";
+import { UpgradePremiumModal } from "@/components/subscription/UpgradePremiumModal";
 import { Select } from "@/components/ui/Select";
+import { TimePicker, TimePickerBody } from "@/components/ui/TimePicker";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useFloatingPopover } from "@/hooks/useFloatingPopover";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import { isValidLocale } from "@/i18n/config";
+import { useUserStore } from "@/store/userStore";
 import type { DatePickerProps } from "@/types/ui";
 import { cn } from "@/utils";
 import {
   formatDateParts,
   formatShortDate,
+  formatTimeDisplay,
+  formatTimeHHMM,
   generateCalendarGrid,
   getFullMonths,
   getOffsetDateString,
   getShortWeekDays,
+  minutesToTimeHHMM,
   parseDateParts,
+  parseTimeToMinutes,
 } from "@/utils/date";
 
 const CALENDAR_POPOVER_WIDTH = 288;
 const CALENDAR_POPOVER_ESTIMATED_HEIGHT = 315;
+const CALENDAR_WITH_TIME_ESTIMATED_HEIGHT = 395;
+
+const EVENT_DURATION_PRESETS = [
+  { label: "+30m", minutes: 30 },
+  { label: "+1h", minutes: 60 },
+  { label: "+2h", minutes: 120 },
+  { label: "+3h", minutes: 180 },
+] as const;
 
 /**
  * Seletor de data (DatePicker) universal do ecossistema HabitParty.
@@ -56,6 +77,15 @@ export function DatePicker({
   hint,
   align = "left",
   yearRange,
+  enableTime = false,
+  timeValue,
+  onTimeChange,
+  startTimeValue,
+  onStartTimeChange,
+  endTimeValue,
+  onEndTimeChange,
+  allDayValue = false,
+  onAllDayChange,
 }: DatePickerProps) {
   const t = useTranslations("ui.datePicker");
   const rawLocale = useLocale();
@@ -122,6 +152,60 @@ export function DatePicker({
     setViewMonth(next.month);
   }, [resolveDefaultView]);
 
+  const hasEventValue = Boolean(allDayValue || startTimeValue || endTimeValue);
+  const { timeFormat } = useTimeFormat();
+  const tTime = useTranslations("ui.timePicker");
+  const isPremium = useUserStore((s) =>
+    Boolean(s.user?.isPremium ?? s.is_Premium),
+  );
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+
+  const hourTriggerId = `${pickerId}-hour-trigger`;
+  const eventTriggerId = `${pickerId}-event-trigger`;
+
+  const hourPopover = useFloatingPopover<
+    HTMLDivElement,
+    HTMLButtonElement,
+    HTMLDivElement
+  >({
+    align: "left",
+    estimatedHeight: 300,
+    estimatedWidth: CALENDAR_POPOVER_WIDTH,
+    matchTriggerWidth: true,
+    maxAllowedHeight: 340,
+    offset: 6,
+    zIndex: 160,
+  });
+
+  const eventPopover = useFloatingPopover<
+    HTMLDivElement,
+    HTMLButtonElement,
+    HTMLDivElement
+  >({
+    align: "left",
+    estimatedHeight: 270,
+    estimatedWidth: CALENDAR_POPOVER_WIDTH,
+    matchTriggerWidth: true,
+    maxAllowedHeight: 340,
+    offset: 6,
+    zIndex: 160,
+  });
+
+  const isSubOverlayOpen = hourPopover.isOpen || eventPopover.isOpen;
+
+  useEffect(() => {
+    if (!isSubOverlayOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        hourPopover.close();
+        eventPopover.close();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [isSubOverlayOpen, hourPopover.close, eventPopover.close]);
+
   const {
     containerRef,
     popoverRef,
@@ -133,13 +217,26 @@ export function DatePicker({
     floatingStyle,
   } = useFloatingPopover<HTMLDivElement, HTMLButtonElement, HTMLDivElement>({
     align,
-    estimatedHeight: CALENDAR_POPOVER_ESTIMATED_HEIGHT,
+    estimatedHeight: enableTime
+      ? CALENDAR_WITH_TIME_ESTIMATED_HEIGHT
+      : CALENDAR_POPOVER_ESTIMATED_HEIGHT,
     estimatedWidth: CALENDAR_POPOVER_WIDTH,
     matchTriggerWidth: false,
     offset: 6,
     disabled,
-    onOpen: syncViewToSelection,
+    onOpen: () => {
+      hourPopover.close();
+      eventPopover.close();
+      syncViewToSelection();
+    },
   });
+
+  useEffect(() => {
+    if (!isOpen) {
+      hourPopover.close();
+      eventPopover.close();
+    }
+  }, [isOpen, hourPopover.close, eventPopover.close]);
 
   const updateValue = (nextVal: string) => {
     if (!isControlled) {
@@ -163,17 +260,51 @@ export function DatePicker({
 
   const handleSelectDay = (year: number, month: number, day: number) => {
     updateValue(formatDateParts(year, month, day));
-    close();
+    if (isSubOverlayOpen) {
+      return;
+    }
+    if (!enableTime || (!timeValue && !hasEventValue)) {
+      close();
+    }
   };
 
   const handleClear = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     updateValue("");
+    if (enableTime) {
+      onTimeChange?.("");
+      onStartTimeChange?.("");
+      onEndTimeChange?.("");
+      onAllDayChange?.(false);
+      hourPopover.close();
+      eventPopover.close();
+    }
   };
 
   const handleSetQuickDate = (offsetDays: number) => {
     updateValue(getOffsetDateString(offsetDays));
-    close();
+    if (isSubOverlayOpen) {
+      return;
+    }
+    if (!enableTime || (!timeValue && !hasEventValue)) {
+      close();
+    }
+  };
+
+  const handleSetNow = () => {
+    onTimeChange?.(formatTimeHHMM(new Date()));
+  };
+
+  const handleApplyDurationPreset = (minutesToAdd: number) => {
+    const baseStart =
+      startTimeValue ||
+      `${String((new Date().getHours() + 1) % 24).padStart(2, "0")}:00`;
+    if (!startTimeValue) {
+      onStartTimeChange?.(baseStart);
+    }
+    const startMin = parseTimeToMinutes(baseStart) ?? 0;
+    const endMin = Math.min(1439, startMin + minutesToAdd);
+    onEndTimeChange?.(minutesToTimeHHMM(endMin));
   };
 
   const calendarDays = useMemo(
@@ -219,6 +350,59 @@ export function DatePicker({
     );
   }, [currentValue, today.isoString, today.tomorrowIso, locale, dateFormat, t]);
 
+  const formattedTime = useMemo(
+    () =>
+      timeValue ? formatTimeDisplay(timeValue, { timeFormat, locale }) : null,
+    [timeValue, timeFormat, locale],
+  );
+  const formattedStart = useMemo(
+    () =>
+      startTimeValue
+        ? formatTimeDisplay(startTimeValue, { timeFormat, locale })
+        : null,
+    [startTimeValue, timeFormat, locale],
+  );
+  const formattedEnd = useMemo(
+    () =>
+      endTimeValue
+        ? formatTimeDisplay(endTimeValue, { timeFormat, locale })
+        : null,
+    [endTimeValue, timeFormat, locale],
+  );
+
+  const displayFullText = useMemo(() => {
+    let timeSuffix: string | null = null;
+    if (allDayValue) {
+      timeSuffix = t("allDayBadge");
+    } else if (formattedStart && formattedEnd) {
+      timeSuffix = `${formattedStart}–${formattedEnd}`;
+    } else if (formattedStart) {
+      timeSuffix = formattedStart;
+    } else if (formattedTime) {
+      timeSuffix = formattedEnd
+        ? `${formattedTime}–${formattedEnd}`
+        : formattedTime;
+    }
+
+    if (displayDateText && timeSuffix) {
+      return `${displayDateText}, ${timeSuffix}`;
+    }
+    if (displayDateText) {
+      return displayDateText;
+    }
+    if (timeSuffix) {
+      return timeSuffix;
+    }
+    return null;
+  }, [
+    displayDateText,
+    formattedTime,
+    formattedStart,
+    formattedEnd,
+    allDayValue,
+    t,
+  ]);
+
   const resolvedClearLabel =
     clearLabel ?? (variant === "badge" ? t("noDueDate") : t("clear"));
   const errorId = id && error ? `${id}-error` : undefined;
@@ -236,7 +420,7 @@ export function DatePicker({
             data-select-for={pickerId}
             style={floatingStyle}
             className={cn(
-              "p-3 rounded-xl border border-primary/40 bg-popover shadow-2xl",
+              "p-3 rounded-xl border border-primary/40 bg-popover shadow-2xl relative",
               "w-72 max-w-[calc(100vw-1rem)] animate-in fade-in zoom-in-95 duration-150 select-none",
               coords.placement === "top" ? "origin-bottom" : "origin-top",
             )}
@@ -326,6 +510,469 @@ export function DatePicker({
               ))}
             </div>
 
+            {/* Gatilhos compactos de Horário e Evento (com cálculo inteligente de viewport via useFloatingPopover) */}
+            {enableTime && (
+              <div className="mt-2.5 pt-2 border-t border-white/10 flex flex-col gap-1.5">
+                {/* 1. Gatilho Hora */}
+                <div
+                  ref={hourPopover.containerRef}
+                  id={hourTriggerId}
+                  className="relative"
+                >
+                  <div
+                    className={cn(
+                      "flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-colors",
+                      hourPopover.isOpen
+                        ? "border-gold/50 bg-gold/10"
+                        : "border-white/8 bg-white/[0.02] hover:bg-white/[0.05]",
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (hourPopover.isOpen) {
+                          hourPopover.close();
+                          return;
+                        }
+                        eventPopover.close();
+                        if (!currentValue) updateValue(today.isoString);
+                        if (hasEventValue) {
+                          onStartTimeChange?.("");
+                          onEndTimeChange?.("");
+                          onAllDayChange?.(false);
+                        }
+                        if (!timeValue) {
+                          const now = new Date();
+                          const defaultHour = String(
+                            (now.getHours() + 1) % 24,
+                          ).padStart(2, "0");
+                          onTimeChange?.(`${defaultHour}:00`);
+                        }
+                        hourPopover.open();
+                      }}
+                      className="flex items-center justify-between flex-1 text-left text-[11px] font-semibold text-neutral-200 hover:text-gold transition-colors cursor-pointer min-w-0"
+                    >
+                      <span className="flex items-center gap-1.5 truncate">
+                        <Clock size={12} className="text-gold shrink-0" />
+                        <span>{t("timeLabel")}</span>
+                        {formattedTime && (
+                          <span className="px-1.5 py-0.2 rounded bg-gold/15 text-gold text-[10px] font-bold tabular-nums">
+                            {formattedTime}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-[10px] text-neutral-400 font-normal">
+                        {timeValue ? "" : t("addTimePlaceholder")}
+                      </span>
+                    </button>
+
+                    {timeValue ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onTimeChange?.("");
+                        }}
+                        className="ml-1 p-0.5 rounded text-neutral-400 hover:text-danger-500 hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+                        title={t("removeTime")}
+                      >
+                        <X size={12} />
+                      </button>
+                    ) : (
+                      <ChevronRight
+                        size={13}
+                        className={cn(
+                          "text-neutral-500 shrink-0 ml-1 transition-transform",
+                          hourPopover.isOpen && "rotate-90 text-gold",
+                        )}
+                      />
+                    )}
+                  </div>
+
+                  {/* Sub-popover Flutuante via Portal: Seleção de Hora */}
+                  {hourPopover.isOpen &&
+                    hourPopover.shouldRenderPortal &&
+                    hourPopover.coords &&
+                    createPortal(
+                      <div
+                        ref={hourPopover.popoverRef}
+                        role="dialog"
+                        aria-modal="false"
+                        aria-label={t("setTimeTitle")}
+                        data-select-for={hourTriggerId}
+                        style={hourPopover.floatingStyle}
+                        className={cn(
+                          "bg-popover rounded-xl p-3 flex flex-col justify-between border border-primary/40 shadow-2xl max-w-[calc(100vw-1rem)] animate-in fade-in zoom-in-95 duration-150 select-none overflow-y-auto custom-scrollbar",
+                          hourPopover.coords.placement === "top"
+                            ? "origin-bottom"
+                            : "origin-top",
+                        )}
+                      >
+                        {/* Header */}
+                        <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
+                          <div className="flex items-center gap-1.5">
+                            <Clock size={14} className="text-gold" />
+                            <span className="text-xs font-bold text-neutral-100">
+                              {t("setTimeTitle")}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={hourPopover.close}
+                            className="p-1 rounded-md text-neutral-400 hover:text-neutral-200 hover:bg-white/10 transition-colors cursor-pointer"
+                            aria-label={t("clear")}
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+
+                        {/* Controles Compartilhados de Horário */}
+                        <TimePickerBody
+                          value={timeValue}
+                          isOpen={hourPopover.isOpen}
+                          onChange={(val) => onTimeChange?.(val)}
+                        />
+
+                        {/* Footer do Overlay de Hora */}
+                        <div className="flex items-center justify-between pt-2 mt-2 border-t border-white/10 text-[11px] gap-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={handleSetNow}
+                              className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-neutral-300 hover:text-gold hover:border-gold/30 transition-colors cursor-pointer text-tiny"
+                            >
+                              {tTime("now")}
+                            </button>
+                            {timeValue && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  onTimeChange?.("");
+                                  hourPopover.close();
+                                }}
+                                className="text-neutral-400 hover:text-danger-500 transition-colors cursor-pointer text-tiny font-medium"
+                              >
+                                {t("removeTime")}
+                              </button>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={hourPopover.close}
+                            className="inline-flex items-center gap-1 px-3 py-1 rounded bg-gold hover:bg-gold-hover text-on-gold font-bold text-tiny shadow-glow-gold-xs transition-colors cursor-pointer"
+                          >
+                            <Check size={12} strokeWidth={2.5} />
+                            <span>{t("confirm")}</span>
+                          </button>
+                        </div>
+                      </div>,
+                      document.body,
+                    )}
+                </div>
+
+                {/* 2. Gatilho Evento (Exclusivo Premium) */}
+                <div
+                  ref={eventPopover.containerRef}
+                  id={eventTriggerId}
+                  className="relative"
+                >
+                  <div
+                    className={cn(
+                      "flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-colors",
+                      eventPopover.isOpen
+                        ? "border-info/50 bg-info/10"
+                        : "border-white/8 bg-white/[0.02] hover:bg-white/[0.05]",
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!isPremium) {
+                          toast.info(t("eventPremiumToast"));
+                          hourPopover.close();
+                          eventPopover.close();
+                          close();
+                          setIsUpgradeModalOpen(true);
+                          return;
+                        }
+                        if (eventPopover.isOpen) {
+                          eventPopover.close();
+                          return;
+                        }
+                        hourPopover.close();
+                        if (!currentValue) updateValue(today.isoString);
+                        if (timeValue) onTimeChange?.("");
+                        if (!allDayValue && !startTimeValue) {
+                          const now = new Date();
+                          const startH = (now.getHours() + 1) % 24;
+                          const endH = (startH + 1) % 24;
+                          const defaultStart = `${String(startH).padStart(2, "0")}:00`;
+                          const defaultEnd =
+                            endH > startH
+                              ? `${String(endH).padStart(2, "0")}:00`
+                              : "23:59";
+                          onStartTimeChange?.(defaultStart);
+                          onEndTimeChange?.(defaultEnd);
+                        }
+                        eventPopover.open();
+                      }}
+                      className="flex items-center justify-between flex-1 text-left text-[11px] font-semibold text-neutral-200 hover:text-info transition-colors cursor-pointer min-w-0"
+                    >
+                      <span className="flex items-center gap-1.5 truncate">
+                        <CalendarClock
+                          size={12}
+                          className="text-info shrink-0"
+                        />
+                        <span>{t("eventLabel")}</span>
+                        <Crown
+                          size={11}
+                          className="text-gold fill-gold shrink-0"
+                        />
+                        {hasEventValue && (
+                          <span className="px-1.5 py-0.2 rounded bg-info/15 text-info text-[10px] font-bold tabular-nums truncate max-w-[120px]">
+                            {allDayValue
+                              ? t("allDayBadge")
+                              : formattedStart && formattedEnd
+                                ? `${formattedStart}–${formattedEnd}`
+                                : formattedStart}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-[10px] text-neutral-400 font-normal">
+                        {hasEventValue ? "" : t("addEventPlaceholder")}
+                      </span>
+                    </button>
+
+                    {hasEventValue ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onStartTimeChange?.("");
+                          onEndTimeChange?.("");
+                          onAllDayChange?.(false);
+                        }}
+                        className="ml-1 p-0.5 rounded text-neutral-400 hover:text-danger-500 hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+                        title={t("removeTime")}
+                      >
+                        <X size={12} />
+                      </button>
+                    ) : (
+                      <ChevronRight
+                        size={13}
+                        className={cn(
+                          "text-neutral-500 shrink-0 ml-1 transition-transform",
+                          eventPopover.isOpen && "rotate-90 text-info",
+                        )}
+                      />
+                    )}
+                  </div>
+
+                  {/* Sub-popover Flutuante via Portal: Configuração de Evento */}
+                  {eventPopover.isOpen &&
+                    eventPopover.shouldRenderPortal &&
+                    eventPopover.coords &&
+                    createPortal(
+                      <div
+                        ref={eventPopover.popoverRef}
+                        role="dialog"
+                        aria-modal="false"
+                        aria-label={t("setEventTitle")}
+                        data-select-for={eventTriggerId}
+                        style={eventPopover.floatingStyle}
+                        className={cn(
+                          "bg-popover rounded-xl p-3 flex flex-col justify-between border border-primary/40 shadow-2xl max-w-[calc(100vw-1rem)] animate-in fade-in zoom-in-95 duration-150 select-none overflow-y-auto custom-scrollbar",
+                          eventPopover.coords.placement === "top"
+                            ? "origin-bottom"
+                            : "origin-top",
+                        )}
+                      >
+                        {/* Header */}
+                        <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                          <div className="flex items-center gap-1.5">
+                            <CalendarClock size={15} className="text-info" />
+                            <span className="text-xs font-bold text-neutral-100">
+                              {t("setEventTitle")}
+                            </span>
+                            <Crown
+                              size={11}
+                              className="text-gold fill-gold shrink-0"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={eventPopover.close}
+                            className="p-1 rounded-md text-neutral-400 hover:text-neutral-200 hover:bg-white/10 transition-colors cursor-pointer"
+                            aria-label={t("clear")}
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+
+                        {/* Conteúdo do Evento */}
+                        <div className="flex flex-col gap-2.5 py-2 flex-1 overflow-y-auto custom-scrollbar">
+                          {/* Checkbox Dia Inteiro */}
+                          <label className="flex items-center justify-between px-2.5 py-2 rounded-lg bg-white/[0.04] border border-white/10 cursor-pointer hover:bg-white/[0.07] transition-colors select-none">
+                            <div className="flex items-center gap-2">
+                              <CalendarClock
+                                size={14}
+                                className="text-info shrink-0"
+                              />
+                              <span className="text-xs font-semibold text-neutral-100">
+                                {t("allDayLabel")}
+                              </span>
+                            </div>
+                            <input
+                              type="checkbox"
+                              checked={Boolean(allDayValue)}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                if (checked) {
+                                  onTimeChange?.("");
+                                  onStartTimeChange?.("");
+                                  onEndTimeChange?.("");
+                                }
+                                onAllDayChange?.(checked);
+                              }}
+                              className="sr-only"
+                            />
+                            <span
+                              aria-hidden="true"
+                              className={cn(
+                                "w-4 h-4 rounded flex items-center justify-center border transition-colors",
+                                allDayValue
+                                  ? "bg-info border-info text-neutral-950 font-bold"
+                                  : "border-white/25 bg-white/5 hover:border-info/60",
+                              )}
+                            >
+                              {allDayValue && (
+                                <Check size={11} strokeWidth={3} />
+                              )}
+                            </span>
+                          </label>
+
+                          {allDayValue ? (
+                            <div className="p-3 rounded-lg bg-info/10 border border-info/30 text-info text-xs flex items-center gap-2">
+                              <CalendarClock
+                                size={16}
+                                className="shrink-0 text-info"
+                              />
+                              <span className="leading-relaxed">
+                                {t("allDayInfo")}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col gap-2.5">
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <span className="text-[10px] font-semibold text-neutral-300 block mb-1">
+                                    {t("startTimeLabel")}
+                                  </span>
+                                  <TimePicker
+                                    compact
+                                    value={startTimeValue}
+                                    onChange={(val) => {
+                                      if (val && timeValue) onTimeChange?.("");
+                                      onStartTimeChange?.(val);
+                                      if (val && !endTimeValue) {
+                                        const startMin =
+                                          parseTimeToMinutes(val) ?? 0;
+                                        onEndTimeChange?.(
+                                          minutesToTimeHHMM(
+                                            Math.min(1439, startMin + 60),
+                                          ),
+                                        );
+                                      }
+                                    }}
+                                    placeholder={t("timePlaceholder")}
+                                    zIndex={170}
+                                  />
+                                </div>
+                                <div>
+                                  <span className="text-[10px] font-semibold text-neutral-300 block mb-1">
+                                    {t("endTimeLabel")}
+                                  </span>
+                                  <TimePicker
+                                    compact
+                                    value={endTimeValue}
+                                    onChange={(val) => {
+                                      if (val && timeValue) onTimeChange?.("");
+                                      onEndTimeChange?.(val);
+                                    }}
+                                    disabled={!startTimeValue}
+                                    placeholder={t("timePlaceholder")}
+                                    hint={
+                                      !startTimeValue
+                                        ? t("endTimeRequiresStart")
+                                        : undefined
+                                    }
+                                    zIndex={170}
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Presets de duração rápida */}
+                              <div className="pt-2 border-t border-white/5 flex flex-col gap-1.5">
+                                <span className="text-[10px] font-medium text-neutral-400">
+                                  {t("durationLabel")}
+                                </span>
+                                <div className="grid grid-cols-4 gap-1.5">
+                                  {EVENT_DURATION_PRESETS.map((preset) => (
+                                    <button
+                                      key={preset.label}
+                                      type="button"
+                                      onClick={() =>
+                                        handleApplyDurationPreset(
+                                          preset.minutes,
+                                        )
+                                      }
+                                      className="py-1 px-1 rounded-md bg-white/5 border border-white/10 hover:border-info/50 hover:bg-info/10 hover:text-info text-neutral-200 text-tiny font-bold transition-colors cursor-pointer text-center"
+                                    >
+                                      {preset.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Footer do Overlay de Evento */}
+                        <div className="flex items-center justify-between pt-2 border-t border-white/10 text-[11px] gap-1.5">
+                          <div>
+                            {hasEventValue && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  onStartTimeChange?.("");
+                                  onEndTimeChange?.("");
+                                  onAllDayChange?.(false);
+                                  eventPopover.close();
+                                }}
+                                className="text-neutral-400 hover:text-danger-500 transition-colors cursor-pointer text-tiny font-medium"
+                              >
+                                {t("removeTime")}
+                              </button>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={eventPopover.close}
+                            className="inline-flex items-center gap-1 px-3 py-1 rounded bg-gold hover:bg-gold-hover text-on-gold font-bold text-tiny shadow-glow-gold-xs transition-colors cursor-pointer"
+                          >
+                            <Check size={12} strokeWidth={2.5} />
+                            <span>{t("confirm")}</span>
+                          </button>
+                        </div>
+                      </div>,
+                      document.body,
+                    )}
+                </div>
+              </div>
+            )}
+
             {/* Rodapé com Atalhos Rápidos */}
             <div className="flex items-center justify-between pt-2.5 mt-2 border-t border-white/10 text-[11px]">
               <div className="flex items-center gap-1.5">
@@ -345,18 +992,30 @@ export function DatePicker({
                 </button>
               </div>
 
-              {allowClear && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    handleClear(e);
-                    close();
-                  }}
-                  className="text-neutral-400 hover:text-danger-500 transition-colors cursor-pointer text-tiny font-medium"
-                >
-                  {resolvedClearLabel}
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {allowClear && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      handleClear(e);
+                      close();
+                    }}
+                    className="text-neutral-400 hover:text-danger-500 transition-colors cursor-pointer text-tiny font-medium"
+                  >
+                    {resolvedClearLabel}
+                  </button>
+                )}
+
+                {enableTime && (
+                  <button
+                    type="button"
+                    onClick={close}
+                    className="px-2.5 py-0.5 rounded bg-gold hover:bg-gold-hover text-on-gold font-bold text-tiny shadow-glow-gold-xs transition-colors cursor-pointer"
+                  >
+                    {t("done")}
+                  </button>
+                )}
+              </div>
             </div>
           </div>,
           document.body,
@@ -426,7 +1085,7 @@ export function DatePicker({
                 isOverdue ? "text-danger-500" : "text-gold",
               )}
             />
-            <span>{badgeLabel ?? displayDateText ?? resolvedPlaceholder}</span>
+            <span>{badgeLabel ?? displayFullText ?? resolvedPlaceholder}</span>
           </button>
         ) : (
           <div
@@ -461,7 +1120,7 @@ export function DatePicker({
                   isOpen
                     ? "text-primary dark:text-gold"
                     : currentValue
-                      ? "text-neutral-400 dark:text-gold"
+                      ? "text-gold"
                       : "text-neutral-400",
                 )}
               />
@@ -471,7 +1130,7 @@ export function DatePicker({
                   currentValue ? "text-neutral-100" : "text-neutral-400",
                 )}
               >
-                {displayDateText || resolvedPlaceholder}
+                {displayFullText || resolvedPlaceholder}
               </span>
             </button>
 
@@ -505,6 +1164,13 @@ export function DatePicker({
         <span id={hintId} className="text-xs text-neutral-400 mt-0.5">
           {hint}
         </span>
+      )}
+
+      {isUpgradeModalOpen && (
+        <UpgradePremiumModal
+          isOpen={isUpgradeModalOpen}
+          onClose={() => setIsUpgradeModalOpen(false)}
+        />
       )}
     </div>
   );

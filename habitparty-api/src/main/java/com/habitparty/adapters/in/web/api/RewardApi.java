@@ -38,10 +38,11 @@ public interface RewardApi {
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 
-    @Operation(summary = "Excluir Recompensa", description = "Remove uma recompensa existente.")
+    @Operation(summary = "Excluir Recompensa", description = "Remove uma recompensa existente. Use deleteHistory=true para remover também seus registros de compra do Histórico.")
     @DeleteMapping("/{id}")
     ResponseEntity<Void> deleteReward(
         @PathVariable UUID id,
+        @RequestParam(defaultValue = "false") boolean deleteHistory,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 

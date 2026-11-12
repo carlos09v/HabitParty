@@ -10,15 +10,6 @@ import {
 } from "@/i18n/config";
 import type { ExperienceMode } from "@/types/ui";
 
-export async function setCompactModeCookie(compact: boolean) {
-  const cookieStore = await cookies();
-  cookieStore.set("compactMode", String(compact), {
-    path: "/",
-    maxAge: 60 * 60 * 24 * 365, // 1 year
-    sameSite: "lax",
-  });
-}
-
 export async function setThemeCookie(theme: "light" | "dark") {
   const cookieStore = await cookies();
   cookieStore.set("theme", theme, {
@@ -51,7 +42,6 @@ export async function setFirstStepPreferencesAction(
   usageMode: string,
   workspaceId?: string,
   experienceMode: ExperienceMode = "PRODUCTIVITY",
-  compactMode?: boolean,
 ) {
   const cookieStore = await cookies();
   cookieStore.set("habitparty_usage_mode", usageMode, {
@@ -59,13 +49,6 @@ export async function setFirstStepPreferencesAction(
     maxAge: 60 * 60 * 24 * 365, // 1 ano
     sameSite: "lax",
   });
-  if (compactMode !== undefined) {
-    cookieStore.set("compactMode", String(compactMode), {
-      path: "/",
-      maxAge: 60 * 60 * 24 * 365,
-      sameSite: "lax",
-    });
-  }
   if (workspaceId) {
     cookieStore.set("activeWorkspaceId", workspaceId, {
       path: "/",

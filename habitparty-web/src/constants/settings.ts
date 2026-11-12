@@ -2,6 +2,8 @@ import {
   Calendar,
   CalendarDays,
   CalendarRange,
+  Clock,
+  Clock12,
   CloudRain,
   Coffee,
   Flame,
@@ -27,7 +29,12 @@ import type {
   SettingsTabId,
   SettingsTabItem,
 } from "@/types/settings";
-import type { AppLocale, DateFormat, ExperienceMode } from "@/types/ui";
+import type {
+  AppLocale,
+  DateFormat,
+  ExperienceMode,
+  TimeFormat,
+} from "@/types/ui";
 
 export const GENDER_OPTIONS: readonly GenderOption[] = [
   { value: "MALE" },
@@ -61,11 +68,6 @@ export const THEME_OPTIONS: readonly SettingsOptionConfig<"dark" | "light">[] =
     { value: "light", icon: Sun },
   ] as const;
 
-export const COMPACT_OPTIONS: readonly SettingsOptionConfig<boolean>[] = [
-  { value: true },
-  { value: false, hasDefaultBadge: true },
-] as const;
-
 export const EXPERIENCE_MODE_OPTIONS: readonly SettingsOptionConfig<ExperienceMode>[] =
   [
     { value: "PRODUCTIVITY", hasDefaultBadge: true, icon: Target },
@@ -93,6 +95,24 @@ export const DATE_FORMAT_OPTIONS: readonly (SettingsOptionConfig<DateFormat> & {
     i18nPrefix: "yyyymmdd",
     statusKey: "statusYyyymmdd",
     icon: CalendarRange,
+  },
+] as const;
+
+export const TIME_FORMAT_OPTIONS: readonly (SettingsOptionConfig<TimeFormat> & {
+  i18nPrefix: "h24" | "h12";
+  statusKey: "statusH24" | "statusH12";
+})[] = [
+  {
+    value: "24h",
+    i18nPrefix: "h24",
+    statusKey: "statusH24",
+    icon: Clock,
+  },
+  {
+    value: "12h",
+    i18nPrefix: "h12",
+    statusKey: "statusH12",
+    icon: Clock12,
   },
 ] as const;
 

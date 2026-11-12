@@ -44,9 +44,9 @@ export function useTaskItemMeta({
   "columnId" | "isOverlay" | "isSortable" | "useTranslateTransform"
 >) {
   const locale = useLocale() as AppLocale;
-  const storeCompact = useUIStore((state) => state.compactMode);
   const dateFormat = useUIStore((state) => state.dateFormat);
-  const isCompact = propIsCompact ?? storeCompact;
+  const timeFormat = useUIStore((state) => state.timeFormat);
+  const isCompact = propIsCompact ?? false;
 
   const { completed, habitScore, toggleCompleted, changeHabit, isDone } =
     useTaskProgress(task, {
@@ -58,12 +58,19 @@ export function useTaskItemMeta({
   const isHabit = taskType === "habit";
   const isDaily = taskType === "daily";
   const isTodo = taskType === "todo";
+  const isTodoEvent = Boolean(
+    isTodo && (task.isAllDay || task.startTime || task.dueEndTime),
+  );
   const dueDateInfo = getTaskDueDateInfo(task.dueDate, {
     activeFilter,
     selectedDate,
     locale,
     dueTime: task.dueTime,
+    startTime: task.startTime,
+    dueEndTime: task.dueEndTime,
+    isAllDay: task.isAllDay,
     dateFormat,
+    timeFormat,
   });
   const isTodoOverdue = Boolean(isTodo && dueDateInfo.isOverdue && !isDone);
   const borderClass = isTodoOverdue
@@ -108,6 +115,7 @@ export function useTaskItemMeta({
     isHabit,
     isDaily,
     isTodo,
+    isTodoEvent,
     borderClass,
     dueDateInfo,
     displayTag,

@@ -10,6 +10,7 @@ import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import type {
   FocusActivity,
+  FocusableTaskItem,
   FocusRecord,
   FocusRecordType,
 } from "@/types/focus";
@@ -35,9 +36,11 @@ interface UseFocusManualRecordFormParams {
   isOpen: boolean;
   activities: FocusActivity[];
   backpackItems: InventoryItemResponseDTO[];
+  focusableTasks?: FocusableTaskItem[];
   records?: FocusRecord[];
   initialActivityId?: string;
   initialItemId?: string;
+  initialTaskId?: string;
   onSuccess?: () => void;
   onClose: () => void;
 }
@@ -52,6 +55,7 @@ export function useFocusManualRecordForm({
   records = [],
   initialActivityId,
   initialItemId,
+  initialTaskId,
   onSuccess,
   onClose,
 }: UseFocusManualRecordFormParams) {
@@ -86,6 +90,10 @@ export function useFocusManualRecordForm({
     if (initialItemId) return initialItemId;
     return backpackItems[0]?.inventoryItemId ?? "";
   });
+
+  const [selectedTaskId, setSelectedTaskId] = useState<string>(
+    () => initialTaskId ?? "",
+  );
 
   const [recordType, setRecordType] = useState<FocusRecordType>("POMO");
 
@@ -319,7 +327,7 @@ export function useFocusManualRecordForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (targetType === "ACTIVITY" && !selectedActivityId) {
+    if (targetType === "ACTIVITY" && !selectedActivityId && !selectedTaskId) {
       toast.error(t("toasts.selectActivityRequired"));
       return;
     }
@@ -399,7 +407,13 @@ export function useFocusManualRecordForm({
 
         const res = await createFocusRecord({
           focusActivityId:
-            targetType === "ACTIVITY" ? selectedActivityId : undefined,
+            targetType === "ACTIVITY" && selectedActivityId
+              ? selectedActivityId
+              : undefined,
+          taskId:
+            targetType === "ACTIVITY" && selectedTaskId
+              ? selectedTaskId
+              : undefined,
           inventoryItemId: targetType === "ITEM" ? selectedItemId : undefined,
           recordType: targetType === "ITEM" ? "STOPWATCH" : recordType,
           completedPomos:
@@ -456,6 +470,8 @@ export function useFocusManualRecordForm({
     handleTargetTypeChange,
     selectedActivityId,
     handleSelectActivity,
+    selectedTaskId,
+    setSelectedTaskId,
     selectedItemId,
     handleSelectBackpackItem,
     recordType,

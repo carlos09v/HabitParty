@@ -94,8 +94,8 @@ export function MysteryBoxSelector({
                 onFocus={() => setHoveredTierId(tier.id)}
                 onBlur={() => setHoveredTierId(null)}
                 className={cn(
-                  "relative w-full h-[160px] flex flex-col items-center justify-between p-2.5 sm:p-3 rounded-xl border transition-[transform,translate,scale,border-color,background-color,box-shadow] duration-200 cursor-pointer select-none text-left group overflow-hidden",
-                  "hover:-translate-y-1 hover:scale-[1.02] active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold",
+                  "relative w-full h-[136px] flex flex-col items-center justify-between p-2 rounded-xl border transition-[transform,translate,scale,border-color,background-color,box-shadow] duration-200 cursor-pointer select-none text-left group overflow-hidden",
+                  "hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold",
                   selected
                     ? cn(tier.borderSelectedClass, tier.bgSelectedClass)
                     : cn(
@@ -119,7 +119,7 @@ export function MysteryBoxSelector({
                 {selected && (
                   <div
                     className={cn(
-                      "absolute top-2 right-2 w-4 h-4 rounded-full flex items-center justify-center text-neutral-950 font-black shadow-xs animate-in zoom-in-50 duration-150 z-10",
+                      "absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-neutral-950 font-black shadow-xs animate-in zoom-in-50 duration-150 z-10",
                       tier.id === "Lendário"
                         ? "bg-gold"
                         : tier.id === "Épico"
@@ -136,7 +136,7 @@ export function MysteryBoxSelector({
                 {/* Ícone Heroico Gamificado da Caixa */}
                 <div
                   className={cn(
-                    "w-12 h-12 rounded-xl flex items-center justify-center border transition-[transform,scale,background-color,box-shadow] duration-300 mt-0.5 shrink-0 shadow-inner group-hover:scale-110",
+                    "w-10 h-10 rounded-xl flex items-center justify-center border transition-[transform,scale,background-color,box-shadow] duration-300 shrink-0 shadow-inner group-hover:scale-105",
                     tier.borderClass,
                     selected
                       ? "bg-surface dark:bg-white/15 shadow-sm dark:shadow-md"
@@ -145,12 +145,12 @@ export function MysteryBoxSelector({
                   style={{
                     boxShadow:
                       isHovered || selected
-                        ? `0 0 16px ${tier.accentGlow}`
+                        ? `0 0 12px ${tier.accentGlow}`
                         : undefined,
                   }}
                 >
                   <TierIcon
-                    size={24}
+                    size={20}
                     className={cn(
                       "transition-transform duration-300 group-hover:rotate-6",
                       tier.textClass,

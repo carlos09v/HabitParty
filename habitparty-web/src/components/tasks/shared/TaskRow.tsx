@@ -4,13 +4,15 @@ import type { DraggableAttributes } from "@dnd-kit/core";
 import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MoreHorizontal } from "lucide-react";
+import { CalendarClock, GripVertical, MoreHorizontal } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type CSSProperties, memo, useEffect, useMemo, useRef } from "react";
 import {
   TaskActionControl,
   TaskChecklistBadge,
   TaskDescriptionBadge,
+  TaskEventBadge,
+  TaskFocusTimeBadge,
   TaskHabitScoreBadge,
   TaskHardcoreBadge,
   TaskPriorityBadge,
@@ -35,6 +37,7 @@ interface TaskRowContentProps extends TaskRowProps {
 
 const TaskRowContent = memo(function TaskRowContent({
   task,
+  isSelected = false,
   columnId = task.columnId,
   columnTitle = task.category,
   activeFilter,
@@ -76,6 +79,7 @@ const TaskRowContent = memo(function TaskRowContent({
     isHabit,
     isDaily,
     isTodo,
+    isTodoEvent,
     borderClass,
     dueDateInfo,
     displayTag,
@@ -160,7 +164,9 @@ const TaskRowContent = memo(function TaskRowContent({
           : "gap-4 px-4 py-2.5 text-body-s",
         isTodo && dueDateInfo.isOverdue && !isDone
           ? "bg-danger-500/[0.03] border-y-danger-500/40 border-r-danger-500/40 hover:border-y-danger-500/60 hover:border-r-danger-500/60 hover:bg-danger-500/[0.06] hover:shadow-card-deep focus:outline-none focus-visible:ring-1 focus-visible:ring-danger-500/60"
-          : "bg-card dark:bg-primary-dark/20 border-y-neutral-700 border-r-neutral-700 dark:border-y-primary/30 dark:border-r-primary/30 hover:border-y-primary/40 hover:border-r-primary/40 dark:hover:border-y-gold/50 dark:hover:border-r-gold/50 hover:bg-card-hover dark:hover:bg-primary-dark/35 shadow-2xs dark:shadow-none hover:shadow-card-deep focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 dark:focus-visible:ring-gold/60",
+          : isSelected
+            ? "bg-primary/[0.07] dark:bg-surface-hover ring-1 ring-primary/50 dark:ring-gold/65 border-y-primary/65 border-r-primary/65 dark:border-y-gold/70 dark:border-r-gold/70 shadow-sm dark:shadow-glow-gold-sm"
+            : "bg-card dark:bg-primary-dark/20 border-y-neutral-700 border-r-neutral-700 dark:border-y-primary/30 dark:border-r-primary/30 hover:border-y-primary/40 hover:border-r-primary/40 dark:hover:border-y-gold/50 dark:hover:border-r-gold/50 hover:bg-card-hover dark:hover:bg-primary-dark/35 shadow-2xs dark:shadow-none hover:shadow-card-deep focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 dark:focus-visible:ring-gold/60",
         borderClass,
         "border-l-4",
         isHardcoreOverdue &&
@@ -213,6 +219,15 @@ const TaskRowContent = memo(function TaskRowContent({
               {task.title}
             </span>
 
+            {!isHabit && (
+              <TaskFocusTimeBadge
+                taskId={task.id}
+                totalFocusMinutes={task.totalFocusMinutes}
+                focusCyclesCount={task.focusCyclesCount}
+                isCompact={isCompact}
+              />
+            )}
+
             {hasChecklist && (
               <TaskChecklistBadge
                 checklistCompleted={checklistCompleted}
@@ -263,9 +278,10 @@ const TaskRowContent = memo(function TaskRowContent({
         />
       </div>
 
-      {/* Coluna 3: Badge do Tipo */}
-      <div className="flex items-center">
+      {/* Coluna 3: Badge do Tipo + Badge de Evento */}
+      <div className="flex items-center gap-1.5 flex-wrap">
         <TaskTypeBadge task={task} isCompact={isCompact} />
+        {isTodoEvent && <TaskEventBadge isCompact={isCompact} />}
       </div>
 
       {/* Coluna 4: Prioridade */}
@@ -293,7 +309,7 @@ const TaskRowContent = memo(function TaskRowContent({
         ) : isTodo ? (
           <span
             className={cn(
-              "text-body-s font-medium truncate",
+              "text-body-s font-medium truncate inline-flex items-center gap-1",
               dueDateInfo.isOverdue
                 ? "text-danger-500 font-medium"
                 : dueDateInfo.isToday
@@ -303,7 +319,13 @@ const TaskRowContent = memo(function TaskRowContent({
                     : "text-neutral-400 font-normal",
             )}
           >
-            {dueDateInfo.label}
+            {isTodoEvent && (
+              <CalendarClock
+                size={12}
+                className="shrink-0 text-sky-600 dark:text-info"
+              />
+            )}
+            <span className="truncate">{dueDateInfo.label}</span>
           </span>
         ) : (
           <span className="text-body-s text-neutral-400 font-medium truncate">

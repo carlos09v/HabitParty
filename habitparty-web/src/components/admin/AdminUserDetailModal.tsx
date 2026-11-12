@@ -18,6 +18,7 @@ import {
   getUserStorageLimitFormatted,
 } from "@/constants/admin";
 import { useDateFormat } from "@/hooks/useDateFormat";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
 import type { AdminUserDetailDTO, EmailDispatchLogDTO } from "@/types/admin";
 import { cn, formatDateTime } from "@/utils";
@@ -124,6 +125,7 @@ export function AdminUserDetailModal({
   const t = useTranslations("admin.userModal");
   const locale = useLocale();
   const { dateFormat } = useDateFormat();
+  const { timeFormat } = useTimeFormat();
 
   if (!isOpen || !detail) return null;
 
@@ -254,6 +256,7 @@ export function AdminUserDetailModal({
                         includeYearFull: true,
                         locale: locale as AppLocale,
                         dateFormat,
+                        timeFormat,
                       })
                     : "—"}
                 </p>
@@ -290,6 +293,7 @@ export function AdminUserDetailModal({
                         includeYearFull: true,
                         locale: locale as AppLocale,
                         dateFormat,
+                        timeFormat,
                       })
                     : summary.isPremium
                       ? t("accountInfo.lifetimeAccess")
@@ -395,6 +399,7 @@ export function AdminUserDetailModal({
                     includeYearFull: true,
                     locale: locale as AppLocale,
                     dateFormat,
+                    timeFormat,
                   });
                   const localizedSubject = getLocalizedSubject(log, t);
                   const localizedError = getLocalizedErrorMessage(

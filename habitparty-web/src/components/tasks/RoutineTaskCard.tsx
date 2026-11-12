@@ -1,14 +1,18 @@
 "use client";
 
-import { Calendar, Clock, ClockAlert } from "lucide-react";
+import { Calendar, CalendarClock, Clock, ClockAlert } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { memo, useEffect, useRef } from "react";
 import {
   TaskActionControl,
   TaskChecklistBadge,
   TaskDescriptionBadge,
+  TaskEventBadge,
+  TaskFocusTimeBadge,
   TaskHabitScoreBadge,
   TaskHardcoreBadge,
   TaskPriorityBadge,
+  TaskReminderBadge,
   TaskRewardBadges,
   TaskTagBadges,
   TaskTypeBadge,
@@ -25,6 +29,7 @@ import { cn } from "@/utils";
 export const RoutineTaskCard = memo(function RoutineTaskCard({
   task,
   columnId,
+  isSelected = false,
   isCompact: propIsCompact,
   onOpenDetails,
   onEditTask,
@@ -33,6 +38,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
   onContextMenu,
   isOverlay = false,
 }: RoutineTaskCardProps) {
+  const tBadges = useTranslations("dashboard.taskShared.badges");
   const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -57,6 +63,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
     isHabit,
     isDaily,
     isTodo,
+    isTodoEvent,
     borderClass,
     dueDateInfo,
     displayTag,
@@ -127,14 +134,17 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
         isCompact
           ? "gap-2 p-2.5 rounded-lg border border-l-4"
           : "gap-2.5 p-3 rounded-xl border border-l-4",
-        "bg-card dark:bg-gradient-to-b dark:from-card dark:to-surface/95 border-y-neutral-700/80 border-r-neutral-700/80 dark:border-y-white/12 dark:border-r-white/12 shadow-xs dark:shadow-sm hover:shadow-card-deep hover:-translate-y-0.5",
-        isHabit
-          ? "hover:border-y-info/45 hover:border-r-info/45"
-          : isDaily
-            ? "hover:border-y-magenta/45 hover:border-r-magenta/45"
-            : isTodo && dueDateInfo.isOverdue && !isDone
-              ? "hover:bg-danger-500/[0.06] hover:border-y-danger-500/60 hover:border-r-danger-500/60"
-              : "hover:border-y-primary/40 hover:border-r-primary/40 dark:hover:border-y-gold/45 dark:hover:border-r-gold/45",
+        isSelected
+          ? "bg-primary/[0.07] dark:bg-surface-hover ring-1 ring-primary/50 dark:ring-gold/65 border-y-primary/65 border-r-primary/65 dark:border-y-gold/70 dark:border-r-gold/70 shadow-sm dark:shadow-glow-gold-sm hover:translate-y-0"
+          : "bg-card hover:bg-surface/70 dark:bg-gradient-to-b dark:from-card dark:to-surface/95 dark:hover:bg-card-hover border-y-neutral-700/80 border-r-neutral-700/80 dark:border-y-white/12 dark:border-r-white/12 shadow-xs dark:shadow-sm hover:shadow-card-deep hover:-translate-y-0.5",
+        !isSelected &&
+          (isHabit
+            ? "hover:border-y-info/45 hover:border-r-info/45"
+            : isDaily
+              ? "hover:border-y-magenta/45 hover:border-r-magenta/45"
+              : isTodo && dueDateInfo.isOverdue && !isDone
+                ? "hover:bg-danger-500/[0.06] hover:border-y-danger-500/60 hover:border-r-danger-500/60"
+                : "hover:border-y-primary/40 hover:border-r-primary/40 dark:hover:border-y-gold/45 dark:hover:border-r-gold/45"),
         borderClass,
         isTodo &&
           dueDateInfo.isOverdue &&
@@ -150,10 +160,11 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
           "!transition-none shadow-card-active border-y-gold/70 border-r-gold/70 bg-card scale-102 rotate-1 cursor-grabbing z-50",
       )}
     >
-      {/* 1. TOPO: Badge do Tipo + Tag Opcional + Indicadores */}
+      {/* 1. TOPO: Badge do Tipo + Badge de Evento (se aplicável) + Tag Opcional + Indicadores */}
       <div className="flex items-center justify-between gap-1.5 min-w-0">
         <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
           <TaskTypeBadge task={task} isCompact={isCompact} />
+          {isTodoEvent && <TaskEventBadge isCompact={isCompact} />}
 
           <TaskTagBadges
             primaryLabel={displayTag}
@@ -230,46 +241,75 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
           )}
 
           {isTodo && (
-            <div
-              className={cn(
-                "flex items-center gap-1 font-medium truncate",
-                dueDateInfo.isOverdue
-                  ? "text-danger-500 font-semibold bg-danger-500/10 px-1.5 py-0.5 rounded border border-danger-500/30"
-                  : dueDateInfo.isToday
-                    ? "text-gold font-semibold"
-                    : "text-neutral-300",
-              )}
-            >
-              {dueDateInfo.isOverdue ? (
-                <ClockAlert
-                  size={isCompact ? 10 : 12}
-                  className="shrink-0 text-danger-500"
-                />
-              ) : dueDateInfo.isToday && task.dueTime ? (
-                <Clock
-                  size={isCompact ? 10 : 12}
-                  className="shrink-0 text-gold"
-                />
-              ) : (
-                <Calendar
-                  size={isCompact ? 10 : 12}
-                  className={cn(
-                    "shrink-0",
-                    dueDateInfo.isToday ? "text-gold" : "text-neutral-400",
-                  )}
-                />
-              )}
-              <span className="truncate">{dueDateInfo.label}</span>
-            </div>
-          )}
+            <>
+              <div
+                title={
+                  dueDateInfo.isInProgress && !isDone
+                    ? tBadges("eventInProgressTitle", {
+                        end: dueDateInfo.endTime ?? "",
+                      })
+                    : undefined
+                }
+                className={cn(
+                  "inline-flex items-center gap-1 font-semibold truncate px-1.5 py-0.5 rounded-md border transition-colors",
+                  dueDateInfo.isOverdue && !isDone
+                    ? "text-danger-500 bg-danger-500/10 border-danger-500/35"
+                    : dueDateInfo.isInProgress && !isDone
+                      ? "text-sky-700 bg-sky-500/12 border-sky-500/35 dark:text-info dark:bg-info/15 dark:border-info/35"
+                      : dueDateInfo.isToday
+                        ? "text-amber-700 bg-amber-500/12 border-amber-500/35 dark:text-gold dark:bg-gold/12 dark:border-gold/35"
+                        : dueDateInfo.isTomorrow
+                          ? "text-sky-700 bg-sky-500/10 border-sky-500/30 dark:text-info dark:bg-info/10 dark:border-info/30"
+                          : dueDateInfo.hasDueDate
+                            ? "text-neutral-100 bg-surface border-neutral-600/80 dark:bg-white/[0.06] dark:border-white/15"
+                            : "text-neutral-300 font-medium bg-surface/60 border-neutral-700/70 dark:bg-white/[0.03] dark:border-white/10",
+                )}
+              >
+                {dueDateInfo.isOverdue && !isDone ? (
+                  <ClockAlert
+                    size={isCompact ? 10 : 12}
+                    className="shrink-0 text-danger-500"
+                  />
+                ) : dueDateInfo.isInProgress && !isDone ? (
+                  <span
+                    aria-hidden="true"
+                    className="w-1.5 h-1.5 rounded-full bg-sky-500 dark:bg-info animate-pulse shrink-0"
+                  />
+                ) : isTodoEvent ? (
+                  <CalendarClock
+                    size={isCompact ? 10 : 12}
+                    className="shrink-0 text-sky-600 dark:text-info"
+                  />
+                ) : dueDateInfo.isToday && task.dueTime ? (
+                  <Clock
+                    size={isCompact ? 10 : 12}
+                    className="shrink-0 text-amber-600 dark:text-gold"
+                  />
+                ) : (
+                  <Calendar
+                    size={isCompact ? 10 : 12}
+                    className={cn(
+                      "shrink-0",
+                      dueDateInfo.isToday
+                        ? "text-amber-600 dark:text-gold"
+                        : dueDateInfo.isTomorrow
+                          ? "text-sky-600 dark:text-info"
+                          : dueDateInfo.hasDueDate
+                            ? "text-primary dark:text-gold"
+                            : "text-neutral-400",
+                    )}
+                  />
+                )}
+                <span className="truncate">{dueDateInfo.label}</span>
+              </div>
 
-          {hasChecklist && (
-            <TaskChecklistBadge
-              checklistCompleted={checklistCompleted}
-              checklistTotal={checklistTotal}
-              isChecklistAllDone={isChecklistAllDone}
-              isCompact={isCompact}
-            />
+              <TaskReminderBadge
+                reminderType={task.reminderType}
+                sendEmailReminder={task.sendEmailReminder}
+                emailReminderSent={task.emailReminderSent}
+                isCompact={isCompact}
+              />
+            </>
           )}
 
           {isHabit && (
@@ -282,12 +322,32 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
           )}
         </div>
 
-        <TaskRewardBadges
-          task={task}
-          isCompact={isCompact}
-          showStreak={true}
-          showRewards={false}
-        />
+        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+          {!isHabit && (
+            <TaskFocusTimeBadge
+              taskId={task.id}
+              totalFocusMinutes={task.totalFocusMinutes}
+              focusCyclesCount={task.focusCyclesCount}
+              isCompact={isCompact}
+            />
+          )}
+
+          {hasChecklist && (
+            <TaskChecklistBadge
+              checklistCompleted={checklistCompleted}
+              checklistTotal={checklistTotal}
+              isChecklistAllDone={isChecklistAllDone}
+              isCompact={isCompact}
+            />
+          )}
+
+          <TaskRewardBadges
+            task={task}
+            isCompact={isCompact}
+            showStreak={true}
+            showRewards={false}
+          />
+        </div>
       </div>
     </article>
   );

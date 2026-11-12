@@ -1,8 +1,10 @@
 import { Flag, Tag } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { DescriptionCharCounter } from "@/components/ui/DescriptionCharCounter";
 import { Select } from "@/components/ui/Select";
 import {
   MAX_TASK_TAGS,
+  TASK_DESCRIPTION_MAX_LENGTH,
   TASK_PRIORITY_META,
   TODO_PRIORITY_OPTIONS,
   toPriorityMessageKey,
@@ -103,25 +105,18 @@ export function TaskBasicFields({ form, columns }: TaskBasicFieldsProps) {
             {t("descriptionLabel")}{" "}
             <span className="text-neutral-500 text-xs">{t("optional")}</span>
           </label>
-          <span
-            className={cn(
-              "text-tiny tabular-nums transition-colors",
-              description.length >= 500
-                ? "text-gold font-semibold"
-                : "text-neutral-400",
-            )}
-          >
-            {description.length}/500
-          </span>
+          <DescriptionCharCounter length={description.length} />
         </div>
         <textarea
           id="taskDesc"
           rows={3}
           value={description}
-          onChange={(e) => setDescription(e.target.value.slice(0, 500))}
+          onChange={(e) =>
+            setDescription(e.target.value.slice(0, TASK_DESCRIPTION_MAX_LENGTH))
+          }
           placeholder={t("descriptionPlaceholder")}
           className="w-full bg-card border border-neutral-600 hover:border-neutral-500 rounded-lg px-3 py-2 text-neutral-50 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 shadow-xs focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-primary-dark/20 dark:border-primary/30 dark:hover:border-primary/50 dark:shadow-none dark:focus:border-gold dark:focus:ring-1 dark:focus:ring-gold transition-colors text-body-s resize-none"
-          maxLength={500}
+          maxLength={TASK_DESCRIPTION_MAX_LENGTH}
           disabled={isPending}
         />
       </div>

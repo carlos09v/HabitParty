@@ -31,12 +31,24 @@ public class TransactionHistory {
   private final TaskDifficulty difficultySnapshot;
   private final RewardPackageLevel packageLevelSnapshot;
   private final List<String> tagsSnapshot;
+  // Nome da lista (BoardColumn) da tarefa no momento da transação
+  private final String columnNameSnapshot;
 
   public TransactionHistory(UUID id, UUID userId, UUID referenceId,
       BigDecimal goldAmount, int xpAmount, BigDecimal priceSnapshot,
       TransactionType transactionType, String nameSnapshot,
       String iconSnapshot, RewardPackageLevel packageLevelSnapshot,
       TaskDifficulty difficultySnapshot, List<String> tagsSnapshot, LocalDateTime createdAt) {
+    this(id, userId, referenceId, goldAmount, xpAmount, priceSnapshot, transactionType, nameSnapshot,
+        iconSnapshot, packageLevelSnapshot, difficultySnapshot, tagsSnapshot, null, createdAt);
+  }
+
+  public TransactionHistory(UUID id, UUID userId, UUID referenceId,
+      BigDecimal goldAmount, int xpAmount, BigDecimal priceSnapshot,
+      TransactionType transactionType, String nameSnapshot,
+      String iconSnapshot, RewardPackageLevel packageLevelSnapshot,
+      TaskDifficulty difficultySnapshot, List<String> tagsSnapshot, String columnNameSnapshot,
+      LocalDateTime createdAt) {
 
     // Validações de integridade do Livro-Caixa
     if (userId == null)
@@ -62,6 +74,7 @@ public class TransactionHistory {
     this.packageLevelSnapshot = packageLevelSnapshot;
     this.difficultySnapshot = difficultySnapshot;
     this.tagsSnapshot = tagsSnapshot;
+    this.columnNameSnapshot = columnNameSnapshot;
     this.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
   }
 
@@ -124,5 +137,9 @@ public class TransactionHistory {
 
   public Optional<List<String>> getTagsSnapshot() {
     return Optional.ofNullable(tagsSnapshot);
+  }
+
+  public Optional<String> getColumnNameSnapshot() {
+    return Optional.ofNullable(columnNameSnapshot);
   }
 }

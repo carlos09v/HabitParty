@@ -3,7 +3,6 @@
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { DATE_FORMAT_OPTIONS } from "@/constants/settings";
-import { useCompactMode } from "@/hooks/useCompactMode";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import type { SettingsOptionItem } from "@/types/settings";
 import type { DateFormat } from "@/types/ui";
@@ -14,12 +13,10 @@ interface DateFormatSettingsProps {
 }
 
 export function DateFormatSettings({
-  isCompact: propIsCompact,
+  isCompact = false,
 }: DateFormatSettingsProps = {}) {
   const t = useTranslations("settings.dateFormatCard");
   const { dateFormat, setDateFormat } = useDateFormat();
-  const { isCompact: storeIsCompact } = useCompactMode();
-  const isCompact = propIsCompact ?? storeIsCompact;
 
   const options: SettingsOptionItem<DateFormat>[] = DATE_FORMAT_OPTIONS.map(
     (opt) => ({

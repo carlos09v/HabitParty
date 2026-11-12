@@ -13,6 +13,7 @@ import com.habitparty.adapters.in.web.dtos.request.CreateTaskDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateTaskDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateTaskOrderDTO;
 import com.habitparty.application.ports.projections.DashboardTaskDTO;
+import com.habitparty.application.ports.projections.TaskSearchWorkspaceCountDTO;
 import com.habitparty.adapters.in.web.dtos.response.TaskResponseDTO;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 import com.habitparty.core.domain.enums.task.TaskStatus;
@@ -42,6 +43,12 @@ public interface TaskApi {
         @RequestParam(defaultValue = "10") int size,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado);
 
+    @Operation(summary = "Buscar tarefas entre workspaces", description = "Retorna, para cada workspace do usuário, a quantidade de tarefas cujo nome ou descrição contém o termo informado (mínimo 2, máximo 100 caracteres).")
+    @GetMapping("/search")
+    ResponseEntity<List<TaskSearchWorkspaceCountDTO>> searchTasksAcrossWorkspaces(
+        @RequestParam("q") String query,
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado);
+
     @Operation(summary = "Criar Tarefa", description = "Cria uma nova tarefa na coluna.")
     @PostMapping("/column/{boardColumnId}")
     ResponseEntity<TaskResponseDTO> createTask(
@@ -56,10 +63,11 @@ public interface TaskApi {
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser userIdLogado,
         @RequestBody @Valid UpdateTaskDTO dto);
 
-    @Operation(summary = "Excluir Tarefa", description = "Deleta uma tarefa.")
+    @Operation(summary = "Excluir Tarefa", description = "Deleta uma tarefa. Use deleteHistory=true para remover também seus registros do Histórico.")
     @DeleteMapping("/{taskId}")
     ResponseEntity<Void> deleteTask(
         @PathVariable UUID taskId,
+        @RequestParam(defaultValue = "false") boolean deleteHistory,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser userIdLogado);
 
     @Operation(summary = "Mover Tarefas (Drag and Drop)", description = "Atualiza a ordem de várias tarefas de uma vez.")

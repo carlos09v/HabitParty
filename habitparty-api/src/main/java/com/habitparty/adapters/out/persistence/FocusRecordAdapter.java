@@ -72,6 +72,13 @@ public class FocusRecordAdapter implements FocusRecordRepository {
   }
 
   @Override
+  public List<FocusRecord> findAllByTaskId(UUID taskId) {
+    return repository.findAllByTaskIdOrderByStartTimeDesc(taskId).stream()
+        .map(mapper::toDomain)
+        .toList();
+  }
+
+  @Override
   public void deleteById(UUID id) {
     repository.deleteById(id);
   }
@@ -82,14 +89,38 @@ public class FocusRecordAdapter implements FocusRecordRepository {
   }
 
   @Override
+  public void deleteAllByTaskId(UUID taskId) {
+    repository.deleteAllByTaskId(taskId);
+  }
+
+  @Override
   public void nullifyFocusActivityId(UUID focusActivityId) {
     repository.nullifyFocusActivityId(focusActivityId);
+  }
+
+  @Override
+  public void nullifyTaskId(UUID taskId) {
+    repository.nullifyTaskId(taskId);
   }
 
   @Override
   public Page<FocusRecord> findAllByFocusActivityId(UUID focusActivityId, int page, int size) {
     PageRequest pageRequest = PageRequest.of(page, size);
     return repository.findAllByFocusActivityIdOrderByStartTimeDesc(focusActivityId, pageRequest)
+        .map(mapper::toDomain);
+  }
+
+  @Override
+  public Page<FocusRecord> findAllByTaskId(UUID taskId, int page, int size) {
+    PageRequest pageRequest = PageRequest.of(page, size);
+    return repository.findAllByTaskIdOrderByStartTimeDesc(taskId, pageRequest)
+        .map(mapper::toDomain);
+  }
+
+  @Override
+  public Page<FocusRecord> findAllByUserId(UUID userId, int page, int size) {
+    PageRequest pageRequest = PageRequest.of(page, size);
+    return repository.findAllByUserIdOrderByStartTimeDesc(userId, pageRequest)
         .map(mapper::toDomain);
   }
 

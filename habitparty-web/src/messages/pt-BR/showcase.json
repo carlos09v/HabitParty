@@ -29,6 +29,12 @@
     "memberSince": "Na jornada desde {date}",
     "settingsButton": "Configurações",
     "changeFrameButton": "Moldura",
+    "changePhoto": "Trocar Foto",
+    "uploadingPhoto": "Enviando...",
+    "photoSuccessToast": "Foto de perfil atualizada!",
+    "photoErrorToast": "Erro ao atualizar foto de perfil.",
+    "invalidImageToast": "Formato de arquivo inválido. Selecione uma imagem.",
+    "imageSizeToast": "A imagem deve ter no máximo 5MB.",
     "achievementPointsLabel": "Pontos de Conquista",
     "unlockedCountLabel": "{unlocked} de {total} medalhas",
     "xpProgressLabel": "{xp} XP acumulados • Faltam {remaining} XP para {nextTitle}",
@@ -176,7 +182,8 @@
     "progressLabel": "Progresso: {current} / {target}",
     "pinToShowcase": "Fixar na Vitrine",
     "pinnedInShowcase": "Na Vitrine",
-    "emptySearch": "Nenhuma conquista encontrada para os filtros selecionados."
+    "emptySearch": "Nenhuma conquista encontrada para os filtros selecionados.",
+    "emptyVisitorGallery": "Este usuário ainda não desbloqueou conquistas para os filtros selecionados."
   },
   "rarities": {
     "COMMON": "Comum",

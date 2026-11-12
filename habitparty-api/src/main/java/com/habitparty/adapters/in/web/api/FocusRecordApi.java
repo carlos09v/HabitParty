@@ -21,10 +21,26 @@ import jakarta.validation.Valid;
 @Tag(name = "Focus Records", description = "Endpoints para gerenciamento do histórico de sessões de foco")
 public interface FocusRecordApi {
 
+    @Operation(summary = "Histórico Geral de Foco do Usuário", description = "Retorna histórico paginado de todas as sessões de foco do usuário (atividades e tarefas).")
+    @GetMapping("/me")
+    ResponseEntity<Page<FocusRecordResponseDTO>> getMyRecords(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "50") int size,
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
+    );
+
     @Operation(summary = "Histórico de Foco por Atividade", description = "Retorna histórico paginado das sessões de foco de uma atividade.")
     @GetMapping("/activity/{activityId}")
     ResponseEntity<Page<FocusRecordResponseDTO>> getByActivity(
         @PathVariable UUID activityId,
+        @RequestParam(defaultValue = "0") int page,
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
+    );
+
+    @Operation(summary = "Histórico de Foco por Tarefa", description = "Retorna histórico paginado das sessões de foco vinculadas a uma tarefa do Kanban.")
+    @GetMapping("/task/{taskId}")
+    ResponseEntity<Page<FocusRecordResponseDTO>> getByTask(
+        @PathVariable UUID taskId,
         @RequestParam(defaultValue = "0") int page,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
@@ -44,10 +60,11 @@ public interface FocusRecordApi {
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 
-    @Operation(summary = "Excluir Registro de Foco", description = "Remove um registro de sessão de foco.")
+    @Operation(summary = "Excluir Registro de Foco", description = "Remove um registro de sessão de foco. Use deleteHistory=true para remover também seu registro do Histórico.")
     @DeleteMapping("/{recordId}")
     ResponseEntity<Void> delete(
         @PathVariable UUID recordId,
+        @RequestParam(defaultValue = "false") boolean deleteHistory,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 }

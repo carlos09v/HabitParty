@@ -42,6 +42,7 @@ export interface InitialTaskFormData {
 
 export interface TaskRowProps {
   task: Task;
+  isSelected?: boolean;
   isCompact?: boolean;
   activeFilter?: string;
   selectedDate?: string | null;
@@ -69,6 +70,7 @@ export interface TaskDetailsPopoverProps {
   onHabitChange?: (taskId: string, delta: number) => void;
   onEdit?: (task: Task) => void;
   onDuplicate?: (task: Task) => void;
+  onOpenFocusHistory?: (task: Task) => void;
 }
 
 export interface TaskDetailsFooterProps {
@@ -190,7 +192,11 @@ export interface TasksBoardModalsProps {
   isDeletingColumn: boolean;
   handleDeleteColumn: (col: BoardColumn) => Promise<boolean>;
   handleDuplicateTask: (task: Task, columnId: string) => void;
-  handleDeleteTask: (task: Task, columnId: string) => void;
+  handleDeleteTask: (
+    task: Task,
+    columnId: string,
+    deleteHistory?: boolean,
+  ) => void;
   handleTaskDetailsUpdate: (task: Task) => void;
   handleToggleComplete: (taskId: string, completed: boolean) => void;
   handleHabitChange?: (taskId: string, delta: number) => void;
@@ -206,6 +212,7 @@ export interface RoutineBoardProps {
   columns: BoardColumn[];
   setColumns: Dispatch<SetStateAction<BoardColumn[]>>;
   visibleColumnIds: string[];
+  selectedTaskId?: string;
   isCompact?: boolean;
   maxColumns?: number;
   selectedColumnId?: string | null;
@@ -247,6 +254,7 @@ export interface RoutineColumnProps {
   column: BoardColumn;
   columnIndex: number;
   isSelected?: boolean;
+  selectedTaskId?: string;
   isCompact?: boolean;
   widthPreset?: ColumnWidthPreset;
   onAddTaskToColumn?: (
@@ -275,6 +283,7 @@ export interface RoutineTaskListProps {
   setColumns: Dispatch<SetStateAction<BoardColumn[]>>;
   visibleColumnIds: string[];
   selectedColumnId?: string | null;
+  selectedTaskId?: string;
   isCompact?: boolean;
   onAddTaskToColumn: (
     columnId: string,
@@ -312,6 +321,7 @@ export interface RoutineTaskListSectionProps {
   column: BoardColumn;
   isCompact: boolean;
   selectedColumnId?: string | null;
+  selectedTaskId?: string;
   onAddTaskToColumn: (
     columnId: string,
     initialType?: TaskTypeOption,
@@ -421,6 +431,7 @@ export interface RoutineFiltersProps {
 export interface RoutineTaskCardProps {
   task: Task;
   columnId: string;
+  isSelected?: boolean;
   isCompact?: boolean;
   onOpenDetails?: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
   onEditTask?: (task: Task, columnId: string) => void;

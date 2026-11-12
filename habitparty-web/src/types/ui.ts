@@ -5,6 +5,7 @@ export type ThemeMode = "light" | "dark";
 export type ExperienceMode = "GAMIFIED" | "PRODUCTIVITY";
 export type AppLocale = "en" | "pt-BR";
 export type DateFormat = "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD";
+export type TimeFormat = "24h" | "12h";
 export type ViewMode = "card" | "list" | "grid";
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -38,6 +39,15 @@ export interface DatePickerProps {
   hint?: string;
   align?: "left" | "right";
   yearRange?: { min?: number; max?: number };
+  enableTime?: boolean;
+  timeValue?: string;
+  onTimeChange?: (time: string) => void;
+  startTimeValue?: string;
+  onStartTimeChange?: (startTime: string) => void;
+  endTimeValue?: string;
+  onEndTimeChange?: (endTime: string) => void;
+  allDayValue?: boolean;
+  onAllDayChange?: (allDay: boolean) => void;
 }
 
 export interface TimePickerProps {
@@ -60,6 +70,7 @@ export interface TimePickerProps {
   error?: string;
   hint?: string;
   align?: "left" | "right";
+  zIndex?: number;
 }
 
 export interface ListCardProps {

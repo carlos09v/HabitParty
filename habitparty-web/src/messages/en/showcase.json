@@ -29,6 +29,12 @@
     "memberSince": "On the journey since {date}",
     "settingsButton": "Settings",
     "changeFrameButton": "Avatar Frame",
+    "changePhoto": "Change Photo",
+    "uploadingPhoto": "Uploading...",
+    "photoSuccessToast": "Profile picture updated!",
+    "photoErrorToast": "Failed to update profile picture.",
+    "invalidImageToast": "Invalid file format. Please select an image.",
+    "imageSizeToast": "Image must be at most 5MB.",
     "achievementPointsLabel": "Achievement Points",
     "unlockedCountLabel": "{unlocked} of {total} medals",
     "xpProgressLabel": "{xp} total XP • {remaining} XP to {nextTitle}",
@@ -176,7 +182,8 @@
     "progressLabel": "Progress: {current} / {target}",
     "pinToShowcase": "Pin to Showcase",
     "pinnedInShowcase": "In Showcase",
-    "emptySearch": "No achievements found for the selected filters."
+    "emptySearch": "No achievements found for the selected filters.",
+    "emptyVisitorGallery": "This user has not unlocked any achievements for the selected filters yet."
   },
   "rarities": {
     "COMMON": "Common",

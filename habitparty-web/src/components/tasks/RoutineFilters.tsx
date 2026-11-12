@@ -5,7 +5,6 @@ import { ArchiveRestore, Columns3, SquarePlus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { PrimaryActionButton } from "@/components/ui/PrimaryActionButton";
-import { useCompactMode } from "@/hooks/useCompactMode";
 import type { RoutineFiltersProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 import { BoardAlignmentSelector } from "./filters/BoardAlignmentSelector";
@@ -123,7 +122,7 @@ export function RoutineFilters({
   isCompact: propIsCompact,
 }: RoutineFiltersProps) {
   const t = useTranslations("tasks.filters");
-  const { isCompact } = useCompactMode(propIsCompact);
+  const isCompact = propIsCompact ?? false;
 
   const leftActions = (
     <RoutineFilterPopover

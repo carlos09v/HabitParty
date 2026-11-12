@@ -35,7 +35,9 @@
       "title": "Delete Task",
       "description": "Are you sure you want to delete the task <bold>\"{title}\"</bold>? This task has subtasks, Hardcore Mode, or an active streak history, and deletion cannot be undone.",
       "confirmText": "Delete Task",
-      "cancelText": "Cancel"
+      "cancelText": "Cancel",
+      "deleteHistoryLabel": "Also delete this task's records from History",
+      "deleteHistoryHint": "Removes completion, failure, and penalty transactions of this task from your history. Coins and XP already earned are not changed."
     },
     "deleteColumnModal": {
       "title": "Delete Column",
@@ -101,6 +103,13 @@
       }
     }
   },
+  "workspaceSearchHint": {
+    "notFoundSwitchPrompt": "Didn't find your task? Switch Workspace to see if it's there:",
+    "foundInOtherWorkspacesEmptyLocal": "No results in this Workspace, but we found matches in:",
+    "foundInOtherWorkspacesAlso": "We also found matching tasks in:",
+    "switchToWorkspaceButton": "Switch to \"{workspace}\"",
+    "defaultWorkspaceName": "Workspace"
+  },
   "columnsDrawer": {
     "dialogAria": "Board Columns Manager",
     "backdropAria": "Close columns drawer",
@@ -113,6 +122,7 @@
     "createNewListTitle": "Create new list",
     "maxColumnsReachedTitle": "Maximum limit of {max} columns reached",
     "newColumnButton": "New Column",
+    "unlockMoreColumnsButton": "Unlock more columns",
     "emptyState": "No columns registered in this workspace.",
     "createFirstColumnButton": "Create first column",
     "taskSingular": "task",
@@ -366,15 +376,23 @@
       "dueDateHardcorePlaceholder": "Select required due date...",
       "dueDatePlaceholder": "Set due date...",
       "dueDateFrozenHint": "🔒 Date frozen: deadline expired in Hardcore Mode.",
-      "dueTimeLabel": "Time (Optional)",
+      "dueTimeLabel": "Time / Deadline (Optional)",
+      "dueStartTimeLabel": "Event Start",
       "dueTimePlaceholder": "Set time...",
+      "dueEndTimeLabel": "End Time (Optional)",
+      "dueEndTimePlaceholder": "Set end time...",
+      "dueEndTimeRequiresStartPlaceholder": "Set start time first",
+      "singleDueTimeHint": "A single time acts as a deadline. For an event with duration, also set the End Time.",
+      "eventTimeRangeHint": "Event from {start} to {end} — stays \"In progress\" during that window and only becomes overdue after {end}.",
       "reminderLabel": "Reminder",
+      "inAppReminderAlertInfo": "You will receive an alert in your in-app notifications ({when}). If you also want an email reminder, toggle the option below.",
       "reminders": {
         "NONE": "No reminder",
         "ONE_DAY_EARLY": "1 day before",
         "TWO_DAYS_EARLY": "2 days before",
         "THREE_DAYS_EARLY": "3 days before",
-        "ONE_WEEK_EARLY": "1 week before"
+        "ONE_WEEK_EARLY": "1 week before",
+        "CUSTOM": "Custom"
       },
       "emailReminderTitle": "Receive email reminder?",
       "emailReminderQuotaFree": "Up to 5 emails",
@@ -481,6 +499,50 @@
       "okButton": "OK",
       "addItemButton": "Add item"
     },
+    "focusSection": {
+      "title": "Focus & Effort",
+      "accumulatedSummary": "{time} accumulated • {cycles, plural, one {# cycle} other {# cycles}}",
+      "noFocusYet": "No focus sessions logged yet",
+      "startFocusButton": "Focus now",
+      "pauseButton": "Pause",
+      "resumeButton": "Resume",
+      "openStageTooltip": "Open Focus Stage",
+      "openHistoryButton": "History",
+      "openHistoryTooltip": "Open focus session history for this task",
+      "toggleHistoryTooltip": "View focus session history for this task",
+      "loadingHistory": "Loading sessions...",
+      "emptyHistory": "No sessions found.",
+      "directTaskFocus": "Task focus session",
+      "accumulatedSummaryNoCycles": "{time} accumulated",
+      "conflictDescription": "There is already a session in progress on <strong>{name}</strong>. What do you want to do with the current time?",
+      "conflictFallbackName": "another target",
+      "conflictAttachToActivity": "Link this task to the current session (keeps the time)",
+      "conflictTransferTime": "Transfer the current time to this task",
+      "conflictSaveAndStart": "Save current session and start on this task",
+      "conflictSaveMinHint": "Sessions can only be saved after 1 minute",
+      "conflictDiscardAndStart": "Discard current time and start fresh",
+      "conflictKeepCurrent": "Keep current session"
+    },
+    "focusHistoryModal": {
+      "title": "Focus History",
+      "description": "Full log of focus sessions and time dedicated to this task.",
+      "totalAccumulated": "Total accumulated",
+      "cyclesLabel": "{cycles, plural, one {# cycle} other {# cycles}}",
+      "sessionsCount": "{count, plural, one {# logged session} other {# logged sessions}}",
+      "emptyTitle": "No focus sessions logged yet",
+      "emptyDescription": "You haven't tracked focus on this task yet. Start by clicking 'Focus now' or directly on the Focus Stage.",
+      "loading": "Loading focus history...",
+      "directTaskFocus": "Direct task focus",
+      "deleteRecordAria": "Delete this focus record",
+      "deleteConfirmTitle": "Delete Focus Record",
+      "deleteConfirmDescription": "Are you sure you want to permanently delete this {duration} session? The duration and cycles will be deducted from this task's total.",
+      "deleteConfirmButton": "Yes, delete",
+      "deleteHistoryLabel": "Delete also from History log",
+      "deleteHistoryHint": "Removes this session entry from the general statement. Earned coins and XP will not be modified.",
+      "deleteRecordSuccess": "Focus record removed successfully!",
+      "deleteRecordError": "Error deleting focus record.",
+      "paginationItemLabel": "sessions"
+    },
     "footer": {
       "rewardsLabel": "Rewards",
       "formatButtonTitle": "Text formatting (Bold, Highlight, List, etc.)",
@@ -572,6 +634,8 @@
     "checklistAddError": "Error adding checklist item.",
     "checklistUpdateError": "Error updating checklist item.",
     "checklistDeleteError": "Error removing checklist item.",
+    "checklistSyncError": "Some subtask changes could not be saved.",
+    "dueEndTimeAfterStartError": "End time must be after the start time.",
     "typeLabels": {
       "HABIT": "Habit",
       "DAILY": "Daily",

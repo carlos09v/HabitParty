@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.habitparty.application.ports.BoardColumnRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
@@ -27,20 +28,28 @@ public class RecordHabitScoreUseCase {
   private final TaskRepository taskPort;
   private final TransactionHistoryRepository transactionPort;
   private final UserRepository userPort;
-  private EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
+  private final EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
+  private final BoardColumnRepository boardColumnPort;
+
+  @Autowired
+  public RecordHabitScoreUseCase(
+      TaskRepository taskPort,
+      TransactionHistoryRepository transactionPort,
+      UserRepository userPort,
+      EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase,
+      BoardColumnRepository boardColumnPort) {
+    this.taskPort = taskPort;
+    this.transactionPort = transactionPort;
+    this.userPort = userPort;
+    this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
+    this.boardColumnPort = boardColumnPort;
+  }
 
   public RecordHabitScoreUseCase(
       TaskRepository taskPort,
       TransactionHistoryRepository transactionPort,
       UserRepository userPort) {
-    this.taskPort = taskPort;
-    this.transactionPort = transactionPort;
-    this.userPort = userPort;
-  }
-
-  @Autowired(required = false)
-  public void setEvaluateUserAchievementsUseCase(EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
-    this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
+    this(taskPort, transactionPort, userPort, null, null);
   }
 
   @Transactional
@@ -55,6 +64,7 @@ public class RecordHabitScoreUseCase {
 
     User user = userPort.findById(userIdLogado)
         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+    String columnName = TaskGamificationHelper.resolveColumnName(boardColumnPort, habit);
 
     if (delta > 0) {
       if (habit.getHabitType() == HabitType.NEGATIVE) {
@@ -70,7 +80,7 @@ public class RecordHabitScoreUseCase {
       }
 
       TaskGamificationHelper.awardTaskCompletion(
-          user, habit, TransactionType.HABIT_COMPLETED, userPort, transactionPort);
+          user, habit, TransactionType.HABIT_COMPLETED, userPort, transactionPort, columnName);
       if (evaluateUserAchievementsUseCase != null) {
         evaluateUserAchievementsUseCase.execute(user);
       }
@@ -89,7 +99,7 @@ public class RecordHabitScoreUseCase {
       userPort.save(user);
 
       TransactionHistory negativeTransaction = TaskGamificationHelper.buildPenaltyTransaction(
-          userIdLogado, habit, penalty, TransactionType.BAD_HABIT_PENALTY, "Penalidade de hábito: ");
+          userIdLogado, habit, penalty, TransactionType.BAD_HABIT_PENALTY, "Penalidade de hábito: ", columnName);
       transactionPort.save(negativeTransaction);
     }
 

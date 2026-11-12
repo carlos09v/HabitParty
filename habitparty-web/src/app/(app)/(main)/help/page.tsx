@@ -16,7 +16,6 @@ import { SUPPORT_LINKS } from "@/constants/landing";
 import type { AppLocale } from "@/i18n/config";
 import { setStaticLocale } from "@/i18n/request";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
-import { getCompactMode } from "@/utils/cookies";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("help.metadata");
@@ -26,13 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-async function HelpStaticContent({
-  locale,
-  isCompact,
-}: {
-  locale: AppLocale;
-  isCompact: boolean;
-}) {
+async function HelpStaticContent({ locale }: { locale: AppLocale }) {
   "use cache";
   cacheLife("static");
   cacheTag("help-content");
@@ -43,7 +36,7 @@ async function HelpStaticContent({
   const tables = getHelpTables(locale);
 
   return (
-    <PageWrapper isCompact={isCompact}>
+    <PageWrapper>
       <div className="flex flex-col gap-8 w-full max-w-6xl mx-auto pb-16">
         {/* CABEÇALHO DA PÁGINA */}
         <header className="flex items-end justify-between border-b border-primary/20 pb-4">
@@ -59,10 +52,10 @@ async function HelpStaticContent({
         </header>
 
         {/* CICLO DE PRODUTIVIDADE (Server Component) */}
-        <HelpProductivityCycle isCompact={isCompact} />
+        <HelpProductivityCycle />
 
         {/* FAQ INTERATIVO + TABELAS DE ECONOMIA INTEGRADAS À BUSCA */}
-        <HelpFaqSection isCompact={isCompact} faqs={faqs} tables={tables} />
+        <HelpFaqSection faqs={faqs} tables={tables} />
 
         {/* CARD DE SUPORTE, CONTATO E REPORT DE BUGS */}
         <section className="rounded-2xl border border-neutral-700 dark:border-primary/30 bg-card dark:bg-surface/60 shadow-xs dark:shadow-none p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -125,14 +118,11 @@ async function HelpStaticContent({
 }
 
 export default async function HelpPage() {
-  const [isCompact, locale] = await Promise.all([
-    getCompactMode(),
-    getLocale() as Promise<AppLocale>,
-  ]);
+  const locale = (await getLocale()) as AppLocale;
 
   return (
     <ScopedIntlProvider scope="help" locale={locale}>
-      <HelpStaticContent locale={locale} isCompact={isCompact} />
+      <HelpStaticContent locale={locale} />
     </ScopedIntlProvider>
   );
 }

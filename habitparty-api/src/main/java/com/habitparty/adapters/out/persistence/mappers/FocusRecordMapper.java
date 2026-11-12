@@ -17,6 +17,8 @@ public class FocusRecordMapper {
     entity.setUserId(domain.getUserId());
     entity.setFocusActivityId(domain.getFocusActivityId().orElse(null));
     entity.setInventoryItemId(domain.getInventoryItemId().orElse(null));
+    entity.setTaskId(domain.getTaskId().orElse(null));
+    entity.setTaskNameSnapshot(domain.getTaskNameSnapshot().orElse(null));
     entity.setNotes(domain.getNotes().orElse(null));
     entity.setStartTime(domain.getStartTime());
     entity.setEndTime(domain.getEndTime());
@@ -37,6 +39,8 @@ public class FocusRecordMapper {
         entity.getUserId(),
         entity.getFocusActivityId(),
         entity.getInventoryItemId(),
+        entity.getTaskId(),
+        entity.getTaskNameSnapshot(),
         entity.getNotes(),
         entity.getStartTime(),
         entity.getEndTime(),

@@ -193,4 +193,91 @@ class TodoDomainTest {
     assertEquals(LocalDate.now(), todo.getDueDate().orElse(null));
     assertEquals(dueTime, todo.getDueTime().orElse(null));
   }
+
+  private Todo buildTodoWithTime(java.time.LocalTime dueTime) {
+    return new Todo(
+        UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+        "Evento", "Descrição", 0, TaskPriority.MEDIUM,
+        List.of(), TaskDifficulty.EASY, TaskStatus.PENDING, TaskType.TODO,
+        false, LocalDate.now().plusDays(1), LocalDateTime.now(), List.of(),
+        TodoReminderType.NONE, null, null, false, false, false, dueTime
+    );
+  }
+
+  @Test
+  @DisplayName("Deve definir o horário de término quando posterior ao horário de início")
+  void shouldDefineDueEndTimeWhenAfterStart() {
+    Todo todo = buildTodoWithTime(java.time.LocalTime.of(14, 0));
+    todo.defineDueEndTime(java.time.LocalTime.of(18, 0));
+    assertEquals(java.time.LocalTime.of(18, 0), todo.getDueEndTime().orElse(null));
+  }
+
+  @Test
+  @DisplayName("Deve rejeitar horário de término sem horário de início")
+  void shouldRejectDueEndTimeWithoutStart() {
+    Todo todo = buildTodoWithTime(null);
+    assertThrows(com.habitparty.core.exceptions.DomainValidationException.class,
+        () -> todo.defineDueEndTime(java.time.LocalTime.of(18, 0)));
+  }
+
+  @Test
+  @DisplayName("Deve rejeitar horário de término igual ou anterior ao início")
+  void shouldRejectDueEndTimeNotAfterStart() {
+    Todo todo = buildTodoWithTime(java.time.LocalTime.of(14, 0));
+    assertThrows(com.habitparty.core.exceptions.DomainValidationException.class,
+        () -> todo.defineDueEndTime(java.time.LocalTime.of(14, 0)));
+    assertThrows(com.habitparty.core.exceptions.DomainValidationException.class,
+        () -> todo.defineDueEndTime(java.time.LocalTime.of(9, 0)));
+  }
+
+  @Test
+  @DisplayName("Deve limpar o término quando o horário de início for removido ou passar a ser posterior")
+  void shouldClearDueEndTimeWhenStartRemovedOrMovedAfterEnd() {
+    Todo todo = buildTodoWithTime(java.time.LocalTime.of(14, 0));
+    todo.defineDueEndTime(java.time.LocalTime.of(18, 0));
+
+    todo.updateTodoDetails(LocalDate.now().plusDays(1), java.time.LocalTime.of(19, 0), TodoReminderType.NONE, null, null);
+    assertTrue(todo.getDueEndTime().isEmpty());
+
+    todo.defineDueEndTime(java.time.LocalTime.of(20, 0));
+    todo.updateTodoDetails(LocalDate.now().plusDays(1), null, TodoReminderType.NONE, null, null);
+    assertTrue(todo.getDueEndTime().isEmpty());
+  }
+
+  @Test
+  @DisplayName("Deve descartar término inconsistente ao reidratar da persistência")
+  void shouldDiscardInconsistentDueEndTimeOnRestore() {
+    Todo todo = buildTodoWithTime(java.time.LocalTime.of(14, 0));
+    todo.restoreDueEndTime(java.time.LocalTime.of(10, 0));
+    assertTrue(todo.getDueEndTime().isEmpty());
+    todo.restoreDueEndTime(java.time.LocalTime.of(16, 0));
+    assertEquals(java.time.LocalTime.of(16, 0), todo.getDueEndTime().orElse(null));
+  }
+
+  @Test
+  @DisplayName("Deve garantir exclusividade mútua entre Hora pontual (dueTime) e Evento (startTime/dueEndTime ou isAllDay)")
+  void shouldEnforceMutualExclusivityBetweenDueTimeAndEvent() {
+    Todo todo = buildTodoWithTime(java.time.LocalTime.of(15, 0));
+    assertEquals(java.time.LocalTime.of(15, 0), todo.getDueTime().orElse(null));
+
+    // Ao definir intervalo de evento (startTime + dueEndTime), limpa dueTime
+    todo.defineEventSchedule(java.time.LocalTime.of(14, 0), java.time.LocalTime.of(16, 0), false);
+    assertTrue(todo.getDueTime().isEmpty());
+    assertEquals(java.time.LocalTime.of(14, 0), todo.getStartTime().orElse(null));
+    assertEquals(java.time.LocalTime.of(16, 0), todo.getDueEndTime().orElse(null));
+    assertFalse(todo.isAllDay());
+
+    // Ao marcar Dia Inteiro (isAllDay), limpa startTime, dueEndTime e dueTime
+    todo.defineEventSchedule(null, null, true);
+    assertTrue(todo.isAllDay());
+    assertTrue(todo.getDueTime().isEmpty());
+    assertTrue(todo.getStartTime().isEmpty());
+    assertTrue(todo.getDueEndTime().isEmpty());
+
+    // Ao voltar para Hora pontual (dueTime), limpa isAllDay e startTime
+    todo.updateTodoDetails(LocalDate.now().plusDays(1), java.time.LocalTime.of(17, 30), TodoReminderType.NONE, null, null);
+    assertEquals(java.time.LocalTime.of(17, 30), todo.getDueTime().orElse(null));
+    assertFalse(todo.isAllDay());
+    assertTrue(todo.getStartTime().isEmpty());
+  }
 }

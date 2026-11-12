@@ -9,14 +9,12 @@ import { ShowcaseHighlightsSection } from "@/components/showcase/ShowcaseHighlig
 import { ShowcaseStatsGrid } from "@/components/showcase/ShowcaseStatsGrid";
 import { MAX_SHOWCASE_HIGHLIGHTS } from "@/constants/achievements";
 import { useIdlePreload } from "@/hooks/useIdlePreload";
-import { useUIStore } from "@/store/uiStore";
 import { useUserStore } from "@/store/userStore";
 import type {
   AchievementItemResponseDTO,
   ProfileHighlightResponseDTO,
   UserShowcaseResponseDTO,
 } from "@/types/showcase";
-import { cn } from "@/utils";
 
 const preloadHighlightPickerModal = () =>
   import("@/components/showcase/ShowcaseHighlightPickerModal").then(
@@ -29,17 +27,9 @@ const ShowcaseHighlightPickerModal = dynamic(preloadHighlightPickerModal, {
 
 interface ShowcaseContainerProps {
   initialShowcase: UserShowcaseResponseDTO;
-  initialCompact?: boolean;
 }
 
-export function ShowcaseContainer({
-  initialShowcase,
-  initialCompact = false,
-}: ShowcaseContainerProps) {
-  const storeCompact = useUIStore((s) => s.compactMode);
-  const hydrated = useUIStore((s) => s.hydrated);
-  const isCompact = hydrated ? storeCompact : initialCompact;
-
+export function ShowcaseContainer({ initialShowcase }: ShowcaseContainerProps) {
   const [highlights, setHighlights] = useState<ProfileHighlightResponseDTO[]>(
     initialShowcase.highlights || [],
   );
@@ -112,19 +102,13 @@ export function ShowcaseContainer({
   };
 
   return (
-    <div
-      className={cn(
-        "flex flex-col w-full max-w-6xl mx-auto pb-16",
-        isCompact ? "gap-5" : "gap-7",
-      )}
-    >
+    <div className="flex flex-col w-full max-w-6xl mx-auto pb-16 gap-7">
       {/* HERO HEADER: AVATAR + MOLDURA + BIO + NÍVEL + PONTOS DE CONQUISTA */}
       <ShowcaseHeroHeader
         user={initialShowcase.user}
         stats={initialShowcase.stats}
         isVisitorMode={isVisitorMode}
         onToggleVisitorMode={() => setIsVisitorMode((prev) => !prev)}
-        isCompact={isCompact}
       />
 
       {/* VITRINE DE DESTAQUES (4 SLOTS PERSONALIZÁVEIS) */}
@@ -135,11 +119,10 @@ export function ShowcaseContainer({
         achievements={initialShowcase.achievements}
         isVisitorMode={isVisitorMode}
         onOpenPicker={handleOpenPicker}
-        isCompact={isCompact}
       />
 
       {/* INDICADORES VITALÍCIOS DE CONSISTÊNCIA & FEITOS */}
-      <ShowcaseStatsGrid stats={initialShowcase.stats} isCompact={isCompact} />
+      <ShowcaseStatsGrid stats={initialShowcase.stats} />
 
       {/* GALERIA DE 59 CONQUISTAS & MEDALHAS */}
       <AchievementsGallery
@@ -147,7 +130,6 @@ export function ShowcaseContainer({
         highlights={highlights}
         isVisitorMode={isVisitorMode}
         onPinAchievement={handlePinAchievementFromGallery}
-        isCompact={isCompact}
       />
 
       {/* MODAL DE SELEÇÃO DOS 4 SLOTS */}

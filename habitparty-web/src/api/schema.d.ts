@@ -76,6 +76,47 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/tasks/search": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Buscar tarefas entre workspaces
+     * @description Retorna, para cada workspace do usuário, a quantidade de tarefas cujo nome ou descrição contém o termo informado.
+     */
+    get: {
+      parameters: {
+        query: {
+          q: string;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description OK */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "*/*": components["schemas"]["TaskSearchWorkspaceCountDTO"][];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/tasks/move": {
     parameters: {
       query?: never;
@@ -932,6 +973,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/focus-records/task/{taskId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Histórico de Foco por Tarefa
+     * @description Retorna histórico paginado das sessões de foco vinculadas a uma tarefa do Kanban.
+     */
+    get: operations["getByTask"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/focus-records/me": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Histórico Geral de Foco do Usuário
+     * @description Retorna histórico paginado de todas as sessões de foco do usuário (atividades e tarefas).
+     */
+    get: operations["getMyRecords"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/board_columns/workspace/{workspaceId}": {
     parameters: {
       query?: never;
@@ -987,6 +1068,26 @@ export interface paths {
      * @description Exclui um registro do extrato de transações.
      */
     delete: operations["deleteTransaction"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/transactions/batch": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Excluir Registros em Lote
+     * @description Exclui vários registros do extrato de transações de uma vez (máx. 200).
+     */
+    delete: operations["deleteTransactionsBatch"];
     options?: never;
     head?: never;
     patch?: never;
@@ -1126,6 +1227,9 @@ export interface components {
       /** @enum {string} */
       monthlyOption?: "DAY_OF_THE_WEEK" | "DAY_OF_THE_MONTH";
       dueTime?: string;
+      startTime?: string;
+      dueEndTime?: string;
+      isAllDay?: boolean;
       /** @enum {string} */
       reminderType?:
         | "NONE"
@@ -1140,6 +1244,10 @@ export interface components {
       sendEmailReminder?: boolean;
       emailReminderSent?: boolean;
       isRewardClaimed?: boolean;
+      /** Format: int32 */
+      totalFocusMinutes?: number;
+      /** Format: int32 */
+      focusCyclesCount?: number;
       checklist?: components["schemas"]["ChecklistItemResponseDTO"][];
     };
     WorkspaceResponseDTO: {
@@ -1261,6 +1369,9 @@ export interface components {
       customReminderAt?: string;
       sendEmailReminder?: boolean;
       dueTime?: string;
+      startTime?: string;
+      dueEndTime?: string;
+      isAllDay?: boolean;
     };
     UpdateTaskOrderDTO: {
       /** Format: uuid */
@@ -1355,6 +1466,9 @@ export interface components {
       focusActivityId?: string;
       /** Format: uuid */
       inventoryItemId?: string;
+      /** Format: uuid */
+      taskId?: string;
+      taskNameSnapshot?: string;
       notes?: string;
       /** Format: date-time */
       startTime?: string;
@@ -1483,6 +1597,16 @@ export interface components {
       customReminderAt?: string;
       sendEmailReminder?: boolean;
       dueTime?: string;
+      startTime?: string;
+      dueEndTime?: string;
+      isAllDay?: boolean;
+    };
+    TaskSearchWorkspaceCountDTO: {
+      /** Format: uuid */
+      workspaceId: string;
+      workspaceName: string;
+      /** Format: int64 */
+      count: number;
     };
     CreateRewardDTO: {
       name: string;
@@ -1512,6 +1636,8 @@ export interface components {
       focusActivityId?: string;
       /** Format: uuid */
       inventoryItemId?: string;
+      /** Format: uuid */
+      taskId?: string;
       notes?: string;
       /** Format: date-time */
       startTime: string;
@@ -1629,8 +1755,12 @@ export interface components {
       /** @enum {string} */
       packageLevel?: "NONE" | "BASIC" | "PREMIUM" | "EPIC" | "LEGENDARY";
       tags?: string[];
+      columnName?: string;
       /** Format: date-time */
       createdAt?: string;
+    };
+    DeleteTransactionsBatchDTO: {
+      ids: string[];
     };
     DashboardTaskDTO: {
       /** Format: uuid */
@@ -1851,7 +1981,9 @@ export interface operations {
   };
   deleteTask: {
     parameters: {
-      query?: never;
+      query?: {
+        deleteHistory?: boolean;
+      };
       header?: never;
       path: {
         taskId: string;
@@ -2035,7 +2167,9 @@ export interface operations {
   };
   delete: {
     parameters: {
-      query?: never;
+      query?: {
+        deleteHistory?: boolean;
+      };
       header?: never;
       path: {
         recordId: string;
@@ -3011,6 +3145,53 @@ export interface operations {
       };
     };
   };
+  getByTask: {
+    parameters: {
+      query?: {
+        page?: number;
+      };
+      header?: never;
+      path: {
+        taskId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["PageFocusRecordResponseDTO"];
+        };
+      };
+    };
+  };
+  getMyRecords: {
+    parameters: {
+      query?: {
+        page?: number;
+        size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["PageFocusRecordResponseDTO"];
+        };
+      };
+    };
+  };
   getColumnListByWorkspaceId: {
     parameters: {
       query?: never;
@@ -3073,9 +3254,33 @@ export interface operations {
       };
     };
   };
-  deleteReward: {
+  deleteTransactionsBatch: {
     parameters: {
       query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DeleteTransactionsBatchDTO"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  deleteReward: {
+    parameters: {
+      query?: {
+        deleteHistory?: boolean;
+      };
       header?: never;
       path: {
         id: string;

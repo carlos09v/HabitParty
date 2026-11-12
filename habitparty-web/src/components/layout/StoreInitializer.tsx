@@ -7,16 +7,21 @@ import { useAvatarFrameStore } from "@/store/avatarFrameStore";
 import { useUIStore } from "@/store/uiStore";
 import { useUserStore } from "@/store/userStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
-import type { DateFormat, ExperienceMode, ThemeMode } from "@/types/ui";
+import type {
+  DateFormat,
+  ExperienceMode,
+  ThemeMode,
+  TimeFormat,
+} from "@/types/ui";
 import { getLevelProgress } from "@/utils/levels";
 
 type Workspace = components["schemas"]["WorkspaceResponseDTO"];
 type User = components["schemas"]["UserResponseDTO"];
 
 interface StoreInitializerProps {
-  compactMode: boolean;
   theme?: ThemeMode;
   dateFormat?: DateFormat;
+  timeFormat?: TimeFormat;
   experienceMode?: ExperienceMode;
   workspaces?: Workspace[];
   activeWorkspaceId?: string | null;
@@ -24,9 +29,9 @@ interface StoreInitializerProps {
 }
 
 export function StoreInitializer({
-  compactMode,
   theme = "dark",
   dateFormat = "DD/MM/YYYY",
+  timeFormat = "24h",
   experienceMode = "PRODUCTIVITY",
   workspaces = [],
   activeWorkspaceId = null,
@@ -43,9 +48,9 @@ export function StoreInitializer({
   if (!initialized.current) {
     useUIStore.setState({
       hydrated: true,
-      compactMode,
       theme,
       dateFormat,
+      timeFormat,
       experienceMode: resolvedExperienceMode,
     });
     if (workspaces.length > 0) {

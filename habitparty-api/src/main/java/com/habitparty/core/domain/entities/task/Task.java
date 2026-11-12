@@ -32,6 +32,8 @@ public abstract class Task {
 
   private boolean isHardcoreModeEnabled = false;
   protected LocalDate dueDate;
+  private int totalFocusMinutes = 0;
+  private int focusCyclesCount = 0;
   private LocalDateTime createdAt;
 
   // Hard-link (Composição real do Aggregate Root)
@@ -217,6 +219,32 @@ public abstract class Task {
 
   public void setChecklist(List<ChecklistItem> checklist) {
     this.checklist = checklist;
+  }
+
+  public void restoreFocusMetrics(int totalFocusMinutes, int focusCyclesCount) {
+    this.totalFocusMinutes = Math.max(0, totalFocusMinutes);
+    this.focusCyclesCount = Math.max(0, focusCyclesCount);
+  }
+
+  public void addFocusSession(int durationMinutes, int completedPomos) {
+    if (this.taskType == TaskType.HABIT) {
+      throw new DomainValidationException("Apenas tarefas Diárias e Afazeres podem ser vinculadas a sessões de foco.");
+    }
+    this.totalFocusMinutes = Math.max(0, this.totalFocusMinutes + Math.max(0, durationMinutes));
+    this.focusCyclesCount = Math.max(0, this.focusCyclesCount + Math.max(0, completedPomos));
+  }
+
+  public void removeFocusSession(int durationMinutes, int completedPomos) {
+    this.totalFocusMinutes = Math.max(0, this.totalFocusMinutes - Math.max(0, durationMinutes));
+    this.focusCyclesCount = Math.max(0, this.focusCyclesCount - Math.max(0, completedPomos));
+  }
+
+  public int getTotalFocusMinutes() {
+    return totalFocusMinutes;
+  }
+
+  public int getFocusCyclesCount() {
+    return focusCyclesCount;
   }
 
 }

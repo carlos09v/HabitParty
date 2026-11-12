@@ -139,6 +139,8 @@ export function SidebarNotificationsPopover({
     switch (type) {
       case "overdue":
         return <AlertCircle size={15} className="text-red-400 shrink-0" />;
+      case "reminder":
+        return <Bell size={15} className="text-amber-400 shrink-0" />;
       case "streak":
         return <Flame size={15} className="text-amber-400 shrink-0" />;
       case "focus_item":

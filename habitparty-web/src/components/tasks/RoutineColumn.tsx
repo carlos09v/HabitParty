@@ -11,7 +11,6 @@ import { useTranslations } from "next-intl";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { getColumnIcon } from "@/constants/routine";
 import { normalizeTaskType } from "@/constants/task";
-import { useCompactMode } from "@/hooks/useCompactMode";
 import type { RoutineColumnProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 import { scrollColumnIntoKanbanView } from "@/utils/dom";
@@ -21,6 +20,7 @@ import { RoutineTaskCard } from "./RoutineTaskCard";
 export const RoutineColumn = memo(function RoutineColumn({
   column,
   isSelected = false,
+  selectedTaskId,
   isCompact: propIsCompact,
   widthPreset = "normal",
   onAddTaskToColumn,
@@ -34,7 +34,7 @@ export const RoutineColumn = memo(function RoutineColumn({
   isOverlay = false,
 }: RoutineColumnProps) {
   const t = useTranslations("tasks.column");
-  const { isCompact } = useCompactMode(propIsCompact);
+  const isCompact = propIsCompact ?? false;
   const ColumnIcon = getColumnIcon(column.icon);
   const columnRef = useRef<HTMLDivElement | null>(null);
 
@@ -314,6 +314,7 @@ export const RoutineColumn = memo(function RoutineColumn({
                 key={task.id}
                 task={task}
                 columnId={column.id}
+                isSelected={selectedTaskId === task.id}
                 isCompact={isCompact || widthPreset === "compact"}
                 onOpenDetails={onOpenDetails}
                 onEditTask={onEditTask}
@@ -363,6 +364,7 @@ export const RoutineColumn = memo(function RoutineColumn({
                       key={task.id}
                       task={task}
                       columnId={column.id}
+                      isSelected={selectedTaskId === task.id}
                       isCompact={isCompact || widthPreset === "compact"}
                       onOpenDetails={onOpenDetails}
                       onEditTask={onEditTask}

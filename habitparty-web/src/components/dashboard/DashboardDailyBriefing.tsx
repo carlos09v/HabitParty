@@ -57,6 +57,32 @@ export function DashboardDailyBriefing({
   const isAllCompleted =
     totalTodayTasks > 0 && completedTodayTasks === totalTodayTasks;
 
+  const currentHour = now.getHours();
+  const isAfterNoon = currentHour >= 12;
+  const hoursLeft = Math.max(1, 24 - currentHour);
+
+  let streakBadgeText: string;
+  let streakBadgeClass =
+    "text-xs font-semibold text-orange-600 dark:text-orange-400 whitespace-nowrap overflow-visible";
+
+  if (isHydrated && isAfterNoon && completedTodayTasks === 0) {
+    streakBadgeText = t("streakRemainingHours", { hours: hoursLeft });
+    streakBadgeClass =
+      "text-xs font-semibold text-amber-500 dark:text-amber-400 whitespace-nowrap overflow-visible";
+  } else if (completedTodayTasks > 0) {
+    streakBadgeText = t("streakSecuredBadge");
+  } else {
+    streakBadgeText =
+      streak > 0 ? t("streakActiveBadge") : t("streakStartBadge");
+  }
+
+  const streakBadgeTitle =
+    isHydrated && isAfterNoon && completedTodayTasks === 0
+      ? t("streakRemainingHours", { hours: hoursLeft })
+      : streak > 0
+        ? t("streakActiveTitle")
+        : t("streakStartTitle");
+
   // Frase de motivação contextual e limpa
   const motivationalMessage = (() => {
     if (totalTodayTasks === 0) {
@@ -191,13 +217,8 @@ export function DashboardDailyBriefing({
                 ? t("streakCount", { count: streak })
                 : t("streakEmptyValue")}
             </span>
-            <span
-              className="text-xs font-semibold text-orange-600 dark:text-orange-400 whitespace-nowrap overflow-visible"
-              title={
-                streak > 0 ? t("streakActiveTitle") : t("streakStartTitle")
-              }
-            >
-              {streak > 0 ? t("streakActiveBadge") : t("streakStartBadge")}
+            <span className={streakBadgeClass} title={streakBadgeTitle}>
+              {streakBadgeText}
             </span>
           </div>
         </div>

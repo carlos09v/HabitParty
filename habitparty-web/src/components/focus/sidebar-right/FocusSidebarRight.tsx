@@ -27,7 +27,10 @@ interface FocusSidebarRightProps {
   onResetWeek?: () => void;
   onAddRecord?: () => void;
   onOptionsClick?: () => void;
-  onDeleteRecord?: (recordId: string) => void;
+  onDeleteRecord?: (
+    recordId: string,
+    deleteHistory: boolean,
+  ) => void | Promise<void>;
   selectedActivityName?: string | null;
   onClearSelectedActivity?: () => void;
   isCompact?: boolean;

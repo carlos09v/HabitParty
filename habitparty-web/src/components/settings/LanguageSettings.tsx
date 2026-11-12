@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 import { LANGUAGE_OPTIONS } from "@/constants/settings";
-import { useCompactMode } from "@/hooks/useCompactMode";
 import { useLocaleSwitcher } from "@/hooks/useLocaleSwitcher";
 import type { SettingsOptionItem } from "@/types/settings";
 import type { AppLocale } from "@/types/ui";
@@ -13,13 +12,11 @@ interface LanguageSettingsProps {
 }
 
 export function LanguageSettings({
-  isCompact: propIsCompact,
+  isCompact = false,
 }: LanguageSettingsProps = {}) {
   const t = useTranslations("settings.languageCard");
   const { locale, setLocale, isEnglish, isSwitching, pendingLocale } =
     useLocaleSwitcher();
-  const { isCompact: storeIsCompact } = useCompactMode();
-  const isCompact = propIsCompact ?? storeIsCompact;
 
   const options: SettingsOptionItem<AppLocale>[] = LANGUAGE_OPTIONS.map(
     (opt) => ({

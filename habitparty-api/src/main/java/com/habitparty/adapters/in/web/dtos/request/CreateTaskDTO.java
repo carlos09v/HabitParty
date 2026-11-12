@@ -67,7 +67,10 @@ public record CreateTaskDTO(
     LocalTime dueTime,
     TodoReminderType reminderType,
     LocalDateTime customReminderAt, // Usado apenas se reminderType for CUSTOM
-    Boolean sendEmailReminder
+    Boolean sendEmailReminder,
+    LocalTime startTime,
+    LocalTime dueEndTime,
+    Boolean isAllDay
 ) {
 
 }

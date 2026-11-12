@@ -1,8 +1,13 @@
 import { create } from "zustand";
 import { updateUserExperienceModeAction } from "@/actions/userActions";
 import { useUserStore } from "@/store/userStore";
-import type { DateFormat, ExperienceMode, ThemeMode } from "@/types/ui";
-import { detectBrowserDateFormat } from "@/utils/date";
+import type {
+  DateFormat,
+  ExperienceMode,
+  ThemeMode,
+  TimeFormat,
+} from "@/types/ui";
+import { detectBrowserDateFormat, detectBrowserTimeFormat } from "@/utils/date";
 
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
@@ -19,9 +24,6 @@ function setClientCookie(name: string, value: string) {
  */
 export interface UIState {
   hydrated: boolean;
-  compactMode: boolean;
-  setCompactMode: (compact: boolean) => void;
-  toggleCompactMode: () => void;
   theme: ThemeMode;
   setTheme: (theme: ThemeMode) => void;
   toggleTheme: () => void;
@@ -29,21 +31,12 @@ export interface UIState {
   setExperienceMode: (mode: ExperienceMode) => void;
   dateFormat: DateFormat;
   setDateFormat: (format: DateFormat) => void;
+  timeFormat: TimeFormat;
+  setTimeFormat: (format: TimeFormat) => void;
 }
 
 export const useUIStore = create<UIState>()((set) => ({
   hydrated: false,
-  compactMode: false,
-  setCompactMode: (compactMode) => {
-    set({ compactMode, hydrated: true });
-    setClientCookie("compactMode", String(compactMode));
-  },
-  toggleCompactMode: () =>
-    set((state) => {
-      const newMode = !state.compactMode;
-      setClientCookie("compactMode", String(newMode));
-      return { compactMode: newMode, hydrated: true };
-    }),
   theme: "dark",
   setTheme: (theme) => {
     set({ theme, hydrated: true });
@@ -73,5 +66,10 @@ export const useUIStore = create<UIState>()((set) => ({
   setDateFormat: (dateFormat) => {
     set({ dateFormat, hydrated: true });
     setClientCookie("dateFormat", dateFormat);
+  },
+  timeFormat: detectBrowserTimeFormat(),
+  setTimeFormat: (timeFormat) => {
+    set({ timeFormat, hydrated: true });
+    setClientCookie("timeFormat", timeFormat);
   },
 }));

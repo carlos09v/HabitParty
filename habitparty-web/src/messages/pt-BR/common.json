@@ -47,7 +47,26 @@
       "selectMonth": "Selecionar mês",
       "selectYear": "Selecionar ano",
       "clickToChangeDate": "Clique para alterar a data",
-      "clearDate": "Limpar data"
+      "clearDate": "Limpar data",
+      "addTime": "Definir horário",
+      "removeTime": "Remover",
+      "timeLabel": "Hora",
+      "eventLabel": "Evento",
+      "startTimeLabel": "Horário de início",
+      "endTimeLabel": "Horário de término",
+      "allDayLabel": "Dia inteiro",
+      "allDayBadge": "Dia inteiro",
+      "allDayInfo": "O evento durará o dia todo na data selecionada.",
+      "timePlaceholder": "00:00",
+      "endTimeRequiresStart": "Defina o horário de início primeiro",
+      "done": "Concluir",
+      "confirm": "Confirmar",
+      "addTimePlaceholder": "Definir horário",
+      "addEventPlaceholder": "Configurar evento",
+      "durationLabel": "Duração rápida",
+      "setTimeTitle": "Definir Horário",
+      "setEventTitle": "Configurar Evento",
+      "eventPremiumToast": "Agendar Afazeres como Eventos (com horário de início/término ou dia inteiro) é exclusivo para membros Premium! Faça upgrade para desbloquear."
     },
     "loading": {
       "defaultLabel": "Carregando..."
@@ -72,10 +91,6 @@
       "hideCardTitle": "Ocultar card",
       "hideCardAria": "Ocultar card",
       "hideLabel": "Ocultar",
-      "compactModeTitle": "Modo Compacto",
-      "compactModeAria": "Modo Compacto",
-      "normalModeTitle": "Modo Normal",
-      "normalModeAria": "Modo Normal",
       "toastHidden": "Card ocultado!",
       "toastHiddenDesc": "Você pode reativá-lo a qualquer momento em Configurações > Preferências.",
       "sectionAria": "Boas-vindas: {title}",
@@ -274,6 +289,8 @@
     },
     "itemCatalog": {
       "inFocus": "Em Foco",
+      "doubleClickEditHint": "Duplo clique no card para editar",
+      "quickEditButtonTitle": "Editar (ou dê duplo clique no card)",
       "types": {
         "SingleUse": "Uso Único",
         "TimeBased": "Cupom",

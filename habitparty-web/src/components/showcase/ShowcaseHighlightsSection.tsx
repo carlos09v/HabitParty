@@ -66,7 +66,10 @@ export function ShowcaseHighlightsSection({
     return { index, highlight, resolved };
   });
 
-  const hasAnyHighlight = slots.some((s) => s.resolved !== null);
+  const visibleSlots = isVisitorMode
+    ? slots.filter((s) => s.resolved !== null && s.highlight !== null)
+    : slots;
+  const hasAnyHighlight = visibleSlots.length > 0;
 
   return (
     <section className="flex flex-col gap-4">
@@ -100,25 +103,21 @@ export function ShowcaseHighlightsSection({
       ) : (
         <div
           className={cn(
-            "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
+            "grid grid-cols-1 sm:grid-cols-2",
+            isVisitorMode
+              ? visibleSlots.length === 1
+                ? "max-w-md"
+                : visibleSlots.length === 2
+                  ? "lg:grid-cols-2 max-w-2xl"
+                  : visibleSlots.length === 3
+                    ? "lg:grid-cols-3"
+                    : "lg:grid-cols-4"
+              : "lg:grid-cols-4",
             isCompact ? "gap-3" : "gap-4",
           )}
         >
-          {slots.map(({ index, highlight, resolved }) => {
+          {visibleSlots.map(({ index, highlight, resolved }) => {
             if (!resolved || !highlight) {
-              if (isVisitorMode) {
-                return (
-                  <div
-                    key={index}
-                    className="rounded-2xl border border-neutral-700 dark:border-primary/10 bg-card/50 dark:bg-surface/20 p-4 flex flex-col items-center justify-center min-h-[132px] opacity-50 dark:opacity-40"
-                  >
-                    <span className="text-tiny text-neutral-400">
-                      {t("slotLabel", { index: index + 1 })}
-                    </span>
-                  </div>
-                );
-              }
-
               return (
                 <button
                   key={index}

@@ -25,6 +25,15 @@ public class TodoJpaEntity extends TaskJpaEntity {
   @Column(name = "due_time")
   private LocalTime dueTime;
 
+  @Column(name = "start_time")
+  private LocalTime startTime;
+
+  @Column(name = "due_end_time")
+  private LocalTime dueEndTime;
+
+  @Column(name = "is_all_day", nullable = false, columnDefinition = "boolean default false")
+  private boolean isAllDay = false;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "reminder_type", nullable = false)
   private TodoReminderType reminderType;

@@ -74,14 +74,15 @@
     "headers": {
       "eventItem": "Evento / Item",
       "eventType": "Tipo de Evento",
-      "difficultyTags": "Dificuldade / Tags",
-      "difficultyTagsProductivity": "Esforço / Tags",
+      "difficultyTags": "Detalhes / Tags",
+      "difficultyTagsProductivity": "Detalhes / Tags",
       "coins": "Moedas",
       "coinsProductivity": "Créditos",
       "xp": "XP",
       "xpProductivity": "Pontos",
       "time": "Horário",
-      "actions": "Ações"
+      "actions": "Ações",
+      "selectAllAria": "Selecionar todos os registros da página"
     },
     "emptyTitle": "Nenhuma transação encontrada",
     "emptyDescription": "Não há movimentações de moedas ou XP para os filtros selecionados.",
@@ -99,6 +100,17 @@
       "deleting": "Excluindo...",
       "confirmText": "Excluir registro",
       "cancelText": "Cancelar"
+    },
+    "bulk": {
+      "selectedCount": "{count, plural, one {# registro selecionado} other {# registros selecionados}}",
+      "selectAll": "Selecionar tudo",
+      "clearSelection": "Limpar seleção",
+      "deleteSelected": "Excluir selecionados ({count})",
+      "modalTitle": "Excluir registros selecionados",
+      "modalDescription": "Remover <bold>{count, plural, one {# registro} other {# registros}}</bold> do seu extrato? Isso <bold>não altera</bold> seu saldo de moedas nem seu XP, apenas apaga os registros.",
+      "confirmText": "Excluir registros",
+      "deleteSuccess": "{count, plural, one {# registro removido} other {# registros removidos}} com sucesso!",
+      "deleteError": "Erro ao excluir os registros selecionados."
     }
   },
   "row": {
@@ -108,7 +120,9 @@
     "durationLabel": "Duração:",
     "listPriceLabel": "Preço tabela:",
     "deleteRecordTitle": "Excluir registro do extrato",
-    "deleteRecordAria": "Excluir registro do extrato"
+    "deleteRecordAria": "Excluir registro do extrato",
+    "columnLabel": "Lista:",
+    "selectRowAria": "Selecionar registro {name}"
   },
   "detailPopover": {
     "dialogAria": "Detalhes da Transação",
@@ -127,7 +141,8 @@
     "recordedAtLabel": "Registrado em:",
     "linkedTagsLabel": "Tags vinculadas:",
     "deleteButton": "Excluir",
-    "closeButton": "Fechar"
+    "closeButton": "Fechar",
+    "columnLabel": "Lista:"
   },
   "utils": {
     "unknownDate": "Data desconhecida",
@@ -175,6 +190,7 @@
     "exportCsvFailed": "Falha ao exportar arquivo CSV do extrato.",
     "exportCsvUnexpectedError": "Erro ao gerar arquivo CSV.",
     "deleteFailed": "Falha ao remover o registro de transação.",
-    "deleteUnexpectedError": "Erro ao comunicar com servidor para exclusão."
+    "deleteUnexpectedError": "Erro ao comunicar com servidor para exclusão.",
+    "deleteBatchFailed": "Falha ao remover os registros selecionados."
   }
 }

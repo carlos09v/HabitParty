@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 import { THEME_OPTIONS } from "@/constants/settings";
-import { useCompactMode } from "@/hooks/useCompactMode";
 import { useThemeMode } from "@/hooks/useThemeMode";
 import { cn } from "@/utils";
 import { SettingsOptionGrid } from "./SettingsOptionGrid";
@@ -13,13 +12,11 @@ interface ThemeSettingsProps {
 }
 
 export function ThemeSettings({
-  isCompact: propIsCompact,
+  isCompact = false,
   className,
 }: ThemeSettingsProps = {}) {
   const t = useTranslations("settings.theme");
   const { theme, setTheme, isDark } = useThemeMode();
-  const { isCompact: storeIsCompact } = useCompactMode();
-  const isCompact = propIsCompact ?? storeIsCompact;
 
   const statusMessage = (
     <>

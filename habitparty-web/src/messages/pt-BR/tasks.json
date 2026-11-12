@@ -35,7 +35,9 @@
       "title": "Excluir Tarefa",
       "description": "Tem certeza de que deseja excluir a tarefa <bold>\"{title}\"</bold>? Esta tarefa possui subtarefas, Modo Hardcore ou histórico de ofensiva ativo, e a exclusão não pode ser desfeita.",
       "confirmText": "Excluir Tarefa",
-      "cancelText": "Cancelar"
+      "cancelText": "Cancelar",
+      "deleteHistoryLabel": "Excluir também os registros desta tarefa no Histórico",
+      "deleteHistoryHint": "Remove as transações de conclusão, falha e penalidade desta tarefa do extrato. Moedas e XP já recebidos não são alterados."
     },
     "deleteColumnModal": {
       "title": "Excluir Coluna",
@@ -101,6 +103,13 @@
       }
     }
   },
+  "workspaceSearchHint": {
+    "notFoundSwitchPrompt": "Não encontrou sua tarefa? Troque de Ambiente para ver se encontra:",
+    "foundInOtherWorkspacesEmptyLocal": "Não encontramos neste Ambiente, mas há resultados em:",
+    "foundInOtherWorkspacesAlso": "Também encontramos tarefas correspondentes em:",
+    "switchToWorkspaceButton": "Trocar para \"{workspace}\"",
+    "defaultWorkspaceName": "Ambiente"
+  },
   "columnsDrawer": {
     "dialogAria": "Gerenciador de Colunas do Quadro",
     "backdropAria": "Fechar gaveta de colunas",
@@ -113,6 +122,7 @@
     "createNewListTitle": "Criar nova lista",
     "maxColumnsReachedTitle": "Limite máximo de {max} colunas atingido",
     "newColumnButton": "Nova Coluna",
+    "unlockMoreColumnsButton": "Desbloquear mais colunas",
     "emptyState": "Nenhuma coluna cadastrada neste workspace.",
     "createFirstColumnButton": "Criar primeira coluna",
     "taskSingular": "tarefa",
@@ -366,15 +376,23 @@
       "dueDateHardcorePlaceholder": "Selecione o prazo obrigatório...",
       "dueDatePlaceholder": "Definir prazo...",
       "dueDateFrozenHint": "🔒 Data congelada: prazo expirado no Modo Hardcore.",
-      "dueTimeLabel": "Horário (Opcional)",
+      "dueTimeLabel": "Horário / Prazo (Opcional)",
+      "dueStartTimeLabel": "Início do Evento",
       "dueTimePlaceholder": "Definir hora...",
+      "dueEndTimeLabel": "Término / Fim (Opcional)",
+      "dueEndTimePlaceholder": "Definir término...",
+      "dueEndTimeRequiresStartPlaceholder": "Defina o início primeiro",
+      "singleDueTimeHint": "Horário único funciona como prazo final. Para um evento com duração, defina também o Término.",
+      "eventTimeRangeHint": "Evento das {start} às {end} — fica \"Em andamento\" nesse período e só atrasa após {end}.",
       "reminderLabel": "Lembrete",
+      "inAppReminderAlertInfo": "Você receberá um alerta nas notificações do app ({when}). Se quiser também receber por e-mail, marque a opção abaixo.",
       "reminders": {
         "NONE": "Sem lembrete",
         "ONE_DAY_EARLY": "1 dia antes",
         "TWO_DAYS_EARLY": "2 dias antes",
         "THREE_DAYS_EARLY": "3 dias antes",
-        "ONE_WEEK_EARLY": "1 semana antes"
+        "ONE_WEEK_EARLY": "1 semana antes",
+        "CUSTOM": "Personalizado"
       },
       "emailReminderTitle": "Receber lembrete por e-mail?",
       "emailReminderQuotaFree": "Até 5 e-mails",
@@ -481,6 +499,50 @@
       "okButton": "OK",
       "addItemButton": "Adicionar item"
     },
+    "focusSection": {
+      "title": "Foco & Esforço",
+      "accumulatedSummary": "{time} acumulados • {cycles, plural, one {# ciclo} other {# ciclos}}",
+      "noFocusYet": "Nenhuma sessão de foco registrada",
+      "startFocusButton": "Focar agora",
+      "pauseButton": "Pausar",
+      "resumeButton": "Continuar",
+      "openStageTooltip": "Abrir Palco de Foco",
+      "openHistoryButton": "Histórico",
+      "openHistoryTooltip": "Abrir histórico de sessões desta tarefa",
+      "toggleHistoryTooltip": "Ver histórico de sessões desta tarefa",
+      "loadingHistory": "Carregando sessões...",
+      "emptyHistory": "Nenhuma sessão encontrada.",
+      "directTaskFocus": "Sessão na tarefa",
+      "accumulatedSummaryNoCycles": "{time} acumulados",
+      "conflictDescription": "Já existe uma sessão em andamento em <strong>{name}</strong>. O que deseja fazer com o tempo atual?",
+      "conflictFallbackName": "outro alvo",
+      "conflictAttachToActivity": "Vincular esta tarefa à sessão atual (mantém o tempo)",
+      "conflictTransferTime": "Transferir o tempo atual para esta tarefa",
+      "conflictSaveAndStart": "Salvar sessão atual e iniciar nesta tarefa",
+      "conflictSaveMinHint": "Sessões só podem ser salvas a partir de 1 minuto",
+      "conflictDiscardAndStart": "Descartar tempo atual e iniciar do zero",
+      "conflictKeepCurrent": "Manter sessão atual"
+    },
+    "focusHistoryModal": {
+      "title": "Histórico de Foco",
+      "description": "Histórico completo das sessões e tempo dedicados a esta tarefa.",
+      "totalAccumulated": "Total acumulado",
+      "cyclesLabel": "{cycles, plural, one {# ciclo} other {# ciclos}}",
+      "sessionsCount": "{count, plural, one {# sessão registrada} other {# sessões registradas}}",
+      "emptyTitle": "Nenhuma sessão de foco registrada",
+      "emptyDescription": "Você ainda não cronometrou foco nesta tarefa. Comece clicando em 'Focar agora' ou diretamente no Palco de Foco.",
+      "loading": "Carregando histórico de foco...",
+      "directTaskFocus": "Foco direto na tarefa",
+      "deleteRecordAria": "Excluir este registro de foco",
+      "deleteConfirmTitle": "Excluir Registro de Foco",
+      "deleteConfirmDescription": "Tem certeza que deseja excluir permanentemente esta sessão de {duration}? O tempo e ciclos serão subtraídos do total acumulado da tarefa.",
+      "deleteConfirmButton": "Sim, excluir",
+      "deleteHistoryLabel": "Excluir também do Histórico",
+      "deleteHistoryHint": "Remove o registro desta sessão do extrato geral. Moedas e XP já recebidos não são alterados.",
+      "deleteRecordSuccess": "Registro de foco removido com sucesso!",
+      "deleteRecordError": "Erro ao excluir registro de foco.",
+      "paginationItemLabel": "sessões"
+    },
     "footer": {
       "rewardsLabel": "Recompensas",
       "formatButtonTitle": "Formatação de texto (Negrito, Destacar, Lista, etc.)",
@@ -572,6 +634,8 @@
     "checklistAddError": "Erro ao adicionar item ao checklist.",
     "checklistUpdateError": "Erro ao atualizar item do checklist.",
     "checklistDeleteError": "Erro ao remover item do checklist.",
+    "checklistSyncError": "Algumas alterações nas subtarefas não puderam ser salvas.",
+    "dueEndTimeAfterStartError": "O horário de término deve ser posterior ao horário de início.",
     "typeLabels": {
       "HABIT": "Hábito",
       "DAILY": "Diária",

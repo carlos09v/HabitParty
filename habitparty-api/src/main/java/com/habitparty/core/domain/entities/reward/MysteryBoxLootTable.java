@@ -25,14 +25,14 @@ public class MysteryBoxLootTable {
       case EPIC -> List.of(
           new MysteryBoxLootItem("Bloco Estendido de Lazer", "gamepad", 120),
           new MysteryBoxLootItem("Noite Livre Completa", "ticket", 180),
-          new MysteryBoxLootItem("Tarde de Desconexão", "trophy", 240));
+          new MysteryBoxLootItem("Tarde de Desconexão", "sparkles", 240));
       case LEGENDARY -> List.of(
-          new MysteryBoxLootItem("Day-Off Parcial de Elite", "star", 240),
-          new MysteryBoxLootItem("Day-Off Integral", "crown", 480),
-          new MysteryBoxLootItem("Celebração Absoluta", "gem", null));
+          new MysteryBoxLootItem("Day-Off Parcial de Elite", "party", 240),
+          new MysteryBoxLootItem("Day-Off Integral", "sparkles", 480),
+          new MysteryBoxLootItem("Celebração Absoluta", "gift", null));
       default -> List.of(
           new MysteryBoxLootItem("Pausa Curta", "coffee", 15),
-          new MysteryBoxLootItem("Lazer Livre", "Gamepad2", 30),
+          new MysteryBoxLootItem("Lazer Livre", "gamepad", 30),
           new MysteryBoxLootItem("Prêmio Especial", "gift", 45));
     };
   }

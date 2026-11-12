@@ -1,41 +1,73 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { DatePicker } from "@/components/ui/DatePicker";
-import { TimePicker } from "@/components/ui/TimePicker";
 import { useDateFormat } from "@/hooks/useDateFormat";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
 import { getPopoverDueDateInfo } from "@/utils/date";
 
 interface TaskDatePickerProps {
   dueDate: string;
   dueTime?: string;
+  startTime?: string;
+  dueEndTime?: string;
+  isAllDay?: boolean;
   onDateChange: (newDate: string) => void;
   onTimeChange?: (newTime: string) => void;
+  onStartTimeChange?: (newStartTime: string) => void;
+  onEndTimeChange?: (newEndTime: string) => void;
+  onAllDayChange?: (newAllDay: boolean) => void;
   disabled?: boolean;
 }
 
 /**
- * Seletor rápido de data e hora para o cabeçalho de detalhes de tarefas To-Do.
- * Injeta as regras de domínio de prazo/atraso de tarefas sobre o DatePicker/TimePicker universal (variante "badge").
+ * Seletor rápido de data e horário integrado para o cabeçalho de detalhes de tarefas To-Do.
+ * Injeta as regras de domínio de prazo/atraso de tarefas sobre o DatePicker universal (variante "badge" com enableTime).
  */
 export function TaskDatePicker({
   dueDate,
   dueTime,
+  startTime,
+  dueEndTime,
+  isAllDay,
   onDateChange,
   onTimeChange,
+  onStartTimeChange,
+  onEndTimeChange,
+  onAllDayChange,
   disabled = false,
 }: TaskDatePickerProps) {
   const t = useTranslations("tasks.detailsPopover.header");
   const locale = useLocale() as AppLocale;
   const { dateFormat } = useDateFormat();
+  const { timeFormat } = useTimeFormat();
   const dateInfo = useMemo(
-    () => getPopoverDueDateInfo(dueDate, locale, dueTime, dateFormat),
-    [dueDate, locale, dueTime, dateFormat],
+    () =>
+      getPopoverDueDateInfo(
+        dueDate,
+        locale,
+        dueTime,
+        dateFormat,
+        dueEndTime,
+        startTime,
+        isAllDay,
+        timeFormat,
+      ),
+    [
+      dueDate,
+      locale,
+      dueTime,
+      dateFormat,
+      dueEndTime,
+      startTime,
+      isAllDay,
+      timeFormat,
+    ],
   );
 
   return (
     <div
-      className="inline-flex items-center gap-1 flex-wrap"
+      className="inline-flex items-center gap-1 min-w-0"
       title={disabled ? t("dateFrozenTitle") : undefined}
     >
       <DatePicker
@@ -47,19 +79,16 @@ export function TaskDatePicker({
         clearLabel={t("noDueDate")}
         allowClear={!disabled}
         disabled={disabled}
+        enableTime={Boolean(onTimeChange)}
+        timeValue={dueTime}
+        onTimeChange={onTimeChange}
+        startTimeValue={startTime}
+        onStartTimeChange={onStartTimeChange}
+        endTimeValue={dueEndTime}
+        onEndTimeChange={onEndTimeChange}
+        allDayValue={isAllDay}
+        onAllDayChange={onAllDayChange}
       />
-      {onTimeChange && (
-        <TimePicker
-          value={dueTime || ""}
-          onChange={onTimeChange}
-          variant="badge"
-          badgeLabel={t("dueTimeBadge")}
-          clearLabel={t("clearDueTime")}
-          isOverdue={dateInfo.isOverdue}
-          allowClear={!disabled}
-          disabled={disabled}
-        />
-      )}
     </div>
   );
 }

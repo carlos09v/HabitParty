@@ -5,7 +5,6 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { Select } from "@/components/ui/Select";
 import { ViewModeSelector } from "@/components/ui/ViewModeSelector";
-import { useCompactMode } from "@/hooks/useCompactMode";
 import type { FilterBarProps } from "@/types/ui";
 import { cn } from "@/utils";
 
@@ -20,7 +19,6 @@ export function FilterBar({
   rightActions,
 }: FilterBarProps) {
   const t = useTranslations("ui.filterBar");
-  const { isCompact } = useCompactMode();
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
@@ -42,35 +40,19 @@ export function FilterBar({
 
   return (
     <nav
-      className={cn(
-        "flex flex-col xl:flex-row items-stretch xl:items-center justify-between w-full",
-        isCompact ? "gap-2.5" : "gap-4",
-      )}
+      className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between w-full gap-4"
       aria-label={t("navAria")}
     >
       <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
         {search && (
-          <div
-            className={cn(
-              "flex items-center gap-2 rounded-lg bg-card dark:bg-surface border border-neutral-600 dark:border-white/15 shadow-2xs dark:shadow-none w-full sm:w-auto sm:max-w-xs flex-1 transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 dark:focus-within:ring-0 dark:focus-within:border-primary-light dark:focus-within:shadow-[0_0_8px_rgba(168,99,255,0.25)]",
-              isCompact
-                ? "px-2.5 py-1.5 min-w-0 sm:min-w-44"
-                : "px-3 py-2.5 min-w-0 sm:min-w-56",
-            )}
-          >
-            <Search
-              size={isCompact ? 14 : 16}
-              className="text-neutral-400 shrink-0"
-            />
+          <div className="flex items-center gap-2 rounded-lg bg-card dark:bg-surface border border-neutral-600 dark:border-white/15 shadow-2xs dark:shadow-none w-full sm:w-auto sm:max-w-xs flex-1 transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 dark:focus-within:ring-0 dark:focus-within:border-primary-light dark:focus-within:shadow-[0_0_8px_rgba(168,99,255,0.25)] px-3 py-2.5 min-w-0 sm:min-w-56">
+            <Search size={16} className="text-neutral-400 shrink-0" />
             <input
               type="text"
               value={search.value}
               onChange={(e) => search.onChange(e.target.value)}
               placeholder={search.placeholder || t("searchDefaultPlaceholder")}
-              className={cn(
-                "w-full bg-transparent text-neutral-50 placeholder:text-neutral-400 focus:outline-none",
-                isCompact ? "text-xs" : "text-body-s",
-              )}
+              className="w-full bg-transparent text-neutral-50 placeholder:text-neutral-400 focus:outline-none text-body-s"
             />
           </div>
         )}
@@ -81,7 +63,6 @@ export function FilterBar({
           <ViewModeSelector
             value={viewMode.value}
             onChange={viewMode.onChange}
-            isCompact={isCompact}
           />
         )}
 
@@ -93,7 +74,6 @@ export function FilterBar({
                 key={filter.id}
                 id={`desktop-filter-${filter.id}`}
                 variant="filter"
-                compact={isCompact}
                 placeholder={filter.label}
                 value={filter.value}
                 options={filter.options}
@@ -109,10 +89,7 @@ export function FilterBar({
               <button
                 type="button"
                 onClick={onClearDropdowns}
-                className={cn(
-                  "font-medium text-neutral-300 hover:text-neutral-50 transition-colors cursor-pointer ml-1 focus:outline-none focus:ring-2 focus:ring-gold/50 rounded",
-                  isCompact ? "text-xs px-1.5 py-0.5" : "text-sm px-2 py-1",
-                )}
+                className="font-medium text-neutral-300 hover:text-neutral-50 transition-colors cursor-pointer ml-1 focus:outline-none focus:ring-2 focus:ring-gold/50 rounded text-sm px-2 py-1"
               >
                 {t("clear")}
               </button>
@@ -131,18 +108,14 @@ export function FilterBar({
               type="button"
               onClick={() => setIsMobileFiltersOpen(true)}
               className={cn(
-                "flex items-center gap-1.5 rounded-lg border font-semibold transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold/50",
-                isCompact ? "px-2.5 py-1.5 text-xs" : "px-3 py-2 text-sm",
+                "flex items-center gap-1.5 rounded-lg border font-semibold transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold/50 px-3 py-2 text-sm",
                 activeFiltersCount > 0
                   ? "border-amber-500/45 bg-amber-500/15 text-amber-800 dark:border-gold/50 dark:bg-gold/15 dark:text-gold shadow-glow-gold-xs font-bold"
                   : "border-neutral-700 dark:border-white/20 bg-card dark:bg-surface text-neutral-200 hover:border-neutral-600 dark:hover:border-white/30",
               )}
               aria-label={t("openFiltersAria")}
             >
-              <SlidersHorizontal
-                size={isCompact ? 13 : 15}
-                aria-hidden="true"
-              />
+              <SlidersHorizontal size={15} aria-hidden="true" />
               <span>{t("filters")}</span>
               {activeFiltersCount > 0 && (
                 <span className="w-5 h-5 rounded-full bg-gold text-neutral-950 text-[10px] font-black inline-flex items-center justify-center ml-0.5">
@@ -156,10 +129,7 @@ export function FilterBar({
             <button
               type="button"
               onClick={onClearDropdowns}
-              className={cn(
-                "font-medium text-neutral-300 hover:text-neutral-50 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold/50 rounded",
-                isCompact ? "text-xs px-1.5 py-0.5" : "text-sm px-2 py-1",
-              )}
+              className="font-medium text-neutral-300 hover:text-neutral-50 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold/50 rounded text-sm px-2 py-1"
             >
               {t("clear")}
             </button>

@@ -115,6 +115,7 @@
   "rouletteModal": {
     "subtitleWon": "Parabéns! Veja o prêmio que você tirou nesta rodada:",
     "subtitleIdle": "Role os dados da sorte e descubra qual prêmio sairá da sua caixa!",
+    "possiblePrizesTitle": "Prêmios possíveis nesta caixa:",
     "trackCouponMinutes": "Cupom {minutes}m",
     "trackSingleUse": "Uso Único",
     "prizeUnlockedTitle": "Prêmio Desbloqueado com Sucesso!",

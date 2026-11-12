@@ -10,7 +10,7 @@ Um sistema open-core de gamificação e produtividade com uma economia matemáti
 
 ## ✨ Funcionalidades Principais
 
-* **Gestão de Rotina Completa:** Separação clara do fluxo de trabalho em **Hábitos** (com ofensivas/streak e decaimento biológico), **Tarefas Diárias** (*Dailies* com agendamento por dias da semana) e **Afazeres** (*To-Dos* com checklists de subtarefas e prazos).
+* **Gestão de Rotina Completa:** Separação clara do fluxo de trabalho em **Hábitos** (com ofensivas/streak e decaimento biológico), **Tarefas Diárias** (*Dailies* com agendamento por dias da semana) e **Afazeres** (*To-Dos* com suporte a tarefas pontuais com prazo e horário limite, checklists de subtarefas e agendamento VIP como eventos cronometrados com início/término ou dia inteiro).
 * **Dois Modos de Experiência (Essencial vs. Aventura):** Alterne a qualquer momento entre dois perfis visuais e semânticos com paridade matemática `1:1`:
   * 🎯 **Modo Essencial (Produtividade):** Estética executiva e limpa. Converte entregas em **Créditos** e **Pontos (`pts`)**, utiliza títulos profissionais, indicadores discretos de **Esforço**, recompensas diretas na Loja (sem sorteios RNG), **Prazo Rígido** e **Inventário**.
   * ⚔️ **Modo Aventura (Imersão RPG):** Experiência gamificada completa com **Moedas de Ouro (🪙)** e **XP**, títulos de aventureiro (`Novato` a `Lenda`), ícones de espadas para **Dificuldade**, **Caixas Misteriosas (Gacha)**, **Modo Hardcore** e **Mochila**.
@@ -19,16 +19,16 @@ Um sistema open-core de gamificação e produtividade com uma economia matemáti
   * 🟦 **Fácil** (0,75 🪙 / Créditos • 5 XP / pts)
   * 🟨 **Médio** (2,50 🪙 / Créditos • 15 XP / pts)
   * 🟧 **Difícil** (5,00 🪙 / Créditos • 30 XP / pts)
-* **Quadro Kanban & Múltiplos Ambientes (Workspaces):** Organize diferentes áreas da sua vida (Trabalho, Estudos, Vida Pessoal) em ambientes independentes, com quadros Kanban interativos e colunas personalizáveis.
+* **Quadro Kanban & Múltiplos Ambientes (Workspaces):** Organize diferentes áreas da sua vida (Trabalho, Estudos, Vida Pessoal) em ambientes independentes, com quadros Kanban interativos, colunas personalizáveis e banner de busca inteligente entre múltiplos workspaces.
 * **Loja de Recompensas da Vida Real:** Cadastre momentos de lazer e descanso categorizados em pacotes (Uso Único, Por Tempo ou Caixas da Sorte) com custos calibrados para o esforço do seu dia.
 * **🎁 Caixas Misteriosas (RNG Opcional):** Sorteios probabilísticos com custos calculados matematicamente (Básica, Premium, Épica e Lendária) para trazer dopamina à sua rotina sem quebrar a economia.
 * **🎒 Mochila de Inventário:** Todos os itens comprados ficam guardados na sua mochila para serem consumidos no momento ideal ou vinculados a uma sessão de descanso cronometrada.
 * **⏱️ Palco de Foco (Pomodoro & Cronômetro):** Ferramenta nativa de imersão com rendimento decrescente diário (*daily soft cap* de até 6h), salvaguardas anti-AFK (teto de 90 min) e trava de lazer (itens de mochila não geram moeda).
-* **👑 Personalização VIP & Sons Ambientes:** Molduras animadas cósmicas para avatar, sons ambientes relaxantes sintetizados nativamente no navegador via Web Audio API (Chuva Suave, Cafeteria, Lofi Zen e Fogueira) e pacote exclusivo de ícones VIP.
+* **👑 Personalização VIP, Eventos & Sons Ambientes:** Agendamento de Afazeres como Eventos (início/término ou dia inteiro), molduras animadas cósmicas para avatar, sons ambientes relaxantes sintetizados nativamente no navegador via Web Audio API (Chuva Suave, Cafeteria, Lofi Zen e Fogueira) e pacote exclusivo de ícones VIP.
 * **🛡️ Painel Administrativo & Telemetria (`/admin`):** Módulo exclusivo para administradores (`ROLE_ADMIN`) com telemetria em tempo real da cota de e-mails no **Resend**, volume global de tarefas, estimativa da pegada de armazenamento do PostgreSQL por usuário, governança de papéis e histórico de logs de auditoria de disparos (`EmailDispatchLog`).
 * **✉️ Notificações e Lembretes por E-mail (Resend):** Disparo automatizado de lembretes para tarefas com prazo próximo e recuperação de conta segura, com travas de cota por usuário para prevenir abusos.
 * **🔑 Autenticação Híbrida & Segurança:** Suporte nativo a login social via **Google OAuth 2.0** e fluxo tradicional via e-mail e senha com JWT stateless, Refresh Tokens, BCrypt e controle de acesso baseado em papéis (RBAC).
-* **📊 Auditoria & Exportação de Dados (CSV):** Histórico detalhado de produtividade diária e possibilidade de exportar todo o extrato financeiro de transações (moedas, XP e compras) para planilhas.
+* **📊 Auditoria & Exportação de Dados (CSV):** Histórico detalhado de produtividade diária com gestão em lote (seleção múltipla, exclusão em massa), retenção persistente da lista de origem das tarefas e exportação de todo o extrato financeiro para planilhas.
 
 ---
 
@@ -92,7 +92,7 @@ Ao comprar uma Caixa Misteriosa, o sistema realiza um sorteio ponderado com base
 | 📦 **Básica (Basic)** | 5,00 🪙 | **60%** Pausa Curta (10-15min) <br> **30%** Lazer Médio (30min) <br> **10%** Sessão Focada (45min + 1 🪙 bônus) |
 | 🎁 **Premium** | 15,00 🪙 | **50%** Lazer Padrão (45-60min) <br> **35%** Lazer Estendido (75-90min) <br> **15%** Noite Gamer / Cinema (120min) |
 | 💎 **Épica (Epic)** | 35,00 🪙 | **50%** Bloco Estendido (120min) <br> **35%** Noite Livre (180min) <br> **15%** Tarde de Desconexão (240min) |
-| 👑 **Lendária (Legendary)** | 80,00 🪙 | **60%** Day-Off Parcial (240min) <br> **30%** Day-Off Integral <br> **10%** O Santo Graal (Final de Semana Livre) |
+| 👑 **Lendária (Legendary)** | 80,00 🪙 | **60%** Day-Off Parcial (240min) <br> **30%** Day-Off Integral <br> **10%** Celebração Absoluta (Final de Semana Livre) |
 
 ---
 
@@ -148,11 +148,11 @@ O sistema foi desenhado visando escalabilidade, manutenibilidade e rigor arquite
   * **Segurança & RBAC:** Spring Security com controle de papéis (`ROLE_USER`, `ROLE_ADMIN`), autenticação stateless via JWT e Refresh Tokens criptografados com BCrypt.
   * **Autenticação Social:** Google OAuth 2.0 integrado.
   * **Comunicação Transacional:** Resend API para envio de lembretes e recuperação de senhas.
-  * **Bancos de Dados:** PostgreSQL (persistência relacional principal) e Redis (cache).
+  * **Bancos de Dados:** PostgreSQL (persistência relacional principal com migrações Flyway).
   * **Pagamentos & Assinaturas:** Integração com Stripe (Checkout, Customer Portal e Webhooks para Cartão e Pix avulso).
   * **Documentação:** Swagger / OpenAPI 3.0 para exploração visual interativa de endpoints.
 * **Frontend (`habitparty-web`):**
-  * **Next.js 15+ (App Router) & React 19**
+  * **Next.js 16 (App Router) & React 19**
   * **Tailwind CSS v4** com design tokens semânticos e modo claro/escuro nativo.
   * **Biome** para linting e formatação com máxima performance.
   * **Web Audio API** nativo para sintetizadores sonoros procedurais (áudio de cliques, alarmes de fim de ciclo e 4 geradores de som ambiente).
@@ -187,8 +187,9 @@ Navegue até o diretório da API e inicie o banco de dados:
 
 ```bash
 cd habitparty-api
-docker compose up -d
+docker compose up -d postgres
 ```
+*(Dica: O comando `docker compose up -d postgres` inicia apenas o banco de dados, liberando a porta `8080` para desenvolvimento local do backend via Maven. Para rodar o stack completo conteinerizado incluindo a API, execute `docker compose up -d`).*
 
 ---
 
@@ -218,7 +219,7 @@ npm run dev
 * **Aplicação Web:** `http://localhost:3000`
 * **Painel Administrativo:** `http://localhost:3000/admin` *(requer conta com cargo `ROLE_ADMIN`)*
 
-> 💡 **Guia do Desenvolvedor:** Para comandos auxiliares de manutenção do Docker, dicas de importação de rotas em clientes HTTP (Bruno, Postman) e checklist de concepção, consulte o documento [docs/DEV_NOTES.md](file:///home/carlosvinicius/github-projects/HabitParty/docs/DEV_NOTES.md).
+> 💡 **Guia do Desenvolvedor:** Para comandos auxiliares de manutenção do Docker, dicas de importação de rotas em clientes HTTP (Bruno, Postman) e checklist de concepção, consulte o documento [docs/DEV_NOTES.md](docs/DEV_NOTES.md).
 
 ---
 
@@ -241,15 +242,22 @@ npm run dev
 
 ---
 
-### 🛡️ Release 1.3 — Foco Vinculado a Tarefas, Temas VIP & Amizades
+### 🛡️ Release 1.3 — Eventos no Kanban, Gestão em Lote & Foco em Tarefas ✅ (Concluído)
 * **Foco Vinculado a Tarefas & Métricas de Esforço:** Associação direta de sessões de Pomodoro/Foco a tarefas específicas do Kanban em 1 clique, registro do tempo acumulado dedicado por card (ex: `⏱️ 2h 15m`), histórico de ciclos e opção de concluir a tarefa ao término do timer.
-* **Temas Exclusivos VIP:** Seletor dinâmico de atmosferas visuais para membros Premium (ex: *Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold*).
-* **Rede de Amizades:** Busca de jogadores por nome de usuário ou código de amigo, envio de solicitações e lista de amigos conectados.
-* **Controles de Privacidade:** Configurações granulares para escolher quais dados (tarefas, ofensivas ou estatísticas) deseja manter públicos ou privados.
+* **Afazeres como Eventos & Programação Temporal (VIP):** Transforme tarefas To-Do em eventos com horários de início e término (`startTime` / `dueEndTime`) ou dia inteiro (`isAllDay`), seletor universal integrado de data e hora (`DatePicker`), e badge pulsante em tempo real no Kanban para eventos em andamento.
+* **Seleção Múltipla & Exclusão em Lote no Histórico:** Gestão ágil de extrato com seleção individual ou global de transações, barra flutuante de ações em lote e exclusão em massa (`DELETE /transactions/batch`).
+* **Snapshot de Listas no Histórico:** Rastreamento persistente da coluna Kanban de origem da tarefa no momento da transação (`column_name_snapshot`), preservando o histórico mesmo após alterações no quadro.
+* **Busca Global Entre Ambientes (Cross-Workspace Search):** Banner inteligente que detecta tarefas correspondentes em outros ambientes do usuário e permite alternar de workspace com 1 clique.
+* **Formato de Horário Global (12h AM/PM vs 24h):** Preferência personalizável de exibição de tempo sincronizada em cards, detalhes, histórico e sessões de foco.
+* **Descrições Expandidas (5.000 caracteres):** Suporte a anotações detalhadas com contador dinâmico de caracteres e alertas de limite.
+* **Notificador de Quebra de Ofensiva:** Detecção proativa e alerta motivacional no primeiro login após quebra de sequência diária.
+* **Sincronização na Exclusão de Foco & Tarefas:** Opção de expurgar transações financeiras vinculadas no Histórico ao excluir sessões de foco ou tarefas.
 
 ---
 
-### ⚔️ Release 1.4 — Party (Grupos Pequenos) & Comunicação Instantânea
+### ⚔️ Release 1.4 — Party, Temas VIP, Amizades & Comunicação Instantânea
+* **Temas Exclusivos VIP:** Seletor dinâmico de atmosferas visuais para membros Premium (ex: *Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold*).
+* **Rede de Amizades & Controles de Privacidade:** Busca de jogadores por nome de usuário ou código de amigo, envio de solicitações, círculo de conexões de consistência e configurações granulares para manter rotinas ou estatísticas públicas/privadas.
 * **Formação de Parties:** Crie pequenos grupos com amigos ou parceiros de estudo via código de convite rápido.
 * **Missões Diárias Cooperativas:** Metas coletivas onde todo o grupo recebe bônus de moedas e recompensas se todos cumprirem seus compromissos.
 * **Chat Integrado em Tempo Real:** Conversas diretas entre amigos e canal exclusivo de bate-papo da Party para manter a motivação em alta.

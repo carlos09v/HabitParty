@@ -376,7 +376,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
     bullets: [
       "Hábitos: Ações contínuas que podem ser positivas (+), negativas (-) ou mistas. Não possuem data fixa e operam com Importância (Baixa, Normal, Alta) e sistema de ofensiva (Streak).",
       "Diárias (Dailies): Rotinas recorrentes que devem ser feitas em dias específicos da semana (ex: segundas e quartas). Resetam periodicamente.",
-      "Afazeres (To-Dos): Tarefas pontuais com prazo definido (Due Date) e checklists de subtarefas. Ao serem concluídas, saem do fluxo ativo.",
+      "Afazeres (To-Dos): Tarefas pontuais com prazo de entrega (data e horário limite gratuitos), lembretes programados, checklists de subtarefas e descrições de até 5.000 caracteres. Assinantes Premium também podem agendar Afazeres como Eventos (com horário de início e término ou dia inteiro) e acompanhar o selo pulsante 'Em andamento' ao vivo no quadro.",
     ],
     tags: ["tarefas", "hábitos", "diárias", "to-do", "rotina"],
     highlightBadge: "Estrutura",
@@ -512,8 +512,8 @@ export const HELP_FAQS: HelpFaqItem[] = [
     category: "OVERVIEW",
     question: "O que são Workspaces e como devo organizá-los?",
     answer:
-      "Workspaces permitem segregar completamente seus fluxos de vida. Você pode manter um workspace para 'Trabalho / Carreira', outro para 'Faculdade / Concursos' e um para 'Vida Pessoal'. Cada workspace possui seu próprio quadro Kanban com colunas personalizadas.",
-    tags: ["workspaces", "áreas", "kanban", "organização"],
+      "Workspaces permitem segregar completamente seus fluxos de vida. Você pode manter um workspace para 'Trabalho / Carreira', outro para 'Faculdade / Concursos' e um para 'Vida Pessoal'. Cada workspace possui seu próprio quadro Kanban com colunas personalizadas e conta com busca inteligente entre ambientes: ao pesquisar uma tarefa, o sistema avisa automaticamente se houver resultados em outros workspaces e permite alternar com 1 clique.",
+    tags: ["workspaces", "áreas", "kanban", "organização", "busca"],
     actionLink: { label: "Gerenciar Quadro", href: "/tasks" },
   },
   {
@@ -523,6 +523,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
     answer:
       "A conta Gratuita oferece acesso completo a todas as ferramentas essenciais de tarefas, hábitos, economia matemática, loja e mochila. O plano Guardião Cósmico (Premium) foi desenhado para quem gerencia rotinas avançadas e deseja máxima personalização estética e imersão:",
     bullets: [
+      "Afazeres como Eventos: Agende tarefas com horário de início e término ou dia inteiro, contando com badge pulsante 'Em andamento' em tempo real no quadro.",
       "Molduras Cósmicas de Avatar: 5 molduras animadas exclusivas com aura e pulso de luz radiante para seu perfil.",
       "Sons Ambientes de Foco: Sons relaxantes sintetizados nativamente no Pomodoro (Chuva Suave, Cafeteria, Lofi Zen e Fogueira).",
       "Pacote de Ícones VIP: Coleção exclusiva de ícones dourados para colunas, rotinas, foco e itens da loja.",
@@ -541,6 +542,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "pix",
       "molduras",
       "sons ambiente",
+      "eventos",
     ],
     highlightBadge: "Planos",
     actionLink: { label: "Ver Planos & Assinatura", href: "/settings" },
@@ -551,7 +553,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
     question:
       "Como funcionam as Molduras de Avatar e a personalização de perfil?",
     answer:
-      "Em Configurações > Perfil, você pode escolher molduras circulares animadas que envolvem seu avatar com efeitos de luz cósmica e gradientes estelares. Usuários gratuitos contam com a moldura clássica limpa, enquanto assinantes Guardião Cósmico têm acesso irrestrito às 5 molduras animadas: Guardião Cósmico (ouro estelar), Cyberpunk Neon (pulso ciano e magenta), Fogo da Fênix (chamas ardentes), Aura Esmeralda (místico verde) e Vácuo Ametista (arcano violeta).",
+      "Na sua Vitrine do Perfil (/profile), ao clicar no ícone de moldura sobre o avatar, você pode escolher molduras circulares animadas que envolvem sua foto com efeitos de luz cósmica e gradientes estelares. Usuários gratuitos contam com a moldura clássica limpa, enquanto assinantes Guardião Cósmico têm acesso irrestrito às 5 molduras animadas: Guardião Cósmico (ouro estelar), Cyberpunk Neon (pulso ciano e magenta), Fogo da Fênix (chamas ardentes), Aura Esmeralda (místico verde) e Vácuo Ametista (arcano violeta).",
     tags: [
       "molduras",
       "avatar",
@@ -561,7 +563,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "vip",
     ],
     highlightBadge: "Visual",
-    actionLink: { label: "Personalizar Perfil", href: "/settings" },
+    actionLink: { label: "Personalizar na Vitrine", href: "/profile" },
   },
   {
     id: "ambient-sounds",
@@ -648,7 +650,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "Ao clicar no seu cartão de perfil no rodapé da barra lateral (Sidebar), você acessa sua Vitrine de Aventureiro (/profile). Ela funciona como seu cartão de visitas oficial, reunindo sua identidade visual, estatísticas vitalícias e uma estante personalizável no topo:",
     bullets: [
       "Identidade & Bio: Exiba seu Avatar com Moldura Animada, selo de Fundador Pioneiro ou VIP, patente de nível atual, pontuação total de conquistas (🏆 pts) e uma frase/bio personalizada de até 160 caracteres.",
-      "4 Espaços de Destaque (Trophy Shelf): Escolha livremente até 4 itens para fixar no topo da sua vitrine — combinando Conquistas Desbloqueadas, Insígnias da Conta (Fundador, Guardião VIP, Conta Verificada, Patente de Nível) ou Recordes em Tempo Real (Maior Ofensiva, Horas de Foco, Tarefas Concluídas, XP Total).",
+      "4 Espaços de Destaque (Trophy Shelf): Escolha livremente até 4 itens para fixar no topo da sua vitrine — combinando Conquistas Desbloqueadas e Insígnias da Conta (Fundador, Guardião VIP, Conta Verificada e Patente de Nível). As estatísticas vitalícias (Ofensiva, Horas de Foco, Tarefas e XP) já ficam exibidas nos painéis dedicados logo abaixo.",
       "Modo Visão de Visitante: Alterne com 1 clique no botão 'Visão de Visitante' no topo da vitrine para pré-visualizar exatamente como seu perfil é exibido sem os botões de edição.",
     ],
     tags: [
@@ -688,6 +690,33 @@ export const HELP_FAQS: HelpFaqItem[] = [
     ],
     highlightBadge: "Novo • 1.2",
     actionLink: { label: "Ver Galeria de Conquistas", href: "/profile" },
+  },
+  {
+    id: "history-batch-and-time-format",
+    category: "ECONOMY",
+    question:
+      "Como funcionam a Exclusão em Lote no Histórico, os Snapshots de Coluna e o Formato de Horário (12h/24h)?",
+    answer:
+      "Para manter seu extrato financeiro e sua visualização temporal sempre organizados ao seu gosto, o HabitParty oferece controles avançados de auditoria e exibição:",
+    bullets: [
+      "Seleção Múltipla e Exclusão em Lote: Na tela de Histórico (/history), selecione múltiplos registros (ou clique em 'Selecionar tudo') para remover transações indesejadas de uma só vez pela barra flutuante de ações.",
+      "Exclusão Sincronizada: Ao excluir uma tarefa ou sessão de foco, você pode marcar a opção de também apagar do Histórico as transações de moedas e XP vinculadas a ela.",
+      "Snapshot de Lista/Coluna: Cada transação de tarefa preserva o nome da coluna Kanban original no momento da conclusão, mantendo o contexto histórico mesmo se a coluna for renomeada ou removida depois.",
+      "Formato de Horário (12h AM/PM ou 24h): Em Configurações > Aparência, alterne entre o relógio de 24 horas (ex: 14:30) e o formato de 12 horas (ex: 2:30 PM), sincronizando instantaneamente cards, popovers de detalhes, seletores de hora, histórico e sessões de foco.",
+    ],
+    tags: [
+      "histórico",
+      "extrato",
+      "lote",
+      "excluir",
+      "horário",
+      "12h",
+      "24h",
+      "am/pm",
+      "snapshot",
+    ],
+    highlightBadge: "Novo • 1.3",
+    actionLink: { label: "Abrir Histórico", href: "/history" },
   },
 ];
 

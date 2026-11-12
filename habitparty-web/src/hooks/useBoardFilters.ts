@@ -12,8 +12,11 @@ import type { BoardColumn, BoardFilterState } from "@/types/task";
  * Hook dedicado ao controle de busca, filtros de tags, tipos, dificuldade e status no Kanban.
  * Utiliza useDeferredValue para garantir digitação suave a 60/120fps sem travar o thread principal.
  */
-export function useBoardFilters(columns: BoardColumn[]) {
-  const [searchQuery, setSearchQuery] = useState("");
+export function useBoardFilters(
+  columns: BoardColumn[],
+  initialSearchQuery = "",
+) {
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [filters, setFilters] = useState<BoardFilterState>(
     DEFAULT_BOARD_FILTERS,

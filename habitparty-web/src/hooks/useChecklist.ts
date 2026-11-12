@@ -15,6 +15,11 @@ export interface UseChecklistOptions {
   initialItems?: ChecklistItem[];
   taskId?: string | null;
   onChecklistChanged?: (items: ChecklistItem[]) => void;
+  /**
+   * Quando true, todas as mutações ficam apenas no estado local (sem Server Actions),
+   * cabendo ao consumidor persistir as alterações (ex: modal de edição ao clicar em Salvar).
+   */
+  deferPersistence?: boolean;
 }
 
 /**
@@ -23,9 +28,12 @@ export interface UseChecklistOptions {
  */
 export function useChecklist({
   initialItems = [],
-  taskId,
+  taskId: rawTaskId,
   onChecklistChanged,
+  deferPersistence = false,
 }: UseChecklistOptions = {}) {
+  // Sem taskId efetivo, as mutações permanecem locais (mesmo comportamento do modo criação)
+  const taskId = deferPersistence ? null : rawTaskId;
   const t = useTranslations("tasks.hooks");
   const [checklist, setChecklist] = useState<ChecklistItem[]>(initialItems);
   const checklistRef = useRef<ChecklistItem[]>(initialItems);

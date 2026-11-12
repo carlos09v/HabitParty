@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.habitparty.application.ports.FocusActivityRepository;
 import com.habitparty.application.ports.FocusRecordRepository;
 import com.habitparty.application.ports.InventoryItemRepository;
+import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsUseCase;
@@ -21,7 +22,10 @@ import com.habitparty.core.domain.entities.focus.FocusActivity;
 import com.habitparty.core.domain.entities.focus.FocusRecord;
 import com.habitparty.core.domain.entities.focus.FocusReward;
 import com.habitparty.core.domain.entities.focus.FocusRewardCalculator;
+import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.domain.enums.TransactionType;
+import com.habitparty.core.domain.enums.task.TaskType;
+import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.LimitExceededException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
@@ -32,6 +36,7 @@ public class CreateFocusRecordUseCase {
   private final FocusActivityRepository focusActivityPort;
   private final TransactionHistoryRepository transactionHistoryPort;
   private final UserRepository userPort;
+  private TaskRepository taskPort;
   private EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
 
   public CreateFocusRecordUseCase(
@@ -48,18 +53,38 @@ public class CreateFocusRecordUseCase {
   }
 
   @Autowired(required = false)
+  public void setTaskPort(TaskRepository taskPort) {
+    this.taskPort = taskPort;
+  }
+
+  @Autowired(required = false)
   public void setEvaluateUserAchievementsUseCase(EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
     this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
   }
 
   @Transactional
   public FocusRecord execute(UUID userIdLogado, CreateFocusRecordCommand command) {
+    Task loadedTask = null;
+    String taskNameSnapshot = null;
+
+    if (command.taskId() != null && taskPort != null) {
+      loadedTask = taskPort.findById(command.taskId())
+          .orElseThrow(() -> new ResourceNotFoundException("Tarefa vinculada ao foco não foi encontrada."));
+      loadedTask.validateOwnership(userIdLogado);
+      if (loadedTask.getTaskType() == TaskType.HABIT) {
+        throw new DomainValidationException("Apenas tarefas Diárias e Afazeres podem ser vinculadas a sessões de foco.");
+      }
+      taskNameSnapshot = loadedTask.getName();
+    }
+
     // 1. Instancia o registro preliminar para validações de domínio (datas, ownership, exclusividade)
     FocusRecord record = new FocusRecord(
         null,
         userIdLogado,
         command.focusActivityId(),
         command.inventoryItemId(),
+        command.taskId(),
+        taskNameSnapshot,
         command.notes(),
         command.startTime(),
         command.endTime(),
@@ -140,6 +165,8 @@ public class CreateFocusRecordUseCase {
         record.getUserId(),
         command.focusActivityId(),
         null,
+        command.taskId(),
+        taskNameSnapshot,
         record.getNotes().orElse(null),
         record.getStartTime(),
         record.getEndTime(),
@@ -149,6 +176,14 @@ public class CreateFocusRecordUseCase {
         reward.coins());
 
     FocusRecord savedRecord = port.save(recordWithRewards);
+
+    // 3.1. Se houver Tarefa vinculada, acumula os minutos e ciclos de foco na Task
+    if (loadedTask != null && taskPort != null) {
+      int durationMins = Math.max(1, savedRecord.getDurationMinutes());
+      int pomos = savedRecord.getCompletedPomos().orElse(0);
+      loadedTask.addFocusSession(durationMins, pomos);
+      taskPort.save(loadedTask);
+    }
 
     // 4. Credita XP e moedas ao perfil do usuário (reutilizando loadedUser se já carregado)
     if (reward.xp() > 0 || reward.coins().compareTo(BigDecimal.ZERO) > 0) {
@@ -186,7 +221,7 @@ public class CreateFocusRecordUseCase {
       }
     }
 
-    // 5. Registra a transação no extrato financeiro (reutilizando loadedActivity sem segunda query)
+    // 5. Registra a transação no extrato financeiro (reutilizando loadedActivity e loadedTask sem query extra)
     String activityName = "Sessão de Foco Livre";
     String activityIcon = "timer";
 
@@ -200,6 +235,12 @@ public class CreateFocusRecordUseCase {
       if (activity.getIcon() != null && !activity.getIcon().isBlank()) {
         activityIcon = activity.getIcon();
       }
+      if (loadedTask != null) {
+        String combined = activityName + " • " + loadedTask.getName();
+        activityName = combined.length() > 250 ? combined.substring(0, 250) : combined;
+      }
+    } else if (loadedTask != null) {
+      activityName = loadedTask.getName();
     }
 
     long totalSeconds = java.time.Duration.between(savedRecord.getStartTime(), savedRecord.getEndTime()).toSeconds();

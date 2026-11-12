@@ -80,6 +80,9 @@ public class TransactionHistoryJpaEntity {
   @Column(name = "tags_snapshot", columnDefinition = "text[]")
   private List<String> tagsSnapshot = new ArrayList<>();
 
+  @Column(name = "column_name_snapshot")
+  private String columnNameSnapshot;
+
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
 }

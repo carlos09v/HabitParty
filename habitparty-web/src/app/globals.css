@@ -131,8 +131,8 @@ html.light {
     200 138 4
   ); /* #C88A04 — Estado pressionado natural */
   --color-gold-ink: rgb(
-    217 119 6
-  ); /* #D97706 — Amber 600 vivo para texto/ícone dourado */
+    202 138 4
+  ); /* #CA8A04 — Dourado Yellow-600 vivo para texto/ícone com contraste WCAG AA */
   --color-gold-warm: var(--color-gold);
   --color-gold-warm-hover: var(--color-gold-hover);
   --color-gold-warm-pressed: var(--color-gold-pressed);
@@ -152,12 +152,12 @@ html.light {
   ); /* #16A34A — Verde vivo para superfícies/bordas */
   --color-success-hover: rgb(21 128 61); /* #15803D */
   --color-warning-400: rgb(
-    180 83 9
-  ); /* #B45309 — Amber 700 para textos de aviso */
+    194 65 12
+  ); /* #C2410C — Orange 700 para textos de aviso */
   --color-warning-500: rgb(
-    217 119 6
-  ); /* #D97706 — Amber 600 vivo (nunca marrom escuro) */
-  --color-warning-hover: rgb(180 83 9); /* #B45309 */
+    234 88 12
+  ); /* #EA580C — Orange 600 vivo para tarefas Medium e avisos */
+  --color-warning-hover: rgb(194 65 12); /* #C2410C */
   --color-danger-300: rgb(185 28 28); /* #B91C1C */
   --color-danger-400: rgb(200 30 30); /* #C81E1E — 5.90:1 vs #FFF */
   --color-danger-500: rgb(220 38 38); /* #DC2626 */
@@ -562,7 +562,7 @@ html.light select option {
   }
   :where(html.light) .border-l-gold,
   :where(html.light) .border-l-gold:hover {
-    border-left-color: var(--color-gold-ink);
+    border-left-color: var(--color-gold);
   }
   :where(html.light) .border-l-purple-500,
   :where(html.light) .border-l-purple-500:hover,
@@ -919,5 +919,144 @@ html.light select option {
   .settings-tab-inactive {
     display: flex;
     content-visibility: hidden;
+  }
+}
+
+/* ========================================================
+   CHECKBOX CUSTOMIZADO DO PROJETO (Gamified / Surface)
+   ======================================================== */
+:root {
+  --icon-check: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'></polyline></svg>");
+  --icon-dash: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'><line x1='5' y1='12' x2='19' y2='12'></line></svg>");
+}
+
+.checkbox-custom {
+  --checkbox-size: 1.125rem;
+  --checkbox-icon-size: 0.72rem;
+
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  inline-size: var(--checkbox-size);
+  aspect-ratio: 1;
+  margin: 0;
+  border-radius: 0.375rem;
+  border: 1.5px solid rgba(139, 92, 246, 0.55);
+  background-color: rgba(33, 21, 56, 0.45);
+  color: var(--color-on-gold);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    transform 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+
+  &::before {
+    content: "";
+    inline-size: var(--checkbox-icon-size);
+    aspect-ratio: 1;
+    background-color: currentColor;
+    mask: var(--checkbox-icon) no-repeat center / contain;
+    scale: 0;
+
+    @media (prefers-reduced-motion: no-preference) {
+      transition: scale 150ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @media (forced-colors: active) {
+      background-color: CanvasText;
+    }
+  }
+
+  &:hover:not(:disabled):not(:checked):not(:indeterminate) {
+    border-color: var(--color-gold);
+    background-color: rgba(237, 229, 57, 0.15);
+    box-shadow: var(--shadow-glow-gold-xs);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.9);
+  }
+
+  &:checked {
+    --checkbox-icon: var(--icon-check);
+  }
+
+  &:indeterminate {
+    --checkbox-icon: var(--icon-dash);
+  }
+
+  &:is(:checked, :indeterminate) {
+    background-color: var(--color-gold);
+    border-color: var(--color-gold);
+    color: var(--color-on-gold);
+    box-shadow: var(--shadow-glow-gold-xs);
+  }
+
+  &:is(:checked, :indeterminate)::before {
+    scale: 1;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+:where(html.light) .checkbox-custom {
+  border-color: rgb(148 163 184);
+  background-color: var(--color-card);
+
+  &:hover:not(:disabled):not(:checked):not(:indeterminate) {
+    border-color: var(--color-gold-ink);
+    background-color: rgba(245, 184, 21, 0.14);
+  }
+
+  &:is(:checked, :indeterminate) {
+    background-color: var(--color-gold);
+    border-color: var(--color-gold-hover);
+    color: var(--color-on-gold);
+  }
+
+  &:focus-visible {
+    outline-color: var(--color-primary);
+  }
+}
+
+.checkbox-custom-danger {
+  &:hover:not(:disabled):not(:checked):not(:indeterminate) {
+    border-color: var(--color-danger-500);
+    background-color: rgba(239, 68, 68, 0.12);
+    box-shadow: none;
+  }
+
+  &:is(:checked, :indeterminate) {
+    background-color: var(--color-danger-500);
+    border-color: var(--color-danger-500);
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+  }
+
+  &:focus-visible {
+    outline-color: var(--color-danger-500);
+  }
+}
+
+:where(html.light) .checkbox-custom-danger {
+  &:hover:not(:disabled):not(:checked):not(:indeterminate) {
+    border-color: var(--color-danger-500);
+    background-color: rgba(220, 38, 38, 0.1);
+  }
+
+  &:is(:checked, :indeterminate) {
+    background-color: var(--color-danger-500);
+    border-color: var(--color-danger-500);
+    color: #ffffff;
   }
 }

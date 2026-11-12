@@ -3,6 +3,7 @@
 import {
   CheckCircle2,
   FastForward,
+  ListTodo,
   Lock,
   Pause,
   Play,
@@ -20,7 +21,11 @@ import {
 } from "@/hooks/useFocusTimer";
 import { useIdlePreload } from "@/hooks/useIdlePreload";
 import { useUserStore } from "@/store/userStore";
-import type { FocusActivity, FocusRecordType } from "@/types/focus";
+import type {
+  FocusActivity,
+  FocusableTaskItem,
+  FocusRecordType,
+} from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn } from "@/utils";
 import { getRewardIcon } from "@/utils/rewardMapper";
@@ -72,9 +77,11 @@ const FocusSessionNotesInput = memo(function FocusSessionNotesInput() {
 interface FocusHeroStageProps {
   activities: FocusActivity[];
   backpackItems: InventoryItemResponseDTO[];
+  focusableTasks?: FocusableTaskItem[];
   onSelectActivity?: (activityId: string | null) => void;
   onStartFocusActivity?: (act: FocusActivity) => void;
   onStartFocusItem?: (item: InventoryItemResponseDTO) => void;
+  onStartFocusTask?: (task: { id: string; title: string }) => void;
   onChangeMode?: (mode: FocusRecordType) => void;
   onOpenUpgradeModal?: () => void;
   isCompact?: boolean;
@@ -83,9 +90,11 @@ interface FocusHeroStageProps {
 export function FocusHeroStage({
   activities,
   backpackItems,
+  focusableTasks = [],
   onSelectActivity,
   onStartFocusActivity,
   onStartFocusItem,
+  onStartFocusTask,
   onChangeMode: propOnChangeMode,
   onOpenUpgradeModal,
   isCompact = false,
@@ -96,6 +105,11 @@ export function FocusHeroStage({
   useIdlePreload(preloadFocusHeroModalChunks);
 
   const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
+  const [targetModalInitialTab, setTargetModalInitialTab] = useState<
+    "ACTIVITIES" | "TASKS" | "BACKPACK"
+  >("ACTIVITIES");
+  const [isLinkActivityOnlyModal, setIsLinkActivityOnlyModal] = useState(false);
+  const [isLinkTaskOnlyModal, setIsLinkTaskOnlyModal] = useState(false);
   const [isZenModeOpen, setIsZenModeOpen] = useState(false);
 
   const {
@@ -124,9 +138,11 @@ export function FocusHeroStage({
   const isInventoryItem = target?.type === "inventory";
   const TargetIcon = isInventoryItem
     ? getRewardIcon(target?.icon, "TimeBased")
-    : target?.icon
-      ? getFocusIcon(target.icon)
-      : Timer;
+    : target?.type === "task"
+      ? ListTodo
+      : target?.icon
+        ? getFocusIcon(target.icon)
+        : Timer;
 
   const targetActivityIndex =
     target?.type === "activity"
@@ -136,8 +152,17 @@ export function FocusHeroStage({
     !isPremium && targetActivityIndex >= MAX_FOCUS_ACTIVITIES_FREE;
 
   const handleOpenTargetModal = useCallback(() => {
+    setIsLinkActivityOnlyModal(false);
+    setIsLinkTaskOnlyModal(false);
+    setTargetModalInitialTab(
+      target?.type === "task"
+        ? "TASKS"
+        : target?.type === "inventory"
+          ? "BACKPACK"
+          : "ACTIVITIES",
+    );
     setIsTargetModalOpen(true);
-  }, []);
+  }, [target?.type]);
 
   const handleOpenZenMode = useCallback(() => {
     setIsZenModeOpen(true);
@@ -155,6 +180,29 @@ export function FocusHeroStage({
     [onSelectActivity, onStartFocusActivity, controls.startFocusActivity],
   );
 
+  // Sessão de foco direto na tarefa: escolher uma atividade no seletor vincula (Macro + Micro) sem perder o tempo
+  const handleLinkActivityToTask = useCallback(
+    (act: FocusActivity) => {
+      controls.linkActivityToTask(act);
+      onSelectActivity?.(act.id);
+    },
+    [controls.linkActivityToTask, onSelectActivity],
+  );
+
+  const handleOpenLinkActivityModal = useCallback(() => {
+    setIsLinkActivityOnlyModal(true);
+    setIsLinkTaskOnlyModal(false);
+    setTargetModalInitialTab("ACTIVITIES");
+    setIsTargetModalOpen(true);
+  }, []);
+
+  const handleOpenLinkTaskModal = useCallback(() => {
+    setIsLinkActivityOnlyModal(false);
+    setIsLinkTaskOnlyModal(true);
+    setTargetModalInitialTab("TASKS");
+    setIsTargetModalOpen(true);
+  }, []);
+
   const handleSelectBackpackItem = useCallback(
     (item: InventoryItemResponseDTO) => {
       if (onStartFocusItem) {
@@ -165,6 +213,17 @@ export function FocusHeroStage({
       }
     },
     [onSelectActivity, onStartFocusItem, controls.startFocusItem],
+  );
+
+  const handleSelectTask = useCallback(
+    (task: { id: string; title: string }) => {
+      if (onStartFocusTask) {
+        onStartFocusTask(task);
+      } else {
+        controls.selectTaskTarget(task);
+      }
+    },
+    [onStartFocusTask, controls.selectTaskTarget],
   );
 
   const handleToggleTimer = useCallback(() => {
@@ -283,6 +342,12 @@ export function FocusHeroStage({
           onChangeSoundType={setTimerSoundType}
           onOpenZenMode={handleOpenZenMode}
           onOpenUpgradeModal={onOpenUpgradeModal}
+          onUnlinkTask={controls.unlinkTaskFromTarget}
+          onCompleteLinkedTask={controls.completeLinkedTask}
+          onOpenLinkActivity={handleOpenLinkActivityModal}
+          onOpenLinkTask={
+            target?.type === "activity" ? handleOpenLinkTaskModal : undefined
+          }
         />
 
         {/* =========================================================================
@@ -432,12 +497,24 @@ export function FocusHeroStage({
       {isTargetModalOpen && (
         <FocusStageTargetSelectorModal
           isOpen={isTargetModalOpen}
-          onClose={() => setIsTargetModalOpen(false)}
+          onClose={() => {
+            setIsTargetModalOpen(false);
+            setIsLinkActivityOnlyModal(false);
+            setIsLinkTaskOnlyModal(false);
+          }}
           activities={activities}
           backpackItems={backpackItems}
+          focusableTasks={focusableTasks}
           currentTargetId={target?.id}
+          currentTarget={target}
+          initialTab={targetModalInitialTab}
+          onlyActivities={isLinkActivityOnlyModal}
+          onlyTasks={isLinkTaskOnlyModal}
           onSelectActivity={handleSelectActivity}
+          onLinkActivityToTask={handleLinkActivityToTask}
           onSelectBackpackItem={handleSelectBackpackItem}
+          onSelectTask={handleSelectTask}
+          onUnlinkTask={controls.unlinkTaskFromTarget}
           onOpenUpgradeModal={onOpenUpgradeModal}
         />
       )}

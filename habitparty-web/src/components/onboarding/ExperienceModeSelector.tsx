@@ -1,10 +1,4 @@
-import {
-  CheckCircle2,
-  Circle,
-  MonitorSmartphone,
-  Volume2,
-  VolumeX,
-} from "lucide-react";
+import { CheckCircle2, Circle, Volume2, VolumeX } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { EXPERIENCE_MODES } from "@/constants/onboarding";
 import type { ExperienceMode } from "@/types/ui";
@@ -13,8 +7,6 @@ import { cn } from "@/utils";
 interface ExperienceModeSelectorProps {
   experienceMode: ExperienceMode;
   onSelectExperienceMode: (mode: ExperienceMode) => void;
-  isCompact: boolean;
-  onToggleCompact: (compact: boolean) => void;
   uiSoundsEnabled: boolean;
   onToggleSounds: (enabled: boolean) => void;
   disabled?: boolean;
@@ -23,8 +15,6 @@ interface ExperienceModeSelectorProps {
 export function ExperienceModeSelector({
   experienceMode,
   onSelectExperienceMode,
-  isCompact,
-  onToggleCompact,
   uiSoundsEnabled,
   onToggleSounds,
   disabled = false,
@@ -113,50 +103,8 @@ export function ExperienceModeSelector({
         })}
       </div>
 
-      {/* Calibragem Rápida complementar: Densidade Visual + Efeitos Sonoros */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-neutral-700 dark:border-white/10">
-        {/* Densidade Visual */}
-        <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-surface border border-neutral-700 dark:bg-white/5 dark:border-white/10">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <MonitorSmartphone
-              size={13}
-              className="text-amber-600 dark:text-gold shrink-0"
-            />
-            <span className="text-[11px] font-medium text-neutral-200 truncate">
-              {t("densityLabel")}
-            </span>
-          </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={() => onToggleCompact(false)}
-              className={cn(
-                "px-2 py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer border",
-                !isCompact
-                  ? "bg-primary/15 text-primary-dark border-primary/30 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
-                  : "border-transparent text-neutral-400 hover:text-neutral-200",
-              )}
-            >
-              {t("densityStandard")}
-            </button>
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={() => onToggleCompact(true)}
-              className={cn(
-                "px-2 py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer border",
-                isCompact
-                  ? "bg-primary/15 text-primary-dark border-primary/30 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
-                  : "border-transparent text-neutral-400 hover:text-neutral-200",
-              )}
-            >
-              {t("densityCompact")}
-            </button>
-          </div>
-        </div>
-
-        {/* Efeitos Sonoros */}
+      {/* Calibragem Rápida complementar: Efeitos Sonoros */}
+      <div className="pt-2 border-t border-neutral-700 dark:border-white/10">
         <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-surface border border-neutral-700 dark:bg-white/5 dark:border-white/10">
           <div className="flex items-center gap-1.5 min-w-0">
             {uiSoundsEnabled ? (

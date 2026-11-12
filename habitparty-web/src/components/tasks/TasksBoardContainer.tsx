@@ -14,12 +14,12 @@ import { RoutineColumn } from "@/components/tasks/RoutineColumn";
 import { RoutineFilters } from "@/components/tasks/RoutineFilters";
 import { RoutineTaskCard } from "@/components/tasks/RoutineTaskCard";
 import { RoutineTaskList } from "@/components/tasks/RoutineTaskList";
+import { WorkspaceSearchHintBanner } from "@/components/tasks/WorkspaceSearchHintBanner";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
 import { WELCOME_CARD_DETAILS } from "@/constants/welcomeCards";
 import { useBoardFilters } from "@/hooks/useBoardFilters";
 import { useBoardModals } from "@/hooks/useBoardModals";
 import { useBoardTaskActions } from "@/hooks/useBoardTaskActions";
-import { useCompactMode } from "@/hooks/useCompactMode";
 import { useRoutineBoardDnd } from "@/hooks/useRoutineBoardDnd";
 import { useRoutineBoardLayout } from "@/hooks/useRoutineBoardLayout";
 import { useRoutineColumns } from "@/hooks/useRoutineColumns";
@@ -82,7 +82,7 @@ export function TasksBoardContainer({
   const workspaces = useWorkspaceStore((state) => state.workspaces);
   const is_Premium = isPremiumProp ?? userStorePremium;
   const activeWorkspaceId = workspaceIdProp ?? activeWorkspaceIdFromStore;
-  const { isCompact } = useCompactMode(isCompactProp);
+  const isCompact = isCompactProp ?? false;
 
   useEffect(() => {
     if (
@@ -164,6 +164,7 @@ export function TasksBoardContainer({
   });
 
   // 3. Hook de Filtros e Busca em Memória
+  const initialSearchFromUrl = searchParams.get("q") || "";
   const {
     searchQuery,
     setSearchQuery,
@@ -171,7 +172,12 @@ export function TasksBoardContainer({
     setFilters,
     availableTags,
     filteredColumns,
-  } = useBoardFilters(columns);
+  } = useBoardFilters(columns, initialSearchFromUrl);
+
+  const localMatchCount = useMemo(
+    () => filteredColumns.reduce((sum, col) => sum + col.tasks.length, 0),
+    [filteredColumns],
+  );
 
   const handleTaskUpdatedInDetails = useCallback(
     (updated: Task) => {
@@ -414,11 +420,15 @@ export function TasksBoardContainer({
           {...boardDnd.handlers}
         >
           {/* Barra de Filtros com Popover, Busca e Seletor de Visualização (Cards / Lista) */}
-          <div className="shrink-0">
+          <div className="shrink-0 flex flex-col gap-2">
             <RoutineFilters
               {...sharedFilterProps}
               isDraggingColumn={Boolean(boardDnd.activeColumn)}
               enableDroppable={true}
+            />
+            <WorkspaceSearchHintBanner
+              searchQuery={searchQuery}
+              localMatchCount={localMatchCount}
             />
           </div>
 
@@ -432,6 +442,7 @@ export function TasksBoardContainer({
               visibleColumnIds={visibleColumnIds}
               maxColumns={maxColumns}
               selectedColumnId={selectedColumnId}
+              selectedTaskId={selectedTaskDetails?.task.id}
               isCompact={isCompact}
               alignment={alignment}
               columnWidths={columnWidths}
@@ -485,11 +496,15 @@ export function TasksBoardContainer({
       ) : (
         <>
           {/* Barra de Filtros no modo Lista */}
-          <div className="shrink-0">
+          <div className="shrink-0 flex flex-col gap-2">
             <RoutineFilters
               {...sharedFilterProps}
               isDraggingColumn={false}
               enableDroppable={false}
+            />
+            <WorkspaceSearchHintBanner
+              searchQuery={searchQuery}
+              localMatchCount={localMatchCount}
             />
           </div>
 
@@ -502,6 +517,7 @@ export function TasksBoardContainer({
               setColumns={setColumns}
               visibleColumnIds={visibleColumnIds}
               selectedColumnId={selectedColumnId}
+              selectedTaskId={selectedTaskDetails?.task.id}
               isCompact={isCompact}
               onAddTaskToColumn={handleAddTaskToColumnSafe}
               onOpenDetails={handleOpenDetails}

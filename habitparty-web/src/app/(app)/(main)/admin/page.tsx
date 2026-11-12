@@ -10,7 +10,6 @@ import { AdminDashboardView } from "@/components/admin/AdminDashboardView";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getCurrentUser } from "@/services/userService";
-import { getCompactMode } from "@/utils/cookies";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("admin.metadata");
@@ -21,10 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AdminPage() {
-  const [isCompact, user] = await Promise.all([
-    getCompactMode(),
-    getCurrentUser(),
-  ]);
+  const user = await getCurrentUser();
 
   // Trava de segurança: Se não for ADMIN, redireciona imediatamente
   if (!user || user.role !== "ADMIN") {
@@ -45,7 +41,7 @@ export default async function AdminPage() {
 
   return (
     <ScopedIntlProvider scope="admin">
-      <PageWrapper isCompact={isCompact}>
+      <PageWrapper>
         <div className="max-w-7xl mx-auto w-full">
           <AdminDashboardView
             initialOverview={overview}

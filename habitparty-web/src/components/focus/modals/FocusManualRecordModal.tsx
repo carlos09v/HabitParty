@@ -8,6 +8,7 @@ import {
   Flame,
   History,
   Hourglass,
+  ListTodo,
   Minus,
   Plus,
   Sparkles,
@@ -30,7 +31,11 @@ import {
   MAX_FOCUS_ACTIVITIES_FREE,
 } from "@/constants/focus";
 import { useFocusManualRecordForm } from "@/hooks/useFocusManualRecordForm";
-import type { FocusActivity, FocusRecord } from "@/types/focus";
+import type {
+  FocusActivity,
+  FocusableTaskItem,
+  FocusRecord,
+} from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn } from "@/utils";
 import { getTodayDateString } from "@/utils/date";
@@ -41,9 +46,11 @@ interface FocusManualRecordModalProps {
   onClose: () => void;
   activities: FocusActivity[];
   backpackItems: InventoryItemResponseDTO[];
+  focusableTasks?: FocusableTaskItem[];
   records?: FocusRecord[];
   initialActivityId?: string;
   initialItemId?: string;
+  initialTaskId?: string;
   onSuccess?: () => void;
 }
 
@@ -52,9 +59,11 @@ export function FocusManualRecordModal({
   onClose,
   activities,
   backpackItems,
+  focusableTasks = [],
   records = [],
   initialActivityId,
   initialItemId,
+  initialTaskId,
   onSuccess,
 }: FocusManualRecordModalProps) {
   const t = useTranslations("focus.manualRecord");
@@ -62,9 +71,11 @@ export function FocusManualRecordModal({
     isOpen,
     activities,
     backpackItems,
+    focusableTasks,
     records,
     initialActivityId,
     initialItemId,
+    initialTaskId,
     onSuccess,
     onClose,
   });
@@ -171,6 +182,25 @@ export function FocusManualRecordModal({
                         </span>
                       </span>
                     )}
+
+                  {focusableTasks.length > 0 && (
+                    <Select
+                      id="select-task"
+                      compact
+                      icon={<ListTodo size={16} />}
+                      label={t("taskSelectLabel")}
+                      placeholder={t("noTaskLinkedOption")}
+                      value={form.selectedTaskId}
+                      onChange={form.setSelectedTaskId}
+                      options={[
+                        { value: "", label: t("noTaskLinkedOption") },
+                        ...focusableTasks.map((task) => ({
+                          value: task.id,
+                          label: task.title,
+                        })),
+                      ]}
+                    />
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col gap-1.5">
@@ -573,7 +603,9 @@ export function FocusManualRecordModal({
             disabled={
               form.isSubmitting ||
               form.durationMinutes <= 0 ||
-              (form.targetType === "ACTIVITY" && !form.selectedActivityId) ||
+              (form.targetType === "ACTIVITY" &&
+                !form.selectedActivityId &&
+                !form.selectedTaskId) ||
               (form.targetType === "ITEM" && !form.selectedItemId)
             }
             className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-colors cursor-pointer disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"

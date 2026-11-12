@@ -34,8 +34,8 @@
     "languageDesc": "Escolha o idioma de exibição dos menus, painéis e mensagens do HabitParty.",
     "dateFormat": "Formato de Data",
     "dateFormatDesc": "Escolha como as datas são exibidas em calendários, prazos de tarefas, foco e histórico.",
-    "compact": "Densidade da Interface",
-    "compactDesc": "Ajuste o espaçamento de elementos na tela para seu estilo de uso.",
+    "timeFormat": "Formato de Hora",
+    "timeFormatDesc": "Escolha como os horários são exibidos em seletores, prazos de tarefas, foco e histórico.",
     "welcomeCards": "Cards Introdutórios das Telas",
     "welcomeCardsDesc": "Gerencie quais cartões de boas-vindas e guias rápidos permanecem visíveis nas telas do aplicativo.",
     "audioTitle": "Sons de Interface & Notificações",
@@ -152,15 +152,17 @@
     "statusYyyymmdd": "AAAA-MM-DD (Padrão ISO) aplicado em toda a plataforma.",
     "toastSuccess": "Formato de data alterado para {format}!"
   },
-  "compactMode": {
-    "compact": "Modo Compacto",
-    "compactDesc": "Cards, calendários e listas menores. Otimiza o espaço de tela para visualização simultânea de mais tarefas e itens de recompensa. Recomendado para maior produtividade.",
-    "comfortable": "Modo Confortável",
-    "comfortableDesc": "Paddings mais generosos e tipografia padrão. Ideal para telas grandes ou para quem prefere espaçamentos mais relaxados e elementos maiores.",
-    "defaultBadge": "Padrão",
-    "statusCompact": "Modo Compacto está ativo para máxima densidade de conteúdo.",
-    "statusComfortable": "Modo Confortável está ativo com espaçamentos ampliados.",
-    "statusLabel": "Status atual: "
+  "timeFormatCard": {
+    "h24Label": "24 Horas (00:00 - 23:59)",
+    "h24Desc": "Formato de hora militar e padrão brasileiro/europeu de 24 horas contínuas.",
+    "h24Example": "14:05",
+    "h12Label": "12 Horas (AM / PM)",
+    "h12Desc": "Formato padrão com sufixo matutino (AM) e vespertino/noturno (PM).",
+    "h12Example": "02:05 PM",
+    "activeLabel": "Formato ativo: ",
+    "statusH24": "24 Horas (14:05) aplicado em toda a plataforma.",
+    "statusH12": "12 Horas com AM/PM (02:05 PM) aplicado em toda a plataforma.",
+    "toastSuccess": "Formato de hora alterado para {format}!"
   },
   "avatarFrames": {
     "title": "Moldura do Avatar",
@@ -462,6 +464,7 @@
     "portalError": "Não foi possível abrir o portal de assinaturas.",
     "unverifiedWarning": "Confirme seu e-mail antes de assinar.",
     "perks": [
+      "Agendamento de Afazeres como Eventos (início, término ou dia inteiro)",
       "Molduras animadas exclusivas para seu perfil e avatar",
       "Sons ambiente no Pomodoro (Chuva, Cafeteria, Fogueira, Lofi)",
       "Pacote exclusivo de ícones VIP para atividades e colunas",

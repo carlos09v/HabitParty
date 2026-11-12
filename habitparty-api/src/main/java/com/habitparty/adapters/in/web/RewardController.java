@@ -71,9 +71,10 @@ public class RewardController implements RewardApi {
   @Override
   public ResponseEntity<Void> deleteReward(
       UUID id,
+      boolean deleteHistory,
       AuthenticatedUser usuarioLogado) {
     UUID userId = usuarioLogado.id();
-    deleteRewardUseCase.execute(id, userId);
+    deleteRewardUseCase.execute(id, userId, deleteHistory);
 
     return ResponseEntity.noContent().build();
   }

@@ -1,4 +1,8 @@
 {
+  "streakLost": {
+    "title": "Ofensiva perdida!",
+    "description": "Você não completou nenhuma tarefa no dia anterior e sua sequência de {count} {count, plural, one {dia foi perdida} other {dias foi perdida}}. Recomece hoje com força total! 🔥"
+  },
   "nav": {
     "dashboard": "Painel",
     "activitySection": "Atividade",
@@ -88,7 +92,11 @@
     "focusItemTitle": "Recompensa pronta: \"{name}\"",
     "focusItemDefaultName": "Item de Foco",
     "focusItemDesc": "Item em foco pronto para ser desfrutado ou concluído.",
-    "focusItemTimestamp": "Mochila / Foco"
+    "focusItemTimestamp": "Mochila / Foco",
+    "reminderSingleTitle": "Lembrete: \"{name}\"",
+    "reminderMultipleTitle": "{count} lembretes de tarefas ativos",
+    "reminderDesc": "Prazo se aproximando — confira seus afazeres agendados.",
+    "reminderTimestamp": "Lembrete agendado"
   },
   "userProfile": {
     "defaultName": "Aventureiro",

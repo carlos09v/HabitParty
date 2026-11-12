@@ -339,7 +339,7 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
     bullets: [
       "Habits: Ongoing actions that can be positive (+), negative (-), or mixed. They have no fixed date and work with Importance (Low, Normal, High) and a Streak system.",
       "Dailies: Recurring routines that must be done on specific weekdays (e.g., Mondays and Wednesdays). They reset periodically.",
-      "To-Dos: One-off tasks with a Due Date and subtask checklists. Once completed, they leave the active flow.",
+      "To-Dos: One-off tasks with a due date and optional deadline time (free), scheduled reminders, subtask checklists, and rich descriptions up to 5,000 characters. Premium subscribers can also schedule To-Dos as Events (with start & end times or all-day duration) featuring a live pulsing 'In progress' badge on the board.",
     ],
     tags: ["tasks", "habits", "dailies", "to-do", "routine"],
     highlightBadge: "Structure",
@@ -473,8 +473,8 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
     category: "OVERVIEW",
     question: "What are Workspaces and how should I organize them?",
     answer:
-      "Workspaces let you fully separate your life streams. You can keep one workspace for 'Work / Career', another for 'College / Exams', and one for 'Personal Life'. Each workspace has its own Kanban board with custom columns.",
-    tags: ["workspaces", "areas", "kanban", "organization"],
+      "Workspaces let you fully separate your life streams. You can keep one workspace for 'Work / Career', another for 'College / Exams', and one for 'Personal Life'. Each workspace has its own Kanban board with custom columns and includes smart cross-workspace search: when searching for a task, the app automatically alerts you if matches exist in your other workspaces so you can switch with 1 click.",
+    tags: ["workspaces", "areas", "kanban", "organization", "search"],
     actionLink: { label: "Manage Board", href: "/tasks" },
   },
   {
@@ -485,6 +485,7 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
     answer:
       "The Free account offers full access to all essential tools: tasks, habits, the mathematical economy, store, and backpack. The Cosmic Guardian (Premium) plan is designed for those who manage advanced routines and want maximum aesthetic customization and immersion:",
     bullets: [
+      "To-Dos as Scheduled Events: Schedule tasks with start & end times or all-day duration, complete with a live pulsing 'In progress' badge on the board.",
       "Cosmic Avatar Frames: 5 exclusive animated frames with a radiant aura and light pulse for your profile.",
       "Focus Ambient Sounds: Relaxing sounds natively synthesized in the Pomodoro (Gentle Rain, Coffee Shop, Zen Lofi, and Campfire).",
       "VIP Icon Pack: An exclusive collection of golden icons for columns, routines, focus, and store items.",
@@ -502,6 +503,7 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
       "subscription",
       "frames",
       "ambient sounds",
+      "events",
     ],
     highlightBadge: "Plans",
     actionLink: { label: "View Plans & Subscription", href: "/settings" },
@@ -511,10 +513,10 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
     category: "OVERVIEW",
     question: "How do Avatar Frames and profile customization work?",
     answer:
-      "In Settings > Profile, you can choose animated circular frames that wrap your avatar with cosmic light effects and stellar gradients. Free users get the clean classic frame, while Cosmic Guardian subscribers have unrestricted access to all 5 animated frames: Cosmic Guardian (stellar gold), Cyberpunk Neon (cyan and magenta pulse), Phoenix Fire (blazing flames), Emerald Aura (mystic green), and Amethyst Void (arcane violet).",
+      "In your Profile Showcase (/profile), clicking the frame icon on your avatar lets you choose animated circular frames that wrap your photo with cosmic light effects and stellar gradients. Free users get the clean classic frame, while Cosmic Guardian subscribers have unrestricted access to all 5 animated frames: Cosmic Guardian (stellar gold), Cyberpunk Neon (cyan and magenta pulse), Phoenix Fire (blazing flames), Emerald Aura (mystic green), and Amethyst Void (arcane violet).",
     tags: ["frames", "avatar", "profile", "customization", "cosmetics", "vip"],
     highlightBadge: "Visual",
-    actionLink: { label: "Customize Profile", href: "/settings" },
+    actionLink: { label: "Customize on Showcase", href: "/profile" },
   },
   {
     id: "ambient-sounds",
@@ -593,7 +595,7 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
       "Clicking your profile card in the bottom of the Sidebar opens your Adventurer Showcase (/profile). It acts as your official calling card, combining your visual identity, lifetime statistics, and a customizable trophy shelf at the top:",
     bullets: [
       "Identity & Bio: Display your Avatar with an Animated Frame, Pioneer Founder or VIP badge, current level rank, total achievement score (🏆 pts), and a custom motto/bio of up to 160 characters.",
-      "4 Highlight Slots (Trophy Shelf): Freely pick up to 4 items to pin at the top of your showcase — mixing Unlocked Achievements, Account Badges (Founder, VIP Guardian, Verified Account, Level Rank), or Live Stat Records (Highest Streak, Focus Hours, Tasks Completed, Total XP).",
+      "4 Highlight Slots (Trophy Shelf): Freely pick up to 4 items to pin at the top of your showcase — mixing Unlocked Achievements and Account Badges (Founder, VIP Guardian, Verified Account, and Level Rank). Your lifetime stats (Streaks, Focus Hours, Tasks, and XP) are displayed right below in dedicated stat cards.",
       "Visitor View Mode: Toggle the 'Visitor View' button at the top of your showcase with 1 click to preview how your profile looks without editing controls.",
     ],
     tags: [
@@ -632,5 +634,32 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
     ],
     highlightBadge: "New • 1.2",
     actionLink: { label: "View Achievements Gallery", href: "/profile" },
+  },
+  {
+    id: "history-batch-and-time-format",
+    category: "ECONOMY",
+    question:
+      "How do Batch History Deletion, Column Snapshots, and the 12h/24h Time Format work?",
+    answer:
+      "To keep your financial ledger and time display tailored to your workflow, HabitParty provides advanced audit and formatting controls:",
+    bullets: [
+      "Multi-Selection & Batch Deletion: On the History screen (/history), select multiple entries (or click 'Select all') to delete unwanted transactions in bulk using the floating action bar.",
+      "Synchronized Deletion: When deleting a task or focus session, you can optionally purge its linked coin and XP transactions from your History at the same time.",
+      "Kanban List Snapshots: Every task transaction records the original Kanban column name at the moment of completion, preserving historical context even if the column is later renamed or deleted.",
+      "Time Format (12h AM/PM or 24h): In Settings > Appearance, switch between 24-hour time (e.g., 14:30) and 12-hour time (e.g., 2:30 PM), syncing cards, detail popovers, time pickers, history, and focus logs.",
+    ],
+    tags: [
+      "history",
+      "ledger",
+      "batch",
+      "delete",
+      "time format",
+      "12h",
+      "24h",
+      "am/pm",
+      "snapshot",
+    ],
+    highlightBadge: "New • 1.3",
+    actionLink: { label: "Open History", href: "/history" },
   },
 ];

@@ -36,8 +36,37 @@ public record CreateTaskCommand(
     TodoReminderType reminderType,
     LocalDateTime customReminderAt,
     Boolean sendEmailReminder,
-    LocalTime dueTime
+    LocalTime dueTime,
+    LocalTime startTime,
+    LocalTime dueEndTime,
+    Boolean isAllDay
 ) {
+  public CreateTaskCommand(
+      String name, String description, TaskPriority priority, List<String> tags,
+      TaskDifficulty difficulty, TaskType taskType, boolean isHardcoreModeEnabled,
+      LocalDate dueDate, HabitType habitType, HabitResetCounter resetCounter,
+      HabitImportanceType importanceType, LocalDate startDate, DailyRepeatType repeatType,
+      Integer repeatEvery, List<DailyDaysOfWeek> daysOfWeek, DailyRepeatMonthlyOption monthlyOption,
+      TodoReminderType reminderType, LocalDateTime customReminderAt, Boolean sendEmailReminder,
+      LocalTime dueTime, LocalTime dueEndTime) {
+    this(name, description, priority, tags, difficulty, taskType, isHardcoreModeEnabled,
+        dueDate, habitType, resetCounter, importanceType, startDate, repeatType,
+        repeatEvery, daysOfWeek, monthlyOption, reminderType, customReminderAt, sendEmailReminder, dueTime, null, dueEndTime, false);
+  }
+
+  public CreateTaskCommand(
+      String name, String description, TaskPriority priority, List<String> tags,
+      TaskDifficulty difficulty, TaskType taskType, boolean isHardcoreModeEnabled,
+      LocalDate dueDate, HabitType habitType, HabitResetCounter resetCounter,
+      HabitImportanceType importanceType, LocalDate startDate, DailyRepeatType repeatType,
+      Integer repeatEvery, List<DailyDaysOfWeek> daysOfWeek, DailyRepeatMonthlyOption monthlyOption,
+      TodoReminderType reminderType, LocalDateTime customReminderAt, Boolean sendEmailReminder,
+      LocalTime dueTime) {
+    this(name, description, priority, tags, difficulty, taskType, isHardcoreModeEnabled,
+        dueDate, habitType, resetCounter, importanceType, startDate, repeatType,
+        repeatEvery, daysOfWeek, monthlyOption, reminderType, customReminderAt, sendEmailReminder, dueTime, null, null, false);
+  }
+
   public CreateTaskCommand(
       String name, String description, TaskPriority priority, List<String> tags,
       TaskDifficulty difficulty, TaskType taskType, boolean isHardcoreModeEnabled,

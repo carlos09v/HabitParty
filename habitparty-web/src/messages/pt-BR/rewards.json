@@ -75,7 +75,9 @@
       "title": "Excluir recompensa?",
       "description": "Tem certeza que deseja excluir <bold>\"{title}\"</bold> da sua Loja de Recompensas?",
       "confirmText": "Sim, excluir",
-      "cancelText": "Cancelar"
+      "cancelText": "Cancelar",
+      "deleteHistoryLabel": "Excluir também os registros de compra no Histórico",
+      "deleteHistoryHint": "Remove as transações de compra desta recompensa do extrato. Moedas e XP já movimentados não são alterados."
     },
     "toasts": {
       "insufficientCoins": "Moedas insuficientes para resgatar este item!",
@@ -121,6 +123,7 @@
     "suggestedPriceByRarity": "(Preço sugerido por raridade)",
     "pricePlaceholder": "Ex: 5, 15, 35 ou 80",
     "mysteryBoxPriceHelper": "Você pode manter o preço calibrado para o pacote ou personalizá-lo livremente.",
+    "mysteryBoxAdventureHint": "A Caixa Misteriosa está disponível no Modo Aventura. Ative o modo em Configurações > Preferências para desbloqueá-la!",
     "cancel": "Cancelar",
     "saving": "Salvando...",
     "saveChanges": "Salvar Alterações",

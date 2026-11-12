@@ -325,11 +325,11 @@ export function useTaskMutations({
   );
 
   const handleDeleteTask = useCallback(
-    async (task: Task, targetColumnId?: string) => {
+    async (task: Task, targetColumnId?: string, deleteHistory = false) => {
       const colId = targetColumnId || task.columnId || defaultColumnId;
       onOptimisticDelete?.(task, colId);
 
-      const res = await deleteTask(task.id);
+      const res = await deleteTask(task.id, deleteHistory);
       if (!res.success) {
         onRollbackDelete?.(task, colId);
         toast.error(res.error || t("deleteError"));

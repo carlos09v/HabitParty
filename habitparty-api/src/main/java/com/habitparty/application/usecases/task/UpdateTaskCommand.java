@@ -34,8 +34,37 @@ public record UpdateTaskCommand(
     TodoReminderType reminderType,
     LocalDateTime customReminderAt,
     Boolean sendEmailReminder,
-    LocalTime dueTime
+    LocalTime dueTime,
+    LocalTime startTime,
+    LocalTime dueEndTime,
+    Boolean isAllDay
 ) {
+  public UpdateTaskCommand(
+      String name, String description, TaskPriority priority, List<String> tags,
+      TaskDifficulty difficulty, boolean isHardcoreModeEnabled, LocalDate dueDate,
+      HabitType habitType, HabitResetCounter resetCounter, HabitImportanceType importanceType,
+      LocalDate startDate, DailyRepeatType repeatType, Integer repeatEvery,
+      List<DailyDaysOfWeek> daysOfWeek, DailyRepeatMonthlyOption monthlyOption,
+      TodoReminderType reminderType, LocalDateTime customReminderAt, Boolean sendEmailReminder,
+      LocalTime dueTime, LocalTime dueEndTime) {
+    this(name, description, priority, tags, difficulty, isHardcoreModeEnabled,
+        dueDate, habitType, resetCounter, importanceType, startDate, repeatType,
+        repeatEvery, daysOfWeek, monthlyOption, reminderType, customReminderAt, sendEmailReminder, dueTime, null, dueEndTime, false);
+  }
+
+  public UpdateTaskCommand(
+      String name, String description, TaskPriority priority, List<String> tags,
+      TaskDifficulty difficulty, boolean isHardcoreModeEnabled, LocalDate dueDate,
+      HabitType habitType, HabitResetCounter resetCounter, HabitImportanceType importanceType,
+      LocalDate startDate, DailyRepeatType repeatType, Integer repeatEvery,
+      List<DailyDaysOfWeek> daysOfWeek, DailyRepeatMonthlyOption monthlyOption,
+      TodoReminderType reminderType, LocalDateTime customReminderAt, Boolean sendEmailReminder,
+      LocalTime dueTime) {
+    this(name, description, priority, tags, difficulty, isHardcoreModeEnabled,
+        dueDate, habitType, resetCounter, importanceType, startDate, repeatType,
+        repeatEvery, daysOfWeek, monthlyOption, reminderType, customReminderAt, sendEmailReminder, dueTime, null, null, false);
+  }
+
   public UpdateTaskCommand(
       String name, String description, TaskPriority priority, List<String> tags,
       TaskDifficulty difficulty, boolean isHardcoreModeEnabled, LocalDate dueDate,

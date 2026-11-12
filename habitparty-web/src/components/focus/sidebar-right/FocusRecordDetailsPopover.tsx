@@ -16,13 +16,13 @@ import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { updateFocusRecord } from "@/actions/focusActions";
 import { CoinIcon } from "@/components/ui/CoinIcon";
-import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { getFocusIcon } from "@/constants/focus";
 import { useAnchoredPopoverPosition } from "@/hooks/useAnchoredPopoverPosition";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useIsClient } from "@/hooks/useIsClient";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
 import type { FocusRecord } from "@/types/focus";
 import { formatCoins, formatDateTime } from "@/utils";
@@ -33,7 +33,8 @@ interface FocusRecordDetailsPopoverProps {
   onClose: () => void;
   record: FocusRecord | null;
   anchorRect: DOMRect | null;
-  onDeleteRecord?: (recordId: string) => void;
+  /** Solicita a exclusão do registro (confirmação exibida pelo pai). */
+  onRequestDelete?: (record: FocusRecord) => void;
 }
 
 const POPOVER_OPTIONS = {
@@ -48,17 +49,17 @@ export function FocusRecordDetailsPopover({
   onClose,
   record,
   anchorRect,
-  onDeleteRecord,
+  onRequestDelete,
 }: FocusRecordDetailsPopoverProps) {
   const t = useTranslations("focus.recordDetails");
   const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
   const { dateFormat } = useDateFormat();
+  const { timeFormat } = useTimeFormat();
   const mounted = useIsClient();
   const popoverRef = useRef<HTMLDivElement>(null);
   const [notes, setNotes] = useState(record?.notes || "");
   const [isSaving, setIsSaving] = useState(false);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   // Sincroniza as notas quando o registro selecionado mudar
   useEffect(() => {
@@ -76,7 +77,7 @@ export function FocusRecordDetailsPopover({
 
   // Fecha no clique fora e ESC respeitando o modal de confirmação
   useClickOutside(popoverRef, onClose, {
-    enabled: isOpen && !isDeleteConfirmOpen,
+    enabled: isOpen,
     onEscape: onClose,
   });
 
@@ -133,14 +134,23 @@ export function FocusRecordDetailsPopover({
 
           <div className="flex flex-col min-w-0 flex-1">
             <h3 className="text-body-m font-bold text-neutral-100 truncate">
-              {record.activityName || record.itemName || t("freeSession")}
+              {record.activityName ||
+                record.taskNameSnapshot ||
+                record.itemName ||
+                t("freeSession")}
             </h3>
+            {record.activityName && record.taskNameSnapshot && (
+              <span className="text-tiny text-gold font-medium truncate">
+                📌 {record.taskNameSnapshot}
+              </span>
+            )}
             <span className="text-label-g text-neutral-400 flex items-center gap-1">
               <Calendar size={11} className="text-neutral-500" />
               {formatDateTime(record.endTime, {
                 isLocal: true,
                 locale,
                 dateFormat,
+                timeFormat,
               })}
             </span>
           </div>
@@ -245,42 +255,20 @@ export function FocusRecordDetailsPopover({
       {/* Ações do Rodapé */}
       <div className="flex items-center justify-between gap-2 pt-2 border-t border-neutral-700 dark:border-primary/20">
         {/* Botão de Excluir */}
-        {onDeleteRecord ? (
-          <>
-            <button
-              type="button"
-              onClick={() => setIsDeleteConfirmOpen(true)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-500/15 transition-colors cursor-pointer"
-              title={t("deleteRecordTitle")}
-            >
-              <Trash2 size={13} />
-              <span>{t("deleteButton")}</span>
-            </button>
-
-            <ConfirmationModal
-              isOpen={isDeleteConfirmOpen}
-              onClose={() => setIsDeleteConfirmOpen(false)}
-              onConfirm={() => {
-                onDeleteRecord(record.id);
-                setIsDeleteConfirmOpen(false);
-                onClose();
-              }}
-              title={t("deleteConfirmTitle")}
-              description={
-                <p>
-                  {t("deleteConfirmDescriptionPrefix")}{" "}
-                  <strong className="text-neutral-100">
-                    "
-                    {record.activityName || record.itemName || t("freeSession")}
-                    "
-                  </strong>
-                  {t("deleteConfirmDescriptionSuffix")}
-                </p>
-              }
-              confirmText={t("deleteConfirmButton")}
-              variant="danger"
-            />
-          </>
+        {onRequestDelete ? (
+          <button
+            type="button"
+            onClick={() => {
+              // A confirmação (com opção de limpar o Histórico) é exibida pelo componente pai
+              onRequestDelete(record);
+              onClose();
+            }}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-500/15 transition-colors cursor-pointer"
+            title={t("deleteRecordTitle")}
+          >
+            <Trash2 size={13} />
+            <span>{t("deleteButton")}</span>
+          </button>
         ) : (
           <div />
         )}

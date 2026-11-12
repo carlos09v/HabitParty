@@ -38,4 +38,13 @@ public interface TransactionHistoryRepository {
   }
 
   void deleteAllByUserId(UUID userId);
+
+  // Exclusão em lote (apenas registros pertencentes ao usuário). Retorna a quantidade removida.
+  int deleteAllByIdsAndUserId(List<UUID> ids, UUID userId);
+
+  // Remove todos os registros vinculados a uma origem (Task, Reward, FocusRecord) do usuário
+  void deleteAllByReferenceIdAndUserId(UUID referenceId, UUID userId);
+
+  // Remove todos os registros vinculados a várias origens do usuário
+  void deleteAllByReferenceIdsAndUserId(List<UUID> referenceIds, UUID userId);
 }

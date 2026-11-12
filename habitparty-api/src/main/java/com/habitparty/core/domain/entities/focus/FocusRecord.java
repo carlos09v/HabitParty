@@ -16,6 +16,8 @@ public class FocusRecord {
   private final UUID userId;
   private final UUID focusActivityId;
   private final UUID inventoryItemId;
+  private final UUID taskId;
+  private final String taskNameSnapshot;
   private String notes;
   private final LocalDateTime startTime;
   private final LocalDateTime endTime;
@@ -30,11 +32,27 @@ public class FocusRecord {
   public FocusRecord(UUID id, UUID userId, UUID focusActivityId, UUID inventoryItemId, String notes,
       LocalDateTime startTime, LocalDateTime endTime, FocusRecordType recordType,
       Integer completedPomos) {
-    this(id, userId, focusActivityId, inventoryItemId, notes, startTime, endTime, recordType, completedPomos, 0,
-        BigDecimal.ZERO);
+    this(id, userId, focusActivityId, inventoryItemId, null, null, notes, startTime, endTime, recordType,
+        completedPomos, 0, BigDecimal.ZERO);
   }
 
   public FocusRecord(UUID id, UUID userId, UUID focusActivityId, UUID inventoryItemId, String notes,
+      LocalDateTime startTime, LocalDateTime endTime, FocusRecordType recordType,
+      Integer completedPomos, Integer xpEarned, BigDecimal coinsEarned) {
+    this(id, userId, focusActivityId, inventoryItemId, null, null, notes, startTime, endTime, recordType,
+        completedPomos, xpEarned, coinsEarned);
+  }
+
+  public FocusRecord(UUID id, UUID userId, UUID focusActivityId, UUID inventoryItemId,
+      UUID taskId, String taskNameSnapshot, String notes,
+      LocalDateTime startTime, LocalDateTime endTime, FocusRecordType recordType,
+      Integer completedPomos) {
+    this(id, userId, focusActivityId, inventoryItemId, taskId, taskNameSnapshot, notes, startTime, endTime, recordType,
+        completedPomos, 0, BigDecimal.ZERO);
+  }
+
+  public FocusRecord(UUID id, UUID userId, UUID focusActivityId, UUID inventoryItemId,
+      UUID taskId, String taskNameSnapshot, String notes,
       LocalDateTime startTime, LocalDateTime endTime, FocusRecordType recordType,
       Integer completedPomos, Integer xpEarned, BigDecimal coinsEarned) {
     // 1. Validações Básicas
@@ -48,14 +66,14 @@ public class FocusRecord {
       throw new DomainValidationException("O horário de fim não pode ser anterior ao horário de início.");
     }
 
-    // 2. Validação de Exclusividade (Ou é Atividade, ou é Recompensa)
-    if (focusActivityId == null && inventoryItemId == null) {
+    // 2. Validação de Vínculo na criação (Deve ter pelo menos Atividade, Tarefa ou Item de Inventário; Inventário é exclusivo)
+    if (id == null && focusActivityId == null && inventoryItemId == null && taskId == null) {
       throw new DomainValidationException(
-          "O registro deve estar vinculado a uma Atividade ou a um Item de Inventário.");
+          "O registro deve estar vinculado a uma Atividade, Tarefa ou a um Item de Inventário.");
     }
-    if (focusActivityId != null && inventoryItemId != null) {
+    if (inventoryItemId != null && (focusActivityId != null || taskId != null)) {
       throw new DomainValidationException(
-          "Um registro não pode estar vinculado simultaneamente a uma Atividade e a um Item de Inventário.");
+          "Um registro não pode estar vinculado simultaneamente a uma Atividade/Tarefa e a um Item de Inventário.");
     }
 
     if (recordType == FocusRecordType.POMO) {
@@ -72,6 +90,8 @@ public class FocusRecord {
     this.userId = userId;
     this.focusActivityId = focusActivityId;
     this.inventoryItemId = inventoryItemId;
+    this.taskId = taskId;
+    this.taskNameSnapshot = taskNameSnapshot;
     this.notes = notes;
     this.startTime = startTime;
     this.endTime = endTime;
@@ -108,6 +128,14 @@ public class FocusRecord {
 
   public Optional<UUID> getInventoryItemId() {
     return Optional.ofNullable(inventoryItemId);
+  }
+
+  public Optional<UUID> getTaskId() {
+    return Optional.ofNullable(taskId);
+  }
+
+  public Optional<String> getTaskNameSnapshot() {
+    return Optional.ofNullable(taskNameSnapshot);
   }
 
   public Optional<String> getNotes() {

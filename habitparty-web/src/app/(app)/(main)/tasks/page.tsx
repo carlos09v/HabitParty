@@ -12,7 +12,6 @@ import {
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getTasksBoardData } from "@/services/taskService";
 import { getCurrentUser } from "@/services/userService";
-import { getCompactMode } from "@/utils/cookies";
 
 interface TasksPageProps {
   searchParams?: Promise<{
@@ -31,7 +30,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function TasksPage({ searchParams }: TasksPageProps) {
-  const isCompact = await getCompactMode();
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const cookieStore = await cookies();
   const paramWorkspaceId = resolvedSearchParams.workspaceId;
@@ -68,7 +66,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
 
   return (
     <ScopedIntlProvider scope="tasks">
-      <PageWrapper noScroll isCompact={isCompact}>
+      <PageWrapper noScroll>
         <Suspense fallback={null}>
           <TasksBoardContainer
             key={workspaceId || "empty"}
@@ -78,7 +76,6 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
             targetColumnId={targetColumnId}
             isPremium={isPremium}
             workspaceId={workspaceId}
-            isCompact={isCompact}
           />
         </Suspense>
       </PageWrapper>

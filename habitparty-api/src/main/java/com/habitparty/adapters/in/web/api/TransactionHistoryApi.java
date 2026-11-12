@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import com.habitparty.adapters.in.web.dtos.request.DeleteTransactionsBatchDTO;
 import com.habitparty.adapters.in.web.dtos.response.TransactionHistoryResponseDTO;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
@@ -15,6 +16,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 
 @RequestMapping("/transactions")
 @Tag(name = "Transactions", description = "Endpoints para consulta e exportação de extrato de transações de moedas/XP")
@@ -45,6 +47,13 @@ public interface TransactionHistoryApi {
     @DeleteMapping("/{id}")
     ResponseEntity<Void> deleteTransaction(
         @PathVariable UUID id,
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
+    );
+
+    @Operation(summary = "Excluir Registros em Lote", description = "Exclui vários registros do extrato de transações de uma vez (máx. 200).")
+    @DeleteMapping("/batch")
+    ResponseEntity<Void> deleteTransactionsBatch(
+        @RequestBody @Valid DeleteTransactionsBatchDTO dto,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 }

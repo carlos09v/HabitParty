@@ -67,12 +67,19 @@ export function useFocusTimerControls({
   const changeDuration = useFocusTimerStore((s) => s.changeDuration);
   const startFocusActivity = useFocusTimerStore((s) => s.startFocusActivity);
   const startFocusItem = useFocusTimerStore((s) => s.startFocusItem);
+  const startFocusTask = useFocusTimerStore((s) => s.startFocusTask);
   const selectActivityTarget = useFocusTimerStore(
     (s) => s.selectActivityTarget,
   );
   const selectItemTarget = useFocusTimerStore((s) => s.selectItemTarget);
+  const selectTaskTarget = useFocusTimerStore((s) => s.selectTaskTarget);
+  const unlinkTaskFromTarget = useFocusTimerStore(
+    (s) => s.unlinkTaskFromTarget,
+  );
+  const completeLinkedTask = useFocusTimerStore((s) => s.completeLinkedTask);
   const resetTarget = useFocusTimerStore((s) => s.resetTarget);
   const transferTarget = useFocusTimerStore((s) => s.transferTarget);
+  const linkActivityToTask = useFocusTimerStore((s) => s.linkActivityToTask);
   const syncTargetMetadata = useFocusTimerStore((s) => s.syncTargetMetadata);
 
   const isSoundEnabled = useSoundPreferencesStore((s) => s.timerSoundsEnabled);
@@ -148,10 +155,15 @@ export function useFocusTimerControls({
     changeDuration,
     startFocusActivity,
     startFocusItem,
+    startFocusTask,
     selectActivityTarget,
     selectItemTarget,
+    selectTaskTarget,
+    unlinkTaskFromTarget,
+    completeLinkedTask,
     resetTarget,
     transferTarget,
+    linkActivityToTask,
     syncTargetMetadata,
   };
 }

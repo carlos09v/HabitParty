@@ -15,6 +15,8 @@ import com.habitparty.application.usecases.focus.CreateFocusRecordCommand;
 import com.habitparty.application.usecases.focus.CreateFocusRecordUseCase;
 import com.habitparty.application.usecases.focus.DeleteFocusRecordUseCase;
 import com.habitparty.application.usecases.focus.GetFocusRecordsByActivityUseCase;
+import com.habitparty.application.usecases.focus.GetFocusRecordsByTaskUseCase;
+import com.habitparty.application.usecases.focus.GetUserFocusRecordsUseCase;
 import com.habitparty.application.usecases.focus.UpdateFocusRecordUseCase;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
@@ -27,6 +29,19 @@ public class FocusRecordController implements FocusRecordApi {
   private final UpdateFocusRecordUseCase updateUseCase;
   private final DeleteFocusRecordUseCase deleteUseCase;
   private final GetFocusRecordsByActivityUseCase getByActivityUseCase;
+  private final GetFocusRecordsByTaskUseCase getByTaskUseCase;
+  private final GetUserFocusRecordsUseCase getUserRecordsUseCase;
+
+  @Override
+  public ResponseEntity<Page<FocusRecordResponseDTO>> getMyRecords(
+      int page,
+      int size,
+      AuthenticatedUser usuarioLogado) {
+
+    Page<FocusRecordResponseDTO> response = getUserRecordsUseCase.execute(usuarioLogado.id(), page, size)
+        .map(FocusRecordResponseDTO::fromDomain);
+    return ResponseEntity.ok(response);
+  }
 
   @Override
   public ResponseEntity<Page<FocusRecordResponseDTO>> getByActivity(
@@ -40,6 +55,17 @@ public class FocusRecordController implements FocusRecordApi {
   }
 
   @Override
+  public ResponseEntity<Page<FocusRecordResponseDTO>> getByTask(
+      UUID taskId,
+      int page,
+      AuthenticatedUser usuarioLogado) {
+
+    Page<FocusRecordResponseDTO> response = getByTaskUseCase.execute(usuarioLogado.id(), taskId, page)
+        .map(FocusRecordResponseDTO::fromDomain);
+    return ResponseEntity.ok(response);
+  }
+
+  @Override
   public ResponseEntity<FocusRecordResponseDTO> create(
       CreateFocusRecordDTO request,
       AuthenticatedUser usuarioLogado) {
@@ -47,6 +73,7 @@ public class FocusRecordController implements FocusRecordApi {
     var command = new CreateFocusRecordCommand(
         request.focusActivityId(),
         request.inventoryItemId(),
+        request.taskId(),
         request.notes(),
         request.startTime(),
         request.endTime(),
@@ -70,9 +97,10 @@ public class FocusRecordController implements FocusRecordApi {
   @Override
   public ResponseEntity<Void> delete(
       UUID recordId,
+      boolean deleteHistory,
       AuthenticatedUser usuarioLogado) {
 
-    deleteUseCase.execute(usuarioLogado.id(), recordId);
+    deleteUseCase.execute(usuarioLogado.id(), recordId, deleteHistory);
     return ResponseEntity.noContent().build();
   }
 }

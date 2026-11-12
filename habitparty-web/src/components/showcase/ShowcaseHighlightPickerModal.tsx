@@ -14,7 +14,6 @@ import {
   HIGHLIGHT_MODAL_ITEMS_PER_PAGE,
   MAX_SHOWCASE_HIGHLIGHTS,
   RARITY_THEMES,
-  STAT_METRIC_DEFINITIONS,
 } from "@/constants/achievements";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
@@ -32,7 +31,6 @@ import {
   resolveAccountBadgeCopy,
   resolveAchievementCopy,
   resolveHighlightSlotCard,
-  resolveStatMetricCopy,
   resolveUserLevelState,
 } from "@/utils";
 import { soundEffects } from "@/utils/soundEffects";
@@ -48,7 +46,7 @@ interface ShowcaseHighlightPickerModalProps {
   onSaved: (updated: ProfileHighlightResponseDTO[]) => void;
 }
 
-type PickerTab = "achievements" | "badges" | "metrics";
+type PickerTab = "achievements" | "badges";
 
 function buildInitialDraftSlots(
   highlights: ProfileHighlightResponseDTO[],
@@ -251,10 +249,6 @@ export function ShowcaseHighlightPickerModal({
       {
         value: "badges" as const,
         label: t("tabs.badges"),
-      },
-      {
-        value: "metrics" as const,
-        label: t("tabs.metrics"),
       },
     ],
     [t, unlockedAchievements.length],
@@ -539,66 +533,6 @@ export function ShowcaseHighlightPickerModal({
                         className="text-amber-600 dark:text-gold shrink-0"
                       />
                     ) : null}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {activeTab === "metrics" && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {STAT_METRIC_DEFINITIONS.map((metric) => {
-                const theme = RARITY_THEMES[metric.rarity];
-                const equippedSlot = findEquippedSlotIndex(
-                  "STAT_METRIC",
-                  null,
-                  metric.id,
-                );
-                const isEquipped = equippedSlot !== -1;
-                const { title, valueFormatted } = resolveStatMetricCopy(
-                  metric.id,
-                  stats,
-                  isGamified,
-                  tMetrics,
-                );
-
-                return (
-                  <button
-                    key={metric.id}
-                    type="button"
-                    onClick={() =>
-                      handleAssignItem("STAT_METRIC", null, metric.id)
-                    }
-                    className={cn(
-                      "flex items-center gap-3 p-3.5 rounded-xl border text-left transition-colors cursor-pointer",
-                      isEquipped
-                        ? "border-gold bg-gold/15"
-                        : "border-neutral-700 bg-card hover:border-primary/45 dark:border-primary/20 dark:bg-surface/50",
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "w-10 h-10 rounded-xl border flex items-center justify-center shrink-0",
-                        theme.iconBg,
-                        theme.iconText,
-                      )}
-                    >
-                      <AchievementIcon iconKey={metric.iconKey} size={20} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-xs font-bold text-neutral-100 block truncate">
-                        {title}
-                      </span>
-                      <p className="text-xs font-extrabold text-amber-700 dark:text-gold mt-0.5">
-                        {valueFormatted}
-                      </p>
-                    </div>
-                    {isEquipped && (
-                      <Check
-                        size={16}
-                        className="text-amber-600 dark:text-gold shrink-0"
-                      />
-                    )}
                   </button>
                 );
               })}

@@ -31,6 +31,7 @@ export interface InvalidateFocusDomainOptions {
   activities?: boolean;
   records?: boolean;
   rewardsAndInventory?: boolean;
+  tasks?: boolean;
 }
 
 /**
@@ -51,6 +52,11 @@ export function invalidateFocusDomainTags(
     updateTag("user");
     updateTag("transactions");
     updateTag("showcase");
+  }
+  if (options.tasks) {
+    updateTag("tasks");
+    updateTag("dashboard-tasks");
+    updateTag("kanban");
   }
 }
 

@@ -17,7 +17,6 @@ import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { TaskRow } from "@/components/tasks/shared/TaskRow";
 import { getColumnIcon } from "@/constants/routine";
 import { TASK_TABLE_GRID_COLS } from "@/constants/task";
-import { useCompactMode } from "@/hooks/useCompactMode";
 import type { Task } from "@/types/task";
 import type {
   RoutineTaskListProps,
@@ -29,6 +28,7 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
   column,
   isCompact,
   selectedColumnId,
+  selectedTaskId,
   onAddTaskToColumn,
   onOpenDetails,
   onEditTask,
@@ -178,6 +178,7 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
               <TaskRow
                 key={task.id}
                 task={task}
+                isSelected={selectedTaskId === task.id}
                 columnId={column.id}
                 columnTitle={column.title}
                 isCompact={isCompact}
@@ -200,6 +201,7 @@ export function RoutineTaskList({
   columns,
   visibleColumnIds,
   selectedColumnId,
+  selectedTaskId,
   isCompact: propIsCompact,
   onAddTaskToColumn,
   onOpenDetails,
@@ -210,7 +212,7 @@ export function RoutineTaskList({
   dndState,
 }: RoutineTaskListProps) {
   const t = useTranslations("tasks.taskList");
-  const { isCompact } = useCompactMode(propIsCompact);
+  const isCompact = propIsCompact ?? false;
 
   const visibleColumns = useMemo(
     () => columns.filter((col) => visibleColumnIds.includes(col.id)),
@@ -272,6 +274,7 @@ export function RoutineTaskList({
               column={col}
               isCompact={isCompact}
               selectedColumnId={selectedColumnId}
+              selectedTaskId={selectedTaskId}
               onAddTaskToColumn={onAddTaskToColumn}
               onOpenDetails={onOpenDetails}
               onEditTask={onEditTask}

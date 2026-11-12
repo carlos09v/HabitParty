@@ -7,7 +7,6 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { MAX_FOCUS_ACTIVITIES_FREE } from "@/constants/focus";
-import { useCompactMode } from "@/hooks/useCompactMode";
 import { useFocusAnalytics } from "@/hooks/useFocusAnalytics";
 import { executeDeleteFocusRecord } from "@/hooks/useFocusMutations";
 import { useFocusTimerControls } from "@/hooks/useFocusTimer";
@@ -15,6 +14,7 @@ import { useIdlePreload } from "@/hooks/useIdlePreload";
 import { useUserStore } from "@/store/userStore";
 import type {
   FocusActivity,
+  FocusableTaskItem,
   FocusRecord,
   FocusRecordType,
 } from "@/types/focus";
@@ -57,28 +57,54 @@ interface FocusContainerProps {
   initialActivities: FocusActivity[];
   initialBackpackItems: InventoryItemResponseDTO[];
   initialRecords: FocusRecord[];
+  initialFocusableTasks?: FocusableTaskItem[];
   initialSelectedActivityId?: string | null;
   initialCreateActivity?: boolean;
-  isCompact?: boolean;
 }
 
 export function FocusContainer({
   initialActivities,
   initialBackpackItems,
   initialRecords,
+  initialFocusableTasks = [],
   initialSelectedActivityId = null,
   initialCreateActivity = false,
-  isCompact: propIsCompact,
 }: FocusContainerProps) {
   const t = useTranslations("focus.container");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const is_Premium = useUserStore((s) => s.is_Premium);
-  const { isCompact: storeIsCompact } = useCompactMode();
   useIdlePreload(preloadFocusContainerModalChunks);
 
-  const isCompact = propIsCompact ?? storeIsCompact;
+  const [focusableTasks, setFocusableTasks] = useState<FocusableTaskItem[]>(
+    initialFocusableTasks,
+  );
+
+  useEffect(() => {
+    setFocusableTasks(initialFocusableTasks);
+  }, [initialFocusableTasks]);
+
+  useEffect(() => {
+    const handleTaskCompleted = (event: Event) => {
+      const detail = (event as CustomEvent<{ taskId?: string }>).detail;
+      if (detail?.taskId) {
+        setFocusableTasks((prev) =>
+          prev.filter((task) => task.id !== detail.taskId),
+        );
+      }
+    };
+    window.addEventListener(
+      "habitparty:task-completed-from-focus",
+      handleTaskCompleted,
+    );
+    return () => {
+      window.removeEventListener(
+        "habitparty:task-completed-from-focus",
+        handleTaskCompleted,
+      );
+    };
+  }, []);
 
   const urlActivityId =
     searchParams.get("activityId") || initialSelectedActivityId || null;
@@ -118,9 +144,10 @@ export function FocusContainer({
 
   // Estado para confirmação de troca de alvo enquanto timer está ativo
   const [pendingSwitchTarget, setPendingSwitchTarget] = useState<{
-    type: "activity" | "item";
+    type: "activity" | "item" | "task";
     activity?: FocusActivity;
     item?: InventoryItemResponseDTO;
+    task?: { id: string; title: string };
   } | null>(null);
 
   // Estado para confirmação de troca de modo (Pomodoro <-> Cronômetro)
@@ -139,8 +166,10 @@ export function FocusContainer({
     changeMode,
     startFocusActivity,
     startFocusItem,
+    startFocusTask,
     selectActivityTarget,
     selectItemTarget,
+    selectTaskTarget,
     resetTarget,
     transferTarget,
     syncTargetMetadata,
@@ -269,6 +298,18 @@ export function FocusContainer({
           targetMinutes: currentAct.targetTimeMinutes,
         });
       }
+    } else if (target.type === "task") {
+      const currentTask = focusableTasks.find(
+        (tItem) => tItem.id === target.id,
+      );
+      if (currentTask) {
+        syncTargetMetadata({
+          id: currentTask.id,
+          name: currentTask.title,
+          taskId: currentTask.id,
+          taskName: currentTask.title,
+        });
+      }
     }
   }, [
     target,
@@ -277,6 +318,7 @@ export function FocusContainer({
     hasElapsedSeconds,
     initialBackpackItems,
     initialActivities,
+    focusableTasks,
     is_Premium,
     resetTarget,
     selectActivityTarget,
@@ -303,7 +345,11 @@ export function FocusContainer({
     }
   };
 
-  const handleSelectBackpackItem = (item: InventoryItemResponseDTO) => {
+  const handleSelectBackpackItem = (item: InventoryItemResponseDTO | null) => {
+    if (!item) {
+      setSelectedBackpackItemId(null);
+      return;
+    }
     const itemId = item.inventoryItemId || null;
     const isDeselecting = itemId !== null && selectedBackpackItemId === itemId;
 
@@ -375,6 +421,24 @@ export function FocusContainer({
     startFocusItem(item);
   };
 
+  const handleStartFocusTask = (task: { id: string; title: string }) => {
+    // Se a sessão atual for uma Atividade, vincula a tarefa como micro-tarefa na atividade
+    if (target?.type === "activity") {
+      selectTaskTarget(task);
+      return;
+    }
+
+    // Se houver uma sessão ativa com tempo decorrido, solicita confirmação de troca
+    if (hasUnsavedWorkSession && target?.id !== task.id) {
+      setPendingSwitchTarget({ type: "task", task });
+      return;
+    }
+
+    setSelectedActivityId(null);
+    setSelectedBackpackItemId(null);
+    startFocusTask(task);
+  };
+
   const handleTransferTarget = () => {
     if (!pendingSwitchTarget) return;
     if (
@@ -399,9 +463,13 @@ export function FocusContainer({
     if (targetToStart.type === "activity" && targetToStart.activity) {
       setSelectedActivityId(targetToStart.activity.id);
       startFocusActivity(targetToStart.activity);
-    } else if (targetToStart.item) {
+    } else if (targetToStart.type === "item" && targetToStart.item) {
       setSelectedActivityId(null);
       startFocusItem(targetToStart.item);
+    } else if (targetToStart.type === "task" && targetToStart.task) {
+      setSelectedActivityId(null);
+      setSelectedBackpackItemId(null);
+      startFocusTask(targetToStart.task);
     }
     setPendingSwitchTarget(null);
     return true;
@@ -415,9 +483,19 @@ export function FocusContainer({
     ) {
       setSelectedActivityId(pendingSwitchTarget.activity.id);
       startFocusActivity(pendingSwitchTarget.activity);
-    } else if (pendingSwitchTarget.item) {
+    } else if (
+      pendingSwitchTarget.type === "item" &&
+      pendingSwitchTarget.item
+    ) {
       setSelectedActivityId(null);
       startFocusItem(pendingSwitchTarget.item);
+    } else if (
+      pendingSwitchTarget.type === "task" &&
+      pendingSwitchTarget.task
+    ) {
+      setSelectedActivityId(null);
+      setSelectedBackpackItemId(null);
+      startFocusTask(pendingSwitchTarget.task);
     }
     setPendingSwitchTarget(null);
   };
@@ -439,11 +517,19 @@ export function FocusContainer({
     setPendingSwitchMode(null);
   };
 
-  const handleDeleteRecord = async (recordId: string) => {
-    await executeDeleteFocusRecord(recordId, {
-      success: t("deleteRecordSuccess"),
-      error: t("deleteRecordError"),
-    });
+  const handleDeleteRecord = async (
+    recordId: string,
+    deleteHistory: boolean,
+  ) => {
+    await executeDeleteFocusRecord(
+      recordId,
+      {
+        success: t("deleteRecordSuccess"),
+        error: t("deleteRecordError"),
+      },
+      undefined,
+      deleteHistory,
+    );
   };
 
   const handleOpenManualRecordModal = (params?: {
@@ -506,6 +592,7 @@ export function FocusContainer({
         <FocusMain
           activities={initialActivities}
           backpackItems={initialBackpackItems}
+          focusableTasks={focusableTasks}
           isPremium={is_Premium}
           selectedActivityId={selectedActivityId}
           selectedBackpackItemId={selectedBackpackItemId}
@@ -513,10 +600,10 @@ export function FocusContainer({
           onSelectBackpackItem={handleSelectBackpackItem}
           onStartFocusActivity={handleStartFocusActivity}
           onStartFocusItem={handleStartFocusItem}
+          onStartFocusTask={handleStartFocusTask}
           onChangeMode={handleChangeMode}
           onOpenManualRecord={handleOpenManualRecordModal}
           initialCreateActivity={initialCreateActivity}
-          isCompact={isCompact}
         />
       </div>
 
@@ -537,7 +624,6 @@ export function FocusContainer({
         onDeleteRecord={handleDeleteRecord}
         selectedActivityName={selectedActivity?.name}
         onClearSelectedActivity={() => handleSelectActivity(null)}
-        isCompact={isCompact}
         className={cn(
           mobileTab === "metrics" ? "flex flex-1 w-full" : "hidden xl:flex",
         )}
@@ -554,6 +640,7 @@ export function FocusContainer({
           }}
           activities={initialActivities}
           backpackItems={initialBackpackItems}
+          focusableTasks={focusableTasks}
           records={initialRecords}
           initialActivityId={manualInitialActivityId}
           initialItemId={manualInitialItemId}
@@ -569,11 +656,15 @@ export function FocusContainer({
           newTargetName={
             pendingSwitchTarget?.type === "activity"
               ? pendingSwitchTarget.activity?.name || t("fallbacks.newActivity")
-              : pendingSwitchTarget?.item?.rewardName ||
-                t("fallbacks.focusItem")
+              : pendingSwitchTarget?.type === "item"
+                ? pendingSwitchTarget.item?.rewardName ||
+                  t("fallbacks.focusItem")
+                : pendingSwitchTarget?.task?.title ||
+                  t("fallbacks.currentSession")
           }
           isCurrentInventory={target?.type === "inventory"}
           isNewInventory={pendingSwitchTarget?.type === "item"}
+          isNewTask={pendingSwitchTarget?.type === "task"}
           onTransfer={handleTransferTarget}
           onSaveAndStartNew={handleSaveAndStartNew}
           onDiscardAndStartNew={handleDiscardAndStartNew}

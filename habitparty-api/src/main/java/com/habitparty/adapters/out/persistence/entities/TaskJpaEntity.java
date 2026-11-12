@@ -50,7 +50,7 @@ public class TaskJpaEntity {
   @Column(nullable = false)
   private String name;
 
-  @Column(length = 500)
+  @Column(length = 5000)
   private String description;
 
   @Column(name = "order_index", nullable = false)
@@ -80,6 +80,12 @@ public class TaskJpaEntity {
 
   @Column(name = "due_date")
   private LocalDate dueDate;
+
+  @Column(name = "total_focus_minutes", nullable = false)
+  private int totalFocusMinutes = 0;
+
+  @Column(name = "focus_cycles_count", nullable = false)
+  private int focusCyclesCount = 0;
 
   @Column(name = "created_at", nullable = false)
   private LocalDateTime createdAt;

@@ -2,8 +2,10 @@ package com.habitparty.application.usecases.task;
 
 import java.util.UUID;
 
+import com.habitparty.application.ports.BoardColumnRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.core.domain.entities.BoardColumn;
 import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.task.ChecklistItem;
@@ -17,12 +19,38 @@ public final class TaskGamificationHelper {
 
   private TaskGamificationHelper() {}
 
+  /**
+   * Resolve o nome da lista (BoardColumn) de uma tarefa para o snapshot do Histórico.
+   * Retorna null quando o repositório não está disponível ou a coluna não existe.
+   */
+  public static String resolveColumnName(BoardColumnRepository boardColumnPort, Task task) {
+    if (boardColumnPort == null || task == null || task.getBoardColumnId() == null) {
+      return null;
+    }
+    return boardColumnPort.findById(task.getBoardColumnId())
+        .map(BoardColumn::getName)
+        .orElse(null);
+  }
+
   public static void awardTaskCompletion(
       User user,
       Task task,
       TransactionType txType,
       UserRepository userPort,
       TransactionHistoryRepository transactionPort) {
+    awardTaskCompletion(user, task, txType, userPort, transactionPort, null);
+  }
+
+  /**
+   * @param columnName nome da lista (BoardColumn) da tarefa, salvo como snapshot no Histórico
+   */
+  public static void awardTaskCompletion(
+      User user,
+      Task task,
+      TransactionType txType,
+      UserRepository userPort,
+      TransactionHistoryRepository transactionPort,
+      String columnName) {
     TaskReward reward = task.calculateReward();
     user.addXp(reward.xp());
     user.addCoins(reward.coins());
@@ -71,6 +99,7 @@ public final class TaskGamificationHelper {
         null,
         task.getDifficulty(),
         task.getTags(),
+        columnName,
         null
     );
     transactionPort.save(transaction);
@@ -82,6 +111,16 @@ public final class TaskGamificationHelper {
       TaskReward penalty,
       TransactionType txType,
       String descriptionPrefix) {
+    return buildPenaltyTransaction(userId, task, penalty, txType, descriptionPrefix, null);
+  }
+
+  public static TransactionHistory buildPenaltyTransaction(
+      UUID userId,
+      Task task,
+      TaskReward penalty,
+      TransactionType txType,
+      String descriptionPrefix,
+      String columnName) {
     return new TransactionHistory(
         null,
         userId,
@@ -95,6 +134,7 @@ public final class TaskGamificationHelper {
         null,
         task.getDifficulty(),
         task.getTags(),
+        columnName,
         null
     );
   }

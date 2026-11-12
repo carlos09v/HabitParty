@@ -16,6 +16,7 @@ import com.habitparty.adapters.in.web.dtos.request.CreateTaskDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateTaskDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateTaskOrderDTO;
 import com.habitparty.application.ports.projections.DashboardTaskDTO;
+import com.habitparty.application.ports.projections.TaskSearchWorkspaceCountDTO;
 import com.habitparty.adapters.in.web.dtos.response.TaskResponseDTO;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 import com.habitparty.application.usecases.task.ChangeTaskStatusUseCase;
@@ -28,6 +29,7 @@ import com.habitparty.application.usecases.task.MoveTaskCommand;
 import com.habitparty.application.usecases.task.MoveTaskUseCase;
 import com.habitparty.application.usecases.task.UpdateTaskCommand;
 import com.habitparty.application.usecases.task.RecordHabitScoreUseCase;
+import com.habitparty.application.usecases.task.SearchTasksAcrossWorkspacesUseCase;
 import com.habitparty.application.usecases.task.UpdateTaskUseCase;
 import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.domain.enums.task.TaskStatus;
@@ -42,6 +44,7 @@ public class TaskController implements TaskApi {
   private final RecordHabitScoreUseCase recordHabitScoreUseCase;
   private final ListTasksByColumnUseCase listTasksByColumnUseCase;
   private final ListDashboardTasksUseCase listDashboardTasksUseCase;
+  private final SearchTasksAcrossWorkspacesUseCase searchTasksAcrossWorkspacesUseCase;
 
   public TaskController(
       CreateTaskUseCase createTaskUseCase,
@@ -51,7 +54,8 @@ public class TaskController implements TaskApi {
       ChangeTaskStatusUseCase changeTaskStatusUseCase,
       RecordHabitScoreUseCase recordHabitScoreUseCase,
       ListTasksByColumnUseCase listTasksByColumnUseCase,
-      ListDashboardTasksUseCase listDashboardTasksUseCase) {
+      ListDashboardTasksUseCase listDashboardTasksUseCase,
+      SearchTasksAcrossWorkspacesUseCase searchTasksAcrossWorkspacesUseCase) {
     this.createTaskUseCase = createTaskUseCase;
     this.updateTaskUseCase = updateTaskUseCase;
     this.deleteTaskUseCase = deleteTaskUseCase;
@@ -60,6 +64,14 @@ public class TaskController implements TaskApi {
     this.recordHabitScoreUseCase = recordHabitScoreUseCase;
     this.listTasksByColumnUseCase = listTasksByColumnUseCase;
     this.listDashboardTasksUseCase = listDashboardTasksUseCase;
+    this.searchTasksAcrossWorkspacesUseCase = searchTasksAcrossWorkspacesUseCase;
+  }
+
+  @Override
+  public ResponseEntity<List<TaskSearchWorkspaceCountDTO>> searchTasksAcrossWorkspaces(
+      String query,
+      AuthenticatedUser usuarioLogado) {
+    return ResponseEntity.ok(searchTasksAcrossWorkspacesUseCase.execute(usuarioLogado.id(), query));
   }
 
   @Override
@@ -109,7 +121,7 @@ public class TaskController implements TaskApi {
         dto.dueDate(), dto.habitType(), dto.resetCounter(), dto.importanceType(),
         dto.startDate(), dto.repeatType(), dto.repeatEvery(), dto.daysOfWeek(),
         dto.monthlyOption(), dto.reminderType(), dto.customReminderAt(),
-        dto.sendEmailReminder(), dto.dueTime()
+        dto.sendEmailReminder(), dto.dueTime(), dto.startTime(), dto.dueEndTime(), dto.isAllDay()
     );
     Task createdTask = createTaskUseCase.execute(userId, boardColumnId, command);
     return ResponseEntity.status(HttpStatus.CREATED).body(TaskResponseDTO.fromDomain(createdTask));
@@ -127,7 +139,7 @@ public class TaskController implements TaskApi {
         dto.habitType(), dto.resetCounter(), dto.importanceType(),
         dto.startDate(), dto.repeatType(), dto.repeatEvery(), dto.daysOfWeek(),
         dto.monthlyOption(), dto.reminderType(), dto.customReminderAt(),
-        dto.sendEmailReminder(), dto.dueTime()
+        dto.sendEmailReminder(), dto.dueTime(), dto.startTime(), dto.dueEndTime(), dto.isAllDay()
     );
     Task updatedTask = updateTaskUseCase.execute(taskId, userId, command);
     return ResponseEntity.ok(TaskResponseDTO.fromDomain(updatedTask));
@@ -136,10 +148,11 @@ public class TaskController implements TaskApi {
   @Override
   public ResponseEntity<Void> deleteTask(
       UUID taskId,
+      boolean deleteHistory,
       AuthenticatedUser userIdLogado) {
     UUID userId = userIdLogado.id();
 
-    deleteTaskUseCase.execute(taskId, userId);
+    deleteTaskUseCase.execute(taskId, userId, deleteHistory);
     return ResponseEntity.noContent().build();
   }
 

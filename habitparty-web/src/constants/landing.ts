@@ -186,28 +186,29 @@ export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] = [
   {
     id: "r13",
     release: "Release 1.3",
+    status: "completed",
+    statusBadgeColor:
+      "bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
+    icon: Timer,
+    iconBoxColor:
+      "bg-emerald-500/15 border-emerald-500/35 text-emerald-700 dark:border-emerald-500/40 dark:text-emerald-400 dark:shadow-[0_0_15px_rgba(16,185,129,0.15)]",
+    checkColor: "text-emerald-600 dark:text-emerald-400",
+    accentColor: "from-emerald-400 via-teal-400 to-emerald-500",
+    borderGlowColor: "hover:border-emerald-500/50",
+    hasExtras: true,
+  },
+  {
+    id: "r14",
+    release: "Release 1.4",
     status: "next",
     statusBadgeColor:
       "bg-amber-500/15 text-amber-800 border-amber-500/30 dark:bg-gold/15 dark:text-gold dark:border-gold/30",
-    icon: Timer,
+    icon: Users2,
     iconBoxColor:
       "bg-amber-500/10 border-amber-500/25 text-amber-700 dark:bg-card dark:border-white/15 dark:text-gold",
     checkColor: "text-amber-600 dark:text-gold",
     accentColor: "from-gold to-warning-500",
     borderGlowColor: "hover:border-gold/40",
-  },
-  {
-    id: "r14",
-    release: "Release 1.4",
-    status: "planned",
-    statusBadgeColor:
-      "bg-magenta/10 text-magenta border-magenta/25 dark:bg-magenta/15 dark:border-magenta/30",
-    icon: Users2,
-    iconBoxColor:
-      "bg-fuchsia-500/10 border-fuchsia-500/25 text-fuchsia-700 dark:bg-card dark:border-white/15 dark:text-magenta",
-    checkColor: "text-fuchsia-600 dark:text-magenta",
-    accentColor: "from-magenta to-primary-light",
-    borderGlowColor: "hover:border-magenta/40",
   },
   {
     id: "r20",

@@ -12,9 +12,11 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useFloatingPopover } from "@/hooks/useFloatingPopover";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { TimePickerProps } from "@/types/ui";
 import { cn } from "@/utils";
 import {
+  formatTimeDisplay,
   formatTimeHHMM,
   formatTimeParts,
   HOURS_LIST,
@@ -25,17 +27,19 @@ import {
 const TIME_POPOVER_WIDTH = 240;
 const TIME_POPOVER_ESTIMATED_HEIGHT = 275;
 
-interface TimeStepperProps {
+export interface TimeStepperProps {
   value: number;
   unit: "h" | "m";
+  displayValue?: string;
   decrementLabel: string;
   incrementLabel: string;
   onChange: (nextVal: number) => void;
 }
 
-function TimeStepper({
+export function TimeStepper({
   value,
   unit,
+  displayValue,
   decrementLabel,
   incrementLabel,
   onChange,
@@ -51,8 +55,7 @@ function TimeStepper({
         <Minus size={12} />
       </button>
       <span className="w-6 text-center text-xs font-bold tabular-nums text-gold">
-        {String(value).padStart(2, "0")}
-        {unit}
+        {displayValue ?? `${String(value).padStart(2, "0")}${unit}`}
       </span>
       <button
         type="button"
@@ -66,18 +69,20 @@ function TimeStepper({
   );
 }
 
-interface TimeScrollColumnProps {
+export interface TimeScrollColumnProps {
   colRef: RefObject<HTMLDivElement | null>;
   items: readonly number[];
   selectedValue: number;
+  formatItemLabel?: (val: number) => string;
   unit: "h" | "m";
   onSelect: (val: number) => void;
 }
 
-function TimeScrollColumn({
+export function TimeScrollColumn({
   colRef,
   items,
   selectedValue,
+  formatItemLabel,
   unit,
   onSelect,
 }: TimeScrollColumnProps) {
@@ -101,12 +106,137 @@ function TimeScrollColumn({
                 : "text-neutral-200 hover:bg-white/10 hover:text-gold",
             )}
           >
-            {String(item).padStart(2, "0")}
-            {unit}
+            {formatItemLabel
+              ? formatItemLabel(item)
+              : `${String(item).padStart(2, "0")}${unit}`}
           </button>
         );
       })}
     </div>
+  );
+}
+
+export interface TimePickerBodyProps {
+  value?: string;
+  isOpen?: boolean;
+  onChange: (nextVal: string) => void;
+  onMinuteSelect?: () => void;
+}
+
+/**
+ * Painel interno reutilizável de seleção de hora e minuto (steppers + colunas roláveis + 12h/24h).
+ * Compartilhado entre o TimePicker standalone e o sub-popover de Hora do DatePicker.
+ */
+export function TimePickerBody({
+  value,
+  isOpen = true,
+  onChange,
+  onMinuteSelect,
+}: TimePickerBodyProps) {
+  const t = useTranslations("ui.timePicker");
+  const { timeFormat } = useTimeFormat();
+  const hoursColRef = useRef<HTMLDivElement>(null);
+  const minutesColRef = useRef<HTMLDivElement>(null);
+
+  const { hour, minute } = useMemo(() => parseTimeParts(value), [value]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const scrollActiveIntoView = (container: HTMLDivElement | null) => {
+      if (!container) return;
+      const activeBtn = container.querySelector<HTMLElement>(
+        '[data-active="true"]',
+      );
+      if (activeBtn) {
+        const offset =
+          activeBtn.offsetTop -
+          container.clientHeight / 2 +
+          activeBtn.clientHeight / 2;
+        container.scrollTo({ top: Math.max(0, offset), behavior: "instant" });
+      }
+    };
+    scrollActiveIntoView(hoursColRef.current);
+    scrollActiveIntoView(minutesColRef.current);
+  }, [isOpen]);
+
+  const handleSelectHour = (nextHour: number) => {
+    const wrapped = ((nextHour % 24) + 24) % 24;
+    onChange(formatTimeParts(wrapped, minute));
+  };
+
+  const handleSelectMinute = (nextMinute: number) => {
+    const wrapped = ((nextMinute % 60) + 60) % 60;
+    onChange(formatTimeParts(hour, wrapped));
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-center gap-2 pb-2.5 mb-2 border-b border-white/10">
+        <TimeStepper
+          value={hour}
+          unit="h"
+          displayValue={
+            timeFormat === "12h"
+              ? `${String(hour % 12 === 0 ? 12 : hour % 12).padStart(2, "0")}h`
+              : undefined
+          }
+          decrementLabel={t("decrementHour")}
+          incrementLabel={t("incrementHour")}
+          onChange={handleSelectHour}
+        />
+        <span className="text-neutral-400 font-bold text-xs">:</span>
+        <TimeStepper
+          value={minute}
+          unit="m"
+          decrementLabel={t("decrementMinute")}
+          incrementLabel={t("incrementMinute")}
+          onChange={handleSelectMinute}
+        />
+        {timeFormat === "12h" && (
+          <button
+            type="button"
+            onClick={() => handleSelectHour(hour >= 12 ? hour - 12 : hour + 12)}
+            className="px-2 py-1 rounded-lg bg-white/5 border border-white/10 hover:bg-gold/20 text-gold text-xs font-bold cursor-pointer transition-colors"
+          >
+            {hour >= 12 ? "PM" : "AM"}
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 text-center mb-1">
+        <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
+          {t("hourHeader")}
+        </span>
+        <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
+          {t("minuteHeader")}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <TimeScrollColumn
+          colRef={hoursColRef}
+          items={HOURS_LIST}
+          selectedValue={hour}
+          formatItemLabel={(h) =>
+            timeFormat === "12h"
+              ? `${String(h % 12 === 0 ? 12 : h % 12).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`
+              : `${String(h).padStart(2, "0")}h`
+          }
+          unit="h"
+          onSelect={handleSelectHour}
+        />
+        <TimeScrollColumn
+          colRef={minutesColRef}
+          items={QUICK_MINUTES_LIST}
+          selectedValue={minute}
+          unit="m"
+          onSelect={(m) => {
+            handleSelectMinute(m);
+            onMinuteSelect?.();
+          }}
+        />
+      </div>
+    </>
   );
 }
 
@@ -134,22 +264,20 @@ export function TimePicker({
   error,
   hint,
   align = "left",
+  zIndex,
 }: TimePickerProps) {
   const t = useTranslations("ui.timePicker");
   const resolvedPlaceholder = placeholder ?? t("placeholder");
   const generatedId = useId();
   const pickerId = id || generatedId;
   const [internalValue, setInternalValue] = useState(defaultValue || "");
-  const hoursColRef = useRef<HTMLDivElement>(null);
-  const minutesColRef = useRef<HTMLDivElement>(null);
+  const { timeFormat } = useTimeFormat();
 
   const isControlled = value !== undefined;
   const currentValue = isControlled ? value : internalValue;
-
-  const { hour, minute } = useMemo(
-    () => parseTimeParts(currentValue),
-    [currentValue],
-  );
+  const displayTime = currentValue
+    ? formatTimeDisplay(currentValue, { timeFormat })
+    : "";
 
   const {
     containerRef,
@@ -167,43 +295,14 @@ export function TimePicker({
     matchTriggerWidth: false,
     offset: 6,
     disabled,
+    zIndex,
   });
-
-  // Centraliza o item ativo nas listas de rolagem ao abrir o popover
-  useEffect(() => {
-    if (!isOpen) return;
-    const scrollActiveIntoView = (container: HTMLDivElement | null) => {
-      if (!container) return;
-      const activeBtn = container.querySelector<HTMLElement>(
-        '[data-active="true"]',
-      );
-      if (activeBtn) {
-        const offset =
-          activeBtn.offsetTop -
-          container.clientHeight / 2 +
-          activeBtn.clientHeight / 2;
-        container.scrollTo({ top: Math.max(0, offset), behavior: "instant" });
-      }
-    };
-    scrollActiveIntoView(hoursColRef.current);
-    scrollActiveIntoView(minutesColRef.current);
-  }, [isOpen]);
 
   const updateValue = (nextVal: string) => {
     if (!isControlled) {
       setInternalValue(nextVal);
     }
     onChange?.(nextVal);
-  };
-
-  const handleSelectHour = (nextHour: number) => {
-    const wrapped = ((nextHour % 24) + 24) % 24;
-    updateValue(formatTimeParts(wrapped, minute));
-  };
-
-  const handleSelectMinute = (nextMinute: number) => {
-    const wrapped = ((nextMinute % 60) + 60) % 60;
-    updateValue(formatTimeParts(hour, wrapped));
   };
 
   const handleSetNow = () => {
@@ -231,55 +330,12 @@ export function TimePicker({
               coords.placement === "top" ? "origin-bottom" : "origin-top",
             )}
           >
-            {/* Controles finos de Hora : Minuto no topo */}
-            <div className="flex items-center justify-center gap-2 pb-2.5 mb-2 border-b border-white/10">
-              <TimeStepper
-                value={hour}
-                unit="h"
-                decrementLabel={t("decrementHour")}
-                incrementLabel={t("incrementHour")}
-                onChange={handleSelectHour}
-              />
-              <span className="text-neutral-400 font-bold text-xs">:</span>
-              <TimeStepper
-                value={minute}
-                unit="m"
-                decrementLabel={t("decrementMinute")}
-                incrementLabel={t("incrementMinute")}
-                onChange={handleSelectMinute}
-              />
-            </div>
-
-            {/* Cabeçalhos das colunas */}
-            <div className="grid grid-cols-2 gap-2 text-center mb-1">
-              <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
-                {t("hourHeader")}
-              </span>
-              <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
-                {t("minuteHeader")}
-              </span>
-            </div>
-
-            {/* Colunas de seleção rápida (Horas 00-23 | Minutos de 5 em 5) */}
-            <div className="grid grid-cols-2 gap-2">
-              <TimeScrollColumn
-                colRef={hoursColRef}
-                items={HOURS_LIST}
-                selectedValue={hour}
-                unit="h"
-                onSelect={handleSelectHour}
-              />
-              <TimeScrollColumn
-                colRef={minutesColRef}
-                items={QUICK_MINUTES_LIST}
-                selectedValue={minute}
-                unit="m"
-                onSelect={(m) => {
-                  handleSelectMinute(m);
-                  close();
-                }}
-              />
-            </div>
+            <TimePickerBody
+              value={currentValue}
+              isOpen={isOpen}
+              onChange={updateValue}
+              onMinuteSelect={close}
+            />
 
             {/* Rodapé com atalho Agora + Limpar + Confirmar */}
             <div className="flex items-center justify-between pt-2.5 mt-2 border-t border-white/10 text-[11px] gap-1.5">
@@ -389,7 +445,7 @@ export function TimePicker({
                     : "text-neutral-400",
                 )}
               />
-              <span>{currentValue || badgeLabel || resolvedPlaceholder}</span>
+              <span>{displayTime || badgeLabel || resolvedPlaceholder}</span>
             </button>
             {allowClear && currentValue && !disabled && (
               <button
@@ -439,7 +495,7 @@ export function TimePicker({
                   isOpen
                     ? "text-primary dark:text-gold"
                     : currentValue
-                      ? "text-neutral-400 dark:text-gold"
+                      ? "text-gold"
                       : "text-neutral-400",
                 )}
               />
@@ -449,7 +505,7 @@ export function TimePicker({
                   currentValue ? "text-neutral-100" : "text-neutral-400",
                 )}
               >
-                {currentValue || resolvedPlaceholder}
+                {displayTime || resolvedPlaceholder}
               </span>
             </button>
 

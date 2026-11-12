@@ -1,10 +1,13 @@
 export { TaskActionControl } from "./TaskActionControl";
+export { TaskEventBadge } from "./TaskEventBadge";
 export {
   TaskChecklistBadge,
   TaskDescriptionBadge,
+  TaskFocusTimeBadge,
   TaskHabitScoreBadge,
   TaskHardcoreBadge,
   TaskPriorityBadge,
+  TaskReminderBadge,
 } from "./TaskMetaIndicators";
 export { TaskRewardBadges } from "./TaskRewardBadges";
 export { TaskRow } from "./TaskRow";

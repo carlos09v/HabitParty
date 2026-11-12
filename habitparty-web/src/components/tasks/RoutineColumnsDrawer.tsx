@@ -116,28 +116,40 @@ export function RoutineColumnsDrawer({
           )}
 
           <div className="ml-auto">
-            <button
-              type="button"
-              onClick={() => {
-                onOpenCreateColumn();
-                onClose();
-              }}
-              disabled={!canCreateMore}
-              title={
-                canCreateMore
-                  ? t("createNewListTitle")
-                  : t("maxColumnsReachedTitle", { max: maxColumns })
-              }
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-[transform,background-color,color,border-color] cursor-pointer",
-                canCreateMore
-                  ? "bg-gold hover:bg-gold-hover text-on-gold shadow-xs dark:shadow-glow-gold-xs active:scale-98"
-                  : "bg-neutral-700 text-neutral-400 cursor-not-allowed border border-neutral-600 dark:bg-white/5 dark:text-neutral-500 dark:border-white/10",
-              )}
-            >
-              <Plus size={14} className="stroke-3" />
-              <span>{t("newColumnButton")}</span>
-            </button>
+            {!canCreateMore && !isPremium ? (
+              <button
+                type="button"
+                onClick={() => setIsUpgradeModalOpen(true)}
+                title={t("maxColumnsReachedTitle", { max: maxColumns })}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-800 dark:bg-gold/15 dark:hover:bg-gold/25 dark:border-gold/40 dark:text-gold shadow-xs dark:shadow-glow-gold-xs transition-[transform,background-color,color,border-color] active:scale-98 cursor-pointer"
+              >
+                <Crown size={14} className="shrink-0" />
+                <span>{t("unlockMoreColumnsButton")}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenCreateColumn();
+                  onClose();
+                }}
+                disabled={!canCreateMore}
+                title={
+                  canCreateMore
+                    ? t("createNewListTitle")
+                    : t("maxColumnsReachedTitle", { max: maxColumns })
+                }
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-[transform,background-color,color,border-color] cursor-pointer",
+                  canCreateMore
+                    ? "bg-gold hover:bg-gold-hover text-on-gold shadow-xs dark:shadow-glow-gold-xs active:scale-98"
+                    : "bg-neutral-700 text-neutral-400 cursor-not-allowed border border-neutral-600 dark:bg-white/5 dark:text-neutral-500 dark:border-white/10",
+                )}
+              >
+                <Plus size={14} className="stroke-3" />
+                <span>{t("newColumnButton")}</span>
+              </button>
+            )}
           </div>
         </div>
 

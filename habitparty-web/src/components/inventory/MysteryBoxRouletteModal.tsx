@@ -27,6 +27,7 @@ export function MysteryBoxRouletteModal({
     wonResult,
     translateX,
     trackItems,
+    poolItems,
     isOpeningServer,
     containerRef,
     handleSpin,
@@ -181,6 +182,56 @@ export function MysteryBoxRouletteModal({
           </span>
         </div>
       </div>
+
+      {/* Grade de 3 Prêmios Possíveis e suas Probabilidades */}
+      {phase === "idle" && poolItems.length > 0 && (
+        <div className="w-full flex flex-col gap-2">
+          <span className="text-label-m text-neutral-400 font-medium">
+            {t("possiblePrizesTitle")}
+          </span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
+            {poolItems.map((poolItem) => {
+              const ItemIcon = getRewardIcon(poolItem.icon);
+              return (
+                <div
+                  key={poolItem.id}
+                  className="flex items-center gap-2 p-2 rounded-xl bg-card dark:bg-surface/50 border border-neutral-700 dark:border-white/10"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-surface dark:bg-white/5 border border-neutral-700 dark:border-white/10 flex items-center justify-center text-neutral-200 shrink-0">
+                    <ItemIcon size={16} />
+                  </div>
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-tiny font-bold text-neutral-100 truncate">
+                        {poolItem.name}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-[10px] font-bold px-1 py-0.5 rounded border leading-none shrink-0",
+                          poolItem.badgeVariant === "emerald"
+                            ? "text-emerald-700 bg-emerald-500/15 border-emerald-500/35 dark:text-success-400 dark:bg-success-500/15 dark:border-success-500/30"
+                            : poolItem.badgeVariant === "amber"
+                              ? "text-amber-700 bg-amber-500/15 border-amber-500/35 dark:text-amber-400 dark:bg-amber-500/15 dark:border-amber-500/30"
+                              : poolItem.badgeVariant === "purple"
+                                ? "text-magenta bg-magenta/10 border-magenta/30 dark:bg-magenta/15 dark:border-magenta/30"
+                                : "text-amber-800 bg-amber-500/15 border-amber-500/35 dark:text-gold dark:bg-gold/15 dark:border-gold/30",
+                        )}
+                      >
+                        {poolItem.badgeLabel}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-neutral-400 truncate">
+                      {poolItem.minutes
+                        ? t("trackCouponMinutes", { minutes: poolItem.minutes })
+                        : t("trackSingleUse")}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Revelação do Prêmio Conquistado */}
       {phase === "won" && wonResult && (

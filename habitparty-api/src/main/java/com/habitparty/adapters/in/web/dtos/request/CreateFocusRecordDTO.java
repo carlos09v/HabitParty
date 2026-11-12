@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 public record CreateFocusRecordDTO(
     UUID focusActivityId,
     UUID inventoryItemId,
+    UUID taskId,
     String notes,
 
     @NotNull(message = "O horário de início é obrigatório.") LocalDateTime startTime,

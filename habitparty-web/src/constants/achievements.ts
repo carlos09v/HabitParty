@@ -32,7 +32,7 @@ export const RARITY_THEMES: Record<AchievementRarity, RarityThemeTokens> = {
     iconBg:
       "bg-gradient-to-br from-slate-500/20 to-slate-600/10 border-slate-400/35",
     iconText: "text-slate-700 dark:text-slate-200",
-    progressFill: "bg-slate-400",
+    progressFill: "bg-emerald-500",
     accentGradient: "from-slate-400/25 via-transparent to-transparent",
   },
   UNCOMMON: {

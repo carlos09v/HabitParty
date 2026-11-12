@@ -1,5 +1,7 @@
 "use server";
 
+import { updateTag } from "next/cache";
+
 import { getTranslations } from "next-intl/server";
 import { serverApi } from "@/api/server";
 import type {
@@ -67,11 +69,14 @@ export async function updateReward(
   }
 }
 
-export async function deleteReward(rewardId: string): Promise<ActionState> {
+export async function deleteReward(
+  rewardId: string,
+  deleteHistory = false,
+): Promise<ActionState> {
   const t = await getTranslations("rewards.actions");
   try {
     const { error } = await serverApi.DELETE("/rewards/{id}", {
-      params: { path: { id: rewardId } },
+      params: { path: { id: rewardId }, query: { deleteHistory } },
     });
 
     if (error) {
@@ -82,6 +87,9 @@ export async function deleteReward(rewardId: string): Promise<ActionState> {
     }
 
     invalidateRewardDomainTags();
+    if (deleteHistory) {
+      updateTag("transactions");
+    }
     return { success: true };
   } catch (err) {
     console.error("[RewardAction:Delete]", err);

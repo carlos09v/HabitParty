@@ -1,5 +1,7 @@
 "use server";
 
+import { updateTag } from "next/cache";
+
 import { getTranslations } from "next-intl/server";
 import { serverApi } from "@/api/server";
 import type {
@@ -103,6 +105,9 @@ export async function deleteFocusActivity(
     }
 
     invalidateFocusDomainTags({ activities: true, records: true });
+    if (deleteHistory) {
+      updateTag("transactions");
+    }
     return { success: true };
   } catch (err) {
     console.error("[FocusAction:DeleteActivity]", err);
@@ -162,7 +167,11 @@ export async function createFocusRecord(
       };
     }
 
-    invalidateFocusDomainTags({ records: true, rewardsAndInventory: true });
+    invalidateFocusDomainTags({
+      records: true,
+      rewardsAndInventory: true,
+      tasks: Boolean(dto.taskId),
+    });
     return { success: true, data: data as FocusRecordResponseDTO };
   } catch (err) {
     console.error("[FocusAction:CreateRecord]", err);
@@ -210,11 +219,12 @@ export async function updateFocusRecord(
  */
 export async function deleteFocusRecord(
   recordId: string,
+  deleteHistory = false,
 ): Promise<ActionState<void>> {
   const t = await getTranslations("focus.actions");
   try {
     const { error } = await serverApi.DELETE("/focus-records/{recordId}", {
-      params: { path: { recordId } },
+      params: { path: { recordId }, query: { deleteHistory } },
     });
 
     if (error) {
@@ -224,10 +234,65 @@ export async function deleteFocusRecord(
       };
     }
 
-    invalidateFocusDomainTags({ records: true, rewardsAndInventory: true });
+    invalidateFocusDomainTags({
+      records: true,
+      rewardsAndInventory: true,
+      tasks: true,
+    });
     return { success: true };
   } catch (err) {
     console.error("[FocusAction:DeleteRecord]", err);
+    return {
+      success: false,
+      error: t("communicationError"),
+    };
+  }
+}
+
+export interface TaskFocusRecordsPage {
+  records: FocusRecordResponseDTO[];
+  totalPages: number;
+  totalElements: number;
+  currentPage: number;
+}
+
+/**
+ * Busca os registros de foco vinculados a uma tarefa específica (paginado)
+ */
+export async function getTaskFocusRecords(
+  taskId: string,
+  page = 0,
+): Promise<ActionState<TaskFocusRecordsPage>> {
+  const t = await getTranslations("focus.actions");
+  try {
+    const { data, error } = await serverApi.GET(
+      "/focus-records/task/{taskId}",
+      {
+        params: {
+          path: { taskId },
+          query: { page },
+        },
+      },
+    );
+
+    if (error) {
+      return {
+        success: false,
+        error: getErrorMessage(error, t("communicationError")),
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        records: data?.content || [],
+        totalPages: data?.totalPages || 0,
+        totalElements: data?.totalElements || 0,
+        currentPage: data?.number !== undefined ? data.number : page,
+      },
+    };
+  } catch (err) {
+    console.error("[FocusAction:GetByTask]", err);
     return {
       success: false,
       error: t("communicationError"),

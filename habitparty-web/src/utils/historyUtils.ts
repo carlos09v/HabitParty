@@ -5,6 +5,7 @@ import {
   getDifficultyLabel,
   getPackageLabel,
   getTransactionTypeLabel,
+  NEGATIVE_TRANSACTION_TYPES,
   TRANSACTION_TYPE_CONFIG,
 } from "@/constants/history";
 import { PACKAGE_BADGE_COLORS, REWARD_ICONS } from "@/constants/reward";
@@ -17,10 +18,11 @@ import type {
   TransactionHistoryResponseDTO,
   TransactionMetadata,
 } from "@/types/history";
-import type { DateFormat, WelcomeCardStat } from "@/types/ui";
+import type { DateFormat, TimeFormat, WelcomeCardStat } from "@/types/ui";
 import {
   formatDateTime,
   formatShortDate,
+  formatTimeDisplay,
   getCapitalizedWeekDays,
   parseServerDate,
 } from "./date";
@@ -73,15 +75,12 @@ function resolveTransactionIcon(
 function formatTransactionTime(
   dateStr?: string | null,
   locale: AppLocale = "pt-BR",
+  timeFormat?: TimeFormat,
 ): string {
   if (!dateStr) return "-";
   const d = parseServerDate(dateStr);
-  if (!d) return formatDateTime(dateStr, { locale });
-  const intlLocale = locale === "en" ? "en-US" : "pt-BR";
-  return new Intl.DateTimeFormat(intlLocale, {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(d);
+  if (!d) return formatDateTime(dateStr, { locale, timeFormat });
+  return formatTimeDisplay(d, { timeFormat, locale });
 }
 
 const PACKAGE_BORDER_MAP: Record<string, string> = {
@@ -99,6 +98,7 @@ export function resolveTransactionMetadata(
   transaction: TransactionHistoryResponseDTO,
   locale: AppLocale = "pt-BR",
   dateFormat?: DateFormat,
+  timeFormat?: TimeFormat,
 ): TransactionMetadata {
   const isFocus = transaction.transactionType === "FOCUS_COMPLETED";
   const rawType = transaction.transactionType || "TASK_COMPLETED";
@@ -114,15 +114,17 @@ export function resolveTransactionMetadata(
     : null;
 
   const normalizedPkg = transaction.packageLevel?.trim().toUpperCase();
-  const packageLabel =
-    normalizedPkg && normalizedPkg !== "NONE"
-      ? getPackageLabel(normalizedPkg, locale)
-      : null;
+  // Pacote "NONE" também é exibido ("Comum") para que Loja/Mochila sempre tenham detalhes na coluna
+  const packageLabel = normalizedPkg
+    ? getPackageLabel(normalizedPkg, locale)
+    : null;
 
-  const borderClass =
-    (normalizedDiff && DIFFICULTY_BORDER[normalizedDiff]) ||
-    (normalizedPkg && PACKAGE_BORDER_MAP[normalizedPkg]) ||
-    typeConfig.borderClass;
+  // Penalidades/falhas sempre usam o vermelho do tipo, sem herdar a cor da dificuldade
+  const borderClass = NEGATIVE_TRANSACTION_TYPES.has(resolvedType)
+    ? typeConfig.borderClass
+    : (normalizedDiff && DIFFICULTY_BORDER[normalizedDiff]) ||
+      (normalizedPkg && PACKAGE_BORDER_MAP[normalizedPkg]) ||
+      typeConfig.borderClass;
 
   const secondaryBadgeClass =
     (normalizedDiff && TASK_DIFFICULTY_META[normalizedDiff]?.badgeColor) ||
@@ -142,8 +144,13 @@ export function resolveTransactionMetadata(
     formattedDate: formatDateTime(transaction.createdAt, {
       locale,
       dateFormat,
+      timeFormat,
     }),
-    formattedTime: formatTransactionTime(transaction.createdAt, locale),
+    formattedTime: formatTransactionTime(
+      transaction.createdAt,
+      locale,
+      timeFormat,
+    ),
   };
 }
 

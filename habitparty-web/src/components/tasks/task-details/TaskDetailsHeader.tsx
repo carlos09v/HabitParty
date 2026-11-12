@@ -15,11 +15,17 @@ interface TaskDetailsHeaderProps {
   isTodo: boolean;
   dueDate: string;
   dueTime?: string;
+  startTime?: string;
+  dueEndTime?: string;
+  isAllDay?: boolean;
   priority: string;
   onToggleComplete: () => void;
   onHabitDelta?: (delta: number) => void;
   onDateChange: (newDate: string) => void;
   onTimeChange?: (newTime: string) => void;
+  onStartTimeChange?: (newStartTime: string) => void;
+  onEndTimeChange?: (newEndTime: string) => void;
+  onAllDayChange?: (newAllDay: boolean) => void;
   onPrioritySelect: (p: TaskPriorityOption) => void;
   onEdit?: () => void;
   onClose?: () => void;
@@ -33,9 +39,15 @@ export function TaskDetailsHeader({
   isTodo,
   dueDate,
   dueTime,
+  startTime,
+  dueEndTime,
+  isAllDay,
   priority,
   onDateChange,
   onTimeChange,
+  onStartTimeChange,
+  onEndTimeChange,
+  onAllDayChange,
   onPrioritySelect,
   onEdit,
   onClose,
@@ -94,8 +106,14 @@ export function TaskDetailsHeader({
           <TaskDatePicker
             dueDate={dueDate}
             dueTime={dueTime}
+            startTime={startTime ?? task.startTime}
+            dueEndTime={dueEndTime ?? task.dueEndTime}
+            isAllDay={isAllDay ?? task.isAllDay}
             onDateChange={onDateChange}
             onTimeChange={onTimeChange}
+            onStartTimeChange={onStartTimeChange}
+            onEndTimeChange={onEndTimeChange}
+            onAllDayChange={onAllDayChange}
             disabled={isDateLocked}
           />
         ) : isDaily ? (

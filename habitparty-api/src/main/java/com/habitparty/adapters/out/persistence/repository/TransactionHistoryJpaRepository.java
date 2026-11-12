@@ -37,4 +37,12 @@ public interface TransactionHistoryJpaRepository extends JpaRepository<Transacti
     @Modifying
     @Query("DELETE FROM TransactionHistoryJpaEntity t WHERE t.user.id = :userId")
     void deleteAllByUserId(@Param("userId") UUID userId);
+
+    @Modifying
+    @Query("DELETE FROM TransactionHistoryJpaEntity t WHERE t.id IN :ids AND t.user.id = :userId")
+    int deleteAllByIdInAndUserId(@Param("ids") List<UUID> ids, @Param("userId") UUID userId);
+
+    @Modifying
+    @Query("DELETE FROM TransactionHistoryJpaEntity t WHERE t.referenceId IN :referenceIds AND t.user.id = :userId")
+    int deleteAllByReferenceIdInAndUserId(@Param("referenceIds") List<UUID> referenceIds, @Param("userId") UUID userId);
 }

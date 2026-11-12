@@ -1,5 +1,7 @@
 "use server";
 
+import { updateTag } from "next/cache";
+
 import { getTranslations } from "next-intl/server";
 import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
@@ -10,6 +12,8 @@ type CreateTaskDTO = components["schemas"]["CreateTaskDTO"];
 type UpdateTaskDTO = components["schemas"]["UpdateTaskDTO"];
 type UpdateTaskOrderDTO = components["schemas"]["UpdateTaskOrderDTO"];
 type TaskResponseDTO = components["schemas"]["TaskResponseDTO"];
+export type TaskSearchWorkspaceCountDTO =
+  components["schemas"]["TaskSearchWorkspaceCountDTO"];
 type TaskStatus =
   | "PENDING"
   | "IN_PROGRESS"
@@ -78,11 +82,14 @@ export async function updateTask(
   }
 }
 
-export async function deleteTask(taskId: string): Promise<ActionState> {
+export async function deleteTask(
+  taskId: string,
+  deleteHistory = false,
+): Promise<ActionState> {
   const t = await getTranslations("tasks.actions");
   try {
     const { data, error } = await serverApi.DELETE("/tasks/{taskId}", {
-      params: { path: { taskId } },
+      params: { path: { taskId }, query: { deleteHistory } },
     });
 
     if (error) {
@@ -93,6 +100,9 @@ export async function deleteTask(taskId: string): Promise<ActionState> {
     }
 
     invalidateTaskDomainTags({ includeColumnSummaries: true });
+    if (deleteHistory) {
+      updateTag("transactions");
+    }
     return { success: true, data };
   } catch (err) {
     console.error("[TaskAction:Delete]", err);
@@ -204,5 +214,24 @@ export async function moveTasks(
       success: false,
       error: t("communicationError"),
     };
+  }
+}
+
+/**
+ * Busca em todos os workspaces do usuário quantas tarefas correspondem ao termo informado (2..100 caracteres).
+ */
+export async function searchTasksAcrossWorkspacesAction(
+  query: string,
+): Promise<TaskSearchWorkspaceCountDTO[]> {
+  const trimmed = query.trim();
+  if (trimmed.length < 2 || trimmed.length > 100) return [];
+  try {
+    const { data, error } = await serverApi.GET("/tasks/search", {
+      params: { query: { q: trimmed } },
+    });
+    if (error || !data) return [];
+    return data;
+  } catch {
+    return [];
   }
 }

@@ -75,6 +75,16 @@ export function getPeriodOptions(locale: AppLocale = "pt-BR"): readonly {
 export const HISTORY_GRID_COLS =
   "md:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1.4fr)_90px_80px_125px_36px]";
 
+/** Variante do grid com coluna inicial de seleção (checkbox) para exclusão em lote. */
+export const HISTORY_GRID_COLS_SELECTABLE =
+  "md:grid-cols-[24px_minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1.4fr)_90px_80px_125px_36px]";
+
+/** Transações negativas: a borda lateral sempre usa o vermelho do tipo (não a cor da dificuldade). */
+export const NEGATIVE_TRANSACTION_TYPES: ReadonlySet<string> = new Set([
+  "TASK_FAILED",
+  "BAD_HABIT_PENALTY",
+]);
+
 export const TRANSACTION_TYPE_CONFIG: Record<string, TransactionTypeStyle> = {
   REWARD_BOUGHT: {
     label: "Resgate na Loja",
@@ -114,8 +124,8 @@ export const TRANSACTION_TYPE_CONFIG: Record<string, TransactionTypeStyle> = {
   },
   BAD_HABIT_PENALTY: {
     label: "Penalidade Hábito",
-    borderClass: "border-l-amber-500",
-    badgeClass: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+    borderClass: "border-l-red-500",
+    badgeClass: "bg-red-500/15 text-red-300 border-red-500/30",
     icon: AlertOctagon,
   },
   ITEM_CONSUMED: {

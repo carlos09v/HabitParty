@@ -34,8 +34,8 @@
     "languageDesc": "Choose the display language for all menus, dashboards, and notifications across HabitParty.",
     "dateFormat": "Date Format",
     "dateFormatDesc": "Choose how dates are formatted across calendars, task deadlines, focus records, and history.",
-    "compact": "Interface Density",
-    "compactDesc": "Adjust screen spacing and element density for your preferred workflow.",
+    "timeFormat": "Time Format",
+    "timeFormatDesc": "Choose how times are displayed in selectors, task deadlines, focus records, and history.",
     "welcomeCards": "Introductory Screen Cards",
     "welcomeCardsDesc": "Manage which welcome cards and quick guides remain visible across app screens.",
     "audioTitle": "Interface Sounds & Notifications",
@@ -152,15 +152,17 @@
     "statusYyyymmdd": "YYYY-MM-DD (ISO Standard) applied across the platform.",
     "toastSuccess": "Date format changed to {format}!"
   },
-  "compactMode": {
-    "compact": "Compact Mode",
-    "compactDesc": "Smaller cards, calendars, and lists. Optimizes screen space to view more tasks and reward items at once. Recommended for higher productivity.",
-    "comfortable": "Comfortable Mode",
-    "comfortableDesc": "Generous paddings and standard typography. Ideal for large screens or those who prefer relaxed spacing and larger elements.",
-    "defaultBadge": "Default",
-    "statusCompact": "Compact Mode is active for maximum content density.",
-    "statusComfortable": "Comfortable Mode is active with generous spacing.",
-    "statusLabel": "Current status: "
+  "timeFormatCard": {
+    "h24Label": "24-Hour (00:00 - 23:59)",
+    "h24Desc": "Continuous 24-hour military/international time format.",
+    "h24Example": "14:05",
+    "h12Label": "12-Hour (AM / PM)",
+    "h12Desc": "Standard 12-hour clock with AM and PM designations.",
+    "h12Example": "02:05 PM",
+    "activeLabel": "Active format: ",
+    "statusH24": "24-Hour (14:05) applied across the platform.",
+    "statusH12": "12-Hour (02:05 PM) applied across the platform.",
+    "toastSuccess": "Time format changed to {format}!"
   },
   "avatarFrames": {
     "title": "Avatar Frame",
@@ -462,6 +464,7 @@
     "portalError": "Could not open subscription portal.",
     "unverifiedWarning": "Please confirm your email before subscribing.",
     "perks": [
+      "Schedule To-Dos as Events (start & end times or all-day)",
       "Exclusive animated frames for your profile and avatar",
       "Pomodoro ambient sounds (Gentle Rain, Coffee Shop, Campfire, Zen Lofi)",
       "Exclusive VIP icon pack for activities and columns",

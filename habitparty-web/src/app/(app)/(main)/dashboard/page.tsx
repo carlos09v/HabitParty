@@ -8,7 +8,6 @@ import { DashboardSidebarRight } from "@/components/dashboard/DashboardSidebarRi
 import { Loading } from "@/components/ui/Loading";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getDashboardData } from "@/services/dashboardService";
-import { getCompactMode } from "@/utils/cookies";
 
 type PageProps = {
   searchParams: Promise<{ workspaceId?: string }>;
@@ -29,7 +28,6 @@ export async function generateMetadata(): Promise<Metadata> {
  */
 export default async function DashboardPage({ searchParams }: PageProps) {
   const t = await getTranslations("dashboard");
-  const isCompact = await getCompactMode();
   const resolvedSearchParams = await searchParams;
   const cookieStore = await cookies();
 
@@ -73,7 +71,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           }
         >
           <DashboardMain
-            isCompact={isCompact}
             initialTasks={initialTasks}
             activeWorkspaceId={activeWorkspaceId}
             initialColumns={initialColumns}
@@ -83,7 +80,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </Suspense>
 
         <DashboardSidebarRight
-          isCompact={isCompact}
           balance={userBalance}
           weeklyEarnings={weeklyEarnings}
           weeklySpent={weeklySpent}

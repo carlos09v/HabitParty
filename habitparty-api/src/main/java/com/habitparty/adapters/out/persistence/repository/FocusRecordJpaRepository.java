@@ -21,18 +21,32 @@ public interface FocusRecordJpaRepository extends JpaRepository<FocusRecordJpaEn
 
   List<FocusRecordJpaEntity> findAllByInventoryItemIdOrderByStartTimeDesc(UUID inventoryItemId);
 
+  List<FocusRecordJpaEntity> findAllByTaskIdOrderByStartTimeDesc(UUID taskId);
+
   // Deleta os registros em cascata
   @Modifying
   @Query("DELETE FROM FocusRecordJpaEntity f WHERE f.focusActivityId = :focusActivityId")
   void deleteAllByFocusActivityId(@Param("focusActivityId") UUID focusActivityId);
+
+  @Modifying
+  @Query("DELETE FROM FocusRecordJpaEntity f WHERE f.taskId = :taskId")
+  void deleteAllByTaskId(@Param("taskId") UUID taskId);
 
   // Mantém os registros para o histórico, mas remove a referência da atividade excluída
   @Modifying
   @Query("UPDATE FocusRecordJpaEntity f SET f.focusActivityId = null WHERE f.focusActivityId = :focusActivityId")
   void nullifyFocusActivityId(@Param("focusActivityId") UUID focusActivityId);
 
-  // Paginação para o histórico da Atividade
+  @Modifying
+  @Query("UPDATE FocusRecordJpaEntity f SET f.taskId = null WHERE f.taskId = :taskId")
+  void nullifyTaskId(@Param("taskId") UUID taskId);
+
+  // Paginação para o histórico da Atividade, Tarefa ou Geral do Usuário
   Page<FocusRecordJpaEntity> findAllByFocusActivityIdOrderByStartTimeDesc(UUID focusActivityId, Pageable pageable);
+
+  Page<FocusRecordJpaEntity> findAllByTaskIdOrderByStartTimeDesc(UUID taskId, Pageable pageable);
+
+  Page<FocusRecordJpaEntity> findAllByUserIdOrderByStartTimeDesc(UUID userId, Pageable pageable);
 
   // Soma de minutos produtivos de hoje (sem itens de inventário)
   @Query("""

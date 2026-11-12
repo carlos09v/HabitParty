@@ -438,6 +438,15 @@ export const TODO_REMINDER_OPTIONS: readonly {
   { id: "ONE_WEEK_EARLY", label: "1 semana antes" },
 ] as const;
 
+/** Janela em dias de antecedência para cada tipo de lembrete de Afazer (ToDo). */
+export const REMINDER_OFFSET_DAYS: Readonly<Record<string, number>> = {
+  ONE_DAY_EARLY: 1,
+  TWO_DAYS_EARLY: 2,
+  THREE_DAYS_EARLY: 3,
+  ONE_WEEK_EARLY: 7,
+  CUSTOM: 1,
+} as const;
+
 export const HABIT_DIRECTION_OPTIONS: readonly {
   id: HabitTypeOption;
   label: string;
@@ -449,6 +458,12 @@ export const HABIT_DIRECTION_OPTIONS: readonly {
 
 /** Limite máximo de tags permitidas por tarefa */
 export const MAX_TASK_TAGS = 5;
+
+/** Limite máximo de caracteres da descrição de uma tarefa (espelha o @Size do backend). */
+export const TASK_DESCRIPTION_MAX_LENGTH = 5000;
+
+/** Fração do limite a partir da qual o contador de caracteres da descrição passa a ser exibido. */
+export const TASK_DESCRIPTION_COUNTER_THRESHOLD = 0.8;
 
 /** Tamanho máximo em caracteres de uma única tag */
 export const MAX_TAG_LENGTH = 25;
@@ -493,7 +508,7 @@ export const TASK_TABLE_GRID_COLS =
 
 /** Dimensões padrão de ancoragem para o TaskDetailsPopover */
 export const TASK_DETAILS_POPOVER_OPTIONS = {
-  popoverWidth: 380,
+  popoverWidth: 390,
   popoverHeight: 420,
 } as const;
 

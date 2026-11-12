@@ -124,7 +124,7 @@ export function FocusActivitiesSection({
 
           {/* Chip de Filtro Ativo (Visível, Discreto e Imediato) */}
           {selectedActivity && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-800 dark:bg-gold/15 dark:border-gold/40 text-xs dark:text-gold font-medium animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gold/10 border border-gold/40 text-xs text-gold font-medium animate-in fade-in zoom-in-95 duration-150">
               <span className="text-label-g text-neutral-400 hidden sm:inline">
                 {t("filteringLabel")}
               </span>
@@ -134,7 +134,7 @@ export function FocusActivitiesSection({
               <button
                 type="button"
                 onClick={() => onSelectActivity?.(null)}
-                className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-amber-500/25 dark:hover:bg-gold/30 text-amber-800 dark:text-gold transition-colors cursor-pointer ml-0.5"
+                className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-gold/20 text-gold transition-colors cursor-pointer ml-0.5"
                 title={t("clearFilterTitle")}
                 aria-label={t("clearFilterAria", {
                   name: selectedActivity.name,

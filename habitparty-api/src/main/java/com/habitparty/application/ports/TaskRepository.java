@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import com.habitparty.application.ports.projections.DashboardTaskDTO;
+import com.habitparty.application.ports.projections.TaskSearchWorkspaceCountDTO;
 import com.habitparty.core.domain.entities.task.ChecklistItem;
 import com.habitparty.core.domain.entities.task.Task;
 
@@ -55,6 +56,9 @@ public interface TaskRepository {
   void deleteAllByUserId(UUID userId);
 
   Page<DashboardTaskDTO> findDashboardTasks(UUID workspaceId, String filter, LocalDate today, Pageable pageable);
+
+  // Busca textual (nome/descrição) agregada por workspace, em todos os workspaces do usuário
+  List<TaskSearchWorkspaceCountDTO> countMatchingTasksByWorkspace(UUID userId, String query);
 
   // ChecklistItem
   Optional<ChecklistItem> findChecklistItemByIdAndUserId(UUID itemId, UUID userId);

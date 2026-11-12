@@ -119,9 +119,19 @@ public class CreateTaskUseCase {
       }
       case TODO -> {
         LocalDate today = LocalDate.now(clock);
+        boolean isEventSchedule = Boolean.TRUE.equals(command.isAllDay())
+            || command.startTime() != null
+            || command.dueEndTime() != null;
+        if (isEventSchedule && !user.isPremium()) {
+          throw new LimitExceededException(
+              "Agendar afazeres como Evento (com horário de início/término ou dia inteiro) é um recurso exclusivo dos planos Premium."
+          );
+        }
+
+        boolean hasAnyTimeOrEvent = command.dueTime() != null || isEventSchedule;
         LocalDate effectiveDueDate = command.dueDate() != null
             ? command.dueDate()
-            : (command.dueTime() != null ? today : null);
+            : (hasAnyTimeOrEvent ? today : null);
 
         if (command.isHardcoreModeEnabled() && effectiveDueDate != null && effectiveDueDate.isBefore(today)) {
           throw new DomainValidationException("A data de vencimento de um afazer no modo Hardcore não pode ser no passado.");
@@ -151,12 +161,18 @@ public class CreateTaskUseCase {
           com.habitparty.core.domain.entities.task.EmailReminderQuotas.validateMonthlyDispatchesQuota(isPremium, sentThisMonth);
         }
 
-        newTask = new Todo(
+        Todo newTodo = new Todo(
             newTaskId, boardColumnId, userIdLogado, command.name(), command.description(),
             newOrderIndex, command.priority(), command.tags(), command.difficulty(), TaskStatus.PENDING,
             command.taskType(), command.isHardcoreModeEnabled(), effectiveDueDate, now, emptyChecklist,
             command.reminderType(), calculatedReminderAt, null, false, sendEmail, false, command.dueTime()
         );
+        if (Boolean.TRUE.equals(command.isAllDay()) || command.startTime() != null) {
+          newTodo.defineEventSchedule(command.startTime(), command.dueEndTime(), command.isAllDay());
+        } else {
+          newTodo.defineDueEndTime(command.dueEndTime());
+        }
+        newTask = newTodo;
       }
       default -> throw new DomainValidationException("Tipo de tarefa inválido: " + command.taskType());
     }

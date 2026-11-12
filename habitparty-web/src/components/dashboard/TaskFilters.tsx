@@ -10,7 +10,6 @@ import {
   DASHBOARD_TASK_FILTERS,
   DEFAULT_DASHBOARD_ADVANCED_FILTERS,
 } from "@/constants/dashboard";
-import { useCompactMode } from "@/hooks/useCompactMode";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useFloatingPopover } from "@/hooks/useFloatingPopover";
@@ -36,9 +35,8 @@ export function TaskFilters({
   const t = useTranslations("dashboard.taskFilters");
   const locale = useLocale() as AppLocale;
   const { dateFormat } = useDateFormat();
-  const { isCompact: hookIsCompact } = useCompactMode();
   const { isGamified } = useExperienceMode();
-  const isCompact = propIsCompact ?? hookIsCompact;
+  const isCompact = propIsCompact ?? false;
   const {
     containerRef,
     triggerRef,

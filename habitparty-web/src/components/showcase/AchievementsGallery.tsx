@@ -65,11 +65,24 @@ export function AchievementsGallery({
     return set;
   }, [highlights]);
 
+  const baseCategoryAchievements = useMemo(() => {
+    return achievements.filter((ach) => {
+      if (categoryFilter !== "ALL" && ach.category !== categoryFilter) {
+        return false;
+      }
+      if (rarityFilter !== "ALL" && ach.rarity !== rarityFilter) {
+        return false;
+      }
+      return true;
+    });
+  }, [achievements, categoryFilter, rarityFilter]);
+
   const unlockedCount = useMemo(
-    () => achievements.filter((a) => a.unlocked).length,
-    [achievements],
+    () => baseCategoryAchievements.filter((a) => a.unlocked).length,
+    [baseCategoryAchievements],
   );
-  const lockedCount = achievements.length - unlockedCount;
+  const totalCategoryCount = baseCategoryAchievements.length;
+  const lockedCount = totalCategoryCount - unlockedCount;
 
   const filteredAchievements = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -78,11 +91,16 @@ export function AchievementsGallery({
       if (categoryFilter !== "ALL" && ach.category !== categoryFilter) {
         return false;
       }
-      if (statusFilter === "UNLOCKED" && !ach.unlocked) {
+      if (isVisitorMode && !ach.unlocked) {
         return false;
       }
-      if (statusFilter === "LOCKED" && ach.unlocked) {
-        return false;
+      if (!isVisitorMode) {
+        if (statusFilter === "UNLOCKED" && !ach.unlocked) {
+          return false;
+        }
+        if (statusFilter === "LOCKED" && ach.unlocked) {
+          return false;
+        }
       }
       if (rarityFilter !== "ALL" && ach.rarity !== rarityFilter) {
         return false;
@@ -110,6 +128,7 @@ export function AchievementsGallery({
     statusFilter,
     rarityFilter,
     searchQuery,
+    isVisitorMode,
     isGamified,
     t,
     tCatalog,
@@ -133,7 +152,7 @@ export function AchievementsGallery({
     () => [
       {
         value: "ALL" as const,
-        label: t("statusFilter.ALL", { count: achievements.length }),
+        label: t("statusFilter.ALL", { count: totalCategoryCount }),
       },
       {
         value: "UNLOCKED" as const,
@@ -144,7 +163,7 @@ export function AchievementsGallery({
         label: t("statusFilter.LOCKED", { count: lockedCount }),
       },
     ],
-    [t, achievements.length, unlockedCount, lockedCount],
+    [t, totalCategoryCount, unlockedCount, lockedCount],
   );
 
   const rarityOptions = useMemo(
@@ -225,15 +244,17 @@ export function AchievementsGallery({
           placeholder: t("searchPlaceholder"),
         }}
         middleActions={
-          <SegmentedControl
-            options={statusOptions}
-            value={statusFilter}
-            onChange={(val) => {
-              setStatusFilter(val);
-              setCurrentPage(1);
-            }}
-            size="sm"
-          />
+          !isVisitorMode ? (
+            <SegmentedControl
+              options={statusOptions}
+              value={statusFilter}
+              onChange={(val) => {
+                setStatusFilter(val);
+                setCurrentPage(1);
+              }}
+              size="sm"
+            />
+          ) : undefined
         }
         rightActions={
           <div className="w-full sm:w-44">
@@ -258,7 +279,7 @@ export function AchievementsGallery({
       {/* GRID OF ACHIEVEMENT CARDS */}
       {filteredAchievements.length === 0 ? (
         <div className="rounded-2xl border border-neutral-700 dark:border-primary/20 bg-card dark:bg-surface/35 shadow-2xs dark:shadow-none p-10 text-center text-body-s text-neutral-400">
-          {t("emptySearch")}
+          {isVisitorMode ? t("emptyVisitorGallery") : t("emptySearch")}
         </div>
       ) : (
         <div className="flex flex-col gap-4">

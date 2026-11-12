@@ -11,10 +11,12 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { memo, useCallback, useState } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
+import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { getFocusIcon } from "@/constants/focus";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
 import type { FocusRecord } from "@/types/focus";
 import { cn, formatCoins, formatDateTime } from "@/utils";
@@ -26,7 +28,7 @@ interface FocusRecentRecordItemProps {
   isCompact: boolean;
   onRowClick: (e: React.MouseEvent, record: FocusRecord) => void;
   onContextMenu: (e: React.MouseEvent, record: FocusRecord) => void;
-  onDeleteRecord?: (recordId: string) => void;
+  onRequestDelete?: (record: FocusRecord) => void;
 }
 
 const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
@@ -34,12 +36,13 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
   isCompact,
   onRowClick,
   onContextMenu,
-  onDeleteRecord,
+  onRequestDelete,
 }: FocusRecentRecordItemProps) {
   const t = useTranslations("focus.records");
   const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
   const { dateFormat } = useDateFormat();
+  const { timeFormat } = useTimeFormat();
   const IconComp = rec.activityIcon ? getFocusIcon(rec.activityIcon) : Timer;
   const durationLabel = formatFocusRecordDuration(
     rec.startTime,
@@ -70,7 +73,12 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="text-body-s font-semibold text-neutral-100 group-hover/row:text-primary dark:group-hover/row:text-gold transition-colors truncate">
-              {rec.activityName || rec.itemName || t("freeSession")}
+              {rec.activityName && rec.taskNameSnapshot
+                ? `${rec.activityName} • ${rec.taskNameSnapshot}`
+                : rec.activityName ||
+                  rec.taskNameSnapshot ||
+                  rec.itemName ||
+                  t("freeSession")}
             </span>
             {rec.notes && rec.notes.trim() !== "" && (
               <span
@@ -86,6 +94,7 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
               isLocal: true,
               locale,
               dateFormat,
+              timeFormat,
             })}
           </span>
         </div>
@@ -120,12 +129,12 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
         </div>
 
         {/* Botão de Excluir Registro direto */}
-        {onDeleteRecord && (
+        {onRequestDelete && (
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              onDeleteRecord(rec.id);
+              onRequestDelete(rec);
             }}
             className="w-6 h-6 rounded flex items-center justify-center text-neutral-500 hover:text-red-400 hover:bg-red-500/15 opacity-70 group-hover/row:opacity-100 transition-[opacity,color,background-color] duration-150 cursor-pointer"
             title={t("deleteRecordAria")}
@@ -143,7 +152,11 @@ interface FocusRecentRecordsProps {
   records: FocusRecord[];
   onAddRecord?: () => void;
   onOptionsClick?: () => void;
-  onDeleteRecord?: (recordId: string) => void;
+  /** Exclui o registro; `deleteHistory` remove também o registro correspondente no Histórico. */
+  onDeleteRecord?: (
+    recordId: string,
+    deleteHistory: boolean,
+  ) => void | Promise<void>;
   isCompact?: boolean;
 }
 
@@ -172,6 +185,32 @@ export function FocusRecentRecords({
     record: null,
     anchorRect: null,
   });
+
+  // Confirmação única de exclusão (botão da linha, menu de contexto e popover)
+  const [pendingDeleteRecord, setPendingDeleteRecord] =
+    useState<FocusRecord | null>(null);
+  const [deleteHistory, setDeleteHistory] = useState(false);
+  const [isDeletingRecord, setIsDeletingRecord] = useState(false);
+
+  const handleRequestDelete = useCallback((record: FocusRecord) => {
+    setDeleteHistory(false);
+    setPendingDeleteRecord(record);
+  }, []);
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteRecord || !onDeleteRecord) return;
+    setIsDeletingRecord(true);
+    try {
+      // Itens de lazer (mochila) não geram registro no Histórico
+      await onDeleteRecord(
+        pendingDeleteRecord.id,
+        !pendingDeleteRecord.inventoryItemId && deleteHistory,
+      );
+      setPendingDeleteRecord(null);
+    } finally {
+      setIsDeletingRecord(false);
+    }
+  };
 
   const handleRowClick = useCallback(
     (e: React.MouseEvent, record: FocusRecord) => {
@@ -261,7 +300,7 @@ export function FocusRecentRecords({
               isCompact={isCompact}
               onRowClick={handleRowClick}
               onContextMenu={handleContextMenu}
-              onDeleteRecord={onDeleteRecord}
+              onRequestDelete={onDeleteRecord ? handleRequestDelete : undefined}
             />
           ))
         )}
@@ -276,7 +315,40 @@ export function FocusRecentRecords({
         }}
         record={selectedRecordForEdit}
         anchorRect={editAnchorRect}
-        onDeleteRecord={onDeleteRecord}
+        onRequestDelete={onDeleteRecord ? handleRequestDelete : undefined}
+      />
+
+      {/* Confirmação de exclusão com opção de limpar o Histórico */}
+      <ConfirmationModal
+        isOpen={pendingDeleteRecord !== null}
+        onClose={() => !isDeletingRecord && setPendingDeleteRecord(null)}
+        onConfirm={handleConfirmDelete}
+        isLoading={isDeletingRecord}
+        title={t("deleteConfirmTitle")}
+        description={
+          <p>
+            {t.rich("deleteConfirmDescription", {
+              name:
+                pendingDeleteRecord?.activityName ||
+                pendingDeleteRecord?.taskNameSnapshot ||
+                pendingDeleteRecord?.itemName ||
+                t("freeSession"),
+              strong: (chunks) => (
+                <strong className="text-neutral-100">{chunks}</strong>
+              ),
+            })}
+          </p>
+        }
+        confirmText={t("deleteConfirmButton")}
+        variant="danger"
+        checkboxLabel={
+          pendingDeleteRecord && !pendingDeleteRecord.inventoryItemId
+            ? t("deleteHistoryLabel")
+            : undefined
+        }
+        checkboxHint={t("deleteHistoryHint")}
+        checkboxChecked={deleteHistory}
+        onCheckboxChange={setDeleteHistory}
       />
 
       {/* Menu de Contexto (Clique com Botão Direito) */}
@@ -303,7 +375,7 @@ export function FocusRecentRecords({
                   variant: "destructive" as const,
                   onClick: () => {
                     if (contextMenu.record) {
-                      onDeleteRecord(contextMenu.record.id);
+                      handleRequestDelete(contextMenu.record);
                     }
                   },
                 },

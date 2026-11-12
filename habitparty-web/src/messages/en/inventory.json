@@ -115,6 +115,7 @@
   "rouletteModal": {
     "subtitleWon": "Congratulations! Check out the prize you won in this round:",
     "subtitleIdle": "Roll the lucky dice and discover which prize comes out of your box!",
+    "possiblePrizesTitle": "Possible prizes in this box:",
     "trackCouponMinutes": "{minutes}m Voucher",
     "trackSingleUse": "Single-Use",
     "prizeUnlockedTitle": "Prize Successfully Unlocked!",

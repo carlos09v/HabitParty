@@ -2,6 +2,7 @@
 
 import {
   Calendar,
+  Camera,
   Crown,
   Eye,
   Pencil,
@@ -22,6 +23,7 @@ import { FounderBadge } from "@/components/ui/FounderBadge";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useIdlePreload } from "@/hooks/useIdlePreload";
+import { useProfilePhotoUpload } from "@/hooks/useProfilePhotoUpload";
 import type { AppLocale } from "@/i18n/config";
 import { useActiveAvatarFrame } from "@/store/avatarFrameStore";
 import { useUserStore } from "@/store/userStore";
@@ -68,6 +70,25 @@ export function ShowcaseHeroHeader({
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [isFramePickerOpen, setIsFramePickerOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  const {
+    fileInputRef,
+    isPending: isPhotoPending,
+    previewUrl,
+    isDraggingOver,
+    handleFileChange,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop,
+  } = useProfilePhotoUpload({
+    disabled: isVisitorMode,
+    messages: {
+      invalidImageToast: t("invalidImageToast"),
+      imageSizeToast: t("imageSizeToast"),
+      photoSuccessToast: t("photoSuccessToast"),
+      photoErrorToast: t("photoErrorToast"),
+    },
+  });
 
   useIdlePreload(preloadAvatarFramePickerModal);
 
@@ -183,13 +204,70 @@ export function ShowcaseHeroHeader({
           {/* IDENTIDADE + AVATAR + BIO */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 flex-1 min-w-0 w-full">
             <div className="shrink-0 pl-1">
-              <UserAvatar
-                src={user?.profilePhotoUrl}
-                name={displayName}
-                size="xl"
-                hasRing={isPremium}
-                frameId={activeFrameId}
-              />
+              {!isVisitorMode ? (
+                <div className="relative group shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    disabled={isPhotoPending}
+                    className="relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-gold cursor-pointer transition-transform group-hover:scale-[1.02] block disabled:cursor-not-allowed"
+                    title={t("changePhoto")}
+                    aria-label={t("changePhoto")}
+                  >
+                    <UserAvatar
+                      src={previewUrl || user?.profilePhotoUrl}
+                      name={displayName}
+                      size="xl"
+                      hasRing={isPremium}
+                      frameId={activeFrameId}
+                    />
+
+                    {/* Overlay sutil de câmera no hover */}
+                    <div
+                      className={cn(
+                        "absolute inset-0 rounded-full bg-black/65 flex flex-col items-center justify-center text-white transition-opacity z-20",
+                        isDraggingOver || isPhotoPending
+                          ? "opacity-100"
+                          : "opacity-0 group-hover:opacity-100",
+                      )}
+                    >
+                      <Camera
+                        size={22}
+                        className={
+                          isPhotoPending
+                            ? "animate-spin text-amber-400 dark:text-gold"
+                            : "text-white drop-shadow-sm"
+                        }
+                      />
+                      <span className="text-[10px] font-bold mt-1 text-white drop-shadow-sm">
+                        {isPhotoPending
+                          ? t("uploadingPhoto")
+                          : t("changePhoto")}
+                      </span>
+                    </div>
+                  </button>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    tabIndex={-1}
+                    onChange={handleFileChange}
+                  />
+                </div>
+              ) : (
+                <UserAvatar
+                  src={previewUrl || user?.profilePhotoUrl}
+                  name={displayName}
+                  size="xl"
+                  hasRing={isPremium}
+                  frameId={activeFrameId}
+                />
+              )}
             </div>
 
             <div className="flex flex-col gap-2 min-w-0 flex-1 w-full">

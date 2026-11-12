@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { reorderRewards } from "@/actions/rewardActions";
+import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { PrimaryActionButton } from "@/components/ui/PrimaryActionButton";
@@ -78,6 +79,12 @@ export function RewardsContainer({
     handleEditReward,
     handleEditFromContextMenu,
     handleDeleteFromContextMenu,
+    rewardToDelete,
+    setRewardToDelete,
+    deleteRewardHistory,
+    setDeleteRewardHistory,
+    handleConfirmDeleteReward,
+    isDeleting,
     isFormModalOpen,
     editingReward,
     handleAddProduct,
@@ -279,6 +286,30 @@ export function RewardsContainer({
           existingRewards={rewards}
           onSuccess={handleRewardSuccess}
           onClose={handleCloseFormModal}
+        />
+      )}
+
+      {/* Modal de Confirmação para Excluir Recompensa */}
+      {rewardToDelete && (
+        <ConfirmationModal
+          isOpen={Boolean(rewardToDelete)}
+          title={t("deleteModal.title")}
+          description={t.rich("deleteModal.description", {
+            title: rewardToDelete.title,
+            bold: (chunks) => (
+              <strong className="text-neutral-100">{chunks}</strong>
+            ),
+          })}
+          confirmText={t("deleteModal.confirmText")}
+          cancelText={t("deleteModal.cancelText")}
+          variant="danger"
+          isLoading={isDeleting}
+          checkboxLabel={t("deleteModal.deleteHistoryLabel")}
+          checkboxHint={t("deleteModal.deleteHistoryHint")}
+          checkboxChecked={deleteRewardHistory}
+          onCheckboxChange={setDeleteRewardHistory}
+          onClose={() => !isDeleting && setRewardToDelete(null)}
+          onConfirm={handleConfirmDeleteReward}
         />
       )}
     </>

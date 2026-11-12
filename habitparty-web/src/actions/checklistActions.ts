@@ -176,3 +176,140 @@ export async function cloneTaskChecklistItems(
 
   return createdItems;
 }
+
+type ChecklistSnapshotItem = {
+  id?: string;
+  name?: string;
+  isCompleted?: boolean;
+};
+
+/**
+ * Persiste em lote as alterações de checklist feitas localmente (ex: no modal de edição),
+ * comparando o estado inicial com o estado final. Executado somente ao salvar a tarefa.
+ * Retorna o checklist final (com IDs reais) e a quantidade de operações que falharam.
+ */
+export async function syncTaskChecklistChanges(
+  taskId: string,
+  initialItems: ChecklistSnapshotItem[],
+  currentItems: ChecklistSnapshotItem[],
+): Promise<{ items: ChecklistItemResponseDTO[]; failedCount: number }> {
+  const isPersisted = (item: ChecklistSnapshotItem) =>
+    Boolean(item.id) && !item.id?.startsWith("temp-");
+
+  const initialById = new Map(
+    initialItems.filter(isPersisted).map((item) => [item.id as string, item]),
+  );
+  const currentIds = new Set(
+    currentItems.filter(isPersisted).map((item) => item.id as string),
+  );
+
+  let failedCount = 0;
+  let hasChanges = false;
+
+  const call = async <T>(
+    fn: () => Promise<{ data?: T; error?: unknown }>,
+  ): Promise<T | undefined> => {
+    hasChanges = true;
+    try {
+      const { data, error } = await fn();
+      if (error) {
+        failedCount++;
+        return undefined;
+      }
+      return data;
+    } catch (err) {
+      console.error("[ChecklistAction:Sync]", err);
+      failedCount++;
+      return undefined;
+    }
+  };
+
+  // 1. Remoções
+  await Promise.all(
+    [...initialById.keys()]
+      .filter((id) => !currentIds.has(id))
+      .map((itemId) =>
+        call(() =>
+          serverApi.DELETE("/tasks/checklists/{itemId}", {
+            params: { path: { itemId } },
+          }),
+        ),
+      ),
+  );
+
+  // 2. Edições de itens existentes em paralelo + inclusões de novos itens em ordem
+  const persistedUpdates = new Map<string, Promise<ChecklistItemResponseDTO>>();
+  for (const item of currentItems) {
+    const name = item.name?.trim();
+    if (!name || !isPersisted(item)) continue;
+
+    const itemId = item.id as string;
+    const original = initialById.get(itemId);
+    persistedUpdates.set(
+      itemId,
+      (async () => {
+        let resolved: ChecklistItemResponseDTO =
+          item as ChecklistItemResponseDTO;
+        if (original && original.name !== name) {
+          const updated = await call(() =>
+            serverApi.PUT("/tasks/checklists/{itemId}", {
+              params: { path: { itemId } },
+              body: { name },
+            }),
+          );
+          if (updated) resolved = updated as ChecklistItemResponseDTO;
+        }
+        if (
+          original &&
+          Boolean(original.isCompleted) !== Boolean(item.isCompleted)
+        ) {
+          const toggled = await call(() =>
+            serverApi.PATCH("/tasks/checklists/{itemId}/toggle", {
+              params: { path: { itemId } },
+            }),
+          );
+          if (toggled) resolved = toggled as ChecklistItemResponseDTO;
+        }
+        return resolved;
+      })(),
+    );
+  }
+
+  await Promise.all(persistedUpdates.values());
+
+  const finalItems: ChecklistItemResponseDTO[] = [];
+  for (const item of currentItems) {
+    const name = item.name?.trim();
+    if (!name) continue;
+
+    if (isPersisted(item)) {
+      const resolved = await persistedUpdates.get(item.id as string);
+      if (resolved) finalItems.push(resolved);
+      continue;
+    }
+
+    const created = (await call(() =>
+      serverApi.POST("/tasks/{taskId}/checklists", {
+        params: { path: { taskId } },
+        body: { name },
+      }),
+    )) as ChecklistItemResponseDTO | undefined;
+    if (!created) continue;
+
+    if (item.isCompleted && created.id) {
+      const createdId = created.id;
+      const toggled = await call(() =>
+        serverApi.PATCH("/tasks/checklists/{itemId}/toggle", {
+          params: { path: { itemId: createdId } },
+        }),
+      );
+      finalItems.push((toggled as ChecklistItemResponseDTO) ?? created);
+    } else {
+      finalItems.push(created);
+    }
+  }
+
+  if (hasChanges) invalidateChecklistTags();
+
+  return { items: finalItems, failedCount };
+}

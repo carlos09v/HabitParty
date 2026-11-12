@@ -49,6 +49,9 @@ import type {
 } from "@/types/reward";
 import type { IconOption, SelectOption } from "@/types/ui";
 
+/** Limite máximo de caracteres da descrição de uma recompensa. */
+export const REWARD_DESCRIPTION_MAX_LENGTH = 120;
+
 export type {
   CategoryMessageKey,
   CouponPackageOption,
@@ -817,12 +820,12 @@ export const DEFAULT_MYSTERY_BOX_LOOT: Record<
   Épico: [
     { name: "Bloco Estendido de Lazer", icon: "gamepad", minutes: 120 },
     { name: "Noite Livre Completa", icon: "ticket", minutes: 180 },
-    { name: "Tarde de Desconexão", icon: "trophy", minutes: 240 },
+    { name: "Tarde de Desconexão", icon: "sparkles", minutes: 240 },
   ],
   Lendário: [
-    { name: "Day-Off Parcial de Elite", icon: "star", minutes: 240 },
-    { name: "Day-Off Integral", icon: "crown", minutes: 480 },
-    { name: "Celebração Absoluta", icon: "gem", minutes: null },
+    { name: "Day-Off Parcial de Elite", icon: "party", minutes: 240 },
+    { name: "Day-Off Integral", icon: "sparkles", minutes: 480 },
+    { name: "Celebração Absoluta", icon: "gift", minutes: null },
   ],
 };
 
@@ -834,7 +837,7 @@ export const MYSTERY_BOX_PRESETS: readonly MysteryBoxPreset[] = [
       Básico: [
         { name: "Vídeo de Gameplay", icon: "tv", minutes: 15 },
         { name: "Partida Casual", icon: "gamepad", minutes: 30 },
-        { name: "Sessão Ranqueada", icon: "trophy", minutes: 60 },
+        { name: "Sessão Ranqueada", icon: "sparkles", minutes: 60 },
       ],
       Premium: [
         {
@@ -848,12 +851,12 @@ export const MYSTERY_BOX_PRESETS: readonly MysteryBoxPreset[] = [
       Épico: [
         { name: "Sessão Coop Estendida", icon: "gamepad", minutes: 120 },
         { name: "Maratona de Série", icon: "clapperboard", minutes: 180 },
-        { name: "Noite Gamer Livre", icon: "trophy", minutes: 240 },
+        { name: "Noite Gamer Livre", icon: "party", minutes: 240 },
       ],
       Lendário: [
         { name: "Tarde Gamer Completa", icon: "gamepad", minutes: 240 },
-        { name: "Day-Off de Lançamento", icon: "crown", minutes: 480 },
-        { name: "Jogo Novo na Promoção", icon: "shopping_bag", minutes: null },
+        { name: "Day-Off de Lançamento", icon: "sparkles", minutes: 480 },
+        { name: "Jogo Novo na Promoção", icon: "shopping", minutes: null },
       ],
     },
   },
@@ -864,22 +867,22 @@ export const MYSTERY_BOX_PRESETS: readonly MysteryBoxPreset[] = [
       Básico: [
         { name: "Café ou Chá Especial", icon: "coffee", minutes: null },
         { name: "Pausa Musical / Meditação", icon: "headphones", minutes: 25 },
-        { name: "Cochilo Revigorante", icon: "heart", minutes: 45 },
+        { name: "Cochilo Revigorante", icon: "sparkles", minutes: 45 },
       ],
       Premium: [
         { name: "Banho Relaxante & Skincare", icon: "sparkles", minutes: null },
-        { name: "Caminhada ao Ar Livre", icon: "heart", minutes: 60 },
+        { name: "Caminhada ao Ar Livre", icon: "headphones", minutes: 60 },
         { name: "Sessão de Filme no Sofá", icon: "tv", minutes: 120 },
       ],
       Épico: [
         { name: "Manhã ou Tarde Sem Pressa", icon: "coffee", minutes: 120 },
         { name: "Spa Day em Casa", icon: "sparkles", minutes: 180 },
-        { name: "Desconexão Digital Total", icon: "heart", minutes: 240 },
+        { name: "Desconexão Digital Total", icon: "book", minutes: 240 },
       ],
       Lendário: [
-        { name: "Meio Período Off", icon: "star", minutes: 240 },
-        { name: "Day-Off de Descanso Total", icon: "crown", minutes: 480 },
-        { name: "Massagem ou Passeio Especial", icon: "gem", minutes: null },
+        { name: "Meio Período Off", icon: "party", minutes: 240 },
+        { name: "Day-Off de Descanso Total", icon: "sparkles", minutes: 480 },
+        { name: "Massagem ou Passeio Especial", icon: "gift", minutes: null },
       ],
     },
   },
@@ -904,8 +907,8 @@ export const MYSTERY_BOX_PRESETS: readonly MysteryBoxPreset[] = [
       ],
       Lendário: [
         { name: "Brunch ou Almoço Especial", icon: "utensils", minutes: 180 },
-        { name: "Restaurante dos Sonhos", icon: "crown", minutes: null },
-        { name: "Experiência Gastronômica VIP", icon: "gem", minutes: null },
+        { name: "Restaurante dos Sonhos", icon: "sparkles", minutes: null },
+        { name: "Experiência Gastronômica VIP", icon: "gift", minutes: null },
       ],
     },
   },
@@ -916,26 +919,30 @@ export const MYSTERY_BOX_PRESETS: readonly MysteryBoxPreset[] = [
       Básico: [
         { name: "Ouvir Álbum / Podcast", icon: "music", minutes: 20 },
         { name: "Capítulo de Livro / Mangá", icon: "book", minutes: 30 },
-        { name: "Prática de Instrumento / Arte", icon: "wand", minutes: 60 },
+        {
+          name: "Prática de Instrumento / Arte",
+          icon: "sparkles",
+          minutes: 60,
+        },
       ],
       Premium: [
         { name: "Leitura Imersiva", icon: "book", minutes: 60 },
-        { name: "Projeto Pessoal Criativo", icon: "wand", minutes: 90 },
+        { name: "Projeto Pessoal Criativo", icon: "sparkles", minutes: 90 },
         { name: "Sessão de Música / Pintura", icon: "music", minutes: 120 },
       ],
       Épico: [
         { name: "Imersão em Hobby Favorito", icon: "book", minutes: 120 },
-        { name: "Tarde Criativa Livre", icon: "wand", minutes: 180 },
+        { name: "Tarde Criativa Livre", icon: "sparkles", minutes: 180 },
         {
           name: "Comprar Livro ou Material",
-          icon: "shopping_bag",
+          icon: "shopping",
           minutes: null,
         },
       ],
       Lendário: [
-        { name: "Maratona de Hobby (4h)", icon: "star", minutes: 240 },
-        { name: "Dia Inteiro para Projetos", icon: "crown", minutes: 480 },
-        { name: "Item de Colecionador / Curso", icon: "gem", minutes: null },
+        { name: "Maratona de Hobby (4h)", icon: "book", minutes: 240 },
+        { name: "Dia Inteiro para Projetos", icon: "sparkles", minutes: 480 },
+        { name: "Item de Colecionador / Curso", icon: "gift", minutes: null },
       ],
     },
   },

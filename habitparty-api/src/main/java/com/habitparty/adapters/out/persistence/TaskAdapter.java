@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import com.habitparty.application.ports.projections.DashboardTaskDTO;
+import com.habitparty.application.ports.projections.TaskSearchWorkspaceCountDTO;
 import com.habitparty.adapters.out.persistence.entities.ChecklistItemJpaEntity;
 import com.habitparty.adapters.out.persistence.entities.TaskJpaEntity;
 import com.habitparty.adapters.out.persistence.mappers.ChecklistItemMapper;
@@ -145,6 +146,23 @@ public class TaskAdapter implements TaskRepository {
         (String) row[4],
         Boolean.TRUE.equals(row[5]),
         toDaysOfWeek(row[6])));
+  }
+
+  @Override
+  public List<TaskSearchWorkspaceCountDTO> countMatchingTasksByWorkspace(UUID userId, String query) {
+    // Escapa curingas do LIKE para que '%' e '_' digitados pelo usuário sejam tratados literalmente
+    String escaped = query.toLowerCase()
+        .replace("\\", "\\\\")
+        .replace("%", "\\%")
+        .replace("_", "\\_");
+    String pattern = "%" + escaped + "%";
+
+    return port.countMatchingTasksByWorkspace(userId, pattern).stream()
+        .map(row -> new TaskSearchWorkspaceCountDTO(
+            (UUID) row[0],
+            (String) row[1],
+            ((Number) row[2]).longValue()))
+        .toList();
   }
 
   // Converte o array/lista de DailyDaysOfWeek (enum do domínio) para java.time.DayOfWeek

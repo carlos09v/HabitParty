@@ -58,12 +58,21 @@ public record TaskResponseDTO(
         // --- Campos específicos de Todo ---
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
         LocalTime dueTime,
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
+        LocalTime startTime,
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
+        LocalTime dueEndTime,
+        Boolean isAllDay,
         TodoReminderType reminderType,
         LocalDateTime reminderAt,
         Boolean isPenaltyApplied,
         Boolean sendEmailReminder,
         Boolean emailReminderSent,
         Boolean isRewardClaimed,
+
+        // --- Métricas de Foco Vinculado ---
+        Integer totalFocusMinutes,
+        Integer focusCyclesCount,
 
         // --- A lista de Checklist ---
         List<ChecklistItemResponseDTO> checklist) {
@@ -109,12 +118,19 @@ public record TaskResponseDTO(
 
                 // Específicos do Todo
                 task instanceof Todo t ? t.getDueTime().orElse(null) : null,
+                task instanceof Todo t ? t.getStartTime().orElse(null) : null,
+                task instanceof Todo t ? t.getDueEndTime().orElse(null) : null,
+                task instanceof Todo t ? t.isAllDay() : null,
                 task instanceof Todo t ? t.getReminderType() : null,
                 task instanceof Todo t ? t.getReminderAt().orElse(null) : null,
                 task instanceof Todo t ? t.isPenaltyApplied() : null,
                 task instanceof Todo t ? t.isSendEmailReminder() : null,
                 task instanceof Todo t ? t.isEmailReminderSent() : null,
                 task.isRewardAlreadyClaimed(),
+
+                // Métricas de Foco
+                task.getTotalFocusMinutes(),
+                task.getFocusCyclesCount(),
 
                 checklistDTOs);
     }

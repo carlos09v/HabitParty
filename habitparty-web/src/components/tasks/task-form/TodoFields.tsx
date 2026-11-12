@@ -1,9 +1,8 @@
-import { Mail } from "lucide-react";
+import { Bell, Mail } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Select } from "@/components/ui/Select";
 import { Switch } from "@/components/ui/Switch";
-import { TimePicker } from "@/components/ui/TimePicker";
 import { TODO_REMINDER_OPTIONS } from "@/constants/task";
 import type { CreateTaskFormReturn } from "@/hooks/useCreateTaskForm";
 import { useUserStore } from "@/store/userStore";
@@ -26,6 +25,12 @@ export function TodoFields({ form }: TodoFieldsProps) {
     setDueDate,
     dueTime,
     setDueTime,
+    startTime,
+    setStartTime,
+    dueEndTime,
+    setDueEndTime,
+    isAllDay,
+    setIsAllDay,
     reminderType,
     setReminderType,
     sendEmailReminder,
@@ -42,7 +47,7 @@ export function TodoFields({ form }: TodoFieldsProps) {
 
   return (
     <div className="flex flex-col gap-3.5 animate-in fade-in duration-150">
-      {/* Prazo de Entrega (Largura completa) */}
+      {/* Prazo de Entrega e Horário Integrado */}
       <DatePicker
         id="todoDue"
         label={isHardcore ? t("dueDateHardcoreLabel") : t("dueDateLabel")}
@@ -56,61 +61,68 @@ export function TodoFields({ form }: TodoFieldsProps) {
         required={isHardcore}
         allowClear={!isOverdueHardcoreLocked && !isHardcore}
         hint={isOverdueHardcoreLocked ? t("dueDateFrozenHint") : undefined}
+        enableTime
+        timeValue={dueTime}
+        onTimeChange={setDueTime}
+        startTimeValue={startTime}
+        onStartTimeChange={setStartTime}
+        endTimeValue={dueEndTime}
+        onEndTimeChange={setDueEndTime}
+        allDayValue={isAllDay}
+        onAllDayChange={setIsAllDay}
       />
 
-      {/* Horário e Lembrete lado a lado */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
-        <TimePicker
-          id="todoDueTime"
-          label={t("dueTimeLabel")}
-          value={dueTime}
-          disabled={isPending || isOverdueHardcoreLocked}
-          onChange={setDueTime}
-          placeholder={t("dueTimePlaceholder")}
-          compact
-          allowClear={!isOverdueHardcoreLocked}
-        />
+      {/* Lembrete */}
+      <Select
+        label={t("reminderLabel")}
+        options={TODO_REMINDER_OPTIONS.map((opt) => ({
+          value: opt.id,
+          label: t(`reminders.${opt.id}`),
+        }))}
+        value={reminderType}
+        onChange={(val) => setReminderType(val as ReminderTypeOption)}
+        disabled={isPending}
+        compact
+      />
 
-        <Select
-          label={t("reminderLabel")}
-          options={TODO_REMINDER_OPTIONS.map((opt) => ({
-            value: opt.id,
-            label: t(`reminders.${opt.id}`),
-          }))}
-          value={reminderType}
-          onChange={(val) => setReminderType(val as ReminderTypeOption)}
-          disabled={isPending}
-          compact
-        />
-      </div>
-
-      {/* Opção de Enviar Lembrete por E-mail (Exibida somente se houver lembrete ativo) */}
+      {/* Alerta no App + Opção de Enviar Lembrete por E-mail (Exibidos quando há lembrete ativo) */}
       {reminderType !== "NONE" && (
-        <div className="flex items-center justify-between p-2.5 rounded-lg bg-surface/60 border border-primary/25 animate-in fade-in duration-150">
-          <div className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-md bg-amber-500/10 text-amber-500 shrink-0">
-              <Mail size={16} />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-semibold text-neutral-100">
-                {t("emailReminderTitle")}
-              </span>
-              <span className="text-label-g text-neutral-400">
-                {isEmailUnverified
-                  ? t("emailUnverifiedDesc")
-                  : isPremium
-                    ? t("emailReminderQuotaVip")
-                    : t("emailReminderQuotaFree")}
-              </span>
-            </div>
+        <div className="flex flex-col gap-2 animate-in fade-in duration-150">
+          <div className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-800 dark:bg-info/10 dark:border-info/30 dark:text-info text-xs">
+            <Bell size={14} className="shrink-0 mt-0.5" />
+            <span className="leading-snug">
+              {t("inAppReminderAlertInfo", {
+                when: t(`reminders.${reminderType}`).toLowerCase(),
+              })}
+            </span>
           </div>
-          <Switch
-            checked={sendEmailReminder && !isEmailUnverified}
-            onCheckedChange={setSendEmailReminder}
-            disabled={isPending || isEmailUnverified}
-            size="sm"
-            aria-label={t("emailSwitchAria")}
-          />
+
+          <div className="flex items-center justify-between p-2.5 rounded-lg bg-surface/60 border border-primary/25">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-md bg-amber-500/10 text-amber-500 shrink-0">
+                <Mail size={16} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-neutral-100">
+                  {t("emailReminderTitle")}
+                </span>
+                <span className="text-label-g text-neutral-400">
+                  {isEmailUnverified
+                    ? t("emailUnverifiedDesc")
+                    : isPremium
+                      ? t("emailReminderQuotaVip")
+                      : t("emailReminderQuotaFree")}
+                </span>
+              </div>
+            </div>
+            <Switch
+              checked={sendEmailReminder && !isEmailUnverified}
+              onCheckedChange={setSendEmailReminder}
+              disabled={isPending || isEmailUnverified}
+              size="sm"
+              aria-label={t("emailSwitchAria")}
+            />
+          </div>
         </div>
       )}
     </div>

@@ -1,13 +1,17 @@
 "use client";
 
-import { Timer, Trash2 } from "lucide-react";
+import { FolderKanban, Timer, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { memo } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { CoinAmount } from "@/components/ui/reward/CoinAmount";
 import { XpAmount } from "@/components/ui/reward/XpAmount";
-import { HISTORY_GRID_COLS } from "@/constants/history";
+import {
+  HISTORY_GRID_COLS,
+  HISTORY_GRID_COLS_SELECTABLE,
+} from "@/constants/history";
 import { useDateFormat } from "@/hooks/useDateFormat";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
 import type {
   TransactionHistoryResponseDTO,
@@ -23,28 +27,37 @@ interface HistoryRowProps {
   onClick?: (tx: TransactionHistoryResponseDTO, rect: DOMRect) => void;
   /** Solicita exclusão (a confirmação é exibida pelo componente pai). */
   onRequestDelete?: (transaction: TransactionHistoryResponseDTO) => void;
+  /** Habilita a coluna de seleção (checkbox) para exclusão em lote. */
+  selectable?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (transaction: TransactionHistoryResponseDTO) => void;
 }
 
+/**
+ * Subtexto da 1ª coluna. A duração do Foco não é repetida aqui (já aparece na coluna "Detalhes / Tags").
+ */
 function TransactionSubtext({
-  isFocus,
-  firstTag,
+  columnName,
+  columnLabel,
   priceSnapshot,
-  durationLabel,
   listPriceLabel,
   locale,
 }: {
-  isFocus: boolean;
-  firstTag?: string;
+  columnName?: string | null;
+  columnLabel: string;
   priceSnapshot?: number | null;
-  durationLabel: string;
   listPriceLabel: string;
   locale: AppLocale;
 }) {
-  if (isFocus && firstTag) {
+  if (columnName) {
     return (
-      <span className="text-label-g text-neutral-400 font-normal flex items-center gap-1">
-        {durationLabel}{" "}
-        <span className="text-gold font-semibold">{firstTag}</span>
+      <span
+        className="text-tiny text-neutral-400 font-normal inline-flex items-center gap-1 min-w-0"
+        title={`${columnLabel} ${columnName}`}
+      >
+        <FolderKanban size={10} className="shrink-0" aria-hidden="true" />
+        <span className="sr-only">{columnLabel}</span>
+        <span className="truncate">{columnName}</span>
       </span>
     );
   }
@@ -116,11 +129,20 @@ export const HistoryRow = memo(function HistoryRow({
   showTimeOnly = false,
   onClick,
   onRequestDelete,
+  selectable = false,
+  isSelected = false,
+  onToggleSelect,
 }: HistoryRowProps) {
   const t = useTranslations("history.row");
   const locale = useLocale() as AppLocale;
   const { dateFormat } = useDateFormat();
-  const metadata = resolveTransactionMetadata(transaction, locale, dateFormat);
+  const { timeFormat } = useTimeFormat();
+  const metadata = resolveTransactionMetadata(
+    transaction,
+    locale,
+    dateFormat,
+    timeFormat,
+  );
   const IconComponent = metadata.icon;
 
   const gold = transaction.goldAmount ?? 0;
@@ -136,6 +158,31 @@ export const HistoryRow = memo(function HistoryRow({
     e.stopPropagation();
     onRequestDelete?.(transaction);
   };
+
+  const canSelect = Boolean(selectable && onToggleSelect && transaction.id);
+  const rowName = transaction.name || t("defaultTransactionName");
+  const selectCheckbox = canSelect ? (
+    <input
+      type="checkbox"
+      checked={isSelected}
+      onChange={() => onToggleSelect?.(transaction)}
+      // Evita abrir o popover da linha ao marcar/desmarcar
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+      aria-label={t("selectRowAria", { name: rowName })}
+      className="checkbox-custom"
+    />
+  ) : null;
+
+  const subtext = (
+    <TransactionSubtext
+      columnName={transaction.columnName}
+      columnLabel={t("columnLabel")}
+      priceSnapshot={priceSnapshot}
+      listPriceLabel={t("listPriceLabel")}
+      locale={locale}
+    />
+  );
 
   return (
     // biome-ignore lint/a11y/useSemanticElements: container row contains nested interactive delete button
@@ -155,11 +202,13 @@ export const HistoryRow = memo(function HistoryRow({
         "group w-full rounded-xl border border-l-4 transition-colors cursor-pointer select-none text-left",
         "bg-card dark:bg-primary-dark/20 border-y-neutral-700 border-r-neutral-700 dark:border-y-primary/25 dark:border-r-primary/25 hover:border-y-primary/35 hover:border-r-primary/35 dark:hover:border-y-primary-light/40 dark:hover:border-r-primary-light/40 hover:bg-card-hover dark:hover:bg-primary-dark/35 shadow-2xs dark:shadow-none hover:shadow-xs",
         metadata.borderClass,
+        isSelected &&
+          "bg-gold/10 dark:bg-gold/8 border-y-gold/50 border-r-gold/50 dark:border-y-gold/45 dark:border-r-gold/45",
         // Mobile Layout: flex column
         "flex flex-col gap-2 p-3",
         // Desktop Layout (md+): Grid perfeitamente alinhado com o cabeçalho
         "md:grid md:items-center",
-        HISTORY_GRID_COLS,
+        canSelect ? HISTORY_GRID_COLS_SELECTABLE : HISTORY_GRID_COLS,
         isCompact
           ? "md:gap-2.5 md:px-3 md:py-2 md:text-xs"
           : "md:gap-3.5 md:px-4 md:py-3 md:text-sm",
@@ -173,6 +222,7 @@ export const HistoryRow = memo(function HistoryRow({
         {/* Linha Superior: Ícone + Título (Esq) | Moedas & XP (Dir) */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
+            {selectCheckbox}
             <div className="w-8 h-8 rounded-lg bg-surface border border-white/10 flex items-center justify-center shrink-0 text-neutral-300 shadow-xs">
               <IconComponent size={16} />
             </div>
@@ -180,14 +230,7 @@ export const HistoryRow = memo(function HistoryRow({
               <span className="font-bold text-neutral-100 text-sm truncate">
                 {transaction.name || t("defaultTransactionName")}
               </span>
-              <TransactionSubtext
-                isFocus={metadata.isFocus}
-                firstTag={tags[0]}
-                priceSnapshot={priceSnapshot}
-                durationLabel={t("durationLabel")}
-                listPriceLabel={t("listPriceLabel")}
-                locale={locale}
-              />
+              {subtext}
             </div>
           </div>
 
@@ -240,6 +283,13 @@ export const HistoryRow = memo(function HistoryRow({
       {/* ========================================================= */}
       {/* 2. VISUALIZAÇÃO DESKTOP: GRID DE 7 COLUNAS (md+)           */}
       {/* ========================================================= */}
+      {/* Col 0: Seleção para exclusão em lote */}
+      {canSelect && (
+        <div className="hidden md:flex items-center justify-center">
+          {selectCheckbox}
+        </div>
+      )}
+
       {/* Col 1: Nome / Evento */}
       <div className="hidden md:flex items-center gap-2.5 min-w-0">
         <div className="w-7 h-7 rounded-lg bg-surface border border-white/10 flex items-center justify-center shrink-0 text-neutral-300 shadow-xs group-hover:border-white/20 transition-colors">
@@ -252,14 +302,7 @@ export const HistoryRow = memo(function HistoryRow({
           >
             {transaction.name || t("defaultTransactionName")}
           </span>
-          <TransactionSubtext
-            isFocus={metadata.isFocus}
-            firstTag={tags[0]}
-            priceSnapshot={priceSnapshot}
-            durationLabel={t("durationLabel")}
-            listPriceLabel={t("listPriceLabel")}
-            locale={locale}
-          />
+          {subtext}
         </div>
       </div>
 
@@ -276,7 +319,7 @@ export const HistoryRow = memo(function HistoryRow({
         </span>
       </div>
 
-      {/* Col 3: Dificuldade / Tags */}
+      {/* Col 3: Detalhes / Tags */}
       <div className="hidden md:flex items-center gap-1 flex-wrap min-w-0">
         <TransactionMetaBadges metadata={metadata} tags={tags} showEmptyDash />
       </div>

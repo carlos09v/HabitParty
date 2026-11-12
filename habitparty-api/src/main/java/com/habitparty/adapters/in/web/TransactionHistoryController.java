@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.habitparty.adapters.in.web.api.TransactionHistoryApi;
+import com.habitparty.adapters.in.web.dtos.request.DeleteTransactionsBatchDTO;
 import com.habitparty.adapters.in.web.dtos.response.TransactionHistoryResponseDTO;
 import com.habitparty.application.usecases.transaction.DeleteTransactionHistoryUseCase;
 import com.habitparty.application.usecases.transaction.ExportTransactionsCsvUseCase;
@@ -62,6 +63,15 @@ public class TransactionHistoryController implements TransactionHistoryApi {
             AuthenticatedUser usuarioLogado) {
         UUID userId = usuarioLogado.id();
         deleteTransactionHistoryUseCase.execute(id, userId);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    public ResponseEntity<Void> deleteTransactionsBatch(
+            DeleteTransactionsBatchDTO dto,
+            AuthenticatedUser usuarioLogado) {
+        deleteTransactionHistoryUseCase.executeBatch(dto.ids(), usuarioLogado.id());
 
         return ResponseEntity.noContent().build();
     }

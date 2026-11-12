@@ -47,6 +47,11 @@ const FALLBACK_STORE_MESSAGES: Record<
     defaultItemName: "Focus Item",
     targetTransferredToast:
       'Target switched to "{name}". The timer keeps running!',
+    taskFocusStartedToast: 'Focusing on task "{name}"!',
+    taskLinkedToast: 'Task "{name}" linked to focus!',
+    completeLinkedTaskAction: "Complete task",
+    linkedTaskCompletedToast: 'Task "{name}" marked as completed!',
+    linkedTaskCompleteFailedToast: "Could not complete the linked task.",
   },
   "pt-BR": {
     breakCompletedToast:
@@ -56,12 +61,12 @@ const FALLBACK_STORE_MESSAGES: Record<
     cycleCompletedToast:
       "🍅 Ciclo {cycles} concluído! Iniciando pausa {breakLabel}. Relaxe um pouco!",
     selectTargetToStartToast:
-      "Selecione uma atividade ou item da mochila para iniciar o foco.",
+      "Selecione uma atividade, tarefa ou item da mochila para iniciar o foco.",
     itemAlreadyCompletedToast:
       "🎉 Este item já concluiu seu tempo. Clique no botão de Concluir (Check) para resgatá-lo.",
     breakSkippedToast: "Pausa pulada. Pronto para focar!",
     linkTargetBeforeSaveToast:
-      "Vincule o foco a uma atividade ou item da mochila antes de salvar.",
+      "Vincule o foco a uma atividade, tarefa ou item da mochila antes de salvar.",
     minDurationWarningToast:
       "Sessões com menos de 1 minuto não são registradas.",
     couponTimeDepletedToast:
@@ -78,6 +83,12 @@ const FALLBACK_STORE_MESSAGES: Record<
     defaultItemName: "Item de Foco",
     targetTransferredToast:
       'Vínculo alterado para "{name}". O tempo continua rodando!',
+    taskFocusStartedToast: 'Foco iniciado na tarefa "{name}"!',
+    taskLinkedToast: 'Tarefa "{name}" vinculada ao foco!',
+    completeLinkedTaskAction: "Concluir tarefa",
+    linkedTaskCompletedToast: 'Tarefa "{name}" marcada como concluída!',
+    linkedTaskCompleteFailedToast:
+      "Não foi possível concluir a tarefa vinculada.",
   },
 };
 

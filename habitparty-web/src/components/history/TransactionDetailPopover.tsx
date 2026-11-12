@@ -7,6 +7,7 @@ import {
   Check,
   Copy,
   ExternalLink,
+  FolderKanban,
   HelpCircle,
   Tag,
   Timer,
@@ -26,6 +27,7 @@ import { useClickOutside } from "@/hooks/useClickOutside";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useIsClient } from "@/hooks/useIsClient";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
 import type { TransactionHistoryResponseDTO } from "@/types/history";
 import { cn, formatCoins, formatDateTime } from "@/utils";
@@ -61,6 +63,7 @@ export function TransactionDetailPopover({
   const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
   const { dateFormat } = useDateFormat();
+  const { timeFormat } = useTimeFormat();
   const mounted = useIsClient();
   const [copiedId, setCopiedId] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -237,6 +240,26 @@ export function TransactionDetailPopover({
               </div>
             )}
 
+            {/* Lista (BoardColumn) de origem da tarefa */}
+            {transaction.columnName && (
+              <div className="flex items-center justify-between gap-3 py-1 border-b border-neutral-700/70 dark:border-white/5">
+                <span className="text-neutral-400 shrink-0">
+                  {t("columnLabel")}
+                </span>
+                <span
+                  className="inline-flex items-center gap-1 min-w-0 px-1.5 py-0.5 rounded-md border font-semibold text-label-g bg-surface border-neutral-700 dark:bg-white/10 dark:border-white/15 text-neutral-100"
+                  title={transaction.columnName}
+                >
+                  <FolderKanban
+                    size={12}
+                    className="shrink-0"
+                    aria-hidden="true"
+                  />
+                  <span className="truncate">{transaction.columnName}</span>
+                </span>
+              </div>
+            )}
+
             {/* Dificuldade ou Esforço */}
             {metadata.difficultyLabel && (
               <div className="flex items-center justify-between py-1 border-b border-neutral-700/70 dark:border-white/5">
@@ -280,7 +303,7 @@ export function TransactionDetailPopover({
                 <span className="text-neutral-400">
                   {t("sessionDurationLabel")}
                 </span>
-                <span className="inline-flex items-center gap-1 font-bold text-amber-800 bg-amber-500/15 border-amber-500/35 dark:text-gold dark:bg-gold/15 px-1.5 py-0.5 rounded-md border dark:border-gold/30 text-label-g">
+                <span className="inline-flex items-center gap-1 font-bold text-gold bg-gold/15 border-gold/30 px-1.5 py-0.5 rounded-md border text-label-g">
                   <Timer size={12} />
                   {tags[0]}
                 </span>
@@ -298,6 +321,7 @@ export function TransactionDetailPopover({
                   includeYearFull: true,
                   locale,
                   dateFormat,
+                  timeFormat,
                 })}
               </span>
             </div>

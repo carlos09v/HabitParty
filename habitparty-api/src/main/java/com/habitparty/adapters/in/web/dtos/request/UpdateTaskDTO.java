@@ -56,6 +56,9 @@ public record UpdateTaskDTO(
                 LocalTime dueTime,
                 TodoReminderType reminderType,
                 LocalDateTime customReminderAt,
-                Boolean sendEmailReminder) {
+                Boolean sendEmailReminder,
+                LocalTime startTime,
+                LocalTime dueEndTime,
+                Boolean isAllDay) {
 
 }

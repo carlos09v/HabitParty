@@ -51,6 +51,39 @@ export async function exportTransactionsCsvAction(
 }
 
 /**
+ * Exclui vários registros de transação de uma vez (seleção múltipla no Histórico)
+ */
+export async function deleteTransactionsBatchAction(
+  ids: string[],
+): Promise<ActionState<void>> {
+  const t = await getTranslations("history.actions");
+  if (ids.length === 0) {
+    return { success: true, data: undefined };
+  }
+  try {
+    const { error } = await serverApi.DELETE("/transactions/batch", {
+      body: { ids },
+    });
+
+    if (error) {
+      return {
+        success: false,
+        error: getErrorMessage(error, t("deleteBatchFailed")),
+      };
+    }
+
+    updateTag("transactions");
+    return { success: true, data: undefined };
+  } catch (err) {
+    console.error("[HistoryAction:DeleteBatch]", err);
+    return {
+      success: false,
+      error: t("deleteUnexpectedError"),
+    };
+  }
+}
+
+/**
  * Exclui um registro específico de transação
  */
 export async function deleteTransactionAction(

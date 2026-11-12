@@ -1,18 +1,8 @@
-import {
-  Calendar,
-  Eye,
-  Languages,
-  MonitorSmartphone,
-  Palette,
-  Sparkles,
-  Swords,
-} from "lucide-react";
+import { Calendar, Clock, Eye, Languages, Palette, Swords } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { PageWrapper } from "@/components/layout/PageWrapper";
-import { AvatarFrameSettings } from "@/components/settings/AvatarFrameSettings";
 import { ChangePasswordCard } from "@/components/settings/ChangePasswordCard";
-import { CompactModeSettings } from "@/components/settings/CompactModeSettings";
 import { DangerZoneCard } from "@/components/settings/DangerZoneCard";
 import { DateFormatSettings } from "@/components/settings/DateFormatSettings";
 import { ExperienceModeSettings } from "@/components/settings/ExperienceModeSettings";
@@ -24,11 +14,11 @@ import { SettingsNavTabs } from "@/components/settings/SettingsNavTabs";
 import { SoundNotificationSettings } from "@/components/settings/SoundNotificationSettings";
 import { SubscriptionSettingsCard } from "@/components/settings/SubscriptionSettingsCard";
 import { ThemeSettings } from "@/components/settings/ThemeSettings";
+import { TimeFormatSettings } from "@/components/settings/TimeFormatSettings";
 import { WelcomeCardsSettings } from "@/components/settings/WelcomeCardsSettings";
 import { resolveSettingsTab } from "@/constants/settings";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getCurrentUser } from "@/services/userService";
-import { getCompactMode } from "@/utils/cookies";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("settings.metadata");
@@ -45,8 +35,7 @@ type SettingsPageProps = {
 export default async function SettingsPage({
   searchParams,
 }: SettingsPageProps) {
-  const [isCompact, t, resolvedParams, user] = await Promise.all([
-    getCompactMode(),
+  const [t, resolvedParams, user] = await Promise.all([
     getTranslations("settings"),
     searchParams,
     getCurrentUser(),
@@ -56,7 +45,7 @@ export default async function SettingsPage({
 
   return (
     <ScopedIntlProvider scope="settings">
-      <PageWrapper isCompact={isCompact}>
+      <PageWrapper>
         <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto pb-16">
           {/* HEADER */}
           <header className="flex flex-col gap-1 border-b border-primary/20 pb-4">
@@ -71,34 +60,17 @@ export default async function SettingsPage({
           {/* NAVEGAÇÃO DE ABAS E CONTEÚDO COM TROCA INSTANTÂNEA NO CLIENTE */}
           <SettingsNavTabs
             activeTab={activeTab}
-            isCompact={isCompact}
             panels={{
               profile: (
                 <>
                   {/* Cartão de Identidade & Foto */}
-                  <ProfileHeaderCard
-                    initialUser={user || null}
-                    isCompact={isCompact}
-                  />
+                  <ProfileHeaderCard initialUser={user || null} />
 
                   {/* Status de Plano & Assinatura (Gerenciar/Cancelar Cartão ou Evoluir) */}
-                  <SubscriptionSettingsCard isCompact={isCompact} />
-
-                  {/* Molduras Animadas de Avatar */}
-                  <SettingsCard
-                    title={t("cards.avatarFrames")}
-                    description={t("cards.avatarFramesDesc")}
-                    icon={<Sparkles size={18} className="text-gold" />}
-                    isCompact={isCompact}
-                  >
-                    <AvatarFrameSettings isCompact={isCompact} />
-                  </SettingsCard>
+                  <SubscriptionSettingsCard />
 
                   {/* Formulário de Dados Pessoais (com SettingsCard integrado) */}
-                  <ProfileForm
-                    initialUser={user || null}
-                    isCompact={isCompact}
-                  />
+                  <ProfileForm initialUser={user || null} />
                 </>
               ),
               appearance: (
@@ -108,9 +80,8 @@ export default async function SettingsPage({
                     title={t("cards.appearanceTheme")}
                     description={t("cards.appearanceThemeDesc")}
                     icon={<Palette size={18} className="text-gold" />}
-                    isCompact={isCompact}
                   >
-                    <ThemeSettings isCompact={isCompact} />
+                    <ThemeSettings />
                   </SettingsCard>
 
                   {/* MODO DE EXPERIÊNCIA: GAMIFICADO VS PRODUTIVIDADE */}
@@ -118,10 +89,8 @@ export default async function SettingsPage({
                     title={t("cards.experienceMode")}
                     description={t("cards.experienceModeDesc")}
                     icon={<Swords size={18} className="text-gold" />}
-                    isCompact={isCompact}
                   >
                     <ExperienceModeSettings
-                      isCompact={isCompact}
                       initialMode={user?.experienceMode}
                     />
                   </SettingsCard>
@@ -131,9 +100,8 @@ export default async function SettingsPage({
                     title={t("cards.language")}
                     description={t("cards.languageDesc")}
                     icon={<Languages size={18} className="text-gold" />}
-                    isCompact={isCompact}
                   >
-                    <LanguageSettings isCompact={isCompact} />
+                    <LanguageSettings />
                   </SettingsCard>
 
                   {/* FORMATO DE DATA */}
@@ -141,19 +109,17 @@ export default async function SettingsPage({
                     title={t("cards.dateFormat")}
                     description={t("cards.dateFormatDesc")}
                     icon={<Calendar size={18} className="text-gold" />}
-                    isCompact={isCompact}
                   >
-                    <DateFormatSettings isCompact={isCompact} />
+                    <DateFormatSettings />
                   </SettingsCard>
 
-                  {/* DENSIDADE DA INTERFACE */}
+                  {/* FORMATO DE HORA */}
                   <SettingsCard
-                    title={t("cards.compact")}
-                    description={t("cards.compactDesc")}
-                    icon={<MonitorSmartphone size={18} className="text-gold" />}
-                    isCompact={isCompact}
+                    title={t("cards.timeFormat")}
+                    description={t("cards.timeFormatDesc")}
+                    icon={<Clock size={18} className="text-gold" />}
                   >
-                    <CompactModeSettings isCompact={isCompact} />
+                    <TimeFormatSettings />
                   </SettingsCard>
 
                   {/* CARDS DE BOAS-VINDAS */}
@@ -161,20 +127,19 @@ export default async function SettingsPage({
                     title={t("cards.welcomeCards")}
                     description={t("cards.welcomeCardsDesc")}
                     icon={<Eye size={18} className="text-gold" />}
-                    isCompact={isCompact}
                   >
-                    <WelcomeCardsSettings isCompact={isCompact} />
+                    <WelcomeCardsSettings />
                   </SettingsCard>
                 </>
               ),
-              audio: <SoundNotificationSettings isCompact={isCompact} />,
+              audio: <SoundNotificationSettings />,
               security: (
                 <>
                   {/* Formulário de Alteração de Senha */}
-                  <ChangePasswordCard isCompact={isCompact} />
+                  <ChangePasswordCard />
 
                   {/* Zona de Perigo / Exclusão de Conta */}
-                  <DangerZoneCard isCompact={isCompact} />
+                  <DangerZoneCard />
                 </>
               ),
             }}

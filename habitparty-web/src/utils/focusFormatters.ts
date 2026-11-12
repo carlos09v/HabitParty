@@ -5,8 +5,8 @@
 export { parseLocalDate, parseServerDate, toLocalISOString } from "./date";
 
 import type { AppLocale } from "@/i18n/config";
-import type { DateFormat } from "@/types/ui";
-import { formatShortDate, parseLocalDate } from "./date";
+import type { DateFormat, TimeFormat } from "@/types/ui";
+import { formatShortDate, formatTimeDisplay, parseLocalDate } from "./date";
 
 /**
  * Formata segundos no padrão MM:SS (ex: 25:00 ou 04:05).
@@ -38,7 +38,7 @@ export function getFocusDisplaySeconds(timerState: {
   mode: "POMO" | "STOPWATCH";
   secondsRemaining: number;
   elapsedSeconds: number;
-  target?: { type?: "activity" | "inventory" } | null;
+  target?: { type?: "activity" | "inventory" | "task" } | null;
 }): number {
   const isCountdown =
     timerState.mode === "POMO" || timerState.target?.type === "inventory";
@@ -52,7 +52,7 @@ export function formatFocusDisplayTime(timerState: {
   mode: "POMO" | "STOPWATCH";
   secondsRemaining: number;
   elapsedSeconds: number;
-  target?: { type?: "activity" | "inventory" } | null;
+  target?: { type?: "activity" | "inventory" | "task" } | null;
 }): string {
   return formatFocusTime(getFocusDisplaySeconds(timerState));
 }
@@ -70,6 +70,8 @@ export function formatFocusMinutes(minutes: number): string {
   return `${hours}h ${remainingMinutes}m`;
 }
 
+export const formatDurationMinutes = formatFocusMinutes;
+
 /**
  * Formata data de término de registro de foco no formato legível respeitando `dateFormat` (ex: DD/MM às HH:MM ou MM/DD at HH:MM).
  */
@@ -77,22 +79,19 @@ export function formatFocusDate(
   dateStr?: string | null,
   locale: AppLocale = "pt-BR",
   dateFormat?: DateFormat,
+  timeFormat?: TimeFormat,
 ): string {
   if (!dateStr) return "-";
   try {
     const d = parseLocalDate(dateStr);
     if (!d) return dateStr;
-    const intlLocale = locale === "en" ? "en-US" : "pt-BR";
     const day = formatShortDate(dateStr, {
       includeYear: false,
       isLocal: true,
       locale,
       dateFormat,
     });
-    const time = new Intl.DateTimeFormat(intlLocale, {
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(d);
+    const time = formatTimeDisplay(d, { timeFormat, locale });
     return locale === "en" ? `${day} at ${time}` : `${day} às ${time}`;
   } catch {
     return dateStr;

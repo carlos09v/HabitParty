@@ -17,6 +17,9 @@ import com.habitparty.core.exceptions.DomainValidationException;
 
 public class Todo extends Task {
   private LocalTime dueTime;
+  private LocalTime startTime;
+  private LocalTime dueEndTime;
+  private boolean isAllDay;
   private TodoReminderType reminderType;
   private LocalDateTime reminderAt;
   private LocalDateTime completedAt;
@@ -148,6 +151,19 @@ public class Todo extends Task {
     }
 
     this.dueTime = (this.dueDate != null) ? newDueTime : null;
+    if (this.dueDate == null) {
+      this.startTime = null;
+      this.dueEndTime = null;
+      this.isAllDay = false;
+    } else if (this.dueTime != null) {
+      this.startTime = null;
+      this.isAllDay = false;
+      if (this.dueEndTime != null && !this.dueEndTime.isAfter(this.dueTime)) {
+        this.dueEndTime = null;
+      }
+    } else if (this.startTime == null) {
+      this.dueEndTime = null;
+    }
 
     if (newReminderType != null) {
       this.reminderType = newReminderType;
@@ -259,9 +275,121 @@ public class Todo extends Task {
     this.emailReminderSent = true;
   }
 
+  /**
+   * Define (ou remove, se nulo) o horário de término do evento.
+   * Regra: exige um horário de início (startTime ou dueTime) e deve ser posterior a ele no mesmo dia.
+   */
+  public void defineDueEndTime(LocalTime newDueEndTime) {
+    if (newDueEndTime == null) {
+      this.dueEndTime = null;
+      return;
+    }
+    LocalTime effectiveStart = this.startTime != null ? this.startTime : this.dueTime;
+    if (effectiveStart == null) {
+      throw new DomainValidationException("O horário de término exige um horário de início.");
+    }
+    if (!newDueEndTime.isAfter(effectiveStart)) {
+      throw new DomainValidationException("O horário de término deve ser posterior ao horário de início.");
+    }
+    this.dueEndTime = newDueEndTime;
+  }
+
+  /**
+   * Define (ou remove) a programação de Evento (Start/End time ou Dia Inteiro).
+   * Mutuamente exclusiva com a Hora Pontual (dueTime).
+   */
+  public void defineEventSchedule(LocalTime newStartTime, LocalTime newEndTime, Boolean allDay) {
+    if (this.dueDate == null && (Boolean.TRUE.equals(allDay) || newStartTime != null || newEndTime != null)) {
+      this.dueDate = LocalDate.now();
+    }
+    if (this.dueDate == null) {
+      this.isAllDay = false;
+      this.startTime = null;
+      this.dueEndTime = null;
+      return;
+    }
+
+    if (Boolean.TRUE.equals(allDay)) {
+      this.isAllDay = true;
+      this.dueTime = null;
+      this.startTime = null;
+      this.dueEndTime = null;
+      return;
+    }
+
+    this.isAllDay = false;
+    if (newStartTime == null && newEndTime == null) {
+      this.startTime = null;
+      this.dueEndTime = null;
+      return;
+    }
+
+    if (newStartTime == null) {
+      throw new DomainValidationException("O horário de término exige um horário de início.");
+    }
+    if (newEndTime != null && !newEndTime.isAfter(newStartTime)) {
+      throw new DomainValidationException("O horário de término deve ser posterior ao horário de início.");
+    }
+
+    this.dueTime = null;
+    this.startTime = newStartTime;
+    this.dueEndTime = newEndTime;
+  }
+
+  /**
+   * Reidrata o horário de término vindo da persistência, descartando valores inconsistentes
+   * em vez de lançar exceção (dados legados).
+   */
+  public void restoreDueEndTime(LocalTime persistedDueEndTime) {
+    LocalTime effectiveStart = this.startTime != null ? this.startTime : this.dueTime;
+    this.dueEndTime = (persistedDueEndTime != null && effectiveStart != null
+        && persistedDueEndTime.isAfter(effectiveStart)) ? persistedDueEndTime : null;
+  }
+
+  /**
+   * Reidrata os campos de Evento (startTime, dueEndTime e isAllDay) vindos da persistência.
+   */
+  public void restoreEventSchedule(LocalTime persistedStartTime, LocalTime persistedEndTime, boolean persistedAllDay) {
+    if (this.dueDate == null) {
+      this.isAllDay = false;
+      this.startTime = null;
+      this.dueEndTime = null;
+      return;
+    }
+    if (persistedAllDay) {
+      this.isAllDay = true;
+      this.dueTime = null;
+      this.startTime = null;
+      this.dueEndTime = null;
+      return;
+    }
+    this.isAllDay = false;
+    if (persistedStartTime != null) {
+      this.dueTime = null;
+      this.startTime = persistedStartTime;
+      this.dueEndTime = (persistedEndTime != null && persistedEndTime.isAfter(persistedStartTime))
+          ? persistedEndTime
+          : null;
+    } else {
+      restoreDueEndTime(persistedEndTime);
+    }
+  }
+
   // Apenas Getters (Sem Setters!)
   public Optional<LocalTime> getDueTime() {
     return Optional.ofNullable(dueTime);
+  }
+
+  public Optional<LocalTime> getStartTime() {
+    return Optional.ofNullable(startTime);
+  }
+
+  public Optional<LocalTime> getDueEndTime() {
+    return Optional.ofNullable(dueEndTime);
+  }
+
+  public boolean isAllDay() {
+    return isAllDay;
   }
 
   public TodoReminderType getReminderType() {

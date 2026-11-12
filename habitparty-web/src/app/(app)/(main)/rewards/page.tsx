@@ -4,7 +4,6 @@ import { PageWrapper } from "@/components/layout/PageWrapper";
 import { RewardsContainer } from "@/components/reward/RewardsContainer";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getRewardsData } from "@/services/rewardService";
-import { getCompactMode } from "@/utils/cookies";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("rewards.metadata");
@@ -15,16 +14,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RewardsPage() {
-  const isCompact = await getCompactMode();
   const { rewards: initialRewards } = await getRewardsData();
 
   return (
     <ScopedIntlProvider scope="rewards">
-      <PageWrapper isCompact={isCompact}>
-        <RewardsContainer
-          isCompact={isCompact}
-          initialRewards={initialRewards}
-        />
+      <PageWrapper>
+        <RewardsContainer initialRewards={initialRewards} />
       </PageWrapper>
     </ScopedIntlProvider>
   );

@@ -9,7 +9,6 @@ import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getHistoryData } from "@/services/historyService";
 import type { HistoryPeriodFilter } from "@/types/history";
 import { summarizeHistoryPage } from "@/utils";
-import { getCompactMode } from "@/utils/cookies";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("history.metadata");
@@ -29,7 +28,6 @@ interface HistoryPageProps {
 }
 
 export default async function HistoryPage({ searchParams }: HistoryPageProps) {
-  const isCompact = await getCompactMode();
   const tPage = await getTranslations("history.page");
   const resolvedParams = await searchParams;
 
@@ -71,22 +69,21 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
 
   return (
     <ScopedIntlProvider scope="history">
-      <PageWrapper isCompact={isCompact}>
+      <PageWrapper>
         <div className="flex flex-col gap-6 w-full max-w-6xl mx-auto pb-16">
           {/* Welcome Card com estatísticas pré-calculadas no servidor */}
-          <HistoryWelcomeCard summary={summary} isCompact={isCompact} />
+          <HistoryWelcomeCard summary={summary} />
 
           {/* Barra de Filtros e Busca conectada à URL */}
           <HistoryFilters
             currentTab={currentTab}
             currentPeriod={currentPeriod}
             currentSearch={currentSearch}
-            isCompact={isCompact}
           />
 
           {/* Tabela de Transações Agrupada por Dia e Paginação RSC via Link */}
           <div className="flex flex-col gap-4">
-            <HistoryTable transactions={transactions} isCompact={isCompact} />
+            <HistoryTable transactions={transactions} selectable />
 
             <Pagination
               currentPage={currentPageNumber}
@@ -94,7 +91,6 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
               totalItems={totalElements}
               itemsPerPage={pageData.size || 8}
               itemLabel={tPage("paginationItemLabel")}
-              isCompact={isCompact}
               buildHref={buildPaginationHref}
             />
           </div>

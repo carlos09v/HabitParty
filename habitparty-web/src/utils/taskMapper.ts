@@ -101,6 +101,9 @@ export function mapTaskResponseToTask(
         : 0,
     dueDate: taskDto.dueDate,
     dueTime: taskDto.dueTime ? taskDto.dueTime.slice(0, 5) : undefined,
+    startTime: taskDto.startTime ? taskDto.startTime.slice(0, 5) : undefined,
+    dueEndTime: taskDto.dueEndTime ? taskDto.dueEndTime.slice(0, 5) : undefined,
+    isAllDay: Boolean(taskDto.isAllDay),
     habitType: taskDto.habitType,
     resetCounter: taskDto.resetCounter,
     importanceType: taskDto.importanceType,
@@ -115,6 +118,8 @@ export function mapTaskResponseToTask(
     emailReminderSent: taskDto.emailReminderSent,
     isHardcoreModeEnabled: taskDto.isHardcoreModeEnabled,
     isPenaltyApplied: taskDto.isPenaltyApplied,
+    totalFocusMinutes: taskDto.totalFocusMinutes ?? 0,
+    focusCyclesCount: taskDto.focusCyclesCount ?? 0,
     columnId: columnId,
     order: taskDto.orderIndex || 0,
     checklist: taskDto.checklist || [],
@@ -154,14 +159,33 @@ export function buildUpdateTaskPayload(
 
   const priority = (merged.priority as TaskPriorityOption) || "NONE";
   const difficulty = normalizeTaskDifficulty(merged.difficulty);
+  const isTodo = !isHabit && !isDaily;
+  const resolvedIsAllDay = isTodo && Boolean(merged.isAllDay);
+  const resolvedStartTime =
+    isTodo && !resolvedIsAllDay && merged.startTime
+      ? merged.startTime.slice(0, 5)
+      : undefined;
+  const rawDueEndTime =
+    isTodo && !resolvedIsAllDay && merged.dueEndTime
+      ? merged.dueEndTime.slice(0, 5)
+      : undefined;
   const resolvedDueTime =
-    !isHabit && !isDaily && merged.dueTime
+    isTodo && !resolvedIsAllDay && !resolvedStartTime && merged.dueTime
       ? merged.dueTime.slice(0, 5)
       : undefined;
-  const resolvedDueDate =
-    !isHabit && !isDaily
-      ? merged.dueDate || (resolvedDueTime ? getTodayDateString() : undefined)
+  const effectiveStartForEnd = resolvedStartTime || resolvedDueTime;
+  const resolvedDueEndTime =
+    effectiveStartForEnd &&
+    rawDueEndTime &&
+    rawDueEndTime > effectiveStartForEnd
+      ? rawDueEndTime
       : undefined;
+  const hasAnyTimeOrEvent = Boolean(
+    resolvedDueTime || resolvedStartTime || resolvedIsAllDay,
+  );
+  const resolvedDueDate = isTodo
+    ? merged.dueDate || (hasAnyTimeOrEvent ? getTodayDateString() : undefined)
+    : undefined;
 
   const payload: UpdateTaskDTO = {
     name: merged.title,
@@ -172,6 +196,9 @@ export function buildUpdateTaskPayload(
     tags: merged.tags && merged.tags.length > 0 ? merged.tags : undefined,
     dueDate: resolvedDueDate,
     dueTime: resolvedDueDate ? resolvedDueTime : undefined,
+    startTime: resolvedDueDate ? resolvedStartTime : undefined,
+    dueEndTime: resolvedDueDate ? resolvedDueEndTime : undefined,
+    isAllDay: resolvedDueDate ? resolvedIsAllDay : false,
     ...(isHabit && {
       habitType: merged.habitType || "POSITIVE",
       resetCounter: merged.resetCounter || "DAILY",
@@ -242,8 +269,27 @@ export function buildCreateTaskPayloadFromTask(task: Task): CreateTaskDTO {
     ...(isTodo && {
       priority: (task.priority as TaskPriorityOption) || "NONE",
       dueDate:
-        task.dueDate || (task.dueTime ? getTodayDateString() : undefined),
-      dueTime: task.dueTime ? task.dueTime.slice(0, 5) : undefined,
+        task.dueDate ||
+        (task.dueTime || task.startTime || task.isAllDay
+          ? getTodayDateString()
+          : undefined),
+      dueTime:
+        !task.isAllDay && !task.startTime && task.dueTime
+          ? task.dueTime.slice(0, 5)
+          : undefined,
+      startTime:
+        !task.isAllDay && task.startTime
+          ? task.startTime.slice(0, 5)
+          : undefined,
+      dueEndTime:
+        !task.isAllDay &&
+        (task.startTime || task.dueTime) &&
+        task.dueEndTime &&
+        task.dueEndTime.slice(0, 5) >
+          (task.startTime || task.dueTime || "").slice(0, 5)
+          ? task.dueEndTime.slice(0, 5)
+          : undefined,
+      isAllDay: Boolean(task.isAllDay),
       reminderType: task.reminderType || "NONE",
       sendEmailReminder: Boolean(task.sendEmailReminder),
     }),

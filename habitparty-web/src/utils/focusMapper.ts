@@ -50,6 +50,8 @@ export function mapFocusRecordDtoToRecord(
     activityName: activity?.name,
     activityIcon: activity?.icon,
     inventoryItemId: dto.inventoryItemId,
+    taskId: dto.taskId,
+    taskNameSnapshot: dto.taskNameSnapshot,
     notes: dto.notes,
     startTime: dto.startTime || toLocalISOString(),
     endTime: dto.endTime || toLocalISOString(),

@@ -50,6 +50,7 @@ export function useMysteryBoxRoulette({
   const [wonResult, setWonResult] = useState<MysteryBoxOpenResult | null>(null);
   const [translateX, setTranslateX] = useState(0);
   const [trackItems, setTrackItems] = useState<RouletteItem[]>([]);
+  const [poolItems, setPoolItems] = useState<RouletteItem[]>([]);
   const [isOpeningServer, setIsOpeningServer] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -126,6 +127,7 @@ export function useMysteryBoxRoulette({
         id: `${randomItem.id}-${i}`,
       });
     }
+    setPoolItems(effectivePool);
     setTrackItems(generated);
   }, [isOpen, item, pool, tierConfig.id, tierConfig.dropRates, t]);
 
@@ -246,6 +248,7 @@ export function useMysteryBoxRoulette({
     isOpeningServer,
     containerRef,
     handleSpin,
+    poolItems,
     tierId: tierConfig.id,
     tierName: t(`tiers.${toPackageMessageKey(tierConfig.id)}`),
     tierConfig,

@@ -20,7 +20,7 @@ export function PageWrapper({
         "flex-1 min-w-0 h-full flex flex-col custom-scrollbar",
         noScroll ? "overflow-hidden" : "overflow-y-auto overflow-x-hidden",
         isCompact
-          ? "p-3.5 sm:p-4 md:p-5 gap-3.5 sm:gap-4 md:gap-5"
+          ? "p-3 sm:p-4 md:p-5 gap-3 sm:gap-4"
           : "p-3.5 sm:p-5 md:p-6 gap-4 sm:gap-6",
         className,
       )}

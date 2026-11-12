@@ -21,15 +21,26 @@ public interface FocusRecordRepository {
   // Busca o histórico de uso de um ÚNICO item do inventário
   List<FocusRecord> findAllByInventoryItemId(UUID inventoryItemId);
 
+  // Busca o histórico de foco vinculado a uma ÚNICA tarefa
+  List<FocusRecord> findAllByTaskId(UUID taskId);
+
   void deleteById(UUID id);
 
   // Cascade Delete
   void deleteAllByFocusActivityId(UUID focusActivityId);
 
-  // Preservar Histórico: Seta a FK para null se a Atividade for apagada
+  void deleteAllByTaskId(UUID taskId);
+
+  // Preservar Histórico: Seta a FK para null se a Atividade ou Tarefa for apagada
   void nullifyFocusActivityId(UUID focusActivityId);
 
+  void nullifyTaskId(UUID taskId);
+
   Page<FocusRecord> findAllByFocusActivityId(UUID focusActivityId, int page, int size);
+
+  Page<FocusRecord> findAllByTaskId(UUID taskId, int page, int size);
+
+  Page<FocusRecord> findAllByUserId(UUID userId, int page, int size);
 
   // Soma de minutos produtivos de foco no dia de hoje (excluindo itens de inventário)
   int sumFocusMinutesToday(UUID userId);

@@ -47,7 +47,26 @@
       "selectMonth": "Select month",
       "selectYear": "Select year",
       "clickToChangeDate": "Click to change date",
-      "clearDate": "Clear date"
+      "clearDate": "Clear date",
+      "addTime": "Set time",
+      "removeTime": "Remove",
+      "timeLabel": "Time",
+      "eventLabel": "Event",
+      "startTimeLabel": "Start time",
+      "endTimeLabel": "End time",
+      "allDayLabel": "All day",
+      "allDayBadge": "All day",
+      "allDayInfo": "The event will last all day on the selected date.",
+      "timePlaceholder": "00:00",
+      "endTimeRequiresStart": "Set start time first",
+      "done": "Done",
+      "confirm": "Confirm",
+      "addTimePlaceholder": "Set time",
+      "addEventPlaceholder": "Configure event",
+      "durationLabel": "Quick duration",
+      "setTimeTitle": "Set Time",
+      "setEventTitle": "Configure Event",
+      "eventPremiumToast": "Scheduling To-Dos as Events (with start/end times or all-day) is exclusive to Premium members! Upgrade to unlock."
     },
     "loading": {
       "defaultLabel": "Loading..."
@@ -72,10 +91,6 @@
       "hideCardTitle": "Hide card",
       "hideCardAria": "Hide card",
       "hideLabel": "Hide",
-      "compactModeTitle": "Compact Mode",
-      "compactModeAria": "Compact Mode",
-      "normalModeTitle": "Normal Mode",
-      "normalModeAria": "Normal Mode",
       "toastHidden": "Card hidden!",
       "toastHiddenDesc": "You can re-enable it anytime in Settings > Preferences.",
       "sectionAria": "Welcome: {title}",
@@ -274,6 +289,8 @@
     },
     "itemCatalog": {
       "inFocus": "In Focus",
+      "doubleClickEditHint": "Double-click the card to edit",
+      "quickEditButtonTitle": "Edit (or double-click card)",
       "types": {
         "SingleUse": "Single-Use",
         "TimeBased": "Voucher",

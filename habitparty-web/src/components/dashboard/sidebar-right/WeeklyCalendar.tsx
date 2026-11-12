@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
-import { useCompactMode } from "@/hooks/useCompactMode";
 import {
   syncDashboardFilterUrl,
   useDashboardFilterStore,
@@ -30,15 +29,13 @@ import {
  * - Indicador de prazos reais (To-Dos com dueDate) sem poluir todos os dias com Diárias repetitivas
  */
 export function WeeklyCalendar({
-  isCompact: propIsCompact,
+  isCompact = false,
   transactions = [],
   tasks = [],
   onSelectDay,
 }: WeeklyCalendarProps) {
   const t = useTranslations("dashboard.sidebarRight.weeklyCalendar");
   const locale = useLocale() as AppLocale;
-  const { isCompact: hookIsCompact } = useCompactMode();
-  const isCompact = propIsCompact ?? hookIsCompact;
 
   const activeFilter = useDashboardFilterStore((s) => s.activeFilter);
   const urlDate = useDashboardFilterStore((s) => s.selectedDate);

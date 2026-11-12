@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,9 +15,11 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionOperations;
 
+import com.habitparty.application.ports.BoardColumnRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
@@ -41,14 +44,22 @@ public class DailyResetUseCase {
   private final TransactionHistoryRepository transactionPort;
   private final Clock clock;
   private final TransactionOperations transactionOperations;
+  private final BoardColumnRepository boardColumnPort;
 
+  @Autowired
   public DailyResetUseCase(TaskRepository port, TransactionHistoryRepository transactionPort, UserRepository userPort,
-      Clock clock, TransactionOperations transactionOperations) {
+      Clock clock, TransactionOperations transactionOperations, BoardColumnRepository boardColumnPort) {
     this.port = port;
     this.transactionPort = transactionPort;
     this.userPort = userPort;
     this.clock = clock;
     this.transactionOperations = transactionOperations;
+    this.boardColumnPort = boardColumnPort;
+  }
+
+  public DailyResetUseCase(TaskRepository port, TransactionHistoryRepository transactionPort, UserRepository userPort,
+      Clock clock, TransactionOperations transactionOperations) {
+    this(port, transactionPort, userPort, clock, transactionOperations, null);
   }
 
   public void executeDailyRollover() {
@@ -193,6 +204,8 @@ public class DailyResetUseCase {
         .collect(Collectors.toMap(User::getId, Function.identity()));
 
     Map<UUID, User> penalizedUsers = new LinkedHashMap<>();
+    // Cache local para não consultar a mesma lista várias vezes no lote
+    Map<UUID, String> columnNamesById = new HashMap<>();
     for (Task task : failedTasks) {
       User user = usersById.get(task.getUserId());
       if (user == null) {
@@ -204,8 +217,11 @@ public class DailyResetUseCase {
       user.applyPenalty(penalty.coins(), penalty.xp());
       penalizedUsers.put(user.getId(), user);
 
+      String columnName = task.getBoardColumnId() == null ? null
+          : columnNamesById.computeIfAbsent(task.getBoardColumnId(),
+              id -> TaskGamificationHelper.resolveColumnName(boardColumnPort, task));
       transactionPort.save(TaskGamificationHelper.buildPenaltyTransaction(
-          task.getUserId(), task, penalty, TransactionType.TASK_FAILED, namePrefix));
+          task.getUserId(), task, penalty, TransactionType.TASK_FAILED, namePrefix, columnName));
     }
 
     penalizedUsers.values().forEach(userPort::save);

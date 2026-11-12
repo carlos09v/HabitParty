@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.habitparty.application.ports.BoardColumnRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
@@ -24,18 +25,26 @@ public class ChangeTaskStatusUseCase {
   private final TaskRepository taskPort;
   private final TransactionHistoryRepository transactionPort;
   private final UserRepository userPort;
-  private EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
+  private final EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
+  private final BoardColumnRepository boardColumnPort;
 
-  public ChangeTaskStatusUseCase(TaskRepository taskPort, TransactionHistoryRepository transactionPort,
-      UserRepository userPort) {
+  @Autowired
+  public ChangeTaskStatusUseCase(
+      TaskRepository taskPort,
+      TransactionHistoryRepository transactionPort,
+      UserRepository userPort,
+      EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase,
+      BoardColumnRepository boardColumnPort) {
     this.taskPort = taskPort;
     this.transactionPort = transactionPort;
     this.userPort = userPort;
+    this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
+    this.boardColumnPort = boardColumnPort;
   }
 
-  @Autowired(required = false)
-  public void setEvaluateUserAchievementsUseCase(EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
-    this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
+  public ChangeTaskStatusUseCase(TaskRepository taskPort, TransactionHistoryRepository transactionPort,
+      UserRepository userPort) {
+    this(taskPort, transactionPort, userPort, null, null);
   }
 
   @Transactional
@@ -50,6 +59,7 @@ public class ChangeTaskStatusUseCase {
         && !task.isRewardAlreadyClaimed()) {
       User user = userPort.findById(userIdLogado)
           .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+      String columnName = TaskGamificationHelper.resolveColumnName(boardColumnPort, task);
 
       // Se for um Todo Hardcore atrasado e a penalidade ainda não foi aplicada (ex: cron da meia-noite não rodou),
       // aplica a dedução do atraso e registra no histórico antes de creditar a recompensa tardia
@@ -60,7 +70,7 @@ public class ChangeTaskStatusUseCase {
           user.applyPenalty(penalty.coins(), penalty.xp());
 
           TransactionHistory negativeTransaction = TaskGamificationHelper.buildPenaltyTransaction(
-              userIdLogado, todo, penalty, TransactionType.TASK_FAILED, "Falhou no prazo: ");
+              userIdLogado, todo, penalty, TransactionType.TASK_FAILED, "Falhou no prazo: ", columnName);
           transactionPort.save(negativeTransaction);
         }
       }
@@ -71,7 +81,7 @@ public class ChangeTaskStatusUseCase {
         case TODO -> TransactionType.TODO_COMPLETED;
       };
 
-      TaskGamificationHelper.awardTaskCompletion(user, task, txType, userPort, transactionPort);
+      TaskGamificationHelper.awardTaskCompletion(user, task, txType, userPort, transactionPort, columnName);
       if (evaluateUserAchievementsUseCase != null) {
         evaluateUserAchievementsUseCase.execute(user);
       }

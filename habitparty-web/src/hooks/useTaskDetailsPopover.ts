@@ -35,6 +35,7 @@ export function useTaskDetailsPopover({
   onHabitChange,
   onEdit,
   onDuplicate,
+  onOpenFocusHistory,
 }: Omit<TaskDetailsPopoverProps, "columnTitle">) {
   const t = useTranslations("tasks.hooks");
   const [, startTransition] = useTransition();
@@ -57,6 +58,13 @@ export function useTaskDetailsPopover({
   const [dueTime, setDueTime] = useState(
     task?.dueTime ? task.dueTime.slice(0, 5) : "",
   );
+  const [startTime, setStartTime] = useState(
+    task?.startTime ? task.startTime.slice(0, 5) : "",
+  );
+  const [dueEndTime, setDueEndTime] = useState(
+    task?.dueEndTime ? task.dueEndTime.slice(0, 5) : "",
+  );
+  const [isAllDay, setIsAllDay] = useState(Boolean(task?.isAllDay));
   const [priority, setPriority] = useState<string>(task?.priority || "NONE");
   const [tags, setTags] = useState<string[]>(task?.tags || []);
 
@@ -126,6 +134,9 @@ export function useTaskDetailsPopover({
     descRef.current = task.description || "";
     setDueDate(task.dueDate || "");
     setDueTime(task.dueTime ? task.dueTime.slice(0, 5) : "");
+    setStartTime(task.startTime ? task.startTime.slice(0, 5) : "");
+    setDueEndTime(task.dueEndTime ? task.dueEndTime.slice(0, 5) : "");
+    setIsAllDay(Boolean(task.isAllDay));
     setPriority(task.priority || "NONE");
     setTags(task.tags || []);
     const initialChecklist = task.checklist || [];
@@ -173,10 +184,46 @@ export function useTaskDetailsPopover({
       onTaskUpdate?.(updated);
 
       const payload = buildUpdateTaskPayload(updated);
+      const previousTask = task;
       startTransition(async () => {
         const res = await updateTask(task.id, payload);
         if (!res.success) {
           toast.error(res.error || t("saveChangesError"));
+          // Rollback da atualização otimista: evita exibir dados que não foram persistidos
+          onTaskUpdate?.(previousTask);
+          if ("description" in fields) {
+            setDescription(previousTask.description || "");
+            descRef.current = previousTask.description || "";
+          }
+          if ("title" in fields) {
+            setTitle(previousTask.title || "");
+            titleRef.current = previousTask.title || "";
+          }
+          if ("dueDate" in fields) setDueDate(previousTask.dueDate || "");
+          if ("dueTime" in fields) {
+            setDueTime(
+              previousTask.dueTime ? previousTask.dueTime.slice(0, 5) : "",
+            );
+          }
+          if ("startTime" in fields) {
+            setStartTime(
+              previousTask.startTime ? previousTask.startTime.slice(0, 5) : "",
+            );
+          }
+          if ("dueEndTime" in fields) {
+            setDueEndTime(
+              previousTask.dueEndTime
+                ? previousTask.dueEndTime.slice(0, 5)
+                : "",
+            );
+          }
+          if ("isAllDay" in fields) {
+            setIsAllDay(Boolean(previousTask.isAllDay));
+          }
+          if ("priority" in fields) {
+            setPriority(previousTask.priority || "NONE");
+          }
+          if ("tags" in fields) setTags(previousTask.tags || []);
         } else if (res.data) {
           const finalChecklist =
             res.data.checklist && res.data.checklist.length > 0
@@ -307,7 +354,16 @@ export function useTaskDetailsPopover({
     setDueDate(newDate);
     if (!newDate) {
       setDueTime("");
-      saveTaskField({ dueDate: undefined, dueTime: undefined });
+      setStartTime("");
+      setDueEndTime("");
+      setIsAllDay(false);
+      saveTaskField({
+        dueDate: undefined,
+        dueTime: undefined,
+        startTime: undefined,
+        dueEndTime: undefined,
+        isAllDay: false,
+      });
     } else {
       saveTaskField({ dueDate: newDate });
     }
@@ -319,12 +375,108 @@ export function useTaskDetailsPopover({
     }
     const cleanTime = newTime ? newTime.slice(0, 5) : "";
     setDueTime(cleanTime);
+    setStartTime("");
+    setDueEndTime("");
+    setIsAllDay(false);
     if (cleanTime && !dueDate) {
       const todayIso = getTodayDateString();
       setDueDate(todayIso);
-      saveTaskField({ dueDate: todayIso, dueTime: cleanTime });
+      saveTaskField({
+        dueDate: todayIso,
+        dueTime: cleanTime,
+        startTime: undefined,
+        dueEndTime: undefined,
+        isAllDay: false,
+      });
     } else {
-      saveTaskField({ dueTime: cleanTime || undefined });
+      saveTaskField({
+        dueTime: cleanTime || undefined,
+        startTime: undefined,
+        dueEndTime: undefined,
+        isAllDay: false,
+      });
+    }
+  };
+
+  const handleStartTimeChange = (newStartTime: string) => {
+    if (!task || isTaskHardcoreLocked(task)) {
+      return;
+    }
+    const cleanStart = newStartTime ? newStartTime.slice(0, 5) : "";
+    setStartTime(cleanStart);
+    setDueTime("");
+    setIsAllDay(false);
+    const currentEnd = dueEndTime || task.dueEndTime?.slice(0, 5);
+    const shouldClearEnd =
+      Boolean(currentEnd) && (!cleanStart || (currentEnd ?? "") <= cleanStart);
+    if (shouldClearEnd) {
+      setDueEndTime("");
+    }
+    const endPatch = shouldClearEnd ? { dueEndTime: undefined } : {};
+    if (cleanStart && !dueDate) {
+      const todayIso = getTodayDateString();
+      setDueDate(todayIso);
+      saveTaskField({
+        dueDate: todayIso,
+        startTime: cleanStart,
+        dueTime: undefined,
+        isAllDay: false,
+        ...endPatch,
+      });
+    } else {
+      saveTaskField({
+        startTime: cleanStart || undefined,
+        dueTime: undefined,
+        isAllDay: false,
+        ...endPatch,
+      });
+    }
+  };
+
+  const handleEndTimeChange = (newEndTime: string) => {
+    if (!task || isTaskHardcoreLocked(task)) {
+      return;
+    }
+    const cleanEnd = newEndTime ? newEndTime.slice(0, 5) : "";
+    setDueEndTime(cleanEnd);
+    setDueTime("");
+    setIsAllDay(false);
+    saveTaskField({
+      dueEndTime: cleanEnd || undefined,
+      dueTime: undefined,
+      isAllDay: false,
+    });
+  };
+
+  const handleAllDayChange = (newAllDay: boolean) => {
+    if (!task || isTaskHardcoreLocked(task)) {
+      return;
+    }
+    setIsAllDay(newAllDay);
+    if (newAllDay) {
+      setDueTime("");
+      setStartTime("");
+      setDueEndTime("");
+      if (!dueDate) {
+        const todayIso = getTodayDateString();
+        setDueDate(todayIso);
+        saveTaskField({
+          dueDate: todayIso,
+          isAllDay: true,
+          dueTime: undefined,
+          startTime: undefined,
+          dueEndTime: undefined,
+        });
+      } else {
+        saveTaskField({
+          isAllDay: true,
+          dueTime: undefined,
+          startTime: undefined,
+          dueEndTime: undefined,
+        });
+      }
+    } else {
+      saveTaskField({ isAllDay: false });
     }
   };
 
@@ -431,6 +583,14 @@ export function useTaskDetailsPopover({
     }
   };
 
+  const handleOpenFocusHistory = () => {
+    if (task) {
+      flushPendingChanges();
+      onOpenFocusHistory?.(task);
+      onClose();
+    }
+  };
+
   return {
     mounted,
     popoverRef,
@@ -451,6 +611,9 @@ export function useTaskDetailsPopover({
     },
     dueDate,
     dueTime,
+    startTime,
+    dueEndTime,
+    isAllDay,
     priority,
     tags,
     isAddingTag,
@@ -487,6 +650,9 @@ export function useTaskDetailsPopover({
     handleDescriptionBlur,
     handleDateChange,
     handleTimeChange,
+    handleStartTimeChange,
+    handleEndTimeChange,
+    handleAllDayChange,
     handlePrioritySelect,
     handleAddTag,
     handleRemoveTag,
@@ -498,5 +664,6 @@ export function useTaskDetailsPopover({
     handleDeleteTask,
     handleDuplicateTask,
     handleOpenFullModal,
+    handleOpenFocusHistory,
   };
 }

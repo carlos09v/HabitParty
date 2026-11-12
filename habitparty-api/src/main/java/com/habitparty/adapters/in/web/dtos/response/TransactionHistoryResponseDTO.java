@@ -26,6 +26,7 @@ public record TransactionHistoryResponseDTO(
     TaskDifficulty difficulty, // Usando String ou o seu Enum de Dificuldade
     RewardPackageLevel packageLevel,
     List<String> tags,
+    String columnName,
     LocalDateTime createdAt
 ) {
 
@@ -42,6 +43,7 @@ public record TransactionHistoryResponseDTO(
         tx.getDifficultySnapshot().orElse(null),
         tx.getPackageLevelSnapshot().orElse(null),
         tx.getTagsSnapshot().orElse(null),
+        tx.getColumnNameSnapshot().orElse(null),
         tx.getCreatedAt()
     );
   }

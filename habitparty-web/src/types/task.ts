@@ -36,6 +36,12 @@ export interface Task extends Omit<TaskResponseDTO, "id" | "difficulty"> {
   category?: string;
   dueDate?: string;
   dueTime?: string;
+  /** Horário opcional de início (HH:mm) para To-dos configurados como Evento. */
+  startTime?: string;
+  /** Horário opcional de término (HH:mm) para To-dos configurados como Evento. */
+  dueEndTime?: string;
+  /** Quando true, marca o Evento como "Dia inteiro" (em andamento durante todo o dia de vencimento). */
+  isAllDay?: boolean;
   completed?: boolean;
   rewardXp?: number;
   rewardGold?: number;
@@ -52,6 +58,10 @@ export interface Task extends Omit<TaskResponseDTO, "id" | "difficulty"> {
   emailReminderSent?: boolean;
   /** Indica se a recompensa de conclusão (XP/Ouro) já foi resgatada no ciclo/tarefa atual. */
   hasClaimedReward?: boolean;
+  /** Total acumulado de minutos dedicados em sessões de foco vinculadas a esta tarefa. */
+  totalFocusMinutes?: number;
+  /** Total de ciclos de Pomodoro concluídos vinculados a esta tarefa. */
+  focusCyclesCount?: number;
 }
 
 export type HabitImportance = "low" | "normal" | "high";

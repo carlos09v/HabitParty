@@ -26,6 +26,8 @@
     "streakStartTitle": "Complete uma tarefa hoje para iniciar!",
     "streakActiveBadge": "Ritmo mantido 🔥",
     "streakStartBadge": "Inicie sua sequência 🔥",
+    "streakRemainingHours": "⏳ Restam {hours}h para o dia acabar",
+    "streakSecuredBadge": "Ofensiva garantida hoje! 🔥",
     "dailyTasksLabel": "Tarefas do Dia",
     "completedCount": "{completed}/{total} Concluídas",
     "noTasksTodayBadge": "Sem metas hoje",
@@ -87,7 +89,9 @@
     "deleteModalDescPrefix": "Tem certeza de que deseja excluir a tarefa",
     "deleteModalDescSuffix": "? Esta tarefa possui subtarefas, Modo Hardcore ou histórico de ofensiva ativo, e a exclusão não pode ser desfeita.",
     "deleteModalConfirm": "Excluir Tarefa",
-    "deleteModalCancel": "Cancelar"
+    "deleteModalCancel": "Cancelar",
+    "deleteHistoryLabel": "Excluir também os registros desta tarefa no Histórico",
+    "deleteHistoryHint": "Remove as transações de conclusão, falha e penalidade desta tarefa do extrato. Moedas e XP já recebidos não são alterados."
   },
   "taskFilters": {
     "ariaLabel": "Filtros de Data das Tarefas",
@@ -233,6 +237,22 @@
     },
     "badges": {
       "checklistTitle": "Subtarefas: {completed} de {total} concluídas",
+      "cardDoubleClickHint": "Clique: detalhes • Duplo clique: editar",
+      "quickEditButtonTitle": "Editar tarefa (ou dê duplo clique no card)",
+      "doubleClickEditOneTimeTip": "Dica: dê duplo clique em qualquer card para abrir direto a edição completa!",
+      "eventBadgeLabel": "Evento",
+      "eventBadgeTitle": "Compromisso com data e horário definidos",
+      "eventInProgressTitle": "Em andamento • até {end}",
+      "reminderScheduledTitle": "Lembrete agendado ({when})",
+      "reminderWithEmailTitle": "Lembrete agendado ({when}) • E-mail ativado",
+      "reminderEmailSentTitle": "Lembrete por e-mail enviado ({when})",
+      "reminderTypes": {
+        "ONE_DAY_EARLY": "1 dia antes",
+        "TWO_DAYS_EARLY": "2 dias antes",
+        "THREE_DAYS_EARLY": "3 dias antes",
+        "ONE_WEEK_EARLY": "1 semana antes",
+        "CUSTOM": "Personalizado"
+      },
       "hardcoreOverdueTitle": "Modo Hardcore: Prazo fatal expirado! Penalidade de 50% ativa!",
       "hardcoreOverdueTitleProductivity": "Prazo Rígido: Prazo expirado! Penalidade de 50% ativa!",
       "hardcoreActiveTitle": "Modo Hardcore Ativo",
@@ -248,7 +268,10 @@
       "streakTitle": "Ofensiva de {count} {count, plural, one {dia} other {dias}}",
       "rewardXpTitle": "Recompensa: +{xp} XP",
       "rewardGoldTitle": "Recompensa: +{gold} Ouro",
-      "defaultCategory": "Geral"
+      "defaultCategory": "Geral",
+      "focusRunningTitle": "Foco em andamento nesta tarefa",
+      "focusTimeTitle": "Tempo focado: {time} ({cycles, plural, one {# ciclo} other {# ciclos}})",
+      "focusActiveShort": "Foco"
     },
     "actions": {
       "positiveHabitTitle": "Registrar hábito positivo (+)",
@@ -261,6 +284,7 @@
       "taskOptionsTitle": "Opções da tarefa (Editar, Duplicar, Excluir)"
     },
     "contextMenu": {
+      "startFocus": "Focar nesta tarefa",
       "edit": "Editar",
       "duplicate": "Duplicar",
       "delete": "Excluir",

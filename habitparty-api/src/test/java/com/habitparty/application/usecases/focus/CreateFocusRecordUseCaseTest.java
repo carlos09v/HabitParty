@@ -29,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.habitparty.application.ports.FocusActivityRepository;
 import com.habitparty.application.ports.FocusRecordRepository;
 import com.habitparty.application.ports.InventoryItemRepository;
+import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.InventoryItem;
@@ -36,12 +37,23 @@ import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.focus.FocusActivity;
 import com.habitparty.core.domain.entities.focus.FocusRecord;
+import com.habitparty.core.domain.entities.task.Habit;
+import com.habitparty.core.domain.entities.task.Todo;
 import com.habitparty.core.domain.enums.FocusRecordType;
 import com.habitparty.core.domain.enums.InventoryItemStatus;
 import com.habitparty.core.domain.enums.RewardType;
 import com.habitparty.core.domain.enums.TransactionType;
 import com.habitparty.core.domain.enums.UserGender;
 import com.habitparty.core.domain.enums.UserRole;
+import com.habitparty.core.domain.enums.task.HabitImportanceType;
+import com.habitparty.core.domain.enums.task.HabitResetCounter;
+import com.habitparty.core.domain.enums.task.HabitType;
+import com.habitparty.core.domain.enums.task.TaskDifficulty;
+import com.habitparty.core.domain.enums.task.TaskPriority;
+import com.habitparty.core.domain.enums.task.TaskStatus;
+import com.habitparty.core.domain.enums.task.TaskType;
+import com.habitparty.core.domain.enums.task.TodoReminderType;
+import com.habitparty.core.exceptions.DomainValidationException;
 
 @ExtendWith(MockitoExtension.class)
 class CreateFocusRecordUseCaseTest {
@@ -61,6 +73,9 @@ class CreateFocusRecordUseCaseTest {
   @Mock
   private UserRepository userPort;
 
+  @Mock
+  private TaskRepository taskPort;
+
   @InjectMocks
   private CreateFocusRecordUseCase useCase;
 
@@ -71,6 +86,7 @@ class CreateFocusRecordUseCaseTest {
 
   @BeforeEach
   void setUp() {
+    useCase.setTaskPort(taskPort);
     userId = UUID.randomUUID();
     activityId = UUID.randomUUID();
     inventoryItemId = UUID.randomUUID();
@@ -232,5 +248,98 @@ class CreateFocusRecordUseCaseTest {
     verify(userPort, never()).save(any());
     // Transação FOCUS_COMPLETED não é gerada para itens de inventário
     verify(transactionHistoryPort, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("Sessão vinculada a uma Tarefa (Todo) deve acumular minutos e ciclos na Task e salvar snapshot")
+  void shouldAccumulateFocusMetricsOnLinkedTodoTask() {
+    UUID taskId = UUID.randomUUID();
+    LocalDateTime start = LocalDateTime.of(2026, 10, 16, 14, 0);
+    LocalDateTime end = LocalDateTime.of(2026, 10, 16, 14, 25); // 25 min, 1 pomo
+
+    Todo todo = new Todo(
+        taskId,
+        UUID.randomUUID(),
+        userId,
+        "Aprender dedilhado da música X",
+        null,
+        0,
+        TaskPriority.MEDIUM,
+        List.of(),
+        TaskDifficulty.MEDIUM,
+        TaskStatus.PENDING,
+        TaskType.TODO,
+        false,
+        LocalDate.of(2026, 10, 20),
+        LocalDateTime.now(),
+        List.of(),
+        TodoReminderType.NONE,
+        null,
+        null);
+
+    CreateFocusRecordCommand command = new CreateFocusRecordCommand(
+        null,
+        null,
+        taskId,
+        "Treino de violão",
+        start,
+        end,
+        FocusRecordType.POMO,
+        1);
+
+    when(taskPort.findById(taskId)).thenReturn(Optional.of(todo));
+    when(port.sumFocusMinutesToday(userId)).thenReturn(0);
+    when(port.save(any(FocusRecord.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(userPort.findById(userId)).thenReturn(Optional.of(user));
+
+    FocusRecord result = useCase.execute(userId, command);
+
+    assertNotNull(result);
+    assertEquals(Optional.of(taskId), result.getTaskId());
+    assertEquals(Optional.of("Aprender dedilhado da música X"), result.getTaskNameSnapshot());
+    assertEquals(25, todo.getTotalFocusMinutes());
+    assertEquals(1, todo.getFocusCyclesCount());
+    verify(taskPort).save(todo);
+  }
+
+  @Test
+  @DisplayName("Deve rejeitar vínculo de foco com tarefa do tipo Hábito")
+  void shouldRejectHabitTaskInFocusRecord() {
+    UUID habitId = UUID.randomUUID();
+    Habit habit = new Habit(
+        habitId,
+        UUID.randomUUID(),
+        userId,
+        "Beber água",
+        null,
+        0,
+        TaskPriority.NONE,
+        List.of(),
+        TaskDifficulty.EASY,
+        TaskStatus.PENDING,
+        TaskType.HABIT,
+        false,
+        null,
+        LocalDateTime.now(),
+        List.of(),
+        0,
+        HabitType.POSITIVE,
+        HabitResetCounter.DAILY,
+        HabitImportanceType.NORMAL,
+        null);
+
+    CreateFocusRecordCommand command = new CreateFocusRecordCommand(
+        null,
+        null,
+        habitId,
+        null,
+        LocalDateTime.of(2026, 10, 16, 14, 0),
+        LocalDateTime.of(2026, 10, 16, 14, 25),
+        FocusRecordType.POMO,
+        1);
+
+    when(taskPort.findById(habitId)).thenReturn(Optional.of(habit));
+
+    assertThrows(DomainValidationException.class, () -> useCase.execute(userId, command));
   }
 }

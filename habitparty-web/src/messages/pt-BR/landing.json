@@ -110,7 +110,7 @@
       "step1": {
         "tag": "Rotina & Hábitos",
         "title": "Estruture sua Rotina",
-        "description": "Crie hábitos com gatilhos positivos e negativos (+/-), rotinas diárias com ofensivas de consistência e projetos organizados em quadros Kanban ágeis.",
+        "description": "Crie hábitos com gatilhos positivos e negativos (+/-), rotinas diárias com ofensivas de consistência e afazeres flexíveis ou agendados como eventos com horário de início e término.",
         "footer": "Kanban Ágil & Streaks Diários"
       },
       "step2": {
@@ -167,7 +167,7 @@
       "workspaces": {
         "badge": "Organização",
         "title": "Ambientes Independentes",
-        "description": "Isole Projetos de Trabalho, Estudos e Vida Pessoal com 1 clique, cada um com seus próprios quadros e métricas."
+        "description": "Isole Projetos de Trabalho, Estudos e Vida Pessoal com 1 clique, com busca inteligente entre ambientes para localizar qualquer tarefa instantaneamente."
       },
       "analytics": {
         "badge": "Métricas",
@@ -213,7 +213,7 @@
         "extras": [
           "Proteção Anti-Bot multicamada (Rate Limiting por IP, Honeypot invisível e bloqueio de e-mails temporários)",
           "Refatoração arquitetural do banco de dados e índices de alta performance",
-          "Controles de densidade de interface (Modo Compacto) e customização de layout"
+          "Personalização de formato global de horário (12h AM/PM ou 24h) e preferências de interface"
         ]
       },
       "r12": {
@@ -230,21 +230,29 @@
         ]
       },
       "r13": {
-        "statusLabel": "Próximo Marco",
-        "title": "Foco em Tarefas, Temas VIP & Amizades",
-        "tagline": "Associe o timer de foco a tarefas com métricas de esforço, personalize sua atmosfera visual VIP e conecte-se com amigos.",
+        "statusLabel": "Concluído",
+        "title": "Eventos no Kanban, Gestão em Lote & Foco em Tarefas",
+        "tagline": "Transforme afazeres em eventos com início e término, gerencie extratos em lote com snapshot de listas e associe o timer de foco a tarefas.",
         "features": [
           "Foco Vinculado a Tarefas & Métricas de Esforço: timer integrado em 1 clique, histórico de tempo por card e conclusão automática",
-          "Temas Exclusivos VIP (Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold)",
-          "Rede de Amizades com busca de jogadores por nome e código de amigo",
-          "Controles granulares de privacidade para estatísticas e rotinas"
+          "Afazeres como Eventos (VIP): agendamento com início e término ou dia inteiro, indicador pulsante 'Em andamento' no Kanban e novo DatePicker universal",
+          "Gestão em Lote e Snapshots de Listas no Histórico: seleção múltipla, exclusão em massa e retenção persistente da coluna de origem",
+          "Busca Global Entre Ambientes: banner inteligente que detecta tarefas em outros workspaces e permite alternar com 1 clique"
+        ],
+        "extras": [
+          "Formato de Horário Global (12h AM/PM vs 24h) sincronizado em relógios, cards, histórico e foco",
+          "Descrições expandidas para até 5.000 caracteres com contador dinâmico e alertas visuais",
+          "Notificador de quebra de ofensiva com alertas amigáveis de incentivo ao recomeço",
+          "Sincronização na exclusão de sessões de foco e tarefas com opção de limpar registros vinculados no Histórico"
         ]
       },
       "r14": {
-        "statusLabel": "Planejado",
-        "title": "Party & Cooperação em Tempo Real",
-        "tagline": "A união faz a força: pequenos grupos de foco mútuo, metas cooperativas e bate-papo integrado.",
+        "statusLabel": "Próximo Marco",
+        "title": "Party, Temas VIP, Amizades & Cooperação em Tempo Real",
+        "tagline": "A união faz a força: personalize sua atmosfera com Temas VIP, conecte-se com amigos e participe de grupos de foco mútuo.",
         "features": [
+          "Temas Exclusivos VIP (Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold)",
+          "Rede de Amizades com busca de jogadores por nome e código de amigo, além de controles granulares de privacidade",
           "Formação de Parties (grupos de foco) via código de convite rápido",
           "Missões Diárias Cooperativas com bônus coletivo de ouro se todos cumprirem",
           "Chat Integrado em Tempo Real com alertas de foco e celebrações mútuas",
@@ -323,6 +331,7 @@
           "👑 1 ano completo de Guardião Cósmico por R$ 59,90 (de R$ 99/ano)",
           "⭐ Reconhecimento perpétuo como pioneiro da história do HabitParty",
           "🚀 Acesso prioritário a todos os lançamentos do Roadmap (Temas, Vitrine, Party e Guildas)",
+          "Agendamento de Afazeres como Eventos (horário de início/término ou dia inteiro)",
           "Molduras animadas exclusivas para seu perfil e avatar",
           "Sons ambiente no Pomodoro (Chuva, Cafeteria, Fogueira, Lofi)",
           "Pacote exclusivo de ícones VIP para atividades, colunas e loja",
@@ -342,6 +351,7 @@
         "description": "Capacidade expandida para quem gerencia múltiplos projetos, estudos avançados e quer foco sem barreiras.",
         "ctaText": "Desbloquear Plano Mensal 👑",
         "features": [
+          "Agendamento de Afazeres como Eventos (horário de início/término ou dia inteiro)",
           "Lembretes por e-mail expandidos (até 30 ativos e 100 disparos/mês)",
           "Molduras animadas exclusivas para seu perfil e avatar",
           "Sons ambiente no Pomodoro (Chuva, Cafeteria, Fogueira, Lofi)",

@@ -95,21 +95,52 @@ export function useAnchoredPopoverPosition(
 
   useLayoutEffect(() => {
     if (!isOpen || !anchorRect || !mounted) return;
+    if (typeof window !== "undefined" && window.innerWidth < 640) return;
 
-    const actualHeight = popoverRef.current?.offsetHeight || popoverHeight;
-    const nextPos = calculateAnchoredPosition(anchorRect, actualHeight, {
-      preferredSide,
-      popoverWidth,
-      popoverHeight: actualHeight,
-      margin,
-    });
+    let rafId: number | null = null;
 
-    setPosition((prev) => {
-      if (prev.top === nextPos.top && prev.left === nextPos.left) {
-        return prev;
+    const recalculate = () => {
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        const actualHeight = popoverRef.current?.offsetHeight || popoverHeight;
+        const nextPos = calculateAnchoredPosition(anchorRect, actualHeight, {
+          preferredSide,
+          popoverWidth,
+          popoverHeight: actualHeight,
+          margin,
+        });
+
+        setPosition((prev) => {
+          if (prev.top === nextPos.top && prev.left === nextPos.left) {
+            return prev;
+          }
+          return nextPos;
+        });
+      });
+    };
+
+    recalculate();
+
+    // Recalcula quando o conteúdo do popover cresce/encolhe (ex: novas subtarefas)
+    // ou quando a janela é redimensionada, evitando que ele ultrapasse a borda inferior da tela.
+    const element = popoverRef.current;
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined" && element
+        ? new ResizeObserver(() => recalculate())
+        : null;
+    if (resizeObserver && element) {
+      resizeObserver.observe(element);
+    }
+    window.addEventListener("resize", recalculate);
+
+    return () => {
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
       }
-      return nextPos;
-    });
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", recalculate);
+    };
   }, [
     isOpen,
     anchorRect,

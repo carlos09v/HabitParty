@@ -175,9 +175,16 @@ export function SidebarFocusWidget() {
             <TargetIcon size={11} />
           </div>
 
-          <span className="text-label-g font-bold text-neutral-100 group-hover:text-primary dark:group-hover:text-gold transition-colors truncate">
-            {target?.name || t("defaultModeName")}
-          </span>
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="text-label-g font-bold text-neutral-100 group-hover:text-primary dark:group-hover:text-gold transition-colors truncate">
+              {target?.name || t("defaultModeName")}
+            </span>
+            {target?.type === "activity" && target.taskName && (
+              <span className="text-label-s text-neutral-400 truncate leading-tight">
+                {target.taskName}
+              </span>
+            )}
+          </div>
         </div>
 
         <span

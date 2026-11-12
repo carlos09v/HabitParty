@@ -2,7 +2,7 @@
 
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { ReactNode } from "react";
+import { type ReactNode, useId } from "react";
 import { BaseModal } from "./BaseModal";
 
 interface ConfirmationModalProps {
@@ -15,6 +15,12 @@ interface ConfirmationModalProps {
   cancelText?: string;
   variant?: "danger" | "warning" | "default";
   isLoading?: boolean;
+  /** Checkbox opcional exibido abaixo da descrição (ex.: "Excluir também do Histórico"). */
+  checkboxLabel?: ReactNode;
+  /** Texto auxiliar exibido abaixo do rótulo do checkbox. */
+  checkboxHint?: ReactNode;
+  checkboxChecked?: boolean;
+  onCheckboxChange?: (checked: boolean) => void;
 }
 
 export function ConfirmationModal({
@@ -27,8 +33,14 @@ export function ConfirmationModal({
   cancelText,
   variant = "danger",
   isLoading = false,
+  checkboxLabel,
+  checkboxHint,
+  checkboxChecked = false,
+  onCheckboxChange,
 }: ConfirmationModalProps) {
   const t = useTranslations("ui.confirmationModal");
+  const checkboxId = useId();
+  const showCheckbox = Boolean(checkboxLabel && onCheckboxChange);
   const resolvedConfirmText = confirmText ?? t("confirm");
   const resolvedCancelText = cancelText ?? t("cancel");
   const isDanger = variant === "danger";
@@ -85,6 +97,32 @@ export function ConfirmationModal({
         <div className="text-body-s text-neutral-300 leading-relaxed">
           {description}
         </div>
+
+        {showCheckbox && (
+          <label
+            htmlFor={checkboxId}
+            className="flex items-start gap-2.5 p-2.5 rounded-lg border border-neutral-700 dark:border-white/10 bg-surface/60 dark:bg-white/5 cursor-pointer hover:bg-surface-hover dark:hover:bg-white/10 transition-colors has-disabled:cursor-not-allowed has-disabled:opacity-60"
+          >
+            <input
+              id={checkboxId}
+              type="checkbox"
+              checked={checkboxChecked}
+              onChange={(e) => onCheckboxChange?.(e.target.checked)}
+              disabled={isLoading}
+              className="checkbox-custom checkbox-custom-danger mt-0.5"
+            />
+            <span className="flex flex-col gap-0.5">
+              <span className="text-xs font-semibold text-neutral-200">
+                {checkboxLabel}
+              </span>
+              {checkboxHint && (
+                <span className="text-tiny text-neutral-400 leading-snug">
+                  {checkboxHint}
+                </span>
+              )}
+            </span>
+          </label>
+        )}
 
         <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-neutral-700 dark:border-white/10">
           <button

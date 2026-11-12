@@ -9,6 +9,7 @@ import { cn } from "@/utils";
 import {
   TaskDescriptionEditor,
   TaskDetailsChecklist,
+  TaskDetailsFocusSection,
   TaskDetailsFooter,
   TaskDetailsHeader,
   TaskDetailsTags,
@@ -26,6 +27,7 @@ export function TaskDetailsPopover({
   onHabitChange,
   onEdit,
   onDuplicate,
+  onOpenFocusHistory,
 }: TaskDetailsPopoverProps) {
   const t = useTranslations("tasks.detailsPopover");
   const {
@@ -42,6 +44,9 @@ export function TaskDetailsPopover({
     setDescription,
     dueDate,
     dueTime,
+    startTime,
+    dueEndTime,
+    isAllDay,
     priority,
     tags,
     isAddingTag,
@@ -66,6 +71,9 @@ export function TaskDetailsPopover({
     handleDescriptionBlur,
     handleDateChange,
     handleTimeChange,
+    handleStartTimeChange,
+    handleEndTimeChange,
+    handleAllDayChange,
     handlePrioritySelect,
     handleAddTag,
     handleRemoveTag,
@@ -77,6 +85,7 @@ export function TaskDetailsPopover({
     handleDeleteTask,
     handleDuplicateTask,
     handleOpenFullModal,
+    handleOpenFocusHistory,
   } = useTaskDetailsPopover({
     isOpen,
     onClose,
@@ -88,6 +97,7 @@ export function TaskDetailsPopover({
     onHabitChange,
     onEdit,
     onDuplicate,
+    onOpenFocusHistory,
   });
 
   if (!isOpen || !mounted || !task) return null;
@@ -116,7 +126,7 @@ export function TaskDetailsPopover({
           // Mobile (< sm): Bottom Sheet fixado na base com scroll interno
           "max-sm:inset-x-0 max-sm:bottom-0 max-sm:w-full max-sm:rounded-t-2xl max-sm:rounded-b-none max-sm:border-t max-sm:border-x-0 max-sm:border-b-0 max-sm:border-primary/40 max-sm:bg-surface max-sm:p-4 max-sm:max-h-[85vh] max-sm:overflow-y-auto max-sm:animate-in max-sm:slide-in-from-bottom max-sm:duration-200",
           // Desktop (sm+): Popover flutuante ancorado
-          "sm:w-[390px] sm:max-w-[calc(100vw-24px)] sm:rounded-2xl sm:border sm:border-primary/40 sm:bg-card dark:sm:bg-popover sm:p-4 sm:animate-in sm:fade-in sm:zoom-in-95 sm:duration-150",
+          "sm:w-[390px] sm:max-w-[calc(100vw-24px)] sm:max-h-[calc(100vh-24px)] sm:rounded-2xl sm:border sm:border-primary/40 sm:bg-card dark:sm:bg-popover sm:p-4 sm:animate-in sm:fade-in sm:zoom-in-95 sm:duration-150",
         )}
         role="dialog"
         aria-label={t("dialogAria")}
@@ -134,11 +144,17 @@ export function TaskDetailsPopover({
           isTodo={isTodo}
           dueDate={dueDate}
           dueTime={dueTime}
+          startTime={startTime}
+          dueEndTime={dueEndTime}
+          isAllDay={isAllDay}
           priority={priority}
           onToggleComplete={handleToggleTask}
           onHabitDelta={handleHabitDelta}
           onDateChange={handleDateChange}
           onTimeChange={handleTimeChange}
+          onStartTimeChange={handleStartTimeChange}
+          onEndTimeChange={handleEndTimeChange}
+          onAllDayChange={handleAllDayChange}
           onPrioritySelect={handlePrioritySelect}
           onEdit={handleOpenFullModal}
           onClose={handleCloseWithSave}
@@ -209,6 +225,18 @@ export function TaskDetailsPopover({
               onToggleItem={handleToggleCheckItem}
               onUpdateItem={handleUpdateCheckItem}
               onDeleteItem={handleDeleteCheckItem}
+            />
+          )}
+
+          {/* SESSÃO DE FOCO & HISTÓRICO DE ESFORÇO DA TAREFA */}
+          {!isHabit && (
+            <TaskDetailsFocusSection
+              task={task}
+              currentTitle={title}
+              completed={completed}
+              onOpenFocusHistory={
+                onOpenFocusHistory ? handleOpenFocusHistory : undefined
+              }
             />
           )}
         </div>

@@ -3,7 +3,11 @@
 import { Check, ExternalLink, FileText, Pencil } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type RefObject, useMemo, useState } from "react";
-import { MARKDOWN_FORMAT_OPTIONS } from "@/constants/task";
+import { DescriptionCharCounter } from "@/components/ui/DescriptionCharCounter";
+import {
+  MARKDOWN_FORMAT_OPTIONS,
+  TASK_DESCRIPTION_MAX_LENGTH,
+} from "@/constants/task";
 import type { FormatSyntax } from "@/types/task-ui";
 import {
   type InlineMarkdownToken,
@@ -216,13 +220,21 @@ export function TaskDescriptionEditor({
             rows={3}
             value={description}
             onFocus={() => setIsEditing(true)}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) =>
+              onChange(e.target.value.slice(0, TASK_DESCRIPTION_MAX_LENGTH))
+            }
+            maxLength={TASK_DESCRIPTION_MAX_LENGTH}
             onBlur={() => {
               setIsEditing(false);
               onBlur();
             }}
             placeholder={t("descriptionPlaceholder")}
             className="w-full bg-transparent p-2.5 text-xs text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none resize-none custom-scrollbar leading-relaxed"
+          />
+
+          <DescriptionCharCounter
+            length={description.length}
+            className="self-end px-2.5 pb-1.5 -mt-1"
           />
 
           {hasContent && hasRichSyntax && (

@@ -12,7 +12,11 @@ import { useFocusMutations } from "@/hooks/useFocusMutations";
 import { useFocusTimerControls } from "@/hooks/useFocusTimer";
 import { useIdlePreload } from "@/hooks/useIdlePreload";
 import type { AppLocale } from "@/i18n/config";
-import type { FocusActivity, FocusRecordType } from "@/types/focus";
+import type {
+  FocusActivity,
+  FocusableTaskItem,
+  FocusRecordType,
+} from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn } from "@/utils";
 import { calculateFocusWelcomeStats } from "@/utils/catalogMetrics";
@@ -50,13 +54,15 @@ function preloadFocusMainModalChunks() {
 interface FocusMainProps {
   activities: FocusActivity[];
   backpackItems: InventoryItemResponseDTO[];
+  focusableTasks?: FocusableTaskItem[];
   isPremium?: boolean;
   selectedActivityId?: string | null;
   selectedBackpackItemId?: string | null;
   onSelectActivity?: (activityId: string | null) => void;
-  onSelectBackpackItem?: (item: InventoryItemResponseDTO) => void;
+  onSelectBackpackItem?: (item: InventoryItemResponseDTO | null) => void;
   onStartFocusActivity: (act: FocusActivity) => void;
   onStartFocusItem: (item: InventoryItemResponseDTO) => void;
+  onStartFocusTask?: (task: { id: string; title: string }) => void;
   onOpenManualRecord?: (params: {
     activityId?: string;
     itemId?: string;
@@ -69,6 +75,7 @@ interface FocusMainProps {
 export function FocusMain({
   activities,
   backpackItems,
+  focusableTasks = [],
   isPremium = false,
   selectedActivityId,
   selectedBackpackItemId,
@@ -76,6 +83,7 @@ export function FocusMain({
   onSelectBackpackItem,
   onStartFocusActivity,
   onStartFocusItem,
+  onStartFocusTask,
   onOpenManualRecord,
   initialCreateActivity = false,
   isCompact = false,
@@ -132,6 +140,8 @@ export function FocusMain({
     handleConfirmReturnToBackpack,
     deleteModalActivity,
     setDeleteModalActivity,
+    deleteActivityHistory,
+    setDeleteActivityHistory,
     isDeletingActivity,
     handleConfirmDeleteActivity,
     handleConsumeItem,
@@ -164,9 +174,9 @@ export function FocusMain({
       },
     });
 
-  // Deseleciona a atividade ativa caso o usuário clique em áreas vazias
+  // Deseleciona a atividade ou item da mochila ativo caso o usuário clique em áreas vazias
   useEffect(() => {
-    if (!selectedActivityId) return;
+    if (!selectedActivityId && !selectedBackpackItemId) return;
 
     let isReady = false;
     const timer = setTimeout(() => {
@@ -188,6 +198,7 @@ export function FocusMain({
         return;
       }
       onSelectActivity?.(null);
+      onSelectBackpackItem?.(null);
     };
 
     window.addEventListener("pointerdown", handlePointerDown);
@@ -195,7 +206,12 @@ export function FocusMain({
       clearTimeout(timer);
       window.removeEventListener("pointerdown", handlePointerDown);
     };
-  }, [selectedActivityId, onSelectActivity]);
+  }, [
+    selectedActivityId,
+    selectedBackpackItemId,
+    onSelectActivity,
+    onSelectBackpackItem,
+  ]);
 
   const locale = useLocale() as AppLocale;
 
@@ -228,9 +244,11 @@ export function FocusMain({
         <FocusHeroStage
           activities={activities}
           backpackItems={backpackItems}
+          focusableTasks={focusableTasks}
           onSelectActivity={onSelectActivity}
           onStartFocusActivity={onStartFocusActivity}
           onStartFocusItem={onStartFocusItem}
+          onStartFocusTask={onStartFocusTask}
           onChangeMode={onChangeMode}
           onOpenUpgradeModal={handleOpenUpgradeModal}
           isCompact={isCompact}
@@ -371,6 +389,10 @@ export function FocusMain({
           }
           confirmText={t("deleteModal.confirm")}
           variant="danger"
+          checkboxLabel={t("deleteModal.deleteHistoryLabel")}
+          checkboxHint={t("deleteModal.deleteHistoryHint")}
+          checkboxChecked={deleteActivityHistory}
+          onCheckboxChange={setDeleteActivityHistory}
         />
       )}
 

@@ -3,7 +3,10 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { cloneTaskChecklistItems } from "@/actions/checklistActions";
+import {
+  cloneTaskChecklistItems,
+  syncTaskChecklistChanges,
+} from "@/actions/checklistActions";
 import { createTask, moveTasks, updateTask } from "@/actions/taskActions";
 import {
   ALL_WEEK_DAYS,
@@ -87,6 +90,11 @@ function buildInitialTaskFormValues({
         "NONE") as TaskPriorityOption,
       dueDate: taskToEdit.dueDate || "",
       dueTime: taskToEdit.dueTime ? taskToEdit.dueTime.slice(0, 5) : "",
+      startTime: taskToEdit.startTime ? taskToEdit.startTime.slice(0, 5) : "",
+      dueEndTime: taskToEdit.dueEndTime
+        ? taskToEdit.dueEndTime.slice(0, 5)
+        : "",
+      isAllDay: Boolean(taskToEdit.isAllDay),
       reminderType: (taskToEdit.reminderType || "NONE") as ReminderTypeOption,
       sendEmailReminder: Boolean(taskToEdit.sendEmailReminder),
       startDate: taskToEdit.startDate || getTodayDateString(),
@@ -124,6 +132,9 @@ function buildInitialTaskFormValues({
       initialValues?.dueDate ||
       (initialValues?.dueTime ? getTodayDateString() : ""),
     dueTime: initialValues?.dueTime ? initialValues.dueTime.slice(0, 5) : "",
+    startTime: "",
+    dueEndTime: "",
+    isAllDay: false,
     reminderType: "NONE" as ReminderTypeOption,
     sendEmailReminder: false,
     startDate: initialValues?.startDate || getTodayDateString(),
@@ -195,6 +206,9 @@ export function useCreateTaskForm({
   );
   const [dueDate, setDueDate] = useState(initialForm.dueDate);
   const [dueTime, setDueTime] = useState(initialForm.dueTime);
+  const [startTime, setStartTime] = useState(initialForm.startTime);
+  const [dueEndTime, setDueEndTime] = useState(initialForm.dueEndTime);
+  const [isAllDay, setIsAllDay] = useState(initialForm.isAllDay);
   const [reminderType, setReminderType] = useState<ReminderTypeOption>(
     initialForm.reminderType,
   );
@@ -206,14 +220,57 @@ export function useCreateTaskForm({
     setDueDate(nextDate);
     if (!nextDate) {
       setDueTime("");
+      setStartTime("");
+      setDueEndTime("");
+      setIsAllDay(false);
     }
   };
 
   const handleDueTimeChange = (nextTime: string) => {
     const cleanTime = nextTime ? nextTime.slice(0, 5) : "";
     setDueTime(cleanTime);
-    if (cleanTime && !dueDate) {
-      setDueDate(getTodayDateString());
+    if (cleanTime) {
+      setStartTime("");
+      setDueEndTime("");
+      setIsAllDay(false);
+      if (!dueDate) {
+        setDueDate(getTodayDateString());
+      }
+    }
+  };
+
+  const handleStartTimeChange = (nextStartTime: string) => {
+    const cleanStart = nextStartTime ? nextStartTime.slice(0, 5) : "";
+    setStartTime(cleanStart);
+    if (cleanStart) {
+      setDueTime("");
+      setIsAllDay(false);
+      if (!dueDate) {
+        setDueDate(getTodayDateString());
+      }
+    } else {
+      setDueEndTime("");
+    }
+  };
+
+  const handleDueEndTimeChange = (nextEndTime: string) => {
+    const cleanEnd = nextEndTime ? nextEndTime.slice(0, 5) : "";
+    setDueEndTime(cleanEnd);
+    if (cleanEnd) {
+      setDueTime("");
+      setIsAllDay(false);
+    }
+  };
+
+  const handleAllDayChange = (nextAllDay: boolean) => {
+    setIsAllDay(nextAllDay);
+    if (nextAllDay) {
+      setDueTime("");
+      setStartTime("");
+      setDueEndTime("");
+      if (!dueDate) {
+        setDueDate(getTodayDateString());
+      }
     }
   };
 
@@ -241,6 +298,8 @@ export function useCreateTaskForm({
   } = useChecklist({
     initialItems: initialForm.checklist,
     taskId: taskToEdit?.id,
+    // Subtarefas só são persistidas ao clicar em Salvar (cancelar descarta as alterações)
+    deferPersistence: true,
   });
   const [newChecklistText, setNewChecklistText] = useState("");
 
@@ -292,6 +351,9 @@ export function useCreateTaskForm({
     setPriority(next.priority);
     setDueDate(next.dueDate);
     setDueTime(next.dueTime);
+    setStartTime(next.startTime);
+    setDueEndTime(next.dueEndTime);
+    setIsAllDay(next.isAllDay);
     setReminderType(next.reminderType);
     setSendEmailReminder(next.sendEmailReminder);
     setStartDate(next.startDate);
@@ -372,8 +434,18 @@ export function useCreateTaskForm({
       return;
     }
 
-    // Regras de validação do Modo Hardcore para To-dos
+    // Regras de validação do Modo Hardcore e horário de término para To-dos
     if (taskType === "TODO") {
+      const effectiveStart = startTime || dueTime;
+      if (
+        !isAllDay &&
+        dueEndTime &&
+        (!effectiveStart || dueEndTime <= effectiveStart)
+      ) {
+        toast.error(t("dueEndTimeAfterStartError"));
+        return;
+      }
+
       const hardcoreError = validateHardcoreTodo({
         isHardcore,
         dueDate,
@@ -423,8 +495,18 @@ export function useCreateTaskForm({
         positiveCount: taskToEdit?.positiveCount ?? 0,
         negativeCount: taskToEdit?.negativeCount ?? 0,
         dueDate:
-          dueDate || (dueTime ? getTodayDateString() : undefined) || undefined,
-        dueTime: dueTime || undefined,
+          dueDate ||
+          (dueTime || startTime || isAllDay
+            ? getTodayDateString()
+            : undefined) ||
+          undefined,
+        dueTime: !isAllDay && !startTime && dueTime ? dueTime : undefined,
+        startTime: !isAllDay && startTime ? startTime : undefined,
+        dueEndTime:
+          !isAllDay && (startTime || dueTime) && dueEndTime
+            ? dueEndTime
+            : undefined,
+        isAllDay: Boolean(isAllDay),
         columnId,
         order: taskToEdit?.order ?? 0,
         daysOfWeek:
@@ -453,6 +535,17 @@ export function useCreateTaskForm({
           return;
         }
 
+        // Persiste as alterações de subtarefas acumuladas localmente no modal
+        const checklistSync = await syncTaskChecklistChanges(
+          taskToEdit.id,
+          taskToEdit.checklist || [],
+          checklist,
+        );
+        const finalChecklist = checklistSync.items;
+        if (checklistSync.failedCount > 0) {
+          toast.error(t("checklistSyncError"));
+        }
+
         const originalColumnId = taskToEdit.columnId || defaultColumnId;
         if (originalColumnId && columnId !== originalColumnId) {
           const moveRes = await moveTasks([
@@ -468,7 +561,7 @@ export function useCreateTaskForm({
         }
 
         toast.success(t("updateTaskSuccess"));
-        onSuccess?.(draftTask, columnId);
+        onSuccess?.({ ...draftTask, checklist: finalChecklist }, columnId);
         onClose();
         return;
       }
@@ -553,6 +646,12 @@ export function useCreateTaskForm({
     setDueDate: handleDueDateChange,
     dueTime,
     setDueTime: handleDueTimeChange,
+    startTime,
+    setStartTime: handleStartTimeChange,
+    dueEndTime,
+    setDueEndTime: handleDueEndTimeChange,
+    isAllDay,
+    setIsAllDay: handleAllDayChange,
     reminderType,
     setReminderType,
     sendEmailReminder,

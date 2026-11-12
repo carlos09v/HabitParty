@@ -1,18 +1,22 @@
 import { cookies, headers } from "next/headers";
 import type { AppLocale } from "@/i18n/config";
 import { getRequestLocale } from "@/i18n/request";
-import type { DateFormat, ExperienceMode, ThemeMode } from "@/types/ui";
-import { detectBrowserDateFormat } from "@/utils/date";
+import type {
+  DateFormat,
+  ExperienceMode,
+  ThemeMode,
+  TimeFormat,
+} from "@/types/ui";
+import { detectBrowserDateFormat, detectBrowserTimeFormat } from "@/utils/date";
 
-export type { AppLocale, DateFormat, ExperienceMode, ThemeMode };
+export type { AppLocale, DateFormat, ExperienceMode, ThemeMode, TimeFormat };
 
 export function isValidDateFormat(val?: string | null): val is DateFormat {
   return val === "DD/MM/YYYY" || val === "MM/DD/YYYY" || val === "YYYY-MM-DD";
 }
 
-export async function getCompactMode() {
-  const cookieStore = await cookies();
-  return cookieStore.get("compactMode")?.value === "true";
+export function isValidTimeFormat(val?: string | null): val is TimeFormat {
+  return val === "24h" || val === "12h";
 }
 
 export async function getThemeMode(): Promise<ThemeMode> {
@@ -39,4 +43,20 @@ export async function getDateFormat(): Promise<DateFormat> {
   const primarySubtag = acceptLang?.split(",")[0]?.split(";")[0]?.trim();
   const locale = await getRequestLocale();
   return detectBrowserDateFormat(primarySubtag, locale);
+}
+
+export async function getTimeFormat(): Promise<TimeFormat> {
+  const cookieStore = await cookies();
+  const raw = cookieStore.get("timeFormat")?.value;
+  if (raw) {
+    const decoded = decodeURIComponent(raw);
+    if (isValidTimeFormat(decoded)) {
+      return decoded;
+    }
+  }
+  const headerStore = await headers();
+  const acceptLang = headerStore.get("accept-language");
+  const primarySubtag = acceptLang?.split(",")[0]?.split(";")[0]?.trim();
+  const locale = await getRequestLocale();
+  return detectBrowserTimeFormat(primarySubtag, locale);
 }

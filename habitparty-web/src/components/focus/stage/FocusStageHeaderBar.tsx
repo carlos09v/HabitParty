@@ -1,6 +1,15 @@
 "use client";
 
-import { ArrowRightLeft, Lock, type LucideIcon, Maximize2 } from "lucide-react";
+import {
+  ArrowRightLeft,
+  CheckCircle2,
+  Layers,
+  ListTodo,
+  Lock,
+  type LucideIcon,
+  Maximize2,
+  X,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { memo } from "react";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
@@ -30,6 +39,10 @@ interface FocusStageHeaderBarProps {
   onChangeSoundType: (type: "zen" | "arcade") => void;
   onOpenZenMode: () => void;
   onOpenUpgradeModal?: () => void;
+  onUnlinkTask?: () => void;
+  onCompleteLinkedTask?: (taskId: string, taskName?: string) => void;
+  onOpenLinkActivity?: () => void;
+  onOpenLinkTask?: () => void;
 }
 
 export const FocusStageHeaderBar = memo(function FocusStageHeaderBar({
@@ -50,6 +63,10 @@ export const FocusStageHeaderBar = memo(function FocusStageHeaderBar({
   onChangeSoundType,
   onOpenZenMode,
   onOpenUpgradeModal,
+  onUnlinkTask,
+  onCompleteLinkedTask,
+  onOpenLinkActivity,
+  onOpenLinkTask,
 }: FocusStageHeaderBarProps) {
   const t = useTranslations("focus.hero");
   const { isGamified } = useExperienceMode();
@@ -119,7 +136,107 @@ export const FocusStageHeaderBar = memo(function FocusStageHeaderBar({
               <ArrowRightLeft size={11} />
               <span>{target ? t("switchTarget") : t("linkTarget")}</span>
             </button>
+
+            {/* Ação rápida de concluir quando o próprio alvo principal é uma tarefa */}
+            {target?.type === "task" &&
+              target.taskId &&
+              onCompleteLinkedTask && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    onCompleteLinkedTask(
+                      target.taskId as string,
+                      target.taskName || target.name,
+                    )
+                  }
+                  title={t("completeLinkedTask")}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 text-tiny font-bold transition-colors cursor-pointer shrink-0"
+                >
+                  <CheckCircle2 size={11} />
+                  <span>{t("completeLinkedTaskShort")}</span>
+                </button>
+              )}
           </div>
+
+          {/* Subtítulo de Sessão Direta na Tarefa + atalho para vincular a uma Atividade (Macro) */}
+          {target?.type === "task" && (
+            <div className="flex items-center gap-1.5 mt-1 min-w-0 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-primary/10 dark:bg-primary-dark/65 border border-primary/30 dark:border-primary-light/50 text-neutral-100 text-tiny font-semibold shrink-0 shadow-2xs">
+                <ListTodo
+                  size={11}
+                  className="text-primary dark:text-gold shrink-0"
+                />
+                <span>{t("taskSessionBadge")}</span>
+              </span>
+
+              {onOpenLinkActivity && (
+                <button
+                  type="button"
+                  onClick={onOpenLinkActivity}
+                  title={t("linkActivityTooltip")}
+                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-amber-500/10 dark:bg-gold/15 hover:bg-amber-500/20 dark:hover:bg-gold/25 border border-amber-500/40 dark:border-gold/45 text-amber-800 dark:text-gold text-tiny font-bold transition-colors cursor-pointer shrink-0"
+                >
+                  <Layers size={11} />
+                  <span>{t("linkActivityButton")}</span>
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Subtítulo de Tarefa Vinculada (Macro Atividade + Micro Tarefa) */}
+          {target?.type === "activity" && target.taskId && target.taskName && (
+            <div className="flex items-center gap-1.5 mt-1 min-w-0">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-primary/10 dark:bg-primary-dark/65 border border-primary/30 dark:border-primary-light/50 text-neutral-100 text-tiny font-semibold truncate max-w-[220px] sm:max-w-xs shadow-2xs">
+                <ListTodo
+                  size={11}
+                  className="text-primary dark:text-gold shrink-0"
+                />
+                <span className="truncate">{target.taskName}</span>
+              </span>
+
+              {onCompleteLinkedTask && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    onCompleteLinkedTask(
+                      target.taskId as string,
+                      target.taskName,
+                    )
+                  }
+                  title={t("completeLinkedTask")}
+                  className="w-5 h-5 rounded-md flex items-center justify-center bg-emerald-500/15 hover:bg-emerald-500/30 border border-emerald-500/35 text-emerald-600 dark:text-emerald-300 transition-colors cursor-pointer shrink-0"
+                >
+                  <CheckCircle2 size={11} />
+                </button>
+              )}
+
+              {onUnlinkTask && (
+                <button
+                  type="button"
+                  onClick={onUnlinkTask}
+                  title={t("unlinkTask")}
+                  className="w-5 h-5 rounded-md flex items-center justify-center bg-surface hover:bg-red-500/20 border border-neutral-700 dark:border-primary/30 hover:border-red-500/40 text-neutral-400 hover:text-red-400 transition-colors cursor-pointer shrink-0"
+                >
+                  <X size={11} />
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Atalho para Vincular Tarefa quando a atividade não possui tarefa vinculada */}
+          {target?.type === "activity" && !target.taskId && onOpenLinkTask && (
+            <div className="flex items-center gap-1.5 mt-1 min-w-0">
+              <button
+                type="button"
+                onClick={onOpenLinkTask}
+                title={t("linkTaskTooltip")}
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-amber-500/10 dark:bg-gold/15 hover:bg-amber-500/20 dark:hover:bg-gold/25 border border-amber-500/40 dark:border-gold/45 text-amber-800 dark:text-gold text-tiny font-bold transition-colors cursor-pointer shrink-0"
+              >
+                <ListTodo size={11} />
+                <span>{t("linkTaskButton")}</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

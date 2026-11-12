@@ -75,7 +75,9 @@
       "title": "Delete reward?",
       "description": "Are you sure you want to delete <bold>\"{title}\"</bold> from your Rewards Store?",
       "confirmText": "Yes, delete",
-      "cancelText": "Cancel"
+      "cancelText": "Cancel",
+      "deleteHistoryLabel": "Also delete purchase records from History",
+      "deleteHistoryHint": "Removes purchase transactions of this reward from your history. Coins and XP already spent are not changed."
     },
     "toasts": {
       "insufficientCoins": "Insufficient coins to redeem this item!",
@@ -121,6 +123,7 @@
     "suggestedPriceByRarity": "(Suggested price by rarity)",
     "pricePlaceholder": "E.g., 5, 15, 35, or 80",
     "mysteryBoxPriceHelper": "You can keep the calibrated price for the package or customize it freely.",
+    "mysteryBoxAdventureHint": "The Mystery Box is available in Adventure Mode. Enable it in Settings > Preferences to unlock it!",
     "cancel": "Cancel",
     "saving": "Saving...",
     "saveChanges": "Save Changes",

@@ -50,12 +50,25 @@ export function useFocusMutations({
   const [deleteModalActivity, setDeleteModalActivity] =
     useState<FocusActivity | null>(null);
   const [isDeletingActivity, setIsDeletingActivity] = useState(false);
+  // Opção do modal: excluir também as sessões da atividade e seus registros no Histórico
+  const [deleteActivityHistory, setDeleteActivityHistory] = useState(false);
+
+  const openDeleteActivityModal = useCallback(
+    (activity: FocusActivity | null) => {
+      setDeleteActivityHistory(false);
+      setDeleteModalActivity(activity);
+    },
+    [],
+  );
 
   const handleConfirmDeleteActivity = useCallback(async () => {
     if (!deleteModalActivity) return;
     setIsDeletingActivity(true);
     try {
-      const res = await deleteFocusActivity(deleteModalActivity.id, false);
+      const res = await deleteFocusActivity(
+        deleteModalActivity.id,
+        deleteActivityHistory,
+      );
       if (res.success) {
         if (selectedActivityId === deleteModalActivity.id) {
           onSelectActivity?.(null);
@@ -85,6 +98,7 @@ export function useFocusMutations({
     }
   }, [
     deleteModalActivity,
+    deleteActivityHistory,
     selectedActivityId,
     activeTarget?.id,
     activities,
@@ -196,7 +210,9 @@ export function useFocusMutations({
     isReturningToBackpack,
     handleConfirmReturnToBackpack,
     deleteModalActivity,
-    setDeleteModalActivity,
+    setDeleteModalActivity: openDeleteActivityModal,
+    deleteActivityHistory,
+    setDeleteActivityHistory,
     isDeletingActivity,
     handleConfirmDeleteActivity,
     handleConsumeItem,
@@ -213,9 +229,10 @@ export async function executeDeleteFocusRecord(
     error?: string;
   },
   onSuccess?: () => void,
+  deleteHistory = false,
 ) {
   const isEn = getBrowserDocumentLocale() === "en";
-  const res = await deleteFocusRecord(recordId);
+  const res = await deleteFocusRecord(recordId, deleteHistory);
   if (res.success) {
     toast.success(
       messages?.success ??

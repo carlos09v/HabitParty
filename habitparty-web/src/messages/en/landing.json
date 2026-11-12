@@ -110,7 +110,7 @@
       "step1": {
         "tag": "Routine & Habits",
         "title": "Structure your Routine",
-        "description": "Build habits with positive and negative triggers (+/-), daily routines with consistency streaks, and projects organized in agile Kanban boards.",
+        "description": "Build habits with positive and negative triggers (+/-), daily routines with consistency streaks, and flexible To-Dos or timed events with start and end times.",
         "footer": "Agile Kanban & Daily Streaks"
       },
       "step2": {
@@ -167,7 +167,7 @@
       "workspaces": {
         "badge": "Organization",
         "title": "Independent Workspaces",
-        "description": "Isolate Work, Study, and Personal Life projects with 1 click, each with its own Kanban boards and metrics."
+        "description": "Isolate Work, Study, and Personal Life projects with 1 click, featuring smart cross-workspace search to locate any task instantly."
       },
       "analytics": {
         "badge": "Analytics",
@@ -213,7 +213,7 @@
         "extras": [
           "Multi-layer Anti-Bot protection (IP Rate Limiting, invisible Honeypot, and disposable email blocking)",
           "Database architectural refactoring and high-performance indexes",
-          "Interface density controls (Compact Mode) and layout customization"
+          "Global time format customization (12h AM/PM or 24h) and interface preferences"
         ]
       },
       "r12": {
@@ -230,21 +230,29 @@
         ]
       },
       "r13": {
-        "statusLabel": "Next Milestone",
-        "title": "Task-Linked Focus, VIP Themes & Friendships",
-        "tagline": "Link focus timers to tasks with effort metrics, customize your VIP visual atmosphere, and connect with friends.",
+        "statusLabel": "Completed",
+        "title": "Kanban Events, Bulk History & Task-Linked Focus",
+        "tagline": "Schedule To-Dos as timed events, manage transaction ledgers in bulk with column snapshots, and link focus timers to tasks.",
         "features": [
-          "Task-Linked Focus Sessions & Effort Metrics: 1-click timer launch, card-level time tracking, and auto-completion",
-          "Exclusive VIP Themes (Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold)",
-          "Friend Network with player search by username and friend code",
-          "Granular privacy controls for stats and routines"
+          "Task-Linked Focus & Effort Metrics: 1-click timer launch, card-level time tracking, and auto-completion",
+          "To-Dos as Events (VIP): schedule with start & end times or all-day, live pulsing 'In progress' badge on Kanban, and integrated universal DatePicker",
+          "Bulk Ledger Management & Column Snapshots: multi-selection, batch deletion, and persistent Kanban list retention",
+          "Cross-Workspace Search: intelligent banner detecting matching tasks in other workspaces with 1-click switching"
+        ],
+        "extras": [
+          "Configurable Global Time Format (12h AM/PM vs 24h) synced across cards, details, history, and focus",
+          "Expanded task descriptions up to 5,000 characters with real-time char counter and limit alerts",
+          "Streak lost notification with compassionate encouragement to restart",
+          "Synchronized deletion option for tasks and focus records to clean up linked History entries"
         ]
       },
       "r14": {
-        "statusLabel": "Planned",
-        "title": "Real-Time Party & Co-op",
-        "tagline": "Strength in numbers: small mutual focus groups, cooperative goals, and built-in chat.",
+        "statusLabel": "Next Milestone",
+        "title": "Party, VIP Themes, Friendships & Real-Time Co-op",
+        "tagline": "Strength in numbers: customize your VIP visual atmosphere, connect with friends, and join mutual focus groups.",
         "features": [
+          "Exclusive VIP Themes (Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold)",
+          "Friend Network with player search by username and friend code, plus granular privacy controls",
           "Party formation (focus groups) via quick invite code",
           "Cooperative Daily Quests with collective gold bonuses when everyone succeeds",
           "Built-in Real-Time Chat with focus alerts and mutual celebrations",
@@ -323,6 +331,7 @@
           "👑 1 full year of Cosmic Guardian for $10.90 (down from $19.90/yr)",
           "⭐ Eternal recognition as a pioneer in HabitParty history",
           "🚀 Priority access to all Roadmap releases (Themes, Showcase, Party & Guilds)",
+          "Schedule To-Dos as Events (start & end times or all-day)",
           "Exclusive animated frames for your profile and avatar",
           "Ambient sounds in Pomodoro (Rain, Coffee Shop, Campfire, Lofi)",
           "Exclusive VIP icon pack for activities, columns, and shop",
@@ -342,6 +351,7 @@
         "description": "Expanded capacity for managing multiple projects, advanced studies, and limitless focus.",
         "ctaText": "Unlock Monthly Plan 👑",
         "features": [
+          "Schedule To-Dos as Events (start & end times or all-day)",
           "Expanded Email Reminders (up to 30 active & 100 sends/month)",
           "Exclusive animated frames for your profile and avatar",
           "Ambient sounds in Pomodoro (Rain, Coffee Shop, Campfire, Lofi)",

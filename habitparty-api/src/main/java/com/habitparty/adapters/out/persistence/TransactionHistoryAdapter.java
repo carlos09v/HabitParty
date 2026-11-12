@@ -115,6 +115,30 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
   }
 
   @Override
+  public int deleteAllByIdsAndUserId(List<UUID> ids, UUID userId) {
+    if (ids == null || ids.isEmpty()) {
+      return 0;
+    }
+    return repository.deleteAllByIdInAndUserId(ids, userId);
+  }
+
+  @Override
+  public void deleteAllByReferenceIdAndUserId(UUID referenceId, UUID userId) {
+    if (referenceId == null) {
+      return;
+    }
+    repository.deleteAllByReferenceIdInAndUserId(List.of(referenceId), userId);
+  }
+
+  @Override
+  public void deleteAllByReferenceIdsAndUserId(List<UUID> referenceIds, UUID userId) {
+    if (referenceIds == null || referenceIds.isEmpty()) {
+      return;
+    }
+    repository.deleteAllByReferenceIdInAndUserId(referenceIds, userId);
+  }
+
+  @Override
   public Page<TransactionHistory> findAllByUserId(UUID userId, int page, int size) {
     return repository.findAllByUserIdOrderByCreatedAtDesc(userId, PageRequest.of(page, size))
         .map(mapper::toDomain);

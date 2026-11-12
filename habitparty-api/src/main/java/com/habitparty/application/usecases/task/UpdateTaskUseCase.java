@@ -19,6 +19,7 @@ import com.habitparty.core.domain.entities.task.Todo;
 import com.habitparty.core.domain.enums.EmailDispatchStatus;
 import com.habitparty.core.domain.enums.EmailType;
 import com.habitparty.core.exceptions.DomainValidationException;
+import com.habitparty.core.exceptions.LimitExceededException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service 
@@ -108,14 +109,34 @@ public class UpdateTaskUseCase {
         }
       }
 
+      boolean isEventSchedule = Boolean.TRUE.equals(command.isAllDay())
+          || command.startTime() != null
+          || command.dueEndTime() != null;
+      if (isEventSchedule) {
+        var user = userPort.findById(userIdLogado)
+            .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+        if (!user.isPremium()) {
+          throw new LimitExceededException(
+              "Agendar afazeres como Evento (com horário de início/término ou dia inteiro) é um recurso exclusivo dos planos Premium."
+          );
+        }
+      }
+
+      boolean hasAnyTimeOrEvent = command.dueTime() != null || isEventSchedule;
       LocalDate effectiveDueDate = command.dueDate() != null
           ? command.dueDate()
-          : (command.dueTime() != null ? today : null);
+          : (hasAnyTimeOrEvent ? today : null);
 
       LocalDateTime newReminderAt = Todo.calculateReminderTime(
           effectiveDueDate, command.reminderType(), command.customReminderAt()
       );
       t.updateTodoDetails(effectiveDueDate, command.dueTime(), command.reminderType(), newReminderAt, command.sendEmailReminder());
+      if (Boolean.TRUE.equals(command.isAllDay()) || command.startTime() != null) {
+        t.defineEventSchedule(command.startTime(), command.dueEndTime(), command.isAllDay());
+      } else {
+        t.defineEventSchedule(null, null, false);
+        t.defineDueEndTime(command.dueEndTime());
+      }
     }
 
     return port.save(task);

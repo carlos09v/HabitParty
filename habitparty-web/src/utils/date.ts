@@ -1,5 +1,5 @@
 import type { AppLocale } from "@/i18n/config";
-import type { DateFormat } from "@/types/ui";
+import type { DateFormat, TimeFormat } from "@/types/ui";
 
 /**
  * Detecta o formato de data preferido com base no locale do navegador/SO (ou subtag de Accept-Language).
@@ -37,6 +37,39 @@ export function resolveEffectiveDateFormat(
 ): DateFormat {
   if (dateFormat) return dateFormat;
   return detectBrowserDateFormat(undefined, locale);
+}
+
+/**
+ * Detecta o formato de hora preferido com base no locale do navegador/SO (ou subtag de Accept-Language).
+ */
+export function detectBrowserTimeFormat(
+  localeSubtag?: string | null,
+  fallbackLocale?: AppLocale,
+): TimeFormat {
+  const tag =
+    localeSubtag?.trim() ||
+    (typeof navigator !== "undefined" ? navigator.language : undefined);
+  if (tag) {
+    try {
+      const resolved = new Intl.DateTimeFormat(tag, {
+        hour: "numeric",
+      }).resolvedOptions();
+      if (resolved.hour12 !== undefined) {
+        return resolved.hour12 ? "12h" : "24h";
+      }
+    } catch {
+      // Fallback caso o subtag seja inválido
+    }
+  }
+  return fallbackLocale === "en" ? "12h" : "24h";
+}
+
+export function resolveEffectiveTimeFormat(
+  timeFormat?: TimeFormat,
+  locale?: AppLocale,
+): TimeFormat {
+  if (timeFormat) return timeFormat;
+  return detectBrowserTimeFormat(undefined, locale);
 }
 
 function formatNumericCalendarDate(
@@ -143,6 +176,7 @@ export function formatDateTime(
     isLocal?: boolean;
     locale?: AppLocale;
     dateFormat?: DateFormat;
+    timeFormat?: TimeFormat;
   },
 ): string {
   if (!dateStr) return "-";
@@ -153,6 +187,10 @@ export function formatDateTime(
     if (!d) return dateStr;
     const format = resolveEffectiveDateFormat(
       options?.dateFormat,
+      options?.locale,
+    );
+    const timeFormat = resolveEffectiveTimeFormat(
+      options?.timeFormat,
       options?.locale,
     );
     const pad = (n: number) => String(n).padStart(2, "0");
@@ -166,10 +204,18 @@ export function formatDateTime(
         shortYear: !options?.includeYearFull && format !== "YYYY-MM-DD",
       },
     );
-    const hours = pad(d.getHours());
-    const minutes = pad(d.getMinutes());
-    const seconds = options?.includeSeconds ? `:${pad(d.getSeconds())}` : "";
-    return `${datePart}, ${hours}:${minutes}${seconds}`;
+    const baseTime = formatTimeParts(d.getHours(), d.getMinutes(), {
+      timeFormat,
+    });
+    if (!options?.includeSeconds) {
+      return `${datePart}, ${baseTime}`;
+    }
+    const secStr = `:${pad(d.getSeconds())}`;
+    if (timeFormat === "12h") {
+      const [hhmm, period] = baseTime.split(" ");
+      return `${datePart}, ${hhmm}${secStr} ${period}`;
+    }
+    return `${datePart}, ${baseTime}${secStr}`;
   } catch {
     return dateStr;
   }
@@ -357,17 +403,104 @@ export interface TaskDueDateInfo {
   isOverdue: boolean;
   hasDueDate: boolean;
   diffDays: number | null;
+  /** Evento em andamento: hoje, entre `dueTime` (início) e `dueEndTime` (fim). */
+  isInProgress?: boolean;
+  /** Horário de término formatado ("HH:mm"), quando a tarefa possui `dueEndTime`. */
+  endTime?: string | null;
 }
 
-/**
- * Calcula o rótulo relativo e status de prazo para cards e tabelas de tarefas To-Do:
- * - "Hoje" / "Today" se for hoje (destaque ouro)
- * - "Amanhã" / "Tomorrow" se for amanhã
- * - Dia da semana abreviado ("Seg", "Ter" / "Mon", "Tue") se estiver dentro dos próximos 7 dias (2 a 7 dias)
- * - "17 Nov" / "Nov 17" (Dia + Mês abreviado) se estiver além de 7 dias
- * - "15 Out" / "Oct 15" com isOverdue=true (vermelho) se estiver atrasada (< hoje)
- * - "Sem prazo" / "No due date" se não tiver data
- */
+interface ResolvedTaskSchedule {
+  isAllDay: boolean;
+  rawDueTime: string | null;
+  rawStartTime: string | null;
+  rawEndTime: string | null;
+  effectiveStartRaw: string | null;
+  displayDueTime: string | null;
+  displayStartTime: string | null;
+  displayEndTime: string | null;
+  formattedTimeRange: string | null;
+}
+
+function resolveTaskScheduleStrings(options: {
+  dueTime?: string | null;
+  startTime?: string | null;
+  dueEndTime?: string | null;
+  isAllDay?: boolean | null;
+  locale: AppLocale;
+  timeFormat?: TimeFormat;
+}): ResolvedTaskSchedule {
+  const isAllDay = Boolean(options.isAllDay);
+  const rawDueTime =
+    !isAllDay && options.dueTime ? options.dueTime.slice(0, 5) : null;
+  const rawStartTime =
+    !isAllDay && options.startTime ? options.startTime.slice(0, 5) : null;
+  const rawEndTime =
+    !isAllDay && options.dueEndTime ? options.dueEndTime.slice(0, 5) : null;
+  const effectiveStartRaw = rawStartTime ?? (rawEndTime ? rawDueTime : null);
+  const timeFormat = resolveEffectiveTimeFormat(
+    options.timeFormat,
+    options.locale,
+  );
+  const displayDueTime = rawDueTime
+    ? formatTimeDisplay(rawDueTime, { timeFormat, locale: options.locale })
+    : null;
+  const displayStartTime = effectiveStartRaw
+    ? formatTimeDisplay(effectiveStartRaw, {
+        timeFormat,
+        locale: options.locale,
+      })
+    : null;
+  const displayEndTime = rawEndTime
+    ? formatTimeDisplay(rawEndTime, { timeFormat, locale: options.locale })
+    : null;
+  const allDayLabel = options.locale === "en" ? "All day" : "Dia inteiro";
+  const formattedTimeRange = isAllDay
+    ? allDayLabel
+    : displayStartTime && displayEndTime
+      ? `${displayStartTime}–${displayEndTime}`
+      : (displayStartTime ?? displayDueTime);
+
+  return {
+    isAllDay,
+    rawDueTime,
+    rawStartTime,
+    rawEndTime,
+    effectiveStartRaw,
+    displayDueTime,
+    displayStartTime,
+    displayEndTime,
+    formattedTimeRange,
+  };
+}
+
+function computeTaskTimeStatus(
+  schedule: ResolvedTaskSchedule,
+  diffDays: number,
+  now: Date,
+): { isTodayTimeOverdue: boolean; isInProgress: boolean } {
+  const dueMinutes = parseTimeToMinutes(schedule.rawDueTime);
+  const startMinutes = parseTimeToMinutes(schedule.effectiveStartRaw);
+  const endMinutes = parseTimeToMinutes(schedule.rawEndTime);
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  // Com horário de término (ou evento de dia inteiro), a tarefa só fica atrasada após o fim do evento/dia.
+  const deadlineMinutes = schedule.isAllDay
+    ? null
+    : (endMinutes ?? (schedule.rawStartTime ? null : dueMinutes));
+  const isTodayTimeOverdue =
+    !schedule.isAllDay &&
+    diffDays === 0 &&
+    deadlineMinutes !== null &&
+    deadlineMinutes < currentMinutes;
+  const isInProgress =
+    diffDays === 0 &&
+    (schedule.isAllDay ||
+      (startMinutes !== null &&
+        startMinutes <= currentMinutes &&
+        (endMinutes === null || currentMinutes <= endMinutes)));
+
+  return { isTodayTimeOverdue, isInProgress };
+}
+
 export function getTaskDueDateInfo(
   dueDate?: string | null,
   options?: {
@@ -375,14 +508,27 @@ export function getTaskDueDateInfo(
     selectedDate?: string | null;
     locale?: AppLocale;
     dueTime?: string | null;
+    /** Horário de início ("HH:mm") quando configurado como Evento. */
+    startTime?: string | null;
+    /** Horário de término ("HH:mm") quando configurado como Evento. */
+    dueEndTime?: string | null;
+    /** Evento de dia inteiro: marca o card como "Em andamento" durante todo o dia de hoje. */
+    isAllDay?: boolean | null;
     dateFormat?: DateFormat;
+    timeFormat?: TimeFormat;
   },
 ): TaskDueDateInfo {
   const activeFilter = options?.activeFilter;
   const locale = options?.locale ?? "pt-BR";
-  const formattedDueTime = options?.dueTime
-    ? options.dueTime.slice(0, 5)
-    : null;
+  const schedule = resolveTaskScheduleStrings({
+    dueTime: options?.dueTime,
+    startTime: options?.startTime,
+    dueEndTime: options?.dueEndTime,
+    isAllDay: options?.isAllDay,
+    locale,
+    timeFormat: options?.timeFormat,
+  });
+  const { displayEndTime, formattedTimeRange } = schedule;
   const isEn = locale === "en";
   const todayLabel = isEn ? "Today" : "Hoje";
   const tomorrowLabel = isEn ? "Tomorrow" : "Amanhã";
@@ -391,12 +537,13 @@ export function getTaskDueDateInfo(
   if (!dueDate) {
     if (activeFilter === "today") {
       return {
-        label: formattedDueTime || todayLabel,
+        label: formattedTimeRange || todayLabel,
         isToday: true,
         isTomorrow: false,
         isOverdue: false,
         hasDueDate: false,
         diffDays: 0,
+        endTime: displayEndTime,
       };
     }
     return {
@@ -429,10 +576,11 @@ export function getTaskDueDateInfo(
     const diffMs = targetDate.getTime() - today.getTime();
     const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
-    const dueMinutes = parseTimeToMinutes(formattedDueTime);
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const isTodayTimeOverdue =
-      diffDays === 0 && dueMinutes !== null && dueMinutes < currentMinutes;
+    const { isTodayTimeOverdue, isInProgress } = computeTaskTimeStatus(
+      schedule,
+      diffDays,
+      now,
+    );
 
     const resolvedFormat = resolveEffectiveDateFormat(
       options?.dateFormat,
@@ -447,7 +595,7 @@ export function getTaskDueDateInfo(
       false,
     );
     const appendTime = (baseLabel: string) =>
-      formattedDueTime ? `${baseLabel}, ${formattedDueTime}` : baseLabel;
+      formattedTimeRange ? `${baseLabel}, ${formattedTimeRange}` : baseLabel;
 
     // Atrasada (data anterior a hoje)
     if (diffDays < 0) {
@@ -458,18 +606,22 @@ export function getTaskDueDateInfo(
         isOverdue: true,
         hasDueDate: true,
         diffDays,
+        isInProgress: false,
+        endTime: displayEndTime,
       };
     }
 
     // Hoje (ou filtro de hoje para uma tarefa de hoje) -> exibe a hora se houver dueTime, senão "Hoje"
     if (diffDays === 0) {
       return {
-        label: formattedDueTime || todayLabel,
+        label: formattedTimeRange || todayLabel,
         isToday: true,
         isTomorrow: false,
         isOverdue: isTodayTimeOverdue,
         hasDueDate: true,
         diffDays: 0,
+        isInProgress,
+        endTime: displayEndTime,
       };
     }
 
@@ -540,6 +692,10 @@ export function getPopoverDueDateInfo(
   locale: AppLocale = "pt-BR",
   dueTime?: string | null,
   dateFormat?: DateFormat,
+  dueEndTime?: string | null,
+  startTime?: string | null,
+  isAllDay?: boolean | null,
+  timeFormat?: TimeFormat,
 ): PopoverDueDateInfo {
   const isEn = locale === "en";
   if (!dueDate) {
@@ -569,10 +725,22 @@ export function getPopoverDueDateInfo(
     const diffMs = targetDate.getTime() - today.getTime();
     const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
-    const dueMinutes = parseTimeToMinutes(dueTime ? dueTime.slice(0, 5) : null);
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const isTodayTimeOverdue =
-      diffDays === 0 && dueMinutes !== null && dueMinutes < currentMinutes;
+    const schedule = resolveTaskScheduleStrings({
+      dueTime,
+      startTime,
+      dueEndTime,
+      isAllDay,
+      locale,
+      timeFormat,
+    });
+    const { isTodayTimeOverdue } = computeTaskTimeStatus(
+      schedule,
+      diffDays,
+      now,
+    );
+    const timeSuffix = schedule.formattedTimeRange
+      ? ` · ${schedule.formattedTimeRange}`
+      : "";
 
     const capitalizedWeekDay =
       getCapitalizedWeekDays(locale)[targetDate.getDay()];
@@ -593,7 +761,7 @@ export function getPopoverDueDateInfo(
         const daysText =
           overdueDays === 1 ? "1 day overdue" : `${overdueDays} days overdue`;
         return {
-          label: `${shortDayMonth} (${daysText})`,
+          label: `${shortDayMonth}${timeSuffix} (${daysText})`,
           isOverdue: true,
           isToday: false,
           hasDueDate: true,
@@ -601,7 +769,7 @@ export function getPopoverDueDateInfo(
       }
       const daysText = overdueDays === 1 ? "1 dia" : `${overdueDays} dias`;
       return {
-        label: `${shortDayMonth} (atrasada há ${daysText})`,
+        label: `${shortDayMonth}${timeSuffix} (atrasada há ${daysText})`,
         isOverdue: true,
         isToday: false,
         hasDueDate: true,
@@ -611,7 +779,9 @@ export function getPopoverDueDateInfo(
     // Hoje
     if (diffDays === 0) {
       return {
-        label: isEn ? `Today, ${shortDayMonth}` : `Hoje, ${shortDayMonth}`,
+        label: isEn
+          ? `Today, ${shortDayMonth}${timeSuffix}`
+          : `Hoje, ${shortDayMonth}${timeSuffix}`,
         isOverdue: isTodayTimeOverdue,
         isToday: true,
         hasDueDate: true,
@@ -621,7 +791,9 @@ export function getPopoverDueDateInfo(
     // Amanhã
     if (diffDays === 1) {
       return {
-        label: isEn ? `Tomorrow, ${shortDayMonth}` : `Amanhã, ${shortDayMonth}`,
+        label: isEn
+          ? `Tomorrow, ${shortDayMonth}${timeSuffix}`
+          : `Amanhã, ${shortDayMonth}${timeSuffix}`,
         isOverdue: false,
         isToday: false,
         hasDueDate: true,
@@ -631,7 +803,7 @@ export function getPopoverDueDateInfo(
     // Dentro da semana (2 a 7 dias) -> "Ter, 20 Out" / "Tue, Oct 20"
     if (diffDays <= 7) {
       return {
-        label: `${capitalizedWeekDay}, ${shortDayMonth}`,
+        label: `${capitalizedWeekDay}, ${shortDayMonth}${timeSuffix}`,
         isOverdue: false,
         isToday: false,
         hasDueDate: true,
@@ -641,8 +813,8 @@ export function getPopoverDueDateInfo(
     // Mais de 7 dias (> 1 semana) -> "26 Out (faltam 9 dias)" / "Oct 26 (in 9 days)"
     return {
       label: isEn
-        ? `${shortDayMonth} (in ${diffDays} days)`
-        : `${shortDayMonth} (faltam ${diffDays} dias)`,
+        ? `${shortDayMonth}${timeSuffix} (in ${diffDays} days)`
+        : `${shortDayMonth}${timeSuffix} (faltam ${diffDays} dias)`,
       isOverdue: false,
       isToday: false,
       hasDueDate: true,
@@ -811,12 +983,43 @@ export function parseTimeParts(val?: string | null): {
 }
 
 /**
- * Formata hora e minuto numéricos no padrão HH:mm (24h).
+ * Formata hora e minuto numéricos no padrão HH:mm (24h) ou hh:mm A (12h).
  */
-export function formatTimeParts(hour: number, minute: number): string {
-  const h = String(Math.max(0, Math.min(23, hour))).padStart(2, "0");
+export function formatTimeParts(
+  hour: number,
+  minute: number,
+  options?: { timeFormat?: TimeFormat },
+): string {
   const m = String(Math.max(0, Math.min(59, minute))).padStart(2, "0");
+  if (options?.timeFormat === "12h") {
+    const period = hour >= 12 ? "PM" : "AM";
+    const h12 = hour % 12 === 0 ? 12 : hour % 12;
+    const hStr = String(h12).padStart(2, "0");
+    return `${hStr}:${m} ${period}`;
+  }
+  const h = String(Math.max(0, Math.min(23, hour))).padStart(2, "0");
   return `${h}:${m}`;
+}
+
+/**
+ * Formata um horário (Date ou string HH:mm) respeitando o formato de hora preferido ("24h" ou "12h").
+ */
+export function formatTimeDisplay(
+  timeVal?: string | Date | null,
+  options?: { timeFormat?: TimeFormat; locale?: AppLocale },
+): string {
+  if (!timeVal) return "";
+  const timeFormat = resolveEffectiveTimeFormat(
+    options?.timeFormat,
+    options?.locale,
+  );
+  if (timeVal instanceof Date) {
+    return formatTimeParts(timeVal.getHours(), timeVal.getMinutes(), {
+      timeFormat,
+    });
+  }
+  const { hour, minute } = parseTimeParts(timeVal);
+  return formatTimeParts(hour, minute, { timeFormat });
 }
 
 /**
@@ -965,4 +1168,14 @@ export function generateCalendarGrid(
   }
 
   return days;
+}
+
+/**
+ * Converte uma string ISO de data (`YYYY-MM-DD` ou `YYYY-MM-DDTHH:mm...`)
+ * para timestamp UTC em milissegundos (00:00:00 UTC), ou `null` se inválida.
+ */
+export function parseIsoDateUtcMs(dateStr: string): number | null {
+  const [y, m, d] = dateStr.split("T")[0].split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return Date.UTC(y, m - 1, d);
 }

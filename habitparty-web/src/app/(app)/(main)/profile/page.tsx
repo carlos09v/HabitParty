@@ -7,7 +7,6 @@ import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getMyShowcase } from "@/services/showcaseService";
 import { getCurrentUser } from "@/services/userService";
 import { createEmptyShowcaseData } from "@/utils";
-import { getCompactMode } from "@/utils/cookies";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("showcase.metadata");
@@ -18,10 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ProfileShowcasePage() {
-  const [isCompact, showcaseData] = await Promise.all([
-    getCompactMode(),
-    getMyShowcase(),
-  ]);
+  const showcaseData = await getMyShowcase();
 
   const resolvedUser = showcaseData?.user ?? (await getCurrentUser());
   if (!resolvedUser) {
@@ -33,11 +29,8 @@ export default async function ProfileShowcasePage() {
 
   return (
     <ScopedIntlProvider scope="showcase">
-      <PageWrapper isCompact={isCompact}>
-        <ShowcaseContainer
-          initialShowcase={resolvedShowcase}
-          initialCompact={isCompact}
-        />
+      <PageWrapper>
+        <ShowcaseContainer initialShowcase={resolvedShowcase} />
       </PageWrapper>
     </ScopedIntlProvider>
   );

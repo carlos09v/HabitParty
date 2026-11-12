@@ -127,4 +127,17 @@ public interface TaskJpaRepository extends JpaRepository<TaskJpaEntity, UUID> {
     @Modifying
     @Query("DELETE FROM TaskJpaEntity t WHERE t.userId = :userId")
     void deleteAllByUserId(@Param("userId") UUID userId);
+
+    // Projeção escalar: [workspaceId, workspaceName, count] — busca case-insensitive em nome e descrição
+    @Query("""
+        SELECT w.id, w.name, COUNT(t)
+        FROM TaskJpaEntity t, BoardColumnJpaEntity c
+        JOIN c.workspace w
+        WHERE t.boardColumnId = c.id
+          AND t.userId = :userId
+          AND (LOWER(t.name) LIKE :pattern ESCAPE '\\' OR LOWER(t.description) LIKE :pattern ESCAPE '\\')
+        GROUP BY w.id, w.name, w.createdAt
+        ORDER BY w.createdAt ASC
+        """)
+    List<Object[]> countMatchingTasksByWorkspace(@Param("userId") UUID userId, @Param("pattern") String pattern);
 }

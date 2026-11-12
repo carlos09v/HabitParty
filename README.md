@@ -10,7 +10,7 @@ An open-core productivity and gamification system featuring a strict mathematica
 
 ## ✨ Key Features
 
-* **Complete Routine Management:** Clear workflow division into **Habits** (with positive/negative streaks and biological decay), **Dailies** (recurring routines with day-of-week scheduling), and **To-Dos** (single-run tasks with subtask checklists and due dates).
+* **Complete Routine Management:** Clear workflow division into **Habits** (with positive/negative streaks and biological decay), **Dailies** (recurring routines with day-of-week scheduling), and **To-Dos** (single-run tasks with due dates, deadline times, subtask checklists, and VIP scheduled events with start/end times or all-day toggle).
 * **Two Experience Modes (Essential vs. Adventure):** Switch anytime between two visual and semantic profiles with `1:1` mathematical parity:
   * 🎯 **Essential Mode (Productivity):** Clean, executive aesthetic. Converts deliverables into **Credits** and **Points (`pts`)**, uses professional progression titles (`Beginner` to `High Performance`), discreet **Effort** indicators, direct personal rewards in the Store (without RNG draws), **Strict Deadline**, and **Inventory**.
   * ⚔️ **Adventure Mode (RPG Immersion):** Full RPG gamification with **Gold Coins (🪙)** and **XP**, adventurer ranks (`Novice` to `Legend`), sword icons for **Difficulty**, **Mystery Boxes (Gacha)**, **Hardcore Mode**, and **Backpack**.
@@ -19,16 +19,16 @@ An open-core productivity and gamification system featuring a strict mathematica
   * 🟦 **Easy** (0.75 🪙 / Credits • 5 XP / pts)
   * 🟨 **Medium** (2.50 🪙 / Credits • 15 XP / pts)
   * 🟧 **Hard** (5.00 🪙 / Credits • 30 XP / pts)
-* **Kanban Board & Multiple Workspaces:** Segregate different areas of your life (Work, Studies, Personal Routine) into isolated workspaces featuring customizable Kanban boards and columns.
+* **Kanban Board & Multiple Workspaces:** Segregate different areas of your life (Work, Studies, Personal Routine) into isolated workspaces featuring customizable Kanban boards, columns, and smart cross-workspace search hints.
 * **Real-Life Reward Store:** Build your own catalog of leisure and recovery rewards categorized into packages (Single Use, Time-Based Coupons, or Mystery Boxes) balanced with your daily effort.
 * **🎁 Mystery Boxes (Optional RNG):** Weighted probability loot boxes calibrated mathematically across 4 tiers (Basic, Premium, Epic, Legendary) to bring excitement without breaking your personal economy.
 * **🎒 Inventory Backpack:** Purchased rewards are stored in your backpack to be consumed whenever you take your break or linked directly to a timed leisure focus session.
 * **⏱️ Focus Hero Stage (Pomodoro & Free Stopwatch):** Native immersion timer featuring daily diminishing returns (*daily soft cap* up to 6h), anti-AFK safeguards (90 min cap per session), and leisure safeguards (backpack leisure sessions yield zero coins).
-* **👑 VIP Personalization & Ambient Sound:** Animated cosmic avatar frames, procedural ambient noise synthesized natively in the browser via Web Audio API (Gentle Rain, Cozy Cafe, Lofi Zen, Fireplace), and an exclusive VIP icon package.
+* **👑 VIP Personalization, Events & Ambient Sound:** Schedule To-Dos as timed or all-day Events, unlock animated cosmic avatar frames, procedural ambient noise synthesized natively in the browser via Web Audio API (Gentle Rain, Cozy Cafe, Lofi Zen, Fireplace), and an exclusive VIP icon package.
 * **🛡️ Admin Dashboard & Observability (`/admin`):** Dedicated administrative panel for users with `ROLE_ADMIN` featuring real-time **Resend** monthly email quota telemetry, platform-wide task volume tracking, estimated PostgreSQL database storage footprint breakdown per user, role management, and email dispatch audit logs (`EmailDispatchLog`).
 * **✉️ Email Reminders & Notifications (Resend):** Automated task deadline reminders and password reset flows with per-user quota controls to prevent email flooding.
 * **🔑 Hybrid Authentication & Security:** Native support for social login via **Google OAuth 2.0** and standard email/password authentication using stateless JWT, Refresh Tokens, BCrypt password hashing, and Role-Based Access Control (RBAC).
-* **📊 Data Audit & Export (CSV):** Detailed daily productivity history with the ability to export full transaction ledgers (coins, XP, purchases) to CSV spreadsheets.
+* **📊 Data Audit & Export (CSV):** Detailed daily productivity history with batch multi-selection management, list origin snapshots, and the ability to export full transaction ledgers (coins, XP, purchases) to CSV spreadsheets.
 
 ---
 
@@ -148,11 +148,11 @@ Built with a focus on high scalability, clean domain modeling, and testability:
   * **Security & RBAC:** Spring Security with role controls (`ROLE_USER`, `ROLE_ADMIN`), stateless JWT authentication, and BCrypt-hashed credentials.
   * **Social Authentication:** Google OAuth 2.0 integration.
   * **Transactional Emailing:** Resend API for task reminders and account recovery.
-  * **Databases:** PostgreSQL (primary relational database) & Redis (caching).
+  * **Databases:** PostgreSQL (primary relational database) with Flyway database migrations.
   * **Payments & Subscriptions:** Stripe Checkout, Customer Portal, and Webhooks for card subscriptions and Pix.
   * **Documentation:** Swagger / OpenAPI 3.0 visual REST documentation.
 * **Frontend (`habitparty-web`):**
-  * **Next.js 15+ (App Router) & React 19**
+  * **Next.js 16 (App Router) & React 19**
   * **Tailwind CSS v4** with semantic design tokens and native light/dark mode support.
   * **Biome** for fast formatting and linting.
   * **Web Audio API** native procedural sound synthesizers (click feedback, timers, and 4 ambient noise generators).
@@ -187,8 +187,9 @@ Navigate to the API folder and launch the PostgreSQL container:
 
 ```bash
 cd habitparty-api
-docker compose up -d
+docker compose up -d postgres
 ```
+*(Tip: Running `docker compose up -d postgres` starts solely the database container, keeping port `8080` available for local backend development with Maven. To run both PostgreSQL and the backend API fully containerized, run `docker compose up -d`).*
 
 ---
 
@@ -241,15 +242,22 @@ npm run dev
 
 ---
 
-### 🛡️ Release 1.3 — Task-Linked Focus, VIP Themes & Friendships
+### 🛡️ Release 1.3 — Scheduled Events, Bulk History Management & Task-Linked Focus ✅ (Completed)
 * **Task-Linked Focus Sessions & Effort Metrics:** Connect Pomodoro/Deep Work timer sessions directly to Kanban tasks in 1 click, track accumulated focus time per card (e.g., `⏱️ 2h 15m focused`), view session history, and auto-complete tasks upon timer completion.
-* **VIP Atmospheric Themes:** Dynamic color schemes exclusive to Premium subscribers (e.g., *Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold*).
-* **Friendship Network:** Find players via username or friend codes, send invites, and build your connected accountability circle.
-* **Privacy Controls:** Granular settings to choose which data (tasks, active streaks, or stats) remain public or private.
+* **To-Dos as Scheduled Events & Duration (VIP):** Transform single-run To-Dos into calendar events with start and end times (`startTime` / `dueEndTime`) or all-day schedules (`isAllDay`), universal date & time selector (`DatePicker`), and live pulsing "In progress" status badges on the Kanban board.
+* **Multi-Selection & Batch Delete on Transaction History:** Granular control over the transaction ledger with individual checkboxes, "select all", floating bulk action bar, and batch deletion (`DELETE /transactions/batch`).
+* **Kanban Column Snapshots in Ledger:** Preserves the list/column name (`column_name_snapshot`) where the task was completed or failed, protecting historical context even if columns are renamed or deleted.
+* **Cross-Workspace Search Hints:** Intelligent search banner that detects matching tasks in other workspaces and lets you switch workspaces with 1 click.
+* **Global Time Format Preference (12h AM/PM vs 24h):** User-configurable time format setting in Appearance, seamlessly applied across cards, task details, history, and focus logs.
+* **Expanded Task Descriptions (5,000 chars):** Rich task specifications with dynamic character counter and limit alerts.
+* **Streak Lost Notifier:** Compassionate, motivational in-app notification when a daily consistency streak is broken.
+* **Synchronized Focus & Task Deletion:** Confirmation modals with an option to simultaneously wipe linked ledger transactions when deleting tasks or focus sessions.
 
 ---
 
-### ⚔️ Release 1.4 — Parties (Small Accountability Squads) & Live Chat
+### ⚔️ Release 1.4 — Parties, VIP Themes, Friendships & Live Chat
+* **VIP Atmospheric Themes:** Dynamic color schemes exclusive to Premium subscribers (e.g., *Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold*).
+* **Friendship Network & Privacy Controls:** Find players via username or friend codes, send invites, build your connected accountability circle, and configure granular privacy controls for your statistics and routines.
 * **Party Squads:** Form small accountability groups with friends or study partners using fast invite codes.
 * **Cooperative Daily Quests:** Collective daily goals granting coin bonuses and rewards when all squad members complete their commitments.
 * **Real-Time Integrated Chat:** Direct messaging between friends and dedicated Party chat rooms to maintain motivation.

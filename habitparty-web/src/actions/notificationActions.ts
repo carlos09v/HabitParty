@@ -3,11 +3,12 @@
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { serverApi } from "@/api/server";
-import { ALL_WEEK_DAYS } from "@/constants/task";
+import { ALL_WEEK_DAYS, REMINDER_OFFSET_DAYS } from "@/constants/task";
+import { parseIsoDateUtcMs } from "@/utils/date";
 
 export interface SidebarNotification {
   id: string;
-  type: "overdue" | "today" | "streak" | "focus_item";
+  type: "overdue" | "today" | "streak" | "focus_item" | "reminder";
   title: string;
   description: string;
   timestamp: string;
@@ -24,6 +25,7 @@ export interface SidebarNotificationsResponse {
  * Coleta e agrega os alertas mais relevantes da rotina do usuário:
  * - Tarefas atrasadas
  * - Metas e afazeres programados para hoje
+ * - Lembretes programados dentro da janela de antecedência
  * - Alerta de manutenção de streak/ofensiva
  * - Itens da mochila ativos na área de foco
  */
@@ -57,14 +59,11 @@ export async function getSidebarNotificationsAction(
       workspaceId = workspacesRes.data[0].id;
     }
 
-    const tasksRes = workspaceId
+    const kanbanRes = workspaceId
       ? await serverApi
-          .GET("/tasks/workspace/{workspaceId}/dashboard", {
-            params: {
-              path: { workspaceId },
-              query: { filter: "ALL", size: 100 },
-            },
-            next: { tags: ["dashboard-tasks"] },
+          .GET("/workspaces/{workspaceId}/kanban", {
+            params: { path: { workspaceId } },
+            next: { tags: ["kanban", "tasks"] },
           })
           .catch(() => ({ data: null }))
       : { data: null };
@@ -79,24 +78,42 @@ export async function getSidebarNotificationsAction(
         typeof clientDayIndex === "number" ? clientDayIndex : now.getDay()
       ];
 
-    const tasks = tasksRes.data?.content || [];
+    const todayUtcMs = parseIsoDateUtcMs(todayStr);
     let overdueCount = 0;
     let todayTasksCount = 0;
+    const activeReminderNames: string[] = [];
 
-    for (const task of tasks) {
-      const type = (task.taskType || "").toLowerCase();
-      const isDaily = type === "daily";
-      const isHabit = type === "habit";
+    for (const col of kanbanRes?.data?.columns || []) {
+      for (const task of col.tasks || []) {
+        if (task.status === "COMPLETED") continue;
 
-      if (task.dueDate) {
-        const datePart = task.dueDate.split("T")[0];
-        if (datePart < todayStr) {
-          overdueCount++;
-        } else if (datePart === todayStr) {
-          todayTasksCount++;
-        }
-      } else {
-        if (isHabit) {
+        const type = (task.taskType || "").toLowerCase();
+        const isDaily = type === "daily";
+        const isHabit = type === "habit";
+
+        if (task.dueDate) {
+          const datePart = task.dueDate.split("T")[0];
+          if (datePart < todayStr) {
+            overdueCount++;
+          } else if (datePart === todayStr) {
+            todayTasksCount++;
+          }
+
+          if (
+            todayUtcMs !== null &&
+            task.reminderType &&
+            task.reminderType !== "NONE"
+          ) {
+            const dueUtcMs = parseIsoDateUtcMs(task.dueDate);
+            if (dueUtcMs !== null) {
+              const diffDays = Math.round((dueUtcMs - todayUtcMs) / 86_400_000);
+              const windowDays = REMINDER_OFFSET_DAYS[task.reminderType] ?? 1;
+              if (diffDays >= 0 && diffDays <= windowDays && task.name) {
+                activeReminderNames.push(task.name);
+              }
+            }
+          }
+        } else if (isHabit) {
           todayTasksCount++;
         } else if (isDaily) {
           if (
@@ -122,6 +139,22 @@ export async function getSidebarNotificationsAction(
         timestamp: t("overdueTimestamp"),
         severity: "danger",
         href: "/dashboard?filter=overdue",
+      });
+    }
+
+    // 1.5. Alertas de Lembretes Programados (To-dos dentro da janela do lembrete)
+    if (activeReminderNames.length > 0) {
+      notifications.push({
+        id: "alert-reminders",
+        type: "reminder",
+        title:
+          activeReminderNames.length === 1
+            ? t("reminderSingleTitle", { name: activeReminderNames[0] })
+            : t("reminderMultipleTitle", { count: activeReminderNames.length }),
+        description: t("reminderDesc"),
+        timestamp: t("reminderTimestamp"),
+        severity: "warning",
+        href: "/tasks",
       });
     }
 

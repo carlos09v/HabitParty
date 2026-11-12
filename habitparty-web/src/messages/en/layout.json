@@ -1,4 +1,8 @@
 {
+  "streakLost": {
+    "title": "Streak lost!",
+    "description": "You didn't complete any tasks yesterday and your streak of {count} {count, plural, one {day was lost} other {days was lost}}. Start fresh today! 🔥"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "activitySection": "Activity",
@@ -88,7 +92,11 @@
     "focusItemTitle": "Reward ready: \"{name}\"",
     "focusItemDefaultName": "Focus Item",
     "focusItemDesc": "Focused item ready to be enjoyed or completed.",
-    "focusItemTimestamp": "Backpack / Focus"
+    "focusItemTimestamp": "Backpack / Focus",
+    "reminderSingleTitle": "Reminder: \"{name}\"",
+    "reminderMultipleTitle": "{count} active task reminders",
+    "reminderDesc": "Due date approaching — check your scheduled to-dos.",
+    "reminderTimestamp": "Scheduled reminder"
   },
   "userProfile": {
     "defaultName": "Adventurer",

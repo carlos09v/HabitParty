@@ -8,28 +8,56 @@ import {
   Maximize2,
   Minimize2,
   Pencil,
+  Timer,
   Trash2,
 } from "lucide-react";
 import type { ContextMenuItem } from "@/components/ui/ContextMenu";
+import { normalizeTaskType } from "@/constants/task";
+import { useFocusTimerStore } from "@/store/focusTimerStore";
 import type { BoardColumn, Task } from "@/types/task";
 import type { ColumnWidthPreset } from "@/types/task-ui";
 
 /**
- * Constrói de forma padronizada os itens do ContextMenu de uma Tarefa (Editar, Duplicar, Excluir).
+ * Constrói de forma padronizada os itens do ContextMenu de uma Tarefa (Focar, Editar, Duplicar, Excluir).
  */
 export function buildTaskContextMenuItems(options: {
   task: Task | null;
   onEdit: (task: Task) => void;
   onDuplicate: (task: Task) => void;
   onDelete: (task: Task) => void;
+  onStartFocus?: (task: Task) => void;
   labels?: {
+    startFocus?: string;
     edit?: string;
     duplicate?: string;
     delete?: string;
   };
 }): ContextMenuItem[] {
-  const { task, onEdit, onDuplicate, onDelete, labels } = options;
+  const { task, onEdit, onDuplicate, onDelete, onStartFocus, labels } = options;
+  const canFocus =
+    Boolean(task) &&
+    normalizeTaskType(task as Task) !== "habit" &&
+    !task?.completed;
+
   return [
+    ...(canFocus && task
+      ? [
+          {
+            label: labels?.startFocus || "Focar nesta tarefa",
+            icon: <Timer size={14} className="text-gold" />,
+            onClick: () => {
+              if (onStartFocus) {
+                onStartFocus(task);
+              } else {
+                useFocusTimerStore.getState().startFocusTask({
+                  id: task.id,
+                  title: task.title,
+                });
+              }
+            },
+          },
+        ]
+      : []),
     {
       label: labels?.edit || "Editar",
       icon: <Pencil size={14} />,

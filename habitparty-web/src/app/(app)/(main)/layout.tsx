@@ -6,13 +6,14 @@ import { EmailVerificationBanner } from "@/components/auth/EmailVerificationBann
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { StoreInitializer } from "@/components/layout/StoreInitializer";
+import { StreakLostNotifier } from "@/components/layout/StreakLostNotifier";
 import { AchievementUnlockListener } from "@/components/showcase/AchievementUnlockListener";
 import { PaymentFeedbackListener } from "@/components/subscription/PaymentFeedbackListener";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getRawInventoryItems } from "@/services/inventoryService";
 import { getCurrentUser } from "@/services/userService";
 import { getWorkspaces } from "@/services/workspaceService";
-import { getCompactMode, getDateFormat, getThemeMode } from "@/utils/cookies";
+import { getDateFormat, getThemeMode, getTimeFormat } from "@/utils/cookies";
 
 export const instant = false;
 
@@ -48,17 +49,17 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const cookieWorkspaceId = cookieStore.get("activeWorkspaceId")?.value;
 
   const [
-    isCompact,
     theme,
     dateFormat,
+    timeFormat,
     workspaces,
     user,
     inventoryData,
     speculativeTasksCount,
   ] = await Promise.all([
-    getCompactMode(),
     getThemeMode(),
     getDateFormat(),
+    getTimeFormat(),
     getWorkspaces(),
     getCurrentUser(),
     getRawInventoryItems(),
@@ -104,12 +105,16 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         <Suspense fallback={null}>
           <PaymentFeedbackListener />
           <AchievementUnlockListener />
+          <StreakLostNotifier
+            userId={user?.id}
+            currentStreak={user?.currentStreak}
+          />
         </Suspense>
 
         <StoreInitializer
-          compactMode={isCompact}
           theme={theme}
           dateFormat={dateFormat}
+          timeFormat={timeFormat}
           experienceMode={user?.experienceMode || "PRODUCTIVITY"}
           workspaces={workspaces || []}
           activeWorkspaceId={activeWorkspaceId}

@@ -1,17 +1,23 @@
 "use client";
 
-import { Check, Gift, Loader2, X } from "lucide-react";
+import { Check, Gift, Loader2, Package, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { CoinIcon } from "@/components/ui/CoinIcon";
+import { DescriptionCharCounter } from "@/components/ui/DescriptionCharCounter";
 import { IconPickerPopover } from "@/components/ui/IconPickerPopover";
 import { Input } from "@/components/ui/Input";
+import {
+  SegmentedControl,
+  type SegmentedControlOption,
+} from "@/components/ui/SegmentedControl";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import {
   COUPON_PACKAGE_OPTIONS,
   calculateSuggestedCouponPrice,
+  REWARD_DESCRIPTION_MAX_LENGTH,
   REWARD_FORM_CATEGORY_OPTIONS,
   REWARD_FORM_TYPE_KEYS,
   REWARD_ICONS,
@@ -82,7 +88,7 @@ export function RewardFormModal({
     onClose,
   });
 
-  const rewardTypeOptions = useMemo(
+  const segmentedTypeOptions: SegmentedControlOption<RewardType>[] = useMemo(
     () =>
       REWARD_FORM_TYPE_KEYS.filter(
         (typeKey) =>
@@ -92,18 +98,10 @@ export function RewardFormModal({
       ).map((typeKey) => {
         const meta = REWARD_TYPE_META[typeKey];
         const Icon = meta?.icon;
-        const iconColorClass =
-          typeKey === "TimeBased"
-            ? "text-emerald-600 dark:text-emerald-400"
-            : typeKey === "SingleUse"
-              ? "text-primary dark:text-purple-400"
-              : "text-amber-600 dark:text-gold";
         return {
           value: typeKey,
           label: tOptions(`types.${toRewardTypeMessageKey(typeKey)}`),
-          icon: Icon ? (
-            <Icon size={15} className={cn("shrink-0", iconColorClass)} />
-          ) : undefined,
+          icon: Icon,
         };
       }),
     [isProductivity, rewardToEdit?.type, tOptions],
@@ -137,7 +135,27 @@ export function RewardFormModal({
       preventClose={isPending}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {/* Nome da Recompensa e Ícone Integrados */}
+        {/* 1. SELETOR DE TIPO NO TOPO (SegmentedControl) */}
+        <div className="flex flex-col gap-1.5">
+          <span className="text-body-s text-neutral-100 font-medium select-none">
+            {t("typeLabel")} <span className="text-gold">*</span>
+          </span>
+          <SegmentedControl<RewardType>
+            options={segmentedTypeOptions}
+            value={type}
+            onChange={(val) => handleTypeChange(val)}
+            disabled={isPending}
+            size="md"
+          />
+          {isProductivity && (
+            <div className="flex items-center gap-2 p-2.5 rounded-xl bg-surface/50 border border-primary/20 text-xs text-neutral-300 mt-1">
+              <Package size={15} className="text-gold shrink-0" />
+              <span>{t("mysteryBoxAdventureHint")}</span>
+            </div>
+          )}
+        </div>
+
+        {/* 2. NOME DA RECOMPENSA E ÍCONE */}
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
             <label
@@ -187,7 +205,7 @@ export function RewardFormModal({
           </span>
         </div>
 
-        {/* Descrição */}
+        {/* 3. DESCRIÇÃO (LOGO ABAIXO DO NOME/TÍTULO COM CONTADOR CONDICIONAL PADRÃO TASK) */}
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
             <label
@@ -196,116 +214,87 @@ export function RewardFormModal({
             >
               {t("descriptionLabel")}
             </label>
-            <span
-              className={cn(
-                "text-tiny tabular-nums transition-colors",
-                description.length >= 120
-                  ? "text-gold font-semibold"
-                  : "text-neutral-400",
-              )}
-            >
-              {description.length}/120
-            </span>
+            <DescriptionCharCounter
+              length={description.length}
+              max={REWARD_DESCRIPTION_MAX_LENGTH}
+            />
           </div>
           <Textarea
             id="rewardDescription"
             rows={2}
             value={description}
-            onChange={(e) => setDescription(e.target.value.slice(0, 120))}
+            onChange={(e) =>
+              setDescription(
+                e.target.value.slice(0, REWARD_DESCRIPTION_MAX_LENGTH),
+              )
+            }
             placeholder={t("descriptionPlaceholder")}
             compact
-            maxLength={120}
+            maxLength={REWARD_DESCRIPTION_MAX_LENGTH}
             disabled={isPending}
           />
         </div>
 
-        {/* Linha dupla: Tipo de Recompensa e Categoria */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Select
-            id="rewardType"
-            label={
-              <span>
-                {t("typeLabel")} <span className="text-gold">*</span>
-              </span>
-            }
-            value={type}
-            onChange={(val) => handleTypeChange(val as RewardType)}
-            options={rewardTypeOptions}
-            disabled={isPending}
-            compact
-            triggerClassName="h-[42px]"
-          />
-
-          <Select
-            id="rewardCategory"
-            label={t("categoryLabel")}
-            value={category}
-            onChange={(val) => setCategory(val as RewardCategory)}
-            options={categoryOptions}
-            disabled={isPending}
-            compact
-            triggerClassName="h-[42px]"
-          />
-        </div>
-
-        {/* 4 Caixas Gamificadas + Editor de Prêmios da Caixa Misteriosa */}
-        {type === "MysteryBox" && (
-          <>
-            <MysteryBoxSelector
-              selectedLevel={packageLevel}
-              onSelect={(tier) =>
-                handleMysteryBoxTierSelect(
-                  tier.id,
-                  tier.recommendedPrice,
-                  tMystery(`tiers.${tier.backendPackageLevel}.name`),
-                )
-              }
-              disabled={isPending}
-            />
-            <MysteryBoxLootEditor
-              packageLevel={packageLevel}
-              lootItems={lootItems}
-              onChangeSlot={handleLootSlotChange}
-              onApplyPreset={handleApplyLootPreset}
-              existingRewards={existingRewards}
-              disabled={isPending}
-            />
-          </>
-        )}
-
-        {/* Seção Condicional se for TimeBased (Cupom - Opção C) */}
-        {type === "TimeBased" && (
-          <div className="flex flex-col gap-3 p-3.5 rounded-xl bg-background border border-neutral-700 dark:bg-surface/30 dark:border-white/10 animate-in fade-in duration-150">
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
+        {/* 4. BLOCO DE CUSTO E DURAÇÃO (VALOR NÃO FICA ESCONDIDO EM ÚLTIMO) */}
+        {type === "TimeBased" ? (
+          <div className="flex flex-col gap-3 p-3.5 rounded-xl bg-background border border-neutral-700 dark:bg-surface/30 dark:border-white/10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Duração ao lado do Custo */}
+              <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="rewardDuration"
                   className="text-body-s text-neutral-100 font-medium"
                 >
                   {t("durationLabel")} <span className="text-gold">*</span>
                 </label>
-                <span className="text-label-m text-neutral-400">
-                  {t("durationHint")}
-                </span>
+                <Input
+                  id="rewardDuration"
+                  type="number"
+                  min={5}
+                  max={1440}
+                  step={5}
+                  value={baseDurationMinutes}
+                  onChange={(e) => setBaseDurationMinutes(e.target.value)}
+                  onBlur={() => {
+                    if (
+                      !baseDurationMinutes ||
+                      Number(baseDurationMinutes) < 5
+                    ) {
+                      setBaseDurationMinutes("5");
+                    }
+                  }}
+                  placeholder={t("durationPlaceholder")}
+                  compact
+                  className="font-semibold h-[42px]"
+                  disabled={isPending}
+                />
               </div>
-              <Input
-                id="rewardDuration"
-                type="number"
-                min={5}
-                max={1440}
-                step={5}
-                value={baseDurationMinutes}
-                onChange={(e) => setBaseDurationMinutes(e.target.value)}
-                onBlur={() => {
-                  if (!baseDurationMinutes || Number(baseDurationMinutes) < 5) {
-                    setBaseDurationMinutes("5");
-                  }
-                }}
-                placeholder={t("durationPlaceholder")}
-                compact
-                className="font-semibold h-[42px]"
-                disabled={isPending}
-              />
+
+              {/* Custo */}
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="rewardPrice"
+                  className="text-body-s text-neutral-100 font-medium"
+                >
+                  {isGamified ? t("priceLabel") : t("priceLabelProductivity")}{" "}
+                  <span className="text-gold">*</span>
+                </label>
+                <Input
+                  id="rewardPrice"
+                  type="number"
+                  step="any"
+                  min="0"
+                  max={99999}
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  placeholder={t("pricePlaceholder")}
+                  compact
+                  icon={<CoinIcon size={16} withGlow />}
+                  className="font-bold h-[42px]"
+                  required
+                  disabled={isPending}
+                />
+              </div>
             </div>
 
             {/* Chips de Pacote / Atalhos de Tempo */}
@@ -373,11 +362,8 @@ export function RewardFormModal({
               </div>
             </div>
           </div>
-        )}
-
-        {/* Custo em Moedas/Créditos */}
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between">
+        ) : type === "SingleUse" ? (
+          <div className="flex flex-col gap-1.5">
             <label
               htmlFor="rewardPrice"
               className="text-body-s text-neutral-100 font-medium"
@@ -385,32 +371,92 @@ export function RewardFormModal({
               {isGamified ? t("priceLabel") : t("priceLabelProductivity")}{" "}
               <span className="text-gold">*</span>
             </label>
-            {type === "MysteryBox" && (
-              <span className="text-label-m text-amber-700 dark:text-gold font-medium">
-                {t("suggestedPriceByRarity")}
-              </span>
-            )}
+            <Input
+              id="rewardPrice"
+              type="number"
+              step="any"
+              min="0"
+              max={99999}
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder={t("pricePlaceholder")}
+              compact
+              icon={<CoinIcon size={16} withGlow />}
+              className="font-bold h-[42px]"
+              required
+              disabled={isPending}
+            />
           </div>
-          <Input
-            id="rewardPrice"
-            type="number"
-            step="any"
-            min="0"
-            max={99999}
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            placeholder={t("pricePlaceholder")}
-            compact
-            icon={<CoinIcon size={16} withGlow />}
-            className="font-bold h-[42px]"
-            required
+        ) : (
+          /* MysteryBox: Custo em destaque seguido por Seletor e Editor de Prêmios */
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <label
+                  htmlFor="rewardPrice"
+                  className="text-body-s text-neutral-100 font-medium"
+                >
+                  {isGamified ? t("priceLabel") : t("priceLabelProductivity")}{" "}
+                  <span className="text-gold">*</span>
+                </label>
+                <span className="text-label-m text-amber-700 dark:text-gold font-medium">
+                  {t("suggestedPriceByRarity")}
+                </span>
+              </div>
+              <Input
+                id="rewardPrice"
+                type="number"
+                step="any"
+                min="0"
+                max={99999}
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder={t("pricePlaceholder")}
+                compact
+                icon={<CoinIcon size={16} withGlow />}
+                className="font-bold h-[42px]"
+                required
+                disabled={isPending}
+              />
+              <span className="text-label-m text-neutral-400">
+                {t("mysteryBoxPriceHelper")}
+              </span>
+            </div>
+
+            <MysteryBoxSelector
+              selectedLevel={packageLevel}
+              onSelect={(tier) =>
+                handleMysteryBoxTierSelect(
+                  tier.id,
+                  tier.recommendedPrice,
+                  tMystery(`tiers.${tier.backendPackageLevel}.name`),
+                )
+              }
+              disabled={isPending}
+            />
+            <MysteryBoxLootEditor
+              packageLevel={packageLevel}
+              lootItems={lootItems}
+              onChangeSlot={handleLootSlotChange}
+              onApplyPreset={handleApplyLootPreset}
+              existingRewards={existingRewards}
+              disabled={isPending}
+            />
+          </div>
+        )}
+
+        {/* 5. CLASSIFICAÇÃO (CATEGORIA COMO TAG) NO FIM */}
+        <div className="flex flex-col gap-3 pt-1 border-t border-neutral-700/50 dark:border-white/5">
+          <Select
+            id="rewardCategory"
+            label={t("categoryLabel")}
+            value={category}
+            onChange={(val) => setCategory(val as RewardCategory)}
+            options={categoryOptions}
             disabled={isPending}
+            compact
+            triggerClassName="h-[42px]"
           />
-          {type === "MysteryBox" && (
-            <span className="text-label-m text-neutral-400">
-              {t("mysteryBoxPriceHelper")}
-            </span>
-          )}
         </div>
 
         {/* Botões de Ação */}

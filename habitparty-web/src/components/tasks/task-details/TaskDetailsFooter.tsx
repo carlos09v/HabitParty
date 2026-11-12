@@ -56,6 +56,7 @@ export function TaskDetailsFooter({
     const isTodo = normalizeTaskType(task) === "todo";
     const dueDateInfo = getTaskDueDateInfo(task.dueDate, {
       dueTime: task.dueTime,
+      dueEndTime: task.dueEndTime,
     });
     return Boolean(
       isTodo && task.isHardcoreModeEnabled && dueDateInfo.isOverdue,
