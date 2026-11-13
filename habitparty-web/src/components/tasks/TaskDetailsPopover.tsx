@@ -7,7 +7,8 @@ import {
   TaskActionControl,
   TaskTagSelector,
 } from "@/components/tasks/shared";
-import { MAX_TASK_TAGS } from "@/constants/task";
+import { DescriptionCharCounter } from "@/components/ui/DescriptionCharCounter";
+import { MAX_TASK_TAGS, TASK_TITLE_MAX_LENGTH } from "@/constants/task";
 import { useTaskDetailsPopover } from "@/hooks/useTaskDetailsPopover";
 import type { TaskDetailsPopoverProps } from "@/types/task-ui";
 import { cn } from "@/utils";
@@ -78,6 +79,7 @@ export function TaskDetailsPopover({
     handlePrioritySelect,
     handleAddTag,
     handleRemoveTag,
+    handleUpdateTag,
     handleAddCheckItem,
     handleToggleCheckItem,
     handleUpdateCheckItem,
@@ -126,7 +128,7 @@ export function TaskDetailsPopover({
           // Mobile (< sm): Bottom Sheet fixado na base com scroll interno
           "max-sm:inset-x-0 max-sm:bottom-0 max-sm:w-full max-sm:rounded-t-2xl max-sm:rounded-b-none max-sm:border-t max-sm:border-x-0 max-sm:border-b-0 max-sm:border-primary/40 max-sm:bg-surface max-sm:p-4 max-sm:max-h-[85vh] max-sm:overflow-y-auto max-sm:animate-in max-sm:slide-in-from-bottom max-sm:duration-200",
           // Desktop (sm+): Popover flutuante ancorado
-          "sm:w-[390px] sm:max-w-[calc(100vw-24px)] sm:max-h-[calc(100vh-24px)] sm:rounded-2xl sm:border sm:border-primary/40 sm:bg-card dark:sm:bg-popover sm:p-4 sm:animate-in sm:fade-in sm:zoom-in-95 sm:duration-150",
+          "sm:w-[390px] sm:max-w-[calc(100vw-24px)] sm:max-h-[calc(100vh-24px)] sm:rounded-2xl sm:border sm:border-primary/40 sm:bg-card dark:sm:bg-popover sm:p-4 sm:animate-in sm:zoom-in-95 sm:duration-150",
         )}
         role="dialog"
         aria-label={t("dialogAria")}
@@ -175,15 +177,23 @@ export function TaskDetailsPopover({
                 ref={titleInputRef}
                 type="text"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                maxLength={TASK_TITLE_MAX_LENGTH}
+                onChange={(e) =>
+                  setTitle(e.target.value.slice(0, TASK_TITLE_MAX_LENGTH))
+                }
                 onBlur={handleTitleBlur}
                 onKeyDown={handleTitleKeyDown}
                 placeholder={t("titlePlaceholder")}
                 className={cn(
-                  "flex-1 min-w-0 bg-transparent border-b border-transparent hover:border-white/15 focus:border-gold/70 px-1 py-0.5 outline-none transition-colors",
+                  "flex-1 min-w-0 select-text bg-transparent border-b border-transparent hover:border-white/15 focus:border-gold/70 px-1 py-0.5 outline-none transition-colors",
                   "text-base font-bold text-neutral-50 placeholder:text-neutral-500",
                   completed && !isHabit && "line-through text-neutral-400",
                 )}
+              />
+              <DescriptionCharCounter
+                length={title.length}
+                max={TASK_TITLE_MAX_LENGTH}
+                className="shrink-0 self-center"
               />
             </div>
 
@@ -200,6 +210,7 @@ export function TaskDetailsPopover({
               onInputValueChange={setNewTagText}
               onAddTag={handleAddTag}
               onRemoveTag={handleRemoveTag}
+              onUpdateTag={handleUpdateTag}
               maxTags={MAX_TASK_TAGS}
             />
           </div>

@@ -460,6 +460,9 @@ export const HABIT_DIRECTION_OPTIONS: readonly {
   { id: "BOTH", label: "+/- Ambos" },
 ] as const;
 
+/** Limite máximo de caracteres do título de uma tarefa (espelha o @Size do backend). */
+export const TASK_TITLE_MAX_LENGTH = 50;
+
 /** Limite máximo de tags permitidas por tarefa */
 export const MAX_TASK_TAGS = 5;
 

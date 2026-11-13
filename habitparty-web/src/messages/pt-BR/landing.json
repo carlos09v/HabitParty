@@ -241,7 +241,7 @@
         ],
         "extras": [
           "Formato de Horário Global (12h AM/PM vs 24h) sincronizado em relógios, cards, histórico e foco",
-          "Descrições expandidas para até 5.000 caracteres com contador dinâmico e alertas visuais",
+          "Descrições expandidas para até 2.000 caracteres com contador dinâmico e alertas visuais",
           "Notificador de quebra de ofensiva com alertas amigáveis de incentivo ao recomeço",
           "Sincronização na exclusão de sessões de foco e tarefas com opção de limpar registros vinculados no Histórico"
         ]

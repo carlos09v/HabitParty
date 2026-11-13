@@ -87,6 +87,7 @@ export interface RoutineFilterPopoverProps {
   filters?: BoardFilterState;
   onFilterChange?: (filters: BoardFilterState) => void;
   availableTags?: string[];
+  tagCounts?: Record<string, number>;
   isCompact?: boolean;
 }
 
@@ -424,6 +425,7 @@ export interface RoutineFiltersProps {
   alignment?: BoardAlignment;
   onAlignmentChange?: (alignment: BoardAlignment) => void;
   availableTags?: string[];
+  tagCounts?: Record<string, number>;
   onOpenCreateColumn?: () => void;
   onOpenCreateTask?: () => void;
   maxColumns?: number;

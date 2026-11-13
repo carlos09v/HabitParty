@@ -17,7 +17,7 @@ import {
 import type { CreateTaskFormReturn } from "@/hooks/useCreateTaskForm";
 import type { TaskPriorityOption } from "@/types/task";
 import { cn } from "@/utils";
-import { mergeTaskTagsWithLimit } from "@/utils/tags";
+import { mergeTaskTagsWithLimit, replaceTaskTag } from "@/utils/tags";
 import { parseTaskTags } from "@/utils/taskMapper";
 import { HabitImportanceSelector } from "./HabitImportanceSelector";
 import { TaskDifficultySelector } from "./TaskDifficultySelector";
@@ -88,6 +88,21 @@ export function TaskBasicFields({
       (item) => item.toLowerCase() !== tagToRemove.toLowerCase(),
     );
     setTagsInput(nextTags.join(", "));
+  };
+
+  const handleUpdateTag = (oldTag: string, newTag: string) => {
+    const { nextTags, updated, errorKey } = replaceTaskTag(
+      selectedTags,
+      oldTag,
+      newTag,
+    );
+    if (errorKey === "tagAlreadyAdded") {
+      toast.error(tHooks("tagAlreadyAdded"));
+      return;
+    }
+    if (updated) {
+      setTagsInput(nextTags.join(", "));
+    }
   };
 
   const handleToggleTag = (tagItem: string) => {
@@ -207,6 +222,7 @@ export function TaskBasicFields({
             availableTags={availableTags}
             onAddTag={handleAddTags}
             onRemoveTag={handleRemoveTag}
+            onUpdateTag={handleUpdateTag}
             onToggleTag={handleToggleTag}
             maxTags={MAX_TASK_TAGS}
             disabled={isPending}

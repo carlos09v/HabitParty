@@ -249,7 +249,7 @@ npm run dev
 * **Snapshot de Listas no Histórico:** Rastreamento persistente da coluna Kanban de origem da tarefa no momento da transação (`column_name_snapshot`), preservando o histórico mesmo após alterações no quadro.
 * **Busca Global Entre Ambientes (Cross-Workspace Search):** Banner inteligente que detecta tarefas correspondentes em outros ambientes do usuário e permite alternar de workspace com 1 clique.
 * **Formato de Horário Global (12h AM/PM vs 24h):** Preferência personalizável de exibição de tempo sincronizada em cards, detalhes, histórico e sessões de foco.
-* **Descrições Expandidas (5.000 caracteres):** Suporte a anotações detalhadas com contador dinâmico de caracteres e alertas de limite.
+* **Descrições Expandidas (2.000 caracteres):** Suporte a anotações detalhadas com contador dinâmico de caracteres e alertas de limite.
 * **Notificador de Quebra de Ofensiva:** Detecção proativa e alerta motivacional no primeiro login após quebra de sequência diária.
 * **Sincronização na Exclusão de Foco & Tarefas:** Opção de expurgar transações financeiras vinculadas no Histórico ao excluir sessões de foco ou tarefas.
 

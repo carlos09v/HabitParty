@@ -249,7 +249,7 @@ npm run dev
 * **Kanban Column Snapshots in Ledger:** Preserves the list/column name (`column_name_snapshot`) where the task was completed or failed, protecting historical context even if columns are renamed or deleted.
 * **Cross-Workspace Search Hints:** Intelligent search banner that detects matching tasks in other workspaces and lets you switch workspaces with 1 click.
 * **Global Time Format Preference (12h AM/PM vs 24h):** User-configurable time format setting in Appearance, seamlessly applied across cards, task details, history, and focus logs.
-* **Expanded Task Descriptions (5,000 chars):** Rich task specifications with dynamic character counter and limit alerts.
+* **Expanded Task Descriptions (2,000 chars):** Rich task specifications with dynamic character counter and limit alerts.
 * **Streak Lost Notifier:** Compassionate, motivational in-app notification when a daily consistency streak is broken.
 * **Synchronized Focus & Task Deletion:** Confirmation modals with an option to simultaneously wipe linked ledger transactions when deleting tasks or focus sessions.
 

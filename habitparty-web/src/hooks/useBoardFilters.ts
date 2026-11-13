@@ -8,6 +8,7 @@ import {
 } from "@/constants/task";
 import type { BoardColumn, BoardFilterState } from "@/types/task";
 import {
+  computeTagTaskCounts,
   doesTaskMatchTagFilter,
   extractAvailableTagOptions,
 } from "@/utils/tags";
@@ -27,9 +28,18 @@ export function useBoardFilters(
   );
 
   // Lista de tags únicas presentes nas tarefas atuais (com ancestrais hierárquicos expostos para filtro)
+  const allTasks = useMemo(
+    () => columns.flatMap((col) => col.tasks),
+    [columns],
+  );
+
   const availableTags = useMemo(() => {
-    return extractAvailableTagOptions(columns.flatMap((col) => col.tasks));
-  }, [columns]);
+    return extractAvailableTagOptions(allTasks);
+  }, [allTasks]);
+
+  const tagCounts = useMemo(() => {
+    return computeTagTaskCounts(allTasks, availableTags);
+  }, [allTasks, availableTags]);
 
   // Colunas com tarefas filtradas aplicadas em memória
   const filteredColumns = useMemo(() => {
@@ -105,6 +115,7 @@ export function useBoardFilters(
     filters,
     setFilters,
     availableTags,
+    tagCounts,
     filteredColumns,
   };
 }

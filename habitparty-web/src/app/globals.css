@@ -753,6 +753,10 @@ html.light select option {
         var(--tw-enter-scale, 1)
       );
   }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @utility animate-in {
@@ -1070,6 +1074,8 @@ html.light select option {
   outline: none;
   overflow-wrap: anywhere;
   word-break: break-word;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .habitparty-tiptap .tiptap > p + p,

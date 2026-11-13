@@ -669,6 +669,10 @@
     "maxTagsReached": "Limite máximo de {max} tags atingido.",
     "nestingHint": "Use > para aninhar (ex: Concurso > BB)",
     "removeTagTitle": "Remover tag {tag}",
+    "editTagTitle": "Editar tag {tag}",
+    "editTagPlaceholder": "Editar tag...",
+    "saveTagAria": "Salvar tag editada",
+    "cancelEditTagAria": "Cancelar edição da tag",
     "clearSearchAria": "Limpar busca de tags",
     "closeSelectorAria": "Fechar seletor de tags"
   }

@@ -8,6 +8,7 @@ import {
   MAX_TASK_TAGS,
   normalizeTaskType,
   TASK_DETAILS_POPOVER_OPTIONS,
+  TASK_TITLE_MAX_LENGTH,
 } from "@/constants/task";
 import { useAnchoredPopoverPosition } from "@/hooks/useAnchoredPopoverPosition";
 import { useChecklist } from "@/hooks/useChecklist";
@@ -21,7 +22,7 @@ import {
   normalizeEventSchedulePatch,
 } from "@/utils/date";
 import { calculateTaskReward } from "@/utils/economy";
-import { mergeTaskTagsWithLimit } from "@/utils/tags";
+import { mergeTaskTagsWithLimit, replaceTaskTag } from "@/utils/tags";
 import {
   buildUpdateTaskPayload,
   computeOptimisticHabitDelta,
@@ -331,7 +332,9 @@ export function useTaskDetailsPopover({
       descRef.current = flushedDesc;
     }
 
-    const trimmedTitle = titleRef.current.trim();
+    const trimmedTitle = titleRef.current
+      .trim()
+      .slice(0, TASK_TITLE_MAX_LENGTH);
     const trimmedDesc = descRef.current.trim();
     const originalDesc = (currentTask.description || "").trim();
 
@@ -383,11 +386,15 @@ export function useTaskDetailsPopover({
   const handleTitleBlur = () => {
     const currentTask = latestTaskRef.current ?? task;
     if (!currentTask) return;
-    const trimmed = title.trim();
+    const trimmed = title.trim().slice(0, TASK_TITLE_MAX_LENGTH);
     if (!trimmed) {
       setTitle(currentTask.title);
       titleRef.current = currentTask.title;
       return;
+    }
+    if (trimmed !== title) {
+      setTitle(trimmed);
+      titleRef.current = trimmed;
     }
     if (trimmed !== currentTask.title) {
       saveTaskField({ title: trimmed });
@@ -485,6 +492,22 @@ export function useTaskDetailsPopover({
     saveTaskField({ tags: nextTags });
   };
 
+  const handleUpdateTag = (oldTag: string, newTag: string) => {
+    const { nextTags, updated, errorKey } = replaceTaskTag(
+      tags,
+      oldTag,
+      newTag,
+    );
+    if (errorKey === "tagAlreadyAdded") {
+      toast.error(t("tagAlreadyAdded"));
+      return;
+    }
+    if (updated) {
+      setTags(nextTags);
+      saveTaskField({ tags: nextTags });
+    }
+  };
+
   const handleAddCheckItem = async () => {
     const trimmed = newItemText.trim();
     if (!trimmed) return;
@@ -543,8 +566,9 @@ export function useTaskDetailsPopover({
     completed,
     title,
     setTitle: (val: string) => {
-      setTitle(val);
-      titleRef.current = val;
+      const clamped = val.slice(0, TASK_TITLE_MAX_LENGTH);
+      setTitle(clamped);
+      titleRef.current = clamped;
     },
     description,
     setDescription: (val: string) => {
@@ -593,6 +617,7 @@ export function useTaskDetailsPopover({
     handlePrioritySelect,
     handleAddTag,
     handleRemoveTag,
+    handleUpdateTag,
     handleAddCheckItem,
     handleToggleCheckItem: toggleChecklistItem,
     handleUpdateCheckItem: updateChecklistItem,

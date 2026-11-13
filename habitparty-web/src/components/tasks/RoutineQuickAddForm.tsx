@@ -4,7 +4,11 @@ import { Calendar, Repeat, SlidersHorizontal, Target } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { QuickAddConfigBar } from "@/components/tasks/task-form/QuickAddConfigBar";
-import { ALL_WEEK_DAYS, WEEKDAYS_ONLY } from "@/constants/task";
+import {
+  ALL_WEEK_DAYS,
+  TASK_TITLE_MAX_LENGTH,
+  WEEKDAYS_ONLY,
+} from "@/constants/task";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import type {
   CreateTaskDTO,
@@ -197,7 +201,10 @@ export function RoutineQuickAddForm({
               : t("todoPlaceholder")
         }
         value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        maxLength={TASK_TITLE_MAX_LENGTH}
+        onChange={(e) =>
+          setTitle(e.target.value.slice(0, TASK_TITLE_MAX_LENGTH))
+        }
         onKeyDown={async (e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();

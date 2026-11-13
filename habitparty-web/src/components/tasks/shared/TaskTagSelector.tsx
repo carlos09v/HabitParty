@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown, Plus, Search, Tag, X } from "lucide-react";
+import { Check, ChevronDown, Pencil, Plus, Search, Tag, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
   type KeyboardEvent,
@@ -12,8 +12,11 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { MAX_TAG_PATH_LENGTH, MAX_TASK_TAGS } from "@/constants/task";
-import { useClickOutside } from "@/hooks/useClickOutside";
+import {
+  MAX_TAG_PATH_LENGTH,
+  MAX_TASK_TAGS,
+  TAG_HIERARCHY_SEPARATOR,
+} from "@/constants/task";
 import { useFloatingPopover } from "@/hooks/useFloatingPopover";
 import { cn } from "@/utils";
 import {
@@ -31,6 +34,7 @@ export interface TaskTagSelectorProps {
   availableTags?: string[];
   onAddTag: (tag: string) => void;
   onRemoveTag: (tag: string) => void;
+  onUpdateTag?: (oldTag: string, newTag: string) => void;
   onToggleTag?: (tag: string) => void;
   variant: "popover" | "modal";
   isOpen?: boolean;
@@ -42,13 +46,16 @@ export interface TaskTagSelectorProps {
   id?: string;
 }
 
+type DropdownNavItem = { type: "create" } | { type: "option"; tag: string };
+
 function formatTagBreadcrumb(tag: string): string {
   const segments = getTagSegments(tag);
   return segments.length > 0 ? segments.join(" › ") : tag;
 }
 
 /**
- * Seletor compartilhado de tags com dropdown pesquisável e suporte a hierarquia estilo TickTick (`Pai > Filho`).
+ * Seletor compartilhado de tags com dropdown flutuante pesquisável, edição inline,
+ * navegação por teclado (↑/↓, →/← hierárquico) e suporte a hierarquia estilo TickTick (`Pai > Filho`).
  * Utilizado no popover rápido (TaskDetailsPopover) e no modal completo (TaskBasicFields).
  */
 export function TaskTagSelector({
@@ -56,6 +63,7 @@ export function TaskTagSelector({
   availableTags = [],
   onAddTag,
   onRemoveTag,
+  onUpdateTag,
   onToggleTag,
   variant,
   isOpen: controlledOpen,
@@ -86,13 +94,26 @@ export function TaskTagSelector({
     [onInputValueChange],
   );
 
-  const [internalPopoverOpen, setInternalPopoverOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [editingTag, setEditingTag] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState("");
+  const editCancelledRef = useRef(false);
+
   const isPopoverVariant = variant === "popover";
   const isLimitReached = selectedTags.length >= maxTags;
 
-  const popoverContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
+  const listScrollRef = useRef<HTMLDivElement>(null);
   const compositionEndTimeRef = useRef(0);
+  const onOpenChangeRef = useRef(onOpenChange);
+  onOpenChangeRef.current = onOpenChange;
+
+  const handleFloatingClose = useCallback(() => {
+    setQuery("");
+    setHighlightedIndex(-1);
+    onOpenChangeRef.current?.(false);
+  }, [setQuery]);
 
   const floating = useFloatingPopover<
     HTMLDivElement,
@@ -101,66 +122,71 @@ export function TaskTagSelector({
   >({
     align: "left",
     estimatedHeight: 240,
-    estimatedWidth: 260,
+    estimatedWidth: 280,
     matchTriggerWidth: true,
     maxAllowedHeight: 260,
     offset: 4,
-    disabled: disabled || isPopoverVariant,
+    disabled,
     usePortal: true,
     zIndex: 160,
+    onClose: handleFloatingClose,
   });
 
-  const isOpen = isPopoverVariant
-    ? (controlledOpen ?? internalPopoverOpen)
-    : floating.isOpen;
+  const isOpen = floating.isOpen;
+
+  const prevControlledOpenRef = useRef(controlledOpen);
+  useEffect(() => {
+    if (controlledOpen === undefined) return;
+    if (prevControlledOpenRef.current !== controlledOpen) {
+      prevControlledOpenRef.current = controlledOpen;
+      if (controlledOpen && !floating.isOpen && !disabled && !isLimitReached) {
+        floating.open();
+      } else if (!controlledOpen && floating.isOpen) {
+        floating.close();
+      }
+    }
+  }, [controlledOpen, floating, disabled, isLimitReached]);
 
   const closeSelector = useCallback(() => {
-    setQuery("");
-    if (isPopoverVariant) {
-      if (onOpenChange) {
-        onOpenChange(false);
-      } else {
-        setInternalPopoverOpen(false);
-      }
-    } else {
-      floating.close();
-    }
-  }, [isPopoverVariant, onOpenChange, floating, setQuery]);
+    floating.close();
+  }, [floating]);
 
   const openSelector = useCallback(() => {
-    if (disabled) return;
-    if (isPopoverVariant) {
-      if (onOpenChange) {
-        onOpenChange(true);
-      } else {
-        setInternalPopoverOpen(true);
-      }
-    } else if (!floating.isOpen) {
-      floating.toggle();
+    if (disabled || (isPopoverVariant && isLimitReached)) return;
+    if (!floating.isOpen) {
+      floating.open();
+      onOpenChangeRef.current?.(true);
     }
-  }, [disabled, isPopoverVariant, onOpenChange, floating]);
+  }, [disabled, isPopoverVariant, isLimitReached, floating]);
 
-  const toggleModalSelector = useCallback(() => {
-    if (disabled || isPopoverVariant) return;
+  const toggleSelector = useCallback(() => {
+    if (disabled) return;
     if (floating.isOpen) {
       closeSelector();
     } else {
-      floating.toggle();
+      openSelector();
     }
-  }, [disabled, isPopoverVariant, floating, closeSelector]);
-
-  useClickOutside(popoverContainerRef, closeSelector, {
-    enabled: isPopoverVariant && isOpen,
-    onEscape: closeSelector,
-  });
+  }, [disabled, floating.isOpen, closeSelector, openSelector]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      setHighlightedIndex(-1);
+      return;
+    }
     const frameId = requestAnimationFrame(() => {
       inputRef.current?.focus({ preventScroll: true });
     });
     return () => cancelAnimationFrame(frameId);
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!editingTag) return;
+    const frameId = requestAnimationFrame(() => {
+      editInputRef.current?.focus({ preventScroll: true });
+      editInputRef.current?.select();
+    });
+    return () => cancelAnimationFrame(frameId);
+  }, [editingTag]);
 
   // Inclui todas as tags existentes no contexto atual além de ancestrais automáticos ("Concurso" para "Concurso > BB")
   const allHierarchyOptions = useMemo(() => {
@@ -200,11 +226,32 @@ export function TaskTagSelector({
     !hasIncompleteHierarchy &&
     (hasMultiTagDelimiter || !exactOptionMatch);
 
+  const navItems = useMemo<DropdownNavItem[]>(() => {
+    const items: DropdownNavItem[] = [];
+    if (canShowCreateRow && !isLimitReached) {
+      items.push({ type: "create" });
+    }
+    for (const tag of filteredOptions) {
+      items.push({ type: "option", tag });
+    }
+    return items;
+  }, [canShowCreateRow, isLimitReached, filteredOptions]);
+
+  const scrollOptionIntoView = useCallback((index: number) => {
+    requestAnimationFrame(() => {
+      const target = listScrollRef.current?.querySelector<HTMLElement>(
+        `[data-option-index="${index}"]`,
+      );
+      target?.scrollIntoView({ block: "nearest" });
+    });
+  }, []);
+
   const handleOptionClick = (tagItem: string) => {
     const isSelected = selectedLowerSet.has(tagItem.toLowerCase());
     if (onToggleTag) {
       onToggleTag(tagItem);
       setQuery("");
+      setHighlightedIndex(-1);
       if (isPopoverVariant) {
         closeSelector();
       }
@@ -217,6 +264,7 @@ export function TaskTagSelector({
       onAddTag(tagItem);
     }
     setQuery("");
+    setHighlightedIndex(-1);
     if (isPopoverVariant) {
       closeSelector();
     }
@@ -234,6 +282,7 @@ export function TaskTagSelector({
         onAddTag(exactOptionMatch);
       }
       setQuery("");
+      setHighlightedIndex(-1);
       if (isPopoverVariant) {
         closeSelector();
       }
@@ -249,9 +298,48 @@ export function TaskTagSelector({
       onAddTag(candidates[0]);
     }
     setQuery("");
+    setHighlightedIndex(-1);
     if (isPopoverVariant) {
       closeSelector();
     }
+  };
+
+  const handleStartEditTag = (tag: string) => {
+    if (disabled || !onUpdateTag) return;
+    if (isOpen) {
+      closeSelector();
+    }
+    editCancelledRef.current = false;
+    setEditingTag(tag);
+    setEditingValue(tag);
+  };
+
+  const handleCancelEditTag = () => {
+    editCancelledRef.current = true;
+    setEditingTag(null);
+    setEditingValue("");
+  };
+
+  const handleCommitEditTag = () => {
+    if (editCancelledRef.current || !editingTag) {
+      editCancelledRef.current = false;
+      setEditingTag(null);
+      setEditingValue("");
+      return;
+    }
+    const oldTag = editingTag;
+    const rawValue = editingValue;
+    setEditingTag(null);
+    setEditingValue("");
+
+    if (!rawValue.trim() || hasEmptyTagHierarchyLevel(rawValue)) {
+      return;
+    }
+    const normalized = normalizeTagPath(rawValue);
+    if (!normalized || normalized === oldTag) {
+      return;
+    }
+    onUpdateTag?.(oldTag, normalized);
   };
 
   const handleInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -259,6 +347,100 @@ export function TaskTagSelector({
       e.preventDefault();
       e.stopPropagation();
       closeSelector();
+      return;
+    }
+
+    if (e.key === "ArrowDown") {
+      if (navItems.length === 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setHighlightedIndex((prev) => {
+        const next = prev < navItems.length - 1 ? prev + 1 : 0;
+        scrollOptionIntoView(next);
+        return next;
+      });
+      return;
+    }
+
+    if (e.key === "ArrowUp") {
+      if (navItems.length === 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setHighlightedIndex((prev) => {
+        const next = prev > 0 ? prev - 1 : navItems.length - 1;
+        scrollOptionIntoView(next);
+        return next;
+      });
+      return;
+    }
+
+    if (e.key === "ArrowRight") {
+      const highlightedItem =
+        highlightedIndex >= 0 ? navItems[highlightedIndex] : undefined;
+      const inputEl = e.currentTarget;
+      const caretAtEnd =
+        inputEl.selectionStart === query.length &&
+        inputEl.selectionEnd === query.length;
+      const trimmedEnd = query.trimEnd();
+      const targetTag =
+        highlightedItem?.type === "option"
+          ? highlightedItem.tag
+          : caretAtEnd && !trimmedEnd.endsWith(">")
+            ? (exactOptionMatch ??
+              (query === "" ? filteredOptions[0] : undefined))
+            : undefined;
+
+      if (targetTag) {
+        const completed = `${targetTag}${TAG_HIERARCHY_SEPARATOR}`;
+        if (completed.length <= MAX_TAG_PATH_LENGTH) {
+          e.preventDefault();
+          e.stopPropagation();
+          setQuery(completed);
+          setHighlightedIndex(-1);
+        }
+      }
+      return;
+    }
+
+    if (e.key === "ArrowLeft") {
+      const highlightedItem =
+        highlightedIndex >= 0 ? navItems[highlightedIndex] : undefined;
+      const inputEl = e.currentTarget;
+      const caretAtEnd =
+        inputEl.selectionStart === query.length &&
+        inputEl.selectionEnd === query.length;
+
+      if (highlightedItem?.type === "option") {
+        e.preventDefault();
+        e.stopPropagation();
+        const segments = getTagSegments(highlightedItem.tag);
+        if (segments.length > 1) {
+          setQuery(segments.slice(0, -1).join(TAG_HIERARCHY_SEPARATOR));
+        } else {
+          setQuery("");
+        }
+        setHighlightedIndex(-1);
+        return;
+      }
+
+      if (query.includes(">") && (highlightedIndex >= 0 || caretAtEnd)) {
+        e.preventDefault();
+        e.stopPropagation();
+        const trimmedEnd = query.trimEnd();
+        if (trimmedEnd.endsWith(">")) {
+          // Remove apenas o separador pendente no fim (ex: "Concurso > " -> "Concurso")
+          const withoutTrailingArrow = trimmedEnd.replace(/\s*>\s*$/, "");
+          setQuery(withoutTrailingArrow);
+        } else {
+          const segments = getTagSegments(query);
+          if (segments.length > 1) {
+            setQuery(segments.slice(0, -1).join(TAG_HIERARCHY_SEPARATOR));
+          } else {
+            setQuery("");
+          }
+        }
+        setHighlightedIndex(-1);
+      }
       return;
     }
 
@@ -271,28 +453,160 @@ export function TaskTagSelector({
       }
       e.preventDefault();
       e.stopPropagation();
+
+      const highlightedItem =
+        highlightedIndex >= 0 ? navItems[highlightedIndex] : undefined;
+      if (highlightedItem?.type === "option") {
+        const isSelected = selectedLowerSet.has(
+          highlightedItem.tag.toLowerCase(),
+        );
+        const optionDisabled = !isSelected && isLimitReached;
+        if (!optionDisabled) {
+          handleOptionClick(highlightedItem.tag);
+        }
+        return;
+      }
       handleCommitTypedInput();
     }
   };
 
-  const renderDropdownPanel = (isFloatingPortal: boolean) => (
+  const activeDescendantId =
+    highlightedIndex >= 0 && highlightedIndex < navItems.length
+      ? `${listboxId}-opt-${highlightedIndex}`
+      : undefined;
+
+  const renderSelectedTagChip = (
+    tag: string,
+    chipVariant: "popover" | "modal",
+  ) => {
+    const isEditingThis = editingTag === tag;
+    if (isEditingThis) {
+      return (
+        <span
+          key={tag}
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-gold/70 bg-background/90 max-w-full"
+        >
+          <input
+            ref={editInputRef}
+            type="text"
+            value={editingValue}
+            maxLength={MAX_TAG_PATH_LENGTH}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => setEditingValue(e.target.value)}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleCommitEditTag();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                handleCancelEditTag();
+              }
+            }}
+            onBlur={handleCommitEditTag}
+            placeholder={t("editTagPlaceholder")}
+            aria-label={t("editTagTitle", { tag })}
+            className="w-28 sm:w-32 bg-transparent text-tiny font-medium text-neutral-50 placeholder:text-neutral-500 focus:outline-none min-w-0"
+          />
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCommitEditTag();
+            }}
+            aria-label={t("saveTagAria")}
+            className="text-gold hover:text-gold-hover cursor-pointer shrink-0"
+          >
+            <Check size={10} />
+          </button>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCancelEditTag();
+            }}
+            aria-label={t("cancelEditTagAria")}
+            className="text-neutral-400 hover:text-danger-500 cursor-pointer shrink-0"
+          >
+            <X size={10} />
+          </button>
+        </span>
+      );
+    }
+
+    const isPop = chipVariant === "popover";
+    return (
+      <span
+        key={tag}
+        className={cn(
+          "inline-flex items-center gap-1 rounded text-tiny max-w-full group/tag",
+          isPop
+            ? "px-2 py-0.5 font-semibold bg-success-500/15 border border-success-500/30 text-success-500"
+            : "px-1.5 py-0.5 font-medium bg-primary/15 border border-primary/30 text-neutral-100",
+        )}
+      >
+        <span
+          className={cn("truncate", isPop ? "max-w-[150px]" : "max-w-[120px]")}
+          title={tag}
+        >
+          {formatTagBreadcrumb(tag)}
+        </span>
+        {onUpdateTag && !disabled && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleStartEditTag(tag);
+            }}
+            className="hover:text-gold cursor-pointer opacity-70 hover:opacity-100 shrink-0 transition-opacity"
+            title={t("editTagTitle", { tag })}
+            aria-label={t("editTagTitle", { tag })}
+          >
+            <Pencil size={isPop ? 9 : 10} />
+          </button>
+        )}
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemoveTag(tag);
+          }}
+          className="hover:text-danger-500 cursor-pointer opacity-70 hover:opacity-100 shrink-0 transition-opacity"
+          title={
+            isPop
+              ? tPopover("removeTagTitle", { tag })
+              : t("removeTagTitle", { tag })
+          }
+          aria-label={
+            isPop
+              ? tPopover("removeTagTitle", { tag })
+              : t("removeTagTitle", { tag })
+          }
+        >
+          <X size={isPop ? 10 : 11} />
+        </button>
+      </span>
+    );
+  };
+
+  const renderDropdownPanel = () => (
     <div
-      ref={isFloatingPortal ? floating.popoverRef : undefined}
+      ref={floating.popoverRef}
       id={listboxId}
       role="listbox"
-      data-select-for={isFloatingPortal ? triggerId : undefined}
-      style={isFloatingPortal ? floating.floatingStyle : undefined}
+      data-select-for={triggerId}
+      style={floating.floatingStyle}
       className={cn(
-        isFloatingPortal
-          ? floating.shouldRenderPortal
-            ? "fixed z-[160]"
-            : "absolute z-50 top-[105%] left-0 w-full"
-          : "w-full mt-1",
+        floating.shouldRenderPortal
+          ? "fixed z-[160]"
+          : "absolute z-50 top-[105%] left-0 w-full",
         "bg-card dark:bg-popover border border-neutral-700 dark:border-primary/40 rounded-xl shadow-2xl overflow-hidden flex flex-col",
-        isFloatingPortal &&
-          (floating.coords?.placement === "top"
-            ? "origin-bottom animate-in fade-in zoom-in-95 duration-100"
-            : "origin-top animate-in fade-in zoom-in-95 duration-100"),
+        floating.coords?.placement === "top"
+          ? "origin-bottom animate-in fade-in zoom-in-95 duration-100"
+          : "origin-top animate-in fade-in zoom-in-95 duration-100",
       )}
     >
       {/* Barra fixa de busca / criação */}
@@ -304,19 +618,26 @@ export function TaskTagSelector({
             type="text"
             value={query}
             maxLength={MAX_TAG_PATH_LENGTH}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setHighlightedIndex(-1);
+            }}
             onCompositionEnd={(e) => {
               compositionEndTimeRef.current = e.timeStamp;
             }}
             onKeyDown={handleInputKeyDown}
             placeholder={t("searchOrCreatePlaceholder")}
             aria-label={t("searchOrCreatePlaceholder")}
+            aria-activedescendant={activeDescendantId}
             className="w-full bg-transparent text-xs text-neutral-50 placeholder:text-neutral-500 focus:outline-none min-w-0"
           />
           {query && (
             <button
               type="button"
-              onClick={() => setQuery("")}
+              onClick={() => {
+                setQuery("");
+                setHighlightedIndex(-1);
+              }}
               className="text-neutral-400 hover:text-neutral-200 cursor-pointer shrink-0"
               aria-label={t("clearSearchAria")}
             >
@@ -346,17 +667,27 @@ export function TaskTagSelector({
       </div>
 
       {/* Lista rolável de tags existentes + criação */}
-      <div className="max-h-44 overflow-y-auto custom-scrollbar p-1 flex flex-col gap-0.5">
+      <div
+        ref={listScrollRef}
+        className="max-h-44 overflow-y-auto custom-scrollbar p-1 flex flex-col gap-0.5"
+      >
         {canShowCreateRow && (
           <button
+            id={`${listboxId}-opt-0`}
+            data-option-index={0}
             type="button"
+            role="option"
+            aria-selected={highlightedIndex === 0}
             onClick={handleCommitTypedInput}
+            onMouseEnter={() => setHighlightedIndex(0)}
             disabled={isLimitReached}
             className={cn(
               "w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition-colors cursor-pointer",
               isLimitReached
                 ? "opacity-50 cursor-not-allowed text-neutral-500"
-                : "text-gold bg-gold/10 hover:bg-gold/20 font-medium",
+                : highlightedIndex === 0
+                  ? "text-gold bg-gold/25 ring-1 ring-gold/50 font-medium"
+                  : "text-gold bg-gold/10 hover:bg-gold/20 font-medium",
             )}
           >
             <Plus size={13} className="shrink-0" />
@@ -378,7 +709,10 @@ export function TaskTagSelector({
                   : t("emptyNoMatches")}
               </div>
             )
-          : filteredOptions.map((tagItem) => {
+          : filteredOptions.map((tagItem, idx) => {
+              const optionIndex =
+                canShowCreateRow && !isLimitReached ? idx + 1 : idx;
+              const isHighlighted = highlightedIndex === optionIndex;
               const isSelected = selectedLowerSet.has(tagItem.toLowerCase());
               const depth = getTagDepth(tagItem);
               const segments = getTagSegments(tagItem);
@@ -392,6 +726,8 @@ export function TaskTagSelector({
               return (
                 <button
                   key={tagItem}
+                  id={`${listboxId}-opt-${optionIndex}`}
+                  data-option-index={optionIndex}
                   type="button"
                   role="option"
                   aria-selected={isSelected}
@@ -402,6 +738,7 @@ export function TaskTagSelector({
                       : tagItem
                   }
                   onClick={() => handleOptionClick(tagItem)}
+                  onMouseEnter={() => setHighlightedIndex(optionIndex)}
                   style={{
                     paddingLeft: `${10 + (searchLower ? 0 : depth * 14)}px`,
                   }}
@@ -410,9 +747,11 @@ export function TaskTagSelector({
                     optionDisabled
                       ? "opacity-45 cursor-not-allowed text-neutral-500"
                       : "cursor-pointer",
-                    isSelected
-                      ? "bg-primary/15 text-primary dark:bg-primary/20 dark:text-gold font-semibold"
-                      : !optionDisabled &&
+                    isHighlighted
+                      ? "bg-primary/25 text-primary dark:bg-gold/18 dark:text-gold ring-1 ring-primary/40 dark:ring-gold/40 font-semibold"
+                      : isSelected
+                        ? "bg-primary/15 text-primary dark:bg-primary/20 dark:text-gold font-semibold"
+                        : !optionDisabled &&
                           "text-neutral-200 hover:bg-surface-hover hover:text-neutral-50 dark:text-neutral-100 dark:hover:bg-primary/20",
                   )}
                 >
@@ -420,7 +759,9 @@ export function TaskTagSelector({
                     <span
                       className={cn(
                         "shrink-0",
-                        isSelected ? "text-gold" : "text-neutral-500",
+                        isSelected || isHighlighted
+                          ? "text-gold"
+                          : "text-neutral-500",
                       )}
                     >
                       {!searchLower && depth > 0 ? "↳" : "#"}
@@ -447,28 +788,15 @@ export function TaskTagSelector({
   if (isPopoverVariant) {
     return (
       <div
-        ref={popoverContainerRef}
-        className="flex flex-col gap-1 w-full min-w-0"
+        ref={floating.containerRef}
+        className="relative flex flex-col gap-1 w-full min-w-0"
       >
-        <div className="flex items-center gap-1.5 flex-wrap min-h-6">
-          {selectedTags.map((tag) => (
-            <span
-              key={tag}
-              className="flex items-center gap-1 px-2 py-0.5 rounded text-tiny font-semibold bg-success-500/15 border border-success-500/30 text-success-500 group/tag max-w-full"
-            >
-              <span className="max-w-[160px] truncate" title={tag}>
-                {formatTagBreadcrumb(tag)}
-              </span>
-              <button
-                type="button"
-                onClick={() => onRemoveTag(tag)}
-                className="hover:text-danger-500 cursor-pointer opacity-70 hover:opacity-100 shrink-0"
-                title={tPopover("removeTagTitle", { tag })}
-              >
-                <X size={10} />
-              </button>
-            </span>
-          ))}
+        <div
+          ref={floating.triggerRef}
+          id={triggerId}
+          className="flex items-center gap-1.5 flex-wrap min-h-6"
+        >
+          {selectedTags.map((tag) => renderSelectedTagChip(tag, "popover"))}
 
           {isLimitReached ? (
             <span
@@ -480,7 +808,7 @@ export function TaskTagSelector({
           ) : (
             <button
               type="button"
-              onClick={() => (isOpen ? closeSelector() : openSelector())}
+              onClick={toggleSelector}
               aria-expanded={isOpen}
               aria-controls={listboxId}
               title={tPopover("addTagTitle", {
@@ -500,7 +828,11 @@ export function TaskTagSelector({
           )}
         </div>
 
-        {isOpen && !isLimitReached && renderDropdownPanel(false)}
+        {isOpen &&
+          !isLimitReached &&
+          (floating.shouldRenderPortal
+            ? createPortal(renderDropdownPanel(), document.body)
+            : renderDropdownPanel())}
       </div>
     );
   }
@@ -516,9 +848,9 @@ export function TaskTagSelector({
         aria-controls={listboxId}
         aria-disabled={disabled}
         tabIndex={disabled ? -1 : 0}
-        onClick={toggleModalSelector}
+        onClick={toggleSelector}
         onKeyDown={(e) => {
-          if (disabled) return;
+          if (disabled || editingTag) return;
           if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
             e.preventDefault();
             if (!isOpen) openSelector();
@@ -547,29 +879,7 @@ export function TaskTagSelector({
             {t("selectOrCreatePlaceholder")}
           </span>
         ) : (
-          selectedTags.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-tiny font-medium bg-primary/15 border border-primary/30 text-neutral-100 max-w-full"
-            >
-              <span className="truncate max-w-[130px]" title={tag}>
-                {formatTagBreadcrumb(tag)}
-              </span>
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemoveTag(tag);
-                }}
-                className="text-neutral-400 hover:text-danger-400 cursor-pointer shrink-0"
-                title={t("removeTagTitle", { tag })}
-                aria-label={t("removeTagTitle", { tag })}
-              >
-                <X size={11} />
-              </button>
-            </span>
-          ))
+          selectedTags.map((tag) => renderSelectedTagChip(tag, "modal"))
         )}
 
         <ChevronDown
@@ -583,8 +893,8 @@ export function TaskTagSelector({
 
       {isOpen &&
         (floating.shouldRenderPortal
-          ? createPortal(renderDropdownPanel(true), document.body)
-          : renderDropdownPanel(true))}
+          ? createPortal(renderDropdownPanel(), document.body)
+          : renderDropdownPanel())}
     </div>
   );
 }

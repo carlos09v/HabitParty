@@ -110,6 +110,7 @@ export function RoutineFilters({
   alignment = "left",
   onAlignmentChange,
   availableTags = [],
+  tagCounts,
   onOpenCreateColumn,
   onOpenCreateTask,
   maxColumns = 4,
@@ -129,6 +130,7 @@ export function RoutineFilters({
       filters={filters}
       onFilterChange={onFilterChange}
       availableTags={availableTags}
+      tagCounts={tagCounts}
       isCompact={isCompact}
     />
   );

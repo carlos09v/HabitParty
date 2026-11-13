@@ -1,6 +1,7 @@
 "use client";
 
 import Highlight from "@tiptap/extension-highlight";
+import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -34,9 +35,15 @@ export interface RichTextDescriptionEditorProps {
   className?: string;
 }
 
+const NonInclusiveLink = Link.extend({
+  inclusive() {
+    return false;
+  },
+});
+
 /**
  * Editor WYSIWYG baseado em TipTap com serialização bidirecional para Markdown.
- * Suporta negrito, itálico, destaque, código inline, links clicáveis e marcadores de lista reais
+ * Suporta negrito, itálico, destaque, código inline, links clicáveis (Ctrl/Cmd + Click) e marcadores de lista reais
  * sem painéis extras de Preview nem inserção de texto placeholder nas listas.
  */
 export function RichTextDescriptionEditor({
@@ -118,18 +125,19 @@ export function RichTextDescriptionEditor({
         orderedList: false,
         strike: false,
         underline: false,
-        link: {
-          autolink: true,
-          linkOnPaste: true,
-          openOnClick: true,
-          defaultProtocol: "https",
-          protocols: ["http", "https"],
-          HTMLAttributes: {
-            target: "_blank",
-            rel: "noopener noreferrer",
-            class:
-              "text-info hover:text-info/80 underline underline-offset-2 font-medium transition-colors cursor-pointer break-all",
-          },
+        link: false,
+      }),
+      NonInclusiveLink.configure({
+        autolink: true,
+        linkOnPaste: false,
+        openOnClick: false,
+        defaultProtocol: "https",
+        protocols: ["http", "https"],
+        HTMLAttributes: {
+          target: "_blank",
+          rel: "noopener noreferrer",
+          class:
+            "text-info hover:text-info/80 underline underline-offset-2 font-medium transition-colors cursor-pointer break-all",
         },
       }),
       Highlight.configure({
@@ -141,6 +149,20 @@ export function RichTextDescriptionEditor({
     ],
     content: markdownToEditorHtml(value),
     editorProps: {
+      handleClick: (_view, _pos, event) => {
+        if (!(event.ctrlKey || event.metaKey) || event.button !== 0) {
+          return false;
+        }
+        const target = event.target as HTMLElement | null;
+        const anchor = target?.closest("a");
+        const href = anchor?.getAttribute("href");
+        if (href && /^https?:\/\/\S+$/i.test(href)) {
+          event.preventDefault();
+          window.open(href, "_blank", "noopener,noreferrer");
+          return true;
+        }
+        return false;
+      },
       attributes: {
         ...(id ? { id } : {}),
         "aria-label": headerLabel || placeholder,
@@ -350,7 +372,7 @@ export function RichTextDescriptionEditor({
             editor.commands.focus();
           }
         }}
-        className="habitparty-tiptap cursor-text"
+        className="habitparty-tiptap select-text cursor-text"
       >
         <EditorContent editor={editor} />
       </div>

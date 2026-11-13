@@ -669,6 +669,10 @@
     "maxTagsReached": "Maximum limit of {max} tags reached.",
     "nestingHint": "Use > to nest (e.g. Study > Math)",
     "removeTagTitle": "Remove tag {tag}",
+    "editTagTitle": "Edit tag {tag}",
+    "editTagPlaceholder": "Edit tag...",
+    "saveTagAria": "Save edited tag",
+    "cancelEditTagAria": "Cancel tag editing",
     "clearSearchAria": "Clear tag search",
     "closeSelectorAria": "Close tag selector"
   }

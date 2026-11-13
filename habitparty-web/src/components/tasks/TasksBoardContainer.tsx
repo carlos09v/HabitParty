@@ -172,6 +172,7 @@ export function TasksBoardContainer({
     filters,
     setFilters,
     availableTags,
+    tagCounts,
     filteredColumns,
   } = useBoardFilters(columns, initialSearchFromUrl);
 
@@ -356,6 +357,7 @@ export function TasksBoardContainer({
     alignment,
     onAlignmentChange: setAlignment,
     availableTags,
+    tagCounts,
     maxColumns,
     isPremium: is_Premium,
     canCreateColumn: isWorkspaceReadOnly ? false : canCreateColumn,

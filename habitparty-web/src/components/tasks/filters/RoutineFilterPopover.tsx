@@ -29,6 +29,7 @@ export function RoutineFilterPopover({
 
   onFilterChange,
   availableTags = [],
+  tagCounts,
   isCompact = false,
 }: RoutineFilterPopoverProps) {
   const t = useTranslations("tasks.filters.popover");
@@ -278,6 +279,7 @@ export function RoutineFilterPopover({
                       const depth = getTagDepth(tagItem);
                       const leafLabel = getTagLeafLabel(tagItem);
                       const isSelected = filters.tag === tagItem;
+                      const count = tagCounts?.[tagItem];
                       return (
                         <button
                           key={tagItem}
@@ -288,23 +290,37 @@ export function RoutineFilterPopover({
                           title={tagItem}
                           style={{ paddingLeft: `${8 + depth * 14}px` }}
                           className={cn(
-                            "w-full text-left pr-2 py-1 rounded-md text-tiny font-medium transition-colors cursor-pointer flex items-center gap-1.5 truncate",
+                            "w-full text-left pr-2 py-1 rounded-md text-tiny font-medium transition-colors cursor-pointer flex items-center justify-between gap-2 min-w-0",
                             isSelected
                               ? "bg-gold text-on-gold font-bold"
                               : "bg-white/5 text-neutral-300 hover:bg-white/10",
                           )}
                         >
-                          <span
-                            className={cn(
-                              "shrink-0",
-                              isSelected
-                                ? "text-on-gold/80"
-                                : "text-neutral-500",
-                            )}
-                          >
-                            {depth > 0 ? "↳" : "#"}
+                          <span className="flex items-center gap-1.5 min-w-0">
+                            <span
+                              className={cn(
+                                "shrink-0",
+                                isSelected
+                                  ? "text-on-gold/80"
+                                  : "text-neutral-500",
+                              )}
+                            >
+                              {depth > 0 ? "↳" : "#"}
+                            </span>
+                            <span className="truncate">{leafLabel}</span>
                           </span>
-                          <span className="truncate">{leafLabel}</span>
+                          {count !== undefined && (
+                            <span
+                              className={cn(
+                                "shrink-0 tabular-nums text-[10px] px-1.5 py-0.2 rounded-full",
+                                isSelected
+                                  ? "bg-on-gold/15 text-on-gold font-bold"
+                                  : "bg-white/8 text-neutral-400",
+                              )}
+                            >
+                              {count}
+                            </span>
+                          )}
                         </button>
                       );
                     })}

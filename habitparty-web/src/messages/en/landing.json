@@ -241,7 +241,7 @@
         ],
         "extras": [
           "Configurable Global Time Format (12h AM/PM vs 24h) synced across cards, details, history, and focus",
-          "Expanded task descriptions up to 5,000 characters with real-time char counter and limit alerts",
+          "Expanded task descriptions up to 2,000 characters with real-time char counter and limit alerts",
           "Streak lost notification with compassionate encouragement to restart",
           "Synchronized deletion option for tasks and focus records to clean up linked History entries"
         ]

@@ -33,6 +33,7 @@ export interface UseFloatingPopoverOptions {
   usePortal?: boolean;
   zIndex?: number;
   onOpen?: () => void;
+  onClose?: () => void;
 }
 
 /**
@@ -58,7 +59,11 @@ export function useFloatingPopover<
     usePortal = true,
     zIndex = 150,
     onOpen,
+    onClose,
   } = options;
+
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   const containerRef = useRef<TContainer>(null);
   const triggerRef = useRef<TTrigger>(null);
@@ -71,6 +76,7 @@ export function useFloatingPopover<
   const close = useCallback(() => {
     setIsOpen(false);
     setCoords(null);
+    onCloseRef.current?.();
   }, []);
 
   useClickOutside(containerRef, close, {

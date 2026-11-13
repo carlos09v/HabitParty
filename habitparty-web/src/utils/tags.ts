@@ -191,6 +191,52 @@ export function mergeTaskTagsWithLimit(
   return { nextTags, addedAny, errorKey: null };
 }
 
+export interface ReplaceTagResult {
+  nextTags: string[];
+  updated: boolean;
+  errorKey: "tagAlreadyAdded" | null;
+}
+
+/**
+ * Replaces an existing tag in a task's tag list after normalizing its hierarchy path
+ * and checking for empty levels or case-insensitive duplicates against other tags.
+ */
+export function replaceTaskTag(
+  existingTags: ReadonlyArray<string>,
+  oldTag: string,
+  newTagInput: string,
+): ReplaceTagResult {
+  if (hasEmptyTagHierarchyLevel(newTagInput)) {
+    return { nextTags: [...existingTags], updated: false, errorKey: null };
+  }
+  const normalized = normalizeTagPath(newTagInput);
+  if (!normalized || normalized === oldTag) {
+    return { nextTags: [...existingTags], updated: false, errorKey: null };
+  }
+  const targetIndex = existingTags.findIndex(
+    (tag) => tag.toLowerCase() === oldTag.toLowerCase(),
+  );
+  if (targetIndex === -1) {
+    return { nextTags: [...existingTags], updated: false, errorKey: null };
+  }
+  const normalizedLower = normalized.toLowerCase();
+  const isDuplicate = existingTags.some(
+    (tag, index) =>
+      index !== targetIndex && tag.toLowerCase() === normalizedLower,
+  );
+  if (isDuplicate) {
+    return {
+      nextTags: [...existingTags],
+      updated: false,
+      errorKey: "tagAlreadyAdded",
+    };
+  }
+  const nextTags = existingTags.map((tag, index) =>
+    index === targetIndex ? normalized : tag,
+  );
+  return { nextTags, updated: true, errorKey: null };
+}
+
 /**
  * Matches exact tags and hierarchical descendants when filtering by a parent tag.
  * Filtering by "Concurso" matches "Concurso" as well as "Concurso > BB".
@@ -226,4 +272,26 @@ export function doesTaskMatchTagFilter(
   }
 
   return false;
+}
+
+/**
+ * Counts how many tasks match each tag option (including descendants for parent tags,
+ * without double-counting tasks that carry both parent and child tags).
+ */
+export function computeTagTaskCounts(
+  tasks: ReadonlyArray<Pick<Task, "tags" | "category">>,
+  availableTags: ReadonlyArray<string>,
+): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const tag of availableTags) {
+    counts[tag] = 0;
+  }
+  for (const task of tasks) {
+    for (const tag of availableTags) {
+      if (doesTaskMatchTagFilter(task, tag)) {
+        counts[tag] += 1;
+      }
+    }
+  }
+  return counts;
 }
