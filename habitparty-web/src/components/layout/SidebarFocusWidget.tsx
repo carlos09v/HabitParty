@@ -2,6 +2,8 @@
 
 import {
   Check,
+  Link2,
+  ListTodo,
   Pause,
   Play,
   RotateCcw,
@@ -106,7 +108,7 @@ export function SidebarFocusWidget() {
               <span className="text-label-g font-bold text-neutral-100 group-hover:text-gold transition-colors truncate">
                 {ambientLabel}
               </span>
-              <span className="text-label-m text-gold/90 font-medium leading-none">
+              <span className="text-label-m text-amber-800 dark:text-gold/90 font-medium leading-none">
                 {t("activeFocusSound")}
               </span>
             </div>
@@ -134,7 +136,12 @@ export function SidebarFocusWidget() {
   // CASO 2: Timer Ativo (com ou sem Som Ambiente)
   const isRunning = isActive && !isPaused;
   const isInventory = target?.type === "inventory";
-  const TargetIcon = target?.icon ? getFocusIcon(target.icon) : Timer;
+  const TargetIcon =
+    target?.type === "task"
+      ? ListTodo
+      : target?.icon
+        ? getFocusIcon(target.icon)
+        : Timer;
 
   const displayTime = formatFocusDisplayTime({
     mode,
@@ -204,6 +211,27 @@ export function SidebarFocusWidget() {
               : t("modeStopwatch")}
         </span>
       </div>
+
+      {/* Badge clicável para vincular atividade quando o foco foi iniciado direto pela tarefa */}
+      {target?.type === "task" && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push("/focus?linkActivity=true");
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.stopPropagation();
+            }
+          }}
+          title={t("linkActivityTitle")}
+          className="inline-flex items-center gap-1 self-start max-w-full px-1.5 py-0.5 rounded-md border border-primary/35 bg-primary/15 hover:bg-primary/25 text-primary-light dark:border-gold/40 dark:bg-gold/12 dark:hover:bg-gold/22 dark:text-gold text-label-s font-semibold transition-colors cursor-pointer"
+        >
+          <Link2 size={10} className="shrink-0" />
+          <span className="truncate">{t("linkActivityBadge")}</span>
+        </button>
+      )}
 
       {/* Linha Central: Mostrador do Tempo e Status */}
       <div className="flex items-center justify-between gap-1.5 pt-0.5">
@@ -296,7 +324,9 @@ export function SidebarFocusWidget() {
               size={11}
               className="text-gold shrink-0 animate-pulse"
             />
-            <span className="truncate text-gold/90">{ambientLabel}</span>
+            <span className="truncate text-amber-800 dark:text-gold/90">
+              {ambientLabel}
+            </span>
           </div>
           <button
             type="button"

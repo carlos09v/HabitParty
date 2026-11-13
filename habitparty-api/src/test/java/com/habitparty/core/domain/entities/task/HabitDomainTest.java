@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -155,10 +156,25 @@ class HabitDomainTest {
     }
     assertEquals(7, habit.getCurrentStreak());
 
-    Task.TaskReward adaptationReward = habit.calculateReward();
+    Task.TaskReward adaptationReward = habit.calculateReward(LocalDate.of(2026, 10, 7));
     // 10 * 0.75 = 7 XP
     assertEquals(7, adaptationReward.xp());
     // 1.75 * 0.75 = 1.31 coins
     assertEquals(new BigDecimal("1.31"), adaptationReward.coins());
+
+    // 3. Streak expirado (ex: 3 dias depois) não deve sofrer decaimento nem aparecer como ativo
+    assertEquals(0, habit.getEffectiveStreak(LocalDate.of(2026, 10, 10)));
+    Task.TaskReward expiredReward = habit.calculateReward(LocalDate.of(2026, 10, 10));
+    assertEquals(10, expiredReward.xp());
+    assertEquals(new BigDecimal("1.75"), expiredReward.coins());
+  }
+
+  @Test
+  @DisplayName("getEffectiveStreak mantém streak no mesmo dia e no dia seguinte, mas zera após 2 dias")
+  void testEffectiveStreakWindow() {
+    habit.registerCompletion(LocalDateTime.of(2026, 10, 17, 10, 0));
+    assertEquals(1, habit.getEffectiveStreak(LocalDate.of(2026, 10, 17)));
+    assertEquals(1, habit.getEffectiveStreak(LocalDate.of(2026, 10, 18)));
+    assertEquals(0, habit.getEffectiveStreak(LocalDate.of(2026, 10, 19)));
   }
 }

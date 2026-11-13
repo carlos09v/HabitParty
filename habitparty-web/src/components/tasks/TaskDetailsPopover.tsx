@@ -2,17 +2,20 @@
 
 import { useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
-import { TaskActionControl } from "@/components/tasks/shared";
+import {
+  RichTextDescriptionEditor,
+  TaskActionControl,
+  TaskTagSelector,
+} from "@/components/tasks/shared";
+import { MAX_TASK_TAGS } from "@/constants/task";
 import { useTaskDetailsPopover } from "@/hooks/useTaskDetailsPopover";
 import type { TaskDetailsPopoverProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 import {
-  TaskDescriptionEditor,
   TaskDetailsChecklist,
   TaskDetailsFocusSection,
   TaskDetailsFooter,
   TaskDetailsHeader,
-  TaskDetailsTags,
 } from "./task-details";
 
 export function TaskDetailsPopover({
@@ -20,6 +23,7 @@ export function TaskDetailsPopover({
   onClose,
   task,
   columnTitle,
+  availableTags = [],
   anchorRect,
   onTaskUpdate,
   onDelete,
@@ -34,7 +38,6 @@ export function TaskDetailsPopover({
     mounted,
     popoverRef,
     titleInputRef,
-    descTextareaRef,
     isMobileScreen,
     popoverPosition,
     completed,
@@ -42,6 +45,7 @@ export function TaskDetailsPopover({
     setTitle,
     description,
     setDescription,
+    descriptionFlushRef,
     dueDate,
     dueTime,
     startTime,
@@ -70,10 +74,7 @@ export function TaskDetailsPopover({
     handleTitleKeyDown,
     handleDescriptionBlur,
     handleDateChange,
-    handleTimeChange,
-    handleStartTimeChange,
-    handleEndTimeChange,
-    handleAllDayChange,
+    handleEventScheduleChange,
     handlePrioritySelect,
     handleAddTag,
     handleRemoveTag,
@@ -81,7 +82,6 @@ export function TaskDetailsPopover({
     handleToggleCheckItem,
     handleUpdateCheckItem,
     handleDeleteCheckItem,
-    handleApplyFormat,
     handleDeleteTask,
     handleDuplicateTask,
     handleOpenFullModal,
@@ -151,10 +151,7 @@ export function TaskDetailsPopover({
           onToggleComplete={handleToggleTask}
           onHabitDelta={handleHabitDelta}
           onDateChange={handleDateChange}
-          onTimeChange={handleTimeChange}
-          onStartTimeChange={handleStartTimeChange}
-          onEndTimeChange={handleEndTimeChange}
-          onAllDayChange={handleAllDayChange}
+          onEventScheduleChange={handleEventScheduleChange}
           onPrioritySelect={handlePrioritySelect}
           onEdit={handleOpenFullModal}
           onClose={handleCloseWithSave}
@@ -191,25 +188,32 @@ export function TaskDetailsPopover({
             </div>
 
             {/* TAGS */}
-            <TaskDetailsTags
-              tags={tags}
-              isAddingTag={isAddingTag}
-              newTagText={newTagText}
-              onNewTagTextChange={setNewTagText}
-              onStartAddTag={() => setIsAddingTag(true)}
-              onCancelAddTag={cancelAddTag}
+            <TaskTagSelector
+              variant="popover"
+              selectedTags={tags}
+              availableTags={availableTags}
+              isOpen={isAddingTag}
+              onOpenChange={(open) =>
+                open ? setIsAddingTag(true) : cancelAddTag()
+              }
+              inputValue={newTagText}
+              onInputValueChange={setNewTagText}
               onAddTag={handleAddTag}
               onRemoveTag={handleRemoveTag}
+              maxTags={MAX_TASK_TAGS}
             />
           </div>
 
-          {/* DESCRIÇÃO COM MARKDOWN INTERATIVO E BARRA INTEGRADA */}
-          <TaskDescriptionEditor
-            description={description}
+          {/* DESCRIÇÃO WYSIWYG COM TIPTAP */}
+          <RichTextDescriptionEditor
+            variant="popover"
+            value={description}
             onChange={setDescription}
+            flushRef={descriptionFlushRef}
             onBlur={handleDescriptionBlur}
-            onApplyFormat={handleApplyFormat}
-            textareaRef={descTextareaRef}
+            placeholder={t("descriptionPlaceholder")}
+            headerLabel={t("descriptionLabel")}
+            doneLabel={t("doneEditing")}
           />
 
           {/* CHECKLIST / SUBTAREFAS */}
@@ -245,7 +249,6 @@ export function TaskDetailsPopover({
         <TaskDetailsFooter
           task={task}
           columnTitle={columnTitle}
-          onApplyFormat={handleApplyFormat}
           onDeleteTask={handleDeleteTask}
           onDuplicateTask={onDuplicate ? handleDuplicateTask : undefined}
           onOpenEdit={handleOpenFullModal}

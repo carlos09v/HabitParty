@@ -82,8 +82,92 @@ public class Habit extends Task {
     this.importanceType = importanceType;
   }
 
+  private enum CycleRelation {
+    SAME_CYCLE,
+    CONSECUTIVE_CYCLE,
+    BROKEN
+  }
+
+  private CycleRelation compareCycles(LocalDate lastDate, LocalDate currentDate) {
+    return switch (this.resetCounter) {
+      case DAILY -> {
+        if (!lastDate.isBefore(currentDate)) {
+          yield CycleRelation.SAME_CYCLE;
+        }
+        yield lastDate.isEqual(currentDate.minusDays(1))
+            ? CycleRelation.CONSECUTIVE_CYCLE
+            : CycleRelation.BROKEN;
+      }
+      case WEEKLY -> {
+        java.time.temporal.WeekFields weekFields = java.time.temporal.WeekFields.ISO;
+        int lastWeek = lastDate.get(weekFields.weekOfWeekBasedYear());
+        int currentWeek = currentDate.get(weekFields.weekOfWeekBasedYear());
+        int lastYear = lastDate.get(weekFields.weekBasedYear());
+        int currentYear = currentDate.get(weekFields.weekBasedYear());
+
+        if (lastYear > currentYear || (lastYear == currentYear && lastWeek >= currentWeek)) {
+          yield CycleRelation.SAME_CYCLE;
+        }
+        LocalDate nextWeekDate = lastDate.plusWeeks(1);
+        if (nextWeekDate.get(weekFields.weekBasedYear()) == currentYear
+            && nextWeekDate.get(weekFields.weekOfWeekBasedYear()) == currentWeek) {
+          yield CycleRelation.CONSECUTIVE_CYCLE;
+        }
+        yield CycleRelation.BROKEN;
+      }
+      case MONTHLY -> {
+        java.time.Period period = java.time.Period.between(
+            lastDate.withDayOfMonth(1), currentDate.withDayOfMonth(1));
+        int monthsBetween = period.getYears() * 12 + period.getMonths();
+
+        if (monthsBetween <= 0) {
+          yield CycleRelation.SAME_CYCLE;
+        }
+        yield monthsBetween == 1 ? CycleRelation.CONSECUTIVE_CYCLE : CycleRelation.BROKEN;
+      }
+    };
+  }
+
+  public boolean isInSameCycle(LocalDate referenceDate) {
+    if (this.lastCompletedAt == null) {
+      return false;
+    }
+    LocalDate effectiveDate = referenceDate != null ? referenceDate : LocalDate.now();
+    return compareCycles(this.lastCompletedAt.toLocalDate(), effectiveDate) == CycleRelation.SAME_CYCLE;
+  }
+
+  public boolean isStreakStillActive(LocalDate referenceDate) {
+    if (this.currentStreak <= 0) {
+      return false;
+    }
+    if (this.lastCompletedAt == null) {
+      return true;
+    }
+    LocalDate effectiveDate = referenceDate != null ? referenceDate : LocalDate.now();
+    CycleRelation relation = compareCycles(this.lastCompletedAt.toLocalDate(), effectiveDate);
+    return relation == CycleRelation.SAME_CYCLE || relation == CycleRelation.CONSECUTIVE_CYCLE;
+  }
+
+  public int getEffectiveStreak(LocalDate referenceDate) {
+    return isStreakStillActive(referenceDate) ? this.currentStreak : 0;
+  }
+
+  /**
+   * Zera o streak caso o ciclo anterior tenha expirado sem conclusão (antes de calcular recompensa/incrementar).
+   */
+  public void refreshStreakForDate(LocalDate referenceDate) {
+    if (this.currentStreak > 0 && this.lastCompletedAt != null && !isStreakStillActive(referenceDate)) {
+      this.currentStreak = 0;
+    }
+  }
+
   @Override
   public TaskReward calculateReward() {
+    return calculateReward(LocalDate.now());
+  }
+
+  @Override
+  public TaskReward calculateReward(LocalDate referenceDate) {
     // 1. Define a recompensa base pela Importância
     int baseXp = switch (this.importanceType) {
       case LOW -> 5;
@@ -105,12 +189,13 @@ public class Habit extends Task {
     };
 
     int adaptationThreshold = habitFormedThreshold / 3;
+    int effectiveStreak = getEffectiveStreak(referenceDate);
 
-    // 2. Aplica o decaimento baseado no Streak atual
+    // 2. Aplica o decaimento baseado no Streak efetivo
     BigDecimal multiplier = BigDecimal.ONE;
-    if (this.currentStreak >= habitFormedThreshold) {
+    if (effectiveStreak >= habitFormedThreshold) {
       multiplier = HALF_RATE; // Hábito formado: paga metade
-    } else if (this.currentStreak >= adaptationThreshold) {
+    } else if (effectiveStreak >= adaptationThreshold) {
       multiplier = ADAPTATION_RATE; // Adaptação: paga 75%
     }
 
@@ -133,6 +218,7 @@ public class Habit extends Task {
     registerCompletion(LocalDateTime.now());
   }
 
+  @Override
   public void registerCompletion(LocalDateTime completionTime) {
     if (completionTime == null) {
       completionTime = LocalDateTime.now();
@@ -146,54 +232,14 @@ public class Habit extends Task {
       return;
     }
 
-    LocalDate lastDate = this.lastCompletedAt.toLocalDate();
-    LocalDate currentDate = completionTime.toLocalDate();
-
-    switch (this.resetCounter) {
-      case DAILY -> {
-        if (lastDate.isEqual(currentDate)) {
-          // Já registrado hoje: streak diário não sobe novamente
-          this.lastCompletedAt = completionTime;
-          return;
-        } else if (lastDate.isEqual(currentDate.minusDays(1))) {
-          // Dia consecutivo: incrementa ofensiva
-          this.currentStreak++;
-        } else {
-          // Intervalo maior que 1 dia: recomeça streak
-          this.currentStreak = 1;
-        }
+    CycleRelation relation = compareCycles(this.lastCompletedAt.toLocalDate(), completionTime.toLocalDate());
+    switch (relation) {
+      case SAME_CYCLE -> {
+        this.lastCompletedAt = completionTime;
+        return;
       }
-      case WEEKLY -> {
-        java.time.temporal.WeekFields weekFields = java.time.temporal.WeekFields.ISO;
-        int lastWeek = lastDate.get(weekFields.weekOfWeekBasedYear());
-        int currentWeek = currentDate.get(weekFields.weekOfWeekBasedYear());
-        int lastYear = lastDate.get(weekFields.weekBasedYear());
-        int currentYear = currentDate.get(weekFields.weekBasedYear());
-
-        if (lastYear == currentYear && lastWeek == currentWeek) {
-          this.lastCompletedAt = completionTime;
-          return;
-        } else if ((lastYear == currentYear && currentWeek == lastWeek + 1)
-            || (currentYear == lastYear + 1 && lastWeek >= 52 && currentWeek == 1)) {
-          this.currentStreak++;
-        } else {
-          this.currentStreak = 1;
-        }
-      }
-      case MONTHLY -> {
-        java.time.Period period = java.time.Period.between(
-            lastDate.withDayOfMonth(1), currentDate.withDayOfMonth(1));
-        int monthsBetween = period.getYears() * 12 + period.getMonths();
-
-        if (monthsBetween == 0) {
-          this.lastCompletedAt = completionTime;
-          return;
-        } else if (monthsBetween == 1) {
-          this.currentStreak++;
-        } else {
-          this.currentStreak = 1;
-        }
-      }
+      case CONSECUTIVE_CYCLE -> this.currentStreak++;
+      case BROKEN -> this.currentStreak = 1;
     }
 
     this.lastCompletedAt = completionTime;

@@ -24,7 +24,7 @@ export async function getWorkspaceColumnsSummary(
 ): Promise<ColumnSummaryDTO[]> {
   "use cache: private";
   cacheLife("catalog");
-  cacheTag("kanban", "board_columns", "dashboard-columns");
+  cacheTag("board_columns", "dashboard-columns");
 
   const { data } = await serverApi.GET(
     "/board_columns/workspace/{workspaceId}",
@@ -47,13 +47,7 @@ export async function fetchWorkspaceBoardColumns(workspaceId: string): Promise<{
 }> {
   "use cache: private";
   cacheLife("private30");
-  cacheTag(
-    "kanban",
-    "board_columns",
-    "tasks",
-    "dashboard-tasks",
-    "dashboard-columns",
-  );
+  cacheTag("kanban", "tasks", "dashboard-tasks");
 
   const [{ data: kanbanBoard }, allColumnsSummary] = await Promise.all([
     serverApi.GET("/workspaces/{workspaceId}/kanban", {

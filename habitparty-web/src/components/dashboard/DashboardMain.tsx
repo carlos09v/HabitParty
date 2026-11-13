@@ -9,11 +9,15 @@ import { RouteLoading } from "@/components/layout/RouteLoading";
 import { MAX_COLUMNS_PREMIUM, MAX_VISIBLE_COLUMNS } from "@/constants/routine";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useProgressStore } from "@/store/progressStore";
+import { useUserStore } from "@/store/userStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import type { DashboardMainProps } from "@/types/dashboard";
 import type { Task } from "@/types/task";
-import { cn } from "@/utils";
-import { getFirstName } from "@/utils/dashboardMetrics";
+import { cn, getTodayDateString } from "@/utils";
+import {
+  getFirstName,
+  hasCompletedTaskInTransactionsToday,
+} from "@/utils/dashboardMetrics";
 
 /**
  * Painel Principal do Dashboard.
@@ -31,8 +35,14 @@ export function DashboardMain({
   const t = useTranslations("dashboard.dailyBriefing");
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [columns, setColumns] = useState(initialColumns);
+  const [optimisticCompletedTodayIds, setOptimisticCompletedTodayIds] =
+    useState<Set<string>>(() => new Set());
   const isSwitchingWorkspace = useWorkspaceStore((s) => s.isSwitchingWorkspace);
   const storeActiveWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
+  const storeUser = useUserStore((s) => s.user);
+  const setLastStreakSecuredDate = useUserStore(
+    (s) => s.setLastStreakSecuredDate,
+  );
 
   useEffect(() => {
     setTasks(initialTasks);
@@ -41,6 +51,52 @@ export function DashboardMain({
   useEffect(() => {
     setColumns(initialColumns);
   }, [initialColumns]);
+
+  useEffect(() => {
+    if (hasCompletedTaskInTransactionsToday(transactions)) {
+      setLastStreakSecuredDate(getTodayDateString());
+    }
+  }, [transactions, setLastStreakSecuredDate]);
+
+  useEffect(() => {
+    const handleFocusTaskCompleted = (event: Event) => {
+      const detail = (event as CustomEvent<{ taskId?: string }>).detail;
+      if (detail?.taskId) {
+        const taskId = detail.taskId;
+        setOptimisticCompletedTodayIds((prev) => {
+          const next = new Set(prev);
+          next.add(taskId);
+          return next;
+        });
+      }
+    };
+
+    window.addEventListener(
+      "habitparty:task-completed-from-focus",
+      handleFocusTaskCompleted,
+    );
+    return () => {
+      window.removeEventListener(
+        "habitparty:task-completed-from-focus",
+        handleFocusTaskCompleted,
+      );
+    };
+  }, []);
+
+  const handleTaskCompletedTodayChange = (
+    taskId: string,
+    completedToday: boolean,
+  ) => {
+    setOptimisticCompletedTodayIds((prev) => {
+      const next = new Set(prev);
+      if (completedToday) {
+        next.add(taskId);
+      } else {
+        next.delete(taskId);
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (
@@ -66,7 +122,10 @@ export function DashboardMain({
     ? t("defaultNameGamified")
     : t("defaultNameProductivity");
   const firstName = getFirstName(user?.fullName, user?.username, defaultName);
-  const streak = user?.currentStreak ?? 0;
+  const streak =
+    storeUser?.id && user?.id && storeUser.id === user.id
+      ? (storeUser.currentStreak ?? 0)
+      : (user?.currentStreak ?? 0);
 
   if (isSwitchingWorkspace) {
     return <RouteLoading route="dashboard" />;
@@ -85,6 +144,7 @@ export function DashboardMain({
         streak={streak}
         tasks={tasks}
         transactions={transactions}
+        hasOptimisticCompletionToday={optimisticCompletedTodayIds.size > 0}
       />
 
       {/* Seção: Resumo de Listas (Interativo com Menu de Contexto e contadores sincronizados) */}
@@ -106,6 +166,7 @@ export function DashboardMain({
         initialTasks={initialTasks}
         tasks={tasks}
         onTasksChange={setTasks}
+        onTaskCompletedTodayChange={handleTaskCompletedTodayChange}
         columns={columns}
         isCompact={isCompact}
       />

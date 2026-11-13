@@ -68,6 +68,7 @@ interface FocusMainProps {
     itemId?: string;
   }) => void;
   initialCreateActivity?: boolean;
+  initialLinkActivity?: boolean;
   isCompact?: boolean;
   onChangeMode?: (mode: FocusRecordType) => void;
 }
@@ -86,6 +87,7 @@ export function FocusMain({
   onStartFocusTask,
   onOpenManualRecord,
   initialCreateActivity = false,
+  initialLinkActivity = false,
   isCompact = false,
   onChangeMode,
 }: FocusMainProps) {
@@ -251,6 +253,7 @@ export function FocusMain({
           onStartFocusTask={onStartFocusTask}
           onChangeMode={onChangeMode}
           onOpenUpgradeModal={handleOpenUpgradeModal}
+          initialLinkActivity={initialLinkActivity}
           isCompact={isCompact}
         />
 
@@ -354,7 +357,7 @@ export function FocusMain({
                     </span>
                   </div>
                 )}
-              <p className="text-xs text-amber-200/90 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-lg leading-relaxed">
+              <p className="text-xs text-amber-800 dark:text-amber-200/90 bg-amber-500/10 border border-amber-500/30 dark:border-amber-500/20 p-2.5 rounded-lg leading-relaxed">
                 {t.rich(
                   isGamified
                     ? "returnModal.warningGamified"

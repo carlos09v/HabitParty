@@ -15,10 +15,10 @@ An open-core productivity and gamification system featuring a strict mathematica
   * 🎯 **Essential Mode (Productivity):** Clean, executive aesthetic. Converts deliverables into **Credits** and **Points (`pts`)**, uses professional progression titles (`Beginner` to `High Performance`), discreet **Effort** indicators, direct personal rewards in the Store (without RNG draws), **Strict Deadline**, and **Inventory**.
   * ⚔️ **Adventure Mode (RPG Immersion):** Full RPG gamification with **Gold Coins (🪙)** and **XP**, adventurer ranks (`Novice` to `Legend`), sword icons for **Difficulty**, **Mystery Boxes (Gacha)**, **Hardcore Mode**, and **Backpack**.
 * **Strict Farming Economy:** Coin/Credit and XP/Point earnings are strictly calculated based on task difficulty/effort:
-  * 🟩 **Trivial** (0.25 🪙 / Credits • 2 XP / pts)
-  * 🟦 **Easy** (0.75 🪙 / Credits • 5 XP / pts)
+  * 🟦 **Trivial** (0.25 🪙 / Credits • 2 XP / pts)
+  * 🟩 **Easy** (0.75 🪙 / Credits • 5 XP / pts)
   * 🟨 **Medium** (2.50 🪙 / Credits • 15 XP / pts)
-  * 🟧 **Hard** (5.00 🪙 / Credits • 30 XP / pts)
+  * 🟪 **Hard** (5.00 🪙 / Credits • 30 XP / pts)
 * **Kanban Board & Multiple Workspaces:** Segregate different areas of your life (Work, Studies, Personal Routine) into isolated workspaces featuring customizable Kanban boards, columns, and smart cross-workspace search hints.
 * **Real-Life Reward Store:** Build your own catalog of leisure and recovery rewards categorized into packages (Single Use, Time-Based Coupons, or Mystery Boxes) balanced with your daily effort.
 * **🎁 Mystery Boxes (Optional RNG):** Weighted probability loot boxes calibrated mathematically across 4 tiers (Basic, Premium, Epic, Legendary) to bring excitement without breaking your personal economy.
@@ -42,10 +42,10 @@ Rewards reflect real effort and estimated time required for each activity:
 
 | Tier | Difficulty | Reward | Description & Typical Examples |
 | :---: | :--- | :--- | :--- |
-| 🟩 | **Trivial** | 2 XP <br> 0.25 🪙 | Almost automatic, short actions. <br>*Ex: Drinking water, taking vitamins, making the bed.* |
-| 🟦 | **Easy** | 5 XP <br> 0.75 🪙 | Quick tasks requiring basic intent or organization. <br>*Ex: Replying to emails, 10 min reading, washing dishes.* |
+| 🟦 | **Trivial** | 2 XP <br> 0.25 🪙 | Almost automatic, short actions. <br>*Ex: Drinking water, taking vitamins, making the bed.* |
+| 🟩 | **Easy** | 5 XP <br> 0.75 🪙 | Quick tasks requiring basic intent or organization. <br>*Ex: Replying to emails, 10 min reading, washing dishes.* |
 | 🟨 | **Medium** (Standard) | 15 XP <br> 2.50 🪙 | The backbone of the economy. Moderate focus (30 to 60 minutes). <br>*Ex: Gym workout, focusing on a work deliverable, cleaning the house.* |
-| 🟧 | **Hard** | 30 XP <br> 5.00 🪙 | Intense cognitive or physical effort (1 to 2 hours of deep work). <br>*Ex: Focused study session, complex software engineering task.* |
+| 🟪 | **Hard** | 30 XP <br> 5.00 🪙 | Intense cognitive or physical effort (1 to 2 hours of deep work). <br>*Ex: Focused study session, complex software engineering task.* |
 
 ---
 
@@ -57,9 +57,9 @@ To simulate this and prevent coin hyperinflation, habits feature **reward decay*
 
 | Level | Base Reward (Initial Streak) | Description & Examples |
 | :--- | :---: | :--- |
-| 🟩 **Low** | 5 XP • 0.75 🪙 | Simple daily maintenance habits. <br>*Ex: Taking daily creatine, tidying your desk.* |
-| 🟨 **Normal** (Standard) | 10 XP • 1.75 🪙 | The core of routine building. Moderate effort. <br>*Ex: Practicing an instrument for 15 min, reading 10 pages.* |
-| 🟧 **High** | 25 XP • 3.75 🪙 | High activation energy habits. <br>*Ex: Solving 30 exam questions, high-intensity workout.* |
+| 🟦 **Low** | 5 XP • 0.75 🪙 | Simple daily maintenance habits. <br>*Ex: Taking daily creatine, tidying your desk.* |
+| 🟩 **Normal** (Standard) | 10 XP • 1.75 🪙 | The core of routine building. Moderate effort. <br>*Ex: Practicing an instrument for 15 min, reading 10 pages.* |
+| 🟪 **High** | 25 XP • 3.75 🪙 | High activation energy habits. <br>*Ex: Solving 30 exam questions, high-intensity workout.* |
 
 #### Streak Decay Table
 * **Days 1 to 6 (Resistance Phase):** 100% Reward (maximum incentive to overcome initial inertia).
@@ -121,10 +121,10 @@ While tasks reward the completion of outputs, focus tools reward time immersion 
 
 | Mode | Duration / Cycle | Base Reward | Rules & Equivalencies |
 | :--- | :---: | :---: | :--- |
-| **Short Pomodoro** | 15 to 24 min | **4 XP • 0.10 🪙** | Fast inertia breaker. Requires completed cycle. |
-| **Standard Pomodoro** | 25 to 40 min | **8 XP • 0.25 🪙** | The classic standard. Equivalent to slightly over 1 Easy Task. |
-| **Deep Work Pomodoro** | > 40 min | **15 XP • 0.50 🪙** | Deep immersion block. Equivalent to 1 Medium Task XP. |
-| **Free Stopwatch** | Per 30 min block | **~7 XP • 0.20 🪙** | Continuous proportional reward (capped at 90 min/session). |
+| **Short Pomodoro** | 15 to 24 min | **4 XP • 0.25 🪙** | Fast inertia breaker (1/3 of 1 Easy Task). Requires completed cycle. |
+| **Standard Pomodoro** | 25 to 40 min | **8 XP • 0.50 🪙** | The classic standard. Worth ~30%–40% of a task deliverable. |
+| **Deep Work Pomodoro** | > 40 min | **15 XP • 1.00 🪙** | Deep immersion block. Worth 40% of coins and 100% of XP of 1 Medium Task. |
+| **Free Stopwatch** | Per 30 min block | **~7 XP • 0.40 🪙** | Continuous proportional reward (capped at 90 min/session). |
 
 #### 🛡️ Anti-Abuse Safeguards
 1. **Minimum Session Duration:** Sessions under **10 minutes** grant 0 XP and 0 coins to prevent accidental triggers or artificial farm transactions.
@@ -142,7 +142,7 @@ While tasks reward the completion of outputs, focus tools reward time immersion 
 Built with a focus on high scalability, clean domain modeling, and testability:
 
 * **Backend (`habitparty-api`):**
-  * **Java 25 & Spring Boot 3.3+**
+  * **Java 25 & Spring Boot 4.x (v4.1+)**
   * **Hexagonal Architecture (Ports and Adapters)** isolating core business logic and economic math from framework concerns.
   * *Design Patterns:* Strategy (reward & decay calculations), Factory Method (polymorphic tasks), Port-Adapter pattern.
   * **Security & RBAC:** Spring Security with role controls (`ROLE_USER`, `ROLE_ADMIN`), stateless JWT authentication, and BCrypt-hashed credentials.
@@ -255,13 +255,27 @@ npm run dev
 
 ---
 
-### ⚔️ Release 1.4 — Parties, VIP Themes, Friendships & Live Chat
-* **VIP Atmospheric Themes:** Dynamic color schemes exclusive to Premium subscribers (e.g., *Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold*).
-* **Friendship Network & Privacy Controls:** Find players via username or friend codes, send invites, build your connected accountability circle, and configure granular privacy controls for your statistics and routines.
-* **Party Squads:** Form small accountability groups with friends or study partners using fast invite codes.
-* **Cooperative Daily Quests:** Collective daily goals granting coin bonuses and rewards when all squad members complete their commitments.
-* **Real-Time Integrated Chat:** Direct messaging between friends and dedicated Party chat rooms to maintain motivation.
-* **Activity Notifications:** Elegant audio and visual alerts for incoming messages and friend milestones in real time.
+### 🎨 Release 1.4 — VIP Themes, Friendships & Privacy Controls
+* **VIP Atmospheric Themes:** Dynamic color schemes and cosmic atmospheres exclusive to Premium subscribers (e.g., *Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold*).
+* **Friendship Network & Friend Codes:** Find players via @username or unique friend codes, send invites, and build your connected consistency circle.
+* **Granular Privacy Controls:** Configurable visibility settings for your routines, history, and productivity statistics (Public, Friends Only, or Private).
+* **Social Activity Notifications:** Elegant audio and visual alerts for incoming friend requests and consistency milestones within your network.
+
+---
+
+### ⚔️ Release 1.5 — Parties, Focus Squads & Cooperative Quests
+* **Party Squads (Focus Teams):** Form small accountability groups (4 to 6 members) with friends or study partners using fast invite codes.
+* **Cooperative Daily Quests:** Collective daily goals granting coin bonuses and reward multipliers when all squad members complete their commitments.
+* **Party Consistency Dashboard:** Real-time visibility into your squad's daily completion progress and active focus sessions.
+* **Shared Team Vault & Co-op Badges:** Unlock collective milestones and exclusive loyalty badges for squad members.
+
+---
+
+### 💬 Release 1.6 — Real-Time Chat, Live Presence & Instant Alerts
+* **Real-Time Integrated Chat:** Direct messaging (DM) between friends and dedicated live chat rooms for each Party powered by WebSockets.
+* **Live Focus Presence:** Real-time presence indicators (*"Focusing now ⏱️"*, *"Coffee Break ☕"*, *"Available"*) synchronized across friends and squads.
+* **Quick 1-Click Encouragement Reactions:** Instant applause and cheer reactions to motivate teammates during heavy focus sessions.
+* **Instant Sound & Visual Notifications:** Subtle soundscapes and visual cues for party messages and co-op celebrations without interrupting your workflow.
 
 ---
 

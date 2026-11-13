@@ -29,6 +29,21 @@ export function useClickOutside<T extends HTMLElement = HTMLElement>(
       // Ignora se o clique ocorreu dentro do container principal
       if (ref.current.contains(target)) return;
 
+      // Ignora cliques em modais sobrepostos (portais montados depois deste container)
+      const targetElement =
+        target instanceof Element ? target : target.parentElement;
+      const modalEl = targetElement?.closest('[aria-modal="true"]');
+      if (
+        modalEl &&
+        !modalEl.contains(ref.current) &&
+        Boolean(
+          ref.current.compareDocumentPosition(modalEl) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+        )
+      ) {
+        return;
+      }
+
       // Ignora se o clique ocorreu dentro de um dropdown/popover em Portal (suporta múltiplos níveis aninhados)
       if (target instanceof Element) {
         let currentEl: Element | null = target;

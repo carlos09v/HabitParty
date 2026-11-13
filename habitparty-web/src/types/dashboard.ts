@@ -48,6 +48,7 @@ export interface DashboardDailyBriefingProps {
   streak: number;
   tasks: Task[];
   transactions: TransactionHistoryDTO[];
+  hasOptimisticCompletionToday?: boolean;
 }
 
 export interface DashboardListSummaryProps {
@@ -68,6 +69,10 @@ export interface DashboardTasksPanelProps {
   isCompact?: boolean;
   tasks?: Task[];
   onTasksChange?: React.Dispatch<React.SetStateAction<Task[]>>;
+  onTaskCompletedTodayChange?: (
+    taskId: string,
+    completedToday: boolean,
+  ) => void;
 }
 
 export interface DashboardWidgetsDataProps {
@@ -124,6 +129,7 @@ export interface TaskTableProps {
   onEditTask?: (task: Task) => void;
   selectedDate?: string | null;
   onPageChange?: (page: number) => void;
+  deletingTaskIds?: ReadonlySet<string>;
 }
 
 export interface TaskFiltersProps {

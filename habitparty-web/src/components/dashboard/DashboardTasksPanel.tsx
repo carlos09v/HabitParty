@@ -12,9 +12,11 @@ import { DASHBOARD_ITEMS_PER_PAGE } from "@/constants/dashboard";
 import { useDashboardTaskActions } from "@/hooks/useDashboardTaskActions";
 import { useDashboardTaskFilters } from "@/hooks/useDashboardTaskFilters";
 import { useIdlePreload } from "@/hooks/useIdlePreload";
+import { useTaskDeleteFlow } from "@/hooks/useTaskDeleteFlow";
 import type { DashboardTasksPanelProps } from "@/types/dashboard";
 import type { Task } from "@/types/task";
 import { cn } from "@/utils";
+import { extractAvailableTagOptions } from "@/utils/tags";
 import { resolveTaskColumnTitle } from "@/utils/taskMapper";
 
 const TaskDetailsPopover = dynamic(
@@ -61,6 +63,7 @@ export function DashboardTasksPanel({
   isCompact = false,
   tasks: externalTasks,
   onTasksChange,
+  onTaskCompletedTodayChange,
 }: DashboardTasksPanelProps) {
   const t = useTranslations("dashboard.tasksPanel");
   const tMenu = useTranslations("dashboard.taskShared.contextMenu");
@@ -157,6 +160,11 @@ export function DashboardTasksPanel({
 
   const defaultColumnId = columns[0]?.id;
 
+  const availableTags = useMemo(
+    () => extractAvailableTagOptions(tasksState),
+    [tasksState],
+  );
+
   const {
     activeFilter,
     setActiveFilter,
@@ -178,6 +186,7 @@ export function DashboardTasksPanel({
     tasks: tasksState,
     setTasks: setTasksState,
     defaultColumnId,
+    onTaskCompletedTodayChange,
   });
 
   // Paginação local inteligente sem recarregar o servidor a cada clique
@@ -234,14 +243,18 @@ export function DashboardTasksPanel({
     taskToEdit: null,
   });
 
-  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
-  const [deleteHistory, setDeleteHistory] = useState(false);
+  const {
+    taskToDelete,
+    deleteHistory,
+    setDeleteHistory,
+    checkingDeleteTaskIds,
+    requestDeleteTask,
+    confirmDeleteTask,
+    cancelDeleteTask,
+  } = useTaskDeleteFlow({
+    onConfirmDelete: handleDeleteTask,
+  });
   const [focusHistoryTask, setFocusHistoryTask] = useState<Task | null>(null);
-
-  const requestDeleteTask = useCallback((task: Task) => {
-    setDeleteHistory(false);
-    setTaskToDelete(task);
-  }, []);
 
   const handleOpenContextMenu = useCallback(
     (e: React.MouseEvent, task: Task) => {
@@ -334,6 +347,7 @@ export function DashboardTasksPanel({
         onEditTask={handleEditTask}
         selectedDate={selectedDate}
         isCompact={isCompact}
+        deletingTaskIds={checkingDeleteTaskIds}
       />
 
       {/* Menu de Contexto da Tarefa (Botão Direito ou Botão Mais Opções) */}
@@ -351,6 +365,7 @@ export function DashboardTasksPanel({
           isOpen={true}
           onClose={() => setSelectedTaskDetails(null)}
           task={selectedTaskDetails.task}
+          availableTags={availableTags}
           columnTitle={resolveTaskColumnTitle(
             selectedTaskDetails.task,
             columns,
@@ -417,6 +432,7 @@ export function DashboardTasksPanel({
             })
           }
           columns={formColumns}
+          availableTags={availableTags}
           defaultColumnId={taskModalState.columnId || defaultColumnId}
           taskToEdit={taskModalState.taskToEdit}
           onSuccess={(savedTask) => {
@@ -430,7 +446,7 @@ export function DashboardTasksPanel({
         />
       )}
 
-      {/* Modal de Confirmação para Excluir Tarefa Relevante (Checklist, Hardcore ou Ofensiva) */}
+      {/* Modal de Confirmação para Excluir Tarefa com registros no Histórico */}
       {Boolean(taskToDelete) && (
         <ConfirmationModal
           isOpen={Boolean(taskToDelete)}
@@ -439,7 +455,7 @@ export function DashboardTasksPanel({
             <>
               {t("deleteModalDescPrefix")}{" "}
               <span className="font-bold text-neutral-100">
-                &quot;{taskToDelete?.title}&quot;
+                &quot;{taskToDelete?.task.title}&quot;
               </span>
               {t("deleteModalDescSuffix")}
             </>
@@ -451,13 +467,8 @@ export function DashboardTasksPanel({
           checkboxHint={t("deleteHistoryHint")}
           checkboxChecked={deleteHistory}
           onCheckboxChange={setDeleteHistory}
-          onClose={() => setTaskToDelete(null)}
-          onConfirm={async () => {
-            if (taskToDelete) {
-              await handleDeleteTask(taskToDelete, undefined, deleteHistory);
-              setTaskToDelete(null);
-            }
-          }}
+          onClose={cancelDeleteTask}
+          onConfirm={confirmDeleteTask}
         />
       )}
     </section>

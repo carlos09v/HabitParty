@@ -137,7 +137,7 @@ export function FocusZenModeModal({
         </div>
 
         <div className="flex items-center gap-2.5 sm:gap-3">
-          <span className="text-tiny text-neutral-500 hidden md:inline">
+          <span className="text-tiny text-neutral-400 hidden md:inline">
             {t.rich("pressEscHint", {
               kbd: (chunks) => (
                 <kbd className="px-1.5 py-0.5 rounded bg-card/80 dark:bg-surface border border-neutral-700 text-neutral-300">

@@ -49,6 +49,16 @@ public class EvaluateUserAchievementsUseCase {
   }
 
   @Transactional
+  public List<Achievement> executeForUserId(UUID userId) {
+    if (userId == null) {
+      return List.of();
+    }
+    return userPort.findById(userId)
+        .map(this::execute)
+        .orElseGet(List::of);
+  }
+
+  @Transactional
   public EvaluationSnapshot executeWithSnapshot(User user, List<ProfileHighlight> preloadedHighlights) {
     if (user == null || user.getId() == null) {
       return new EvaluationSnapshot(List.of(), List.of(), List.of());

@@ -50,7 +50,7 @@ public class TaskJpaEntity {
   @Column(nullable = false)
   private String name;
 
-  @Column(length = 5000)
+  @Column(length = 2000)
   private String description;
 
   @Column(name = "order_index", nullable = false)

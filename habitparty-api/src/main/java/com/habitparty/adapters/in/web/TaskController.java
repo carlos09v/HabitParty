@@ -1,7 +1,8 @@
 package com.habitparty.adapters.in.web;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -17,9 +18,11 @@ import com.habitparty.adapters.in.web.dtos.request.UpdateTaskDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateTaskOrderDTO;
 import com.habitparty.application.ports.projections.DashboardTaskDTO;
 import com.habitparty.application.ports.projections.TaskSearchWorkspaceCountDTO;
+import com.habitparty.adapters.in.web.dtos.response.TaskHistoryStatusResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.TaskResponseDTO;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 import com.habitparty.application.usecases.task.ChangeTaskStatusUseCase;
+import com.habitparty.application.usecases.task.CheckTaskHasHistoryUseCase;
 import com.habitparty.application.usecases.task.CreateTaskCommand;
 import com.habitparty.application.usecases.task.CreateTaskUseCase;
 import com.habitparty.application.usecases.task.DeleteTaskUseCase;
@@ -34,37 +37,29 @@ import com.habitparty.application.usecases.task.UpdateTaskUseCase;
 import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.domain.enums.task.TaskStatus;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @RestController
 public class TaskController implements TaskApi {
   private final CreateTaskUseCase createTaskUseCase;
   private final UpdateTaskUseCase updateTaskUseCase;
   private final DeleteTaskUseCase deleteTaskUseCase;
+  private final CheckTaskHasHistoryUseCase checkTaskHasHistoryUseCase;
   private final MoveTaskUseCase moveTaskUseCase;
   private final ChangeTaskStatusUseCase changeTaskStatusUseCase;
   private final RecordHabitScoreUseCase recordHabitScoreUseCase;
   private final ListTasksByColumnUseCase listTasksByColumnUseCase;
   private final ListDashboardTasksUseCase listDashboardTasksUseCase;
   private final SearchTasksAcrossWorkspacesUseCase searchTasksAcrossWorkspacesUseCase;
+  private final Clock clock;
 
-  public TaskController(
-      CreateTaskUseCase createTaskUseCase,
-      UpdateTaskUseCase updateTaskUseCase,
-      DeleteTaskUseCase deleteTaskUseCase,
-      MoveTaskUseCase moveTaskUseCase,
-      ChangeTaskStatusUseCase changeTaskStatusUseCase,
-      RecordHabitScoreUseCase recordHabitScoreUseCase,
-      ListTasksByColumnUseCase listTasksByColumnUseCase,
-      ListDashboardTasksUseCase listDashboardTasksUseCase,
-      SearchTasksAcrossWorkspacesUseCase searchTasksAcrossWorkspacesUseCase) {
-    this.createTaskUseCase = createTaskUseCase;
-    this.updateTaskUseCase = updateTaskUseCase;
-    this.deleteTaskUseCase = deleteTaskUseCase;
-    this.moveTaskUseCase = moveTaskUseCase;
-    this.changeTaskStatusUseCase = changeTaskStatusUseCase;
-    this.recordHabitScoreUseCase = recordHabitScoreUseCase;
-    this.listTasksByColumnUseCase = listTasksByColumnUseCase;
-    this.listDashboardTasksUseCase = listDashboardTasksUseCase;
-    this.searchTasksAcrossWorkspacesUseCase = searchTasksAcrossWorkspacesUseCase;
+  private LocalDate today() {
+    return LocalDate.now(clock);
+  }
+
+  private TaskResponseDTO toDto(Task task) {
+    return TaskResponseDTO.fromDomain(task, today(), clock.getZone());
   }
 
   @Override
@@ -81,8 +76,9 @@ public class TaskController implements TaskApi {
     UUID userId = userIdLogado.id();
 
     List<Task> tasks = listTasksByColumnUseCase.execute(boardColumnId, userId);
+    LocalDate referenceDate = today();
     List<TaskResponseDTO> responseList = tasks.stream()
-        .map(TaskResponseDTO::fromDomain)
+        .map(t -> TaskResponseDTO.fromDomain(t, referenceDate, clock.getZone()))
         .toList();
 
     return ResponseEntity.ok(responseList);
@@ -124,7 +120,7 @@ public class TaskController implements TaskApi {
         dto.sendEmailReminder(), dto.dueTime(), dto.startTime(), dto.dueEndTime(), dto.isAllDay()
     );
     Task createdTask = createTaskUseCase.execute(userId, boardColumnId, command);
-    return ResponseEntity.status(HttpStatus.CREATED).body(TaskResponseDTO.fromDomain(createdTask));
+    return ResponseEntity.status(HttpStatus.CREATED).body(toDto(createdTask));
   }
 
   @Override
@@ -142,7 +138,16 @@ public class TaskController implements TaskApi {
         dto.sendEmailReminder(), dto.dueTime(), dto.startTime(), dto.dueEndTime(), dto.isAllDay()
     );
     Task updatedTask = updateTaskUseCase.execute(taskId, userId, command);
-    return ResponseEntity.ok(TaskResponseDTO.fromDomain(updatedTask));
+    return ResponseEntity.ok(toDto(updatedTask));
+  }
+
+  @Override
+  public ResponseEntity<TaskHistoryStatusResponseDTO> checkTaskHasHistory(
+      UUID taskId,
+      AuthenticatedUser userIdLogado) {
+    UUID userId = userIdLogado.id();
+    boolean hasHistory = checkTaskHasHistoryUseCase.execute(taskId, userId);
+    return ResponseEntity.ok(new TaskHistoryStatusResponseDTO(hasHistory));
   }
 
   @Override
@@ -175,7 +180,7 @@ public class TaskController implements TaskApi {
       TaskStatus newStatus) {
     UUID userId = userIdLogado.id();
     Task updatedTask = changeTaskStatusUseCase.execute(taskId, userId, newStatus);
-    return ResponseEntity.ok(TaskResponseDTO.fromDomain(updatedTask));
+    return ResponseEntity.ok(toDto(updatedTask));
   }
 
   @Override
@@ -185,6 +190,6 @@ public class TaskController implements TaskApi {
       int delta) {
     UUID userId = userIdLogado.id();
     Task updatedHabit = recordHabitScoreUseCase.execute(taskId, userId, delta);
-    return ResponseEntity.ok(TaskResponseDTO.fromDomain(updatedHabit));
+    return ResponseEntity.ok(toDto(updatedHabit));
   }
 }

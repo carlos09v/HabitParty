@@ -10,10 +10,12 @@ import { StreakLostNotifier } from "@/components/layout/StreakLostNotifier";
 import { AchievementUnlockListener } from "@/components/showcase/AchievementUnlockListener";
 import { PaymentFeedbackListener } from "@/components/subscription/PaymentFeedbackListener";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
+import { getDashboardTransactions } from "@/services/dashboardService";
 import { getRawInventoryItems } from "@/services/inventoryService";
 import { getCurrentUser } from "@/services/userService";
 import { getWorkspaces } from "@/services/workspaceService";
 import { getDateFormat, getThemeMode, getTimeFormat } from "@/utils/cookies";
+import { getLatestTaskCompletionCreatedAt } from "@/utils/dashboardMetrics";
 
 export const instant = false;
 
@@ -55,6 +57,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     workspaces,
     user,
     inventoryData,
+    transactions,
     speculativeTasksCount,
   ] = await Promise.all([
     getThemeMode(),
@@ -63,10 +66,13 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     getWorkspaces(),
     getCurrentUser(),
     getRawInventoryItems(),
+    getDashboardTransactions(),
     cookieWorkspaceId
       ? fetchPendingTasksCount(cookieWorkspaceId)
       : Promise.resolve(0),
   ]);
+
+  const lastTaskCompletionAt = getLatestTaskCompletionCreatedAt(transactions);
 
   let activeWorkspaceId: string | null = null;
   let isCookieWorkspaceValid = false;
@@ -119,6 +125,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           workspaces={workspaces || []}
           activeWorkspaceId={activeWorkspaceId}
           user={user || null}
+          lastTaskCompletionAt={lastTaskCompletionAt}
         />
         {/* 
         =========================================

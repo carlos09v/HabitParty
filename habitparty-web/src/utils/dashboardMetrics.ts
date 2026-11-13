@@ -246,8 +246,21 @@ export function buildWeeklyCalendarData(
     }
   }
 
-  // Se alguma tarefa foi concluída hoje (mesmo em estado otimista), garante ofensiva hoje
-  if (tasks.some((t) => t.completed)) {
+  // Apenas tarefas efetivamente concluídas hoje garantem o marcador de hoje no calendário
+  if (
+    tasks.some((t) => {
+      if (!t.completed || !t.lastCompletedAt) return false;
+      const parsed = parseServerDate(t.lastCompletedAt);
+      if (!parsed) return false;
+      return (
+        formatDateParts(
+          parsed.getFullYear(),
+          parsed.getMonth(),
+          parsed.getDate(),
+        ) === todayIso
+      );
+    })
+  ) {
     activityDates.add(todayIso);
   }
 
@@ -340,4 +353,48 @@ export function buildWeeklyCalendarData(
     weekRangeLabel,
     streakDaysInWeek,
   };
+}
+
+export const TASK_COMPLETION_TRANSACTION_TYPES = new Set([
+  "HABIT_COMPLETED",
+  "DAILY_COMPLETED",
+  "TODO_COMPLETED",
+  "TASK_COMPLETED",
+]);
+
+export function getLatestTaskCompletionCreatedAt(
+  transactions: TransactionHistoryResponseDTO[] = [],
+): string | null {
+  let latestCreatedAt: string | null = null;
+  let latestTimestamp = -1;
+
+  for (const tx of transactions) {
+    if (!tx.createdAt || !tx.transactionType) continue;
+    if (!TASK_COMPLETION_TRANSACTION_TYPES.has(tx.transactionType)) continue;
+    const parsed = parseServerDate(tx.createdAt);
+    const ts = parsed?.getTime() ?? -1;
+    if (ts > latestTimestamp) {
+      latestTimestamp = ts;
+      latestCreatedAt = tx.createdAt;
+    }
+  }
+
+  return latestCreatedAt;
+}
+
+/**
+ * Verifica se há ao menos uma transação de conclusão de tarefa (Hábito positivo,
+ * Diária ou Afazer) registrada hoje, refletindo a mesma regra usada no backend
+ * para contabilizar a ofensiva diária mesmo em tarefas fora da lista de hoje.
+ */
+export function hasCompletedTaskInTransactionsToday(
+  transactions: TransactionHistoryResponseDTO[] = [],
+  now: Date = new Date(),
+): boolean {
+  const latest = getLatestTaskCompletionCreatedAt(transactions);
+  if (!latest) return false;
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const d = parseServerDate(latest);
+  return Boolean(d && d >= todayStart);
 }

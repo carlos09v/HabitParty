@@ -21,17 +21,58 @@ import {
 } from "@/utils/economy";
 import { awardUserRewards, deductUserPenalty } from "@/utils/gamification";
 import { soundEffects } from "@/utils/soundEffects";
-import { buildCreateTaskPayloadFromTask } from "@/utils/taskMapper";
+import {
+  buildCreateTaskPayloadFromTask,
+  mergeTaskWithResponseDTO,
+} from "@/utils/taskMapper";
+
+function notifyTasksChanged() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("habitparty:tasks-changed"));
+  }
+}
+
+interface TaskToggleRollbackState {
+  completed: boolean;
+  hasClaimedReward?: boolean;
+  lastCompletedAt?: string;
+}
+
+function resolveRewardStreakBeforeAction(
+  task: Task,
+  serverStreakAfterAction?: number,
+): number {
+  const taskType = task.type?.toLowerCase();
+  if (taskType === "daily" && typeof serverStreakAfterAction === "number") {
+    return Math.max(0, serverStreakAfterAction - 1);
+  }
+  if (
+    taskType === "habit" &&
+    serverStreakAfterAction === 1 &&
+    (task.streak ?? 0) >= 1
+  ) {
+    return 0;
+  }
+  return task.currentStreak ?? task.streak ?? task.positiveCount ?? 0;
+}
 
 export interface UseTaskMutationsOptions {
   findTask: (taskId: string) => Task | undefined;
   onOptimisticToggle: (taskId: string, completed: boolean) => void;
   onOptimisticHabit: (taskId: string, delta: number) => void;
-  onRollbackToggle: (taskId: string, previousCompleted: boolean) => void;
+  onRollbackToggle: (
+    taskId: string,
+    previousState: {
+      completed: boolean;
+      hasClaimedReward?: boolean;
+      lastCompletedAt?: string;
+    },
+  ) => void;
   onOptimisticDelete?: (task: Task, columnId?: string) => void;
   onRollbackDelete?: (task: Task, columnId?: string) => void;
   onTaskDuplicated?: (duplicatedTask: Task, targetColumnId: string) => void;
   onTaskUpdatedInDetails?: (task: Task) => void;
+  onReconcileTask?: (task: Task) => void;
   defaultColumnId?: string;
 }
 
@@ -49,6 +90,7 @@ export function useTaskMutations({
   onRollbackDelete,
   onTaskDuplicated,
   onTaskUpdatedInDetails,
+  onReconcileTask,
   defaultColumnId,
 }: UseTaskMutationsOptions) {
   const t = useTranslations("dashboard.taskShared.mutations");
@@ -73,6 +115,11 @@ export function useTaskMutations({
       const alreadyRewarded = Boolean(
         targetTask.hasClaimedReward || rewardedTaskIdsRef.current.has(taskId),
       );
+      const rollbackState: TaskToggleRollbackState = {
+        completed: Boolean(targetTask.completed),
+        hasClaimedReward: targetTask.hasClaimedReward,
+        lastCompletedAt: targetTask.lastCompletedAt,
+      };
 
       onOptimisticToggle(taskId, completed);
       onTaskUpdatedInDetails?.({
@@ -88,10 +135,19 @@ export function useTaskMutations({
 
         if (!res.success) {
           toast.error(res.error || t("statusUpdateError"));
-          onRollbackToggle(taskId, !completed);
-          onTaskUpdatedInDetails?.({ ...targetTask, completed: !completed });
+          onRollbackToggle(taskId, rollbackState);
+          onTaskUpdatedInDetails?.(targetTask);
           return;
         }
+
+        const reconciledTask = res.data
+          ? mergeTaskWithResponseDTO(targetTask, res.data)
+          : null;
+        if (reconciledTask) {
+          onReconcileTask?.(reconciledTask);
+          onTaskUpdatedInDetails?.(reconciledTask);
+        }
+        notifyTasksChanged();
 
         if (completed) {
           const completionLabel =
@@ -117,17 +173,18 @@ export function useTaskMutations({
 
           rewardedTaskIdsRef.current.add(taskId);
 
+          const rewardStreak = resolveRewardStreakBeforeAction(
+            targetTask,
+            res.data?.currentStreak,
+          );
+
           const breakdown = getTaskRewardBreakdown({
             taskType: targetTask.type,
             difficulty: targetTask.difficulty,
             importanceType: targetTask.importanceType,
             repeatType: targetTask.repeatType,
             resetCounter: targetTask.resetCounter,
-            currentStreak:
-              targetTask.currentStreak ??
-              targetTask.streak ??
-              targetTask.positiveCount ??
-              0,
+            currentStreak: rewardStreak,
             isHardcoreModeEnabled: targetTask.isHardcoreModeEnabled,
             dueDate: targetTask.dueDate,
             isPenaltyApplied: targetTask.isPenaltyApplied,
@@ -142,6 +199,7 @@ export function useTaskMutations({
             levelUpTitle: tLevelUp("title"),
             congratsPrefix: tLevelUp("congratsPrefix"),
             congratsSuffix: tLevelUp("congratsSuffix"),
+            isTaskCompletion: true,
           });
 
           // Se não subiu de nível, executa o som e o toast padrão contextual ao tipo da atividade
@@ -189,6 +247,7 @@ export function useTaskMutations({
       onOptimisticToggle,
       onRollbackToggle,
       onTaskUpdatedInDetails,
+      onReconcileTask,
       t,
       tLevelUp,
       locale,
@@ -215,27 +274,27 @@ export function useTaskMutations({
           return;
         }
 
-        // Se o painel de detalhes estiver aberto com essa tarefa, atualiza seus contadores
-        if (res.data && onTaskUpdatedInDetails) {
-          onTaskUpdatedInDetails({
-            ...targetTask,
-            positiveCount: res.data.positiveCount ?? targetTask.positiveCount,
-            negativeCount: res.data.negativeCount ?? targetTask.negativeCount,
-            streak: res.data.currentStreak ?? targetTask.streak,
-            completed: res.data.status === "COMPLETED",
-          });
+        // Reconcilia os contadores e streak exatos retornados pelo backend
+        const reconciledTask = res.data
+          ? mergeTaskWithResponseDTO(targetTask, res.data)
+          : null;
+        if (reconciledTask) {
+          onReconcileTask?.(reconciledTask);
+          onTaskUpdatedInDetails?.(reconciledTask);
         }
+        notifyTasksChanged();
 
         if (delta > 0) {
+          const rewardStreak = resolveRewardStreakBeforeAction(
+            targetTask,
+            res.data?.currentStreak,
+          );
+
           const breakdown = getTaskRewardBreakdown({
             taskType: targetTask.type,
             importanceType: targetTask.importanceType,
             resetCounter: targetTask.resetCounter,
-            currentStreak:
-              targetTask.currentStreak ??
-              targetTask.streak ??
-              targetTask.positiveCount ??
-              0,
+            currentStreak: rewardStreak,
             locale,
           });
 
@@ -247,6 +306,7 @@ export function useTaskMutations({
             levelUpTitle: tLevelUp("title"),
             congratsPrefix: tLevelUp("congratsPrefix"),
             congratsSuffix: tLevelUp("congratsSuffix"),
+            isTaskCompletion: true,
           });
 
           // Se não subiu de nível, executa o som e o toast padrão do hábito
@@ -316,6 +376,7 @@ export function useTaskMutations({
       findTask,
       onOptimisticHabit,
       onTaskUpdatedInDetails,
+      onReconcileTask,
       t,
       tLevelUp,
       locale,
@@ -336,6 +397,7 @@ export function useTaskMutations({
         return;
       }
 
+      notifyTasksChanged();
       toast.success(t("deleteSuccess", { title: task.title }));
     },
     [defaultColumnId, onOptimisticDelete, onRollbackDelete, t],
@@ -383,6 +445,7 @@ export function useTaskMutations({
       };
 
       onTaskDuplicated?.(duplicatedTask, colId);
+      notifyTasksChanged();
       soundEffects.playCreateSound();
       toast.success(t("duplicateSuccess", { title: task.title }));
     },

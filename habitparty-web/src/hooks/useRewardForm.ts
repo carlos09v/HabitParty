@@ -51,6 +51,7 @@ export function useRewardForm({
   const [baseDurationMinutes, setBaseDurationMinutes] = useState("30");
   const [selectedIcon, setSelectedIcon] = useState("gamepad");
   const [hasManuallyChangedIcon, setHasManuallyChangedIcon] = useState(false);
+  const [hasManuallyEditedPrice, setHasManuallyEditedPrice] = useState(false);
   const [lootItems, setLootItems] = useState<
     [MysteryBoxLootItem, MysteryBoxLootItem, MysteryBoxLootItem]
   >(() => [
@@ -63,6 +64,7 @@ export function useRewardForm({
   useEffect(() => {
     if (isOpen) {
       setHasManuallyChangedIcon(false);
+      setHasManuallyEditedPrice(false);
       if (rewardToEdit) {
         setTitle(rewardToEdit.title || "");
         setDescription(rewardToEdit.description || "");
@@ -243,6 +245,7 @@ export function useRewardForm({
 
   const handleTypeChange = (newType: RewardType) => {
     setType(newType);
+    setHasManuallyEditedPrice(false);
     if (newType === "MysteryBox") {
       if (packageLevel === "Nenhum" || packageLevel === "NONE") {
         setPackageLevel("Básico");
@@ -285,6 +288,7 @@ export function useRewardForm({
   ) => {
     setPackageLevel(tierId);
     setPrice(String(recommendedPrice));
+    setHasManuallyEditedPrice(false);
     setSelectedIcon("mystery_box");
     const tierObj = getMysteryBoxTier(tierId);
     const defaultTierLoot =
@@ -366,6 +370,26 @@ export function useRewardForm({
     }
   };
 
+  const handlePriceChange = (newPrice: string) => {
+    setPrice(newPrice);
+    setHasManuallyEditedPrice(true);
+  };
+
+  const applySuggestedPrice = (suggested: number) => {
+    setPrice(String(suggested));
+    setHasManuallyEditedPrice(false);
+  };
+
+  const handleBaseDurationChange = (newDuration: string) => {
+    setBaseDurationMinutes(newDuration);
+    if (type === "TimeBased" && !isEditing && !hasManuallyEditedPrice) {
+      const parsed = Number.parseInt(newDuration, 10);
+      if (Number.isFinite(parsed) && parsed >= 5) {
+        setPrice(String(calculateSuggestedCouponPrice(parsed)));
+      }
+    }
+  };
+
   const handleIconSelect = (iconId: string) => {
     setSelectedIcon(iconId);
     setHasManuallyChangedIcon(true);
@@ -381,6 +405,8 @@ export function useRewardForm({
     setDescription,
     price,
     setPrice,
+    handlePriceChange,
+    applySuggestedPrice,
     type,
     setType,
     handleTypeChange,
@@ -391,6 +417,7 @@ export function useRewardForm({
     handleMysteryBoxTierSelect,
     baseDurationMinutes,
     setBaseDurationMinutes,
+    handleBaseDurationChange,
     selectedIcon,
     setSelectedIcon,
     handleIconSelect,

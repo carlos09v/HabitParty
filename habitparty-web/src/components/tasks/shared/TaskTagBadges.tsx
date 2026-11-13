@@ -3,6 +3,7 @@ import { cn } from "@/utils";
 
 export interface TaskTagBadgesProps {
   primaryLabel?: string | null;
+  primaryTitle?: string | null;
   fallbackLabel?: string;
   hasExtraTags?: boolean;
   extraTagsCount?: number;
@@ -17,6 +18,7 @@ export interface TaskTagBadgesProps {
  */
 export function TaskTagBadges({
   primaryLabel,
+  primaryTitle,
   fallbackLabel,
   hasExtraTags = false,
   extraTagsCount = 0,
@@ -45,7 +47,7 @@ export function TaskTagBadges({
                 isCompact ? "px-1.5 py-0.5 text-tiny" : "px-2 py-0.5 text-xs",
               ),
         )}
-        title={primaryLabel || t("defaultCategory")}
+        title={primaryTitle || primaryLabel || t("defaultCategory")}
       >
         {label}
       </span>

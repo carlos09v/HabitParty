@@ -87,7 +87,7 @@
     "defaultList": "List",
     "deleteModalTitle": "Delete Task",
     "deleteModalDescPrefix": "Are you sure you want to delete the task",
-    "deleteModalDescSuffix": "? This task has subtasks, Hardcore Mode, or an active streak history, and deletion cannot be undone.",
+    "deleteModalDescSuffix": "? This task has linked records in History, and deletion cannot be undone.",
     "deleteModalConfirm": "Delete Task",
     "deleteModalCancel": "Cancel",
     "deleteHistoryLabel": "Also delete this task's records from History",
@@ -281,7 +281,8 @@
       "markPendingAria": "Mark as pending",
       "markCompletedAria": "Mark as completed",
       "taskOptionsAria": "Task options for {title}",
-      "taskOptionsTitle": "Task options (Edit, Duplicate, Delete)"
+      "taskOptionsTitle": "Task options (Edit, Duplicate, Delete)",
+      "checkingDeleteAria": "Checking task history..."
     },
     "contextMenu": {
       "startFocus": "Focus on this task",

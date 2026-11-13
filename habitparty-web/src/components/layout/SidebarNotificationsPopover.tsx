@@ -28,6 +28,12 @@ const POPOVER_OPTIONS = {
   margin: 14,
 };
 
+const DISMISSED_STORAGE_PREFIX = "habitparty:notifications-dismissed:";
+
+function getDismissedStorageKey(dateStr = getTodayDateString()): string {
+  return `${DISMISSED_STORAGE_PREFIX}${dateStr}`;
+}
+
 export interface SidebarNotificationsPopoverProps {
   className?: string;
 }
@@ -56,6 +62,7 @@ export function SidebarNotificationsPopover({
       const res = await getSidebarNotificationsAction(
         localDateStr,
         localDayIdx,
+        now.getTimezoneOffset(),
       );
       setNotifications(res.notifications);
       if (
@@ -68,6 +75,58 @@ export function SidebarNotificationsPopover({
       }
     });
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(getDismissedStorageKey());
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          setDismissedIds(
+            new Set(parsed.filter((v): v is string => typeof v === "string")),
+          );
+        }
+      }
+    } catch {
+      // Ignora erros de acesso/parse do localStorage
+    }
+  }, []);
+
+  // Mantém o contador/badge sincronizado ao concluir/alterar tarefas mesmo com o popover fechado
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let debounceTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
+
+    const handleTasksUpdated = () => {
+      if (debounceTimer) {
+        globalThis.clearTimeout(debounceTimer);
+      }
+      debounceTimer = globalThis.setTimeout(() => {
+        loadNotifications(false);
+      }, 1200);
+    };
+
+    window.addEventListener("habitparty:tasks-changed", handleTasksUpdated);
+    window.addEventListener(
+      "habitparty:task-completed-from-focus",
+      handleTasksUpdated,
+    );
+
+    return () => {
+      if (debounceTimer) {
+        globalThis.clearTimeout(debounceTimer);
+      }
+      window.removeEventListener(
+        "habitparty:tasks-changed",
+        handleTasksUpdated,
+      );
+      window.removeEventListener(
+        "habitparty:task-completed-from-focus",
+        handleTasksUpdated,
+      );
+    };
+  }, [loadNotifications]);
 
   // Adia o carregamento inicial de alertas para o período ocioso pós-hidratação,
   // evitando que 4 buscas concorram com a renderização inicial da rota
@@ -132,7 +191,18 @@ export function SidebarNotificationsPopover({
   const hasCritical = criticalNotifications.length > 0;
 
   const handleDismissAll = () => {
-    setDismissedIds(new Set(notifications.map((n) => n.id)));
+    const nextDismissed = new Set(notifications.map((n) => n.id));
+    setDismissedIds(nextDismissed);
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem(
+          getDismissedStorageKey(),
+          JSON.stringify(Array.from(nextDismissed)),
+        );
+      } catch {
+        // Ignora falha de escrita no localStorage
+      }
+    }
   };
 
   const getNotificationIcon = (type: SidebarNotification["type"]) => {

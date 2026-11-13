@@ -248,15 +248,38 @@
       },
       "r14": {
         "statusLabel": "Next Milestone",
-        "title": "Party, VIP Themes, Friendships & Real-Time Co-op",
-        "tagline": "Strength in numbers: customize your VIP visual atmosphere, connect with friends, and join mutual focus groups.",
+        "title": "VIP Themes, Friendships & Privacy Controls",
+        "tagline": "Customize your visual atmosphere with exclusive VIP Themes, connect with friends via friend codes, and manage your privacy with complete autonomy.",
         "features": [
           "Exclusive VIP Themes (Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold)",
-          "Friend Network with player search by username and friend code, plus granular privacy controls",
-          "Party formation (focus groups) via quick invite code",
-          "Cooperative Daily Quests with collective gold bonuses when everyone succeeds",
-          "Built-in Real-Time Chat with focus alerts and mutual celebrations",
-          "Sleek sound and visual notifications for team milestones"
+          "Friend Network with fast search by @username and unique friend code",
+          "Social Connection Circle to track consistency and achievements of your friends",
+          "Granular Privacy Controls (visibility of habits, stats, and routines: Public, Friends Only, or Private)",
+          "Social Activity Notifications for incoming requests and consistency milestones"
+        ]
+      },
+      "r15": {
+        "statusLabel": "Planned Milestone",
+        "title": "Parties & Cooperative Daily Quests",
+        "tagline": "Strength in numbers: build focused study and work squads, tackle collective goals, and unlock shared reward multipliers.",
+        "features": [
+          "Party Formation (focus squads of 4 to 6 adventurers) via instant invite codes",
+          "Cooperative Daily Quests with shared gold and XP bonuses when everyone succeeds",
+          "Party Consistency Dashboard with real-time overview of squad dailies and active sessions",
+          "Shared Team Vault and exclusive co-op loyalty badges for squad members",
+          "Team celebrations for every daily collective milestone achieved"
+        ]
+      },
+      "r16": {
+        "statusLabel": "Planned Milestone",
+        "title": "Real-Time Chat, Live Presence & Instant Alerts",
+        "tagline": "Instant communication and live presence: chat with your squad, send motivational reactions, and feel mutual accountability in real time.",
+        "features": [
+          "Built-in Real-Time Chat (WebSockets) with dedicated Party channels and direct messages (DM) between friends",
+          "Live Presence Status (real-time focus badges, break indicators, and availability)",
+          "Quick 1-Click Reactions and Encouragement Emojis during team focus blocks",
+          "Instant Sound and Visual Notifications for incoming messages and team milestones",
+          "Built-in Do Not Disturb mode for uninterrupted deep work sessions"
         ]
       },
       "r20": {

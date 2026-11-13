@@ -33,7 +33,7 @@
     "reactivatePremium": "Reativar Premium",
     "deleteTaskModal": {
       "title": "Excluir Tarefa",
-      "description": "Tem certeza de que deseja excluir a tarefa <bold>\"{title}\"</bold>? Esta tarefa possui subtarefas, Modo Hardcore ou histórico de ofensiva ativo, e a exclusão não pode ser desfeita.",
+      "description": "Tem certeza de que deseja excluir a tarefa <bold>\"{title}\"</bold>? Esta tarefa possui registros vinculados no Histórico e a exclusão não pode ser desfeita.",
       "confirmText": "Excluir Tarefa",
       "cancelText": "Cancelar",
       "deleteHistoryLabel": "Excluir também os registros desta tarefa no Histórico",
@@ -305,8 +305,8 @@
       "difficultyGuideMedium": "• <bold>30 a 60 min</bold> de foco moderado → <bold>Médio</bold>",
       "difficultyGuideHard": "• <bold>+1 hora</bold> ou alta exigência mental → <bold>Difícil</bold>",
       "tagsLabel": "Tags",
-      "tagsHint": "Separe por , ou ;",
-      "tagsPlaceholder": "Ex: saúde, estudos; foco (máx. {max})",
+      "tagsHint": "Use > para aninhar",
+      "tagsPlaceholder": "Ex: saúde, Concurso > BB (máx. {max})",
       "priorityLabel": "Prioridade"
     },
     "habitFields": {
@@ -458,7 +458,6 @@
     "titlePlaceholder": "Título da tarefa...",
     "descriptionLabel": "Descrição",
     "descriptionPlaceholder": "Adicione uma descrição ou anotações...",
-    "previewLabel": "Visualização",
     "doneEditing": "Concluir",
     "clickToEditDescription": "Clique para editar a descrição",
     "header": {
@@ -646,6 +645,7 @@
     "communicationError": "Erro interno de comunicação com o servidor.",
     "createTaskFailed": "Falha ao criar tarefa.",
     "updateTaskFailed": "Falha ao atualizar tarefa.",
+    "checkTaskHistoryFailed": "Falha ao verificar histórico da tarefa.",
     "deleteTaskFailed": "Falha ao excluir tarefa.",
     "recordHabitScoreFailed": "Falha ao registrar pontuação do hábito.",
     "changeTaskStatusFailed": "Falha ao alterar status da tarefa.",
@@ -658,5 +658,18 @@
     "updateChecklistFailed": "Falha ao atualizar item do checklist.",
     "toggleChecklistFailed": "Falha ao marcar item do checklist.",
     "deleteChecklistFailed": "Falha ao excluir item do checklist."
+  },
+  "tagSelector": {
+    "selectOrCreatePlaceholder": "Selecionar ou criar tag...",
+    "searchOrCreatePlaceholder": "Buscar ou criar (ex: Concurso > BB)",
+    "createTagOption": "Criar tag \"{tag}\"",
+    "emptyNoTags": "Nenhuma tag ainda. Digite acima para criar.",
+    "emptyNoMatches": "Nenhuma tag encontrada.",
+    "incompleteHierarchyWarning": "Informe o nome do subnível após \">\".",
+    "maxTagsReached": "Limite máximo de {max} tags atingido.",
+    "nestingHint": "Use > para aninhar (ex: Concurso > BB)",
+    "removeTagTitle": "Remover tag {tag}",
+    "clearSearchAria": "Limpar busca de tags",
+    "closeSelectorAria": "Fechar seletor de tags"
   }
 }

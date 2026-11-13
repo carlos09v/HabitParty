@@ -24,13 +24,10 @@ export function TodoFields({ form }: TodoFieldsProps) {
     dueDate,
     setDueDate,
     dueTime,
-    setDueTime,
     startTime,
-    setStartTime,
     dueEndTime,
-    setDueEndTime,
     isAllDay,
-    setIsAllDay,
+    onEventScheduleChange,
     reminderType,
     setReminderType,
     sendEmailReminder,
@@ -63,13 +60,10 @@ export function TodoFields({ form }: TodoFieldsProps) {
         hint={isOverdueHardcoreLocked ? t("dueDateFrozenHint") : undefined}
         enableTime
         timeValue={dueTime}
-        onTimeChange={setDueTime}
         startTimeValue={startTime}
-        onStartTimeChange={setStartTime}
         endTimeValue={dueEndTime}
-        onEndTimeChange={setDueEndTime}
         allDayValue={isAllDay}
-        onAllDayChange={setIsAllDay}
+        onEventScheduleChange={onEventScheduleChange}
       />
 
       {/* Lembrete */}

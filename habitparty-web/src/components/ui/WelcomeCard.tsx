@@ -237,15 +237,15 @@ export function WelcomeCard({
                         className={cn(
                           "text-xs font-semibold px-2.5 py-0.5 rounded-md border flex items-center gap-1.5 transition-colors whitespace-nowrap",
                           stat.variant === "gold"
-                            ? "text-amber-600 dark:text-gold border-amber-500/25 dark:border-gold/30 bg-amber-500/10 dark:bg-gold/10"
+                            ? "text-amber-700 dark:text-gold border-amber-500/30 dark:border-gold/30 bg-amber-500/10 dark:bg-gold/10"
                             : stat.variant === "success"
-                              ? "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 dark:border-emerald-500/30 bg-emerald-500/10"
+                              ? "text-emerald-700 dark:text-emerald-400 border-emerald-500/30 dark:border-emerald-500/30 bg-emerald-500/10"
                               : stat.variant === "info"
                                 ? "text-info dark:text-sky-300 border-info/35 dark:border-sky-400/40 bg-info/10 dark:bg-sky-500/15"
                                 : stat.variant === "primary"
-                                  ? "text-indigo-600 dark:text-white border-indigo-500/25 dark:border-primary-light/40 bg-indigo-500/10 dark:bg-primary/25"
+                                  ? "text-indigo-700 dark:text-white border-indigo-500/30 dark:border-primary-light/40 bg-indigo-500/10 dark:bg-primary/25"
                                   : stat.variant === "warning"
-                                    ? "text-orange-600 dark:text-amber-400 border-orange-500/25 dark:border-amber-500/30 bg-orange-500/10 dark:bg-amber-500/10"
+                                    ? "text-orange-700 dark:text-amber-400 border-orange-500/30 dark:border-amber-500/30 bg-orange-500/10 dark:bg-amber-500/10"
                                     : "text-neutral-200 border-neutral-700 dark:border-white/10 bg-white dark:bg-white/5",
                         )}
                         title={`${stat.label}: ${stat.value}`}
@@ -379,15 +379,15 @@ export function WelcomeCard({
                               "rounded-lg shrink-0 flex items-center justify-center border",
                               compact ? "w-9 h-9" : "w-10 h-10",
                               stat.variant === "gold"
-                                ? "bg-amber-500/10 dark:bg-gold/20 border-amber-500/20 dark:border-gold/30 text-amber-600 dark:text-gold"
+                                ? "bg-amber-500/10 dark:bg-gold/20 border-amber-500/25 dark:border-gold/30 text-amber-700 dark:text-gold"
                                 : stat.variant === "success"
-                                  ? "bg-emerald-500/10 dark:bg-emerald-500/20 border-emerald-500/20 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                                  ? "bg-emerald-500/10 dark:bg-emerald-500/20 border-emerald-500/25 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400"
                                   : stat.variant === "info"
                                     ? "bg-info/10 dark:bg-sky-500/25 border-info/25 dark:border-sky-400/30 text-info dark:text-sky-300"
                                     : stat.variant === "primary"
-                                      ? "bg-indigo-500/10 dark:bg-primary/30 border-indigo-500/20 dark:border-primary-light/30 text-indigo-600 dark:text-white"
+                                      ? "bg-indigo-500/10 dark:bg-primary/30 border-indigo-500/25 dark:border-primary-light/30 text-indigo-700 dark:text-white"
                                       : stat.variant === "warning"
-                                        ? "bg-orange-500/10 dark:bg-amber-500/20 border-orange-500/20 dark:border-amber-500/30 text-orange-600 dark:text-amber-400"
+                                        ? "bg-orange-500/10 dark:bg-amber-500/20 border-orange-500/25 dark:border-amber-500/30 text-orange-700 dark:text-amber-400"
                                         : "bg-surface dark:bg-white/10 border-neutral-700 dark:border-white/15 text-neutral-200",
                             )}
                           >
@@ -405,15 +405,15 @@ export function WelcomeCard({
                                 ? "text-sm sm:text-base"
                                 : "text-base sm:text-lg",
                               stat.variant === "gold"
-                                ? "text-amber-600 dark:text-gold"
+                                ? "text-amber-700 dark:text-gold"
                                 : stat.variant === "success"
-                                  ? "text-emerald-600 dark:text-emerald-400"
+                                  ? "text-emerald-700 dark:text-emerald-400"
                                   : stat.variant === "info"
                                     ? "text-info dark:text-sky-300"
                                     : stat.variant === "primary"
-                                      ? "text-indigo-600 dark:text-neutral-50"
+                                      ? "text-indigo-700 dark:text-neutral-50"
                                       : stat.variant === "warning"
-                                        ? "text-orange-600 dark:text-amber-400"
+                                        ? "text-orange-700 dark:text-amber-400"
                                         : "text-neutral-50",
                             )}
                           >

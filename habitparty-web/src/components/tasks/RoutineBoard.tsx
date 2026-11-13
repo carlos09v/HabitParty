@@ -17,6 +17,7 @@ export function RoutineBoard({
   visibleColumnIds,
   selectedColumnId,
   selectedTaskId,
+  deletingTaskIds,
   isCompact: propIsCompact,
   alignment = "left",
   columnWidths = {},
@@ -143,6 +144,7 @@ export function RoutineBoard({
                   columnIndex={idx}
                   isSelected={selectedColumnId === column.id}
                   selectedTaskId={selectedTaskId}
+                  deletingTaskIds={deletingTaskIds}
                   isCompact={isCompact}
                   widthPreset={columnWidths[column.id] || "normal"}
                   onAddTaskToColumn={onAddTaskToColumn}

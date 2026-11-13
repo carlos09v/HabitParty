@@ -14,6 +14,7 @@ import com.habitparty.adapters.in.web.dtos.request.UpdateTaskDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateTaskOrderDTO;
 import com.habitparty.application.ports.projections.DashboardTaskDTO;
 import com.habitparty.application.ports.projections.TaskSearchWorkspaceCountDTO;
+import com.habitparty.adapters.in.web.dtos.response.TaskHistoryStatusResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.TaskResponseDTO;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 import com.habitparty.core.domain.enums.task.TaskStatus;
@@ -62,6 +63,12 @@ public interface TaskApi {
         @PathVariable UUID taskId,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser userIdLogado,
         @RequestBody @Valid UpdateTaskDTO dto);
+
+    @Operation(summary = "Verifica histórico da tarefa", description = "Retorna se a tarefa possui registros no histórico (transações ou sessões de foco avulsas).")
+    @GetMapping("/{taskId}/has-history")
+    ResponseEntity<TaskHistoryStatusResponseDTO> checkTaskHasHistory(
+        @PathVariable UUID taskId,
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser userIdLogado);
 
     @Operation(summary = "Excluir Tarefa", description = "Deleta uma tarefa. Use deleteHistory=true para remover também seus registros do Histórico.")
     @DeleteMapping("/{taskId}")

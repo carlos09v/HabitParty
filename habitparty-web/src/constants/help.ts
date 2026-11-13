@@ -1,3 +1,4 @@
+import { FOCUS_REWARD_RULES } from "@/constants/focus";
 import { HELP_FAQS_EN, HELP_TABLES_EN } from "@/constants/help.en";
 import { MYSTERY_BOX_TIERS } from "@/constants/reward";
 import { DIFFICULTY_REWARDS } from "@/constants/task";
@@ -122,13 +123,13 @@ export const HELP_TABLES: Record<string, HelpTableEntry> = {
     ],
     rows: [
       [
-        "🟩",
+        "🟦",
         "Trivial (Muito Fácil)",
         `${DIFFICULTY_REWARDS.TRIVIAL.xp} XP • ${formatCoins(DIFFICULTY_REWARDS.TRIVIAL.gold)} 🪙`,
         "Tarefas quase automáticas de curtíssima duração (ex: beber água, tomar remédio, arrumar a cama).",
       ],
       [
-        "🟦",
+        "🟩",
         "Fácil",
         `${DIFFICULTY_REWARDS.EASY.xp} XP • ${formatCoins(DIFFICULTY_REWARDS.EASY.gold)} 🪙`,
         "Tarefas rápidas que exigem intenção básica (ex: responder e-mails, 10 min de leitura, lavar louça).",
@@ -140,7 +141,7 @@ export const HELP_TABLES: Record<string, HelpTableEntry> = {
         "A base da economia: 30 a 60 minutos de esforço moderado (ex: treino físico, tarefa de trabalho).",
       ],
       [
-        "🟧",
+        "🟪",
         "Difícil",
         `${DIFFICULTY_REWARDS.HARD.xp} XP • ${formatCoins(DIFFICULTY_REWARDS.HARD.gold)} 🪙`,
         "Esforço cognitivo ou físico intenso: 1 a 2 horas (ex: sessão de estudo pesado, projeto de programação).",
@@ -245,25 +246,25 @@ export const HELP_TABLES: Record<string, HelpTableEntry> = {
       [
         "🍅 Pomodoro Curto",
         "15 a 24 min",
-        `4 XP • ${formatCoins(0.1)} 🪙`,
-        "Quebra rápida de inércia. Requer ciclo completado com sucesso.",
+        `${FOCUS_REWARD_RULES.SHORT_POMO_XP_PER_CYCLE} XP • ${formatCoins(FOCUS_REWARD_RULES.SHORT_POMO_COINS_PER_CYCLE)} 🪙`,
+        "Quebra rápida de inércia (1/3 de 1 Tarefa Fácil). Requer ciclo completado.",
       ],
       [
         "🍅 Pomodoro Padrão",
         "25 a 40 min",
-        `8 XP • ${formatCoins(0.25)} 🪙`,
-        "O padrão de ouro do foco. Equivale a pouco mais de 1 Tarefa Fácil.",
+        `${FOCUS_REWARD_RULES.STANDARD_XP_PER_CYCLE} XP • ${formatCoins(FOCUS_REWARD_RULES.STANDARD_COINS_PER_CYCLE)} 🪙`,
+        "O padrão de ouro do foco. Equivale a ~30%–40% de uma entrega de tarefa.",
       ],
       [
         "🍅 Pomodoro Deep Work",
         "Mais de 40 min",
-        `15 XP • ${formatCoins(0.5)} 🪙`,
-        "Imersão profunda prolongada. Equivale ao XP de 1 Tarefa Média.",
+        `${FOCUS_REWARD_RULES.DEEP_WORK_XP_PER_CYCLE} XP • ${formatCoins(FOCUS_REWARD_RULES.DEEP_WORK_COINS_PER_CYCLE)} 🪙`,
+        "Imersão profunda prolongada. Equivale a 40% da moeda e 100% do XP de 1 Tarefa Média.",
       ],
       [
         "⏱️ Cronômetro Livre",
         "A cada 30 min",
-        `~7 XP • ${formatCoins(0.2)} 🪙`,
+        `~${FOCUS_REWARD_RULES.STOPWATCH_XP_PER_30_MIN} XP • ${formatCoins(FOCUS_REWARD_RULES.STOPWATCH_COINS_PER_30_MIN)} 🪙`,
         "Cálculo contínuo proporcional. Limitado ao teto de 90 min por sessão.",
       ],
       [

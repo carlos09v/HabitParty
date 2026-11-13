@@ -47,6 +47,10 @@ export function WeeklyCalendar({
   const [weekOffset, setWeekOffset] = useState(0);
 
   const todayIso = useMemo(() => getTodayDateString(), []);
+  const baseDate = useMemo(() => {
+    const [y, m, d] = todayIso.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }, [todayIso]);
 
   const { weekRangeLabel, weekDays } = useMemo(
     () =>
@@ -55,10 +59,10 @@ export function WeeklyCalendar({
         transactions,
         weekOffset,
         todayIso,
-        new Date(),
+        baseDate,
         locale,
       ),
-    [tasks, transactions, weekOffset, todayIso, locale],
+    [tasks, transactions, weekOffset, todayIso, baseDate, locale],
   );
 
   const handleDayClick = (isoString: string) => {

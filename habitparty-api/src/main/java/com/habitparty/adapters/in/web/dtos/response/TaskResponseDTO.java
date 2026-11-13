@@ -3,6 +3,8 @@ package com.habitparty.adapters.in.web.dtos.response;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -69,6 +71,7 @@ public record TaskResponseDTO(
         Boolean sendEmailReminder,
         Boolean emailReminderSent,
         Boolean isRewardClaimed,
+        OffsetDateTime lastCompletedAt,
 
         // --- Métricas de Foco Vinculado ---
         Integer totalFocusMinutes,
@@ -77,10 +80,35 @@ public record TaskResponseDTO(
         // --- A lista de Checklist ---
         List<ChecklistItemResponseDTO> checklist) {
     public static TaskResponseDTO fromDomain(Task task) {
+        return fromDomain(task, LocalDate.now(), ZoneId.systemDefault());
+    }
+
+    public static TaskResponseDTO fromDomain(Task task, LocalDate referenceDate) {
+        return fromDomain(task, referenceDate, ZoneId.systemDefault());
+    }
+
+    public static TaskResponseDTO fromDomain(Task task, LocalDate referenceDate, ZoneId zoneId) {
+        LocalDate effectiveDate = referenceDate != null ? referenceDate : LocalDate.now();
+        ZoneId effectiveZone = zoneId != null ? zoneId : ZoneId.systemDefault();
         // Converte o checklist para DTO (se existir)
         List<ChecklistItemResponseDTO> checklistDTOs = task.getChecklist() != null
                 ? task.getChecklist().stream().map(ChecklistItemResponseDTO::fromDomain).toList()
                 : List.of();
+
+        Integer effectiveStreak = task instanceof Habit h
+                ? (Integer) h.getEffectiveStreak(effectiveDate)
+                : task instanceof Daily d
+                        ? (Integer) d.getEffectiveStreak(effectiveDate)
+                        : null;
+
+        LocalDateTime rawLastCompletedAt = task instanceof Habit h
+                ? h.getLastCompletedAt()
+                : task instanceof Daily d
+                        ? d.getLastCompletedAt()
+                        : task instanceof Todo t ? t.getCompletedAt() : null;
+        OffsetDateTime lastCompletedAt = rawLastCompletedAt != null
+                ? rawLastCompletedAt.atZone(effectiveZone).toOffsetDateTime()
+                : null;
 
         // Montagem do DTO dinâmico
         return new TaskResponseDTO(
@@ -98,9 +126,8 @@ public record TaskResponseDTO(
 
                 // --- A Mágica do Java para extrair campos das subclasses ---
 
-                // currentStreak (Existe no Habit e no Daily)
-                task instanceof Habit h ? (Integer) h.getCurrentStreak()
-                        : task instanceof Daily d ? (Integer) d.getCurrentStreak() : null,
+                // currentStreak efetivo no ciclo atual (Existe no Habit e no Daily)
+                effectiveStreak,
 
                 // Específicos do Habit
                 task instanceof Habit h ? h.getHabitType() : null,
@@ -126,7 +153,8 @@ public record TaskResponseDTO(
                 task instanceof Todo t ? t.isPenaltyApplied() : null,
                 task instanceof Todo t ? t.isSendEmailReminder() : null,
                 task instanceof Todo t ? t.isEmailReminderSent() : null,
-                task.isRewardAlreadyClaimed(),
+                task.isRewardAlreadyClaimed(effectiveDate),
+                lastCompletedAt,
 
                 // Métricas de Foco
                 task.getTotalFocusMinutes(),

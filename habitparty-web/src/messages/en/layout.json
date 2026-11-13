@@ -150,7 +150,9 @@
     "completeSaveAria": "Complete and Save",
     "stopResetTitle": "Stop / Reset time",
     "stopAria": "Stop",
-    "stopLabel": "Stop"
+    "stopLabel": "Stop",
+    "linkActivityBadge": "Link to an activity?",
+    "linkActivityTitle": "Link this focus session to an activity"
   },
   "subscriptionAlert": {
     "ariaLabel": "Subscription expiration notice",

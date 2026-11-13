@@ -254,22 +254,26 @@ export const TASK_DIFFICULTY_META: Record<
   EASY: {
     label: "Fácil",
     color: "text-success-500",
-    badgeColor: "text-success-500 bg-success-500/20 border-success-500/40",
+    badgeColor:
+      "text-emerald-800 dark:text-success-500 bg-success-500/20 border-success-500/40",
   },
   easy: {
     label: "Fácil",
     color: "text-success-500",
-    badgeColor: "text-success-500 bg-success-500/20 border-success-500/40",
+    badgeColor:
+      "text-emerald-800 dark:text-success-500 bg-success-500/20 border-success-500/40",
   },
   MEDIUM: {
     label: "Médio",
     color: "text-warning-500",
-    badgeColor: "text-warning-500 bg-warning-500/20 border-warning-500/40",
+    badgeColor:
+      "text-orange-800 dark:text-warning-500 bg-warning-500/20 border-warning-500/40",
   },
   medium: {
     label: "Médio",
     color: "text-warning-500",
-    badgeColor: "text-warning-500 bg-warning-500/20 border-warning-500/40",
+    badgeColor:
+      "text-orange-800 dark:text-warning-500 bg-warning-500/20 border-warning-500/40",
   },
   HARD: {
     label: "Difícil",
@@ -320,31 +324,31 @@ export const TASK_PRIORITY_META: Record<
     label: "Média",
     color: "text-warning-500 fill-warning-500",
     badgeColor:
-      "text-warning-500 bg-warning-500/20 border-warning-500/40 fill-warning-500",
+      "text-orange-800 dark:text-warning-500 bg-warning-500/20 border-warning-500/40 fill-orange-800 dark:fill-warning-500",
   },
   medium: {
     label: "Média",
     color: "text-warning-500 fill-warning-500",
     badgeColor:
-      "text-warning-500 bg-warning-500/20 border-warning-500/40 fill-warning-500",
+      "text-orange-800 dark:text-warning-500 bg-warning-500/20 border-warning-500/40 fill-orange-800 dark:fill-warning-500",
   },
   Low: {
     label: "Baixa",
     color: "text-success-500 fill-success-500",
     badgeColor:
-      "text-success-500 bg-success-500/20 border-success-500/40 fill-success-500",
+      "text-emerald-800 dark:text-success-500 bg-success-500/20 border-success-500/40 fill-emerald-800 dark:fill-success-500",
   },
   LOW: {
     label: "Baixa",
     color: "text-success-500 fill-success-500",
     badgeColor:
-      "text-success-500 bg-success-500/20 border-success-500/40 fill-success-500",
+      "text-emerald-800 dark:text-success-500 bg-success-500/20 border-success-500/40 fill-emerald-800 dark:fill-success-500",
   },
   low: {
     label: "Baixa",
     color: "text-success-500 fill-success-500",
     badgeColor:
-      "text-success-500 bg-success-500/20 border-success-500/40 fill-success-500",
+      "text-emerald-800 dark:text-success-500 bg-success-500/20 border-success-500/40 fill-emerald-800 dark:fill-success-500",
   },
   NONE: {
     label: "Nenhuma",
@@ -460,13 +464,22 @@ export const HABIT_DIRECTION_OPTIONS: readonly {
 export const MAX_TASK_TAGS = 5;
 
 /** Limite máximo de caracteres da descrição de uma tarefa (espelha o @Size do backend). */
-export const TASK_DESCRIPTION_MAX_LENGTH = 5000;
+export const TASK_DESCRIPTION_MAX_LENGTH = 2000;
 
 /** Fração do limite a partir da qual o contador de caracteres da descrição passa a ser exibido. */
 export const TASK_DESCRIPTION_COUNTER_THRESHOLD = 0.8;
 
-/** Tamanho máximo em caracteres de uma única tag */
+/** Tamanho máximo em caracteres de um único nível de tag */
 export const MAX_TAG_LENGTH = 25;
+
+/** Tamanho máximo em caracteres de um único nível de tag (alias semântico) */
+export const MAX_TAG_SEGMENT_LENGTH = MAX_TAG_LENGTH;
+
+/** Tamanho máximo em caracteres do caminho completo de uma tag (incluindo " > ") */
+export const MAX_TAG_PATH_LENGTH = 80;
+
+/** Separador canônico para tags hierárquicas (estilo TickTick) */
+export const TAG_HIERARCHY_SEPARATOR = " > ";
 
 /** Dias úteis (Segunda a Sexta) para seletores rápidos de tarefas diárias */
 export const WEEKDAYS_ONLY: readonly DailyDaysOfWeek[] = [
@@ -547,7 +560,7 @@ export const MARKDOWN_FORMAT_OPTIONS: ReadonlyArray<{
   {
     syntax: "bullet",
     label: "Lista",
-    hint: "- item",
+    hint: "•",
     icon: List,
     iconColorClass: "text-primary-light",
   },

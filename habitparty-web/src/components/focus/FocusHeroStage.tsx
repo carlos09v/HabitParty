@@ -31,6 +31,7 @@ import { cn } from "@/utils";
 import { getRewardIcon } from "@/utils/rewardMapper";
 import { FocusDurationPresets } from "./stage/FocusDurationPresets";
 import { FocusStageHeaderBar } from "./stage/FocusStageHeaderBar";
+import { FocusStageTaskSlot } from "./stage/FocusStageTaskSlot";
 import { FocusStageTimerCircle } from "./stage/FocusStageTimerCircle";
 
 const FocusZenModeModal = dynamic(
@@ -84,6 +85,7 @@ interface FocusHeroStageProps {
   onStartFocusTask?: (task: { id: string; title: string }) => void;
   onChangeMode?: (mode: FocusRecordType) => void;
   onOpenUpgradeModal?: () => void;
+  initialLinkActivity?: boolean;
   isCompact?: boolean;
 }
 
@@ -97,6 +99,7 @@ export function FocusHeroStage({
   onStartFocusTask,
   onChangeMode: propOnChangeMode,
   onOpenUpgradeModal,
+  initialLinkActivity = false,
   isCompact = false,
 }: FocusHeroStageProps) {
   const t = useTranslations("focus.hero");
@@ -202,6 +205,24 @@ export function FocusHeroStage({
     setTargetModalInitialTab("TASKS");
     setIsTargetModalOpen(true);
   }, []);
+
+  useEffect(() => {
+    if (!initialLinkActivity) return;
+    if (target?.type === "task") {
+      handleOpenLinkActivityModal();
+    }
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("linkActivity")) {
+        url.searchParams.delete("linkActivity");
+        window.history.replaceState(
+          null,
+          "",
+          url.pathname + (url.search ? url.search : ""),
+        );
+      }
+    }
+  }, [initialLinkActivity, target?.type, handleOpenLinkActivityModal]);
 
   const handleSelectBackpackItem = useCallback(
     (item: InventoryItemResponseDTO) => {
@@ -342,12 +363,6 @@ export function FocusHeroStage({
           onChangeSoundType={setTimerSoundType}
           onOpenZenMode={handleOpenZenMode}
           onOpenUpgradeModal={onOpenUpgradeModal}
-          onUnlinkTask={controls.unlinkTaskFromTarget}
-          onCompleteLinkedTask={controls.completeLinkedTask}
-          onOpenLinkActivity={handleOpenLinkActivityModal}
-          onOpenLinkTask={
-            target?.type === "activity" ? handleOpenLinkTaskModal : undefined
-          }
         />
 
         {/* =========================================================================
@@ -410,7 +425,7 @@ export function FocusHeroStage({
                     ? t("savePartialTitle")
                     : t("completeSessionTitle")
                 }
-                className="w-full py-2.5 px-5 rounded-xl border border-emerald-500/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-bold text-sm flex items-center justify-center gap-2 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shadow-sm hover:scale-[1.01]"
+                className="w-full py-2.5 px-5 rounded-xl border border-emerald-500/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-800 dark:text-emerald-300 font-bold text-sm flex items-center justify-center gap-2 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shadow-sm hover:scale-[1.01]"
               >
                 <CheckCircle2 size={17} />
                 <span>
@@ -420,6 +435,16 @@ export function FocusHeroStage({
                 </span>
               </button>
             )}
+
+            {/* 2.5. Painel de Tarefa Vinculada (logo abaixo de Começar / Salvar Tempo Parcial) */}
+            <FocusStageTaskSlot
+              target={target}
+              isInventoryItem={isInventoryItem}
+              onOpenLinkTask={handleOpenLinkTaskModal}
+              onOpenLinkActivity={handleOpenLinkActivityModal}
+              onCompleteLinkedTask={controls.completeLinkedTask}
+              onUnlinkTask={controls.unlinkTaskFromTarget}
+            />
 
             {/* 3. Controles Auxiliares: Presets ou Botões de Reiniciar / Pular Pausa */}
             {mode === "POMO" && !isInventoryItem && !isActive ? (

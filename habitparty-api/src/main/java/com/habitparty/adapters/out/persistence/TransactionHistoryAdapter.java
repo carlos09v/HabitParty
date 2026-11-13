@@ -95,6 +95,17 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
   }
 
   @Override
+  public boolean hasCompletedTasksSinceYesterday(UUID userId) {
+    LocalDate yesterday = LocalDate.now(clock).minusDays(1);
+    LocalDateTime sinceYesterday = toStorageDateTime(yesterday, LocalTime.MIN);
+    return repository.existsByUser_IdAndTransactionTypeInAndCreatedAtGreaterThanEqual(
+        userId,
+        COMPLETED_TASK_TYPES,
+        sinceYesterday
+    );
+  }
+
+  @Override
   public void save(TransactionHistory transaction) {
     repository.save(mapper.toEntity(transaction));
   }
@@ -136,6 +147,14 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
       return;
     }
     repository.deleteAllByReferenceIdInAndUserId(referenceIds, userId);
+  }
+
+  @Override
+  public boolean existsByReferenceIdAndUserId(UUID referenceId, UUID userId) {
+    if (referenceId == null || userId == null) {
+      return false;
+    }
+    return repository.existsByReferenceIdAndUserId(referenceId, userId);
   }
 
   @Override

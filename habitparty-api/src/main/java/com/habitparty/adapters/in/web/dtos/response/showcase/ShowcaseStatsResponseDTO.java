@@ -29,8 +29,24 @@ public record ShowcaseStatsResponseDTO(
       int totalAchievements,
       int achievementPoints,
       int maxPoints) {
-    return new ShowcaseStatsResponseDTO(
+    return fromDomain(
+        stats,
         stats != null ? stats.getCurrentStreak() : 0,
+        unlockedCount,
+        totalAchievements,
+        achievementPoints,
+        maxPoints);
+  }
+
+  public static ShowcaseStatsResponseDTO fromDomain(
+      UserStats stats,
+      int effectiveStreak,
+      int unlockedCount,
+      int totalAchievements,
+      int achievementPoints,
+      int maxPoints) {
+    return new ShowcaseStatsResponseDTO(
+        effectiveStreak,
         stats != null ? stats.getHighestStreak() : 0,
         stats != null ? stats.getTotalTasksCompleted() : 0,
         stats != null ? stats.getTotalHardTasksCompleted() : 0,

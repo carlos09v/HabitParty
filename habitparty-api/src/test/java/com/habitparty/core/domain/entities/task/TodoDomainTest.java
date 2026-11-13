@@ -280,4 +280,52 @@ class TodoDomainTest {
     assertFalse(todo.isAllDay());
     assertTrue(todo.getStartTime().isEmpty());
   }
+
+  @Test
+  @DisplayName("Normaliza e aceita tags hierárquicas válidas preservando o caminho completo")
+  void shouldNormalizeAndAcceptValidNestedTags() {
+    Todo todo = createTodo(false, null, false);
+    todo.updateBaseDetails(
+        todo.getName(),
+        todo.getDescription().orElse(null),
+        todo.getPriority().orElse(null),
+        todo.getDifficulty(),
+        List.of("  Concurso>BB  ", "Estudo > Arquitetura > Java"),
+        false);
+
+    assertEquals(List.of("Concurso > BB", "Estudo > Arquitetura > Java"), todo.getTags());
+  }
+
+  @Test
+  @DisplayName("Rejeita nível de tag hierárquica acima de 25 caracteres ou nível vazio")
+  void shouldRejectOversizedOrMalformedNestedTagSegments() {
+    Todo todo = createTodo(false, null, false);
+
+    assertThrows(DomainValidationException.class, () ->
+        todo.updateBaseDetails(
+            todo.getName(),
+            todo.getDescription().orElse(null),
+            todo.getPriority().orElse(null),
+            todo.getDifficulty(),
+            List.of("Concurso > SegmentoComMaisDeVinteECincoChars"),
+            false));
+
+    assertThrows(DomainValidationException.class, () ->
+        todo.updateBaseDetails(
+            todo.getName(),
+            todo.getDescription().orElse(null),
+            todo.getPriority().orElse(null),
+            todo.getDifficulty(),
+            List.of("Concurso > "),
+            false));
+
+    assertThrows(DomainValidationException.class, () ->
+        todo.updateBaseDetails(
+            todo.getName(),
+            todo.getDescription().orElse(null),
+            todo.getPriority().orElse(null),
+            todo.getDifficulty(),
+            List.of("NivelUmVinteCincoChars123 > NivelDoisVinteCincoChars > NivelTresVinteCincoCh1 > Nivel4"),
+            false));
+  }
 }

@@ -86,7 +86,8 @@ export function LandingRoadmap() {
                     ? "bg-gradient-to-b from-emerald-500/[0.06] via-card to-card dark:from-emerald-950/30 dark:via-surface/70 dark:to-surface/50 border border-emerald-500/30 dark:border-emerald-500/40 hover:border-emerald-500/60 dark:hover:border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.06)] hover:shadow-[0_0_35px_rgba(16,185,129,0.16)] hover:-translate-y-1"
                     : "bg-card/95 dark:bg-surface/60 border border-neutral-700/80 dark:border-white/10 hover:border-neutral-500 dark:hover:border-white/25 shadow-sm dark:shadow-card-deep hover:-translate-y-1",
                   item.borderGlowColor,
-                  index === 4 && "md:col-span-2",
+                  index === LANDING_ROADMAP_CONFIGS.length - 1 &&
+                    "md:col-span-2",
                 )}
               >
                 {/* Linha Decorativa do Topo */}
@@ -178,7 +179,7 @@ export function LandingRoadmap() {
                     <div
                       className={cn(
                         "space-y-3",
-                        index === 4 &&
+                        index === LANDING_ROADMAP_CONFIGS.length - 1 &&
                           "md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-3 md:space-y-0",
                       )}
                     >
@@ -260,7 +261,7 @@ export function LandingRoadmap() {
                         : "text-neutral-400",
                     )}
                   >
-                    {isCompleted ? "Disponível v1.1" : "Gamification System"}
+                    {isCompleted ? item.release : "Gamification System"}
                   </span>
                 </div>
               </div>

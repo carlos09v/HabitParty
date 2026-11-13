@@ -1,6 +1,5 @@
 import {
   ALL_WEEK_DAYS,
-  MAX_TAG_LENGTH,
   normalizeTaskDifficulty,
   normalizeTaskType,
 } from "@/constants/task";
@@ -18,8 +17,9 @@ import type {
   UpdateTaskDTO,
 } from "@/types/task";
 import type { WorkspaceResponseDTO } from "@/types/workspace";
-import { getTodayDateString } from "./date";
+import { formatDateParts, getTodayDateString, parseServerDate } from "./date";
 import { calculateTaskReward } from "./economy";
+import { normalizeTagPath } from "./tags";
 
 const IMPORTANCE_MAP: Record<string, HabitImportance> = {
   LOW: "low",
@@ -87,6 +87,7 @@ export function mapTaskResponseToTask(
     rewardGold: reward.gold,
     completed: isCompleted,
     hasClaimedReward: Boolean(taskDto.isRewardClaimed || isCompleted),
+    lastCompletedAt: taskDto.lastCompletedAt,
     streak:
       (taskDto.taskType?.toLowerCase() as TaskType) === "todo"
         ? undefined
@@ -296,30 +297,137 @@ export function buildCreateTaskPayloadFromTask(task: Task): CreateTaskDTO {
   };
 }
 
+function getIsoWeekInfo(date: Date): { year: number; week: number } {
+  const utc = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+  );
+  const dayNum = utc.getUTCDay() || 7;
+  utc.setUTCDate(utc.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(
+    ((utc.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7,
+  );
+  return { year: utc.getUTCFullYear(), week };
+}
+
+function isHabitStreakActiveForDelta(task: Task, now: Date): boolean {
+  if (!(task.streak && task.streak > 0)) {
+    return false;
+  }
+  if (!task.lastCompletedAt) {
+    return true;
+  }
+  const lastDate = parseServerDate(task.lastCompletedAt);
+  if (!lastDate) {
+    return true;
+  }
+
+  const counter = (task.resetCounter || "DAILY").toUpperCase();
+  if (counter === "WEEKLY") {
+    const last = getIsoWeekInfo(lastDate);
+    const curr = getIsoWeekInfo(now);
+    if (
+      last.year > curr.year ||
+      (last.year === curr.year && last.week >= curr.week)
+    ) {
+      return true;
+    }
+    const nextWeekDate = new Date(lastDate.getTime() + 7 * 86_400_000);
+    const nextWeek = getIsoWeekInfo(nextWeekDate);
+    return nextWeek.year === curr.year && nextWeek.week === curr.week;
+  }
+  if (counter === "MONTHLY") {
+    const monthsDiff =
+      (now.getFullYear() - lastDate.getFullYear()) * 12 +
+      (now.getMonth() - lastDate.getMonth());
+    return monthsDiff <= 1;
+  }
+
+  const lastStart = new Date(
+    lastDate.getFullYear(),
+    lastDate.getMonth(),
+    lastDate.getDate(),
+  );
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diffDays = Math.round(
+    (todayStart.getTime() - lastStart.getTime()) / 86_400_000,
+  );
+  return diffDays <= 1;
+}
+
 /**
  * Calcula o próximo estado de contadores e ofensiva de um hábito ao receber um incremento ou decremento.
  */
 export function computeOptimisticHabitDelta(
   task: Task,
   delta: number,
-): Pick<Task, "positiveCount" | "negativeCount" | "streak" | "completed"> {
+): Pick<
+  Task,
+  "positiveCount" | "negativeCount" | "streak" | "completed" | "lastCompletedAt"
+> {
   const currentPositive = task.positiveCount ?? 0;
   const nextPositive = delta > 0 ? currentPositive + delta : currentPositive;
   const nextNegative =
     delta < 0
       ? (task.negativeCount ?? 0) + Math.abs(delta)
       : (task.negativeCount ?? 0);
-  // Ofensiva (streak) só sobe 1 vez no primeiro clique positivo do dia
-  const nextStreak =
-    delta > 0 && currentPositive === 0
-      ? (task.streak ?? 0) + 1
-      : (task.streak ?? 0);
+
+  const now = new Date();
+  const todayIso = formatDateParts(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
+  const parsedLast = task.lastCompletedAt
+    ? parseServerDate(task.lastCompletedAt)
+    : null;
+  const lastIso = parsedLast
+    ? formatDateParts(
+        parsedLast.getFullYear(),
+        parsedLast.getMonth(),
+        parsedLast.getDate(),
+      )
+    : null;
+
+  let nextStreak = task.streak ?? 0;
+  if (delta > 0 && currentPositive === 0) {
+    if (lastIso === todayIso && nextStreak > 0) {
+      nextStreak = task.streak ?? 1;
+    } else if (isHabitStreakActiveForDelta(task, now)) {
+      nextStreak = (task.streak ?? 0) + 1;
+    } else {
+      nextStreak = 1;
+    }
+  }
 
   return {
     positiveCount: nextPositive,
     negativeCount: nextNegative,
     streak: nextStreak,
-    completed: true,
+    completed: delta > 0 ? true : Boolean(task.completed),
+    lastCompletedAt: delta > 0 ? now.toISOString() : task.lastCompletedAt,
+  };
+}
+
+/**
+ * Reconcilia uma Task local com o DTO autorizado retornado pelo backend após uma mutação.
+ */
+export function mergeTaskWithResponseDTO(
+  task: Task,
+  dto: TaskResponseDTO,
+): Task {
+  const isCompleted = dto.status === "COMPLETED";
+  return {
+    ...task,
+    completed: isCompleted,
+    hasClaimedReward: Boolean(dto.isRewardClaimed || isCompleted),
+    positiveCount: dto.positiveCount ?? task.positiveCount,
+    negativeCount: dto.negativeCount ?? task.negativeCount,
+    streak: dto.currentStreak !== undefined ? dto.currentStreak : task.streak,
+    currentStreak:
+      dto.currentStreak !== undefined ? dto.currentStreak : task.currentStreak,
+    lastCompletedAt: dto.lastCompletedAt ?? task.lastCompletedAt,
+    isPenaltyApplied: dto.isPenaltyApplied ?? task.isPenaltyApplied,
   };
 }
 
@@ -332,7 +440,7 @@ export function parseTaskTags(tagsInput: string): string[] {
 
   const rawTags = tagsInput
     .split(/[,;]+/)
-    .map((t) => t.trim().slice(0, MAX_TAG_LENGTH))
+    .map((t) => normalizeTagPath(t))
     .filter(Boolean);
 
   return Array.from(new Map(rawTags.map((t) => [t.toLowerCase(), t])).values());

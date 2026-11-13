@@ -22,6 +22,7 @@ import type {
 } from "@/types/task";
 import type { RoutineFilterPopoverProps } from "@/types/task-ui";
 import { cn } from "@/utils";
+import { getTagDepth, getTagLeafLabel } from "@/utils/tags";
 
 export function RoutineFilterPopover({
   filters = DEFAULT_BOARD_FILTERS,
@@ -255,10 +256,10 @@ export function RoutineFilterPopover({
               {/* 5. Tags (se houver disponíveis no quadro) */}
               {availableTags.length > 0 && (
                 <div className="flex flex-col gap-1.5 pt-1 border-t border-white/5">
-                  <span className="text-label-g font-semibold text-neutral-400 flex items-center gap-1">
-                    <Tag size={11} /> {t("tagsLabel")}
-                  </span>
-                  <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto custom-scrollbar">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-label-g font-semibold text-neutral-400 flex items-center gap-1">
+                      <Tag size={11} /> {t("tagsLabel")}
+                    </span>
                     <button
                       type="button"
                       onClick={() => updateFilter("tag", null)}
@@ -271,26 +272,42 @@ export function RoutineFilterPopover({
                     >
                       {t("allOptions")}
                     </button>
-                    {availableTags.map((tagItem) => (
-                      <button
-                        key={tagItem}
-                        type="button"
-                        onClick={() =>
-                          updateFilter(
-                            "tag",
-                            filters.tag === tagItem ? null : tagItem,
-                          )
-                        }
-                        className={cn(
-                          "px-2 py-0.5 rounded-full text-tiny font-medium transition-colors cursor-pointer truncate max-w-[120px]",
-                          filters.tag === tagItem
-                            ? "bg-gold text-on-gold font-bold"
-                            : "bg-white/5 text-neutral-300 hover:bg-white/10",
-                        )}
-                      >
-                        #{tagItem}
-                      </button>
-                    ))}
+                  </div>
+                  <div className="flex flex-col gap-0.5 max-h-36 overflow-y-auto custom-scrollbar pr-0.5">
+                    {availableTags.map((tagItem) => {
+                      const depth = getTagDepth(tagItem);
+                      const leafLabel = getTagLeafLabel(tagItem);
+                      const isSelected = filters.tag === tagItem;
+                      return (
+                        <button
+                          key={tagItem}
+                          type="button"
+                          onClick={() =>
+                            updateFilter("tag", isSelected ? null : tagItem)
+                          }
+                          title={tagItem}
+                          style={{ paddingLeft: `${8 + depth * 14}px` }}
+                          className={cn(
+                            "w-full text-left pr-2 py-1 rounded-md text-tiny font-medium transition-colors cursor-pointer flex items-center gap-1.5 truncate",
+                            isSelected
+                              ? "bg-gold text-on-gold font-bold"
+                              : "bg-white/5 text-neutral-300 hover:bg-white/10",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "shrink-0",
+                              isSelected
+                                ? "text-on-gold/80"
+                                : "text-neutral-500",
+                            )}
+                          >
+                            {depth > 0 ? "↳" : "#"}
+                          </span>
+                          <span className="truncate">{leafLabel}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}

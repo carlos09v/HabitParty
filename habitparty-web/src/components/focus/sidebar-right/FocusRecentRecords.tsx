@@ -136,7 +136,7 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
               e.stopPropagation();
               onRequestDelete(rec);
             }}
-            className="w-6 h-6 rounded flex items-center justify-center text-neutral-500 hover:text-red-400 hover:bg-red-500/15 opacity-70 group-hover/row:opacity-100 transition-[opacity,color,background-color] duration-150 cursor-pointer"
+            className="w-6 h-6 rounded flex items-center justify-center text-neutral-400 hover:text-red-400 hover:bg-red-500/15 opacity-85 group-hover/row:opacity-100 transition-[opacity,color,background-color] duration-150 cursor-pointer"
             title={t("deleteRecordAria")}
             aria-label={t("deleteRecordAria")}
           >

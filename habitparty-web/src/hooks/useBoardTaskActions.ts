@@ -230,12 +230,26 @@ export function useBoardTaskActions({
   );
 
   const onRollbackToggle = useCallback(
-    (taskId: string, previousCompleted: boolean) => {
+    (
+      taskId: string,
+      previousState: {
+        completed: boolean;
+        hasClaimedReward?: boolean;
+        lastCompletedAt?: string;
+      },
+    ) => {
       setColumns((prev) =>
         prev.map((col) => ({
           ...col,
           tasks: col.tasks.map((t) =>
-            t.id === taskId ? { ...t, completed: previousCompleted } : t,
+            t.id === taskId
+              ? {
+                  ...t,
+                  completed: previousState.completed,
+                  hasClaimedReward: previousState.hasClaimedReward,
+                  lastCompletedAt: previousState.lastCompletedAt,
+                }
+              : t,
           ),
         })),
       );
@@ -282,6 +296,20 @@ export function useBoardTaskActions({
     [setColumns],
   );
 
+  const onReconcileTask = useCallback(
+    (reconciledTask: Task) => {
+      setColumns((prev) =>
+        prev.map((col) => ({
+          ...col,
+          tasks: col.tasks.map((t) =>
+            t.id === reconciledTask.id ? reconciledTask : t,
+          ),
+        })),
+      );
+    },
+    [setColumns],
+  );
+
   const {
     handleToggleComplete,
     handleHabitChange,
@@ -296,6 +324,7 @@ export function useBoardTaskActions({
     onRollbackDelete,
     onTaskDuplicated,
     onTaskUpdatedInDetails,
+    onReconcileTask,
   });
 
   return {

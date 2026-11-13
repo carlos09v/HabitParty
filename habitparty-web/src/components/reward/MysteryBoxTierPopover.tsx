@@ -1,5 +1,3 @@
-"use client";
-
 import { useLocale, useTranslations } from "next-intl";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import type { AppLocale } from "@/i18n/config";

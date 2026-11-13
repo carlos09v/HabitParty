@@ -33,7 +33,7 @@
     "reactivatePremium": "Reactivate Premium",
     "deleteTaskModal": {
       "title": "Delete Task",
-      "description": "Are you sure you want to delete the task <bold>\"{title}\"</bold>? This task has subtasks, Hardcore Mode, or an active streak history, and deletion cannot be undone.",
+      "description": "Are you sure you want to delete the task <bold>\"{title}\"</bold>? This task has linked records in History, and deletion cannot be undone.",
       "confirmText": "Delete Task",
       "cancelText": "Cancel",
       "deleteHistoryLabel": "Also delete this task's records from History",
@@ -305,8 +305,8 @@
       "difficultyGuideMedium": "• <bold>30 to 60 min</bold> moderate focus → <bold>Medium</bold>",
       "difficultyGuideHard": "• <bold>+1 hour</bold> or high mental demand → <bold>Hard</bold>",
       "tagsLabel": "Tags",
-      "tagsHint": "Separate with , or ;",
-      "tagsPlaceholder": "E.g., health, studies; focus (max {max})",
+      "tagsHint": "Use > to nest",
+      "tagsPlaceholder": "E.g., health, Study > Math (max {max})",
       "priorityLabel": "Priority"
     },
     "habitFields": {
@@ -458,7 +458,6 @@
     "titlePlaceholder": "Task title...",
     "descriptionLabel": "Description",
     "descriptionPlaceholder": "Add a description or notes...",
-    "previewLabel": "Preview",
     "doneEditing": "Done",
     "clickToEditDescription": "Click to edit description",
     "header": {
@@ -646,6 +645,7 @@
     "communicationError": "Internal server communication error.",
     "createTaskFailed": "Failed to create task.",
     "updateTaskFailed": "Failed to update task.",
+    "checkTaskHistoryFailed": "Failed to check task history.",
     "deleteTaskFailed": "Failed to delete task.",
     "recordHabitScoreFailed": "Failed to record habit score.",
     "changeTaskStatusFailed": "Failed to change task status.",
@@ -658,5 +658,18 @@
     "updateChecklistFailed": "Failed to update checklist item.",
     "toggleChecklistFailed": "Failed to toggle checklist item.",
     "deleteChecklistFailed": "Failed to delete checklist item."
+  },
+  "tagSelector": {
+    "selectOrCreatePlaceholder": "Select or create tag...",
+    "searchOrCreatePlaceholder": "Search or create (e.g. Study > Math)",
+    "createTagOption": "Create tag \"{tag}\"",
+    "emptyNoTags": "No tags yet. Type above to create one.",
+    "emptyNoMatches": "No matching tags found.",
+    "incompleteHierarchyWarning": "Enter a sub-tag name after \">\".",
+    "maxTagsReached": "Maximum limit of {max} tags reached.",
+    "nestingHint": "Use > to nest (e.g. Study > Math)",
+    "removeTagTitle": "Remove tag {tag}",
+    "clearSearchAria": "Clear tag search",
+    "closeSelectorAria": "Close tag selector"
   }
 }

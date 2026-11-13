@@ -1,6 +1,12 @@
 "use client";
 
-import { Calendar, CalendarClock, Clock, ClockAlert } from "lucide-react";
+import {
+  Calendar,
+  CalendarClock,
+  Clock,
+  ClockAlert,
+  Loader2,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { memo, useEffect, useRef } from "react";
 import {
@@ -30,6 +36,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
   task,
   columnId,
   isSelected = false,
+  isDeleteChecking = false,
   isCompact: propIsCompact,
   onOpenDetails,
   onEditTask,
@@ -39,6 +46,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
   isOverlay = false,
 }: RoutineTaskCardProps) {
   const tBadges = useTranslations("dashboard.taskShared.badges");
+  const tActions = useTranslations("dashboard.taskShared.actions");
   const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -67,6 +75,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
     borderClass,
     dueDateInfo,
     displayTag,
+    displayTagTitle,
     hasExtraTags,
     extraTagsCount,
     hasChecklist,
@@ -88,10 +97,11 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
     <article
       ref={setNodeRef}
       style={style}
+      aria-busy={isDeleteChecking || undefined}
       {...attributes}
       {...listeners}
       onClick={(e) => {
-        if (isDragging) return;
+        if (isDragging || isDeleteChecking) return;
         e.stopPropagation();
         if (e.detail >= 2) {
           if (clickTimeoutRef.current) {
@@ -114,7 +124,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
         }
       }}
       onDoubleClick={(e) => {
-        if (isDragging || !onEditTask) return;
+        if (isDragging || isDeleteChecking || !onEditTask) return;
         e.stopPropagation();
         if (clickTimeoutRef.current) {
           clearTimeout(clickTimeoutRef.current);
@@ -154,6 +164,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
         isHardcoreOverdue &&
           "border-y-danger-500/70 border-r-danger-500/70 hover:border-y-danger-500/80 hover:border-r-danger-500/80 shadow-sm dark:shadow-[0_0_12px_rgba(239,68,68,0.28)]",
         isDone && "dark:opacity-65 bg-card/85 dark:bg-card hover:translate-y-0",
+        isDeleteChecking && "opacity-75 pointer-events-none cursor-wait",
         isDragging &&
           "!transition-none opacity-30 border-dashed border-y-primary-light border-r-primary-light scale-95",
         isOverlay &&
@@ -168,6 +179,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
 
           <TaskTagBadges
             primaryLabel={displayTag}
+            primaryTitle={displayTagTitle}
             hasExtraTags={hasExtraTags}
             extraTagsCount={extraTagsCount}
             extraTagsTitle={task.tags?.slice(1).join(", ")}
@@ -176,8 +188,15 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
           />
         </div>
 
-        {/* Indicadores complementares (Bandeira de Prioridade, Hardcore e Descrição) */}
+        {/* Indicadores complementares (Loading de exclusão, Bandeira de Prioridade, Hardcore e Descrição) */}
         <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+          {isDeleteChecking && (
+            <Loader2
+              size={isCompact ? 13 : 14}
+              className="animate-spin text-gold shrink-0"
+              aria-label={tActions("checkingDeleteAria")}
+            />
+          )}
           <TaskPriorityBadge
             priority={task.priority}
             isCompact={isCompact}
@@ -242,66 +261,64 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
 
           {isTodo && (
             <>
-              <div
-                title={
-                  dueDateInfo.isInProgress && !isDone
-                    ? tBadges("eventInProgressTitle", {
-                        end: dueDateInfo.endTime ?? "",
-                      })
-                    : undefined
-                }
-                className={cn(
-                  "inline-flex items-center gap-1 font-semibold truncate px-1.5 py-0.5 rounded-md border transition-colors",
-                  dueDateInfo.isOverdue && !isDone
-                    ? "text-danger-500 bg-danger-500/10 border-danger-500/35"
-                    : dueDateInfo.isInProgress && !isDone
-                      ? "text-sky-700 bg-sky-500/12 border-sky-500/35 dark:text-info dark:bg-info/15 dark:border-info/35"
-                      : dueDateInfo.isToday
-                        ? "text-amber-700 bg-amber-500/12 border-amber-500/35 dark:text-gold dark:bg-gold/12 dark:border-gold/35"
-                        : dueDateInfo.isTomorrow
-                          ? "text-sky-700 bg-sky-500/10 border-sky-500/30 dark:text-info dark:bg-info/10 dark:border-info/30"
-                          : dueDateInfo.hasDueDate
-                            ? "text-neutral-100 bg-surface border-neutral-600/80 dark:bg-white/[0.06] dark:border-white/15"
-                            : "text-neutral-300 font-medium bg-surface/60 border-neutral-700/70 dark:bg-white/[0.03] dark:border-white/10",
-                )}
-              >
-                {dueDateInfo.isOverdue && !isDone ? (
-                  <ClockAlert
-                    size={isCompact ? 10 : 12}
-                    className="shrink-0 text-danger-500"
-                  />
-                ) : dueDateInfo.isInProgress && !isDone ? (
-                  <span
-                    aria-hidden="true"
-                    className="w-1.5 h-1.5 rounded-full bg-sky-500 dark:bg-info animate-pulse shrink-0"
-                  />
-                ) : isTodoEvent ? (
-                  <CalendarClock
-                    size={isCompact ? 10 : 12}
-                    className="shrink-0 text-sky-600 dark:text-info"
-                  />
-                ) : dueDateInfo.isToday && task.dueTime ? (
-                  <Clock
-                    size={isCompact ? 10 : 12}
-                    className="shrink-0 text-amber-600 dark:text-gold"
-                  />
-                ) : (
-                  <Calendar
-                    size={isCompact ? 10 : 12}
-                    className={cn(
-                      "shrink-0",
-                      dueDateInfo.isToday
-                        ? "text-amber-600 dark:text-gold"
-                        : dueDateInfo.isTomorrow
-                          ? "text-sky-600 dark:text-info"
-                          : dueDateInfo.hasDueDate
-                            ? "text-primary dark:text-gold"
-                            : "text-neutral-400",
-                    )}
-                  />
-                )}
-                <span className="truncate">{dueDateInfo.label}</span>
-              </div>
+              {dueDateInfo.hasDueDate && (
+                <div
+                  title={
+                    dueDateInfo.isInProgress && !isDone
+                      ? tBadges("eventInProgressTitle", {
+                          end: dueDateInfo.endTime ?? "",
+                        })
+                      : undefined
+                  }
+                  className={cn(
+                    "inline-flex items-center gap-1 font-semibold truncate px-1.5 py-0.5 rounded-md border transition-colors",
+                    dueDateInfo.isOverdue && !isDone
+                      ? "text-danger-500 bg-danger-500/10 border-danger-500/35"
+                      : dueDateInfo.isInProgress && !isDone
+                        ? "text-sky-700 bg-sky-500/12 border-sky-500/35 dark:text-info dark:bg-info/15 dark:border-info/35"
+                        : dueDateInfo.isToday
+                          ? "text-amber-700 bg-amber-500/12 border-amber-500/35 dark:text-gold dark:bg-gold/12 dark:border-gold/35"
+                          : dueDateInfo.isTomorrow
+                            ? "text-sky-700 bg-sky-500/10 border-sky-500/30 dark:text-info dark:bg-info/10 dark:border-info/30"
+                            : "text-neutral-100 bg-surface border-neutral-600/80 dark:bg-white/[0.06] dark:border-white/15",
+                  )}
+                >
+                  {dueDateInfo.isOverdue && !isDone ? (
+                    <ClockAlert
+                      size={isCompact ? 10 : 12}
+                      className="shrink-0 text-danger-500"
+                    />
+                  ) : dueDateInfo.isInProgress && !isDone ? (
+                    <span
+                      aria-hidden="true"
+                      className="w-1.5 h-1.5 rounded-full bg-sky-500 dark:bg-info animate-pulse shrink-0"
+                    />
+                  ) : isTodoEvent ? (
+                    <CalendarClock
+                      size={isCompact ? 10 : 12}
+                      className="shrink-0 text-sky-600 dark:text-info"
+                    />
+                  ) : dueDateInfo.isToday && task.dueTime ? (
+                    <Clock
+                      size={isCompact ? 10 : 12}
+                      className="shrink-0 text-amber-600 dark:text-gold"
+                    />
+                  ) : (
+                    <Calendar
+                      size={isCompact ? 10 : 12}
+                      className={cn(
+                        "shrink-0",
+                        dueDateInfo.isToday
+                          ? "text-amber-600 dark:text-gold"
+                          : dueDateInfo.isTomorrow
+                            ? "text-sky-600 dark:text-info"
+                            : "text-primary dark:text-gold",
+                      )}
+                    />
+                  )}
+                  <span className="truncate">{dueDateInfo.label}</span>
+                </div>
+              )}
 
               <TaskReminderBadge
                 reminderType={task.reminderType}

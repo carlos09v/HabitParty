@@ -23,6 +23,7 @@ import { useBoardTaskActions } from "@/hooks/useBoardTaskActions";
 import { useRoutineBoardDnd } from "@/hooks/useRoutineBoardDnd";
 import { useRoutineBoardLayout } from "@/hooks/useRoutineBoardLayout";
 import { useRoutineColumns } from "@/hooks/useRoutineColumns";
+import { useTaskDeleteFlow } from "@/hooks/useTaskDeleteFlow";
 import { useViewMode } from "@/hooks/useViewMode";
 import type { AppLocale } from "@/i18n/config";
 import { useProgressStore } from "@/store/progressStore";
@@ -213,6 +214,18 @@ export function TasksBoardContainer({
     columns,
     setColumns,
     onTaskUpdatedInDetails: handleTaskUpdatedInDetails,
+  });
+
+  const {
+    taskToDelete,
+    deleteHistory,
+    setDeleteHistory,
+    checkingDeleteTaskIds,
+    requestDeleteTask,
+    confirmDeleteTask,
+    cancelDeleteTask,
+  } = useTaskDeleteFlow({
+    onConfirmDelete: handleDeleteTask,
   });
 
   const handleHideColumn = useCallback(
@@ -443,6 +456,7 @@ export function TasksBoardContainer({
               maxColumns={maxColumns}
               selectedColumnId={selectedColumnId}
               selectedTaskId={selectedTaskDetails?.task.id}
+              deletingTaskIds={checkingDeleteTaskIds}
               isCompact={isCompact}
               alignment={alignment}
               columnWidths={columnWidths}
@@ -518,6 +532,7 @@ export function TasksBoardContainer({
               visibleColumnIds={visibleColumnIds}
               selectedColumnId={selectedColumnId}
               selectedTaskId={selectedTaskDetails?.task.id}
+              deletingTaskIds={checkingDeleteTaskIds}
               isCompact={isCompact}
               onAddTaskToColumn={handleAddTaskToColumnSafe}
               onOpenDetails={handleOpenDetails}
@@ -538,6 +553,7 @@ export function TasksBoardContainer({
         columns={columns}
         formColumns={formColumns}
         visibleColumnIds={visibleColumnIds}
+        availableTags={availableTags}
         maxColumns={maxColumns}
         isPremium={is_Premium}
         columnModalState={columnModalState}
@@ -558,7 +574,12 @@ export function TasksBoardContainer({
         isDeletingColumn={isDeletingColumn}
         handleDeleteColumn={handleDeleteColumn}
         handleDuplicateTask={handleDuplicateTask}
-        handleDeleteTask={handleDeleteTask}
+        taskToDelete={taskToDelete}
+        deleteHistory={deleteHistory}
+        onDeleteHistoryChange={setDeleteHistory}
+        requestDeleteTask={requestDeleteTask}
+        onConfirmDeleteTask={confirmDeleteTask}
+        onCancelDeleteTask={cancelDeleteTask}
         handleTaskDetailsUpdate={handleTaskDetailsUpdate}
         handleToggleComplete={handleToggleComplete}
         handleHabitChange={handleHabitChange}

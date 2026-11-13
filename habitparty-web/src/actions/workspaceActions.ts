@@ -78,7 +78,6 @@ export async function updateWorkspaceAction(
     }
 
     updateTag("workspaces");
-    updateTag(`workspace-${workspaceId}`);
 
     return { success: true, data: data as WorkspaceResponseDTO };
   } catch (err) {

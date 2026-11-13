@@ -194,8 +194,72 @@ public class Daily extends Task {
     this.dueDate = calculateNextOccurrence(referenceDate, false);
   }
 
+  /**
+   * Avança dueDate para a primeira ocorrência válida >= minDate caso esteja atrasada.
+   */
+  public void advanceDueDateToAtLeast(LocalDate minDate) {
+    if (minDate == null || (this.dueDate != null && !this.dueDate.isBefore(minDate))) {
+      return;
+    }
+    LocalDate cursor = this.dueDate != null ? this.dueDate : minDate;
+    if (this.repeatType == DailyRepeatType.DAILY && cursor.isBefore(minDate)) {
+      long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(cursor, minDate);
+      long steps = (daysBetween + this.repeatEvery - 1) / this.repeatEvery;
+      this.dueDate = cursor.plusDays(steps * this.repeatEvery);
+      return;
+    }
+    int guard = 0;
+    while (cursor.isBefore(minDate) && guard < 1000) {
+      LocalDate next = calculateNextOccurrence(cursor, false);
+      if (!next.isAfter(cursor)) {
+        cursor = minDate;
+        break;
+      }
+      cursor = next;
+      guard++;
+    }
+    this.dueDate = cursor.isBefore(minDate) ? minDate : cursor;
+  }
+
+  public boolean isStreakStillActive(LocalDate referenceDate) {
+    if (this.currentStreak <= 0) {
+      return false;
+    }
+    LocalDate effectiveDate = referenceDate != null ? referenceDate : LocalDate.now();
+    if (this.getStatus() == TaskStatus.PENDING
+        && this.dueDate != null
+        && this.dueDate.isBefore(effectiveDate)) {
+      return false;
+    }
+    if (this.lastCompletedAt != null) {
+      LocalDate lastDate = this.lastCompletedAt.toLocalDate();
+      if (lastDate.isBefore(effectiveDate)) {
+        LocalDate nextExpected = calculateNextOccurrence(lastDate, false);
+        if (nextExpected.isBefore(effectiveDate)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  public int getEffectiveStreak(LocalDate referenceDate) {
+    return isStreakStillActive(referenceDate) ? this.currentStreak : 0;
+  }
+
+  public void refreshStreakForDate(LocalDate referenceDate) {
+    if (this.currentStreak > 0 && !isStreakStillActive(referenceDate)) {
+      this.currentStreak = 0;
+    }
+  }
+
   @Override
   public TaskReward calculateReward() {
+    return calculateReward(LocalDate.now());
+  }
+
+  @Override
+  public TaskReward calculateReward(LocalDate referenceDate) {
     // 1. Base pela DIFICULDADE (Exclusivo de Daily/Todo)
     int baseXp = switch (this.getDifficulty()) {
       case TRIVIAL -> 2;
@@ -220,12 +284,13 @@ public class Daily extends Task {
     };
 
     int adaptationThreshold = Math.max(1, daysToForm / 3);
+    int effectiveStreak = getEffectiveStreak(referenceDate);
 
-    // 3. Aplica o decaimento baseado no Streak
+    // 3. Aplica o decaimento baseado no Streak efetivo
     BigDecimal multiplier = BigDecimal.ONE;
-    if (this.currentStreak >= daysToForm) {
+    if (effectiveStreak >= daysToForm) {
       multiplier = HALF_RATE; // Rotina cravada: paga 50%
-    } else if (this.currentStreak >= adaptationThreshold) {
+    } else if (effectiveStreak >= adaptationThreshold) {
       multiplier = ADAPTATION_RATE; // Adaptação: paga 75%
     }
 
@@ -244,13 +309,30 @@ public class Daily extends Task {
 
   @Override
   public void registerCompletion() {
-    this.lastCompletedAt = LocalDateTime.now();
-    this.currentStreak++;
+    registerCompletion(LocalDateTime.now());
+  }
+
+  @Override
+  public void registerCompletion(LocalDateTime completionTime) {
+    LocalDateTime effectiveTime = completionTime != null ? completionTime : LocalDateTime.now();
+    LocalDate today = effectiveTime.toLocalDate();
+    if (this.currentStreak > 0 && !isStreakStillActive(today)) {
+      this.currentStreak = 1;
+    } else {
+      this.currentStreak++;
+    }
+    this.lastCompletedAt = effectiveTime;
   }
 
   @Override
   public boolean isRewardAlreadyClaimed() {
-    return this.lastCompletedAt != null && !this.lastCompletedAt.toLocalDate().isBefore(LocalDate.now());
+    return isRewardAlreadyClaimed(LocalDate.now());
+  }
+
+  @Override
+  public boolean isRewardAlreadyClaimed(LocalDate referenceDate) {
+    LocalDate effectiveDate = referenceDate != null ? referenceDate : LocalDate.now();
+    return this.lastCompletedAt != null && !this.lastCompletedAt.toLocalDate().isBefore(effectiveDate);
   }
 
   public void breakStreak() {

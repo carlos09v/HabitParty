@@ -5,6 +5,8 @@ import {
   Languages,
   Layers,
   LineChart,
+  MessageSquare,
+  Palette,
   Shield,
   ShoppingBag,
   SlidersHorizontal,
@@ -203,12 +205,38 @@ export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] = [
     status: "next",
     statusBadgeColor:
       "bg-amber-500/15 text-amber-800 border-amber-500/30 dark:bg-gold/15 dark:text-gold dark:border-gold/30",
-    icon: Users2,
+    icon: Palette,
     iconBoxColor:
       "bg-amber-500/10 border-amber-500/25 text-amber-700 dark:bg-card dark:border-white/15 dark:text-gold",
     checkColor: "text-amber-600 dark:text-gold",
     accentColor: "from-gold to-warning-500",
     borderGlowColor: "hover:border-gold/40",
+  },
+  {
+    id: "r15",
+    release: "Release 1.5",
+    status: "planned",
+    statusBadgeColor:
+      "bg-purple-500/10 text-purple-700 border-purple-500/25 dark:bg-primary/15 dark:text-primary-light dark:border-primary-light/30",
+    icon: Users2,
+    iconBoxColor:
+      "bg-purple-500/10 border-purple-500/25 text-purple-700 dark:bg-card dark:border-white/15 dark:text-primary-light",
+    checkColor: "text-purple-600 dark:text-primary-light",
+    accentColor: "from-primary to-primary-light",
+    borderGlowColor: "hover:border-primary/40",
+  },
+  {
+    id: "r16",
+    release: "Release 1.6",
+    status: "planned",
+    statusBadgeColor:
+      "bg-sky-500/10 text-sky-700 border-sky-500/25 dark:bg-info/15 dark:text-info dark:border-info/30",
+    icon: MessageSquare,
+    iconBoxColor:
+      "bg-sky-500/10 border-sky-500/25 text-sky-700 dark:bg-card dark:border-white/15 dark:text-info",
+    checkColor: "text-sky-600 dark:text-info",
+    accentColor: "from-blue to-info",
+    borderGlowColor: "hover:border-info/40",
   },
   {
     id: "r20",

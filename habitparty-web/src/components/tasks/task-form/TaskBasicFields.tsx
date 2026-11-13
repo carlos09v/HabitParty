@@ -1,10 +1,15 @@
-import { Flag, Tag } from "lucide-react";
+import { Flag } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useMemo } from "react";
+import { toast } from "sonner";
+import {
+  RichTextDescriptionEditor,
+  TaskTagSelector,
+} from "@/components/tasks/shared";
 import { DescriptionCharCounter } from "@/components/ui/DescriptionCharCounter";
 import { Select } from "@/components/ui/Select";
 import {
   MAX_TASK_TAGS,
-  TASK_DESCRIPTION_MAX_LENGTH,
   TASK_PRIORITY_META,
   TODO_PRIORITY_OPTIONS,
   toPriorityMessageKey,
@@ -12,17 +17,25 @@ import {
 import type { CreateTaskFormReturn } from "@/hooks/useCreateTaskForm";
 import type { TaskPriorityOption } from "@/types/task";
 import { cn } from "@/utils";
+import { mergeTaskTagsWithLimit } from "@/utils/tags";
+import { parseTaskTags } from "@/utils/taskMapper";
 import { HabitImportanceSelector } from "./HabitImportanceSelector";
 import { TaskDifficultySelector } from "./TaskDifficultySelector";
 
 interface TaskBasicFieldsProps {
   form: CreateTaskFormReturn;
   columns: { id: string; title: string }[];
+  availableTags?: string[];
 }
 
-export function TaskBasicFields({ form, columns }: TaskBasicFieldsProps) {
+export function TaskBasicFields({
+  form,
+  columns,
+  availableTags = [],
+}: TaskBasicFieldsProps) {
   const t = useTranslations("tasks.taskModal.basicFields");
   const tOptions = useTranslations("tasks.options");
+  const tHooks = useTranslations("tasks.hooks");
   const {
     taskType,
     columnId,
@@ -31,6 +44,7 @@ export function TaskBasicFields({ form, columns }: TaskBasicFieldsProps) {
     setName,
     description,
     setDescription,
+    descriptionFlushRef,
     importanceType,
     setImportanceType,
     difficulty,
@@ -48,6 +62,44 @@ export function TaskBasicFields({ form, columns }: TaskBasicFieldsProps) {
     value: col.id,
     label: col.title,
   }));
+
+  const selectedTags = useMemo(() => parseTaskTags(tagsInput), [tagsInput]);
+
+  const handleAddTags = (rawTagInput: string) => {
+    const { nextTags, addedAny, errorKey } = mergeTaskTagsWithLimit(
+      selectedTags,
+      parseTaskTags(rawTagInput),
+      MAX_TASK_TAGS,
+    );
+
+    if (errorKey === "maxTagsError") {
+      toast.error(tHooks("maxTagsError", { max: MAX_TASK_TAGS }));
+    } else if (errorKey === "tagAlreadyAdded") {
+      toast.error(tHooks("tagAlreadyAdded"));
+    }
+
+    if (addedAny) {
+      setTagsInput(nextTags.join(", "));
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    const nextTags = selectedTags.filter(
+      (item) => item.toLowerCase() !== tagToRemove.toLowerCase(),
+    );
+    setTagsInput(nextTags.join(", "));
+  };
+
+  const handleToggleTag = (tagItem: string) => {
+    const exists = selectedTags.some(
+      (item) => item.toLowerCase() === tagItem.toLowerCase(),
+    );
+    if (exists) {
+      handleRemoveTag(tagItem);
+    } else {
+      handleAddTags(tagItem);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-3.5">
@@ -103,20 +155,17 @@ export function TaskBasicFields({ form, columns }: TaskBasicFieldsProps) {
             className="text-body-s text-neutral-300 font-medium"
           >
             {t("descriptionLabel")}{" "}
-            <span className="text-neutral-500 text-xs">{t("optional")}</span>
+            <span className="text-neutral-400 text-xs">{t("optional")}</span>
           </label>
           <DescriptionCharCounter length={description.length} />
         </div>
-        <textarea
+        <RichTextDescriptionEditor
           id="taskDesc"
-          rows={3}
           value={description}
-          onChange={(e) =>
-            setDescription(e.target.value.slice(0, TASK_DESCRIPTION_MAX_LENGTH))
-          }
+          onChange={setDescription}
+          flushRef={descriptionFlushRef}
           placeholder={t("descriptionPlaceholder")}
-          className="w-full bg-card border border-neutral-600 hover:border-neutral-500 rounded-lg px-3 py-2 text-neutral-50 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 shadow-xs focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-primary-dark/20 dark:border-primary/30 dark:hover:border-primary/50 dark:shadow-none dark:focus:border-gold dark:focus:ring-1 dark:focus:ring-gold transition-colors text-body-s resize-none"
-          maxLength={TASK_DESCRIPTION_MAX_LENGTH}
+          variant="modal"
           disabled={isPending}
         />
       </div>
@@ -151,21 +200,17 @@ export function TaskBasicFields({ form, columns }: TaskBasicFieldsProps) {
               {t("tagsHint")}
             </span>
           </div>
-          <div className="relative flex items-center">
-            <Tag
-              size={15}
-              className="absolute left-3 text-neutral-400 pointer-events-none shrink-0"
-            />
-            <input
-              id="taskTags"
-              type="text"
-              value={tagsInput}
-              onChange={(e) => setTagsInput(e.target.value)}
-              placeholder={t("tagsPlaceholder", { max: MAX_TASK_TAGS })}
-              className="w-full rounded-lg text-left transition-colors py-2 pl-8 pr-3 text-body-s h-[38px] bg-card border border-neutral-600 hover:border-neutral-500 text-neutral-50 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 shadow-xs focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-primary-dark/20 dark:border-primary/30 dark:hover:border-primary/50 dark:shadow-none dark:focus:border-gold dark:focus:ring-1 dark:focus:ring-gold disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isPending}
-            />
-          </div>
+          <TaskTagSelector
+            id="taskTags"
+            variant="modal"
+            selectedTags={selectedTags}
+            availableTags={availableTags}
+            onAddTag={handleAddTags}
+            onRemoveTag={handleRemoveTag}
+            onToggleTag={handleToggleTag}
+            maxTags={MAX_TASK_TAGS}
+            disabled={isPending}
+          />
         </div>
 
         {/* Prioridade */}

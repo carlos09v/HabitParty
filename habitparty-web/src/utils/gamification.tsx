@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
+import { getTodayDateString } from "@/utils/date";
 import {
   checkLevelUp,
   getCurrentLevel,
@@ -27,6 +28,7 @@ export interface AwardRewardsOptions {
   levelUpTitle?: string;
   congratsPrefix?: string;
   congratsSuffix?: string;
+  isTaskCompletion?: boolean;
 }
 
 /**
@@ -78,6 +80,10 @@ export function awardUserRewards(
     nextLevelTitle: nextLevel.title,
     xpToNextLevel,
   });
+
+  if (options?.isTaskCompletion) {
+    store.markStreakSecuredToday(getTodayDateString());
+  }
 
   if (didLevelUp) {
     soundEffects.playLevelUpSound();

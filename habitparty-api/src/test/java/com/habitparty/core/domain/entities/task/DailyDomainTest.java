@@ -119,4 +119,38 @@ class DailyDomainTest {
     assertThrows(UnauthorizedException.class, () -> daily.validateOwnership(otherUserId));
     assertDoesNotThrow(() -> daily.validateOwnership(userId));
   }
+
+  @Test
+  @DisplayName("Concluir Daily atrasada sem rollover anterior deve reiniciar streak em 1 em vez de incrementar")
+  void testRegisterCompletionAfterMissedDayResetsStreakToOne() {
+    LocalDate twoDaysAgo = LocalDate.now().minusDays(2);
+    Daily overdueDaily = new Daily(
+        UUID.randomUUID(),
+        columnId,
+        userId,
+        "Alongar",
+        null,
+        1,
+        TaskPriority.MEDIUM,
+        List.of(),
+        TaskDifficulty.MEDIUM,
+        TaskStatus.PENDING,
+        TaskType.DAILY,
+        false,
+        twoDaysAgo,
+        LocalDateTime.now().minusDays(5),
+        List.of(),
+        6, // streak antigo antes da falha
+        twoDaysAgo,
+        DailyRepeatType.DAILY,
+        1,
+        null,
+        null,
+        LocalDateTime.now().minusDays(3)
+    );
+
+    assertEquals(0, overdueDaily.getEffectiveStreak(LocalDate.now()));
+    overdueDaily.registerCompletion(LocalDateTime.now());
+    assertEquals(1, overdueDaily.getCurrentStreak());
+  }
 }

@@ -227,10 +227,15 @@ public class Todo extends Task {
 
   @Override
   public TaskReward calculateReward() {
+    return calculateReward(LocalDate.now());
+  }
+
+  @Override
+  public TaskReward calculateReward(LocalDate referenceDate) {
     TaskReward base = calculateBaseReward();
 
     // Se a penalidade já foi aplicada ou o afazer hardcore está com prazo vencido, ganha apenas 50%
-    if (this.isPenaltyApplied || (this.isHardcoreModeEnabled() && this.isOverdue())) {
+    if (this.isPenaltyApplied || (this.isHardcoreModeEnabled() && this.isOverdue(referenceDate))) {
       int reducedXp = Math.max(1, BigDecimal.valueOf(base.xp()).multiply(HALF_RATE).intValue());
       BigDecimal reducedCoins = base.coins()
           .multiply(HALF_RATE)
@@ -247,7 +252,12 @@ public class Todo extends Task {
 
   @Override
   public void registerCompletion() {
-    this.completedAt = LocalDateTime.now();
+    registerCompletion(LocalDateTime.now());
+  }
+
+  @Override
+  public void registerCompletion(LocalDateTime completionTime) {
+    this.completedAt = completionTime != null ? completionTime : LocalDateTime.now();
   }
 
   @Override

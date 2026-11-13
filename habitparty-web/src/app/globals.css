@@ -131,8 +131,8 @@ html.light {
     200 138 4
   ); /* #C88A04 — Estado pressionado natural */
   --color-gold-ink: rgb(
-    202 138 4
-  ); /* #CA8A04 — Dourado Yellow-600 vivo para texto/ícone com contraste WCAG AA */
+    158 72 7
+  ); /* #9E4807 — Tinta Âmbar escura para texto/ícone com contraste WCAG AA (>= 5.2:1 em card, surface e badges) */
   --color-gold-warm: var(--color-gold);
   --color-gold-warm-hover: var(--color-gold-hover);
   --color-gold-warm-pressed: var(--color-gold-pressed);
@@ -416,7 +416,8 @@ html.light select option {
     color: var(--color-gold-ink);
   }
   :where(html.light) .text-emerald-400,
-  :where(html.light) .text-emerald-300 {
+  :where(html.light) .text-emerald-300,
+  :where(html.light) .text-success-500 {
     color: var(--color-success-300);
   }
   :where(html.light) .text-red-400,
@@ -427,8 +428,9 @@ html.light select option {
     color: rgb(225 29 72); /* Rose-600 #E11D48 */
   }
   :where(html.light) .text-orange-400,
-  :where(html.light) .text-orange-300 {
-    color: rgb(234 88 12); /* Orange-600 #EA580C */
+  :where(html.light) .text-orange-300,
+  :where(html.light) .text-warning-500 {
+    color: var(--color-warning-400); /* Orange-700 #C2410C — 5.18:1 vs #FFF */
   }
   :where(html.light) .text-cyan-400,
   :where(html.light) .text-cyan-300,
@@ -1059,4 +1061,94 @@ html.light select option {
     border-color: var(--color-danger-500);
     color: #ffffff;
   }
+}
+
+/* ========================================================
+   EDITOR WYSIWYG DE DESCRIÇÃO (TipTap)
+   ======================================================== */
+.habitparty-tiptap .tiptap {
+  outline: none;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.habitparty-tiptap .tiptap > p + p,
+.habitparty-tiptap .tiptap > p + ul,
+.habitparty-tiptap .tiptap > ul + p {
+  margin-top: 0.25rem;
+}
+
+.habitparty-tiptap .tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: rgb(148 163 184);
+}
+
+html:not(.light)
+  .habitparty-tiptap
+  .tiptap
+  p.is-editor-empty:first-child::before {
+  color: rgb(107 114 128);
+}
+
+.habitparty-tiptap .tiptap ul {
+  list-style-type: disc;
+  padding-left: 1.15rem;
+  margin: 0.15rem 0;
+}
+
+.habitparty-tiptap .tiptap ul li {
+  margin: 0.125rem 0;
+}
+
+.habitparty-tiptap .tiptap ul li > p {
+  margin: 0;
+}
+
+.habitparty-tiptap .tiptap ul li::marker {
+  color: var(--color-gold);
+}
+
+:where(html.light) .habitparty-tiptap .tiptap ul li::marker {
+  color: var(--color-primary);
+}
+
+.habitparty-tiptap .tiptap strong {
+  font-weight: 700;
+  color: var(--color-neutral-50);
+}
+
+.habitparty-tiptap .tiptap em {
+  font-style: italic;
+}
+
+.habitparty-tiptap .tiptap mark {
+  background-color: rgba(245, 184, 21, 0.22);
+  color: var(--color-gold);
+  padding: 0.05rem 0.25rem;
+  border-radius: 0.25rem;
+  font-weight: 600;
+}
+
+:where(html.light) .habitparty-tiptap .tiptap mark {
+  background-color: rgba(245, 158, 11, 0.22);
+  color: rgb(146 64 14);
+}
+
+.habitparty-tiptap .tiptap code {
+  padding: 0.05rem 0.35rem;
+  border-radius: 0.25rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--color-gold);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+}
+
+:where(html.light) .habitparty-tiptap .tiptap code {
+  background-color: var(--color-surface);
+  border-color: rgb(203 213 225);
+  color: var(--color-primary);
 }

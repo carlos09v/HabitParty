@@ -8,11 +8,9 @@ import { RewardPreview } from "@/components/ui/reward/RewardPreview";
 import { normalizeTaskType } from "@/constants/task";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import type { AppLocale } from "@/i18n/config";
-import type { FormatSyntax, TaskDetailsFooterProps } from "@/types/task-ui";
+import type { TaskDetailsFooterProps } from "@/types/task-ui";
 import { getTaskDueDateInfo } from "@/utils/date";
 import { getTaskRewardBreakdown, toTaskRewardEstimate } from "@/utils/economy";
-
-export type { FormatSyntax };
 
 export function TaskDetailsFooter({
   task,

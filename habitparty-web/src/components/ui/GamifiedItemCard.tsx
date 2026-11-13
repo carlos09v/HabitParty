@@ -209,7 +209,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
             <RewardIcon
               size={isCompact ? 17 : 20}
               className={
-                isMystery ? "text-amber-600 dark:text-amber-400" : undefined
+                isMystery ? "text-amber-700 dark:text-amber-400" : undefined
               }
               aria-hidden="true"
             />
@@ -279,7 +279,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
             ) : (
               <p
                 className={cn(
-                  "text-neutral-500 italic truncate leading-tight",
+                  "text-neutral-400 italic truncate leading-tight",
                   isCompact ? "text-label-g" : "text-xs",
                 )}
               >
@@ -325,7 +325,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
               >
                 <Clock
                   size={isCompact ? 10 : 12}
-                  className="text-emerald-600 dark:text-emerald-400 shrink-0"
+                  className="text-emerald-700 dark:text-emerald-400 shrink-0"
                   aria-hidden="true"
                 />
                 <span className="truncate">

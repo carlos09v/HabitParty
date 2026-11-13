@@ -1,5 +1,6 @@
 package com.habitparty.application.usecases.task;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 import com.habitparty.application.ports.BoardColumnRepository;
@@ -51,7 +52,19 @@ public final class TaskGamificationHelper {
       UserRepository userPort,
       TransactionHistoryRepository transactionPort,
       String columnName) {
-    TaskReward reward = task.calculateReward();
+    awardTaskCompletion(user, task, txType, userPort, transactionPort, columnName, LocalDate.now());
+  }
+
+  public static void awardTaskCompletion(
+      User user,
+      Task task,
+      TransactionType txType,
+      UserRepository userPort,
+      TransactionHistoryRepository transactionPort,
+      String columnName,
+      LocalDate referenceDate) {
+    LocalDate effectiveDate = referenceDate != null ? referenceDate : LocalDate.now();
+    TaskReward reward = task.calculateReward(effectiveDate);
     user.addXp(reward.xp());
     user.addCoins(reward.coins());
     if (user.getStats() != null) {
@@ -68,7 +81,7 @@ public final class TaskGamificationHelper {
       // Pontualidade Real: Afazer (To-Do) com data de vencimento concluído dentro do prazo e sem penalidade
       if (task instanceof Todo todo
           && todo.getDueDate().isPresent()
-          && !todo.isOverdue()
+          && !todo.isOverdue(effectiveDate)
           && !todo.isPenaltyApplied()) {
         user.getStats().recordOnTimeTodoCompleted();
       }

@@ -14,7 +14,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 type PageProps = {
-  searchParams: Promise<{ activityId?: string; createActivity?: string }>;
+  searchParams: Promise<{
+    activityId?: string;
+    createActivity?: string;
+    linkActivity?: string;
+  }>;
 };
 
 /**
@@ -37,6 +41,7 @@ export default async function FocusPage({ searchParams }: PageProps) {
           initialFocusableTasks={focusableTasks}
           initialSelectedActivityId={resolvedSearchParams.activityId || null}
           initialCreateActivity={resolvedSearchParams.createActivity === "true"}
+          initialLinkActivity={resolvedSearchParams.linkActivity === "true"}
         />
       </Suspense>
     </ScopedIntlProvider>

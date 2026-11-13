@@ -13,9 +13,10 @@ public record UserShowcaseResponseDTO(
 
   public static UserShowcaseResponseDTO fromDomain(UserShowcaseResult result) {
     return new UserShowcaseResponseDTO(
-        UserResponseDTO.fromDomain(result.user()),
+        UserResponseDTO.fromDomain(result.user(), result.effectiveStreak()),
         ShowcaseStatsResponseDTO.fromDomain(
             result.user().getStats(),
+            result.effectiveStreak(),
             result.unlockedCount(),
             result.totalAchievements(),
             result.totalAchievementPoints(),

@@ -162,7 +162,7 @@ class DailyResetUseCaseTest {
     assertTrue(user.getCurrentCoins().compareTo(new BigDecimal("100.00")) < 0);
     assertTrue(user.getTotalXp() < 100);
 
-    verify(userPort).save(user);
+    verify(userPort).saveAll(argThat(users -> List.copyOf(users).equals(List.of(user))));
 
     ArgumentCaptor<TransactionHistory> captor = ArgumentCaptor.forClass(TransactionHistory.class);
     verify(transactionPort).save(captor.capture());
@@ -287,7 +287,7 @@ class DailyResetUseCaseTest {
     dailyResetUseCase.executeDailyRollover();
 
     assertTrue(todo.isPenaltyApplied());
-    verify(userPort, times(1)).save(user);
+    verify(userPort, times(1)).saveAll(argThat(users -> List.copyOf(users).equals(List.of(user))));
     verify(transactionPort, times(1)).save(any(TransactionHistory.class));
     verify(port, times(1)).saveAll(List.of(todo));
   }
@@ -304,6 +304,48 @@ class DailyResetUseCaseTest {
 
     assertEquals(1, resetCount);
     assertEquals(0, user.getCurrentStreak());
-    verify(userPort, times(1)).save(user);
+    verify(userPort, times(1)).saveAll(argThat(users -> List.copyOf(users).equals(List.of(user))));
+  }
+
+  @Test
+  @DisplayName("Catch-up de startup deve resetar hábito COMPLETED de ciclo passado e zerar streak expirado sem duplicar penalidade")
+  void testCatchUpRecurringTasksResetsExpiredCompletedHabit() {
+    LocalDate today = LocalDate.now();
+    Habit staleHabit = new Habit(
+        UUID.randomUUID(),
+        UUID.randomUUID(),
+        userId,
+        "Estudar Inglês",
+        null,
+        1,
+        TaskPriority.MEDIUM,
+        List.of(),
+        TaskDifficulty.EASY,
+        TaskStatus.COMPLETED,
+        TaskType.HABIT,
+        true,
+        null,
+        today.minusDays(5).atStartOfDay(),
+        List.of(),
+        4,
+        HabitType.POSITIVE,
+        HabitResetCounter.DAILY,
+        HabitImportanceType.NORMAL,
+        today.minusDays(2).atTime(10, 0),
+        2,
+        0
+    );
+
+    when(port.findRecurringTasksPage(0, DailyResetUseCase.BATCH_SIZE)).thenReturn(List.of(staleHabit));
+
+    int updated = dailyResetUseCase.catchUpRecurringTasks(today);
+
+    assertEquals(1, updated);
+    assertEquals(TaskStatus.PENDING, staleHabit.getStatus());
+    assertEquals(0, staleHabit.getPositiveCount());
+    assertEquals(0, staleHabit.getCurrentStreak());
+    verify(port, times(1)).saveAll(List.of(staleHabit));
+    verifyNoInteractions(userPort);
+    verifyNoInteractions(transactionPort);
   }
 }

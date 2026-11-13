@@ -63,10 +63,10 @@ public class ShowcaseController implements ShowcaseApi {
   public ResponseEntity<UserResponseDTO> updateMyShowcaseProfile(
       AuthenticatedUser usuarioLogado,
       UpdateShowcaseProfileRequestDTO requestDto) {
-    User updated = updateShowcaseProfileUseCase.execute(
+    var updated = updateShowcaseProfileUseCase.executeWithEffectiveStreak(
         usuarioLogado.id(),
         new UpdateShowcaseProfileCommand(requestDto.bio(), requestDto.avatarFrame()));
-    return ResponseEntity.ok(UserResponseDTO.fromDomain(updated));
+    return ResponseEntity.ok(UserResponseDTO.fromDomain(updated.user(), updated.effectiveStreak()));
   }
 
   @Override

@@ -4,6 +4,7 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
+import type { DatePickerEventSchedulePatch } from "@/types/ui";
 import { getPopoverDueDateInfo } from "@/utils/date";
 
 interface TaskDatePickerProps {
@@ -13,10 +14,7 @@ interface TaskDatePickerProps {
   dueEndTime?: string;
   isAllDay?: boolean;
   onDateChange: (newDate: string) => void;
-  onTimeChange?: (newTime: string) => void;
-  onStartTimeChange?: (newStartTime: string) => void;
-  onEndTimeChange?: (newEndTime: string) => void;
-  onAllDayChange?: (newAllDay: boolean) => void;
+  onEventScheduleChange?: (patch: DatePickerEventSchedulePatch) => void;
   disabled?: boolean;
 }
 
@@ -31,10 +29,7 @@ export function TaskDatePicker({
   dueEndTime,
   isAllDay,
   onDateChange,
-  onTimeChange,
-  onStartTimeChange,
-  onEndTimeChange,
-  onAllDayChange,
+  onEventScheduleChange,
   disabled = false,
 }: TaskDatePickerProps) {
   const t = useTranslations("tasks.detailsPopover.header");
@@ -79,15 +74,12 @@ export function TaskDatePicker({
         clearLabel={t("noDueDate")}
         allowClear={!disabled}
         disabled={disabled}
-        enableTime={Boolean(onTimeChange)}
+        enableTime={Boolean(onEventScheduleChange)}
         timeValue={dueTime}
-        onTimeChange={onTimeChange}
         startTimeValue={startTime}
-        onStartTimeChange={onStartTimeChange}
         endTimeValue={dueEndTime}
-        onEndTimeChange={onEndTimeChange}
         allDayValue={isAllDay}
-        onAllDayChange={onAllDayChange}
+        onEventScheduleChange={onEventScheduleChange}
       />
     </div>
   );

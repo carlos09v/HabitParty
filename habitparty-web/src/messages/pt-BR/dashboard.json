@@ -87,7 +87,7 @@
     "defaultList": "Lista",
     "deleteModalTitle": "Excluir Tarefa",
     "deleteModalDescPrefix": "Tem certeza de que deseja excluir a tarefa",
-    "deleteModalDescSuffix": "? Esta tarefa possui subtarefas, Modo Hardcore ou histórico de ofensiva ativo, e a exclusão não pode ser desfeita.",
+    "deleteModalDescSuffix": "? Esta tarefa possui registros vinculados no Histórico e a exclusão não pode ser desfeita.",
     "deleteModalConfirm": "Excluir Tarefa",
     "deleteModalCancel": "Cancelar",
     "deleteHistoryLabel": "Excluir também os registros desta tarefa no Histórico",
@@ -281,7 +281,8 @@
       "markPendingAria": "Marcar como pendente",
       "markCompletedAria": "Marcar como concluída",
       "taskOptionsAria": "Opções da tarefa {title}",
-      "taskOptionsTitle": "Opções da tarefa (Editar, Duplicar, Excluir)"
+      "taskOptionsTitle": "Opções da tarefa (Editar, Duplicar, Excluir)",
+      "checkingDeleteAria": "Verificando histórico da tarefa..."
     },
     "contextMenu": {
       "startFocus": "Focar nesta tarefa",

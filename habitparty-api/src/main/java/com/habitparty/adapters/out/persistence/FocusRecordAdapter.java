@@ -84,6 +84,14 @@ public class FocusRecordAdapter implements FocusRecordRepository {
   }
 
   @Override
+  public void deleteAllByIds(List<UUID> ids) {
+    if (ids == null || ids.isEmpty()) {
+      return;
+    }
+    repository.deleteAllByIdInBatch(ids);
+  }
+
+  @Override
   public void deleteAllByFocusActivityId(UUID focusActivityId) {
     repository.deleteAllByFocusActivityId(focusActivityId);
   }
@@ -135,5 +143,13 @@ public class FocusRecordAdapter implements FocusRecordRepository {
   @Override
   public void deleteAllByUserId(UUID userId) {
     repository.deleteAllByUserId(userId);
+  }
+
+  @Override
+  public boolean existsStandaloneByTaskId(UUID taskId) {
+    if (taskId == null) {
+      return false;
+    }
+    return repository.existsStandaloneByTaskId(taskId);
   }
 }

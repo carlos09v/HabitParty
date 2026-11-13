@@ -65,4 +65,12 @@ public interface FocusRecordJpaRepository extends JpaRepository<FocusRecordJpaEn
   @Modifying
   @Query("DELETE FROM FocusRecordJpaEntity f WHERE f.userId = :userId")
   void deleteAllByUserId(@Param("userId") UUID userId);
+
+  @Query("""
+      SELECT COUNT(f) > 0
+      FROM FocusRecordJpaEntity f
+      WHERE f.taskId = :taskId
+        AND f.focusActivityId IS NULL
+  """)
+  boolean existsStandaloneByTaskId(@Param("taskId") UUID taskId);
 }

@@ -1,6 +1,7 @@
 import { Flame, FolderKanban, Pencil, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { Task, TaskPriorityOption } from "@/types/task";
+import type { DatePickerEventSchedulePatch } from "@/types/ui";
 import { cn } from "@/utils";
 import { isTaskHardcoreLocked } from "@/utils/date";
 import { TaskDatePicker } from "./TaskDatePicker";
@@ -22,10 +23,7 @@ interface TaskDetailsHeaderProps {
   onToggleComplete: () => void;
   onHabitDelta?: (delta: number) => void;
   onDateChange: (newDate: string) => void;
-  onTimeChange?: (newTime: string) => void;
-  onStartTimeChange?: (newStartTime: string) => void;
-  onEndTimeChange?: (newEndTime: string) => void;
-  onAllDayChange?: (newAllDay: boolean) => void;
+  onEventScheduleChange?: (patch: DatePickerEventSchedulePatch) => void;
   onPrioritySelect: (p: TaskPriorityOption) => void;
   onEdit?: () => void;
   onClose?: () => void;
@@ -44,10 +42,7 @@ export function TaskDetailsHeader({
   isAllDay,
   priority,
   onDateChange,
-  onTimeChange,
-  onStartTimeChange,
-  onEndTimeChange,
-  onAllDayChange,
+  onEventScheduleChange,
   onPrioritySelect,
   onEdit,
   onClose,
@@ -63,10 +58,13 @@ export function TaskDetailsHeader({
         {columnTitle && (
           <>
             <span
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/6 border border-white/10 text-neutral-300 text-tiny font-semibold truncate max-w-[115px]"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface border border-neutral-700/80 dark:bg-white/6 dark:border-white/10 text-neutral-300 text-tiny font-semibold truncate max-w-[115px]"
               title={columnTitle}
             >
-              <FolderKanban size={11} className="text-gold/80 shrink-0" />
+              <FolderKanban
+                size={11}
+                className="text-amber-700 dark:text-gold/80 shrink-0"
+              />
               <span className="truncate">{columnTitle}</span>
             </span>
             <div className="h-3.5 w-px bg-white/12 shrink-0" />
@@ -110,10 +108,7 @@ export function TaskDetailsHeader({
             dueEndTime={dueEndTime ?? task.dueEndTime}
             isAllDay={isAllDay ?? task.isAllDay}
             onDateChange={onDateChange}
-            onTimeChange={onTimeChange}
-            onStartTimeChange={onStartTimeChange}
-            onEndTimeChange={onEndTimeChange}
-            onAllDayChange={onAllDayChange}
+            onEventScheduleChange={onEventScheduleChange}
             disabled={isDateLocked}
           />
         ) : isDaily ? (

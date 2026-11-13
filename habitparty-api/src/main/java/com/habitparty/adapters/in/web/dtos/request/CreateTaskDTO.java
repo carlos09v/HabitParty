@@ -36,12 +36,12 @@ public record CreateTaskDTO(
     // --- Campos Base (Comuns a todas as tarefas) ---
     @NotBlank(message = "O nome é obrigatório.") @Size(max = 50, message = "O nome deve ter até 50 caracteres.") String name,
 
-    @Size(max = 5000, message = "A descrição deve ter até 5000 caracteres.") String description,
+    @Size(max = 2000, message = "A descrição deve ter até 2000 caracteres.") String description,
 
     TaskPriority priority,
 
     @Size(max = 5, message = "Uma tarefa pode ter no máximo 5 tags.")
-    List<@Size(max = 25, message = "Cada tag deve ter até 25 caracteres.") String> tags,
+    List<@Size(max = 80, message = "Cada tag deve ter até 80 caracteres.") String> tags,
 
     TaskDifficulty difficulty,
 

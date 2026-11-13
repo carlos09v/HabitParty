@@ -32,8 +32,9 @@ import type {
   TaskTypeOption,
 } from "@/types/task";
 import type { UseCreateTaskFormOptions } from "@/types/task-ui";
+import type { DatePickerEventSchedulePatch } from "@/types/ui";
 import { formatCoins } from "@/utils";
-import { getTodayDateString } from "@/utils/date";
+import { getTodayDateString, normalizeEventSchedulePatch } from "@/utils/date";
 import { calculateTaskReward } from "@/utils/economy";
 import { soundEffects } from "@/utils/soundEffects";
 import {
@@ -183,6 +184,7 @@ export function useCreateTaskForm({
   const [columnId, setColumnId] = useState(initialForm.columnId);
   const [name, setName] = useState(initialForm.name);
   const [description, setDescription] = useState(initialForm.description);
+  const descriptionFlushRef = useRef<(() => string) | null>(null);
   const [tagsInput, setTagsInput] = useState(initialForm.tagsInput);
   const [isHardcore, setIsHardcore] = useState(initialForm.isHardcore);
 
@@ -226,52 +228,19 @@ export function useCreateTaskForm({
     }
   };
 
-  const handleDueTimeChange = (nextTime: string) => {
-    const cleanTime = nextTime ? nextTime.slice(0, 5) : "";
-    setDueTime(cleanTime);
-    if (cleanTime) {
-      setStartTime("");
-      setDueEndTime("");
-      setIsAllDay(false);
-      if (!dueDate) {
-        setDueDate(getTodayDateString());
-      }
-    }
-  };
+  const handleEventScheduleChange = (patch: DatePickerEventSchedulePatch) => {
+    const normalized = normalizeEventSchedulePatch(
+      { dueDate, dueTime, startTime, dueEndTime, isAllDay },
+      patch,
+    );
 
-  const handleStartTimeChange = (nextStartTime: string) => {
-    const cleanStart = nextStartTime ? nextStartTime.slice(0, 5) : "";
-    setStartTime(cleanStart);
-    if (cleanStart) {
-      setDueTime("");
-      setIsAllDay(false);
-      if (!dueDate) {
-        setDueDate(getTodayDateString());
-      }
-    } else {
-      setDueEndTime("");
+    if (normalized.dueDate !== undefined) setDueDate(normalized.dueDate);
+    if (normalized.dueTime !== undefined) setDueTime(normalized.dueTime);
+    if (normalized.startTime !== undefined) setStartTime(normalized.startTime);
+    if (normalized.dueEndTime !== undefined) {
+      setDueEndTime(normalized.dueEndTime);
     }
-  };
-
-  const handleDueEndTimeChange = (nextEndTime: string) => {
-    const cleanEnd = nextEndTime ? nextEndTime.slice(0, 5) : "";
-    setDueEndTime(cleanEnd);
-    if (cleanEnd) {
-      setDueTime("");
-      setIsAllDay(false);
-    }
-  };
-
-  const handleAllDayChange = (nextAllDay: boolean) => {
-    setIsAllDay(nextAllDay);
-    if (nextAllDay) {
-      setDueTime("");
-      setStartTime("");
-      setDueEndTime("");
-      if (!dueDate) {
-        setDueDate(getTodayDateString());
-      }
-    }
+    if (normalized.isAllDay !== undefined) setIsAllDay(normalized.isAllDay);
   };
 
   // Campos específicos de Daily
@@ -472,11 +441,13 @@ export function useCreateTaskForm({
         isPenaltyApplied: taskToEdit?.isPenaltyApplied,
       });
 
+      const latestDescription = descriptionFlushRef.current?.() ?? description;
+
       const draftTask: Task = {
         ...(taskToEdit || {}),
         id: taskToEdit?.id || `tsk-${Date.now()}`,
         title: trimmedName,
-        description: description.trim() || undefined,
+        description: latestDescription.trim() || undefined,
         category:
           tags[0] ||
           (taskToEdit?.category !== "Geral" ? taskToEdit?.category : undefined),
@@ -628,6 +599,7 @@ export function useCreateTaskForm({
     setName,
     description,
     setDescription,
+    descriptionFlushRef,
     tagsInput,
     setTagsInput,
     isHardcore,
@@ -645,13 +617,10 @@ export function useCreateTaskForm({
     dueDate,
     setDueDate: handleDueDateChange,
     dueTime,
-    setDueTime: handleDueTimeChange,
     startTime,
-    setStartTime: handleStartTimeChange,
     dueEndTime,
-    setDueEndTime: handleDueEndTimeChange,
     isAllDay,
-    setIsAllDay: handleAllDayChange,
+    onEventScheduleChange: handleEventScheduleChange,
     reminderType,
     setReminderType,
     sendEmailReminder,

@@ -9,6 +9,10 @@ interface UseDashboardTaskActionsProps {
   tasks?: Task[];
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
   defaultColumnId?: string;
+  onTaskCompletedTodayChange?: (
+    taskId: string,
+    completedToday: boolean,
+  ) => void;
 }
 
 /**
@@ -19,6 +23,7 @@ export function useDashboardTaskActions({
   tasks,
   setTasks,
   defaultColumnId,
+  onTaskCompletedTodayChange,
 }: UseDashboardTaskActionsProps) {
   const tasksRef = useRef(tasks);
   tasksRef.current = tasks;
@@ -30,6 +35,8 @@ export function useDashboardTaskActions({
 
   const onOptimisticToggle = useCallback(
     (taskId: string, completed: boolean) => {
+      onTaskCompletedTodayChange?.(taskId, completed);
+      const nowIso = new Date().toISOString();
       setTasks((prev) =>
         prev.map((t) =>
           t.id === taskId
@@ -37,16 +44,20 @@ export function useDashboardTaskActions({
                 ...t,
                 completed,
                 hasClaimedReward: completed ? true : t.hasClaimedReward,
+                lastCompletedAt: completed ? nowIso : t.lastCompletedAt,
               }
             : t,
         ),
       );
     },
-    [setTasks],
+    [onTaskCompletedTodayChange, setTasks],
   );
 
   const onOptimisticHabit = useCallback(
     (taskId: string, delta: number) => {
+      if (delta > 0) {
+        onTaskCompletedTodayChange?.(taskId, true);
+      }
       setTasks((prev) =>
         prev.map((t) => {
           if (t.id === taskId) {
@@ -59,18 +70,33 @@ export function useDashboardTaskActions({
         }),
       );
     },
-    [setTasks],
+    [onTaskCompletedTodayChange, setTasks],
   );
 
   const onRollbackToggle = useCallback(
-    (taskId: string, previousCompleted: boolean) => {
+    (
+      taskId: string,
+      previousState: {
+        completed: boolean;
+        hasClaimedReward?: boolean;
+        lastCompletedAt?: string;
+      },
+    ) => {
+      onTaskCompletedTodayChange?.(taskId, previousState.completed);
       setTasks((prev) =>
         prev.map((t) =>
-          t.id === taskId ? { ...t, completed: previousCompleted } : t,
+          t.id === taskId
+            ? {
+                ...t,
+                completed: previousState.completed,
+                hasClaimedReward: previousState.hasClaimedReward,
+                lastCompletedAt: previousState.lastCompletedAt,
+              }
+            : t,
         ),
       );
     },
-    [setTasks],
+    [onTaskCompletedTodayChange, setTasks],
   );
 
   const onOptimisticDelete = useCallback(
@@ -94,6 +120,15 @@ export function useDashboardTaskActions({
     [setTasks],
   );
 
+  const onReconcileTask = useCallback(
+    (reconciledTask: Task) => {
+      setTasks((prev) =>
+        prev.map((t) => (t.id === reconciledTask.id ? reconciledTask : t)),
+      );
+    },
+    [setTasks],
+  );
+
   const {
     handleToggleComplete,
     handleHabitChange,
@@ -107,6 +142,7 @@ export function useDashboardTaskActions({
     onOptimisticDelete,
     onRollbackDelete,
     onTaskDuplicated,
+    onReconcileTask,
     defaultColumnId,
   });
 

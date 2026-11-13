@@ -1,8 +1,12 @@
 package com.habitparty.application.usecases.task;
 
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +15,7 @@ import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsUseCase;
+import com.habitparty.application.events.TaskCompletedEvent;
 import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.task.Habit;
@@ -19,7 +24,6 @@ import com.habitparty.core.domain.entities.task.Task.TaskReward;
 import com.habitparty.core.domain.enums.TransactionType;
 import com.habitparty.core.domain.enums.task.HabitType;
 import com.habitparty.core.domain.enums.task.TaskStatus;
-import com.habitparty.core.domain.enums.task.TaskType;
 import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
@@ -30,6 +34,8 @@ public class RecordHabitScoreUseCase {
   private final UserRepository userPort;
   private final EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
   private final BoardColumnRepository boardColumnPort;
+  private final Clock clock;
+  private final ApplicationEventPublisher eventPublisher;
 
   @Autowired
   public RecordHabitScoreUseCase(
@@ -37,19 +43,23 @@ public class RecordHabitScoreUseCase {
       TransactionHistoryRepository transactionPort,
       UserRepository userPort,
       EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase,
-      BoardColumnRepository boardColumnPort) {
+      BoardColumnRepository boardColumnPort,
+      Clock clock,
+      ApplicationEventPublisher eventPublisher) {
     this.taskPort = taskPort;
     this.transactionPort = transactionPort;
     this.userPort = userPort;
     this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
     this.boardColumnPort = boardColumnPort;
+    this.clock = clock != null ? clock : Clock.systemDefaultZone();
+    this.eventPublisher = eventPublisher;
   }
 
   public RecordHabitScoreUseCase(
       TaskRepository taskPort,
       TransactionHistoryRepository transactionPort,
       UserRepository userPort) {
-    this(taskPort, transactionPort, userPort, null, null);
+    this(taskPort, transactionPort, userPort, null, null, Clock.systemDefaultZone(), null);
   }
 
   @Transactional
@@ -65,11 +75,16 @@ public class RecordHabitScoreUseCase {
     User user = userPort.findById(userIdLogado)
         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
     String columnName = TaskGamificationHelper.resolveColumnName(boardColumnPort, habit);
+    LocalDate today = LocalDate.now(clock);
+    LocalDateTime now = LocalDateTime.now(clock);
 
     if (delta > 0) {
       if (habit.getHabitType() == HabitType.NEGATIVE) {
         throw new DomainValidationException("Este hábito é do tipo Negativo e não permite pontuação positiva.");
       }
+
+      // Garante que eventual streak expirado por falta de rollover seja zerado antes do bônus/incremento
+      habit.refreshStreakForDate(today);
 
       // Domínio do Impulso: primeira ação positiva no ciclo de um Hábito Misto (BOTH) sem nenhuma recaída negativa
       if (habit.getHabitType() == HabitType.BOTH
@@ -80,12 +95,14 @@ public class RecordHabitScoreUseCase {
       }
 
       TaskGamificationHelper.awardTaskCompletion(
-          user, habit, TransactionType.HABIT_COMPLETED, userPort, transactionPort, columnName);
-      if (evaluateUserAchievementsUseCase != null) {
+          user, habit, TransactionType.HABIT_COMPLETED, userPort, transactionPort, columnName, today);
+      if (eventPublisher != null) {
+        eventPublisher.publishEvent(new TaskCompletedEvent(user.getId()));
+      } else if (evaluateUserAchievementsUseCase != null) {
         evaluateUserAchievementsUseCase.execute(user);
       }
 
-      habit.registerCompletion();
+      habit.registerCompletion(now);
       habit.changeStatus(TaskStatus.COMPLETED);
     } else if (delta < 0) {
       if (habit.getHabitType() == HabitType.POSITIVE) {

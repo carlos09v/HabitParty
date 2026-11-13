@@ -55,9 +55,8 @@ public class UserController implements UserApi {
 
   @Override
   public ResponseEntity<UserResponseDTO> getUserById(AuthenticatedUser usuarioLogado) {
-    UUID userId = usuarioLogado.id();
-    User user = findUserByIdUseCase.execute(userId);
-    return ResponseEntity.ok(UserResponseDTO.fromDomain(user));
+    var result = findUserByIdUseCase.executeWithEffectiveStreak(usuarioLogado.id());
+    return ResponseEntity.ok(UserResponseDTO.fromDomain(result.user(), result.effectiveStreak()));
   }
 
   @Override
@@ -92,8 +91,8 @@ public class UserController implements UserApi {
       AuthenticatedUser usuarioLogado) {
     UUID userId = usuarioLogado.id();
     var command = new UpdateUserProfileCommand(dto.fullName(), dto.birthDate(), dto.gender(), dto.experienceMode());
-    User updatedUser = updateUserProfileUseCase.execute(userId, command);
-    return ResponseEntity.ok(UserResponseDTO.fromDomain(updatedUser));
+    var updated = updateUserProfileUseCase.executeWithEffectiveStreak(userId, command);
+    return ResponseEntity.ok(UserResponseDTO.fromDomain(updated.user(), updated.effectiveStreak()));
   }
 
   @Override

@@ -164,7 +164,7 @@ export function FocusMetricsGrid({
             </span>
             <Flame
               size={13}
-              className="text-orange-500 dark:text-amber-400 shrink-0"
+              className="text-orange-700 dark:text-amber-400 shrink-0"
             />
           </div>
           <div className="flex flex-col">
@@ -174,7 +174,7 @@ export function FocusMetricsGrid({
               </span>
               <Flame
                 size={14}
-                className="text-orange-500 fill-orange-500/20 dark:text-amber-400 dark:fill-amber-400/20"
+                className="text-orange-700 fill-orange-500/20 dark:text-amber-400 dark:fill-amber-400/20"
               />
             </div>
             <span className="text-tiny text-neutral-400 truncate">

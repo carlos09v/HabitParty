@@ -53,7 +53,7 @@ public class DeleteTaskUseCase {
             .toList();
         if (!standaloneTaskRecordIds.isEmpty()) {
           transactionPort.deleteAllByReferenceIdsAndUserId(standaloneTaskRecordIds, userIdLogado);
-          standaloneTaskRecordIds.forEach(focusRecordPort::deleteById);
+          focusRecordPort.deleteAllByIds(standaloneTaskRecordIds);
         }
         focusRecordPort.nullifyTaskId(taskId);
       } else {

@@ -16,6 +16,13 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   hint?: string;
 }
 
+export interface DatePickerEventSchedulePatch {
+  dueTime?: string;
+  startTime?: string;
+  endTime?: string;
+  isAllDay?: boolean;
+}
+
 export interface DatePickerProps {
   id?: string;
   label?: ReactNode;
@@ -48,6 +55,7 @@ export interface DatePickerProps {
   onEndTimeChange?: (endTime: string) => void;
   allDayValue?: boolean;
   onAllDayChange?: (allDay: boolean) => void;
+  onEventScheduleChange?: (patch: DatePickerEventSchedulePatch) => void;
 }
 
 export interface TimePickerProps {

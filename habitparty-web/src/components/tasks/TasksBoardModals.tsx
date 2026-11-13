@@ -76,6 +76,7 @@ export const TasksBoardModals = memo(function TasksBoardModals({
   columns,
   formColumns,
   visibleColumnIds,
+  availableTags = [],
   maxColumns,
   isPremium,
   columnModalState,
@@ -96,7 +97,12 @@ export const TasksBoardModals = memo(function TasksBoardModals({
   isDeletingColumn,
   handleDeleteColumn,
   handleDuplicateTask,
-  handleDeleteTask,
+  taskToDelete,
+  deleteHistory,
+  onDeleteHistoryChange,
+  requestDeleteTask,
+  onConfirmDeleteTask,
+  onCancelDeleteTask,
   handleTaskDetailsUpdate,
   handleToggleComplete,
   handleHabitChange,
@@ -112,17 +118,7 @@ export const TasksBoardModals = memo(function TasksBoardModals({
   const tMenus = useTranslations("dashboard.taskShared.contextMenu");
   useIdlePreload(preloadTasksBoardModalChunks);
 
-  const [taskToDelete, setTaskToDelete] = useState<{
-    task: Task;
-    columnId: string;
-  } | null>(null);
-  const [deleteHistory, setDeleteHistory] = useState(false);
   const [focusHistoryTask, setFocusHistoryTask] = useState<Task | null>(null);
-
-  const requestDeleteTask = useCallback((task: Task, columnId: string) => {
-    setDeleteHistory(false);
-    setTaskToDelete({ task, columnId });
-  }, []);
 
   const taskContextMenuItems = useMemo(
     () =>
@@ -293,18 +289,9 @@ export const TasksBoardModals = memo(function TasksBoardModals({
           checkboxLabel={t("deleteTaskModal.deleteHistoryLabel")}
           checkboxHint={t("deleteTaskModal.deleteHistoryHint")}
           checkboxChecked={deleteHistory}
-          onCheckboxChange={setDeleteHistory}
-          onClose={() => setTaskToDelete(null)}
-          onConfirm={() => {
-            if (taskToDelete) {
-              handleDeleteTask(
-                taskToDelete.task,
-                taskToDelete.columnId,
-                deleteHistory,
-              );
-              setTaskToDelete(null);
-            }
-          }}
+          onCheckboxChange={onDeleteHistoryChange}
+          onClose={onCancelDeleteTask}
+          onConfirm={onConfirmDeleteTask}
         />
       )}
 
@@ -337,6 +324,7 @@ export const TasksBoardModals = memo(function TasksBoardModals({
             })
           }
           columns={formColumns}
+          availableTags={availableTags}
           defaultColumnId={taskModalState.columnId}
           defaultTaskType={taskModalState.defaultTaskType}
           initialTitle={taskModalState.initialTitle}
@@ -353,6 +341,7 @@ export const TasksBoardModals = memo(function TasksBoardModals({
           isOpen={true}
           onClose={() => setSelectedTaskDetails(null)}
           task={selectedTaskDetails.task}
+          availableTags={availableTags}
           columnTitle={resolveTaskColumnTitle(
             selectedTaskDetails.task,
             columns,

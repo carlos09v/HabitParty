@@ -1,3 +1,4 @@
+export { RichTextDescriptionEditor } from "./RichTextDescriptionEditor";
 export { TaskActionControl } from "./TaskActionControl";
 export { TaskEventBadge } from "./TaskEventBadge";
 export {
@@ -12,6 +13,7 @@ export {
 export { TaskRewardBadges } from "./TaskRewardBadges";
 export { TaskRow } from "./TaskRow";
 export { TaskTagBadges } from "./TaskTagBadges";
+export { TaskTagSelector } from "./TaskTagSelector";
 export { TaskTypeBadge } from "./TaskTypeBadge";
 export {
   buildColumnContextMenuItems,

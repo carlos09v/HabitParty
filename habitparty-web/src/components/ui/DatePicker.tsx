@@ -22,7 +22,7 @@ import { useFloatingPopover } from "@/hooks/useFloatingPopover";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
 import { isValidLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
-import type { DatePickerProps } from "@/types/ui";
+import type { DatePickerEventSchedulePatch, DatePickerProps } from "@/types/ui";
 import { cn } from "@/utils";
 import {
   formatDateParts,
@@ -86,6 +86,7 @@ export function DatePicker({
   onEndTimeChange,
   allDayValue = false,
   onAllDayChange,
+  onEventScheduleChange,
 }: DatePickerProps) {
   const t = useTranslations("ui.datePicker");
   const rawLocale = useLocale();
@@ -245,6 +246,25 @@ export function DatePicker({
     onChange?.(nextVal);
   };
 
+  const applyEventSchedulePatch = (patch: DatePickerEventSchedulePatch) => {
+    if (onEventScheduleChange) {
+      onEventScheduleChange(patch);
+      return;
+    }
+    if (patch.dueTime !== undefined) {
+      onTimeChange?.(patch.dueTime);
+    }
+    if (patch.startTime !== undefined) {
+      onStartTimeChange?.(patch.startTime);
+    }
+    if (patch.endTime !== undefined) {
+      onEndTimeChange?.(patch.endTime);
+    }
+    if (patch.isAllDay !== undefined) {
+      onAllDayChange?.(patch.isAllDay);
+    }
+  };
+
   const handleStepMonth = (delta: -1 | 1, e: React.MouseEvent) => {
     e.stopPropagation();
     if (delta === -1 && viewMonth === 0) {
@@ -272,10 +292,12 @@ export function DatePicker({
     e?.stopPropagation();
     updateValue("");
     if (enableTime) {
-      onTimeChange?.("");
-      onStartTimeChange?.("");
-      onEndTimeChange?.("");
-      onAllDayChange?.(false);
+      applyEventSchedulePatch({
+        dueTime: "",
+        startTime: "",
+        endTime: "",
+        isAllDay: false,
+      });
       hourPopover.close();
       eventPopover.close();
     }
@@ -292,19 +314,26 @@ export function DatePicker({
   };
 
   const handleSetNow = () => {
-    onTimeChange?.(formatTimeHHMM(new Date()));
+    applyEventSchedulePatch({
+      dueTime: formatTimeHHMM(new Date()),
+      startTime: "",
+      endTime: "",
+      isAllDay: false,
+    });
   };
 
   const handleApplyDurationPreset = (minutesToAdd: number) => {
     const baseStart =
       startTimeValue ||
       `${String((new Date().getHours() + 1) % 24).padStart(2, "0")}:00`;
-    if (!startTimeValue) {
-      onStartTimeChange?.(baseStart);
-    }
     const startMin = parseTimeToMinutes(baseStart) ?? 0;
     const endMin = Math.min(1439, startMin + minutesToAdd);
-    onEndTimeChange?.(minutesToTimeHHMM(endMin));
+    applyEventSchedulePatch({
+      dueTime: "",
+      startTime: baseStart,
+      endTime: endMin > startMin ? minutesToTimeHHMM(endMin) : "",
+      isAllDay: false,
+    });
   };
 
   const calendarDays = useMemo(
@@ -536,17 +565,18 @@ export function DatePicker({
                         }
                         eventPopover.close();
                         if (!currentValue) updateValue(today.isoString);
-                        if (hasEventValue) {
-                          onStartTimeChange?.("");
-                          onEndTimeChange?.("");
-                          onAllDayChange?.(false);
-                        }
-                        if (!timeValue) {
-                          const now = new Date();
+                        if (hasEventValue || !timeValue) {
                           const defaultHour = String(
-                            (now.getHours() + 1) % 24,
+                            (new Date().getHours() + 1) % 24,
                           ).padStart(2, "0");
-                          onTimeChange?.(`${defaultHour}:00`);
+                          applyEventSchedulePatch({
+                            ...(hasEventValue
+                              ? { startTime: "", endTime: "", isAllDay: false }
+                              : {}),
+                            ...(!timeValue
+                              ? { dueTime: `${defaultHour}:00` }
+                              : {}),
+                          });
                         }
                         hourPopover.open();
                       }}
@@ -571,7 +601,7 @@ export function DatePicker({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onTimeChange?.("");
+                          applyEventSchedulePatch({ dueTime: "" });
                         }}
                         className="ml-1 p-0.5 rounded text-neutral-400 hover:text-danger-500 hover:bg-white/10 transition-colors cursor-pointer shrink-0"
                         title={t("removeTime")}
@@ -630,7 +660,14 @@ export function DatePicker({
                         <TimePickerBody
                           value={timeValue}
                           isOpen={hourPopover.isOpen}
-                          onChange={(val) => onTimeChange?.(val)}
+                          onChange={(val) =>
+                            applyEventSchedulePatch({
+                              dueTime: val,
+                              startTime: "",
+                              endTime: "",
+                              isAllDay: false,
+                            })
+                          }
                         />
 
                         {/* Footer do Overlay de Hora */}
@@ -647,7 +684,12 @@ export function DatePicker({
                               <button
                                 type="button"
                                 onClick={() => {
-                                  onTimeChange?.("");
+                                  applyEventSchedulePatch({
+                                    dueTime: "",
+                                    startTime: "",
+                                    endTime: "",
+                                    isAllDay: false,
+                                  });
                                   hourPopover.close();
                                 }}
                                 className="text-neutral-400 hover:text-danger-500 transition-colors cursor-pointer text-tiny font-medium"
@@ -702,7 +744,6 @@ export function DatePicker({
                         }
                         hourPopover.close();
                         if (!currentValue) updateValue(today.isoString);
-                        if (timeValue) onTimeChange?.("");
                         if (!allDayValue && !startTimeValue) {
                           const now = new Date();
                           const startH = (now.getHours() + 1) % 24;
@@ -712,8 +753,14 @@ export function DatePicker({
                             endH > startH
                               ? `${String(endH).padStart(2, "0")}:00`
                               : "23:59";
-                          onStartTimeChange?.(defaultStart);
-                          onEndTimeChange?.(defaultEnd);
+                          applyEventSchedulePatch({
+                            dueTime: "",
+                            startTime: defaultStart,
+                            endTime: defaultEnd,
+                            isAllDay: false,
+                          });
+                        } else if (timeValue) {
+                          applyEventSchedulePatch({ dueTime: "" });
                         }
                         eventPopover.open();
                       }}
@@ -749,9 +796,11 @@ export function DatePicker({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onStartTimeChange?.("");
-                          onEndTimeChange?.("");
-                          onAllDayChange?.(false);
+                          applyEventSchedulePatch({
+                            startTime: "",
+                            endTime: "",
+                            isAllDay: false,
+                          });
                         }}
                         className="ml-1 p-0.5 rounded text-neutral-400 hover:text-danger-500 hover:bg-white/10 transition-colors cursor-pointer shrink-0"
                         title={t("removeTime")}
@@ -829,11 +878,17 @@ export function DatePicker({
                               onChange={(e) => {
                                 const checked = e.target.checked;
                                 if (checked) {
-                                  onTimeChange?.("");
-                                  onStartTimeChange?.("");
-                                  onEndTimeChange?.("");
+                                  applyEventSchedulePatch({
+                                    dueTime: "",
+                                    startTime: "",
+                                    endTime: "",
+                                    isAllDay: true,
+                                  });
+                                } else {
+                                  applyEventSchedulePatch({
+                                    isAllDay: false,
+                                  });
                                 }
-                                onAllDayChange?.(checked);
                               }}
                               className="sr-only"
                             />
@@ -873,17 +928,31 @@ export function DatePicker({
                                     compact
                                     value={startTimeValue}
                                     onChange={(val) => {
-                                      if (val && timeValue) onTimeChange?.("");
-                                      onStartTimeChange?.(val);
-                                      if (val && !endTimeValue) {
-                                        const startMin =
-                                          parseTimeToMinutes(val) ?? 0;
-                                        onEndTimeChange?.(
-                                          minutesToTimeHHMM(
-                                            Math.min(1439, startMin + 60),
-                                          ),
-                                        );
+                                      if (!val) {
+                                        applyEventSchedulePatch({
+                                          dueTime: "",
+                                          startTime: "",
+                                          endTime: "",
+                                          isAllDay: false,
+                                        });
+                                        return;
                                       }
+                                      const startMin =
+                                        parseTimeToMinutes(val) ?? 0;
+                                      const nextEnd =
+                                        endTimeValue && endTimeValue > val
+                                          ? endTimeValue
+                                          : startMin < 1439
+                                            ? minutesToTimeHHMM(
+                                                Math.min(1439, startMin + 60),
+                                              )
+                                            : "";
+                                      applyEventSchedulePatch({
+                                        dueTime: "",
+                                        startTime: val,
+                                        endTime: nextEnd,
+                                        isAllDay: false,
+                                      });
                                     }}
                                     placeholder={t("timePlaceholder")}
                                     zIndex={170}
@@ -897,8 +966,11 @@ export function DatePicker({
                                     compact
                                     value={endTimeValue}
                                     onChange={(val) => {
-                                      if (val && timeValue) onTimeChange?.("");
-                                      onEndTimeChange?.(val);
+                                      applyEventSchedulePatch({
+                                        dueTime: "",
+                                        endTime: val,
+                                        isAllDay: false,
+                                      });
                                     }}
                                     disabled={!startTimeValue}
                                     placeholder={t("timePlaceholder")}
@@ -945,9 +1017,11 @@ export function DatePicker({
                               <button
                                 type="button"
                                 onClick={() => {
-                                  onStartTimeChange?.("");
-                                  onEndTimeChange?.("");
-                                  onAllDayChange?.(false);
+                                  applyEventSchedulePatch({
+                                    startTime: "",
+                                    endTime: "",
+                                    isAllDay: false,
+                                  });
                                   eventPopover.close();
                                 }}
                                 className="text-neutral-400 hover:text-danger-500 transition-colors cursor-pointer text-tiny font-medium"

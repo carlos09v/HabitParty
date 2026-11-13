@@ -37,6 +37,11 @@ public interface TransactionHistoryRepository {
     return true;
   }
 
+  // Verifica se o usuário completou alguma tarefa ontem ou hoje (usado para validar streak efetivo na leitura)
+  default boolean hasCompletedTasksSinceYesterday(UUID userId) {
+    return true;
+  }
+
   void deleteAllByUserId(UUID userId);
 
   // Exclusão em lote (apenas registros pertencentes ao usuário). Retorna a quantidade removida.
@@ -47,4 +52,7 @@ public interface TransactionHistoryRepository {
 
   // Remove todos os registros vinculados a várias origens do usuário
   void deleteAllByReferenceIdsAndUserId(List<UUID> referenceIds, UUID userId);
+
+  // Verifica se existem registros no histórico vinculados a uma origem do usuário
+  boolean existsByReferenceIdAndUserId(UUID referenceId, UUID userId);
 }

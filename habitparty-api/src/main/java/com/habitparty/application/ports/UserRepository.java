@@ -13,7 +13,13 @@ import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.enums.UserRole;
 
 public interface UserRepository {
-  User save(User user); // create and update methods
+  User save(User user);
+
+  default void saveAll(Collection<User> users) {
+    if (users != null) {
+      users.forEach(this::save);
+    }
+  } // create and update methods
   void deleteById(UUID id);
   Optional<User> findById(UUID id);
   List<User> findAllByIds(Collection<UUID> ids); // Carregamento em lote (evita N+1 em jobs)

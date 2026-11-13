@@ -1,6 +1,6 @@
 # 🎮 HabitParty Web (Frontend)
 
-Interface web moderna do HabitParty construída com **Next.js 15+ (App Router)**, **React 19**, **Tailwind CSS v4** e **Biome**.
+Interface web moderna do HabitParty construída com **Next.js 16+ (App Router)**, **React 19**, **Tailwind CSS v4** e **Biome**.
 
 ## 🚀 Como Executar
 

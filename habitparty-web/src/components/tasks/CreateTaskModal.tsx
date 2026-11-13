@@ -35,6 +35,7 @@ export function CreateTaskModal({
   isOpen,
   onClose,
   columns,
+  availableTags = [],
   defaultColumnId,
   defaultTaskType,
   initialTitle,
@@ -157,7 +158,11 @@ export function CreateTaskModal({
               <span>{t("section1Title")}</span>
             </div>
 
-            <TaskBasicFields form={form} columns={columns} />
+            <TaskBasicFields
+              form={form}
+              columns={columns}
+              availableTags={availableTags}
+            />
           </div>
 
           {/* COLUNA 2 (DIREITA): CONFIGURAÇÕES ESPECÍFICAS DO TIPO & RECOMPENSA */}

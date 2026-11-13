@@ -60,6 +60,7 @@ interface FocusContainerProps {
   initialFocusableTasks?: FocusableTaskItem[];
   initialSelectedActivityId?: string | null;
   initialCreateActivity?: boolean;
+  initialLinkActivity?: boolean;
 }
 
 export function FocusContainer({
@@ -69,6 +70,7 @@ export function FocusContainer({
   initialFocusableTasks = [],
   initialSelectedActivityId = null,
   initialCreateActivity = false,
+  initialLinkActivity = false,
 }: FocusContainerProps) {
   const t = useTranslations("focus.container");
   const router = useRouter();
@@ -108,6 +110,8 @@ export function FocusContainer({
 
   const urlActivityId =
     searchParams.get("activityId") || initialSelectedActivityId || null;
+  const shouldOpenLinkActivityModal =
+    searchParams.get("linkActivity") === "true" || initialLinkActivity;
 
   // Atividade selecionada para filtro de métricas (não interfere no timer ativo)
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(
@@ -604,6 +608,7 @@ export function FocusContainer({
           onChangeMode={handleChangeMode}
           onOpenManualRecord={handleOpenManualRecordModal}
           initialCreateActivity={initialCreateActivity}
+          initialLinkActivity={shouldOpenLinkActivityModal}
         />
       </div>
 

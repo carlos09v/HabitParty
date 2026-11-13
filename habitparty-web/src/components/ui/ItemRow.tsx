@@ -310,7 +310,7 @@ export const ItemRow = memo(function ItemRow({
               >
                 <Clock
                   size={isCompact ? 11 : 13}
-                  className="text-emerald-600 dark:text-emerald-400 shrink-0"
+                  className="text-emerald-700 dark:text-emerald-400 shrink-0"
                   aria-hidden="true"
                 />
                 <span className="truncate">

@@ -50,6 +50,7 @@ export interface TaskRowProps {
   columnTitle?: string;
   isSortable?: boolean;
   isOverlay?: boolean;
+  isDeleteChecking?: boolean;
   onToggle?: (id: string, completed: boolean) => void;
   onToggleCompleted?: (id: string, completed: boolean) => void;
   onHabitChange?: (id: string, delta: number) => void;
@@ -63,6 +64,7 @@ export interface TaskDetailsPopoverProps {
   onClose: () => void;
   task: Task | null;
   columnTitle?: string;
+  availableTags?: string[];
   anchorRect?: DOMRect | null;
   onTaskUpdate?: (updatedTask: Task) => void;
   onDelete?: (taskId: string) => void;
@@ -76,7 +78,6 @@ export interface TaskDetailsPopoverProps {
 export interface TaskDetailsFooterProps {
   task?: Task;
   columnTitle?: string;
-  onApplyFormat?: (syntax: FormatSyntax) => void;
   onDeleteTask: () => void;
   onDuplicateTask?: () => void;
   onOpenEdit?: () => void;
@@ -110,6 +111,7 @@ export interface TasksBoardModalsProps {
   columns: BoardColumn[];
   formColumns: { id: string; title: string }[];
   visibleColumnIds: string[];
+  availableTags?: string[];
   maxColumns: number;
   isPremium: boolean;
   columnModalState: {
@@ -192,11 +194,12 @@ export interface TasksBoardModalsProps {
   isDeletingColumn: boolean;
   handleDeleteColumn: (col: BoardColumn) => Promise<boolean>;
   handleDuplicateTask: (task: Task, columnId: string) => void;
-  handleDeleteTask: (
-    task: Task,
-    columnId: string,
-    deleteHistory?: boolean,
-  ) => void;
+  taskToDelete: { task: Task; columnId?: string } | null;
+  deleteHistory: boolean;
+  onDeleteHistoryChange: (checked: boolean) => void;
+  requestDeleteTask: (task: Task, columnId?: string) => void;
+  onConfirmDeleteTask: () => void | Promise<void>;
+  onCancelDeleteTask: () => void;
   handleTaskDetailsUpdate: (task: Task) => void;
   handleToggleComplete: (taskId: string, completed: boolean) => void;
   handleHabitChange?: (taskId: string, delta: number) => void;
@@ -213,6 +216,7 @@ export interface RoutineBoardProps {
   setColumns: Dispatch<SetStateAction<BoardColumn[]>>;
   visibleColumnIds: string[];
   selectedTaskId?: string;
+  deletingTaskIds?: ReadonlySet<string>;
   isCompact?: boolean;
   maxColumns?: number;
   selectedColumnId?: string | null;
@@ -255,6 +259,7 @@ export interface RoutineColumnProps {
   columnIndex: number;
   isSelected?: boolean;
   selectedTaskId?: string;
+  deletingTaskIds?: ReadonlySet<string>;
   isCompact?: boolean;
   widthPreset?: ColumnWidthPreset;
   onAddTaskToColumn?: (
@@ -284,6 +289,7 @@ export interface RoutineTaskListProps {
   visibleColumnIds: string[];
   selectedColumnId?: string | null;
   selectedTaskId?: string;
+  deletingTaskIds?: ReadonlySet<string>;
   isCompact?: boolean;
   onAddTaskToColumn: (
     columnId: string,
@@ -322,6 +328,7 @@ export interface RoutineTaskListSectionProps {
   isCompact: boolean;
   selectedColumnId?: string | null;
   selectedTaskId?: string;
+  deletingTaskIds?: ReadonlySet<string>;
   onAddTaskToColumn: (
     columnId: string,
     initialType?: TaskTypeOption,
@@ -384,6 +391,7 @@ export interface CreateTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   columns: { id: string; title: string }[];
+  availableTags?: string[];
   defaultColumnId?: string;
   defaultTaskType?: TaskTypeOption;
   initialTitle?: string;
@@ -432,6 +440,7 @@ export interface RoutineTaskCardProps {
   task: Task;
   columnId: string;
   isSelected?: boolean;
+  isDeleteChecking?: boolean;
   isCompact?: boolean;
   onOpenDetails?: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
   onEditTask?: (task: Task, columnId: string) => void;

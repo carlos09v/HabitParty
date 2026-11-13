@@ -23,12 +23,16 @@ public class DailyResetJob {
     this.clock = clock;
   }
 
-  // Roda na inicialização do servidor para recuperar afazeres hardcore vencidos e streaks expirados caso a aplicação estivesse offline à meia-noite
+  // Roda na inicialização do servidor para recuperar rotinas recorrentes, afazeres hardcore vencidos e streaks expirados caso a aplicação estivesse offline à meia-noite
   @EventListener(ApplicationReadyEvent.class)
   public void catchUpOverdueHardcoreTodosOnStartup() {
     try {
       LocalDate today = LocalDate.now(clock);
       // Usa o relógio no fuso de negócio (evita penalizar antes da hora quando a JVM está em UTC)
+      int syncedRecurring = dailyResetUseCase.catchUpRecurringTasks(today);
+      if (syncedRecurring > 0) {
+        logger.info("[Startup] {} tarefa(s) recorrente(s) sincronizada(s) após virada de ciclo.", syncedRecurring);
+      }
       int processedCount = dailyResetUseCase.processOverdueHardcoreTodos(today);
       if (processedCount > 0) {
         logger.info("[Startup] {} afazer(es) hardcore vencido(s) processado(s) com aplicação de penalidade.", processedCount);

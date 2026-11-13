@@ -40,20 +40,20 @@ export function EconomyWeeklyChart({
         <span className="font-semibold text-xs transition-colors">
           {activeHoveredBar ? (
             <span className="flex items-center gap-1.5">
-              <span className="text-emerald-600 dark:text-gold">
+              <span className="text-emerald-700 dark:text-gold">
                 +{formatCoins(activeHoveredBar.gold, { locale })}
               </span>
-              <span className="text-neutral-500">/</span>
+              <span className="text-neutral-400">/</span>
               <span className="text-rose-600 dark:text-rose-400">
                 -{formatCoins(activeHoveredBar.spent ?? 0, { locale })}
               </span>
             </span>
           ) : (
             <span className="flex items-center gap-1.5">
-              <span className="text-emerald-600 dark:text-gold">
+              <span className="text-emerald-700 dark:text-gold">
                 +{formatCoins(weeklyEarnings, { locale })}
               </span>
-              <span className="text-neutral-500">/</span>
+              <span className="text-neutral-400">/</span>
               <span className="text-rose-600 dark:text-rose-400">
                 -{formatCoins(weeklySpent, { locale })}
               </span>

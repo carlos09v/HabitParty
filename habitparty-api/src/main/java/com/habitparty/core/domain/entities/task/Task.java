@@ -72,13 +72,25 @@ public abstract class Task {
   // Métodos Abstratos (Os filhos são obrigados a implementar!)
   public abstract TaskReward calculateReward();
 
+  public TaskReward calculateReward(LocalDate referenceDate) {
+    return calculateReward();
+  }
+
   public abstract void registerCompletion();
+
+  public void registerCompletion(LocalDateTime completionTime) {
+    registerCompletion();
+  }
 
   /**
    * Indica se a recompensa de conclusão já foi resgatada (para evitar ganho infinito ao marcar e desmarcar).
    */
   public boolean isRewardAlreadyClaimed() {
     return false;
+  }
+
+  public boolean isRewardAlreadyClaimed(LocalDate referenceDate) {
+    return isRewardAlreadyClaimed();
   }
 
   public void moveTo(UUID newBoardColumnId, int newOrderIndex) {
@@ -115,7 +127,12 @@ public abstract class Task {
   }
 
   public boolean isOverdue() {
-    return this.dueDate != null && this.dueDate.isBefore(LocalDate.now());
+    return isOverdue(LocalDate.now());
+  }
+
+  public boolean isOverdue(LocalDate referenceDate) {
+    LocalDate effectiveDate = referenceDate != null ? referenceDate : LocalDate.now();
+    return this.dueDate != null && this.dueDate.isBefore(effectiveDate);
   }
 
   // Uso de setter semântico e não anêmico (tradicional/burro)
@@ -133,19 +150,47 @@ public abstract class Task {
     this.isHardcoreModeEnabled = isHardcoreModeEnabled;
   }
 
+  private static final int MAX_TAGS = 5;
+  private static final int MAX_TAG_SEGMENT_LENGTH = 25;
+  private static final int MAX_TAG_PATH_LENGTH = 80;
+  private static final String TAG_HIERARCHY_SEPARATOR = " > ";
+
   private List<String> validateAndSanitizeTags(List<String> tags) {
     if (tags == null) {
       return null;
     }
-    if (tags.size() > 5) {
+    if (tags.size() > MAX_TAGS) {
       throw new DomainValidationException("A tarefa não pode ter mais de 5 tags.");
     }
+    List<String> sanitized = new ArrayList<>(tags.size());
     for (String tag : tags) {
-      if (tag != null && tag.length() > 25) {
-        throw new DomainValidationException("Cada tag deve ter até 25 caracteres.");
+      if (tag == null) {
+        continue;
       }
+      String[] rawSegments = tag.split(">", -1);
+      List<String> normalizedSegments = new ArrayList<>(rawSegments.length);
+      for (String rawSegment : rawSegments) {
+        String trimmedSegment = rawSegment.trim();
+        if (trimmedSegment.isEmpty()) {
+          throw new DomainValidationException(
+              rawSegments.length > 1
+                  ? "Cada nível da tag hierárquica deve ser preenchido."
+                  : "Tags vazias não são permitidas.");
+        }
+        if (trimmedSegment.length() > MAX_TAG_SEGMENT_LENGTH) {
+          throw new DomainValidationException(
+              "Cada nível da tag deve ter até " + MAX_TAG_SEGMENT_LENGTH + " caracteres.");
+        }
+        normalizedSegments.add(trimmedSegment);
+      }
+      String normalizedPath = String.join(TAG_HIERARCHY_SEPARATOR, normalizedSegments);
+      if (normalizedPath.length() > MAX_TAG_PATH_LENGTH) {
+        throw new DomainValidationException(
+            "Cada tag completa deve ter até " + MAX_TAG_PATH_LENGTH + " caracteres.");
+      }
+      sanitized.add(normalizedPath);
     }
-    return tags;
+    return sanitized;
   }
 
   // --- Getters ---

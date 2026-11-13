@@ -29,6 +29,7 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
   isCompact,
   selectedColumnId,
   selectedTaskId,
+  deletingTaskIds,
   onAddTaskToColumn,
   onOpenDetails,
   onEditTask,
@@ -179,6 +180,7 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
                 key={task.id}
                 task={task}
                 isSelected={selectedTaskId === task.id}
+                isDeleteChecking={Boolean(deletingTaskIds?.has(task.id))}
                 columnId={column.id}
                 columnTitle={column.title}
                 isCompact={isCompact}
@@ -202,6 +204,7 @@ export function RoutineTaskList({
   visibleColumnIds,
   selectedColumnId,
   selectedTaskId,
+  deletingTaskIds,
   isCompact: propIsCompact,
   onAddTaskToColumn,
   onOpenDetails,
@@ -275,6 +278,7 @@ export function RoutineTaskList({
               isCompact={isCompact}
               selectedColumnId={selectedColumnId}
               selectedTaskId={selectedTaskId}
+              deletingTaskIds={deletingTaskIds}
               onAddTaskToColumn={onAddTaskToColumn}
               onOpenDetails={onOpenDetails}
               onEditTask={onEditTask}

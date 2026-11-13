@@ -182,7 +182,7 @@ export function FocusStageTargetSelectorModal({
             ) : (
               <>
                 {onlyActivities && canLinkActivityToTask && currentTarget && (
-                  <div className="px-3 py-2 rounded-lg bg-primary/10 dark:bg-primary-dark/40 border border-primary/30 dark:border-primary-light/35 text-tiny text-neutral-700 dark:text-neutral-200 leading-relaxed">
+                  <div className="px-3 py-2 rounded-lg bg-primary/10 dark:bg-primary-dark/40 border border-primary/30 dark:border-primary-light/35 text-tiny text-neutral-100 dark:text-neutral-200 leading-relaxed">
                     {t("linkActivityToTaskHint", {
                       taskName: currentTarget.taskName || currentTarget.name,
                     })}

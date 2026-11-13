@@ -86,6 +86,14 @@ export interface CouponPackageOption {
   selectedClass: string;
 }
 
+export interface SingleUseTierOption {
+  id: "BASIC" | "PREMIUM" | "EPIC" | "LEGENDARY";
+  suggestedPrice: number;
+  dotColor: string;
+  unselectedClass: string;
+  selectedClass: string;
+}
+
 export type RewardType =
   | NonNullable<RewardResponseDTO["type"]>
   | "SingleUse"

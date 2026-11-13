@@ -81,7 +81,6 @@ export async function listAdminUsersAction(
           "Content-Type": "application/json",
           ...authHeaders,
         },
-        next: { tags: ["admin-users"] },
         cache: "no-store",
       },
     );

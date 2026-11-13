@@ -62,6 +62,8 @@ public class DailyResetUseCase {
     this(port, transactionPort, userPort, clock, transactionOperations, null);
   }
 
+  private record RolloverOutcome(boolean changed, boolean hasFailed) {}
+
   public void executeDailyRollover() {
     LocalDate today = LocalDate.now(clock);
 
@@ -69,8 +71,8 @@ public class DailyResetUseCase {
     int page = 0;
     while (true) {
       final int currentPage = page;
-      Integer fetched = transactionOperations.execute(status -> processRecurringBatch(currentPage, today));
-      if (fetched == null || fetched < BATCH_SIZE) {
+      int[] batchCounts = transactionOperations.execute(status -> processRecurringBatch(currentPage, today, false));
+      if (batchCounts == null || batchCounts[0] < BATCH_SIZE) {
         break;
       }
       page++;
@@ -80,8 +82,30 @@ public class DailyResetUseCase {
     processOverdueHardcoreTodos(today);
   }
 
-  private int processRecurringBatch(int page, LocalDate today) {
-    LocalDate yesterday = today.minusDays(1);
+  /**
+   * Recuperação idempotente executada no startup da aplicação para sincronizar
+   * Hábitos e Diárias caso o servidor estivesse offline na virada da meia-noite.
+   * Não reaplica penalidades Hardcore para evitar cobrança duplicada em múltiplos restarts no mesmo dia.
+   */
+  public int catchUpRecurringTasks(LocalDate today) {
+    int totalUpdated = 0;
+    int page = 0;
+    while (true) {
+      final int currentPage = page;
+      int[] batchCounts = transactionOperations.execute(status -> processRecurringBatch(currentPage, today, true));
+      if (batchCounts == null) {
+        break;
+      }
+      totalUpdated += batchCounts[1];
+      if (batchCounts[0] < BATCH_SIZE) {
+        break;
+      }
+      page++;
+    }
+    return totalUpdated;
+  }
+
+  private int[] processRecurringBatch(int page, LocalDate today, boolean catchUp) {
     List<Task> batch = port.findRecurringTasksPage(page, BATCH_SIZE);
 
     List<Task> changedTasks = new ArrayList<>();
@@ -89,64 +113,127 @@ public class DailyResetUseCase {
     List<UUID> cleanNegativeHabitUsers = new ArrayList<>();
 
     for (Task task : batch) {
-      boolean changed = false;
-      boolean hasFailed = false;
+      RolloverOutcome outcome = switch (task) {
+        case Habit h -> processHabitRollover(h, today, catchUp, cleanNegativeHabitUsers);
+        case Daily d -> processDailyRollover(d, today, catchUp);
+        default -> new RolloverOutcome(false, false);
+      };
 
-      if (task instanceof Habit h) {
-        boolean isResetBoundary = switch (h.getResetCounter()) {
-          case DAILY -> true;
-          case WEEKLY -> today.getDayOfWeek() == DayOfWeek.SUNDAY;
-          case MONTHLY -> today.getDayOfMonth() == 1;
-        };
-
-        if (isResetBoundary) {
-          if (h.getHabitType() == HabitType.NEGATIVE) {
-            if (h.getNegativeCount() == 0) {
-              cleanNegativeHabitUsers.add(h.getUserId());
-            }
-            h.resetCycleCounts();
-            changed = true;
-          } else if (task.getStatus() == TaskStatus.COMPLETED) {
-            h.resetCycleCounts();
-            task.changeStatus(TaskStatus.PENDING);
-            changed = true;
-          } else if (task.getStatus() == TaskStatus.PENDING) {
-            h.breakStreak();
-            h.resetCycleCounts();
-            hasFailed = true;
-            changed = true;
-          }
-        }
-      } else if (task instanceof Daily d) {
-        if (task.getStatus() == TaskStatus.COMPLETED) {
-          task.changeStatus(TaskStatus.PENDING);
-          changed = true;
-        } else if (task.getStatus() == TaskStatus.PENDING
-            && d.getDueDate().isPresent() && !d.getDueDate().get().isAfter(yesterday)) {
-          d.breakStreak();
-          d.shiftToNextOccurrence(today);
-          hasFailed = true;
-          changed = true;
-        }
-      }
-
-      if (changed) {
+      if (outcome.changed()) {
         changedTasks.add(task);
       }
-      // A Regra do Hardcore (Punição para Habit e Daily)
-      if (hasFailed && task.isHardcoreModeEnabled()) {
+      // A Regra do Hardcore (Punição para Habit e Daily, omitida no catch-up idempotente)
+      if (!catchUp && outcome.hasFailed() && task.isHardcoreModeEnabled()) {
         failedHardcoreTasks.add(task);
       }
     }
 
-    applyHardcorePenalties(failedHardcoreTasks, "Falhou: ");
-    rewardCleanNegativeHabits(cleanNegativeHabitUsers);
+    if (!catchUp) {
+      applyHardcorePenalties(failedHardcoreTasks, "Falhou: ");
+      rewardCleanNegativeHabits(cleanNegativeHabitUsers);
+    }
 
     // Persiste apenas as tarefas efetivamente alteradas
     if (!changedTasks.isEmpty()) {
       port.saveAll(changedTasks);
     }
-    return batch.size();
+    return new int[] { batch.size(), changedTasks.size() };
+  }
+
+  private RolloverOutcome processHabitRollover(
+      Habit habit, LocalDate today, boolean catchUp, List<UUID> cleanNegativeHabitUsers) {
+    if (catchUp) {
+      if (habit.getHabitType() == HabitType.NEGATIVE) {
+        return new RolloverOutcome(false, false);
+      }
+      boolean changed = false;
+      boolean completedInPastCycle = habit.getLastCompletedAt() != null && !habit.isInSameCycle(today);
+      if (completedInPastCycle
+          && (habit.getStatus() == TaskStatus.COMPLETED
+              || habit.getPositiveCount() > 0
+              || habit.getNegativeCount() > 0)) {
+        habit.resetCycleCounts();
+        habit.changeStatus(TaskStatus.PENDING);
+        changed = true;
+      }
+      if (breakExpiredHabitStreakIfNeeded(habit, today)) {
+        changed = true;
+      }
+      return new RolloverOutcome(changed, false);
+    }
+
+    boolean isResetBoundary = switch (habit.getResetCounter()) {
+      case DAILY -> true;
+      case WEEKLY -> today.getDayOfWeek() == DayOfWeek.SUNDAY;
+      case MONTHLY -> today.getDayOfMonth() == 1;
+    };
+
+    if (isResetBoundary) {
+      if (habit.getHabitType() == HabitType.NEGATIVE) {
+        if (habit.getNegativeCount() == 0) {
+          cleanNegativeHabitUsers.add(habit.getUserId());
+        }
+        habit.resetCycleCounts();
+        return new RolloverOutcome(true, false);
+      }
+      if (habit.getStatus() == TaskStatus.COMPLETED) {
+        breakExpiredHabitStreakIfNeeded(habit, today);
+        habit.resetCycleCounts();
+        habit.changeStatus(TaskStatus.PENDING);
+        return new RolloverOutcome(true, false);
+      }
+      if (habit.getStatus() == TaskStatus.PENDING) {
+        habit.breakStreak();
+        habit.resetCycleCounts();
+        return new RolloverOutcome(true, true);
+      }
+    } else if (breakExpiredHabitStreakIfNeeded(habit, today)) {
+      return new RolloverOutcome(true, false);
+    }
+
+    return new RolloverOutcome(false, false);
+  }
+
+  private boolean breakExpiredHabitStreakIfNeeded(Habit habit, LocalDate today) {
+    if (habit.getHabitType() != HabitType.NEGATIVE
+        && habit.getCurrentStreak() > 0
+        && habit.getLastCompletedAt() != null
+        && !habit.isStreakStillActive(today)) {
+      habit.breakStreak();
+      return true;
+    }
+    return false;
+  }
+
+  private RolloverOutcome processDailyRollover(Daily daily, LocalDate today, boolean catchUp) {
+    boolean canResetCompleted = !catchUp
+        || daily.getLastCompletedAt() == null
+        || daily.getLastCompletedAt().toLocalDate().isBefore(today);
+
+    if (daily.getStatus() == TaskStatus.COMPLETED && canResetCompleted) {
+      if (daily.getLastCompletedAt() != null && !daily.isStreakStillActive(today)) {
+        daily.breakStreak();
+      }
+      daily.changeStatus(TaskStatus.PENDING);
+      if (daily.getDueDate().isPresent() && daily.getDueDate().get().isBefore(today)) {
+        daily.advanceDueDateToAtLeast(today);
+      }
+      return new RolloverOutcome(true, false);
+    }
+
+    if (daily.getStatus() == TaskStatus.PENDING
+        && daily.getDueDate().isPresent()
+        && daily.getDueDate().get().isBefore(today)) {
+      daily.breakStreak();
+      if (catchUp) {
+        daily.advanceDueDateToAtLeast(today);
+        return new RolloverOutcome(true, false);
+      }
+      daily.shiftToNextOccurrence(today);
+      return new RolloverOutcome(true, true);
+    }
+
+    return new RolloverOutcome(false, false);
   }
 
   public int processOverdueHardcoreTodos(LocalDate today) {
@@ -183,7 +270,9 @@ public class DailyResetUseCase {
       List<User> expiredUsers = userPort.findUsersWithExpiredStreak(yesterdayStart);
       for (User user : expiredUsers) {
         user.resetStreak();
-        userPort.save(user);
+      }
+      if (!expiredUsers.isEmpty()) {
+        userPort.saveAll(expiredUsers);
       }
       return expiredUsers.size();
     });
@@ -224,7 +313,7 @@ public class DailyResetUseCase {
           task.getUserId(), task, penalty, TransactionType.TASK_FAILED, namePrefix, columnName));
     }
 
-    penalizedUsers.values().forEach(userPort::save);
+    userPort.saveAll(penalizedUsers.values());
   }
 
   private void rewardCleanNegativeHabits(List<UUID> cleanUserIds) {
@@ -245,6 +334,8 @@ public class DailyResetUseCase {
       }
     }
 
-    updatedUsers.values().forEach(userPort::save);
+    if (!updatedUsers.isEmpty()) {
+      userPort.saveAll(updatedUsers.values());
+    }
   }
 }

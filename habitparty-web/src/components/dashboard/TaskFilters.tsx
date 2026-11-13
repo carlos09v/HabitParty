@@ -238,7 +238,7 @@ export function TaskFilters({
                 <span className="text-xs font-bold text-neutral-100 flex items-center gap-1.5">
                   <SlidersHorizontal
                     size={13}
-                    className="text-amber-600 dark:text-gold"
+                    className="text-amber-700 dark:text-gold"
                   />
                   {t("advancedTitle")}
                 </span>

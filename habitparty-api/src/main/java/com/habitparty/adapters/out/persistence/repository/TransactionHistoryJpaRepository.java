@@ -27,6 +27,11 @@ public interface TransactionHistoryJpaRepository extends JpaRepository<Transacti
             LocalDateTime startOfDay,
             LocalDateTime endOfDay);
 
+    boolean existsByUser_IdAndTransactionTypeInAndCreatedAtGreaterThanEqual(
+            UUID userId,
+            List<TransactionType> types,
+            LocalDateTime since);
+
     // Busca geral paginada
     Page<TransactionHistoryJpaEntity> findAllByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
 
@@ -45,4 +50,7 @@ public interface TransactionHistoryJpaRepository extends JpaRepository<Transacti
     @Modifying
     @Query("DELETE FROM TransactionHistoryJpaEntity t WHERE t.referenceId IN :referenceIds AND t.user.id = :userId")
     int deleteAllByReferenceIdInAndUserId(@Param("referenceIds") List<UUID> referenceIds, @Param("userId") UUID userId);
+
+    @Query("SELECT COUNT(t) > 0 FROM TransactionHistoryJpaEntity t WHERE t.referenceId = :referenceId AND t.user.id = :userId")
+    boolean existsByReferenceIdAndUserId(@Param("referenceId") UUID referenceId, @Param("userId") UUID userId);
 }

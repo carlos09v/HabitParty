@@ -102,6 +102,8 @@
     "linkTarget": "Vincular",
     "linkTaskButton": "Vincular tarefa",
     "linkTaskTooltip": "Contabilizar este foco simultaneamente em uma tarefa pendente",
+    "linkedTaskLabel": "Tarefa vinculada",
+    "switchLinkedTask": "Trocar tarefa vinculada",
     "completeLinkedTask": "Concluir tarefa vinculada agora",
     "completeLinkedTaskShort": "Concluir tarefa",
     "unlinkTask": "Desvincular tarefa",

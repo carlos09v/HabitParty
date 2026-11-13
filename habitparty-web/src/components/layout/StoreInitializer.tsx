@@ -13,6 +13,7 @@ import type {
   ThemeMode,
   TimeFormat,
 } from "@/types/ui";
+import { getTodayDateString, parseServerDate } from "@/utils/date";
 import { getLevelProgress } from "@/utils/levels";
 
 type Workspace = components["schemas"]["WorkspaceResponseDTO"];
@@ -26,6 +27,31 @@ interface StoreInitializerProps {
   workspaces?: Workspace[];
   activeWorkspaceId?: string | null;
   user?: User | null;
+  lastTaskCompletionAt?: string | null;
+}
+
+function resolveSecuredStreakDateToday(
+  lastTaskCompletionAt?: string | null,
+): string | null {
+  if (!lastTaskCompletionAt) return null;
+  const parsed = parseServerDate(lastTaskCompletionAt);
+  if (!parsed) return null;
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  return parsed >= todayStart ? getTodayDateString() : null;
+}
+
+function buildHydratedStoreUser(user: User): User {
+  const progress = getLevelProgress(user.totalXp ?? 0);
+  return {
+    ...user,
+    currentLevelTitle: user.currentLevelTitle || progress.currentLevel.title,
+    nextLevelTitle: user.nextLevelTitle || progress.nextLevel.title,
+    xpToNextLevel:
+      user.xpToNextLevel !== undefined
+        ? user.xpToNextLevel
+        : progress.remainingXp,
+  };
 }
 
 export function StoreInitializer({
@@ -36,6 +62,7 @@ export function StoreInitializer({
   workspaces = [],
   activeWorkspaceId = null,
   user = null,
+  lastTaskCompletionAt = null,
 }: StoreInitializerProps) {
   const initialized = useRef(false);
 
@@ -60,7 +87,6 @@ export function StoreInitializer({
       });
     }
     if (user) {
-      const progress = getLevelProgress(user.totalXp ?? 0);
       if (
         user.avatarFrame &&
         AVATAR_FRAMES.some((f) => f.id === user.avatarFrame)
@@ -69,18 +95,14 @@ export function StoreInitializer({
           frameId: user.avatarFrame as AvatarFrameId,
         });
       }
+      const securedToday =
+        typeof window !== "undefined"
+          ? resolveSecuredStreakDateToday(lastTaskCompletionAt)
+          : null;
       useUserStore.setState({
-        user: {
-          ...user,
-          currentLevelTitle:
-            user.currentLevelTitle || progress.currentLevel.title,
-          nextLevelTitle: user.nextLevelTitle || progress.nextLevel.title,
-          xpToNextLevel:
-            user.xpToNextLevel !== undefined
-              ? user.xpToNextLevel
-              : progress.remainingXp,
-        },
+        user: buildHydratedStoreUser(user),
         is_Premium: user.isPremium ?? false,
+        ...(securedToday ? { lastStreakSecuredDate: securedToday } : {}),
       });
     }
     initialized.current = true;
@@ -104,16 +126,31 @@ export function StoreInitializer({
   useEffect(() => {
     if (!user) return;
 
-    const currentStoreUser = useUserStore.getState().user;
+    const currentState = useUserStore.getState();
+    const currentStoreUser = currentState.user;
+    const isDifferentUser = currentStoreUser?.id !== user.id;
+    const securedToday = resolveSecuredStreakDateToday(lastTaskCompletionAt);
+
     const shouldSyncUser =
-      currentStoreUser?.id !== user.id ||
+      isDifferentUser ||
       currentStoreUser?.emailVerified !== user.emailVerified ||
       currentStoreUser?.experienceMode !== user.experienceMode ||
       currentStoreUser?.isPremium !== user.isPremium ||
-      currentStoreUser?.totalXp !== user.totalXp;
+      currentStoreUser?.totalXp !== user.totalXp ||
+      currentStoreUser?.currentCoins !== user.currentCoins ||
+      currentStoreUser?.currentStreak !== user.currentStreak ||
+      currentStoreUser?.achievementPoints !== user.achievementPoints;
+
+    const nextSecuredDate =
+      securedToday !== null
+        ? securedToday
+        : isDifferentUser || (user.currentStreak ?? 0) === 0
+          ? null
+          : currentState.lastStreakSecuredDate;
+    const shouldSyncSecuredDate =
+      nextSecuredDate !== currentState.lastStreakSecuredDate;
 
     if (shouldSyncUser) {
-      const progress = getLevelProgress(user.totalXp ?? 0);
       if (
         user.experienceMode === "GAMIFIED" ||
         user.experienceMode === "PRODUCTIVITY"
@@ -121,20 +158,16 @@ export function StoreInitializer({
         useUIStore.setState({ experienceMode: user.experienceMode });
       }
       useUserStore.setState({
-        user: {
-          ...user,
-          currentLevelTitle:
-            user.currentLevelTitle || progress.currentLevel.title,
-          nextLevelTitle: user.nextLevelTitle || progress.nextLevel.title,
-          xpToNextLevel:
-            user.xpToNextLevel !== undefined
-              ? user.xpToNextLevel
-              : progress.remainingXp,
-        },
+        user: buildHydratedStoreUser(user),
         is_Premium: user.isPremium ?? false,
+        ...(shouldSyncSecuredDate
+          ? { lastStreakSecuredDate: nextSecuredDate }
+          : {}),
       });
+    } else if (shouldSyncSecuredDate) {
+      useUserStore.setState({ lastStreakSecuredDate: nextSecuredDate });
     }
-  }, [user]);
+  }, [user, lastTaskCompletionAt]);
 
   return null;
 }

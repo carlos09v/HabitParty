@@ -34,7 +34,9 @@ export interface DashboardData {
   user: UserResponseDTO | null;
 }
 
-async function getDashboardTransactions(): Promise<TransactionHistoryDTO[]> {
+export async function getDashboardTransactions(): Promise<
+  TransactionHistoryDTO[]
+> {
   "use cache: private";
   cacheLife("private30");
   cacheTag("transactions");

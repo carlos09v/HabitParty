@@ -35,8 +35,14 @@
       "NONE": "Nenhum",
       "BASIC": "Básico (30m)",
       "PREMIUM": "Premium (60m)",
-      "EPIC": "Épico (120m)",
-      "LEGENDARY": "Lendário (240m)"
+      "EPIC": "Épico (180m)",
+      "LEGENDARY": "Lendário (480m)"
+    },
+    "singleUseTiers": {
+      "BASIC": "Mimo Rápido (8)",
+      "PREMIUM": "Diário (16)",
+      "EPIC": "Semanal (60)",
+      "LEGENDARY": "Épico (180)"
     },
     "sort": {
       "default": "Ordem Padrão",
@@ -123,6 +129,30 @@
     "suggestedPriceByRarity": "(Preço sugerido por raridade)",
     "pricePlaceholder": "Ex: 5, 15, 35 ou 80",
     "mysteryBoxPriceHelper": "Você pode manter o preço calibrado para o pacote ou personalizá-lo livremente.",
+    "singleUseTiersLabel": "Horizonte sugerido",
+    "singleUseTiersHint": "(opcional • guia de esforço)",
+    "priceGuidance": {
+      "suggestedLabel": "Sugerido:",
+      "applySuggested": "Usar {price}",
+      "effortPrefix": "Esforço equivalente:",
+      "tooLowTitle": "Preço muito abaixo do padrão",
+      "tooHighTitle": "Preço muito acima do padrão",
+      "effort": {
+        "free": "Gratuito (sem custo)",
+        "easyTasks": "~{count, plural, one {# tarefa Fácil} other {# tarefas Fáceis}}",
+        "hardSingleTask": "~1 Tarefa Difícil",
+        "mediumTasks": "~{count, plural, one {# tarefa Média} other {# tarefas Médias}}",
+        "halfDayMix": "~1 Difícil + 1 Média + 1h foco (~½ dia produtivo)",
+        "oneProductiveDay": "~1 dia produtivo (ou ~{hardCount} Tarefas Difíceis)",
+        "multipleProductiveDays": "~{days} dias produtivos"
+      },
+      "warnings": {
+        "belowCalibrated": "Bem abaixo do calibrado ({price} moedas) — pode ficar fácil demais e tirar o peso da conquista.",
+        "aboveCalibrated": "Mais que o dobro do calibrado ({price} moedas) — cuidado para não gerar frustração.",
+        "singleUseTooLow": "Valor muito baixo — recompensas triviais costumam perder o brilho motivacional.",
+        "singleUseTooHigh": "Meta bem longa — avalie quebrar em recompensas intermediárias para não desanimar."
+      }
+    },
     "mysteryBoxAdventureHint": "A Caixa Misteriosa está disponível no Modo Aventura. Ative o modo em Configurações > Preferências para desbloqueá-la!",
     "cancel": "Cancelar",
     "saving": "Salvando...",

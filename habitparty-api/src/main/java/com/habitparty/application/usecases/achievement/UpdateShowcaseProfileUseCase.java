@@ -2,10 +2,13 @@ package com.habitparty.application.usecases.achievement;
 
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.application.usecases.user.EffectiveStreakResolver;
+import com.habitparty.application.usecases.user.EffectiveStreakResolver.UserWithEffectiveStreak;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
@@ -13,12 +16,24 @@ import com.habitparty.core.exceptions.ResourceNotFoundException;
 public class UpdateShowcaseProfileUseCase {
   private final UserRepository userPort;
   private final EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
+  private final EffectiveStreakResolver effectiveStreakResolver;
+
+  @Autowired
+  public UpdateShowcaseProfileUseCase(
+      UserRepository userPort,
+      EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase,
+      EffectiveStreakResolver effectiveStreakResolver) {
+    this.userPort = userPort;
+    this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
+    this.effectiveStreakResolver = effectiveStreakResolver != null
+        ? effectiveStreakResolver
+        : new EffectiveStreakResolver(null);
+  }
 
   public UpdateShowcaseProfileUseCase(
       UserRepository userPort,
       EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
-    this.userPort = userPort;
-    this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
+    this(userPort, evaluateUserAchievementsUseCase, new EffectiveStreakResolver(null));
   }
 
   public record UpdateShowcaseProfileCommand(String bio, String avatarFrame) {}
@@ -32,5 +47,11 @@ public class UpdateShowcaseProfileUseCase {
     User saved = userPort.save(user);
     evaluateUserAchievementsUseCase.execute(saved);
     return saved;
+  }
+
+  @Transactional
+  public UserWithEffectiveStreak executeWithEffectiveStreak(
+      UUID userId, UpdateShowcaseProfileCommand command) {
+    return effectiveStreakResolver.wrap(execute(userId, command));
   }
 }

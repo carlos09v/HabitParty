@@ -76,6 +76,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/tasks/{taskId}/has-history": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Verifica histórico da tarefa
+     * @description Retorna se a tarefa possui registros no histórico (transações ou sessões de foco avulsas).
+     */
+    get: operations["checkTaskHasHistory"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/tasks/search": {
     parameters: {
       query?: never;
@@ -1244,11 +1264,16 @@ export interface components {
       sendEmailReminder?: boolean;
       emailReminderSent?: boolean;
       isRewardClaimed?: boolean;
+      /** Format: date-time */
+      lastCompletedAt?: string;
       /** Format: int32 */
       totalFocusMinutes?: number;
       /** Format: int32 */
       focusCyclesCount?: number;
       checklist?: components["schemas"]["ChecklistItemResponseDTO"][];
+    };
+    TaskHistoryStatusResponseDTO: {
+      hasHistory?: boolean;
     };
     WorkspaceResponseDTO: {
       /** Format: uuid */
@@ -1975,6 +2000,28 @@ export interface operations {
         };
         content: {
           "*/*": components["schemas"]["TaskResponseDTO"];
+        };
+      };
+    };
+  };
+  checkTaskHasHistory: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        taskId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["TaskHistoryStatusResponseDTO"];
         };
       };
     };

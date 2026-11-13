@@ -35,8 +35,14 @@
       "NONE": "None",
       "BASIC": "Basic (30m)",
       "PREMIUM": "Premium (60m)",
-      "EPIC": "Epic (120m)",
-      "LEGENDARY": "Legendary (240m)"
+      "EPIC": "Epic (180m)",
+      "LEGENDARY": "Legendary (480m)"
+    },
+    "singleUseTiers": {
+      "BASIC": "Quick Treat (8)",
+      "PREMIUM": "Daily (16)",
+      "EPIC": "Weekly (60)",
+      "LEGENDARY": "Epic (180)"
     },
     "sort": {
       "default": "Default Order",
@@ -123,6 +129,30 @@
     "suggestedPriceByRarity": "(Suggested price by rarity)",
     "pricePlaceholder": "E.g., 5, 15, 35, or 80",
     "mysteryBoxPriceHelper": "You can keep the calibrated price for the package or customize it freely.",
+    "singleUseTiersLabel": "Suggested horizon",
+    "singleUseTiersHint": "(optional • effort guide)",
+    "priceGuidance": {
+      "suggestedLabel": "Suggested:",
+      "applySuggested": "Use {price}",
+      "effortPrefix": "Effort equivalent:",
+      "tooLowTitle": "Price well below standard",
+      "tooHighTitle": "Price well above standard",
+      "effort": {
+        "free": "Free (no effort required)",
+        "easyTasks": "~{count, plural, one {# Easy task} other {# Easy tasks}}",
+        "hardSingleTask": "~1 Hard task",
+        "mediumTasks": "~{count, plural, one {# Medium task} other {# Medium tasks}}",
+        "halfDayMix": "~1 Hard + 1 Medium + 1h focus (~½ productive day)",
+        "oneProductiveDay": "~1 productive day (or ~{hardCount} Hard tasks)",
+        "multipleProductiveDays": "~{days} productive days"
+      },
+      "warnings": {
+        "belowCalibrated": "Well below the calibrated {price} coins — too easy to farm and may reduce the sense of achievement.",
+        "aboveCalibrated": "Over 2× the calibrated {price} coins — watch out for frustration or burnout.",
+        "singleUseTooLow": "Very low cost — trivial rewards can quickly lose motivational impact.",
+        "singleUseTooHigh": "Long-horizon milestone — consider splitting into intermediate rewards to avoid frustration."
+      }
+    },
     "mysteryBoxAdventureHint": "The Mystery Box is available in Adventure Mode. Enable it in Settings > Preferences to unlock it!",
     "cancel": "Cancel",
     "saving": "Saving...",

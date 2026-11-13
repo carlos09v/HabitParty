@@ -12,6 +12,7 @@ import {
   getTodayDateString,
   getTodayTasks,
   getTodayXp,
+  hasCompletedTaskInTransactionsToday,
 } from "@/utils/dashboardMetrics";
 
 /**
@@ -24,6 +25,7 @@ export function DashboardDailyBriefing({
   streak,
   tasks,
   transactions,
+  hasOptimisticCompletionToday = false,
 }: DashboardDailyBriefingProps) {
   const t = useTranslations("dashboard.dailyBriefing");
   const { isGamified } = useExperienceMode();
@@ -61,23 +63,32 @@ export function DashboardDailyBriefing({
   const isAfterNoon = currentHour >= 12;
   const hoursLeft = Math.max(1, 24 - currentHour);
 
+  const hasCompletedTxToday = hasCompletedTaskInTransactionsToday(
+    transactions,
+    now,
+  );
+  const hasCompletedAnyTaskToday =
+    completedTodayTasks > 0 ||
+    hasCompletedTxToday ||
+    hasOptimisticCompletionToday;
+
   let streakBadgeText: string;
   let streakBadgeClass =
-    "text-xs font-semibold text-orange-600 dark:text-orange-400 whitespace-nowrap overflow-visible";
+    "text-xs font-semibold text-orange-700 dark:text-orange-400 whitespace-nowrap overflow-visible";
 
-  if (isHydrated && isAfterNoon && completedTodayTasks === 0) {
+  if (hasCompletedAnyTaskToday) {
+    streakBadgeText = t("streakSecuredBadge");
+  } else if (isHydrated && isAfterNoon) {
     streakBadgeText = t("streakRemainingHours", { hours: hoursLeft });
     streakBadgeClass =
-      "text-xs font-semibold text-amber-500 dark:text-amber-400 whitespace-nowrap overflow-visible";
-  } else if (completedTodayTasks > 0) {
-    streakBadgeText = t("streakSecuredBadge");
+      "text-xs font-semibold text-amber-700 dark:text-amber-400 whitespace-nowrap overflow-visible";
   } else {
     streakBadgeText =
       streak > 0 ? t("streakActiveBadge") : t("streakStartBadge");
   }
 
   const streakBadgeTitle =
-    isHydrated && isAfterNoon && completedTodayTasks === 0
+    isHydrated && isAfterNoon && !hasCompletedAnyTaskToday
       ? t("streakRemainingHours", { hours: hoursLeft })
       : streak > 0
         ? t("streakActiveTitle")
@@ -162,8 +173,8 @@ export function DashboardDailyBriefing({
                 className={cn(
                   "font-bold",
                   isAllCompleted
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-amber-600 dark:text-gold",
+                    ? "text-emerald-700 dark:text-emerald-400"
+                    : "text-amber-700 dark:text-gold",
                 )}
                 suppressHydrationWarning
               >
@@ -198,7 +209,7 @@ export function DashboardDailyBriefing({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
         {/* Card 1: Ofensiva */}
         <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-white dark:bg-white/5 border border-neutral-700 dark:border-white/10 shadow-xs dark:shadow-none hover:border-orange-500/30 transition-colors min-w-0">
-          <div className="w-11 h-11 rounded-lg bg-orange-500/10 dark:bg-orange-500/15 border border-orange-500/20 dark:border-orange-500/30 flex items-center justify-center text-orange-600 dark:text-orange-400 shrink-0">
+          <div className="w-11 h-11 rounded-lg bg-orange-500/10 dark:bg-orange-500/15 border border-orange-500/20 dark:border-orange-500/30 flex items-center justify-center text-orange-700 dark:text-orange-400 shrink-0">
             <Flame size={22} aria-hidden="true" />
           </div>
           <div className="flex flex-col min-w-0 flex-1">
@@ -229,8 +240,8 @@ export function DashboardDailyBriefing({
             className={cn(
               "w-11 h-11 rounded-lg flex items-center justify-center shrink-0 border",
               isAllCompleted
-                ? "bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500/20 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-                : "bg-indigo-500/10 dark:bg-blue-500/15 border-indigo-500/20 dark:border-blue-500/30 text-indigo-600 dark:text-blue-400",
+                ? "bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500/20 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400"
+                : "bg-indigo-500/10 dark:bg-blue-500/15 border-indigo-500/20 dark:border-blue-500/30 text-indigo-700 dark:text-blue-400",
             )}
           >
             <Target size={22} aria-hidden="true" />
@@ -242,7 +253,7 @@ export function DashboardDailyBriefing({
             <span
               className={cn(
                 "text-base sm:text-lg font-extrabold truncate",
-                totalTodayTasks > 0 ? "text-neutral-100" : "text-neutral-500",
+                totalTodayTasks > 0 ? "text-neutral-100" : "text-neutral-400",
               )}
               suppressHydrationWarning
             >
@@ -259,7 +270,7 @@ export function DashboardDailyBriefing({
                 totalTodayTasks === 0
                   ? "text-neutral-400"
                   : isAllCompleted
-                    ? "text-emerald-600 dark:text-emerald-400"
+                    ? "text-emerald-700 dark:text-emerald-400"
                     : "text-neutral-300",
               )}
               title={
@@ -286,7 +297,7 @@ export function DashboardDailyBriefing({
 
         {/* Card 3: XP / Pontos Acumulados Hoje */}
         <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-white dark:bg-white/5 border border-neutral-700 dark:border-white/10 shadow-xs dark:shadow-none hover:border-amber-500/30 dark:hover:border-gold/30 transition-colors min-w-0">
-          <div className="w-11 h-11 rounded-lg bg-amber-500/10 dark:bg-gold/15 border border-amber-500/20 dark:border-gold/30 flex items-center justify-center text-amber-600 dark:text-gold shrink-0">
+          <div className="w-11 h-11 rounded-lg bg-amber-500/10 dark:bg-gold/15 border border-amber-500/20 dark:border-gold/30 flex items-center justify-center text-amber-700 dark:text-gold shrink-0">
             <Sparkles size={22} aria-hidden="true" />
           </div>
           <div className="flex flex-col min-w-0 flex-1">
@@ -299,8 +310,8 @@ export function DashboardDailyBriefing({
               className={cn(
                 "text-base sm:text-lg font-extrabold truncate",
                 todayXp > 0
-                  ? "text-amber-600 dark:text-gold"
-                  : "text-neutral-500",
+                  ? "text-amber-700 dark:text-gold"
+                  : "text-neutral-400",
               )}
               suppressHydrationWarning
             >

@@ -21,6 +21,7 @@ export const RoutineColumn = memo(function RoutineColumn({
   column,
   isSelected = false,
   selectedTaskId,
+  deletingTaskIds,
   isCompact: propIsCompact,
   widthPreset = "normal",
   onAddTaskToColumn,
@@ -315,6 +316,7 @@ export const RoutineColumn = memo(function RoutineColumn({
                 task={task}
                 columnId={column.id}
                 isSelected={selectedTaskId === task.id}
+                isDeleteChecking={Boolean(deletingTaskIds?.has(task.id))}
                 isCompact={isCompact || widthPreset === "compact"}
                 onOpenDetails={onOpenDetails}
                 onEditTask={onEditTask}
@@ -365,6 +367,7 @@ export const RoutineColumn = memo(function RoutineColumn({
                       task={task}
                       columnId={column.id}
                       isSelected={selectedTaskId === task.id}
+                      isDeleteChecking={Boolean(deletingTaskIds?.has(task.id))}
                       isCompact={isCompact || widthPreset === "compact"}
                       onOpenDetails={onOpenDetails}
                       onEditTask={onEditTask}

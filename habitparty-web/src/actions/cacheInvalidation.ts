@@ -23,6 +23,7 @@ export function invalidateTaskDomainTags(
   if (options.includeUserAndTransactions) {
     updateTag("user");
     updateTag("transactions");
+    // Showcase já compartilha a tag "user", então mantemos invalidação consistente.
     updateTag("showcase");
   }
 }

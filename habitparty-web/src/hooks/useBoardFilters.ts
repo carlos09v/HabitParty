@@ -7,6 +7,10 @@ import {
   normalizeTaskType,
 } from "@/constants/task";
 import type { BoardColumn, BoardFilterState } from "@/types/task";
+import {
+  doesTaskMatchTagFilter,
+  extractAvailableTagOptions,
+} from "@/utils/tags";
 
 /**
  * Hook dedicado ao controle de busca, filtros de tags, tipos, dificuldade e status no Kanban.
@@ -22,19 +26,9 @@ export function useBoardFilters(
     DEFAULT_BOARD_FILTERS,
   );
 
-  // Lista de tags únicas presentes nas tarefas atuais para o filtro
+  // Lista de tags únicas presentes nas tarefas atuais (com ancestrais hierárquicos expostos para filtro)
   const availableTags = useMemo(() => {
-    const tagSet = new Set<string>();
-    for (const col of columns) {
-      for (const task of col.tasks) {
-        if (task.tags && Array.isArray(task.tags)) {
-          for (const t of task.tags) {
-            if (t?.trim()) tagSet.add(t.trim());
-          }
-        }
-      }
-    }
-    return Array.from(tagSet);
+    return extractAvailableTagOptions(columns.flatMap((col) => col.tasks));
   }, [columns]);
 
   // Colunas com tarefas filtradas aplicadas em memória
@@ -86,12 +80,9 @@ export function useBoardFilters(
         if (filters.status === "completed" && !task.completed) return false;
         if (filters.status === "pending" && task.completed) return false;
 
-        // 6. Filtro por Tag
-        if (filters.tag) {
-          const hasTag =
-            task.tags?.includes(filters.tag) ||
-            (task.category && task.category === filters.tag);
-          if (!hasTag) return false;
+        // 6. Filtro por Tag (suporta tags hierárquicas: selecionar pai casa filhos)
+        if (filters.tag && !doesTaskMatchTagFilter(task, filters.tag)) {
+          return false;
         }
 
         return true;

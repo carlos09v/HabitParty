@@ -26,6 +26,12 @@ public interface FocusRecordRepository {
 
   void deleteById(UUID id);
 
+  default void deleteAllByIds(List<UUID> ids) {
+    if (ids != null) {
+      ids.forEach(this::deleteById);
+    }
+  }
+
   // Cascade Delete
   void deleteAllByFocusActivityId(UUID focusActivityId);
 
@@ -46,4 +52,7 @@ public interface FocusRecordRepository {
   int sumFocusMinutesToday(UUID userId);
 
   void deleteAllByUserId(UUID userId);
+
+  // Verifica se há registros de foco avulsos (sem atividade de foco vinculada) para a tarefa
+  boolean existsStandaloneByTaskId(UUID taskId);
 }

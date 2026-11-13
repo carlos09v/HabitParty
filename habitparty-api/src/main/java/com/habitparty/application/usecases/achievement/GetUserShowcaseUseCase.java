@@ -28,6 +28,25 @@ public class GetUserShowcaseUseCase {
   private final UserAchievementRepository userAchievementPort;
   private final ProfileHighlightRepository profileHighlightPort;
   private final EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
+  private final com.habitparty.application.usecases.user.EffectiveStreakResolver effectiveStreakResolver;
+
+  @org.springframework.beans.factory.annotation.Autowired
+  public GetUserShowcaseUseCase(
+      UserRepository userPort,
+      AchievementRepository achievementPort,
+      UserAchievementRepository userAchievementPort,
+      ProfileHighlightRepository profileHighlightPort,
+      EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase,
+      com.habitparty.application.usecases.user.EffectiveStreakResolver effectiveStreakResolver) {
+    this.userPort = userPort;
+    this.achievementPort = achievementPort;
+    this.userAchievementPort = userAchievementPort;
+    this.profileHighlightPort = profileHighlightPort;
+    this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
+    this.effectiveStreakResolver = effectiveStreakResolver != null
+        ? effectiveStreakResolver
+        : new com.habitparty.application.usecases.user.EffectiveStreakResolver(null);
+  }
 
   public GetUserShowcaseUseCase(
       UserRepository userPort,
@@ -35,11 +54,13 @@ public class GetUserShowcaseUseCase {
       UserAchievementRepository userAchievementPort,
       ProfileHighlightRepository profileHighlightPort,
       EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
-    this.userPort = userPort;
-    this.achievementPort = achievementPort;
-    this.userAchievementPort = userAchievementPort;
-    this.profileHighlightPort = profileHighlightPort;
-    this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
+    this(
+        userPort,
+        achievementPort,
+        userAchievementPort,
+        profileHighlightPort,
+        evaluateUserAchievementsUseCase,
+        new com.habitparty.application.usecases.user.EffectiveStreakResolver(null));
   }
 
   public record AchievementProgressItem(
@@ -52,6 +73,7 @@ public class GetUserShowcaseUseCase {
 
   public record UserShowcaseResult(
       User user,
+      int effectiveStreak,
       List<ProfileHighlight> highlights,
       List<AchievementProgressItem> achievements,
       int unlockedCount,
@@ -117,6 +139,7 @@ public class GetUserShowcaseUseCase {
 
     return new UserShowcaseResult(
         user,
+        effectiveStreakResolver.resolve(user),
         highlights,
         items,
         unlockedCount,

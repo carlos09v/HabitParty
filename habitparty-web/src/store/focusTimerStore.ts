@@ -10,6 +10,7 @@ import {
 } from "@/constants/focus";
 import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
 import { useUIStore } from "@/store/uiStore";
+import { useUserStore } from "@/store/userStore";
 import type {
   FocusActivity,
   FocusPhase,
@@ -18,7 +19,7 @@ import type {
 } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
-import { toLocalISOString } from "@/utils/date";
+import { getTodayDateString, toLocalISOString } from "@/utils/date";
 import { formatDurationMinSec } from "@/utils/focusFormatters";
 import {
   optimizedFocusStorage,
@@ -893,6 +894,9 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         try {
           const res = await changeTaskStatus(taskId, "COMPLETED");
           if (res.success) {
+            useUserStore
+              .getState()
+              .markStreakSecuredToday(getTodayDateString());
             triggerCelebrationConfetti();
             toast.success(
               tStoreMsg("linkedTaskCompletedToast", {
@@ -905,6 +909,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
                   detail: { taskId, updatedTask: res.data },
                 }),
               );
+              window.dispatchEvent(new CustomEvent("habitparty:tasks-changed"));
             }
             set((prev) => {
               if (!prev.target) return prev;

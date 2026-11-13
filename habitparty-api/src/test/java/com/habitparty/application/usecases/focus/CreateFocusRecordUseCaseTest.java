@@ -114,7 +114,7 @@ class CreateFocusRecordUseCaseTest {
   @DisplayName("Sessão de atividade produtiva deve calcular XP/Gold, creditar no User e registrar transação")
   void shouldCreditUserAndLogTransactionForProductiveFocus() {
     LocalDateTime start = LocalDateTime.of(2026, 10, 16, 9, 0);
-    LocalDateTime end = LocalDateTime.of(2026, 10, 16, 9, 30); // 30 min, 1 pomo -> 8 XP, 0.25 moedas
+    LocalDateTime end = LocalDateTime.of(2026, 10, 16, 9, 30); // 30 min, 1 pomo -> 8 XP, 0.50 moedas
 
     CreateFocusRecordCommand command = new CreateFocusRecordCommand(
         activityId,
@@ -145,11 +145,11 @@ class CreateFocusRecordUseCaseTest {
 
     assertNotNull(result);
     assertEquals(8, result.getXpEarned().orElse(0));
-    assertEquals(new BigDecimal("0.25"), result.getCoinsEarned().orElse(BigDecimal.ZERO));
+    assertEquals(new BigDecimal("0.50"), result.getCoinsEarned().orElse(BigDecimal.ZERO));
 
     // Verifica que o User recebeu o XP e as moedas
     assertEquals(8, user.getTotalXp());
-    assertEquals(new BigDecimal("0.25"), user.getCurrentCoins());
+    assertEquals(new BigDecimal("0.50"), user.getCurrentCoins());
     verify(userPort).save(user);
 
     // Verifica que a transação foi salva com os valores corretos
@@ -158,7 +158,7 @@ class CreateFocusRecordUseCaseTest {
     TransactionHistory tx = txCaptor.getValue();
     assertEquals(TransactionType.FOCUS_COMPLETED, tx.getTransactionType());
     assertEquals(8, tx.getXpAmount());
-    assertEquals(Optional.of(new BigDecimal("0.25")), tx.getGoldAmount());
+    assertEquals(Optional.of(new BigDecimal("0.50")), tx.getGoldAmount());
     assertEquals("Estudos", tx.getNameSnapshot());
   }
 

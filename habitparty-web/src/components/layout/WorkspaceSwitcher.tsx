@@ -413,7 +413,7 @@ export function WorkspaceSwitcher({
                       <ChevronDown
                         size={13}
                         className={cn(
-                          "text-gold/70 transition-transform duration-200",
+                          "text-amber-700 dark:text-gold/70 transition-transform duration-200",
                           isBlockedExpanded && "rotate-180",
                         )}
                       />

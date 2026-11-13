@@ -26,6 +26,7 @@ export function TaskTable({
   selectedDate,
   onPageChange,
   isCompact = false,
+  deletingTaskIds,
 }: TaskTableProps) {
   const t = useTranslations("dashboard.taskTable");
   const locale = useLocale() as AppLocale;
@@ -120,6 +121,7 @@ export function TaskTable({
                 task={task}
                 activeFilter={activeFilter}
                 selectedDate={selectedDate}
+                isDeleteChecking={Boolean(deletingTaskIds?.has(task.id))}
                 onToggle={onToggle}
                 onHabitChange={onHabitChange}
                 onContextMenu={onContextMenu}

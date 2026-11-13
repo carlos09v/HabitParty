@@ -47,32 +47,32 @@ public final class FocusRewardCalculator {
         // Anti-exploit: muitos pomos declarados para pouco tempo decorrido
         baseXp = (effectiveMinutes / 30.0) * 6.0;
         baseCoins = BigDecimal.valueOf(effectiveMinutes)
-            .multiply(new BigDecimal("0.15"))
+            .multiply(new BigDecimal("0.30"))
             .divide(BigDecimal.valueOf(30), 4, RoundingMode.HALF_UP);
       } else if (minutesPerPomo < 25) {
         // Pomodoro curto (15 a 24 min)
         baseXp = completedPomos * 4.0;
-        baseCoins = new BigDecimal("0.10").multiply(BigDecimal.valueOf(completedPomos));
+        baseCoins = new BigDecimal("0.25").multiply(BigDecimal.valueOf(completedPomos));
       } else if (minutesPerPomo <= 40) {
         // Pomodoro padrão (25 a 40 min)
         baseXp = completedPomos * 8.0;
-        baseCoins = new BigDecimal("0.25").multiply(BigDecimal.valueOf(completedPomos));
+        baseCoins = new BigDecimal("0.50").multiply(BigDecimal.valueOf(completedPomos));
       } else {
         // Pomodoro longo / Deep work (> 40 min)
         baseXp = completedPomos * 15.0;
-        baseCoins = new BigDecimal("0.50").multiply(BigDecimal.valueOf(completedPomos));
+        baseCoins = new BigDecimal("1.00").multiply(BigDecimal.valueOf(completedPomos));
       }
     } else if (type == FocusRecordType.POMO) {
       // Pomodoro com tempo válido >= 10m mas sem ciclo concluído formalmente
       baseXp = (effectiveMinutes / 30.0) * 6.0;
       baseCoins = BigDecimal.valueOf(effectiveMinutes)
-          .multiply(new BigDecimal("0.15"))
+          .multiply(new BigDecimal("0.30"))
           .divide(BigDecimal.valueOf(30), 4, RoundingMode.HALF_UP);
     } else {
-      // STOPWATCH (Cronômetro Livre): ~7 XP e 0,20 moedas a cada bloco de 30 minutos
+      // STOPWATCH (Cronômetro Livre): ~7 XP e 0,40 moedas a cada bloco de 30 minutos
       baseXp = (effectiveMinutes / 30.0) * 7.0;
       baseCoins = BigDecimal.valueOf(effectiveMinutes)
-          .multiply(new BigDecimal("0.20"))
+          .multiply(new BigDecimal("0.40"))
           .divide(BigDecimal.valueOf(30), 4, RoundingMode.HALF_UP);
     }
 

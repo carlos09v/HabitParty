@@ -14,6 +14,7 @@ import type { AppLocale } from "@/i18n/config";
 import { useUIStore } from "@/store/uiStore";
 import type { Task } from "@/types/task";
 import { getTaskDueDateInfo } from "@/utils/date";
+import { getTagLeafLabel } from "@/utils/tags";
 
 export interface UseTaskCardItemOptions {
   task: Task;
@@ -77,12 +78,15 @@ export function useTaskItemMeta({
     ? "border-l-danger-500 hover:border-l-danger-500"
     : getTaskBorderClass(task);
 
-  const displayTag =
+  const rawDisplayTag =
     task.tags && task.tags.length > 0
       ? task.tags[0]
       : task.category && task.category !== "Geral"
         ? task.category
         : null;
+
+  const displayTag = rawDisplayTag ? getTagLeafLabel(rawDisplayTag) : null;
+  const displayTagTitle = rawDisplayTag;
 
   const hasExtraTags = Boolean(task.tags && task.tags.length > 1);
   const extraTagsCount =
@@ -119,6 +123,7 @@ export function useTaskItemMeta({
     borderClass,
     dueDateInfo,
     displayTag,
+    displayTagTitle,
     hasExtraTags,
     extraTagsCount,
     priorityMeta,

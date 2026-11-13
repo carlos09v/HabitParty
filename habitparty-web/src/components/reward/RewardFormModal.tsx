@@ -22,10 +22,16 @@ import {
   REWARD_FORM_TYPE_KEYS,
   REWARD_ICONS,
   REWARD_TYPE_META,
+  SINGLE_USE_TIER_OPTIONS,
 } from "@/constants/reward";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useRewardForm } from "@/hooks/useRewardForm";
-import type { Reward, RewardCategory, RewardType } from "@/types/reward";
+import type {
+  PackageLevel,
+  Reward,
+  RewardCategory,
+  RewardType,
+} from "@/types/reward";
 import { cn } from "@/utils";
 import {
   toCategoryMessageKey,
@@ -34,6 +40,73 @@ import {
 } from "@/utils/rewardMapper";
 import { MysteryBoxLootEditor } from "./MysteryBoxLootEditor";
 import { MysteryBoxSelector } from "./MysteryBoxSelector";
+import { RewardPriceGuidance } from "./RewardPriceGuidance";
+
+interface RewardPriceFieldProps {
+  label: string;
+  hint?: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  disabled: boolean;
+  guidanceType?: RewardType;
+  packageLevel?: PackageLevel;
+  onApplySuggestedPrice?: (suggestedPrice: number) => void;
+}
+
+function RewardPriceField({
+  label,
+  hint,
+  value,
+  onChange,
+  placeholder,
+  disabled,
+  guidanceType,
+  packageLevel,
+  onApplySuggestedPrice,
+}: RewardPriceFieldProps) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <label
+          htmlFor="rewardPrice"
+          className="text-body-s text-neutral-100 font-medium"
+        >
+          {label} <span className="text-gold">*</span>
+        </label>
+        {hint && (
+          <span className="text-label-m text-amber-700 dark:text-gold font-medium">
+            {hint}
+          </span>
+        )}
+      </div>
+      <Input
+        id="rewardPrice"
+        type="number"
+        step="any"
+        min="0"
+        max={99999}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        compact
+        icon={<CoinIcon size={16} withGlow />}
+        className="font-bold h-[42px]"
+        required
+        disabled={disabled}
+      />
+      {guidanceType && (
+        <RewardPriceGuidance
+          type={guidanceType}
+          price={value}
+          packageLevel={packageLevel}
+          onApplySuggestedPrice={onApplySuggestedPrice}
+          disabled={disabled}
+        />
+      )}
+    </div>
+  );
+}
 
 interface RewardFormModalProps {
   isOpen: boolean;
@@ -65,7 +138,8 @@ export function RewardFormModal({
     description,
     setDescription,
     price,
-    setPrice,
+    handlePriceChange,
+    applySuggestedPrice,
     type,
     handleTypeChange,
     category,
@@ -75,6 +149,7 @@ export function RewardFormModal({
     handleMysteryBoxTierSelect,
     baseDurationMinutes,
     setBaseDurationMinutes,
+    handleBaseDurationChange,
     selectedIcon,
     handleIconSelect,
     lootItems,
@@ -254,13 +329,13 @@ export function RewardFormModal({
                   max={1440}
                   step={5}
                   value={baseDurationMinutes}
-                  onChange={(e) => setBaseDurationMinutes(e.target.value)}
+                  onChange={(e) => handleBaseDurationChange(e.target.value)}
                   onBlur={() => {
                     if (
                       !baseDurationMinutes ||
                       Number(baseDurationMinutes) < 5
                     ) {
-                      setBaseDurationMinutes("5");
+                      handleBaseDurationChange("5");
                     }
                   }}
                   placeholder={t("durationPlaceholder")}
@@ -271,31 +346,25 @@ export function RewardFormModal({
               </div>
 
               {/* Custo */}
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="rewardPrice"
-                  className="text-body-s text-neutral-100 font-medium"
-                >
-                  {isGamified ? t("priceLabel") : t("priceLabelProductivity")}{" "}
-                  <span className="text-gold">*</span>
-                </label>
-                <Input
-                  id="rewardPrice"
-                  type="number"
-                  step="any"
-                  min="0"
-                  max={99999}
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  placeholder={t("pricePlaceholder")}
-                  compact
-                  icon={<CoinIcon size={16} withGlow />}
-                  className="font-bold h-[42px]"
-                  required
-                  disabled={isPending}
-                />
-              </div>
+              <RewardPriceField
+                label={
+                  isGamified ? t("priceLabel") : t("priceLabelProductivity")
+                }
+                value={price}
+                onChange={handlePriceChange}
+                placeholder={t("pricePlaceholder")}
+                disabled={isPending}
+              />
             </div>
+
+            <RewardPriceGuidance
+              type={type}
+              price={price}
+              durationMinutes={baseDurationMinutes}
+              packageLevel={packageLevel}
+              onApplySuggestedPrice={applySuggestedPrice}
+              disabled={isPending}
+            />
 
             {/* Chips de Pacote / Atalhos de Tempo */}
             <div className="flex flex-col gap-1.5 pt-0.5">
@@ -328,13 +397,13 @@ export function RewardFormModal({
                           setBaseDurationMinutes(String(pkg.suggestedMinutes));
                         }
                         if (typeof pkg.suggestedPrice === "number") {
-                          setPrice(String(pkg.suggestedPrice));
+                          applySuggestedPrice(pkg.suggestedPrice);
                         } else {
                           const proportionalPrice =
                             calculateSuggestedCouponPrice(
                               Number(baseDurationMinutes) || 30,
                             );
-                          setPrice(String(proportionalPrice));
+                          applySuggestedPrice(proportionalPrice);
                         }
                       }}
                       className={cn(
@@ -363,65 +432,73 @@ export function RewardFormModal({
             </div>
           </div>
         ) : type === "SingleUse" ? (
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="rewardPrice"
-              className="text-body-s text-neutral-100 font-medium"
-            >
-              {isGamified ? t("priceLabel") : t("priceLabelProductivity")}{" "}
-              <span className="text-gold">*</span>
-            </label>
-            <Input
-              id="rewardPrice"
-              type="number"
-              step="any"
-              min="0"
-              max={99999}
+          <div className="flex flex-col gap-3 p-3.5 rounded-xl bg-background border border-neutral-700 dark:bg-surface/30 dark:border-white/10">
+            {/* Custo */}
+            <RewardPriceField
+              label={isGamified ? t("priceLabel") : t("priceLabelProductivity")}
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              onChange={handlePriceChange}
               placeholder={t("pricePlaceholder")}
-              compact
-              icon={<CoinIcon size={16} withGlow />}
-              className="font-bold h-[42px]"
-              required
               disabled={isPending}
+              guidanceType={type}
             />
+
+            {/* Atalhos opcionais de horizonte temporal para Uso Único */}
+            <div className="flex flex-col gap-1.5 pt-0.5">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-body-s text-neutral-100 font-medium">
+                  {t("singleUseTiersLabel")}
+                </span>
+                <span className="text-label-m text-neutral-400">
+                  {t("singleUseTiersHint")}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {SINGLE_USE_TIER_OPTIONS.map((tier) => {
+                  const isSelected =
+                    Number.parseFloat(price.replace(",", ".")) ===
+                    tier.suggestedPrice;
+
+                  return (
+                    <button
+                      key={tier.id}
+                      type="button"
+                      aria-pressed={isSelected}
+                      disabled={isPending}
+                      onClick={() => applySuggestedPrice(tier.suggestedPrice)}
+                      className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-label-g font-semibold transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer select-none active:scale-95",
+                        isSelected ? tier.selectedClass : tier.unselectedClass,
+                        isPending && "opacity-50 cursor-not-allowed",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "w-1.5 h-1.5 rounded-full shrink-0",
+                          tier.dotColor,
+                        )}
+                      />
+                      <span>{tOptions(`singleUseTiers.${tier.id}`)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         ) : (
           /* MysteryBox: Custo em destaque seguido por Seletor e Editor de Prêmios */
           <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <label
-                  htmlFor="rewardPrice"
-                  className="text-body-s text-neutral-100 font-medium"
-                >
-                  {isGamified ? t("priceLabel") : t("priceLabelProductivity")}{" "}
-                  <span className="text-gold">*</span>
-                </label>
-                <span className="text-label-m text-amber-700 dark:text-gold font-medium">
-                  {t("suggestedPriceByRarity")}
-                </span>
-              </div>
-              <Input
-                id="rewardPrice"
-                type="number"
-                step="any"
-                min="0"
-                max={99999}
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder={t("pricePlaceholder")}
-                compact
-                icon={<CoinIcon size={16} withGlow />}
-                className="font-bold h-[42px]"
-                required
-                disabled={isPending}
-              />
-              <span className="text-label-m text-neutral-400">
-                {t("mysteryBoxPriceHelper")}
-              </span>
-            </div>
+            <RewardPriceField
+              label={isGamified ? t("priceLabel") : t("priceLabelProductivity")}
+              hint={t("suggestedPriceByRarity")}
+              value={price}
+              onChange={handlePriceChange}
+              placeholder={t("pricePlaceholder")}
+              disabled={isPending}
+              guidanceType={type}
+              packageLevel={packageLevel}
+              onApplySuggestedPrice={applySuggestedPrice}
+            />
 
             <MysteryBoxSelector
               selectedLevel={packageLevel}

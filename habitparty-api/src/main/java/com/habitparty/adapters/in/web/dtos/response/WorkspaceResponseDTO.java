@@ -1,5 +1,7 @@
 package com.habitparty.adapters.in.web.dtos.response;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,10 +35,20 @@ public record WorkspaceResponseDTO(
 
   // 3. Mapeia a partir do Aggregate/Record KanbanBoard puro de domínio
   public static WorkspaceResponseDTO fromKanbanBoard(KanbanBoard board) {
+    return fromKanbanBoard(board, LocalDate.now(), ZoneId.systemDefault());
+  }
+
+  public static WorkspaceResponseDTO fromKanbanBoard(KanbanBoard board, LocalDate referenceDate) {
+    return fromKanbanBoard(board, referenceDate, ZoneId.systemDefault());
+  }
+
+  public static WorkspaceResponseDTO fromKanbanBoard(KanbanBoard board, LocalDate referenceDate, ZoneId zoneId) {
+    LocalDate effectiveDate = referenceDate != null ? referenceDate : LocalDate.now();
+    ZoneId effectiveZone = zoneId != null ? zoneId : ZoneId.systemDefault();
     List<BoardColumnResponseDTO> columnDTOs = board.columns().stream()
         .map(col -> BoardColumnResponseDTO.fromDomain(
             col.column(),
-            col.tasks().stream().map(TaskResponseDTO::fromDomain).toList()
+            col.tasks().stream().map(t -> TaskResponseDTO.fromDomain(t, effectiveDate, effectiveZone)).toList()
         ))
         .toList();
 

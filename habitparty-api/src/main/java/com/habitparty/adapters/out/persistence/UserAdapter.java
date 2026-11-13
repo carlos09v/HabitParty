@@ -42,6 +42,39 @@ public class UserAdapter implements UserRepository {
   }
 
   @Override
+  public void saveAll(Collection<User> users) {
+    if (users == null || users.isEmpty()) {
+      return;
+    }
+
+    List<UUID> existingIds = users.stream()
+        .map(User::getId)
+        .filter(java.util.Objects::nonNull)
+        .toList();
+
+    java.util.Map<UUID, UserJpaEntity> existingById = existingIds.isEmpty()
+        ? java.util.Map.of()
+        : userRepository.findAllById(existingIds).stream()
+            .collect(java.util.stream.Collectors.toMap(
+                UserJpaEntity::getId,
+                java.util.function.Function.identity(),
+                (a, b) -> a));
+
+    List<UserJpaEntity> entitiesToSave = new java.util.ArrayList<>(users.size());
+    for (User user : users) {
+      UserJpaEntity entity = user.getId() != null ? existingById.get(user.getId()) : null;
+      if (entity != null) {
+        userMapper.updateEntityFromDomain(entity, user);
+      } else {
+        entity = userMapper.toEntity(user);
+      }
+      entitiesToSave.add(entity);
+    }
+
+    userRepository.saveAll(entitiesToSave);
+  }
+
+  @Override
   public Optional<User> findById(UUID id) {
     return userRepository.findById(id)
         .map(userMapper::toDomain);

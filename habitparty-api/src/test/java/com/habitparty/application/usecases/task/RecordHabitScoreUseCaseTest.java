@@ -167,4 +167,31 @@ class RecordHabitScoreUseCaseTest {
     assertThrows(ResourceNotFoundException.class, () ->
         recordHabitScoreUseCase.execute(taskId, userId, 1));
   }
+
+  @Test
+  @DisplayName("Hábito com streak obsoleto (>= 2 dias sem concluir) deve reiniciar em 1 sem aplicar decaimento na recompensa")
+  void testStaleHabitStreakResetsBeforeRewardAndBecomesOne() {
+    Habit staleHabit = new Habit(
+        taskId, UUID.randomUUID(), userId, "Meditar", "10 min",
+        0, TaskPriority.HIGH, List.of(), TaskDifficulty.EASY,
+        TaskStatus.PENDING, TaskType.HABIT, false, null,
+        LocalDateTime.now().minusDays(10), List.of(),
+        10, // streak >= adaptation threshold (7), porém obsoleto
+        HabitType.POSITIVE,
+        HabitResetCounter.DAILY, HabitImportanceType.NORMAL,
+        LocalDateTime.now().minusDays(3), 0, 0);
+
+    when(taskPort.findById(taskId)).thenReturn(Optional.of(staleHabit));
+    when(userPort.findById(userId)).thenReturn(Optional.of(user));
+    when(transactionPort.countCompletedTasksToday(userId)).thenReturn(0);
+    when(taskPort.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    Task result = recordHabitScoreUseCase.execute(taskId, userId, 1);
+
+    Habit updated = (Habit) result;
+    assertEquals(1, updated.getCurrentStreak());
+    // Recompensa integral NORMAL (10 XP, 1.75 coins), sem decaimento de adaptação do streak obsoleto
+    assertEquals(110, user.getTotalXp());
+    assertEquals(new BigDecimal("11.75"), user.getCurrentCoins());
+  }
 }

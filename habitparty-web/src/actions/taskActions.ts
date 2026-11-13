@@ -82,6 +82,33 @@ export async function updateTask(
   }
 }
 
+export async function checkTaskHasHistory(
+  taskId: string,
+): Promise<ActionState<boolean>> {
+  const t = await getTranslations("tasks.actions");
+  try {
+    const { data, error } = await serverApi.GET("/tasks/{taskId}/has-history", {
+      params: { path: { taskId } },
+      cache: "no-store",
+    });
+
+    if (error) {
+      return {
+        success: false,
+        error: getErrorMessage(error, t("checkTaskHistoryFailed")),
+      };
+    }
+
+    return { success: true, data: Boolean(data?.hasHistory) };
+  } catch (err) {
+    console.error("[TaskAction:CheckHistory]", err);
+    return {
+      success: false,
+      error: t("communicationError"),
+    };
+  }
+}
+
 export async function deleteTask(
   taskId: string,
   deleteHistory = false,
@@ -103,6 +130,7 @@ export async function deleteTask(
     if (deleteHistory) {
       updateTag("transactions");
     }
+    updateTag("focus-records");
     return { success: true, data };
   } catch (err) {
     console.error("[TaskAction:Delete]", err);
@@ -177,8 +205,7 @@ export async function changeTaskStatus(
     }
 
     invalidateTaskDomainTags({
-      includeUserAndTransactions: true,
-      includeColumnSummaries: true,
+      includeUserAndTransactions: newStatus === "COMPLETED",
     });
     return { success: true, data };
   } catch (err) {

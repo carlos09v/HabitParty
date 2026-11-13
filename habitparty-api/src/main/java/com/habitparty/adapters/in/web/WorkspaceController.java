@@ -1,5 +1,7 @@
 package com.habitparty.adapters.in.web;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,6 +31,7 @@ public class WorkspaceController implements WorkspaceApi {
   private final ListUserWorkspacesUseCase listUserWorkspacesUseCase;
   private final UpdateWorkspaceUseCase updateWorkspaceUseCase;
   private final GetFullKanbanBoardUseCase getFullKanbanBoardUseCase;
+  private final Clock clock;
 
   @Override
   public ResponseEntity<WorkspaceResponseDTO> createWorkspace(
@@ -82,6 +85,8 @@ public class WorkspaceController implements WorkspaceApi {
       AuthenticatedUser usuarioLogado) {
     UUID userId = usuarioLogado.id();
     var kanbanBoard = getFullKanbanBoardUseCase.execute(workspaceId, userId);
-    return ResponseEntity.ok(WorkspaceResponseDTO.fromKanbanBoard(kanbanBoard));
+    LocalDate today = clock != null ? LocalDate.now(clock) : LocalDate.now();
+    return ResponseEntity.ok(WorkspaceResponseDTO.fromKanbanBoard(
+        kanbanBoard, today, clock != null ? clock.getZone() : java.time.ZoneId.systemDefault()));
   }
 }

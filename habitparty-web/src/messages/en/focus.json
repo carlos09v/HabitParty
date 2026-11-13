@@ -102,6 +102,8 @@
     "linkTarget": "Link",
     "linkTaskButton": "Link task",
     "linkTaskTooltip": "Count this focus simultaneously on a pending task",
+    "linkedTaskLabel": "Linked task",
+    "switchLinkedTask": "Change linked task",
     "completeLinkedTask": "Complete linked task now",
     "completeLinkedTaskShort": "Complete task",
     "unlinkTask": "Unlink task",

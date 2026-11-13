@@ -46,6 +46,7 @@ import type {
   RewardTypeMessageKey,
   RewardTypeMeta,
   RouletteItem,
+  SingleUseTierOption,
 } from "@/types/reward";
 import type { IconOption, SelectOption } from "@/types/ui";
 
@@ -419,9 +420,9 @@ export const COUPON_PACKAGE_OPTIONS: readonly CouponPackageOption[] = [
   },
   {
     id: "Épico",
-    label: "Épico (120m)",
-    suggestedMinutes: 120,
-    suggestedPrice: 28,
+    label: "Épico (180m)",
+    suggestedMinutes: 180,
+    suggestedPrice: 40,
     dotColor: "bg-magenta",
     unselectedClass:
       "bg-magenta/10 border-magenta/30 text-magenta hover:bg-magenta/15 hover:border-magenta/50 dark:bg-magenta/5 dark:border-magenta/30 dark:hover:bg-magenta/10 dark:hover:border-magenta/60",
@@ -430,9 +431,52 @@ export const COUPON_PACKAGE_OPTIONS: readonly CouponPackageOption[] = [
   },
   {
     id: "Lendário",
-    label: "Lendário (240m)",
-    suggestedMinutes: 240,
-    suggestedPrice: 50,
+    label: "Lendário (480m)",
+    suggestedMinutes: 480,
+    suggestedPrice: 95,
+    dotColor: "bg-amber-500 dark:bg-gold",
+    unselectedClass:
+      "text-amber-700 border-amber-500/35 bg-amber-500/10 hover:bg-amber-500/15 hover:border-amber-500/60 dark:bg-gold/5 dark:border-gold/30 dark:text-gold dark:hover:bg-gold/10 dark:hover:border-gold/60",
+    selectedClass:
+      "bg-amber-500/15 border-amber-600 text-amber-800 ring-2 ring-amber-500/20 dark:bg-gold/20 dark:border-gold dark:text-gold dark:ring-gold/40 dark:shadow-glow-gold-xs",
+  },
+] as const;
+
+/**
+ * Presets exponenciais de horizonte temporal para recompensas de Uso Único (SingleUse):
+ * 8 (Mimo Rápido) -> 16 (Diária) -> 60 (Semanal) -> 180 (Marco Épico).
+ */
+export const SINGLE_USE_TIER_OPTIONS: readonly SingleUseTierOption[] = [
+  {
+    id: "BASIC",
+    suggestedPrice: 8,
+    dotColor: "bg-emerald-500 dark:bg-success-500",
+    unselectedClass:
+      "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/15 hover:border-emerald-500/50 dark:bg-success-500/5 dark:border-success-500/30 dark:text-success-400 dark:hover:bg-success-500/10 dark:hover:border-success-500/60",
+    selectedClass:
+      "bg-emerald-500/15 border-emerald-600 text-emerald-800 ring-2 ring-emerald-500/20 dark:bg-success-500/20 dark:border-success-500 dark:text-success-300 dark:ring-success-500/40 dark:shadow-[0_0_10px_rgba(0,201,80,0.25)]",
+  },
+  {
+    id: "PREMIUM",
+    suggestedPrice: 16,
+    dotColor: "bg-sky-500 dark:bg-info",
+    unselectedClass:
+      "bg-sky-500/10 border-sky-500/30 text-sky-700 hover:bg-sky-500/15 hover:border-sky-500/50 dark:bg-info/5 dark:border-info/30 dark:text-info dark:hover:bg-info/10 dark:hover:border-info/60",
+    selectedClass:
+      "bg-sky-500/15 border-sky-600 text-sky-800 ring-2 ring-sky-500/20 dark:bg-info/20 dark:border-info dark:text-info dark:ring-info/40 dark:shadow-[0_0_10px_rgba(0,194,255,0.25)]",
+  },
+  {
+    id: "EPIC",
+    suggestedPrice: 60,
+    dotColor: "bg-magenta",
+    unselectedClass:
+      "bg-magenta/10 border-magenta/30 text-magenta hover:bg-magenta/15 hover:border-magenta/50 dark:bg-magenta/5 dark:border-magenta/30 dark:hover:bg-magenta/10 dark:hover:border-magenta/60",
+    selectedClass:
+      "bg-magenta/15 border-magenta text-magenta ring-2 ring-magenta/20 dark:bg-magenta/20 dark:border-magenta dark:text-magenta dark:ring-magenta/40 dark:shadow-[0_0_12px_rgba(237,43,229,0.3)]",
+  },
+  {
+    id: "LEGENDARY",
+    suggestedPrice: 180,
     dotColor: "bg-amber-500 dark:bg-gold",
     unselectedClass:
       "text-amber-700 border-amber-500/35 bg-amber-500/10 hover:bg-amber-500/15 hover:border-amber-500/60 dark:bg-gold/5 dark:border-gold/30 dark:text-gold dark:hover:bg-gold/10 dark:hover:border-gold/60",
@@ -443,15 +487,30 @@ export const COUPON_PACKAGE_OPTIONS: readonly CouponPackageOption[] = [
 
 /**
  * Calcula o preço sugerido calibrado para um cupom de tempo (TimeBased)
- * com base na economia de tarefas e desconto progressivo por pacote.
+ * mantendo custo por minuto consistente e desconto progressivo leve para pacotes maiores.
  */
 export function calculateSuggestedCouponPrice(minutes: number): number {
   const safeMin = Math.max(5, Math.round(minutes || 30));
   if (safeMin === 30) return 8;
   if (safeMin === 60) return 15;
   if (safeMin === 120) return 28;
+  if (safeMin === 180) return 40;
   if (safeMin === 240) return 50;
-  return Math.max(1, Math.round(safeMin * 0.25));
+  if (safeMin === 480) return 95;
+
+  if (safeMin < 30) {
+    return Math.max(1, Math.round(safeMin * (8 / 30)));
+  }
+  if (safeMin < 60) {
+    return Math.round(8 + ((safeMin - 30) / 30) * 7);
+  }
+  if (safeMin < 180) {
+    return Math.round(15 + ((safeMin - 60) / 120) * 25);
+  }
+  if (safeMin < 480) {
+    return Math.round(40 + ((safeMin - 180) / 300) * 55);
+  }
+  return Math.round(safeMin * 0.2);
 }
 
 export const REWARD_SORT_OPTIONS: SelectOption[] = [

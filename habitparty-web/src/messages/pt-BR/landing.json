@@ -248,15 +248,38 @@
       },
       "r14": {
         "statusLabel": "Próximo Marco",
-        "title": "Party, Temas VIP, Amizades & Cooperação em Tempo Real",
-        "tagline": "A união faz a força: personalize sua atmosfera com Temas VIP, conecte-se com amigos e participe de grupos de foco mútuo.",
+        "title": "Temas VIP, Amizades & Controles de Privacidade",
+        "tagline": "Personalize sua atmosfera visual com Temas VIP exclusivos, conecte-se com amigos por código e gerencie sua privacidade com total autonomia.",
         "features": [
           "Temas Exclusivos VIP (Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold)",
-          "Rede de Amizades com busca de jogadores por nome e código de amigo, além de controles granulares de privacidade",
-          "Formação de Parties (grupos de foco) via código de convite rápido",
-          "Missões Diárias Cooperativas com bônus coletivo de ouro se todos cumprirem",
-          "Chat Integrado em Tempo Real com alertas de foco e celebrações mútuas",
-          "Notificações sonoras e visuais elegantes para marcos em equipe"
+          "Rede de Amizades com busca rápida por @username e código de amigo exclusivo",
+          "Círculo de Conexões Sociais para acompanhar o nível e conquistas de amigos",
+          "Controles Granulares de Privacidade (visibilidade de hábitos, estatísticas e rotinas: Público, Amigos ou Privado)",
+          "Notificações de Atividade Social para pedidos de amizade e marcos da sua rede"
+        ]
+      },
+      "r15": {
+        "statusLabel": "Marco Planejado",
+        "title": "Parties & Missões Diárias Cooperativas",
+        "tagline": "A união faz a força: forme esquadrões focados de estudo e trabalho, cumpra metas coletivas e ganhe bônus compartilhados.",
+        "features": [
+          "Formação de Parties (esquadrões de foco de 4 a 6 aventureiros) via código de convite rápido",
+          "Missões Diárias Cooperativas (Co-op Daily Quests) com bônus coletivo de ouro e XP se todos cumprirem",
+          "Painel de Consistência da Party com acompanhamento em tempo real das diárias do grupo",
+          "Cofre Compartilhado e Insígnias Cooperativas exclusivas para os membros do esquadrão",
+          "Celebrações em equipe a cada marco diário concluído com sucesso"
+        ]
+      },
+      "r16": {
+        "statusLabel": "Marco Planejado",
+        "title": "Chat em Tempo Real, Presença ao Vivo & Alertas",
+        "tagline": "Comunicação instantânea e presença ao vivo: converse com seu esquadrão, envie reações de incentivo e sinta o apoio mútuo em tempo real.",
+        "features": [
+          "Chat Integrado em Tempo Real (WebSockets) com canal exclusivo da Party e mensagens diretas (DM) entre amigos",
+          "Status de Presença ao Vivo (indicador de foco em tempo real, pausas e disponibilidade)",
+          "Reações Rápidas e Emojis de Incentivo em 1 clique durante as sessões de foco",
+          "Alertas Sonoros e Notificações Imediatas para novas mensagens e conquistas em equipe",
+          "Modo Não Perturbe integrado para manter o foco total durante sessões de deep work"
         ]
       },
       "r20": {

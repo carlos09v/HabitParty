@@ -54,7 +54,14 @@ export interface LandingFeatureConfig {
   iconBoxColor: string;
 }
 
-export type LandingRoadmapKey = "r11" | "r12" | "r13" | "r14" | "r20";
+export type LandingRoadmapKey =
+  | "r11"
+  | "r12"
+  | "r13"
+  | "r14"
+  | "r15"
+  | "r16"
+  | "r20";
 
 export interface LandingRoadmapConfig {
   id: LandingRoadmapKey;

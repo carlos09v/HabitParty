@@ -150,7 +150,9 @@
     "completeSaveAria": "Concluir e Salvar",
     "stopResetTitle": "Parar / Reiniciar tempo",
     "stopAria": "Parar",
-    "stopLabel": "Parar"
+    "stopLabel": "Parar",
+    "linkActivityBadge": "Vincular a uma atividade?",
+    "linkActivityTitle": "Vincular esta sessão de foco a uma atividade"
   },
   "subscriptionAlert": {
     "ariaLabel": "Aviso de expiração da assinatura",

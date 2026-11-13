@@ -4,7 +4,12 @@ import type { DraggableAttributes } from "@dnd-kit/core";
 import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { CalendarClock, GripVertical, MoreHorizontal } from "lucide-react";
+import {
+  CalendarClock,
+  GripVertical,
+  Loader2,
+  MoreHorizontal,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type CSSProperties, memo, useEffect, useMemo, useRef } from "react";
 import {
@@ -44,6 +49,7 @@ const TaskRowContent = memo(function TaskRowContent({
   selectedDate,
   isSortable = false,
   isOverlay = false,
+  isDeleteChecking = false,
   isCompact: propIsCompact,
   onToggle,
   onToggleCompleted,
@@ -83,6 +89,7 @@ const TaskRowContent = memo(function TaskRowContent({
     borderClass,
     dueDateInfo,
     displayTag,
+    displayTagTitle,
     hasExtraTags,
     extraTagsCount,
     priorityMeta,
@@ -148,6 +155,7 @@ const TaskRowContent = memo(function TaskRowContent({
     <ElementTag
       ref={setNodeRef as React.Ref<never>}
       style={style}
+      aria-busy={isDeleteChecking || undefined}
       {...(isSortable ? attributes : {})}
       {...(isSortable ? listeners : {})}
       onClick={handleClick}
@@ -172,6 +180,7 @@ const TaskRowContent = memo(function TaskRowContent({
         isHardcoreOverdue &&
           "border-y-danger-500/70 border-r-danger-500/70 hover:border-y-danger-500/80 hover:border-r-danger-500/80 shadow-[0_0_10px_rgba(239,68,68,0.25)]",
         isDone && "dark:opacity-60 bg-card/80 dark:bg-primary-dark/15",
+        isDeleteChecking && "opacity-75 pointer-events-none cursor-wait",
         isDragging &&
           "!transition-none opacity-30 border-dashed border-primary-light scale-95",
         isOverlay &&
@@ -269,6 +278,7 @@ const TaskRowContent = memo(function TaskRowContent({
       <div className="hidden sm:flex items-center gap-1 min-w-0">
         <TaskTagBadges
           primaryLabel={columnTitle || displayTag}
+          primaryTitle={columnTitle || displayTagTitle}
           fallbackLabel="-"
           hasExtraTags={hasExtraTags}
           extraTagsCount={extraTagsCount}
@@ -340,24 +350,38 @@ const TaskRowContent = memo(function TaskRowContent({
         )}
       </div>
 
-      {/* Coluna 6: Ações (Dispara Menu de Opções) */}
+      {/* Coluna 6: Ações (Spinner durante checagem de exclusão ou Menu de Opções) */}
       <div className="flex items-center justify-end">
-        <button
-          type="button"
-          onPointerDown={(e) => e.stopPropagation()}
-          onDoubleClick={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (onContextMenu) {
-              onContextMenu(e, task, columnId);
-            }
-          }}
-          aria-label={t("actions.taskOptionsAria", { title: task.title })}
-          title={t("actions.taskOptionsTitle")}
-          className="p-1 rounded text-neutral-400 group-hover:text-neutral-200 hover:!text-gold hover:!bg-white/10 focus:outline-none focus:ring-1 focus:ring-gold/60 transition-colors cursor-pointer"
-        >
-          <MoreHorizontal size={isCompact ? 14 : 16} />
-        </button>
+        {isDeleteChecking ? (
+          <output
+            className="p-1 text-gold inline-flex items-center justify-center"
+            title={t("actions.checkingDeleteAria")}
+            aria-label={t("actions.checkingDeleteAria")}
+          >
+            <Loader2
+              size={isCompact ? 14 : 16}
+              className="animate-spin"
+              aria-hidden="true"
+            />
+          </output>
+        ) : (
+          <button
+            type="button"
+            onPointerDown={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onContextMenu) {
+                onContextMenu(e, task, columnId);
+              }
+            }}
+            aria-label={t("actions.taskOptionsAria", { title: task.title })}
+            title={t("actions.taskOptionsTitle")}
+            className="p-1 rounded text-neutral-400 group-hover:text-neutral-200 hover:!text-gold hover:!bg-white/10 focus:outline-none focus:ring-1 focus:ring-gold/60 transition-colors cursor-pointer"
+          >
+            <MoreHorizontal size={isCompact ? 14 : 16} />
+          </button>
+        )}
       </div>
     </ElementTag>
   );

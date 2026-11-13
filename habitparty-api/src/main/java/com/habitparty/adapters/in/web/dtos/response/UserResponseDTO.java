@@ -45,6 +45,10 @@ public record UserResponseDTO(
         int highestStreak,
         int achievementPoints) {
     public static UserResponseDTO fromDomain(User user) {
+        return fromDomain(user, user.getCurrentStreak());
+    }
+
+    public static UserResponseDTO fromDomain(User user, int effectiveStreak) {
         return new UserResponseDTO(
                 user.getId(),
                 user.isPremium(),
@@ -73,7 +77,7 @@ public record UserResponseDTO(
                 user.getCurrentCoins(),
                 user.getTotalGoldEarned(),
                 user.getTotalXp(),
-                user.getCurrentStreak(),
+                effectiveStreak,
                 user.getHighestStreak(),
                 user.getStats() != null ? user.getStats().getAchievementPoints() : 0);
     }

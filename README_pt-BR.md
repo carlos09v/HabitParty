@@ -15,10 +15,10 @@ Um sistema open-core de gamificação e produtividade com uma economia matemáti
   * 🎯 **Modo Essencial (Produtividade):** Estética executiva e limpa. Converte entregas em **Créditos** e **Pontos (`pts`)**, utiliza títulos profissionais, indicadores discretos de **Esforço**, recompensas diretas na Loja (sem sorteios RNG), **Prazo Rígido** e **Inventário**.
   * ⚔️ **Modo Aventura (Imersão RPG):** Experiência gamificada completa com **Moedas de Ouro (🪙)** e **XP**, títulos de aventureiro (`Novato` a `Lenda`), ícones de espadas para **Dificuldade**, **Caixas Misteriosas (Gacha)**, **Modo Hardcore** e **Mochila**.
 * **Economia Rígida (Farming):** Ganhos de Moedas/Créditos e XP/Pontos calculados estritamente com base na dificuldade/esforço da tarefa:
-  * 🟩 **Trivial** (0,25 🪙 / Créditos • 2 XP / pts)
-  * 🟦 **Fácil** (0,75 🪙 / Créditos • 5 XP / pts)
+  * 🟦 **Trivial** (0,25 🪙 / Créditos • 2 XP / pts)
+  * 🟩 **Fácil** (0,75 🪙 / Créditos • 5 XP / pts)
   * 🟨 **Médio** (2,50 🪙 / Créditos • 15 XP / pts)
-  * 🟧 **Difícil** (5,00 🪙 / Créditos • 30 XP / pts)
+  * 🟪 **Difícil** (5,00 🪙 / Créditos • 30 XP / pts)
 * **Quadro Kanban & Múltiplos Ambientes (Workspaces):** Organize diferentes áreas da sua vida (Trabalho, Estudos, Vida Pessoal) em ambientes independentes, com quadros Kanban interativos, colunas personalizáveis e banner de busca inteligente entre múltiplos workspaces.
 * **Loja de Recompensas da Vida Real:** Cadastre momentos de lazer e descanso categorizados em pacotes (Uso Único, Por Tempo ou Caixas da Sorte) com custos calibrados para o esforço do seu dia.
 * **🎁 Caixas Misteriosas (RNG Opcional):** Sorteios probabilísticos com custos calculados matematicamente (Básica, Premium, Épica e Lendária) para trazer dopamina à sua rotina sem quebrar a economia.
@@ -42,10 +42,10 @@ A quantidade de XP e Moedas recebidas reflete a carga de esforço e o tempo inve
 
 | Nível | Dificuldade | Ganho | Descrição e Exemplos de Uso |
 | :---: | :--- | :--- | :--- |
-| 🟩 | **Trivial** | 2 XP <br> 0,25 🪙 | Tarefas automáticas e de curtíssima duração. <br>*Ex: Beber água, tomar um remédio, arrumar a cama.* |
-| 🟦 | **Fácil** | 5 XP <br> 0,75 🪙 | Tarefas rápidas que exigem intenção ou organização básica. <br>*Ex: Responder e-mails, leitura de 10 minutos, lavar a louça.* |
+| 🟦 | **Trivial** | 2 XP <br> 0,25 🪙 | Tarefas automáticas e de curtíssima duração. <br>*Ex: Beber água, tomar um remédio, arrumar a cama.* |
+| 🟩 | **Fácil** | 5 XP <br> 0,75 🪙 | Tarefas rápidas que exigem intenção ou organização básica. <br>*Ex: Responder e-mails, leitura de 10 minutos, lavar a louça.* |
 | 🟨 | **Médio** (Padrão) | 15 XP <br> 2,50 🪙 | A base da economia. Exige foco moderado (30 a 60 minutos). <br>*Ex: Treino na academia, focar em uma tarefa do trabalho, limpar a casa.* |
-| 🟧 | **Difícil** | 30 XP <br> 5,00 🪙 | Esforço físico ou cognitivo intenso (1 a 2 horas de trabalho profundo). <br>*Ex: Sessão de estudo focada, desenvolvimento de módulo complexo.* |
+| 🟪 | **Difícil** | 30 XP <br> 5,00 🪙 | Esforço físico ou cognitivo intenso (1 a 2 horas de trabalho profundo). <br>*Ex: Sessão de estudo focada, desenvolvimento de módulo complexo.* |
 
 ---
 
@@ -57,9 +57,9 @@ Para refletir isso na economia e evitar a inflação de moedas, os hábitos sofr
 
 | Nível | Recompensa Base (Streak Inicial) | Descrição e Exemplos de Uso |
 | :--- | :---: | :--- |
-| 🟩 **Baixa (Low)** | 5 XP • 0,75 🪙 | Hábitos de manutenção simples e rápida. <br>*Ex: Tomar creatina, arrumar a mesa de trabalho.* |
-| 🟨 **Normal** (Padrão) | 10 XP • 1,75 🪙 | A base da rotina com esforço moderado. <br>*Ex: Praticar instrumento musical por 15 min, ler 10 páginas.* |
-| 🟧 **Alta (High)** | 25 XP • 3,75 🪙 | Hábitos de alta energia de ativação. <br>*Ex: Resolver 30 questões de concurso, treino físico pesado.* |
+| 🟦 **Baixa (Low)** | 5 XP • 0,75 🪙 | Hábitos de manutenção simples e rápida. <br>*Ex: Tomar creatina, arrumar a mesa de trabalho.* |
+| 🟩 **Normal** (Padrão) | 10 XP • 1,75 🪙 | A base da rotina com esforço moderado. <br>*Ex: Praticar instrumento musical por 15 min, ler 10 páginas.* |
+| 🟪 **Alta (High)** | 25 XP • 3,75 🪙 | Hábitos de alta energia de ativação. <br>*Ex: Resolver 30 questões de concurso, treino físico pesado.* |
 
 #### Tabela de Decaimento por Ofensiva (Streak)
 * **Dias 1 a 6 (Fase de Resistência):** 100% da Recompensa (estímulo máximo para vencer a inércia).
@@ -121,10 +121,10 @@ Enquanto as tarefas recompensam a entrega de resultados (*output*), a tela de fo
 
 | Modalidade | Duração / Ciclo | Recompensa Base | Equivalência e Regras |
 | :--- | :---: | :---: | :--- |
-| **Pomodoro Curto** | 15 a 24 min | **4 XP • 0,10 🪙** | Quebra rápida de inércia. Requer ciclo completado. |
-| **Pomodoro Padrão** | 25 a 40 min | **8 XP • 0,25 🪙** | O padrão clássico. Equivale a pouco mais de 1 Tarefa Fácil. |
-| **Pomodoro Deep Work** | Mais de 40 min | **15 XP • 0,50 🪙** | Sessão de imersão profunda. Equivale ao XP de 1 Tarefa Média. |
-| **Cronômetro Livre** | Por bloco de 30 min | **~7 XP • 0,20 🪙** | Bonificação contínua proporcional (teto de 90 min/sessão). |
+| **Pomodoro Curto** | 15 a 24 min | **4 XP • 0,25 🪙** | Quebra rápida de inércia (1/3 de 1 Tarefa Fácil). Requer ciclo completado. |
+| **Pomodoro Padrão** | 25 a 40 min | **8 XP • 0,50 🪙** | O padrão clássico. Equivale a ~30%–40% de uma entrega de tarefa. |
+| **Pomodoro Deep Work** | Mais de 40 min | **15 XP • 1,00 🪙** | Sessão de imersão profunda. Equivale a 40% das moedas e 100% do XP de 1 Tarefa Média. |
+| **Cronômetro Livre** | Por bloco de 30 min | **~7 XP • 0,40 🪙** | Bonificação contínua proporcional (teto de 90 min/sessão). |
 
 #### 🛡️ Travas de Segurança & Regras Anti-Abuso
 1. **Tempo Mínimo para Pontuar:** Sessões com menos de **10 minutos** geram 0 XP e 0 moedas, prevenindo cliques acidentais ou farm artificial.
@@ -142,7 +142,7 @@ Enquanto as tarefas recompensam a entrega de resultados (*output*), a tela de fo
 O sistema foi desenhado visando escalabilidade, manutenibilidade e rigor arquitetural:
 
 * **Backend (`habitparty-api`):**
-  * **Java 25 & Spring Boot 3.3+**
+  * **Java 25 & Spring Boot 4.x (v4.1+)**
   * **Arquitetura Hexagonal (Ports & Adapters)** isolando regras de negócio e cálculo matemático de dependências externas.
   * *Design Patterns:* Strategy (cálculo de recompensas e decaimentos), Factory Method (instanciação polimórfica de tarefas) e Port-Adapter Pattern.
   * **Segurança & RBAC:** Spring Security com controle de papéis (`ROLE_USER`, `ROLE_ADMIN`), autenticação stateless via JWT e Refresh Tokens criptografados com BCrypt.
@@ -255,13 +255,28 @@ npm run dev
 
 ---
 
-### ⚔️ Release 1.4 — Party, Temas VIP, Amizades & Comunicação Instantânea
-* **Temas Exclusivos VIP:** Seletor dinâmico de atmosferas visuais para membros Premium (ex: *Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold*).
-* **Rede de Amizades & Controles de Privacidade:** Busca de jogadores por nome de usuário ou código de amigo, envio de solicitações, círculo de conexões de consistência e configurações granulares para manter rotinas ou estatísticas públicas/privadas.
-* **Formação de Parties:** Crie pequenos grupos com amigos ou parceiros de estudo via código de convite rápido.
-* **Missões Diárias Cooperativas:** Metas coletivas onde todo o grupo recebe bônus de moedas e recompensas se todos cumprirem seus compromissos.
-* **Chat Integrado em Tempo Real:** Conversas diretas entre amigos e canal exclusivo de bate-papo da Party para manter a motivação em alta.
-* **Notificações de Atividade:** Alertas sonoros e visuais elegantes para mensagens e conquistas de amigos em tempo real.
+### 🎨 Release 1.4 — Temas VIP, Amizades & Controles de Privacidade
+* **Temas Exclusivos VIP:** Seletor dinâmico de atmosferas visuais e paletas cósmicas para membros Premium (ex: *Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold*).
+* **Rede de Amizades & Códigos de Amigo:** Busca ágil de outros aventureiros por nome de usuário (@username) ou código de amigo (Friend Code) com envio de solicitações.
+* **Círculo de Conexões Sociais:** Acompanhamento da consistência, nível e insígnias dos seus amigos conectados.
+* **Controles Granulares de Privacidade:** Configurações personalizadas para definir a visibilidade das suas rotinas, histórico e estatísticas (Público, Apenas Amigos ou Privado).
+* **Notificações de Atividade Social:** Alertas sonoros e visuais elegantes para solicitações recebidas e marcos de consistência da sua rede.
+
+---
+
+### ⚔️ Release 1.5 — Parties, Esquadrões de Foco & Quests Cooperativas
+* **Formação de Parties:** Crie pequenos grupos de foco e consistência (4 a 6 membros) com parceiros de estudo ou trabalho via código de convite rápido.
+* **Missões Diárias Cooperativas:** Metas coletivas onde todo o grupo recebe multiplicadores de XP e bônus de ouro se todos cumprirem seus compromissos no dia.
+* **Painel de Consistência da Party:** Visão unificada em tempo real do progresso das tarefas diárias e sessões ativas de foco dos integrantes do esquadrão.
+* **Marcos Compartilhados & Insígnias Cooperativas:** Desbloqueio conjunto de conquistas e títulos cooperativos para os membros da equipe.
+
+---
+
+### 💬 Release 1.6 — Chat em Tempo Real, Presença ao Vivo & Alertas Instantâneos
+* **Chat Integrado em Tempo Real:** Conversas instantâneas via WebSockets com salas exclusivas para cada Party e mensagens diretas (DM) entre amigos.
+* **Status de Presença e Foco ao Vivo:** Indicadores em tempo real para saber quem está em sessão de foco (*"Focando agora ⏱️"*), descansando (*"Pausa ☕"*) ou disponível.
+* **Reações Rápidas e Emojis de Incentivo:** Envie incentivos e aplausos em 1 clique durante as sessões de foco dos parceiros de esquadrão.
+* **Alertas Sonoros Imediatos:** Efeitos sonoros sutis e notificações em tela para mensagens da party e conquistas em tempo real sem sair do fluxo.
 
 ---
 
@@ -278,4 +293,4 @@ npm run dev
 
 O código-fonte deste projeto é disponibilizado publicamente (*"Source-Available"*) com o propósito de transparência, estudo e uso pessoal. É **estritamente proibido** o uso, cópia, redistribuição ou modificação deste software para qualquer finalidade comercial, monetização ou oferta como serviço (SaaS) por terceiros.
 
-Para visualizar as regras completas de uso pessoal, consulte o arquivo [LICENSE](file:///home/carlosvinicius/github-projects/HabitParty/LICENSE) na raiz deste repositório.
+Para visualizar as regras completas de uso pessoal, consulte o arquivo [LICENSE](LICENSE) na raiz deste repositório.

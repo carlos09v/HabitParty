@@ -1,5 +1,9 @@
 import type { AppLocale } from "@/i18n/config";
-import type { DateFormat, TimeFormat } from "@/types/ui";
+import type {
+  DateFormat,
+  DatePickerEventSchedulePatch,
+  TimeFormat,
+} from "@/types/ui";
 
 /**
  * Detecta o formato de data preferido com base no locale do navegador/SO (ou subtag de Accept-Language).
@@ -1178,4 +1182,88 @@ export function parseIsoDateUtcMs(dateStr: string): number | null {
   const [y, m, d] = dateStr.split("T")[0].split("-").map(Number);
   if (!y || !m || !d) return null;
   return Date.UTC(y, m - 1, d);
+}
+
+export interface EventScheduleState {
+  dueDate?: string;
+  dueTime?: string;
+  startTime?: string;
+  dueEndTime?: string;
+  isAllDay?: boolean;
+}
+
+export interface NormalizedEventScheduleResult {
+  /** Valores normalizados de UI (`""` quando limpo, `undefined` se inalterado). */
+  dueDate?: string;
+  dueTime?: string;
+  startTime?: string;
+  dueEndTime?: string;
+  isAllDay?: boolean;
+  /** Campos prontos para persistência/patch de Task (`undefined` apaga o valor). */
+  taskPatch: {
+    dueDate?: string;
+    dueTime?: string;
+    startTime?: string;
+    dueEndTime?: string;
+    isAllDay?: boolean;
+  };
+}
+
+/**
+ * Normaliza patches atômicos de agenda/horário emitidos pelo `DatePicker`:
+ * trunca para `HH:mm`, limpa `dueEndTime` órfão quando `startTime` é removido
+ * e preenche `dueDate` com a data local de hoje caso um horário/dia inteiro seja
+ * ativado sem data selecionada.
+ */
+export function normalizeEventSchedulePatch(
+  current: EventScheduleState,
+  patch: DatePickerEventSchedulePatch,
+): NormalizedEventScheduleResult {
+  const cleanHm = (value?: string) => (value ? value.slice(0, 5) : "");
+  const result: NormalizedEventScheduleResult = { taskPatch: {} };
+
+  let effectiveDueTime = cleanHm(current.dueTime);
+  let effectiveStartTime = cleanHm(current.startTime);
+  let effectiveIsAllDay = Boolean(current.isAllDay);
+
+  if (patch.dueTime !== undefined) {
+    const nextDueTime = cleanHm(patch.dueTime);
+    effectiveDueTime = nextDueTime;
+    result.dueTime = nextDueTime;
+    result.taskPatch.dueTime = nextDueTime || undefined;
+  }
+
+  if (patch.startTime !== undefined) {
+    const nextStartTime = cleanHm(patch.startTime);
+    effectiveStartTime = nextStartTime;
+    result.startTime = nextStartTime;
+    result.taskPatch.startTime = nextStartTime || undefined;
+    if (!nextStartTime && patch.endTime === undefined) {
+      result.dueEndTime = "";
+      result.taskPatch.dueEndTime = undefined;
+    }
+  }
+
+  if (patch.endTime !== undefined) {
+    const nextEndTime = cleanHm(patch.endTime);
+    result.dueEndTime = nextEndTime;
+    result.taskPatch.dueEndTime = nextEndTime || undefined;
+  }
+
+  if (patch.isAllDay !== undefined) {
+    effectiveIsAllDay = patch.isAllDay;
+    result.isAllDay = patch.isAllDay;
+    result.taskPatch.isAllDay = patch.isAllDay;
+  }
+
+  if (
+    (effectiveDueTime || effectiveStartTime || effectiveIsAllDay) &&
+    !current.dueDate
+  ) {
+    const todayIso = getTodayDateString();
+    result.dueDate = todayIso;
+    result.taskPatch.dueDate = todayIso;
+  }
+
+  return result;
 }

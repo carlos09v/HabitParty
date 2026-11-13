@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { updateTask } from "@/actions/taskActions";
 import {
@@ -14,13 +14,18 @@ import { useChecklist } from "@/hooks/useChecklist";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useIsClient } from "@/hooks/useIsClient";
 import type { ChecklistItem, Task, TaskPriorityOption } from "@/types/task";
-import type { FormatSyntax, TaskDetailsPopoverProps } from "@/types/task-ui";
-import { getTodayDateString, isTaskHardcoreLocked } from "@/utils/date";
+import type { TaskDetailsPopoverProps } from "@/types/task-ui";
+import type { DatePickerEventSchedulePatch } from "@/types/ui";
+import {
+  isTaskHardcoreLocked,
+  normalizeEventSchedulePatch,
+} from "@/utils/date";
 import { calculateTaskReward } from "@/utils/economy";
-import { applyMarkdownFormat } from "@/utils/markdown";
+import { mergeTaskTagsWithLimit } from "@/utils/tags";
 import {
   buildUpdateTaskPayload,
   computeOptimisticHabitDelta,
+  mapTaskResponseToTask,
   parseTaskTags,
 } from "@/utils/taskMapper";
 
@@ -38,17 +43,29 @@ export function useTaskDetailsPopover({
   onOpenFocusHistory,
 }: Omit<TaskDetailsPopoverProps, "columnTitle">) {
   const t = useTranslations("tasks.hooks");
-  const [, startTransition] = useTransition();
   const popoverRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
-  const descTextareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Refs de sincronização imediata para auto-save ao sair
+  // Refs de sincronização imediata para auto-save e consolidação atômica sem closures defasadas
   const titleRef = useRef(task?.title || "");
   const descRef = useRef(task?.description || "");
-  const newTagRef = useRef("");
+  const descriptionFlushRef = useRef<(() => string) | null>(null);
   const newItemRef = useRef("");
   const checklistRef = useRef<ChecklistItem[]>(task?.checklist || []);
+  const latestTaskRef = useRef<Task | undefined>(task);
+  const confirmedTaskRef = useRef<Task | undefined>(task);
+  const pendingFieldsRef = useRef<Partial<Task>>({});
+  const flushScheduledRef = useRef(false);
+  const saveChainRef = useRef<Promise<void>>(Promise.resolve());
+  const saveSequenceRef = useRef(0);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const mounted = useIsClient();
   const [completed, setCompleted] = useState(Boolean(task?.completed));
@@ -71,11 +88,17 @@ export function useTaskDetailsPopover({
   const handleChecklistChanged = useCallback(
     (nextList: ChecklistItem[]) => {
       checklistRef.current = nextList;
-      if (task) {
-        onTaskUpdate?.({ ...task, checklist: nextList });
+      const baseTask = latestTaskRef.current;
+      if (baseTask) {
+        const updatedTask = { ...baseTask, checklist: nextList };
+        latestTaskRef.current = updatedTask;
+        confirmedTaskRef.current = confirmedTaskRef.current
+          ? { ...confirmedTaskRef.current, checklist: nextList }
+          : updatedTask;
+        onTaskUpdate?.(updatedTask);
       }
     },
-    [task, onTaskUpdate],
+    [onTaskUpdate],
   );
 
   const {
@@ -118,37 +141,78 @@ export function useTaskDetailsPopover({
     mounted,
   );
 
+  const applyFieldsToLocalState = useCallback(
+    (sourceTask: Task, fieldsToSync?: Partial<Task>) => {
+      const checkField = (key: keyof Task) =>
+        !fieldsToSync || key in fieldsToSync;
+
+      if (checkField("completed")) {
+        setCompleted(Boolean(sourceTask.completed));
+      }
+      if (checkField("description")) {
+        setDescription(sourceTask.description || "");
+        descRef.current = sourceTask.description || "";
+      }
+      if (checkField("title")) {
+        setTitle(sourceTask.title || "");
+        titleRef.current = sourceTask.title || "";
+      }
+      if (checkField("dueDate")) {
+        setDueDate(sourceTask.dueDate || "");
+      }
+      if (checkField("dueTime")) {
+        setDueTime(sourceTask.dueTime ? sourceTask.dueTime.slice(0, 5) : "");
+      }
+      if (checkField("startTime")) {
+        setStartTime(
+          sourceTask.startTime ? sourceTask.startTime.slice(0, 5) : "",
+        );
+      }
+      if (checkField("dueEndTime")) {
+        setDueEndTime(
+          sourceTask.dueEndTime ? sourceTask.dueEndTime.slice(0, 5) : "",
+        );
+      }
+      if (checkField("isAllDay")) {
+        setIsAllDay(Boolean(sourceTask.isAllDay));
+      }
+      if (checkField("priority")) {
+        setPriority(sourceTask.priority || "NONE");
+      }
+      if (checkField("tags")) {
+        setTags(sourceTask.tags || []);
+      }
+    },
+    [],
+  );
+
   // Sincroniza dados locais e refs apenas quando uma tarefa diferente passa a ser exibida
   useEffect(() => {
     if (!task) {
       syncedTaskIdRef.current = undefined;
+      latestTaskRef.current = undefined;
+      confirmedTaskRef.current = undefined;
+      pendingFieldsRef.current = {};
+      flushScheduledRef.current = false;
       return;
     }
     if (syncedTaskIdRef.current === task.id) return;
     syncedTaskIdRef.current = task.id;
+    latestTaskRef.current = task;
+    confirmedTaskRef.current = task;
+    pendingFieldsRef.current = {};
+    flushScheduledRef.current = false;
 
-    setCompleted(Boolean(task.completed));
-    setTitle(task.title || "");
-    titleRef.current = task.title || "";
-    setDescription(task.description || "");
-    descRef.current = task.description || "";
-    setDueDate(task.dueDate || "");
-    setDueTime(task.dueTime ? task.dueTime.slice(0, 5) : "");
-    setStartTime(task.startTime ? task.startTime.slice(0, 5) : "");
-    setDueEndTime(task.dueEndTime ? task.dueEndTime.slice(0, 5) : "");
-    setIsAllDay(Boolean(task.isAllDay));
-    setPriority(task.priority || "NONE");
-    setTags(task.tags || []);
+    applyFieldsToLocalState(task);
     const initialChecklist = task.checklist || [];
     resetChecklist(initialChecklist);
     checklistRef.current = initialChecklist;
     setIsAddingTag(false);
     setNewTagText("");
-    newTagRef.current = "";
     setIsAddingItem(false);
     setNewItemText("");
     newItemRef.current = "";
-  }, [task, resetChecklist]);
+  }, [task, resetChecklist, applyFieldsToLocalState]);
 
   useEffect(() => {
     checklistRef.current = checklist;
@@ -161,114 +225,124 @@ export function useTaskDetailsPopover({
 
   const saveTaskField = useCallback(
     (fields: Partial<Task>) => {
-      if (!task) return;
-      const reward = calculateTaskReward({
-        ...task,
-        ...fields,
-        isHardcoreModeEnabled:
-          fields.isHardcoreModeEnabled ?? task.isHardcoreModeEnabled,
-        dueDate: fields.dueDate ?? task.dueDate,
-        isPenaltyApplied: fields.isPenaltyApplied ?? task.isPenaltyApplied,
-      });
+      const baseTask = latestTaskRef.current ?? task;
+      if (!baseTask) return;
+
       const currentChecklist =
         checklistRef.current.length > 0
           ? checklistRef.current
-          : task.checklist || [];
-      const updated = {
-        ...task,
+          : baseTask.checklist || [];
+
+      const mergedDraft: Task = {
+        ...baseTask,
         checklist: currentChecklist,
         ...fields,
+      };
+      const reward = calculateTaskReward({
+        ...mergedDraft,
+        isHardcoreModeEnabled: mergedDraft.isHardcoreModeEnabled,
+        dueDate: mergedDraft.dueDate,
+        isPenaltyApplied: mergedDraft.isPenaltyApplied,
+      });
+      const updated: Task = {
+        ...mergedDraft,
         rewardXp: reward.xp,
         rewardGold: reward.gold,
       };
+
+      latestTaskRef.current = updated;
+      pendingFieldsRef.current = {
+        ...pendingFieldsRef.current,
+        ...fields,
+      };
+      saveSequenceRef.current += 1;
       onTaskUpdate?.(updated);
 
-      const payload = buildUpdateTaskPayload(updated);
-      const previousTask = task;
-      startTransition(async () => {
-        const res = await updateTask(task.id, payload);
-        if (!res.success) {
-          toast.error(res.error || t("saveChangesError"));
-          // Rollback da atualização otimista: evita exibir dados que não foram persistidos
-          onTaskUpdate?.(previousTask);
-          if ("description" in fields) {
-            setDescription(previousTask.description || "");
-            descRef.current = previousTask.description || "";
-          }
-          if ("title" in fields) {
-            setTitle(previousTask.title || "");
-            titleRef.current = previousTask.title || "";
-          }
-          if ("dueDate" in fields) setDueDate(previousTask.dueDate || "");
-          if ("dueTime" in fields) {
-            setDueTime(
-              previousTask.dueTime ? previousTask.dueTime.slice(0, 5) : "",
+      if (flushScheduledRef.current) return;
+      flushScheduledRef.current = true;
+
+      queueMicrotask(() => {
+        flushScheduledRef.current = false;
+        const snapshotTask = latestTaskRef.current;
+        const patchedFields = pendingFieldsRef.current;
+        pendingFieldsRef.current = {};
+        if (!snapshotTask) return;
+
+        const batchSeq = saveSequenceRef.current;
+        const payload = buildUpdateTaskPayload(snapshotTask);
+
+        saveChainRef.current = saveChainRef.current.then(async () => {
+          const previousConfirmed = confirmedTaskRef.current ?? snapshotTask;
+          const res = await updateTask(snapshotTask.id, payload);
+          if (!res.success) {
+            toast.error(res.error || t("saveChangesError"));
+            if (batchSeq === saveSequenceRef.current) {
+              latestTaskRef.current = previousConfirmed;
+              onTaskUpdate?.(previousConfirmed);
+              if (isMountedRef.current) {
+                applyFieldsToLocalState(previousConfirmed, patchedFields);
+              }
+            }
+          } else if (res.data) {
+            const mappedServer = mapTaskResponseToTask(
+              res.data,
+              snapshotTask.columnId || "",
             );
+            const finalChecklist =
+              res.data.checklist && res.data.checklist.length > 0
+                ? res.data.checklist
+                : snapshotTask.checklist;
+            const syncedTask: Task = {
+              ...mappedServer,
+              title: res.data.name || snapshotTask.title,
+              checklist: finalChecklist,
+              totalFocusMinutes:
+                res.data.totalFocusMinutes ?? snapshotTask.totalFocusMinutes,
+              focusCyclesCount:
+                res.data.focusCyclesCount ?? snapshotTask.focusCyclesCount,
+            };
+            confirmedTaskRef.current = syncedTask;
+            if (batchSeq === saveSequenceRef.current) {
+              latestTaskRef.current = syncedTask;
+              onTaskUpdate?.(syncedTask);
+              if (isMountedRef.current) {
+                applyFieldsToLocalState(syncedTask, {
+                  dueDate: syncedTask.dueDate,
+                  dueTime: syncedTask.dueTime,
+                  startTime: syncedTask.startTime,
+                  dueEndTime: syncedTask.dueEndTime,
+                  isAllDay: syncedTask.isAllDay,
+                });
+              }
+            }
           }
-          if ("startTime" in fields) {
-            setStartTime(
-              previousTask.startTime ? previousTask.startTime.slice(0, 5) : "",
-            );
-          }
-          if ("dueEndTime" in fields) {
-            setDueEndTime(
-              previousTask.dueEndTime
-                ? previousTask.dueEndTime.slice(0, 5)
-                : "",
-            );
-          }
-          if ("isAllDay" in fields) {
-            setIsAllDay(Boolean(previousTask.isAllDay));
-          }
-          if ("priority" in fields) {
-            setPriority(previousTask.priority || "NONE");
-          }
-          if ("tags" in fields) setTags(previousTask.tags || []);
-        } else if (res.data) {
-          const finalChecklist =
-            res.data.checklist && res.data.checklist.length > 0
-              ? res.data.checklist
-              : currentChecklist;
-          onTaskUpdate?.({
-            ...updated,
-            title: res.data.name || updated.title,
-            checklist: finalChecklist,
-          });
-        }
+        });
       });
     },
-    [task, onTaskUpdate, t],
+    [task, onTaskUpdate, applyFieldsToLocalState, t],
   );
 
   const flushPendingChanges = useCallback(() => {
-    if (!task) return;
+    const currentTask = latestTaskRef.current ?? task;
+    if (!currentTask) return;
+
+    const flushedDesc = descriptionFlushRef.current?.();
+    if (flushedDesc !== undefined) {
+      descRef.current = flushedDesc;
+    }
 
     const trimmedTitle = titleRef.current.trim();
     const trimmedDesc = descRef.current.trim();
-    const originalDesc = (task.description || "").trim();
+    const originalDesc = (currentTask.description || "").trim();
 
-    const titleChanged = trimmedTitle !== "" && trimmedTitle !== task.title;
+    const titleChanged =
+      trimmedTitle !== "" && trimmedTitle !== currentTask.title;
     const descChanged = trimmedDesc !== originalDesc;
 
-    let nextTags = [...(task.tags || tags)];
-    const parsedPendingTags = parseTaskTags(newTagRef.current);
-    let tagsChanged = false;
-
-    for (const pendingTag of parsedPendingTags) {
-      if (
-        nextTags.length < MAX_TASK_TAGS &&
-        !nextTags.some((t) => t.toLowerCase() === pendingTag.toLowerCase())
-      ) {
-        nextTags = [...nextTags, pendingTag];
-        tagsChanged = true;
-      }
-    }
-
-    if (titleChanged || descChanged || tagsChanged) {
+    if (titleChanged || descChanged) {
       saveTaskField({
         ...(titleChanged ? { title: trimmedTitle } : {}),
         ...(descChanged ? { description: trimmedDesc || undefined } : {}),
-        ...(tagsChanged ? { tags: nextTags } : {}),
       });
     }
 
@@ -276,27 +350,7 @@ export function useTaskDetailsPopover({
     if (pendingItem) {
       addChecklistItem(pendingItem);
     }
-  }, [task, tags, saveTaskField, addChecklistItem]);
-
-  const handleApplyFormat = useCallback((syntax: FormatSyntax) => {
-    const textarea = descTextareaRef.current;
-    const { nextDesc, nextCursorPos } = applyMarkdownFormat(
-      textarea,
-      descRef.current,
-      syntax,
-    );
-
-    setDescription(nextDesc);
-    descRef.current = nextDesc;
-
-    setTimeout(() => {
-      const targetTextarea = descTextareaRef.current;
-      if (targetTextarea) {
-        targetTextarea.focus();
-        targetTextarea.setSelectionRange(nextCursorPos, nextCursorPos);
-      }
-    }, 50);
-  }, []);
+  }, [task, saveTaskField, addChecklistItem]);
 
   const handleCloseWithSave = useCallback(() => {
     flushPendingChanges();
@@ -306,29 +360,36 @@ export function useTaskDetailsPopover({
   useClickOutside(popoverRef, handleCloseWithSave, { enabled: isOpen });
 
   const handleToggleTask = () => {
-    if (!task) return;
+    const currentTask = latestTaskRef.current ?? task;
+    if (!currentTask) return;
     const next = !completed;
     setCompleted(next);
-    onToggleComplete?.(task.id, next);
-    onTaskUpdate?.({ ...task, completed: next });
+    const updatedTask = { ...currentTask, completed: next };
+    latestTaskRef.current = updatedTask;
+    onToggleComplete?.(currentTask.id, next);
+    onTaskUpdate?.(updatedTask);
   };
 
   const handleHabitDelta = (delta: number) => {
-    if (!task) return;
-    onHabitChange?.(task.id, delta);
-    const nextFields = computeOptimisticHabitDelta(task, delta);
-    onTaskUpdate?.({ ...task, ...nextFields });
+    const currentTask = latestTaskRef.current ?? task;
+    if (!currentTask) return;
+    onHabitChange?.(currentTask.id, delta);
+    const nextFields = computeOptimisticHabitDelta(currentTask, delta);
+    const updatedTask = { ...currentTask, ...nextFields };
+    latestTaskRef.current = updatedTask;
+    onTaskUpdate?.(updatedTask);
   };
 
   const handleTitleBlur = () => {
-    if (!task) return;
+    const currentTask = latestTaskRef.current ?? task;
+    if (!currentTask) return;
     const trimmed = title.trim();
     if (!trimmed) {
-      setTitle(task.title);
-      titleRef.current = task.title;
+      setTitle(currentTask.title);
+      titleRef.current = currentTask.title;
       return;
     }
-    if (trimmed !== task.title) {
+    if (trimmed !== currentTask.title) {
       saveTaskField({ title: trimmed });
     }
   };
@@ -340,15 +401,17 @@ export function useTaskDetailsPopover({
   };
 
   const handleDescriptionBlur = () => {
-    if (!task) return;
-    const trimmed = description.trim();
-    if (trimmed !== (task.description || "").trim()) {
+    const currentTask = latestTaskRef.current ?? task;
+    if (!currentTask) return;
+    const trimmed = descRef.current.trim();
+    if (trimmed !== (currentTask.description || "").trim()) {
       saveTaskField({ description: trimmed || undefined });
     }
   };
 
   const handleDateChange = (newDate: string) => {
-    if (!task || isTaskHardcoreLocked(task)) {
+    const currentTask = latestTaskRef.current ?? task;
+    if (!currentTask || isTaskHardcoreLocked(currentTask)) {
       return;
     }
     setDueDate(newDate);
@@ -369,115 +432,23 @@ export function useTaskDetailsPopover({
     }
   };
 
-  const handleTimeChange = (newTime: string) => {
-    if (!task || isTaskHardcoreLocked(task)) {
+  const handleEventScheduleChange = (patch: DatePickerEventSchedulePatch) => {
+    const currentTask = latestTaskRef.current ?? task;
+    if (!currentTask || isTaskHardcoreLocked(currentTask)) {
       return;
     }
-    const cleanTime = newTime ? newTime.slice(0, 5) : "";
-    setDueTime(cleanTime);
-    setStartTime("");
-    setDueEndTime("");
-    setIsAllDay(false);
-    if (cleanTime && !dueDate) {
-      const todayIso = getTodayDateString();
-      setDueDate(todayIso);
-      saveTaskField({
-        dueDate: todayIso,
-        dueTime: cleanTime,
-        startTime: undefined,
-        dueEndTime: undefined,
-        isAllDay: false,
-      });
-    } else {
-      saveTaskField({
-        dueTime: cleanTime || undefined,
-        startTime: undefined,
-        dueEndTime: undefined,
-        isAllDay: false,
-      });
-    }
-  };
 
-  const handleStartTimeChange = (newStartTime: string) => {
-    if (!task || isTaskHardcoreLocked(task)) {
-      return;
-    }
-    const cleanStart = newStartTime ? newStartTime.slice(0, 5) : "";
-    setStartTime(cleanStart);
-    setDueTime("");
-    setIsAllDay(false);
-    const currentEnd = dueEndTime || task.dueEndTime?.slice(0, 5);
-    const shouldClearEnd =
-      Boolean(currentEnd) && (!cleanStart || (currentEnd ?? "") <= cleanStart);
-    if (shouldClearEnd) {
-      setDueEndTime("");
-    }
-    const endPatch = shouldClearEnd ? { dueEndTime: undefined } : {};
-    if (cleanStart && !dueDate) {
-      const todayIso = getTodayDateString();
-      setDueDate(todayIso);
-      saveTaskField({
-        dueDate: todayIso,
-        startTime: cleanStart,
-        dueTime: undefined,
-        isAllDay: false,
-        ...endPatch,
-      });
-    } else {
-      saveTaskField({
-        startTime: cleanStart || undefined,
-        dueTime: undefined,
-        isAllDay: false,
-        ...endPatch,
-      });
-    }
-  };
+    const normalized = normalizeEventSchedulePatch(currentTask, patch);
 
-  const handleEndTimeChange = (newEndTime: string) => {
-    if (!task || isTaskHardcoreLocked(task)) {
-      return;
+    if (normalized.dueDate !== undefined) setDueDate(normalized.dueDate);
+    if (normalized.dueTime !== undefined) setDueTime(normalized.dueTime);
+    if (normalized.startTime !== undefined) setStartTime(normalized.startTime);
+    if (normalized.dueEndTime !== undefined) {
+      setDueEndTime(normalized.dueEndTime);
     }
-    const cleanEnd = newEndTime ? newEndTime.slice(0, 5) : "";
-    setDueEndTime(cleanEnd);
-    setDueTime("");
-    setIsAllDay(false);
-    saveTaskField({
-      dueEndTime: cleanEnd || undefined,
-      dueTime: undefined,
-      isAllDay: false,
-    });
-  };
+    if (normalized.isAllDay !== undefined) setIsAllDay(normalized.isAllDay);
 
-  const handleAllDayChange = (newAllDay: boolean) => {
-    if (!task || isTaskHardcoreLocked(task)) {
-      return;
-    }
-    setIsAllDay(newAllDay);
-    if (newAllDay) {
-      setDueTime("");
-      setStartTime("");
-      setDueEndTime("");
-      if (!dueDate) {
-        const todayIso = getTodayDateString();
-        setDueDate(todayIso);
-        saveTaskField({
-          dueDate: todayIso,
-          isAllDay: true,
-          dueTime: undefined,
-          startTime: undefined,
-          dueEndTime: undefined,
-        });
-      } else {
-        saveTaskField({
-          isAllDay: true,
-          dueTime: undefined,
-          startTime: undefined,
-          dueEndTime: undefined,
-        });
-      }
-    } else {
-      saveTaskField({ isAllDay: false });
-    }
+    saveTaskField(normalized.taskPatch);
   };
 
   const handlePrioritySelect = (p: TaskPriorityOption) => {
@@ -485,46 +456,19 @@ export function useTaskDetailsPopover({
     saveTaskField({ priority: p });
   };
 
-  const handleAddTag = () => {
-    const parsedNewTags = parseTaskTags(newTagText);
-    if (parsedNewTags.length === 0) {
-      setIsAddingTag(false);
-      return;
-    }
-    if (tags.length >= MAX_TASK_TAGS) {
+  const handleAddTag = (explicitTagInput?: string) => {
+    const rawInput =
+      typeof explicitTagInput === "string" ? explicitTagInput : newTagText;
+    const { nextTags, addedAny, errorKey } = mergeTaskTagsWithLimit(
+      tags,
+      parseTaskTags(rawInput),
+      MAX_TASK_TAGS,
+    );
+
+    if (errorKey === "maxTagsError") {
       toast.error(t("maxTagsError", { max: MAX_TASK_TAGS }));
-      setNewTagText("");
-      newTagRef.current = "";
-      setIsAddingTag(false);
-      return;
-    }
-
-    const nextTags = [...tags];
-    let addedAny = false;
-    let hadDuplicate = false;
-
-    for (const candidate of parsedNewTags) {
-      if (nextTags.length >= MAX_TASK_TAGS) {
-        toast.error(t("maxTagsError", { max: MAX_TASK_TAGS }));
-        break;
-      }
-      const alreadyExists = nextTags.some(
-        (tagItem) => tagItem.toLowerCase() === candidate.toLowerCase(),
-      );
-      if (alreadyExists) {
-        hadDuplicate = true;
-        continue;
-      }
-      nextTags.push(candidate);
-      addedAny = true;
-    }
-
-    if (!addedAny && hadDuplicate) {
+    } else if (errorKey === "tagAlreadyAdded") {
       toast.error(t("tagAlreadyAdded"));
-      setNewTagText("");
-      newTagRef.current = "";
-      setIsAddingTag(false);
-      return;
     }
 
     if (addedAny) {
@@ -532,7 +476,6 @@ export function useTaskDetailsPopover({
       saveTaskField({ tags: nextTags });
     }
     setNewTagText("");
-    newTagRef.current = "";
     setIsAddingTag(false);
   };
 
@@ -595,7 +538,6 @@ export function useTaskDetailsPopover({
     mounted,
     popoverRef,
     titleInputRef,
-    descTextareaRef,
     isMobileScreen,
     popoverPosition,
     completed,
@@ -609,6 +551,7 @@ export function useTaskDetailsPopover({
       setDescription(val);
       descRef.current = val;
     },
+    descriptionFlushRef,
     dueDate,
     dueTime,
     startTime,
@@ -619,13 +562,10 @@ export function useTaskDetailsPopover({
     isAddingTag,
     setIsAddingTag,
     newTagText,
-    setNewTagText: (val: string) => {
-      setNewTagText(val);
-      newTagRef.current = val;
-    },
+    setNewTagText,
     cancelAddTag: () => {
       setIsAddingTag(false);
-      newTagRef.current = "";
+      setNewTagText("");
     },
     checklist,
     isAddingItem,
@@ -649,10 +589,7 @@ export function useTaskDetailsPopover({
     handleTitleKeyDown,
     handleDescriptionBlur,
     handleDateChange,
-    handleTimeChange,
-    handleStartTimeChange,
-    handleEndTimeChange,
-    handleAllDayChange,
+    handleEventScheduleChange,
     handlePrioritySelect,
     handleAddTag,
     handleRemoveTag,
@@ -660,7 +597,6 @@ export function useTaskDetailsPopover({
     handleToggleCheckItem: toggleChecklistItem,
     handleUpdateCheckItem: updateChecklistItem,
     handleDeleteCheckItem: deleteChecklistItem,
-    handleApplyFormat,
     handleDeleteTask,
     handleDuplicateTask,
     handleOpenFullModal,
