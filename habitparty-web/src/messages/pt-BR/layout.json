@@ -173,6 +173,16 @@
     "resendDefaultTarget": "sua caixa de entrada",
     "resendErrorToast": "Não foi possível reenviar o e-mail de confirmação."
   },
+  "timezoneAlert": {
+    "ariaLabel": "Aviso de divergência de fuso horário",
+    "title": "Seu fuso horário parece diferente do navegador.",
+    "description": "Sua conta está configurada em {currentTz}, mas este dispositivo está em {browserTz}.",
+    "updateButton": "Atualizar para {browserTz}",
+    "updating": "Atualizando...",
+    "dismissAria": "Dispensar aviso de fuso horário",
+    "updateSuccessToast": "Fuso horário atualizado para {timezone}!",
+    "updateErrorToast": "Não foi possível atualizar seu fuso horário agora."
+  },
   "paymentFeedback": {
     "successToast": "Parabéns! Sua assinatura Premium de Guardião Cósmico foi ativada com sucesso!",
     "waitingCompensationToast": "Aguardando compensação do pagamento...",

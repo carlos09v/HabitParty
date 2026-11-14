@@ -1,9 +1,11 @@
 package com.habitparty.application.usecases.user;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
+import java.time.ZoneId;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -27,29 +29,44 @@ public class CreateUserUseCase {
   private final UserRepository port;
   private final PasswordHasherPort passwordHasher;
   private final SendEmailVerificationUseCase sendEmailVerificationUseCase;
+  private final Clock clock;
 
   public CreateUserUseCase(UserRepository port, PasswordHasherPort passwordHasher) {
-    this(port, passwordHasher, null);
+    this(port, passwordHasher, null, Clock.system(ZoneId.of(User.DEFAULT_TIMEZONE)));
+  }
+
+  public CreateUserUseCase(
+      UserRepository port,
+      PasswordHasherPort passwordHasher,
+      SendEmailVerificationUseCase sendEmailVerificationUseCase) {
+    this(port, passwordHasher, sendEmailVerificationUseCase, Clock.system(ZoneId.of(User.DEFAULT_TIMEZONE)));
   }
 
   @Autowired
   public CreateUserUseCase(
       UserRepository port,
       PasswordHasherPort passwordHasher,
-      SendEmailVerificationUseCase sendEmailVerificationUseCase) {
+      SendEmailVerificationUseCase sendEmailVerificationUseCase,
+      Clock clock) {
     this.port = port;
     this.passwordHasher = passwordHasher;
     this.sendEmailVerificationUseCase = sendEmailVerificationUseCase;
+    this.clock = clock != null ? clock : Clock.system(ZoneId.of(User.DEFAULT_TIMEZONE));
   }
 
   public User execute(CreateUserCommand command) {
+    ZoneId userZone = (command.timezone() != null && !command.timezone().isBlank())
+        ? User.parseValidZoneId(command.timezone())
+        : clock.getZone();
+    LocalDate userToday = LocalDate.now(clock.withZone(userZone));
+
     if (command.birthDate() == null) {
       throw new DomainValidationException("A data de nascimento é obrigatória.");
     }
-    if (command.birthDate().isAfter(LocalDate.now())) {
+    if (command.birthDate().isAfter(userToday)) {
       throw new DomainValidationException("A data de nascimento deve estar no passado.");
     }
-    int age = Period.between(command.birthDate(), LocalDate.now()).getYears();
+    int age = Period.between(command.birthDate(), userToday).getYears();
     if (age < 12) {
       throw new DomainValidationException("Você deve ter no mínimo 12 anos para criar uma conta.");
     }
@@ -87,8 +104,9 @@ public class CreateUserUseCase {
         0,
         0,
         0,
-        LocalDateTime.now()
+        LocalDateTime.now(clock)
     );
+    newUser.initializeTimezone(userZone.getId(), clock);
 
     // 3. Salva no banco
     User savedUser = port.save(newUser);

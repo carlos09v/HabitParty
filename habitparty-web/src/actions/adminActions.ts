@@ -1,14 +1,10 @@
 "use server";
 
-import { updateTag } from "next/cache";
 import { getTranslations } from "next-intl/server";
+import { invalidateAdminDomainTags } from "@/actions/cacheInvalidation";
 import { type ActionState, getErrorMessage } from "@/actions/types";
 import { getServerAuthToken } from "@/api/server";
-import type {
-  AdminOverviewDTO,
-  AdminUserDetailDTO,
-  AdminUsersPageResponse,
-} from "@/types/admin";
+import type { AdminUserDetailDTO } from "@/types/admin";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -18,94 +14,15 @@ async function getAuthHeader(): Promise<HeadersInit> {
 }
 
 /**
- * Obtém as métricas gerais do sistema (Resend, Usuários, Banco)
+ * Força a revalidação imediata dos dados do painel administrativo (overview + listagem de usuários).
  */
-export async function getAdminOverviewAction(): Promise<
-  ActionState<AdminOverviewDTO>
-> {
-  const t = await getTranslations("admin.actions");
-  try {
-    const authHeaders = await getAuthHeader();
-    const res = await fetch(`${API_BASE_URL}/api/v1/admin/overview`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        ...authHeaders,
-      },
-      next: { tags: ["admin-overview"], revalidate: 15 },
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => null);
-      return {
-        success: false,
-        error: getErrorMessage(err, t("overviewFailed")),
-      };
-    }
-
-    const data = (await res.json()) as AdminOverviewDTO;
-    return { success: true, data };
-  } catch (err) {
-    console.error("[AdminAction:getOverview]", err);
-    return {
-      success: false,
-      error: t("overviewConnectionError"),
-    };
-  }
+export async function refreshAdminDataAction(): Promise<ActionState<void>> {
+  invalidateAdminDomainTags();
+  return { success: true, data: undefined };
 }
 
 /**
- * Lista usuários paginados com métricas de e-mail e armazenamento
- */
-export async function listAdminUsersAction(
-  search = "",
-  filter = "ALL",
-  page = 0,
-  size = 15,
-): Promise<ActionState<AdminUsersPageResponse>> {
-  const t = await getTranslations("admin.actions");
-  try {
-    const authHeaders = await getAuthHeader();
-    const query = new URLSearchParams({
-      search: search.trim(),
-      filter,
-      page: page.toString(),
-      size: size.toString(),
-    });
-
-    const res = await fetch(
-      `${API_BASE_URL}/api/v1/admin/users?${query.toString()}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          ...authHeaders,
-        },
-        cache: "no-store",
-      },
-    );
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => null);
-      return {
-        success: false,
-        error: getErrorMessage(err, t("listUsersFailed")),
-      };
-    }
-
-    const data = (await res.json()) as AdminUsersPageResponse;
-    return { success: true, data };
-  } catch (err) {
-    console.error("[AdminAction:listUsers]", err);
-    return {
-      success: false,
-      error: t("listUsersConnectionError"),
-    };
-  }
-}
-
-/**
- * Detalhes e breakdown de armazenamento de um usuário específico
+ * Detalhes e breakdown de armazenamento de um usuário específico (sob demanda ao abrir modal)
  */
 export async function getAdminUserDetailAction(
   userId: string,
@@ -171,8 +88,7 @@ export async function updateUserRoleAction(
       };
     }
 
-    updateTag("admin-overview");
-    updateTag("admin-users");
+    invalidateAdminDomainTags();
     return { success: true, data: undefined };
   } catch (err) {
     console.error("[AdminAction:updateRole]", err);

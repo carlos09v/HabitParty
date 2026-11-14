@@ -3,6 +3,7 @@ package com.habitparty.application.usecases.task;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.habitparty.application.ports.EmailDispatchLogRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.task.Daily;
 import com.habitparty.core.domain.entities.task.Habit;
 import com.habitparty.core.domain.entities.task.Task;
@@ -54,7 +56,9 @@ public class UpdateTaskUseCase {
         .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada."));
     task.validateOwnership(userIdLogado);
 
-    LocalDate today = LocalDate.now(clock);
+    User loadedUser = userPort != null ? userPort.findById(userIdLogado).orElse(null) : null;
+    ZoneId userZone = loadedUser != null ? loadedUser.resolveZoneId(clock.getZone()) : clock.getZone();
+    LocalDate today = loadedUser != null ? loadedUser.resolveLocalDate(clock) : LocalDate.now(clock);
 
     // Validação específica para Todo no modo Hardcore antes da atualização
     if (task instanceof Todo t) {
@@ -72,7 +76,8 @@ public class UpdateTaskUseCase {
     // 2. Atualiza os campos comuns
     task.updateBaseDetails(
         command.name(), command.description(), command.priority(), 
-        command.difficulty(), command.tags(), command.isHardcoreModeEnabled()
+        command.difficulty(), command.tags(), command.isHardcoreModeEnabled(),
+        today
     );
 
     // 3. Atualiza os campos específicos usando Pattern Matching
@@ -82,23 +87,27 @@ public class UpdateTaskUseCase {
     else if (task instanceof Daily d) {
       int safeRepeat = command.repeatEvery() != null ? command.repeatEvery() : 1;
       d.updateDailyDetails(command.startDate(), command.repeatType(), safeRepeat, 
-                           command.daysOfWeek(), command.monthlyOption());
+                           command.daysOfWeek(), command.monthlyOption(), today);
     } 
     else if (task instanceof Todo t) {
       if (Boolean.TRUE.equals(command.sendEmailReminder())) {
         boolean wasAlreadyActive = t.isSendEmailReminder() && !t.isEmailReminderSent();
         if (!wasAlreadyActive) {
-          var user = userPort.findById(userIdLogado)
-              .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+          if (loadedUser == null) {
+            throw new ResourceNotFoundException("Usuário não encontrado.");
+          }
 
-          user.validateEmailVerified("ativar lembretes por e-mail");
+          loadedUser.validateEmailVerified("ativar lembretes por e-mail");
 
-          boolean isPremium = user.isPremium();
+          boolean isPremium = loadedUser.isPremium();
 
           long activeReminders = port.countActiveEmailRemindersByUserId(userIdLogado);
           com.habitparty.core.domain.entities.task.EmailReminderQuotas.validateActiveRemindersQuota(isPremium, activeReminders);
 
-          LocalDateTime startOfMonth = today.withDayOfMonth(1).atStartOfDay();
+          LocalDateTime startOfMonth = today.withDayOfMonth(1)
+              .atStartOfDay(userZone)
+              .withZoneSameInstant(ZoneId.systemDefault())
+              .toLocalDateTime();
           long sentThisMonth = emailLogPort.countByUserIdAndEmailTypeAndStatusAndSentAtAfter(
               userIdLogado,
               EmailType.TASK_REMINDER,
@@ -113,9 +122,10 @@ public class UpdateTaskUseCase {
           || command.startTime() != null
           || command.dueEndTime() != null;
       if (isEventSchedule) {
-        var user = userPort.findById(userIdLogado)
-            .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
-        if (!user.isPremium()) {
+        if (loadedUser == null) {
+          throw new ResourceNotFoundException("Usuário não encontrado.");
+        }
+        if (!loadedUser.isPremium()) {
           throw new LimitExceededException(
               "Agendar afazeres como Evento (com horário de início/término ou dia inteiro) é um recurso exclusivo dos planos Premium."
           );
@@ -130,11 +140,11 @@ public class UpdateTaskUseCase {
       LocalDateTime newReminderAt = Todo.calculateReminderTime(
           effectiveDueDate, command.reminderType(), command.customReminderAt()
       );
-      t.updateTodoDetails(effectiveDueDate, command.dueTime(), command.reminderType(), newReminderAt, command.sendEmailReminder());
+      t.updateTodoDetails(effectiveDueDate, command.dueTime(), command.reminderType(), newReminderAt, command.sendEmailReminder(), today);
       if (Boolean.TRUE.equals(command.isAllDay()) || command.startTime() != null) {
-        t.defineEventSchedule(command.startTime(), command.dueEndTime(), command.isAllDay());
+        t.defineEventSchedule(command.startTime(), command.dueEndTime(), command.isAllDay(), today);
       } else {
-        t.defineEventSchedule(null, null, false);
+        t.defineEventSchedule(null, null, false, today);
         t.defineDueEndTime(command.dueEndTime());
       }
     }

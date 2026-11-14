@@ -11,7 +11,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { type CSSProperties, memo, useEffect, useMemo, useRef } from "react";
+import { type CSSProperties, memo, useMemo } from "react";
 import {
   TaskActionControl,
   TaskChecklistBadge,
@@ -27,7 +27,10 @@ import {
   WeekDaysIndicator,
 } from "@/components/tasks/shared";
 import { TASK_TABLE_GRID_COLS } from "@/constants/task";
-import { useTaskItemMeta } from "@/hooks/useTaskCardItem";
+import {
+  useDeferredSingleClick,
+  useTaskItemMeta,
+} from "@/hooks/useTaskCardItem";
 import type { TaskRowProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 import { getClickAnchorRect } from "@/utils/dom";
@@ -65,15 +68,7 @@ const TaskRowContent = memo(function TaskRowContent({
 }: TaskRowContentProps) {
   const t = useTranslations("dashboard.taskShared");
   const effectiveToggle = onToggleCompleted || onToggle;
-  const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (clickTimeoutRef.current) {
-        clearTimeout(clickTimeoutRef.current);
-      }
-    };
-  }, []);
+  const { triggerSingleClick, clearPendingClick } = useDeferredSingleClick();
 
   const {
     isCompact,
@@ -110,34 +105,18 @@ const TaskRowContent = memo(function TaskRowContent({
   const handleClick = (e: React.MouseEvent<HTMLElement>) => {
     if (isDragging) return;
     e.stopPropagation();
-    if (e.detail >= 2) {
-      if (clickTimeoutRef.current) {
-        clearTimeout(clickTimeoutRef.current);
-        clickTimeoutRef.current = null;
-      }
-      return;
-    }
     if (onOpenDetails) {
       const anchor = getClickAnchorRect(e);
-      if (onEditTask) {
-        if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
-        clickTimeoutRef.current = setTimeout(() => {
-          clickTimeoutRef.current = null;
-          onOpenDetails(task, anchor, columnId);
-        }, 180);
-      } else {
+      triggerSingleClick(e.detail, Boolean(onEditTask), () => {
         onOpenDetails(task, anchor, columnId);
-      }
+      });
     }
   };
 
   const handleDoubleClick = (e: React.MouseEvent<HTMLElement>) => {
     if (isDragging || !onEditTask) return;
     e.stopPropagation();
-    if (clickTimeoutRef.current) {
-      clearTimeout(clickTimeoutRef.current);
-      clickTimeoutRef.current = null;
-    }
+    clearPendingClick();
     onEditTask(task, columnId);
   };
 
@@ -182,9 +161,9 @@ const TaskRowContent = memo(function TaskRowContent({
         isDone && "dark:opacity-60 bg-card/80 dark:bg-primary-dark/15",
         isDeleteChecking && "opacity-75 pointer-events-none cursor-wait",
         isDragging &&
-          "!transition-none opacity-30 border-dashed border-primary-light scale-95",
+          "transition-none! opacity-30 border-dashed border-primary-light scale-95",
         isOverlay &&
-          "!transition-none shadow-card-active border-gold/70 bg-surface/90 scale-102 cursor-grabbing z-50",
+          "transition-none! shadow-card-active border-gold/70 bg-surface/90 scale-102 cursor-grabbing z-50",
       )}
     >
       {/* Coluna 1: [Grip opcional] + Ação + Título + Metadados (Streak, Recompensas e Saldo) */}
@@ -377,7 +356,7 @@ const TaskRowContent = memo(function TaskRowContent({
             }}
             aria-label={t("actions.taskOptionsAria", { title: task.title })}
             title={t("actions.taskOptionsTitle")}
-            className="p-1 rounded text-neutral-400 group-hover:text-neutral-200 hover:!text-gold hover:!bg-white/10 focus:outline-none focus:ring-1 focus:ring-gold/60 transition-colors cursor-pointer"
+            className="p-1 rounded text-neutral-400 group-hover:text-neutral-200 hover:text-gold-ink! dark:hover:text-gold! hover:bg-surface-hover! dark:hover:bg-white/10! focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/60 transition-colors cursor-pointer"
           >
             <MoreHorizontal size={isCompact ? 14 : 16} />
           </button>

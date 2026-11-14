@@ -2,10 +2,8 @@
 
 import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import type {
   FocusMetrics,
-  FocusPeriodTab,
   FocusRecord,
   WeeklyFocusDayData,
 } from "@/types/focus";
@@ -58,7 +56,6 @@ export function FocusSidebarRight({
 }: FocusSidebarRightProps) {
   const t = useTranslations("focus.sidebar");
   const resolvedWeekLabel = weekLabel ?? t("thisWeek");
-  const [period, setPeriod] = useState<FocusPeriodTab>("HOJE");
 
   return (
     <aside
@@ -96,14 +93,9 @@ export function FocusSidebarRight({
       )}
 
       {/* 1. Visão Geral e Grid de Métricas */}
-      <FocusMetricsGrid
-        metrics={metrics}
-        period={period}
-        onPeriodChange={setPeriod}
-        isCompact={isCompact}
-      />
+      <FocusMetricsGrid metrics={metrics} isCompact={isCompact} />
 
-      <div className="h-px w-full bg-white/10 shrink-0" />
+      <div className="h-px w-full bg-neutral-700 dark:bg-white/10 shrink-0" />
 
       {/* 2. Gráfico Semanal (Análise de Foco com Navegação de Semanas) */}
       <FocusWeeklyChart
@@ -118,7 +110,7 @@ export function FocusSidebarRight({
         isCompact={isCompact}
       />
 
-      <div className="h-px w-full bg-white/10 shrink-0" />
+      <div className="h-px w-full bg-neutral-700 dark:bg-white/10 shrink-0" />
 
       {/* 3. Foco em Registro (Histórico Recente com botões + e ...) */}
       <FocusRecentRecords

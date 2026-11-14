@@ -13,11 +13,9 @@ export type HistoryPeriodFilter = "ALL" | "TODAY" | "7DAYS" | "30DAYS";
 
 export interface HistoryTab {
   id: HistoryTabId;
-  label: string;
 }
 
 export interface TransactionTypeStyle {
-  label: string;
   borderClass: string;
   badgeClass: string;
   icon: LucideIcon;

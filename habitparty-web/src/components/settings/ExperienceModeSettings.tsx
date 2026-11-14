@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 import { EXPERIENCE_MODE_OPTIONS } from "@/constants/settings";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { ExperienceMode } from "@/types/ui";
@@ -33,12 +34,20 @@ export function ExperienceModeSettings({
     badge: opt.hasDefaultBadge ? t("defaultBadge") : undefined,
   }));
 
+  const handleSelectMode = (nextMode: ExperienceMode) => {
+    if (nextMode === experienceMode) return;
+    setExperienceMode(nextMode);
+    const modeLabel =
+      nextMode === "GAMIFIED" ? t("gamified") : t("productivity");
+    toast.success(t("toastSuccess", { mode: modeLabel }));
+  };
+
   return (
     <SettingsOptionGrid
       statusMessage={statusMessage}
       options={options}
       selectedValue={experienceMode}
-      onSelect={(val) => setExperienceMode(val)}
+      onSelect={handleSelectMode}
       isCompact={isCompact}
     />
   );

@@ -1,4 +1,16 @@
-import { Calendar, Clock, Eye, Languages, Palette, Swords } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  Crown,
+  Eye,
+  Globe,
+  KeyRound,
+  Languages,
+  Palette,
+  Swords,
+  User as UserIcon,
+  Volume2,
+} from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { PageWrapper } from "@/components/layout/PageWrapper";
@@ -15,6 +27,7 @@ import { SoundNotificationSettings } from "@/components/settings/SoundNotificati
 import { SubscriptionSettingsCard } from "@/components/settings/SubscriptionSettingsCard";
 import { ThemeSettings } from "@/components/settings/ThemeSettings";
 import { TimeFormatSettings } from "@/components/settings/TimeFormatSettings";
+import { TimezoneSettings } from "@/components/settings/TimezoneSettings";
 import { WelcomeCardsSettings } from "@/components/settings/WelcomeCardsSettings";
 import { resolveSettingsTab } from "@/constants/settings";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
@@ -67,10 +80,22 @@ export default async function SettingsPage({
                   <ProfileHeaderCard initialUser={user || null} />
 
                   {/* Status de Plano & Assinatura (Gerenciar/Cancelar Cartão ou Evoluir) */}
-                  <SubscriptionSettingsCard />
+                  <SettingsCard
+                    title={t("cards.subscription")}
+                    description={t("cards.subscriptionDesc")}
+                    icon={<Crown size={18} className="text-gold fill-gold" />}
+                  >
+                    <SubscriptionSettingsCard />
+                  </SettingsCard>
 
-                  {/* Formulário de Dados Pessoais (com SettingsCard integrado) */}
-                  <ProfileForm initialUser={user || null} />
+                  {/* Formulário de Dados Pessoais */}
+                  <SettingsCard
+                    title={t("cards.profile")}
+                    description={t("cards.profileDesc")}
+                    icon={<UserIcon size={18} className="text-gold" />}
+                  >
+                    <ProfileForm initialUser={user || null} />
+                  </SettingsCard>
                 </>
               ),
               appearance: (
@@ -122,6 +147,18 @@ export default async function SettingsPage({
                     <TimeFormatSettings />
                   </SettingsCard>
 
+                  {/* FUSO HORÁRIO */}
+                  <SettingsCard
+                    title={t("cards.timezone")}
+                    description={t("cards.timezoneDesc")}
+                    icon={<Globe size={18} className="text-gold" />}
+                  >
+                    <TimezoneSettings
+                      initialTimezone={user?.timezone}
+                      initialTimezoneUpdatedAt={user?.timezoneUpdatedAt}
+                    />
+                  </SettingsCard>
+
                   {/* CARDS DE BOAS-VINDAS */}
                   <SettingsCard
                     title={t("cards.welcomeCards")}
@@ -132,11 +169,25 @@ export default async function SettingsPage({
                   </SettingsCard>
                 </>
               ),
-              audio: <SoundNotificationSettings />,
+              audio: (
+                <SettingsCard
+                  title={t("cards.audioTitle")}
+                  description={t("cards.audioDesc")}
+                  icon={<Volume2 className="text-gold" size={20} />}
+                >
+                  <SoundNotificationSettings />
+                </SettingsCard>
+              ),
               security: (
                 <>
                   {/* Formulário de Alteração de Senha */}
-                  <ChangePasswordCard />
+                  <SettingsCard
+                    title={t("cards.changePassword")}
+                    description={t("cards.changePasswordDesc")}
+                    icon={<KeyRound size={18} className="text-gold" />}
+                  >
+                    <ChangePasswordCard />
+                  </SettingsCard>
 
                   {/* Zona de Perigo / Exclusão de Conta */}
                   <DangerZoneCard />

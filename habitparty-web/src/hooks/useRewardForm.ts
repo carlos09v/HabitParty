@@ -235,12 +235,25 @@ export function useRewardForm({
 
   const isDefaultBoxTitle = (val: string) => {
     const trimmed = val.trim();
-    return (
-      !trimmed ||
-      trimmed.startsWith("Caixa") ||
-      trimmed.endsWith("Box") ||
-      trimmed === t("defaultMysteryBoxTitle")
-    );
+    if (!trimmed) return true;
+    const defaultTitles = new Set([
+      t("defaultMysteryBoxTitle"),
+      tMystery("tiers.BASIC.name"),
+      tMystery("tiers.PREMIUM.name"),
+      tMystery("tiers.EPIC.name"),
+      tMystery("tiers.LEGENDARY.name"),
+      "Caixa Misteriosa",
+      "Mystery Box",
+      "Caixa Básica",
+      "Caixa Premium",
+      "Caixa Épica",
+      "Caixa Lendária",
+      "Basic Box",
+      "Premium Box",
+      "Epic Box",
+      "Legendary Box",
+    ]);
+    return defaultTitles.has(trimmed);
   };
 
   const handleTypeChange = (newType: RewardType) => {

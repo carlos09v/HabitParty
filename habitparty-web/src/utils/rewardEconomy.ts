@@ -1,10 +1,37 @@
-import { calculateSuggestedCouponPrice } from "@/constants/reward";
 import { DIFFICULTY_REWARDS } from "@/constants/task";
 import type { PackageLevel, RewardType } from "@/types/reward";
 import { getMysteryBoxTier } from "@/utils/rewardMapper";
 
 /** Ganho médio de referência de um dia produtivo completo (tarefas + ~2h-3h de foco). */
 export const DAILY_PRODUCTIVE_COINS_BENCHMARK = 15;
+
+/**
+ * Calcula o preço sugerido calibrado para um cupom de tempo (TimeBased)
+ * mantendo custo por minuto consistente e desconto progressivo leve para pacotes maiores.
+ */
+export function calculateSuggestedCouponPrice(minutes: number): number {
+  const safeMin = Math.max(5, Math.round(minutes || 30));
+  if (safeMin === 30) return 8;
+  if (safeMin === 60) return 15;
+  if (safeMin === 120) return 28;
+  if (safeMin === 180) return 40;
+  if (safeMin === 240) return 50;
+  if (safeMin === 480) return 95;
+
+  if (safeMin < 30) {
+    return Math.max(1, Math.round(safeMin * (8 / 30)));
+  }
+  if (safeMin < 60) {
+    return Math.round(8 + ((safeMin - 30) / 30) * 7);
+  }
+  if (safeMin < 180) {
+    return Math.round(15 + ((safeMin - 60) / 120) * 25);
+  }
+  if (safeMin < 480) {
+    return Math.round(40 + ((safeMin - 180) / 300) * 55);
+  }
+  return Math.round(safeMin * 0.2);
+}
 
 export type RewardEffortDescriptor =
   | { key: "free" }

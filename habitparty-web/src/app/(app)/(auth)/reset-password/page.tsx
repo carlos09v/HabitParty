@@ -2,6 +2,7 @@ import { AlertTriangle } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { AuthPageShell } from "@/components/auth/AuthPageShell";
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
 
 export const instant = false;
@@ -29,11 +30,7 @@ export default async function ResetPasswordPage({
 
   if (!token) {
     return (
-      <main className="flex flex-col gap-6 w-full animate-in fade-in duration-300">
-        <header className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold text-neutral-50">{t("title")}</h1>
-        </header>
-
+      <AuthPageShell title={t("title")}>
         <div className="rounded-xl border border-danger-500/40 bg-danger-500/10 p-6 flex flex-col items-center text-center gap-3">
           <div className="w-12 h-12 rounded-full bg-danger-500/20 border border-danger-500/50 flex items-center justify-center text-danger-400">
             <AlertTriangle size={24} aria-hidden="true" />
@@ -54,18 +51,13 @@ export default async function ResetPasswordPage({
         >
           {t("requestNewLink")}
         </Link>
-      </main>
+      </AuthPageShell>
     );
   }
 
   return (
-    <main className="flex flex-col gap-6 w-full animate-in fade-in duration-300">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold text-neutral-50">{t("title")}</h1>
-        <p className="text-base text-neutral-300">{t("subtitle")}</p>
-      </header>
-
+    <AuthPageShell title={t("title")} subtitle={t("subtitle")}>
       <ResetPasswordForm token={token} />
-    </main>
+    </AuthPageShell>
   );
 }

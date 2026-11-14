@@ -20,9 +20,7 @@ import type { GenderType, ProfileFormProps } from "@/types/settings";
 import type { UpdateUserDTO } from "@/types/user";
 import { cn } from "@/utils";
 import { getMaxBirthDateString } from "@/utils/date";
-import { validateBirthDate } from "@/utils/validators";
-
-import { SettingsCard } from "./SettingsCard";
+import { MIN_USER_AGE, validateBirthDate } from "@/utils/validators";
 
 function resolveInitialBirthDate(
   user?: {
@@ -40,12 +38,16 @@ function resolveInitialBirthDate(
 export function ProfileForm({ initialUser, isCompact }: ProfileFormProps) {
   const t = useTranslations("settings.profileForm");
   const tGender = useTranslations("settings.profileForm.genderOptions");
+  const tValidation = useTranslations("auth.validation");
 
   const storeUser = useUserStore((s) => s.user);
   const user = storeUser || initialUser;
   const updateUserPartial = useUserStore((s) => s.updateUserPartial);
 
-  const maxBirthDate = useMemo(() => getMaxBirthDateString(12), []);
+  const maxBirthDate = useMemo(
+    () => getMaxBirthDateString(MIN_USER_AGE, new Date(), user?.timezone),
+    [user?.timezone],
+  );
 
   const [fullName, setFullName] = useState(user?.fullName || "");
   const [birthDate, setBirthDate] = useState(() =>
@@ -113,9 +115,18 @@ export function ProfileForm({ initialUser, isCompact }: ProfileFormProps) {
     }
 
     if (birthDate) {
-      const birthDateValidation = validateBirthDate(birthDate);
+      const birthDateValidation = validateBirthDate(
+        birthDate,
+        undefined,
+        undefined,
+        user?.timezone,
+      );
       if (!birthDateValidation.isValid) {
-        toast.error(birthDateValidation.error);
+        toast.error(
+          birthDateValidation.errorKey
+            ? tValidation(birthDateValidation.errorKey)
+            : birthDateValidation.error,
+        );
         return;
       }
     }
@@ -146,82 +157,75 @@ export function ProfileForm({ initialUser, isCompact }: ProfileFormProps) {
   };
 
   return (
-    <SettingsCard
-      title={t("cardTitle")}
-      description={t("cardDesc")}
-      icon={<UserIcon size={18} className="text-gold" />}
-      isCompact={isCompact}
-    >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* NOME COMPLETO */}
-          <div className="md:col-span-2">
-            <Input
-              id="fullName"
-              label={t("fullNameLabel")}
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder={t("fullNamePlaceholder")}
-              maxLength={30}
-              compact={isCompact}
-              icon={<UserIcon size={18} />}
-              required
-            />
-            <span className="text-tiny text-neutral-400 mt-1 block text-right">
-              {t("charCounter", { current: fullName.length, max: 30 })}
-            </span>
-          </div>
-
-          {/* DATA DE NASCIMENTO */}
-          <div>
-            <DatePicker
-              id="birthDate"
-              label={t("birthdayLabel")}
-              value={birthDate}
-              onChange={setBirthDate}
-              compact={isCompact}
-              placeholder={t("birthdayPlaceholder")}
-              maxDate={maxBirthDate}
-            />
-          </div>
-
-          {/* GÊNERO COM SELECT PADRONIZADO DO DESIGN SYSTEM */}
-          <div>
-            <Select
-              id="gender"
-              label={t("genderLabel")}
-              placeholder={t("genderPlaceholder")}
-              value={gender || ""}
-              compact={isCompact}
-              options={localizedGenderOptions}
-              onChange={(val) => setGender((val || undefined) as GenderType)}
-            />
-          </div>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* NOME COMPLETO */}
+        <div className="md:col-span-2">
+          <Input
+            id="fullName"
+            label={t("fullNameLabel")}
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder={t("fullNamePlaceholder")}
+            maxLength={30}
+            compact={isCompact}
+            icon={<UserIcon size={18} />}
+            required
+          />
+          <span className="text-tiny text-neutral-400 mt-1 block text-right">
+            {t("charCounter", { current: fullName.length, max: 30 })}
+          </span>
         </div>
 
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-neutral-700 dark:border-primary/20">
-          <button
-            type="submit"
-            disabled={isPending || !canSubmit}
-            className={cn(
-              "rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-md",
-              "bg-gold text-on-gold hover:bg-gold-hover active:bg-gold-pressed",
-              "disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-40 disabled:cursor-not-allowed",
-              isCompact ? "px-4 py-2 text-xs" : "px-6 py-2.5 text-sm",
-            )}
-            title={!hasChanges ? t("noChangesTitle") : t("save")}
-          >
-            {isPending ? (
-              t("saving")
-            ) : (
-              <>
-                <Save size={16} />
-                {t("save")}
-              </>
-            )}
-          </button>
+        {/* DATA DE NASCIMENTO */}
+        <div>
+          <DatePicker
+            id="birthDate"
+            label={t("birthdayLabel")}
+            value={birthDate}
+            onChange={setBirthDate}
+            compact={isCompact}
+            placeholder={t("birthdayPlaceholder")}
+            maxDate={maxBirthDate}
+          />
         </div>
-      </form>
-    </SettingsCard>
+
+        {/* GÊNERO COM SELECT PADRONIZADO DO DESIGN SYSTEM */}
+        <div>
+          <Select
+            id="gender"
+            label={t("genderLabel")}
+            placeholder={t("genderPlaceholder")}
+            value={gender || ""}
+            compact={isCompact}
+            options={localizedGenderOptions}
+            onChange={(val) => setGender((val || undefined) as GenderType)}
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-3 pt-4 border-t border-neutral-700 dark:border-primary/20">
+        <button
+          type="submit"
+          disabled={isPending || !canSubmit}
+          className={cn(
+            "rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-md",
+            "bg-gold text-on-gold hover:bg-gold-hover active:bg-gold-pressed",
+            "disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-40 disabled:cursor-not-allowed",
+            isCompact ? "px-4 py-2 text-xs" : "px-6 py-2.5 text-sm",
+          )}
+          title={!hasChanges ? t("noChangesTitle") : t("save")}
+        >
+          {isPending ? (
+            t("saving")
+          ) : (
+            <>
+              <Save size={16} />
+              {t("save")}
+            </>
+          )}
+        </button>
+      </div>
+    </form>
   );
 }

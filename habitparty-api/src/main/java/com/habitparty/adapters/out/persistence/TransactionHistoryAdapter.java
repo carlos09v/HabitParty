@@ -57,18 +57,28 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
     this(repository, mapper, Clock.systemDefaultZone());
   }
 
-  private LocalDateTime toStorageDateTime(LocalDate businessDate, LocalTime businessTime) {
+  private ZoneId resolveZone(ZoneId userZone) {
+    return userZone != null ? userZone : clock.getZone();
+  }
+
+  private LocalDateTime toStorageDateTime(LocalDate businessDate, LocalTime businessTime, ZoneId userZone) {
     return businessDate.atTime(businessTime)
-        .atZone(clock.getZone())
+        .atZone(resolveZone(userZone))
         .withZoneSameInstant(ZoneId.systemDefault())
         .toLocalDateTime();
   }
 
   @Override
   public int countCompletedTasksToday(UUID userId) {
-    LocalDate today = LocalDate.now(clock);
-    LocalDateTime startOfDay = toStorageDateTime(today, LocalTime.MIN);
-    LocalDateTime endOfDay = toStorageDateTime(today, END_OF_DAY_TIME);
+    return countCompletedTasksToday(userId, clock.getZone());
+  }
+
+  @Override
+  public int countCompletedTasksToday(UUID userId, ZoneId userZone) {
+    ZoneId effectiveZone = resolveZone(userZone);
+    LocalDate today = LocalDate.now(clock.withZone(effectiveZone));
+    LocalDateTime startOfDay = toStorageDateTime(today, LocalTime.MIN, effectiveZone);
+    LocalDateTime endOfDay = toStorageDateTime(today, END_OF_DAY_TIME, effectiveZone);
 
     long count = repository.countByUser_IdAndTransactionTypeInAndCreatedAtBetween(
         userId,
@@ -82,9 +92,15 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
 
   @Override
   public boolean hasCompletedTasksYesterday(UUID userId) {
-    LocalDate yesterday = LocalDate.now(clock).minusDays(1);
-    LocalDateTime startOfYesterday = toStorageDateTime(yesterday, LocalTime.MIN);
-    LocalDateTime endOfYesterday = toStorageDateTime(yesterday, END_OF_DAY_TIME);
+    return hasCompletedTasksYesterday(userId, clock.getZone());
+  }
+
+  @Override
+  public boolean hasCompletedTasksYesterday(UUID userId, ZoneId userZone) {
+    ZoneId effectiveZone = resolveZone(userZone);
+    LocalDate yesterday = LocalDate.now(clock.withZone(effectiveZone)).minusDays(1);
+    LocalDateTime startOfYesterday = toStorageDateTime(yesterday, LocalTime.MIN, effectiveZone);
+    LocalDateTime endOfYesterday = toStorageDateTime(yesterday, END_OF_DAY_TIME, effectiveZone);
 
     return repository.countByUser_IdAndTransactionTypeInAndCreatedAtBetween(
         userId,
@@ -96,13 +112,33 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
 
   @Override
   public boolean hasCompletedTasksSinceYesterday(UUID userId) {
-    LocalDate yesterday = LocalDate.now(clock).minusDays(1);
-    LocalDateTime sinceYesterday = toStorageDateTime(yesterday, LocalTime.MIN);
+    return hasCompletedTasksSinceYesterday(userId, clock.getZone());
+  }
+
+  @Override
+  public boolean hasCompletedTasksSinceYesterday(UUID userId, ZoneId userZone) {
+    ZoneId effectiveZone = resolveZone(userZone);
+    LocalDate yesterday = LocalDate.now(clock.withZone(effectiveZone)).minusDays(1);
+    LocalDateTime sinceYesterday = toStorageDateTime(yesterday, LocalTime.MIN, effectiveZone);
     return repository.existsByUser_IdAndTransactionTypeInAndCreatedAtGreaterThanEqual(
         userId,
         COMPLETED_TASK_TYPES,
         sinceYesterday
     );
+  }
+
+  @Override
+  public java.util.Map<UUID, LocalDateTime> findLastCompletedTaskAtByUserIds(java.util.Collection<UUID> userIds, LocalDateTime since) {
+    if (userIds == null || userIds.isEmpty()) {
+      return java.util.Map.of();
+    }
+    java.util.Map<UUID, LocalDateTime> result = new java.util.HashMap<>();
+    for (Object[] row : repository.findLastCompletedTaskAtByUserIds(userIds, COMPLETED_TASK_TYPES, since)) {
+      if (row != null && row.length >= 2 && row[0] instanceof UUID uid && row[1] instanceof LocalDateTime dt) {
+        result.put(uid, dt);
+      }
+    }
+    return result;
   }
 
   @Override

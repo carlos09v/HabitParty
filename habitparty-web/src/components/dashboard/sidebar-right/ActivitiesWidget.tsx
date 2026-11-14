@@ -95,9 +95,18 @@ export function ActivitiesWidget({
     ? Math.max(0, activitiesList.length - maxActivities)
     : 0;
 
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
+
   const activityTimeMap = useMemo(
-    () => calculateActivityDurationMap(records, period),
-    [records, period],
+    () =>
+      calculateActivityDurationMap(
+        records,
+        period,
+        undefined,
+        new Date(),
+        userTimeZone,
+      ),
+    [records, period, userTimeZone],
   );
 
   const handleOpenCreateModal = () => {

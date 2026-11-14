@@ -12,7 +12,7 @@ import { HelpFaqSection } from "@/components/help/HelpFaqSection";
 import { HelpProductivityCycle } from "@/components/help/HelpProductivityCycle";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { getHelpFaqs, getHelpTables } from "@/constants/help";
-import { SUPPORT_LINKS } from "@/constants/landing";
+import { SUPPORT_LINKS } from "@/constants/links";
 import type { AppLocale } from "@/i18n/config";
 import { setStaticLocale } from "@/i18n/request";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";

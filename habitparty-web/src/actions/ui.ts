@@ -2,6 +2,12 @@
 
 import { updateTag } from "next/cache";
 import { cookies } from "next/headers";
+import { invalidateShowcaseDomainTags } from "@/actions/cacheInvalidation";
+import type { ActionState } from "@/actions/types";
+import {
+  createWorkspaceAction,
+  type WorkspaceResponseDTO,
+} from "@/actions/workspaceActions";
 import { serverApi } from "@/api/server";
 import {
   type AppLocale,
@@ -58,11 +64,40 @@ export async function setFirstStepPreferencesAction(
   }
 
   try {
-    await serverApi.PUT("/users", {
+    const { error } = await serverApi.PUT("/users", {
       body: { experienceMode },
     });
-    updateTag("user");
-  } catch {
-    // ignore
+    if (!error) {
+      updateTag("user");
+      invalidateShowcaseDomainTags(false);
+    }
+  } catch (err) {
+    console.error("[UIAction:setFirstStepPreferences]", err);
   }
+}
+
+/**
+ * Conclui o onboarding inicial em uma única requisição atômica:
+ * cria o primeiro workspace, persiste os cookies de uso e sincroniza o modo de experiência.
+ */
+export async function completeFirstStepOnboardingAction(payload: {
+  workspaceName: string;
+  usageMode: string;
+  experienceMode: ExperienceMode;
+}): Promise<ActionState<WorkspaceResponseDTO>> {
+  const workspaceResult = await createWorkspaceAction({
+    name: payload.workspaceName,
+  });
+
+  if (!workspaceResult.success || !workspaceResult.data?.id) {
+    return workspaceResult;
+  }
+
+  await setFirstStepPreferencesAction(
+    payload.usageMode,
+    workspaceResult.data.id,
+    payload.experienceMode,
+  );
+
+  return workspaceResult;
 }

@@ -1,21 +1,10 @@
 "use client";
 
-import {
-  closestCenter,
-  DndContext,
-  type DragEndEvent,
-  type SensorDescriptor,
-  type SensorOptions,
+import type {
+  DragEndEvent,
+  SensorDescriptor,
+  SensorOptions,
 } from "@dnd-kit/core";
-import {
-  restrictToParentElement,
-  restrictToWindowEdges,
-} from "@dnd-kit/modifiers";
-import {
-  rectSortingStrategy,
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
 import { Backpack, Package, SearchX, Store } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -25,11 +14,11 @@ import {
   InventoryItemRow,
 } from "@/components/inventory/InventoryCard";
 import { CatalogEmptyState } from "@/components/ui/CatalogEmptyState";
+import { CatalogGridListShell } from "@/components/ui/CatalogGridListShell";
 import { ItemRowHeader } from "@/components/ui/ItemRow";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { InventoryItem } from "@/types/inventory";
 import type { ViewMode } from "@/types/ui";
-import { cn } from "@/utils";
 
 interface InventoryCatalogViewProps {
   filteredItems: InventoryItem[];
@@ -110,64 +99,44 @@ export function InventoryCatalogView({
   }
 
   return (
-    <DndContext
-      id="inventory-dnd-context"
+    <CatalogGridListShell
+      dndContextId="inventory-dnd-context"
+      itemIds={filteredItems.map((i) => i.id)}
+      viewMode={viewMode}
+      isCompact={isCompact}
+      headerMode="inventory"
+      listAriaLabel={t("listAriaLabel")}
+      gridClassName={
+        isCompact
+          ? "lg:grid-cols-3 xl:grid-cols-4 gap-3.5"
+          : "lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4"
+      }
       sensors={sensors}
-      collisionDetection={closestCenter}
       onDragEnd={onDragEnd}
-      modifiers={[restrictToParentElement, restrictToWindowEdges]}
     >
-      <SortableContext
-        items={filteredItems.map((i) => i.id)}
-        strategy={
-          viewMode === "card"
-            ? rectSortingStrategy
-            : verticalListSortingStrategy
-        }
-      >
-        {viewMode === "card" ? (
-          <div
-            className={cn(
-              "w-full pb-8",
-              isCompact
-                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5"
-                : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4",
-            )}
-          >
-            {filteredItems.map((item) => (
-              <InventoryCard
-                key={item.id}
-                item={item}
-                onUse={onUse}
-                onSendToFocus={onSendToFocus}
-                onOpenMysteryBox={onOpenMysteryBox}
-                onContextMenu={onContextMenu}
-                isCompact={isCompact}
-              />
-            ))}
-          </div>
+      {filteredItems.map((item) =>
+        viewMode === "card" ? (
+          <InventoryCard
+            key={item.id}
+            item={item}
+            onUse={onUse}
+            onSendToFocus={onSendToFocus}
+            onOpenMysteryBox={onOpenMysteryBox}
+            onContextMenu={onContextMenu}
+            isCompact={isCompact}
+          />
         ) : (
-          <div className="flex flex-col gap-2.5 w-full pb-8">
-            <ItemRowHeader isCompact={isCompact} mode="inventory" />
-            <ul
-              className="flex flex-col gap-2 w-full"
-              aria-label={t("listAriaLabel")}
-            >
-              {filteredItems.map((item) => (
-                <InventoryItemRow
-                  key={item.id}
-                  item={item}
-                  onUse={onUse}
-                  onSendToFocus={onSendToFocus}
-                  onOpenMysteryBox={onOpenMysteryBox}
-                  onContextMenu={onContextMenu}
-                  isCompact={isCompact}
-                />
-              ))}
-            </ul>
-          </div>
-        )}
-      </SortableContext>
-    </DndContext>
+          <InventoryItemRow
+            key={item.id}
+            item={item}
+            onUse={onUse}
+            onSendToFocus={onSendToFocus}
+            onOpenMysteryBox={onOpenMysteryBox}
+            onContextMenu={onContextMenu}
+            isCompact={isCompact}
+          />
+        ),
+      )}
+    </CatalogGridListShell>
   );
 }

@@ -1,66 +1,66 @@
 "use client";
 
+import { Coins, History, Sparkles } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
-import { WELCOME_CARD_DETAILS } from "@/constants/welcomeCards";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
-import type {
-  HistoryPageSummary,
-  TransactionHistoryResponseDTO,
-} from "@/types/history";
-import { calculateHistoryWelcomeStats } from "@/utils/historyUtils";
+import type { HistoryPageSummary } from "@/types/history";
+import type { WelcomeCardStat } from "@/types/ui";
+import { formatCoins } from "@/utils/economy";
 
 interface HistoryWelcomeCardProps {
-  summary?: HistoryPageSummary;
-  transactions?: TransactionHistoryResponseDTO[];
-  totalElements?: number;
+  summary: HistoryPageSummary;
   isCompact?: boolean;
 }
 
 export function HistoryWelcomeCard({
   summary,
-  transactions = [],
-  totalElements,
   isCompact = false,
 }: HistoryWelcomeCardProps) {
-  const t = useTranslations("history.welcomeCard");
+  const t = useTranslations("history.welcomeCard.stats");
   const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
-  const welcomeDetails = WELCOME_CARD_DETAILS.history;
-  if (!welcomeDetails) return null;
 
-  const stats = summary
-    ? calculateHistoryWelcomeStats(summary, locale, locale, isGamified)
-    : calculateHistoryWelcomeStats(
-        transactions,
-        totalElements,
-        locale,
-        isGamified,
-      );
+  const formattedEarned = formatCoins(summary.goldEarned, { locale });
+  const formattedSpent = formatCoins(summary.goldSpent, { locale });
 
-  const title = isGamified ? t("titleGamified") : t("titleProductivity");
-  const subtitle = isGamified
-    ? t("subtitleGamified")
-    : t("subtitleProductivity");
-  const bullet0 = isGamified ? t("bullet0") : t("bullet0Productivity");
-  const bullet2 = isGamified ? t("bullet2Gamified") : t("bullet2Productivity");
+  const stats: WelcomeCardStat[] = [
+    {
+      label: isGamified
+        ? t("coinsOnPageLabel")
+        : t("coinsOnPageLabelProductivity"),
+      value: isGamified
+        ? t("coinsValue", { amount: formattedEarned })
+        : t("coinsValueProductivity", { amount: formattedEarned }),
+      icon: Coins,
+      variant: "gold",
+      hint:
+        summary.goldSpent > 0
+          ? isGamified
+            ? t("coinsSpentHint", { amount: formattedSpent })
+            : t("coinsSpentHintProductivity", { amount: formattedSpent })
+          : isGamified
+            ? t("coinsEarnedHint")
+            : t("coinsEarnedHintProductivity"),
+    },
+    {
+      label: isGamified ? t("xpOnPageLabel") : t("xpOnPageLabelProductivity"),
+      value: isGamified
+        ? t("xpValue", { amount: summary.xpEarned })
+        : t("xpValueProductivity", { amount: summary.xpEarned }),
+      icon: Sparkles,
+      variant: "info",
+      hint: isGamified ? t("xpEarnedHint") : t("xpEarnedHintProductivity"),
+    },
+    {
+      label: t("totalRecordsLabel"),
+      value: `${summary.totalCount} ${summary.totalCount === 1 ? t("transactionSingular") : t("transactionPlural")}`,
+      icon: History,
+      variant: "primary",
+      hint: t("currentFiltersHint"),
+    },
+  ];
 
-  return (
-    <WelcomeCard
-      compact={isCompact}
-      title={title}
-      subtitle={subtitle}
-      bullets={[bullet0, t("bullet1"), bullet2]}
-      imageSrc={welcomeDetails.imageSrc}
-      stats={stats}
-      imageWidth={
-        isCompact ? welcomeDetails.compactWidth : welcomeDetails.normalWidth
-      }
-      imageHeight={
-        isCompact ? welcomeDetails.compactHeight : welcomeDetails.normalHeight
-      }
-      storageKey="history"
-    />
-  );
+  return <WelcomeCard compact={isCompact} stats={stats} storageKey="history" />;
 }

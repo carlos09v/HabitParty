@@ -1,7 +1,7 @@
 package com.habitparty.adapters.in.web;
 
-import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,6 +13,8 @@ import com.habitparty.adapters.in.web.api.WorkspaceApi;
 import com.habitparty.adapters.in.web.dtos.request.CreateWorkspaceDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateWorkspaceDTO;
 import com.habitparty.adapters.in.web.dtos.response.WorkspaceResponseDTO;
+import com.habitparty.application.usecases.task.DailyResetUseCase;
+import com.habitparty.application.usecases.user.UserTimeResolver;
 import com.habitparty.application.usecases.workspace.CreateWorkspaceUseCase;
 import com.habitparty.application.usecases.workspace.DeleteWorkspaceUseCase;
 import com.habitparty.application.usecases.workspace.GetFullKanbanBoardUseCase;
@@ -31,7 +33,13 @@ public class WorkspaceController implements WorkspaceApi {
   private final ListUserWorkspacesUseCase listUserWorkspacesUseCase;
   private final UpdateWorkspaceUseCase updateWorkspaceUseCase;
   private final GetFullKanbanBoardUseCase getFullKanbanBoardUseCase;
-  private final Clock clock;
+  private final UserTimeResolver userTimeResolver;
+  private DailyResetUseCase dailyResetUseCase;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  public void setDailyResetUseCase(DailyResetUseCase dailyResetUseCase) {
+    this.dailyResetUseCase = dailyResetUseCase;
+  }
 
   @Override
   public ResponseEntity<WorkspaceResponseDTO> createWorkspace(
@@ -84,9 +92,13 @@ public class WorkspaceController implements WorkspaceApi {
       UUID workspaceId,
       AuthenticatedUser usuarioLogado) {
     UUID userId = usuarioLogado.id();
+    if (dailyResetUseCase != null) {
+      dailyResetUseCase.resetUserIfDue(userId);
+    }
     var kanbanBoard = getFullKanbanBoardUseCase.execute(workspaceId, userId);
-    LocalDate today = clock != null ? LocalDate.now(clock) : LocalDate.now();
+    ZoneId userZone = userTimeResolver.resolveZone(userId);
+    LocalDate today = LocalDate.now(userTimeResolver.clock().withZone(userZone));
     return ResponseEntity.ok(WorkspaceResponseDTO.fromKanbanBoard(
-        kanbanBoard, today, clock != null ? clock.getZone() : java.time.ZoneId.systemDefault()));
+        kanbanBoard, today, userZone));
   }
 }

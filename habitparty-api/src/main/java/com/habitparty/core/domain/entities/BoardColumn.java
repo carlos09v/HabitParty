@@ -3,6 +3,7 @@ package com.habitparty.core.domain.entities;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.UnauthorizedException;
 
 public class BoardColumn {
@@ -48,6 +49,15 @@ public class BoardColumn {
       if (newIcon != null && !newIcon.trim().isEmpty()) {
           this.icon = newIcon;
       }
+  }
+
+  public void moveToWorkspace(UUID targetWorkspaceId, int newOrderIndex, boolean visible) {
+    if (targetWorkspaceId == null) {
+      throw new DomainValidationException("O ID do ambiente de destino é obrigatório.");
+    }
+    this.workspaceId = targetWorkspaceId;
+    this.orderIndex = Math.max(0, newOrderIndex);
+    this.isVisible = visible;
   }
 
   // --- Getters and Setters ---

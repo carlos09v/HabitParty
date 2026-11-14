@@ -1,5 +1,6 @@
 package com.habitparty.adapters.out.persistence;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -91,6 +92,30 @@ public class UserAdapter implements UserRepository {
   }
 
   @Override
+  public Optional<User> findByIdForUpdate(UUID id) {
+    return userRepository.findByIdForUpdate(id)
+        .map(userMapper::toDomain);
+  }
+
+  @Override
+  public List<User> findAllByIdsForUpdate(Collection<UUID> ids) {
+    if (ids == null || ids.isEmpty()) {
+      return List.of();
+    }
+    return userRepository.findAllByIdInForUpdate(ids).stream()
+        .map(userMapper::toDomain)
+        .toList();
+  }
+
+  @Override
+  public boolean isUserDueForDailyReset(UUID id, Instant nowUtc) {
+    if (id == null) {
+      return false;
+    }
+    return userRepository.isUserDueForDailyReset(id, nowUtc);
+  }
+
+  @Override
   public Optional<User> findByEmail(String email) {
     return userRepository.findByEmail(email)
         .map(userMapper::toDomain);
@@ -156,5 +181,10 @@ public class UserAdapter implements UserRepository {
     return userRepository.findUsersWithExpiredStreak(TransactionHistoryAdapter.COMPLETED_TASK_TYPES, since).stream()
         .map(userMapper::toDomain)
         .toList();
+  }
+
+  @Override
+  public List<UUID> findUserIdsDueForDailyReset(Instant nowUtc) {
+    return userRepository.findUserIdsDueForDailyReset(nowUtc);
   }
 }

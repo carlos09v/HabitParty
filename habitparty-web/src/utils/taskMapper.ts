@@ -17,7 +17,11 @@ import type {
   UpdateTaskDTO,
 } from "@/types/task";
 import type { WorkspaceResponseDTO } from "@/types/workspace";
-import { formatDateParts, getTodayDateString, parseServerDate } from "./date";
+import {
+  getDatePartsInTimeZone,
+  getTodayDateString,
+  parseServerDate,
+} from "./date";
 import { calculateTaskReward } from "./economy";
 import { normalizeTagPath } from "./tags";
 
@@ -46,6 +50,7 @@ const PRIORITY_MAP: Record<string, HabitImportance> = {
 export function mapTaskResponseToTask(
   taskDto: TaskResponseDTO,
   columnId: string,
+  timeZone?: string | null,
 ): Task {
   const normalizedDifficulty = taskDto.difficulty
     ? normalizeTaskDifficulty(taskDto.difficulty)
@@ -69,6 +74,7 @@ export function mapTaskResponseToTask(
     isHardcoreModeEnabled: taskDto.isHardcoreModeEnabled,
     dueDate: taskDto.dueDate,
     isPenaltyApplied: taskDto.isPenaltyApplied,
+    timeZone,
   });
 
   const isCompleted = taskDto.status === "COMPLETED";
@@ -132,6 +138,7 @@ export function mapTaskResponseToTask(
  */
 export function mapWorkspaceToBoardColumns(
   workspace: WorkspaceResponseDTO,
+  timeZone?: string | null,
 ): BoardColumn[] {
   if (!workspace.columns) return [];
 
@@ -140,7 +147,9 @@ export function mapWorkspaceToBoardColumns(
     title: col.name || "",
     order: col.orderIndex || 0,
     icon: col.icon || "sun",
-    tasks: (col.tasks || []).map((t) => mapTaskResponseToTask(t, col.id || "")),
+    tasks: (col.tasks || []).map((t) =>
+      mapTaskResponseToTask(t, col.id || "", timeZone),
+    ),
   }));
 }
 
@@ -152,6 +161,7 @@ export function mapWorkspaceToBoardColumns(
 export function buildUpdateTaskPayload(
   task: Task,
   overrides?: Partial<Task>,
+  timeZone?: string | null,
 ): UpdateTaskDTO {
   const merged: Task = { ...task, ...overrides };
   const taskType = normalizeTaskType(merged);
@@ -185,7 +195,8 @@ export function buildUpdateTaskPayload(
     resolvedDueTime || resolvedStartTime || resolvedIsAllDay,
   );
   const resolvedDueDate = isTodo
-    ? merged.dueDate || (hasAnyTimeOrEvent ? getTodayDateString() : undefined)
+    ? merged.dueDate ||
+      (hasAnyTimeOrEvent ? getTodayDateString(new Date(), timeZone) : undefined)
     : undefined;
 
   const payload: UpdateTaskDTO = {
@@ -235,7 +246,10 @@ export function buildUpdateTaskPayload(
 /**
  * Constrói o CreateTaskDTO a partir de uma entidade Task existente (ex: para duplicação ou conversão).
  */
-export function buildCreateTaskPayloadFromTask(task: Task): CreateTaskDTO {
+export function buildCreateTaskPayloadFromTask(
+  task: Task,
+  timeZone?: string | null,
+): CreateTaskDTO {
   const resolvedType = normalizeTaskType(task);
   const isHabit = resolvedType === "habit";
   const isDaily = resolvedType === "daily";
@@ -272,7 +286,7 @@ export function buildCreateTaskPayloadFromTask(task: Task): CreateTaskDTO {
       dueDate:
         task.dueDate ||
         (task.dueTime || task.startTime || task.isAllDay
-          ? getTodayDateString()
+          ? getTodayDateString(new Date(), timeZone)
           : undefined),
       dueTime:
         !task.isAllDay && !task.startTime && task.dueTime
@@ -297,10 +311,12 @@ export function buildCreateTaskPayloadFromTask(task: Task): CreateTaskDTO {
   };
 }
 
-function getIsoWeekInfo(date: Date): { year: number; week: number } {
-  const utc = new Date(
-    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
-  );
+function getIsoWeekInfo(
+  date: Date,
+  timeZone?: string | null,
+): { year: number; week: number } {
+  const parts = getDatePartsInTimeZone(date, timeZone);
+  const utc = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
   const dayNum = utc.getUTCDay() || 7;
   utc.setUTCDate(utc.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
@@ -310,7 +326,11 @@ function getIsoWeekInfo(date: Date): { year: number; week: number } {
   return { year: utc.getUTCFullYear(), week };
 }
 
-function isHabitStreakActiveForDelta(task: Task, now: Date): boolean {
+function isHabitStreakActiveForDelta(
+  task: Task,
+  now: Date,
+  timeZone?: string | null,
+): boolean {
   if (!(task.streak && task.streak > 0)) {
     return false;
   }
@@ -324,8 +344,8 @@ function isHabitStreakActiveForDelta(task: Task, now: Date): boolean {
 
   const counter = (task.resetCounter || "DAILY").toUpperCase();
   if (counter === "WEEKLY") {
-    const last = getIsoWeekInfo(lastDate);
-    const curr = getIsoWeekInfo(now);
+    const last = getIsoWeekInfo(lastDate, timeZone);
+    const curr = getIsoWeekInfo(now, timeZone);
     if (
       last.year > curr.year ||
       (last.year === curr.year && last.week >= curr.week)
@@ -333,25 +353,23 @@ function isHabitStreakActiveForDelta(task: Task, now: Date): boolean {
       return true;
     }
     const nextWeekDate = new Date(lastDate.getTime() + 7 * 86_400_000);
-    const nextWeek = getIsoWeekInfo(nextWeekDate);
+    const nextWeek = getIsoWeekInfo(nextWeekDate, timeZone);
     return nextWeek.year === curr.year && nextWeek.week === curr.week;
   }
   if (counter === "MONTHLY") {
+    const nowParts = getDatePartsInTimeZone(now, timeZone);
+    const lastParts = getDatePartsInTimeZone(lastDate, timeZone);
     const monthsDiff =
-      (now.getFullYear() - lastDate.getFullYear()) * 12 +
-      (now.getMonth() - lastDate.getMonth());
+      (nowParts.year - lastParts.year) * 12 +
+      (nowParts.month - lastParts.month);
     return monthsDiff <= 1;
   }
 
-  const lastStart = new Date(
-    lastDate.getFullYear(),
-    lastDate.getMonth(),
-    lastDate.getDate(),
-  );
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const diffDays = Math.round(
-    (todayStart.getTime() - lastStart.getTime()) / 86_400_000,
-  );
+  const lastParts = getDatePartsInTimeZone(lastDate, timeZone);
+  const nowParts = getDatePartsInTimeZone(now, timeZone);
+  const lastUtc = Date.UTC(lastParts.year, lastParts.month - 1, lastParts.day);
+  const todayUtc = Date.UTC(nowParts.year, nowParts.month - 1, nowParts.day);
+  const diffDays = Math.round((todayUtc - lastUtc) / 86_400_000);
   return diffDays <= 1;
 }
 
@@ -361,6 +379,7 @@ function isHabitStreakActiveForDelta(task: Task, now: Date): boolean {
 export function computeOptimisticHabitDelta(
   task: Task,
   delta: number,
+  timeZone?: string | null,
 ): Pick<
   Task,
   "positiveCount" | "negativeCount" | "streak" | "completed" | "lastCompletedAt"
@@ -373,27 +392,17 @@ export function computeOptimisticHabitDelta(
       : (task.negativeCount ?? 0);
 
   const now = new Date();
-  const todayIso = formatDateParts(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-  );
+  const todayIso = getTodayDateString(now, timeZone);
   const parsedLast = task.lastCompletedAt
     ? parseServerDate(task.lastCompletedAt)
     : null;
-  const lastIso = parsedLast
-    ? formatDateParts(
-        parsedLast.getFullYear(),
-        parsedLast.getMonth(),
-        parsedLast.getDate(),
-      )
-    : null;
+  const lastIso = parsedLast ? getTodayDateString(parsedLast, timeZone) : null;
 
   let nextStreak = task.streak ?? 0;
   if (delta > 0 && currentPositive === 0) {
     if (lastIso === todayIso && nextStreak > 0) {
       nextStreak = task.streak ?? 1;
-    } else if (isHabitStreakActiveForDelta(task, now)) {
+    } else if (isHabitStreakActiveForDelta(task, now, timeZone)) {
       nextStreak = (task.streak ?? 0) + 1;
     } else {
       nextStreak = 1;
@@ -475,6 +484,7 @@ export function buildQuickCreateTaskPayload(
   taskType: TaskTypeOption = "TODO",
   extraPayload?: Partial<CreateTaskDTO>,
   tempId = `temp-${Date.now()}`,
+  timeZone?: string | null,
 ): { payload: CreateTaskDTO; optimisticTask: Task } {
   const effectiveType = (taskType.toUpperCase() as TaskTypeOption) || "TODO";
 
@@ -515,7 +525,8 @@ export function buildQuickCreateTaskPayload(
   }
 
   if (effectiveType === "DAILY") {
-    const startDate = extraPayload?.startDate || getTodayDateString();
+    const startDate =
+      extraPayload?.startDate || getTodayDateString(new Date(), timeZone);
     const repeatType = extraPayload?.repeatType || "DAILY";
     const repeatEvery = extraPayload?.repeatEvery || 1;
     const daysOfWeek = extraPayload?.daysOfWeek || ALL_WEEK_DAYS;
@@ -564,7 +575,8 @@ export function buildQuickCreateTaskPayload(
     ? extraPayload.dueTime.slice(0, 5)
     : undefined;
   const dueDate =
-    extraPayload?.dueDate || (dueTime ? getTodayDateString() : undefined);
+    extraPayload?.dueDate ||
+    (dueTime ? getTodayDateString(new Date(), timeZone) : undefined);
 
   return {
     payload: {

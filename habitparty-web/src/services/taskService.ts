@@ -1,9 +1,13 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { serverApi } from "@/api/server";
-import { getWorkspaces } from "@/services/workspaceService";
+import {
+  getWorkspaces,
+  resolveActiveWorkspace,
+} from "@/services/workspaceService";
 import type { ColumnSummaryDTO } from "@/types/dashboard";
 import type { BoardColumn } from "@/types/task";
 import type { WorkspaceResponseDTO } from "@/types/workspace";
+import { getUserTimezoneCookie } from "@/utils/cookies";
 import {
   mapTaskResponseToTask,
   mapWorkspaceToBoardColumns,
@@ -49,15 +53,17 @@ export async function fetchWorkspaceBoardColumns(workspaceId: string): Promise<{
   cacheLife("private30");
   cacheTag("kanban", "tasks", "dashboard-tasks");
 
-  const [{ data: kanbanBoard }, allColumnsSummary] = await Promise.all([
-    serverApi.GET("/workspaces/{workspaceId}/kanban", {
-      params: { path: { workspaceId } },
-    }),
-    getWorkspaceColumnsSummary(workspaceId),
-  ]);
+  const [{ data: kanbanBoard }, allColumnsSummary, userTimeZone] =
+    await Promise.all([
+      serverApi.GET("/workspaces/{workspaceId}/kanban", {
+        params: { path: { workspaceId } },
+      }),
+      getWorkspaceColumnsSummary(workspaceId),
+      getUserTimezoneCookie(),
+    ]);
 
   const kanbanColumns = kanbanBoard
-    ? mapWorkspaceToBoardColumns(kanbanBoard)
+    ? mapWorkspaceToBoardColumns(kanbanBoard, userTimeZone)
     : [];
 
   const summaries: ColumnSummaryDTO[] = allColumnsSummary || [];
@@ -76,7 +82,7 @@ export async function fetchWorkspaceBoardColumns(workspaceId: string): Promise<{
         },
       );
       const tasks = (tasksDto || []).map((t) =>
-        mapTaskResponseToTask(t, columnId),
+        mapTaskResponseToTask(t, columnId, userTimeZone),
       );
       return {
         id: columnId,
@@ -96,6 +102,39 @@ export async function fetchWorkspaceBoardColumns(workspaceId: string): Promise<{
 }
 
 /**
+ * Busca a contagem de tarefas pendentes programadas para hoje no workspace ativo.
+ * Cacheada de forma privada (`private30`) para uso nos badges da Sidebar e MobileHeader.
+ */
+export async function fetchPendingTasksCount(
+  workspaceId: string,
+): Promise<number> {
+  "use cache: private";
+  cacheLife("private30");
+  cacheTag("tasks", "dashboard-tasks");
+
+  try {
+    const { data: tasksData } = await serverApi.GET(
+      "/tasks/workspace/{workspaceId}/dashboard",
+      {
+        params: {
+          path: { workspaceId },
+          query: { filter: "TODAY", size: 1 },
+        },
+      },
+    );
+    if (tasksData?.totalElements !== undefined) {
+      return tasksData.totalElements;
+    }
+    if (tasksData?.content) {
+      return tasksData.content.length;
+    }
+  } catch {
+    // ignore
+  }
+  return 0;
+}
+
+/**
  * Obtém todos os dados necessários para renderizar o quadro Kanban de tarefas.
  * Paraleliza a busca de workspaces e das colunas do workspace solicitado logo na 1ª onda.
  */
@@ -109,18 +148,12 @@ export async function getTasksBoardData(
       : Promise.resolve(null),
   ]);
 
-  if (workspaces.length === 0) {
-    return {
-      workspaces: [],
-      activeWorkspace: null,
-      initialColumns: [],
-    };
-  }
+  const { activeWorkspace, activeWorkspaceId } = resolveActiveWorkspace(
+    workspaces,
+    requestedWorkspaceId,
+  );
 
-  const activeWorkspace =
-    workspaces.find((w) => w.id === requestedWorkspaceId) || workspaces[0];
-
-  if (!activeWorkspace?.id) {
+  if (!activeWorkspace || !activeWorkspaceId) {
     return {
       workspaces,
       activeWorkspace: null,
@@ -129,9 +162,9 @@ export async function getTasksBoardData(
   }
 
   const { columns: initialColumns } =
-    activeWorkspace.id === requestedWorkspaceId && speculativeBoard
+    activeWorkspaceId === requestedWorkspaceId && speculativeBoard
       ? speculativeBoard
-      : await fetchWorkspaceBoardColumns(activeWorkspace.id);
+      : await fetchWorkspaceBoardColumns(activeWorkspaceId);
 
   return {
     workspaces,

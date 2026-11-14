@@ -1,5 +1,6 @@
 package com.habitparty.adapters.in.web;
 
+import java.time.ZoneId;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -18,6 +19,7 @@ import com.habitparty.application.usecases.focus.GetFocusRecordsByActivityUseCas
 import com.habitparty.application.usecases.focus.GetFocusRecordsByTaskUseCase;
 import com.habitparty.application.usecases.focus.GetUserFocusRecordsUseCase;
 import com.habitparty.application.usecases.focus.UpdateFocusRecordUseCase;
+import com.habitparty.application.usecases.user.UserTimeResolver;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ public class FocusRecordController implements FocusRecordApi {
   private final GetFocusRecordsByActivityUseCase getByActivityUseCase;
   private final GetFocusRecordsByTaskUseCase getByTaskUseCase;
   private final GetUserFocusRecordsUseCase getUserRecordsUseCase;
+  private final UserTimeResolver userTimeResolver;
 
   @Override
   public ResponseEntity<Page<FocusRecordResponseDTO>> getMyRecords(
@@ -38,8 +41,9 @@ public class FocusRecordController implements FocusRecordApi {
       int size,
       AuthenticatedUser usuarioLogado) {
 
+    ZoneId userZone = userTimeResolver.resolveZone(usuarioLogado.id());
     Page<FocusRecordResponseDTO> response = getUserRecordsUseCase.execute(usuarioLogado.id(), page, size)
-        .map(FocusRecordResponseDTO::fromDomain);
+        .map(record -> FocusRecordResponseDTO.fromDomain(record, userZone));
     return ResponseEntity.ok(response);
   }
 
@@ -49,8 +53,9 @@ public class FocusRecordController implements FocusRecordApi {
       int page,
       AuthenticatedUser usuarioLogado) {
 
+    ZoneId userZone = userTimeResolver.resolveZone(usuarioLogado.id());
     Page<FocusRecordResponseDTO> response = getByActivityUseCase.execute(usuarioLogado.id(), activityId, page)
-        .map(FocusRecordResponseDTO::fromDomain);
+        .map(record -> FocusRecordResponseDTO.fromDomain(record, userZone));
     return ResponseEntity.ok(response);
   }
 
@@ -60,8 +65,9 @@ public class FocusRecordController implements FocusRecordApi {
       int page,
       AuthenticatedUser usuarioLogado) {
 
+    ZoneId userZone = userTimeResolver.resolveZone(usuarioLogado.id());
     Page<FocusRecordResponseDTO> response = getByTaskUseCase.execute(usuarioLogado.id(), taskId, page)
-        .map(FocusRecordResponseDTO::fromDomain);
+        .map(record -> FocusRecordResponseDTO.fromDomain(record, userZone));
     return ResponseEntity.ok(response);
   }
 
@@ -81,7 +87,8 @@ public class FocusRecordController implements FocusRecordApi {
         request.completedPomos()
     );
     var record = createUseCase.execute(usuarioLogado.id(), command);
-    return ResponseEntity.status(HttpStatus.CREATED).body(FocusRecordResponseDTO.fromDomain(record));
+    ZoneId userZone = userTimeResolver.resolveZone(usuarioLogado.id());
+    return ResponseEntity.status(HttpStatus.CREATED).body(FocusRecordResponseDTO.fromDomain(record, userZone));
   }
 
   @Override
@@ -91,7 +98,8 @@ public class FocusRecordController implements FocusRecordApi {
       AuthenticatedUser usuarioLogado) {
 
     var record = updateUseCase.execute(usuarioLogado.id(), recordId, request.notes());
-    return ResponseEntity.ok(FocusRecordResponseDTO.fromDomain(record));
+    ZoneId userZone = userTimeResolver.resolveZone(usuarioLogado.id());
+    return ResponseEntity.ok(FocusRecordResponseDTO.fromDomain(record, userZone));
   }
 
   @Override

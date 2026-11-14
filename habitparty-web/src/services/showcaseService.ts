@@ -1,15 +1,13 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { getServerAuthToken } from "@/api/server";
+import { getServerAuthToken, serverApi } from "@/api/server";
 import type {
   AchievementItemResponseDTO,
   UserShowcaseResponseDTO,
 } from "@/types/showcase";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-
 /**
  * Carrega todos os dados da vitrine do usuário autenticado (estatísticas vitalícias,
- * 4 slots de destaque e catálogo de 59 conquistas com progresso em tempo real).
+ * 4 slots de destaque e catálogo de conquistas com progresso em tempo real).
  */
 export async function getMyShowcase(): Promise<UserShowcaseResponseDTO | null> {
   "use cache: private";
@@ -22,19 +20,12 @@ export async function getMyShowcase(): Promise<UserShowcaseResponseDTO | null> {
       return null;
     }
 
-    const res = await fetch(`${API_BASE_URL}/showcase/me`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!res.ok) {
+    const { data, error } = await serverApi.GET("/showcase/me");
+    if (error || !data) {
       return null;
     }
 
-    return (await res.json()) as UserShowcaseResponseDTO;
+    return data as UserShowcaseResponseDTO;
   } catch (err) {
     console.error("[ShowcaseService:getMyShowcase]", err);
     return null;
@@ -53,20 +44,18 @@ export async function getUnseenAchievements(): Promise<
       return [];
     }
 
-    const res = await fetch(`${API_BASE_URL}/showcase/achievements/unseen`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
+    const { data, error } = await serverApi.GET(
+      "/showcase/achievements/unseen",
+      {
+        cache: "no-store",
       },
-      cache: "no-store",
-    });
+    );
 
-    if (!res.ok) {
+    if (error || !data) {
       return [];
     }
 
-    return (await res.json()) as AchievementItemResponseDTO[];
+    return data as AchievementItemResponseDTO[];
   } catch {
     return [];
   }

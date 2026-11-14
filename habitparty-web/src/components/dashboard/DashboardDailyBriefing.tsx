@@ -2,18 +2,21 @@
 
 import { Calendar, Flame, Sparkles, Target } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import type { DashboardDailyBriefingProps } from "@/types/dashboard";
 import { cn } from "@/utils";
 import {
+  getCurrentHourInTimeZone,
   getGreeting,
   getTodayDateString,
   getTodayTasks,
   getTodayXp,
   hasCompletedTaskInTransactionsToday,
+  isTaskCompletedOnDate,
 } from "@/utils/dashboardMetrics";
+import { isValidIanaTimeZone } from "@/utils/date";
 
 /**
  * Painel de Resumo Diário do Jogador (Client Component).
@@ -26,6 +29,7 @@ export function DashboardDailyBriefing({
   tasks,
   transactions,
   hasOptimisticCompletionToday = false,
+  timezone,
 }: DashboardDailyBriefingProps) {
   const t = useTranslations("dashboard.dailyBriefing");
   const { isGamified } = useExperienceMode();
@@ -42,14 +46,30 @@ export function DashboardDailyBriefing({
     return () => clearInterval(interval);
   }, []);
 
-  const tzRenderKey = isHydrated ? "local-tz" : "ssr-tz";
-  const greeting = getGreeting(now, locale);
+  const resolvedTimeZone = isValidIanaTimeZone(timezone)
+    ? timezone.trim()
+    : undefined;
+  const tzRenderKey = resolvedTimeZone ?? (isHydrated ? "local-tz" : "ssr-tz");
+  const greeting = getGreeting(now, locale, resolvedTimeZone);
 
-  const todayDateStr = getTodayDateString(now);
-  const localTodayTasks = getTodayTasks(tasks, todayDateStr);
-  const completedTodayTasks = localTodayTasks.filter((t) => t.completed).length;
+  const todayDateStr = getTodayDateString(now, resolvedTimeZone);
+  const localTodayTasks = useMemo(
+    () => getTodayTasks(tasks, todayDateStr),
+    [tasks, todayDateStr],
+  );
+  const completedTodayTasks = useMemo(
+    () =>
+      localTodayTasks.filter((t) =>
+        isTaskCompletedOnDate(t, todayDateStr, resolvedTimeZone),
+      ).length,
+    [localTodayTasks, todayDateStr, resolvedTimeZone],
+  );
   const totalTodayTasks = localTodayTasks.length;
-  const todayXp = getTodayXp(transactions, now);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: todayDateStr representa a janela diária efetiva de now no fuso
+  const todayXp = useMemo(
+    () => getTodayXp(transactions, now, resolvedTimeZone),
+    [transactions, todayDateStr, resolvedTimeZone],
+  );
 
   const completionPercent =
     totalTodayTasks > 0
@@ -59,13 +79,15 @@ export function DashboardDailyBriefing({
   const isAllCompleted =
     totalTodayTasks > 0 && completedTodayTasks === totalTodayTasks;
 
-  const currentHour = now.getHours();
+  const currentHour = getCurrentHourInTimeZone(now, resolvedTimeZone);
   const isAfterNoon = currentHour >= 12;
   const hoursLeft = Math.max(1, 24 - currentHour);
 
-  const hasCompletedTxToday = hasCompletedTaskInTransactionsToday(
-    transactions,
-    now,
+  // biome-ignore lint/correctness/useExhaustiveDependencies: todayDateStr representa a janela diária efetiva de now no fuso
+  const hasCompletedTxToday = useMemo(
+    () =>
+      hasCompletedTaskInTransactionsToday(transactions, now, resolvedTimeZone),
+    [transactions, todayDateStr, resolvedTimeZone],
   );
   const hasCompletedAnyTaskToday =
     completedTodayTasks > 0 ||
@@ -114,6 +136,7 @@ export function DashboardDailyBriefing({
       weekday: "long",
       day: "numeric",
       month: "short",
+      ...(resolvedTimeZone ? { timeZone: resolvedTimeZone } : {}),
     },
   );
   const capitalizedDay =

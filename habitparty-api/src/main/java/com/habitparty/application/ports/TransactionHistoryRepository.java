@@ -1,7 +1,10 @@
 package com.habitparty.application.ports;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,14 +35,30 @@ public interface TransactionHistoryRepository {
   // Pra validar o incrementStreak do user
   int countCompletedTasksToday(UUID userId);
 
+  default int countCompletedTasksToday(UUID userId, ZoneId userZone) {
+    return countCompletedTasksToday(userId);
+  }
+
   // Verifica se o usuário completou pelo menos 1 tarefa ontem (evita manter streak vencido)
   default boolean hasCompletedTasksYesterday(UUID userId) {
     return true;
   }
 
+  default boolean hasCompletedTasksYesterday(UUID userId, ZoneId userZone) {
+    return hasCompletedTasksYesterday(userId);
+  }
+
   // Verifica se o usuário completou alguma tarefa ontem ou hoje (usado para validar streak efetivo na leitura)
   default boolean hasCompletedTasksSinceYesterday(UUID userId) {
     return true;
+  }
+
+  default boolean hasCompletedTasksSinceYesterday(UUID userId, ZoneId userZone) {
+    return hasCompletedTasksSinceYesterday(userId);
+  }
+
+  default Map<UUID, LocalDateTime> findLastCompletedTaskAtByUserIds(Collection<UUID> userIds, LocalDateTime since) {
+    return Map.of();
   }
 
   void deleteAllByUserId(UUID userId);

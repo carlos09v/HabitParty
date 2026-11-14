@@ -10,7 +10,7 @@
   "headerSubtitle": "Manage your profile, subscription, appearance, and account security.",
   "tabs": {
     "profile": "Profile",
-    "profileDesc": "Cosmic identity, photos, and frames",
+    "profileDesc": "Cosmic identity and profile photo",
     "appearance": "Appearance",
     "appearanceDesc": "Theme, language, density, and experience",
     "audio": "Audio & Alerts",
@@ -24,8 +24,6 @@
   "cards": {
     "profile": "My Profile",
     "profileDesc": "Manage your name, birth date, and platform identity.",
-    "avatarFrames": "Avatar Frames",
-    "avatarFramesDesc": "Customize the light ring and visual effects around your profile picture.",
     "appearanceTheme": "Appearance & Theme",
     "appearanceThemeDesc": "Switch between the classic cosmic dark theme and the Cosmic Daylight light theme.",
     "experienceMode": "Experience Profile (Essential Mode vs. Adventure Mode)",
@@ -36,6 +34,8 @@
     "dateFormatDesc": "Choose how dates are formatted across calendars, task deadlines, focus records, and history.",
     "timeFormat": "Time Format",
     "timeFormatDesc": "Choose how times are displayed in selectors, task deadlines, focus records, and history.",
+    "timezone": "Time Zone",
+    "timezoneDesc": "Defines when your midnight occurs for daily resets, streak calculations, and task reminders.",
     "welcomeCards": "Introductory Screen Cards",
     "welcomeCardsDesc": "Manage which welcome cards and quick guides remain visible across app screens.",
     "audioTitle": "Interface Sounds & Notifications",
@@ -49,6 +49,8 @@
   },
   "profileHeader": {
     "changePhoto": "Change photo",
+    "viewProfile": "View Profile",
+    "viewProfileTitle": "Go to your profile showcase and avatar frames (/profile)",
     "uploading": "Uploading...",
     "currentLevel": "Level {level} • {title}",
     "coins": "{amount} Coins",
@@ -164,52 +166,21 @@
     "statusH12": "12-Hour (02:05 PM) applied across the platform.",
     "toastSuccess": "Time format changed to {format}!"
   },
-  "avatarFrames": {
-    "title": "Avatar Frame",
-    "upgradeToast": "Animated frames are exclusive to Premium members! Upgrade to unlock.",
-    "vipBadge": "Cosmic VIP",
-    "defaultBadge": "Default",
-    "equipped": "Equipped",
-    "equip": "Equip",
-    "locked": "VIP Exclusive",
-    "previewLabel": "Avatar Preview:",
-    "successToast": "Frame \"{name}\" equipped successfully!",
-    "frames": {
-      "none": {
-        "name": "No Frame",
-        "badge": "Default",
-        "description": "Classic clean look with no additional border effects."
-      },
-      "cosmic_gold": {
-        "name": "Cosmic Guardian",
-        "badge": "Cosmic VIP",
-        "description": "Radiant stellar gold aura with rotating cosmic light and golden glow."
-      },
-      "cyber_neon": {
-        "name": "Cyberpunk Neon",
-        "badge": "Tech VIP",
-        "description": "Electrifying neon pulse alternating between futuristic cyan and laser magenta."
-      },
-      "fire_phoenix": {
-        "name": "Phoenix Fire",
-        "badge": "Phoenix VIP",
-        "description": "Blazing flames in scarlet red and amber with ember combustion glow."
-      },
-      "emerald_mystic": {
-        "name": "Emerald Aura",
-        "badge": "Mystic VIP",
-        "description": "Emerald green natural energy ring with a soft, mystic pulse."
-      },
-      "amethyst_void": {
-        "name": "Amethyst Void",
-        "badge": "Arcane VIP",
-        "description": "Deep violet dimensional energy with ethereal, mysterious stellar glow."
-      }
-    },
-    "subtitle": "Choose an animated frame with cosmic light to highlight your profile in Party, leaderboard, and dashboard.",
-    "unlockAll": "Unlock All",
-    "freeBadge": "Free",
-    "lockedTitle": "VIP Exclusive"
+  "timezoneCard": {
+    "activeLabel": "Active timezone: ",
+    "browserDiffHint": "Browser detected as {browserTz} ({browserOffset}).",
+    "searchPlaceholder": "Search city or timezone (e.g., New_York, London, Tokyo)...",
+    "selectLabel": "Select IANA timezone",
+    "detectBrowserButton": "Use browser timezone",
+    "saveButton": "Save Timezone",
+    "saving": "Saving...",
+    "cooldownHint": "For streak protection, manual timezone changes require at least 24 hours between updates.",
+    "cooldownActiveAlert": "You updated your timezone recently. For streak protection, you can change it again in {hours}h {minutes}m.",
+    "cooldownButtonLabel": "Cooldown ({hours}h {minutes}m)",
+    "noResults": "No timezones matched \"{query}\".",
+    "noChangeHint": "This is already your account's active timezone.",
+    "toastSuccess": "Timezone updated to {timezone}!",
+    "toastError": "Could not update timezone."
   },
   "welcomeCards": {
     "hiddenCount": "{count, plural, one {# card hidden} other {# cards hidden}}",

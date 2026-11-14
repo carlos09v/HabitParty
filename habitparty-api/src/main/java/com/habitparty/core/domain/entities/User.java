@@ -1,9 +1,13 @@
 package com.habitparty.core.domain.entities;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.DateTimeException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -16,6 +20,25 @@ import com.habitparty.core.domain.enums.UserRole;
 import com.habitparty.core.exceptions.DomainValidationException;
 
 public class User {
+  public static final String DEFAULT_TIMEZONE = "America/Sao_Paulo";
+  public static final long TIMEZONE_CHANGE_COOLDOWN_HOURS = 24L;
+  public static final String DEFAULT_THEME = "dark";
+  public static final Set<String> FREE_THEMES = Set.of(
+      "dark",
+      "light"
+  );
+  public static final Set<String> PREMIUM_THEMES = Set.of(
+      "dark-knight",
+      "cyberpunk-neon",
+      "forest-ranger"
+  );
+  public static final Set<String> VALID_THEMES = Set.of(
+      "dark",
+      "light",
+      "dark-knight",
+      "cyberpunk-neon",
+      "forest-ranger"
+  );
   public static final Set<String> VALID_AVATAR_FRAMES = Set.of(
       "none",
       "cosmic_gold",
@@ -37,8 +60,13 @@ public class User {
   private String profilePhotoUrl;
   private String bio;
   private String avatarFrame = "none";
+  private String theme = DEFAULT_THEME;
   private UserGender gender;
   private UserExperienceMode experienceMode = UserExperienceMode.PRODUCTIVITY;
+  private String timezone = DEFAULT_TIMEZONE;
+  private Instant timezoneUpdatedAt;
+  private LocalDate lastDailyResetDate;
+  private Instant nextDailyResetAt;
   private LocalDateTime createdAt;
 
   // Sub-entidades do Agregado (1:1 com PK compartilhada no banco)
@@ -385,14 +413,19 @@ public class User {
 
   // --- ATUALIZAÇÃO DE PERFIL, FOTO E SENHA ---
   public void updateProfile(String fullName, LocalDate birthDate, UserGender gender) {
+    updateProfile(fullName, birthDate, gender, LocalDate.now());
+  }
+
+  public void updateProfile(String fullName, LocalDate birthDate, UserGender gender, LocalDate referenceDate) {
     if (fullName == null || fullName.trim().isEmpty()) {
       throw new DomainValidationException("O nome não pode estar vazio.");
     }
     if (birthDate != null) {
-      if (birthDate.isAfter(LocalDate.now())) {
+      LocalDate effectiveToday = referenceDate != null ? referenceDate : LocalDate.now();
+      if (birthDate.isAfter(effectiveToday)) {
         throw new DomainValidationException("A data de nascimento deve estar no passado.");
       }
-      int age = Period.between(birthDate, LocalDate.now()).getYears();
+      int age = Period.between(birthDate, effectiveToday).getYears();
       if (age < 12) {
         throw new DomainValidationException("Você deve ter no mínimo 12 anos.");
       }
@@ -406,9 +439,14 @@ public class User {
   }
 
   public Integer getAge() {
+    return getAge(LocalDate.now(resolveZoneId(null)));
+  }
+
+  public Integer getAge(LocalDate referenceDate) {
     if (this.birthDate == null)
       return null;
-    return Period.between(this.birthDate, LocalDate.now()).getYears();
+    LocalDate effectiveToday = referenceDate != null ? referenceDate : LocalDate.now(resolveZoneId(null));
+    return Period.between(this.birthDate, effectiveToday).getYears();
   }
 
   public void updateProfilePhoto(String photoUrl) {
@@ -533,6 +571,44 @@ public class User {
     this.avatarFrame = (avatarFrame != null && !avatarFrame.isBlank()) ? avatarFrame.trim() : "none";
   }
 
+  public static boolean isPremiumTheme(String themeId) {
+    return themeId != null && PREMIUM_THEMES.contains(themeId.trim().toLowerCase());
+  }
+
+  public String getTheme() {
+    return (theme != null && !theme.isBlank()) ? theme.trim().toLowerCase() : DEFAULT_THEME;
+  }
+
+  public void setTheme(String theme) {
+    this.theme = (theme != null && !theme.isBlank()) ? theme.trim().toLowerCase() : DEFAULT_THEME;
+  }
+
+  public String getEffectiveTheme() {
+    String current = getTheme();
+    if (!VALID_THEMES.contains(current)) {
+      return DEFAULT_THEME;
+    }
+    if (PREMIUM_THEMES.contains(current) && !this.isPremium()) {
+      return DEFAULT_THEME;
+    }
+    return current;
+  }
+
+  public void updateTheme(String newTheme) {
+    if (newTheme == null || newTheme.isBlank()) {
+      throw new DomainValidationException("O tema visual não pode estar vazio.");
+    }
+    String cleanTheme = newTheme.trim().toLowerCase();
+    if (!VALID_THEMES.contains(cleanTheme)) {
+      throw new DomainValidationException("Tema visual inválido: " + newTheme);
+    }
+    if (PREMIUM_THEMES.contains(cleanTheme) && !this.isPremium()) {
+      throw new DomainValidationException(
+          "Temas atmosféricos VIP requerem o plano Guardião Cósmico (Premium).");
+    }
+    this.theme = cleanTheme;
+  }
+
   public void updateShowcaseProfile(String bio, String avatarFrame) {
     if (bio != null) {
       setBio(bio);
@@ -555,5 +631,188 @@ public class User {
 
   public void setCreatedAt(LocalDateTime createdAt) {
     this.createdAt = createdAt;
+  }
+
+  // --- FUSO HORÁRIO E CONTROLE IDEMPOTENTE DE VIRADA DIÁRIA ---
+
+  private static final java.util.Map<String, String> CANONICAL_ZONE_ALIASES = java.util.Map.ofEntries(
+      java.util.Map.entry("Z", "UTC"),
+      java.util.Map.entry("GMT", "UTC"),
+      java.util.Map.entry("GMT+0", "UTC"),
+      java.util.Map.entry("GMT-0", "UTC"),
+      java.util.Map.entry("GMT0", "UTC"),
+      java.util.Map.entry("Etc/GMT", "UTC"),
+      java.util.Map.entry("Etc/GMT+0", "UTC"),
+      java.util.Map.entry("Etc/GMT-0", "UTC"),
+      java.util.Map.entry("Etc/GMT0", "UTC"),
+      java.util.Map.entry("Etc/UTC", "UTC"),
+      java.util.Map.entry("Etc/Universal", "UTC"),
+      java.util.Map.entry("Etc/Zulu", "UTC"),
+      java.util.Map.entry("Universal", "UTC"),
+      java.util.Map.entry("Zulu", "UTC"),
+      java.util.Map.entry("Asia/Calcutta", "Asia/Kolkata"),
+      java.util.Map.entry("Asia/Saigon", "Asia/Ho_Chi_Minh"),
+      java.util.Map.entry("Asia/Katmandu", "Asia/Kathmandu"),
+      java.util.Map.entry("Asia/Rangoon", "Asia/Yangon"),
+      java.util.Map.entry("Europe/Kiev", "Europe/Kyiv"),
+      java.util.Map.entry("America/Buenos_Aires", "America/Argentina/Buenos_Aires"),
+      java.util.Map.entry("America/Godthab", "America/Nuuk"),
+      java.util.Map.entry("Brazil/East", "America/Sao_Paulo"),
+      java.util.Map.entry("Brazil/West", "America/Manaus"),
+      java.util.Map.entry("US/Eastern", "America/New_York"),
+      java.util.Map.entry("US/Central", "America/Chicago"),
+      java.util.Map.entry("US/Mountain", "America/Denver"),
+      java.util.Map.entry("US/Pacific", "America/Los_Angeles"),
+      java.util.Map.entry("US/Hawaii", "Pacific/Honolulu"),
+      java.util.Map.entry("US/Alaska", "America/Anchorage"),
+      java.util.Map.entry("Africa/Asmera", "Africa/Asmara"),
+      java.util.Map.entry("Atlantic/Faeroe", "Atlantic/Faroe"),
+      java.util.Map.entry("Pacific/Ponape", "Pacific/Pohnpei"),
+      java.util.Map.entry("Pacific/Truk", "Pacific/Chuuk")
+  );
+
+  public static ZoneId canonicalizeZoneId(ZoneId zone) {
+    if (zone == null) {
+      return ZoneId.of(DEFAULT_TIMEZONE);
+    }
+    String mapped = CANONICAL_ZONE_ALIASES.get(zone.getId());
+    return mapped != null ? ZoneId.of(mapped) : zone;
+  }
+
+  public static boolean areTimezonesEquivalent(String first, String second) {
+    if (first == null || first.isBlank() || second == null || second.isBlank()) {
+      return false;
+    }
+    try {
+      return canonicalizeZoneId(ZoneId.of(first.trim()))
+          .equals(canonicalizeZoneId(ZoneId.of(second.trim())));
+    } catch (DateTimeException e) {
+      return false;
+    }
+  }
+
+  public static ZoneId parseValidZoneId(String rawTimezone) {
+    if (rawTimezone == null || rawTimezone.isBlank()) {
+      throw new DomainValidationException("O fuso horário não pode estar vazio.");
+    }
+    String clean = rawTimezone.trim();
+    if (clean.length() > 64) {
+      throw new DomainValidationException("Identificador de fuso horário inválido.");
+    }
+    try {
+      return canonicalizeZoneId(ZoneId.of(clean));
+    } catch (DateTimeException e) {
+      throw new DomainValidationException("Fuso horário IANA inválido: " + clean);
+    }
+  }
+
+  public static Instant calculateNextMidnightInstant(LocalDate referenceDate, ZoneId zone) {
+    ZoneId effectiveZone = zone != null ? zone : ZoneId.of(DEFAULT_TIMEZONE);
+    return referenceDate.plusDays(1).atStartOfDay(effectiveZone).toInstant();
+  }
+
+  public ZoneId resolveZoneId(ZoneId fallback) {
+    if (this.timezone != null && !this.timezone.isBlank()) {
+      try {
+        return ZoneId.of(this.timezone.trim());
+      } catch (DateTimeException ignored) {
+        // Cai para o fallback seguro caso um valor legado inválido exista
+      }
+    }
+    return fallback != null ? fallback : ZoneId.of(DEFAULT_TIMEZONE);
+  }
+
+  public LocalDate resolveLocalDate(Clock baseClock) {
+    Clock effectiveClock = baseClock != null ? baseClock : Clock.systemDefaultZone();
+    return LocalDate.now(effectiveClock.withZone(resolveZoneId(effectiveClock.getZone())));
+  }
+
+  public LocalDateTime resolveLocalDateTime(Clock baseClock) {
+    Clock effectiveClock = baseClock != null ? baseClock : Clock.systemDefaultZone();
+    return LocalDateTime.now(effectiveClock.withZone(resolveZoneId(effectiveClock.getZone())));
+  }
+
+  public void initializeTimezone(String requestedTimezone, Clock baseClock) {
+    Clock effectiveClock = baseClock != null ? baseClock : Clock.systemDefaultZone();
+    if (requestedTimezone != null && !requestedTimezone.isBlank()) {
+      ZoneId zone = parseValidZoneId(requestedTimezone);
+      this.timezone = zone.getId();
+    } else {
+      this.timezone = DEFAULT_TIMEZONE;
+    }
+    this.timezoneUpdatedAt = null;
+    ZoneId effectiveZone = resolveZoneId(effectiveClock.getZone());
+    LocalDate userToday = LocalDate.now(effectiveClock.withZone(effectiveZone));
+    this.lastDailyResetDate = userToday;
+    this.nextDailyResetAt = calculateNextMidnightInstant(userToday, effectiveZone);
+  }
+
+  public void changeTimezone(String newTimezone, Clock baseClock) {
+    ZoneId newZone = parseValidZoneId(newTimezone);
+    ZoneId currentZone = canonicalizeZoneId(resolveZoneId(null));
+    if (newZone.equals(currentZone)) {
+      return;
+    }
+
+    Clock effectiveClock = baseClock != null ? baseClock : Clock.systemDefaultZone();
+    Instant now = Instant.now(effectiveClock);
+    if (this.timezoneUpdatedAt != null) {
+      Instant nextAllowedAt = this.timezoneUpdatedAt.plusSeconds(TIMEZONE_CHANGE_COOLDOWN_HOURS * 3600L);
+      if (now.isBefore(nextAllowedAt)) {
+        throw new DomainValidationException(
+            "Você só pode alterar seu fuso horário manualmente uma vez a cada 24 horas.");
+      }
+    }
+
+    this.timezone = newZone.getId();
+    this.timezoneUpdatedAt = now;
+
+    LocalDate newToday = LocalDate.now(effectiveClock.withZone(newZone));
+    LocalDate effectiveResetDate = (this.lastDailyResetDate != null && this.lastDailyResetDate.isAfter(newToday))
+        ? this.lastDailyResetDate
+        : newToday;
+    this.lastDailyResetDate = effectiveResetDate;
+    this.nextDailyResetAt = calculateNextMidnightInstant(effectiveResetDate, newZone);
+  }
+
+  public boolean shouldRunDailyReset(LocalDate userToday) {
+    return this.lastDailyResetDate == null || userToday.isAfter(this.lastDailyResetDate);
+  }
+
+  public void markDailyResetExecuted(LocalDate userToday, ZoneId userZone) {
+    this.lastDailyResetDate = userToday;
+    this.nextDailyResetAt = calculateNextMidnightInstant(userToday, userZone);
+  }
+
+  public String getTimezone() {
+    return (timezone != null && !timezone.isBlank()) ? timezone : DEFAULT_TIMEZONE;
+  }
+
+  public void setTimezone(String timezone) {
+    this.timezone = (timezone != null && !timezone.isBlank()) ? timezone.trim() : DEFAULT_TIMEZONE;
+  }
+
+  public Instant getTimezoneUpdatedAt() {
+    return timezoneUpdatedAt;
+  }
+
+  public void setTimezoneUpdatedAt(Instant timezoneUpdatedAt) {
+    this.timezoneUpdatedAt = timezoneUpdatedAt;
+  }
+
+  public LocalDate getLastDailyResetDate() {
+    return lastDailyResetDate;
+  }
+
+  public void setLastDailyResetDate(LocalDate lastDailyResetDate) {
+    this.lastDailyResetDate = lastDailyResetDate;
+  }
+
+  public Instant getNextDailyResetAt() {
+    return nextDailyResetAt;
+  }
+
+  public void setNextDailyResetAt(Instant nextDailyResetAt) {
+    this.nextDailyResetAt = nextDailyResetAt;
   }
 }

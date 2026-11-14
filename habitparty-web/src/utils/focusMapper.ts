@@ -42,6 +42,7 @@ export function mapFocusActivities(
 export function mapFocusRecordDtoToRecord(
   dto: FocusRecordResponseDTO,
   activity?: FocusActivity,
+  timeZone?: string | null,
 ): FocusRecord {
   return {
     id: dto.id || crypto.randomUUID(),
@@ -53,8 +54,8 @@ export function mapFocusRecordDtoToRecord(
     taskId: dto.taskId,
     taskNameSnapshot: dto.taskNameSnapshot,
     notes: dto.notes,
-    startTime: dto.startTime || toLocalISOString(),
-    endTime: dto.endTime || toLocalISOString(),
+    startTime: dto.startTime || toLocalISOString(new Date(), timeZone),
+    endTime: dto.endTime || toLocalISOString(new Date(), timeZone),
     recordType: dto.recordType || "POMO",
     completedPomos: dto.completedPomos,
     durationMinutes: dto.durationMinutes || 0,
@@ -69,6 +70,7 @@ export function mapFocusRecordDtoToRecord(
 export function mapFocusRecords(
   dtos: FocusRecordResponseDTO[] | undefined | null,
   activities: FocusActivity[] = [],
+  timeZone?: string | null,
 ): FocusRecord[] {
   if (!dtos || dtos.length === 0) return [];
   const activityMap = new Map(activities.map((act) => [act.id, act]));
@@ -77,6 +79,6 @@ export function mapFocusRecords(
     const matchedActivity = dto.focusActivityId
       ? activityMap.get(dto.focusActivityId)
       : undefined;
-    return mapFocusRecordDtoToRecord(dto, matchedActivity);
+    return mapFocusRecordDtoToRecord(dto, matchedActivity, timeZone);
   });
 }

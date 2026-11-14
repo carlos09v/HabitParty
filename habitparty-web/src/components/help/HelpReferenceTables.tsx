@@ -89,12 +89,8 @@ export function HelpReferenceTables({
     .map((table) => {
       const matchesCategory =
         activeCategory === "ALL" ||
-        activeCategory === "OVERVIEW" ||
         table.entry.category === activeCategory ||
-        (activeCategory === "ECONOMY" &&
-          (table.id === "habitDecay" ||
-            table.id === "focusRewards" ||
-            table.id === "mysteryBoxes"));
+        (table.entry.categories?.includes(activeCategory) ?? false);
 
       if (!matchesCategory) return null;
       if (!query) return table;

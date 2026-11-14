@@ -1,117 +1,126 @@
 "use client";
 
 import { RefreshCw, ShieldCheck } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useCallback, useState, useTransition } from "react";
+import { type ReactNode, useCallback, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
-  getAdminOverviewAction,
   getAdminUserDetailAction,
-  listAdminUsersAction,
+  refreshAdminDataAction,
   updateUserRoleAction,
 } from "@/actions/adminActions";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
-import type {
-  AdminOverviewDTO,
-  AdminUserDetailDTO,
-  AdminUserSummaryDTO,
-} from "@/types/admin";
-import { AdminOverviewCards } from "./AdminOverviewCards";
+import type { AdminUserDetailDTO, AdminUserSummaryDTO } from "@/types/admin";
 import { AdminUserDetailModal } from "./AdminUserDetailModal";
 import { AdminUsersTable } from "./AdminUsersTable";
 
 interface AdminDashboardViewProps {
-  initialOverview: AdminOverviewDTO | null;
-  initialUsers: AdminUserSummaryDTO[];
-  initialTotalPages: number;
-  initialTotalElements: number;
+  overviewCards?: ReactNode;
+  users: AdminUserSummaryDTO[];
+  totalPages: number;
+  totalElements: number;
+  currentPage: number;
+  search: string;
+  filter: string;
 }
 
 export function AdminDashboardView({
-  initialOverview,
-  initialUsers,
-  initialTotalPages,
-  initialTotalElements,
+  overviewCards,
+  users,
+  totalPages,
+  totalElements,
+  currentPage,
+  search,
+  filter,
 }: AdminDashboardViewProps) {
   const t = useTranslations("admin.dashboard");
-  const [overview, setOverview] = useState<AdminOverviewDTO | null>(
-    initialOverview,
-  );
-  const [users, setUsers] = useState<AdminUserSummaryDTO[]>(initialUsers);
-  const [totalPages, setTotalPages] = useState(initialTotalPages);
-  const [totalElements, setTotalElements] = useState(initialTotalElements);
-
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("ALL");
-  const [page, setPage] = useState(0);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const [selectedUserDetail, setSelectedUserDetail] =
     useState<AdminUserDetailDTO | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [loadingUserId, setLoadingUserId] = useState<string | null>(null);
   const [roleModalUser, setRoleModalUser] =
     useState<AdminUserSummaryDTO | null>(null);
 
-  const [isPending, startTransition] = useTransition();
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [isPendingNav, startNavTransition] = useTransition();
+  const [isPendingRole, startRoleTransition] = useTransition();
 
-  const loadUsers = useCallback(
-    (newSearch = search, newFilter = filter, newPage = page) => {
-      startTransition(async () => {
-        const res = await listAdminUsersAction(
-          newSearch,
-          newFilter,
-          newPage,
-          15,
-        );
-        if (res.success && res.data) {
-          setUsers(res.data.content);
-          setTotalPages(res.data.totalPages);
-          setTotalElements(res.data.totalElements);
+  const buildUrl = useCallback(
+    (updates: { search?: string; filter?: string; page?: number }) => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      if (updates.search !== undefined) {
+        if (updates.search) {
+          params.set("search", updates.search);
+        } else {
+          params.delete("search");
         }
-      });
+      }
+
+      if (updates.filter !== undefined) {
+        if (updates.filter && updates.filter !== "ALL") {
+          params.set("filter", updates.filter);
+        } else {
+          params.delete("filter");
+        }
+      }
+
+      if (updates.page !== undefined) {
+        if (updates.page > 1) {
+          params.set("page", String(updates.page));
+        } else {
+          params.delete("page");
+        }
+      }
+
+      const qs = params.toString();
+      return qs ? `${pathname}?${qs}` : pathname;
     },
-    [search, filter, page],
+    [pathname, searchParams],
   );
 
-  const refreshAll = useCallback(() => {
-    startTransition(async () => {
-      const [overviewRes, usersRes] = await Promise.all([
-        getAdminOverviewAction(),
-        listAdminUsersAction(search, filter, page, 15),
-      ]);
+  const handleSearchChange = useCallback(
+    (newSearch: string) => {
+      startNavTransition(() => {
+        router.replace(buildUrl({ search: newSearch, page: 1 }), {
+          scroll: false,
+        });
+      });
+    },
+    [buildUrl, router],
+  );
 
-      if (overviewRes.success && overviewRes.data) {
-        setOverview(overviewRes.data);
-      }
-      if (usersRes.success && usersRes.data) {
-        setUsers(usersRes.data.content);
-        setTotalPages(usersRes.data.totalPages);
-        setTotalElements(usersRes.data.totalElements);
-      }
-      setActionMessage(t("refreshedMessage"));
-      setTimeout(() => setActionMessage(null), 3000);
+  const handleFilterChange = useCallback(
+    (newFilter: string) => {
+      startNavTransition(() => {
+        router.replace(buildUrl({ filter: newFilter, page: 1 }), {
+          scroll: false,
+        });
+      });
+    },
+    [buildUrl, router],
+  );
+
+  const buildPageHref = useCallback(
+    (page1Based: number) => buildUrl({ page: page1Based }),
+    [buildUrl],
+  );
+
+  const handleRefreshAll = useCallback(() => {
+    startNavTransition(async () => {
+      await refreshAdminDataAction();
+      router.refresh();
+      toast.success(t("refreshedMessage"));
     });
-  }, [search, filter, page, t]);
-
-  const handleSearchChange = (newSearch: string) => {
-    setSearch(newSearch);
-    setPage(0);
-    loadUsers(newSearch, filter, 0);
-  };
-
-  const handleFilterChange = (newFilter: string) => {
-    setFilter(newFilter);
-    setPage(0);
-    loadUsers(search, newFilter, 0);
-  };
-
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
-    loadUsers(search, filter, newPage);
-  };
+  }, [router, t]);
 
   const handleSelectUser = async (user: AdminUserSummaryDTO) => {
-    startTransition(async () => {
+    setLoadingUserId(user.id);
+    try {
       const res = await getAdminUserDetailAction(user.id);
       if (!res.success) {
         toast.error(res.error || t("userDetailLoadError"));
@@ -119,7 +128,9 @@ export function AdminDashboardView({
       }
       setSelectedUserDetail(res.data);
       setIsDetailOpen(true);
-    });
+    } finally {
+      setLoadingUserId(null);
+    }
   };
 
   const handleToggleRole = (user: AdminUserSummaryDTO) => {
@@ -131,17 +142,16 @@ export function AdminDashboardView({
     const targetUser = roleModalUser;
     const newRole = targetUser.role === "ADMIN" ? "USER" : "ADMIN";
 
-    startTransition(async () => {
+    startRoleTransition(async () => {
       const res = await updateUserRoleAction(targetUser.id, newRole);
       if (res.success) {
         setRoleModalUser(null);
-        refreshAll();
-        setActionMessage(
+        router.refresh();
+        toast.success(
           newRole === "ADMIN"
             ? t("promotedMessage", { fullName: targetUser.fullName })
             : t("demotedMessage", { fullName: targetUser.fullName }),
         );
-        setTimeout(() => setActionMessage(null), 3000);
       } else {
         toast.error(res.error || t("roleUpdateError"));
       }
@@ -165,39 +175,34 @@ export function AdminDashboardView({
 
         <button
           type="button"
-          onClick={refreshAll}
-          disabled={isPending}
-          className="self-start sm:self-auto px-4 py-2 rounded-xl bg-surface border border-white/10 hover:border-gold/40 text-neutral-200 hover:text-gold transition-colors text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-sm"
+          onClick={handleRefreshAll}
+          disabled={isPendingNav}
+          className="self-start sm:self-auto px-4 py-2 rounded-xl bg-surface border border-white/10 hover:border-gold/40 text-neutral-200 hover:text-gold transition-colors text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-60"
         >
           <RefreshCw
             size={14}
-            className={isPending ? "animate-spin text-gold" : ""}
+            className={isPendingNav ? "animate-spin text-gold" : ""}
           />
           {t("refreshButton")}
         </button>
       </div>
 
-      {actionMessage && (
-        <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold animate-in fade-in duration-200">
-          {actionMessage}
-        </div>
-      )}
-
-      {/* CARDS COM MÉTRICAS PRINCIPAIS */}
-      {overview && <AdminOverviewCards overview={overview} />}
+      {/* CARDS COM MÉTRICAS PRINCIPAIS (RENDERIZADOS NO SERVIDOR) */}
+      {overviewCards}
 
       {/* TABELA DE GESTÃO DE USUÁRIOS */}
       <AdminUsersTable
         users={users}
         totalPages={totalPages}
-        currentPage={page}
+        currentPage={currentPage}
         totalElements={totalElements}
         search={search}
         filter={filter}
-        isLoading={isPending}
+        isLoading={isPendingNav}
+        loadingUserId={loadingUserId}
+        buildPageHref={buildPageHref}
         onSearchChange={handleSearchChange}
         onFilterChange={handleFilterChange}
-        onPageChange={handlePageChange}
         onSelectUser={handleSelectUser}
         onToggleRole={handleToggleRole}
       />
@@ -217,7 +222,7 @@ export function AdminDashboardView({
         isOpen={Boolean(roleModalUser)}
         onClose={() => setRoleModalUser(null)}
         onConfirm={handleConfirmRoleToggle}
-        isLoading={isPending}
+        isLoading={isPendingRole}
         title={
           roleModalUser?.role === "ADMIN"
             ? t("roleModal.demoteTitle")

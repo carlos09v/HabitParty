@@ -329,6 +329,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/board_columns/{boardColumnId}/move-workspace": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Mover Coluna para Workspace
+     * @description Move uma coluna e todas as suas tarefas para outro ambiente do usuário.
+     */
+    patch: operations["moveToWorkspace"];
+    trace?: never;
+  };
   "/board_columns/workspace/{workspaceId}/reorder": {
     parameters: {
       query?: never;
@@ -1291,6 +1311,7 @@ export interface components {
       gender?: "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_TO_SAY";
       /** @enum {string} */
       experienceMode?: "GAMIFIED" | "PRODUCTIVITY";
+      timezone?: string;
     };
     UserResponseDTO: {
       /** Format: uuid */
@@ -1311,6 +1332,9 @@ export interface components {
       gender?: "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_TO_SAY";
       /** @enum {string} */
       experienceMode?: "GAMIFIED" | "PRODUCTIVITY";
+      timezone?: string;
+      /** Format: date-time */
+      timezoneUpdatedAt?: string;
       email?: string;
       profilePhotoUrl?: string;
       bio?: string | null;
@@ -1560,6 +1584,7 @@ export interface components {
       gender: "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_TO_SAY";
       /** Format: date */
       birthDate: string;
+      timezone?: string;
     };
     /**
      * @example {
@@ -1689,6 +1714,10 @@ export interface components {
       /** Format: int32 */
       orderIndex?: number;
     };
+    MoveBoardColumnDTO: {
+      /** Format: uuid */
+      targetWorkspaceId: string;
+    };
     RefreshTokenRequestDTO: {
       refreshToken: string;
     };
@@ -1715,6 +1744,7 @@ export interface components {
     };
     GoogleSignInRequestDTO: {
       code: string;
+      timezone?: string;
     };
     UpdateUserPasswordDTO: {
       currentPassword: string;
@@ -2316,6 +2346,32 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": components["schemas"]["UpdateBoardColumnDTO"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["BoardColumnResponseDTO"];
+        };
+      };
+    };
+  };
+  moveToWorkspace: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        boardColumnId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MoveBoardColumnDTO"];
       };
     };
     responses: {

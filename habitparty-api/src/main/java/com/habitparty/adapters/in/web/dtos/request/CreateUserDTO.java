@@ -38,8 +38,21 @@ public record CreateUserDTO(
 
     @NotNull(message = "A data de nascimento é obrigatória")
     @Past(message = "A data de nascimento deve estar no passado")
-    LocalDate birthDate
+    LocalDate birthDate,
+
+    @Size(max = 64, message = "O fuso horário deve ter no máximo 64 caracteres")
+    String timezone
 ) {
+    public CreateUserDTO(
+        String fullName,
+        String username,
+        String email,
+        String password,
+        UserGender gender,
+        LocalDate birthDate) {
+      this(fullName, username, email, password, gender, birthDate, null);
+    }
+
     // Repare que NÃO colocamos ID, money, profile_photo_url ou created_at aqui.
     // O usuário não envia o próprio ID ou Saldo na hora de se cadastrar!
 }

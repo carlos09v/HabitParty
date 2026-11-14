@@ -1,61 +1,23 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { TaskFilters } from "@/components/dashboard/TaskFilters";
 import { TaskTable } from "@/components/dashboard/TaskTable";
-import { buildTaskContextMenuItems } from "@/components/tasks/shared";
-import { ContextMenu } from "@/components/ui/ContextMenu";
+import { TaskModalsHost } from "@/components/tasks/shared";
 import { DASHBOARD_ITEMS_PER_PAGE } from "@/constants/dashboard";
 import { useDashboardTaskActions } from "@/hooks/useDashboardTaskActions";
 import { useDashboardTaskFilters } from "@/hooks/useDashboardTaskFilters";
-import { useIdlePreload } from "@/hooks/useIdlePreload";
+import {
+  applyFocusRecordedToTask,
+  useFocusTaskSync,
+} from "@/hooks/useFocusTaskSync";
 import { useTaskDeleteFlow } from "@/hooks/useTaskDeleteFlow";
 import type { DashboardTasksPanelProps } from "@/types/dashboard";
 import type { Task } from "@/types/task";
 import { cn } from "@/utils";
 import { extractAvailableTagOptions } from "@/utils/tags";
-import { resolveTaskColumnTitle } from "@/utils/taskMapper";
-
-const TaskDetailsPopover = dynamic(
-  () =>
-    import("@/components/tasks/TaskDetailsPopover").then((mod) => ({
-      default: mod.TaskDetailsPopover,
-    })),
-  { ssr: false },
-);
-
-const CreateTaskModal = dynamic(
-  () =>
-    import("@/components/tasks/CreateTaskModal").then((mod) => ({
-      default: mod.CreateTaskModal,
-    })),
-  { ssr: false },
-);
-
-const ConfirmationModal = dynamic(
-  () =>
-    import("@/components/ui/ConfirmationModal").then((mod) => ({
-      default: mod.ConfirmationModal,
-    })),
-  { ssr: false },
-);
-
-const TaskFocusHistoryModal = dynamic(
-  () =>
-    import("@/components/tasks/TaskFocusHistoryModal").then((mod) => ({
-      default: mod.TaskFocusHistoryModal,
-    })),
-  { ssr: false },
-);
-
-function preloadDashboardTaskModalChunks() {
-  void import("@/components/tasks/CreateTaskModal");
-  void import("@/components/tasks/TaskDetailsPopover");
-  void import("@/components/tasks/TaskFocusHistoryModal");
-}
 
 export function DashboardTasksPanel({
   initialTasks,
@@ -66,9 +28,7 @@ export function DashboardTasksPanel({
   onTaskCompletedTodayChange,
 }: DashboardTasksPanelProps) {
   const t = useTranslations("dashboard.tasksPanel");
-  const tMenu = useTranslations("dashboard.taskShared.contextMenu");
   const searchParams = useSearchParams();
-  useIdlePreload(preloadDashboardTaskModalChunks);
 
   const [internalTasks, setInternalTasks] = useState<Task[]>(initialTasks);
 
@@ -80,83 +40,60 @@ export function DashboardTasksPanel({
   const tasksState = externalTasks ?? internalTasks;
   const setTasksState = onTasksChange ?? setInternalTasks;
 
-  // Atualiza métricas de foco e conclusão em tempo real quando sessões finalizam no SidebarFocusWidget
-  useEffect(() => {
-    const handleFocusRecorded = (event: Event) => {
-      const detail = (
-        event as CustomEvent<{
-          taskId?: string;
-          durationMinutes?: number;
-          cycles?: number;
-        }>
-      ).detail;
-      if (!detail?.taskId) return;
-      const mins = detail.durationMinutes ?? 0;
-      const cyc = detail.cycles ?? 0;
-      setTasksState((prev) =>
-        prev.map((t) =>
-          t.id === detail.taskId
+  const [selectedTaskDetails, setSelectedTaskDetails] = useState<{
+    task: Task;
+    anchorRect?: DOMRect;
+  } | null>(null);
+
+  // Sincroniza eventos de foco com a lista local (quando não delegada ao DashboardMain) e com o popover aberto
+  useFocusTaskSync({
+    onFocusRecorded: useCallback(
+      (taskId: string, durationMinutes: number, cycles: number) => {
+        if (!onTasksChange) {
+          setInternalTasks((prev) =>
+            prev.map((task) =>
+              task.id === taskId
+                ? applyFocusRecordedToTask(task, durationMinutes, cycles)
+                : task,
+            ),
+          );
+        }
+        setSelectedTaskDetails((prev) =>
+          prev && prev.task.id === taskId
             ? {
-                ...t,
-                totalFocusMinutes: (t.totalFocusMinutes ?? 0) + mins,
-                focusCyclesCount: (t.focusCyclesCount ?? 0) + cyc,
+                ...prev,
+                task: applyFocusRecordedToTask(
+                  prev.task,
+                  durationMinutes,
+                  cycles,
+                ),
               }
-            : t,
-        ),
-      );
-      setSelectedTaskDetails((prev) =>
-        prev && prev.task.id === detail.taskId
-          ? {
-              ...prev,
-              task: {
-                ...prev.task,
-                totalFocusMinutes: (prev.task.totalFocusMinutes ?? 0) + mins,
-                focusCyclesCount: (prev.task.focusCyclesCount ?? 0) + cyc,
-              },
-            }
-          : prev,
-      );
-    };
-
-    const handleTaskCompleted = (event: Event) => {
-      const detail = (event as CustomEvent<{ taskId?: string }>).detail;
-      if (!detail?.taskId) return;
-      setTasksState((prev) =>
-        prev.map((t) =>
-          t.id === detail.taskId
-            ? { ...t, completed: true, hasClaimedReward: true }
-            : t,
-        ),
-      );
-      setSelectedTaskDetails((prev) =>
-        prev && prev.task.id === detail.taskId
-          ? {
-              ...prev,
-              task: { ...prev.task, completed: true, hasClaimedReward: true },
-            }
-          : prev,
-      );
-    };
-
-    window.addEventListener(
-      "habitparty:task-focus-recorded",
-      handleFocusRecorded,
-    );
-    window.addEventListener(
-      "habitparty:task-completed-from-focus",
-      handleTaskCompleted,
-    );
-    return () => {
-      window.removeEventListener(
-        "habitparty:task-focus-recorded",
-        handleFocusRecorded,
-      );
-      window.removeEventListener(
-        "habitparty:task-completed-from-focus",
-        handleTaskCompleted,
-      );
-    };
-  }, [setTasksState]);
+            : prev,
+        );
+      },
+      [onTasksChange],
+    ),
+    onTaskCompleted: useCallback(
+      (taskId: string, transformTask: (task: Task) => Task) => {
+        if (!onTasksChange) {
+          setInternalTasks((prev) =>
+            prev.map((task) =>
+              task.id === taskId ? transformTask(task) : task,
+            ),
+          );
+        }
+        setSelectedTaskDetails((prev) =>
+          prev && prev.task.id === taskId
+            ? {
+                ...prev,
+                task: transformTask(prev.task),
+              }
+            : prev,
+        );
+      },
+      [onTasksChange],
+    ),
+  });
 
   const defaultColumnId = columns[0]?.id;
 
@@ -221,18 +158,8 @@ export function DashboardTasksPanel({
   }>({
     isOpen: false,
     position: { x: 0, y: 0 },
-    columnId: undefined,
     task: null,
-  } as {
-    isOpen: boolean;
-    position: { x: number; y: number };
-    task: Task | null;
   });
-
-  const [selectedTaskDetails, setSelectedTaskDetails] = useState<{
-    task: Task;
-    anchorRect?: DOMRect;
-  } | null>(null);
 
   const [taskModalState, setTaskModalState] = useState<{
     isOpen: boolean;
@@ -254,7 +181,6 @@ export function DashboardTasksPanel({
   } = useTaskDeleteFlow({
     onConfirmDelete: handleDeleteTask,
   });
-  const [focusHistoryTask, setFocusHistoryTask] = useState<Task | null>(null);
 
   const handleOpenContextMenu = useCallback(
     (e: React.MouseEvent, task: Task) => {
@@ -273,12 +199,12 @@ export function DashboardTasksPanel({
   }, []);
 
   const handleEditTask = useCallback(
-    (task: Task) => {
+    (task: Task, columnId?: string) => {
       setSelectedTaskDetails(null);
       setTaskModalState({
         isOpen: true,
         taskToEdit: task,
-        columnId: task.columnId || defaultColumnId,
+        columnId: columnId || task.columnId || defaultColumnId,
       });
     },
     [defaultColumnId],
@@ -291,34 +217,6 @@ export function DashboardTasksPanel({
         title: c.name || t("defaultList"),
       })),
     [columns, t],
-  );
-
-  const contextMenuItems = useMemo(
-    () =>
-      buildTaskContextMenuItems({
-        task: contextMenu.task,
-        onEdit: (task) =>
-          setTaskModalState({
-            isOpen: true,
-            taskToEdit: task,
-            columnId: task.columnId || defaultColumnId,
-          }),
-        onDuplicate: (task) => handleDuplicateTask(task),
-        onDelete: requestDeleteTask,
-        labels: {
-          startFocus: tMenu("startFocus"),
-          edit: tMenu("edit"),
-          duplicate: tMenu("duplicate"),
-          delete: tMenu("delete"),
-        },
-      }),
-    [
-      contextMenu.task,
-      defaultColumnId,
-      handleDuplicateTask,
-      requestDeleteTask,
-      tMenu,
-    ],
   );
 
   return (
@@ -339,6 +237,7 @@ export function DashboardTasksPanel({
         currentPage={currentPage}
         onPageChange={setCurrentPage}
         tasks={filteredTasks}
+        columns={columns}
         activeFilter={activeFilter}
         onToggle={handleToggleComplete}
         onHabitChange={handleHabitChange}
@@ -350,108 +249,53 @@ export function DashboardTasksPanel({
         deletingTaskIds={checkingDeleteTaskIds}
       />
 
-      {/* Menu de Contexto da Tarefa (Botão Direito ou Botão Mais Opções) */}
-      <ContextMenu
-        isOpen={contextMenu.isOpen}
-        position={contextMenu.position}
-        onClose={() => setContextMenu((prev) => ({ ...prev, isOpen: false }))}
-        items={contextMenuItems}
-      />
-
-      {/* Popover Lateral Flutuante de Detalhes Rápidos */}
-      {selectedTaskDetails && (
-        <TaskDetailsPopover
-          key={selectedTaskDetails.task.id}
-          isOpen={true}
-          onClose={() => setSelectedTaskDetails(null)}
-          task={selectedTaskDetails.task}
-          availableTags={availableTags}
-          columnTitle={resolveTaskColumnTitle(
-            selectedTaskDetails.task,
-            columns,
-            t("defaultList"),
-          )}
-          anchorRect={selectedTaskDetails.anchorRect}
-          onTaskUpdate={(updated) => {
-            handleTaskDetailsUpdate(updated);
-            setSelectedTaskDetails((prev) =>
-              prev ? { ...prev, task: updated } : null,
-            );
-          }}
-          onEdit={(task) => {
-            setTaskModalState({
-              isOpen: true,
-              taskToEdit: task,
-              columnId: task.columnId || defaultColumnId,
-            });
-            setSelectedTaskDetails(null);
-          }}
-          onDuplicate={(task) => {
-            handleDuplicateTask(task);
-            setSelectedTaskDetails(null);
-          }}
-          onDelete={(taskId) => {
-            const task = tasksState.find((t) => t.id === taskId);
-            if (task) {
-              requestDeleteTask(task);
-            }
-            setSelectedTaskDetails(null);
-          }}
-          onToggleComplete={handleToggleComplete}
-          onHabitChange={handleHabitChange}
-          onOpenFocusHistory={(task) => setFocusHistoryTask(task)}
-        />
-      )}
-
-      {/* Modal Dedicado de Histórico de Foco da Tarefa */}
-      {focusHistoryTask && (
-        <TaskFocusHistoryModal
-          isOpen={Boolean(focusHistoryTask)}
-          onClose={() => setFocusHistoryTask(null)}
-          task={focusHistoryTask}
-          onTaskUpdate={(updated) => {
-            handleTaskDetailsUpdate(updated);
-            setFocusHistoryTask(updated);
-          }}
-        />
-      )}
-
-      {/* Modal Completo: Criar / Editar Tarefa */}
-      {taskModalState.isOpen && (
-        <CreateTaskModal
-          key={
-            taskModalState.taskToEdit?.id ??
-            `new-${taskModalState.columnId ?? defaultColumnId ?? ""}`
-          }
-          isOpen={taskModalState.isOpen}
-          onClose={() =>
-            setTaskModalState({
-              isOpen: false,
-              taskToEdit: null,
-              columnId: undefined,
-            })
-          }
-          columns={formColumns}
-          availableTags={availableTags}
-          defaultColumnId={taskModalState.columnId || defaultColumnId}
-          taskToEdit={taskModalState.taskToEdit}
-          onSuccess={(savedTask) => {
-            handleTaskSaved(savedTask);
-            setTaskModalState({
-              isOpen: false,
-              taskToEdit: null,
-              columnId: undefined,
-            });
-          }}
-        />
-      )}
-
-      {/* Modal de Confirmação para Excluir Tarefa com registros no Histórico */}
-      {Boolean(taskToDelete) && (
-        <ConfirmationModal
-          isOpen={Boolean(taskToDelete)}
-          title={t("deleteModalTitle")}
-          description={
+      <TaskModalsHost
+        columns={columns}
+        formColumns={formColumns}
+        availableTags={availableTags}
+        defaultColumnId={defaultColumnId}
+        defaultColumnTitle={t("defaultList")}
+        contextMenu={contextMenu}
+        onCloseContextMenu={() =>
+          setContextMenu((prev) => ({ ...prev, isOpen: false }))
+        }
+        selectedTaskDetails={selectedTaskDetails}
+        onCloseTaskDetails={() => setSelectedTaskDetails(null)}
+        taskModalState={taskModalState}
+        onCloseTaskModal={() =>
+          setTaskModalState({
+            isOpen: false,
+            taskToEdit: null,
+            columnId: undefined,
+          })
+        }
+        onOpenEditTask={handleEditTask}
+        onTaskSaved={(savedTask) => {
+          handleTaskSaved(savedTask);
+          setTaskModalState({
+            isOpen: false,
+            taskToEdit: null,
+            columnId: undefined,
+          });
+        }}
+        onTaskDetailsUpdate={(updated) => {
+          handleTaskDetailsUpdate(updated);
+          setSelectedTaskDetails((prev) =>
+            prev ? { ...prev, task: updated } : null,
+          );
+        }}
+        onDuplicateTask={(task) => handleDuplicateTask(task)}
+        onRequestDeleteTask={(task) => requestDeleteTask(task)}
+        onToggleComplete={handleToggleComplete}
+        onHabitChange={handleHabitChange}
+        taskToDelete={taskToDelete}
+        deleteHistory={deleteHistory}
+        onDeleteHistoryChange={setDeleteHistory}
+        onConfirmDeleteTask={confirmDeleteTask}
+        onCancelDeleteTask={cancelDeleteTask}
+        deleteModalLabels={{
+          title: t("deleteModalTitle"),
+          description: (
             <>
               {t("deleteModalDescPrefix")}{" "}
               <span className="font-bold text-neutral-100">
@@ -459,18 +303,13 @@ export function DashboardTasksPanel({
               </span>
               {t("deleteModalDescSuffix")}
             </>
-          }
-          confirmText={t("deleteModalConfirm")}
-          cancelText={t("deleteModalCancel")}
-          variant="danger"
-          checkboxLabel={t("deleteHistoryLabel")}
-          checkboxHint={t("deleteHistoryHint")}
-          checkboxChecked={deleteHistory}
-          onCheckboxChange={setDeleteHistory}
-          onClose={cancelDeleteTask}
-          onConfirm={confirmDeleteTask}
-        />
-      )}
+          ),
+          confirmText: t("deleteModalConfirm"),
+          cancelText: t("deleteModalCancel"),
+          deleteHistoryLabel: t("deleteHistoryLabel"),
+          deleteHistoryHint: t("deleteHistoryHint"),
+        }}
+      />
     </section>
   );
 }

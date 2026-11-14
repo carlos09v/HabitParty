@@ -33,7 +33,7 @@ export default async function VerifyEmailPage({
 
   if (!cleanToken) {
     return (
-      <main className="flex flex-col items-center text-center gap-6 w-full animate-in fade-in duration-300">
+      <div className="flex flex-col items-center text-center gap-6 w-full animate-in fade-in duration-300">
         <div className="w-14 h-14 rounded-2xl bg-danger-500/15 border border-danger-500/35 flex items-center justify-center text-danger-400">
           <ShieldAlert size={28} />
         </div>
@@ -49,7 +49,7 @@ export default async function VerifyEmailPage({
         >
           {t("backToHabitParty")}
         </Link>
-      </main>
+      </div>
     );
   }
 
@@ -59,7 +59,7 @@ export default async function VerifyEmailPage({
 
   if (!verificationResult.success) {
     return (
-      <main className="flex flex-col items-center text-center gap-6 w-full animate-in fade-in duration-300">
+      <div className="flex flex-col items-center text-center gap-6 w-full animate-in fade-in duration-300">
         <div className="w-14 h-14 rounded-2xl bg-danger-500/15 border border-danger-500/35 flex items-center justify-center text-danger-400">
           <ShieldAlert size={28} />
         </div>
@@ -77,12 +77,12 @@ export default async function VerifyEmailPage({
         >
           {t("backToHabitParty")}
         </Link>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="flex flex-col items-center text-center gap-6 w-full animate-in fade-in duration-300">
+    <div className="flex flex-col items-center text-center gap-6 w-full animate-in fade-in duration-300">
       <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/35 flex items-center justify-center text-emerald-400">
         <CheckCircle2 size={28} />
       </div>
@@ -100,6 +100,6 @@ export default async function VerifyEmailPage({
           {t("continueToApp")}
         </button>
       </form>
-    </main>
+    </div>
   );
 }

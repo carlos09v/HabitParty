@@ -1,10 +1,7 @@
-import { Coins, History, type LucideIcon, Sparkles } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { FOCUS_ICON_MAP } from "@/constants/focus";
 import {
   DEFAULT_TRANSACTION_STYLE,
-  getDifficultyLabel,
-  getPackageLabel,
-  getTransactionTypeLabel,
   NEGATIVE_TRANSACTION_TYPES,
   TRANSACTION_TYPE_CONFIG,
 } from "@/constants/history";
@@ -18,16 +15,16 @@ import type {
   TransactionHistoryResponseDTO,
   TransactionMetadata,
 } from "@/types/history";
-import type { DateFormat, TimeFormat, WelcomeCardStat } from "@/types/ui";
+import type { DateFormat, TimeFormat } from "@/types/ui";
 import {
   formatDateTime,
   formatShortDate,
   formatTimeDisplay,
   getCapitalizedWeekDays,
+  getDateKeyInTimeZone,
+  getDatePartsInTimeZone,
   parseServerDate,
 } from "./date";
-import { formatCoins } from "./economy";
-import { toLocalDateKey } from "./focusMetrics";
 
 /** Índices de ícones construídos uma única vez (evita `.find` por linha/render). */
 const toIconMap = (items: readonly { id: string; icon: LucideIcon }[]) =>
@@ -76,11 +73,12 @@ function formatTransactionTime(
   dateStr?: string | null,
   locale: AppLocale = "pt-BR",
   timeFormat?: TimeFormat,
+  timeZone?: string | null,
 ): string {
   if (!dateStr) return "-";
   const d = parseServerDate(dateStr);
-  if (!d) return formatDateTime(dateStr, { locale, timeFormat });
-  return formatTimeDisplay(d, { timeFormat, locale });
+  if (!d) return formatDateTime(dateStr, { locale, timeFormat, timeZone });
+  return formatTimeDisplay(d, { timeFormat, locale, timeZone });
 }
 
 const PACKAGE_BORDER_MAP: Record<string, string> = {
@@ -90,15 +88,24 @@ const PACKAGE_BORDER_MAP: Record<string, string> = {
   LEGENDARY: "border-l-amber-500",
 };
 
+export interface TransactionMetadataLabels {
+  defaultTransactionLabel: string;
+  getTransactionTypeLabel: (resolvedType: string) => string;
+  getDifficultyLabel: (difficulty: string) => string;
+  getPackageLabel: (packageLevel: string) => string;
+}
+
 /**
  * Resolve e normaliza todos os metadados visuais e contextuais de uma transação
- * do histórico (tipo resolvido, rótulos, ícone correto e classes Tailwind).
+ * do histórico (tipo resolvido, rótulos traduzidos, ícone correto, fuso horário e classes Tailwind).
  */
 export function resolveTransactionMetadata(
   transaction: TransactionHistoryResponseDTO,
   locale: AppLocale = "pt-BR",
   dateFormat?: DateFormat,
   timeFormat?: TimeFormat,
+  timeZone?: string | null,
+  labels?: TransactionMetadataLabels,
 ): TransactionMetadata {
   const isFocus = transaction.transactionType === "FOCUS_COMPLETED";
   const rawType = transaction.transactionType || "TASK_COMPLETED";
@@ -110,13 +117,16 @@ export function resolveTransactionMetadata(
 
   const normalizedDiff = transaction.difficulty?.trim().toUpperCase();
   const difficultyLabel = normalizedDiff
-    ? getDifficultyLabel(normalizedDiff, locale)
+    ? labels
+      ? labels.getDifficultyLabel(normalizedDiff)
+      : normalizedDiff
     : null;
 
   const normalizedPkg = transaction.packageLevel?.trim().toUpperCase();
-  // Pacote "NONE" também é exibido ("Comum") para que Loja/Mochila sempre tenham detalhes na coluna
   const packageLabel = normalizedPkg
-    ? getPackageLabel(normalizedPkg, locale)
+    ? labels
+      ? labels.getPackageLabel(normalizedPkg)
+      : normalizedPkg
     : null;
 
   // Penalidades/falhas sempre usam o vermelho do tipo, sem herdar a cor da dificuldade
@@ -131,8 +141,13 @@ export function resolveTransactionMetadata(
     (normalizedPkg && PACKAGE_BADGE_COLORS[normalizedPkg]) ||
     "bg-white/10 border-white/15 text-neutral-200";
 
+  const label = labels
+    ? labels.getTransactionTypeLabel(resolvedType) ||
+      labels.defaultTransactionLabel
+    : resolvedType;
+
   return {
-    label: getTransactionTypeLabel(resolvedType, locale),
+    label,
     badgeClass: typeConfig.badgeClass,
     borderClass,
     secondaryBadgeClass,
@@ -145,52 +160,63 @@ export function resolveTransactionMetadata(
       locale,
       dateFormat,
       timeFormat,
+      timeZone,
     }),
     formattedTime: formatTransactionTime(
       transaction.createdAt,
       locale,
       timeFormat,
+      timeZone,
     ),
   };
 }
 
+export interface TransactionDayLabels {
+  unknownDate: string;
+  today: string;
+  yesterday: string;
+}
+
 /**
- * Formata um rótulo amigável para o divisor de data do extrato ("Hoje", "Ontem", "Ter, 12 Out" ou "12 Out 2025").
+ * Formata um rótulo amigável para o divisor de data do extrato ("Hoje", "Ontem", "Ter, 12 Out" ou "12 Out 2025"),
+ * respeitando o fuso horário do usuário.
  */
 export function formatTransactionDayLabel(
   dateKey: string,
-  referenceDateOrLocale: Date | AppLocale = new Date(),
-  localeArg: AppLocale = "pt-BR",
+  referenceDate: Date = new Date(),
+  locale: AppLocale = "pt-BR",
   dateFormat?: DateFormat,
+  timeZone?: string | null,
+  dayLabels?: TransactionDayLabels,
 ): string {
-  const referenceDate =
-    typeof referenceDateOrLocale === "string"
-      ? new Date()
-      : referenceDateOrLocale;
-  const locale =
-    typeof referenceDateOrLocale === "string"
-      ? referenceDateOrLocale
-      : localeArg;
   const isEn = locale === "en";
 
   if (!dateKey || dateKey === "unknown") {
-    return isEn ? "Unknown date" : "Data desconhecida";
+    return (
+      dayLabels?.unknownDate ?? (isEn ? "Unknown date" : "Data desconhecida")
+    );
   }
 
-  const todayKey = toLocalDateKey(referenceDate);
-  if (dateKey === todayKey) return isEn ? "Today" : "Hoje";
+  const todayParts = getDatePartsInTimeZone(referenceDate, timeZone);
+  const todayKey = getDateKeyInTimeZone(referenceDate, timeZone);
+  if (dateKey === todayKey) {
+    return dayLabels?.today ?? (isEn ? "Today" : "Hoje");
+  }
 
-  const yesterday = new Date(referenceDate);
-  yesterday.setDate(referenceDate.getDate() - 1);
-  const yesterdayKey = toLocalDateKey(yesterday);
-  if (dateKey === yesterdayKey) return isEn ? "Yesterday" : "Ontem";
+  const yesterdayUtc = new Date(
+    Date.UTC(todayParts.year, todayParts.month - 1, todayParts.day - 1),
+  );
+  const yesterdayKey = `${yesterdayUtc.getUTCFullYear()}-${String(yesterdayUtc.getUTCMonth() + 1).padStart(2, "0")}-${String(yesterdayUtc.getUTCDate()).padStart(2, "0")}`;
+  if (dateKey === yesterdayKey) {
+    return dayLabels?.yesterday ?? (isEn ? "Yesterday" : "Ontem");
+  }
 
   const [y, m, d] = dateKey.split("-").map(Number);
   if (!y || !m || !d) return dateKey;
 
   const dateObj = new Date(y, m - 1, d);
   const weekDay = getCapitalizedWeekDays(locale)[dateObj.getDay()];
-  const includeYear = y !== referenceDate.getFullYear();
+  const includeYear = y !== todayParts.year;
   const formattedDate = formatShortDate(dateKey, {
     includeYear,
     monthFormat: "short",
@@ -205,29 +231,22 @@ export function formatTransactionDayLabel(
 }
 
 /**
- * Agrupa uma lista de transações por dia no fuso horário local preservando a ordem original.
+ * Agrupa uma lista de transações por dia no fuso horário do usuário preservando a ordem original.
  */
 export function groupTransactionsByDay(
   transactions: TransactionHistoryResponseDTO[],
-  referenceDateOrLocale: Date | AppLocale = new Date(),
-  localeArg: AppLocale = "pt-BR",
+  referenceDate: Date = new Date(),
+  locale: AppLocale = "pt-BR",
   dateFormat?: DateFormat,
+  timeZone?: string | null,
+  dayLabels?: TransactionDayLabels,
 ): TransactionDayGroup[] {
-  const referenceDate =
-    typeof referenceDateOrLocale === "string"
-      ? new Date()
-      : referenceDateOrLocale;
-  const locale =
-    typeof referenceDateOrLocale === "string"
-      ? referenceDateOrLocale
-      : localeArg;
-
   const groups: TransactionDayGroup[] = [];
   const groupMap = new Map<string, TransactionDayGroup>();
 
   for (const tx of transactions) {
     const parsed = parseServerDate(tx.createdAt);
-    const dateKey = parsed ? toLocalDateKey(parsed) : "unknown";
+    const dateKey = parsed ? getDateKeyInTimeZone(parsed, timeZone) : "unknown";
 
     let group = groupMap.get(dateKey);
     if (!group) {
@@ -238,6 +257,8 @@ export function groupTransactionsByDay(
           referenceDate,
           locale,
           dateFormat,
+          timeZone,
+          dayLabels,
         ),
         items: [],
       };
@@ -276,90 +297,4 @@ export function summarizeHistoryPage(
     xpEarned,
     totalCount: totalElements ?? transactions.length,
   };
-}
-
-/**
- * Estatísticas do WelcomeCard do Extrato.
- * Moedas e XP refletem apenas as transações da página visível; o total de
- * registros reflete todos os resultados dos filtros atuais.
- */
-export function calculateHistoryWelcomeStats(
-  input: TransactionHistoryResponseDTO[] | HistoryPageSummary,
-  totalElementsOrLocale?: number | AppLocale,
-  localeArg: AppLocale = "pt-BR",
-  isGamified = true,
-): WelcomeCardStat[] {
-  const totalElements =
-    typeof totalElementsOrLocale === "number"
-      ? totalElementsOrLocale
-      : undefined;
-  const locale =
-    typeof totalElementsOrLocale === "string"
-      ? totalElementsOrLocale
-      : localeArg;
-  const isEn = locale === "en";
-
-  const summary = Array.isArray(input)
-    ? summarizeHistoryPage(input, totalElements)
-    : input;
-
-  const currencyLabel = isGamified
-    ? isEn
-      ? "Coins"
-      : "Moedas"
-    : isEn
-      ? "Credits"
-      : "Créditos";
-  const currencyLower = isGamified
-    ? isEn
-      ? "coins"
-      : "moedas"
-    : isEn
-      ? "credits"
-      : "créditos";
-
-  return [
-    {
-      label: isEn ? `${currencyLabel} on Page` : `${currencyLabel} na Página`,
-      value: `+${formatCoins(summary.goldEarned, { locale })} ${currencyLabel}`,
-      icon: Coins,
-      variant: "gold",
-      hint:
-        summary.goldSpent > 0
-          ? isEn
-            ? `−${formatCoins(summary.goldSpent, { locale })} ${currencyLower} spent on this page`
-            : `−${formatCoins(summary.goldSpent, { locale })} ${currencyLower} ${isGamified ? "gastas" : "usados"} nesta página`
-          : isEn
-            ? "earned in visible records"
-            : isGamified
-              ? "ganhas nos registros visíveis"
-              : "acumulados nos registros visíveis",
-    },
-    {
-      label: isGamified
-        ? isEn
-          ? "XP on Page"
-          : "XP na Página"
-        : isEn
-          ? "Points on Page"
-          : "Pontos na Página",
-      value: `+${summary.xpEarned} ${isGamified ? "XP" : "pts"}`,
-      icon: Sparkles,
-      variant: "info",
-      hint: isGamified
-        ? isEn
-          ? "experience in visible records"
-          : "experiência nos registros visíveis"
-        : isEn
-          ? "points in visible records"
-          : "pontos nos registros visíveis",
-    },
-    {
-      label: isEn ? "Total Records" : "Total de Registros",
-      value: `${summary.totalCount} ${summary.totalCount === 1 ? (isEn ? "transaction" : "transação") : isEn ? "transactions" : "transações"}`,
-      icon: History,
-      variant: "primary",
-      hint: isEn ? "with current filters" : "com os filtros atuais",
-    },
-  ];
 }

@@ -1,5 +1,6 @@
 package com.habitparty.adapters.out.persistence.entities;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -66,6 +67,9 @@ public class UserJpaEntity {
   @Column(name = "avatar_frame", nullable = false, length = 40, columnDefinition = "varchar(40) default 'none'")
   private String avatarFrame = "none";
 
+  @Column(name = "theme", nullable = false, length = 40, columnDefinition = "varchar(40) default 'dark'")
+  private String theme = "dark";
+
   @Column(name = "birth_date", nullable = true)
   private LocalDate birthDate;
 
@@ -76,6 +80,18 @@ public class UserJpaEntity {
   @Enumerated(EnumType.STRING)
   @Column(name = "experience_mode", nullable = false, length = 30, columnDefinition = "varchar(30) default 'PRODUCTIVITY'")
   private UserExperienceMode experienceMode = UserExperienceMode.PRODUCTIVITY;
+
+  @Column(name = "timezone", nullable = false, length = 64, columnDefinition = "varchar(64) default 'America/Sao_Paulo'")
+  private String timezone = "America/Sao_Paulo";
+
+  @Column(name = "timezone_updated_at")
+  private Instant timezoneUpdatedAt;
+
+  @Column(name = "last_daily_reset_date")
+  private LocalDate lastDailyResetDate;
+
+  @Column(name = "next_daily_reset_at")
+  private Instant nextDailyResetAt;
 
   @Column(name = "created_at", nullable = false, updatable = false)
   @CreationTimestamp

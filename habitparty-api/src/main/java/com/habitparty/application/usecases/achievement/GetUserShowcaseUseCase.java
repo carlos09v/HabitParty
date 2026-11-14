@@ -29,6 +29,12 @@ public class GetUserShowcaseUseCase {
   private final ProfileHighlightRepository profileHighlightPort;
   private final EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
   private final com.habitparty.application.usecases.user.EffectiveStreakResolver effectiveStreakResolver;
+  private com.habitparty.application.usecases.task.DailyResetUseCase dailyResetUseCase;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  public void setDailyResetUseCase(com.habitparty.application.usecases.task.DailyResetUseCase dailyResetUseCase) {
+    this.dailyResetUseCase = dailyResetUseCase;
+  }
 
   @org.springframework.beans.factory.annotation.Autowired
   public GetUserShowcaseUseCase(
@@ -83,6 +89,9 @@ public class GetUserShowcaseUseCase {
 
   @Transactional
   public UserShowcaseResult execute(UUID userId) {
+    if (dailyResetUseCase != null) {
+      dailyResetUseCase.resetUserIfDue(userId);
+    }
     User user = userPort.findById(userId)
         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
 

@@ -1,7 +1,11 @@
+"use client";
+
 import { useTranslations } from "next-intl";
 import { WEEK_DAYS } from "@/constants/task";
+import { useUserStore } from "@/store/userStore";
 import type { DailyDaysOfWeek } from "@/types/task";
 import { cn } from "@/utils";
+import { getDatePartsInTimeZone } from "@/utils/date";
 
 interface WeekDaysIndicatorProps {
   daysOfWeek?: DailyDaysOfWeek[] | null;
@@ -19,9 +23,10 @@ export function WeekDaysIndicator({
   className,
 }: WeekDaysIndicatorProps) {
   const t = useTranslations("dashboard.taskShared.weekDays");
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
   // Se daysOfWeek tiver itens, acende apenas os selecionados. Se for nulo/vazio em Diária, acende todos os dias.
   const hasSelectedDays = Array.isArray(daysOfWeek) && daysOfWeek.length > 0;
-  const todayIndex = new Date().getDay(); // 0 = Domingo, 1 = Segunda, etc.
+  const todayIndex = getDatePartsInTimeZone(new Date(), userTimeZone).weekday; // 0 = Domingo, 1 = Segunda, etc.
 
   return (
     <div
@@ -40,7 +45,9 @@ export function WeekDaysIndicator({
             title={`${fullName}${isToday ? t("todaySuffix") : ""}: ${isActive ? t("activeStatus") : t("inactiveStatus")}`}
             className={cn(
               "rounded-full flex items-center justify-center font-bold transition-colors shrink-0",
-              isCompact ? "w-3.5 h-3.5 text-[8px]" : "w-4.5 h-4.5 text-label-m",
+              isCompact
+                ? "w-3.5 h-3.5 text-label-s"
+                : "w-4.5 h-4.5 text-label-m",
               isActive &&
                 isToday &&
                 "bg-primary dark:bg-magenta text-white ring-2 ring-primary/25 dark:ring-1 dark:ring-white/40 dark:shadow-glow-magenta font-extrabold",

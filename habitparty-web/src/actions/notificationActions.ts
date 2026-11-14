@@ -7,20 +7,33 @@ import { getDashboardTransactions } from "@/services/dashboardService";
 import { getRawInventoryItems } from "@/services/inventoryService";
 import { fetchWorkspaceBoardColumns } from "@/services/taskService";
 import { getCurrentUser } from "@/services/userService";
-import { getWorkspaces } from "@/services/workspaceService";
+import {
+  getWorkspaces,
+  resolveActiveWorkspace,
+} from "@/services/workspaceService";
 import {
   isTaskScheduledForDate,
   TASK_COMPLETION_TRANSACTION_TYPES,
 } from "@/utils/dashboardMetrics";
-import { parseIsoDateUtcMs, parseServerDate } from "@/utils/date";
+import {
+  getDateKeyInTimeZone,
+  getTodayDateString,
+  isValidIanaTimeZone,
+  parseIsoDateUtcMs,
+  parseServerDate,
+} from "@/utils/date";
 
 function isTimestampOnLocalDate(
   rawIso: string | undefined,
   targetDateStr: string,
+  timeZone?: string,
   timezoneOffsetMinutes?: number,
 ): boolean {
   if (!rawIso) return false;
   const parsed = parseServerDate(rawIso);
+  if (parsed && timeZone) {
+    return getDateKeyInTimeZone(parsed, timeZone) === targetDateStr;
+  }
   if (
     parsed &&
     typeof timezoneOffsetMinutes === "number" &&
@@ -78,12 +91,10 @@ export async function getSidebarNotificationsAction(
           : Promise.resolve(null),
       ]);
 
-    const isCookieWorkspaceValid =
-      Boolean(cookieWorkspaceId) &&
-      workspaces.some((w) => w.id === cookieWorkspaceId);
-    const activeWorkspaceId = isCookieWorkspaceValid
-      ? cookieWorkspaceId
-      : workspaces[0]?.id;
+    const { activeWorkspaceId } = resolveActiveWorkspace(
+      workspaces,
+      cookieWorkspaceId,
+    );
 
     const boardData =
       activeWorkspaceId && activeWorkspaceId === cookieWorkspaceId
@@ -94,9 +105,11 @@ export async function getSidebarNotificationsAction(
 
     const notifications: SidebarNotification[] = [];
     const now = new Date();
+    const effectiveTimeZone = isValidIanaTimeZone(user?.timezone)
+      ? user.timezone.trim()
+      : undefined;
     const todayStr =
-      clientDateStr ||
-      `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      clientDateStr || getTodayDateString(now, effectiveTimeZone);
 
     const todayUtcMs = parseIsoDateUtcMs(todayStr);
     let overdueCount = 0;
@@ -116,6 +129,7 @@ export async function getSidebarNotificationsAction(
           isTimestampOnLocalDate(
             task.lastCompletedAt,
             todayStr,
+            effectiveTimeZone,
             clientTimezoneOffsetMinutes,
           )
         ) {
@@ -169,6 +183,7 @@ export async function getSidebarNotificationsAction(
           isTimestampOnLocalDate(
             tx.createdAt,
             todayStr,
+            effectiveTimeZone,
             clientTimezoneOffsetMinutes,
           ),
       ),

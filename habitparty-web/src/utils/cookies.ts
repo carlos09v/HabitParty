@@ -7,9 +7,17 @@ import type {
   ThemeMode,
   TimeFormat,
 } from "@/types/ui";
-import { detectBrowserDateFormat, detectBrowserTimeFormat } from "@/utils/date";
+import {
+  BROWSER_TIMEZONE_COOKIE,
+  DEFAULT_TIMEZONE,
+  detectBrowserDateFormat,
+  detectBrowserTimeFormat,
+  isValidIanaTimeZone,
+  TIMEZONE_COOKIE,
+} from "@/utils/date";
 
 export type { AppLocale, DateFormat, ExperienceMode, ThemeMode, TimeFormat };
+export { BROWSER_TIMEZONE_COOKIE, TIMEZONE_COOKIE };
 
 export function isValidDateFormat(val?: string | null): val is DateFormat {
   return val === "DD/MM/YYYY" || val === "MM/DD/YYYY" || val === "YYYY-MM-DD";
@@ -59,4 +67,20 @@ export async function getTimeFormat(): Promise<TimeFormat> {
   const primarySubtag = acceptLang?.split(",")[0]?.split(";")[0]?.trim();
   const locale = await getRequestLocale();
   return detectBrowserTimeFormat(primarySubtag, locale);
+}
+
+export async function getUserTimezoneCookie(): Promise<string> {
+  const cookieStore = await cookies();
+  const raw = cookieStore.get(TIMEZONE_COOKIE)?.value;
+  if (raw) {
+    try {
+      const decoded = decodeURIComponent(raw);
+      if (isValidIanaTimeZone(decoded)) {
+        return decoded.trim();
+      }
+    } catch {
+      // Fallback para timezone padrão caso cookie esteja malformado
+    }
+  }
+  return DEFAULT_TIMEZONE;
 }

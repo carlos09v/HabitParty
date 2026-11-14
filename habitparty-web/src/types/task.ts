@@ -99,7 +99,6 @@ export interface BoardFilterState {
 export type {
   DashboardAdvancedFilters,
   TaskFiltersProps,
-  TaskPaginationProps,
   TaskTableProps,
 } from "@/types/dashboard";
 

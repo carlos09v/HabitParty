@@ -6,6 +6,11 @@ import { DashboardEmptyWorkspace } from "@/components/dashboard/DashboardEmptyWo
 import { DashboardMain } from "@/components/dashboard/DashboardMain";
 import { DashboardSidebarRight } from "@/components/dashboard/DashboardSidebarRight";
 import { Loading } from "@/components/ui/Loading";
+import {
+  MAX_COLUMNS_PREMIUM,
+  MAX_VISIBLE_COLUMNS,
+  resolveVisibleColumnIds,
+} from "@/constants/routine";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getDashboardData } from "@/services/dashboardService";
 
@@ -60,6 +65,26 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     user,
   } = dashboardData;
 
+  const isPremium = user?.isPremium ?? false;
+  const maxAllowed = isPremium ? MAX_COLUMNS_PREMIUM : MAX_VISIBLE_COLUMNS;
+  const cookieKey = activeWorkspaceId
+    ? `hp_visible_cols_${activeWorkspaceId}`
+    : null;
+  const cookieVal = cookieKey ? cookieStore.get(cookieKey)?.value : null;
+  let parsedCookieIds: string[] | undefined;
+  if (cookieVal) {
+    try {
+      parsedCookieIds = JSON.parse(decodeURIComponent(cookieVal));
+    } catch {
+      // ignore
+    }
+  }
+  const initialVisibleColumnIds = resolveVisibleColumnIds(
+    initialColumns.map((c) => c.id || "").filter(Boolean),
+    parsedCookieIds,
+    maxAllowed,
+  );
+
   return (
     <ScopedIntlProvider scope="dashboard">
       <div className="flex h-full w-full overflow-hidden">
@@ -74,12 +99,14 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             initialTasks={initialTasks}
             activeWorkspaceId={activeWorkspaceId}
             initialColumns={initialColumns}
+            initialVisibleColumnIds={initialVisibleColumnIds}
             transactions={transactions}
             user={user}
           />
         </Suspense>
 
         <DashboardSidebarRight
+          experienceMode={user?.experienceMode}
           balance={userBalance}
           weeklyEarnings={weeklyEarnings}
           weeklySpent={weeklySpent}

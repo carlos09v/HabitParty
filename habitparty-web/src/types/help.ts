@@ -28,6 +28,7 @@ export interface HelpTableEntry {
   title: string;
   description: string;
   category?: HelpCategory;
+  categories?: HelpCategory[];
   columns: string[];
   rows: Array<Array<string | number>>;
 }

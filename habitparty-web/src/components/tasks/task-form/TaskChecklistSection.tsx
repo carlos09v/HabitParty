@@ -1,8 +1,12 @@
-import { Check, CheckSquare, Pencil, Trash2 } from "lucide-react";
+"use client";
+
+import { CheckSquare } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import {
+  ChecklistItemRow,
+  useChecklistInlineEdit,
+} from "@/components/tasks/shared/ChecklistEditor";
 import type { CreateTaskFormReturn } from "@/hooks/useCreateTaskForm";
-import { cn } from "@/utils";
 
 interface TaskChecklistSectionProps {
   form: CreateTaskFormReturn;
@@ -21,38 +25,15 @@ export function TaskChecklistSection({ form }: TaskChecklistSectionProps) {
     isPending,
   } = form;
 
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [editingText, setEditingText] = useState("");
-  const editInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (editingIndex !== null) {
-      editInputRef.current?.focus();
-      editInputRef.current?.select();
-    }
-  }, [editingIndex]);
-
-  const handleStartEdit = (idx: number, currentName?: string) => {
-    if (isPending) return;
-    setEditingIndex(idx);
-    setEditingText(currentName || "");
-  };
-
-  const handleConfirmEdit = () => {
-    if (editingIndex !== null) {
-      const trimmed = editingText.trim();
-      if (trimmed) {
-        handleUpdateChecklistItem(editingIndex, trimmed);
-      }
-      setEditingIndex(null);
-      setEditingText("");
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingIndex(null);
-    setEditingText("");
-  };
+  const {
+    editingKey: editingIndex,
+    editingText,
+    setEditingText,
+    editInputRef,
+    startEdit,
+    confirmEdit,
+    cancelEdit,
+  } = useChecklistInlineEdit<number>(handleUpdateChecklistItem, isPending);
 
   return (
     <div className="flex flex-col gap-2 pt-2 border-t border-neutral-700/70 dark:border-white/10 flex-1 min-h-0 overflow-hidden">
@@ -96,96 +77,30 @@ export function TaskChecklistSection({ form }: TaskChecklistSectionProps) {
       {/* Lista de itens do checklist */}
       {checklist.length > 0 && (
         <ul className="flex flex-col gap-1.5 overflow-y-auto custom-scrollbar mt-1 flex-1 min-h-0 max-h-48 md:max-h-none pr-1">
-          {checklist.map((item, idx) => {
-            const isEditingThis = editingIndex === idx;
-            return (
-              <li
-                key={item.id || `item-${idx}-${item.name}`}
-                className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-surface/70 border border-neutral-700 dark:bg-background/40 dark:border-primary/20 text-body-s text-neutral-200 group/item"
-              >
-                {isEditingThis ? (
-                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                    <input
-                      ref={editInputRef}
-                      type="text"
-                      value={editingText}
-                      onChange={(e) => setEditingText(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleConfirmEdit();
-                        }
-                        if (e.key === "Escape") {
-                          e.preventDefault();
-                          handleCancelEdit();
-                        }
-                      }}
-                      onBlur={handleConfirmEdit}
-                      className="flex-1 bg-card border border-primary/50 rounded px-2 py-0.5 text-body-s text-neutral-50 focus:outline-none focus:border-primary dark:bg-background/60 dark:border-gold/60 dark:focus:border-gold min-w-0"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <button
-                      type="button"
-                      onClick={() => handleToggleChecklistItem(idx)}
-                      disabled={isPending}
-                      className={cn(
-                        "w-4 h-4 rounded border flex items-center justify-center transition-colors cursor-pointer shrink-0",
-                        item.isCompleted
-                          ? "bg-gold border-gold text-on-gold dark:shadow-glow-gold-xs"
-                          : "border-neutral-500 bg-card hover:border-primary dark:border-primary/50 dark:bg-primary-dark/40 dark:hover:border-gold",
-                      )}
-                      aria-label={
-                        item.isCompleted
-                          ? t("markPendingAria")
-                          : t("markCompletedAria")
-                      }
-                    >
-                      {item.isCompleted && (
-                        <Check size={11} className="stroke-3 text-on-gold" />
-                      )}
-                    </button>
-                    <span
-                      className={cn(
-                        "truncate",
-                        item.isCompleted && "line-through text-neutral-400",
-                      )}
-                    >
-                      {item.name}
-                    </span>
-                  </div>
-                )}
-
-                {!isEditingThis && (
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => handleStartEdit(idx, item.name)}
-                      disabled={isPending}
-                      className="text-neutral-400 hover:text-primary dark:hover:text-gold p-1 rounded transition-colors cursor-pointer disabled:opacity-50 shrink-0"
-                      aria-label={t("editItemAria", { name: item.name ?? "" })}
-                      title={t("editItemAria", { name: item.name ?? "" })}
-                    >
-                      <Pencil size={13} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveChecklistItem(idx)}
-                      disabled={isPending}
-                      className="text-neutral-400 hover:text-danger-500 p-1 rounded transition-colors cursor-pointer disabled:opacity-50 shrink-0"
-                      aria-label={t("removeItemAria", {
-                        name: item.name ?? "",
-                      })}
-                      title={t("removeItemAria", { name: item.name ?? "" })}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                )}
-              </li>
-            );
-          })}
+          {checklist.map((item, idx) => (
+            <ChecklistItemRow
+              key={item.id || `item-${idx}-${item.name}`}
+              item={item}
+              variant="modal"
+              isEditing={editingIndex === idx}
+              editingText={editingText}
+              editInputRef={editInputRef}
+              disabled={isPending}
+              onEditingTextChange={setEditingText}
+              onConfirmEdit={confirmEdit}
+              onCancelEdit={cancelEdit}
+              onStartEdit={() => startEdit(idx, item.name)}
+              onToggle={() => handleToggleChecklistItem(idx)}
+              onDelete={() => handleRemoveChecklistItem(idx)}
+              labels={{
+                toggleAria: item.isCompleted
+                  ? t("markPendingAria")
+                  : t("markCompletedAria"),
+                editAria: t("editItemAria", { name: item.name ?? "" }),
+                deleteAria: t("removeItemAria", { name: item.name ?? "" }),
+              }}
+            />
+          ))}
         </ul>
       )}
     </div>

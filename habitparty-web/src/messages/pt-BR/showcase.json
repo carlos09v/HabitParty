@@ -12,6 +12,48 @@
     "updateProfileError": "Não foi possível atualizar sua vitrine.",
     "networkError": "Erro de conexão com o servidor. Tente novamente."
   },
+  "avatarFrames": {
+    "title": "Moldura do Avatar",
+    "subtitle": "Escolha uma moldura animada com luz cósmica para destacar seu perfil na Party, no ranking e no painel.",
+    "upgradeToast": "Molduras animadas são exclusivas para membros Premium! Faça o upgrade para desbloquear.",
+    "vipBadge": "VIP Cósmico",
+    "freeBadge": "Grátis",
+    "unlockAll": "Desbloquear Todas",
+    "lockedTitle": "Exclusivo Premium",
+    "successToast": "Moldura \"{name}\" equipada com sucesso!",
+    "frames": {
+      "none": {
+        "name": "Sem Moldura",
+        "badge": "Padrão",
+        "description": "Visual clássico limpo sem efeitos de borda adicionais."
+      },
+      "cosmic_gold": {
+        "name": "Guardião Cósmico",
+        "badge": "VIP Cósmico",
+        "description": "Aura de ouro estelar radiante com rotação de luz cósmica e brilho dourado."
+      },
+      "cyber_neon": {
+        "name": "Cyberpunk Neon",
+        "badge": "VIP Tech",
+        "description": "Pulso neon eletrizante alternando tons de ciano futurista e magenta laser."
+      },
+      "fire_phoenix": {
+        "name": "Fogo da Fênix",
+        "badge": "VIP Fênix",
+        "description": "Chamas ardentes em vermelho escarlate e âmbar com efeito de combustão."
+      },
+      "emerald_mystic": {
+        "name": "Aura Esmeralda",
+        "badge": "VIP Místico",
+        "description": "Anel de energia natural verde esmeralda com pulsação suave e mística."
+      },
+      "amethyst_void": {
+        "name": "Vácuo Ametista",
+        "badge": "VIP Arcano",
+        "description": "Energia dimensional violeta escura com brilho estelar etéreo e misterioso."
+      }
+    }
+  },
   "header": {
     "badgeGamified": "Vitrine do Aventureiro",
     "badgeEssential": "Vitrine de Desempenho",
@@ -52,13 +94,12 @@
     "emptyVisitorText": "Nenhum destaque selecionado ainda.",
     "typeBadge": {
       "ACHIEVEMENT": "Conquista",
-      "ACCOUNT_BADGE": "Insígnia",
-      "STAT_METRIC": "Recorde"
+      "ACCOUNT_BADGE": "Insígnia"
     }
   },
   "pickerModal": {
     "title": "Personalizar Vitrine de Destaques",
-    "subtitle": "Selecione o slot acima e escolha qual conquista desbloqueada, insígnia especial ou recorde deseja exibir.",
+    "subtitle": "Selecione o slot acima e escolha qual conquista desbloqueada ou insígnia especial deseja exibir.",
     "activeSlotLabel": "Editando Espaço #{slot}",
     "clearSlot": "Limpar espaço",
     "saveButton": "Salvar Vitrine",
@@ -68,8 +109,7 @@
     "alreadyEquipped": "Em uso no Espaço #{slot}",
     "tabs": {
       "achievements": "Conquistas ({count})",
-      "badges": "Insígnias da Conta",
-      "metrics": "Métricas & Recordes"
+      "badges": "Insígnias da Conta"
     },
     "noUnlockedAchievements": "Você ainda não desbloqueou conquistas. Complete tarefas ou sessões de foco para ganhar sua primeira medalha!",
     "lockedBadgeHint": "Bloqueado para sua conta no momento"
@@ -102,38 +142,6 @@
       "description": "Título alcançado com {xp} XP totais acumulados na jornada.",
       "essentialDescription": "Marco de evolução atingido com {xp} pontos de experiência.",
       "lockedHint": "Disponível para todos os usuários"
-    }
-  },
-  "statMetrics": {
-    "HIGHEST_STREAK": {
-      "title": "Recorde Histórico de Ofensiva",
-      "essentialTitle": "Maior Sequência de Dias",
-      "valueFormat": "{value} dias seguidos"
-    },
-    "CURRENT_STREAK": {
-      "title": "Chama de Ofensiva Atual",
-      "essentialTitle": "Sequência Atual",
-      "valueFormat": "{value} dias ativos"
-    },
-    "TOTAL_TASKS": {
-      "title": "Missões Concluídas",
-      "essentialTitle": "Tarefas Finalizadas",
-      "valueFormat": "{value} concluídas"
-    },
-    "FOCUS_HOURS": {
-      "title": "Tempo em Imersão Profunda",
-      "essentialTitle": "Horas de Foco Acumuladas",
-      "valueFormat": "{value}h de foco"
-    },
-    "TOTAL_XP": {
-      "title": "Experiência Total (XP)",
-      "essentialTitle": "Pontuação de Evolução",
-      "valueFormat": "{value} XP"
-    },
-    "ACHIEVEMENT_POINTS": {
-      "title": "Pontuação de Troféus",
-      "essentialTitle": "Pontos de Conquista",
-      "valueFormat": "{value} pts"
     }
   },
   "statsGrid": {

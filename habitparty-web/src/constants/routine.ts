@@ -119,6 +119,14 @@ export const COLUMN_ICONS: readonly IconOption[] = [
   { id: "key", label: "Chave Mestra", icon: Key, isPremium: true },
 ] as const;
 
+/** Limite máximo de caracteres para o nome de uma coluna/lista. */
+export const MAX_COLUMN_NAME_LENGTH = 30;
+
+/** Sugestões rápidas de ícones e nomes exibidas ao criar uma coluna/lista. */
+export const QUICK_COLUMN_TEMPLATES = COLUMN_ICONS.filter(
+  (i) => !i.isPremium,
+).slice(0, 6);
+
 /** Retorna o ícone Lucide correspondente ao ID da coluna, com fallback para Sun. */
 export function getColumnIcon(iconId?: string | null): LucideIcon {
   if (iconId) {

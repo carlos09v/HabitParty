@@ -3,40 +3,58 @@ import type { AppLocale } from "@/i18n/config";
 import type { TransactionHistoryResponseDTO } from "@/types/history";
 import type { Task } from "@/types/task";
 import {
+  DEFAULT_TIMEZONE,
   formatDateParts,
+  getDateKeyInTimeZone,
+  getDatePartsInTimeZone,
   getShortMonths,
   getShortWeekDays,
   getTodayDateString,
-  getWeekDateRange,
+  isValidIanaTimeZone,
   parseDateParts,
   parseServerDate,
 } from "./date";
 
 export { getTodayDateString };
 
-export function getGreeting(
+export function getCurrentHourInTimeZone(
   now: Date = new Date(),
-  locale: AppLocale = "pt-BR",
-): string {
-  let hour = now.getHours();
-  if (typeof window === "undefined") {
+  timeZone?: string | null,
+): number {
+  const effectiveZone = isValidIanaTimeZone(timeZone)
+    ? timeZone.trim()
+    : typeof window === "undefined"
+      ? DEFAULT_TIMEZONE
+      : null;
+
+  if (effectiveZone) {
     try {
       const parts = new Intl.DateTimeFormat("en-US", {
         hour: "numeric",
         hourCycle: "h23",
-        timeZone: "America/Sao_Paulo",
+        timeZone: effectiveZone,
       }).formatToParts(now);
       const hourPart = parts.find((p) => p.type === "hour")?.value;
       if (hourPart !== undefined) {
         const parsed = Number.parseInt(hourPart, 10);
         if (!Number.isNaN(parsed)) {
-          hour = parsed;
+          return parsed;
         }
       }
     } catch {
       // Fallback para getHours() local caso Intl falhe
     }
   }
+
+  return now.getHours();
+}
+
+export function getGreeting(
+  now: Date = new Date(),
+  locale: AppLocale = "pt-BR",
+  timeZone?: string | null,
+): string {
+  const hour = getCurrentHourInTimeZone(now, timeZone);
   if (locale === "en") {
     if (hour < 12) return "Good morning";
     if (hour < 18) return "Good afternoon";
@@ -89,35 +107,68 @@ export function isTaskScheduledForDate(
 
     const parts = parseDateParts(dateIso);
     if (!parts) return true;
-    const dateObj = new Date(parts.year, parts.month, parts.day);
+    const dateObj = new Date(Date.UTC(parts.year, parts.month, parts.day));
     const repeatType = (task.repeatType || "DAILY").toUpperCase();
+    const repeatEvery = Math.max(1, task.repeatEvery ?? 1);
+    const anchorParts = parseDateParts(dueIso || startIso);
 
     if (repeatType === "DAILY") {
+      if (repeatEvery > 1 && anchorParts) {
+        const anchorMs = Date.UTC(
+          anchorParts.year,
+          anchorParts.month,
+          anchorParts.day,
+        );
+        const diffDays = Math.round(
+          (dateObj.getTime() - anchorMs) / 86_400_000,
+        );
+        return diffDays >= 0 && diffDays % repeatEvery === 0;
+      }
       return true;
     }
 
     if (repeatType === "WEEKLY") {
-      const dayName = ALL_WEEK_DAYS[dateObj.getDay()];
-      return (
+      const dayName = ALL_WEEK_DAYS[dateObj.getUTCDay()];
+      const matchesDay =
         !task.daysOfWeek ||
         task.daysOfWeek.length === 0 ||
-        task.daysOfWeek.includes(dayName)
-      );
+        task.daysOfWeek.includes(dayName);
+      if (!matchesDay) return false;
+
+      if (repeatEvery > 1 && anchorParts) {
+        const getMondayUtcMs = (d: Date) => {
+          const day = d.getUTCDay();
+          const offsetToMonday = day === 0 ? -6 : 1 - day;
+          return d.getTime() + offsetToMonday * 86_400_000;
+        };
+        const anchorObj = new Date(
+          Date.UTC(anchorParts.year, anchorParts.month, anchorParts.day),
+        );
+        const diffWeeks = Math.round(
+          (getMondayUtcMs(dateObj) - getMondayUtcMs(anchorObj)) /
+            (7 * 86_400_000),
+        );
+        return diffWeeks >= 0 && diffWeeks % repeatEvery === 0;
+      }
+      return true;
     }
 
     if (repeatType === "MONTHLY") {
       const startParts = parseDateParts(startIso || dueIso);
       if (!startParts) return false;
+      const monthsDiff =
+        (parts.year - startParts.year) * 12 + (parts.month - startParts.month);
+      if (monthsDiff < 0 || (repeatEvery > 1 && monthsDiff % repeatEvery !== 0))
+        return false;
+
       if (task.monthlyOption === "DAY_OF_THE_WEEK") {
         const startObj = new Date(
-          startParts.year,
-          startParts.month,
-          startParts.day,
+          Date.UTC(startParts.year, startParts.month, startParts.day),
         );
         const startOrdinalWeek = Math.floor((startParts.day - 1) / 7) + 1;
         const targetOrdinalWeek = Math.floor((parts.day - 1) / 7) + 1;
         return (
-          dateObj.getDay() === startObj.getDay() &&
+          dateObj.getUTCDay() === startObj.getUTCDay() &&
           targetOrdinalWeek === startOrdinalWeek
         );
       }
@@ -127,6 +178,9 @@ export function isTaskScheduledForDate(
     if (repeatType === "YEARLY") {
       const startParts = parseDateParts(startIso || dueIso);
       if (!startParts) return false;
+      const yearsDiff = parts.year - startParts.year;
+      if (yearsDiff < 0 || (repeatEvery > 1 && yearsDiff % repeatEvery !== 0))
+        return false;
       return parts.month === startParts.month && parts.day === startParts.day;
     }
 
@@ -134,6 +188,26 @@ export function isTaskScheduledForDate(
   }
 
   return false;
+}
+
+/**
+ * Verifica se uma tarefa foi efetivamente concluída na data local informada (`dateIso`),
+ * protegendo contra estado cliente defasado após a virada da meia-noite.
+ */
+export function isTaskCompletedOnDate(
+  task: Task,
+  dateIso: string,
+  timeZone?: string | null,
+): boolean {
+  if (!task.completed) return false;
+  const type = normalizeTaskType(task);
+  if ((type === "daily" || type === "habit") && task.lastCompletedAt) {
+    const parsed = parseServerDate(task.lastCompletedAt);
+    if (parsed) {
+      return getDateKeyInTimeZone(parsed, timeZone) === dateIso;
+    }
+  }
+  return true;
 }
 
 export function getTodayTasks(tasks: Task[], todayDateStr: string): Task[] {
@@ -145,14 +219,14 @@ export function getTodayTasks(tasks: Task[], todayDateStr: string): Task[] {
 export function getTodayXp(
   transactions: TransactionHistoryResponseDTO[] = [],
   now: Date = new Date(),
+  timeZone?: string | null,
 ): number {
-  const todayStart = new Date(now);
-  todayStart.setHours(0, 0, 0, 0);
+  const todayKey = getTodayDateString(now, timeZone);
 
   return transactions.reduce((acc, tx) => {
     if (!tx.createdAt || (tx.xpAmount ?? 0) <= 0) return acc;
     const d = parseServerDate(tx.createdAt);
-    if (d && d >= todayStart) {
+    if (d && getDateKeyInTimeZone(d, timeZone) === todayKey) {
       return acc + (tx.xpAmount ?? 0);
     }
     return acc;
@@ -221,12 +295,23 @@ export function buildWeeklyCalendarData(
   todayIso: string,
   baseDate: Date = new Date(),
   locale: AppLocale = "pt-BR",
+  timeZone?: string | null,
 ): {
   weekDays: WeeklyCalendarDayItem[];
   weekRangeLabel: string;
   streakDaysInWeek: number;
 } {
-  const { startOfWeek, endOfWeek } = getWeekDateRange(baseDate, weekOffset);
+  const baseParts = getDatePartsInTimeZone(baseDate, timeZone);
+  const baseUtcMs = Date.UTC(
+    baseParts.year,
+    baseParts.month - 1,
+    baseParts.day,
+  );
+  const dayMs = 86_400_000;
+  const startOfWeekUtcMs =
+    baseUtcMs + (weekOffset * 7 - baseParts.weekday) * dayMs;
+  const startOfWeek = new Date(startOfWeekUtcMs);
+  const endOfWeek = new Date(startOfWeekUtcMs + 6 * dayMs);
   const shortWeekDays = getShortWeekDays(locale);
   const shortMonths = getShortMonths(locale);
 
@@ -235,13 +320,7 @@ export function buildWeeklyCalendarData(
     if (tx.createdAt && (tx.xpAmount ?? 0) > 0) {
       const parsed = parseServerDate(tx.createdAt);
       if (parsed) {
-        activityDates.add(
-          formatDateParts(
-            parsed.getFullYear(),
-            parsed.getMonth(),
-            parsed.getDate(),
-          ),
-        );
+        activityDates.add(getDateKeyInTimeZone(parsed, timeZone));
       }
     }
   }
@@ -252,13 +331,7 @@ export function buildWeeklyCalendarData(
       if (!t.completed || !t.lastCompletedAt) return false;
       const parsed = parseServerDate(t.lastCompletedAt);
       if (!parsed) return false;
-      return (
-        formatDateParts(
-          parsed.getFullYear(),
-          parsed.getMonth(),
-          parsed.getDate(),
-        ) === todayIso
-      );
+      return getDateKeyInTimeZone(parsed, timeZone) === todayIso;
     })
   ) {
     activityDates.add(todayIso);
@@ -268,13 +341,14 @@ export function buildWeeklyCalendarData(
 
   const weekDays: WeeklyCalendarDayItem[] = shortWeekDays.map(
     (shortName, index) => {
-      const d = new Date(startOfWeek);
-      d.setDate(startOfWeek.getDate() + index);
+      const d = new Date(startOfWeekUtcMs + index * dayMs);
+      const dayNumber = d.getUTCDate();
+      const monthIndex = d.getUTCMonth();
 
       const isoString = formatDateParts(
-        d.getFullYear(),
-        d.getMonth(),
-        d.getDate(),
+        d.getUTCFullYear(),
+        monthIndex,
+        dayNumber,
       );
       const isToday = isoString === todayIso;
       const isPast = isoString < todayIso;
@@ -289,7 +363,7 @@ export function buildWeeklyCalendarData(
         (t) =>
           normalizeTaskType(t) === "todo" &&
           !t.completed &&
-          t.dueDate === isoString,
+          t.dueDate?.split("T")[0] === isoString,
       ).length;
 
       const scheduledCount = tasks.filter((t) =>
@@ -298,8 +372,8 @@ export function buildWeeklyCalendarData(
 
       const parts: string[] = [
         locale === "en"
-          ? `${shortName}, ${shortMonths[d.getMonth()]} ${d.getDate()}${isToday ? " (Today)" : ""}`
-          : `${shortName}, ${d.getDate()} de ${shortMonths[d.getMonth()]}${isToday ? " (Hoje)" : ""}`,
+          ? `${shortName}, ${shortMonths[monthIndex]} ${dayNumber}${isToday ? " (Today)" : ""}`
+          : `${shortName}, ${dayNumber} de ${shortMonths[monthIndex]}${isToday ? " (Hoje)" : ""}`,
       ];
 
       if (hasStreak) {
@@ -325,7 +399,7 @@ export function buildWeeklyCalendarData(
 
       return {
         shortName,
-        dayNumber: d.getDate(),
+        dayNumber,
         isoString,
         isToday,
         isPast,
@@ -338,13 +412,13 @@ export function buildWeeklyCalendarData(
     },
   );
 
-  const startDay = String(startOfWeek.getDate()).padStart(2, "0");
-  const endDay = String(endOfWeek.getDate()).padStart(2, "0");
-  const startMonth = shortMonths[startOfWeek.getMonth()];
-  const endMonth = shortMonths[endOfWeek.getMonth()];
+  const startDay = String(startOfWeek.getUTCDate()).padStart(2, "0");
+  const endDay = String(endOfWeek.getUTCDate()).padStart(2, "0");
+  const startMonth = shortMonths[startOfWeek.getUTCMonth()];
+  const endMonth = shortMonths[endOfWeek.getUTCMonth()];
 
   const weekRangeLabel =
-    startOfWeek.getMonth() === endOfWeek.getMonth()
+    startOfWeek.getUTCMonth() === endOfWeek.getUTCMonth()
       ? `${startDay}–${endDay} ${startMonth}`
       : `${startDay} ${startMonth} – ${endDay} ${endMonth}`;
 
@@ -390,11 +464,13 @@ export function getLatestTaskCompletionCreatedAt(
 export function hasCompletedTaskInTransactionsToday(
   transactions: TransactionHistoryResponseDTO[] = [],
   now: Date = new Date(),
+  timeZone?: string | null,
 ): boolean {
   const latest = getLatestTaskCompletionCreatedAt(transactions);
   if (!latest) return false;
-  const todayStart = new Date(now);
-  todayStart.setHours(0, 0, 0, 0);
   const d = parseServerDate(latest);
-  return Boolean(d && d >= todayStart);
+  if (!d) return false;
+  return (
+    getDateKeyInTimeZone(d, timeZone) === getTodayDateString(now, timeZone)
+  );
 }

@@ -9,6 +9,7 @@ import type {
   FocusPhase,
   FocusRecordType,
 } from "@/types/focus";
+import type { TimerSoundType } from "@/types/settings";
 import { cn } from "@/utils";
 import { FocusStageAudioControls } from "./FocusStageAudioControls";
 
@@ -23,11 +24,11 @@ interface FocusStageHeaderBarProps {
   isInventoryItem: boolean;
   isTargetLocked: boolean;
   isSoundEnabled: boolean;
-  timerSoundType: "zen" | "arcade";
+  timerSoundType: TimerSoundType;
   onOpenTargetModal: () => void;
   onChangeMode: (mode: FocusRecordType) => void;
   onToggleSound: () => void;
-  onChangeSoundType: (type: "zen" | "arcade") => void;
+  onChangeSoundType: (type: TimerSoundType) => void;
   onOpenZenMode: () => void;
   onOpenUpgradeModal?: () => void;
 }

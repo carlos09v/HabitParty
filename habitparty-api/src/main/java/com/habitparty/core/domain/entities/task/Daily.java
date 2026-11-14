@@ -1,8 +1,10 @@
 package com.habitparty.core.domain.entities.task;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -98,18 +100,37 @@ public class Daily extends Task {
         return referenceDate.plusDays(jump);
 
       case WEEKLY:
-        LocalDate next = referenceDate.plusWeeks(jump);
-
-        // Varre até 7 dias para encontrar o próximo dia compatível na lista
-        for (int i = 0; i < 7; i++) {
-          final LocalDate currentDate = next;
-          boolean isMatch = this.daysOfWeek != null &&
-              this.daysOfWeek.stream()
-                  .anyMatch(d -> d.name().equals(currentDate.getDayOfWeek().name()));
-          if (isMatch) {
-            return next;
+        if (this.daysOfWeek == null || this.daysOfWeek.isEmpty()) {
+          return referenceDate;
+        }
+        if (isFirstTime) {
+          for (int i = 0; i < 7; i++) {
+            LocalDate candidate = referenceDate.plusDays(i);
+            if (matchesDayOfWeek(candidate)) {
+              return candidate;
+            }
           }
-          next = next.plusDays(1);
+          return referenceDate;
+        }
+
+        // 1. Procura o próximo dia compatível ainda dentro da semana ISO corrente (Seg..Dom)
+        LocalDate currentWeekEnd = referenceDate.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+        LocalDate cursor = referenceDate.plusDays(1);
+        while (!cursor.isAfter(currentWeekEnd)) {
+          if (matchesDayOfWeek(cursor)) {
+            return cursor;
+          }
+          cursor = cursor.plusDays(1);
+        }
+
+        // 2. Sem dias restantes na semana atual: salta repeatEvery semanas para o próximo ciclo semanal
+        LocalDate currentWeekStart = referenceDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate nextCycleWeekStart = currentWeekStart.plusWeeks(this.repeatEvery);
+        for (int i = 0; i < 7; i++) {
+          LocalDate candidate = nextCycleWeekStart.plusDays(i);
+          if (matchesDayOfWeek(candidate)) {
+            return candidate;
+          }
         }
         return referenceDate; // Fallback
 
@@ -143,6 +164,11 @@ public class Daily extends Task {
 
   public void updateDailyDetails(LocalDate newStartDate, DailyRepeatType newRepeatType, int newRepeatEvery,
       List<DailyDaysOfWeek> newDaysOfWeek, DailyRepeatMonthlyOption newMonthlyOpt) {
+    updateDailyDetails(newStartDate, newRepeatType, newRepeatEvery, newDaysOfWeek, newMonthlyOpt, LocalDate.now());
+  }
+
+  public void updateDailyDetails(LocalDate newStartDate, DailyRepeatType newRepeatType, int newRepeatEvery,
+      List<DailyDaysOfWeek> newDaysOfWeek, DailyRepeatMonthlyOption newMonthlyOpt, LocalDate todayReference) {
     // 1. Só atualiza a Data de Início se o Front-end mandar uma nova. Se não mandar, mantém a atual!
     if (newStartDate != null) {
       this.startDate = newStartDate;
@@ -181,13 +207,25 @@ public class Daily extends Task {
     }
 
     // Qual é a data base para calcular o novo vencimento?
-    LocalDate today = LocalDate.now();
+    LocalDate today = todayReference != null ? todayReference : LocalDate.now();
 
-    // Se a tarefa começou no passado, calculamos do dia de hoje pra frente. 
+    // Se a tarefa começou no passado, calculamos do dia de hoje pra frente.
     // Se ela vai começar no futuro, usamos a data de início dela.
     LocalDate referenceDate = today.isAfter(this.startDate) ? today : this.startDate;
     
     this.dueDate = calculateNextOccurrence(referenceDate, true);
+  }
+
+  public void recalculateInitialDueDate(LocalDate todayReference) {
+    LocalDate today = todayReference != null ? todayReference : LocalDate.now();
+    LocalDate initialReferenceDate = today.isAfter(this.startDate) ? today : this.startDate;
+    this.dueDate = calculateNextOccurrence(initialReferenceDate, true);
+  }
+
+  private boolean matchesDayOfWeek(LocalDate date) {
+    return this.daysOfWeek != null
+        && this.daysOfWeek.stream()
+            .anyMatch(d -> d.name().equals(date.getDayOfWeek().name()));
   }
 
   public void shiftToNextOccurrence(LocalDate referenceDate) {

@@ -1,3 +1,5 @@
+"use client";
+
 import { Bell, Mail } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -39,7 +41,7 @@ export function TodoFields({ form }: TodoFieldsProps) {
   } = form;
 
   const isOverdueHardcoreLocked = Boolean(
-    isEditing && isTaskHardcoreLocked(taskToEdit),
+    isEditing && isTaskHardcoreLocked(taskToEdit, new Date(), user?.timezone),
   );
 
   return (

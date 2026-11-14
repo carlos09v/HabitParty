@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.habitparty.adapters.in.web.api.BoardColumnApi;
 import com.habitparty.adapters.in.web.dtos.request.CreateBoardColumnDTO;
+import com.habitparty.adapters.in.web.dtos.request.MoveBoardColumnDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateBoardColumnDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateBoardColumnOrderDTO;
 import com.habitparty.adapters.in.web.dtos.response.BoardColumnResponseDTO;
@@ -18,6 +19,8 @@ import com.habitparty.application.usecases.boardcolumn.CreateBoardColumnCommand;
 import com.habitparty.application.usecases.boardcolumn.CreateBoardColumnUseCase;
 import com.habitparty.application.usecases.boardcolumn.DeleteBoardColumnUseCase;
 import com.habitparty.application.usecases.boardcolumn.ListUserBoardColumnsUseCase;
+import com.habitparty.application.usecases.boardcolumn.MoveBoardColumnCommand;
+import com.habitparty.application.usecases.boardcolumn.MoveBoardColumnUseCase;
 import com.habitparty.application.usecases.boardcolumn.ReorderBoardColumnUseCase;
 import com.habitparty.application.usecases.boardcolumn.UpdateBoardColumnUseCase;
 import com.habitparty.core.domain.entities.BoardColumn;
@@ -33,6 +36,13 @@ public class BoardColumnController implements BoardColumnApi {
   private final ReorderBoardColumnUseCase reorderBoardColumnUseCase;
   private final UpdateBoardColumnUseCase updateBoardColumnUseCase;  
   private final ListUserBoardColumnsUseCase listUserBoardColumnsUseCase;
+  private final MoveBoardColumnUseCase moveBoardColumnUseCase;
+  private com.habitparty.application.usecases.task.DailyResetUseCase dailyResetUseCase;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  public void setDailyResetUseCase(com.habitparty.application.usecases.task.DailyResetUseCase dailyResetUseCase) {
+    this.dailyResetUseCase = dailyResetUseCase;
+  }
 
   @Override
   public ResponseEntity<BoardColumnResponseDTO> createBoardColumn(
@@ -81,12 +91,27 @@ public class BoardColumnController implements BoardColumnApi {
   }
 
   @Override
+  public ResponseEntity<BoardColumnResponseDTO> moveToWorkspace(
+      UUID boardColumnId,
+      MoveBoardColumnDTO dto,
+      AuthenticatedUser usuarioLogado) {
+    UUID userId = usuarioLogado.id();
+    var command = new MoveBoardColumnCommand(dto.targetWorkspaceId());
+    BoardColumn moved = moveBoardColumnUseCase.execute(boardColumnId, command, userId);
+    return ResponseEntity.ok(BoardColumnResponseDTO.fromDomain(moved));
+  }
+
+  @Override
   public ResponseEntity<List<BoardColumnSummaryDTO>> getColumnListByWorkspaceId(
       UUID workspaceId,
       AuthenticatedUser usuarioLogado) {
+    UUID userId = usuarioLogado.id();
+    if (dailyResetUseCase != null) {
+      dailyResetUseCase.resetUserIfDue(userId);
+    }
     List<BoardColumnSummaryDTO> responseList = listUserBoardColumnsUseCase.execute(
         workspaceId, 
-        usuarioLogado.id()
+        userId
     );
 
     return ResponseEntity.ok(responseList);

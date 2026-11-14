@@ -1,6 +1,7 @@
 package com.habitparty.application.usecases.task;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.UUID;
 
 import com.habitparty.application.ports.BoardColumnRepository;
@@ -87,11 +88,12 @@ public final class TaskGamificationHelper {
       }
     }
 
-    int tasksCompletedToday = transactionPort.countCompletedTasksToday(user.getId());
+    ZoneId userZone = user.resolveZoneId(null);
+    int tasksCompletedToday = transactionPort.countCompletedTasksToday(user.getId(), userZone);
     if (tasksCompletedToday == 0) {
       // Se o usuário possuía streak > 0 mas passou o dia anterior sem concluir tarefas,
       // zera antes de iniciar a nova contagem em 1
-      if (user.getCurrentStreak() > 0 && !transactionPort.hasCompletedTasksYesterday(user.getId())) {
+      if (user.getCurrentStreak() > 0 && !transactionPort.hasCompletedTasksYesterday(user.getId(), userZone)) {
         user.resetStreak();
       }
       user.incrementStreak();

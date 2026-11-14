@@ -6,10 +6,17 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { type ActionState, getErrorMessage } from "@/actions/types";
 import { getServerAuthToken, serverApi } from "@/api/server";
-import { getRequestLocale } from "@/i18n/request";
 import type { CreateUserDTO, UserResponseDTO } from "@/types/user";
+import { isValidIanaTimeZone, TIMEZONE_COOKIE } from "@/utils/date";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+/**
+ * Invalida as tags de cache privado associadas à sessão do usuário.
+ */
+function invalidateSessionCacheTags() {
+  updateTag("user");
+  updateTag("workspaces");
+  updateTag("showcase");
+}
 
 /**
  * Salva os tokens JWT seguros nos cookies HTTP-only.
@@ -35,6 +42,65 @@ async function setAuthCookies(accessToken: string, refreshToken: string) {
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });
+}
+
+/**
+ * Persiste o fuso horário IANA do usuário no cookie de sessão.
+ */
+async function setTimezoneCookieIfValid(timezone?: string | null) {
+  if (!isValidIanaTimeZone(timezone)) return;
+  const cookieStore = await cookies();
+  cookieStore.set(TIMEZONE_COOKIE, timezone, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: "lax",
+  });
+}
+
+/**
+ * Finaliza a configuração de uma sessão autenticada (cookies de token,
+ * sincronização de fuso horário, checagem opcional de workspaces e invalidação de cache).
+ */
+async function finalizeAuthenticatedSession(
+  accessToken: string,
+  refreshToken: string,
+  options?: { checkWorkspaces?: boolean; initialIsNewUser?: boolean },
+): Promise<{ isNewUser: boolean }> {
+  await setAuthCookies(accessToken, refreshToken);
+
+  const authHeaders = {
+    Authorization: `Bearer ${accessToken}`,
+  };
+
+  let isNewUser = Boolean(options?.initialIsNewUser);
+
+  try {
+    const shouldFetchWorkspaces = options?.checkWorkspaces && !isNewUser;
+    const [wsResult, meResult] = await Promise.all([
+      shouldFetchWorkspaces
+        ? serverApi.GET("/workspaces", {
+            headers: authHeaders,
+            cache: "no-store",
+          })
+        : Promise.resolve(null),
+      serverApi.GET("/users/me", {
+        headers: authHeaders,
+        cache: "no-store",
+      }),
+    ]);
+
+    if (wsResult?.data) {
+      isNewUser = Array.isArray(wsResult.data) && wsResult.data.length === 0;
+    }
+
+    const meData = meResult.data as UserResponseDTO | undefined;
+    await setTimezoneCookieIfValid(meData?.timezone);
+  } catch {
+    // Fallback silencioso caso o fuso seja sincronizado posteriormente no cliente
+  }
+
+  invalidateSessionCacheTags();
+  return { isNewUser };
 }
 
 /**
@@ -64,7 +130,8 @@ export async function signIn(formData: FormData): Promise<ActionState<void>> {
       };
     }
 
-    await setAuthCookies(data.accessToken, data.refreshToken);
+    await finalizeAuthenticatedSession(data.accessToken, data.refreshToken);
+
     return { success: true, data: undefined };
   } catch (err) {
     console.error("[AuthAction:SignIn]", err);
@@ -124,6 +191,11 @@ export async function signUpAction(
       await setAuthCookies(authData.accessToken, authData.refreshToken);
     }
 
+    const userTimezone =
+      (createdUser as UserResponseDTO).timezone || payload.timezone;
+    await setTimezoneCookieIfValid(userTimezone);
+    invalidateSessionCacheTags();
+
     return {
       success: true,
       data: createdUser as UserResponseDTO,
@@ -160,6 +232,8 @@ export async function signOut() {
 
   cookieStore.delete("habitparty_token");
   cookieStore.delete("habitparty_refresh_token");
+  cookieStore.delete(TIMEZONE_COOKIE);
+  invalidateSessionCacheTags();
   redirect("/signIn");
 }
 
@@ -231,7 +305,7 @@ export async function resetPassword(payload: {
     const cookieStore = await cookies();
     cookieStore.delete("habitparty_token");
     cookieStore.delete("habitparty_refresh_token");
-    updateTag("user");
+    invalidateSessionCacheTags();
 
     return { success: true, data: undefined };
   } catch (err) {
@@ -249,34 +323,19 @@ export async function resetPassword(payload: {
 export async function completeOAuthLogin(
   accessToken: string,
   refreshToken: string,
+  _browserTimezone?: string,
 ): Promise<ActionState<{ isNewUser: boolean }>> {
-  const [t, locale] = await Promise.all([
-    getTranslations("auth.errors"),
-    getRequestLocale(),
-  ]);
+  const t = await getTranslations("auth.errors");
 
   if (!accessToken || !refreshToken) {
     return { success: false, error: t("invalidOAuthTokens") };
   }
 
-  await setAuthCookies(accessToken, refreshToken);
-
-  let isNewUser = false;
-  try {
-    const res = await fetch(`${API_BASE_URL}/workspaces`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Accept-Language": locale,
-      },
-      cache: "no-store",
-    });
-    if (res.ok) {
-      const workspaces = await res.json();
-      isNewUser = Array.isArray(workspaces) && workspaces.length === 0;
-    }
-  } catch {
-    // Fallback silencioso
-  }
+  const { isNewUser } = await finalizeAuthenticatedSession(
+    accessToken,
+    refreshToken,
+    { checkWorkspaces: true },
+  );
 
   return { success: true, data: { isNewUser } };
 }
@@ -286,56 +345,46 @@ export async function completeOAuthLogin(
  */
 export async function exchangeGoogleCode(
   code: string,
+  browserTimezone?: string,
 ): Promise<ActionState<{ isNewUser: boolean }>> {
-  const [t, locale] = await Promise.all([
-    getTranslations("auth.errors"),
-    getRequestLocale(),
-  ]);
+  const t = await getTranslations("auth.errors");
 
   if (!code) {
     return { success: false, error: t("missingAuthCode") };
   }
 
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/google`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept-Language": locale,
+    const validTimezone = isValidIanaTimeZone(browserTimezone)
+      ? browserTimezone.trim()
+      : undefined;
+
+    const { data, error } = await serverApi.POST("/auth/google", {
+      body: {
+        code,
+        ...(validTimezone ? { timezone: validTimezone } : {}),
       },
-      body: JSON.stringify({ code }),
       cache: "no-store",
     });
 
-    const data = await res.json().catch(() => null);
+    const authResponse = data as
+      | { accessToken?: string; refreshToken?: string; isNewUser?: boolean }
+      | undefined;
 
-    if (!res.ok || !data?.accessToken || !data?.refreshToken) {
+    if (error || !authResponse?.accessToken || !authResponse?.refreshToken) {
       return {
         success: false,
-        error: getErrorMessage(data, t("googleAuthFailed")),
+        error: getErrorMessage(error, t("googleAuthFailed")),
       };
     }
 
-    await setAuthCookies(data.accessToken, data.refreshToken);
-
-    let isNewUser = Boolean(data.isNewUser);
-    if (!isNewUser) {
-      try {
-        const wsRes = await fetch(`${API_BASE_URL}/workspaces`, {
-          headers: {
-            Authorization: `Bearer ${data.accessToken}`,
-            "Accept-Language": locale,
-          },
-          cache: "no-store",
-        });
-        if (wsRes.ok) {
-          const workspaces = await wsRes.json();
-          isNewUser = Array.isArray(workspaces) && workspaces.length === 0;
-        }
-      } catch {
-        // Fallback silencioso
-      }
-    }
+    const { isNewUser } = await finalizeAuthenticatedSession(
+      authResponse.accessToken,
+      authResponse.refreshToken,
+      {
+        checkWorkspaces: true,
+        initialIsNewUser: Boolean(authResponse.isNewUser),
+      },
+    );
 
     return {
       success: true,

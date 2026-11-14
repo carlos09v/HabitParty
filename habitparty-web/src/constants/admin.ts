@@ -19,92 +19,69 @@ export const FREE_USER_STORAGE_LIMIT_BYTES = 5 * 1024 * 1024; // 5 MB (~5.000 ta
 export const PREMIUM_USER_STORAGE_LIMIT_BYTES = 50 * 1024 * 1024; // 50 MB (~50.000 tarefas / registros)
 
 export const FREE_USER_EMAIL_MONTHLY_LIMIT = 20;
+export const PREMIUM_USER_EMAIL_MONTHLY_LIMIT = 100;
+
 export const FREE_USER_MAX_ACTIVE_REMINDERS = 5;
+export const PREMIUM_USER_MAX_ACTIVE_REMINDERS = 30;
 
-/** Retorna a cota máxima em bytes de acordo com o plano do usuário */
-export function getUserStorageLimitBytes(isPremium: boolean): number {
-  return isPremium
-    ? PREMIUM_USER_STORAGE_LIMIT_BYTES
-    : FREE_USER_STORAGE_LIMIT_BYTES;
-}
-
-/** Retorna o limite formatado (ex: "5 MB" ou "50 MB") */
-export function getUserStorageLimitFormatted(isPremium: boolean): string {
-  return isPremium ? "50 MB" : "5 MB";
-}
-
-/** Calcula a porcentagem utilizada da cota (0% a 100%) */
-export function calculateStoragePercentage(
-  bytesUsed: number,
-  isPremium: boolean,
-): number {
-  const limit = getUserStorageLimitBytes(isPremium);
-  if (limit <= 0) return 0;
-  const pct = (bytesUsed / limit) * 100;
-  return Math.min(Math.round(pct * 10) / 10, 100);
-}
-
-/** Formata bytes em B, KB ou MB (espelhando UserStorageBreakdownProjection.formatBytes do backend) */
-export function formatStorageBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-}
+export const ADMIN_DEFAULT_PAGE_SIZE = 15;
 
 /** Abas de filtro da tabela de usuários */
 export const ADMIN_USER_FILTER_TABS = [
-  { id: "ALL", label: "Todos os Usuários" },
-  { id: "VERIFIED", label: "Verificados" },
-  { id: "UNVERIFIED", label: "Não Verificados" },
-  { id: "FREE", label: "Plano Gratuito" },
-  { id: "PREMIUM", label: "Premium VIP" },
-  { id: "FOUNDER", label: "Fundadores 👑" },
-  { id: "ADMIN", label: "Administradores" },
+  { id: "ALL" },
+  { id: "VERIFIED" },
+  { id: "UNVERIFIED" },
+  { id: "FREE" },
+  { id: "PREMIUM" },
+  { id: "FOUNDER" },
+  { id: "ADMIN" },
 ] as const;
+
+export type AdminUserFilterId = (typeof ADMIN_USER_FILTER_TABS)[number]["id"];
+
+export function resolveAdminUserFilter(raw?: string): AdminUserFilterId {
+  if (!raw) return "ALL";
+  const upper = raw.toUpperCase();
+  const match = ADMIN_USER_FILTER_TABS.find((t) => t.id === upper);
+  return match ? match.id : "ALL";
+}
 
 /** Itens de detalhamento de armazenamento mapeados para o design system do HabitParty */
 export const ADMIN_STORAGE_BREAKDOWN_CONFIG = [
   {
     key: "tasks",
-    label: "Afazeres e Tarefas",
     icon: ListTodo,
     color: "text-info bg-info/10 border-info/30",
   },
   {
     key: "checklists",
-    label: "Itens de Checklist",
     icon: CheckSquare,
     color:
       "text-emerald-700 dark:text-success-500 bg-success-500/10 border-success-500/30",
   },
   {
     key: "workspaces",
-    label: "Ambientes & Quadros",
     icon: Layers,
     color:
       "text-primary dark:text-primary-light bg-primary/15 dark:bg-primary/20 border-primary/30",
   },
   {
     key: "history",
-    label: "Histórico de Economia (XP & Ouro)",
     icon: History,
     color: "text-amber-700 dark:text-gold bg-gold/10 border-gold/30",
   },
   {
     key: "inventory",
-    label: "Mochila & Inventário",
     icon: Backpack,
     color: "text-magenta bg-magenta/15 border-magenta/30",
   },
   {
     key: "focus",
-    label: "Registros de Foco (Pomodoro)",
     icon: Timer,
     color: "text-info bg-info/15 border-info/30",
   },
   {
     key: "userRow",
-    label: "Conta, Estatísticas & Assinatura",
     icon: UserIcon,
     color:
       "text-neutral-300 bg-surface border-neutral-700 dark:border-white/10",

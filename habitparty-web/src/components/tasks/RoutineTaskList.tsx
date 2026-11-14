@@ -114,7 +114,7 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
         isSelected &&
           "ring-2 ring-inset ring-gold/90 shadow-glow-gold bg-gold/[0.03] p-2",
         isDragging &&
-          "!transition-none opacity-30 border border-dashed border-primary-light p-2",
+          "transition-none! opacity-30 border border-dashed border-primary-light p-2",
       )}
       aria-label={t("sectionAria", { title: column.title })}
     >

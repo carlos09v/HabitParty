@@ -13,6 +13,7 @@ import {
 import { createPortal } from "react-dom";
 import { useFloatingPopover } from "@/hooks/useFloatingPopover";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
+import { useUserStore } from "@/store/userStore";
 import type { TimePickerProps } from "@/types/ui";
 import { cn } from "@/utils";
 import {
@@ -272,6 +273,7 @@ export function TimePicker({
   const pickerId = id || generatedId;
   const [internalValue, setInternalValue] = useState(defaultValue || "");
   const { timeFormat } = useTimeFormat();
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
 
   const isControlled = value !== undefined;
   const currentValue = isControlled ? value : internalValue;
@@ -306,7 +308,7 @@ export function TimePicker({
   };
 
   const handleSetNow = () => {
-    updateValue(formatTimeHHMM(new Date()));
+    updateValue(formatTimeHHMM(new Date(), userTimeZone));
     close();
   };
 

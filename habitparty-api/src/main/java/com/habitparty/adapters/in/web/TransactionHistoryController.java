@@ -1,6 +1,7 @@
 package com.habitparty.adapters.in.web;
 
 import java.io.IOException;
+import java.time.ZoneId;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -14,6 +15,7 @@ import com.habitparty.adapters.in.web.dtos.response.TransactionHistoryResponseDT
 import com.habitparty.application.usecases.transaction.DeleteTransactionHistoryUseCase;
 import com.habitparty.application.usecases.transaction.ExportTransactionsCsvUseCase;
 import com.habitparty.application.usecases.transaction.ListUserTransactionsUseCase;
+import com.habitparty.application.usecases.user.UserTimeResolver;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -25,6 +27,7 @@ public class TransactionHistoryController implements TransactionHistoryApi {
     private final ListUserTransactionsUseCase listUseCase;
     private final DeleteTransactionHistoryUseCase deleteTransactionHistoryUseCase;
     private final ExportTransactionsCsvUseCase exportTransactionsCsvUseCase;
+    private final UserTimeResolver userTimeResolver;
 
     @Override
     public ResponseEntity<Page<TransactionHistoryResponseDTO>> getMyHistory(
@@ -36,8 +39,9 @@ public class TransactionHistoryController implements TransactionHistoryApi {
             int size) {
 
         UUID userId = usuarioLogado.id();
+        ZoneId userZone = userTimeResolver.resolveZone(userId);
         Page<TransactionHistoryResponseDTO> response = listUseCase.execute(userId, tab, period, search, page, size)
-                .map(TransactionHistoryResponseDTO::fromDomain);
+                .map(tx -> TransactionHistoryResponseDTO.fromDomain(tx, userZone));
         return ResponseEntity.ok(response);
     }
 

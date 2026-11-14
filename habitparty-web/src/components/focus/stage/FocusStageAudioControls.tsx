@@ -16,6 +16,7 @@ import { useRef, useState } from "react";
 import { AMBIENT_ICONS, AMBIENT_SOUND_OPTIONS } from "@/constants/settings";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useFocusAudioControls } from "@/hooks/useFocusAudioControls";
+import type { TimerSoundType } from "@/types/settings";
 import { cn } from "@/utils";
 import { soundEffects } from "@/utils/soundEffects";
 
@@ -29,9 +30,9 @@ const UpgradePremiumModal = dynamic(
 
 export interface FocusStageAudioControlsProps {
   isSoundEnabled?: boolean;
-  timerSoundType?: "zen" | "arcade";
+  timerSoundType?: TimerSoundType;
   onToggleSound?: () => void;
-  onChangeSoundType?: (type: "zen" | "arcade") => void;
+  onChangeSoundType?: (type: TimerSoundType) => void;
   onOpenUpgradeModal?: () => void;
 }
 
@@ -94,7 +95,7 @@ export function FocusStageAudioControls({
     }
   };
 
-  const handleSelectSoundType = (type: "zen" | "arcade") => {
+  const handleSelectSoundType = (type: TimerSoundType) => {
     onChangeSoundType?.(type);
     setTimerSoundType(type);
     soundEffects.playTimerStartSound(type, timerVolume ?? 0.8);

@@ -1,30 +1,19 @@
 "use client";
 
-import {
-  closestCenter,
-  DndContext,
-  type DragEndEvent,
-  type SensorDescriptor,
-  type SensorOptions,
+import type {
+  DragEndEvent,
+  SensorDescriptor,
+  SensorOptions,
 } from "@dnd-kit/core";
-import {
-  restrictToParentElement,
-  restrictToWindowEdges,
-} from "@dnd-kit/modifiers";
-import {
-  rectSortingStrategy,
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
 import { Plus, SearchX, Store } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { MouseEvent } from "react";
 import { CatalogEmptyState } from "@/components/ui/CatalogEmptyState";
+import { CatalogGridListShell } from "@/components/ui/CatalogGridListShell";
 import { ItemRowHeader } from "@/components/ui/ItemRow";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { Reward } from "@/types/reward";
 import type { ViewMode } from "@/types/ui";
-import { cn } from "@/utils";
 import { AddRewardCard, RewardCard, RewardItemRow } from "./RewardCard";
 
 interface RewardsCatalogViewProps {
@@ -107,86 +96,48 @@ export function RewardsCatalogView({
   }
 
   return (
-    <DndContext
-      id="rewards-dnd-context"
+    <CatalogGridListShell
+      dndContextId="rewards-dnd-context"
+      itemIds={filteredRewards.map((r) => r.id)}
+      viewMode={viewMode}
+      isCompact={isCompact}
+      headerMode="reward"
       sensors={sensors}
-      collisionDetection={closestCenter}
       onDragEnd={onDragEnd}
-      modifiers={[restrictToParentElement, restrictToWindowEdges]}
     >
-      <SortableContext
-        items={filteredRewards.map((r) => r.id)}
-        strategy={
-          viewMode === "card"
-            ? rectSortingStrategy
-            : verticalListSortingStrategy
-        }
-      >
-        {viewMode === "card" ? (
-          <div
-            className={cn(
-              "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 w-full pb-8",
-              isCompact
-                ? "lg:grid-cols-3 xl:grid-cols-4 gap-3.5"
-                : "lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4",
-            )}
-          >
-            {filteredRewards.map((reward) => {
-              const canAfford =
-                typeof currentCoins === "number"
-                  ? currentCoins >= reward.price
-                  : true;
+      {filteredRewards.map((reward) => {
+        const canAfford =
+          typeof currentCoins === "number"
+            ? currentCoins >= reward.price
+            : true;
 
-              return (
-                <RewardCard
-                  key={reward.id}
-                  reward={reward}
-                  onBuy={onBuy}
-                  onEdit={onEdit}
-                  onContextMenu={onContextMenu}
-                  isCompact={isCompact}
-                  canAfford={canAfford}
-                />
-              );
-            })}
-            <AddRewardCard
-              onClick={onAddProduct}
-              viewMode="card"
-              isCompact={isCompact}
-            />
-          </div>
+        return viewMode === "card" ? (
+          <RewardCard
+            key={reward.id}
+            reward={reward}
+            onBuy={onBuy}
+            onEdit={onEdit}
+            onContextMenu={onContextMenu}
+            isCompact={isCompact}
+            canAfford={canAfford}
+          />
         ) : (
-          <div className="flex flex-col gap-2.5 w-full pb-8">
-            <ItemRowHeader isCompact={isCompact} mode="reward" />
-
-            <ul className="flex flex-col gap-2 w-full">
-              {filteredRewards.map((reward) => {
-                const canAfford =
-                  typeof currentCoins === "number"
-                    ? currentCoins >= reward.price
-                    : true;
-
-                return (
-                  <RewardItemRow
-                    key={reward.id}
-                    reward={reward}
-                    onBuy={onBuy}
-                    onEdit={onEdit}
-                    onContextMenu={onContextMenu}
-                    isCompact={isCompact}
-                    canAfford={canAfford}
-                  />
-                );
-              })}
-              <AddRewardCard
-                onClick={onAddProduct}
-                viewMode="list"
-                isCompact={isCompact}
-              />
-            </ul>
-          </div>
-        )}
-      </SortableContext>
-    </DndContext>
+          <RewardItemRow
+            key={reward.id}
+            reward={reward}
+            onBuy={onBuy}
+            onEdit={onEdit}
+            onContextMenu={onContextMenu}
+            isCompact={isCompact}
+            canAfford={canAfford}
+          />
+        );
+      })}
+      <AddRewardCard
+        onClick={onAddProduct}
+        viewMode={viewMode === "card" ? "card" : "list"}
+        isCompact={isCompact}
+      />
+    </CatalogGridListShell>
   );
 }

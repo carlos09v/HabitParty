@@ -147,9 +147,9 @@ export const RoutineColumn = memo(function RoutineColumn({
         isSelected &&
           "ring-2 ring-inset ring-gold/90 shadow-glow-gold bg-gold/[0.04]",
         isDragging &&
-          "!transition-none opacity-30 border-dashed border-primary-light scale-98",
+          "transition-none! opacity-30 border-dashed border-primary-light scale-98",
         isOverlay &&
-          "!transition-none shadow-card-deep border-gold/70 bg-primary-dark/60 scale-102 rotate-1 z-50",
+          "transition-none! shadow-card-deep border-gold/70 bg-primary-dark/60 scale-102 rotate-1 z-50",
       )}
     >
       {/* HEADER DA COLUNA (Arrastável com dnd-kit) */}
@@ -262,7 +262,7 @@ export const RoutineColumn = memo(function RoutineColumn({
                 "h-full w-full origin-left transition-[transform,background-color] duration-300",
                 isAllDone
                   ? "bg-success-500"
-                  : "bg-gradient-to-r from-primary-light via-gold to-gold",
+                  : "bg-linear-to-r from-primary-light via-gold to-gold",
               )}
               style={{ transform: `scaleX(${progressPercent / 100})` }}
             />

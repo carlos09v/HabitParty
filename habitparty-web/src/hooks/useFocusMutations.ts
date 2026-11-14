@@ -12,6 +12,7 @@ import {
   consumeInventoryItem,
   returnItemToBackpack,
 } from "@/actions/inventoryActions";
+import { useUserStore } from "@/store/userStore";
 import type { FocusActiveTarget, FocusActivity } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
@@ -46,6 +47,7 @@ export function useFocusMutations({
   const [returnModalItem, setReturnModalItem] =
     useState<InventoryItemResponseDTO | null>(null);
   const [isReturningToBackpack, setIsReturningToBackpack] = useState(false);
+  const [isConsumingItem, setIsConsumingItem] = useState(false);
 
   const [deleteModalActivity, setDeleteModalActivity] =
     useState<FocusActivity | null>(null);
@@ -148,13 +150,18 @@ export function useFocusMutations({
 
   const handleConsumeItem = useCallback(
     async (item: InventoryItemResponseDTO) => {
-      if (!item.inventoryItemId) return;
+      if (!item.inventoryItemId || isConsumingItem) return;
+      setIsConsumingItem(true);
       try {
-        if (item.remainingSeconds && item.remainingSeconds > 0) {
+        // Registra sessão residual apenas quando há pelo menos 1 minuto restante
+        // (remainingSeconds === 1 é a marcação do backend de cupom já zerado pronto para resgate)
+        if (item.remainingSeconds && item.remainingSeconds >= 60) {
           const now = new Date();
-          const endTime = toLocalISOString(now);
+          const userTimeZone = useUserStore.getState().user?.timezone;
+          const endTime = toLocalISOString(now, userTimeZone);
           const startTime = toLocalISOString(
             new Date(now.getTime() - item.remainingSeconds * 1000),
+            userTimeZone,
           );
           await createFocusRecord({
             inventoryItemId: item.inventoryItemId,
@@ -191,11 +198,14 @@ export function useFocusMutations({
         }
       } catch {
         toast.error(t("consumeItemError"));
+      } finally {
+        setIsConsumingItem(false);
       }
     },
     [
       activeTarget?.id,
       activities,
+      isConsumingItem,
       onResetTarget,
       onSelectActivityTarget,
       onSelectActivity,
@@ -208,6 +218,7 @@ export function useFocusMutations({
     returnModalItem,
     setReturnModalItem,
     isReturningToBackpack,
+    isConsumingItem,
     handleConfirmReturnToBackpack,
     deleteModalActivity,
     setDeleteModalActivity: openDeleteActivityModal,

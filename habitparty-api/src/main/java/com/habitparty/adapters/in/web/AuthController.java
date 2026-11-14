@@ -92,7 +92,7 @@ public class AuthController implements AuthApi {
 
     @Override
     public ResponseEntity<SignInResponseDTO> googleSignIn(GoogleSignInRequestDTO dto) {
-        var tokens = googleSignInUseCase.execute(dto.code());
+        var tokens = googleSignInUseCase.execute(dto.code(), dto.timezone());
         return ResponseEntity.ok(SignInResponseDTO.fromDomain(tokens));
     }
 }

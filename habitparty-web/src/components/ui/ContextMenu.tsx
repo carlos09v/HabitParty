@@ -21,9 +21,18 @@ export function ContextMenu({
   const [adjustedPos, setAdjustedPos] = useState(position);
   const [openSubmenuKey, setOpenSubmenuKey] = useState<string | null>(null);
 
-  // Adjust coordinates to avoid viewport overflow
+  // Reset submenu state whenever menu closes
+  useEffect(() => {
+    if (!isOpen) {
+      setOpenSubmenuKey(null);
+    }
+  }, [isOpen]);
+
+  // Adjust coordinates to avoid viewport overflow (including after submenu expand/collapse)
   useLayoutEffect(() => {
     if (!isOpen || !menuRef.current) return;
+    void openSubmenuKey;
+    void items.length;
 
     const rect = menuRef.current.getBoundingClientRect();
     const margin = 8;
@@ -38,7 +47,7 @@ export function ContextMenu({
     }
 
     setAdjustedPos({ x: newX, y: newY });
-  }, [isOpen, position]);
+  }, [isOpen, position, openSubmenuKey, items]);
 
   // Handle click outside, scroll, and escape
   useEffect(() => {
@@ -138,7 +147,7 @@ export function ContextMenu({
 
                 {/* Dropdown com opções filhas */}
                 {isSubmenuOpen && (
-                  <div className="flex flex-col gap-0.5 pl-3 my-0.5 border-l-2 border-gold/40 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <div className="flex flex-col gap-0.5 pl-3 my-0.5 border-l-2 border-gold/40 max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-1 duration-150">
                     {item.children?.map((child, childIndex) => {
                       const isChildDestructive =
                         child.variant === "destructive";
@@ -149,6 +158,7 @@ export function ContextMenu({
                         <button
                           key={`${child.label}-${childIndex}`}
                           type="button"
+                          title={child.title}
                           disabled={child.disabled}
                           onClick={() => {
                             onClose();
@@ -168,7 +178,7 @@ export function ContextMenu({
                                   : "text-neutral-300 hover:text-gold hover:bg-white/10",
                           )}
                         >
-                          <div className="flex items-center gap-2 truncate">
+                          <div className="flex items-center gap-2 min-w-0 truncate">
                             {child.icon && (
                               <span className="shrink-0 flex items-center justify-center">
                                 {child.icon}
@@ -176,6 +186,9 @@ export function ContextMenu({
                             )}
                             <span className="truncate">{child.label}</span>
                           </div>
+                          {child.badge && (
+                            <span className="shrink-0">{child.badge}</span>
+                          )}
                         </button>
                       );
                     })}

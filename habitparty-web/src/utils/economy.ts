@@ -7,7 +7,13 @@ import {
 import type { AppLocale } from "@/i18n/config";
 import type { EconomyBarData } from "@/types/dashboard";
 import type { TransactionHistoryResponseDTO } from "@/types/history";
-import { parseServerDate } from "./date";
+import {
+  formatDateParts,
+  getDateKeyInTimeZone,
+  getDatePartsInTimeZone,
+  getTodayDateString,
+  parseServerDate,
+} from "./date";
 
 export interface WeeklyEarningsResult {
   bars: EconomyBarData[];
@@ -61,13 +67,12 @@ function formatPeriodRange(
   startDate: Date,
   locale: AppLocale = "pt-BR",
 ): string {
-  const endDate = new Date(startDate);
-  endDate.setDate(startDate.getDate() + 6);
+  const endDate = new Date(startDate.getTime() + 6 * 86_400_000);
 
-  const startDay = String(startDate.getDate()).padStart(2, "0");
-  const startMonth = String(startDate.getMonth() + 1).padStart(2, "0");
-  const endDay = String(endDate.getDate()).padStart(2, "0");
-  const endMonth = String(endDate.getMonth() + 1).padStart(2, "0");
+  const startDay = String(startDate.getUTCDate()).padStart(2, "0");
+  const startMonth = String(startDate.getUTCMonth() + 1).padStart(2, "0");
+  const endDay = String(endDate.getUTCDate()).padStart(2, "0");
+  const endMonth = String(endDate.getUTCMonth() + 1).padStart(2, "0");
 
   if (locale === "en") {
     if (startMonth === endMonth) {
@@ -90,22 +95,22 @@ export function calculateWeeklyTaskEarnings(
   transactions: TransactionHistoryResponseDTO[] = [],
   referenceDate: Date = new Date(),
   locale: AppLocale = "pt-BR",
+  timeZone?: string | null,
 ): WeeklyEarningsResult {
-  // Encontra o início da semana atual (Domingo às 00:00:00)
-  const now = new Date(referenceDate);
-  const dayOfWeek = now.getDay(); // 0 = Domingo, 6 = Sábado
-  const startOfCurrentWeek = new Date(now);
-  startOfCurrentWeek.setDate(now.getDate() - dayOfWeek);
-  startOfCurrentWeek.setHours(0, 0, 0, 0);
+  const dayMs = 86_400_000;
+  const refParts = getDatePartsInTimeZone(referenceDate, timeZone);
+  const refUtcMs = Date.UTC(refParts.year, refParts.month - 1, refParts.day);
+  const startOfCurrentWeek = new Date(refUtcMs - refParts.weekday * dayMs);
+  const startOfWeek3 = new Date(startOfCurrentWeek.getTime() - 7 * dayMs);
+  const startOfWeek2 = new Date(startOfCurrentWeek.getTime() - 14 * dayMs);
+  const startOfWeek1 = new Date(startOfCurrentWeek.getTime() - 21 * dayMs);
 
-  const startOfWeek3 = new Date(startOfCurrentWeek);
-  startOfWeek3.setDate(startOfCurrentWeek.getDate() - 7);
-
-  const startOfWeek2 = new Date(startOfCurrentWeek);
-  startOfWeek2.setDate(startOfCurrentWeek.getDate() - 14);
-
-  const startOfWeek1 = new Date(startOfCurrentWeek);
-  startOfWeek1.setDate(startOfCurrentWeek.getDate() - 21);
+  const toUtcDateKey = (d: Date) =>
+    formatDateParts(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  const currentWeekKey = toUtcDateKey(startOfCurrentWeek);
+  const week3Key = toUtcDateKey(startOfWeek3);
+  const week2Key = toUtcDateKey(startOfWeek2);
+  const week1Key = toUtcDateKey(startOfWeek1);
 
   const weekGains = [0, 0, 0, 0];
   const weekSpent = [0, 0, 0, 0];
@@ -114,16 +119,17 @@ export function calculateWeeklyTaskEarnings(
     if (!tx.createdAt) continue;
     const txDate = parseServerDate(tx.createdAt);
     if (!txDate || Number.isNaN(txDate.getTime())) continue;
+    const txKey = getDateKeyInTimeZone(txDate, timeZone);
 
     // Determina o índice da semana (0: -3 sem, 1: -2 sem, 2: Passada, 3: Atual)
     let weekIndex = -1;
-    if (txDate >= startOfCurrentWeek) {
+    if (txKey >= currentWeekKey) {
       weekIndex = 3;
-    } else if (txDate >= startOfWeek3) {
+    } else if (txKey >= week3Key) {
       weekIndex = 2;
-    } else if (txDate >= startOfWeek2) {
+    } else if (txKey >= week2Key) {
       weekIndex = 1;
-    } else if (txDate >= startOfWeek1) {
+    } else if (txKey >= week1Key) {
       weekIndex = 0;
     }
 
@@ -216,6 +222,7 @@ export interface TaskRewardCalculationInput {
   dueDate?: string;
   isPenaltyApplied?: boolean;
   locale?: AppLocale;
+  timeZone?: string | null;
 }
 
 export type RewardStage = "INITIAL" | "ADAPTATION" | "FORMED";
@@ -413,8 +420,9 @@ export function getTaskRewardBreakdown(
   }
 
   // To-Do: se for modo Hardcore e estiver atrasado ou com penalidade aplicada, concede apenas 50%
+  const dueDatePart = task.dueDate?.split("T")[0];
   const isTodoOverdue = Boolean(
-    task.dueDate && new Date(`${task.dueDate}T23:59:59`) < new Date(),
+    dueDatePart && dueDatePart < getTodayDateString(new Date(), task.timeZone),
   );
   const isLateHardcoreTodo =
     normalizedType === "todo" &&

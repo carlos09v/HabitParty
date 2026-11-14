@@ -10,8 +10,9 @@ import { FilterBar } from "@/components/ui/FilterBar";
 import { Select } from "@/components/ui/Select";
 import { HISTORY_TABS, PERIOD_OPTIONS } from "@/constants/history";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useUserStore } from "@/store/userStore";
 import type { HistoryPeriodFilter } from "@/types/history";
-import { cn, downloadBlob } from "@/utils";
+import { cn, downloadBlob, getTodayDateString } from "@/utils";
 
 interface HistoryFiltersProps {
   currentTab: string;
@@ -49,6 +50,7 @@ export function HistoryFilters({
 }: HistoryFiltersProps) {
   const t = useTranslations("history.filters");
   const { isGamified } = useExperienceMode();
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -172,7 +174,7 @@ export function HistoryFilters({
 
       if (res.data) {
         try {
-          const dateStr = new Date().toISOString().split("T")[0];
+          const dateStr = getTodayDateString(new Date(), userTimeZone);
           const tabSuffix =
             optimisticTab && optimisticTab !== "ALL"
               ? `_${optimisticTab.toLowerCase()}`

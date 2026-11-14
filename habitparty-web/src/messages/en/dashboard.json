@@ -294,7 +294,11 @@
       "layout": "Layout",
       "compact": "Compact",
       "normal": "Standard",
-      "wide": "Wide"
+      "wide": "Wide",
+      "moveTo": "Move to",
+      "noTargetWorkspaces": "No other workspace available",
+      "vipBadge": "VIP",
+      "readOnlyWorkspaceHint": "Premium only (workspace in read-only mode)"
     },
     "mutations": {
       "statusUpdateError": "Failed to update task status.",

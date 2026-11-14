@@ -9,17 +9,16 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
+import { useMidnightRollover } from "@/hooks/useMidnightRollover";
+import type { AppLocale } from "@/i18n/config";
 import {
   syncDashboardFilterUrl,
   useDashboardFilterStore,
-} from "@/hooks/useDashboardTaskFilters";
-import type { AppLocale } from "@/i18n/config";
+} from "@/store/dashboardFilterStore";
+import { useUserStore } from "@/store/userStore";
 import type { WeeklyCalendarProps } from "@/types/dashboard";
 import { cn } from "@/utils";
-import {
-  buildWeeklyCalendarData,
-  getTodayDateString,
-} from "@/utils/dashboardMetrics";
+import { buildWeeklyCalendarData } from "@/utils/dashboardMetrics";
 
 /**
  * Rastreador de Ofensiva & Prazos da Semana (WeeklyCalendar - Opção 1).
@@ -36,6 +35,7 @@ export function WeeklyCalendar({
 }: WeeklyCalendarProps) {
   const t = useTranslations("dashboard.sidebarRight.weeklyCalendar");
   const locale = useLocale() as AppLocale;
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
 
   const activeFilter = useDashboardFilterStore((s) => s.activeFilter);
   const urlDate = useDashboardFilterStore((s) => s.selectedDate);
@@ -46,11 +46,9 @@ export function WeeklyCalendar({
 
   const [weekOffset, setWeekOffset] = useState(0);
 
-  const todayIso = useMemo(() => getTodayDateString(), []);
-  const baseDate = useMemo(() => {
-    const [y, m, d] = todayIso.split("-").map(Number);
-    return new Date(y, m - 1, d);
-  }, [todayIso]);
+  const todayIso = useMidnightRollover(userTimeZone);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: atualiza a data-base do calendário ao virar o dia
+  const baseDate = useMemo(() => new Date(), [todayIso]);
 
   const { weekRangeLabel, weekDays } = useMemo(
     () =>
@@ -61,8 +59,9 @@ export function WeeklyCalendar({
         todayIso,
         baseDate,
         locale,
+        userTimeZone,
       ),
-    [tasks, transactions, weekOffset, todayIso, baseDate, locale],
+    [tasks, transactions, weekOffset, todayIso, baseDate, locale, userTimeZone],
   );
 
   const handleDayClick = (isoString: string) => {

@@ -8,7 +8,10 @@ import {
   DEFAULT_POMO_MINUTES,
   DEFAULT_SHORT_BREAK_MINUTES,
 } from "@/constants/focus";
-import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
+import {
+  type TimerSoundType,
+  useSoundPreferencesStore,
+} from "@/store/soundPreferencesStore";
 import { useUIStore } from "@/store/uiStore";
 import { useUserStore } from "@/store/userStore";
 import type {
@@ -38,6 +41,7 @@ import { soundEffects } from "@/utils/soundEffects";
 export { setFocusTimerTranslators };
 
 let globalTimerInterval: NodeJS.Timeout | null = null;
+let isCompletingSession = false;
 
 function startGlobalTicker(tickFn: () => void) {
   if (typeof window === "undefined") return;
@@ -84,7 +88,7 @@ export interface FocusTimerStoreState extends FocusTimerState {
 
   // Preferências de som delegadas ao soundPreferencesStore (fonte única da verdade)
   toggleSound: () => void;
-  setTimerSoundType: (type: "zen" | "arcade") => void;
+  setTimerSoundType: (type: TimerSoundType) => void;
 
   // Anotações da sessão
   sessionNotes: string;
@@ -113,6 +117,7 @@ export interface FocusTimerStoreState extends FocusTimerState {
     name?: string;
     icon?: string;
     targetMinutes?: number;
+    recordType?: FocusRecordType;
     taskId?: string;
     taskName?: string;
   }) => void;
@@ -402,6 +407,9 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       },
 
       completeSession: async (notes?: string) => {
+        if (isCompletingSession) {
+          return false;
+        }
         const state = get();
         if (state.phase === "SHORT_BREAK" || state.phase === "LONG_BREAK") {
           get().skipBreak();
@@ -418,12 +426,18 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           return false;
         }
 
+        const wasRunning = state.isActive && !state.isPaused;
+        isCompletingSession = true;
+        stopGlobalTicker();
+
         const isInventory = state.target?.type === "inventory";
         const now = new Date();
         const exactSeconds = Math.max(1, elapsed);
-        const endTime = toLocalISOString(now);
+        const userTimeZone = useUserStore.getState().user?.timezone;
+        const endTime = toLocalISOString(now, userTimeZone);
         const startTime = toLocalISOString(
           new Date(now.getTime() - exactSeconds * 1000),
+          userTimeZone,
         );
 
         const recordType: FocusRecordType = isInventory
@@ -569,11 +583,19 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             return true;
           }
 
+          if (wasRunning) {
+            startGlobalTicker(() => get().tick());
+          }
           toast.error(res.error || tStoreMsg("saveSessionFailedToast"));
           return false;
         } catch {
+          if (wasRunning) {
+            startGlobalTicker(() => get().tick());
+          }
           toast.error(tStoreMsg("saveSessionServerErrorToast"));
           return false;
+        } finally {
+          isCompletingSession = false;
         }
       },
 
@@ -896,7 +918,12 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           if (res.success) {
             useUserStore
               .getState()
-              .markStreakSecuredToday(getTodayDateString());
+              .markStreakSecuredToday(
+                getTodayDateString(
+                  new Date(),
+                  useUserStore.getState().user?.timezone,
+                ),
+              );
             triggerCelebrationConfetti();
             toast.success(
               tStoreMsg("linkedTaskCompletedToast", {
@@ -1074,7 +1101,8 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       },
 
       syncTargetMetadata: (metadata) => {
-        const currentTarget = get().target;
+        const state = get();
+        const currentTarget = state.target;
         if (
           !currentTarget ||
           !metadata.id ||
@@ -1090,6 +1118,10 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         const hasMinutesChange =
           metadata.targetMinutes !== undefined &&
           metadata.targetMinutes !== currentTarget.targetMinutes;
+        const hasRecordTypeChange =
+          metadata.recordType !== undefined &&
+          metadata.recordType !== state.mode &&
+          currentTarget.type === "activity";
         const hasTaskNameChange =
           metadata.taskName !== undefined &&
           metadata.taskName !== currentTarget.taskName;
@@ -1098,21 +1130,34 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           !hasNameChange &&
           !hasIconChange &&
           !hasMinutesChange &&
+          !hasRecordTypeChange &&
           !hasTaskNameChange
         ) {
           return;
         }
+
+        const nextTargetMinutes =
+          metadata.targetMinutes ?? currentTarget.targetMinutes;
+        const isIdleAtStart = !state.isActive && state.elapsedSeconds === 0;
+        const nextDurationSeconds =
+          (nextTargetMinutes || DEFAULT_POMO_MINUTES) * 60;
 
         set({
           target: {
             ...currentTarget,
             name: metadata.name ?? currentTarget.name,
             icon: metadata.icon ?? currentTarget.icon,
-            targetMinutes:
-              metadata.targetMinutes ?? currentTarget.targetMinutes,
+            targetMinutes: nextTargetMinutes,
             taskId: metadata.taskId ?? currentTarget.taskId,
             taskName: metadata.taskName ?? currentTarget.taskName,
           },
+          ...(isIdleAtStart && (hasMinutesChange || hasRecordTypeChange)
+            ? {
+                mode: metadata.recordType ?? state.mode,
+                totalDurationSeconds: nextDurationSeconds,
+                secondsRemaining: nextDurationSeconds,
+              }
+            : {}),
         });
         updateDocumentTitle(get());
       },

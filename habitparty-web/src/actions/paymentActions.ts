@@ -2,12 +2,15 @@
 
 import { updateTag } from "next/cache";
 import { getTranslations } from "next-intl/server";
+import { invalidateShowcaseDomainTags } from "@/actions/cacheInvalidation";
 import { type ActionState, getErrorMessage } from "@/actions/types";
-import { getServerAuthToken } from "@/api/server";
-import { getRequestLocale } from "@/i18n/request";
-import type { CheckoutRequestDTO, CheckoutResponseDTO } from "@/types/payment";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+import { getServerAuthToken, serverApi } from "@/api/server";
+import { getFoundersQuota } from "@/services/paymentService";
+import type {
+  CheckoutRequestDTO,
+  CheckoutResponseDTO,
+  FoundersQuotaDTO,
+} from "@/types/payment";
 
 /**
  * Cria uma sessão no Stripe Checkout para assinatura ou pagamento Pix avulso.
@@ -15,10 +18,9 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 export async function createCheckoutSessionAction(
   payload: CheckoutRequestDTO,
 ): Promise<ActionState<CheckoutResponseDTO>> {
-  const [t, token, locale] = await Promise.all([
+  const [t, token] = await Promise.all([
     getTranslations("settings.paymentActions"),
     getServerAuthToken(),
-    getRequestLocale(),
   ]);
 
   try {
@@ -29,26 +31,17 @@ export async function createCheckoutSessionAction(
       };
     }
 
-    const res = await fetch(`${API_BASE_URL}/api/v1/payments/checkout`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        "Accept-Language": locale,
-      },
-      body: JSON.stringify(payload),
+    const { data, error } = await serverApi.POST("/api/v1/payments/checkout", {
+      body: payload,
       cache: "no-store",
     });
 
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => null);
+    if (error || !data) {
       return {
         success: false,
-        error: getErrorMessage(errorData, t("checkoutError")),
+        error: getErrorMessage(error, t("checkoutError")),
       };
     }
-
-    const data: CheckoutResponseDTO = await res.json();
 
     if (!data.checkoutUrl) {
       return {
@@ -76,11 +69,12 @@ export async function createCheckoutSessionAction(
 export async function createCustomerPortalSessionAction(): Promise<
   ActionState<{ portalUrl: string }>
 > {
-  const t = await getTranslations("settings.paymentActions");
+  const [t, token] = await Promise.all([
+    getTranslations("settings.paymentActions"),
+    getServerAuthToken(),
+  ]);
 
   try {
-    const token = await getServerAuthToken();
-
     if (!token) {
       return {
         success: false,
@@ -88,24 +82,17 @@ export async function createCustomerPortalSessionAction(): Promise<
       };
     }
 
-    const res = await fetch(`${API_BASE_URL}/api/v1/payments/portal`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+    const { data, error } = await serverApi.POST("/api/v1/payments/portal", {
       cache: "no-store",
     });
 
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => null);
+    if (error || !data) {
       return {
         success: false,
-        error: getErrorMessage(errorData, t("portalError")),
+        error: getErrorMessage(error, t("portalError")),
       };
     }
 
-    const data: { portalUrl: string } = await res.json();
     return {
       success: true,
       data,
@@ -120,54 +107,16 @@ export async function createCustomerPortalSessionAction(): Promise<
 }
 
 /**
- * Consulta a disponibilidade e contagem de vagas do plano Membro Fundador.
+ * Consulta a disponibilidade e contagem de vagas do plano Membro Fundador (para Client Components).
  */
 export async function getFoundersQuotaAction(): Promise<
-  ActionState<import("@/types/payment").FoundersQuotaDTO>
+  ActionState<FoundersQuotaDTO>
 > {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/v1/payments/founders-quota`, {
-      method: "GET",
-      next: { tags: ["founders-quota"] },
-    });
-
-    if (!res.ok) {
-      return {
-        success: true,
-        data: {
-          maxSlots: 30,
-          claimedSlots: 0,
-          remainingSlots: 30,
-          isAvailable: true,
-        },
-      };
-    }
-
-    const data: import("@/types/payment").FoundersQuotaDTO = await res.json();
-    return {
-      success: true,
-      data,
-    };
-  } catch (err: unknown) {
-    if (
-      err &&
-      typeof err === "object" &&
-      "digest" in err &&
-      err.digest === "DYNAMIC_SERVER_USAGE"
-    ) {
-      throw err;
-    }
-    console.error("[PaymentAction:GetFoundersQuota]", err);
-    return {
-      success: true,
-      data: {
-        maxSlots: 30,
-        claimedSlots: 0,
-        remainingSlots: 30,
-        isAvailable: true,
-      },
-    };
-  }
+  const data = await getFoundersQuota();
+  return {
+    success: true,
+    data,
+  };
 }
 
 export interface PaymentConfirmResponse {
@@ -182,11 +131,12 @@ export interface PaymentConfirmResponse {
 export async function confirmPaymentAction(
   sessionId: string,
 ): Promise<ActionState<PaymentConfirmResponse>> {
-  const t = await getTranslations("settings.paymentActions");
+  const [t, token] = await Promise.all([
+    getTranslations("settings.paymentActions"),
+    getServerAuthToken(),
+  ]);
 
   try {
-    const token = await getServerAuthToken();
-
     if (!token) {
       return {
         success: false,
@@ -194,27 +144,21 @@ export async function confirmPaymentAction(
       };
     }
 
-    const res = await fetch(`${API_BASE_URL}/api/v1/payments/confirm`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ sessionId }),
+    const { data, error } = await serverApi.POST("/api/v1/payments/confirm", {
+      body: { sessionId },
       cache: "no-store",
     });
 
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => null);
+    if (error || !data) {
       return {
         success: false,
-        error: getErrorMessage(errorData, t("checkoutError")),
+        error: getErrorMessage(error, t("checkoutError")),
       };
     }
 
-    const data: PaymentConfirmResponse = await res.json();
     if (data.isPaid) {
       updateTag("user");
+      invalidateShowcaseDomainTags(false);
       updateTag("admin-overview");
       updateTag("admin-users");
       updateTag("founders-quota");

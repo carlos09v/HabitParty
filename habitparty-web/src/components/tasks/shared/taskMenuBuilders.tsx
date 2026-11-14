@@ -4,7 +4,10 @@ import {
   Check,
   Columns3,
   Copy,
+  FolderInput,
+  Layers,
   LayoutGrid,
+  Lock,
   Maximize2,
   Minimize2,
   Pencil,
@@ -83,17 +86,32 @@ export function buildTaskContextMenuItems(options: {
   ];
 }
 
+export interface ColumnMoveWorkspaceOption {
+  id: string;
+  name: string;
+  isLocked?: boolean;
+}
+
 /**
- * Constrói de forma padronizada os itens do ContextMenu de uma Coluna (Editar, Layout opcional, Excluir).
+ * Constrói de forma padronizada os itens do ContextMenu de uma Coluna do Kanban
+ * (Editar, Inserir à esquerda/direita, Layout, Mover para, Excluir).
  */
 export function buildColumnContextMenuItems(options: {
   column: BoardColumn | null;
   columnWidths?: Record<string, ColumnWidthPreset>;
+  availableWorkspaces?: ColumnMoveWorkspaceOption[];
+  isSourceWorkspaceReadOnly?: boolean;
   onEdit: (column: BoardColumn) => void;
   onDelete: (column: BoardColumn) => void;
   onInsertLeft?: (column: BoardColumn) => void;
   onInsertRight?: (column: BoardColumn) => void;
   onColumnWidthChange?: (columnId: string, width: ColumnWidthPreset) => void;
+  onMoveToWorkspace?: (
+    column: BoardColumn,
+    targetWorkspaceId: string,
+    targetWorkspaceName: string,
+  ) => void;
+  onMoveLockedWorkspace?: (reason: "source" | "target", name?: string) => void;
   labels?: {
     edit?: string;
     delete?: string;
@@ -103,19 +121,62 @@ export function buildColumnContextMenuItems(options: {
     compact?: string;
     normal?: string;
     wide?: string;
+    moveTo?: string;
+    noTargetWorkspaces?: string;
+    vipBadge?: string;
+    readOnlyHint?: string;
   };
 }): ContextMenuItem[] {
   const {
     column,
     columnWidths,
+    availableWorkspaces,
+    isSourceWorkspaceReadOnly = false,
     onEdit,
     onDelete,
     onInsertLeft,
     onInsertRight,
     onColumnWidthChange,
+    onMoveToWorkspace,
+    onMoveLockedWorkspace,
     labels,
   } = options;
   const currentWidth = (column && columnWidths?.[column.id]) || "normal";
+
+  const moveWorkspaceChildren: ContextMenuItem[] =
+    availableWorkspaces && availableWorkspaces.length > 0 && column
+      ? availableWorkspaces.map((ws) => {
+          const isBlocked = isSourceWorkspaceReadOnly || Boolean(ws.isLocked);
+          const lockReason = isSourceWorkspaceReadOnly ? "source" : "target";
+          return {
+            label: ws.name,
+            title: isBlocked ? labels?.readOnlyHint : ws.name,
+            icon: isBlocked ? (
+              <Lock size={13} className="text-gold shrink-0" />
+            ) : (
+              <Layers size={13} className="text-neutral-400 shrink-0" />
+            ),
+            badge: isBlocked ? (
+              <span className="px-1.5 py-0.5 rounded text-label-m font-bold uppercase tracking-wider bg-amber-500/15 text-gold-ink border border-amber-500/35 dark:bg-gold/15 dark:text-gold dark:border-gold/30">
+                {labels?.vipBadge || "VIP"}
+              </span>
+            ) : undefined,
+            onClick: () => {
+              if (isBlocked) {
+                onMoveLockedWorkspace?.(lockReason, ws.name);
+                return;
+              }
+              onMoveToWorkspace?.(column, ws.id, ws.name);
+            },
+          };
+        })
+      : [
+          {
+            label:
+              labels?.noTargetWorkspaces || "Nenhum outro ambiente disponível",
+            disabled: true,
+          },
+        ];
 
   return [
     {
@@ -189,6 +250,15 @@ export function buildColumnContextMenuItems(options: {
                 onClick: () => onColumnWidthChange(column.id, "wide"),
               },
             ],
+          },
+        ]
+      : []),
+    ...(onMoveToWorkspace && column
+      ? [
+          {
+            label: labels?.moveTo || "Mover para",
+            icon: <FolderInput size={14} />,
+            children: moveWorkspaceChildren,
           },
         ]
       : []),

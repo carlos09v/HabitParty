@@ -199,4 +199,46 @@ class SendTaskRemindersUseCaseTest {
     verify(taskPort, times(1)).save(todo);
     verify(emailLogPort, times(1)).save(any());
   }
+
+  @Test
+  @DisplayName("Deve disparar lembrete apenas para o usuário cujo horário local já atingiu o reminderAt")
+  void shouldRespectOwnerTimezoneWhenSendingReminders() {
+    // 2026-11-13T12:30:00Z -> Tóquio = 21:30 (passou de 21:00) | Nova York = 07:30 (antes de 09:00)
+    java.time.Clock fixedClock = java.time.Clock.fixed(
+        java.time.Instant.parse("2026-11-13T12:30:00Z"),
+        java.time.ZoneId.of("UTC"));
+    SendTaskRemindersUseCase tzUseCase = new SendTaskRemindersUseCase(
+        taskPort, userPort, emailPort, emailLogPort, fixedClock);
+
+    UUID tokyoUserId = UUID.randomUUID();
+    User tokyoUser = createTestUser(tokyoUserId);
+    tokyoUser.setTimezone("Asia/Tokyo");
+    Todo tokyoTodo = new Todo(
+        UUID.randomUUID(), UUID.randomUUID(), tokyoUserId, "Meditar em Tóquio", null,
+        0, TaskPriority.MEDIUM, List.of(), TaskDifficulty.EASY, TaskStatus.PENDING,
+        TaskType.TODO, false, LocalDate.of(2026, 11, 14), LocalDateTime.of(2026, 11, 12, 10, 0),
+        List.of(), TodoReminderType.CUSTOM, LocalDateTime.of(2026, 11, 13, 21, 0),
+        null, false, true, false);
+
+    UUID nyUserId = UUID.randomUUID();
+    User nyUser = createTestUser(nyUserId);
+    nyUser.setTimezone("America/New_York");
+    Todo nyTodo = new Todo(
+        UUID.randomUUID(), UUID.randomUUID(), nyUserId, "Reunião em NY", null,
+        1, TaskPriority.MEDIUM, List.of(), TaskDifficulty.EASY, TaskStatus.PENDING,
+        TaskType.TODO, false, LocalDate.of(2026, 11, 14), LocalDateTime.of(2026, 11, 12, 10, 0),
+        List.of(), TodoReminderType.CUSTOM, LocalDateTime.of(2026, 11, 13, 9, 0),
+        null, false, true, false);
+
+    when(taskPort.findPendingEmailReminders(any(), any())).thenReturn(List.of(tokyoTodo, nyTodo));
+    when(userPort.findAllByIds(any())).thenReturn(List.of(tokyoUser, nyUser));
+    when(emailPort.sendTaskReminderEmail(any(), any(), eq("Meditar em Tóquio"), any(), any(Boolean.class)))
+        .thenReturn(true);
+
+    int sent = tzUseCase.execute();
+
+    assertEquals(1, sent);
+    assertTrue(tokyoTodo.isEmailReminderSent());
+    assertEquals(false, nyTodo.isEmailReminderSent());
+  }
 }

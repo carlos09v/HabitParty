@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { setFirstStepPreferencesAction } from "@/actions/ui";
-import { createWorkspaceAction } from "@/actions/workspaceActions";
+import { completeFirstStepOnboardingAction } from "@/actions/ui";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
 import { useUIStore } from "@/store/uiStore";
@@ -78,9 +77,10 @@ export function FirstStepWizard() {
     }
 
     startTransition(async () => {
-      // 1. Criar o Workspace inicial no Backend
-      const result = await createWorkspaceAction({
-        name: trimmedName,
+      const result = await completeFirstStepOnboardingAction({
+        workspaceName: trimmedName,
+        usageMode: selectedMode,
+        experienceMode,
       });
 
       if (!result.success) {
@@ -93,18 +93,10 @@ export function FirstStepWizard() {
         return;
       }
 
-      // 2. Atualizar estado local do Zustand imediatamente
       useUIStore.setState({
         experienceMode,
       });
       useUserStore.getState().updateUserPartial({ experienceMode });
-
-      // 3. Salvar preferências de modo de uso, experiência e workspace ativa no banco e cookies
-      await setFirstStepPreferencesAction(
-        selectedMode,
-        result.data.id,
-        experienceMode,
-      );
 
       toast.success(
         t("successToast", { name: result.data.name || trimmedName }),

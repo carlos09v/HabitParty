@@ -1,7 +1,6 @@
-"use client";
-
-import { CheckCircle2, Coins, Flame } from "lucide-react";
+import { CheckCircle2, Flame } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { CoinIcon } from "@/components/ui/CoinIcon";
 import { cn } from "@/utils";
 
 interface DemoDailyCardProps {
@@ -28,12 +27,12 @@ export function DemoDailyCard({
     >
       <div>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-bold text-amber-700 dark:text-warning-500 uppercase tracking-wider bg-amber-500/10 dark:bg-warning-500/10 px-2 py-0.5 rounded flex items-center gap-1">
+          <span className="text-tiny font-bold text-amber-700 dark:text-warning-500 uppercase tracking-wider bg-amber-500/10 dark:bg-warning-500/10 px-2 py-0.5 rounded flex items-center gap-1">
             <Flame className="w-3 h-3 fill-current" />
             {t("streakBadge", { count: studyStreak })}
           </span>
           <span className="text-xs font-bold text-amber-700 dark:text-gold flex items-center gap-1">
-            <Coins className="w-3.5 h-3.5" /> +25
+            <CoinIcon size={13} variant="coin" /> +25
           </span>
         </div>
         <h4
@@ -48,7 +47,7 @@ export function DemoDailyCard({
       </div>
 
       <div className="mt-4 pt-3 border-t border-neutral-700/60 dark:border-white/5 flex items-center justify-between">
-        <span className="text-[11px] text-neutral-400">
+        <span className="text-tiny text-neutral-400">
           {isStudyDone ? t("statusDone") : t("statusPending")}
         </span>
         <button

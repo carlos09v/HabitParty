@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { type ButtonHTMLAttributes, useState } from "react";
 import { GoogleLogoIcon } from "@/components/ui/GoogleLogoIcon";
 import { cn } from "@/utils";
+import { BROWSER_TIMEZONE_COOKIE, detectBrowserTimeZone } from "@/utils/date";
 
 interface GoogleSignInButtonProps
   extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -32,6 +33,11 @@ export function GoogleSignInButton({
     }
 
     setInternalPending(true);
+    if (typeof document !== "undefined") {
+      const detectedTz = detectBrowserTimeZone();
+      // biome-ignore lint/suspicious/noDocumentCookie: Armazena fuso detectado brevemente antes do redirecionamento OAuth para leitura no callback
+      document.cookie = `${BROWSER_TIMEZONE_COOKIE}=${encodeURIComponent(detectedTz)}; path=/; max-age=600; samesite=lax`;
+    }
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     const backendUrl =
       process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";

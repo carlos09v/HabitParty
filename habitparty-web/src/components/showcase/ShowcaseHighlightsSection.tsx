@@ -41,7 +41,6 @@ export function ShowcaseHighlightsSection({
   const tRarities = useTranslations("showcase.rarities");
   const tCatalog = useTranslations("showcase.catalog");
   const tBadges = useTranslations("showcase.accountBadges");
-  const tMetrics = useTranslations("showcase.statMetrics");
   const { isGamified } = useExperienceMode();
 
   const { currentXp, levelTitle } = resolveUserLevelState(
@@ -55,13 +54,11 @@ export function ShowcaseHighlightsSection({
     const highlight = highlights.find((h) => h.displayOrder === index) || null;
     const resolved = resolveHighlightSlotCard(highlight, {
       achievements,
-      stats,
       isGamified,
       levelTitle,
       currentXp,
       tCatalog,
       tBadges,
-      tMetrics,
     });
     return { index, highlight, resolved };
   });

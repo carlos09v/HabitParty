@@ -130,7 +130,7 @@ export function AchievementUnlockListener() {
                       </span>
                       <span
                         className={cn(
-                          "px-1.5 py-0.2 rounded-full text-[9px] font-extrabold uppercase border",
+                          "px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase border",
                           theme.badgeBg,
                           theme.badgeText,
                           theme.badgeBorder,

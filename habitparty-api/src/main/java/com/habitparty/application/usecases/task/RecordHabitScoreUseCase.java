@@ -36,6 +36,7 @@ public class RecordHabitScoreUseCase {
   private final BoardColumnRepository boardColumnPort;
   private final Clock clock;
   private final ApplicationEventPublisher eventPublisher;
+  private DailyResetUseCase dailyResetUseCase;
 
   @Autowired
   public RecordHabitScoreUseCase(
@@ -62,8 +63,16 @@ public class RecordHabitScoreUseCase {
     this(taskPort, transactionPort, userPort, null, null, Clock.systemDefaultZone(), null);
   }
 
+  @Autowired(required = false)
+  public void setDailyResetUseCase(DailyResetUseCase dailyResetUseCase) {
+    this.dailyResetUseCase = dailyResetUseCase;
+  }
+
   @Transactional
   public Task execute(UUID taskId, UUID userIdLogado, int delta) {
+    if (dailyResetUseCase != null) {
+      dailyResetUseCase.resetUserIfDue(userIdLogado);
+    }
     Task task = taskPort.findById(taskId)
         .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada."));
     task.validateOwnership(userIdLogado);
@@ -75,8 +84,8 @@ public class RecordHabitScoreUseCase {
     User user = userPort.findById(userIdLogado)
         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
     String columnName = TaskGamificationHelper.resolveColumnName(boardColumnPort, habit);
-    LocalDate today = LocalDate.now(clock);
-    LocalDateTime now = LocalDateTime.now(clock);
+    LocalDate today = user.resolveLocalDate(clock);
+    LocalDateTime now = user.resolveLocalDateTime(clock);
 
     if (delta > 0) {
       if (habit.getHabitType() == HabitType.NEGATIVE) {
@@ -96,14 +105,18 @@ public class RecordHabitScoreUseCase {
 
       TaskGamificationHelper.awardTaskCompletion(
           user, habit, TransactionType.HABIT_COMPLETED, userPort, transactionPort, columnName, today);
+
+      habit.registerCompletion(now);
+      habit.changeStatus(TaskStatus.COMPLETED);
+      Task savedHabit = taskPort.save(habit);
+
       if (eventPublisher != null) {
         eventPublisher.publishEvent(new TaskCompletedEvent(user.getId()));
       } else if (evaluateUserAchievementsUseCase != null) {
         evaluateUserAchievementsUseCase.execute(user);
       }
 
-      habit.registerCompletion(now);
-      habit.changeStatus(TaskStatus.COMPLETED);
+      return savedHabit;
     } else if (delta < 0) {
       if (habit.getHabitType() == HabitType.POSITIVE) {
         throw new DomainValidationException("Este hábito é do tipo Positivo e não permite pontuação negativa.");
@@ -111,7 +124,7 @@ public class RecordHabitScoreUseCase {
 
       habit.registerNegative();
 
-      TaskReward penalty = habit.calculatePenalty();
+      TaskReward penalty = habit.calculatePenalty(today);
       user.applyPenalty(penalty.coins(), penalty.xp());
       userPort.save(user);
 

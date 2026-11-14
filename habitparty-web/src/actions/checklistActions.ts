@@ -152,6 +152,7 @@ export async function deleteChecklistItem(
 export async function cloneTaskChecklistItems(
   newTaskId: string,
   items?: { name?: string }[],
+  options?: { skipInvalidation?: boolean },
 ): Promise<ChecklistItemResponseDTO[]> {
   if (!items || items.length === 0) return [];
   const validItems = items.filter((item) => Boolean(item.name?.trim()));
@@ -172,12 +173,14 @@ export async function cloneTaskChecklistItems(
     }
   }
 
-  invalidateChecklistTags();
+  if (!options?.skipInvalidation) {
+    invalidateChecklistTags();
+  }
 
   return createdItems;
 }
 
-type ChecklistSnapshotItem = {
+export type ChecklistSnapshotItem = {
   id?: string;
   name?: string;
   isCompleted?: boolean;
@@ -192,6 +195,7 @@ export async function syncTaskChecklistChanges(
   taskId: string,
   initialItems: ChecklistSnapshotItem[],
   currentItems: ChecklistSnapshotItem[],
+  options?: { skipInvalidation?: boolean },
 ): Promise<{ items: ChecklistItemResponseDTO[]; failedCount: number }> {
   const isPersisted = (item: ChecklistSnapshotItem) =>
     Boolean(item.id) && !item.id?.startsWith("temp-");
@@ -309,7 +313,7 @@ export async function syncTaskChecklistChanges(
     }
   }
 
-  if (hasChanges) invalidateChecklistTags();
+  if (hasChanges && !options?.skipInvalidation) invalidateChecklistTags();
 
   return { items: finalItems, failedCount };
 }

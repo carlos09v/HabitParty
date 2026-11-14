@@ -10,6 +10,7 @@ import {
   WEEKDAYS_ONLY,
 } from "@/constants/task";
 import { useClickOutside } from "@/hooks/useClickOutside";
+import { useUserStore } from "@/store/userStore";
 import type {
   CreateTaskDTO,
   HabitImportanceOption,
@@ -87,7 +88,10 @@ export function RoutineQuickAddForm({
         };
       } else if (taskType === "DAILY") {
         extraPayload = {
-          startDate: getTodayDateString(),
+          startDate: getTodayDateString(
+            new Date(),
+            useUserStore.getState().user?.timezone,
+          ),
           repeatType: dailyFreq === "WEEKDAYS" ? "WEEKLY" : "DAILY",
           repeatEvery: 1,
           daysOfWeek:
@@ -100,7 +104,11 @@ export function RoutineQuickAddForm({
         extraPayload = {
           difficulty,
           ...(resolvedOffset !== null && {
-            dueDate: getOffsetDateString(resolvedOffset),
+            dueDate: getOffsetDateString(
+              resolvedOffset,
+              new Date(),
+              useUserStore.getState().user?.timezone,
+            ),
           }),
           ...(dueTime && {
             dueTime,
@@ -270,9 +278,16 @@ export function RoutineQuickAddForm({
                 difficulty,
                 dueDate:
                   dueOffset !== null
-                    ? getOffsetDateString(dueOffset)
+                    ? getOffsetDateString(
+                        dueOffset,
+                        new Date(),
+                        useUserStore.getState().user?.timezone,
+                      )
                     : dueTime
-                      ? getTodayDateString()
+                      ? getTodayDateString(
+                          new Date(),
+                          useUserStore.getState().user?.timezone,
+                        )
                       : undefined,
                 dueTime: dueTime || undefined,
               }),
@@ -286,7 +301,10 @@ export function RoutineQuickAddForm({
                 repeatType: dailyFreq === "WEEKDAYS" ? "WEEKLY" : "DAILY",
                 daysOfWeek:
                   dailyFreq === "WEEKDAYS" ? [...WEEKDAYS_ONLY] : ALL_WEEK_DAYS,
-                startDate: getTodayDateString(),
+                startDate: getTodayDateString(
+                  new Date(),
+                  useUserStore.getState().user?.timezone,
+                ),
                 repeatEvery: 1,
               }),
             };

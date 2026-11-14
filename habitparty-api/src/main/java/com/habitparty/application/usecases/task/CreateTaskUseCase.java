@@ -3,6 +3,7 @@ package com.habitparty.application.usecases.task;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -93,7 +94,9 @@ public class CreateTaskUseCase {
     int newOrderIndex = maxIndex + 1;
 
     UUID newTaskId = UUID.randomUUID();
-    LocalDateTime now = LocalDateTime.now();
+    ZoneId userZone = user.resolveZoneId(clock.getZone());
+    LocalDate userToday = user.resolveLocalDate(clock);
+    LocalDateTime now = user.resolveLocalDateTime(clock);
     List<ChecklistItem> emptyChecklist = List.of();
 
     Task newTask;
@@ -110,15 +113,18 @@ public class CreateTaskUseCase {
       case DAILY -> {
         int safeRepeat = (command.repeatEvery() != null) ? command.repeatEvery() : 1;
 
-        newTask = new Daily(
+        Daily createdDaily = new Daily(
             newTaskId, boardColumnId, userIdLogado, command.name(), command.description(),
             newOrderIndex, command.priority(), command.tags(), command.difficulty(), TaskStatus.PENDING,
             command.taskType(), command.isHardcoreModeEnabled(), command.dueDate(), now, emptyChecklist,
             0, command.startDate(), command.repeatType(), safeRepeat, command.daysOfWeek(), command.monthlyOption(), null
         );
+        if (command.dueDate() == null) {
+          createdDaily.recalculateInitialDueDate(userToday);
+        }
+        newTask = createdDaily;
       }
       case TODO -> {
-        LocalDate today = LocalDate.now(clock);
         boolean isEventSchedule = Boolean.TRUE.equals(command.isAllDay())
             || command.startTime() != null
             || command.dueEndTime() != null;
@@ -131,9 +137,9 @@ public class CreateTaskUseCase {
         boolean hasAnyTimeOrEvent = command.dueTime() != null || isEventSchedule;
         LocalDate effectiveDueDate = command.dueDate() != null
             ? command.dueDate()
-            : (hasAnyTimeOrEvent ? today : null);
+            : (hasAnyTimeOrEvent ? userToday : null);
 
-        if (command.isHardcoreModeEnabled() && effectiveDueDate != null && effectiveDueDate.isBefore(today)) {
+        if (command.isHardcoreModeEnabled() && effectiveDueDate != null && effectiveDueDate.isBefore(userToday)) {
           throw new DomainValidationException("A data de vencimento de um afazer no modo Hardcore não pode ser no passado.");
         }
 
@@ -151,7 +157,10 @@ public class CreateTaskUseCase {
           long activeReminders = taskPort.countActiveEmailRemindersByUserId(userIdLogado);
           com.habitparty.core.domain.entities.task.EmailReminderQuotas.validateActiveRemindersQuota(isPremium, activeReminders);
 
-          LocalDateTime startOfMonth = today.withDayOfMonth(1).atStartOfDay();
+          LocalDateTime startOfMonth = userToday.withDayOfMonth(1)
+              .atStartOfDay(userZone)
+              .withZoneSameInstant(ZoneId.systemDefault())
+              .toLocalDateTime();
           long sentThisMonth = emailLogPort.countByUserIdAndEmailTypeAndStatusAndSentAtAfter(
               userIdLogado,
               com.habitparty.core.domain.enums.EmailType.TASK_REMINDER,
@@ -168,7 +177,7 @@ public class CreateTaskUseCase {
             command.reminderType(), calculatedReminderAt, null, false, sendEmail, false, command.dueTime()
         );
         if (Boolean.TRUE.equals(command.isAllDay()) || command.startTime() != null) {
-          newTodo.defineEventSchedule(command.startTime(), command.dueEndTime(), command.isAllDay());
+          newTodo.defineEventSchedule(command.startTime(), command.dueEndTime(), command.isAllDay(), userToday);
         } else {
           newTodo.defineDueEndTime(command.dueEndTime());
         }

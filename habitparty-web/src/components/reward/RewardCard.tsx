@@ -134,19 +134,21 @@ export const AddRewardCard = memo(function AddRewardCard({
 
   if (viewMode === "list") {
     return (
-      <button
-        type="button"
-        onClick={onClick}
-        aria-label={t("addRewardAria")}
-        className={cn(
-          "w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-dashed transition-colors cursor-pointer",
-          "border-neutral-600 bg-card/80 text-xs font-semibold text-neutral-200",
-          "hover:border-primary hover:text-primary hover:bg-card hover:shadow-xs dark:border-white/20 dark:bg-card/40 dark:text-neutral-300 dark:hover:border-gold dark:hover:text-gold dark:hover:bg-card/60 focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-gold",
-        )}
-      >
-        <Plus size={15} aria-hidden="true" />
-        <span>{addLabel}</span>
-      </button>
+      <li className="w-full list-none">
+        <button
+          type="button"
+          onClick={onClick}
+          aria-label={t("addRewardAria")}
+          className={cn(
+            "w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-dashed transition-colors cursor-pointer",
+            "border-neutral-600 bg-card/80 text-xs font-semibold text-neutral-200",
+            "hover:border-primary hover:text-primary hover:bg-card hover:shadow-xs dark:border-white/20 dark:bg-card/40 dark:text-neutral-300 dark:hover:border-gold dark:hover:text-gold dark:hover:bg-card/60 focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-gold",
+          )}
+        >
+          <Plus size={15} aria-hidden="true" />
+          <span>{addLabel}</span>
+        </button>
+      </li>
     );
   }
 

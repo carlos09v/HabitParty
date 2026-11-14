@@ -1,9 +1,12 @@
+"use client";
+
 import { CalendarClock, Sword, Swords } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { TimePicker } from "@/components/ui/TimePicker";
 import {
   DIFFICULTY_DOT_COLORS,
   DIFFICULTY_SWORD_COLORS,
+  HABIT_IMPORTANCE_META,
   HABIT_IMPORTANCE_OPTIONS,
   TASK_DIFFICULTY_OPTIONS,
 } from "@/constants/task";
@@ -15,7 +18,6 @@ import type {
   TaskTypeOption,
 } from "@/types/task";
 import { cn } from "@/utils";
-import { HABIT_IMPORTANCE_META } from "./HabitImportanceSelector";
 
 interface QuickAddConfigBarProps {
   taskType: TaskTypeOption;

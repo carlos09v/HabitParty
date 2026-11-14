@@ -12,6 +12,48 @@
     "updateProfileError": "Could not update your profile showcase.",
     "networkError": "Server connection error. Please try again."
   },
+  "avatarFrames": {
+    "title": "Avatar Frame",
+    "subtitle": "Choose an animated frame with cosmic light to highlight your profile in Party, leaderboard, and dashboard.",
+    "upgradeToast": "Animated frames are exclusive to Premium members! Upgrade to unlock.",
+    "vipBadge": "Cosmic VIP",
+    "freeBadge": "Free",
+    "unlockAll": "Unlock All",
+    "lockedTitle": "VIP Exclusive",
+    "successToast": "Frame \"{name}\" equipped successfully!",
+    "frames": {
+      "none": {
+        "name": "No Frame",
+        "badge": "Default",
+        "description": "Classic clean look with no additional border effects."
+      },
+      "cosmic_gold": {
+        "name": "Cosmic Guardian",
+        "badge": "Cosmic VIP",
+        "description": "Radiant stellar gold aura with rotating cosmic light and golden glow."
+      },
+      "cyber_neon": {
+        "name": "Cyberpunk Neon",
+        "badge": "Tech VIP",
+        "description": "Electrifying neon pulse alternating between futuristic cyan and laser magenta."
+      },
+      "fire_phoenix": {
+        "name": "Phoenix Fire",
+        "badge": "Phoenix VIP",
+        "description": "Blazing flames in scarlet red and amber with ember combustion glow."
+      },
+      "emerald_mystic": {
+        "name": "Emerald Aura",
+        "badge": "Mystic VIP",
+        "description": "Emerald green natural energy ring with a soft, mystic pulse."
+      },
+      "amethyst_void": {
+        "name": "Amethyst Void",
+        "badge": "Arcane VIP",
+        "description": "Deep violet dimensional energy with ethereal, mysterious stellar glow."
+      }
+    }
+  },
   "header": {
     "badgeGamified": "Adventurer Showcase",
     "badgeEssential": "Performance Showcase",
@@ -52,13 +94,12 @@
     "emptyVisitorText": "No highlight selected yet.",
     "typeBadge": {
       "ACHIEVEMENT": "Achievement",
-      "ACCOUNT_BADGE": "Badge",
-      "STAT_METRIC": "Record"
+      "ACCOUNT_BADGE": "Badge"
     }
   },
   "pickerModal": {
     "title": "Customize Featured Highlights",
-    "subtitle": "Select a slot above and choose which unlocked achievement, special badge, or record to feature.",
+    "subtitle": "Select a slot above and choose which unlocked achievement or special badge to feature.",
     "activeSlotLabel": "Editing Slot #{slot}",
     "clearSlot": "Clear slot",
     "saveButton": "Save Showcase",
@@ -68,8 +109,7 @@
     "alreadyEquipped": "Equipped in Slot #{slot}",
     "tabs": {
       "achievements": "Achievements ({count})",
-      "badges": "Account Badges",
-      "metrics": "Metrics & Records"
+      "badges": "Account Badges"
     },
     "noUnlockedAchievements": "You haven't unlocked any achievements yet. Complete tasks or focus sessions to earn your first medal!",
     "lockedBadgeHint": "Currently locked for your account"
@@ -102,38 +142,6 @@
       "description": "Rank achieved with {xp} total XP earned on the journey.",
       "essentialDescription": "Progression milestone reached with {xp} experience points.",
       "lockedHint": "Available to all users"
-    }
-  },
-  "statMetrics": {
-    "HIGHEST_STREAK": {
-      "title": "All-Time Streak Record",
-      "essentialTitle": "Longest Active Streak",
-      "valueFormat": "{value} day streak"
-    },
-    "CURRENT_STREAK": {
-      "title": "Current Streak Flame",
-      "essentialTitle": "Current Streak",
-      "valueFormat": "{value} active days"
-    },
-    "TOTAL_TASKS": {
-      "title": "Quests Completed",
-      "essentialTitle": "Tasks Completed",
-      "valueFormat": "{value} completed"
-    },
-    "FOCUS_HOURS": {
-      "title": "Deep Focus Immersion",
-      "essentialTitle": "Total Focus Hours",
-      "valueFormat": "{value}h focused"
-    },
-    "TOTAL_XP": {
-      "title": "Total Experience (XP)",
-      "essentialTitle": "Progression Score",
-      "valueFormat": "{value} XP"
-    },
-    "ACHIEVEMENT_POINTS": {
-      "title": "Trophy Score",
-      "essentialTitle": "Achievement Points",
-      "valueFormat": "{value} pts"
     }
   },
   "statsGrid": {

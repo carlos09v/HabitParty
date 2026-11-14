@@ -3,7 +3,7 @@
 import { getTranslations } from "next-intl/server";
 import { invalidateShowcaseDomainTags } from "@/actions/cacheInvalidation";
 import { type ActionState, getErrorMessage } from "@/actions/types";
-import { getServerAuthToken } from "@/api/server";
+import { getServerAuthToken, serverApi } from "@/api/server";
 import { getUnseenAchievements } from "@/services/showcaseService";
 import type {
   AchievementItemResponseDTO,
@@ -12,8 +12,6 @@ import type {
   UpdateShowcaseProfileRequestDTO,
 } from "@/types/showcase";
 import type { UserResponseDTO } from "@/types/user";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 /**
  * Atualiza os 4 slots de destaque da vitrine do usuário.
@@ -31,26 +29,22 @@ export async function updateMyHighlightsAction(
       };
     }
 
-    const res = await fetch(`${API_BASE_URL}/showcase/highlights`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
+    const { data, error } = await serverApi.PUT("/showcase/highlights", {
+      body: payload,
     });
 
-    if (!res.ok) {
-      const json = await res.json().catch(() => null);
+    if (error || !data) {
       return {
         success: false,
-        error: getErrorMessage(json, t("updateHighlightsError")),
+        error: getErrorMessage(error, t("updateHighlightsError")),
       };
     }
 
-    const data = (await res.json()) as ProfileHighlightResponseDTO[];
     invalidateShowcaseDomainTags(false);
-    return { success: true, data };
+    return {
+      success: true,
+      data: data as ProfileHighlightResponseDTO[],
+    };
   } catch (err) {
     console.error("[ShowcaseAction:UpdateHighlights]", err);
     return {
@@ -76,26 +70,22 @@ export async function updateShowcaseProfileAction(
       };
     }
 
-    const res = await fetch(`${API_BASE_URL}/showcase/profile`, {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
+    const { data, error } = await serverApi.PATCH("/showcase/profile", {
+      body: payload,
     });
 
-    if (!res.ok) {
-      const json = await res.json().catch(() => null);
+    if (error || !data) {
       return {
         success: false,
-        error: getErrorMessage(json, t("updateProfileError")),
+        error: getErrorMessage(error, t("updateProfileError")),
       };
     }
 
-    const data = (await res.json()) as UserResponseDTO;
     invalidateShowcaseDomainTags(true);
-    return { success: true, data };
+    return {
+      success: true,
+      data: data as unknown as UserResponseDTO,
+    };
   } catch (err) {
     console.error("[ShowcaseAction:UpdateProfile]", err);
     return {
@@ -116,7 +106,8 @@ export async function fetchUnseenAchievementsAction(): Promise<
 }
 
 /**
- * Marca todas as conquistas recém-desbloqueadas como vistas.
+ * Marca todas as conquistas recém-desbloqueadas como vistas no servidor.
+ * Não invalida a tag `showcase` por padrão para evitar re-renderização imediata da página `/profile` no mount.
  */
 export async function markAchievementsSeenAction(): Promise<ActionState<void>> {
   try {
@@ -125,14 +116,7 @@ export async function markAchievementsSeenAction(): Promise<ActionState<void>> {
       return { success: true, data: undefined };
     }
 
-    await fetch(`${API_BASE_URL}/showcase/achievements/seen`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    invalidateShowcaseDomainTags(false);
+    await serverApi.POST("/showcase/achievements/seen");
     return { success: true, data: undefined };
   } catch {
     return { success: false, error: "Failed to mark achievements seen" };

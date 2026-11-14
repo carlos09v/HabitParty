@@ -26,6 +26,7 @@ import {
   formatDurationMinutes,
   getItemRemainingMinutes,
 } from "@/utils/focusFormatters";
+import { getRewardIcon } from "@/utils/rewardMapper";
 
 export interface FocusStageTargetSelectorModalProps {
   isOpen: boolean;
@@ -420,6 +421,9 @@ export function FocusStageTargetSelectorModal({
               const remainingMinutes = getItemRemainingMinutes(
                 item.remainingSeconds,
               );
+              const ItemIcon = item.rewardIcon
+                ? getRewardIcon(item.rewardIcon, item.rewardType)
+                : Backpack;
 
               return (
                 <div
@@ -433,7 +437,7 @@ export function FocusStageTargetSelectorModal({
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/25 text-primary dark:bg-primary-dark/40 dark:border-primary/30 flex items-center justify-center dark:text-primary-light shrink-0">
-                      <Backpack size={16} />
+                      <ItemIcon size={16} />
                     </div>
                     <div className="flex flex-col min-w-0 flex-1">
                       <span className="text-xs font-bold text-neutral-100 truncate">

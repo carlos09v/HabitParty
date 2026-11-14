@@ -3,20 +3,22 @@
 import { updateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
-import { type ActionResponse, getErrorMessage } from "@/actions/types";
+import { invalidateTaskDomainTags } from "@/actions/cacheInvalidation";
+import { type ActionState, getErrorMessage } from "@/actions/types";
 import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
 
-type CreateWorkspaceDTO = components["schemas"]["CreateWorkspaceDTO"];
-type UpdateWorkspaceDTO = components["schemas"]["UpdateWorkspaceDTO"];
-type WorkspaceResponseDTO = components["schemas"]["WorkspaceResponseDTO"];
+export type CreateWorkspaceDTO = components["schemas"]["CreateWorkspaceDTO"];
+export type UpdateWorkspaceDTO = components["schemas"]["UpdateWorkspaceDTO"];
+export type WorkspaceResponseDTO =
+  components["schemas"]["WorkspaceResponseDTO"];
 
 /**
  * Cria um novo Workspace
  */
 export async function createWorkspaceAction(
   payload: CreateWorkspaceDTO,
-): Promise<ActionResponse<WorkspaceResponseDTO>> {
+): Promise<ActionState<WorkspaceResponseDTO>> {
   const t = await getTranslations("onboarding.workspaceActions");
   try {
     const { data, error } = await serverApi.POST("/workspaces", {
@@ -60,7 +62,7 @@ export async function createWorkspaceAction(
 export async function updateWorkspaceAction(
   workspaceId: string,
   payload: UpdateWorkspaceDTO,
-): Promise<ActionResponse<WorkspaceResponseDTO>> {
+): Promise<ActionState<WorkspaceResponseDTO>> {
   const t = await getTranslations("onboarding.workspaceActions");
   try {
     const { data, error } = await serverApi.PUT("/workspaces/{workspaceId}", {
@@ -89,9 +91,7 @@ export async function updateWorkspaceAction(
 /**
  * Exclui um Workspace
  */
-export async function deleteWorkspaceAction(
-  id: string,
-): Promise<ActionResponse> {
+export async function deleteWorkspaceAction(id: string): Promise<ActionState> {
   const t = await getTranslations("onboarding.workspaceActions");
   try {
     const { error } = await serverApi.DELETE("/workspaces/{id}", {
@@ -108,6 +108,7 @@ export async function deleteWorkspaceAction(
     }
 
     updateTag("workspaces");
+    invalidateTaskDomainTags({ includeColumnSummaries: true });
 
     return { success: true, data: undefined };
   } catch (err) {

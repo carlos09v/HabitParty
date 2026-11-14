@@ -10,19 +10,17 @@ import {
 } from "@/actions/boardColumnActions";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { IconPickerPopover } from "@/components/ui/IconPickerPopover";
-import { COLUMN_ICONS, inferColumnIcon } from "@/constants/routine";
+import {
+  COLUMN_ICONS,
+  inferColumnIcon,
+  MAX_COLUMN_NAME_LENGTH,
+  QUICK_COLUMN_TEMPLATES,
+} from "@/constants/routine";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import type { BoardColumn } from "@/types/task";
 import type { CreateBoardColumnModalProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 import { soundEffects } from "@/utils/soundEffects";
-
-const QUICK_COLUMN_TEMPLATES = COLUMN_ICONS.filter((i) => !i.isPremium).slice(
-  0,
-  6,
-);
-
-const MAX_COLUMN_NAME_LENGTH = 30;
 
 export function CreateBoardColumnModal({
   isOpen,

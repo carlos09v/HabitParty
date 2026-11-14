@@ -15,6 +15,7 @@ import { cn } from "@/utils";
  */
 export async function DashboardSidebarRight({
   isCompact = false,
+  experienceMode = "PRODUCTIVITY",
   balance = 0,
   weeklyEarnings = 0,
   weeklySpent = 0,
@@ -28,6 +29,7 @@ export async function DashboardSidebarRight({
   const widgets = (
     <DashboardWidgetsList
       isCompact={isCompact}
+      experienceMode={experienceMode}
       balance={balance}
       weeklyEarnings={weeklyEarnings}
       weeklySpent={weeklySpent}

@@ -21,6 +21,7 @@ interface SwitchFocusTargetModalProps {
   currentName: string;
   newTargetName: string;
   isCurrentInventory?: boolean;
+  isCurrentTask?: boolean;
   isNewInventory?: boolean;
   isNewTask?: boolean;
   onTransfer: () => void;
@@ -34,6 +35,7 @@ export function SwitchFocusTargetModal({
   currentName,
   newTargetName,
   isCurrentInventory = false,
+  isCurrentTask = false,
   isNewInventory = false,
   isNewTask = false,
   onTransfer,
@@ -49,7 +51,8 @@ export function SwitchFocusTargetModal({
   const timeDisplay = formatDurationMinSec(elapsedSeconds);
 
   // Transferência direta só é permitida entre atividades normais
-  const canTransfer = !isCurrentInventory && !isNewInventory && !isNewTask;
+  const canTransfer =
+    !isCurrentInventory && !isCurrentTask && !isNewInventory && !isNewTask;
 
   // Sessões só podem ser salvas a partir de 1 minuto (60 segundos)
   const canSaveCurrent = elapsedSeconds >= 60;

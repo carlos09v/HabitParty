@@ -17,9 +17,32 @@ public record UpdateUserDTO(
 
   UserGender gender,
 
-  UserExperienceMode experienceMode
+  UserExperienceMode experienceMode,
+
+  @Size(max = 64, message = "O fuso horário deve ter no máximo 64 caracteres")
+  String timezone,
+
+  @Size(max = 40, message = "O identificador do tema deve ter no máximo 40 caracteres")
+  String theme
 ) {
   public UpdateUserDTO(String fullName, LocalDate birthDate, UserGender gender) {
-    this(fullName, birthDate, gender, null);
+    this(fullName, birthDate, gender, null, null, null);
+  }
+
+  public UpdateUserDTO(
+      String fullName,
+      LocalDate birthDate,
+      UserGender gender,
+      UserExperienceMode experienceMode) {
+    this(fullName, birthDate, gender, experienceMode, null, null);
+  }
+
+  public UpdateUserDTO(
+      String fullName,
+      LocalDate birthDate,
+      UserGender gender,
+      UserExperienceMode experienceMode,
+      String timezone) {
+    this(fullName, birthDate, gender, experienceMode, timezone, null);
   }
 }

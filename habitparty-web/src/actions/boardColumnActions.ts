@@ -7,6 +7,7 @@ import { invalidateTaskDomainTags } from "./cacheInvalidation";
 import { type ActionState, getErrorMessage } from "./types";
 
 type CreateBoardColumnDTO = components["schemas"]["CreateBoardColumnDTO"];
+type MoveBoardColumnDTO = components["schemas"]["MoveBoardColumnDTO"];
 type UpdateBoardColumnDTO = components["schemas"]["UpdateBoardColumnDTO"];
 type UpdateBoardColumnOrderDTO =
   components["schemas"]["UpdateBoardColumnOrderDTO"];
@@ -76,6 +77,42 @@ export async function updateBoardColumn(
     return { success: true, data: data as BoardColumnResponseDTO };
   } catch (err) {
     console.error("[BoardColumnAction:Update]", err);
+    return {
+      success: false,
+      error: t("communicationError"),
+    };
+  }
+}
+
+/**
+ * Move uma coluna (e todas as suas tarefas) para outro ambiente do usuário
+ */
+export async function moveBoardColumnToWorkspace(
+  boardColumnId: string,
+  payload: MoveBoardColumnDTO,
+): Promise<ActionState<BoardColumnResponseDTO>> {
+  const t = await getTranslations("tasks.actions");
+  try {
+    const { data, error } = await serverApi.PATCH(
+      "/board_columns/{boardColumnId}/move-workspace",
+      {
+        params: { path: { boardColumnId } },
+        body: payload,
+      },
+    );
+
+    if (error) {
+      return {
+        success: false,
+        error: getErrorMessage(error, t("moveColumnFailed")),
+      };
+    }
+
+    invalidateBoardColumnTags();
+
+    return { success: true, data: data as BoardColumnResponseDTO };
+  } catch (err) {
+    console.error("[BoardColumnAction:MoveWorkspace]", err);
     return {
       success: false,
       error: t("communicationError"),

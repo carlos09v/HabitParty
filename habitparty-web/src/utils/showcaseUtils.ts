@@ -2,7 +2,6 @@ import {
   ACCOUNT_BADGES_BY_ID,
   DEFAULT_MAX_ACHIEVEMENT_POINTS,
   DEFAULT_TOTAL_ACHIEVEMENTS_COUNT,
-  STAT_METRICS_BY_ID,
 } from "@/constants/achievements";
 import type {
   AccountBadgeId,
@@ -10,8 +9,6 @@ import type {
   AchievementRarity,
   HighlightSlotInputDTO,
   ProfileHighlightResponseDTO,
-  ShowcaseStatsResponseDTO,
-  StatMetricId,
   UserShowcaseResponseDTO,
 } from "@/types/showcase";
 import type { UserResponseDTO } from "@/types/user";
@@ -60,29 +57,6 @@ export function resolveAchievementCopy(
 }
 
 /**
- * Extrai o valor numérico bruto de uma métrica de vitrine.
- */
-export function getStatMetricRawValue(
-  metricId: StatMetricId,
-  stats: ShowcaseStatsResponseDTO,
-): number {
-  switch (metricId) {
-    case "HIGHEST_STREAK":
-      return stats.highestStreak;
-    case "CURRENT_STREAK":
-      return stats.currentStreak;
-    case "TOTAL_TASKS":
-      return stats.totalTasksCompleted;
-    case "FOCUS_HOURS":
-      return Math.round((stats.totalFocusMinutes / 60) * 10) / 10;
-    case "TOTAL_XP":
-      return stats.totalXp;
-    case "ACHIEVEMENT_POINTS":
-      return stats.achievementPoints;
-  }
-}
-
-/**
  * Resolve o título e descrição de uma insígnia de conta.
  */
 export function resolveAccountBadgeCopy(
@@ -106,30 +80,6 @@ export function resolveAccountBadgeCopy(
 }
 
 /**
- * Resolve o título e valor formatado de uma métrica de vitrine.
- */
-export function resolveStatMetricCopy(
-  metricId: StatMetricId,
-  stats: ShowcaseStatsResponseDTO,
-  isGamified: boolean,
-  tMetrics: ParametricTranslator,
-): { title: string; valueFormatted: string; rawValue: number } {
-  const rawValue = getStatMetricRawValue(metricId, stats);
-  const titleKey = isGamified
-    ? `${metricId}.title`
-    : `${metricId}.essentialTitle`;
-
-  return {
-    title: tMetrics(titleKey as never),
-    valueFormatted: tMetrics(
-      `${metricId}.valueFormat` as never,
-      { value: rawValue } as never,
-    ),
-    rawValue,
-  };
-}
-
-/**
  * Verifica se o usuário possui determinada insígnia de conta desbloqueada.
  */
 export function isAccountBadgeUnlocked(
@@ -149,7 +99,7 @@ export function isAccountBadgeUnlocked(
 }
 
 /**
- * Resolve os metadados completos de exibição de um slot de destaque (Conquista, Insígnia ou Métrica).
+ * Resolve os metadados completos de exibição de um slot de destaque (Conquista ou Insígnia).
  */
 export function resolveHighlightSlotCard(
   item:
@@ -162,13 +112,11 @@ export function resolveHighlightSlotCard(
     | undefined,
   context: {
     achievements: AchievementItemResponseDTO[];
-    stats: ShowcaseStatsResponseDTO;
     isGamified: boolean;
     levelTitle: string;
     currentXp: number;
     tCatalog: CatalogTranslator;
     tBadges: ParametricTranslator;
-    tMetrics: ParametricTranslator;
   },
 ): ResolvedHighlightCard | null {
   if (!item) return null;
@@ -207,23 +155,6 @@ export function resolveHighlightSlotCard(
       iconKey: def.iconKey,
       title,
       subtitle: description,
-    };
-  }
-
-  if (item.highlightType === "STAT_METRIC" && item.highlightKey) {
-    const def = STAT_METRICS_BY_ID[item.highlightKey as StatMetricId];
-    if (!def) return null;
-    const { title, valueFormatted } = resolveStatMetricCopy(
-      def.id,
-      context.stats,
-      context.isGamified,
-      context.tMetrics,
-    );
-    return {
-      rarity: def.rarity,
-      iconKey: def.iconKey,
-      title,
-      subtitle: valueFormatted,
     };
   }
 

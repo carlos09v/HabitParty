@@ -34,10 +34,15 @@ public class UserMapper {
     entity.setEmailVerifiedAt(domain.getEmailVerifiedAt());
     entity.setGender(domain.getGender());
     entity.setExperienceMode(domain.getExperienceMode() != null ? domain.getExperienceMode() : UserExperienceMode.PRODUCTIVITY);
+    entity.setTimezone(domain.getTimezone());
+    entity.setTimezoneUpdatedAt(domain.getTimezoneUpdatedAt());
+    entity.setLastDailyResetDate(domain.getLastDailyResetDate());
+    entity.setNextDailyResetAt(domain.getNextDailyResetAt());
     entity.setBirthDate(domain.getBirthDate());
     entity.setProfilePhotoUrl(domain.getProfilePhotoUrl().orElse(null));
     entity.setBio(domain.getBio().orElse(null));
     entity.setAvatarFrame(domain.getAvatarFrame());
+    entity.setTheme(domain.getTheme());
     if (entity.getCreatedAt() == null) {
       entity.setCreatedAt(domain.getCreatedAt() != null ? domain.getCreatedAt() : LocalDateTime.now());
     }
@@ -165,6 +170,11 @@ public class UserMapper {
     );
     user.setBio(entity.getBio());
     user.setAvatarFrame(entity.getAvatarFrame());
+    user.setTheme(entity.getTheme());
+    user.setTimezone(entity.getTimezone());
+    user.setTimezoneUpdatedAt(entity.getTimezoneUpdatedAt());
+    user.setLastDailyResetDate(entity.getLastDailyResetDate());
+    user.setNextDailyResetAt(entity.getNextDailyResetAt());
     return user;
   }
 }

@@ -14,6 +14,7 @@ import { useAnchoredPopoverPosition } from "@/hooks/useAnchoredPopoverPosition";
 import { useChecklist } from "@/hooks/useChecklist";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useIsClient } from "@/hooks/useIsClient";
+import { useUserStore } from "@/store/userStore";
 import type { ChecklistItem, Task, TaskPriorityOption } from "@/types/task";
 import type { TaskDetailsPopoverProps } from "@/types/task-ui";
 import type { DatePickerEventSchedulePatch } from "@/types/ui";
@@ -270,7 +271,11 @@ export function useTaskDetailsPopover({
         if (!snapshotTask) return;
 
         const batchSeq = saveSequenceRef.current;
-        const payload = buildUpdateTaskPayload(snapshotTask);
+        const payload = buildUpdateTaskPayload(
+          snapshotTask,
+          undefined,
+          useUserStore.getState().user?.timezone,
+        );
 
         saveChainRef.current = saveChainRef.current.then(async () => {
           const previousConfirmed = confirmedTaskRef.current ?? snapshotTask;
@@ -377,7 +382,11 @@ export function useTaskDetailsPopover({
     const currentTask = latestTaskRef.current ?? task;
     if (!currentTask) return;
     onHabitChange?.(currentTask.id, delta);
-    const nextFields = computeOptimisticHabitDelta(currentTask, delta);
+    const nextFields = computeOptimisticHabitDelta(
+      currentTask,
+      delta,
+      useUserStore.getState().user?.timezone,
+    );
     const updatedTask = { ...currentTask, ...nextFields };
     latestTaskRef.current = updatedTask;
     onTaskUpdate?.(updatedTask);
@@ -418,7 +427,14 @@ export function useTaskDetailsPopover({
 
   const handleDateChange = (newDate: string) => {
     const currentTask = latestTaskRef.current ?? task;
-    if (!currentTask || isTaskHardcoreLocked(currentTask)) {
+    if (
+      !currentTask ||
+      isTaskHardcoreLocked(
+        currentTask,
+        new Date(),
+        useUserStore.getState().user?.timezone,
+      )
+    ) {
       return;
     }
     setDueDate(newDate);
@@ -441,11 +457,19 @@ export function useTaskDetailsPopover({
 
   const handleEventScheduleChange = (patch: DatePickerEventSchedulePatch) => {
     const currentTask = latestTaskRef.current ?? task;
-    if (!currentTask || isTaskHardcoreLocked(currentTask)) {
+    const userTimeZone = useUserStore.getState().user?.timezone;
+    if (
+      !currentTask ||
+      isTaskHardcoreLocked(currentTask, new Date(), userTimeZone)
+    ) {
       return;
     }
 
-    const normalized = normalizeEventSchedulePatch(currentTask, patch);
+    const normalized = normalizeEventSchedulePatch(
+      currentTask,
+      patch,
+      userTimeZone,
+    );
 
     if (normalized.dueDate !== undefined) setDueDate(normalized.dueDate);
     if (normalized.dueTime !== undefined) setDueTime(normalized.dueTime);

@@ -14,6 +14,7 @@ import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useFloatingPopover } from "@/hooks/useFloatingPopover";
 import type { AppLocale } from "@/i18n/config";
+import { useUserStore } from "@/store/userStore";
 import type {
   DashboardAdvancedFilters,
   TaskFiltersProps,
@@ -36,6 +37,7 @@ export function TaskFilters({
   const locale = useLocale() as AppLocale;
   const { dateFormat } = useDateFormat();
   const { isGamified } = useExperienceMode();
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
   const isCompact = propIsCompact ?? false;
   const {
     containerRef,
@@ -71,8 +73,9 @@ export function TaskFilters({
       monthFormat: "short",
       locale,
       dateFormat,
+      timeZone: userTimeZone,
     });
-  }, [selectedDate, locale, dateFormat]);
+  }, [selectedDate, locale, dateFormat, userTimeZone]);
 
   const columnOptions = useMemo(() => {
     const opts = [{ value: "all", label: t("allColumns") }];

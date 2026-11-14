@@ -4,6 +4,10 @@ import { updateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import {
+  invalidateFocusDomainTags,
+  invalidateTaskDomainTags,
+} from "@/actions/cacheInvalidation";
 import { type ActionState, getErrorMessage } from "@/actions/types";
 import { getServerAuthToken, serverApi } from "@/api/server";
 import type { ExperienceMode } from "@/types/ui";
@@ -12,6 +16,7 @@ import type {
   UpdateUserPasswordDTO,
   UserResponseDTO,
 } from "@/types/user";
+import { isValidIanaTimeZone, TIMEZONE_COOKIE } from "@/utils/date";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -34,8 +39,26 @@ export async function updateUserProfileAction(
       };
     }
 
-    updateTag("user");
-    return { success: true, data: data as UserResponseDTO };
+    const updatedUser = data as UserResponseDTO;
+    if (isValidIanaTimeZone(updatedUser?.timezone)) {
+      const cookieStore = await cookies();
+      cookieStore.set(TIMEZONE_COOKIE, updatedUser.timezone, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 365,
+        sameSite: "lax",
+      });
+    }
+
+    if (payload.timezone) {
+      invalidateTaskDomainTags({
+        includeColumnSummaries: true,
+        includeUserAndTransactions: true,
+      });
+      invalidateFocusDomainTags({ records: true });
+    } else {
+      updateTag("user");
+    }
+    return { success: true, data: updatedUser };
   } catch (err) {
     console.error("[UserAction:UpdateProfile]", err);
     return {
@@ -59,7 +82,7 @@ export async function updateUserExperienceModeAction(
  */
 export async function updateUserProfilePhotoAction(
   formData: FormData,
-): Promise<ActionState<void>> {
+): Promise<ActionState<UserResponseDTO | null>> {
   const t = await getTranslations("settings.userActions");
   try {
     const token = await getServerAuthToken();
@@ -86,8 +109,11 @@ export async function updateUserProfilePhotoAction(
       };
     }
 
+    const updatedUser = (await res
+      .json()
+      .catch(() => null)) as UserResponseDTO | null;
     updateTag("user");
-    return { success: true, data: undefined };
+    return { success: true, data: updatedUser };
   } catch (err) {
     console.error("[UserAction:UpdatePhoto]", err);
     return {

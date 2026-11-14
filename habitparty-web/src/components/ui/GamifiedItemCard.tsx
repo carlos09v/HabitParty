@@ -104,19 +104,9 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
     vertical: "top" | "bottom";
   }>({ side: "right", vertical: "top" });
 
-  const handleMysteryEnter = (e: React.MouseEvent<HTMLElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const spaceRight = window.innerWidth - rect.right;
-    const spaceBelow = window.innerHeight - rect.top;
-
-    const side = spaceRight < 310 ? "left" : "right";
-    const vertical = spaceBelow < 380 && rect.bottom > 380 ? "bottom" : "top";
-
-    setPopoverPlacement({ side, vertical });
-    setIsHovered(true);
-  };
-
-  const handleMysteryFocus = (e: React.FocusEvent<HTMLElement>) => {
+  const handleMysteryEnterOrFocus = (
+    e: React.MouseEvent<HTMLElement> | React.FocusEvent<HTMLElement>,
+  ) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const spaceRight = window.innerWidth - rect.right;
     const spaceBelow = window.innerHeight - rect.top;
@@ -157,15 +147,19 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
       style={style}
       {...attributes}
       {...listeners}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        listeners?.onKeyDown?.(e);
+      }}
       onDoubleClick={(e) => {
         if (isDragging || !onDoubleClick) return;
         e.stopPropagation();
         onDoubleClick(e);
       }}
       onContextMenu={onContextMenu}
-      onMouseEnter={isMystery ? handleMysteryEnter : undefined}
+      onMouseEnter={isMystery ? handleMysteryEnterOrFocus : undefined}
       onMouseLeave={isMystery ? handleMysteryLeave : undefined}
-      onFocus={isMystery ? handleMysteryFocus : undefined}
+      onFocus={isMystery ? handleMysteryEnterOrFocus : undefined}
       onBlur={isMystery ? handleMysteryLeave : undefined}
       className={cn(
         "relative flex flex-col justify-between rounded-xl bg-card dark:bg-linear-to-b dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,transform] duration-150 group select-none shadow-xs dark:shadow-sm hover:shadow-card-deep hover:-translate-y-0.5",
@@ -237,7 +231,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                 {typeof quantity === "number" && (
                   <span
                     className={cn(
-                      "font-bold bg-white/10 border border-white/20 text-neutral-100 px-1.5 py-0.5",
+                      "font-bold bg-surface border border-neutral-700 dark:bg-white/10 dark:border-white/20 text-neutral-100 px-1.5 py-0.5",
                       isCompact
                         ? "text-tiny rounded"
                         : "text-label-g rounded-md",
@@ -346,7 +340,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
             </span>
           )}
           {hasValidCategory && (
-            <span className="font-medium rounded bg-white/8 border border-white/10 text-neutral-300 text-tiny px-1.5 py-0.5 leading-none">
+            <span className="font-medium rounded bg-surface/80 border border-neutral-700/80 dark:bg-white/8 dark:border-white/10 text-neutral-300 text-tiny px-1.5 py-0.5 leading-none">
               {t(`categories.${categoryMessageKey}`)}
             </span>
           )}

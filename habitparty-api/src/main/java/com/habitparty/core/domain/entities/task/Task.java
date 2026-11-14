@@ -108,8 +108,12 @@ public abstract class Task {
 
   // Calcula a penalidade do modo Hardcore
   public TaskReward calculatePenalty() {
+    return calculatePenalty(LocalDate.now());
+  }
+
+  public TaskReward calculatePenalty(LocalDate referenceDate) {
     // 1. Descobre quanto essa tarefa pagaria hoje (O filho responde isso!)
-    TaskReward fullReward = this.calculateReward();
+    TaskReward fullReward = this.calculateReward(referenceDate);
 
     // 2. Aplica a taxa de penalidade (Ex: 50% de multa)
     int penaltyXp = (int) (fullReward.xp() * 0.5);
@@ -139,7 +143,13 @@ public abstract class Task {
   public void updateBaseDetails(String name, String description, TaskPriority priority,
       TaskDifficulty difficulty, List<String> tags,
       boolean isHardcoreModeEnabled) {
-    if (this.isHardcoreModeEnabled && !isHardcoreModeEnabled && this.isOverdue()) {
+    updateBaseDetails(name, description, priority, difficulty, tags, isHardcoreModeEnabled, LocalDate.now());
+  }
+
+  public void updateBaseDetails(String name, String description, TaskPriority priority,
+      TaskDifficulty difficulty, List<String> tags,
+      boolean isHardcoreModeEnabled, LocalDate referenceDate) {
+    if (this.isHardcoreModeEnabled && !isHardcoreModeEnabled && this.isOverdue(referenceDate)) {
       throw new DomainValidationException("Não é permitido desativar o modo Hardcore de uma tarefa com prazo vencido.");
     }
     this.name = name;

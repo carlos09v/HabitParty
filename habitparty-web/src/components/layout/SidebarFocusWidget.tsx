@@ -20,6 +20,7 @@ import { useFocusTimerStore } from "@/store/focusTimerStore";
 import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
 import { cn } from "@/utils";
 import { formatFocusDisplayTime } from "@/utils/focusFormatters";
+import { getRewardIcon } from "@/utils/rewardMapper";
 import { soundEffects } from "@/utils/soundEffects";
 
 export function SidebarFocusWidget() {
@@ -90,6 +91,7 @@ export function SidebarFocusWidget() {
       <article
         onClick={handleCardClick}
         onKeyDown={(e) => {
+          if (e.target !== e.currentTarget) return;
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             handleCardClick();
@@ -139,9 +141,11 @@ export function SidebarFocusWidget() {
   const TargetIcon =
     target?.type === "task"
       ? ListTodo
-      : target?.icon
-        ? getFocusIcon(target.icon)
-        : Timer;
+      : isInventory
+        ? getRewardIcon(target?.icon, "TimeBased")
+        : target?.icon
+          ? getFocusIcon(target.icon)
+          : Timer;
 
   const displayTime = formatFocusDisplayTime({
     mode,
@@ -154,6 +158,7 @@ export function SidebarFocusWidget() {
     <article
       onClick={handleCardClick}
       onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           handleCardClick();

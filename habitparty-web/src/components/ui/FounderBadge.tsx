@@ -19,8 +19,8 @@ export function FounderBadge({
     <div
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full font-black uppercase tracking-wider transition-colors select-none",
-        "bg-gradient-to-r from-gold/25 via-amber-400/20 to-gold/25 text-amber-700 dark:text-gold border border-gold/50 shadow-glow-gold-xs hover:shadow-glow-gold",
-        size === "sm" ? "px-2 py-0.5 text-[9px]" : "px-2.5 py-1 text-[11px]",
+        "bg-linear-to-r from-gold/25 via-amber-400/20 to-gold/25 text-amber-700 dark:text-gold border border-gold/50 shadow-glow-gold-xs hover:shadow-glow-gold",
+        size === "sm" ? "px-2 py-0.5 text-label-m" : "px-2.5 py-1 text-label-g",
         className,
       )}
       title={t("title")}

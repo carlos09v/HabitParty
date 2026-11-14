@@ -451,6 +451,31 @@ export const REMINDER_OFFSET_DAYS: Readonly<Record<string, number>> = {
   CUSTOM: 1,
 } as const;
 
+/** Pesos numéricos de importância para Hábitos */
+export const HABIT_IMPORTANCE_META: Record<
+  HabitImportanceOption,
+  { color: string; dotColor: string; activeClass: string }
+> = {
+  LOW: {
+    color: "text-info",
+    dotColor: "bg-info",
+    activeClass:
+      "bg-sky-500/10 border-sky-500/40 text-sky-700 dark:bg-info/15 dark:border-info/50 dark:text-info font-bold",
+  },
+  NORMAL: {
+    color: "text-success-500",
+    dotColor: "bg-success-500",
+    activeClass:
+      "bg-emerald-500/10 border-emerald-500/40 text-emerald-700 dark:bg-success-500/15 dark:border-success-500/50 dark:text-success-500 font-bold",
+  },
+  HIGH: {
+    color: "text-purple-400",
+    dotColor: "bg-purple-400",
+    activeClass:
+      "bg-purple-500/10 border-purple-500/40 text-purple-700 dark:bg-purple-500/15 dark:border-purple-400/50 dark:text-purple-300 font-bold",
+  },
+};
+
 export const HABIT_DIRECTION_OPTIONS: readonly {
   id: HabitTypeOption;
   label: string;

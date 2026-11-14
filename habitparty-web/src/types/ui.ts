@@ -224,7 +224,9 @@ export interface IconPickerProps {
 
 export interface ContextMenuItem {
   label: string;
+  title?: string;
   icon?: ReactNode;
+  badge?: ReactNode;
   onClick?: () => void;
   variant?: "default" | "destructive" | "warning";
   disabled?: boolean;

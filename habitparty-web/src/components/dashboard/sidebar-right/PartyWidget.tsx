@@ -1,8 +1,5 @@
-"use client";
-
 import { Sparkles, Users } from "lucide-react";
-import { useTranslations } from "next-intl";
-import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { getTranslations } from "next-intl/server";
 import type { PartyWidgetProps } from "@/types/dashboard";
 import { cn } from "@/utils";
 
@@ -11,9 +8,12 @@ import { cn } from "@/utils";
  * Client Component: exibe dinamicamente "Party & Amigos" (Gamificado)
  * ou "Equipe & Colaboração" (Produtividade).
  */
-export function PartyWidget({ isCompact = false }: PartyWidgetProps) {
-  const t = useTranslations("dashboard.sidebarRight.partyWidget");
-  const { isGamified } = useExperienceMode();
+export async function PartyWidget({
+  isCompact = false,
+  experienceMode = "PRODUCTIVITY",
+}: PartyWidgetProps) {
+  const t = await getTranslations("dashboard.sidebarRight.partyWidget");
+  const isGamified = experienceMode === "GAMIFIED";
   return (
     <div
       className={cn(

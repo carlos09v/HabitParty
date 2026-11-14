@@ -13,7 +13,7 @@ import { Select } from "@/components/ui/Select";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { GENDER_OPTIONS } from "@/constants/settings";
 import type { CreateUserDTO, GenderType } from "@/types/user";
-import { getMaxBirthDateString } from "@/utils/date";
+import { detectBrowserTimeZone, getMaxBirthDateString } from "@/utils/date";
 import {
   MIN_USER_AGE,
   validateAuthPassword,
@@ -104,6 +104,7 @@ export function SignUpForm() {
       password,
       birthDate,
       gender: selectedGender || "PREFER_NOT_TO_SAY",
+      timezone: detectBrowserTimeZone(),
     };
 
     startTransition(async () => {

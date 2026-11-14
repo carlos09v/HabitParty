@@ -3,7 +3,7 @@
 import { Check, Crown, Lock, Paintbrush, Sparkles } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { updateShowcaseProfileAction } from "@/actions/showcaseActions";
 import { BaseModal } from "@/components/ui/BaseModal";
@@ -23,26 +23,21 @@ const UpgradePremiumModal = dynamic(
   { ssr: false },
 );
 
-interface AvatarFrameSettingsProps {
-  isCompact?: boolean;
-  hideSubtitle?: boolean;
-  gridClassName?: string;
+interface AvatarFrameSelectorGridProps {
   onFrameChanged?: (frameId: AvatarFrameId) => void;
 }
 
-export function AvatarFrameSettings({
-  isCompact = false,
-  hideSubtitle = false,
-  gridClassName,
+function AvatarFrameSelectorGrid({
   onFrameChanged,
-}: AvatarFrameSettingsProps) {
-  const t = useTranslations("settings.avatarFrames");
+}: AvatarFrameSelectorGridProps) {
+  const t = useTranslations("showcase.avatarFrames");
   const user = useUserStore((s) => s.user);
   const isPremium = useUserStore((s) => s.is_Premium);
   const currentFrameId = useAvatarFrameStore((s) => s.frameId);
   const setFrameId = useAvatarFrameStore((s) => s.setFrameId);
 
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const mounted = useIsClient();
 
   const displayName = user?.fullName || user?.username || "Aventureiro";
@@ -58,51 +53,47 @@ export function AvatarFrameSettings({
       return;
     }
 
+    const previousFrameId = currentFrameId;
     soundEffects.playCreateSound();
     setFrameId(frameId);
     useUserStore.getState().updateUserPartial({ avatarFrame: frameId });
     onFrameChanged?.(frameId);
-    void updateShowcaseProfileAction({ avatarFrame: frameId });
-    toast.success(
-      t("successToast", {
-        name: t(`frames.${frameId}.name`),
-      }),
-    );
+
+    startTransition(async () => {
+      const res = await updateShowcaseProfileAction({ avatarFrame: frameId });
+      if (!res.success) {
+        setFrameId(previousFrameId);
+        useUserStore
+          .getState()
+          .updateUserPartial({ avatarFrame: previousFrameId });
+        toast.error(res.error);
+        return;
+      }
+      toast.success(
+        t("successToast", {
+          name: t(`frames.${frameId}.name`),
+        }),
+      );
+    });
   };
 
   return (
     <>
       <div className="flex flex-col gap-4">
-        {(!hideSubtitle || !isPremium) && (
-          <div className="flex items-center justify-between gap-3">
-            {!hideSubtitle ? (
-              <p className="text-body-s text-neutral-300">{t("subtitle")}</p>
-            ) : (
-              <span />
-            )}
-
-            {!isPremium && (
-              <button
-                type="button"
-                onClick={() => setIsUpgradeModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-tiny font-bold bg-gold/15 text-gold border border-gold/40 hover:bg-gold/25 transition-colors cursor-pointer shrink-0"
-              >
-                <Crown size={12} className="stroke-2" />
-                <span>{t("unlockAll")}</span>
-              </button>
-            )}
+        {!isPremium && (
+          <div className="flex items-center justify-end">
+            <button
+              type="button"
+              onClick={() => setIsUpgradeModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-tiny font-bold bg-gold/15 text-gold border border-gold/40 hover:bg-gold/25 transition-colors cursor-pointer shrink-0"
+            >
+              <Crown size={12} className="stroke-2" />
+              <span>{t("unlockAll")}</span>
+            </button>
           </div>
         )}
 
-        <div
-          className={cn(
-            "grid gap-3",
-            gridClassName ??
-              (isCompact
-                ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"),
-          )}
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {AVATAR_FRAMES.map((frame) => {
             const resolvedCurrentFrame = mounted
               ? currentFrameId
@@ -116,10 +107,11 @@ export function AvatarFrameSettings({
               <button
                 key={frame.id}
                 type="button"
+                disabled={isPending}
                 onClick={() => handleSelectFrame(frame.id, frame.isPremium)}
                 className={cn(
                   "relative flex items-center gap-3.5 p-3.5 rounded-xl border text-left transition-colors cursor-pointer select-none",
-                  "focus:outline-none focus:ring-2 focus:ring-gold/60",
+                  "focus:outline-none focus:ring-2 focus:ring-gold/60 disabled:opacity-60",
                   isSelected
                     ? "border-gold bg-gold/10 shadow-glow-gold-xs font-medium"
                     : isLocked
@@ -143,12 +135,12 @@ export function AvatarFrameSettings({
                     </span>
 
                     {frame.isPremium ? (
-                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase tracking-wider bg-gold/20 text-gold border border-gold/40 shrink-0">
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-label-m font-black uppercase tracking-wider bg-gold/20 text-gold border border-gold/40 shrink-0">
                         <Sparkles size={9} />
                         {t("vipBadge")}
                       </span>
                     ) : (
-                      <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold uppercase tracking-wider bg-surface text-neutral-400 border border-neutral-700 dark:border-primary/20 shrink-0">
+                      <span className="px-1.5 py-0.5 rounded-full text-label-m font-bold uppercase tracking-wider bg-surface text-neutral-400 border border-neutral-700 dark:border-primary/20 shrink-0">
                         {t("freeBadge")}
                       </span>
                     )}
@@ -206,7 +198,7 @@ export function AvatarFramePickerModal({
   description,
   onFrameChanged,
 }: AvatarFramePickerModalProps) {
-  const t = useTranslations("settings.avatarFrames");
+  const t = useTranslations("showcase.avatarFrames");
   const resolvedTitle =
     title ?? (t.has("title") ? t("title") : "Molduras de Avatar");
   const resolvedDescription = description ?? t("subtitle");
@@ -222,11 +214,7 @@ export function AvatarFramePickerModal({
       title={resolvedTitle}
       description={resolvedDescription}
     >
-      <AvatarFrameSettings
-        hideSubtitle
-        gridClassName="grid-cols-1 sm:grid-cols-2"
-        onFrameChanged={onFrameChanged}
-      />
+      <AvatarFrameSelectorGrid onFrameChanged={onFrameChanged} />
     </BaseModal>
   );
 }

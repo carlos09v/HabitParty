@@ -1,53 +1,26 @@
-"use client";
-
-import { ArrowRight, LayoutDashboard, Plus, Sparkles } from "lucide-react";
+import { ArrowRight, LayoutDashboard, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
-import { toast } from "sonner";
-import { createWorkspaceAction } from "@/actions/workspaceActions";
-import { CreateWorkspaceModal } from "@/components/layout/CreateWorkspaceModal";
-import { useExperienceMode } from "@/hooks/useExperienceMode";
-import { useWorkspaceStore } from "@/store/workspaceStore";
+import { getTranslations } from "next-intl/server";
+import { DashboardEmptyWorkspaceActions } from "@/components/dashboard/DashboardEmptyWorkspaceActions";
+import { getCurrentUser } from "@/services/userService";
 
-export function DashboardEmptyWorkspace() {
-  const t = useTranslations("dashboard.emptyWorkspace");
-  const { isGamified } = useExperienceMode();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
-
-  const handleCreate = (name: string) => {
-    setIsModalOpen(false);
-
-    startTransition(async () => {
-      const response = await createWorkspaceAction({ name });
-
-      if (response.success && response.data?.id) {
-        toast.success(
-          t("createSuccessToast", { name: response.data.name || name }),
-        );
-
-        // Sincroniza estado na store de workspaces
-        useWorkspaceStore.setState((state) => ({
-          workspaces: [...state.workspaces, response.data],
-          activeWorkspaceId: response.data.id || null,
-        }));
-      } else {
-        toast.error(!response.success ? response.error : t("createErrorToast"));
-      }
-    });
-  };
+export async function DashboardEmptyWorkspace() {
+  const [t, user] = await Promise.all([
+    getTranslations("dashboard.emptyWorkspace"),
+    getCurrentUser(),
+  ]);
+  const isGamified = user?.experienceMode === "GAMIFIED";
 
   return (
     <div className="flex h-full w-full overflow-hidden items-center justify-center p-6 select-none relative">
       {/* CARD PRINCIPAL CONVIDATIVO */}
       <div className="relative z-10 w-full max-w-lg p-8 sm:p-10 rounded-2xl bg-card dark:bg-surface/90 border border-neutral-700 dark:border-primary/30 shadow-sm dark:shadow-card-deep text-center flex flex-col items-center gap-6 animate-in fade-in zoom-in-95 duration-300">
         {/* Ícone Cósmico / Produtividade Iluminado */}
-        <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/35 text-amber-700 dark:bg-gold/15 dark:border-gold/40 dark:text-gold shadow-glow-gold-sm flex items-center justify-center mb-1">
+        <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/35 text-gold-ink dark:bg-gold/15 dark:border-gold/40 dark:text-gold shadow-glow-gold-sm flex items-center justify-center mb-1">
           {isGamified ? (
-            <Sparkles size={28} className="animate-pulse" />
+            <Sparkles size={28} className="animate-pulse" aria-hidden="true" />
           ) : (
-            <LayoutDashboard size={28} />
+            <LayoutDashboard size={28} aria-hidden="true" />
           )}
         </div>
 
@@ -69,39 +42,24 @@ export function DashboardEmptyWorkspace() {
 
         {/* Ações: Opção Híbrida (Botão de Modal + Atalho para Assistente) */}
         <div className="flex flex-col items-center gap-3.5 w-full pt-1">
-          <button
-            type="button"
-            onClick={() => setIsModalOpen(true)}
-            disabled={isPending}
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gold hover:bg-gold-hover text-on-gold font-bold text-body-m shadow-glow-gold-sm hover:shadow-glow-gold-md transition-[background-color,box-shadow] flex items-center justify-center gap-2 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50"
-          >
-            <Plus size={18} strokeWidth={2.5} />
-            <span>{t("createButton")}</span>
-          </button>
+          <DashboardEmptyWorkspaceActions />
 
           <Link
             href="/firstStep"
-            className="text-xs sm:text-body-s text-neutral-400 hover:text-amber-700 dark:hover:text-gold transition-colors inline-flex items-center gap-1.5 pt-1 outline-none focus-visible:ring-2 focus-visible:ring-gold rounded group"
+            className="text-xs sm:text-body-s text-neutral-400 hover:text-gold-ink dark:hover:text-gold transition-colors inline-flex items-center gap-1.5 pt-1 outline-none focus-visible:ring-2 focus-visible:ring-gold rounded group"
           >
             <span>{t("wizardQuestion")}</span>
-            <span className="text-neutral-200 group-hover:text-amber-700 dark:group-hover:text-gold font-semibold underline underline-offset-4 flex items-center gap-1">
+            <span className="text-neutral-200 group-hover:text-gold-ink dark:group-hover:text-gold font-semibold underline underline-offset-4 flex items-center gap-1">
               {t("wizardLink")}
               <ArrowRight
                 size={13}
                 className="transition-transform group-hover:translate-x-0.5"
+                aria-hidden="true"
               />
             </span>
           </Link>
         </div>
       </div>
-
-      {/* MODAL DE CRIAÇÃO RÁPIDA DE AMBIENTE */}
-      <CreateWorkspaceModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleCreate}
-        initialName={t("defaultInitialName")}
-      />
     </div>
   );
 }

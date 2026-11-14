@@ -1,3 +1,5 @@
+"use client";
+
 import { Flag } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
@@ -11,6 +13,7 @@ import { Select } from "@/components/ui/Select";
 import {
   MAX_TASK_TAGS,
   TASK_PRIORITY_META,
+  TASK_TITLE_MAX_LENGTH,
   TODO_PRIORITY_OPTIONS,
   toPriorityMessageKey,
 } from "@/constants/task";
@@ -140,12 +143,12 @@ export function TaskBasicFields({
           <span
             className={cn(
               "text-tiny tabular-nums transition-colors",
-              name.length >= 50
+              name.length >= TASK_TITLE_MAX_LENGTH
                 ? "text-gold font-semibold"
                 : "text-neutral-400",
             )}
           >
-            {name.length}/50
+            {name.length}/{TASK_TITLE_MAX_LENGTH}
           </span>
         </div>
         <input
@@ -153,11 +156,13 @@ export function TaskBasicFields({
           id="taskTitle"
           type="text"
           value={name}
-          onChange={(e) => setName(e.target.value.slice(0, 50))}
+          onChange={(e) =>
+            setName(e.target.value.slice(0, TASK_TITLE_MAX_LENGTH))
+          }
           placeholder={t("titlePlaceholder")}
           className="w-full bg-card border border-neutral-600 hover:border-neutral-500 rounded-lg px-3 py-2 text-neutral-50 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 shadow-xs focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-primary-dark/20 dark:border-primary/30 dark:hover:border-primary/50 dark:shadow-none dark:focus:border-gold dark:focus:ring-1 dark:focus:ring-gold transition-colors text-body-s"
           required
-          maxLength={50}
+          maxLength={TASK_TITLE_MAX_LENGTH}
           disabled={isPending}
         />
       </div>

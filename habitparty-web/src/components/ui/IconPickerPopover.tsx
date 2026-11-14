@@ -133,19 +133,24 @@ export function IconPickerPopover({
               onClick={() => handleSelect(item)}
               title={item.isPremium ? t("exclusiveBadge", { label }) : label}
               className={cn(
-                "relative flex flex-col items-center justify-center gap-1 p-2 rounded-lg border transition-colors cursor-pointer select-none",
+                "relative flex flex-col items-center justify-center gap-1 p-2 rounded-lg border transition-[color,background-color,border-color,opacity] cursor-pointer select-none",
                 "focus:outline-none focus:ring-1 focus:ring-gold",
                 isSelected
-                  ? "border-gold bg-gold/20 text-gold shadow-glow-gold-xs font-bold"
+                  ? "opacity-100 border-gold bg-gold/20 text-gold shadow-glow-gold-xs font-bold"
                   : isLocked
-                    ? "border-primary/20 bg-primary-dark/20 text-neutral-400 hover:text-gold hover:border-gold/40 hover:bg-white/5"
-                    : "border-primary/25 bg-primary-dark/20 text-neutral-300 hover:text-gold hover:border-gold/40 hover:bg-white/5",
+                    ? "opacity-45 hover:opacity-85 border-neutral-700/70 bg-surface/40 dark:border-primary/15 dark:bg-primary-dark/15 text-neutral-400 hover:text-gold hover:border-gold/40 hover:bg-white/5"
+                    : "opacity-100 border-primary/25 bg-primary-dark/20 text-neutral-200 hover:text-gold hover:border-gold/40 hover:bg-white/5",
               )}
             >
               {item.isPremium && (
                 <Crown
                   size={10}
-                  className="absolute top-1 right-1 text-gold fill-gold"
+                  className={cn(
+                    "absolute top-1 right-1",
+                    isLocked
+                      ? "text-gold/75 fill-gold/45"
+                      : "text-gold fill-gold",
+                  )}
                 />
               )}
               <Icon size={18} />

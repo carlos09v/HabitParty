@@ -2,7 +2,6 @@
 
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { create } from "zustand";
 import {
   DASHBOARD_TASK_FILTERS,
   DEFAULT_DASHBOARD_ADVANCED_FILTERS,
@@ -13,76 +12,52 @@ import {
   normalizeTaskType,
   PRIORITY_SORT_WEIGHTS,
 } from "@/constants/task";
+import {
+  syncDashboardFilterUrl,
+  useDashboardFilterStore,
+} from "@/store/dashboardFilterStore";
+import { useUserStore } from "@/store/userStore";
 import type { DashboardAdvancedFilters } from "@/types/dashboard";
 import type { Task, TaskFilterType } from "@/types/task";
 import {
   getTodayDateString,
   isTaskScheduledForDate,
 } from "@/utils/dashboardMetrics";
-import { formatDateParts } from "@/utils/date";
+import {
+  formatDateParts,
+  getDatePartsInTimeZone,
+  getOffsetDateString,
+} from "@/utils/date";
+
+export { syncDashboardFilterUrl, useDashboardFilterStore };
 
 function isValidTaskFilter(val: string | null): val is TaskFilterType {
   return DASHBOARD_TASK_FILTERS.some((f) => f.id === val);
 }
 
-interface DashboardFilterStoreState {
-  activeFilter: TaskFilterType;
-  selectedDate: string | null;
-  setFilter: (filter: TaskFilterType) => void;
-  setSelectedDate: (date: string | null) => void;
-}
-
-export const useDashboardFilterStore = create<DashboardFilterStoreState>(
-  (set) => ({
-    activeFilter: "today",
-    selectedDate: null,
-    setFilter: (activeFilter) => set({ activeFilter, selectedDate: null }),
-    setSelectedDate: (selectedDate) => set({ selectedDate }),
-  }),
-);
-
-export function syncDashboardFilterUrl(
-  nextFilter: TaskFilterType,
-  nextDate: string | null,
-) {
-  if (typeof window === "undefined") return;
-  const params = new URLSearchParams(window.location.search);
-  if (nextDate) {
-    params.set("date", nextDate);
-  } else {
-    params.delete("date");
-  }
-  params.set("filter", nextFilter);
-  params.set("page", "1");
-  const query = params.toString();
-  const nextUrl = query
-    ? `${window.location.pathname}?${query}`
-    : window.location.pathname;
-  window.history.replaceState(window.history.state, "", nextUrl);
-}
-
 function isDailyScheduledBetween(
   task: Task,
-  startDate: Date,
+  startDateUtc: Date,
   daysCount: number,
 ): boolean {
-  const cursor = new Date(startDate);
+  const cursor = new Date(startDateUtc);
   for (let i = 0; i < daysCount; i++) {
     const iso = formatDateParts(
-      cursor.getFullYear(),
-      cursor.getMonth(),
-      cursor.getDate(),
+      cursor.getUTCFullYear(),
+      cursor.getUTCMonth(),
+      cursor.getUTCDate(),
     );
     if (isTaskScheduledForDate(task, iso, { includeHabits: false })) {
       return true;
     }
-    cursor.setDate(cursor.getDate() + 1);
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
   return false;
 }
 
 export function useDashboardTaskFilters(tasks: Task[]) {
   const searchParams = useSearchParams();
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
   const activeFilter = useDashboardFilterStore((s) => s.activeFilter);
   const selectedDate = useDashboardFilterStore((s) => s.selectedDate);
   const setStoreFilter = useDashboardFilterStore((s) => s.setFilter);
@@ -98,7 +73,7 @@ export function useDashboardTaskFilters(tasks: Task[]) {
   const urlDateParam = searchParams.get("date");
 
   useEffect(() => {
-    const todayIso = getTodayDateString();
+    const todayIso = getTodayDateString(new Date(), userTimeZone);
     const resolvedFilter: TaskFilterType = isValidTaskFilter(urlFilterParam)
       ? urlFilterParam
       : "today";
@@ -108,7 +83,13 @@ export function useDashboardTaskFilters(tasks: Task[]) {
     } else {
       setStoreFilter(urlDateParam === todayIso ? "today" : resolvedFilter);
     }
-  }, [urlFilterParam, urlDateParam, setStoreFilter, setStoreSelectedDate]);
+  }, [
+    urlFilterParam,
+    urlDateParam,
+    userTimeZone,
+    setStoreFilter,
+    setStoreSelectedDate,
+  ]);
 
   const effectiveFilter = activeFilter;
 
@@ -126,22 +107,24 @@ export function useDashboardTaskFilters(tasks: Task[]) {
   }, [activeFilter, setStoreSelectedDate]);
 
   const filteredTasks = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayIso = getTodayDateString(today);
-
-    const next7Days = new Date(today);
-    next7Days.setDate(today.getDate() + 7);
-    next7Days.setHours(23, 59, 59, 999);
+    const now = new Date();
+    const nowParts = getDatePartsInTimeZone(now, userTimeZone);
+    const todayUtc = new Date(
+      Date.UTC(nowParts.year, nowParts.month - 1, nowParts.day),
+    );
+    const todayIso = formatDateParts(
+      nowParts.year,
+      nowParts.month - 1,
+      nowParts.day,
+    );
+    const next7DaysIso = getOffsetDateString(7, now, userTimeZone);
 
     const daysInCurrentMonth = new Date(
-      today.getFullYear(),
-      today.getMonth() + 1,
-      0,
-    ).getDate();
+      Date.UTC(nowParts.year, nowParts.month, 0),
+    ).getUTCDate();
     const remainingDaysInMonth = Math.max(
       1,
-      daysInCurrentMonth - today.getDate() + 1,
+      daysInCurrentMonth - nowParts.day + 1,
     );
 
     // 1. Filtro Temporal
@@ -168,10 +151,10 @@ export function useDashboardTaskFilters(tasks: Task[]) {
       // Diárias são avaliadas conforme sua programação real dentro do intervalo
       if (isDaily) {
         if (effectiveFilter === "next7days") {
-          return isDailyScheduledBetween(task, today, 8);
+          return isDailyScheduledBetween(task, todayUtc, 8);
         }
         if (effectiveFilter === "this_month") {
-          return isDailyScheduledBetween(task, today, remainingDaysInMonth);
+          return isDailyScheduledBetween(task, todayUtc, remainingDaysInMonth);
         }
         return false;
       }
@@ -182,17 +165,11 @@ export function useDashboardTaskFilters(tasks: Task[]) {
       }
 
       const datePart = task.dueDate.split("T")[0];
-      const [year, month, day] = datePart.split("-").map(Number);
-      const taskDate = new Date(year, (month || 1) - 1, day || 1);
-      taskDate.setHours(0, 0, 0, 0);
+      const [year, month] = datePart.split("-").map(Number);
 
-      const isPast = taskDate.getTime() < today.getTime();
-      const isWithin7Days =
-        taskDate.getTime() >= today.getTime() &&
-        taskDate.getTime() <= next7Days.getTime();
-      const isThisMonth =
-        taskDate.getFullYear() === today.getFullYear() &&
-        taskDate.getMonth() === today.getMonth();
+      const isPast = datePart < todayIso;
+      const isWithin7Days = datePart >= todayIso && datePart <= next7DaysIso;
+      const isThisMonth = year === nowParts.year && month === nowParts.month;
 
       switch (effectiveFilter) {
         case "next7days":
@@ -261,7 +238,7 @@ export function useDashboardTaskFilters(tasks: Task[]) {
     });
 
     return result;
-  }, [tasks, selectedDate, effectiveFilter, advancedFilters]);
+  }, [tasks, selectedDate, effectiveFilter, advancedFilters, userTimeZone]);
 
   return {
     activeFilter: effectiveFilter,

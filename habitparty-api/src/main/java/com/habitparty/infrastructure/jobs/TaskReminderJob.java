@@ -17,7 +17,7 @@ public class TaskReminderJob {
   }
 
   // Roda a cada 15 minutos checando lembretes pendentes
-  @Scheduled(cron = "0 */15 * * * *", zone = "${app.timezone:America/Sao_Paulo}")
+  @Scheduled(cron = "0 */15 * * * *", zone = "UTC")
   public void runTaskReminders() {
     try {
       int sentCount = sendTaskRemindersUseCase.execute();

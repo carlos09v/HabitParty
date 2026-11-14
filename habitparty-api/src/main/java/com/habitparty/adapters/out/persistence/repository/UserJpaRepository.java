@@ -1,5 +1,6 @@
 package com.habitparty.adapters.out.persistence.repository;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -10,12 +11,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.habitparty.adapters.out.persistence.entities.UserJpaEntity;
 import com.habitparty.core.domain.enums.TransactionType;
 import com.habitparty.core.domain.enums.UserRole;
+
+import jakarta.persistence.LockModeType;
 
 public interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
 
@@ -97,4 +101,28 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
       @Param("completedTypes") Collection<TransactionType> completedTypes,
       @Param("since") LocalDateTime since
   );
+
+  @Query("""
+      SELECT u.id FROM UserJpaEntity u
+      WHERE u.nextDailyResetAt IS NULL OR u.nextDailyResetAt <= :nowUtc
+      ORDER BY u.id ASC
+  """)
+  List<UUID> findUserIdsDueForDailyReset(@Param("nowUtc") Instant nowUtc);
+
+  @Query("""
+      SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END
+      FROM UserJpaEntity u
+      WHERE u.id = :id AND (u.nextDailyResetAt IS NULL OR u.nextDailyResetAt <= :nowUtc)
+  """)
+  boolean isUserDueForDailyReset(@Param("id") UUID id, @Param("nowUtc") Instant nowUtc);
+
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @EntityGraph(attributePaths = {"stats", "subscription"})
+  @Query("SELECT u FROM UserJpaEntity u WHERE u.id = :id")
+  Optional<UserJpaEntity> findByIdForUpdate(@Param("id") UUID id);
+
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @EntityGraph(attributePaths = {"stats", "subscription"})
+  @Query("SELECT u FROM UserJpaEntity u WHERE u.id IN :ids ORDER BY u.id ASC")
+  List<UserJpaEntity> findAllByIdInForUpdate(@Param("ids") Collection<UUID> ids);
 }

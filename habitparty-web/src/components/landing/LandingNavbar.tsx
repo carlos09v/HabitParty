@@ -1,140 +1,90 @@
-"use client";
-
-import { ArrowRight, Menu, Sparkles, X } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { getLocale, getTranslations } from "next-intl/server";
+import {
+  LandingNavbarClientShell,
+  type ResolvedLandingNavLink,
+} from "@/components/landing/LandingNavbarClientShell";
 import { LanguageToggleBtn } from "@/components/layout/LanguageToggleBtn";
 import { ThemeToggleBtn } from "@/components/layout/ThemeToggleBtn";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { LANDING_NAV_LINK_CONFIGS } from "@/constants/landing";
-import { cn } from "@/utils";
 
-export function LandingNavbar() {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const locale = useLocale();
-  const t = useTranslations("landing.navbar");
+export async function LandingNavbar() {
+  const [locale, t] = await Promise.all([
+    getLocale(),
+    getTranslations("landing.navbar"),
+  ]);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
+  const resolvedLinks: ResolvedLandingNavLink[] = LANDING_NAV_LINK_CONFIGS.map(
+    (link) => ({
+      id: link.id,
+      href: link.href,
+      label: t(`links.${link.id}`),
+    }),
+  );
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  const desktopBarContent = (
+    <>
+      {/* Logo */}
+      <Link
+        href={`/${locale}`}
+        className="flex items-center gap-2 group transition-opacity hover:opacity-95"
+      >
+        <BrandLogo
+          alt="HabitParty"
+          width={160}
+          height={36}
+          className="w-auto h-9"
+          priority
+        />
+      </Link>
+
+      {/* Desktop Navigation Links */}
+      <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-neutral-300">
+        {resolvedLinks.map((link) => (
+          <a
+            key={link.id}
+            href={link.href}
+            className="transition-colors hover:text-primary dark:hover:text-gold"
+          >
+            {link.label}
+          </a>
+        ))}
+      </nav>
+
+      {/* Action Buttons */}
+      <div className="hidden md:flex items-center gap-2.5">
+        <LanguageToggleBtn variant="icon" />
+        <ThemeToggleBtn variant="icon" />
+        <Link
+          href="/signIn"
+          className="px-4 py-2 text-sm font-medium text-neutral-200 hover:text-neutral-50 transition-colors"
+        >
+          {t("signIn")}
+        </Link>
+        <Link
+          href="/signUp"
+          className="relative group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-light text-white font-semibold text-sm shadow-sm dark:shadow-[0_0_20px_rgba(124,58,237,0.4)] dark:hover:shadow-glow-gold hover:border-primary dark:hover:border-gold/50 transition-[transform,border-color,box-shadow] duration-300 hover:scale-[1.02] border border-primary-light/40"
+        >
+          <Sparkles className="w-4 h-4 text-white dark:text-gold animate-pulse" />
+          <span>{t("startFree")}</span>
+          <ArrowRight className="w-4 h-4 text-white transition-transform group-hover:translate-x-1" />
+        </Link>
+      </div>
+    </>
+  );
 
   return (
-    <header
-      className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-[background-color,border-color,padding,box-shadow] duration-300",
-        isScrolled
-          ? "bg-card/95 dark:bg-background/95 border-b border-neutral-700/80 dark:border-white/10 shadow-xs dark:shadow-lg dark:shadow-black/20 py-3"
-          : "bg-card/95 dark:bg-transparent border-b border-neutral-700/60 dark:border-transparent py-4 md:py-5",
-      )}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-        {/* Logo */}
-        <Link
-          href={`/${locale}`}
-          className="flex items-center gap-2 group transition-opacity hover:opacity-95"
-        >
-          <BrandLogo
-            alt="HabitParty"
-            width={160}
-            height={36}
-            className="w-auto h-9"
-            priority
-          />
-        </Link>
-
-        {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-neutral-300">
-          {LANDING_NAV_LINK_CONFIGS.map((link) => (
-            <a
-              key={link.id}
-              href={link.href}
-              className="transition-colors hover:text-primary dark:hover:text-gold"
-            >
-              {t(`links.${link.id}`)}
-            </a>
-          ))}
-        </nav>
-
-        {/* Action Buttons */}
-        <div className="hidden md:flex items-center gap-2.5">
-          <LanguageToggleBtn variant="icon" />
-          <ThemeToggleBtn variant="icon" />
-          <Link
-            href="/signIn"
-            className="px-4 py-2 text-sm font-medium text-neutral-200 hover:text-neutral-50 transition-colors"
-          >
-            {t("signIn")}
-          </Link>
-          <Link
-            href="/signUp"
-            className="relative group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-light text-white font-semibold text-sm shadow-sm dark:shadow-[0_0_20px_rgba(124,58,237,0.4)] dark:hover:shadow-glow-gold hover:border-primary dark:hover:border-gold/50 transition-[transform,border-color,box-shadow] duration-300 hover:scale-[1.02] border border-primary-light/40"
-          >
-            <Sparkles className="w-4 h-4 text-white dark:text-gold animate-pulse" />
-            <span>{t("startFree")}</span>
-            <ArrowRight className="w-4 h-4 text-white transition-transform group-hover:translate-x-1" />
-          </Link>
-        </div>
-
-        {/* Mobile Actions & Menu Button */}
-        <div className="flex md:hidden items-center gap-2">
-          <LanguageToggleBtn variant="icon" />
-          <ThemeToggleBtn variant="icon" />
-          <button
-            type="button"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 text-neutral-300 hover:text-neutral-50 focus:outline-none cursor-pointer"
-            aria-label={isMobileMenuOpen ? t("closeMenu") : t("openMenu")}
-            aria-expanded={isMobileMenuOpen}
-          >
-            {isMobileMenuOpen ? (
-              <X className="w-6 h-6" />
-            ) : (
-              <Menu className="w-6 h-6" />
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Dropdown */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden bg-card dark:bg-surface border-b border-neutral-700 dark:border-white/10 px-6 py-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 shadow-xl">
-          <nav className="flex flex-col space-y-3 text-base font-medium text-neutral-200">
-            {LANDING_NAV_LINK_CONFIGS.map((link) => (
-              <a
-                key={link.id}
-                href={link.href}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="py-1 hover:text-primary dark:hover:text-gold transition-colors"
-              >
-                {t(`links.${link.id}`)}
-              </a>
-            ))}
-          </nav>
-          <div className="pt-4 border-t border-neutral-700 dark:border-white/10 flex flex-col gap-3">
-            <Link
-              href="/signIn"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="w-full py-2.5 text-center text-sm font-medium text-neutral-100 bg-surface hover:bg-surface-hover dark:text-neutral-200 dark:bg-white/5 dark:hover:bg-white/10 rounded-xl transition-colors border border-neutral-700 dark:border-transparent"
-            >
-              {t("signInAccount")}
-            </Link>
-            <Link
-              href="/signUp"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="w-full py-3 text-center text-sm font-bold text-on-gold bg-gold hover:bg-gold-hover rounded-xl shadow-glow-gold transition-colors"
-            >
-              {t("startFreeAdventure")}
-            </Link>
-          </div>
-        </div>
-      )}
-    </header>
+    <LandingNavbarClientShell
+      desktopBarContent={desktopBarContent}
+      links={resolvedLinks}
+      labels={{
+        openMenu: t("openMenu"),
+        closeMenu: t("closeMenu"),
+        signInAccount: t("signInAccount"),
+        startFreeAdventure: t("startFreeAdventure"),
+      }}
+    />
   );
 }

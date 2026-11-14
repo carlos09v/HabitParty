@@ -2,12 +2,16 @@ import { cacheLife, cacheTag } from "next/cache";
 import { serverApi } from "@/api/server";
 import { getRequestLocale } from "@/i18n/request";
 import {
+  fetchRawUserFocusRecords,
   getFocusInitialRecords,
   getRawFocusActivities,
 } from "@/services/focusService";
 import { fetchWorkspaceBoardColumns } from "@/services/taskService";
 import { getCurrentUser } from "@/services/userService";
-import { getWorkspaces } from "@/services/workspaceService";
+import {
+  getWorkspaces,
+  resolveActiveWorkspace,
+} from "@/services/workspaceService";
 import type {
   ColumnSummaryDTO,
   TransactionHistoryDTO,
@@ -16,6 +20,7 @@ import type { FocusActivity, FocusRecord } from "@/types/focus";
 import type { Task } from "@/types/task";
 import type { UserResponseDTO } from "@/types/user";
 import type { WorkspaceResponseDTO } from "@/types/workspace";
+import { getUserTimezoneCookie } from "@/utils/cookies";
 import { calculateWeeklyTaskEarnings } from "@/utils/economy";
 import { mapFocusActivities } from "@/utils/focusMapper";
 
@@ -66,6 +71,7 @@ export async function getDashboardData(
     user,
     transactions,
     rawFocusActivities,
+    rawFocusRecords,
     locale,
     speculativeBoardData,
   ] = await Promise.all([
@@ -73,23 +79,21 @@ export async function getDashboardData(
     getCurrentUser(),
     getDashboardTransactions(),
     getRawFocusActivities(),
+    fetchRawUserFocusRecords(),
     getRequestLocale(),
     requestedWorkspaceId
       ? fetchWorkspaceBoardColumns(requestedWorkspaceId)
       : Promise.resolve(null),
   ]);
 
-  if (!workspaces || workspaces.length === 0) {
+  const { activeWorkspaceId } = resolveActiveWorkspace(
+    workspaces,
+    requestedWorkspaceId,
+  );
+
+  if (!activeWorkspaceId) {
     return null;
   }
-
-  const isValidWorkspace = workspaces.some(
-    (w) => w.id === requestedWorkspaceId,
-  );
-  const activeWorkspaceId =
-    requestedWorkspaceId && isValidWorkspace
-      ? requestedWorkspaceId
-      : workspaces[0].id || "";
 
   const focusActivities: FocusActivity[] = mapFocusActivities(
     rawFocusActivities,
@@ -97,14 +101,10 @@ export async function getDashboardData(
   );
 
   const [boardData, focusRecords] = await Promise.all([
-    activeWorkspaceId &&
-    activeWorkspaceId === requestedWorkspaceId &&
-    speculativeBoardData
+    activeWorkspaceId === requestedWorkspaceId && speculativeBoardData
       ? Promise.resolve(speculativeBoardData)
-      : activeWorkspaceId
-        ? fetchWorkspaceBoardColumns(activeWorkspaceId)
-        : Promise.resolve({ columns: [], summaries: [] }),
-    getFocusInitialRecords(focusActivities),
+      : fetchWorkspaceBoardColumns(activeWorkspaceId),
+    getFocusInitialRecords(focusActivities, rawFocusRecords),
   ]);
 
   const initialColumns: ColumnSummaryDTO[] = boardData.summaries;
@@ -112,16 +112,19 @@ export async function getDashboardData(
 
   for (const col of boardData.columns) {
     for (const task of col.tasks) {
-      initialTasks.push({
-        ...task,
-        category: col.title || task.category,
-      });
+      initialTasks.push(task);
     }
   }
 
   const userBalance = user?.currentCoins ?? 0;
+  const resolvedTimeZone = user?.timezone ?? (await getUserTimezoneCookie());
   const { bars, currentWeekEarnings, currentWeekSpent } =
-    calculateWeeklyTaskEarnings(transactions, new Date(), locale);
+    calculateWeeklyTaskEarnings(
+      transactions,
+      new Date(),
+      locale,
+      resolvedTimeZone,
+    );
 
   return {
     workspaces,

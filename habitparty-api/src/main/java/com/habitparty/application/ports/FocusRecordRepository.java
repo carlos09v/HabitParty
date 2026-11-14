@@ -1,5 +1,6 @@
 package com.habitparty.application.ports;
 
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,6 +51,10 @@ public interface FocusRecordRepository {
 
   // Soma de minutos produtivos de foco no dia de hoje (excluindo itens de inventário)
   int sumFocusMinutesToday(UUID userId);
+
+  default int sumFocusMinutesToday(UUID userId, ZoneId userZone) {
+    return sumFocusMinutesToday(userId);
+  }
 
   void deleteAllByUserId(UUID userId);
 

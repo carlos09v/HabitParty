@@ -170,4 +170,29 @@ class CreateUserUseCaseTest {
     assertTrue(exception.getMessage().contains("obrigatória"));
     verify(userRepository, never()).save(any());
   }
+
+  @Test
+  @DisplayName("Deve inicializar o fuso horário IANA informado no cadastro e manter cooldown liberado")
+  void shouldInitializeProvidedTimezoneOnSignup() {
+    LocalDate birthDate = LocalDate.of(1998, 5, 10);
+    CreateUserCommand command = new CreateUserCommand(
+        "Alice London",
+        "alice_uk",
+        "alice@habitparty.com",
+        "SenhaForte@123",
+        UserGender.FEMALE,
+        birthDate,
+        "Europe/London"
+    );
+
+    when(passwordHasher.encode("SenhaForte@123")).thenReturn("hashed_password");
+    when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    User created = createUserUseCase.execute(command);
+
+    assertEquals("Europe/London", created.getTimezone());
+    assertNull(created.getTimezoneUpdatedAt());
+    assertNotNull(created.getLastDailyResetDate());
+    assertNotNull(created.getNextDailyResetAt());
+  }
 }

@@ -1,18 +1,9 @@
-"use client";
-
 import { ChevronDown, HelpCircle } from "lucide-react";
-import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { getTranslations } from "next-intl/server";
 import { LANDING_FAQ_KEYS } from "@/constants/landing";
-import { cn } from "@/utils";
 
-export function LandingFaq() {
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
-  const t = useTranslations("landing.faq");
-
-  const toggle = (idx: number) => {
-    setOpenIndex(openIndex === idx ? null : idx);
-  };
+export async function LandingFaq() {
+  const t = await getTranslations("landing.faq");
 
   return (
     <section id="faq" className="py-20 md:py-28 relative">
@@ -29,35 +20,22 @@ export function LandingFaq() {
         </div>
 
         <div className="space-y-4">
-          {LANDING_FAQ_KEYS.map((faqKey, idx) => {
-            const isOpen = openIndex === idx;
-            return (
-              <div
-                key={faqKey}
-                className="rounded-xl bg-card dark:bg-surface/75 border border-neutral-700 dark:border-white/10 overflow-hidden transition-colors duration-200"
-              >
-                <button
-                  type="button"
-                  onClick={() => toggle(idx)}
-                  className="w-full px-6 py-5 flex items-center justify-between text-left text-neutral-100 hover:text-primary dark:hover:text-gold font-semibold text-base transition-colors cursor-pointer"
-                  aria-expanded={isOpen}
-                >
-                  <span>{t(`items.${faqKey}.question`)}</span>
-                  <ChevronDown
-                    className={cn(
-                      "w-5 h-5 text-neutral-400 transition-transform duration-300 shrink-0 ml-4",
-                      isOpen && "rotate-180 text-primary dark:text-gold",
-                    )}
-                  />
-                </button>
-                {isOpen && (
-                  <div className="px-6 pb-5 pt-1 text-sm text-neutral-300 leading-relaxed border-t border-neutral-700/60 dark:border-white/5 animate-in fade-in duration-200">
-                    {t(`items.${faqKey}.answer`)}
-                  </div>
-                )}
+          {LANDING_FAQ_KEYS.map((faqKey, idx) => (
+            <details
+              key={faqKey}
+              name="landing-faq"
+              open={idx === 0}
+              className="group rounded-xl bg-card dark:bg-surface/75 border border-neutral-700 dark:border-white/10 overflow-hidden transition-colors duration-200"
+            >
+              <summary className="w-full px-6 py-5 flex items-center justify-between text-left text-neutral-100 hover:text-primary dark:hover:text-gold font-semibold text-base transition-colors cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                <span>{t(`items.${faqKey}.question`)}</span>
+                <ChevronDown className="w-5 h-5 text-neutral-400 transition-transform duration-300 shrink-0 ml-4 group-open:rotate-180 group-open:text-primary dark:group-open:text-gold" />
+              </summary>
+              <div className="px-6 pb-5 pt-1 text-sm text-neutral-300 leading-relaxed border-t border-neutral-700/60 dark:border-white/5 animate-in fade-in duration-200">
+                {t(`items.${faqKey}.answer`)}
               </div>
-            );
-          })}
+            </details>
+          ))}
         </div>
       </div>
     </section>

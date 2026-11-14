@@ -1,5 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { serverApi } from "@/api/server";
+import { getRewardsData } from "@/services/rewardService";
 import type {
   InventoryItem,
   InventoryItemResponseDTO,
@@ -32,10 +33,14 @@ export async function getRawInventoryItems(): Promise<
 }
 
 /**
- * Carrega e agrupa todos os itens disponíveis e em foco da mochila do usuário.
+ * Carrega e agrupa todos os itens disponíveis e em foco da mochila do usuário,
+ * enriquecendo metadados visuais (categoria e descrição) a partir do catálogo cacheado de recompensas.
  */
 export async function getInventoryData(): Promise<InventoryPageData> {
-  const inventoryData = await getRawInventoryItems();
-  const items = mapAndGroupInventory(inventoryData);
+  const [inventoryData, { rewards }] = await Promise.all([
+    getRawInventoryItems(),
+    getRewardsData(),
+  ]);
+  const items = mapAndGroupInventory(inventoryData, rewards);
   return { items };
 }

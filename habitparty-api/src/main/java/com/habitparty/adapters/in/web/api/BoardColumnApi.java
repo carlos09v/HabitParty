@@ -9,6 +9,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import com.habitparty.adapters.in.web.dtos.request.CreateBoardColumnDTO;
+import com.habitparty.adapters.in.web.dtos.request.MoveBoardColumnDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateBoardColumnDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateBoardColumnOrderDTO;
 import com.habitparty.adapters.in.web.dtos.response.BoardColumnResponseDTO;
@@ -52,6 +53,14 @@ public interface BoardColumnApi {
     ResponseEntity<BoardColumnResponseDTO> update(
         @PathVariable UUID boardColumnId,
         @RequestBody @Valid UpdateBoardColumnDTO dto,
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
+    );
+
+    @Operation(summary = "Mover Coluna para Workspace", description = "Move uma coluna e todas as suas tarefas para outro ambiente do usuário.")
+    @PatchMapping("/{boardColumnId}/move-workspace")
+    ResponseEntity<BoardColumnResponseDTO> moveToWorkspace(
+        @PathVariable UUID boardColumnId,
+        @RequestBody @Valid MoveBoardColumnDTO dto,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 

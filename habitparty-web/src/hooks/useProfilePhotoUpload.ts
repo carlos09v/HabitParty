@@ -32,9 +32,14 @@ export function useProfilePhotoUpload({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
 
+  const committedBlobUrlRef = useRef<string | null>(null);
+
   useEffect(() => {
     return () => {
-      if (previewUrl?.startsWith("blob:")) {
+      if (
+        previewUrl?.startsWith("blob:") &&
+        previewUrl !== committedBlobUrlRef.current
+      ) {
         URL.revokeObjectURL(previewUrl);
       }
     };
@@ -53,7 +58,7 @@ export function useProfilePhotoUpload({
 
     const objectUrl = URL.createObjectURL(file);
     setPreviewUrl((prev) => {
-      if (prev?.startsWith("blob:")) {
+      if (prev?.startsWith("blob:") && prev !== committedBlobUrlRef.current) {
         URL.revokeObjectURL(prev);
       }
       return objectUrl;
@@ -66,7 +71,28 @@ export function useProfilePhotoUpload({
       const res = await updateUserProfilePhotoAction(formData);
       if (res.success) {
         toast.success(messages.photoSuccessToast);
-        updateUserPartial({ profilePhotoUrl: objectUrl });
+        const serverPhotoUrl = res.data?.profilePhotoUrl;
+        if (serverPhotoUrl) {
+          if (
+            committedBlobUrlRef.current &&
+            committedBlobUrlRef.current !== objectUrl
+          ) {
+            URL.revokeObjectURL(committedBlobUrlRef.current);
+          }
+          committedBlobUrlRef.current = null;
+          setPreviewUrl(serverPhotoUrl);
+          updateUserPartial({ profilePhotoUrl: serverPhotoUrl });
+          URL.revokeObjectURL(objectUrl);
+        } else {
+          if (
+            committedBlobUrlRef.current &&
+            committedBlobUrlRef.current !== objectUrl
+          ) {
+            URL.revokeObjectURL(committedBlobUrlRef.current);
+          }
+          committedBlobUrlRef.current = objectUrl;
+          updateUserPartial({ profilePhotoUrl: objectUrl });
+        }
       } else {
         toast.error(res.error || messages.photoErrorToast);
         URL.revokeObjectURL(objectUrl);

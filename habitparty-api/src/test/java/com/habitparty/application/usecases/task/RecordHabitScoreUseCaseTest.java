@@ -83,7 +83,7 @@ class RecordHabitScoreUseCaseTest {
   void testPositiveDeltaIncrementsScoreAndRewardsUser() {
     when(taskPort.findById(taskId)).thenReturn(Optional.of(habit));
     when(userPort.findById(userId)).thenReturn(Optional.of(user));
-    when(transactionPort.countCompletedTasksToday(userId)).thenReturn(0);
+    when(transactionPort.countCompletedTasksToday(eq(userId), any())).thenReturn(0);
     when(taskPort.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
     Task result = recordHabitScoreUseCase.execute(taskId, userId, 1);
@@ -183,7 +183,7 @@ class RecordHabitScoreUseCaseTest {
 
     when(taskPort.findById(taskId)).thenReturn(Optional.of(staleHabit));
     when(userPort.findById(userId)).thenReturn(Optional.of(user));
-    when(transactionPort.countCompletedTasksToday(userId)).thenReturn(0);
+    when(transactionPort.countCompletedTasksToday(eq(userId), any())).thenReturn(0);
     when(taskPort.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
     Task result = recordHabitScoreUseCase.execute(taskId, userId, 1);

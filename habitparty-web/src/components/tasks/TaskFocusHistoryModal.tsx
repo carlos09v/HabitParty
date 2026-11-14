@@ -22,6 +22,7 @@ import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { executeDeleteFocusRecord } from "@/hooks/useFocusMutations";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
+import { useUserStore } from "@/store/userStore";
 import type { FocusRecord } from "@/types/focus";
 import type { Task } from "@/types/task";
 import { formatCoins, formatDateTime } from "@/utils";
@@ -229,12 +230,20 @@ export function TaskFocusHistoryModal({
           <div className="flex flex-col gap-2 min-h-[220px] max-h-[360px] overflow-y-auto custom-scrollbar pr-1">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-12 gap-2 text-neutral-400">
-                <Loader2 size={24} className="animate-spin text-gold" />
+                <Loader2
+                  size={24}
+                  className="animate-spin text-primary dark:text-gold"
+                  aria-hidden="true"
+                />
                 <span className="text-xs">{t("loading")}</span>
               </div>
             ) : records.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 px-4 text-center rounded-xl border border-dashed border-neutral-700 dark:border-primary/30 bg-card/40">
-                <History size={28} className="text-neutral-500 mb-2" />
+                <History
+                  size={28}
+                  className="text-neutral-500 mb-2"
+                  aria-hidden="true"
+                />
                 <span className="text-xs font-bold text-neutral-200">
                   {t("emptyTitle")}
                 </span>
@@ -260,7 +269,7 @@ export function TaskFocusHistoryModal({
                         <span className="text-xs font-bold text-neutral-100 truncate">
                           {rec.activityName || t("directTaskFocus")}
                         </span>
-                        <span className="px-1.5 py-0.5 rounded text-tiny font-bold bg-amber-500/15 border border-amber-500/35 text-amber-800 dark:bg-gold/15 dark:border-gold/30 dark:text-gold shrink-0">
+                        <span className="px-1.5 py-0.5 rounded text-tiny font-bold bg-amber-500/15 border border-amber-500/35 text-gold-ink dark:bg-gold/15 dark:border-gold/30 dark:text-gold shrink-0">
                           {durationFormatted}
                         </span>
                         {rec.completedPomos && rec.completedPomos > 0 ? (
@@ -274,6 +283,7 @@ export function TaskFocusHistoryModal({
                         <span>
                           {formatDateTime(rec.endTime || rec.startTime, {
                             isLocal: true,
+                            timeZone: useUserStore.getState().user?.timezone,
                             locale,
                             dateFormat,
                             timeFormat,
@@ -284,12 +294,12 @@ export function TaskFocusHistoryModal({
                           (rec.coinsEarned ?? 0) > 0) && (
                           <span className="inline-flex items-center gap-1.5 text-neutral-300">
                             <span>•</span>
-                            <span className="inline-flex items-center gap-0.5 text-primary-light font-semibold">
-                              <Sparkles size={10} />+{rec.xpEarned ?? 0}{" "}
-                              {isGamified ? "XP" : "pts"}
+                            <span className="inline-flex items-center gap-0.5 text-primary dark:text-primary-light font-semibold">
+                              <Sparkles size={10} aria-hidden="true" />+
+                              {rec.xpEarned ?? 0} {isGamified ? "XP" : "pts"}
                             </span>
                             <span>•</span>
-                            <span className="inline-flex items-center gap-0.5 text-gold font-semibold">
+                            <span className="inline-flex items-center gap-0.5 text-gold-ink dark:text-gold font-semibold">
                               +{formatCoins(rec.coinsEarned ?? 0, { locale })}
                               <CoinIcon size={10} />
                             </span>
@@ -298,10 +308,11 @@ export function TaskFocusHistoryModal({
                       </div>
 
                       {rec.notes && (
-                        <div className="flex items-start gap-1 mt-1 text-tiny text-neutral-300 bg-surface/70 rounded-md px-2 py-1 border border-neutral-700/60 dark:border-white/5">
+                        <div className="flex items-start gap-1 mt-1 text-tiny text-neutral-300 bg-surface/70 dark:bg-white/5 rounded-md px-2 py-1 border border-neutral-700/60 dark:border-white/5">
                           <FileText
                             size={11}
                             className="text-neutral-400 shrink-0 mt-0.5"
+                            aria-hidden="true"
                           />
                           <span className="line-clamp-2 italic">
                             "{rec.notes}"
@@ -315,9 +326,9 @@ export function TaskFocusHistoryModal({
                       onClick={() => handleRequestDelete(rec)}
                       title={t("deleteRecordAria")}
                       aria-label={t("deleteRecordAria")}
-                      className="p-1.5 rounded-lg border border-transparent hover:border-red-500/40 text-neutral-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer shrink-0"
+                      className="p-1.5 rounded-lg border border-transparent hover:border-red-500/40 text-neutral-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70 transition-colors cursor-pointer shrink-0"
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={14} aria-hidden="true" />
                     </button>
                   </div>
                 );

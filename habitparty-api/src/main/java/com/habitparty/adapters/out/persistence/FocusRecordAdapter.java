@@ -3,6 +3,8 @@ package com.habitparty.adapters.out.persistence;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -134,9 +136,21 @@ public class FocusRecordAdapter implements FocusRecordRepository {
 
   @Override
   public int sumFocusMinutesToday(UUID userId) {
-    LocalDate today = LocalDate.now(clock);
-    LocalDateTime startOfDay = today.atStartOfDay();
-    LocalDateTime endOfDay = today.atTime(23, 59, 59, 999999999);
+    return sumFocusMinutesToday(userId, clock.getZone());
+  }
+
+  @Override
+  public int sumFocusMinutesToday(UUID userId, ZoneId userZone) {
+    ZoneId effectiveZone = userZone != null ? userZone : clock.getZone();
+    LocalDate today = LocalDate.now(clock.withZone(effectiveZone));
+    LocalDateTime startOfDay = today.atTime(LocalTime.MIN)
+        .atZone(effectiveZone)
+        .withZoneSameInstant(ZoneId.systemDefault())
+        .toLocalDateTime();
+    LocalDateTime endOfDay = today.atTime(23, 59, 59, 999999999)
+        .atZone(effectiveZone)
+        .withZoneSameInstant(ZoneId.systemDefault())
+        .toLocalDateTime();
     return repository.sumTodayFocusMinutesByUserId(userId, startOfDay, endOfDay);
   }
 

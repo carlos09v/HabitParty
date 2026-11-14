@@ -291,8 +291,11 @@ export function FocusHeroStage({
           activeEl.tagName === "TEXTAREA" ||
           activeEl.tagName === "SELECT" ||
           activeEl.tagName === "BUTTON" ||
+          activeEl.tagName === "A" ||
           activeEl.isContentEditable ||
-          activeEl.closest("[role='dialog']"))
+          activeEl.closest(
+            "a, button, [role='button'], [role='menuitem'], [role='tab'], [role='dialog']",
+          ))
       ) {
         return;
       }

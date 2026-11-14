@@ -102,3 +102,11 @@ export function invalidateShowcaseDomainTags(includeUser = false) {
     updateTag("user");
   }
 }
+
+/**
+ * Invalida as tags de cache RSC do Painel Administrativo (/admin).
+ */
+export function invalidateAdminDomainTags() {
+  updateTag("admin-overview");
+  updateTag("admin-users");
+}

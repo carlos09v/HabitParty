@@ -143,7 +143,7 @@ export function LandingHero() {
                         <span className="text-[10px] font-bold uppercase tracking-wider text-magenta">
                           {t("preview.dailyTag")}
                         </span>
-                        <span className="text-[10px] font-semibold text-amber-800 bg-amber-500/10 border border-amber-500/25 dark:text-amber-400 px-1.5 py-0.2 rounded-full">
+                        <span className="text-[10px] font-semibold text-amber-800 bg-amber-500/10 border border-amber-500/25 dark:text-amber-400 px-1.5 py-0.5 rounded-full">
                           {t("preview.streakBadge")}
                         </span>
                       </div>

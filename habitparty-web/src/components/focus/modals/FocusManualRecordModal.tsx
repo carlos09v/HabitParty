@@ -31,6 +31,7 @@ import {
   MAX_FOCUS_ACTIVITIES_FREE,
 } from "@/constants/focus";
 import { useFocusManualRecordForm } from "@/hooks/useFocusManualRecordForm";
+import { useUserStore } from "@/store/userStore";
 import type {
   FocusActivity,
   FocusableTaskItem,
@@ -533,7 +534,10 @@ export function FocusManualRecordModal({
                     label={t("sessionDateLabel")}
                     value={form.sessionDate}
                     onChange={form.setSessionDate}
-                    maxDate={getTodayDateString()}
+                    maxDate={getTodayDateString(
+                      new Date(),
+                      useUserStore.getState().user?.timezone,
+                    )}
                     placeholder={t("todayPlaceholder")}
                     compact
                     allowClear={false}

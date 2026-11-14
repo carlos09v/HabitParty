@@ -1,4 +1,3 @@
-import type { PasswordValidationResult } from "@/types/settings";
 import type { Task } from "@/types/task";
 import { getTodayDateString } from "./date";
 
@@ -149,31 +148,6 @@ export function validateAuthPassword(password: string): {
 }
 
 /**
- * Valida os requisitos de segurança da senha e verifica se a confirmação confere.
- */
-export function validatePasswordRequirements(
-  newPassword: string,
-  confirmPassword = "",
-): PasswordValidationResult {
-  const hasMinLength = newPassword.length >= PASSWORD_MIN_LENGTH;
-  const hasUpperCase = /[A-Z]/.test(newPassword);
-  const hasSpecialChar = /[@$!%*?&#]/.test(newPassword);
-  const passwordsMatch =
-    newPassword.length > 0 && newPassword === confirmPassword;
-
-  const isValid =
-    hasMinLength && hasUpperCase && hasSpecialChar && passwordsMatch;
-
-  return {
-    hasMinLength,
-    hasUpperCase,
-    hasSpecialChar,
-    passwordsMatch,
-    isValid,
-  };
-}
-
-/**
  * Idade mínima exigida para cadastro autônomo na plataforma (12 anos).
  * Em conformidade com o marco de adolescência do ECA e boas práticas da LGPD.
  */
@@ -193,6 +167,7 @@ export function validateBirthDate(
   birthDateString: string,
   minAge: number = MIN_USER_AGE,
   maxAge: number = MAX_USER_AGE,
+  timeZone?: string | null,
 ): {
   isValid: boolean;
   error?: string;
@@ -231,8 +206,13 @@ export function validateBirthDate(
     };
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const [todayYear, todayMonth, todayDay] = getTodayDateString(
+    new Date(),
+    timeZone,
+  )
+    .split("-")
+    .map(Number);
+  const today = new Date(todayYear, todayMonth - 1, todayDay);
 
   if (birthDate > today) {
     return {
@@ -243,9 +223,9 @@ export function validateBirthDate(
   }
 
   // Cálculo preciso de idade considerando ano, mês e dia
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const m = today.getMonth() - birthDate.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+  let age = todayYear - year;
+  const m = todayMonth - month;
+  if (m < 0 || (m === 0 && todayDay < day)) {
     age--;
   }
 
@@ -278,6 +258,7 @@ export function validateHardcoreTodo(options: {
   isEditing: boolean;
   taskToEdit?: { isHardcoreModeEnabled?: boolean; dueDate?: string } | null;
   locale?: "pt-BR" | "en";
+  timeZone?: string | null;
 }): string | null {
   const {
     isHardcore,
@@ -285,6 +266,7 @@ export function validateHardcoreTodo(options: {
     isEditing,
     taskToEdit,
     locale = "pt-BR",
+    timeZone,
   } = options;
   const isEn = locale === "en";
   if (!isHardcore) return null;
@@ -295,7 +277,7 @@ export function validateHardcoreTodo(options: {
       : "No Modo Hardcore, afazeres exigem uma data de vencimento.";
   }
 
-  const todayStr = getTodayDateString();
+  const todayStr = getTodayDateString(new Date(), timeZone);
 
   if (!isEditing && dueDate < todayStr) {
     return isEn

@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { useFocusTaskSync } from "@/hooks/useFocusTaskSync";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
 import type { Task } from "@/types/task";
 import { cn } from "@/utils";
@@ -66,33 +67,13 @@ export function TaskDetailsFocusSection({
     setLocalCycles(task.focusCyclesCount ?? 0);
   }, [task.totalFocusMinutes, task.focusCyclesCount]);
 
-  useEffect(() => {
-    const handleFocusRecorded = (event: Event) => {
-      const detail = (
-        event as CustomEvent<{
-          taskId?: string;
-          durationMinutes?: number;
-          cycles?: number;
-        }>
-      ).detail;
-      if (detail?.taskId !== task.id) return;
-      setLocalMinutes((prev) =>
-        Math.max(0, prev + (detail.durationMinutes ?? 0)),
-      );
-      setLocalCycles((prev) => Math.max(0, prev + (detail.cycles ?? 0)));
-    };
-
-    window.addEventListener(
-      "habitparty:task-focus-recorded",
-      handleFocusRecorded,
-    );
-    return () => {
-      window.removeEventListener(
-        "habitparty:task-focus-recorded",
-        handleFocusRecorded,
-      );
-    };
-  }, [task.id]);
+  useFocusTaskSync({
+    onFocusRecorded: (recordedTaskId, durationMinutes, cycles) => {
+      if (recordedTaskId !== task.id) return;
+      setLocalMinutes((prev) => Math.max(0, prev + durationMinutes));
+      setLocalCycles((prev) => Math.max(0, prev + cycles));
+    },
+  });
 
   const isRunningOnThisTask = isTargetTask && isTimerActive && !isTimerPaused;
   const isPausedOnThisTask = isTargetTask && isTimerActive && isTimerPaused;

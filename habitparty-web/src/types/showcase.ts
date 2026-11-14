@@ -15,21 +15,13 @@ export type AchievementRarity =
   | "EPIC"
   | "LEGENDARY";
 
-export type HighlightType = "ACHIEVEMENT" | "ACCOUNT_BADGE" | "STAT_METRIC";
+export type HighlightType = "ACHIEVEMENT" | "ACCOUNT_BADGE";
 
 export type AccountBadgeId =
   | "FOUNDER"
   | "PREMIUM_GUARDIAN"
   | "VERIFIED_ADVENTURER"
   | "LEVEL_RANK";
-
-export type StatMetricId =
-  | "HIGHEST_STREAK"
-  | "CURRENT_STREAK"
-  | "TOTAL_TASKS"
-  | "FOCUS_HOURS"
-  | "TOTAL_XP"
-  | "ACHIEVEMENT_POINTS";
 
 export interface AchievementItemResponseDTO {
   id: string;

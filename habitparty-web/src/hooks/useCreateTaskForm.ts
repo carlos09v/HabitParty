@@ -3,11 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
-import {
-  cloneTaskChecklistItems,
-  syncTaskChecklistChanges,
-} from "@/actions/checklistActions";
-import { createTask, moveTasks, updateTask } from "@/actions/taskActions";
+import { createTask, saveTaskWithDetails } from "@/actions/taskActions";
 import {
   ALL_WEEK_DAYS,
   MAX_TASK_TAGS,
@@ -16,6 +12,7 @@ import {
 import { useChecklist } from "@/hooks/useChecklist";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
+import { useUserStore } from "@/store/userStore";
 import type {
   DailyDaysOfWeek,
   DailyRepeatMonthlyOption,
@@ -98,7 +95,9 @@ function buildInitialTaskFormValues({
       isAllDay: Boolean(taskToEdit.isAllDay),
       reminderType: (taskToEdit.reminderType || "NONE") as ReminderTypeOption,
       sendEmailReminder: Boolean(taskToEdit.sendEmailReminder),
-      startDate: taskToEdit.startDate || getTodayDateString(),
+      startDate:
+        taskToEdit.startDate ||
+        getTodayDateString(new Date(), useUserStore.getState().user?.timezone),
       repeatType: (taskToEdit.repeatType || "DAILY") as DailyRepeatTypeOption,
       repeatEvery: taskToEdit.repeatEvery || 1,
       selectedDays:
@@ -131,14 +130,18 @@ function buildInitialTaskFormValues({
     priority: (initialValues?.priority || "NONE") as TaskPriorityOption,
     dueDate:
       initialValues?.dueDate ||
-      (initialValues?.dueTime ? getTodayDateString() : ""),
+      (initialValues?.dueTime
+        ? getTodayDateString(new Date(), useUserStore.getState().user?.timezone)
+        : ""),
     dueTime: initialValues?.dueTime ? initialValues.dueTime.slice(0, 5) : "",
     startTime: "",
     dueEndTime: "",
     isAllDay: false,
     reminderType: "NONE" as ReminderTypeOption,
     sendEmailReminder: false,
-    startDate: initialValues?.startDate || getTodayDateString(),
+    startDate:
+      initialValues?.startDate ||
+      getTodayDateString(new Date(), useUserStore.getState().user?.timezone),
     repeatType: (initialValues?.repeatType || "DAILY") as DailyRepeatTypeOption,
     repeatEvery: initialValues?.repeatEvery ?? 1,
     selectedDays: initialValues?.daysOfWeek || ALL_WEEK_DAYS,
@@ -232,6 +235,7 @@ export function useCreateTaskForm({
     const normalized = normalizeEventSchedulePatch(
       { dueDate, dueTime, startTime, dueEndTime, isAllDay },
       patch,
+      useUserStore.getState().user?.timezone,
     );
 
     if (normalized.dueDate !== undefined) setDueDate(normalized.dueDate);
@@ -421,6 +425,7 @@ export function useCreateTaskForm({
         isEditing,
         taskToEdit,
         locale,
+        timeZone: useUserStore.getState().user?.timezone,
       });
       if (hardcoreError) {
         toast.error(hardcoreError);
@@ -468,7 +473,10 @@ export function useCreateTaskForm({
         dueDate:
           dueDate ||
           (dueTime || startTime || isAllDay
-            ? getTodayDateString()
+            ? getTodayDateString(
+                new Date(),
+                useUserStore.getState().user?.timezone,
+              )
             : undefined) ||
           undefined,
         dueTime: !isAllDay && !startTime && dueTime ? dueTime : undefined,
@@ -498,37 +506,36 @@ export function useCreateTaskForm({
       };
 
       if (isEditing && taskToEdit) {
-        const updatePayload = buildUpdateTaskPayload(draftTask);
-        const response = await updateTask(taskToEdit.id, updatePayload);
+        const updatePayload = buildUpdateTaskPayload(
+          draftTask,
+          undefined,
+          useUserStore.getState().user?.timezone,
+        );
+        const originalColumnId = taskToEdit.columnId || defaultColumnId;
+        const response = await saveTaskWithDetails({
+          taskId: taskToEdit.id,
+          payload: updatePayload,
+          initialChecklist: taskToEdit.checklist || [],
+          currentChecklist: checklist,
+          originalColumnId,
+          targetColumnId: columnId,
+        });
 
         if (!response.success) {
           toast.error(response.error || t("updateTaskError"));
           return;
         }
 
-        // Persiste as alterações de subtarefas acumuladas localmente no modal
-        const checklistSync = await syncTaskChecklistChanges(
-          taskToEdit.id,
-          taskToEdit.checklist || [],
-          checklist,
-        );
-        const finalChecklist = checklistSync.items;
-        if (checklistSync.failedCount > 0) {
+        const {
+          checklist: finalChecklist,
+          checklistFailedCount,
+          moveError,
+        } = response.data;
+        if (checklistFailedCount > 0) {
           toast.error(t("checklistSyncError"));
         }
-
-        const originalColumnId = taskToEdit.columnId || defaultColumnId;
-        if (originalColumnId && columnId !== originalColumnId) {
-          const moveRes = await moveTasks([
-            {
-              taskId: taskToEdit.id,
-              boardColumnId: columnId,
-              newOrderIndex: 0,
-            },
-          ]);
-          if (!moveRes.success) {
-            toast.error(moveRes.error || t("moveTaskColumnError"));
-          }
+        if (moveError) {
+          toast.error(moveError || t("moveTaskColumnError"));
         }
 
         toast.success(t("updateTaskSuccess"));
@@ -538,8 +545,9 @@ export function useCreateTaskForm({
       }
 
       // MODO CRIAÇÃO
-      const payload = buildCreateTaskPayloadFromTask(draftTask);
-      const response = await createTask(columnId, payload);
+      const userTimeZone = useUserStore.getState().user?.timezone;
+      const payload = buildCreateTaskPayloadFromTask(draftTask, userTimeZone);
+      const response = await createTask(columnId, payload, checklist);
 
       if (!response.success) {
         toast.error(response.error || t("createTaskError"));
@@ -548,21 +556,14 @@ export function useCreateTaskForm({
 
       const createdTaskData = response.data;
       const createdTaskId = createdTaskData?.id;
-
-      let finalChecklist = checklist;
-      if (createdTaskId && checklist.length > 0) {
-        const createdItems = await cloneTaskChecklistItems(
-          createdTaskId,
-          checklist,
-        );
-        if (createdItems.length > 0) {
-          finalChecklist = createdItems;
-        }
-      }
+      const finalChecklist =
+        createdTaskData?.checklist && createdTaskData.checklist.length > 0
+          ? createdTaskData.checklist
+          : checklist;
 
       const mappedTask: Task = createdTaskData
         ? {
-            ...mapTaskResponseToTask(createdTaskData, columnId),
+            ...mapTaskResponseToTask(createdTaskData, columnId, userTimeZone),
             checklist: finalChecklist,
           }
         : {

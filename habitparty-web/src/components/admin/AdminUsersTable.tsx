@@ -1,26 +1,29 @@
 "use client";
 
-import {
-  BadgeCheck,
-  Clock,
-  Crown,
-  Database,
-  HardDrive,
-  Mail,
-  Search,
-  Shield,
-} from "lucide-react";
+import { Database, Loader2, Mail } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
-import { TaskPagination } from "@/components/dashboard/TaskPagination";
+import { useEffect, useState } from "react";
+import { StorageUsageBar } from "@/components/admin/StorageUsageBar";
+import { FilterBar } from "@/components/ui/FilterBar";
+import { FounderBadge } from "@/components/ui/FounderBadge";
+import { Pagination } from "@/components/ui/Pagination";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import {
+  UserPlanBadge,
+  UserRoleBadge,
+  UserVerifiedBadge,
+} from "@/components/ui/UserStatusBadges";
+import {
+  ADMIN_DEFAULT_PAGE_SIZE,
   ADMIN_USER_FILTER_TABS,
-  calculateStoragePercentage,
-  getUserStorageLimitFormatted,
+  FREE_USER_EMAIL_MONTHLY_LIMIT,
+  FREE_USER_MAX_ACTIVE_REMINDERS,
+  PREMIUM_USER_EMAIL_MONTHLY_LIMIT,
+  PREMIUM_USER_MAX_ACTIVE_REMINDERS,
 } from "@/constants/admin";
 import type { AdminUserSummaryDTO } from "@/types/admin";
 import { cn } from "@/utils";
+import { calculateStoragePercentage } from "@/utils/adminUtils";
 
 interface AdminUsersTableProps {
   users: AdminUserSummaryDTO[];
@@ -30,9 +33,10 @@ interface AdminUsersTableProps {
   search: string;
   filter: string;
   isLoading: boolean;
+  loadingUserId: string | null;
+  buildPageHref: (page1Based: number) => string;
   onSearchChange: (search: string) => void;
   onFilterChange: (filter: string) => void;
-  onPageChange: (page: number) => void;
   onSelectUser: (user: AdminUserSummaryDTO) => void;
   onToggleRole: (user: AdminUserSummaryDTO) => void;
 }
@@ -45,66 +49,63 @@ export function AdminUsersTable({
   search,
   filter,
   isLoading,
+  loadingUserId,
+  buildPageHref,
   onSearchChange,
   onFilterChange,
-  onPageChange,
   onSelectUser,
   onToggleRole,
 }: AdminUsersTableProps) {
   const t = useTranslations("admin.usersTable");
   const [searchInput, setSearchInput] = useState(search);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSearchChange(searchInput);
-  };
+  useEffect(() => {
+    setSearchInput(search);
+  }, [search]);
 
-  const filterTabs = ADMIN_USER_FILTER_TABS;
+  useEffect(() => {
+    const trimmed = searchInput.trim();
+    if (trimmed === search.trim()) return;
+
+    const timer = window.setTimeout(() => {
+      onSearchChange(trimmed);
+    }, 350);
+
+    return () => window.clearTimeout(timer);
+  }, [searchInput, search, onSearchChange]);
 
   return (
     <div className="flex flex-col gap-4">
-      {/* BARRA DE FILTROS & BUSCA */}
-      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-        {/* Abas de Filtro */}
-        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface dark:bg-surface/80 border border-neutral-700 dark:border-white/10 overflow-x-auto w-full sm:w-auto">
-          {filterTabs.map((tab) => {
-            const isActive = filter === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => onFilterChange(tab.id)}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer",
-                  isActive
-                    ? "bg-gold text-on-gold dark:text-neutral-950 font-bold shadow-sm"
-                    : "text-neutral-300 hover:text-neutral-50 hover:bg-card/70 dark:text-neutral-400 dark:hover:text-neutral-200 dark:hover:bg-white/5",
-                )}
-              >
-                {t(`filterTabs.${tab.id}`)}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Input de Busca */}
-        <form
-          onSubmit={handleSearchSubmit}
-          className="relative w-full sm:w-72 shrink-0"
-        >
-          <Search
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400"
-          />
-          <input
-            type="text"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder={t("searchPlaceholder")}
-            className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-card dark:bg-surface/80 border border-neutral-600 dark:border-white/10 text-xs text-neutral-50 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 shadow-2xs dark:shadow-none focus:outline-none focus:border-primary dark:focus:border-gold/50"
-          />
-        </form>
-      </div>
+      {/* BARRA DE FILTROS & BUSCA PADRONIZADA */}
+      <FilterBar
+        search={{
+          value: searchInput,
+          onChange: setSearchInput,
+          placeholder: t("searchPlaceholder"),
+        }}
+        leftActions={
+          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface dark:bg-surface/80 border border-neutral-700 dark:border-white/10 overflow-x-auto w-full sm:w-auto">
+            {ADMIN_USER_FILTER_TABS.map((tab) => {
+              const isActive = filter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => onFilterChange(tab.id)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer",
+                    isActive
+                      ? "bg-gold text-on-gold dark:text-neutral-950 font-bold shadow-sm"
+                      : "text-neutral-300 hover:text-neutral-50 hover:bg-card/70 dark:text-neutral-400 dark:hover:text-neutral-200 dark:hover:bg-white/5",
+                  )}
+                >
+                  {t(`filterTabs.${tab.id}`)}
+                </button>
+              );
+            })}
+          </div>
+        }
+      />
 
       {/* TABELA */}
       <div className="rounded-2xl border border-neutral-700 dark:border-white/10 bg-card dark:bg-surface/80 shadow-xs dark:shadow-none overflow-hidden relative">
@@ -119,7 +120,7 @@ export function AdminUsersTable({
         <div className="overflow-x-auto [scrollbar-width:thin] custom-scrollbar">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-neutral-700 dark:border-white/10 bg-surface/70 dark:bg-white/[0.03] text-neutral-400 uppercase tracking-wider text-[11px] font-semibold">
+              <tr className="border-b border-neutral-700 dark:border-white/10 bg-surface/70 dark:bg-white/[0.03] text-neutral-400 uppercase tracking-wider text-label-g font-semibold">
                 <th className="py-3.5 px-4">{t("headers.user")}</th>
                 <th className="py-3.5 px-4">{t("headers.role")}</th>
                 <th className="py-3.5 px-4">{t("headers.plan")}</th>
@@ -145,6 +146,11 @@ export function AdminUsersTable({
                 users.map((user) => {
                   const isAdmin = user.role === "ADMIN";
                   const isFree = !user.isPremium;
+                  const isLoadingDetail = loadingUserId === user.id;
+                  const storagePct = calculateStoragePercentage(
+                    user.estimatedStorageBytes,
+                    user.isPremium,
+                  );
 
                   return (
                     <tr
@@ -165,25 +171,18 @@ export function AdminUsersTable({
                               <p className="font-bold text-neutral-50 dark:text-neutral-100 truncate">
                                 {user.fullName}
                               </p>
-                              {user.emailVerified ? (
-                                <span
-                                  title={t("verification.verifiedTitle")}
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 shrink-0"
-                                >
-                                  <BadgeCheck size={11} />
-                                  <span>{t("verification.verified")}</span>
-                                </span>
-                              ) : (
-                                <span
-                                  title={t("verification.unverifiedTitle")}
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/25 shrink-0"
-                                >
-                                  <Clock size={10} />
-                                  <span>{t("verification.unverified")}</span>
-                                </span>
-                              )}
+                              <UserVerifiedBadge
+                                isVerified={user.emailVerified}
+                                verifiedLabel={t("verification.verified")}
+                                unverifiedLabel={t("verification.unverified")}
+                                title={
+                                  user.emailVerified
+                                    ? t("verification.verifiedTitle")
+                                    : t("verification.unverifiedTitle")
+                                }
+                              />
                             </div>
-                            <p className="text-[11px] text-neutral-400 truncate">
+                            <p className="text-label-g text-neutral-400 truncate font-normal">
                               @{user.username} • {user.email}
                             </p>
                           </div>
@@ -192,48 +191,35 @@ export function AdminUsersTable({
 
                       {/* CARGO */}
                       <td className="py-3.5 px-4">
-                        {isAdmin ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30">
-                            <Shield size={12} />
-                            {t("roles.admin")}
-                          </span>
-                        ) : (
-                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-surface text-neutral-300 border border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:border-white/5">
-                            {t("roles.user")}
-                          </span>
-                        )}
+                        <UserRoleBadge
+                          role={user.role}
+                          adminLabel={t("roles.admin")}
+                          userLabel={t("roles.user")}
+                          showUserRole
+                        />
                       </td>
 
                       {/* PLANO */}
                       <td className="py-3.5 px-4">
                         {user.isFounder ? (
                           <div className="flex flex-col gap-1 items-start">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gold/20 text-amber-700 dark:text-gold border border-gold/40 shadow-glow-gold-xs">
-                              <Crown
-                                size={12}
-                                className="fill-amber-500 dark:fill-gold"
-                              />
-                              {t("plans.founder")}
-                            </span>
+                            <FounderBadge size="sm" />
                             {user.isPremium ? (
-                              <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
+                              <span className="text-tiny font-semibold text-emerald-700 dark:text-emerald-400">
                                 {t("plans.premiumActive")}
                               </span>
                             ) : (
-                              <span className="text-[10px] font-semibold text-neutral-400">
+                              <span className="text-tiny font-semibold text-neutral-400">
                                 {t("plans.freeAccess")}
                               </span>
                             )}
                           </div>
-                        ) : user.isPremium ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gold/15 text-amber-700 dark:text-gold border border-gold/30">
-                            <Crown size={12} />
-                            {t("plans.premiumVip")}
-                          </span>
                         ) : (
-                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-surface text-neutral-200 border border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:border-white/5">
-                            {t("plans.free")}
-                          </span>
+                          <UserPlanBadge
+                            isPremium={user.isPremium}
+                            premiumLabel={t("plans.premiumVip")}
+                            freeLabel={t("plans.free")}
+                          />
                         )}
                       </td>
 
@@ -248,17 +234,21 @@ export function AdminUsersTable({
                             <span className="font-bold text-neutral-100 dark:text-neutral-200">
                               {user.emailsSentThisMonth}
                             </span>
-                            <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
+                            <span className="text-label-g text-neutral-400 dark:text-neutral-500 font-normal">
                               {t("emails.monthlyQuota", {
-                                limit: isFree ? 20 : 100,
+                                limit: isFree
+                                  ? FREE_USER_EMAIL_MONTHLY_LIMIT
+                                  : PREMIUM_USER_EMAIL_MONTHLY_LIMIT,
                               })}
                             </span>
                           </div>
                           {user.activeEmailReminders > 0 && (
-                            <span className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">
+                            <span className="text-tiny text-amber-700 dark:text-amber-400 mt-0.5">
                               {t("emails.activeReminders", {
                                 active: user.activeEmailReminders,
-                                max: isFree ? 5 : 30,
+                                max: isFree
+                                  ? FREE_USER_MAX_ACTIVE_REMINDERS
+                                  : PREMIUM_USER_MAX_ACTIVE_REMINDERS,
                               })}
                             </span>
                           )}
@@ -270,7 +260,7 @@ export function AdminUsersTable({
                         <span className="font-bold text-neutral-100 dark:text-neutral-200">
                           {user.activeTasksCount}
                         </span>
-                        <span className="text-neutral-400 dark:text-neutral-500 text-[11px]">
+                        <span className="text-neutral-400 dark:text-neutral-500 text-label-g font-normal">
                           {" "}
                           {t("tasks.totalSuffix", {
                             total: user.totalTasksCount,
@@ -280,53 +270,17 @@ export function AdminUsersTable({
 
                       {/* ESPAÇO NO BANCO & COTA */}
                       <td className="py-3.5 px-4 font-mono">
-                        {(() => {
-                          const storageLimitFormatted =
-                            getUserStorageLimitFormatted(user.isPremium);
-                          const storagePct = calculateStoragePercentage(
-                            user.estimatedStorageBytes,
-                            user.isPremium,
-                          );
-
-                          return (
-                            <div className="flex flex-col gap-1 min-w-[130px]">
-                              <div className="flex items-center gap-1.5">
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-success-500/10 text-emerald-700 dark:text-success-500 border border-success-500/25 font-bold text-[11px]">
-                                  <HardDrive size={11} />
-                                  {user.estimatedStorageFormatted}
-                                </span>
-                                <span className="text-[10px] text-neutral-400">
-                                  / {storageLimitFormatted}
-                                </span>
-                              </div>
-
-                              <div className="w-full h-1.5 rounded-full bg-neutral-700 dark:bg-neutral-800 overflow-hidden">
-                                <div
-                                  className={cn(
-                                    "h-full w-full origin-left rounded-full transition-transform duration-300",
-                                    storagePct >= 80
-                                      ? "bg-danger-500"
-                                      : storagePct >= 50
-                                        ? "bg-warning-500"
-                                        : "bg-success-500",
-                                  )}
-                                  style={{
-                                    transform: `scaleX(${Math.max(storagePct, 2) / 100})`,
-                                  }}
-                                />
-                              </div>
-
-                              <span className="text-[10px] text-neutral-400 font-normal">
-                                {t("storage.quotaPercentage", {
-                                  percentage: storagePct,
-                                  tier: user.isPremium
-                                    ? t("storage.tierVip")
-                                    : t("storage.tierFree"),
-                                })}
-                              </span>
-                            </div>
-                          );
-                        })()}
+                        <StorageUsageBar
+                          bytesUsed={user.estimatedStorageBytes}
+                          usedFormatted={user.estimatedStorageFormatted}
+                          isPremium={user.isPremium}
+                          quotaLabel={t("storage.quotaPercentage", {
+                            percentage: storagePct,
+                            tier: user.isPremium
+                              ? t("storage.tierVip")
+                              : t("storage.tierFree"),
+                          })}
+                        />
                       </td>
 
                       {/* AÇÕES */}
@@ -335,10 +289,18 @@ export function AdminUsersTable({
                           <button
                             type="button"
                             onClick={() => onSelectUser(user)}
-                            className="px-2.5 py-1 rounded-lg bg-surface hover:bg-surface-hover border border-neutral-700 text-neutral-100 dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10 dark:text-neutral-200 dark:hover:text-white transition-colors text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                            disabled={isLoadingDetail}
+                            className="px-2.5 py-1 rounded-lg bg-surface hover:bg-surface-hover border border-neutral-700 text-neutral-100 dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10 dark:text-neutral-200 dark:hover:text-white transition-colors text-xs font-semibold flex items-center gap-1 cursor-pointer disabled:opacity-60"
                             title={t("actions.detailsTitle")}
                           >
-                            <Database size={13} />
+                            {isLoadingDetail ? (
+                              <Loader2
+                                size={13}
+                                className="animate-spin text-gold"
+                              />
+                            ) : (
+                              <Database size={13} />
+                            )}
                             {t("actions.details")}
                           </button>
 
@@ -373,14 +335,14 @@ export function AdminUsersTable({
 
         {/* PAGINAÇÃO */}
         {totalPages > 1 ? (
-          <div className="border-t border-neutral-700 dark:border-white/10 bg-surface/40 dark:bg-white/[0.02] px-3 py-1">
-            <TaskPagination
+          <div className="bg-surface/40 dark:bg-white/[0.02] px-3 py-1">
+            <Pagination
               currentPage={currentPage + 1}
               totalPages={totalPages}
               totalItems={totalElements}
-              itemsPerPage={15}
+              itemsPerPage={ADMIN_DEFAULT_PAGE_SIZE}
               itemLabel={t("pagination.itemLabel")}
-              onPageChange={(page) => onPageChange(page - 1)}
+              buildHref={buildPageHref}
             />
           </div>
         ) : totalElements > 0 ? (

@@ -1,3 +1,5 @@
+"use client";
+
 import { Coins, Flame, Sparkles, Sword, Swords } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {

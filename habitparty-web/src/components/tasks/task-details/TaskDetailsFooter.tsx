@@ -8,6 +8,7 @@ import { RewardPreview } from "@/components/ui/reward/RewardPreview";
 import { normalizeTaskType } from "@/constants/task";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import type { AppLocale } from "@/i18n/config";
+import { useUserStore } from "@/store/userStore";
 import type { TaskDetailsFooterProps } from "@/types/task-ui";
 import { getTaskDueDateInfo } from "@/utils/date";
 import { getTaskRewardBreakdown, toTaskRewardEstimate } from "@/utils/economy";
@@ -20,6 +21,7 @@ export function TaskDetailsFooter({
 }: TaskDetailsFooterProps) {
   const t = useTranslations("tasks.detailsPopover.footer");
   const locale = useLocale() as AppLocale;
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuContainerRef = useRef<HTMLDivElement>(null);
 
@@ -41,13 +43,14 @@ export function TaskDetailsFooter({
       dueDate: task.dueDate,
       isPenaltyApplied: task.isPenaltyApplied,
       locale,
+      timeZone: userTimeZone,
     });
     return toTaskRewardEstimate(breakdown, {
       isHardcore: task.isHardcoreModeEnabled,
       taskType: task.type,
       locale,
     });
-  }, [task, locale]);
+  }, [task, locale, userTimeZone]);
 
   const isHardcoreOverdue = useMemo(() => {
     if (!task) return false;
@@ -55,11 +58,12 @@ export function TaskDetailsFooter({
     const dueDateInfo = getTaskDueDateInfo(task.dueDate, {
       dueTime: task.dueTime,
       dueEndTime: task.dueEndTime,
+      timeZone: userTimeZone,
     });
     return Boolean(
       isTodo && task.isHardcoreModeEnabled && dueDateInfo.isOverdue,
     );
-  }, [task]);
+  }, [task, userTimeZone]);
 
   return (
     <div className="flex items-center justify-between pt-2 border-t border-white/8 mt-0.5 min-w-0">

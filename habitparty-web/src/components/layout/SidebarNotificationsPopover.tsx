@@ -18,7 +18,9 @@ import {
 } from "@/actions/notificationActions";
 import { useAnchoredPopoverPosition } from "@/hooks/useAnchoredPopoverPosition";
 import { useClickOutside } from "@/hooks/useClickOutside";
+import { useUserStore } from "@/store/userStore";
 import { cn, getTodayDateString } from "@/utils";
+import { getDatePartsInTimeZone } from "@/utils/date";
 import { soundEffects } from "@/utils/soundEffects";
 
 const POPOVER_OPTIONS = {
@@ -30,7 +32,12 @@ const POPOVER_OPTIONS = {
 
 const DISMISSED_STORAGE_PREFIX = "habitparty:notifications-dismissed:";
 
-function getDismissedStorageKey(dateStr = getTodayDateString()): string {
+function getDismissedStorageKey(
+  dateStr = getTodayDateString(
+    new Date(),
+    useUserStore.getState().user?.timezone,
+  ),
+): string {
   return `${DISMISSED_STORAGE_PREFIX}${dateStr}`;
 }
 
@@ -57,8 +64,9 @@ export function SidebarNotificationsPopover({
   const loadNotifications = useCallback((playAlertOnNew = false) => {
     startTransition(async () => {
       const now = new Date();
-      const localDateStr = getTodayDateString(now);
-      const localDayIdx = now.getDay();
+      const userTimeZone = useUserStore.getState().user?.timezone;
+      const localDateStr = getTodayDateString(now, userTimeZone);
+      const localDayIdx = getDatePartsInTimeZone(now, userTimeZone).weekday;
       const res = await getSidebarNotificationsAction(
         localDateStr,
         localDayIdx,
@@ -93,29 +101,61 @@ export function SidebarNotificationsPopover({
     }
   }, []);
 
-  // Mantém o contador/badge sincronizado ao concluir/alterar tarefas mesmo com o popover fechado
+  // Mantém o contador/badge sincronizado ao concluir/alterar tarefas mesmo com o popover fechado,
+  // atualizando otimisticamente o alerta de ofensiva e adiando a revalidação pesada para o período ocioso
   useEffect(() => {
     if (typeof window === "undefined") return;
     let debounceTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
+    let idleCallbackId: number | null = null;
 
-    const handleTasksUpdated = () => {
+    const scheduleRefresh = () => {
       if (debounceTimer) {
         globalThis.clearTimeout(debounceTimer);
       }
+      if (idleCallbackId !== null && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(idleCallbackId);
+        idleCallbackId = null;
+      }
       debounceTimer = globalThis.setTimeout(() => {
-        loadNotifications(false);
-      }, 1200);
+        if ("requestIdleCallback" in window) {
+          idleCallbackId = window.requestIdleCallback(
+            () => {
+              loadNotifications(false);
+            },
+            { timeout: 3000 },
+          );
+        } else {
+          loadNotifications(false);
+        }
+      }, 4500);
+    };
+
+    const handleTasksUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<{ completedToday?: boolean }>)
+        .detail;
+      if (detail?.completedToday) {
+        setNotifications((prev) => prev.filter((n) => n.id !== "alert-streak"));
+      }
+      scheduleRefresh();
+    };
+
+    const handleFocusTaskCompleted = () => {
+      setNotifications((prev) => prev.filter((n) => n.id !== "alert-streak"));
+      scheduleRefresh();
     };
 
     window.addEventListener("habitparty:tasks-changed", handleTasksUpdated);
     window.addEventListener(
       "habitparty:task-completed-from-focus",
-      handleTasksUpdated,
+      handleFocusTaskCompleted,
     );
 
     return () => {
       if (debounceTimer) {
         globalThis.clearTimeout(debounceTimer);
+      }
+      if (idleCallbackId !== null && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(idleCallbackId);
       }
       window.removeEventListener(
         "habitparty:tasks-changed",
@@ -123,7 +163,7 @@ export function SidebarNotificationsPopover({
       );
       window.removeEventListener(
         "habitparty:task-completed-from-focus",
-        handleTasksUpdated,
+        handleFocusTaskCompleted,
       );
     };
   }, [loadNotifications]);

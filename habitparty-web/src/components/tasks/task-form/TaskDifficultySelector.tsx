@@ -1,3 +1,5 @@
+"use client";
+
 import { Gauge, Sword, Swords } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";

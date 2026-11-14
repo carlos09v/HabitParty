@@ -1,8 +1,144 @@
 import { cookies, headers } from "next/headers";
 import createClient, { type Middleware } from "openapi-fetch";
 import { cache } from "react";
+import type { PaymentConfirmResponse } from "@/actions/paymentActions";
+import type {
+  CheckoutRequestDTO,
+  CheckoutResponseDTO,
+  FoundersQuotaDTO,
+} from "@/types/payment";
+import type {
+  AchievementItemResponseDTO,
+  ProfileHighlightResponseDTO,
+  UpdateProfileHighlightsRequestDTO,
+  UpdateShowcaseProfileRequestDTO,
+  UserShowcaseResponseDTO,
+} from "@/types/showcase";
 import { getLocaleMode } from "@/utils/cookies";
 import type { paths } from "./schema";
+
+export type ExtendedApiPaths = paths & {
+  "/showcase/me": {
+    get: {
+      responses: {
+        200: {
+          content: {
+            "application/json": UserShowcaseResponseDTO;
+          };
+        };
+      };
+    };
+  };
+  "/showcase/highlights": {
+    put: {
+      requestBody: {
+        content: {
+          "application/json": UpdateProfileHighlightsRequestDTO;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            "application/json": ProfileHighlightResponseDTO[];
+          };
+        };
+      };
+    };
+  };
+  "/showcase/profile": {
+    patch: {
+      requestBody: {
+        content: {
+          "application/json": UpdateShowcaseProfileRequestDTO;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            "application/json": Record<string, unknown>;
+          };
+        };
+      };
+    };
+  };
+  "/showcase/achievements/unseen": {
+    get: {
+      responses: {
+        200: {
+          content: {
+            "application/json": AchievementItemResponseDTO[];
+          };
+        };
+      };
+    };
+  };
+  "/showcase/achievements/seen": {
+    post: {
+      responses: {
+        200: {
+          content?: never;
+        };
+        204: {
+          content?: never;
+        };
+      };
+    };
+  };
+  "/api/v1/payments/founders-quota": {
+    get: {
+      responses: {
+        200: {
+          content: {
+            "application/json": FoundersQuotaDTO;
+          };
+        };
+      };
+    };
+  };
+  "/api/v1/payments/checkout": {
+    post: {
+      requestBody: {
+        content: {
+          "application/json": CheckoutRequestDTO;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            "application/json": CheckoutResponseDTO;
+          };
+        };
+      };
+    };
+  };
+  "/api/v1/payments/portal": {
+    post: {
+      responses: {
+        200: {
+          content: {
+            "application/json": { portalUrl: string };
+          };
+        };
+      };
+    };
+  };
+  "/api/v1/payments/confirm": {
+    post: {
+      requestBody: {
+        content: {
+          "application/json": { sessionId: string };
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            "application/json": PaymentConfirmResponse;
+          };
+        };
+      };
+    };
+  };
+};
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -59,9 +195,11 @@ export const getServerAuthToken = cache(async (): Promise<string | null> => {
  */
 const serverAuthMiddleware: Middleware = {
   async onRequest({ request }) {
-    const token = await getServerAuthToken();
-    if (token) {
-      request.headers.set("Authorization", `Bearer ${token}`);
+    if (!request.headers.has("Authorization")) {
+      const token = await getServerAuthToken();
+      if (token) {
+        request.headers.set("Authorization", `Bearer ${token}`);
+      }
     }
 
     try {
@@ -93,12 +231,20 @@ const serverAuthMiddleware: Middleware = {
 };
 
 /**
- * Cliente HTTP tipado 100% type-safe para uso em Server Components e Server Actions.
+ * Cliente HTTP tipado 100% type-safe para uso em Server Components e Server Actions autenticados.
  */
-export const serverApi = createClient<paths>({
+export const serverApi = createClient<ExtendedApiPaths>({
   baseUrl: API_BASE_URL,
 });
 
 serverApi.use(serverAuthMiddleware);
+
+/**
+ * Cliente HTTP tipado para endpoints públicos sem acesso a `cookies()` ou `headers()`,
+ * seguro para uso dentro de escopos `"use cache"` e pré-renderização estática.
+ */
+export const publicServerApi = createClient<ExtendedApiPaths>({
+  baseUrl: API_BASE_URL,
+});
 
 export default serverApi;

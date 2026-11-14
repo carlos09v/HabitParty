@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,9 +12,14 @@ import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.habitparty.adapters.in.web.dtos.response.FocusRecordResponseDTO;
 
 import com.habitparty.core.exceptions.LimitExceededException;
 
@@ -135,7 +141,7 @@ class CreateFocusRecordUseCaseTest {
         30,
         LocalDateTime.now());
 
-    when(port.sumFocusMinutesToday(userId)).thenReturn(0);
+    when(port.sumFocusMinutesToday(eq(userId), any())).thenReturn(0);
     when(port.save(any(FocusRecord.class))).thenAnswer(invocation -> invocation.getArgument(0));
     when(userPort.findById(userId)).thenReturn(Optional.of(user));
     when(focusActivityPort.findById(activityId)).thenReturn(Optional.of(activity));
@@ -288,7 +294,7 @@ class CreateFocusRecordUseCaseTest {
         1);
 
     when(taskPort.findById(taskId)).thenReturn(Optional.of(todo));
-    when(port.sumFocusMinutesToday(userId)).thenReturn(0);
+    when(port.sumFocusMinutesToday(eq(userId), any())).thenReturn(0);
     when(port.save(any(FocusRecord.class))).thenAnswer(invocation -> invocation.getArgument(0));
     when(userPort.findById(userId)).thenReturn(Optional.of(user));
 
@@ -341,5 +347,61 @@ class CreateFocusRecordUseCaseTest {
     when(taskPort.findById(habitId)).thenReturn(Optional.of(habit));
 
     assertThrows(DomainValidationException.class, () -> useCase.execute(userId, command));
+  }
+
+  @Test
+  @DisplayName("Sessão em fuso distinto do servidor deve normalizar armazenamento para o servidor, avaliar conquista na hora do usuário e serializar com offset do usuário")
+  void shouldNormalizeFocusTimestampsBetweenUserZoneAndServerZone() {
+    ZoneId tokyoZone = ZoneId.of("Asia/Tokyo");
+    user.setTimezone("Asia/Tokyo");
+
+    LocalDateTime tokyoStart = LocalDateTime.of(2026, 10, 16, 23, 0);
+    LocalDateTime tokyoEnd = LocalDateTime.of(2026, 10, 16, 23, 30);
+
+    CreateFocusRecordCommand command = new CreateFocusRecordCommand(
+        activityId,
+        null,
+        null,
+        "Sessão noturna em Tóquio",
+        tokyoStart,
+        tokyoEnd,
+        FocusRecordType.POMO,
+        1);
+
+    FocusActivity activity = new FocusActivity(
+        activityId,
+        userId,
+        "Leitura",
+        "book",
+        0,
+        FocusRecordType.POMO,
+        30,
+        LocalDateTime.now());
+
+    when(focusActivityPort.findById(activityId)).thenReturn(Optional.of(activity));
+    when(focusActivityPort.findAllByUserIdOrderByOrderIndex(userId)).thenReturn(List.of(activity));
+    when(userPort.findById(userId)).thenReturn(Optional.of(user));
+    when(port.sumFocusMinutesToday(userId, tokyoZone)).thenReturn(0);
+    when(port.save(any(FocusRecord.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    FocusRecord saved = useCase.execute(userId, command);
+
+    LocalDateTime expectedServerStart = tokyoStart
+        .atZone(tokyoZone)
+        .withZoneSameInstant(ZoneId.systemDefault())
+        .toLocalDateTime();
+    LocalDateTime expectedServerEnd = tokyoEnd
+        .atZone(tokyoZone)
+        .withZoneSameInstant(ZoneId.systemDefault())
+        .toLocalDateTime();
+
+    assertEquals(expectedServerStart, saved.getStartTime());
+    assertEquals(expectedServerEnd, saved.getEndTime());
+    // 23:00-23:30 no relógio do usuário em Tóquio conta como foco noturno (22h..06h)
+    assertEquals(1, user.getStats().getTotalNightFocusSessions());
+
+    FocusRecordResponseDTO dto = FocusRecordResponseDTO.fromDomain(saved, tokyoZone);
+    assertEquals(OffsetDateTime.of(tokyoStart, ZoneOffset.ofHours(9)), dto.startTime());
+    assertEquals(OffsetDateTime.of(tokyoEnd, ZoneOffset.ofHours(9)), dto.endTime());
   }
 }

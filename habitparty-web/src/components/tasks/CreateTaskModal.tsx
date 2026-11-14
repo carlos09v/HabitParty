@@ -26,6 +26,7 @@ import { RewardPreview } from "@/components/ui/reward/RewardPreview";
 import { TASK_TYPE_META } from "@/constants/task";
 import { useCreateTaskForm } from "@/hooks/useCreateTaskForm";
 import type { AppLocale } from "@/i18n/config";
+import { useUserStore } from "@/store/userStore";
 import type { CreateTaskModalProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 import { isTaskHardcoreLocked } from "@/utils/date";
@@ -60,9 +61,10 @@ export function CreateTaskModal({
   });
 
   const isEditing = form.isEditing;
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
 
   const isOverdueHardcoreLocked = Boolean(
-    isEditing && isTaskHardcoreLocked(taskToEdit),
+    isEditing && isTaskHardcoreLocked(taskToEdit, new Date(), userTimeZone),
   );
 
   const rewardEstimate = useMemo(() => {
@@ -81,6 +83,7 @@ export function CreateTaskModal({
       dueDate: form.dueDate,
       isPenaltyApplied: taskToEdit?.isPenaltyApplied,
       locale,
+      timeZone: userTimeZone,
     });
     return toTaskRewardEstimate(breakdown, {
       isHardcore: form.isHardcore,
@@ -97,6 +100,7 @@ export function CreateTaskModal({
     form.dueDate,
     taskToEdit,
     locale,
+    userTimeZone,
   ]);
 
   const TypeHeaderIcon =

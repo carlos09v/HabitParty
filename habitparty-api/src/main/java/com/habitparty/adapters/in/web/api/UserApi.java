@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.habitparty.adapters.in.web.dtos.request.CreateUserDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserPasswordDTO;
+import com.habitparty.adapters.in.web.dtos.request.UpdateUserThemeDTO;
 import com.habitparty.adapters.in.web.dtos.response.UserResponseDTO;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
@@ -54,6 +55,13 @@ public interface UserApi {
     @PutMapping
     ResponseEntity<UserResponseDTO> update(
         @RequestBody @Valid UpdateUserDTO dto,
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
+    );
+
+    @Operation(summary = "Atualizar Tema Visual", description = "Atualiza o tema visual da interface (temas atmosféricos VIP requerem assinatura Premium).")
+    @PatchMapping("/theme")
+    ResponseEntity<UserResponseDTO> updateTheme(
+        @RequestBody @Valid UpdateUserThemeDTO dto,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 

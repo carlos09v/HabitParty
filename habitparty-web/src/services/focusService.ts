@@ -68,8 +68,8 @@ export async function getFocusActivitiesAndItems(): Promise<{
  * Busca os DTOs brutos de registros recentes de foco do usuário (atividades e tarefas)
  * em uma única chamada cacheada (`private30`).
  */
-async function fetchRawUserFocusRecords(
-  activityIds: string[],
+export async function fetchRawUserFocusRecords(
+  activityIds: string[] = [],
 ): Promise<FocusRecordResponseDTO[]> {
   "use cache: private";
   cacheLife("private30");
@@ -78,7 +78,7 @@ async function fetchRawUserFocusRecords(
   const { data: myRecordsPage, error } = await serverApi
     .GET("/focus-records/me", {
       params: {
-        query: { page: 0, size: 50 },
+        query: { page: 0, size: 250 },
       },
     })
     .catch(() => ({ data: null, error: true }));
@@ -119,13 +119,17 @@ async function fetchRawUserFocusRecords(
  */
 export async function getFocusInitialRecords(
   activities: FocusActivity[],
+  prefetchedRawRecords?: FocusRecordResponseDTO[],
 ): Promise<FocusRecord[]> {
   const sortedActivityIds = (activities || [])
     .map((act) => act.id)
     .filter(Boolean)
     .sort();
 
-  const rawRecords = await fetchRawUserFocusRecords(sortedActivityIds);
+  const rawRecords =
+    prefetchedRawRecords !== undefined
+      ? prefetchedRawRecords
+      : await fetchRawUserFocusRecords(sortedActivityIds);
   const initialRecords = mapFocusRecords(rawRecords, activities);
 
   // Ordena do mais recente para o mais antigo
@@ -188,11 +192,16 @@ export async function getFocusableTasks(): Promise<FocusableTaskItem[]> {
  * Obtém todos os dados iniciais necessários para a renderização da tela de Foco.
  */
 export async function getFocusPageData(): Promise<FocusPageData> {
-  const [{ activities, backpackItems }, focusableTasks] = await Promise.all([
-    getFocusActivitiesAndItems(),
-    getFocusableTasks(),
-  ]);
-  const initialRecords = await getFocusInitialRecords(activities);
+  const [{ activities, backpackItems }, focusableTasks, prefetchedRawRecords] =
+    await Promise.all([
+      getFocusActivitiesAndItems(),
+      getFocusableTasks(),
+      fetchRawUserFocusRecords(),
+    ]);
+  const initialRecords = await getFocusInitialRecords(
+    activities,
+    prefetchedRawRecords.length > 0 ? prefetchedRawRecords : undefined,
+  );
 
   return {
     activities,

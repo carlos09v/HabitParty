@@ -10,7 +10,7 @@
   "headerSubtitle": "Gerencie seu perfil, assinatura, aparência e segurança da conta.",
   "tabs": {
     "profile": "Perfil",
-    "profileDesc": "Identidade cósmica, fotos e molduras",
+    "profileDesc": "Identidade cósmica e foto de perfil",
     "appearance": "Aparência",
     "appearanceDesc": "Tema claro/escuro, idioma, densidade e cards",
     "audio": "Áudio & Avisos",
@@ -24,8 +24,6 @@
   "cards": {
     "profile": "Meu Perfil",
     "profileDesc": "Gerencie seu nome, data de nascimento e identidade na plataforma.",
-    "avatarFrames": "Molduras de Avatar",
-    "avatarFramesDesc": "Personalize o anel de luz e efeitos visuais ao redor da sua foto de perfil.",
     "appearanceTheme": "Aparência & Tema",
     "appearanceThemeDesc": "Alterne entre o tema escuro cósmico tradicional e o tema claro Cosmic Daylight de conforto visual.",
     "experienceMode": "Perfil de Experiência (Modo Essencial vs. Modo Aventura)",
@@ -36,6 +34,8 @@
     "dateFormatDesc": "Escolha como as datas são exibidas em calendários, prazos de tarefas, foco e histórico.",
     "timeFormat": "Formato de Hora",
     "timeFormatDesc": "Escolha como os horários são exibidos em seletores, prazos de tarefas, foco e histórico.",
+    "timezone": "Fuso Horário",
+    "timezoneDesc": "Define quando sua meia-noite acontece para o reset diário das dailies, cálculo de sequência e lembretes.",
     "welcomeCards": "Cards Introdutórios das Telas",
     "welcomeCardsDesc": "Gerencie quais cartões de boas-vindas e guias rápidos permanecem visíveis nas telas do aplicativo.",
     "audioTitle": "Sons de Interface & Notificações",
@@ -49,6 +49,8 @@
   },
   "profileHeader": {
     "changePhoto": "Alterar foto",
+    "viewProfile": "Ver Perfil",
+    "viewProfileTitle": "Ir para sua vitrine de perfil e molduras (/profile)",
     "uploading": "Enviando...",
     "currentLevel": "Nível {level} • {title}",
     "coins": "{amount} Moedas",
@@ -164,52 +166,21 @@
     "statusH12": "12 Horas com AM/PM (02:05 PM) aplicado em toda a plataforma.",
     "toastSuccess": "Formato de hora alterado para {format}!"
   },
-  "avatarFrames": {
-    "title": "Moldura do Avatar",
-    "upgradeToast": "Molduras animadas são exclusivas para membros Premium! Faça o upgrade para desbloquear.",
-    "vipBadge": "VIP Cósmico",
-    "defaultBadge": "Padrão",
-    "equipped": "Equipada",
-    "equip": "Equipar",
-    "locked": "Exclusivo VIP",
-    "previewLabel": "Prévia do Avatar:",
-    "successToast": "Moldura \"{name}\" equipada com sucesso!",
-    "frames": {
-      "none": {
-        "name": "Sem Moldura",
-        "badge": "Padrão",
-        "description": "Visual clássico limpo sem efeitos de borda adicionais."
-      },
-      "cosmic_gold": {
-        "name": "Guardião Cósmico",
-        "badge": "VIP Cósmico",
-        "description": "Aura de ouro estelar radiante com rotação de luz cósmica e brilho dourado."
-      },
-      "cyber_neon": {
-        "name": "Cyberpunk Neon",
-        "badge": "VIP Tech",
-        "description": "Pulso neon eletrizante alternando tons de ciano futurista e magenta laser."
-      },
-      "fire_phoenix": {
-        "name": "Fogo da Fênix",
-        "badge": "VIP Fênix",
-        "description": "Chamas ardentes em vermelho escarlate e âmbar com efeito de combustão."
-      },
-      "emerald_mystic": {
-        "name": "Aura Esmeralda",
-        "badge": "VIP Místico",
-        "description": "Anel de energia natural verde esmeralda com pulsação suave e mística."
-      },
-      "amethyst_void": {
-        "name": "Vácuo Ametista",
-        "badge": "VIP Arcano",
-        "description": "Energia dimensional violeta escura com brilho estelar etéreo e misterioso."
-      }
-    },
-    "subtitle": "Escolha uma moldura animada com luz cósmica para destacar seu perfil na Party, no ranking e no painel.",
-    "unlockAll": "Desbloquear Todas",
-    "freeBadge": "Grátis",
-    "lockedTitle": "Exclusivo Premium"
+  "timezoneCard": {
+    "activeLabel": "Fuso ativo: ",
+    "browserDiffHint": "Navegador detectado em {browserTz} ({browserOffset}).",
+    "searchPlaceholder": "Buscar cidade ou fuso (ex: Sao_Paulo, New_York, London)...",
+    "selectLabel": "Selecionar fuso horário IANA",
+    "detectBrowserButton": "Usar do navegador",
+    "saveButton": "Salvar Fuso",
+    "saving": "Salvando...",
+    "cooldownHint": "Por segurança da sequência, mudanças manuais têm intervalo mínimo de 24 horas entre alterações.",
+    "cooldownActiveAlert": "Você alterou seu fuso recentemente. Por segurança da ofensiva, poderá alterar novamente em {hours}h {minutes}min.",
+    "cooldownButtonLabel": "Aguarde ({hours}h {minutes}min)",
+    "noResults": "Nenhum fuso encontrado para \"{query}\".",
+    "noChangeHint": "Este já é o fuso horário ativo da sua conta.",
+    "toastSuccess": "Fuso horário atualizado para {timezone}!",
+    "toastError": "Não foi possível atualizar o fuso horário."
   },
   "welcomeCards": {
     "hiddenCount": "{count, plural, one {# card ocultado} other {# cards ocultados}}",

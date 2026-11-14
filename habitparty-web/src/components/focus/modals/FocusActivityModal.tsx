@@ -109,6 +109,7 @@ export function FocusActivityModal({
             id: activityToEdit.id,
             name: name.trim(),
             icon,
+            recordType,
             targetMinutes:
               recordType === "POMO" ? targetTimeMinutes : undefined,
           });
@@ -120,7 +121,9 @@ export function FocusActivityModal({
               icon: res.data?.icon || icon,
               recordType: res.data?.recordType || recordType,
               targetTimeMinutes:
-                recordType === "POMO" ? targetTimeMinutes : undefined,
+                recordType === "POMO"
+                  ? (res.data?.targetTimeMinutes ?? targetTimeMinutes)
+                  : undefined,
             },
             true,
           );

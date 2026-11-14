@@ -4,13 +4,7 @@ import { Check, ShieldCheck, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { cn } from "@/utils";
-import {
-  analyzePassword,
-  type PasswordAnalysis,
-  type PasswordStrengthKey,
-} from "@/utils/validators";
-
-export { analyzePassword, type PasswordAnalysis, type PasswordStrengthKey };
+import { analyzePassword } from "@/utils/validators";
 
 interface PasswordStrengthIndicatorProps {
   password: string;

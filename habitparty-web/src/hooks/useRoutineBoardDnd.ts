@@ -41,8 +41,12 @@ export interface UseRoutineBoardDndOptions {
     targetColumnId: string,
     newOrderIndex: number,
     allTargetTasks?: Task[],
+    previousColumns?: BoardColumn[],
   ) => void;
-  onColumnReorder?: (reorderedColumns: BoardColumn[]) => void;
+  onColumnReorder?: (
+    reorderedColumns: BoardColumn[],
+    previousColumns?: BoardColumn[],
+  ) => void;
   onHideColumn?: (columnId: string) => void;
 }
 
@@ -241,6 +245,7 @@ export function useRoutineBoardDnd({
   };
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
+    const previousColumns = initialDragColumnsRef.current ?? columnsRef.current;
     setActiveColumn(null);
     setActiveTask(null);
     lastOverIdRef.current = null;
@@ -272,7 +277,7 @@ export function useRoutineBoardDnd({
         const next = reorderColumns(currentCols, active.id, targetOverColId);
         columnsRef.current = next;
         setColumns(next);
-        onColumnReorder?.(next);
+        onColumnReorder?.(next, previousColumns);
       }
     } else if (type === "Task") {
       const fromCol = findColumnByTask(currentCols, active.id);
@@ -311,6 +316,7 @@ export function useRoutineBoardDnd({
           targetCol.id,
           newIndex,
           targetCol.tasks,
+          previousColumns,
         );
       }
     }

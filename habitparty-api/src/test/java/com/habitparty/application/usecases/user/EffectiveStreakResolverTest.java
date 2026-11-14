@@ -1,6 +1,8 @@
 package com.habitparty.application.usecases.user;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -63,7 +65,7 @@ class EffectiveStreakResolverTest {
   void zeroesExpiredStreakWhenNoCompletionSinceYesterday() {
     EffectiveStreakResolver resolver = new EffectiveStreakResolver(transactionPort);
     User user = buildUser(9);
-    when(transactionPort.hasCompletedTasksSinceYesterday(user.getId())).thenReturn(false);
+    when(transactionPort.hasCompletedTasksSinceYesterday(eq(user.getId()), any())).thenReturn(false);
 
     assertEquals(0, resolver.resolve(user));
   }
@@ -73,8 +75,20 @@ class EffectiveStreakResolverTest {
   void preservesStreakWhenCompletionExistsSinceYesterday() {
     EffectiveStreakResolver resolver = new EffectiveStreakResolver(transactionPort);
     User user = buildUser(9);
-    when(transactionPort.hasCompletedTasksSinceYesterday(user.getId())).thenReturn(true);
+    when(transactionPort.hasCompletedTasksSinceYesterday(eq(user.getId()), any())).thenReturn(true);
 
     assertEquals(9, resolver.resolve(user));
+  }
+
+  @Test
+  @DisplayName("Deve encaminhar o ZoneId configurado no usuário ao consultar conclusões recentes")
+  void passesUserZoneIdToRepository() {
+    EffectiveStreakResolver resolver = new EffectiveStreakResolver(transactionPort);
+    User user = buildUser(4);
+    user.setTimezone("Asia/Tokyo");
+    when(transactionPort.hasCompletedTasksSinceYesterday(user.getId(), java.time.ZoneId.of("Asia/Tokyo")))
+        .thenReturn(true);
+
+    assertEquals(4, resolver.resolve(user));
   }
 }

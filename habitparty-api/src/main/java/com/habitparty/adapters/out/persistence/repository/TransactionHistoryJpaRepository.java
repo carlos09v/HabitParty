@@ -1,6 +1,7 @@
 package com.habitparty.adapters.out.persistence.repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,6 +32,18 @@ public interface TransactionHistoryJpaRepository extends JpaRepository<Transacti
             UUID userId,
             List<TransactionType> types,
             LocalDateTime since);
+
+    @Query("""
+        SELECT t.user.id, MAX(t.createdAt) FROM TransactionHistoryJpaEntity t
+        WHERE t.user.id IN :userIds
+          AND t.transactionType IN :types
+          AND t.createdAt >= :since
+        GROUP BY t.user.id
+    """)
+    List<Object[]> findLastCompletedTaskAtByUserIds(
+            @Param("userIds") Collection<UUID> userIds,
+            @Param("types") Collection<TransactionType> types,
+            @Param("since") LocalDateTime since);
 
     // Busca geral paginada
     Page<TransactionHistoryJpaEntity> findAllByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);

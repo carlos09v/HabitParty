@@ -354,7 +354,7 @@ export function RichTextDescriptionEditor({
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => editor?.commands.blur()}
-              className="ml-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary/10 border border-primary/30 text-primary hover:bg-primary hover:text-white dark:bg-gold/15 dark:border-gold/30 dark:text-gold dark:hover:bg-gold dark:hover:text-on-gold text-[10px] font-bold transition-colors cursor-pointer"
+              className="ml-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary/10 border border-primary/30 text-primary hover:bg-primary hover:text-white dark:bg-gold/15 dark:border-gold/30 dark:text-gold dark:hover:bg-gold dark:hover:text-on-gold text-tiny font-bold transition-colors cursor-pointer"
             >
               <Check size={10} />
               <span>{doneLabel}</span>

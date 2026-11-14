@@ -16,8 +16,19 @@ export function suggestIconFromKeyword(
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
+  const tokens = normalized.split(/[^a-z0-9]+/).filter(Boolean);
+
+  // 1. Prioriza correspondência exata de palavra inteira (evita "cha" em "lanche"/"chave"/"bolacha" ou "ler" em "colher")
+  for (const token of tokens) {
+    const exactMatch = keywordMap[token];
+    if (exactMatch) {
+      return exactMatch;
+    }
+  }
+
+  // 2. Fallback por prefixo/substring apenas para palavras-chave de 4+ caracteres
   for (const [keyword, iconId] of Object.entries(keywordMap)) {
-    if (normalized.includes(keyword)) {
+    if (keyword.length >= 4 && normalized.includes(keyword)) {
       return iconId;
     }
   }

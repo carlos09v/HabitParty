@@ -2,10 +2,15 @@
 
 import { Clock, Sparkles, Store } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 import { toast } from "sonner";
 import { IconPickerPopover } from "@/components/ui/IconPickerPopover";
 import { Input } from "@/components/ui/Input";
-import { MYSTERY_BOX_PRESETS, REWARD_ICONS } from "@/constants/reward";
+import {
+  getMysteryBadgeVariantClass,
+  MYSTERY_BOX_PRESETS,
+  REWARD_ICONS,
+} from "@/constants/reward";
 import type {
   MysteryBoxLootItem,
   MysteryBoxPresetId,
@@ -51,6 +56,9 @@ export function MysteryBoxLootEditor({
   const tier = getMysteryBoxTier(packageLevel);
   const tierId = tier.id;
   const slotMaxMinutes = tier.slotMaxMinutes;
+  const [manualIconSlots, setManualIconSlots] = useState<
+    [boolean, boolean, boolean]
+  >([false, false, false]);
 
   const storeCandidates = existingRewards.filter(
     (r) => r.type === "SingleUse" || r.type === "TimeBased",
@@ -60,6 +68,7 @@ export function MysteryBoxLootEditor({
     const preset = MYSTERY_BOX_PRESETS.find((p) => p.id === presetId);
     if (!preset) return;
     const tierSlots = preset.tiers[tierId] || preset.tiers.Básico;
+    setManualIconSlots([false, false, false]);
     onApplyPreset([
       { ...tierSlots[0] },
       { ...tierSlots[1] },
@@ -96,26 +105,45 @@ export function MysteryBoxLootEditor({
         };
       }) as [MysteryBoxLootItem, MysteryBoxLootItem, MysteryBoxLootItem];
 
+    setManualIconSlots([false, false, false]);
     onApplyPreset(picked);
     toast.success(t("pulledFromStoreToast"));
   };
 
   return (
-    <div className="flex flex-col gap-3 p-3.5 rounded-xl bg-background border border-neutral-700 dark:bg-surface/30 dark:border-white/10 animate-in fade-in duration-150">
+    <div className="flex flex-col gap-2.5 p-3 rounded-xl bg-background border border-neutral-700 dark:bg-surface/30 dark:border-white/10 animate-in fade-in duration-150">
       {/* Cabeçalho + Presets de Estilo de Vida */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <Sparkles
-              size={14}
-              className="text-gold shrink-0"
-              aria-hidden="true"
-            />
-            <span className="text-body-s font-bold text-neutral-100">
-              {t("title")}
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <div className="flex items-center gap-1.5">
+              <Sparkles
+                size={14}
+                className="text-gold shrink-0"
+                aria-hidden="true"
+              />
+              <span className="text-body-s font-bold text-neutral-100">
+                {t("title")}
+              </span>
+            </div>
+            <span className="text-tiny text-neutral-400">
+              <span aria-hidden="true">• </span>
+              {t("subtitle")}
             </span>
           </div>
-          <span className="text-tiny text-neutral-400">{t("subtitle")}</span>
+
+          {storeCandidates.length > 0 && (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={handlePullFromStore}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-primary/40 bg-primary/15 hover:bg-primary/25 text-primary dark:text-primary-light hover:text-primary-dark dark:hover:text-neutral-50 text-tiny font-semibold transition-[color,background-color,border-color,transform] cursor-pointer active:scale-95 disabled:opacity-50 shrink-0"
+              title={t("pullFromStoreHint")}
+            >
+              <Store size={11} className="shrink-0" aria-hidden="true" />
+              <span>{t("pullFromStore")}</span>
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -137,19 +165,6 @@ export function MysteryBoxLootEditor({
               </button>
             );
           })}
-
-          {storeCandidates.length > 0 && (
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={handlePullFromStore}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-primary/40 bg-primary/15 hover:bg-primary/25 text-primary dark:text-primary-light hover:text-primary-dark dark:hover:text-neutral-50 text-tiny font-semibold transition-[color,background-color,border-color,transform] cursor-pointer active:scale-95 disabled:opacity-50"
-              title={t("pullFromStoreHint")}
-            >
-              <Store size={11} className="shrink-0" aria-hidden="true" />
-              <span>{t("pullFromStore")}</span>
-            </button>
-          )}
         </div>
       </div>
 
@@ -166,21 +181,14 @@ export function MysteryBoxLootEditor({
           const slotInputId = `mystery-slot-name-${slotIndex}`;
           const slotMinutesId = `mystery-slot-min-${slotIndex}`;
 
-          const badgeColor =
-            drop?.badgeVariant === "emerald"
-              ? "text-emerald-700 bg-emerald-500/15 border-emerald-500/35 dark:text-success-400 dark:bg-success-500/15 dark:border-success-500/30"
-              : drop?.badgeVariant === "amber"
-                ? "text-amber-700 bg-amber-500/15 border-amber-500/35 dark:text-amber-400 dark:bg-amber-500/15 dark:border-amber-500/30"
-                : drop?.badgeVariant === "purple"
-                  ? "text-magenta bg-magenta/10 border-magenta/30 dark:bg-magenta/15 dark:border-magenta/30"
-                  : "text-amber-700 bg-amber-500/15 border-amber-500/35 dark:text-gold dark:bg-gold/15 dark:border-gold/30";
+          const badgeColor = getMysteryBadgeVariantClass(drop?.badgeVariant);
 
           return (
             <div
               key={slotIndex}
-              className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-card dark:bg-surface/50 border border-neutral-700 dark:border-white/10"
+              className="flex flex-col gap-1.5 p-2 rounded-xl bg-card dark:bg-surface/50 border border-neutral-700 dark:border-white/10"
             >
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
                 <label
                   htmlFor={slotInputId}
                   className="flex items-center gap-1.5 text-tiny font-bold text-neutral-200 cursor-pointer"
@@ -245,14 +253,20 @@ export function MysteryBoxLootEditor({
                 <IconPickerPopover
                   options={REWARD_ICONS}
                   value={slot.icon || "gift"}
-                  onChange={(newIcon) =>
+                  onChange={(newIcon) => {
+                    setManualIconSlots((prev) => {
+                      const next: [boolean, boolean, boolean] = [...prev];
+                      next[slotIndex] = true;
+                      return next;
+                    });
                     onChangeSlot(slotIndex, {
                       ...slot,
                       icon: newIcon,
-                    })
-                  }
+                    });
+                  }}
                   disabled={disabled}
                   title={t("iconPickerTitle")}
+                  className="h-[36px] px-2.5"
                 />
 
                 <div className="flex-1 min-w-0">
@@ -265,7 +279,9 @@ export function MysteryBoxLootEditor({
                         0,
                         MAX_SLOT_NAME_LENGTH,
                       );
-                      const autoIcon = suggestRewardIconFromTitle(nextName);
+                      const autoIcon = !manualIconSlots[slotIndex]
+                        ? suggestRewardIconFromTitle(nextName)
+                        : null;
                       onChangeSlot(slotIndex, {
                         ...slot,
                         name: nextName,
@@ -277,7 +293,7 @@ export function MysteryBoxLootEditor({
                     maxLength={MAX_SLOT_NAME_LENGTH}
                     disabled={disabled}
                     required
-                    className="h-[38px] text-xs"
+                    className="h-[36px] text-xs"
                   />
                 </div>
 
@@ -315,7 +331,7 @@ export function MysteryBoxLootEditor({
                       }}
                       compact
                       disabled={disabled}
-                      className="h-[38px] text-xs font-bold text-center"
+                      className="h-[36px] text-xs font-bold text-center"
                       title={t("minutesMaxHint", { max: maxCap })}
                     />
                   </div>

@@ -1,9 +1,12 @@
+"use client";
+
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
+import { useUserStore } from "@/store/userStore";
 import type { DatePickerEventSchedulePatch } from "@/types/ui";
 import { getPopoverDueDateInfo } from "@/utils/date";
 
@@ -36,6 +39,7 @@ export function TaskDatePicker({
   const locale = useLocale() as AppLocale;
   const { dateFormat } = useDateFormat();
   const { timeFormat } = useTimeFormat();
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
   const dateInfo = useMemo(
     () =>
       getPopoverDueDateInfo(
@@ -47,6 +51,7 @@ export function TaskDatePicker({
         startTime,
         isAllDay,
         timeFormat,
+        userTimeZone,
       ),
     [
       dueDate,
@@ -57,6 +62,7 @@ export function TaskDatePicker({
       startTime,
       isAllDay,
       timeFormat,
+      userTimeZone,
     ],
   );
 

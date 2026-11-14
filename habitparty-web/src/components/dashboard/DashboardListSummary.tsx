@@ -46,6 +46,7 @@ const ConfirmationModal = dynamic(
 
 export function DashboardListSummary({
   initialColumns,
+  initialVisibleColumnIds,
   columns: controlledColumns,
   onColumnsChange,
   onColumnDeleted,
@@ -63,7 +64,9 @@ export function DashboardListSummary({
     useState<ColumnSummaryDTO[]>(initialColumns);
   const columns = controlledColumns ?? internalColumns;
   const setColumns = onColumnsChange ?? setInternalColumns;
-  const [savedVisibleIds, setSavedVisibleIds] = useState<string[] | null>(null);
+  const [savedVisibleIds, setSavedVisibleIds] = useState<string[] | null>(
+    () => initialVisibleColumnIds ?? null,
+  );
 
   useEffect(() => {
     setInternalColumns(initialColumns);
@@ -71,7 +74,7 @@ export function DashboardListSummary({
 
   useEffect(() => {
     if (!activeWorkspaceId) {
-      setSavedVisibleIds(null);
+      setSavedVisibleIds(initialVisibleColumnIds ?? null);
       return;
     }
     try {
@@ -82,12 +85,16 @@ export function DashboardListSummary({
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
           setSavedVisibleIds(parsed);
+          return;
         }
       }
     } catch {
       // ignore
     }
-  }, [activeWorkspaceId]);
+    if (initialVisibleColumnIds) {
+      setSavedVisibleIds(initialVisibleColumnIds);
+    }
+  }, [activeWorkspaceId, initialVisibleColumnIds]);
 
   const activeColumns = useMemo(() => {
     if (columns.length <= maxColumns) {

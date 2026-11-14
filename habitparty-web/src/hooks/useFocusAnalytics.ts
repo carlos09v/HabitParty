@@ -3,6 +3,7 @@
 import { useLocale } from "next-intl";
 import { useCallback, useMemo, useState } from "react";
 import type { AppLocale } from "@/i18n/config";
+import { useUserStore } from "@/store/userStore";
 import type { FocusActivity, FocusRecord } from "@/types/focus";
 import { calculateFocusMetrics } from "@/utils/focusMetrics";
 
@@ -18,6 +19,7 @@ export function useFocusAnalytics({
   selectedActivityId,
 }: UseFocusAnalyticsParams) {
   const locale = useLocale() as AppLocale;
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
 
   // Deslocamento da semana para o gráfico semanal (0 = Esta semana, -1 = semana passada...)
   const [weekOffset, setWeekOffset] = useState(0);
@@ -58,8 +60,9 @@ export function useFocusAnalytics({
         weekOffset,
         undefined,
         locale,
+        userTimeZone,
       );
-    }, [relevantRecords, weekOffset, locale]);
+    }, [relevantRecords, weekOffset, locale, userTimeZone]);
 
   return {
     weekOffset,

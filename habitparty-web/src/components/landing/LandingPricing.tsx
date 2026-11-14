@@ -1,20 +1,19 @@
 import { Check, Crown, Flame, Shield, Sparkles, Zap } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { getFoundersQuotaAction } from "@/actions/paymentActions";
 import { LANDING_PLAN_CONFIGS } from "@/constants/landing";
+import { getFoundersQuota } from "@/services/paymentService";
 import { cn } from "@/utils";
 
 export async function LandingPricing() {
-  const [quotaRes, t] = await Promise.all([
-    getFoundersQuotaAction(),
+  const [quota, t] = await Promise.all([
+    getFoundersQuota(),
     getTranslations("landing.pricing"),
   ]);
   const founderPrice = t("founderPrice");
   const founderDiscountBadge = t("founderDiscountBadge");
-  const quota = quotaRes.success ? quotaRes.data : null;
-  const remainingSlots = quota ? quota.remainingSlots : 30;
-  const isAvailable = quota ? quota.isAvailable : true;
+  const remainingSlots = quota.remainingSlots;
+  const isAvailable = quota.isAvailable;
 
   return (
     <section id="planos" className="py-20 md:py-28 relative overflow-hidden">

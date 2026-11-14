@@ -1,3 +1,5 @@
+"use client";
+
 import { ArrowLeftRight, Minus, Plus, RotateCcw } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";

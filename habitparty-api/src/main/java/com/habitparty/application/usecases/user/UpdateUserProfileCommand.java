@@ -8,9 +8,28 @@ public record UpdateUserProfileCommand(
     String fullName,
     LocalDate birthDate,
     UserGender gender,
-    UserExperienceMode experienceMode
+    UserExperienceMode experienceMode,
+    String timezone,
+    String theme
 ) {
   public UpdateUserProfileCommand(String fullName, LocalDate birthDate, UserGender gender) {
-    this(fullName, birthDate, gender, null);
+    this(fullName, birthDate, gender, null, null, null);
+  }
+
+  public UpdateUserProfileCommand(
+      String fullName,
+      LocalDate birthDate,
+      UserGender gender,
+      UserExperienceMode experienceMode) {
+    this(fullName, birthDate, gender, experienceMode, null, null);
+  }
+
+  public UpdateUserProfileCommand(
+      String fullName,
+      LocalDate birthDate,
+      UserGender gender,
+      UserExperienceMode experienceMode,
+      String timezone) {
+    this(fullName, birthDate, gender, experienceMode, timezone, null);
   }
 }

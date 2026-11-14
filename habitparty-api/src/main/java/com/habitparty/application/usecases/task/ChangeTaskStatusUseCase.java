@@ -36,6 +36,7 @@ public class ChangeTaskStatusUseCase {
   private final BoardColumnRepository boardColumnPort;
   private final Clock clock;
   private final ApplicationEventPublisher eventPublisher;
+  private DailyResetUseCase dailyResetUseCase;
 
   @Autowired
   public ChangeTaskStatusUseCase(
@@ -60,63 +61,78 @@ public class ChangeTaskStatusUseCase {
     this(taskPort, transactionPort, userPort, null, null, Clock.systemDefaultZone(), null);
   }
 
+  @Autowired(required = false)
+  public void setDailyResetUseCase(DailyResetUseCase dailyResetUseCase) {
+    this.dailyResetUseCase = dailyResetUseCase;
+  }
+
   @Transactional
   public Task execute(UUID taskId, UUID userIdLogado, TaskStatus newStatus) {
+    if (dailyResetUseCase != null) {
+      dailyResetUseCase.resetUserIfDue(userIdLogado);
+    }
     Task task = taskPort.findById(taskId)
         .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada."));
     task.validateOwnership(userIdLogado);
 
-    LocalDate today = LocalDate.now(clock);
-    LocalDateTime now = LocalDateTime.now(clock);
-
     // 2. Só gera extrato e recompensa se o status mudou para COMPLETED e a recompensa ainda não foi resgatada
-    if (newStatus == TaskStatus.COMPLETED
-        && task.getStatus() != TaskStatus.COMPLETED
-        && !task.isRewardAlreadyClaimed(today)) {
+    User rewardedUser = null;
+    if (newStatus == TaskStatus.COMPLETED && task.getStatus() != TaskStatus.COMPLETED) {
       User user = userPort.findById(userIdLogado)
           .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
-      String columnName = TaskGamificationHelper.resolveColumnName(boardColumnPort, task);
+      LocalDate today = user.resolveLocalDate(clock);
+      LocalDateTime now = user.resolveLocalDateTime(clock);
 
-      // Se for um Todo Hardcore atrasado e a penalidade ainda não foi aplicada (ex: cron da meia-noite não rodou),
-      // aplica a dedução do atraso e registra no histórico antes de creditar a recompensa tardia
-      if (task instanceof Todo todo && todo.isHardcoreModeEnabled() && todo.isOverdue(today)) {
-        if (!todo.isPenaltyApplied()) {
-          todo.markPenaltyApplied();
-          TaskReward penalty = todo.calculatePenalty();
-          user.applyPenalty(penalty.coins(), penalty.xp());
+      if (!task.isRewardAlreadyClaimed(today)) {
+        String columnName = TaskGamificationHelper.resolveColumnName(boardColumnPort, task);
 
-          TransactionHistory negativeTransaction = TaskGamificationHelper.buildPenaltyTransaction(
-              userIdLogado, todo, penalty, TransactionType.TASK_FAILED, "Falhou no prazo: ", columnName);
-          transactionPort.save(negativeTransaction);
+        // Se for um Todo Hardcore atrasado e a penalidade ainda não foi aplicada (ex: cron da meia-noite não rodou),
+        // aplica a dedução do atraso e registra no histórico antes de creditar a recompensa tardia
+        if (task instanceof Todo todo && todo.isHardcoreModeEnabled() && todo.isOverdue(today)) {
+          if (!todo.isPenaltyApplied()) {
+            todo.markPenaltyApplied();
+            TaskReward penalty = todo.calculatePenalty(today);
+            user.applyPenalty(penalty.coins(), penalty.xp());
+
+            TransactionHistory negativeTransaction = TaskGamificationHelper.buildPenaltyTransaction(
+                userIdLogado, todo, penalty, TransactionType.TASK_FAILED, "Falhou no prazo: ", columnName);
+            transactionPort.save(negativeTransaction);
+          }
         }
-      }
 
-      if (task instanceof Habit habit) {
-        habit.refreshStreakForDate(today);
-      } else if (task instanceof Daily daily) {
-        daily.refreshStreakForDate(today);
-      }
+        if (task instanceof Habit habit) {
+          habit.refreshStreakForDate(today);
+        } else if (task instanceof Daily daily) {
+          daily.refreshStreakForDate(today);
+        }
 
-      TransactionType txType = switch (task.getTaskType()) {
-        case HABIT -> TransactionType.HABIT_COMPLETED;
-        case DAILY -> TransactionType.DAILY_COMPLETED;
-        case TODO -> TransactionType.TODO_COMPLETED;
-      };
+        TransactionType txType = switch (task.getTaskType()) {
+          case HABIT -> TransactionType.HABIT_COMPLETED;
+          case DAILY -> TransactionType.DAILY_COMPLETED;
+          case TODO -> TransactionType.TODO_COMPLETED;
+        };
 
-      TaskGamificationHelper.awardTaskCompletion(
-          user, task, txType, userPort, transactionPort, columnName, today);
-      if (eventPublisher != null) {
-        eventPublisher.publishEvent(new TaskCompletedEvent(user.getId()));
-      } else if (evaluateUserAchievementsUseCase != null) {
-        evaluateUserAchievementsUseCase.execute(user);
+        TaskGamificationHelper.awardTaskCompletion(
+            user, task, txType, userPort, transactionPort, columnName, today);
+        task.registerCompletion(now);
+        rewardedUser = user;
       }
-      task.registerCompletion(now);
     }
 
     // 3. Atualiza o status no Domínio
     task.changeStatus(newStatus);
 
     // 4. Salva e devolve a tarefa atualizada
-    return taskPort.save(task);
+    Task savedTask = taskPort.save(task);
+
+    if (rewardedUser != null) {
+      if (eventPublisher != null) {
+        eventPublisher.publishEvent(new TaskCompletedEvent(rewardedUser.getId()));
+      } else if (evaluateUserAchievementsUseCase != null) {
+        evaluateUserAchievementsUseCase.execute(rewardedUser);
+      }
+    }
+
+    return savedTask;
   }
 }

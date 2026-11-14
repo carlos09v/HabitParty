@@ -7,14 +7,6 @@ export interface GenderOption {
   value: NonNullable<GenderType>;
 }
 
-export interface PasswordValidationResult {
-  hasMinLength: boolean;
-  hasUpperCase: boolean;
-  hasSpecialChar: boolean;
-  passwordsMatch: boolean;
-  isValid: boolean;
-}
-
 export interface ProfileCardBaseProps {
   isCompact?: boolean;
 }
@@ -64,7 +56,13 @@ export interface SettingsTabItem {
   icon: LucideIcon;
 }
 
-export type TimerSoundType = "zen" | "arcade";
+export type TimerSoundType = "zen" | "arcade" | "digital" | "harp";
+export const ALARM_TONE_IDS: readonly TimerSoundType[] = [
+  "zen",
+  "arcade",
+  "digital",
+  "harp",
+] as const;
 export type AmbientSoundType = "none" | "rain" | "cafe" | "lofi" | "fire";
 
 export interface AmbientSoundOption {

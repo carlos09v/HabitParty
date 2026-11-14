@@ -2,7 +2,6 @@ import type {
   AccountBadgeId,
   AchievementCategory,
   AchievementRarity,
-  StatMetricId,
 } from "@/types/showcase";
 
 export interface RarityThemeTokens {
@@ -141,43 +140,6 @@ export const ACCOUNT_BADGE_DEFINITIONS: {
   },
 ];
 
-export const STAT_METRIC_DEFINITIONS: {
-  id: StatMetricId;
-  rarity: AchievementRarity;
-  iconKey: string;
-}[] = [
-  {
-    id: "HIGHEST_STREAK",
-    rarity: "LEGENDARY",
-    iconKey: "flame-solar",
-  },
-  {
-    id: "CURRENT_STREAK",
-    rarity: "RARE",
-    iconKey: "flame",
-  },
-  {
-    id: "TOTAL_TASKS",
-    rarity: "EPIC",
-    iconKey: "swords",
-  },
-  {
-    id: "FOCUS_HOURS",
-    rarity: "EPIC",
-    iconKey: "hourglass-gold",
-  },
-  {
-    id: "TOTAL_XP",
-    rarity: "RARE",
-    iconKey: "zap",
-  },
-  {
-    id: "ACHIEVEMENT_POINTS",
-    rarity: "LEGENDARY",
-    iconKey: "trophy",
-  },
-];
-
 export const MAX_SHOWCASE_HIGHLIGHTS = 4;
 export const DEFAULT_MAX_ACHIEVEMENT_POINTS = 4170;
 export const DEFAULT_TOTAL_ACHIEVEMENTS_COUNT = 63;
@@ -187,7 +149,3 @@ export const HIGHLIGHT_MODAL_ITEMS_PER_PAGE = 6;
 export const ACCOUNT_BADGES_BY_ID = Object.fromEntries(
   ACCOUNT_BADGE_DEFINITIONS.map((b) => [b.id, b]),
 ) as Record<AccountBadgeId, (typeof ACCOUNT_BADGE_DEFINITIONS)[number]>;
-
-export const STAT_METRICS_BY_ID = Object.fromEntries(
-  STAT_METRIC_DEFINITIONS.map((m) => [m.id, m]),
-) as Record<StatMetricId, (typeof STAT_METRIC_DEFINITIONS)[number]>;

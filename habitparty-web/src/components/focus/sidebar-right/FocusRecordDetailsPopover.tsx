@@ -24,6 +24,7 @@ import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useIsClient } from "@/hooks/useIsClient";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
+import { useUserStore } from "@/store/userStore";
 import type { FocusRecord } from "@/types/focus";
 import { formatCoins, formatDateTime } from "@/utils";
 import { formatFocusRecordDuration } from "@/utils/focusFormatters";
@@ -148,6 +149,7 @@ export function FocusRecordDetailsPopover({
               <Calendar size={11} className="text-neutral-500" />
               {formatDateTime(record.endTime, {
                 isLocal: true,
+                timeZone: useUserStore.getState().user?.timezone,
                 locale,
                 dateFormat,
                 timeFormat,

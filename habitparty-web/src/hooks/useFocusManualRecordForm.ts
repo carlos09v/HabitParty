@@ -17,7 +17,9 @@ import type {
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import {
   computeTimeWindowFromDuration,
+  formatDateParts,
   formatTimeHHMM,
+  getDatePartsInTimeZone,
   getTodayDateString,
   minutesToTimeHHMM,
   parseTimeToMinutes,
@@ -131,12 +133,19 @@ export function useFocusManualRecordForm({
     return 1;
   });
 
-  const [sessionDate, setSessionDate] = useState<string>(getTodayDateString);
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
+
+  const [sessionDate, setSessionDate] = useState<string>(() =>
+    getTodayDateString(new Date(), useUserStore.getState().user?.timezone),
+  );
   const [endTimeStr, setEndTimeStr] = useState<string>(() =>
-    formatTimeHHMM(new Date()),
+    formatTimeHHMM(new Date(), useUserStore.getState().user?.timezone),
   );
   const [startTimeStr, setStartTimeStr] = useState<string>(() => {
-    const initialEnd = formatTimeHHMM(new Date());
+    const initialEnd = formatTimeHHMM(
+      new Date(),
+      useUserStore.getState().user?.timezone,
+    );
     return computeTimeWindowFromDuration(initialEnd, durationMinutes)
       .startTimeStr;
   });
@@ -243,10 +252,10 @@ export function useFocusManualRecordForm({
     if (!sessionDate || records.length === 0) return 0;
     return records.reduce((sum, rec) => {
       if (rec.inventoryItemId) return sum;
-      if (toLocalDateKey(rec.endTime) !== sessionDate) return sum;
+      if (toLocalDateKey(rec.endTime, userTimeZone) !== sessionDate) return sum;
       return sum + (rec.durationMinutes || 0);
     }, 0);
-  }, [records, sessionDate]);
+  }, [records, sessionDate, userTimeZone]);
 
   const estimatedRewards = useMemo(() => {
     return calculateFocusRewardEstimate(
@@ -353,57 +362,103 @@ export function useFocusManualRecordForm({
       return;
     }
 
+    if (targetType === "ACTIVITY") {
+      const now = new Date();
+      const activeTz = useUserStore.getState().user?.timezone;
+      const todayStr = getTodayDateString(now, activeTz);
+      const baseDateStr = sessionDate || todayStr;
+      if (baseDateStr > todayStr) {
+        toast.error(
+          locale === "en"
+            ? "Cannot log focus sessions in the future."
+            : "Não é possível registrar sessões de foco no futuro.",
+        );
+        return;
+      }
+      if (baseDateStr === todayStr) {
+        const endMins = parseTimeToMinutes(endTimeStr);
+        const nowParts = getDatePartsInTimeZone(now, activeTz);
+        const nowMins = nowParts.hour * 60 + nowParts.minute;
+        if (endMins !== null && endMins > nowMins) {
+          toast.error(
+            locale === "en"
+              ? "End time cannot be in the future."
+              : "O horário de término não pode estar no futuro.",
+          );
+          return;
+        }
+      }
+    }
+
     startTransition(async () => {
       try {
         const now = new Date();
-        let startDate: Date;
-        let endDate: Date;
+        const activeTz = useUserStore.getState().user?.timezone;
+        let startTime: string;
+        let endTime: string;
 
         if (targetType === "ITEM") {
-          endDate = now;
-          startDate = new Date(now.getTime() - durationMinutes * 60 * 1000);
+          endTime = toLocalISOString(now, activeTz);
+          startTime = toLocalISOString(
+            new Date(now.getTime() - durationMinutes * 60 * 1000),
+            activeTz,
+          );
         } else {
-          const baseDateStr = sessionDate || getTodayDateString(now);
+          const baseDateStr = sessionDate || getTodayDateString(now, activeTz);
           const [y, m, d] = baseDateStr.split("-").map(Number);
           const startMins = parseTimeToMinutes(startTimeStr);
           const endMins = parseTimeToMinutes(endTimeStr);
+          const formatWallUtc = (dt: Date) => {
+            const pad = (n: number) => String(n).padStart(2, "0");
+            return `${formatDateParts(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate())}T${pad(dt.getUTCHours())}:${pad(dt.getUTCMinutes())}:${pad(dt.getUTCSeconds())}`;
+          };
 
           if (startMins !== null && endMins !== null && endMins > startMins) {
-            startDate = new Date(
-              y,
-              m - 1,
-              d,
-              Math.floor(startMins / 60),
-              startMins % 60,
-              0,
+            startTime = formatWallUtc(
+              new Date(
+                Date.UTC(
+                  y,
+                  m - 1,
+                  d,
+                  Math.floor(startMins / 60),
+                  startMins % 60,
+                  0,
+                ),
+              ),
             );
-            endDate = new Date(
-              y,
-              m - 1,
-              d,
-              Math.floor(endMins / 60),
-              endMins % 60,
-              0,
+            endTime = formatWallUtc(
+              new Date(
+                Date.UTC(
+                  y,
+                  m - 1,
+                  d,
+                  Math.floor(endMins / 60),
+                  endMins % 60,
+                  0,
+                ),
+              ),
             );
           } else {
+            const nowParts = getDatePartsInTimeZone(now, activeTz);
             const fallbackEndMins =
-              endMins ?? now.getHours() * 60 + now.getMinutes();
-            endDate = new Date(
-              y,
-              m - 1,
-              d,
-              Math.floor(fallbackEndMins / 60),
-              fallbackEndMins % 60,
-              0,
+              endMins ?? nowParts.hour * 60 + nowParts.minute;
+            const endUtc = new Date(
+              Date.UTC(
+                y,
+                m - 1,
+                d,
+                Math.floor(fallbackEndMins / 60),
+                fallbackEndMins % 60,
+                0,
+              ),
             );
-            startDate = new Date(
-              endDate.getTime() - durationMinutes * 60 * 1000,
+            const startUtc = new Date(
+              endUtc.getTime() - durationMinutes * 60 * 1000,
             );
+            startTime = formatWallUtc(startUtc);
+            endTime = formatWallUtc(endUtc);
           }
         }
-
-        const startTime = toLocalISOString(startDate);
-        const endTime = toLocalISOString(endDate);
 
         const res = await createFocusRecord({
           focusActivityId:

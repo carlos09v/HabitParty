@@ -119,6 +119,10 @@ export const ItemRow = memo(function ItemRow({
       style={style}
       {...attributes}
       {...listeners}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        listeners?.onKeyDown?.(e);
+      }}
       onDoubleClick={(e) => {
         if (isDragging || !onDoubleClick) return;
         e.stopPropagation();
@@ -272,7 +276,7 @@ export const ItemRow = memo(function ItemRow({
           {hasValidCategory && (
             <span
               className={cn(
-                "text-label-m font-medium bg-white/10 border border-white/10 text-neutral-300 truncate rounded",
+                "text-label-m font-medium bg-surface/80 border border-neutral-700/80 dark:bg-white/10 dark:border-white/10 text-neutral-300 truncate rounded",
                 isCompact ? "px-1.5 py-0.5" : "px-2 py-0.5",
               )}
             >
@@ -352,9 +356,7 @@ export const ItemRow = memo(function ItemRow({
             )}
           >
             <CoinIcon size={isCompact ? 15 : 16} withGlow />
-            <span
-              className={cn("font-bold", isCompact ? "text-xs" : "text-xs")}
-            >
+            <span className="font-bold text-xs">
               {formatCoins(price, { locale })}
             </span>
           </div>

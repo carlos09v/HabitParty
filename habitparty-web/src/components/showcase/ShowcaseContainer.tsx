@@ -1,12 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { markAchievementsSeenAction } from "@/actions/showcaseActions";
 import { AchievementsGallery } from "@/components/showcase/AchievementsGallery";
 import { ShowcaseHeroHeader } from "@/components/showcase/ShowcaseHeroHeader";
 import { ShowcaseHighlightsSection } from "@/components/showcase/ShowcaseHighlightsSection";
-import { ShowcaseStatsGrid } from "@/components/showcase/ShowcaseStatsGrid";
 import { MAX_SHOWCASE_HIGHLIGHTS } from "@/constants/achievements";
 import { useIdlePreload } from "@/hooks/useIdlePreload";
 import { useUserStore } from "@/store/userStore";
@@ -27,9 +26,13 @@ const ShowcaseHighlightPickerModal = dynamic(preloadHighlightPickerModal, {
 
 interface ShowcaseContainerProps {
   initialShowcase: UserShowcaseResponseDTO;
+  statsSlot?: ReactNode;
 }
 
-export function ShowcaseContainer({ initialShowcase }: ShowcaseContainerProps) {
+export function ShowcaseContainer({
+  initialShowcase,
+  statsSlot,
+}: ShowcaseContainerProps) {
   const [highlights, setHighlights] = useState<ProfileHighlightResponseDTO[]>(
     initialShowcase.highlights || [],
   );
@@ -121,10 +124,10 @@ export function ShowcaseContainer({ initialShowcase }: ShowcaseContainerProps) {
         onOpenPicker={handleOpenPicker}
       />
 
-      {/* INDICADORES VITALÍCIOS DE CONSISTÊNCIA & FEITOS */}
-      <ShowcaseStatsGrid stats={initialShowcase.stats} />
+      {/* INDICADORES VITALÍCIOS DE CONSISTÊNCIA & FEITOS (Server Component Slot) */}
+      {statsSlot}
 
-      {/* GALERIA DE 59 CONQUISTAS & MEDALHAS */}
+      {/* GALERIA DE CONQUISTAS & MEDALHAS */}
       <AchievementsGallery
         achievements={initialShowcase.achievements}
         highlights={highlights}

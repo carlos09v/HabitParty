@@ -1,7 +1,6 @@
-"use client";
-
 import {
   type AmbientSoundType,
+  type TimerSoundType,
   useSoundPreferencesStore,
 } from "@/store/soundPreferencesStore";
 
@@ -561,7 +560,7 @@ class SoundEffectsManager {
   }
 
   /**
-   * Som de Conclusão de Sessão de Foco / Pomodoro (Sino Zen suave / Chime de sino tibetano)
+   * Som de Conclusão de Sessão de Foco / Pomodoro (respeita o tom configurado)
    */
   playFocusSessionCompleteSound(volumeOverride?: number) {
     const prefs = this.getPreferences();
@@ -569,32 +568,13 @@ class SoundEffectsManager {
     const volume = volumeOverride ?? prefs.timerVolume;
     if (volume <= 0) return;
 
-    this.runWithContext((ctx) => {
-      const now = ctx.currentTime;
-
-      // Frequência fundamental de sino suave (528Hz - nota de cura/foco)
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(528, now);
-      osc.frequency.exponentialRampToValueAtTime(1056, now + 0.15);
-
-      gain.gain.setValueAtTime(0.3 * volume, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start(now);
-      osc.stop(now + 1.2);
-    });
+    this.playTimerStartSound(prefs.timerSoundType, volume);
   }
 
   /**
-   * Som de Início de Sessão de Foco (Zen ou Arcade)
+   * Som de Alarme / Sessão de Foco (Zen, Arcade, Digital ou Harp)
    */
-  playTimerStartSound(type?: "zen" | "arcade", volumeOverride?: number) {
+  playTimerStartSound(type?: TimerSoundType, volumeOverride?: number) {
     const prefs = this.getPreferences();
     if (volumeOverride === undefined && !prefs.timerSoundsEnabled) return;
     const volume = volumeOverride ?? prefs.timerVolume ?? 0.8;
@@ -628,7 +608,7 @@ class SoundEffectsManager {
         osc2.start(now);
         osc1.stop(now + 0.9);
         osc2.stop(now + 0.9);
-      } else {
+      } else if (chosenType === "arcade") {
         // Arcade Start: 2 bips ascendentes rápidos (Dó5 -> Sol5)
         const tones = [
           { freq: 523.25, time: 0, dur: 0.1 },
@@ -651,6 +631,52 @@ class SoundEffectsManager {
 
           osc.start(startTime);
           osc.stop(startTime + tone.dur);
+        });
+      } else if (chosenType === "digital") {
+        // Digital Moderno: Toque minimalista executivo de alta frequência (A5 -> E6)
+        const pulses = [
+          { freq: 880, time: 0, dur: 0.08 },
+          { freq: 1318.51, time: 0.1, dur: 0.22 },
+        ];
+
+        pulses.forEach((pulse) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const startTime = now + pulse.time;
+
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(pulse.freq, startTime);
+
+          gain.gain.setValueAtTime(0.2 * safeVolume, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, startTime + pulse.dur);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(startTime);
+          osc.stop(startTime + pulse.dur);
+        });
+      } else {
+        // Harpa Etérea: Acorde espacial suave (C5 -> E5 -> G5 -> B5)
+        const harpNotes = [523.25, 659.25, 783.99, 987.77];
+
+        harpNotes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const startTime = now + idx * 0.07;
+          const dur = 0.65;
+
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq, startTime);
+
+          gain.gain.setValueAtTime(0.18 * safeVolume, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, startTime + dur);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(startTime);
+          osc.stop(startTime + dur);
         });
       }
     });

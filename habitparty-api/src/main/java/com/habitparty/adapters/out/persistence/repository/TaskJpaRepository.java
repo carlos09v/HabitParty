@@ -35,6 +35,9 @@ public interface TaskJpaRepository extends JpaRepository<TaskJpaEntity, UUID> {
     @Query("SELECT t FROM TaskJpaEntity t WHERE t.taskType IN ('HABIT', 'DAILY') ORDER BY t.id")
     List<TaskJpaEntity> findRecurringTasks(Pageable pageable);
 
+    @Query("SELECT t FROM TaskJpaEntity t WHERE t.userId IN :userIds AND t.taskType IN ('HABIT', 'DAILY') ORDER BY t.id")
+    List<TaskJpaEntity> findRecurringTasksByUserIds(@Param("userIds") Collection<UUID> userIds);
+
     // Busca afazeres no modo hardcore pendentes, vencidos e que ainda não receberam a penalidade
     @Query("""
         SELECT t FROM TodoJpaEntity t
@@ -44,6 +47,18 @@ public interface TaskJpaRepository extends JpaRepository<TaskJpaEntity, UUID> {
           AND t.isPenaltyApplied = false
     """)
     List<TodoJpaEntity> findOverdueHardcoreTodos(@Param("today") LocalDate today);
+
+    @Query("""
+        SELECT t FROM TodoJpaEntity t
+        WHERE t.userId IN :userIds
+          AND t.isHardcoreModeEnabled = true
+          AND t.status = 'PENDING'
+          AND t.dueDate < :maxDueDate
+          AND t.isPenaltyApplied = false
+    """)
+    List<TodoJpaEntity> findOverdueHardcoreTodosByUserIds(
+        @Param("userIds") Collection<UUID> userIds,
+        @Param("maxDueDate") LocalDate maxDueDate);
 
     // Busca afazeres pendentes com lembrete por e-mail ativado cujo alarme já chegou e ainda não foi enviado
     @Query("""

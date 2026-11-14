@@ -5,7 +5,14 @@ import type {
   FocusRecord,
   WeeklyFocusDayData,
 } from "@/types/focus";
-import { getShortWeekDays, getWeekDateRange, parseLocalDate } from "./date";
+import {
+  formatDateParts,
+  getDateKeyInTimeZone,
+  getDatePartsInTimeZone,
+  getOffsetDateString,
+  getShortWeekDays,
+  parseServerDate,
+} from "./date";
 import { calculateRecordReward } from "./focusRewards";
 
 export { calculateRecordReward };
@@ -19,43 +26,81 @@ export interface FocusMetricsCalculationResult {
 }
 
 /**
- * Converte um Date ou string ISO local para chave YYYY-MM-DD no fuso horário local.
+ * Converte um Date ou string ISO/calendário para chave YYYY-MM-DD no fuso horário alvo do usuário.
  */
-export function toLocalDateKey(dateInput: Date | string): string {
-  const d =
-    typeof dateInput === "string"
-      ? dateInput.includes("T")
-        ? parseLocalDate(dateInput)
-        : new Date(`${dateInput}T12:00:00`)
-      : dateInput;
-  if (!d || Number.isNaN(d.getTime())) return "";
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+export function toLocalDateKey(
+  dateInput: Date | string,
+  timeZone?: string | null,
+): string {
+  if (dateInput instanceof Date) {
+    if (Number.isNaN(dateInput.getTime())) return "";
+    return getDateKeyInTimeZone(dateInput, timeZone);
+  }
+  const trimmed = dateInput.trim();
+  if (!trimmed) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return trimmed;
+  }
+  const timePart = trimmed.split("T")[1] ?? trimmed.split(" ")[1] ?? "";
+  const hasExplicitTz = /([zZ]|[+-]\d{2}(?::?\d{2})?)$/.test(timePart.trim());
+  if (!hasExplicitTz) {
+    // String naive (sem offset) já representa wall-clock; extrair YYYY-MM-DD direto evita dupla conversão.
+    const datePrefix = trimmed.split("T")[0]?.split(" ")[0] ?? "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(datePrefix)) {
+      return datePrefix;
+    }
+    return "";
+  }
+  const parsed = parseServerDate(trimmed);
+  if (!parsed) return "";
+  return getDateKeyInTimeZone(parsed, timeZone);
 }
 
 /**
  * Calcula o mapa de minutos focados por atividade para um determinado período
  * ("today", "this_week", "this_month") ou data selecionada (YYYY-MM-DD),
- * respeitando o fuso horário local do usuário.
+ * respeitando o fuso horário do usuário.
  */
 export function calculateActivityDurationMap(
   records: FocusRecord[],
   period: ActivityPeriodOption,
   selectedDate?: string | null,
   referenceDate: Date = new Date(),
+  timeZone?: string | null,
 ): Record<string, number> {
   const map: Record<string, number> = {};
-  const todayStr = toLocalDateKey(referenceDate);
-  const { monday, sunday } = getWeekDateRange(referenceDate, 0);
+  const todayStr = getDateKeyInTimeZone(referenceDate, timeZone);
+  const refParts = getDatePartsInTimeZone(referenceDate, timeZone);
+  const weekStartUtc = new Date(
+    Date.UTC(
+      refParts.year,
+      refParts.month - 1,
+      refParts.day - refParts.weekday,
+    ),
+  );
+  const weekEndUtc = new Date(
+    Date.UTC(
+      refParts.year,
+      refParts.month - 1,
+      refParts.day - refParts.weekday + 6,
+    ),
+  );
+  const weekStartStr = formatDateParts(
+    weekStartUtc.getUTCFullYear(),
+    weekStartUtc.getUTCMonth(),
+    weekStartUtc.getUTCDate(),
+  );
+  const weekEndStr = formatDateParts(
+    weekEndUtc.getUTCFullYear(),
+    weekEndUtc.getUTCMonth(),
+    weekEndUtc.getUTCDate(),
+  );
 
   for (const rec of records) {
     if (!rec.focusActivityId || !rec.endTime) continue;
 
-    const recDate = parseLocalDate(rec.endTime);
-    if (!recDate) continue;
-    const recDateStr = toLocalDateKey(recDate);
+    const recDateStr = toLocalDateKey(rec.endTime, timeZone);
+    if (!recDateStr) continue;
 
     let matches = false;
     if (selectedDate) {
@@ -63,11 +108,9 @@ export function calculateActivityDurationMap(
     } else if (period === "today") {
       matches = recDateStr === todayStr;
     } else if (period === "this_week") {
-      matches = recDate >= monday && recDate <= sunday;
+      matches = recDateStr >= weekStartStr && recDateStr <= weekEndStr;
     } else if (period === "this_month") {
-      matches =
-        recDate.getFullYear() === referenceDate.getFullYear() &&
-        recDate.getMonth() === referenceDate.getMonth();
+      matches = recDateStr.slice(0, 7) === todayStr.slice(0, 7);
     }
 
     if (matches) {
@@ -98,15 +141,21 @@ function calculateConsecutiveStreak(
 
   if (!currentCheckStr) return 0;
 
+  const [y, m, d] = currentCheckStr.split("-").map(Number);
+  if (!y || !m || !d) return 0;
+
   let streak = 0;
-  // Meio-dia para evitar inconsistências em trocas de horário
-  const cursor = new Date(`${currentCheckStr}T12:00:00`);
+  const cursor = new Date(Date.UTC(y, m - 1, d));
 
   while (true) {
-    const key = toLocalDateKey(cursor);
+    const key = formatDateParts(
+      cursor.getUTCFullYear(),
+      cursor.getUTCMonth(),
+      cursor.getUTCDate(),
+    );
     if (uniqueDays.has(key)) {
       streak++;
-      cursor.setDate(cursor.getDate() - 1);
+      cursor.setUTCDate(cursor.getUTCDate() - 1);
     } else {
       break;
     }
@@ -124,14 +173,12 @@ export function calculateFocusMetrics(
   weekOffset = 0,
   referenceDate: Date = new Date(),
   locale: AppLocale = "pt-BR",
+  timeZone?: string | null,
 ): FocusMetricsCalculationResult {
   const isEn = locale === "en";
   const shortWeekDays = getShortWeekDays(locale);
-  const todayStr = toLocalDateKey(referenceDate);
-
-  const yesterday = new Date(referenceDate);
-  yesterday.setDate(referenceDate.getDate() - 1);
-  const yesterdayStr = toLocalDateKey(yesterday);
+  const todayStr = getDateKeyInTimeZone(referenceDate, timeZone);
+  const yesterdayStr = getOffsetDateString(-1, referenceDate, timeZone);
 
   let todayCount = 0;
   let totalCount = 0;
@@ -148,7 +195,7 @@ export function calculateFocusMetrics(
   const uniqueDays = new Set<string>();
 
   for (const rec of records) {
-    const recDate = toLocalDateKey(rec.endTime);
+    const recDate = toLocalDateKey(rec.endTime, timeZone);
     if (!recDate) continue;
 
     const mins = rec.durationMinutes || 0;
@@ -180,24 +227,36 @@ export function calculateFocusMetrics(
     dayMinutesMap[recDate] = (dayMinutesMap[recDate] || 0) + mins;
   }
 
-  // Base para a semana selecionada (aplicando weekOffset em blocos de 7 dias)
-  const targetDate = new Date(referenceDate);
-  targetDate.setDate(referenceDate.getDate() + weekOffset * 7);
-
-  // Encontra o Domingo da semana correspondente (0 = Domingo)
-  const currentDayIdx = targetDate.getDay();
-  const startOfWeek = new Date(targetDate);
-  startOfWeek.setDate(targetDate.getDate() - currentDayIdx);
-  startOfWeek.setHours(0, 0, 0, 0);
+  const refParts = getDatePartsInTimeZone(referenceDate, timeZone);
+  const targetUtc = new Date(
+    Date.UTC(refParts.year, refParts.month - 1, refParts.day + weekOffset * 7),
+  );
+  const currentDayIdx = targetUtc.getUTCDay();
+  const startOfWeekUtc = new Date(
+    Date.UTC(
+      targetUtc.getUTCFullYear(),
+      targetUtc.getUTCMonth(),
+      targetUtc.getUTCDate() - currentDayIdx,
+    ),
+  );
 
   const calculatedDays: WeeklyFocusDayData[] = [];
   let weekTotal = 0;
   let maxDayMins = 1;
 
   for (let i = 0; i < 7; i++) {
-    const d = new Date(startOfWeek);
-    d.setDate(startOfWeek.getDate() + i);
-    const dateKey = toLocalDateKey(d);
+    const d = new Date(
+      Date.UTC(
+        startOfWeekUtc.getUTCFullYear(),
+        startOfWeekUtc.getUTCMonth(),
+        startOfWeekUtc.getUTCDate() + i,
+      ),
+    );
+    const dateKey = formatDateParts(
+      d.getUTCFullYear(),
+      d.getUTCMonth(),
+      d.getUTCDate(),
+    );
     const mins = dayMinutesMap[dateKey] || 0;
     weekTotal += mins;
     if (mins > maxDayMins) {
@@ -229,12 +288,17 @@ export function calculateFocusMetrics(
   }
 
   // Range de data (ex: "12/10 a 18/10" ou "10/12 to 10/18")
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6);
-  const startDay = String(startOfWeek.getDate()).padStart(2, "0");
-  const startMonth = String(startOfWeek.getMonth() + 1).padStart(2, "0");
-  const endDay = String(endOfWeek.getDate()).padStart(2, "0");
-  const endMonth = String(endOfWeek.getMonth() + 1).padStart(2, "0");
+  const endOfWeekUtc = new Date(
+    Date.UTC(
+      startOfWeekUtc.getUTCFullYear(),
+      startOfWeekUtc.getUTCMonth(),
+      startOfWeekUtc.getUTCDate() + 6,
+    ),
+  );
+  const startDay = String(startOfWeekUtc.getUTCDate()).padStart(2, "0");
+  const startMonth = String(startOfWeekUtc.getUTCMonth() + 1).padStart(2, "0");
+  const endDay = String(endOfWeekUtc.getUTCDate()).padStart(2, "0");
+  const endMonth = String(endOfWeekUtc.getUTCMonth() + 1).padStart(2, "0");
   const weekDateRange = isEn
     ? `${startMonth}/${startDay} to ${endMonth}/${endDay}`
     : `${startDay}/${startMonth} a ${endDay}/${endMonth}`;

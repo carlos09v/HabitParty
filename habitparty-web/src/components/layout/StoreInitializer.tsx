@@ -13,7 +13,12 @@ import type {
   ThemeMode,
   TimeFormat,
 } from "@/types/ui";
-import { getTodayDateString, parseServerDate } from "@/utils/date";
+import {
+  getDateKeyInTimeZone,
+  getTodayDateString,
+  parseServerDate,
+  setClientTimeZoneCookie,
+} from "@/utils/date";
 import { getLevelProgress } from "@/utils/levels";
 
 type Workspace = components["schemas"]["WorkspaceResponseDTO"];
@@ -32,13 +37,13 @@ interface StoreInitializerProps {
 
 function resolveSecuredStreakDateToday(
   lastTaskCompletionAt?: string | null,
+  timeZone?: string | null,
 ): string | null {
   if (!lastTaskCompletionAt) return null;
   const parsed = parseServerDate(lastTaskCompletionAt);
   if (!parsed) return null;
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  return parsed >= todayStart ? getTodayDateString() : null;
+  const todayStr = getTodayDateString(new Date(), timeZone);
+  return getDateKeyInTimeZone(parsed, timeZone) === todayStr ? todayStr : null;
 }
 
 function buildHydratedStoreUser(user: User): User {
@@ -52,6 +57,13 @@ function buildHydratedStoreUser(user: User): User {
         ? user.xpToNextLevel
         : progress.remainingXp,
   };
+}
+
+function resolveValidAvatarFrame(frame?: string | null): AvatarFrameId {
+  if (frame && AVATAR_FRAMES.some((f) => f.id === frame)) {
+    return frame as AvatarFrameId;
+  }
+  return "cosmic_gold";
 }
 
 export function StoreInitializer({
@@ -87,17 +99,12 @@ export function StoreInitializer({
       });
     }
     if (user) {
-      if (
-        user.avatarFrame &&
-        AVATAR_FRAMES.some((f) => f.id === user.avatarFrame)
-      ) {
-        useAvatarFrameStore.setState({
-          frameId: user.avatarFrame as AvatarFrameId,
-        });
-      }
+      useAvatarFrameStore.setState({
+        frameId: resolveValidAvatarFrame(user.avatarFrame),
+      });
       const securedToday =
         typeof window !== "undefined"
-          ? resolveSecuredStreakDateToday(lastTaskCompletionAt)
+          ? resolveSecuredStreakDateToday(lastTaskCompletionAt, user.timezone)
           : null;
       useUserStore.setState({
         user: buildHydratedStoreUser(user),
@@ -126,20 +133,28 @@ export function StoreInitializer({
   useEffect(() => {
     if (!user) return;
 
+    setClientTimeZoneCookie(user.timezone);
+
     const currentState = useUserStore.getState();
     const currentStoreUser = currentState.user;
     const isDifferentUser = currentStoreUser?.id !== user.id;
-    const securedToday = resolveSecuredStreakDateToday(lastTaskCompletionAt);
+    const securedToday = resolveSecuredStreakDateToday(
+      lastTaskCompletionAt,
+      user.timezone,
+    );
 
     const shouldSyncUser =
       isDifferentUser ||
+      currentStoreUser?.avatarFrame !== user.avatarFrame ||
       currentStoreUser?.emailVerified !== user.emailVerified ||
       currentStoreUser?.experienceMode !== user.experienceMode ||
       currentStoreUser?.isPremium !== user.isPremium ||
       currentStoreUser?.totalXp !== user.totalXp ||
       currentStoreUser?.currentCoins !== user.currentCoins ||
       currentStoreUser?.currentStreak !== user.currentStreak ||
-      currentStoreUser?.achievementPoints !== user.achievementPoints;
+      currentStoreUser?.achievementPoints !== user.achievementPoints ||
+      currentStoreUser?.timezone !== user.timezone ||
+      currentStoreUser?.timezoneUpdatedAt !== user.timezoneUpdatedAt;
 
     const nextSecuredDate =
       securedToday !== null
@@ -151,6 +166,9 @@ export function StoreInitializer({
       nextSecuredDate !== currentState.lastStreakSecuredDate;
 
     if (shouldSyncUser) {
+      useAvatarFrameStore.setState({
+        frameId: resolveValidAvatarFrame(user.avatarFrame),
+      });
       if (
         user.experienceMode === "GAMIFIED" ||
         user.experienceMode === "PRODUCTIVITY"

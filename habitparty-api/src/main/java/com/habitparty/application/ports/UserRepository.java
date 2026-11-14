@@ -1,5 +1,6 @@
 package com.habitparty.application.ports;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -36,5 +37,21 @@ public interface UserRepository {
 
   default List<User> findUsersWithExpiredStreak(LocalDateTime since) {
     return List.of();
+  }
+
+  default List<UUID> findUserIdsDueForDailyReset(Instant nowUtc) {
+    return List.of();
+  }
+
+  default boolean isUserDueForDailyReset(UUID id, Instant nowUtc) {
+    return false;
+  }
+
+  default Optional<User> findByIdForUpdate(UUID id) {
+    return findById(id);
+  }
+
+  default List<User> findAllByIdsForUpdate(Collection<UUID> ids) {
+    return findAllByIds(ids);
   }
 }

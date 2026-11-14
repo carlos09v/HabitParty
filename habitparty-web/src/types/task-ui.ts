@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
+import type { ColumnMoveWorkspaceOption } from "@/components/tasks/shared";
 import type {
   BoardColumn,
   BoardFilterState,
@@ -210,23 +211,27 @@ export interface TasksBoardModalsProps {
   showAllColumns: () => void;
   columnWidths?: Record<string, ColumnWidthPreset>;
   onColumnWidthChange?: (columnId: string, width: ColumnWidthPreset) => void;
+  availableTargetWorkspaces?: ColumnMoveWorkspaceOption[];
+  isWorkspaceReadOnly?: boolean;
+  onMoveColumnToWorkspace?: (
+    column: BoardColumn,
+    targetWorkspaceId: string,
+    targetWorkspaceName: string,
+  ) => Promise<boolean>;
+  onMoveLockedWorkspace?: (reason: "source" | "target", name?: string) => void;
 }
 
 export interface RoutineBoardProps {
   columns: BoardColumn[];
-  setColumns: Dispatch<SetStateAction<BoardColumn[]>>;
   visibleColumnIds: string[];
   selectedTaskId?: string;
   deletingTaskIds?: ReadonlySet<string>;
   isCompact?: boolean;
-  maxColumns?: number;
   selectedColumnId?: string | null;
   alignment?: BoardAlignment;
   columnWidths?: Record<string, ColumnWidthPreset>;
   getColumnWidthClass?: (columnId: string) => string;
   onAddColumn?: () => void;
-  onOpenColumnsDrawer?: () => void;
-  onViewModeChange?: (mode: "card" | "list") => void;
   onAddTaskToColumn?: (
     columnId: string,
     initialType?: TaskTypeOption,
@@ -236,12 +241,6 @@ export interface RoutineBoardProps {
   onOpenDetails?: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
   onEditTask?: (task: Task, columnId: string) => void;
   onContextMenu?: (e: React.MouseEvent, task: Task, columnId: string) => void;
-  onTaskMove?: (
-    taskId: string,
-    targetColumnId: string,
-    newIndex: number,
-  ) => void;
-  onColumnReorder?: (reorderedColumns: BoardColumn[]) => void;
   onOpenColumnMenu?: (e: React.MouseEvent, column: BoardColumn) => void;
   onToggleComplete?: (taskId: string, completed: boolean) => void;
   onHabitChange?: (taskId: string, delta: number) => void;
@@ -251,8 +250,6 @@ export interface RoutineBoardProps {
     taskType?: TaskTypeOption,
     extraPayload?: Partial<CreateTaskDTO>,
   ) => Promise<void>;
-  dndState?: unknown;
-  onHideColumn?: (columnId: string) => void;
 }
 
 export interface RoutineColumnProps {
@@ -286,7 +283,6 @@ export interface RoutineColumnProps {
 
 export interface RoutineTaskListProps {
   columns: BoardColumn[];
-  setColumns: Dispatch<SetStateAction<BoardColumn[]>>;
   visibleColumnIds: string[];
   selectedColumnId?: string | null;
   selectedTaskId?: string;
@@ -301,13 +297,6 @@ export interface RoutineTaskListProps {
   onOpenDetails: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
   onEditTask?: (task: Task, columnId: string) => void;
   onContextMenu: (e: React.MouseEvent, task: Task, columnId: string) => void;
-  onTaskMove?: (
-    taskId: string,
-    targetColumnId: string,
-    newOrderIndex: number,
-    allTargetTasks?: Task[],
-  ) => void;
-  onColumnReorder?: (reorderedColumns: BoardColumn[]) => void;
   onToggleComplete: (taskId: string, completed: boolean) => void;
   onHabitChange: (taskId: string, delta: number) => void;
   dndState?: {

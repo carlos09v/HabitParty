@@ -1,7 +1,5 @@
 "use server";
 
-import { updateTag } from "next/cache";
-
 import { getTranslations } from "next-intl/server";
 import { serverApi } from "@/api/server";
 import type {
@@ -104,10 +102,12 @@ export async function deleteFocusActivity(
       };
     }
 
-    invalidateFocusDomainTags({ activities: true, records: true });
-    if (deleteHistory) {
-      updateTag("transactions");
-    }
+    invalidateFocusDomainTags({
+      activities: true,
+      records: true,
+      rewardsAndInventory: deleteHistory,
+      tasks: deleteHistory,
+    });
     return { success: true };
   } catch (err) {
     console.error("[FocusAction:DeleteActivity]", err);
@@ -203,7 +203,7 @@ export async function updateFocusRecord(
       };
     }
 
-    invalidateFocusDomainTags({ records: true });
+    invalidateFocusDomainTags({ records: true, tasks: true });
     return { success: true, data: data as FocusRecordResponseDTO };
   } catch (err) {
     console.error("[FocusAction:UpdateRecord]", err);

@@ -3,7 +3,6 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useRef, useTransition } from "react";
 import { toast } from "sonner";
-import { cloneTaskChecklistItems } from "@/actions/checklistActions";
 import {
   changeTaskStatus,
   completeTask,
@@ -13,6 +12,7 @@ import {
 } from "@/actions/taskActions";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
+import { useUserStore } from "@/store/userStore";
 import type { Task } from "@/types/task";
 import {
   calculateTaskPenalty,
@@ -23,19 +23,58 @@ import { awardUserRewards, deductUserPenalty } from "@/utils/gamification";
 import { soundEffects } from "@/utils/soundEffects";
 import {
   buildCreateTaskPayloadFromTask,
+  computeOptimisticHabitDelta,
   mergeTaskWithResponseDTO,
 } from "@/utils/taskMapper";
 
-function notifyTasksChanged() {
+function notifyTasksChanged(detail?: { completedToday?: boolean }) {
   if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent("habitparty:tasks-changed"));
+    window.dispatchEvent(
+      new CustomEvent("habitparty:tasks-changed", { detail }),
+    );
   }
 }
 
-interface TaskToggleRollbackState {
+export interface TaskToggleRollbackState {
   completed: boolean;
   hasClaimedReward?: boolean;
   lastCompletedAt?: string;
+}
+
+export function applyOptimisticTaskToggle(
+  task: Task,
+  completed: boolean,
+  nowIso = new Date().toISOString(),
+): Task {
+  return {
+    ...task,
+    completed,
+    hasClaimedReward: completed ? true : task.hasClaimedReward,
+    lastCompletedAt: completed ? nowIso : task.lastCompletedAt,
+  };
+}
+
+export function applyOptimisticTaskRollback(
+  task: Task,
+  previousState: TaskToggleRollbackState,
+): Task {
+  return {
+    ...task,
+    completed: previousState.completed,
+    hasClaimedReward: previousState.hasClaimedReward,
+    lastCompletedAt: previousState.lastCompletedAt,
+  };
+}
+
+export function applyOptimisticHabitChange(
+  task: Task,
+  delta: number,
+  timeZone?: string | null,
+): Task {
+  return {
+    ...task,
+    ...computeOptimisticHabitDelta(task, delta, timeZone),
+  };
 }
 
 function resolveRewardStreakBeforeAction(
@@ -122,6 +161,9 @@ export function useTaskMutations({
       };
 
       onOptimisticToggle(taskId, completed);
+      if (completed) {
+        soundEffects.playTaskCompleteSound();
+      }
       onTaskUpdatedInDetails?.({
         ...targetTask,
         completed,
@@ -147,7 +189,7 @@ export function useTaskMutations({
           onReconcileTask?.(reconciledTask);
           onTaskUpdatedInDetails?.(reconciledTask);
         }
-        notifyTasksChanged();
+        notifyTasksChanged({ completedToday: completed });
 
         if (completed) {
           const completionLabel =
@@ -159,7 +201,6 @@ export function useTaskMutations({
 
           // Proteção contra ganho múltiplo de Ouro/XP ao marcar e desmarcar a mesma tarefa/diária
           if (alreadyRewarded) {
-            soundEffects.playTaskCompleteSound();
             toast.success(
               <span>
                 {completionLabel}{" "}
@@ -189,6 +230,7 @@ export function useTaskMutations({
             dueDate: targetTask.dueDate,
             isPenaltyApplied: targetTask.isPenaltyApplied,
             locale,
+            timeZone: useUserStore.getState().user?.timezone,
           });
 
           const xp = breakdown.finalReward.xp;
@@ -202,10 +244,8 @@ export function useTaskMutations({
             isTaskCompletion: true,
           });
 
-          // Se não subiu de nível, executa o som e o toast padrão contextual ao tipo da atividade
+          // Se não subiu de nível, exibe o toast padrão contextual ao tipo da atividade
           if (!rewardResult.didLevelUp) {
-            soundEffects.playTaskCompleteSound();
-
             if (xp > 0 || gold > 0) {
               toast.success(
                 <span>
@@ -263,6 +303,11 @@ export function useTaskMutations({
 
       // Atualização otimista imediata na visualização do usuário
       onOptimisticHabit(taskId, delta);
+      if (delta > 0) {
+        soundEffects.playHabitSound();
+      } else if (delta < 0) {
+        soundEffects.playPenaltySound();
+      }
 
       startTransition(async () => {
         const res = await recordHabitScore(taskId, delta);
@@ -282,7 +327,7 @@ export function useTaskMutations({
           onReconcileTask?.(reconciledTask);
           onTaskUpdatedInDetails?.(reconciledTask);
         }
-        notifyTasksChanged();
+        notifyTasksChanged({ completedToday: delta > 0 });
 
         if (delta > 0) {
           const rewardStreak = resolveRewardStreakBeforeAction(
@@ -309,9 +354,8 @@ export function useTaskMutations({
             isTaskCompletion: true,
           });
 
-          // Se não subiu de nível, executa o som e o toast padrão do hábito
+          // Se não subiu de nível, exibe o toast padrão do hábito
           if (!rewardResult.didLevelUp) {
-            soundEffects.playHabitSound();
             if (xp > 0 || gold > 0) {
               toast.success(
                 <span>
@@ -352,8 +396,6 @@ export function useTaskMutations({
           });
 
           const penaltyResult = deductUserPenalty(penalty.xp, penalty.gold);
-
-          soundEffects.playPenaltySound();
 
           toast.error(
             <span>
@@ -411,25 +453,21 @@ export function useTaskMutations({
         return;
       }
 
-      const payload = buildCreateTaskPayloadFromTask(task);
-      const res = await createTask(colId, payload);
+      const payload = buildCreateTaskPayloadFromTask(
+        task,
+        useUserStore.getState().user?.timezone,
+      );
+      const res = await createTask(colId, payload, task.checklist);
       if (!res.success) {
         toast.error(res.error || t("duplicateError"));
         return;
       }
 
       const newTaskId = res.data?.id;
-      let clonedChecklist = task.checklist;
-
-      if (newTaskId && task.checklist && task.checklist.length > 0) {
-        const createdItems = await cloneTaskChecklistItems(
-          newTaskId,
-          task.checklist,
-        );
-        if (createdItems.length > 0) {
-          clonedChecklist = createdItems;
-        }
-      }
+      const clonedChecklist =
+        res.data?.checklist && res.data.checklist.length > 0
+          ? res.data.checklist
+          : task.checklist;
 
       const duplicatedTask: Task = {
         ...task,

@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { OnboardingStepHeader } from "@/components/onboarding/OnboardingStepHeader";
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/utils";
 
@@ -22,17 +23,15 @@ export function WorkspaceSetupCard({
 
   return (
     <div className="flex flex-col gap-2.5 p-3.5 rounded-xl border border-neutral-700 bg-card shadow-xs dark:border-primary/30 dark:bg-surface/50 dark:shadow-card-deep">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h2 className="text-body-s font-bold text-neutral-100 flex items-center gap-2">
-          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/15 text-amber-700 dark:bg-gold/20 dark:text-gold text-[11px] font-bold">
-            2
+      <OnboardingStepHeader
+        step={2}
+        title={t("title")}
+        rightSlot={
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 dark:bg-gold/15 border border-amber-500/35 dark:border-gold/40 text-amber-800 dark:text-gold text-label-m font-bold uppercase tracking-wider">
+            {t("badge")}
           </span>
-          {t("title")}
-        </h2>
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 dark:bg-gold/15 border border-amber-500/35 dark:border-gold/40 text-amber-800 dark:text-gold text-[10px] font-bold uppercase tracking-wider">
-          {t("badge")}
-        </span>
-      </div>
+        }
+      />
 
       <p className="text-tiny sm:text-xs text-neutral-300">
         {t("description")}

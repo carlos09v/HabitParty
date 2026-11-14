@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
   openMysteryBox,
   revalidateInventoryAfterRoulette,
@@ -57,6 +58,7 @@ export function useMysteryBoxRoulette({
   const soundIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const winTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const initializedItemKeyRef = useRef<string | null>(null);
+  const pendingRevalidationRef = useRef(false);
 
   const tierId: PackageLevel =
     (item?.reward.packageLevel as PackageLevel) || "Básico";
@@ -131,7 +133,8 @@ export function useMysteryBoxRoulette({
     setTrackItems(generated);
   }, [isOpen, item, pool, tierConfig.id, tierConfig.dropRates, t]);
 
-  // Limpeza de intervalos sonoros e timers ao desmontar ou fechar
+  // Limpeza de intervalos sonoros e timers ao desmontar ou fechar;
+  // garante que a revalidação ocorra mesmo se a modal for fechada antes do fim da animação
   useEffect(() => {
     return () => {
       if (soundIntervalRef.current) {
@@ -140,6 +143,10 @@ export function useMysteryBoxRoulette({
       if (winTimeoutRef.current) {
         clearTimeout(winTimeoutRef.current);
       }
+      if (pendingRevalidationRef.current) {
+        pendingRevalidationRef.current = false;
+        void revalidateInventoryAfterRoulette();
+      }
     };
   }, []);
 
@@ -147,15 +154,20 @@ export function useMysteryBoxRoulette({
     if (phase !== "idle" || !item || isOpeningServer) return;
 
     setIsOpeningServer(true);
-    const targetItemId = item.inventoryItemId || item.id;
+    const targetItemId = item.itemIds?.[0] || item.inventoryItemId || item.id;
 
     try {
       const res = await openMysteryBox(targetItemId, true);
       if (!res.success || !res.data) {
         setIsOpeningServer(false);
+        const errorMsg = !res.success
+          ? res.error
+          : "Não foi possível abrir a caixa misteriosa.";
+        toast.error(errorMsg);
         return;
       }
 
+      pendingRevalidationRef.current = true;
       const winData = res.data;
       setWonResult(winData);
 
@@ -233,10 +245,14 @@ export function useMysteryBoxRoulette({
         setPhase("won");
         soundEffects.playRouletteWinSound();
         onSuccess?.(winData);
-        void revalidateInventoryAfterRoulette();
+        if (pendingRevalidationRef.current) {
+          pendingRevalidationRef.current = false;
+          void revalidateInventoryAfterRoulette();
+        }
       }, 4600);
     } catch (_err) {
       setIsOpeningServer(false);
+      toast.error("Não foi possível abrir a caixa misteriosa.");
     }
   };
 

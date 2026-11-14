@@ -21,7 +21,7 @@ import { createPortal } from "react-dom";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { CoinAmount } from "@/components/ui/reward/CoinAmount";
 import { XpAmount } from "@/components/ui/reward/XpAmount";
-import { getTransactionContextRoute } from "@/constants/history";
+import { TRANSACTION_CONTEXT_ROUTE_MAP } from "@/constants/history";
 import { useAnchoredPopoverPosition } from "@/hooks/useAnchoredPopoverPosition";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useDateFormat } from "@/hooks/useDateFormat";
@@ -29,9 +29,14 @@ import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useIsClient } from "@/hooks/useIsClient";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
+import { useUserStore } from "@/store/userStore";
 import type { TransactionHistoryResponseDTO } from "@/types/history";
+import type { DateFormat, TimeFormat } from "@/types/ui";
 import { cn, formatCoins, formatDateTime } from "@/utils";
-import { resolveTransactionMetadata } from "@/utils/historyUtils";
+import {
+  resolveTransactionMetadata,
+  type TransactionMetadataLabels,
+} from "@/utils/historyUtils";
 
 interface TransactionDetailPopoverProps {
   isOpen: boolean;
@@ -42,6 +47,10 @@ interface TransactionDetailPopoverProps {
   onRequestDelete?: (transaction: TransactionHistoryResponseDTO) => void;
   /** Suspende o fechamento por clique-fora/ESC (ex.: modal de confirmação aberto). */
   suspendDismiss?: boolean;
+  dateFormat?: DateFormat;
+  timeFormat?: TimeFormat;
+  userTimeZone?: string | null;
+  metadataLabels?: TransactionMetadataLabels;
 }
 
 const POPOVER_OPTIONS = {
@@ -58,12 +67,22 @@ export function TransactionDetailPopover({
   anchorRect,
   onRequestDelete,
   suspendDismiss = false,
+  dateFormat: propDateFormat,
+  timeFormat: propTimeFormat,
+  userTimeZone: propUserTimeZone,
+  metadataLabels,
 }: TransactionDetailPopoverProps) {
   const t = useTranslations("history.detailPopover");
+  const tUtils = useTranslations("history.utils");
   const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
-  const { dateFormat } = useDateFormat();
-  const { timeFormat } = useTimeFormat();
+  const { dateFormat: hookDateFormat } = useDateFormat();
+  const { timeFormat: hookTimeFormat } = useTimeFormat();
+  const storeUserTimeZone = useUserStore((s) => s.user?.timezone);
+  const dateFormat = propDateFormat ?? hookDateFormat;
+  const timeFormat = propTimeFormat ?? hookTimeFormat;
+  const userTimeZone = propUserTimeZone ?? storeUserTimeZone;
+
   const mounted = useIsClient();
   const [copiedId, setCopiedId] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -84,7 +103,14 @@ export function TransactionDetailPopover({
 
   if (!isOpen || !mounted || !transaction) return null;
 
-  const metadata = resolveTransactionMetadata(transaction, locale);
+  const metadata = resolveTransactionMetadata(
+    transaction,
+    locale,
+    dateFormat,
+    timeFormat,
+    userTimeZone,
+    metadataLabels,
+  );
   const IconComponent = metadata.icon || HelpCircle;
 
   const gold = transaction.goldAmount ?? 0;
@@ -100,11 +126,21 @@ export function TransactionDetailPopover({
   };
 
   // Atalho contextual para o módulo de origem (apenas se houver referência)
-  const contextualRoute = transaction.referenceId
-    ? getTransactionContextRoute(metadata.resolvedType, locale)
+  const routeConfig = transaction.referenceId
+    ? TRANSACTION_CONTEXT_ROUTE_MAP[metadata.resolvedType]
+    : undefined;
+  const contextualRouteLabel = routeConfig
+    ? routeConfig.routeKey === "inventory"
+      ? isGamified
+        ? tUtils("contextRoutes.inventoryGamified")
+        : tUtils("contextRoutes.inventoryProductivity")
+      : routeConfig.routeKey === "rewards"
+        ? isGamified
+          ? tUtils("contextRoutes.rewardsGamified")
+          : tUtils("contextRoutes.rewardsProductivity")
+        : tUtils(`contextRoutes.${routeConfig.routeKey}`)
     : undefined;
 
-  // Mobile: centralizado via classes. Desktop (md+): ancorado via CSS vars.
   const anchorStyle = {
     "--pop-top": `${position.top}px`,
     "--pop-left": `${position.left}px`,
@@ -136,7 +172,6 @@ export function TransactionDetailPopover({
         {/* CABEÇALHO DO POPOVER */}
         <header className="p-4 border-b border-neutral-700 dark:border-white/10 flex items-start justify-between gap-3 bg-surface/50">
           <div className="flex items-start gap-3 min-w-0">
-            {/* A cor do tipo de transação fica concentrada no ícone */}
             <div
               className={cn(
                 "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border shadow-xs",
@@ -197,7 +232,6 @@ export function TransactionDetailPopover({
         <div className="p-4 flex flex-col gap-3.5 overflow-y-auto max-h-[calc(100vh-200px)]">
           {/* PAINEL DE IMPACTO FINANCEIRO / XP */}
           <div className="grid grid-cols-2 gap-2.5 p-3 rounded-xl bg-surface/70 border border-neutral-700 dark:border-white/10">
-            {/* Moedas / Créditos */}
             <div className="flex flex-col gap-0.5">
               <span className="text-label-g font-semibold text-neutral-400 flex items-center gap-1">
                 {gold > 0 ? (
@@ -214,7 +248,6 @@ export function TransactionDetailPopover({
               </div>
             </div>
 
-            {/* Experiência (XP) / Pontos */}
             <div className="flex flex-col gap-0.5">
               <span className="text-label-g font-semibold text-neutral-400">
                 {isGamified ? t("xpLabel") : t("xpLabelProductivity")}
@@ -227,7 +260,6 @@ export function TransactionDetailPopover({
 
           {/* DETALHES CONTEXTUAIS DA TAREFA / RECOMPENSA */}
           <div className="flex flex-col gap-2 text-xs text-neutral-300">
-            {/* Preço original na loja se houver */}
             {priceSnapshot != null && priceSnapshot > 0 && (
               <div className="flex items-center justify-between py-1 border-b border-neutral-700/70 dark:border-white/5">
                 <span className="text-neutral-400">
@@ -240,7 +272,6 @@ export function TransactionDetailPopover({
               </div>
             )}
 
-            {/* Lista (BoardColumn) de origem da tarefa */}
             {transaction.columnName && (
               <div className="flex items-center justify-between gap-3 py-1 border-b border-neutral-700/70 dark:border-white/5">
                 <span className="text-neutral-400 shrink-0">
@@ -260,7 +291,6 @@ export function TransactionDetailPopover({
               </div>
             )}
 
-            {/* Dificuldade ou Esforço */}
             {metadata.difficultyLabel && (
               <div className="flex items-center justify-between py-1 border-b border-neutral-700/70 dark:border-white/5">
                 <span className="text-neutral-400">
@@ -297,7 +327,6 @@ export function TransactionDetailPopover({
               </div>
             )}
 
-            {/* Sessão de Foco: Duração */}
             {metadata.isFocus && tags.length > 0 && (
               <div className="flex items-center justify-between py-1 border-b border-neutral-700/70 dark:border-white/5">
                 <span className="text-neutral-400">
@@ -322,11 +351,11 @@ export function TransactionDetailPopover({
                   locale,
                   dateFormat,
                   timeFormat,
+                  timeZone: userTimeZone,
                 })}
               </span>
             </div>
 
-            {/* Tags associadas */}
             {tags.length > 0 && (!metadata.isFocus || tags.length > 1) && (
               <div className="flex flex-col gap-1 pt-1">
                 <span className="text-neutral-400 flex items-center gap-1 text-label-g">
@@ -345,15 +374,14 @@ export function TransactionDetailPopover({
               </div>
             )}
 
-            {/* Link contextual para o módulo de origem se existir */}
-            {contextualRoute && (
+            {routeConfig && contextualRouteLabel && (
               <div className="pt-1">
                 <Link
-                  href={contextualRoute.href}
+                  href={routeConfig.href}
                   className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface dark:bg-primary-dark/40 border border-neutral-700 dark:border-primary/40 hover:bg-surface-hover dark:hover:bg-primary-dark/70 hover:border-amber-500/40 dark:hover:border-gold/40 text-neutral-200 dark:text-neutral-300 hover:text-amber-700 dark:hover:text-gold text-xs font-semibold transition-colors group"
                   onClick={onClose}
                 >
-                  <span>{contextualRoute.label}</span>
+                  <span>{contextualRouteLabel}</span>
                   <ExternalLink
                     size={12}
                     className="group-hover:translate-x-0.5 transition-transform"

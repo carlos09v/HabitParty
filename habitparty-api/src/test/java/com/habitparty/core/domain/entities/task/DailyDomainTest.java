@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.habitparty.core.domain.enums.task.DailyDaysOfWeek;
 import com.habitparty.core.domain.enums.task.DailyRepeatType;
 import com.habitparty.core.domain.enums.task.TaskDifficulty;
 import com.habitparty.core.domain.enums.task.TaskPriority;
@@ -152,5 +153,48 @@ class DailyDomainTest {
     assertEquals(0, overdueDaily.getEffectiveStreak(LocalDate.now()));
     overdueDaily.registerCompletion(LocalDateTime.now());
     assertEquals(1, overdueDaily.getCurrentStreak());
+  }
+
+  @Test
+  @DisplayName("Daily WEEKLY com múltiplos dias avança para o próximo dia da mesma semana antes de pular semanas")
+  void testWeeklyMultipleDaysAdvancesWithinSameWeekAndPreservesStreak() {
+    LocalDate monday = LocalDate.of(2026, 3, 2); // Segunda-feira
+    LocalDate wednesday = LocalDate.of(2026, 3, 4); // Quarta-feira
+    LocalDate friday = LocalDate.of(2026, 3, 6); // Sexta-feira
+    LocalDate nextCycleMonday = LocalDate.of(2026, 3, 16); // +2 semanas
+
+    Daily biweeklyMultiDay = new Daily(
+        UUID.randomUUID(),
+        columnId,
+        userId,
+        "Academia",
+        null,
+        0,
+        TaskPriority.MEDIUM,
+        List.of(),
+        TaskDifficulty.MEDIUM,
+        TaskStatus.COMPLETED,
+        TaskType.DAILY,
+        false,
+        monday,
+        monday.atStartOfDay(),
+        List.of(),
+        3,
+        monday,
+        DailyRepeatType.WEEKLY,
+        2,
+        List.of(DailyDaysOfWeek.MONDAY, DailyDaysOfWeek.WEDNESDAY, DailyDaysOfWeek.FRIDAY),
+        null,
+        monday.atTime(19, 0)
+    );
+
+    assertEquals(wednesday, biweeklyMultiDay.calculateNextOccurrence(monday, false));
+    assertEquals(friday, biweeklyMultiDay.calculateNextOccurrence(wednesday, false));
+    assertEquals(nextCycleMonday, biweeklyMultiDay.calculateNextOccurrence(friday, false));
+
+    // Na terça após concluir segunda, próxima esperada é quarta: streak permanece ativo
+    assertTrue(biweeklyMultiDay.isStreakStillActive(LocalDate.of(2026, 3, 3)));
+    // Na quinta após NÃO concluir quarta (última conclusão segunda), nextExpected (quarta) < quinta -> streak quebra
+    assertFalse(biweeklyMultiDay.isStreakStillActive(LocalDate.of(2026, 3, 5)));
   }
 }

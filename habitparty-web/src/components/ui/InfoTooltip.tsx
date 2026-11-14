@@ -22,6 +22,8 @@ export interface InfoTooltipProps {
   icon?: ReactNode;
   /** Conteúdo do popover (parágrafos explicativos, listas e dicas) */
   children: ReactNode;
+  /** Ícone customizado para o botão gatilho (padrão: <Info />) */
+  triggerIcon?: ReactNode;
   /** Tamanho do ícone <Info /> no botão gatilho (padrão: 15) */
   size?: number;
   /** Rótulo opcional visível ao lado do ícone no botão gatilho (ex: "Ainda em dúvida?") */
@@ -32,6 +34,8 @@ export interface InfoTooltipProps {
   side?: "top" | "bottom";
   /** Classes extras para o container relativo do gatilho */
   className?: string;
+  /** Classes extras para o botão gatilho */
+  triggerClassName?: string;
   /** Classes extras para a caixa flutuante do popover */
   popoverClassName?: string;
 }
@@ -48,11 +52,13 @@ export function InfoTooltip({
   title,
   icon,
   children,
+  triggerIcon,
   size = 15,
   triggerLabel,
   align = "left",
   side = "top",
   className,
+  triggerClassName,
   popoverClassName,
 }: InfoTooltipProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -242,6 +248,18 @@ export function InfoTooltip({
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onFocus={(e) => {
+          if (e.currentTarget.matches(":focus-visible")) {
+            handleMouseEnter();
+          }
+        }}
+        onBlur={(e) => {
+          const next = e.relatedTarget as Node | null;
+          if (next && popoverRef.current?.contains(next)) {
+            return;
+          }
+          handleMouseLeave();
+        }}
         aria-label={ariaLabel}
         aria-expanded={isOpen}
         className={cn(
@@ -249,9 +267,10 @@ export function InfoTooltip({
           triggerLabel
             ? "text-tiny font-medium px-1.5 py-0.5 rounded-md bg-white/5 hover:bg-gold/10 border border-white/10 hover:border-gold/30"
             : "p-0.5",
+          triggerClassName,
         )}
       >
-        <Info size={size} className="shrink-0" />
+        {triggerIcon ?? <Info size={size} className="shrink-0" />}
         {triggerLabel && <span>{triggerLabel}</span>}
       </button>
 

@@ -1,11 +1,15 @@
 "use client";
 
-import { Camera, Crown, Shield, Sparkles, UploadCloud } from "lucide-react";
+import { ExternalLink, Sparkles, UploadCloud } from "lucide-react";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import { FounderBadge } from "@/components/ui/FounderBadge";
 import { UserAvatar } from "@/components/ui/UserAvatar";
+import { UserPlanBadge, UserRoleBadge } from "@/components/ui/UserStatusBadges";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useProfilePhotoUpload } from "@/hooks/useProfilePhotoUpload";
 import type { AppLocale } from "@/i18n/config";
+import { useActiveAvatarFrame } from "@/store/avatarFrameStore";
 import { useUserStore } from "@/store/userStore";
 import type { ProfileHeaderCardProps } from "@/types/settings";
 import { cn, formatCoins, resolveUserLevelState } from "@/utils";
@@ -20,6 +24,7 @@ export function ProfileHeaderCard({
 
   const storeUser = useUserStore((s) => s.user);
   const user = storeUser || initialUser;
+  const activeFrameId = useActiveAvatarFrame();
 
   const {
     fileInputRef,
@@ -54,49 +59,31 @@ export function ProfileHeaderCard({
       )}
     >
       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-6 min-w-0 flex-1 w-full">
-        {/* AVATAR COM OVERLAY ELEGANTE PARA UPLOAD */}
+        {/* AVATAR COM LINK PARA VITRINE DE PERFIL (/profile) */}
         <div className="relative group shrink-0">
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            disabled={isPending}
-            className="relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-gold cursor-pointer transition-transform group-hover:scale-[1.02] block disabled:cursor-not-allowed"
-            title={t("dropzoneTitle")}
-            aria-label={t("changePhotoAria")}
+          <Link
+            href="/profile"
+            className="relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-gold cursor-pointer transition-transform group-hover:scale-[1.02] block"
+            title={t("viewProfileTitle")}
+            aria-label={t("viewProfileTitle")}
           >
             <UserAvatar
               src={displayPhoto}
               name={displayName}
               size="xl"
               hasRing={Boolean(user?.isPremium)}
+              frameId={activeFrameId}
               className="shadow-md dark:shadow-xl"
             />
 
-            {/* Overlay sutil de câmera no hover */}
-            <div
-              className={cn(
-                "absolute inset-0 rounded-full bg-black/65 flex flex-col items-center justify-center text-white transition-opacity z-20",
-                isDraggingOver || isPending
-                  ? "opacity-100"
-                  : "opacity-0 group-hover:opacity-100",
-              )}
-            >
-              <Camera
-                size={22}
-                className={
-                  isPending
-                    ? "animate-spin text-amber-400 dark:text-gold"
-                    : "text-white drop-shadow-sm"
-                }
-              />
-              <span className="text-[10px] font-bold mt-1 text-white drop-shadow-sm">
-                {isPending ? t("uploading") : t("changePhoto")}
+            {/* Overlay sutil de navegação para /profile no hover */}
+            <div className="absolute inset-0 rounded-full bg-black/65 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity z-20">
+              <ExternalLink size={20} className="text-white drop-shadow-sm" />
+              <span className="text-tiny font-bold mt-1 text-white drop-shadow-sm">
+                {t("viewProfile")}
               </span>
             </div>
-          </button>
+          </Link>
 
           <input
             ref={fileInputRef}
@@ -115,24 +102,15 @@ export function ProfileHeaderCard({
               {displayName}
             </h2>
 
-            {user?.isPremium ? (
-              <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-tiny font-bold bg-gold/20 text-gold border border-gold/40 shadow-xs">
-                <Crown size={12} className="stroke-2" />
-                {t("premiumBadge")}
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-tiny font-bold bg-surface border border-neutral-700 dark:border-primary/30 text-neutral-300 shadow-xs">
-                <Sparkles size={12} className="text-neutral-400" />
-                {t("freeBadge")}
-              </span>
-            )}
+            {user?.isFounder && <FounderBadge size="sm" />}
 
-            {user?.role === "ADMIN" && (
-              <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-tiny font-bold bg-magenta/20 text-magenta border border-magenta/40">
-                <Shield size={12} />
-                {t("adminBadge")}
-              </span>
-            )}
+            <UserPlanBadge
+              isPremium={user?.isPremium}
+              premiumLabel={t("premiumBadge")}
+              freeLabel={t("freeBadge")}
+            />
+
+            <UserRoleBadge role={user?.role} adminLabel={t("adminBadge")} />
           </div>
 
           {user?.username && (
@@ -207,7 +185,7 @@ export function ProfileHeaderCard({
                 ? t("dropzoneActive")
                 : t("dropzoneDefault")}
           </span>
-          <span className="text-[11px] text-neutral-400 leading-tight">
+          <span className="text-label-g text-neutral-400 leading-tight font-normal">
             {t("dropzoneHint")}
           </span>
         </button>

@@ -1,5 +1,8 @@
+"use client";
+
 import { Flame, FolderKanban, Pencil, X } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useUserStore } from "@/store/userStore";
 import type { Task, TaskPriorityOption } from "@/types/task";
 import type { DatePickerEventSchedulePatch } from "@/types/ui";
 import { cn } from "@/utils";
@@ -48,9 +51,10 @@ export function TaskDetailsHeader({
   onClose,
 }: TaskDetailsHeaderProps) {
   const t = useTranslations("tasks.detailsPopover.header");
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
   const streak = task.streak ?? task.currentStreak ?? 0;
   const habitScore = (task.positiveCount ?? 0) - (task.negativeCount ?? 0);
-  const isDateLocked = isTaskHardcoreLocked(task);
+  const isDateLocked = isTaskHardcoreLocked(task, new Date(), userTimeZone);
 
   return (
     <div className="flex items-center justify-between gap-2 border-b border-white/8 pb-2.5">

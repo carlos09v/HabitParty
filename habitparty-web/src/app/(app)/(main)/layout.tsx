@@ -1,50 +1,26 @@
-import { cacheLife, cacheTag } from "next/cache";
 import { cookies } from "next/headers";
 import { type ReactNode, Suspense } from "react";
-import { serverApi } from "@/api/server";
 import { EmailVerificationBanner } from "@/components/auth/EmailVerificationBanner";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { StoreInitializer } from "@/components/layout/StoreInitializer";
 import { StreakLostNotifier } from "@/components/layout/StreakLostNotifier";
+import { TimezoneMismatchBanner } from "@/components/layout/TimezoneMismatchBanner";
 import { AchievementUnlockListener } from "@/components/showcase/AchievementUnlockListener";
 import { PaymentFeedbackListener } from "@/components/subscription/PaymentFeedbackListener";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getDashboardTransactions } from "@/services/dashboardService";
 import { getRawInventoryItems } from "@/services/inventoryService";
+import { fetchPendingTasksCount } from "@/services/taskService";
 import { getCurrentUser } from "@/services/userService";
-import { getWorkspaces } from "@/services/workspaceService";
+import {
+  getWorkspaces,
+  resolveActiveWorkspace,
+} from "@/services/workspaceService";
 import { getDateFormat, getThemeMode, getTimeFormat } from "@/utils/cookies";
 import { getLatestTaskCompletionCreatedAt } from "@/utils/dashboardMetrics";
 
 export const instant = false;
-
-async function fetchPendingTasksCount(workspaceId: string): Promise<number> {
-  "use cache: private";
-  cacheLife("private30");
-  cacheTag("tasks", "dashboard-tasks");
-
-  try {
-    const { data: tasksData } = await serverApi.GET(
-      "/tasks/workspace/{workspaceId}/dashboard",
-      {
-        params: {
-          path: { workspaceId },
-          query: { filter: "TODAY", size: 1 },
-        },
-      },
-    );
-    if (tasksData?.totalElements !== undefined) {
-      return tasksData.totalElements;
-    }
-    if (tasksData?.content) {
-      return tasksData.content.length;
-    }
-  } catch {
-    // ignore
-  }
-  return 0;
-}
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const cookieStore = await cookies();
@@ -73,17 +49,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   ]);
 
   const lastTaskCompletionAt = getLatestTaskCompletionCreatedAt(transactions);
-
-  let activeWorkspaceId: string | null = null;
-  let isCookieWorkspaceValid = false;
-
-  if (workspaces.length > 0) {
-    isCookieWorkspaceValid = workspaces.some((w) => w.id === cookieWorkspaceId);
-    activeWorkspaceId =
-      isCookieWorkspaceValid && cookieWorkspaceId
-        ? cookieWorkspaceId
-        : workspaces[0].id || null;
-  }
+  const { activeWorkspaceId } = resolveActiveWorkspace(
+    workspaces,
+    cookieWorkspaceId,
+  );
 
   // Contagem de itens utilizáveis na mochila (AVAILABLE ou IN_FOCUS)
   const inventoryCount = inventoryData.filter(
@@ -114,6 +83,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           <StreakLostNotifier
             userId={user?.id}
             currentStreak={user?.currentStreak}
+            timezone={user?.timezone}
           />
         </Suspense>
 
@@ -152,6 +122,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       */}
         <main className="relative z-10 flex-1 min-h-0 min-w-0 h-full overflow-hidden flex flex-col">
           <EmailVerificationBanner initialUser={user || null} />
+          <TimezoneMismatchBanner initialUser={user || null} />
           {/* Todo o conteúdo das telas /dashboard, /inventory, etc., aparecerá aqui */}
           {children}
         </main>

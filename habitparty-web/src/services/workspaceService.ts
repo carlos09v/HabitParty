@@ -20,3 +20,29 @@ export async function getWorkspaces(): Promise<WorkspaceResponseDTO[]> {
 
   return data;
 }
+
+/**
+ * Resolve de forma unificada o workspace ativo a partir do ID solicitado (cookie/parâmetro),
+ * caindo de volta para o primeiro workspace disponível caso o ID não exista mais.
+ */
+export function resolveActiveWorkspace(
+  workspaces: WorkspaceResponseDTO[],
+  requestedWorkspaceId?: string | null,
+): {
+  activeWorkspace: WorkspaceResponseDTO | null;
+  activeWorkspaceId: string | null;
+} {
+  if (!workspaces || workspaces.length === 0) {
+    return { activeWorkspace: null, activeWorkspaceId: null };
+  }
+
+  const matched = requestedWorkspaceId
+    ? workspaces.find((w) => w.id === requestedWorkspaceId)
+    : undefined;
+  const activeWorkspace = matched || workspaces[0] || null;
+
+  return {
+    activeWorkspace,
+    activeWorkspaceId: activeWorkspace?.id || null,
+  };
+}

@@ -6,12 +6,19 @@ import { getTranslations } from "next-intl/server";
 import type { components } from "@/api/schema";
 import { serverApi } from "@/api/server";
 import { invalidateTaskDomainTags } from "./cacheInvalidation";
+import {
+  type ChecklistSnapshotItem,
+  cloneTaskChecklistItems,
+  syncTaskChecklistChanges,
+} from "./checklistActions";
 import { type ActionState, getErrorMessage } from "./types";
 
 type CreateTaskDTO = components["schemas"]["CreateTaskDTO"];
 type UpdateTaskDTO = components["schemas"]["UpdateTaskDTO"];
 type UpdateTaskOrderDTO = components["schemas"]["UpdateTaskOrderDTO"];
 type TaskResponseDTO = components["schemas"]["TaskResponseDTO"];
+type ChecklistItemResponseDTO =
+  components["schemas"]["ChecklistItemResponseDTO"];
 export type TaskSearchWorkspaceCountDTO =
   components["schemas"]["TaskSearchWorkspaceCountDTO"];
 type TaskStatus =
@@ -24,6 +31,7 @@ type TaskStatus =
 export async function createTask(
   boardColumnId: string,
   payload: CreateTaskDTO,
+  checklistItems?: { name?: string }[],
 ): Promise<ActionState<TaskResponseDTO>> {
   const t = await getTranslations("tasks.actions");
   try {
@@ -42,8 +50,20 @@ export async function createTask(
       };
     }
 
+    let createdTask = data as TaskResponseDTO;
+    if (createdTask?.id && checklistItems && checklistItems.length > 0) {
+      const clonedChecklist = await cloneTaskChecklistItems(
+        createdTask.id,
+        checklistItems,
+        { skipInvalidation: true },
+      );
+      if (clonedChecklist.length > 0) {
+        createdTask = { ...createdTask, checklist: clonedChecklist };
+      }
+    }
+
     invalidateTaskDomainTags({ includeColumnSummaries: true });
-    return { success: true, data: data as TaskResponseDTO };
+    return { success: true, data: createdTask };
   } catch (err) {
     console.error("[TaskAction:Create]", err);
     return {
@@ -71,10 +91,106 @@ export async function updateTask(
       };
     }
 
-    invalidateTaskDomainTags();
+    invalidateTaskDomainTags({ includeColumnSummaries: true });
     return { success: true, data };
   } catch (err) {
     console.error("[TaskAction:Update]", err);
+    return {
+      success: false,
+      error: t("communicationError"),
+    };
+  }
+}
+
+export interface SaveTaskWithDetailsInput {
+  taskId: string;
+  payload: UpdateTaskDTO;
+  initialChecklist?: ChecklistSnapshotItem[];
+  currentChecklist?: ChecklistSnapshotItem[];
+  originalColumnId?: string;
+  targetColumnId?: string;
+}
+
+export interface SaveTaskWithDetailsResult {
+  task: TaskResponseDTO;
+  checklist: ChecklistItemResponseDTO[];
+  checklistFailedCount: number;
+  moveError?: string;
+}
+
+/**
+ * Executa a atualização da tarefa, sincronização em lote do checklist e eventual
+ * mudança de coluna em uma única Server Action, invalidando o cache apenas uma vez.
+ */
+export async function saveTaskWithDetails(
+  input: SaveTaskWithDetailsInput,
+): Promise<ActionState<SaveTaskWithDetailsResult>> {
+  const t = await getTranslations("tasks.actions");
+  try {
+    const { data, error } = await serverApi.PUT("/tasks/{taskId}", {
+      params: { path: { taskId: input.taskId } },
+      body: input.payload,
+    });
+
+    if (error || !data) {
+      return {
+        success: false,
+        error: getErrorMessage(error, t("updateTaskFailed")),
+      };
+    }
+
+    const checklistPromise =
+      input.initialChecklist !== undefined &&
+      input.currentChecklist !== undefined
+        ? syncTaskChecklistChanges(
+            input.taskId,
+            input.initialChecklist,
+            input.currentChecklist,
+            { skipInvalidation: true },
+          )
+        : Promise.resolve({
+            items: (data.checklist ?? []) as ChecklistItemResponseDTO[],
+            failedCount: 0,
+          });
+
+    const shouldMoveColumn = Boolean(
+      input.originalColumnId &&
+        input.targetColumnId &&
+        input.targetColumnId !== input.originalColumnId,
+    );
+
+    const movePromise: Promise<{ error?: unknown }> = shouldMoveColumn
+      ? serverApi.PUT("/tasks/move", {
+          body: [
+            {
+              taskId: input.taskId,
+              boardColumnId: input.targetColumnId as string,
+              newOrderIndex: 0,
+            },
+          ],
+        })
+      : Promise.resolve({ error: undefined });
+
+    const [checklistSync, moveResult] = await Promise.all([
+      checklistPromise,
+      movePromise,
+    ]);
+
+    invalidateTaskDomainTags({ includeColumnSummaries: true });
+
+    return {
+      success: true,
+      data: {
+        task: { ...data, checklist: checklistSync.items },
+        checklist: checklistSync.items,
+        checklistFailedCount: checklistSync.failedCount,
+        moveError: moveResult.error
+          ? getErrorMessage(moveResult.error, t("moveTasksFailed"))
+          : undefined,
+      },
+    };
+  } catch (err) {
+    console.error("[TaskAction:SaveWithDetails]", err);
     return {
       success: false,
       error: t("communicationError"),
@@ -173,7 +289,10 @@ export async function recordHabitScore(
       };
     }
 
-    invalidateTaskDomainTags({ includeUserAndTransactions: true });
+    invalidateTaskDomainTags({
+      includeColumnSummaries: true,
+      includeUserAndTransactions: true,
+    });
     return { success: true, data: data as TaskResponseDTO };
   } catch (err) {
     console.error("[TaskAction:RecordHabitScore]", err);
@@ -205,7 +324,8 @@ export async function changeTaskStatus(
     }
 
     invalidateTaskDomainTags({
-      includeUserAndTransactions: newStatus === "COMPLETED",
+      includeColumnSummaries: true,
+      includeUserAndTransactions: true,
     });
     return { success: true, data };
   } catch (err) {
@@ -215,6 +335,20 @@ export async function changeTaskStatus(
       error: t("communicationError"),
     };
   }
+}
+
+/**
+ * Invalida o cache de tarefas, colunas, usuário e transações ao cruzar a meia-noite no cliente,
+ * permitindo que `router.refresh()` dispare o `DailyResetUseCase` no backend com dados frescos.
+ */
+export async function triggerMidnightRolloverAction(): Promise<
+  ActionState<void>
+> {
+  invalidateTaskDomainTags({
+    includeColumnSummaries: true,
+    includeUserAndTransactions: true,
+  });
+  return { success: true, data: undefined };
 }
 
 export async function moveTasks(

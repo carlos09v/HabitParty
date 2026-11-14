@@ -7,7 +7,10 @@ import { DashboardListSummary } from "@/components/dashboard/DashboardListSummar
 import { DashboardTasksPanel } from "@/components/dashboard/DashboardTasksPanel";
 import { RouteLoading } from "@/components/layout/RouteLoading";
 import { MAX_COLUMNS_PREMIUM, MAX_VISIBLE_COLUMNS } from "@/constants/routine";
+import { normalizeTaskType } from "@/constants/task";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useFocusTaskSync } from "@/hooks/useFocusTaskSync";
+import { useMidnightRollover } from "@/hooks/useMidnightRollover";
 import { useProgressStore } from "@/store/progressStore";
 import { useUserStore } from "@/store/userStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
@@ -29,6 +32,7 @@ export function DashboardMain({
   initialTasks = [],
   activeWorkspaceId,
   initialColumns = [],
+  initialVisibleColumnIds,
   transactions = [],
   user = null,
 }: DashboardMainProps) {
@@ -43,6 +47,23 @@ export function DashboardMain({
   const setLastStreakSecuredDate = useUserStore(
     (s) => s.setLastStreakSecuredDate,
   );
+  const userTimezone =
+    storeUser?.id && user?.id && storeUser.id === user.id
+      ? (storeUser.timezone ?? user?.timezone)
+      : (user?.timezone ?? storeUser?.timezone);
+
+  useMidnightRollover(userTimezone, () => {
+    setOptimisticCompletedTodayIds(new Set());
+    setTasks((prev) =>
+      prev.map((task) => {
+        const type = normalizeTaskType(task);
+        if (type === "daily" || type === "habit") {
+          return { ...task, completed: false, hasClaimedReward: false };
+        }
+        return task;
+      }),
+    );
+  });
 
   useEffect(() => {
     setTasks(initialTasks);
@@ -53,35 +74,26 @@ export function DashboardMain({
   }, [initialColumns]);
 
   useEffect(() => {
-    if (hasCompletedTaskInTransactionsToday(transactions)) {
-      setLastStreakSecuredDate(getTodayDateString());
+    if (
+      hasCompletedTaskInTransactionsToday(
+        transactions,
+        new Date(),
+        userTimezone,
+      )
+    ) {
+      setLastStreakSecuredDate(getTodayDateString(new Date(), userTimezone));
     }
-  }, [transactions, setLastStreakSecuredDate]);
+  }, [transactions, setLastStreakSecuredDate, userTimezone]);
 
-  useEffect(() => {
-    const handleFocusTaskCompleted = (event: Event) => {
-      const detail = (event as CustomEvent<{ taskId?: string }>).detail;
-      if (detail?.taskId) {
-        const taskId = detail.taskId;
-        setOptimisticCompletedTodayIds((prev) => {
-          const next = new Set(prev);
-          next.add(taskId);
-          return next;
-        });
-      }
-    };
-
-    window.addEventListener(
-      "habitparty:task-completed-from-focus",
-      handleFocusTaskCompleted,
-    );
-    return () => {
-      window.removeEventListener(
-        "habitparty:task-completed-from-focus",
-        handleFocusTaskCompleted,
-      );
-    };
-  }, []);
+  useFocusTaskSync({
+    onTaskCompleted: (taskId) => {
+      setOptimisticCompletedTodayIds((prev) => {
+        const next = new Set(prev);
+        next.add(taskId);
+        return next;
+      });
+    },
+  });
 
   const handleTaskCompletedTodayChange = (
     taskId: string,
@@ -145,11 +157,13 @@ export function DashboardMain({
         tasks={tasks}
         transactions={transactions}
         hasOptimisticCompletionToday={optimisticCompletedTodayIds.size > 0}
+        timezone={userTimezone}
       />
 
       {/* Seção: Resumo de Listas (Interativo com Menu de Contexto e contadores sincronizados) */}
       <DashboardListSummary
         initialColumns={initialColumns}
+        initialVisibleColumnIds={initialVisibleColumnIds}
         columns={columns}
         onColumnsChange={setColumns}
         onColumnDeleted={handleColumnDeleted}

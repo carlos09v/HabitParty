@@ -1,8 +1,6 @@
-"use client";
-
 import { Pause, Play, Timer } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { cn } from "@/utils";
+import { cn, formatFocusTime } from "@/utils";
 
 interface DemoFocusCardProps {
   timerSeconds: number;
@@ -17,17 +15,11 @@ export function DemoFocusCard({
 }: DemoFocusCardProps) {
   const t = useTranslations("landing.demo.focusCard");
 
-  const formatTimer = (totalSec: number) => {
-    const mins = Math.floor(totalSec / 60);
-    const secs = totalSec % 60;
-    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-  };
-
   return (
     <div className="p-4 rounded-xl bg-card dark:bg-card/70 border border-neutral-700 dark:border-white/10 shadow-xs dark:shadow-sm flex flex-col justify-between hover:border-primary-light/40 transition-colors">
       <div>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-bold text-info uppercase tracking-wider bg-info/10 px-2 py-0.5 rounded flex items-center gap-1">
+          <span className="text-tiny font-bold text-info uppercase tracking-wider bg-info/10 px-2 py-0.5 rounded flex items-center gap-1">
             <Timer className="w-3 h-3" />
             {t("badge")}
           </span>
@@ -37,7 +29,7 @@ export function DemoFocusCard({
         </div>
         <div className="flex items-center justify-between mt-2">
           <div className="text-2xl font-black text-neutral-50 tracking-wider font-mono">
-            {formatTimer(timerSeconds)}
+            {formatFocusTime(timerSeconds)}
           </div>
           {isRunning && (
             <div className="flex items-center gap-1">
@@ -53,7 +45,7 @@ export function DemoFocusCard({
       </div>
 
       <div className="mt-4 pt-3 border-t border-neutral-700/60 dark:border-white/5 flex items-center justify-between">
-        <span className="text-[11px] text-neutral-400">
+        <span className="text-tiny text-neutral-400">
           {isRunning ? t("statusRunning") : t("statusIdle")}
         </span>
         <button

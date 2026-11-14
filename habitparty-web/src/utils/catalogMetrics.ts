@@ -135,19 +135,23 @@ export function calculateInventoryWelcomeStats(
     (acc, item) => acc + (item.quantity || 1),
     0,
   );
-  const inFocusCount = items.filter(
-    (item) => item.status === "IN_FOCUS",
-  ).length;
+  const inFocusCount = items
+    .filter((item) => item.status === "IN_FOCUS")
+    .reduce((acc, item) => acc + (item.quantity || 1), 0);
 
-  const singleUseCount = items.filter(
-    (item) =>
-      item.reward?.type === "SINGLE_USE" || item.reward?.type === "SingleUse",
-  ).length;
+  const singleUseCount = items
+    .filter(
+      (item) =>
+        item.reward?.type === "SINGLE_USE" || item.reward?.type === "SingleUse",
+    )
+    .reduce((acc, item) => acc + (item.quantity || 1), 0);
 
-  const couponCount = items.filter(
-    (item) =>
-      item.reward?.type === "TIME_BASED" || item.reward?.type === "TimeBased",
-  ).length;
+  const couponCount = items
+    .filter(
+      (item) =>
+        item.reward?.type === "TIME_BASED" || item.reward?.type === "TimeBased",
+    )
+    .reduce((acc, item) => acc + (item.quantity || 1), 0);
 
   const stats: WelcomeCardStat[] = [
     {

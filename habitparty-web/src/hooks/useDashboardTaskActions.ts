@@ -1,9 +1,15 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import { useTaskMutations } from "@/hooks/useTaskMutations";
+import {
+  applyOptimisticHabitChange,
+  applyOptimisticTaskRollback,
+  applyOptimisticTaskToggle,
+  type TaskToggleRollbackState,
+  useTaskMutations,
+} from "@/hooks/useTaskMutations";
+import { useUserStore } from "@/store/userStore";
 import type { Task } from "@/types/task";
-import { computeOptimisticHabitDelta } from "@/utils/taskMapper";
 
 interface UseDashboardTaskActionsProps {
   tasks?: Task[];
@@ -39,14 +45,7 @@ export function useDashboardTaskActions({
       const nowIso = new Date().toISOString();
       setTasks((prev) =>
         prev.map((t) =>
-          t.id === taskId
-            ? {
-                ...t,
-                completed,
-                hasClaimedReward: completed ? true : t.hasClaimedReward,
-                lastCompletedAt: completed ? nowIso : t.lastCompletedAt,
-              }
-            : t,
+          t.id === taskId ? applyOptimisticTaskToggle(t, completed, nowIso) : t,
         ),
       );
     },
@@ -58,41 +57,22 @@ export function useDashboardTaskActions({
       if (delta > 0) {
         onTaskCompletedTodayChange?.(taskId, true);
       }
+      const timeZone = useUserStore.getState().user?.timezone;
       setTasks((prev) =>
-        prev.map((t) => {
-          if (t.id === taskId) {
-            return {
-              ...t,
-              ...computeOptimisticHabitDelta(t, delta),
-            };
-          }
-          return t;
-        }),
+        prev.map((t) =>
+          t.id === taskId ? applyOptimisticHabitChange(t, delta, timeZone) : t,
+        ),
       );
     },
     [onTaskCompletedTodayChange, setTasks],
   );
 
   const onRollbackToggle = useCallback(
-    (
-      taskId: string,
-      previousState: {
-        completed: boolean;
-        hasClaimedReward?: boolean;
-        lastCompletedAt?: string;
-      },
-    ) => {
+    (taskId: string, previousState: TaskToggleRollbackState) => {
       onTaskCompletedTodayChange?.(taskId, previousState.completed);
       setTasks((prev) =>
         prev.map((t) =>
-          t.id === taskId
-            ? {
-                ...t,
-                completed: previousState.completed,
-                hasClaimedReward: previousState.hasClaimedReward,
-                lastCompletedAt: previousState.lastCompletedAt,
-              }
-            : t,
+          t.id === taskId ? applyOptimisticTaskRollback(t, previousState) : t,
         ),
       );
     },

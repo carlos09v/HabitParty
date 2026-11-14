@@ -7,6 +7,7 @@ import { RARITY_THEMES } from "@/constants/achievements";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
+import { useUserStore } from "@/store/userStore";
 import type { AchievementItemResponseDTO } from "@/types/showcase";
 import { cn, formatShortDate, resolveAchievementCopy } from "@/utils";
 
@@ -27,6 +28,7 @@ export function AchievementCard({
 }: AchievementCardProps) {
   const locale = useLocale() as AppLocale;
   const { dateFormat } = useDateFormat();
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
   const t = useTranslations("showcase.gallery");
   const tRarities = useTranslations("showcase.rarities");
   const tCatalog = useTranslations("showcase.catalog");
@@ -51,6 +53,7 @@ export function AchievementCard({
         monthFormat: "short",
         locale,
         dateFormat,
+        timeZone: userTimeZone,
       })
     : null;
 

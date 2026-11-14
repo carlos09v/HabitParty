@@ -64,6 +64,7 @@ const MAIN_SHELL_PATHS = [
   "focusWidget",
   "subscriptionAlert",
   "emailVerificationBanner",
+  "timezoneAlert",
   "paymentFeedback",
   "auth.mainError",
   "dashboard.loading",
@@ -80,7 +81,7 @@ const MAIN_SHELL_PATHS = [
 
 export const SCOPE_CLIENT_PATHS: Record<MessageScope, readonly string[]> = {
   base: BASE_PATHS,
-  public: [...BASE_PATHS, "landing.navbar", "landing.demo", "landing.faq"],
+  public: [...BASE_PATHS, "landing.demo"],
   auth: [
     ...BASE_PATHS,
     "ui.input",
@@ -173,7 +174,6 @@ export const SCOPE_CLIENT_PATHS: Record<MessageScope, readonly string[]> = {
     "history",
     "ui.filterBar",
     "ui.select",
-    "ui.viewMode",
     "ui.welcomeCard",
   ],
   help: [
@@ -184,15 +184,14 @@ export const SCOPE_CLIENT_PATHS: Record<MessageScope, readonly string[]> = {
     "ui.select",
     "ui.viewMode",
   ],
-  admin: [
-    ...MAIN_PAGE_SHARED_PATHS,
-    "admin",
-    "dashboard.taskTable",
-    "ui.pagination",
-  ],
+  admin: [...MAIN_PAGE_SHARED_PATHS, "admin", "ui.filterBar", "ui.pagination"],
   settings: [
     ...MAIN_PAGE_SHARED_PATHS,
     "settings",
+    "auth.passwordStrength",
+    "auth.validation",
+    "focus.audio.toasts",
+    "focusWidget",
     "subscriptionAlert",
     "ui.datePicker",
     "ui.select",
@@ -200,8 +199,6 @@ export const SCOPE_CLIENT_PATHS: Record<MessageScope, readonly string[]> = {
   showcase: [
     ...MAIN_PAGE_SHARED_PATHS,
     "showcase",
-    "settings.avatarFrames",
-    "settings.upgradeModal",
     "ui.filterBar",
     "ui.pagination",
     "ui.select",
@@ -216,12 +213,14 @@ export const SCOPE_CLIENT_PATHS: Record<MessageScope, readonly string[]> = {
 export const SERVER_ONLY_PATHS: readonly string[] = [
   "metadata",
   "landing.metadata",
+  "landing.navbar",
   "landing.hero",
   "landing.productivityLoop",
   "landing.manifesto",
   "landing.features",
   "landing.roadmap",
   "landing.pricing",
+  "landing.faq",
   "landing.ctaBanner",
   "landing.footer",
   "auth.layout",
@@ -254,9 +253,11 @@ export const SERVER_ONLY_PATHS: readonly string[] = [
   "help.page",
   "help.cycle",
   "admin.metadata",
+  "admin.overview",
   "admin.actions",
   "showcase.metadata",
   "showcase.actions",
+  "showcase.statsGrid",
 ];
 
 function isRecord(value: unknown): value is Record<string, unknown> {

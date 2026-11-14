@@ -5,7 +5,14 @@ import type { Dispatch, SetStateAction } from "react";
 import { useCallback, useRef, useTransition } from "react";
 import { toast } from "sonner";
 import { createTask, moveTasks } from "@/actions/taskActions";
-import { useTaskMutations } from "@/hooks/useTaskMutations";
+import {
+  applyOptimisticHabitChange,
+  applyOptimisticTaskRollback,
+  applyOptimisticTaskToggle,
+  type TaskToggleRollbackState,
+  useTaskMutations,
+} from "@/hooks/useTaskMutations";
+import { useUserStore } from "@/store/userStore";
 import type {
   BoardColumn,
   CreateTaskDTO,
@@ -16,7 +23,6 @@ import type {
 import { soundEffects } from "@/utils/soundEffects";
 import {
   buildQuickCreateTaskPayload,
-  computeOptimisticHabitDelta,
   mapTaskResponseToTask,
 } from "@/utils/taskMapper";
 
@@ -86,6 +92,7 @@ export function useBoardTaskActions({
         taskType,
         extraPayload,
         tempId,
+        useUserStore.getState().user?.timezone,
       );
 
       setColumns((prev) =>
@@ -140,6 +147,7 @@ export function useBoardTaskActions({
       targetColumnId: string,
       _newIndex: number,
       allTargetTasks?: Task[],
+      previousColumns?: BoardColumn[],
     ) => {
       const tasksToUpdate =
         allTargetTasks ||
@@ -158,12 +166,16 @@ export function useBoardTaskActions({
         startTransition(async () => {
           const res = await moveTasks(updates);
           if (!res.success) {
+            if (previousColumns) {
+              columnsRef.current = previousColumns;
+              setColumns(previousColumns);
+            }
             toast.error(res.error || t("movePositionError"));
           }
         });
       }
     },
-    [t],
+    [setColumns, t],
   );
 
   const handleTaskDetailsUpdate = useCallback(
@@ -191,16 +203,13 @@ export function useBoardTaskActions({
 
   const onOptimisticToggle = useCallback(
     (taskId: string, completed: boolean) => {
+      const nowIso = new Date().toISOString();
       setColumns((prev) =>
         prev.map((col) => ({
           ...col,
           tasks: col.tasks.map((t) =>
             t.id === taskId
-              ? {
-                  ...t,
-                  completed,
-                  hasClaimedReward: completed ? true : t.hasClaimedReward,
-                }
+              ? applyOptimisticTaskToggle(t, completed, nowIso)
               : t,
           ),
         })),
@@ -211,18 +220,15 @@ export function useBoardTaskActions({
 
   const onOptimisticHabit = useCallback(
     (taskId: string, delta: number) => {
+      const timeZone = useUserStore.getState().user?.timezone;
       setColumns((prev) =>
         prev.map((col) => ({
           ...col,
-          tasks: col.tasks.map((t) => {
-            if (t.id === taskId) {
-              return {
-                ...t,
-                ...computeOptimisticHabitDelta(t, delta),
-              };
-            }
-            return t;
-          }),
+          tasks: col.tasks.map((t) =>
+            t.id === taskId
+              ? applyOptimisticHabitChange(t, delta, timeZone)
+              : t,
+          ),
         })),
       );
     },
@@ -230,26 +236,12 @@ export function useBoardTaskActions({
   );
 
   const onRollbackToggle = useCallback(
-    (
-      taskId: string,
-      previousState: {
-        completed: boolean;
-        hasClaimedReward?: boolean;
-        lastCompletedAt?: string;
-      },
-    ) => {
+    (taskId: string, previousState: TaskToggleRollbackState) => {
       setColumns((prev) =>
         prev.map((col) => ({
           ...col,
           tasks: col.tasks.map((t) =>
-            t.id === taskId
-              ? {
-                  ...t,
-                  completed: previousState.completed,
-                  hasClaimedReward: previousState.hasClaimedReward,
-                  lastCompletedAt: previousState.lastCompletedAt,
-                }
-              : t,
+            t.id === taskId ? applyOptimisticTaskRollback(t, previousState) : t,
           ),
         })),
       );

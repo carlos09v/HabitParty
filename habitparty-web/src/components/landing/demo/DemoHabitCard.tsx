@@ -1,7 +1,6 @@
-"use client";
-
-import { Coins, Minus, Plus } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { CoinIcon } from "@/components/ui/CoinIcon";
 
 interface DemoHabitCardProps {
   waterCount: number;
@@ -20,11 +19,11 @@ export function DemoHabitCard({
     <div className="p-4 rounded-xl bg-card dark:bg-card/70 border border-neutral-700 dark:border-white/10 shadow-xs dark:shadow-sm flex flex-col justify-between hover:border-primary-light/40 transition-colors">
       <div>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-bold text-primary-dark dark:text-primary-light uppercase tracking-wider bg-primary/10 dark:bg-primary/20 px-2 py-0.5 rounded">
+          <span className="text-tiny font-bold text-primary-dark dark:text-primary-light uppercase tracking-wider bg-primary/10 dark:bg-primary/20 px-2 py-0.5 rounded">
             {t("badge")}
           </span>
           <span className="text-xs font-bold text-amber-700 dark:text-gold flex items-center gap-1">
-            <Coins className="w-3.5 h-3.5" /> +5
+            <CoinIcon size={13} variant="coin" /> +5
           </span>
         </div>
         <h4 className="text-sm font-bold text-neutral-50 flex items-center gap-2">
@@ -39,9 +38,7 @@ export function DemoHabitCard({
       </div>
 
       <div className="mt-4 pt-3 border-t border-neutral-700/60 dark:border-white/5 flex items-center justify-between">
-        <span className="text-[11px] text-neutral-400">
-          {t("clickToScore")}
-        </span>
+        <span className="text-tiny text-neutral-400">{t("clickToScore")}</span>
         <div className="flex items-center gap-2">
           <button
             type="button"

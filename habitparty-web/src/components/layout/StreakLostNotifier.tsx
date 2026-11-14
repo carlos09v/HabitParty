@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { useUserStore } from "@/store/userStore";
 import { getTodayDateString } from "@/utils/date";
 
 const STREAK_TRACKER_STORAGE_PREFIX = "habitparty_streak_tracker_";
@@ -10,20 +11,24 @@ const STREAK_TRACKER_STORAGE_PREFIX = "habitparty_streak_tracker_";
 interface StreakLostNotifierProps {
   userId?: string | null;
   currentStreak?: number | null;
+  timezone?: string | null;
 }
 
 export function StreakLostNotifier({
   userId,
   currentStreak: rawStreak,
+  timezone: propTimezone,
 }: StreakLostNotifierProps) {
   const t = useTranslations("streakLost");
+  const storeTimeZone = useUserStore((s) => s.user?.timezone);
+  const userTimeZone = storeTimeZone ?? propTimezone;
   const checkedRef = useRef(false);
 
   useEffect(() => {
     if (!userId) return;
 
     try {
-      const todayStr = getTodayDateString();
+      const todayStr = getTodayDateString(new Date(), userTimeZone);
       const storageKey = `${STREAK_TRACKER_STORAGE_PREFIX}${userId}`;
       const raw = localStorage.getItem(storageKey);
       const currentStreak = rawStreak ?? 0;
@@ -59,7 +64,7 @@ export function StreakLostNotifier({
     } catch {
       // Ignora falhas em ambientes restritos de storage
     }
-  }, [userId, rawStreak, t]);
+  }, [userId, rawStreak, userTimeZone, t]);
 
   return null;
 }

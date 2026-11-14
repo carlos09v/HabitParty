@@ -18,6 +18,7 @@ import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
+import { useUserStore } from "@/store/userStore";
 import type { FocusRecord } from "@/types/focus";
 import { cn, formatCoins, formatDateTime } from "@/utils";
 import { formatFocusRecordDuration } from "@/utils/focusFormatters";
@@ -43,6 +44,7 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
   const locale = useLocale() as AppLocale;
   const { dateFormat } = useDateFormat();
   const { timeFormat } = useTimeFormat();
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
   const IconComp = rec.activityIcon ? getFocusIcon(rec.activityIcon) : Timer;
   const durationLabel = formatFocusRecordDuration(
     rec.startTime,
@@ -55,6 +57,7 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
       onClick={(e) => onRowClick(e, rec)}
       onContextMenu={(e) => onContextMenu(e, rec)}
       onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           onRowClick(e as unknown as React.MouseEvent, rec);
@@ -95,6 +98,7 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
               locale,
               dateFormat,
               timeFormat,
+              timeZone: userTimeZone,
             })}
           </span>
         </div>

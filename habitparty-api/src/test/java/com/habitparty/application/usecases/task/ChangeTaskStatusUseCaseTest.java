@@ -108,7 +108,7 @@ class ChangeTaskStatusUseCaseTest {
   void testCompleteTaskFirstTimeTodayIncrementsStreak() {
     when(taskPort.findById(taskId)).thenReturn(Optional.of(todoTask));
     when(userPort.findById(userId)).thenReturn(Optional.of(user));
-    when(transactionPort.countCompletedTasksToday(userId)).thenReturn(0);
+    when(transactionPort.countCompletedTasksToday(eq(userId), any())).thenReturn(0);
     when(taskPort.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
     var updated = changeTaskStatusUseCase.execute(taskId, userId, TaskStatus.COMPLETED);
@@ -132,7 +132,7 @@ class ChangeTaskStatusUseCaseTest {
     user.incrementStreak(); // Já estava streak = 1
     when(taskPort.findById(taskId)).thenReturn(Optional.of(todoTask));
     when(userPort.findById(userId)).thenReturn(Optional.of(user));
-    when(transactionPort.countCompletedTasksToday(userId)).thenReturn(1);
+    when(transactionPort.countCompletedTasksToday(eq(userId), any())).thenReturn(1);
     when(taskPort.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
     var updated = changeTaskStatusUseCase.execute(taskId, userId, TaskStatus.COMPLETED);
@@ -193,7 +193,7 @@ class ChangeTaskStatusUseCaseTest {
 
     when(taskPort.findById(taskId)).thenReturn(Optional.of(overdueTodo));
     when(userPort.findById(userId)).thenReturn(Optional.of(user));
-    when(transactionPort.countCompletedTasksToday(userId)).thenReturn(0);
+    when(transactionPort.countCompletedTasksToday(eq(userId), any())).thenReturn(0);
     when(taskPort.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
     var updated = changeTaskStatusUseCase.execute(taskId, userId, TaskStatus.COMPLETED);
@@ -220,7 +220,7 @@ class ChangeTaskStatusUseCaseTest {
 
     when(taskPort.findById(taskId)).thenReturn(Optional.of(overdueTodo));
     when(userPort.findById(userId)).thenReturn(Optional.of(user));
-    when(transactionPort.countCompletedTasksToday(userId)).thenReturn(0);
+    when(transactionPort.countCompletedTasksToday(eq(userId), any())).thenReturn(0);
     when(taskPort.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
     var updated = changeTaskStatusUseCase.execute(taskId, userId, TaskStatus.COMPLETED);
@@ -238,7 +238,7 @@ class ChangeTaskStatusUseCaseTest {
   void testTodoUncheckedAndRecompletedDoesNotAwardRewardTwice() {
     when(taskPort.findById(taskId)).thenReturn(Optional.of(todoTask));
     when(userPort.findById(userId)).thenReturn(Optional.of(user));
-    when(transactionPort.countCompletedTasksToday(userId)).thenReturn(0);
+    when(transactionPort.countCompletedTasksToday(eq(userId), any())).thenReturn(0);
     when(taskPort.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
     // 1ª conclusão: concede recompensa

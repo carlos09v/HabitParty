@@ -136,11 +136,16 @@ public class Todo extends Task {
   }
 
   public void updateTodoDetails(LocalDate newDueDate, LocalTime newDueTime, TodoReminderType newReminderType, LocalDateTime newReminderAt, Boolean sendEmailReminder) {
-    LocalDate effectiveDueDate = newDueDate != null ? newDueDate : (newDueTime != null ? LocalDate.now() : null);
+    updateTodoDetails(newDueDate, newDueTime, newReminderType, newReminderAt, sendEmailReminder, LocalDate.now());
+  }
+
+  public void updateTodoDetails(LocalDate newDueDate, LocalTime newDueTime, TodoReminderType newReminderType, LocalDateTime newReminderAt, Boolean sendEmailReminder, LocalDate referenceDate) {
+    LocalDate effectiveReferenceDate = referenceDate != null ? referenceDate : LocalDate.now();
+    LocalDate effectiveDueDate = newDueDate != null ? newDueDate : (newDueTime != null ? effectiveReferenceDate : null);
 
     if (effectiveDueDate != null && !effectiveDueDate.equals(this.dueDate)) {
       // Trava anti-burla: se o afazer é hardcore e já está vencido, a data não pode ser alterada
-      if (this.isHardcoreModeEnabled() && this.isOverdue()) {
+      if (this.isHardcoreModeEnabled() && this.isOverdue(effectiveReferenceDate)) {
         throw new DomainValidationException("Não é permitido alterar a data de um afazer hardcore com prazo vencido.");
       }
       this.dueDate = effectiveDueDate; // Acessa o atributo protected herdado de Task
@@ -223,6 +228,11 @@ public class Todo extends Task {
     }
 
     return new TaskReward(penaltyXp, penaltyCoins);
+  }
+
+  @Override
+  public TaskReward calculatePenalty(LocalDate referenceDate) {
+    return calculatePenalty();
   }
 
   @Override
@@ -309,8 +319,13 @@ public class Todo extends Task {
    * Mutuamente exclusiva com a Hora Pontual (dueTime).
    */
   public void defineEventSchedule(LocalTime newStartTime, LocalTime newEndTime, Boolean allDay) {
+    defineEventSchedule(newStartTime, newEndTime, allDay, LocalDate.now());
+  }
+
+  public void defineEventSchedule(LocalTime newStartTime, LocalTime newEndTime, Boolean allDay, LocalDate referenceDate) {
+    LocalDate effectiveReferenceDate = referenceDate != null ? referenceDate : LocalDate.now();
     if (this.dueDate == null && (Boolean.TRUE.equals(allDay) || newStartTime != null || newEndTime != null)) {
-      this.dueDate = LocalDate.now();
+      this.dueDate = effectiveReferenceDate;
     }
     if (this.dueDate == null) {
       this.isAllDay = false;

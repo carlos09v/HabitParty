@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   deleteBoardColumn,
+  moveBoardColumnToWorkspace,
   updateBoardColumnOrder,
 } from "@/actions/boardColumnActions";
 import {
@@ -12,8 +13,61 @@ import {
   MAX_VISIBLE_COLUMNS,
   resolveVisibleColumnIds,
 } from "@/constants/routine";
+import {
+  applyFocusRecordedToTask,
+  useFocusTaskSync,
+} from "@/hooks/useFocusTaskSync";
 import type { BoardColumn } from "@/types/task";
 import type { ColumnInsertTarget } from "@/types/task-ui";
+
+function persistVisibleColumnsForWorkspace(
+  targetWorkspaceId: string | null | undefined,
+  ids: string[],
+) {
+  if (!targetWorkspaceId) return;
+  try {
+    localStorage.setItem(
+      `habitparty_visible_columns_${targetWorkspaceId}`,
+      JSON.stringify(ids),
+    );
+  } catch {
+    // localStorage indisponível ou bloqueado
+  }
+  try {
+    // biome-ignore lint/suspicious/noDocumentCookie: Persiste colunas visíveis por workspace no cliente
+    document.cookie = `hp_visible_cols_${targetWorkspaceId}=${encodeURIComponent(
+      JSON.stringify(ids),
+    )}; path=/; max-age=31536000; SameSite=Lax`;
+  } catch {
+    // falha silenciosa em ambientes restritos
+  }
+}
+
+function appendVisibleColumnIfSpaceAllows(
+  targetWorkspaceId: string,
+  columnId: string,
+  maxAllowed: number,
+) {
+  try {
+    const raw = localStorage.getItem(
+      `habitparty_visible_columns_${targetWorkspaceId}`,
+    );
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (
+      Array.isArray(parsed) &&
+      !parsed.includes(columnId) &&
+      parsed.length < maxAllowed
+    ) {
+      persistVisibleColumnsForWorkspace(targetWorkspaceId, [
+        ...parsed,
+        columnId,
+      ]);
+    }
+  } catch {
+    // localStorage indisponível ou inválido
+  }
+}
 
 /**
  * Estado do quadro de rotina: colunas, visibilidade e mutações de colunas.
@@ -53,29 +107,11 @@ export function useRoutineColumns(
   const visibleColumnIdsRef = useRef(visibleColumnIds);
   visibleColumnIdsRef.current = visibleColumnIds;
 
-  // Função dedicada para persistir somente sob ações do usuário
   const persistVisibleColumns = useCallback(
     (ids: string[]) => {
-      if (storageKey) {
-        try {
-          localStorage.setItem(storageKey, JSON.stringify(ids));
-        } catch {
-          // localStorage indisponível ou bloqueado
-        }
-      }
-
-      if (workspaceId) {
-        try {
-          // biome-ignore lint/suspicious/noDocumentCookie: Persiste colunas visíveis por workspace no cliente
-          document.cookie = `hp_visible_cols_${workspaceId}=${encodeURIComponent(
-            JSON.stringify(ids),
-          )}; path=/; max-age=31536000; SameSite=Lax`;
-        } catch {
-          // falha silenciosa em ambientes restritos
-        }
-      }
+      persistVisibleColumnsForWorkspace(workspaceId, ids);
     },
-    [storageKey, workspaceId],
+    [workspaceId],
   );
 
   // 2. Carrega preferências do localStorage no mount como fallback se o cookie ainda não existia
@@ -158,68 +194,28 @@ export function useRoutineColumns(
   }, [initialColumns]);
 
   // Atualiza métricas de foco e conclusão em tempo real quando sessões finalizam no SidebarFocusWidget
-  useEffect(() => {
-    const handleFocusRecorded = (event: Event) => {
-      const detail = (
-        event as CustomEvent<{
-          taskId?: string;
-          durationMinutes?: number;
-          cycles?: number;
-        }>
-      ).detail;
-      if (!detail?.taskId) return;
-      const mins = detail.durationMinutes ?? 0;
-      const cyc = detail.cycles ?? 0;
+  useFocusTaskSync({
+    onFocusRecorded: (taskId, durationMinutes, cycles) => {
       setColumns((prev) =>
         prev.map((col) => ({
           ...col,
           tasks: col.tasks.map((t) =>
-            t.id === detail.taskId
-              ? {
-                  ...t,
-                  totalFocusMinutes: (t.totalFocusMinutes ?? 0) + mins,
-                  focusCyclesCount: (t.focusCyclesCount ?? 0) + cyc,
-                }
+            t.id === taskId
+              ? applyFocusRecordedToTask(t, durationMinutes, cycles)
               : t,
           ),
         })),
       );
-    };
-
-    const handleTaskCompleted = (event: Event) => {
-      const detail = (event as CustomEvent<{ taskId?: string }>).detail;
-      if (!detail?.taskId) return;
+    },
+    onTaskCompleted: (taskId, transformTask) => {
       setColumns((prev) =>
         prev.map((col) => ({
           ...col,
-          tasks: col.tasks.map((t) =>
-            t.id === detail.taskId
-              ? { ...t, completed: true, hasClaimedReward: true }
-              : t,
-          ),
+          tasks: col.tasks.map((t) => (t.id === taskId ? transformTask(t) : t)),
         })),
       );
-    };
-
-    window.addEventListener(
-      "habitparty:task-focus-recorded",
-      handleFocusRecorded,
-    );
-    window.addEventListener(
-      "habitparty:task-completed-from-focus",
-      handleTaskCompleted,
-    );
-    return () => {
-      window.removeEventListener(
-        "habitparty:task-focus-recorded",
-        handleFocusRecorded,
-      );
-      window.removeEventListener(
-        "habitparty:task-completed-from-focus",
-        handleTaskCompleted,
-      );
-    };
-  }, []);
+    },
+  });
 
   const maxColumns = maxAllowed;
   const canCreateColumn = columns.length < maxColumns;
@@ -391,7 +387,7 @@ export function useRoutineColumns(
   );
 
   const handleColumnReorder = useCallback(
-    (reorderedColumns: BoardColumn[]) => {
+    (reorderedColumns: BoardColumn[], previousColumns?: BoardColumn[]) => {
       if (!workspaceId) return;
 
       const payload = reorderedColumns.map((c, idx) => ({
@@ -402,11 +398,69 @@ export function useRoutineColumns(
       startTransition(async () => {
         const res = await updateBoardColumnOrder(workspaceId, payload);
         if (!res.success) {
+          if (previousColumns) {
+            columnsRef.current = previousColumns;
+            setColumns(previousColumns);
+          }
           toast.error(res.error || t("reorderColumnsError"));
         }
       });
     },
     [workspaceId, t],
+  );
+
+  const handleMoveColumnToWorkspace = useCallback(
+    async (
+      column: BoardColumn,
+      targetWorkspaceId: string,
+      targetWorkspaceName?: string,
+    ) => {
+      try {
+        const res = await moveBoardColumnToWorkspace(column.id, {
+          targetWorkspaceId,
+        });
+        if (!res.success) {
+          toast.error(res.error || t("moveColumnError"));
+          return false;
+        }
+
+        const remainingColumns = columnsRef.current.filter(
+          (c) => c.id !== column.id,
+        );
+        setColumns(remainingColumns);
+        columnsRef.current = remainingColumns;
+
+        if (visibleColumnIdsRef.current.includes(column.id)) {
+          let nextVisible = visibleColumnIdsRef.current.filter(
+            (id) => id !== column.id,
+          );
+          if (nextVisible.length === 0 && remainingColumns.length > 0) {
+            nextVisible = [remainingColumns[0].id];
+          }
+          setVisibleColumnIds(nextVisible);
+          visibleColumnIdsRef.current = nextVisible;
+          persistVisibleColumns(nextVisible);
+        }
+
+        appendVisibleColumnIfSpaceAllows(
+          targetWorkspaceId,
+          column.id,
+          maxAllowed,
+        );
+
+        toast.success(
+          t("moveColumnSuccess", {
+            title: column.title,
+            workspace: targetWorkspaceName || t("defaultWorkspaceName"),
+          }),
+        );
+        return true;
+      } catch (_error) {
+        toast.error(t("moveColumnUnexpectedError"));
+        return false;
+      }
+    },
+    [maxAllowed, persistVisibleColumns, t],
   );
 
   return {
@@ -422,6 +476,7 @@ export function useRoutineColumns(
     handleColumnSaved,
     handleDeleteColumn,
     isDeletingColumn,
+    handleMoveColumnToWorkspace,
     handleColumnReorder,
   };
 }

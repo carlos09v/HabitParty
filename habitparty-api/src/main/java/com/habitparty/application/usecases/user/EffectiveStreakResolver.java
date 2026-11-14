@@ -25,7 +25,7 @@ public class EffectiveStreakResolver {
     }
     int effectiveStreak = user.getCurrentStreak();
     if (effectiveStreak > 0 && transactionPort != null
-        && !transactionPort.hasCompletedTasksSinceYesterday(user.getId())) {
+        && !transactionPort.hasCompletedTasksSinceYesterday(user.getId(), user.resolveZoneId(null))) {
       return 0;
     }
     return effectiveStreak;

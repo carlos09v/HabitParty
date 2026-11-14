@@ -1,6 +1,7 @@
 package com.habitparty.adapters.in.web.dtos.response;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -24,10 +25,13 @@ public record UserResponseDTO(
         String username,
         UserGender gender,
         UserExperienceMode experienceMode,
+        String timezone,
+        Instant timezoneUpdatedAt,
         String email,
         String profilePhotoUrl,
         String bio,
         String avatarFrame,
+        String theme,
         LocalDate birthDate,
         LocalDateTime createdAt,
 
@@ -62,10 +66,13 @@ public record UserResponseDTO(
                 user.getUsername(),
                 user.getGender(),
                 user.getExperienceMode(),
+                user.getTimezone(),
+                user.getTimezoneUpdatedAt(),
                 user.getEmail(),
                 user.getProfilePhotoUrl().orElse(null),
                 user.getBio().orElse(null),
                 user.getAvatarFrame(),
+                user.getEffectiveTheme(),
                 user.getBirthDate(),
                 user.getCreatedAt(),
 

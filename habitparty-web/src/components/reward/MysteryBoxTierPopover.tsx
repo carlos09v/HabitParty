@@ -1,4 +1,5 @@
 import { useLocale, useTranslations } from "next-intl";
+import type { CSSProperties, Ref } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import type { AppLocale } from "@/i18n/config";
 import type { MysteryBoxLootItem, MysteryBoxTier } from "@/types/reward";
@@ -10,6 +11,8 @@ interface MysteryBoxTierPopoverProps {
   alignClass?: string;
   customPrice?: number;
   customLootItems?: MysteryBoxLootItem[];
+  popoverRef?: Ref<HTMLElement>;
+  style?: CSSProperties;
 }
 
 export function MysteryBoxTierPopover({
@@ -17,6 +20,8 @@ export function MysteryBoxTierPopover({
   alignClass = "bottom-full mb-2.5 left-1/2 -translate-x-1/2",
   customPrice,
   customLootItems,
+  popoverRef,
+  style,
 }: MysteryBoxTierPopoverProps) {
   const t = useTranslations("rewards.tierPopover");
   const tMystery = useTranslations("rewards.mysteryBox");
@@ -36,10 +41,13 @@ export function MysteryBoxTierPopover({
 
   return (
     <aside
+      ref={popoverRef}
+      style={style}
       aria-label={t("detailsAria", { name: tierName })}
       className={cn(
-        "absolute z-50 w-64 sm:w-72 pointer-events-none animate-in fade-in zoom-in-95 duration-150",
-        alignClass,
+        "w-64 sm:w-72 pointer-events-none animate-in fade-in zoom-in-95 duration-150",
+        !style && "absolute z-50",
+        !style && alignClass,
       )}
     >
       <div className="rounded-xl bg-popover border border-neutral-700 dark:border-white/20 p-3.5 shadow-popover-dark flex flex-col gap-2.5 text-neutral-100">

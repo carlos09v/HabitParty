@@ -8,7 +8,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { memo, useEffect, useRef } from "react";
+import { memo } from "react";
 import {
   TaskActionControl,
   TaskChecklistBadge,
@@ -24,7 +24,10 @@ import {
   TaskTypeBadge,
   WeekDaysIndicator,
 } from "@/components/tasks/shared";
-import { useTaskCardItem } from "@/hooks/useTaskCardItem";
+import {
+  useDeferredSingleClick,
+  useTaskCardItem,
+} from "@/hooks/useTaskCardItem";
 import type { RoutineTaskCardProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 
@@ -47,15 +50,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
 }: RoutineTaskCardProps) {
   const tBadges = useTranslations("dashboard.taskShared.badges");
   const tActions = useTranslations("dashboard.taskShared.actions");
-  const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (clickTimeoutRef.current) {
-        clearTimeout(clickTimeoutRef.current);
-      }
-    };
-  }, []);
+  const { triggerSingleClick, clearPendingClick } = useDeferredSingleClick();
   const {
     isCompact,
     completed,
@@ -103,33 +98,17 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
       onClick={(e) => {
         if (isDragging || isDeleteChecking) return;
         e.stopPropagation();
-        if (e.detail >= 2) {
-          if (clickTimeoutRef.current) {
-            clearTimeout(clickTimeoutRef.current);
-            clickTimeoutRef.current = null;
-          }
-          return;
-        }
         if (onOpenDetails) {
           const rect = e.currentTarget.getBoundingClientRect();
-          if (onEditTask) {
-            if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
-            clickTimeoutRef.current = setTimeout(() => {
-              clickTimeoutRef.current = null;
-              onOpenDetails(task, columnId, rect);
-            }, 180);
-          } else {
+          triggerSingleClick(e.detail, Boolean(onEditTask), () => {
             onOpenDetails(task, columnId, rect);
-          }
+          });
         }
       }}
       onDoubleClick={(e) => {
         if (isDragging || isDeleteChecking || !onEditTask) return;
         e.stopPropagation();
-        if (clickTimeoutRef.current) {
-          clearTimeout(clickTimeoutRef.current);
-          clickTimeoutRef.current = null;
-        }
+        clearPendingClick();
         onEditTask(task, columnId);
       }}
       onContextMenu={(e) => {
@@ -146,7 +125,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
           : "gap-2.5 p-3 rounded-xl border border-l-4",
         isSelected
           ? "bg-primary/[0.07] dark:bg-surface-hover ring-1 ring-primary/50 dark:ring-gold/65 border-y-primary/65 border-r-primary/65 dark:border-y-gold/70 dark:border-r-gold/70 shadow-sm dark:shadow-glow-gold-sm hover:translate-y-0"
-          : "bg-card hover:bg-surface/70 dark:bg-gradient-to-b dark:from-card dark:to-surface/95 dark:hover:bg-card-hover border-y-neutral-700/80 border-r-neutral-700/80 dark:border-y-white/12 dark:border-r-white/12 shadow-xs dark:shadow-sm hover:shadow-card-deep hover:-translate-y-0.5",
+          : "bg-card hover:bg-surface/70 dark:bg-linear-to-b dark:from-card dark:to-surface/95 dark:hover:bg-card-hover border-y-neutral-700/80 border-r-neutral-700/80 dark:border-y-white/12 dark:border-r-white/12 shadow-xs dark:shadow-sm hover:shadow-card-deep hover:-translate-y-0.5",
         !isSelected &&
           (isHabit
             ? "hover:border-y-info/45 hover:border-r-info/45"
@@ -166,9 +145,9 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
         isDone && "dark:opacity-65 bg-card/85 dark:bg-card hover:translate-y-0",
         isDeleteChecking && "opacity-75 pointer-events-none cursor-wait",
         isDragging &&
-          "!transition-none opacity-30 border-dashed border-y-primary-light border-r-primary-light scale-95",
+          "transition-none! opacity-30 border-dashed border-y-primary-light border-r-primary-light scale-95",
         isOverlay &&
-          "!transition-none shadow-card-active border-y-gold/70 border-r-gold/70 bg-card scale-102 rotate-1 cursor-grabbing z-50",
+          "transition-none! shadow-card-active border-y-gold/70 border-r-gold/70 bg-card scale-102 rotate-1 cursor-grabbing z-50",
       )}
     >
       {/* 1. TOPO: Badge do Tipo + Badge de Evento (se aplicável) + Tag Opcional + Indicadores */}

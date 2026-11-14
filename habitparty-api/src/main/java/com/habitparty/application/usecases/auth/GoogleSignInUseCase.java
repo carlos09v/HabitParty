@@ -1,10 +1,13 @@
 package com.habitparty.application.usecases.auth;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.habitparty.application.ports.OAuthIdentityProviderPort;
@@ -27,6 +30,7 @@ public class GoogleSignInUseCase {
   private final TokenPort tokenPort;
   private final RefreshTokenRepository refreshTokenRepository;
   private final OAuthIdentityProviderPort oAuthIdentityProviderPort;
+  private final Clock clock;
 
   public GoogleSignInUseCase(
       UserRepository userRepository,
@@ -34,14 +38,36 @@ public class GoogleSignInUseCase {
       TokenPort tokenPort,
       RefreshTokenRepository refreshTokenRepository,
       OAuthIdentityProviderPort oAuthIdentityProviderPort) {
+    this(
+        userRepository,
+        passwordHasher,
+        tokenPort,
+        refreshTokenRepository,
+        oAuthIdentityProviderPort,
+        Clock.system(ZoneId.of(User.DEFAULT_TIMEZONE)));
+  }
+
+  @Autowired
+  public GoogleSignInUseCase(
+      UserRepository userRepository,
+      PasswordHasherPort passwordHasher,
+      TokenPort tokenPort,
+      RefreshTokenRepository refreshTokenRepository,
+      OAuthIdentityProviderPort oAuthIdentityProviderPort,
+      Clock clock) {
     this.userRepository = userRepository;
     this.passwordHasher = passwordHasher;
     this.tokenPort = tokenPort;
     this.refreshTokenRepository = refreshTokenRepository;
     this.oAuthIdentityProviderPort = oAuthIdentityProviderPort;
+    this.clock = clock != null ? clock : Clock.system(ZoneId.of(User.DEFAULT_TIMEZONE));
   }
 
   public AuthTokens execute(String code) {
+    return execute(code, null);
+  }
+
+  public AuthTokens execute(String code, String timezone) {
     // 1. Obtém as informações do perfil do usuário via porta de identidade OAuth
     OAuthUserProfile profile = oAuthIdentityProviderPort.fetchUserProfile(code);
 
@@ -66,13 +92,13 @@ public class GoogleSignInUseCase {
           }
           return needsSave ? userRepository.save(existing) : existing;
         })
-        .orElseGet(() -> createGoogleUser(profile, emailNormalized));
+        .orElseGet(() -> createGoogleUser(profile, emailNormalized, timezone));
 
     // 3. Limita sessões ativas e emite Access Token + Refresh Token
     return AuthSessionIssuer.issueSession(user, tokenPort, refreshTokenRepository);
   }
 
-  private User createGoogleUser(OAuthUserProfile profile, String emailNormalized) {
+  private User createGoogleUser(OAuthUserProfile profile, String emailNormalized, String timezone) {
     String baseUsername = emailNormalized.split("@")[0].replaceAll("[^a-z0-9_]", "");
     if (baseUsername.isBlank()) {
       baseUsername = "user";
@@ -88,7 +114,7 @@ public class GoogleSignInUseCase {
         ? profile.name().trim()
         : uniqueUsername;
 
-    LocalDateTime now = LocalDateTime.now();
+    LocalDateTime now = LocalDateTime.now(clock);
 
     User newUser = new User(
         UUID.randomUUID(),
@@ -115,6 +141,7 @@ public class GoogleSignInUseCase {
         0,
         now
     );
+    newUser.initializeTimezone(timezone, clock);
 
     return userRepository.save(newUser);
   }

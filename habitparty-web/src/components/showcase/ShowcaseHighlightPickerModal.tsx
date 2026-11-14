@@ -1,12 +1,14 @@
 "use client";
 
-import { Check, Lock, Search, Sparkles, Trash2, Trophy, X } from "lucide-react";
+import { Check, Lock, Search, Sparkles, Trophy, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { updateMyHighlightsAction } from "@/actions/showcaseActions";
 import { AchievementIcon } from "@/components/showcase/AchievementIcon";
+import { HighlightSlotSelectorBar } from "@/components/showcase/HighlightSlotSelectorBar";
 import { BaseModal } from "@/components/ui/BaseModal";
+import { Input } from "@/components/ui/Input";
 import { Pagination } from "@/components/ui/Pagination";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import {
@@ -82,7 +84,6 @@ export function ShowcaseHighlightPickerModal({
   const tRarities = useTranslations("showcase.rarities");
   const tCatalog = useTranslations("showcase.catalog");
   const tBadges = useTranslations("showcase.accountBadges");
-  const tMetrics = useTranslations("showcase.statMetrics");
   const { isGamified } = useExperienceMode();
 
   const [activeSlot, setActiveSlot] = useState(initialSlotIndex);
@@ -141,13 +142,11 @@ export function ShowcaseHighlightPickerModal({
   const getSlotTitle = (slotItem: HighlightSlotInputDTO | null): string => {
     const resolved = resolveHighlightSlotCard(slotItem, {
       achievements,
-      stats,
       isGamified,
       levelTitle,
       currentXp,
       tCatalog,
       tBadges,
-      tMetrics,
     });
     return resolved?.title ?? tHighlights("emptySlotTitle");
   };
@@ -267,53 +266,13 @@ export function ShowcaseHighlightPickerModal({
     >
       <div className="flex flex-col gap-4">
         {/* SELETOR DOS 4 SLOTS */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          {([0, 1, 2, 3] as const).map((slotIdx) => {
-            const slotItem = draftSlots[slotIdx] ?? null;
-            const isSelectedSlot = activeSlot === slotIdx;
-            return (
-              <div
-                key={`picker-slot-${slotIdx}`}
-                className={cn(
-                  "relative rounded-xl border p-2.5 flex flex-col justify-between gap-1 text-left transition-colors",
-                  isSelectedSlot
-                    ? "border-gold bg-gold/15 shadow-glow-gold-xs"
-                    : "border-neutral-700 bg-card hover:border-primary/45 dark:border-primary/25 dark:bg-surface/60",
-                )}
-              >
-                <div className="flex items-center justify-between gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setActiveSlot(slotIdx)}
-                    className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700 dark:text-gold cursor-pointer text-left flex-1"
-                  >
-                    {tHighlights("slotLabel", { index: slotIdx + 1 })}
-                  </button>
-                  {slotItem && (
-                    <button
-                      type="button"
-                      onClick={() => handleClearSlot(slotIdx)}
-                      className="text-neutral-400 hover:text-red-400 p-0.5 rounded cursor-pointer"
-                      title={t("clearSlot")}
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveSlot(slotIdx)}
-                  className={cn(
-                    "text-xs font-bold truncate text-left cursor-pointer",
-                    slotItem ? "text-neutral-100" : "text-neutral-400 italic",
-                  )}
-                >
-                  {getSlotTitle(slotItem)}
-                </button>
-              </div>
-            );
-          })}
-        </div>
+        <HighlightSlotSelectorBar
+          draftSlots={draftSlots}
+          activeSlot={activeSlot}
+          onSelectSlot={setActiveSlot}
+          onClearSlot={handleClearSlot}
+          getSlotTitle={getSlotTitle}
+        />
 
         {/* ABAS DE CATEGORIA + BUSCA */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-neutral-700 dark:border-primary/15">
@@ -326,19 +285,17 @@ export function ShowcaseHighlightPickerModal({
 
           {activeTab === "achievements" && unlockedAchievements.length > 0 && (
             <div className="relative w-full sm:w-64">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none"
-              />
-              <input
+              <Input
                 type="search"
+                compact
+                icon={<Search size={14} />}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
                 placeholder={tGallery("searchPlaceholder")}
-                className="w-full pl-8 pr-7 py-1.5 rounded-xl border border-neutral-600 bg-card text-xs text-neutral-50 placeholder:text-neutral-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-primary/25 dark:bg-surface/80 dark:text-neutral-100 dark:focus:border-gold dark:focus:ring-2 dark:focus:ring-gold/50"
+                className="pr-8"
               />
               {searchQuery && (
                 <button
@@ -426,7 +383,7 @@ export function ShowcaseHighlightPickerModal({
                             </span>
                             <span
                               className={cn(
-                                "px-1.5 py-0.2 rounded-full text-[9px] font-bold uppercase border shrink-0",
+                                "px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase border shrink-0",
                                 theme.badgeBg,
                                 theme.badgeText,
                                 theme.badgeBorder,

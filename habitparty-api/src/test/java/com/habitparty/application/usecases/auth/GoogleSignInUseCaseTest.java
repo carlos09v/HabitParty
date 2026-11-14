@@ -185,4 +185,27 @@ class GoogleSignInUseCaseTest {
     verifyNoInteractions(userRepository);
     verifyNoInteractions(refreshTokenRepository);
   }
+
+  @Test
+  @DisplayName("Deve inicializar timezone IANA para novo usuário Google sem sobrescrever fuso de usuário existente")
+  void testGoogleSignInInitializesTimezoneForNewUserOnly() {
+    String authCode = "new_google_code";
+    OAuthUserProfile profile = new OAuthUserProfile("kenji@gmail.com", "Kenji", null);
+
+    when(oAuthIdentityProviderPort.fetchUserProfile(authCode)).thenReturn(profile);
+    when(userRepository.findByEmail("kenji@gmail.com")).thenReturn(Optional.empty());
+    when(userRepository.findByUsername("kenji")).thenReturn(Optional.empty());
+    when(passwordHasher.encode(any())).thenReturn("hashed_pwd");
+    when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(refreshTokenRepository.countActiveByUserId(any())).thenReturn(0);
+    when(tokenPort.generateToken(any())).thenReturn("jwt_token");
+
+    googleSignInUseCase.execute(authCode, "Asia/Tokyo");
+
+    ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+    verify(userRepository).save(captor.capture());
+    assertEquals("Asia/Tokyo", captor.getValue().getTimezone());
+    assertNotNull(captor.getValue().getLastDailyResetDate());
+    assertNotNull(captor.getValue().getNextDailyResetAt());
+  }
 }

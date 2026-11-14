@@ -294,7 +294,11 @@
       "layout": "Layout",
       "compact": "Compacto",
       "normal": "Padrão",
-      "wide": "Largo"
+      "wide": "Largo",
+      "moveTo": "Mover para",
+      "noTargetWorkspaces": "Nenhum outro ambiente disponível",
+      "vipBadge": "VIP",
+      "readOnlyWorkspaceHint": "Disponível apenas no plano Premium (ambiente em modo somente leitura)"
     },
     "mutations": {
       "statusUpdateError": "Erro ao atualizar status da tarefa.",

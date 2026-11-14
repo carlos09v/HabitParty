@@ -1,48 +1,18 @@
 "use client";
 
-import { Check, KeyRound, Lock, Mail, X } from "lucide-react";
+import { Check, Lock, Mail } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type FormEvent, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { requestPasswordReset } from "@/actions/auth";
 import { updateUserPasswordAction } from "@/actions/userActions";
+import { PasswordStrengthIndicator } from "@/components/auth/PasswordStrengthIndicator";
 import { GoogleLogoIcon } from "@/components/ui/GoogleLogoIcon";
 import { Input } from "@/components/ui/Input";
 import { useUserStore } from "@/store/userStore";
 import type { ProfileCardBaseProps } from "@/types/settings";
 import { cn } from "@/utils";
-import { validatePasswordRequirements } from "@/utils/validators";
-
-import { SettingsCard } from "./SettingsCard";
-
-function PasswordRuleItem({
-  satisfied,
-  label,
-  isError = false,
-  className,
-}: {
-  satisfied: boolean;
-  label: string;
-  isError?: boolean;
-  className?: string;
-}) {
-  return (
-    <span
-      className={cn(
-        "flex items-center gap-1.5 transition-colors",
-        isError
-          ? "text-red-400 font-medium"
-          : satisfied
-            ? "text-emerald-400 font-medium"
-            : "text-neutral-400",
-        className,
-      )}
-    >
-      {satisfied && !isError ? <Check size={14} /> : <X size={14} />}
-      {label}
-    </span>
-  );
-}
+import { analyzePassword } from "@/utils/validators";
 
 export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
   const t = useTranslations("settings.changePassword");
@@ -60,13 +30,15 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
     newPassword.length > 0 &&
     currentPassword === newPassword;
 
-  const {
-    hasMinLength,
-    hasUpperCase,
-    hasSpecialChar,
-    passwordsMatch,
-    isValid: isFormValid,
-  } = validatePasswordRequirements(newPassword, confirmPassword);
+  const analysis = analyzePassword(newPassword);
+  const isPasswordValid =
+    analysis.hasMinLength &&
+    analysis.hasUpperCase &&
+    analysis.hasLowerCase &&
+    analysis.hasNumberOrSpecial;
+  const passwordsMatch =
+    newPassword.length > 0 && newPassword === confirmPassword;
+  const isFormValid = isPasswordValid && passwordsMatch;
 
   const isEmailUnverified = user?.emailVerified === false;
 
@@ -106,7 +78,7 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
       return;
     }
 
-    if (!hasMinLength || !hasUpperCase || !hasSpecialChar) {
+    if (!isPasswordValid) {
       toast.error(t("requirementsNotMet"));
       return;
     }
@@ -134,158 +106,123 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
   };
 
   return (
-    <SettingsCard
-      title={t("cardTitle")}
-      description={t("cardDesc")}
-      icon={<KeyRound size={18} className="text-gold" />}
-      isCompact={isCompact}
-    >
-      <div className="flex flex-col gap-5">
-        {isEmailUnverified && (
-          <div className="p-3.5 sm:p-4 rounded-xl bg-amber-500/10 dark:bg-gold/10 border border-amber-500/35 dark:border-gold/30 text-xs sm:text-body-s text-neutral-200 leading-relaxed">
-            <strong className="text-amber-700 dark:text-gold font-bold">
-              {t("unverifiedEmailWarning")}
-            </strong>{" "}
-            {t("unverifiedEmailDesc", { email: user?.email ?? "" })}
-          </div>
-        )}
+    <div className="flex flex-col gap-5">
+      {isEmailUnverified && (
+        <div className="p-3.5 sm:p-4 rounded-xl bg-amber-500/10 dark:bg-gold/10 border border-amber-500/35 dark:border-gold/30 text-xs sm:text-body-s text-neutral-200 leading-relaxed">
+          <strong className="text-amber-700 dark:text-gold font-bold">
+            {t("unverifiedEmailWarning")}
+          </strong>{" "}
+          {t("unverifiedEmailDesc", { email: user?.email ?? "" })}
+        </div>
+      )}
 
-        {/* Aviso informativo para contas criadas/vinculadas via Google */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 p-3.5 sm:p-4 rounded-xl bg-surface/60 border border-neutral-700 dark:border-primary/25">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-white dark:bg-white/10 border border-neutral-700 dark:border-white/15 shadow-2xs dark:shadow-none flex items-center justify-center shrink-0 mt-0.5">
-              <GoogleLogoIcon />
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-xs sm:text-body-s font-bold text-neutral-100">
-                {t("googleNoticeTitleFull")}
-              </span>
-              <p className="text-tiny sm:text-xs text-neutral-300 leading-relaxed">
-                {t("googleNoticeDescFull")}
-              </p>
-            </div>
+      {/* Aviso informativo para contas criadas/vinculadas via Google */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 p-3.5 sm:p-4 rounded-xl bg-surface/60 border border-neutral-700 dark:border-primary/25">
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 rounded-lg bg-white dark:bg-white/10 border border-neutral-700 dark:border-white/15 shadow-2xs dark:shadow-none flex items-center justify-center shrink-0 mt-0.5">
+            <GoogleLogoIcon />
           </div>
-
-          <button
-            type="button"
-            onClick={handleSendPasswordSetupEmail}
-            disabled={isSendingReset || resetEmailSent || !user?.email}
-            className={cn(
-              "shrink-0 rounded-xl border font-semibold transition-colors flex items-center gap-1.5 cursor-pointer",
-              resetEmailSent
-                ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 cursor-default"
-                : "border-gold/45 bg-gold/10 text-amber-700 dark:text-gold hover:bg-gold hover:text-on-gold dark:hover:text-neutral-950",
-              "disabled:opacity-50 disabled:cursor-not-allowed",
-              isCompact ? "px-3 py-1.5 text-xs" : "px-3.5 py-2 text-xs",
-            )}
-          >
-            {resetEmailSent ? (
-              <>
-                <Check size={14} />
-                <span>{t("linkSent")}</span>
-              </>
-            ) : (
-              <>
-                <Mail size={14} />
-                <span>
-                  {isSendingReset ? t("sendingEmail") : t("receiveLink")}
-                </span>
-              </>
-            )}
-          </button>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs sm:text-body-s font-bold text-neutral-100">
+              {t("googleNoticeTitleFull")}
+            </span>
+            <p className="text-tiny sm:text-xs text-neutral-300 leading-relaxed">
+              {t("googleNoticeDescFull")}
+            </p>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <div className="flex flex-col gap-4 max-w-xl">
-            <Input
-              id="currentPassword"
-              type="password"
-              label={t("currentPasswordLabel")}
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder={t("currentPasswordPlaceholder")}
-              compact={isCompact}
-              icon={<Lock size={18} />}
-              required
-            />
-
-            <Input
-              id="newPassword"
-              type="password"
-              label={t("newPasswordLabel")}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder={t("newPasswordPlaceholder")}
-              compact={isCompact}
-              icon={<Lock size={18} />}
-              error={isSameAsCurrent ? t("samePasswordError") : undefined}
-              required
-            />
-
-            {/* Indicador de requisitos */}
-            <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-surface/60 border border-neutral-700 dark:border-primary/20 text-xs">
-              <span className="font-semibold text-neutral-300">
-                {t("requirementsTitle")}
+        <button
+          type="button"
+          onClick={handleSendPasswordSetupEmail}
+          disabled={isSendingReset || resetEmailSent || !user?.email}
+          className={cn(
+            "shrink-0 rounded-xl border font-semibold transition-colors flex items-center gap-1.5 cursor-pointer",
+            resetEmailSent
+              ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 cursor-default"
+              : "border-gold/45 bg-gold/10 text-amber-700 dark:text-gold hover:bg-gold hover:text-on-gold dark:hover:text-neutral-950",
+            "disabled:opacity-50 disabled:cursor-not-allowed",
+            isCompact ? "px-3 py-1.5 text-xs" : "px-3.5 py-2 text-xs",
+          )}
+        >
+          {resetEmailSent ? (
+            <>
+              <Check size={14} />
+              <span>{t("linkSent")}</span>
+            </>
+          ) : (
+            <>
+              <Mail size={14} />
+              <span>
+                {isSendingReset ? t("sendingEmail") : t("receiveLink")}
               </span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-1">
-                <PasswordRuleItem
-                  satisfied={hasMinLength}
-                  label={t("ruleMinLength")}
-                />
-                <PasswordRuleItem
-                  satisfied={hasUpperCase}
-                  label={t("ruleUpperCase")}
-                />
-                <PasswordRuleItem
-                  satisfied={hasSpecialChar}
-                  label={t("ruleSpecialChar")}
-                />
-                <PasswordRuleItem
-                  satisfied={passwordsMatch}
-                  label={t("ruleMatch")}
-                />
-                <PasswordRuleItem
-                  satisfied={
-                    newPassword.length > 0 &&
-                    currentPassword.length > 0 &&
-                    !isSameAsCurrent
-                  }
-                  isError={isSameAsCurrent}
-                  label={t("ruleDifferent")}
-                  className="sm:col-span-2"
-                />
-              </div>
-            </div>
-
-            <Input
-              id="confirmPassword"
-              type="password"
-              label={t("confirmPasswordLabel")}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder={t("confirmPasswordPlaceholder")}
-              compact={isCompact}
-              icon={<Lock size={18} />}
-              required
-            />
-          </div>
-
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-neutral-700 dark:border-primary/20">
-            <button
-              type="submit"
-              disabled={isPending || !canSubmit}
-              className={cn(
-                "rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-xs dark:shadow-md",
-                "bg-gold text-on-gold hover:bg-gold-hover active:bg-gold-pressed",
-                "disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-40 disabled:cursor-not-allowed",
-                isCompact ? "px-4 py-2 text-xs" : "px-6 py-2.5 text-sm",
-              )}
-            >
-              {isPending ? t("submittingBtn") : t("submitBtn")}
-            </button>
-          </div>
-        </form>
+            </>
+          )}
+        </button>
       </div>
-    </SettingsCard>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <div className="flex flex-col gap-4 max-w-xl">
+          <Input
+            id="currentPassword"
+            type="password"
+            label={t("currentPasswordLabel")}
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            placeholder={t("currentPasswordPlaceholder")}
+            compact={isCompact}
+            icon={<Lock size={18} />}
+            required
+          />
+
+          <Input
+            id="newPassword"
+            type="password"
+            label={t("newPasswordLabel")}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder={t("newPasswordPlaceholder")}
+            compact={isCompact}
+            icon={<Lock size={18} />}
+            error={isSameAsCurrent ? t("samePasswordError") : undefined}
+            required
+          />
+
+          <PasswordStrengthIndicator password={newPassword} />
+
+          <Input
+            id="confirmPassword"
+            type="password"
+            label={t("confirmPasswordLabel")}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder={t("confirmPasswordPlaceholder")}
+            compact={isCompact}
+            icon={<Lock size={18} />}
+            error={
+              confirmPassword.length > 0 && !passwordsMatch
+                ? t("passwordsDoNotMatch")
+                : undefined
+            }
+            required
+          />
+        </div>
+
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-neutral-700 dark:border-primary/20">
+          <button
+            type="submit"
+            disabled={isPending || !canSubmit}
+            className={cn(
+              "rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-xs dark:shadow-md",
+              "bg-gold text-on-gold hover:bg-gold-hover active:bg-gold-pressed",
+              "disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-40 disabled:cursor-not-allowed",
+              isCompact ? "px-4 py-2 text-xs" : "px-6 py-2.5 text-sm",
+            )}
+          >
+            {isPending ? t("submittingBtn") : t("submitBtn")}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }

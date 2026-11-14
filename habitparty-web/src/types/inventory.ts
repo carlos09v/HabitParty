@@ -28,6 +28,7 @@ export type InventoryItemType =
 export interface InventoryItem
   extends Omit<InventoryItemResponseDTO, "rewardType"> {
   id: string; // Add id for UI
+  itemIds?: string[]; // Todos os inventoryItemIds agrupados nesta pilha
   name: string;
   description: string;
   quantity: number;

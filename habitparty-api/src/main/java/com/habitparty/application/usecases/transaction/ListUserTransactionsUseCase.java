@@ -12,29 +12,40 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import com.habitparty.application.ports.TransactionHistoryRepository;
+import com.habitparty.application.usecases.user.UserTimeResolver;
 import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.enums.TransactionType;
 
 @Service
 public class ListUserTransactionsUseCase {
   private final TransactionHistoryRepository port;
+  private final UserTimeResolver userTimeResolver;
   private final Clock clock;
 
   @Autowired
-  public ListUserTransactionsUseCase(TransactionHistoryRepository port, Clock clock) {
+  public ListUserTransactionsUseCase(
+      TransactionHistoryRepository port,
+      UserTimeResolver userTimeResolver,
+      Clock clock) {
     this.port = port;
+    this.userTimeResolver = userTimeResolver;
     this.clock = clock != null ? clock : Clock.systemDefaultZone();
   }
 
+  public ListUserTransactionsUseCase(TransactionHistoryRepository port, Clock clock) {
+    this(port, null, clock);
+  }
+
   public ListUserTransactionsUseCase(TransactionHistoryRepository port) {
-    this(port, Clock.systemDefaultZone());
+    this(port, null, Clock.systemDefaultZone());
   }
 
   public Page<TransactionHistory> execute(UUID userId, String tab, String period, String search, int page, int requestedSize) {
     int safePage = Math.max(page, 0);
     int safeSize = Math.min(Math.max(requestedSize, 1), 100);
     List<TransactionType> typesToFilter = resolveTypesForTab(tab);
-    LocalDateTime startDate = resolveStartDateForPeriod(period, clock);
+    ZoneId userZone = userTimeResolver != null ? userTimeResolver.resolveZone(userId) : clock.getZone();
+    LocalDateTime startDate = resolveStartDateForPeriod(period, clock, userZone);
 
     return port.findFiltered(userId, typesToFilter, startDate, search, safePage, safeSize);
   }
@@ -55,17 +66,23 @@ public class ListUserTransactionsUseCase {
   }
 
   public static LocalDateTime resolveStartDateForPeriod(String period, Clock clock) {
+    Clock effectiveClock = clock != null ? clock : Clock.systemDefaultZone();
+    return resolveStartDateForPeriod(period, effectiveClock, effectiveClock.getZone());
+  }
+
+  public static LocalDateTime resolveStartDateForPeriod(String period, Clock clock, ZoneId userZone) {
     if (period == null || period.trim().isEmpty() || period.equalsIgnoreCase("ALL")) {
       return null;
     }
     Clock effectiveClock = clock != null ? clock : Clock.systemDefaultZone();
+    ZoneId effectiveZone = userZone != null ? userZone : effectiveClock.getZone();
     return switch (period.toUpperCase()) {
-      case "TODAY" -> LocalDate.now(effectiveClock)
-          .atStartOfDay(effectiveClock.getZone())
+      case "TODAY" -> LocalDate.now(effectiveClock.withZone(effectiveZone))
+          .atStartOfDay(effectiveZone)
           .withZoneSameInstant(ZoneId.systemDefault())
           .toLocalDateTime();
-      case "7DAYS" -> LocalDateTime.now().minusDays(7);
-      case "30DAYS" -> LocalDateTime.now().minusDays(30);
+      case "7DAYS" -> LocalDateTime.now(effectiveClock.withZone(ZoneId.systemDefault())).minusDays(7);
+      case "30DAYS" -> LocalDateTime.now(effectiveClock.withZone(ZoneId.systemDefault())).minusDays(30);
       default -> null;
     };
   }

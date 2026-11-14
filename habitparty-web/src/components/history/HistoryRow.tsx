@@ -10,14 +10,14 @@ import {
   HISTORY_GRID_COLS,
   HISTORY_GRID_COLS_SELECTABLE,
 } from "@/constants/history";
-import { useDateFormat } from "@/hooks/useDateFormat";
-import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
 import type {
   TransactionHistoryResponseDTO,
   TransactionMetadata,
 } from "@/types/history";
+import type { DateFormat, TimeFormat } from "@/types/ui";
 import { cn, formatCoins, resolveTransactionMetadata } from "@/utils";
+import type { TransactionMetadataLabels } from "@/utils/historyUtils";
 
 interface HistoryRowProps {
   transaction: TransactionHistoryResponseDTO;
@@ -31,6 +31,10 @@ interface HistoryRowProps {
   selectable?: boolean;
   isSelected?: boolean;
   onToggleSelect?: (transaction: TransactionHistoryResponseDTO) => void;
+  dateFormat?: DateFormat;
+  timeFormat?: TimeFormat;
+  userTimeZone?: string | null;
+  metadataLabels?: TransactionMetadataLabels;
 }
 
 /**
@@ -132,16 +136,20 @@ export const HistoryRow = memo(function HistoryRow({
   selectable = false,
   isSelected = false,
   onToggleSelect,
+  dateFormat,
+  timeFormat,
+  userTimeZone,
+  metadataLabels,
 }: HistoryRowProps) {
   const t = useTranslations("history.row");
   const locale = useLocale() as AppLocale;
-  const { dateFormat } = useDateFormat();
-  const { timeFormat } = useTimeFormat();
   const metadata = resolveTransactionMetadata(
     transaction,
     locale,
     dateFormat,
     timeFormat,
+    userTimeZone,
+    metadataLabels,
   );
   const IconComponent = metadata.icon;
 
@@ -166,7 +174,6 @@ export const HistoryRow = memo(function HistoryRow({
       type="checkbox"
       checked={isSelected}
       onChange={() => onToggleSelect?.(transaction)}
-      // Evita abrir o popover da linha ao marcar/desmarcar
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
       aria-label={t("selectRowAria", { name: rowName })}
@@ -204,9 +211,7 @@ export const HistoryRow = memo(function HistoryRow({
         metadata.borderClass,
         isSelected &&
           "bg-gold/10 dark:bg-gold/8 border-y-gold/50 border-r-gold/50 dark:border-y-gold/45 dark:border-r-gold/45",
-        // Mobile Layout: flex column
         "flex flex-col gap-2 p-3",
-        // Desktop Layout (md+): Grid perfeitamente alinhado com o cabeçalho
         "md:grid md:items-center",
         canSelect ? HISTORY_GRID_COLS_SELECTABLE : HISTORY_GRID_COLS,
         isCompact
@@ -215,11 +220,8 @@ export const HistoryRow = memo(function HistoryRow({
       )}
       title={t("rowTitle")}
     >
-      {/* ========================================================= */}
-      {/* 1. VISUALIZAÇÃO MOBILE (< md)                              */}
-      {/* ========================================================= */}
+      {/* 1. VISUALIZAÇÃO MOBILE (< md) */}
       <div className="flex md:hidden flex-col gap-2 w-full">
-        {/* Linha Superior: Ícone + Título (Esq) | Moedas & XP (Dir) */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
             {selectCheckbox}
@@ -228,13 +230,12 @@ export const HistoryRow = memo(function HistoryRow({
             </div>
             <div className="flex flex-col min-w-0">
               <span className="font-bold text-neutral-100 text-sm truncate">
-                {transaction.name || t("defaultTransactionName")}
+                {rowName}
               </span>
               {subtext}
             </div>
           </div>
 
-          {/* Moedas e XP */}
           <div className="flex flex-col items-end shrink-0 gap-0.5">
             {gold !== 0 || xp === 0 ? (
               <CoinAmount amount={gold} size="sm" showZeroAsDash={xp === 0} />
@@ -243,7 +244,6 @@ export const HistoryRow = memo(function HistoryRow({
           </div>
         </div>
 
-        {/* Linha Central: Badges e Tags */}
         <div className="flex items-center gap-1.5 flex-wrap pl-10 text-xs">
           <span
             className={cn(
@@ -257,7 +257,6 @@ export const HistoryRow = memo(function HistoryRow({
           <TransactionMetaBadges metadata={metadata} tags={tags} />
         </div>
 
-        {/* Linha Inferior: Data/Hora e Ação de Excluir */}
         <div className="flex items-center justify-between pt-1 border-t border-white/5 pl-10">
           <span
             className="text-neutral-400 text-label-g font-medium"
@@ -280,17 +279,13 @@ export const HistoryRow = memo(function HistoryRow({
         </div>
       </div>
 
-      {/* ========================================================= */}
-      {/* 2. VISUALIZAÇÃO DESKTOP: GRID DE 7 COLUNAS (md+)           */}
-      {/* ========================================================= */}
-      {/* Col 0: Seleção para exclusão em lote */}
+      {/* 2. VISUALIZAÇÃO DESKTOP: GRID DE 7 COLUNAS (md+) */}
       {canSelect && (
         <div className="hidden md:flex items-center justify-center">
           {selectCheckbox}
         </div>
       )}
 
-      {/* Col 1: Nome / Evento */}
       <div className="hidden md:flex items-center gap-2.5 min-w-0">
         <div className="w-7 h-7 rounded-lg bg-surface border border-white/10 flex items-center justify-center shrink-0 text-neutral-300 shadow-xs group-hover:border-white/20 transition-colors">
           <IconComponent size={15} />
@@ -300,13 +295,12 @@ export const HistoryRow = memo(function HistoryRow({
             className="font-bold text-neutral-100 truncate group-hover:text-primary dark:group-hover:text-gold transition-colors"
             title={transaction.name || t("defaultEventTitle")}
           >
-            {transaction.name || t("defaultTransactionName")}
+            {rowName}
           </span>
           {subtext}
         </div>
       </div>
 
-      {/* Col 2: Tipo de Evento */}
       <div className="hidden md:block min-w-0">
         <span
           className={cn(
@@ -319,12 +313,10 @@ export const HistoryRow = memo(function HistoryRow({
         </span>
       </div>
 
-      {/* Col 3: Detalhes / Tags */}
       <div className="hidden md:flex items-center gap-1 flex-wrap min-w-0">
         <TransactionMetaBadges metadata={metadata} tags={tags} showEmptyDash />
       </div>
 
-      {/* Col 4: Moedas (padrão "−" quando 0) */}
       <div className="hidden md:flex items-center">
         <CoinAmount
           amount={gold}
@@ -333,7 +325,6 @@ export const HistoryRow = memo(function HistoryRow({
         />
       </div>
 
-      {/* Col 5: XP (padrão "−" quando 0) */}
       <div className="hidden md:flex items-center">
         <XpAmount
           amount={xp}
@@ -343,7 +334,6 @@ export const HistoryRow = memo(function HistoryRow({
         />
       </div>
 
-      {/* Col 6: Data e Hora */}
       <span
         className="hidden md:block text-right text-neutral-400 font-medium whitespace-nowrap text-xs"
         title={metadata.formattedDate}
@@ -351,7 +341,6 @@ export const HistoryRow = memo(function HistoryRow({
         {displayDateText}
       </span>
 
-      {/* Col 7: Ação de Excluir (discreto no desktop, visível no hover/focus) */}
       <div className="hidden md:flex items-center justify-end">
         {canDelete && (
           <button

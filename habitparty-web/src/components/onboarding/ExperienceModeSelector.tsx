@@ -1,5 +1,6 @@
 import { CheckCircle2, Circle, Volume2, VolumeX } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { OnboardingStepHeader } from "@/components/onboarding/OnboardingStepHeader";
 import { EXPERIENCE_MODES } from "@/constants/onboarding";
 import type { ExperienceMode } from "@/types/ui";
 import { cn } from "@/utils";
@@ -23,17 +24,15 @@ export function ExperienceModeSelector({
 
   return (
     <div className="flex flex-col gap-2.5 p-3 sm:p-3.5 rounded-xl border border-neutral-700 bg-card shadow-xs dark:border-primary/25 dark:bg-surface/40">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h3 className="text-body-s font-bold text-neutral-50 flex items-center gap-2">
-          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/15 text-amber-700 dark:bg-gold/20 dark:text-gold text-[11px] font-bold">
-            3
+      <OnboardingStepHeader
+        step={3}
+        title={t("title")}
+        rightSlot={
+          <span className="text-tiny text-neutral-400">
+            {t("settingsHint")}
           </span>
-          {t("title")}
-        </h3>
-        <span className="text-[11px] text-neutral-400">
-          {t("settingsHint")}
-        </span>
-      </div>
+        }
+      />
 
       {/* Cards de Seleção: Gamificado vs Produtividade (Compactos) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">

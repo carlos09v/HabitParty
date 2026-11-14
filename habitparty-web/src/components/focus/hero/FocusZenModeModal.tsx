@@ -12,12 +12,14 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useThemeMode } from "@/hooks/useThemeMode";
 import type {
   FocusActiveTarget,
   FocusPhase,
   FocusRecordType,
 } from "@/types/focus";
+import type { TimerSoundType } from "@/types/settings";
 import { cn } from "@/utils";
 import { FocusStageAudioControls } from "../stage/FocusStageAudioControls";
 import { FocusStageTimerCircle } from "../stage/FocusStageTimerCircle";
@@ -33,14 +35,14 @@ interface FocusZenModeModalProps {
   target: FocusActiveTarget | null;
   canComplete: boolean;
   isSoundEnabled: boolean;
-  timerSoundType: "zen" | "arcade";
+  timerSoundType: TimerSoundType;
   TargetIcon: React.ComponentType<{ size?: number; className?: string }>;
   onToggleTimer: () => void;
   onResetTimer: () => void;
   onSkipBreak: () => void;
   onComplete: () => void;
   onToggleSound: () => void;
-  onChangeSoundType: (type: "zen" | "arcade") => void;
+  onChangeSoundType: (type: TimerSoundType) => void;
 }
 
 /**
@@ -70,23 +72,28 @@ export function FocusZenModeModal({
   const { isLight } = useThemeMode();
   const [isLightsOff, setIsLightsOff] = useState(false);
 
-  // Fecha o Modo Zen com a tecla Esc
+  // Fecha o Modo Zen com a tecla Esc e bloqueia scroll do body enquanto aberto
   useEffect(() => {
     if (!isOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         onClose();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === "undefined") return null;
 
   const isDimmed = isLight && isLightsOff;
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -257,6 +264,7 @@ export function FocusZenModeModal({
           onChangeSoundType={onChangeSoundType}
         />
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

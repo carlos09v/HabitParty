@@ -35,7 +35,15 @@ public interface TaskRepository {
   // Busca paginada das tarefas recorrentes (HABIT/DAILY) para o rollover diário em lotes
   List<Task> findRecurringTasksPage(int page, int size);
 
+  default List<Task> findRecurringTasksByUserIds(Collection<UUID> userIds) {
+    return List.of();
+  }
+
   List<Task> findOverdueHardcoreTodos(LocalDate today);
+
+  default List<Task> findOverdueHardcoreTodosByUserIds(Collection<UUID> userIds, LocalDate maxDueDate) {
+    return List.of();
+  }
 
   List<Task> findPendingEmailReminders(LocalDateTime now, LocalDate today);
 

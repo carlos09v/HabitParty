@@ -111,7 +111,9 @@ export async function sendItemToFocus(
       };
     }
 
-    invalidateInventoryDomainTags(true);
+    // A tela de Foco consome os itens via getRawInventoryItems() que já possui cacheTag("inventory").
+    // Não há alteração nas atividades nem no histórico de registros de foco.
+    invalidateInventoryDomainTags(false);
     return { success: true };
   } catch (err) {
     console.error("[InventoryAction:SendToFocus]", err);
@@ -141,7 +143,7 @@ export async function returnItemToBackpack(
       };
     }
 
-    invalidateInventoryDomainTags(true);
+    invalidateInventoryDomainTags(false);
     return { success: true };
   } catch (err) {
     console.error("[InventoryAction:ReturnToBackpack]", err);
@@ -170,7 +172,7 @@ export async function openMysteryBox(
     }
 
     if (!skipImmediateRevalidate) {
-      invalidateInventoryDomainTags(true, true);
+      invalidateInventoryDomainTags(false, false);
     }
     return { success: true, data: data as MysteryBoxOpenResult };
   } catch (err) {
@@ -183,5 +185,5 @@ export async function openMysteryBox(
 }
 
 export async function revalidateInventoryAfterRoulette(): Promise<void> {
-  invalidateInventoryDomainTags(true, true);
+  invalidateInventoryDomainTags(false, false);
 }

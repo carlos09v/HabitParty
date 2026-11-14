@@ -10,6 +10,7 @@ export interface XpAmountProps {
   showSign?: boolean;
   showZeroAsDash?: boolean;
   withIcon?: boolean;
+  isGamified?: boolean;
   className?: string;
 }
 
@@ -36,9 +37,11 @@ export function XpAmount({
   showSign = true,
   showZeroAsDash = false,
   withIcon = false,
+  isGamified: isGamifiedProp,
   className,
 }: XpAmountProps) {
-  const { isGamified } = useExperienceMode();
+  const { isGamified: contextIsGamified } = useExperienceMode();
+  const isGamified = isGamifiedProp ?? contextIsGamified;
   const isPositive = amount > 0;
   const isNegative = amount < 0;
   const isZero = amount === 0;

@@ -9,5 +9,16 @@ public record CreateUserCommand(
     String email,
     String password,
     UserGender gender,
-    LocalDate birthDate
-) {}
+    LocalDate birthDate,
+    String timezone
+) {
+  public CreateUserCommand(
+      String fullName,
+      String username,
+      String email,
+      String password,
+      UserGender gender,
+      LocalDate birthDate) {
+    this(fullName, username, email, password, gender, birthDate, null);
+  }
+}

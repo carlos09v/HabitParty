@@ -44,7 +44,7 @@ export function SettingsCard({
         <div className="flex flex-col gap-1 min-w-0 flex-1">
           <h3
             className={cn(
-              "text-body-l font-bold flex items-center gap-2",
+              "text-subtitle-s font-bold flex items-center gap-2",
               isDanger ? "text-red-600 dark:text-red-400" : "text-neutral-50",
             )}
           >

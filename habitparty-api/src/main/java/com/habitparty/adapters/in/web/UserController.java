@@ -12,6 +12,7 @@ import com.habitparty.adapters.in.web.api.UserApi;
 import com.habitparty.adapters.in.web.dtos.request.CreateUserDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserPasswordDTO;
+import com.habitparty.adapters.in.web.dtos.request.UpdateUserThemeDTO;
 import com.habitparty.adapters.in.web.dtos.response.UserResponseDTO;
 import com.habitparty.application.usecases.user.CreateUserCommand;
 import com.habitparty.application.usecases.user.CreateUserUseCase;
@@ -46,7 +47,8 @@ public class UserController implements UserApi {
         requestDto.email(),
         requestDto.password(),
         requestDto.gender(),
-        requestDto.birthDate()
+        requestDto.birthDate(),
+        requestDto.timezone()
     );
     User createdUser = createUserUseCase.execute(command);
     UserResponseDTO response = UserResponseDTO.fromDomain(createdUser);
@@ -90,8 +92,23 @@ public class UserController implements UserApi {
       UpdateUserDTO dto,
       AuthenticatedUser usuarioLogado) {
     UUID userId = usuarioLogado.id();
-    var command = new UpdateUserProfileCommand(dto.fullName(), dto.birthDate(), dto.gender(), dto.experienceMode());
+    var command = new UpdateUserProfileCommand(
+        dto.fullName(),
+        dto.birthDate(),
+        dto.gender(),
+        dto.experienceMode(),
+        dto.timezone(),
+        dto.theme());
     var updated = updateUserProfileUseCase.executeWithEffectiveStreak(userId, command);
+    return ResponseEntity.ok(UserResponseDTO.fromDomain(updated.user(), updated.effectiveStreak()));
+  }
+
+  @Override
+  public ResponseEntity<UserResponseDTO> updateTheme(
+      UpdateUserThemeDTO dto,
+      AuthenticatedUser usuarioLogado) {
+    UUID userId = usuarioLogado.id();
+    var updated = updateUserProfileUseCase.updateThemeWithEffectiveStreak(userId, dto.theme());
     return ResponseEntity.ok(UserResponseDTO.fromDomain(updated.user(), updated.effectiveStreak()));
   }
 

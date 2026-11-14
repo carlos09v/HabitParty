@@ -3,7 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useLocale } from "next-intl";
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   getTaskBorderClass,
   normalizeTaskType,
@@ -12,6 +12,7 @@ import {
 import { useTaskProgress } from "@/hooks/useTaskProgress";
 import type { AppLocale } from "@/i18n/config";
 import { useUIStore } from "@/store/uiStore";
+import { useUserStore } from "@/store/userStore";
 import type { Task } from "@/types/task";
 import { getTaskDueDateInfo } from "@/utils/date";
 import { getTagLeafLabel } from "@/utils/tags";
@@ -47,6 +48,7 @@ export function useTaskItemMeta({
   const locale = useLocale() as AppLocale;
   const dateFormat = useUIStore((state) => state.dateFormat);
   const timeFormat = useUIStore((state) => state.timeFormat);
+  const userTimeZone = useUserStore((state) => state.user?.timezone);
   const isCompact = propIsCompact ?? false;
 
   const { completed, habitScore, toggleCompleted, changeHabit, isDone } =
@@ -72,6 +74,7 @@ export function useTaskItemMeta({
     isAllDay: task.isAllDay,
     dateFormat,
     timeFormat,
+    timeZone: userTimeZone,
   });
   const isTodoOverdue = Boolean(isTodo && dueDateInfo.isOverdue && !isDone);
   const borderClass = isTodoOverdue
@@ -197,5 +200,56 @@ export function useTaskCardItem({
     setNodeRef,
     isDragging,
     style,
+  };
+}
+
+/**
+ * Hook que desambigua clique simples (ex: abrir detalhes) de duplo clique (ex: abrir edição)
+ * usando um timer de 180ms limpo automaticamente na desmontagem.
+ */
+export function useDeferredSingleClick(delayMs = 180) {
+  const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const clearPendingClick = useCallback(() => {
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+      clickTimeoutRef.current = null;
+    }
+  }, []);
+
+  const triggerSingleClick = useCallback(
+    (
+      eventDetail: number,
+      hasDoubleClickHandler: boolean,
+      callback: () => void,
+    ) => {
+      if (eventDetail >= 2) {
+        clearPendingClick();
+        return;
+      }
+      if (hasDoubleClickHandler) {
+        clearPendingClick();
+        clickTimeoutRef.current = setTimeout(() => {
+          clickTimeoutRef.current = null;
+          callback();
+        }, delayMs);
+      } else {
+        callback();
+      }
+    },
+    [clearPendingClick, delayMs],
+  );
+
+  return {
+    triggerSingleClick,
+    clearPendingClick,
   };
 }

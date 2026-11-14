@@ -1,8 +1,8 @@
 "use client";
 
-import { Calendar, History as HistoryIcon, Trash2, X } from "lucide-react";
+import { Calendar, History as HistoryIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   deleteTransactionAction,
@@ -15,9 +15,16 @@ import {
 } from "@/constants/history";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
+import { useUserStore } from "@/store/userStore";
 import type { TransactionHistoryResponseDTO } from "@/types/history";
 import { cn, groupTransactionsByDay } from "@/utils";
+import type {
+  TransactionDayLabels,
+  TransactionMetadataLabels,
+} from "@/utils/historyUtils";
+import { HistoryBulkActionBar } from "./HistoryBulkActionBar";
 import { HistoryRow } from "./HistoryRow";
 import { TransactionDetailPopover } from "./TransactionDetailPopover";
 
@@ -36,9 +43,13 @@ export function HistoryTable({
   selectable = false,
 }: HistoryTableProps) {
   const t = useTranslations("history.table");
+  const tUtils = useTranslations("history.utils");
   const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
   const { dateFormat } = useDateFormat();
+  const { timeFormat } = useTimeFormat();
+
   const [selectedTransaction, setSelectedTransaction] =
     useState<TransactionHistoryResponseDTO | null>(null);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
@@ -50,7 +61,6 @@ export function HistoryTable({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-  const selectAllRef = useRef<HTMLInputElement>(null);
 
   const selectableIds = useMemo(
     () =>
@@ -73,13 +83,6 @@ export function HistoryTable({
     selectableIds.length > 0 && selectedCount === selectableIds.length;
   const isPartiallySelected = selectedCount > 0 && !isAllSelected;
   const showSelection = selectable && selectableIds.length > 0;
-
-  // `indeterminate` só existe como propriedade DOM (não há atributo HTML)
-  useEffect(() => {
-    if (selectAllRef.current) {
-      selectAllRef.current.indeterminate = isPartiallySelected;
-    }
-  }, [isPartiallySelected]);
 
   const handleToggleSelect = useCallback(
     (tx: TransactionHistoryResponseDTO) => {
@@ -123,9 +126,57 @@ export function HistoryTable({
     }
   };
 
+  const dayLabels = useMemo<TransactionDayLabels>(
+    () => ({
+      unknownDate: tUtils("unknownDate"),
+      today: tUtils("today"),
+      yesterday: tUtils("yesterday"),
+    }),
+    [tUtils],
+  );
+
+  const metadataLabels = useMemo<TransactionMetadataLabels>(
+    () => ({
+      defaultTransactionLabel: tUtils("defaultTransactionLabel"),
+      getTransactionTypeLabel: (resolvedType: string) =>
+        tUtils.has(
+          `transactionTypes.${resolvedType}` as Parameters<
+            typeof tUtils.has
+          >[0],
+        )
+          ? tUtils(
+              `transactionTypes.${resolvedType}` as Parameters<
+                typeof tUtils
+              >[0],
+            )
+          : tUtils("defaultTransactionLabel"),
+      getDifficultyLabel: (difficulty: string) =>
+        tUtils.has(
+          `difficulties.${difficulty}` as Parameters<typeof tUtils.has>[0],
+        )
+          ? tUtils(`difficulties.${difficulty}` as Parameters<typeof tUtils>[0])
+          : difficulty,
+      getPackageLabel: (packageLevel: string) =>
+        tUtils.has(
+          `packages.${packageLevel}` as Parameters<typeof tUtils.has>[0],
+        )
+          ? tUtils(`packages.${packageLevel}` as Parameters<typeof tUtils>[0])
+          : packageLevel,
+    }),
+    [tUtils],
+  );
+
   const groupedTransactions = useMemo(
-    () => groupTransactionsByDay(transactions, new Date(), locale, dateFormat),
-    [transactions, locale, dateFormat],
+    () =>
+      groupTransactionsByDay(
+        transactions,
+        new Date(),
+        locale,
+        dateFormat,
+        userTimeZone,
+        dayLabels,
+      ),
+    [transactions, locale, dateFormat, userTimeZone, dayLabels],
   );
 
   const handleRowClick = useCallback(
@@ -178,52 +229,15 @@ export function HistoryTable({
     >
       {/* BARRA DE SELEÇÃO / AÇÕES EM LOTE */}
       {showSelection && (
-        <div
-          className={cn(
-            "flex items-center justify-between gap-3 flex-wrap rounded-xl border transition-colors",
-            isCompact ? "px-3 py-1.5" : "px-4 py-2",
-            selectedCount > 0
-              ? "border-gold/45 bg-gold/10 dark:border-gold/35 dark:bg-gold/8 shadow-2xs"
-              : "border-neutral-700/70 bg-card/60 dark:border-primary/20 dark:bg-primary-dark/15",
-          )}
-        >
-          <label className="inline-flex items-center gap-2.5 text-xs font-semibold text-neutral-200 hover:text-neutral-50 cursor-pointer select-none py-0.5">
-            <input
-              ref={selectAllRef}
-              type="checkbox"
-              checked={isAllSelected}
-              onChange={handleToggleSelectAll}
-              aria-label={t("headers.selectAllAria")}
-              className="checkbox-custom"
-            />
-            <span className={cn(selectedCount > 0 && "text-gold font-bold")}>
-              {selectedCount > 0
-                ? t("bulk.selectedCount", { count: selectedCount })
-                : t("bulk.selectAll")}
-            </span>
-          </label>
-
-          {selectedCount > 0 && (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleClearSelection}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-neutral-300 hover:bg-surface-hover dark:hover:bg-white/10 transition-colors cursor-pointer"
-              >
-                <X size={13} aria-hidden="true" />
-                {t("bulk.clearSelection")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsBulkModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white shadow-xs transition-colors cursor-pointer"
-              >
-                <Trash2 size={13} aria-hidden="true" />
-                {t("bulk.deleteSelected", { count: selectedCount })}
-              </button>
-            </div>
-          )}
-        </div>
+        <HistoryBulkActionBar
+          selectedCount={selectedCount}
+          isAllSelected={isAllSelected}
+          isPartiallySelected={isPartiallySelected}
+          isCompact={isCompact}
+          onToggleSelectAll={handleToggleSelectAll}
+          onClearSelection={handleClearSelection}
+          onOpenBulkDeleteModal={() => setIsBulkModalOpen(true)}
+        />
       )}
 
       {/* WRAPPER COM ROLAGEM HORIZONTAL PARA DESKTOP/TABLET QUANDO NECESSÁRIO */}
@@ -316,6 +330,10 @@ export function HistoryTable({
                         selectable={showSelection}
                         isSelected={Boolean(tx.id && selectedIds.has(tx.id))}
                         onToggleSelect={handleToggleSelect}
+                        dateFormat={dateFormat}
+                        timeFormat={timeFormat}
+                        userTimeZone={userTimeZone}
+                        metadataLabels={metadataLabels}
                       />
                     ))}
                   </div>
@@ -334,6 +352,10 @@ export function HistoryTable({
         anchorRect={anchorRect}
         onRequestDelete={handleRequestDelete}
         suspendDismiss={Boolean(pendingDelete)}
+        dateFormat={dateFormat}
+        timeFormat={timeFormat}
+        userTimeZone={userTimeZone}
+        metadataLabels={metadataLabels}
       />
 
       {/* CONFIRMAÇÃO DE EXCLUSÃO (o extrato é apenas registro: não altera saldo) */}

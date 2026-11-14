@@ -1,7 +1,8 @@
 package com.habitparty.adapters.in.web.dtos.response;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,10 +28,18 @@ public record TransactionHistoryResponseDTO(
     RewardPackageLevel packageLevel,
     List<String> tags,
     String columnName,
-    LocalDateTime createdAt
+    OffsetDateTime createdAt
 ) {
 
   public static TransactionHistoryResponseDTO fromDomain(TransactionHistory tx) {
+    return fromDomain(tx, ZoneId.systemDefault());
+  }
+
+  public static TransactionHistoryResponseDTO fromDomain(TransactionHistory tx, ZoneId userZone) {
+    ZoneId effectiveZone = userZone != null ? userZone : ZoneId.systemDefault();
+    OffsetDateTime zonedCreatedAt = tx.getCreatedAt() != null
+        ? tx.getCreatedAt().atZone(ZoneId.systemDefault()).withZoneSameInstant(effectiveZone).toOffsetDateTime()
+        : null;
     return new TransactionHistoryResponseDTO(
         tx.getId(),
         tx.getReferenceId().orElse(null),
@@ -44,7 +53,7 @@ public record TransactionHistoryResponseDTO(
         tx.getPackageLevelSnapshot().orElse(null),
         tx.getTagsSnapshot().orElse(null),
         tx.getColumnNameSnapshot().orElse(null),
-        tx.getCreatedAt()
+        zonedCreatedAt
     );
   }
 }

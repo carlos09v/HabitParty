@@ -64,6 +64,14 @@ export function getTagLeafLabel(tag: string): string {
 }
 
 /**
+ * Formats a hierarchical tag path as a visual breadcrumb ("Concurso › BB").
+ */
+export function formatTagBreadcrumb(tag: string): string {
+  const segments = getTagSegments(tag);
+  return segments.length > 0 ? segments.join(" › ") : tag;
+}
+
+/**
  * Returns every ancestor path up to and including the tag itself.
  * Example: "Concurso > BB > TI" -> ["Concurso", "Concurso > BB", "Concurso > BB > TI"].
  */

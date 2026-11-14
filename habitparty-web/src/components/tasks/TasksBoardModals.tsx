@@ -2,30 +2,19 @@
 
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import {
   buildColumnContextMenuItems,
-  buildTaskContextMenuItems,
+  TaskModalsHost,
 } from "@/components/tasks/shared";
 import { ContextMenu } from "@/components/ui/ContextMenu";
-import { useIdlePreload } from "@/hooks/useIdlePreload";
-import type { Task } from "@/types/task";
 import type { TasksBoardModalsProps } from "@/types/task-ui";
-import { resolveTaskColumnTitle } from "@/utils/taskMapper";
 
 const CreateBoardColumnModal = dynamic(
   () =>
     import("@/components/tasks/CreateBoardColumnModal").then((mod) => ({
       default: mod.CreateBoardColumnModal,
-    })),
-  { ssr: false },
-);
-
-const CreateTaskModal = dynamic(
-  () =>
-    import("@/components/tasks/CreateTaskModal").then((mod) => ({
-      default: mod.CreateTaskModal,
     })),
   { ssr: false },
 );
@@ -45,28 +34,6 @@ const RoutineColumnsDrawer = dynamic(
     })),
   { ssr: false },
 );
-
-const TaskDetailsPopover = dynamic(
-  () =>
-    import("@/components/tasks/TaskDetailsPopover").then((mod) => ({
-      default: mod.TaskDetailsPopover,
-    })),
-  { ssr: false },
-);
-
-const TaskFocusHistoryModal = dynamic(
-  () =>
-    import("@/components/tasks/TaskFocusHistoryModal").then((mod) => ({
-      default: mod.TaskFocusHistoryModal,
-    })),
-  { ssr: false },
-);
-
-function preloadTasksBoardModalChunks() {
-  void import("@/components/tasks/CreateTaskModal");
-  void import("@/components/tasks/TaskDetailsPopover");
-  void import("@/components/tasks/TaskFocusHistoryModal");
-}
 
 /**
  * Componente modular que isola todos os modais, popovers e menus de contexto do Kanban,
@@ -112,53 +79,14 @@ export const TasksBoardModals = memo(function TasksBoardModals({
   showAllColumns,
   columnWidths,
   onColumnWidthChange,
+  availableTargetWorkspaces,
+  isWorkspaceReadOnly,
+  onMoveColumnToWorkspace,
+  onMoveLockedWorkspace,
 }: TasksBoardModalsProps) {
   const t = useTranslations("tasks.container");
   const tFilters = useTranslations("tasks.filters");
   const tMenus = useTranslations("dashboard.taskShared.contextMenu");
-  useIdlePreload(preloadTasksBoardModalChunks);
-
-  const [focusHistoryTask, setFocusHistoryTask] = useState<Task | null>(null);
-
-  const taskContextMenuItems = useMemo(
-    () =>
-      buildTaskContextMenuItems({
-        task: contextMenu.task,
-        onEdit: (task) => {
-          if (contextMenu.columnId) {
-            setTaskModalState({
-              isOpen: true,
-              columnId: contextMenu.columnId,
-              taskToEdit: task,
-            });
-          }
-        },
-        onDuplicate: (task) => {
-          if (contextMenu.columnId) {
-            handleDuplicateTask(task, contextMenu.columnId);
-          }
-        },
-        onDelete: (task) => {
-          if (contextMenu.columnId) {
-            requestDeleteTask(task, contextMenu.columnId);
-          }
-        },
-        labels: {
-          startFocus: tMenus("startFocus"),
-          edit: tMenus("edit"),
-          duplicate: tMenus("duplicate"),
-          delete: tMenus("delete"),
-        },
-      }),
-    [
-      contextMenu.task,
-      contextMenu.columnId,
-      setTaskModalState,
-      handleDuplicateTask,
-      requestDeleteTask,
-      tMenus,
-    ],
-  );
 
   const handleInsertColumnRelative = useCallback(
     (refColumn: (typeof columns)[number], position: "left" | "right") => {
@@ -191,6 +119,8 @@ export const TasksBoardModals = memo(function TasksBoardModals({
       buildColumnContextMenuItems({
         column: columnContextMenu.column,
         columnWidths,
+        availableWorkspaces: availableTargetWorkspaces,
+        isSourceWorkspaceReadOnly: isWorkspaceReadOnly,
         onColumnWidthChange,
         onEdit: (col) =>
           setColumnModalState({
@@ -200,6 +130,16 @@ export const TasksBoardModals = memo(function TasksBoardModals({
           }),
         onInsertLeft: (col) => handleInsertColumnRelative(col, "left"),
         onInsertRight: (col) => handleInsertColumnRelative(col, "right"),
+        onMoveToWorkspace: onMoveColumnToWorkspace
+          ? (col, targetWorkspaceId, targetWorkspaceName) => {
+              void onMoveColumnToWorkspace(
+                col,
+                targetWorkspaceId,
+                targetWorkspaceName,
+              );
+            }
+          : undefined,
+        onMoveLockedWorkspace,
         onDelete: (col) => setColumnToDelete(col),
         labels: {
           edit: tMenus("edit"),
@@ -210,14 +150,22 @@ export const TasksBoardModals = memo(function TasksBoardModals({
           compact: tMenus("compact"),
           normal: tMenus("normal"),
           wide: tMenus("wide"),
+          moveTo: tMenus("moveTo"),
+          noTargetWorkspaces: tMenus("noTargetWorkspaces"),
+          vipBadge: tMenus("vipBadge"),
+          readOnlyHint: tMenus("readOnlyWorkspaceHint"),
         },
       }),
     [
       columnContextMenu.column,
       columnWidths,
+      availableTargetWorkspaces,
+      isWorkspaceReadOnly,
       onColumnWidthChange,
       setColumnModalState,
       handleInsertColumnRelative,
+      onMoveColumnToWorkspace,
+      onMoveLockedWorkspace,
       setColumnToDelete,
       tMenus,
     ],
@@ -225,12 +173,69 @@ export const TasksBoardModals = memo(function TasksBoardModals({
 
   return (
     <>
-      {/* Menu de Contexto da Tarefa (botão direito) */}
-      <ContextMenu
-        isOpen={contextMenu.isOpen}
-        position={contextMenu.position}
-        onClose={() => setContextMenu((prev) => ({ ...prev, isOpen: false }))}
-        items={taskContextMenuItems}
+      <TaskModalsHost
+        columns={columns}
+        formColumns={formColumns}
+        availableTags={availableTags}
+        defaultColumnId={columns[0]?.id}
+        defaultColumnTitle={t("defaultColumnTitle")}
+        contextMenu={contextMenu}
+        onCloseContextMenu={() =>
+          setContextMenu((prev) => ({ ...prev, isOpen: false }))
+        }
+        selectedTaskDetails={selectedTaskDetails}
+        onCloseTaskDetails={() => setSelectedTaskDetails(null)}
+        taskModalState={taskModalState}
+        onCloseTaskModal={() =>
+          setTaskModalState({
+            isOpen: false,
+            taskToEdit: null,
+            defaultTaskType: undefined,
+            initialTitle: undefined,
+            initialValues: undefined,
+          })
+        }
+        onOpenEditTask={(task, columnId) => {
+          if (columnId) {
+            setTaskModalState({
+              isOpen: true,
+              columnId,
+              taskToEdit: task,
+            });
+          }
+        }}
+        onTaskSaved={handleTaskSaved}
+        onTaskDetailsUpdate={handleTaskDetailsUpdate}
+        onDuplicateTask={(task, columnId) => {
+          if (columnId) {
+            handleDuplicateTask(task, columnId);
+          }
+        }}
+        onRequestDeleteTask={(task, columnId) => {
+          if (columnId) {
+            requestDeleteTask(task, columnId);
+          }
+        }}
+        onToggleComplete={handleToggleComplete}
+        onHabitChange={handleHabitChange}
+        taskToDelete={taskToDelete}
+        deleteHistory={deleteHistory}
+        onDeleteHistoryChange={onDeleteHistoryChange}
+        onConfirmDeleteTask={onConfirmDeleteTask}
+        onCancelDeleteTask={onCancelDeleteTask}
+        deleteModalLabels={{
+          title: t("deleteTaskModal.title"),
+          description: t.rich("deleteTaskModal.description", {
+            title: taskToDelete?.task.title ?? "",
+            bold: (chunks) => (
+              <span className="font-bold text-neutral-100">{chunks}</span>
+            ),
+          }),
+          confirmText: t("deleteTaskModal.confirmText"),
+          cancelText: t("deleteTaskModal.cancelText"),
+          deleteHistoryLabel: t("deleteTaskModal.deleteHistoryLabel"),
+          deleteHistoryHint: t("deleteTaskModal.deleteHistoryHint"),
+        }}
       />
 
       {/* Menu de Contexto da Coluna (3 pontos) */}
@@ -272,29 +277,6 @@ export const TasksBoardModals = memo(function TasksBoardModals({
         />
       )}
 
-      {/* Modal: Excluir Tarefa */}
-      {Boolean(taskToDelete) && (
-        <ConfirmationModal
-          isOpen={Boolean(taskToDelete)}
-          title={t("deleteTaskModal.title")}
-          description={t.rich("deleteTaskModal.description", {
-            title: taskToDelete?.task.title ?? "",
-            bold: (chunks) => (
-              <span className="font-bold text-neutral-100">{chunks}</span>
-            ),
-          })}
-          confirmText={t("deleteTaskModal.confirmText")}
-          cancelText={t("deleteTaskModal.cancelText")}
-          variant="danger"
-          checkboxLabel={t("deleteTaskModal.deleteHistoryLabel")}
-          checkboxHint={t("deleteTaskModal.deleteHistoryHint")}
-          checkboxChecked={deleteHistory}
-          onCheckboxChange={onDeleteHistoryChange}
-          onClose={onCancelDeleteTask}
-          onConfirm={onConfirmDeleteTask}
-        />
-      )}
-
       {/* Modal: Criar / Editar Coluna */}
       {columnModalState.isOpen && (
         <CreateBoardColumnModal
@@ -303,91 +285,6 @@ export const TasksBoardModals = memo(function TasksBoardModals({
           insertTarget={columnModalState.insertTarget}
           onClose={closeColumnModal}
           onSuccess={handleColumnSaved}
-        />
-      )}
-
-      {/* Modal: Criar / Editar Tarefa */}
-      {taskModalState.isOpen && (
-        <CreateTaskModal
-          key={
-            taskModalState.taskToEdit?.id ??
-            `new-${taskModalState.columnId ?? ""}-${taskModalState.defaultTaskType ?? ""}-${taskModalState.initialTitle ?? ""}`
-          }
-          isOpen={taskModalState.isOpen}
-          onClose={() =>
-            setTaskModalState({
-              isOpen: false,
-              taskToEdit: null,
-              defaultTaskType: undefined,
-              initialTitle: undefined,
-              initialValues: undefined,
-            })
-          }
-          columns={formColumns}
-          availableTags={availableTags}
-          defaultColumnId={taskModalState.columnId}
-          defaultTaskType={taskModalState.defaultTaskType}
-          initialTitle={taskModalState.initialTitle}
-          initialValues={taskModalState.initialValues}
-          taskToEdit={taskModalState.taskToEdit}
-          onSuccess={handleTaskSaved}
-        />
-      )}
-
-      {/* Popover Lateral: Detalhes Rápidos da Tarefa */}
-      {selectedTaskDetails && (
-        <TaskDetailsPopover
-          key={selectedTaskDetails.task.id}
-          isOpen={true}
-          onClose={() => setSelectedTaskDetails(null)}
-          task={selectedTaskDetails.task}
-          availableTags={availableTags}
-          columnTitle={resolveTaskColumnTitle(
-            selectedTaskDetails.task,
-            columns,
-            t("defaultColumnTitle"),
-            selectedTaskDetails.columnId,
-          )}
-          anchorRect={selectedTaskDetails.anchorRect}
-          onTaskUpdate={handleTaskDetailsUpdate}
-          onEdit={(task) => {
-            if (selectedTaskDetails) {
-              setTaskModalState({
-                isOpen: true,
-                columnId: selectedTaskDetails.columnId,
-                taskToEdit: task,
-              });
-              setSelectedTaskDetails(null);
-            }
-          }}
-          onDuplicate={(task) => {
-            if (selectedTaskDetails) {
-              handleDuplicateTask(task, selectedTaskDetails.columnId);
-              setSelectedTaskDetails(null);
-            }
-          }}
-          onDelete={(_taskId) => {
-            if (selectedTaskDetails) {
-              requestDeleteTask(
-                selectedTaskDetails.task,
-                selectedTaskDetails.columnId,
-              );
-              setSelectedTaskDetails(null);
-            }
-          }}
-          onToggleComplete={handleToggleComplete}
-          onHabitChange={handleHabitChange}
-          onOpenFocusHistory={(task) => setFocusHistoryTask(task)}
-        />
-      )}
-
-      {/* Modal Dedicado de Histórico de Foco da Tarefa */}
-      {focusHistoryTask && (
-        <TaskFocusHistoryModal
-          isOpen={Boolean(focusHistoryTask)}
-          onClose={() => setFocusHistoryTask(null)}
-          task={focusHistoryTask}
-          onTaskUpdate={handleTaskDetailsUpdate}
         />
       )}
 

@@ -82,7 +82,7 @@ export function awardUserRewards(
   });
 
   if (options?.isTaskCompletion) {
-    store.markStreakSecuredToday(getTodayDateString());
+    store.markStreakSecuredToday(getTodayDateString(new Date(), user.timezone));
   }
 
   if (didLevelUp) {

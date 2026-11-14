@@ -104,8 +104,24 @@ public class TaskAdapter implements TaskRepository {
   }
 
   @Override
+  public List<Task> findRecurringTasksByUserIds(Collection<UUID> userIds) {
+    if (userIds == null || userIds.isEmpty()) {
+      return List.of();
+    }
+    return toDomainListWithoutChecklist(port.findRecurringTasksByUserIds(userIds));
+  }
+
+  @Override
   public List<Task> findOverdueHardcoreTodos(LocalDate today) {
     return toDomainListWithoutChecklist(port.findOverdueHardcoreTodos(today));
+  }
+
+  @Override
+  public List<Task> findOverdueHardcoreTodosByUserIds(Collection<UUID> userIds, LocalDate maxDueDate) {
+    if (userIds == null || userIds.isEmpty()) {
+      return List.of();
+    }
+    return toDomainListWithoutChecklist(port.findOverdueHardcoreTodosByUserIds(userIds, maxDueDate));
   }
 
   @Override

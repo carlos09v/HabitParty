@@ -2,6 +2,7 @@
 
 import { Award, Flame, ListChecks, Timer } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useState } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
@@ -11,20 +12,26 @@ import { formatFocusMinutes } from "@/utils/focusFormatters";
 
 interface FocusMetricsGridProps {
   metrics: FocusMetrics;
-  period: FocusPeriodTab;
-  onPeriodChange: (p: FocusPeriodTab) => void;
+  period?: FocusPeriodTab;
+  onPeriodChange?: (p: FocusPeriodTab) => void;
   isCompact?: boolean;
 }
 
 export function FocusMetricsGrid({
   metrics,
-  period,
+  period: controlledPeriod,
   onPeriodChange,
   isCompact = false,
 }: FocusMetricsGridProps) {
   const t = useTranslations("focus.metrics");
   const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
+  const [internalPeriod, setInternalPeriod] = useState<FocusPeriodTab>("HOJE");
+  const period = controlledPeriod ?? internalPeriod;
+  const handlePeriodChange = (next: FocusPeriodTab) => {
+    setInternalPeriod(next);
+    onPeriodChange?.(next);
+  };
   const isToday = period === "HOJE";
 
   const recordsCount = isToday
@@ -58,7 +65,7 @@ export function FocusMetricsGrid({
         <div className="flex items-center rounded-lg bg-white dark:bg-surface/80 p-0.5 border border-neutral-700 dark:border-primary/30">
           <button
             type="button"
-            onClick={() => onPeriodChange("HOJE")}
+            onClick={() => handlePeriodChange("HOJE")}
             className={cn(
               "px-2.5 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer",
               isToday
@@ -70,7 +77,7 @@ export function FocusMetricsGrid({
           </button>
           <button
             type="button"
-            onClick={() => onPeriodChange("TOTAL")}
+            onClick={() => handlePeriodChange("TOTAL")}
             className={cn(
               "px-2.5 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer",
               !isToday

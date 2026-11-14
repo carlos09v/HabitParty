@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { components } from "@/api/schema";
 import type { FocusActivity, FocusRecord } from "@/types/focus";
 import type { Task, TaskFilterType } from "@/types/task";
+import type { ExperienceMode } from "@/types/ui";
 import type { UserResponseDTO } from "@/types/user";
 
 export type ColumnSummaryDTO = components["schemas"]["BoardColumnSummaryDTO"];
@@ -39,6 +40,7 @@ export interface DashboardMainProps {
   initialTasks?: Task[];
   activeWorkspaceId?: string;
   initialColumns?: ColumnSummaryDTO[];
+  initialVisibleColumnIds?: string[];
   transactions?: TransactionHistoryDTO[];
   user?: UserResponseDTO | null;
 }
@@ -49,10 +51,12 @@ export interface DashboardDailyBriefingProps {
   tasks: Task[];
   transactions: TransactionHistoryDTO[];
   hasOptimisticCompletionToday?: boolean;
+  timezone?: string | null;
 }
 
 export interface DashboardListSummaryProps {
   initialColumns: ColumnSummaryDTO[];
+  initialVisibleColumnIds?: string[];
   columns?: ColumnSummaryDTO[];
   onColumnsChange?: React.Dispatch<React.SetStateAction<ColumnSummaryDTO[]>>;
   onColumnDeleted?: (columnId: string) => void;
@@ -77,6 +81,7 @@ export interface DashboardTasksPanelProps {
 
 export interface DashboardWidgetsDataProps {
   isCompact?: boolean;
+  experienceMode?: ExperienceMode;
   balance?: number;
   weeklyEarnings?: number;
   weeklySpent?: number;
@@ -114,10 +119,12 @@ export interface ActivitiesWidgetProps {
 
 export interface PartyWidgetProps {
   isCompact?: boolean;
+  experienceMode?: ExperienceMode;
 }
 
 export interface TaskTableProps {
   tasks: Task[];
+  columns?: ColumnSummaryDTO[];
   itemsPerPage?: number;
   currentPage?: number;
   activeFilter?: TaskFilterType;
@@ -141,14 +148,4 @@ export interface TaskFiltersProps {
   advancedFilters?: DashboardAdvancedFilters;
   onAdvancedFiltersChange?: (filters: DashboardAdvancedFilters) => void;
   isCompact?: boolean;
-}
-
-export interface TaskPaginationProps {
-  currentPage: number;
-  totalPages: number;
-  totalItems: number;
-  itemsPerPage: number;
-  itemLabel?: string;
-  isCompact?: boolean;
-  onPageChange?: (page: number) => void;
 }

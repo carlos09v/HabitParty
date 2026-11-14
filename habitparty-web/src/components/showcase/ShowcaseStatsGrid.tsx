@@ -1,23 +1,21 @@
-"use client";
-
 import { Flame, Hourglass, Swords, Trophy } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { DEFAULT_MAX_ACHIEVEMENT_POINTS } from "@/constants/achievements";
-import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { ShowcaseStatsResponseDTO } from "@/types/showcase";
 import { cn } from "@/utils";
 
 interface ShowcaseStatsGridProps {
   stats: ShowcaseStatsResponseDTO;
+  isGamified?: boolean;
   isCompact?: boolean;
 }
 
-export function ShowcaseStatsGrid({
+export async function ShowcaseStatsGrid({
   stats,
+  isGamified = true,
   isCompact = false,
 }: ShowcaseStatsGridProps) {
-  const t = useTranslations("showcase.statsGrid");
-  const { isGamified } = useExperienceMode();
+  const t = await getTranslations("showcase.statsGrid");
 
   const focusHours = Math.round((stats.totalFocusMinutes / 60) * 10) / 10;
   const masteryPercent =
@@ -117,7 +115,7 @@ export function ShowcaseStatsGrid({
               <span className="text-lg font-black text-neutral-50 tabular-nums block mt-0.5">
                 {card.value}
               </span>
-              <span className="text-[11px] text-neutral-400 block truncate mt-0.5">
+              <span className="text-tiny text-neutral-400 block truncate mt-0.5">
                 {card.sub}
               </span>
             </div>

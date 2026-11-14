@@ -2,7 +2,6 @@
 
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { restrictToWindowEdges } from "@dnd-kit/modifiers";
-import { Crown, Lock } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -14,17 +13,21 @@ import { RoutineColumn } from "@/components/tasks/RoutineColumn";
 import { RoutineFilters } from "@/components/tasks/RoutineFilters";
 import { RoutineTaskCard } from "@/components/tasks/RoutineTaskCard";
 import { RoutineTaskList } from "@/components/tasks/RoutineTaskList";
+import { WorkspaceReadOnlyBanner } from "@/components/tasks/WorkspaceReadOnlyBanner";
 import { WorkspaceSearchHintBanner } from "@/components/tasks/WorkspaceSearchHintBanner";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
+import { normalizeTaskType } from "@/constants/task";
 import { WELCOME_CARD_DETAILS } from "@/constants/welcomeCards";
 import { useBoardFilters } from "@/hooks/useBoardFilters";
 import { useBoardModals } from "@/hooks/useBoardModals";
 import { useBoardTaskActions } from "@/hooks/useBoardTaskActions";
+import { useMidnightRollover } from "@/hooks/useMidnightRollover";
 import { useRoutineBoardDnd } from "@/hooks/useRoutineBoardDnd";
 import { useRoutineBoardLayout } from "@/hooks/useRoutineBoardLayout";
 import { useRoutineColumns } from "@/hooks/useRoutineColumns";
 import { useTaskDeleteFlow } from "@/hooks/useTaskDeleteFlow";
 import { useViewMode } from "@/hooks/useViewMode";
+import { useWorkspaceWriteGuard } from "@/hooks/useWorkspaceWriteGuard";
 import type { AppLocale } from "@/i18n/config";
 import { useProgressStore } from "@/store/progressStore";
 import { useUserStore } from "@/store/userStore";
@@ -97,15 +100,6 @@ export function TasksBoardContainer({
   }, [workspaceIdProp, activeWorkspaceIdFromStore, isSwitchingWorkspace]);
   const [viewMode, setViewMode] = useViewMode("tasks", "card");
   const [isColumnsDrawerOpen, setIsColumnsDrawerOpen] = useState(false);
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-
-  const activeWorkspaceIndex = useMemo(() => {
-    if (!activeWorkspaceId) return 0;
-    const idx = workspaces.findIndex((w) => w.id === activeWorkspaceId);
-    return idx >= 0 ? idx : 0;
-  }, [workspaces, activeWorkspaceId]);
-
-  const isWorkspaceReadOnly = !is_Premium && activeWorkspaceIndex >= 2;
 
   // 1. Hook de Colunas, Visibilidade e Mutações de Coluna
   const {
@@ -120,6 +114,7 @@ export function TasksBoardContainer({
     handleColumnSaved,
     handleDeleteColumn,
     isDeletingColumn,
+    handleMoveColumnToWorkspace,
     handleColumnReorder,
   } = useRoutineColumns(
     initialColumns,
@@ -131,6 +126,22 @@ export function TasksBoardContainer({
 
   const columnsRef = useRef(columns);
   columnsRef.current = columns;
+
+  const userTimezone = useUserStore((state) => state.user?.timezone);
+  useMidnightRollover(userTimezone, () => {
+    setColumns((prev) =>
+      prev.map((col) => ({
+        ...col,
+        tasks: col.tasks.map((task) => {
+          const type = normalizeTaskType(task);
+          if (type === "daily" || type === "habit") {
+            return { ...task, completed: false, hasClaimedReward: false };
+          }
+          return task;
+        }),
+      })),
+    );
+  });
 
   // 1.1 Hook de Alinhamento e Largura das Colunas do Quadro
   const {
@@ -263,17 +274,33 @@ export function TasksBoardContainer({
     [columnStructureKey, columns],
   );
 
-  const ensureWriteAccess = useCallback(
-    (errorMessage: string): boolean => {
-      if (isWorkspaceReadOnly) {
-        setIsUpgradeModalOpen(true);
-        toast.error(errorMessage);
-        return false;
-      }
-      return true;
-    },
-    [isWorkspaceReadOnly],
-  );
+  const {
+    isWorkspaceReadOnly,
+    isUpgradeModalOpen,
+    setIsUpgradeModalOpen,
+    ensureWriteAccess,
+    availableTargetWorkspaces,
+    handleMoveLockedWorkspace,
+    handleMoveColumnToWorkspaceSafe,
+  } = useWorkspaceWriteGuard({
+    workspaces,
+    activeWorkspaceId,
+    isPremium: is_Premium,
+    onMoveColumnToWorkspace: handleMoveColumnToWorkspace,
+    onColumnMoved: useCallback(
+      (columnId: string) => {
+        setSelectedTaskDetails((prev) =>
+          prev?.columnId === columnId ? null : prev,
+        );
+        setColumnModalState((prev) =>
+          prev.columnToEdit?.id === columnId
+            ? { isOpen: false, columnToEdit: null, insertTarget: null }
+            : prev,
+        );
+      },
+      [setSelectedTaskDetails, setColumnModalState],
+    ),
+  });
 
   const handleOpenCreateColumn = useCallback(() => {
     if (!ensureWriteAccess(t("readOnlyCreateColumnToast"))) {
@@ -395,34 +422,9 @@ export function TasksBoardContainer({
 
       {/* Aviso de Ambiente Preservado em Modo Somente Leitura */}
       {isWorkspaceReadOnly && (
-        <div className="shrink-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 sm:px-4 sm:py-3 rounded-xl bg-amber-500/10 border border-amber-500/35 shadow-xs dark:bg-gold/10 dark:border-gold/40 dark:shadow-glow-gold-xs">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/35 flex items-center justify-center text-amber-700 dark:bg-gold/20 dark:border-gold/40 dark:text-gold shrink-0">
-              <Lock size={16} />
-            </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="text-body-s font-bold text-neutral-100">
-                  {t("readOnlyTitle")}
-                </span>
-                <span className="text-tiny uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-800 border border-amber-500/30 dark:bg-gold/20 dark:text-gold dark:border-gold/30">
-                  VIP
-                </span>
-              </div>
-              <p className="text-xs text-neutral-300">
-                {t("readOnlyDescription")}
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsUpgradeModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold hover:bg-gold-hover text-on-gold font-bold text-xs shadow-xs dark:shadow-glow-gold-xs transition-colors cursor-pointer shrink-0"
-          >
-            <Crown size={14} className="fill-on-gold" />
-            <span>{t("reactivatePremium")}</span>
-          </button>
-        </div>
+        <WorkspaceReadOnlyBanner
+          onOpenUpgrade={() => setIsUpgradeModalOpen(true)}
+        />
       )}
 
       {/* Quadro Kanban ou Visualização em Lista */}
@@ -453,9 +455,7 @@ export function TasksBoardContainer({
           >
             <RoutineBoard
               columns={filteredColumns}
-              setColumns={setColumns}
               visibleColumnIds={visibleColumnIds}
-              maxColumns={maxColumns}
               selectedColumnId={selectedColumnId}
               selectedTaskId={selectedTaskDetails?.task.id}
               deletingTaskIds={checkingDeleteTaskIds}
@@ -464,20 +464,14 @@ export function TasksBoardContainer({
               columnWidths={columnWidths}
               getColumnWidthClass={getColumnWidthClass}
               onAddColumn={handleOpenCreateColumn}
-              onOpenColumnsDrawer={handleOpenColumnsDrawer}
-              onViewModeChange={setViewMode}
               onAddTaskToColumn={handleAddTaskToColumnSafe}
               onQuickCreateTask={handleQuickCreateTaskSafe}
               onOpenDetails={handleOpenDetails}
               onEditTask={handleEditTask}
               onContextMenu={handleOpenTaskContextMenu}
               onOpenColumnMenu={handleOpenColumnContextMenu}
-              onTaskMove={handleTaskMove}
-              onColumnReorder={handleColumnReorder}
               onToggleComplete={handleToggleComplete}
               onHabitChange={handleHabitChange}
-              dndState={boardDnd}
-              onHideColumn={handleHideColumn}
             />
           </section>
 
@@ -530,7 +524,6 @@ export function TasksBoardContainer({
           >
             <RoutineTaskList
               columns={filteredColumns}
-              setColumns={setColumns}
               visibleColumnIds={visibleColumnIds}
               selectedColumnId={selectedColumnId}
               selectedTaskId={selectedTaskDetails?.task.id}
@@ -540,8 +533,6 @@ export function TasksBoardContainer({
               onOpenDetails={handleOpenDetails}
               onEditTask={handleEditTask}
               onContextMenu={handleOpenTaskContextMenu}
-              onTaskMove={handleTaskMove}
-              onColumnReorder={handleColumnReorder}
               onToggleComplete={handleToggleComplete}
               onHabitChange={handleHabitChange}
               dndState={boardDnd}
@@ -591,6 +582,10 @@ export function TasksBoardContainer({
         showAllColumns={showAllColumns}
         columnWidths={columnWidths}
         onColumnWidthChange={setColumnWidth}
+        availableTargetWorkspaces={availableTargetWorkspaces}
+        isWorkspaceReadOnly={isWorkspaceReadOnly}
+        onMoveColumnToWorkspace={handleMoveColumnToWorkspaceSafe}
+        onMoveLockedWorkspace={handleMoveLockedWorkspace}
       />
 
       {isUpgradeModalOpen && (

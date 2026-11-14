@@ -7,19 +7,23 @@ import { cn } from "@/utils";
 interface DescriptionCharCounterProps {
   length: number;
   max?: number;
+  alwaysVisible?: boolean;
   className?: string;
 }
 
 /**
  * Contador de caracteres da descrição exibido apenas quando o texto se aproxima do limite
- * (a partir de TASK_DESCRIPTION_COUNTER_THRESHOLD), evitando poluição visual no uso comum.
+ * (a partir de TASK_DESCRIPTION_COUNTER_THRESHOLD) ou quando `alwaysVisible` é verdadeiro.
  */
 export function DescriptionCharCounter({
   length,
   max = TASK_DESCRIPTION_MAX_LENGTH,
+  alwaysVisible = false,
   className,
 }: DescriptionCharCounterProps) {
-  if (length < max * TASK_DESCRIPTION_COUNTER_THRESHOLD) return null;
+  if (!alwaysVisible && length < max * TASK_DESCRIPTION_COUNTER_THRESHOLD) {
+    return null;
+  }
 
   const isAtLimit = length >= max;
 

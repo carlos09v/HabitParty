@@ -1,6 +1,12 @@
-import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
+"use client";
+
+import { Plus, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import {
+  ChecklistItemRow,
+  useChecklistInlineEdit,
+} from "@/components/tasks/shared/ChecklistEditor";
 import type { ChecklistItem } from "@/types/task";
 import { cn } from "@/utils";
 
@@ -30,45 +36,30 @@ export function TaskDetailsChecklist({
   onDeleteItem,
 }: TaskDetailsChecklistProps) {
   const t = useTranslations("tasks.detailsPopover.checklist");
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [editingText, setEditingText] = useState("");
-  const editInputRef = useRef<HTMLInputElement>(null);
   const newItemInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (editingItemId) {
-      editInputRef.current?.focus();
-      editInputRef.current?.select();
-    }
-  }, [editingItemId]);
+  const handleConfirmUpdate = useCallback(
+    (itemId: string, trimmedName: string) => {
+      onUpdateItem?.(itemId, trimmedName);
+    },
+    [onUpdateItem],
+  );
+
+  const {
+    editingKey: editingItemId,
+    editingText,
+    setEditingText,
+    editInputRef,
+    startEdit,
+    confirmEdit,
+    cancelEdit,
+  } = useChecklistInlineEdit<string>(handleConfirmUpdate);
 
   useEffect(() => {
     if (isAddingItem) {
       newItemInputRef.current?.focus();
     }
   }, [isAddingItem]);
-
-  const handleStartEdit = (item: ChecklistItem) => {
-    if (!item.id) return;
-    setEditingItemId(item.id);
-    setEditingText(item.name || "");
-  };
-
-  const handleConfirmEdit = () => {
-    if (editingItemId) {
-      const trimmed = editingText.trim();
-      if (trimmed) {
-        onUpdateItem?.(editingItemId, trimmed);
-      }
-      setEditingItemId(null);
-      setEditingText("");
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingItemId(null);
-    setEditingText("");
-  };
 
   const completedCount = checklist.filter((i) => i.isCompleted).length;
   const totalCount = checklist.length;
@@ -111,89 +102,28 @@ export function TaskDetailsChecklist({
         )}
       </div>
       <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-0.5">
-        {checklist.map((item) => {
-          const isEditingThis = editingItemId === item.id;
-          return (
-            <div
-              key={item.id}
-              className="flex items-center justify-between gap-2 py-1 px-1 rounded-md hover:bg-surface/70 dark:hover:bg-white/4 group/item transition-colors"
-            >
-              {isEditingThis ? (
-                <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                  <input
-                    ref={editInputRef}
-                    type="text"
-                    value={editingText}
-                    onChange={(e) => setEditingText(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleConfirmEdit();
-                      if (e.key === "Escape") handleCancelEdit();
-                    }}
-                    onBlur={handleConfirmEdit}
-                    className="flex-1 bg-card border border-primary/50 rounded px-1.5 py-0.5 text-xs text-neutral-50 focus:outline-none focus:border-primary dark:bg-background/60 dark:border-gold/60 dark:focus:border-gold min-w-0"
-                  />
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onToggleItem(item.id)}
-                  className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer group/toggle focus:outline-none"
-                >
-                  <span
-                    className={cn(
-                      "w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors shrink-0",
-                      item.isCompleted
-                        ? "bg-gold border-gold text-on-gold"
-                        : "border-neutral-500 bg-card group-hover/toggle:border-primary dark:border-primary/50 dark:bg-primary-dark/40 dark:group-hover/toggle:border-gold",
-                    )}
-                  >
-                    {item.isCompleted && (
-                      <Check size={9} className="stroke-3" />
-                    )}
-                  </span>
-                  <span
-                    className={cn(
-                      "text-xs text-neutral-200 truncate transition-colors group-hover/toggle:text-neutral-50",
-                      item.isCompleted &&
-                        "line-through text-neutral-400 dark:text-neutral-500 group-hover/toggle:text-neutral-300 dark:group-hover/toggle:text-neutral-400",
-                    )}
-                  >
-                    {item.name}
-                  </span>
-                </button>
-              )}
-
-              {!isEditingThis && (
-                <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/item:opacity-100 focus-within:opacity-100 transition-opacity">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleStartEdit(item);
-                    }}
-                    className="p-0.5 rounded text-neutral-400 dark:text-neutral-500 hover:text-primary dark:hover:text-gold transition-colors cursor-pointer shrink-0"
-                    aria-label={t("editItemAria", { name: item.name ?? "" })}
-                    title={t("editItemAria", { name: item.name ?? "" })}
-                  >
-                    <Pencil size={11} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteItem(item.id);
-                    }}
-                    className="p-0.5 rounded text-neutral-500 hover:text-danger-500 transition-colors cursor-pointer shrink-0"
-                    aria-label={t("deleteItemAria", { name: item.name ?? "" })}
-                    title={t("deleteItemAria", { name: item.name ?? "" })}
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {checklist.map((item) => (
+          <ChecklistItemRow
+            key={item.id}
+            item={item}
+            variant="popover"
+            isEditing={editingItemId === item.id}
+            editingText={editingText}
+            editInputRef={editInputRef}
+            onEditingTextChange={setEditingText}
+            onConfirmEdit={confirmEdit}
+            onCancelEdit={cancelEdit}
+            onStartEdit={() => {
+              if (item.id) startEdit(item.id, item.name);
+            }}
+            onToggle={() => onToggleItem(item.id)}
+            onDelete={() => onDeleteItem(item.id)}
+            labels={{
+              editAria: t("editItemAria", { name: item.name ?? "" }),
+              deleteAria: t("deleteItemAria", { name: item.name ?? "" }),
+            }}
+          />
+        ))}
 
         {isAddingItem ? (
           <div className="flex items-center gap-1.5 mt-1">

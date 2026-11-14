@@ -2,7 +2,7 @@
 
 import { FilterX, SlidersHorizontal, Tag } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useId, useState } from "react";
 import {
   STATUS_FILTER_OPTIONS,
   TASK_TYPE_FILTER_OPTIONS,
@@ -24,6 +24,12 @@ import type { RoutineFilterPopoverProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 import { getTagDepth, getTagLeafLabel } from "@/utils/tags";
 
+const UNSELECTED_PILL_CLASSES =
+  "bg-surface border border-neutral-700/70 text-neutral-200 hover:bg-surface-hover dark:border-transparent dark:bg-white/5 dark:text-neutral-300 dark:hover:bg-white/10";
+const SELECTED_PILL_CLASSES = "bg-gold text-on-gold font-bold";
+const PILL_FOCUS_CLASSES =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60";
+
 export function RoutineFilterPopover({
   filters = DEFAULT_BOARD_FILTERS,
 
@@ -35,6 +41,19 @@ export function RoutineFilterPopover({
   const t = useTranslations("tasks.filters.popover");
   const { isGamified } = useExperienceMode();
   const [showFilterPopover, setShowFilterPopover] = useState(false);
+  const popoverId = useId();
+
+  useEffect(() => {
+    if (!showFilterPopover) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        setShowFilterPopover(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showFilterPopover]);
 
   const activeFiltersCount =
     (filters.taskType !== "all" ? 1 : 0) +
@@ -63,19 +82,23 @@ export function RoutineFilterPopover({
         type="button"
         onClick={() => setShowFilterPopover(!showFilterPopover)}
         aria-expanded={showFilterPopover}
+        aria-controls={popoverId}
         className={cn(
-          "flex items-center gap-1.5 rounded-lg border font-medium transition-colors cursor-pointer select-none",
+          "flex items-center gap-1.5 rounded-lg border font-medium transition-colors cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70",
           isCompact ? "px-2.5 py-1.5 text-xs" : "px-3 py-2 text-body-s",
           activeFiltersCount > 0
-            ? "bg-gold/15 border-gold/60 text-gold-pressed shadow-glow-gold-xs"
-            : "bg-surface border-white/15 text-neutral-200 hover:text-neutral-50 hover:bg-surface-hover hover:border-white/25",
+            ? "bg-amber-500/15 border-amber-500/50 text-gold-ink shadow-glow-gold-xs dark:bg-gold/15 dark:border-gold/60 dark:text-gold-pressed"
+            : "bg-surface border-neutral-700 text-neutral-200 hover:text-neutral-50 hover:bg-surface-hover hover:border-neutral-600 dark:border-white/15 dark:hover:border-white/25",
         )}
       >
         <SlidersHorizontal
           size={isCompact ? 13 : 15}
+          aria-hidden="true"
           className={cn(
             "shrink-0",
-            activeFiltersCount > 0 ? "text-gold" : "text-neutral-300",
+            activeFiltersCount > 0
+              ? "text-gold-ink dark:text-gold"
+              : "text-neutral-300",
           )}
         />
         <span>{t("triggerLabel")}</span>
@@ -95,20 +118,29 @@ export function RoutineFilterPopover({
             onClick={() => setShowFilterPopover(false)}
           />
 
-          <div className="absolute left-0 top-full mt-2 w-80 rounded-xl bg-popover border border-white/20 p-4 shadow-popover-dark z-50 animate-in fade-in zoom-in-95 duration-150">
+          <div
+            id={popoverId}
+            role="dialog"
+            aria-label={t("title")}
+            className="absolute left-0 top-full mt-2 w-80 rounded-xl bg-popover border border-neutral-700 dark:border-white/20 p-4 shadow-lg dark:shadow-popover-dark z-50 animate-in fade-in zoom-in-95 duration-150"
+          >
             {/* Cabeçalho do Popover */}
-            <div className="flex items-center justify-between pb-2 border-b border-white/10 mb-3">
+            <div className="flex items-center justify-between pb-2 border-b border-neutral-700 dark:border-white/10 mb-3">
               <span className="text-xs font-bold text-neutral-100 flex items-center gap-1.5">
-                <SlidersHorizontal size={13} className="text-gold" />
+                <SlidersHorizontal
+                  size={13}
+                  className="text-gold-ink dark:text-gold"
+                  aria-hidden="true"
+                />
                 {t("title")}
               </span>
               {activeFiltersCount > 0 && (
                 <button
                   type="button"
                   onClick={handleResetFilters}
-                  className="flex items-center gap-1 text-tiny text-neutral-400 hover:text-danger-500 transition-colors cursor-pointer"
+                  className="flex items-center gap-1 text-tiny text-neutral-400 hover:text-danger-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-danger-500 rounded transition-colors cursor-pointer"
                 >
-                  <FilterX size={12} />
+                  <FilterX size={12} aria-hidden="true" />
                   <span>{t("clear")}</span>
                 </button>
               )}
@@ -125,6 +157,7 @@ export function RoutineFilterPopover({
                     <button
                       key={opt.id}
                       type="button"
+                      aria-pressed={filters.taskType === opt.id}
                       onClick={() =>
                         updateFilter(
                           "taskType",
@@ -133,9 +166,10 @@ export function RoutineFilterPopover({
                       }
                       className={cn(
                         "px-2 py-1 rounded-md text-xs font-medium transition-colors text-center cursor-pointer",
+                        PILL_FOCUS_CLASSES,
                         filters.taskType === opt.id
-                          ? "bg-gold text-on-gold font-bold shadow-xs"
-                          : "bg-white/5 text-neutral-300 hover:bg-white/10",
+                          ? `${SELECTED_PILL_CLASSES} shadow-xs`
+                          : UNSELECTED_PILL_CLASSES,
                       )}
                     >
                       {t(`types.${opt.id as "all" | TaskTypeOption}`)}
@@ -152,12 +186,14 @@ export function RoutineFilterPopover({
                 <div className="flex flex-wrap gap-1">
                   <button
                     type="button"
+                    aria-pressed={filters.difficulty === "all"}
                     onClick={() => updateFilter("difficulty", "all")}
                     className={cn(
                       "px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer",
+                      PILL_FOCUS_CLASSES,
                       filters.difficulty === "all"
-                        ? "bg-gold text-on-gold font-bold"
-                        : "bg-white/5 text-neutral-300 hover:bg-white/10",
+                        ? SELECTED_PILL_CLASSES
+                        : UNSELECTED_PILL_CLASSES,
                     )}
                   >
                     {t("allOptions")}
@@ -166,6 +202,7 @@ export function RoutineFilterPopover({
                     <button
                       key={diff.id}
                       type="button"
+                      aria-pressed={filters.difficulty === diff.id}
                       onClick={() =>
                         updateFilter(
                           "difficulty",
@@ -174,9 +211,10 @@ export function RoutineFilterPopover({
                       }
                       className={cn(
                         "px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer",
+                        PILL_FOCUS_CLASSES,
                         filters.difficulty === diff.id
-                          ? "bg-gold text-on-gold font-bold"
-                          : "bg-white/5 text-neutral-300 hover:bg-white/10",
+                          ? SELECTED_PILL_CLASSES
+                          : UNSELECTED_PILL_CLASSES,
                       )}
                     >
                       {t(`difficulties.${diff.id}`)}
@@ -193,12 +231,14 @@ export function RoutineFilterPopover({
                 <div className="flex flex-wrap gap-1">
                   <button
                     type="button"
+                    aria-pressed={filters.priority === "all"}
                     onClick={() => updateFilter("priority", "all")}
                     className={cn(
                       "px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer",
+                      PILL_FOCUS_CLASSES,
                       filters.priority === "all"
-                        ? "bg-gold text-on-gold font-bold"
-                        : "bg-white/5 text-neutral-300 hover:bg-white/10",
+                        ? SELECTED_PILL_CLASSES
+                        : UNSELECTED_PILL_CLASSES,
                     )}
                   >
                     {t("allOptions")}
@@ -207,14 +247,16 @@ export function RoutineFilterPopover({
                     <button
                       key={p.id}
                       type="button"
+                      aria-pressed={filters.priority === p.id}
                       onClick={() =>
                         updateFilter("priority", p.id as TaskPriorityOption)
                       }
                       className={cn(
                         "px-2 py-0.5 rounded-md text-xs font-medium transition-colors cursor-pointer",
+                        PILL_FOCUS_CLASSES,
                         filters.priority === p.id
-                          ? "bg-gold text-on-gold font-bold"
-                          : "bg-white/5 text-neutral-300 hover:bg-white/10",
+                          ? SELECTED_PILL_CLASSES
+                          : UNSELECTED_PILL_CLASSES,
                       )}
                     >
                       {t(`priorities.${toPriorityMessageKey(p.id)}`)}
@@ -233,6 +275,7 @@ export function RoutineFilterPopover({
                     <button
                       key={st.id}
                       type="button"
+                      aria-pressed={filters.status === st.id}
                       onClick={() =>
                         updateFilter(
                           "status",
@@ -241,9 +284,10 @@ export function RoutineFilterPopover({
                       }
                       className={cn(
                         "px-2 py-1 rounded-md text-xs font-medium transition-colors text-center cursor-pointer",
+                        PILL_FOCUS_CLASSES,
                         filters.status === st.id
-                          ? "bg-gold text-on-gold font-bold shadow-xs"
-                          : "bg-white/5 text-neutral-300 hover:bg-white/10",
+                          ? `${SELECTED_PILL_CLASSES} shadow-xs`
+                          : UNSELECTED_PILL_CLASSES,
                       )}
                     >
                       {t(
@@ -256,19 +300,21 @@ export function RoutineFilterPopover({
 
               {/* 5. Tags (se houver disponíveis no quadro) */}
               {availableTags.length > 0 && (
-                <div className="flex flex-col gap-1.5 pt-1 border-t border-white/5">
+                <div className="flex flex-col gap-1.5 pt-1 border-t border-neutral-700 dark:border-white/5">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-label-g font-semibold text-neutral-400 flex items-center gap-1">
-                      <Tag size={11} /> {t("tagsLabel")}
+                      <Tag size={11} aria-hidden="true" /> {t("tagsLabel")}
                     </span>
                     <button
                       type="button"
+                      aria-pressed={filters.tag === null}
                       onClick={() => updateFilter("tag", null)}
                       className={cn(
                         "px-2 py-0.5 rounded-full text-tiny font-medium transition-colors cursor-pointer",
+                        PILL_FOCUS_CLASSES,
                         filters.tag === null
-                          ? "bg-gold text-on-gold font-bold"
-                          : "bg-white/5 text-neutral-300 hover:bg-white/10",
+                          ? SELECTED_PILL_CLASSES
+                          : UNSELECTED_PILL_CLASSES,
                       )}
                     >
                       {t("allOptions")}
@@ -284,6 +330,7 @@ export function RoutineFilterPopover({
                         <button
                           key={tagItem}
                           type="button"
+                          aria-pressed={isSelected}
                           onClick={() =>
                             updateFilter("tag", isSelected ? null : tagItem)
                           }
@@ -291,18 +338,20 @@ export function RoutineFilterPopover({
                           style={{ paddingLeft: `${8 + depth * 14}px` }}
                           className={cn(
                             "w-full text-left pr-2 py-1 rounded-md text-tiny font-medium transition-colors cursor-pointer flex items-center justify-between gap-2 min-w-0",
+                            PILL_FOCUS_CLASSES,
                             isSelected
-                              ? "bg-gold text-on-gold font-bold"
-                              : "bg-white/5 text-neutral-300 hover:bg-white/10",
+                              ? SELECTED_PILL_CLASSES
+                              : UNSELECTED_PILL_CLASSES,
                           )}
                         >
                           <span className="flex items-center gap-1.5 min-w-0">
                             <span
+                              aria-hidden="true"
                               className={cn(
                                 "shrink-0",
                                 isSelected
                                   ? "text-on-gold/80"
-                                  : "text-neutral-500",
+                                  : "text-neutral-400 dark:text-neutral-500",
                               )}
                             >
                               {depth > 0 ? "↳" : "#"}
@@ -312,10 +361,10 @@ export function RoutineFilterPopover({
                           {count !== undefined && (
                             <span
                               className={cn(
-                                "shrink-0 tabular-nums text-[10px] px-1.5 py-0.2 rounded-full",
+                                "shrink-0 tabular-nums text-tiny px-1.5 py-0.5 rounded-full",
                                 isSelected
                                   ? "bg-on-gold/15 text-on-gold font-bold"
-                                  : "bg-white/8 text-neutral-400",
+                                  : "bg-neutral-700/60 dark:bg-white/8 text-neutral-300 dark:text-neutral-400",
                               )}
                             >
                               {count}

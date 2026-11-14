@@ -6,7 +6,12 @@ export { parseLocalDate, parseServerDate, toLocalISOString } from "./date";
 
 import type { AppLocale } from "@/i18n/config";
 import type { DateFormat, TimeFormat } from "@/types/ui";
-import { formatShortDate, formatTimeDisplay, parseLocalDate } from "./date";
+import {
+  formatShortDate,
+  formatTimeDisplay,
+  parseLocalDate,
+  parseServerDate,
+} from "./date";
 
 /**
  * Formata segundos no padrão MM:SS (ex: 25:00 ou 04:05).
@@ -80,18 +85,27 @@ export function formatFocusDate(
   locale: AppLocale = "pt-BR",
   dateFormat?: DateFormat,
   timeFormat?: TimeFormat,
+  timeZone?: string | null,
 ): string {
   if (!dateStr) return "-";
   try {
-    const d = parseLocalDate(dateStr);
+    const hasExplicitTz = /([zZ]|[+-]\d{2}(?::?\d{2})?)$/.test(dateStr.trim());
+    const d = hasExplicitTz
+      ? parseServerDate(dateStr)
+      : parseLocalDate(dateStr);
     if (!d) return dateStr;
     const day = formatShortDate(dateStr, {
       includeYear: false,
-      isLocal: true,
+      isLocal: !hasExplicitTz,
       locale,
       dateFormat,
+      timeZone,
     });
-    const time = formatTimeDisplay(d, { timeFormat, locale });
+    const time = formatTimeDisplay(d, {
+      timeFormat,
+      locale,
+      ...(hasExplicitTz ? { timeZone } : {}),
+    });
     return locale === "en" ? `${day} at ${time}` : `${day} às ${time}`;
   } catch {
     return dateStr;

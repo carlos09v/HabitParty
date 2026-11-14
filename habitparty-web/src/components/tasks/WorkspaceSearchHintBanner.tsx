@@ -151,7 +151,7 @@ export function WorkspaceSearchHintBanner({
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-800 dark:bg-gold/15 dark:hover:bg-gold/25 dark:border-gold/40 dark:text-gold transition-colors cursor-pointer"
               >
                 <span>{item.workspaceName}</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500/20 dark:bg-gold/20">
+                <span className="px-1.5 py-0.5 rounded-full text-tiny font-bold bg-amber-500/20 dark:bg-gold/20">
                   {item.count}
                 </span>
               </button>

@@ -173,6 +173,16 @@
     "resendDefaultTarget": "your inbox",
     "resendErrorToast": "Could not resend the verification email."
   },
+  "timezoneAlert": {
+    "ariaLabel": "Timezone mismatch notice",
+    "title": "Your timezone seems different from your browser.",
+    "description": "Your account is set to {currentTz}, while this device is in {browserTz}.",
+    "updateButton": "Update to {browserTz}",
+    "updating": "Updating...",
+    "dismissAria": "Dismiss timezone notice",
+    "updateSuccessToast": "Timezone updated to {timezone}!",
+    "updateErrorToast": "Could not update your timezone right now."
+  },
   "paymentFeedback": {
     "successToast": "Congratulations! Your Cosmic Guardian Premium subscription is now active!",
     "waitingCompensationToast": "Waiting for payment confirmation...",

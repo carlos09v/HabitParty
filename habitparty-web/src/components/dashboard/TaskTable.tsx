@@ -1,6 +1,9 @@
+"use client";
+
 import { CalendarCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { TaskRow } from "@/components/tasks/shared/TaskRow";
+import { Pagination } from "@/components/ui/Pagination";
 import {
   DASHBOARD_EMPTY_MESSAGES,
   isDashboardStandardFilterId,
@@ -8,15 +11,17 @@ import {
 import { TASK_TABLE_GRID_COLS } from "@/constants/task";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import type { AppLocale } from "@/i18n/config";
+import { useUserStore } from "@/store/userStore";
 import type { TaskTableProps } from "@/types/dashboard";
 import { cn } from "@/utils";
 import { formatShortDate } from "@/utils/date";
-import { TaskPagination } from "./TaskPagination";
+import { resolveTaskColumnTitle } from "@/utils/taskMapper";
 
 export function TaskTable({
   itemsPerPage = 3,
   currentPage = 1,
   tasks,
+  columns,
   activeFilter = "today",
   onToggle,
   onHabitChange,
@@ -31,6 +36,7 @@ export function TaskTable({
   const t = useTranslations("dashboard.taskTable");
   const locale = useLocale() as AppLocale;
   const { dateFormat } = useDateFormat();
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
   const totalItems = tasks.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
@@ -38,7 +44,11 @@ export function TaskTable({
   const startIndex = (safeCurrentPage - 1) * itemsPerPage;
   const paginatedTasks = tasks.slice(startIndex, startIndex + itemsPerPage);
 
-  const formattedDate = formatShortDate(selectedDate, { locale, dateFormat });
+  const formattedDate = formatShortDate(selectedDate, {
+    locale,
+    dateFormat,
+    timeZone: userTimeZone,
+  });
 
   const EmptyIcon = isDashboardStandardFilterId(activeFilter)
     ? DASHBOARD_EMPTY_MESSAGES[activeFilter].icon
@@ -119,6 +129,11 @@ export function TaskTable({
             >
               <TaskRow
                 task={task}
+                columnTitle={
+                  columns
+                    ? resolveTaskColumnTitle(task, columns, "")
+                    : undefined
+                }
                 activeFilter={activeFilter}
                 selectedDate={selectedDate}
                 isDeleteChecking={Boolean(deletingTaskIds?.has(task.id))}
@@ -135,13 +150,30 @@ export function TaskTable({
       )}
 
       {totalItems > 0 && (
-        <TaskPagination
+        <Pagination
           currentPage={safeCurrentPage}
           totalPages={totalPages}
           totalItems={totalItems}
           itemsPerPage={itemsPerPage}
+          itemLabel={t("paginationItemLabel")}
           isCompact={isCompact}
-          onPageChange={onPageChange}
+          onPageChange={(newPage) => {
+            if (newPage < 1 || newPage > totalPages) return;
+            onPageChange?.(newPage);
+            if (typeof window !== "undefined") {
+              const url = new URL(window.location.href);
+              if (newPage <= 1) {
+                url.searchParams.delete("page");
+              } else {
+                url.searchParams.set("page", String(newPage));
+              }
+              window.history.replaceState(
+                window.history.state,
+                "",
+                `${url.pathname}${url.search}${url.hash}`,
+              );
+            }
+          }}
         />
       )}
     </section>

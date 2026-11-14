@@ -1,6 +1,7 @@
 package com.habitparty.adapters.out.export;
 
 import java.io.Writer;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.function.IntFunction;
 
@@ -18,7 +19,13 @@ public class CsvTransactionExporterAdapter implements TransactionCsvExporterPort
 
   @Override
   public void exportTransactions(IntFunction<Page<TransactionHistory>> pageProvider, Writer writer) {
+    exportTransactions(pageProvider, writer, ZoneId.systemDefault());
+  }
+
+  @Override
+  public void exportTransactions(IntFunction<Page<TransactionHistory>> pageProvider, Writer writer, ZoneId userZone) {
     DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+    ZoneId effectiveZone = userZone != null ? userZone : ZoneId.systemDefault();
 
     CSVFormat format = CSVFormat.EXCEL.builder()
         .setHeader("Nome", "Ouro", "XP", "Tipo", "Dificuldade", "Preço Original", "Data")
@@ -33,6 +40,12 @@ public class CsvTransactionExporterAdapter implements TransactionCsvExporterPort
         transactionPage = pageProvider.apply(page);
 
         for (TransactionHistory tx : transactionPage.getContent()) {
+          String formattedCreatedAt = tx.getCreatedAt() != null
+              ? tx.getCreatedAt()
+                  .atZone(ZoneId.systemDefault())
+                  .withZoneSameInstant(effectiveZone)
+                  .format(dateFormatter)
+              : "";
           printer.printRecord(
               sanitizeCsvCell(tx.getNameSnapshot()),
               tx.getGoldAmount().map(Object::toString).orElse("0"),
@@ -40,7 +53,7 @@ public class CsvTransactionExporterAdapter implements TransactionCsvExporterPort
               tx.getTransactionType().getDescription(),
               tx.getDifficultySnapshot().map(TaskDifficulty::getDescription).orElse("-"),
               tx.getPriceSnapshot().map(Object::toString).orElse(""),
-              tx.getCreatedAt().format(dateFormatter)
+              formattedCreatedAt
           );
         }
 

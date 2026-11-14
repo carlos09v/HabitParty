@@ -1,8 +1,9 @@
 "use client";
 
-import { Coins, Sparkles, Zap } from "lucide-react";
+import { Sparkles, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { CoinIcon } from "@/components/ui/CoinIcon";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
 import { soundEffects } from "@/utils/soundEffects";
 import { DemoDailyCard } from "./demo/DemoDailyCard";
@@ -34,26 +35,39 @@ export function LandingInteractiveDemo() {
     return () => clearInterval(interval);
   }, [isTimerRunning]);
 
-  // Efeito de feedback flutuante
+  // Efeito de feedback flutuante com limpeza segura de timeout
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const showToast = (msg: string) => {
+  const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = setTimeout(() => {
       setToastMessage(null);
+      toastTimeoutRef.current = null;
     }, 2500);
-  };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleWaterPlus = (e: React.MouseEvent) => {
     setWaterCount((prev) => prev + 1);
-    const newXp = xp + 15;
-    const newGold = gold + 5;
-    setGold(newGold);
+    setGold((prev) => prev + 5);
 
+    const newXp = xp + 15;
     if (newXp >= maxXp) {
-      setLevel((prev) => prev + 1);
+      const nextLevel = level + 1;
+      setLevel(nextLevel);
       setXp(newXp - maxXp);
-      showToast(t("toasts.habitLevelUp", { level: level + 1 }));
+      showToast(t("toasts.habitLevelUp", { level: nextLevel }));
       triggerCelebrationConfetti(e.clientX, e.clientY);
       soundEffects.playTaskCompleteSound();
     } else {
@@ -78,9 +92,10 @@ export function LandingInteractiveDemo() {
       const newXp = xp + 60;
 
       if (newXp >= maxXp) {
-        setLevel((prev) => prev + 1);
+        const nextLevel = level + 1;
+        setLevel(nextLevel);
         setXp(newXp - maxXp);
-        showToast(t("toasts.dailyLevelUp", { level: level + 1 }));
+        showToast(t("toasts.dailyLevelUp", { level: nextLevel }));
       } else {
         setXp(newXp);
         showToast(t("toasts.dailyCompleted"));
@@ -137,7 +152,7 @@ export function LandingInteractiveDemo() {
             </div>
             <div className="flex items-center gap-4 text-xs font-medium text-neutral-200">
               <span className="flex items-center gap-1 text-gold font-bold">
-                <Coins className="w-4 h-4 text-gold" />
+                <CoinIcon size={14} variant="coin" />
                 {t("goldStatus", { gold })}
               </span>
               <span className="flex items-center gap-1 text-primary dark:text-primary-light font-bold">

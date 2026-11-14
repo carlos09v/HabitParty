@@ -30,6 +30,7 @@ import {
   formatTimeDisplay,
   formatTimeHHMM,
   generateCalendarGrid,
+  getDatePartsInTimeZone,
   getFullMonths,
   getOffsetDateString,
   getShortWeekDays,
@@ -111,6 +112,8 @@ export function DatePicker({
   const isControlled = value !== undefined;
   const currentValue = isControlled ? value : internalValue;
 
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
+
   const selectedParts = useMemo(
     () => parseDateParts(currentValue),
     [currentValue],
@@ -118,18 +121,15 @@ export function DatePicker({
 
   const today = useMemo(() => {
     const now = new Date();
+    const parts = getDatePartsInTimeZone(now, userTimeZone);
     return {
-      year: now.getFullYear(),
-      month: now.getMonth(),
-      day: now.getDate(),
-      isoString: formatDateParts(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-      ),
-      tomorrowIso: getOffsetDateString(1, now),
+      year: parts.year,
+      month: parts.month - 1,
+      day: parts.day,
+      isoString: formatDateParts(parts.year, parts.month - 1, parts.day),
+      tomorrowIso: getOffsetDateString(1, now, userTimeZone),
     };
-  }, []);
+  }, [userTimeZone]);
 
   const resolveDefaultView = useCallback(() => {
     if (selectedParts) {
@@ -304,7 +304,13 @@ export function DatePicker({
   };
 
   const handleSetQuickDate = (offsetDays: number) => {
-    updateValue(getOffsetDateString(offsetDays));
+    updateValue(
+      getOffsetDateString(
+        offsetDays,
+        new Date(),
+        useUserStore.getState().user?.timezone,
+      ),
+    );
     if (isSubOverlayOpen) {
       return;
     }
@@ -315,7 +321,10 @@ export function DatePicker({
 
   const handleSetNow = () => {
     applyEventSchedulePatch({
-      dueTime: formatTimeHHMM(new Date()),
+      dueTime: formatTimeHHMM(
+        new Date(),
+        useUserStore.getState().user?.timezone,
+      ),
       startTime: "",
       endTime: "",
       isAllDay: false,
@@ -323,9 +332,12 @@ export function DatePicker({
   };
 
   const handleApplyDurationPreset = (minutesToAdd: number) => {
+    const { hour: nowHour } = getDatePartsInTimeZone(
+      new Date(),
+      useUserStore.getState().user?.timezone,
+    );
     const baseStart =
-      startTimeValue ||
-      `${String((new Date().getHours() + 1) % 24).padStart(2, "0")}:00`;
+      startTimeValue || `${String((nowHour + 1) % 24).padStart(2, "0")}:00`;
     const startMin = parseTimeToMinutes(baseStart) ?? 0;
     const endMin = Math.min(1439, startMin + minutesToAdd);
     applyEventSchedulePatch({
@@ -341,8 +353,9 @@ export function DatePicker({
       generateCalendarGrid(viewYear, viewMonth, currentValue, {
         minDate,
         maxDate,
+        timeZone: userTimeZone,
       }),
-    [viewYear, viewMonth, currentValue, minDate, maxDate],
+    [viewYear, viewMonth, currentValue, minDate, maxDate, userTimeZone],
   );
 
   const yearOptions = useMemo(() => {
@@ -375,9 +388,18 @@ export function DatePicker({
         includeYear: true,
         locale,
         dateFormat,
+        timeZone: userTimeZone,
       }) || currentValue
     );
-  }, [currentValue, today.isoString, today.tomorrowIso, locale, dateFormat, t]);
+  }, [
+    currentValue,
+    today.isoString,
+    today.tomorrowIso,
+    locale,
+    dateFormat,
+    userTimeZone,
+    t,
+  ]);
 
   const formattedTime = useMemo(
     () =>
@@ -502,7 +524,7 @@ export function DatePicker({
               {shortWeekDays.map((day) => (
                 <span
                   key={day}
-                  className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider"
+                  className="text-tiny font-semibold text-neutral-400 uppercase tracking-wider"
                 >
                   {day}
                 </span>
@@ -580,18 +602,18 @@ export function DatePicker({
                         }
                         hourPopover.open();
                       }}
-                      className="flex items-center justify-between flex-1 text-left text-[11px] font-semibold text-neutral-200 hover:text-gold transition-colors cursor-pointer min-w-0"
+                      className="flex items-center justify-between flex-1 text-left text-label-g font-semibold text-neutral-200 hover:text-gold-ink dark:hover:text-gold transition-colors cursor-pointer min-w-0"
                     >
                       <span className="flex items-center gap-1.5 truncate">
                         <Clock size={12} className="text-gold shrink-0" />
                         <span>{t("timeLabel")}</span>
                         {formattedTime && (
-                          <span className="px-1.5 py-0.2 rounded bg-gold/15 text-gold text-[10px] font-bold tabular-nums">
+                          <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-gold-ink dark:bg-gold/15 dark:text-gold text-tiny font-bold tabular-nums">
                             {formattedTime}
                           </span>
                         )}
                       </span>
-                      <span className="text-[10px] text-neutral-400 font-normal">
+                      <span className="text-tiny text-neutral-400 font-normal">
                         {timeValue ? "" : t("addTimePlaceholder")}
                       </span>
                     </button>
@@ -671,7 +693,7 @@ export function DatePicker({
                         />
 
                         {/* Footer do Overlay de Hora */}
-                        <div className="flex items-center justify-between pt-2 mt-2 border-t border-white/10 text-[11px] gap-1.5">
+                        <div className="flex items-center justify-between pt-2 mt-2 border-t border-neutral-700 dark:border-white/10 text-label-g gap-1.5">
                           <div className="flex items-center gap-1.5">
                             <button
                               type="button"
@@ -764,7 +786,7 @@ export function DatePicker({
                         }
                         eventPopover.open();
                       }}
-                      className="flex items-center justify-between flex-1 text-left text-[11px] font-semibold text-neutral-200 hover:text-info transition-colors cursor-pointer min-w-0"
+                      className="flex items-center justify-between flex-1 text-left text-label-g font-semibold text-neutral-200 hover:text-info transition-colors cursor-pointer min-w-0"
                     >
                       <span className="flex items-center gap-1.5 truncate">
                         <CalendarClock
@@ -777,7 +799,7 @@ export function DatePicker({
                           className="text-gold fill-gold shrink-0"
                         />
                         {hasEventValue && (
-                          <span className="px-1.5 py-0.2 rounded bg-info/15 text-info text-[10px] font-bold tabular-nums truncate max-w-[120px]">
+                          <span className="px-1.5 py-0.5 rounded bg-info/15 text-info text-tiny font-bold tabular-nums truncate max-w-[120px]">
                             {allDayValue
                               ? t("allDayBadge")
                               : formattedStart && formattedEnd
@@ -786,7 +808,7 @@ export function DatePicker({
                           </span>
                         )}
                       </span>
-                      <span className="text-[10px] text-neutral-400 font-normal">
+                      <span className="text-tiny text-neutral-400 font-normal">
                         {hasEventValue ? "" : t("addEventPlaceholder")}
                       </span>
                     </button>
@@ -921,7 +943,7 @@ export function DatePicker({
                             <div className="flex flex-col gap-2.5">
                               <div className="grid grid-cols-2 gap-2">
                                 <div>
-                                  <span className="text-[10px] font-semibold text-neutral-300 block mb-1">
+                                  <span className="text-tiny font-semibold text-neutral-300 block mb-1">
                                     {t("startTimeLabel")}
                                   </span>
                                   <TimePicker
@@ -959,7 +981,7 @@ export function DatePicker({
                                   />
                                 </div>
                                 <div>
-                                  <span className="text-[10px] font-semibold text-neutral-300 block mb-1">
+                                  <span className="text-tiny font-semibold text-neutral-300 block mb-1">
                                     {t("endTimeLabel")}
                                   </span>
                                   <TimePicker
@@ -986,7 +1008,7 @@ export function DatePicker({
 
                               {/* Presets de duração rápida */}
                               <div className="pt-2 border-t border-white/5 flex flex-col gap-1.5">
-                                <span className="text-[10px] font-medium text-neutral-400">
+                                <span className="text-tiny font-medium text-neutral-400">
                                   {t("durationLabel")}
                                 </span>
                                 <div className="grid grid-cols-4 gap-1.5">
@@ -1011,7 +1033,7 @@ export function DatePicker({
                         </div>
 
                         {/* Footer do Overlay de Evento */}
-                        <div className="flex items-center justify-between pt-2 border-t border-white/10 text-[11px] gap-1.5">
+                        <div className="flex items-center justify-between pt-2 border-t border-neutral-700 dark:border-white/10 text-label-g gap-1.5">
                           <div>
                             {hasEventValue && (
                               <button
@@ -1048,7 +1070,7 @@ export function DatePicker({
             )}
 
             {/* Rodapé com Atalhos Rápidos */}
-            <div className="flex items-center justify-between pt-2.5 mt-2 border-t border-white/10 text-[11px]">
+            <div className="flex items-center justify-between pt-2.5 mt-2 border-t border-neutral-700 dark:border-white/10 text-label-g">
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"

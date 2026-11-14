@@ -158,6 +158,11 @@ export function FocusContainer({
   const [pendingSwitchMode, setPendingSwitchMode] =
     useState<FocusRecordType | null>(null);
 
+  const handleSessionSaved = useCallback(() => {
+    setSelectedActivityId(null);
+    setSelectedBackpackItemId(null);
+  }, []);
+
   // Controles e ações do timer desacoplados de variáveis de ticking a cada segundo e de sessionNotes.
   const {
     isActive,
@@ -179,10 +184,7 @@ export function FocusContainer({
     syncTargetMetadata,
     completeSession,
   } = useFocusTimerControls({
-    onSessionSaved: () => {
-      setSelectedActivityId(null);
-      setSelectedBackpackItemId(null);
-    },
+    onSessionSaved: handleSessionSaved,
   });
 
   const {
@@ -455,15 +457,9 @@ export function FocusContainer({
     setPendingSwitchTarget(null);
   };
 
-  const handleSaveAndStartNew = async (): Promise<boolean> => {
-    const targetToStart = pendingSwitchTarget;
-    if (!targetToStart) return false;
-
-    const saved = await completeSession();
-    if (!saved) {
-      return false;
-    }
-
+  const applyPendingTargetSwitch = (
+    targetToStart: NonNullable<typeof pendingSwitchTarget>,
+  ) => {
     if (targetToStart.type === "activity" && targetToStart.activity) {
       setSelectedActivityId(targetToStart.activity.id);
       startFocusActivity(targetToStart.activity);
@@ -476,32 +472,24 @@ export function FocusContainer({
       startFocusTask(targetToStart.task);
     }
     setPendingSwitchTarget(null);
+  };
+
+  const handleSaveAndStartNew = async (): Promise<boolean> => {
+    const targetToStart = pendingSwitchTarget;
+    if (!targetToStart) return false;
+
+    const saved = await completeSession();
+    if (!saved) {
+      return false;
+    }
+
+    applyPendingTargetSwitch(targetToStart);
     return true;
   };
 
   const handleDiscardAndStartNew = () => {
     if (!pendingSwitchTarget) return;
-    if (
-      pendingSwitchTarget.type === "activity" &&
-      pendingSwitchTarget.activity
-    ) {
-      setSelectedActivityId(pendingSwitchTarget.activity.id);
-      startFocusActivity(pendingSwitchTarget.activity);
-    } else if (
-      pendingSwitchTarget.type === "item" &&
-      pendingSwitchTarget.item
-    ) {
-      setSelectedActivityId(null);
-      startFocusItem(pendingSwitchTarget.item);
-    } else if (
-      pendingSwitchTarget.type === "task" &&
-      pendingSwitchTarget.task
-    ) {
-      setSelectedActivityId(null);
-      setSelectedBackpackItemId(null);
-      startFocusTask(pendingSwitchTarget.task);
-    }
-    setPendingSwitchTarget(null);
+    applyPendingTargetSwitch(pendingSwitchTarget);
   };
 
   const handleChangeMode = (newMode: FocusRecordType) => {
@@ -668,6 +656,7 @@ export function FocusContainer({
                   t("fallbacks.currentSession")
           }
           isCurrentInventory={target?.type === "inventory"}
+          isCurrentTask={target?.type === "task"}
           isNewInventory={pendingSwitchTarget?.type === "item"}
           isNewTask={pendingSwitchTarget?.type === "task"}
           onTransfer={handleTransferTarget}

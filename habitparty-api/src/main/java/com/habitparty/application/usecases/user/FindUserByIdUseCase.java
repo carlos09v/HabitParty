@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.application.usecases.task.DailyResetUseCase;
 import com.habitparty.application.usecases.user.EffectiveStreakResolver.UserWithEffectiveStreak;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
@@ -15,6 +16,7 @@ import com.habitparty.core.exceptions.ResourceNotFoundException;
 public class FindUserByIdUseCase {
     private final UserRepository port;
     private final EffectiveStreakResolver effectiveStreakResolver;
+    private DailyResetUseCase dailyResetUseCase;
 
     @Autowired
     public FindUserByIdUseCase(
@@ -30,6 +32,11 @@ public class FindUserByIdUseCase {
       this(port, new EffectiveStreakResolver(null));
     }
 
+    @Autowired(required = false)
+    public void setDailyResetUseCase(DailyResetUseCase dailyResetUseCase) {
+      this.dailyResetUseCase = dailyResetUseCase;
+    }
+
     public User execute(UUID id) {
         Optional<User> user = port.findById(id);
         
@@ -42,6 +49,9 @@ public class FindUserByIdUseCase {
     }
 
     public UserWithEffectiveStreak executeWithEffectiveStreak(UUID id) {
+        if (dailyResetUseCase != null) {
+          dailyResetUseCase.resetUserIfDue(id);
+        }
         return effectiveStreakResolver.wrap(execute(id));
     }
 }

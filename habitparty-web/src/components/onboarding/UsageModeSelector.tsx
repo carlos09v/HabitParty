@@ -1,5 +1,6 @@
 import { CheckCircle2, Circle } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { OnboardingStepHeader } from "@/components/onboarding/OnboardingStepHeader";
 import { USAGE_MODES } from "@/constants/onboarding";
 import type { ModeOption, UsageMode } from "@/types/onboarding";
 import { cn } from "@/utils";
@@ -19,12 +20,7 @@ export function UsageModeSelector({
 
   return (
     <div className="flex flex-col gap-2">
-      <h2 className="text-body-s font-bold text-neutral-100 flex items-center gap-2">
-        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/15 text-amber-700 dark:bg-gold/20 dark:text-gold text-[11px] font-bold">
-          1
-        </span>
-        {t("sectionTitle")}
-      </h2>
+      <OnboardingStepHeader step={1} title={t("sectionTitle")} />
 
       {/* Grid 2x2 Compacto de Modos de Uso */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">

@@ -41,7 +41,6 @@ export interface LandingProductivityStepConfig {
 export type LandingFeatureKey =
   | "experienceMode"
   | "rewardShop"
-  | "partyGuild"
   | "hardcoreMode"
   | "workspaces"
   | "analytics"
@@ -66,7 +65,7 @@ export type LandingRoadmapKey =
 export interface LandingRoadmapConfig {
   id: LandingRoadmapKey;
   release: string;
-  status: "completed" | "in_progress" | "next" | "planned" | "epic";
+  status: "completed" | "next" | "planned" | "epic";
   statusBadgeColor: string;
   icon: LucideIcon;
   iconBoxColor: string;

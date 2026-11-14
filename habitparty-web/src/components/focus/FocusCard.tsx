@@ -184,7 +184,9 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
       data-selected={isSelected}
       onClick={handleCardClick}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
+        if (e.target !== e.currentTarget) return;
+        sortableListeners?.onKeyDown?.(e);
+        if (!e.defaultPrevented && (e.key === "Enter" || e.key === " ")) {
           e.preventDefault();
           handleCardClick();
         }
