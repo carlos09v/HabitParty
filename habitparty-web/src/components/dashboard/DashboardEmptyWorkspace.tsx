@@ -12,9 +12,9 @@ export async function DashboardEmptyWorkspace() {
   const isGamified = user?.experienceMode === "GAMIFIED";
 
   return (
-    <div className="flex h-full w-full overflow-hidden items-center justify-center p-6 select-none relative">
+    <div className="flex h-full w-full overflow-y-auto overflow-x-hidden items-center justify-center p-4 sm:p-6 select-none relative">
       {/* CARD PRINCIPAL CONVIDATIVO */}
-      <div className="relative z-10 w-full max-w-lg p-8 sm:p-10 rounded-2xl bg-card dark:bg-surface/90 border border-neutral-700 dark:border-primary/30 shadow-sm dark:shadow-card-deep text-center flex flex-col items-center gap-6 animate-in fade-in zoom-in-95 duration-300">
+      <div className="my-auto relative z-10 w-full max-w-lg p-6 sm:p-10 rounded-2xl bg-card dark:bg-surface/90 border border-neutral-700 dark:border-primary/30 shadow-sm dark:shadow-card-deep text-center flex flex-col items-center gap-6 animate-in fade-in zoom-in-95 duration-300">
         {/* Ícone Cósmico / Produtividade Iluminado */}
         <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/35 text-gold-ink dark:bg-gold/15 dark:border-gold/40 dark:text-gold shadow-glow-gold-sm flex items-center justify-center mb-1">
           {isGamified ? (

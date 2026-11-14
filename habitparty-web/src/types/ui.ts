@@ -1,7 +1,18 @@
 import type { LucideIcon } from "lucide-react";
 import type { HTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
 
-export type ThemeMode = "light" | "dark";
+export type ThemeId =
+  | "dark"
+  | "light"
+  | "dark-knight"
+  | "solar-parchment"
+  | "cyberpunk-neon"
+  | "forest-ranger"
+  | "royal-gold";
+
+export type ThemePolarity = "dark" | "light";
+
+export type ThemeMode = ThemeId;
 export type ExperienceMode = "GAMIFIED" | "PRODUCTIVITY";
 export type AppLocale = "en" | "pt-BR";
 export type DateFormat = "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD";
@@ -89,6 +100,8 @@ export interface ListCardProps {
   icon?: ReactNode;
   isAdd?: boolean;
   disabled?: boolean;
+  as?: "button" | "div";
+  reserveMenuSpace?: boolean;
   onClick?: () => void;
   onContextMenu?: (e: React.MouseEvent) => void;
   className?: string;

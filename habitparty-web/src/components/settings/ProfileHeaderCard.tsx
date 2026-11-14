@@ -55,7 +55,7 @@ export function ProfileHeaderCard({
     <div
       className={cn(
         "rounded-2xl border border-neutral-700 dark:border-primary/20 bg-card dark:bg-surface/45 shadow-xs dark:shadow-none flex flex-col md:flex-row items-center md:items-start justify-between gap-6 md:gap-8",
-        isCompact ? "p-4 sm:p-5" : "p-6 sm:p-7",
+        isCompact ? "p-4 sm:p-5" : "p-4 sm:p-7",
       )}
     >
       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-6 min-w-0 flex-1 w-full">
@@ -83,6 +83,14 @@ export function ProfileHeaderCard({
                 {t("viewProfile")}
               </span>
             </div>
+
+            {/* Selo persistente de navegação em telas touch (< md) */}
+            <span
+              aria-hidden="true"
+              className="md:hidden absolute -bottom-0.5 -right-0.5 z-30 w-7 h-7 rounded-full bg-surface border border-neutral-600 dark:border-primary/40 text-neutral-100 shadow-md flex items-center justify-center"
+            >
+              <ExternalLink size={13} />
+            </span>
           </Link>
 
           <input
@@ -96,9 +104,9 @@ export function ProfileHeaderCard({
         </div>
 
         {/* INFORMAÇÕES DE TEXTO E STATUS */}
-        <div className="flex flex-col items-center sm:items-start gap-2 text-center sm:text-left min-w-0 flex-1">
-          <div className="flex items-center gap-2.5 flex-wrap justify-center sm:justify-start">
-            <h2 className="text-xl sm:text-2xl font-bold text-neutral-50 truncate">
+        <div className="flex flex-col items-center sm:items-start gap-2 text-center sm:text-left min-w-0 flex-1 w-full">
+          <div className="flex items-center gap-2.5 flex-wrap justify-center sm:justify-start max-w-full">
+            <h2 className="text-xl sm:text-2xl font-bold text-neutral-50 truncate max-w-full">
               {displayName}
             </h2>
 
@@ -120,7 +128,9 @@ export function ProfileHeaderCard({
           )}
 
           {user?.email && (
-            <p className="text-tiny text-neutral-400">{user.email}</p>
+            <p className="text-tiny text-neutral-400 max-w-full break-all">
+              {user.email}
+            </p>
           )}
 
           <div className="flex items-center gap-2 mt-2 flex-wrap justify-center sm:justify-start">

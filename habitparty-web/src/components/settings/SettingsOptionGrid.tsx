@@ -31,11 +31,11 @@ export function SettingsOptionGrid<T extends string | boolean>({
   pendingValue = null,
 }: SettingsOptionGridProps<T>) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="@container flex flex-col gap-4">
       {/* Banner de Status Ativo */}
       <div
         className={cn(
-          "rounded-xl border flex items-center gap-3 w-fit transition-colors",
+          "rounded-xl border flex items-center gap-3 w-full sm:w-fit max-w-full transition-colors",
           isCompact ? "p-3" : "p-4",
           "bg-amber-500/10 dark:bg-gold/10 border-amber-500/30 dark:border-gold/30 text-amber-800 dark:text-gold",
         )}
@@ -44,14 +44,16 @@ export function SettingsOptionGrid<T extends string | boolean>({
           size={20}
           className="shrink-0 text-amber-600 dark:text-gold"
         />
-        <div className="text-body-s">{statusMessage}</div>
+        <div className="text-body-s min-w-0 flex-1">{statusMessage}</div>
       </div>
 
       {/* Grade de Seleção de Opções */}
       <div
         className={cn(
           "grid grid-cols-1 gap-4 mt-1",
-          options.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2",
+          options.length === 3
+            ? "@lg:grid-cols-2 @3xl:grid-cols-3"
+            : "@lg:grid-cols-2",
         )}
       >
         {options.map((option) => {

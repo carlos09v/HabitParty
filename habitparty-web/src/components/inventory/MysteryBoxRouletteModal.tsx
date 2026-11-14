@@ -100,8 +100,8 @@ export function MysteryBoxRouletteModal({
           className="relative w-full h-[164px] bg-surface/80 dark:bg-neutral-950/80 border-2 border-neutral-700 dark:border-primary/40 rounded-2xl overflow-hidden shadow-inner flex items-center"
         >
           {/* Sombras de vinheta esquerda e direita */}
-          <div className="absolute left-0 inset-y-0 w-16 bg-linear-to-r from-card via-card/70 dark:from-neutral-950 dark:via-neutral-950/70 to-transparent z-10 pointer-events-none" />
-          <div className="absolute right-0 inset-y-0 w-16 bg-linear-to-l from-card via-card/70 dark:from-neutral-950 dark:via-neutral-950/70 to-transparent z-10 pointer-events-none" />
+          <div className="absolute left-0 inset-y-0 w-7 sm:w-16 bg-linear-to-r from-card via-card/70 dark:from-neutral-950 dark:via-neutral-950/70 to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 inset-y-0 w-7 sm:w-16 bg-linear-to-l from-card via-card/70 dark:from-neutral-950 dark:via-neutral-950/70 to-transparent z-10 pointer-events-none" />
 
           {/* Fita deslizante com os cards */}
           <div
@@ -236,22 +236,22 @@ export function MysteryBoxRouletteModal({
       {/* Revelação do Prêmio Conquistado */}
       {phase === "won" && wonResult && (
         <div className="w-full flex flex-col items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/35 dark:bg-gold/10 dark:border-gold/40 shadow-glow-gold-xs animate-in zoom-in-95 duration-200">
-          <div className="flex items-center gap-2 text-amber-700 dark:text-gold font-bold text-body-m">
+          <div className="flex flex-wrap items-center justify-center gap-2 text-amber-700 dark:text-gold font-bold text-body-m text-center">
             <Sparkles
               size={18}
-              className="animate-spin text-amber-600 dark:text-gold"
+              className="animate-spin text-amber-600 dark:text-gold shrink-0"
             />
             <span>{t("prizeUnlockedTitle")}</span>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-700 dark:bg-gold/20 dark:border-gold/40 flex items-center justify-center dark:text-gold shadow-sm dark:shadow-md">
+          <div className="flex items-center gap-3 w-full justify-center min-w-0">
+            <div className="w-12 h-12 shrink-0 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-700 dark:bg-gold/20 dark:border-gold/40 flex items-center justify-center dark:text-gold shadow-sm dark:shadow-md">
               {(() => {
                 const WinIcon = getRewardIcon(wonResult.rewardIcon);
                 return <WinIcon size={24} />;
               })()}
             </div>
-            <div className="flex flex-col">
-              <span className="text-body-m font-black text-neutral-50">
+            <div className="flex flex-col min-w-0">
+              <span className="text-body-m font-black text-neutral-50 break-words">
                 {wonResult.rewardName}
               </span>
               <span className="text-label-g text-neutral-300">
@@ -267,15 +267,15 @@ export function MysteryBoxRouletteModal({
       )}
 
       {/* Botões de Ação */}
-      <div className="flex items-center justify-center gap-3 w-full pt-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 w-full pt-2">
         {phase === "idle" && (
           <button
             type="button"
             disabled={isOpeningServer}
             onClick={handleSpin}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-gold hover:bg-gold-hover active:bg-gold-pressed border border-gold rounded-xl text-on-gold font-bold text-body-m active:scale-95 transition-[transform,background-color,border-color,box-shadow] shadow-glow-gold-xs cursor-pointer disabled:opacity-50"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-gold hover:bg-gold-hover active:bg-gold-pressed border border-gold rounded-xl text-on-gold font-bold text-body-m active:scale-95 transition-[transform,background-color,border-color,box-shadow] shadow-glow-gold-xs cursor-pointer disabled:opacity-50"
           >
-            <Dices size={20} className="text-on-gold" />
+            <Dices size={20} className="text-on-gold shrink-0" />
             <span>
               {isOpeningServer ? t("drawingButton") : t("spinButton")}
             </span>
@@ -283,7 +283,7 @@ export function MysteryBoxRouletteModal({
         )}
 
         {isSpinning && (
-          <div className="flex items-center gap-2 text-amber-700 dark:text-gold font-bold py-2 animate-pulse">
+          <div className="flex items-center justify-center gap-2 text-amber-700 dark:text-gold font-bold py-2 animate-pulse">
             <Sparkles size={18} />
             <span>{t("spinningStatus")}</span>
           </div>
@@ -293,9 +293,9 @@ export function MysteryBoxRouletteModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gold hover:bg-gold-hover active:bg-gold-pressed border border-gold rounded-xl text-on-gold font-bold text-body-s active:scale-95 transition-[transform,background-color,border-color,box-shadow] shadow-glow-gold-xs cursor-pointer"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-gold hover:bg-gold-hover active:bg-gold-pressed border border-gold rounded-xl text-on-gold font-bold text-body-s active:scale-95 transition-[transform,background-color,border-color,box-shadow] shadow-glow-gold-xs cursor-pointer"
           >
-            <Check size={18} className="text-on-gold" />
+            <Check size={18} className="text-on-gold shrink-0" />
             <span>{t("storeInBackpackButton")}</span>
           </button>
         )}

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./styles/themes.css";
 
 @custom-variant dark (&:where(.dark:not(.light), .dark:not(.light) *));
 
@@ -82,131 +83,21 @@
   --text-label-s: 8px;
   --text-tiny: 10px;
 
-  /* Sombras Semânticas (Glows e Cards) */
-  --shadow-glow-gold: 0 0 15px rgba(237, 229, 57, 0.3);
-  --shadow-glow-gold-md: 0 0 12px rgba(237, 229, 57, 0.25);
-  --shadow-glow-gold-sm: 0 0 10px rgba(237, 229, 57, 0.15);
-  --shadow-glow-gold-xs: 0 0 6px rgba(237, 229, 57, 0.4);
-  --shadow-glow-magenta: 0 0 10px rgba(237, 43, 229, 0.45);
-  --shadow-card-deep: 0 15px 30px rgba(0, 0, 0, 0.5);
-  --shadow-card-active: 0 12px 24px rgba(0, 0, 0, 0.45);
-  --shadow-popover-dark: 0 12px 28px rgba(0, 0, 0, 0.6);
-
   /* Peso de fonte padrão do seu design (Medium) */
   --font-weight-normal: 500;
   --font-sans: var(--font-plus-jakarta), sans-serif;
 }
 
-/* ========================================================
-   TEMA CLARO — COSMIC DAYLIGHT (Alabaster Slate & Royal Gold)
-   ======================================================== */
-:root {
-  color-scheme: dark;
-  accent-color: var(--color-primary);
-}
-
-html.light {
-  color-scheme: light;
-  accent-color: var(--color-primary);
-
-  /* Superfícies Neutras Frias (Alabaster / Slate) — Zero fadiga de lavanda */
-  --color-background: rgb(245 245 248); /* #F5F5F8 — Canvas Alabastro */
-  --color-surface: rgb(
-    236 236 242
-  ); /* #ECECF2 — Inputs, tabs, containers rebaixados */
-  --color-surface-hover: rgb(226 226 236); /* #E2E2EC — Hover de superfície */
-  --color-card: rgb(255 255 255); /* #FFFFFF — Cards elevados */
-  --color-card-hover: rgb(250 250 253); /* #FAFAFD — Hover sutil de card */
-  --color-popover: rgb(255 255 255); /* #FFFFFF — Menus e modais */
-
-  /* Tríade de Marca (Roxo distinto em 3 degraus) */
-  --color-primary-dark: rgb(91 33 182); /* #5B21B6 */
-  --color-primary: rgb(109 40 217); /* #6D28D9 */
-  --color-primary-light: rgb(124 58 237); /* #7C3AED */
-
-  /* Gamificação (Ouro Real para CTAs + Tinta Âmbar Viva para textos/ícones) */
-  --color-gold: rgb(245 184 21); /* #F5B815 — 9.15:1 c/ texto #1E1E2A */
-  --color-gold-hover: rgb(224 163 11); /* #E0A30B */
-  --color-gold-pressed: rgb(
-    200 138 4
-  ); /* #C88A04 — Estado pressionado natural */
-  --color-gold-ink: rgb(
-    158 72 7
-  ); /* #9E4807 — Tinta Âmbar escura para texto/ícone com contraste WCAG AA (>= 5.2:1 em card, surface e badges) */
-  --color-gold-warm: var(--color-gold);
-  --color-gold-warm-hover: var(--color-gold-hover);
-  --color-gold-warm-pressed: var(--color-gold-pressed);
-  --color-on-gold: rgb(
-    30 30 42
-  ); /* #1E1E2A — Contraste 9.15:1 sobre botões e badges dourados */
-  --color-magenta: rgb(162 28 175); /* #A21CAF — 6.32:1 vs #FFF */
-  --color-blue: rgb(67 56 202); /* #4338CA — 7.89:1 vs #FFF */
-
-  /* Funcionais calibrados com contraste real WCAG AA (>= 4.6:1 inclusive em surface) */
-  --color-info: rgb(3 105 161); /* #0369A1 — 5.93:1 vs #FFF */
-  --color-info-hover: rgb(7 89 133); /* #075985 */
-  --color-success-300: rgb(20 122 56); /* #147A38 — 5.42:1 vs #FFF */
-  --color-success-400: rgb(20 122 56);
-  --color-success-500: rgb(
-    22 163 74
-  ); /* #16A34A — Verde vivo para superfícies/bordas */
-  --color-success-hover: rgb(21 128 61); /* #15803D */
-  --color-warning-400: rgb(
-    194 65 12
-  ); /* #C2410C — Orange 700 para textos de aviso */
-  --color-warning-500: rgb(
-    234 88 12
-  ); /* #EA580C — Orange 600 vivo para tarefas Medium e avisos */
-  --color-warning-hover: rgb(194 65 12); /* #C2410C */
-  --color-danger-300: rgb(185 28 28); /* #B91C1C */
-  --color-danger-400: rgb(200 30 30); /* #C81E1E — 5.90:1 vs #FFF */
-  --color-danger-500: rgb(220 38 38); /* #DC2626 */
-  --color-danger-hover: rgb(185 28 28); /* #B91C1C */
-
-  /* Escala Neutra Invertida (Slate Cósmico Dessaturado) */
-  --color-neutral-50: rgb(30 30 42); /* #1E1E2A — Títulos principais (16.5:1) */
-  --color-neutral-100: rgb(
-    42 42 56
-  ); /* #2A2A38 — Ênfase / Subtítulos fortes (14.1:1) */
-  --color-neutral-200: rgb(
-    59 59 77
-  ); /* #3B3B4D — Subtítulos e texto primário (10.9:1) */
-  --color-neutral-300: rgb(
-    78 78 99
-  ); /* #4E4E63 — Corpo de texto secundário (8.1:1) */
-  --color-neutral-400: rgb(
-    100 100 122
-  ); /* #64647A — Labels, metadados e ícones (5.76:1) */
-  --color-neutral-500: rgb(
-    133 133 155
-  ); /* #85859B — Placeholders e bordas de controle (3.60:1) */
-  --color-neutral-600: rgb(198 198 214); /* #C6C6D6 — Bordas médias */
-  --color-neutral-700: rgb(
-    220 220 232
-  ); /* #DCDCE8 — Divisores e bordas de cards */
-  --color-neutral-800: rgb(
-    232 232 240
-  ); /* #E8E8F0 — Superfície sutil interna */
-  --color-neutral-900: rgb(
-    245 245 248
-  ); /* #F5F5F8 — Base extrema da escala clara invertida */
-
-  /* Elevação Física Limpa (Zero halos borrados amarelados) */
-  --shadow-glow-gold:
-    0 2px 8px -1px rgba(180, 120, 0, 0.16), 0 1px 2px rgba(15, 15, 30, 0.05);
-  --shadow-glow-gold-md:
-    0 2px 6px -1px rgba(180, 120, 0, 0.12), 0 1px 2px rgba(15, 15, 30, 0.04);
-  --shadow-glow-gold-sm: 0 1px 3px rgba(15, 15, 30, 0.05);
-  --shadow-glow-gold-xs: 0 1px 2px rgba(15, 15, 30, 0.04);
-  --shadow-glow-magenta: 0 2px 8px -1px rgba(162, 28, 175, 0.12);
-  --shadow-card-deep:
-    0 2px 8px -2px rgba(15, 15, 30, 0.06), 0 1px 2px -1px rgba(15, 15, 30, 0.04);
-  --shadow-card-active:
-    0 4px 12px -2px rgba(15, 15, 30, 0.08),
-    0 8px 16px -4px rgba(15, 15, 30, 0.06);
-  --shadow-popover-dark:
-    0 12px 32px -4px rgba(15, 15, 30, 0.12),
-    0 2px 6px -1px rgba(15, 15, 30, 0.06);
+/* Sombras Semânticas (inlined em utilitários via referência dinâmica a --theme-shadow-* de themes.css) */
+@theme inline {
+  --shadow-glow-gold: var(--theme-shadow-glow-gold);
+  --shadow-glow-gold-md: var(--theme-shadow-glow-gold-md);
+  --shadow-glow-gold-sm: var(--theme-shadow-glow-gold-sm);
+  --shadow-glow-gold-xs: var(--theme-shadow-glow-gold-xs);
+  --shadow-glow-magenta: var(--theme-shadow-glow-magenta);
+  --shadow-card-deep: var(--theme-shadow-card-deep);
+  --shadow-card-active: var(--theme-shadow-card-active);
+  --shadow-popover-dark: var(--theme-shadow-popover-dark);
 }
 
 /* ==========================================
@@ -221,6 +112,11 @@ html.light {
       background-color 0.2s ease,
       color 0.2s ease;
   }
+
+  ::selection {
+    background-color: var(--color-primary);
+    color: #ffffff;
+  }
 }
 
 /* ========================================================
@@ -232,7 +128,8 @@ html.light {
   text-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
 }
 html.light .timer-display-shadow {
-  text-shadow: 0 2px 8px rgba(109, 40, 217, 0.12);
+  text-shadow: 0 2px 8px
+    color-mix(in srgb, var(--color-primary) 16%, transparent);
 }
 
 /* Tooltips escuros em ambos os temas (FocusWeeklyChart, EconomyWeeklyChart) */
@@ -300,17 +197,17 @@ html.light .zen-dimmed-dark .timer-display-shadow {
   background:
     radial-gradient(
       850px circle at 92% 6%,
-      rgba(237, 43, 229, 0.08),
+      var(--ambient-glow-1),
       transparent 70%
     ),
     radial-gradient(
       900px circle at 6% 92%,
-      rgba(64, 57, 237, 0.1),
+      var(--ambient-glow-2),
       transparent 70%
     ),
     radial-gradient(
       800px circle at 28% 4%,
-      rgba(124, 58, 237, 0.15),
+      var(--ambient-glow-3),
       transparent 70%
     );
 }
@@ -319,17 +216,17 @@ html.light .zen-dimmed-dark .timer-display-shadow {
   background:
     radial-gradient(
       700px circle at 28% 5%,
-      rgba(237, 43, 229, 0.11),
+      var(--ambient-onboarding-1),
       transparent 70%
     ),
     radial-gradient(
       800px circle at 80% 92%,
-      rgba(64, 57, 237, 0.15),
+      var(--ambient-onboarding-2),
       transparent 70%
     ),
     radial-gradient(
       550px circle at 70% 38%,
-      rgba(124, 58, 237, 0.14),
+      var(--ambient-onboarding-3),
       transparent 70%
     );
 }
@@ -338,12 +235,12 @@ html.light .zen-dimmed-dark .timer-display-shadow {
   background:
     radial-gradient(
       650px 560px at 88% 88%,
-      rgba(64, 57, 237, 0.24),
+      var(--ambient-auth-1),
       transparent 70%
     ),
     radial-gradient(
       560px circle at 68% 36%,
-      rgba(124, 58, 237, 0.2),
+      var(--ambient-auth-2),
       transparent 70%
     );
 }
@@ -394,7 +291,7 @@ html.light .sidebar-confetti {
 }
 
 html.light select option {
-  background-color: #ffffff;
+  background-color: var(--color-popover);
   color: var(--color-neutral-50);
 }
 
@@ -425,7 +322,9 @@ html.light select option {
     color: var(--color-danger-400);
   }
   :where(html.light) .text-rose-400 {
-    color: rgb(225 29 72); /* Rose-600 #E11D48 */
+    color: rgb(
+      190 18 60
+    ); /* Rose-700 #BE123C — >= 4.89:1 inclusive em surface */
   }
   :where(html.light) .text-orange-400,
   :where(html.light) .text-orange-300,
@@ -464,20 +363,26 @@ html.light select option {
   :where(html.light) .bg-white\/4,
   :where(html.light) .bg-white\/5,
   :where(html.light) .bg-white\/8 {
-    background-color: rgba(30, 30, 42, 0.035);
+    background-color: color-mix(
+      in srgb,
+      var(--color-neutral-50) 4%,
+      transparent
+    );
   }
   :where(html.light) .bg-white\/10,
   :where(html.light) .bg-white\/15 {
-    background-color: rgba(30, 30, 42, 0.065);
+    background-color: color-mix(
+      in srgb,
+      var(--color-neutral-50) 7%,
+      transparent
+    );
   }
   /* Containers de cards externos (ListCard, TaskRow, HistoryRow, etc.) */
   :where(html.light) .bg-primary-dark\/15,
   :where(html.light) .bg-primary-dark\/20,
   :where(html.light) .bg-primary-dark\/25 {
-    background-color: #ffffff;
-    box-shadow:
-      0 1px 3px 0 rgba(15, 15, 30, 0.05),
-      0 1px 2px -1px rgba(15, 15, 30, 0.04);
+    background-color: var(--color-card);
+    box-shadow: var(--theme-shadow-glow-gold-sm);
   }
   /* Caixas de ícones internas, badges, cabeçalhos de tabela e controles */
   :where(html.light) .bg-primary-dark\/30,
@@ -485,7 +390,7 @@ html.light select option {
   :where(html.light) .bg-primary-dark\/40,
   :where(html.light) .bg-primary-dark\/50,
   :where(html.light) .bg-primary-dark\/60 {
-    background-color: rgba(109, 40, 217, 0.07);
+    background-color: color-mix(in srgb, var(--color-primary) 8%, transparent);
   }
 
   :where(html.light) .hover\:bg-white\/4:hover,
@@ -493,7 +398,11 @@ html.light select option {
   :where(html.light) .hover\:bg-white\/8:hover,
   :where(html.light) .hover\:bg-white\/10:hover,
   :where(html.light) .hover\:bg-white\/15:hover {
-    background-color: rgba(30, 30, 42, 0.06);
+    background-color: color-mix(
+      in srgb,
+      var(--color-neutral-50) 6%,
+      transparent
+    );
   }
   :where(html.light) .hover\:bg-primary-dark\/30:hover,
   :where(html.light) .hover\:bg-primary-dark\/35:hover,
@@ -510,7 +419,7 @@ html.light select option {
   :where(html.light) .border-white\/20,
   :where(html.light) .border-white\/25,
   :where(html.light) .border-white\/30 {
-    border-color: rgba(30, 30, 42, 0.09);
+    border-color: color-mix(in srgb, var(--color-neutral-50) 10%, transparent);
   }
   :where(html.light) .border-primary\/15,
   :where(html.light) .border-primary\/20,
@@ -519,22 +428,22 @@ html.light select option {
   :where(html.light) .border-primary\/35,
   :where(html.light) .border-primary\/40,
   :where(html.light) .border-primary\/50 {
-    border-color: rgba(109, 40, 217, 0.14);
+    border-color: color-mix(in srgb, var(--color-primary) 16%, transparent);
   }
   :where(html.light) .border-primary-light\/30,
   :where(html.light) .border-primary-light\/40,
   :where(html.light) .border-primary-light\/50 {
-    border-color: rgba(109, 40, 217, 0.22);
+    border-color: color-mix(in srgb, var(--color-primary) 24%, transparent);
   }
 
   :where(html.light) .hover\:border-white\/10:hover,
   :where(html.light) .hover\:border-white\/20:hover,
   :where(html.light) .hover\:border-white\/25:hover,
   :where(html.light) .hover\:border-white\/30:hover {
-    border-color: rgba(30, 30, 42, 0.18);
+    border-color: color-mix(in srgb, var(--color-neutral-50) 18%, transparent);
   }
   :where(html.light) .hover\:border-primary-light:hover {
-    border-color: rgba(109, 40, 217, 0.32);
+    border-color: color-mix(in srgb, var(--color-primary) 34%, transparent);
   }
 
   /* Preserva bordas laterais semânticas (border-l-4) contra shorthands border-color (repouso e hover) */
@@ -583,62 +492,9 @@ html.light select option {
     border-left-color: var(--color-neutral-500);
   }
 
-  /* 4. Sobrescrita das Sombras Customizadas do @theme no Modo Claro
-     (O Tailwind v4 faz inline do valor de --shadow-* em --tw-shadow no build) */
-  :where(html.light) .shadow-card-deep,
-  :where(html.light) .hover\:shadow-card-deep:hover {
-    --tw-shadow: var(--shadow-card-deep);
-    box-shadow:
-      var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
-      var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
-  }
-  :where(html.light) .shadow-card-active {
-    --tw-shadow: var(--shadow-card-active);
-    box-shadow:
-      var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
-      var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
-  }
-  :where(html.light) .shadow-glow-gold,
-  :where(html.light) .hover\:shadow-glow-gold:hover {
-    --tw-shadow: var(--shadow-glow-gold);
-    box-shadow:
-      var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
-      var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
-  }
-  :where(html.light) .shadow-glow-gold-md,
-  :where(html.light) .hover\:shadow-glow-gold-md:hover {
-    --tw-shadow: var(--shadow-glow-gold-md);
-    box-shadow:
-      var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
-      var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
-  }
-  :where(html.light) .shadow-glow-gold-sm,
-  :where(html.light) .hover\:shadow-glow-gold-sm:hover {
-    --tw-shadow: var(--shadow-glow-gold-sm);
-    box-shadow:
-      var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
-      var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
-  }
-  :where(html.light) .shadow-glow-gold-xs,
-  :where(html.light) .hover\:shadow-glow-gold-xs:hover {
-    --tw-shadow: var(--shadow-glow-gold-xs);
-    box-shadow:
-      var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
-      var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
-  }
-  :where(html.light) .shadow-popover-dark {
-    --tw-shadow: var(--shadow-popover-dark);
-    box-shadow:
-      var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
-      var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
-  }
-
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: rgba(123, 115, 141, 0.3) transparent;
-  }
-  html.light .custom-scrollbar {
-    scrollbar-color: rgba(30, 30, 42, 0.14) transparent;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
   }
   @supports not (scrollbar-color: auto) {
     .custom-scrollbar::-webkit-scrollbar {
@@ -654,17 +510,11 @@ html.light select option {
       background: transparent;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: rgba(123, 115, 141, 0.3);
+      background: var(--scrollbar-thumb);
       border-radius: 9999px;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: rgba(237, 229, 57, 0.5);
-    }
-    html.light .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: rgba(30, 30, 42, 0.14);
-    }
-    html.light .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: rgba(109, 40, 217, 0.35);
+      background: var(--scrollbar-thumb-hover);
     }
   }
 
@@ -673,8 +523,8 @@ html.light select option {
     position: relative;
     background: linear-gradient(
       to right,
-      rgba(124, 58, 237, 0.3),
-      rgba(33, 4, 89, 0.6)
+      var(--switcher-bg-start),
+      var(--switcher-bg-end)
     );
   }
 
@@ -686,8 +536,8 @@ html.light select option {
     padding: 1px;
     background: linear-gradient(
       to right,
-      rgba(168, 99, 255, 0.6),
-      rgba(124, 58, 237, 0.25)
+      var(--switcher-border-start),
+      var(--switcher-border-end)
     );
     -webkit-mask:
       linear-gradient(#fff 0 0) content-box,
@@ -701,32 +551,8 @@ html.light select option {
   .border-gradient-switcher:hover::before {
     background: linear-gradient(
       to right,
-      rgba(168, 99, 255, 0.85),
-      rgba(124, 58, 237, 0.45)
-    );
-  }
-
-  html.light .border-gradient-switcher {
-    background: linear-gradient(
-      to right,
-      rgba(124, 58, 237, 0.08),
-      rgba(255, 255, 255, 0.85)
-    );
-  }
-
-  html.light .border-gradient-switcher::before {
-    background: linear-gradient(
-      to right,
-      rgba(124, 58, 237, 0.35),
-      rgba(124, 58, 237, 0.15)
-    );
-  }
-
-  html.light .border-gradient-switcher:hover::before {
-    background: linear-gradient(
-      to right,
-      rgba(124, 58, 237, 0.55),
-      rgba(124, 58, 237, 0.25)
+      var(--switcher-border-hover-start),
+      var(--switcher-border-hover-end)
     );
   }
 }
@@ -977,8 +803,8 @@ html.light select option {
 
   &:hover:not(:disabled):not(:checked):not(:indeterminate) {
     border-color: var(--color-gold);
-    background-color: rgba(237, 229, 57, 0.15);
-    box-shadow: var(--shadow-glow-gold-xs);
+    background-color: color-mix(in srgb, var(--color-gold) 15%, transparent);
+    box-shadow: var(--theme-shadow-glow-gold-xs);
   }
 
   &:active:not(:disabled) {
@@ -997,7 +823,7 @@ html.light select option {
     background-color: var(--color-gold);
     border-color: var(--color-gold);
     color: var(--color-on-gold);
-    box-shadow: var(--shadow-glow-gold-xs);
+    box-shadow: var(--theme-shadow-glow-gold-xs);
   }
 
   &:is(:checked, :indeterminate)::before {
@@ -1016,12 +842,12 @@ html.light select option {
 }
 
 :where(html.light) .checkbox-custom {
-  border-color: rgb(148 163 184);
+  border-color: var(--color-neutral-500);
   background-color: var(--color-card);
 
   &:hover:not(:disabled):not(:checked):not(:indeterminate) {
     border-color: var(--color-gold-ink);
-    background-color: rgba(245, 184, 21, 0.14);
+    background-color: color-mix(in srgb, var(--color-gold) 14%, transparent);
   }
 
   &:is(:checked, :indeterminate) {
@@ -1139,8 +965,8 @@ html:not(.light)
 }
 
 :where(html.light) .habitparty-tiptap .tiptap mark {
-  background-color: rgba(245, 158, 11, 0.22);
-  color: rgb(146 64 14);
+  background-color: color-mix(in srgb, var(--color-gold) 24%, transparent);
+  color: var(--color-gold-ink);
 }
 
 .habitparty-tiptap .tiptap code {
@@ -1155,6 +981,6 @@ html:not(.light)
 
 :where(html.light) .habitparty-tiptap .tiptap code {
   background-color: var(--color-surface);
-  border-color: rgb(203 213 225);
+  border-color: var(--color-neutral-600);
   color: var(--color-primary);
 }

@@ -59,7 +59,7 @@ export function ShowcaseBioEditor({
 
   if (isEditingBio && !isVisitorMode) {
     return (
-      <div className="flex flex-col gap-2 max-w-xl mt-1">
+      <div className="flex flex-col gap-2 w-full max-w-xl mt-1">
         <Textarea
           rows={2}
           maxLength={BIO_MAX_LENGTH}
@@ -68,7 +68,7 @@ export function ShowcaseBioEditor({
           placeholder={t("bioPlaceholder")}
           compact
         />
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <DescriptionCharCounter
             length={draftBio.length}
             max={BIO_MAX_LENGTH}
@@ -101,10 +101,10 @@ export function ShowcaseBioEditor({
   }
 
   return (
-    <div className="flex items-start gap-2 group max-w-xl mt-1">
+    <div className="flex items-start gap-2 group w-full max-w-xl mt-1 min-w-0">
       <p
         className={cn(
-          "text-body-s leading-relaxed",
+          "text-body-s leading-relaxed min-w-0 flex-1 break-words",
           resolvedBio ? "text-neutral-200" : "text-neutral-400 italic",
         )}
       >

@@ -48,14 +48,19 @@ export const MAX_VISIBLE_COLUMNS = 4;
 /** Máximo de colunas (listas) permitidas no plano Premium. */
 export const MAX_COLUMNS_PREMIUM = 6;
 
+/** Máximo de ambientes editáveis no plano gratuito; os demais ficam em modo somente leitura. */
+export const FREE_ACTIVE_WORKSPACE_LIMIT = 2;
+
 export type ColumnIconOption = IconOption;
 
 /** Classes de largura das colunas do quadro Kanban por preset. */
 export const COLUMN_WIDTH_CLASSES: Readonly<Record<ColumnWidthPreset, string>> =
   {
-    compact: "w-[250px] min-w-[240px] max-w-[270px]",
-    normal: "w-[300px] min-w-[270px] max-w-[320px]",
-    wide: "w-[420px] min-w-[380px] max-w-[460px]",
+    compact:
+      "w-[min(250px,calc(100vw-2.5rem))] min-w-[min(240px,calc(100vw-2.5rem))] max-w-[min(270px,calc(100vw-2rem))]",
+    normal:
+      "w-[min(300px,calc(100vw-2.5rem))] min-w-[min(270px,calc(100vw-2.5rem))] max-w-[min(320px,calc(100vw-2rem))]",
+    wide: "w-[min(420px,calc(100vw-2.5rem))] min-w-[min(380px,calc(100vw-2.5rem))] max-w-[min(460px,calc(100vw-2rem))]",
   };
 
 /** Opções de alinhamento horizontal do quadro Kanban. */
@@ -451,4 +456,27 @@ export function resolveVisibleColumnIds(
   }
 
   return result;
+}
+
+/**
+ * Seleciona os IDs visíveis respeitando cookie salvo do usuário e, na ausência dele,
+ * o flag `isVisible` retornado pelo backend (ou os primeiros `maxAllowed` itens).
+ */
+export function resolveDashboardVisibleColumnIds(
+  columns: { id?: string; isVisible?: boolean }[],
+  savedIds: string[] | undefined | null,
+  maxAllowed: number,
+): string[] {
+  const allIds = columns.map((c) => c.id || "").filter(Boolean);
+  if (Array.isArray(savedIds) && savedIds.length > 0) {
+    return resolveVisibleColumnIds(allIds, savedIds, maxAllowed);
+  }
+  const backendVisibleIds = columns
+    .filter((c) => c.id && c.isVisible !== false)
+    .map((c) => c.id as string);
+  return resolveVisibleColumnIds(
+    allIds,
+    backendVisibleIds.length > 0 ? backendVisibleIds : undefined,
+    maxAllowed,
+  );
 }

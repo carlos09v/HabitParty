@@ -115,7 +115,6 @@ export function SidebarUserProfile({
               >
                 {displayName}
               </span>
-              {user?.isFounder && <FounderBadge size="sm" />}
               {achievementPoints > 0 && (
                 <span
                   className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full bg-gold/15 border border-gold/35 text-[10px] font-bold text-amber-600 dark:text-gold shrink-0 ml-auto"
@@ -128,35 +127,40 @@ export function SidebarUserProfile({
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-1.5 min-w-0 mt-0.5">
-              <span className="text-tiny text-neutral-300 truncate">
-                {levelTitle}
-              </span>
-              <span className="text-neutral-500 text-tiny shrink-0">•</span>
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1 px-1.5 py-0.2 rounded border text-[10px] font-bold leading-tight shrink-0",
-                  isGamified
-                    ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:bg-gold/10 dark:border-gold/30 dark:text-gold"
-                    : "bg-sky-500/10 border-sky-500/30 text-sky-600 dark:bg-cyan-500/10 dark:border-cyan-500/30 dark:text-cyan-400",
-                )}
-                title={
-                  isGamified
-                    ? t("modeGamifiedTitle")
-                    : t("modeProductivityTitle")
-                }
-              >
-                {isGamified ? (
-                  <Swords size={10} className="shrink-0" />
-                ) : (
-                  <Target size={10} className="shrink-0" />
-                )}
-                <span>
-                  {isGamified
-                    ? t("modeGamifiedBadge")
-                    : t("modeProductivityBadge")}
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 min-w-0 mt-0.5">
+              <div className="flex items-center gap-1.5 min-w-0 max-w-full shrink-0">
+                <span className="text-tiny text-neutral-300 truncate">
+                  {levelTitle}
                 </span>
-              </span>
+                <span className="text-neutral-500 text-tiny shrink-0">•</span>
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 px-1.5 py-0.2 rounded border text-[10px] font-bold leading-tight shrink-0",
+                    isGamified
+                      ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:bg-gold/10 dark:border-gold/30 dark:text-gold"
+                      : "bg-sky-500/10 border-sky-500/30 text-sky-600 dark:bg-cyan-500/10 dark:border-cyan-500/30 dark:text-cyan-400",
+                  )}
+                  title={
+                    isGamified
+                      ? t("modeGamifiedTitle")
+                      : t("modeProductivityTitle")
+                  }
+                >
+                  {isGamified ? (
+                    <Swords size={10} className="shrink-0" />
+                  ) : (
+                    <Target size={10} className="shrink-0" />
+                  )}
+                  <span>
+                    {isGamified
+                      ? t("modeGamifiedBadge")
+                      : t("modeProductivityBadge")}
+                  </span>
+                </span>
+              </div>
+              {user?.isFounder && (
+                <FounderBadge size="sm" className="shrink-0" />
+              )}
             </div>
           </div>
         </ProfileLinkContent>

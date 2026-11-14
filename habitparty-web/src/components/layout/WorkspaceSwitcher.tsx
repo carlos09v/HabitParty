@@ -342,7 +342,7 @@ export function WorkspaceSwitcher({
                         className={cn(
                           "text-body-s truncate",
                           isActive
-                            ? "text-gold-pressed font-bold"
+                            ? "text-gold-ink dark:text-gold font-bold"
                             : "text-neutral-50",
                         )}
                       >
@@ -458,14 +458,14 @@ export function WorkspaceSwitcher({
                                 className={cn(
                                   "text-body-s truncate",
                                   isActive
-                                    ? "text-gold-pressed font-bold"
+                                    ? "text-gold-ink dark:text-gold font-bold"
                                     : "text-neutral-50",
                                 )}
                               >
                                 {ws.name}
                               </span>
                               <span
-                                className="text-[9px] px-1.5 py-0.5 rounded bg-gold/15 text-gold border border-gold/30 shrink-0 font-semibold flex items-center gap-1 ml-auto"
+                                className="text-[9px] px-1.5 py-0.5 rounded bg-gold/15 text-gold-ink dark:text-gold border border-gold/35 shrink-0 font-semibold flex items-center gap-1 ml-auto"
                                 title={t("readOnlyBadgeTitle")}
                               >
                                 <Lock size={9} />

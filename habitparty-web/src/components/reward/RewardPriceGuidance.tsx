@@ -188,8 +188,8 @@ export function RewardPriceGuidance({
         </span>
       </div>
 
-      {/* Linha 2 (altura fixa): Alerta em InfoTooltip + atalho de preço sugerido */}
-      <div className="flex items-center justify-between gap-2 min-h-[24px] text-label-m">
+      {/* Linha 2: Alerta em InfoTooltip + atalho de preço sugerido */}
+      <div className="flex flex-wrap items-center justify-between gap-2 min-h-[24px] text-label-m">
         <div className="flex items-center min-w-0">
           {isWarning && warningMessage ? (
             renderWarningTooltip("left")

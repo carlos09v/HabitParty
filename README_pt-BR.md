@@ -19,12 +19,15 @@ Um sistema open-core de gamificação e produtividade com uma economia matemáti
   * 🟩 **Fácil** (0,75 🪙 / Créditos • 5 XP / pts)
   * 🟨 **Médio** (2,50 🪙 / Créditos • 15 XP / pts)
   * 🟪 **Difícil** (5,00 🪙 / Créditos • 30 XP / pts)
-* **Quadro Kanban & Múltiplos Ambientes (Workspaces):** Organize diferentes áreas da sua vida (Trabalho, Estudos, Vida Pessoal) em ambientes independentes, com quadros Kanban interativos, colunas personalizáveis e banner de busca inteligente entre múltiplos workspaces.
+* **Quadro Kanban & Múltiplos Ambientes (Workspaces):** Organize diferentes áreas da sua vida (Trabalho, Estudos, Vida Pessoal) em ambientes independentes, com quadros Kanban interativos, movimentação de colunas entre ambientes, banner de busca inteligente e visualização unificada **"Todos os Workspaces"** no Dashboard.
+* **Temas Atmosféricos (4 Gratuitos + 3 VIP):** Personalize o visual com **7 temas** — **4 Gratuitos** (2 Escuros: *Dark Cósmico* e alternativo *Dark Knight*; 2 Claros: *Cosmic Daylight* e alternativo *Solar Parchment*) e **3 VIP** (*Cyberpunk Neon*, *Forest Ranger* e o tema Claro extra *Royal Gold*) — com alternância claro/escuro que memoriza a última escolha em cada polaridade.
 * **Loja de Recompensas da Vida Real:** Cadastre momentos de lazer e descanso categorizados em pacotes (Uso Único, Por Tempo ou Caixas da Sorte) com custos calibrados para o esforço do seu dia.
 * **🎁 Caixas Misteriosas (RNG Opcional):** Sorteios probabilísticos com custos calculados matematicamente (Básica, Premium, Épica e Lendária) para trazer dopamina à sua rotina sem quebrar a economia.
 * **🎒 Mochila de Inventário:** Todos os itens comprados ficam guardados na sua mochila para serem consumidos no momento ideal ou vinculados a uma sessão de descanso cronometrada.
-* **⏱️ Palco de Foco (Pomodoro & Cronômetro):** Ferramenta nativa de imersão com rendimento decrescente diário (*daily soft cap* de até 6h), salvaguardas anti-AFK (teto de 90 min) e trava de lazer (itens de mochila não geram moeda).
-* **👑 Personalização VIP, Eventos & Sons Ambientes:** Agendamento de Afazeres como Eventos (início/término ou dia inteiro), molduras animadas cósmicas para avatar, sons ambientes relaxantes sintetizados nativamente no navegador via Web Audio API (Chuva Suave, Cafeteria, Lofi Zen e Fogueira) e pacote exclusivo de ícones VIP.
+* **⏱️ Palco de Foco (Pomodoro & Cronômetro):** Ferramenta nativa de imersão com **Foco Rápido em 1 clique** direto nas linhas de tarefa do Dashboard, rendimento decrescente diário (*daily soft cap* de até 6h), salvaguardas anti-AFK (teto de 90 min) e trava de lazer (itens de mochila não geram moeda).
+* **🤝 Rede de Amizades, Códigos de Amigo & Privacidade Granular:** Conecte-se com até 100 amigos por `@username` ou código único `HP-XXXXXX`, receba notificações sociais para convites e marcos de amigos e configure visibilidade independente (`Público`, `Apenas Amigos`, `Privado`) para Perfil, Estatísticas e Conquistas.
+* **🏅 Vitrine Pública, Retrospectiva Anual & Cards PNG:** Compartilhe perfis públicos (`/profile/[username]`), desbloqueie Retrospectivas Anuais sazonais com 5 arquétipos comportamentais e baixe cards PNG em alta resolução do Perfil ou da Retrospectiva.
+* **👑 Personalização VIP, Eventos & Sons Ambientes:** Agendamento de Afazeres como Eventos (início/término ou dia inteiro), molduras animadas cósmicas para avatar, 3 temas atmosféricos VIP (*Cyberpunk Neon*, *Forest Ranger*, *Royal Gold*), sons ambientes relaxantes sintetizados nativamente no navegador via Web Audio API (Chuva Suave, Cafeteria, Lofi Zen e Fogueira) e pacote exclusivo de ícones VIP.
 * **🛡️ Painel Administrativo & Telemetria (`/admin`):** Módulo exclusivo para administradores (`ROLE_ADMIN`) com telemetria em tempo real da cota de e-mails no **Resend**, volume global de tarefas, estimativa da pegada de armazenamento do PostgreSQL por usuário, governança de papéis e histórico de logs de auditoria de disparos (`EmailDispatchLog`).
 * **✉️ Notificações e Lembretes por E-mail (Resend):** Disparo automatizado de lembretes para tarefas com prazo próximo e recuperação de conta segura, com travas de cota por usuário para prevenir abusos.
 * **🔑 Autenticação Híbrida & Segurança:** Suporte nativo a login social via **Google OAuth 2.0** e fluxo tradicional via e-mail e senha com JWT stateless, Refresh Tokens, BCrypt e controle de acesso baseado em papéis (RBAC).
@@ -255,12 +258,13 @@ npm run dev
 
 ---
 
-### 🎨 Release 1.4 — Temas VIP, Amizades & Controles de Privacidade
-* **Temas Exclusivos VIP:** Seletor dinâmico de atmosferas visuais e paletas cósmicas para membros Premium (ex: *Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold*).
-* **Rede de Amizades & Códigos de Amigo:** Busca ágil de outros aventureiros por nome de usuário (@username) ou código de amigo (Friend Code) com envio de solicitações.
-* **Círculo de Conexões Sociais:** Acompanhamento da consistência, nível e insígnias dos seus amigos conectados.
-* **Controles Granulares de Privacidade:** Configurações personalizadas para definir a visibilidade das suas rotinas, histórico e estatísticas (Público, Apenas Amigos ou Privado).
-* **Notificações de Atividade Social:** Alertas sonoros e visuais elegantes para solicitações recebidas e marcos de consistência da sua rede.
+### 🎨 Release 1.4 — Temas VIP, Amizades & Controles de Privacidade ✅ (Concluído)
+* **Temas Atmosféricos (Gratuitos & VIP):** Seletor dinâmico com 7 temas — **4 Gratuitos** — 2 escuros (*Dark Cósmico* padrão + *Dark Knight* alternativo) e 2 claros (*Cosmic Daylight* padrão + *Solar Parchment* alternativo) — além de **3 temas VIP** (*Cyberpunk Neon*, *Forest Ranger* e o tema claro extra *Royal Gold*), com alternância que memoriza o último tema usado em cada modo.
+* **Rede de Amizades & Códigos de Amigo (`HP-XXXXXX`):** Busca por nome, `@username` ou código de amigo exclusivo (com regeneração e aceite automático em convites mútuos), bloqueio/remoção (até 100 amigos) e acompanhamento direto no widget do Dashboard.
+* **Perfis Públicos & Controles Granulares de Privacidade:** Vitrine pública em `/profile/[username]` e controle independente de visibilidade (`Público`, `Apenas Amigos` ou `Privado`) para Perfil, Estatísticas e Conquistas, além de política de solicitações (`Todos`, `Apenas Código de Amigo`, `Ninguém`).
+* **Notificações de Atividade Social:** Alertas persistentes no sino de notificações com contagem de não lidas para solicitações recebidas, convites aceitos e marcos de nível/conquista dos seus amigos.
+* **Retrospectiva Anual & Cards PNG Compartilháveis:** Resumo sazonal (`20/dez – 31/jan`, trava `2 de 3` critérios mínimos e 5 arquétipos comportamentais) + exportação em Canvas de cards PNG do Perfil e da Retrospectiva (paletas clara/escura e Código de Amigo opcional).
+* **Dashboard Multi-Workspace, Foco Rápido & Evolução Contínua:** Filtro unificado *"Todos os Workspaces"* com pills rápidas e trava somente-leitura do plano Free, Foco Rápido nas linhas de tarefa, checagem de histórico antes de excluir recompensas, descrições WYSIWYG (`2.000` chars), tags hierárquicas `>`, fuso horário IANA automático com virada à meia-noite e movimentação de colunas entre workspaces.
 
 ---
 

@@ -237,7 +237,7 @@ export function TaskTagDropdownPortal({
       )}
     >
       {/* Barra fixa de busca / criação */}
-      <div className="p-2 border-b border-white/10 flex flex-col gap-1 shrink-0 bg-card/80 dark:bg-popover/90">
+      <div className="p-2 border-b border-neutral-700 dark:border-white/10 flex flex-col gap-1 shrink-0 bg-card/80 dark:bg-popover/90">
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-background/60 border border-primary/35 focus-within:border-gold">
           <Search size={12} className="text-neutral-400 shrink-0" />
           <input
@@ -275,7 +275,7 @@ export function TaskTagDropdownPortal({
             <button
               type="button"
               onClick={onCloseSelector}
-              className="text-neutral-400 hover:text-gold cursor-pointer shrink-0 pl-1 border-l border-white/10"
+              className="text-neutral-400 hover:text-gold cursor-pointer shrink-0 pl-1 border-l border-neutral-700 dark:border-white/10"
               aria-label={t("closeSelectorAria")}
             >
               <X size={12} />

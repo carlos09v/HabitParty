@@ -199,6 +199,7 @@
     "activitiesTab": "Activities ({count})",
     "tasksTab": "Tasks ({count})",
     "backpackTab": "Backpack ({count})",
+    "loadingActivities": "Loading activities...",
     "emptyActivities": "No activities registered. Create one on the main screen.",
     "emptyTasks": "No pending tasks (Daily or To-Do) found.",
     "searchTasksPlaceholder": "Search task by title...",
@@ -286,7 +287,8 @@
     "startFocusAria": "Start focus on {title}",
     "pauseFocusTitle": "Pause Focus",
     "resumeFocusTitle": "Resume Focus",
-    "startFocusTitle": "Start Focus"
+    "startFocusTitle": "Start Focus",
+    "moreActionsAria": "More actions for {title}"
   },
   "backpack": {
     "sectionAria": "Backpack in Focus",

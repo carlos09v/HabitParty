@@ -11,7 +11,9 @@ import com.habitparty.adapters.in.web.api.RewardApi;
 import com.habitparty.adapters.in.web.dtos.request.CreateRewardDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateRewardDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateRewardOrderDTO;
+import com.habitparty.adapters.in.web.dtos.response.RewardHistoryStatusResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.RewardResponseDTO;
+import com.habitparty.application.usecases.reward.CheckRewardHasHistoryUseCase;
 import com.habitparty.application.usecases.reward.CreateRewardCommand;
 import com.habitparty.application.usecases.reward.CreateRewardUseCase;
 import com.habitparty.application.usecases.reward.DeleteRewardUseCase;
@@ -29,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RestController
 public class RewardController implements RewardApi {
+  private final CheckRewardHasHistoryUseCase checkRewardHasHistoryUseCase;
   private final CreateRewardUseCase createRewardUseCase;
   private final DeleteRewardUseCase deleteRewardUseCase;
   private final ListUserRewardsUseCase listUserRewardsUseCase;
@@ -66,6 +69,16 @@ public class RewardController implements RewardApi {
     Reward createdReward = createRewardUseCase.execute(command, userId);
 
     return ResponseEntity.status(HttpStatus.CREATED).body(RewardResponseDTO.fromDomain(createdReward));
+  }
+
+  @Override
+  public ResponseEntity<RewardHistoryStatusResponseDTO> checkRewardHasHistory(
+      UUID rewardId,
+      AuthenticatedUser usuarioLogado) {
+    UUID userId = usuarioLogado.id();
+    boolean hasHistory = checkRewardHasHistoryUseCase.execute(rewardId, userId);
+
+    return ResponseEntity.ok(new RewardHistoryStatusResponseDTO(hasHistory));
   }
 
   @Override

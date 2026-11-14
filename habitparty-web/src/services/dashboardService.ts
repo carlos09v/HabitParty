@@ -1,34 +1,33 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { serverApi } from "@/api/server";
+import { FREE_ACTIVE_WORKSPACE_LIMIT } from "@/constants/routine";
 import { getRequestLocale } from "@/i18n/request";
 import {
   fetchRawUserFocusRecords,
   getFocusInitialRecords,
   getRawFocusActivities,
 } from "@/services/focusService";
-import { fetchWorkspaceBoardColumns } from "@/services/taskService";
+import { fetchAllWorkspacesBoards } from "@/services/taskService";
 import { getCurrentUser } from "@/services/userService";
-import {
-  getWorkspaces,
-  resolveActiveWorkspace,
-} from "@/services/workspaceService";
+import { resolveActiveWorkspace } from "@/services/workspaceService";
 import type {
-  ColumnSummaryDTO,
+  DashboardColumnOption,
+  DashboardWorkspaceOption,
   TransactionHistoryDTO,
 } from "@/types/dashboard";
 import type { FocusActivity, FocusRecord } from "@/types/focus";
 import type { Task } from "@/types/task";
 import type { UserResponseDTO } from "@/types/user";
-import type { WorkspaceResponseDTO } from "@/types/workspace";
 import { getUserTimezoneCookie } from "@/utils/cookies";
 import { calculateWeeklyTaskEarnings } from "@/utils/economy";
 import { mapFocusActivities } from "@/utils/focusMapper";
 
 export interface DashboardData {
-  workspaces: WorkspaceResponseDTO[];
+  workspaces: DashboardWorkspaceOption[];
   activeWorkspaceId: string;
   initialTasks: Task[];
-  initialColumns: ColumnSummaryDTO[];
+  initialColumns: DashboardColumnOption[];
+  initialAllColumns: DashboardColumnOption[];
   transactions: TransactionHistoryDTO[];
   userBalance: number;
   weeklyEarnings: number;
@@ -60,34 +59,36 @@ export async function getDashboardTransactions(): Promise<
 
 /**
  * Busca todos os dados necessários para renderizar a página do Dashboard e sua Sidebar.
- * Paraleliza chamadas independentes (incluindo busca especulativa do quadro Kanban pelo cookie)
- * logo na primeira onda para reduzir latência (RTT).
+ * Carrega tarefas e colunas de todos os workspaces do usuário em uma única consulta em lote,
+ * mantendo o resumo superior de listas focado no workspace ativo.
  */
 export async function getDashboardData(
   requestedWorkspaceId?: string,
 ): Promise<DashboardData | null> {
   const [
-    workspaces,
+    allBoards,
     user,
     transactions,
     rawFocusActivities,
     rawFocusRecords,
     locale,
-    speculativeBoardData,
   ] = await Promise.all([
-    getWorkspaces(),
+    fetchAllWorkspacesBoards(),
     getCurrentUser(),
     getDashboardTransactions(),
     getRawFocusActivities(),
     fetchRawUserFocusRecords(),
     getRequestLocale(),
-    requestedWorkspaceId
-      ? fetchWorkspaceBoardColumns(requestedWorkspaceId)
-      : Promise.resolve(null),
   ]);
 
+  const isPremium = user?.isPremium ?? false;
+  const workspacesFromBoards = allBoards.map((board) => ({
+    id: board.workspaceId,
+    name: board.workspaceName,
+  }));
+
   const { activeWorkspaceId } = resolveActiveWorkspace(
-    workspaces,
+    workspacesFromBoards,
     requestedWorkspaceId,
   );
 
@@ -100,21 +101,43 @@ export async function getDashboardData(
     locale,
   );
 
-  const [boardData, focusRecords] = await Promise.all([
-    activeWorkspaceId === requestedWorkspaceId && speculativeBoardData
-      ? Promise.resolve(speculativeBoardData)
-      : fetchWorkspaceBoardColumns(activeWorkspaceId),
-    getFocusInitialRecords(focusActivities, rawFocusRecords),
-  ]);
+  const focusRecords = await getFocusInitialRecords(
+    focusActivities,
+    rawFocusRecords,
+  );
 
-  const initialColumns: ColumnSummaryDTO[] = boardData.summaries;
-  const initialTasks: Task[] = [];
+  const readOnlyWorkspaceIds = new Set<string>();
+  const workspaceOptions: DashboardWorkspaceOption[] = allBoards.map(
+    (board, index) => {
+      const isReadOnly = !isPremium && index >= FREE_ACTIVE_WORKSPACE_LIMIT;
+      if (isReadOnly) {
+        readOnlyWorkspaceIds.add(board.workspaceId);
+      }
+      return {
+        id: board.workspaceId,
+        name: board.workspaceName,
+        isReadOnly,
+      };
+    },
+  );
 
-  for (const col of boardData.columns) {
-    for (const task of col.tasks) {
-      initialTasks.push(task);
-    }
-  }
+  const allColumnsWithReadOnly: DashboardColumnOption[] = allBoards.flatMap(
+    (board) => {
+      const wsReadOnly = readOnlyWorkspaceIds.has(board.workspaceId);
+      return board.summaries.map((summary) => ({
+        ...summary,
+        isReadOnly: wsReadOnly,
+      }));
+    },
+  );
+
+  const initialColumns: DashboardColumnOption[] = allColumnsWithReadOnly.filter(
+    (col) => col.workspaceId === activeWorkspaceId,
+  );
+  const initialAllColumns: DashboardColumnOption[] = allColumnsWithReadOnly;
+  const initialTasks: Task[] = allBoards.flatMap((b) =>
+    b.columns.flatMap((c) => c.tasks),
+  );
 
   const userBalance = user?.currentCoins ?? 0;
   const resolvedTimeZone = user?.timezone ?? (await getUserTimezoneCookie());
@@ -127,10 +150,11 @@ export async function getDashboardData(
     );
 
   return {
-    workspaces,
+    workspaces: workspaceOptions,
     activeWorkspaceId,
     initialTasks,
     initialColumns,
+    initialAllColumns,
     transactions,
     userBalance,
     weeklyEarnings: currentWeekEarnings,

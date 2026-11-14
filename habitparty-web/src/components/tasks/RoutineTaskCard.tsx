@@ -119,7 +119,8 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
         }
       }}
       className={cn(
-        "group/card flex flex-col transition-[background-color,border-color,opacity,transform] duration-150 select-none touch-none cursor-pointer",
+        "group/card flex flex-col transition-[background-color,border-color,opacity,transform] duration-150 select-none touch-manipulation cursor-pointer",
+        isDragging && "touch-none",
         isCompact
           ? "gap-2 p-2.5 rounded-lg border border-l-4"
           : "gap-2.5 p-3 rounded-xl border border-l-4",
@@ -154,7 +155,13 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
       <div className="flex items-center justify-between gap-1.5 min-w-0">
         <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
           <TaskTypeBadge task={task} isCompact={isCompact} />
-          {isTodoEvent && <TaskEventBadge isCompact={isCompact} />}
+          {isTodoEvent && (
+            <TaskEventBadge
+              isCompact={isCompact}
+              isInProgress={Boolean(dueDateInfo.isInProgress && !isDone)}
+              endTime={dueDateInfo.endTime}
+            />
+          )}
 
           <TaskTagBadges
             primaryLabel={displayTag}
@@ -244,9 +251,11 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
                 <div
                   title={
                     dueDateInfo.isInProgress && !isDone
-                      ? tBadges("eventInProgressTitle", {
-                          end: dueDateInfo.endTime ?? "",
-                        })
+                      ? dueDateInfo.endTime
+                        ? tBadges("eventInProgressTitle", {
+                            end: dueDateInfo.endTime,
+                          })
+                        : tBadges("eventInProgressAllDayTitle")
                       : undefined
                   }
                   className={cn(
@@ -254,7 +263,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
                     dueDateInfo.isOverdue && !isDone
                       ? "text-danger-500 bg-danger-500/10 border-danger-500/35"
                       : dueDateInfo.isInProgress && !isDone
-                        ? "text-sky-700 bg-sky-500/12 border-sky-500/35 dark:text-info dark:bg-info/15 dark:border-info/35"
+                        ? "text-emerald-700 bg-emerald-500/12 border-emerald-500/35 dark:text-emerald-300 dark:bg-emerald-500/15 dark:border-emerald-400/35"
                         : dueDateInfo.isToday
                           ? "text-amber-700 bg-amber-500/12 border-amber-500/35 dark:text-gold dark:bg-gold/12 dark:border-gold/35"
                           : dueDateInfo.isTomorrow
@@ -270,7 +279,7 @@ export const RoutineTaskCard = memo(function RoutineTaskCard({
                   ) : dueDateInfo.isInProgress && !isDone ? (
                     <span
                       aria-hidden="true"
-                      className="w-1.5 h-1.5 rounded-full bg-sky-500 dark:bg-info animate-pulse shrink-0"
+                      className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse shrink-0"
                     />
                   ) : isTodoEvent ? (
                     <CalendarClock

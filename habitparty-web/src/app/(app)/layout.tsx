@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { RootShell } from "@/components/layout/RootShell";
-import { getLocaleMode, getThemeMode } from "@/utils/cookies";
+import { getLocaleMode, getSitePolarity, getThemeMode } from "@/utils/cookies";
 
 export const instant = false;
 
@@ -23,10 +24,21 @@ export default async function AppRootLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
-  const [locale, theme] = await Promise.all([getLocaleMode(), getThemeMode()]);
+  const headerStore = await headers();
+  const allowCustomThemes =
+    headerStore.get("x-habitparty-theme-scope") !== "default";
+  const [locale, theme] = await Promise.all([
+    getLocaleMode(),
+    allowCustomThemes ? getThemeMode() : getSitePolarity(),
+  ]);
 
   return (
-    <RootShell locale={locale} theme={theme} scope="base">
+    <RootShell
+      locale={locale}
+      theme={theme}
+      allowCustomThemes={allowCustomThemes}
+      scope="base"
+    >
       {children}
     </RootShell>
   );

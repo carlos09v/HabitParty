@@ -221,6 +221,7 @@ export function DatePicker({
     estimatedHeight: enableTime
       ? CALENDAR_WITH_TIME_ESTIMATED_HEIGHT
       : CALENDAR_POPOVER_ESTIMATED_HEIGHT,
+    maxAllowedHeight: enableTime ? 420 : 340,
     estimatedWidth: CALENDAR_POPOVER_WIDTH,
     matchTriggerWidth: false,
     offset: 6,
@@ -471,7 +472,7 @@ export function DatePicker({
             data-select-for={pickerId}
             style={floatingStyle}
             className={cn(
-              "p-3 rounded-xl border border-primary/40 bg-popover shadow-2xl relative",
+              "p-3 rounded-xl border border-primary/40 bg-popover shadow-2xl relative overflow-y-auto custom-scrollbar",
               "w-72 max-w-[calc(100vw-1rem)] animate-in fade-in zoom-in-95 duration-150 select-none",
               coords.placement === "top" ? "origin-bottom" : "origin-top",
             )}
@@ -542,7 +543,7 @@ export function DatePicker({
                     handleSelectDay(cell.year, cell.month, cell.day)
                   }
                   className={cn(
-                    "h-7 w-7 mx-auto rounded-lg text-xs font-medium flex items-center justify-center transition-[color,background-color,border-color,opacity] duration-150 cursor-pointer relative",
+                    "h-8 w-8 sm:h-7 sm:w-7 mx-auto rounded-lg text-xs font-medium flex items-center justify-center transition-[color,background-color,border-color,opacity] duration-150 cursor-pointer relative",
                     !cell.isCurrentMonth &&
                       "text-neutral-500 opacity-40 hover:opacity-100",
                     cell.isCurrentMonth && "text-neutral-100",

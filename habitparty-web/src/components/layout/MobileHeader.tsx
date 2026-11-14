@@ -58,7 +58,7 @@ export function MobileHeader({ user, badgeCounts }: MobileHeaderProps) {
             type="button"
             onClick={() => setIsDrawerOpen(true)}
             aria-label={t("openMenu")}
-            className="p-1.5 -ml-1 text-neutral-200 dark:text-neutral-300 hover:text-neutral-50 dark:hover:text-white rounded-lg hover:bg-surface dark:hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 cursor-pointer"
+            className="w-11 h-11 flex items-center justify-center -ml-2 text-neutral-200 dark:text-neutral-300 hover:text-neutral-50 dark:hover:text-white rounded-lg hover:bg-surface dark:hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 cursor-pointer"
           >
             <Menu size={22} />
           </button>

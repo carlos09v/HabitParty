@@ -69,8 +69,8 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
 
   return (
     <ScopedIntlProvider scope="history">
-      <PageWrapper>
-        <div className="flex flex-col gap-6 w-full max-w-6xl mx-auto pb-16">
+      <PageWrapper className="md:py-4">
+        <div className="flex flex-col gap-3 sm:gap-3.5 w-full max-w-6xl mx-auto pb-4 lg:pb-1">
           {/* Welcome Card com estatísticas pré-calculadas no servidor */}
           <HistoryWelcomeCard summary={summary} />
 
@@ -82,7 +82,7 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
           />
 
           {/* Tabela de Transações Agrupada por Dia e Paginação RSC via Link */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2.5">
             <HistoryTable transactions={transactions} selectable />
 
             <Pagination
@@ -92,6 +92,7 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
               itemsPerPage={pageData.size || 8}
               itemLabel={tPage("paginationItemLabel")}
               buildHref={buildPaginationHref}
+              isCompact
             />
           </div>
         </div>

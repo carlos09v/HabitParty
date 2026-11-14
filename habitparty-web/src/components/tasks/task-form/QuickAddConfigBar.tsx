@@ -65,7 +65,7 @@ export function QuickAddConfigBar({
       <span className="text-neutral-300 dark:text-neutral-400 font-medium text-tiny shrink-0">
         {t("effortLabel")}
       </span>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 flex-wrap">
         {TASK_DIFFICULTY_OPTIONS.map((opt) => {
           const isSelected = difficulty === opt.id;
           const DifficultyIcon =
@@ -80,7 +80,7 @@ export function QuickAddConfigBar({
                 onFocusInput?.();
               }}
               className={cn(
-                "flex items-center gap-1 px-1.5 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
+                "flex items-center gap-1 px-2 py-1 sm:px-1.5 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
                 isSelected
                   ? "bg-card text-neutral-50 border border-neutral-600 shadow-2xs dark:bg-white/15 dark:text-neutral-100 dark:border-white/25 dark:shadow-none"
                   : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
@@ -118,7 +118,7 @@ export function QuickAddConfigBar({
             />
             {t("dueLabel")}
           </span>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-wrap">
             {[
               { label: t("dueNoDate"), offset: null },
               { label: t("dueToday"), offset: 0 },
@@ -136,7 +136,7 @@ export function QuickAddConfigBar({
                     onFocusInput?.();
                   }}
                   className={cn(
-                    "px-1.5 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
+                    "px-2 py-1 sm:px-1.5 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
                     isSelected
                       ? "bg-amber-500/15 text-amber-800 border border-amber-500/35 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
                       : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
@@ -174,7 +174,7 @@ export function QuickAddConfigBar({
           <span className="text-neutral-300 dark:text-neutral-400 font-medium text-tiny shrink-0">
             {t("directionLabel")}
           </span>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-wrap">
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
@@ -183,7 +183,7 @@ export function QuickAddConfigBar({
                 onFocusInput?.();
               }}
               className={cn(
-                "px-1.5 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
+                "px-2 py-1 sm:px-1.5 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
                 habitType === "POSITIVE"
                   ? "bg-emerald-500/15 text-emerald-700 border border-emerald-500/35 dark:bg-success-500/20 dark:text-success-500 dark:border-success-500/40"
                   : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
@@ -200,7 +200,7 @@ export function QuickAddConfigBar({
                 onFocusInput?.();
               }}
               className={cn(
-                "px-1.5 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
+                "px-2 py-1 sm:px-1.5 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
                 habitType === "NEGATIVE"
                   ? "bg-rose-500/15 text-rose-700 border border-rose-500/35 dark:bg-danger-500/20 dark:text-danger-500 dark:border-danger-500/40"
                   : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
@@ -217,7 +217,7 @@ export function QuickAddConfigBar({
                 onFocusInput?.();
               }}
               className={cn(
-                "px-1.5 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
+                "px-2 py-1 sm:px-1.5 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
                 habitType === "BOTH"
                   ? "bg-purple-500/15 text-purple-700 border border-purple-500/35 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/40"
                   : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
@@ -233,7 +233,7 @@ export function QuickAddConfigBar({
           <span className="text-neutral-300 dark:text-neutral-400 font-medium text-tiny shrink-0">
             {t("importanceLabel")}
           </span>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-wrap">
             {HABIT_IMPORTANCE_OPTIONS.map((imp) => {
               const isSelected = importanceType === imp.id;
               return (
@@ -246,7 +246,7 @@ export function QuickAddConfigBar({
                     onFocusInput?.();
                   }}
                   className={cn(
-                    "flex items-center gap-1 px-1.5 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
+                    "flex items-center gap-1 px-2 py-1 sm:px-1.5 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
                     isSelected
                       ? "bg-card text-neutral-50 border border-neutral-600 shadow-2xs dark:bg-white/15 dark:text-neutral-100 dark:border-white/25 dark:shadow-none"
                       : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
@@ -292,7 +292,7 @@ export function QuickAddConfigBar({
         <span className="text-neutral-300 dark:text-neutral-400 font-medium text-tiny shrink-0">
           {t("frequencyLabel")}
         </span>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-wrap">
           <button
             type="button"
             onMouseDown={(e) => e.preventDefault()}
@@ -301,7 +301,7 @@ export function QuickAddConfigBar({
               onFocusInput?.();
             }}
             className={cn(
-              "px-2 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
+              "px-2 py-1 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
               dailyFreq === "DAILY"
                 ? "bg-amber-500/15 text-amber-800 border border-amber-500/35 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
                 : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
@@ -317,7 +317,7 @@ export function QuickAddConfigBar({
               onFocusInput?.();
             }}
             className={cn(
-              "px-2 py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
+              "px-2 py-1 sm:py-0.5 rounded text-tiny font-bold transition-colors cursor-pointer",
               dailyFreq === "WEEKDAYS"
                 ? "bg-amber-500/15 text-amber-800 border border-amber-500/35 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
                 : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",

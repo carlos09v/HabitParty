@@ -1,19 +1,38 @@
 import { create } from "zustand";
+import { DEFAULT_DASHBOARD_ADVANCED_FILTERS } from "@/constants/dashboard";
+import type { DashboardAdvancedFilters } from "@/types/dashboard";
 import type { TaskFilterType } from "@/types/task";
 
 interface DashboardFilterStoreState {
   activeFilter: TaskFilterType;
   selectedDate: string | null;
+  advancedFilters: DashboardAdvancedFilters;
   setFilter: (filter: TaskFilterType) => void;
   setSelectedDate: (date: string | null) => void;
+  setAdvancedFilters: (
+    updater:
+      | DashboardAdvancedFilters
+      | ((prev: DashboardAdvancedFilters) => DashboardAdvancedFilters),
+  ) => void;
+  resetAdvancedFilters: () => void;
 }
 
 export const useDashboardFilterStore = create<DashboardFilterStoreState>(
   (set) => ({
     activeFilter: "today",
     selectedDate: null,
+    advancedFilters: DEFAULT_DASHBOARD_ADVANCED_FILTERS,
     setFilter: (activeFilter) => set({ activeFilter, selectedDate: null }),
     setSelectedDate: (selectedDate) => set({ selectedDate }),
+    setAdvancedFilters: (updater) =>
+      set((state) => ({
+        advancedFilters:
+          typeof updater === "function"
+            ? updater(state.advancedFilters)
+            : updater,
+      })),
+    resetAdvancedFilters: () =>
+      set({ advancedFilters: DEFAULT_DASHBOARD_ADVANCED_FILTERS }),
   }),
 );
 
@@ -29,7 +48,7 @@ export function syncDashboardFilterUrl(
     params.delete("date");
   }
   params.set("filter", nextFilter);
-  params.set("page", "1");
+  params.delete("page");
   const query = params.toString();
   const nextUrl = query
     ? `${window.location.pathname}?${query}`

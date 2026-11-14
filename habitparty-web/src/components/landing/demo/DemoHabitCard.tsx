@@ -18,7 +18,7 @@ export function DemoHabitCard({
   return (
     <div className="p-4 rounded-xl bg-card dark:bg-card/70 border border-neutral-700 dark:border-white/10 shadow-xs dark:shadow-sm flex flex-col justify-between hover:border-primary-light/40 transition-colors">
       <div>
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
           <span className="text-tiny font-bold text-primary-dark dark:text-primary-light uppercase tracking-wider bg-primary/10 dark:bg-primary/20 px-2 py-0.5 rounded">
             {t("badge")}
           </span>
@@ -37,7 +37,7 @@ export function DemoHabitCard({
         </p>
       </div>
 
-      <div className="mt-4 pt-3 border-t border-neutral-700/60 dark:border-white/5 flex items-center justify-between">
+      <div className="mt-4 pt-3 border-t border-neutral-700/60 dark:border-white/5 flex items-center justify-between flex-wrap gap-2">
         <span className="text-tiny text-neutral-400">{t("clickToScore")}</span>
         <div className="flex items-center gap-2">
           <button

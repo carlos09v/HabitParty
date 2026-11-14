@@ -49,7 +49,12 @@ export interface SettingsOptionItem<T extends string | boolean> {
   icon?: LucideIcon;
 }
 
-export type SettingsTabId = "profile" | "appearance" | "audio" | "security";
+export type SettingsTabId =
+  | "profile"
+  | "appearance"
+  | "audio"
+  | "privacy"
+  | "security";
 
 export interface SettingsTabItem {
   id: SettingsTabId;

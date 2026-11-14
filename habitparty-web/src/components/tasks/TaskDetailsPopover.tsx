@@ -24,6 +24,7 @@ export function TaskDetailsPopover({
   onClose,
   task,
   columnTitle,
+  workspaceName,
   availableTags = [],
   anchorRect,
   onTaskUpdate,
@@ -125,10 +126,10 @@ export function TaskDetailsPopover({
         }
         className={cn(
           "fixed z-[120] select-none flex flex-col gap-3 shadow-2xl",
-          // Mobile (< sm): Bottom Sheet fixado na base com scroll interno
-          "max-sm:inset-x-0 max-sm:bottom-0 max-sm:w-full max-sm:rounded-t-2xl max-sm:rounded-b-none max-sm:border-t max-sm:border-x-0 max-sm:border-b-0 max-sm:border-primary/40 max-sm:bg-surface max-sm:p-4 max-sm:max-h-[85vh] max-sm:overflow-y-auto max-sm:animate-in max-sm:slide-in-from-bottom max-sm:duration-200",
+          // Mobile (< sm): Bottom Sheet fixado na base com scroll único interno
+          "max-sm:inset-x-0 max-sm:bottom-0 max-sm:w-full max-sm:rounded-t-2xl max-sm:rounded-b-none max-sm:border-t max-sm:border-x-0 max-sm:border-b-0 max-sm:border-primary/40 max-sm:bg-card dark:max-sm:bg-popover max-sm:p-4 max-sm:pb-[max(1rem,env(safe-area-inset-bottom))] max-sm:max-h-[85dvh] max-sm:overflow-hidden max-sm:overscroll-contain max-sm:animate-in max-sm:slide-in-from-bottom max-sm:duration-200",
           // Desktop (sm+): Popover flutuante ancorado
-          "sm:w-[390px] sm:max-w-[calc(100vw-24px)] sm:max-h-[calc(100vh-24px)] sm:rounded-2xl sm:border sm:border-primary/40 sm:bg-card dark:sm:bg-popover sm:p-4 sm:animate-in sm:zoom-in-95 sm:duration-150",
+          "sm:w-[390px] sm:max-w-[calc(100vw-24px)] sm:max-h-[calc(100dvh-24px)] sm:rounded-2xl sm:border sm:border-primary/40 sm:bg-card dark:sm:bg-popover sm:p-4 sm:animate-in sm:zoom-in-95 sm:duration-150",
         )}
         role="dialog"
         aria-label={t("dialogAria")}
@@ -140,6 +141,7 @@ export function TaskDetailsPopover({
         <TaskDetailsHeader
           task={task}
           columnTitle={columnTitle}
+          workspaceName={workspaceName}
           completed={completed}
           isHabit={isHabit}
           isDaily={isDaily}
@@ -160,7 +162,7 @@ export function TaskDetailsPopover({
         />
 
         {/* 2. ÁREA CENTRAL ROLÁVEL COM CABEÇALHO E RODAPÉ FIXOS */}
-        <div className="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 max-h-[min(500px,calc(100vh-200px))]">
+        <div className="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 sm:max-h-[min(500px,calc(100dvh-200px))]">
           {/* HERO: AÇÃO + TÍTULO EDITÁVEL + TAGS */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2.5 min-w-0">

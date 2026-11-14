@@ -291,6 +291,9 @@
       "inFocus": "Em Foco",
       "doubleClickEditHint": "Duplo clique no card para editar",
       "quickEditButtonTitle": "Editar (ou dê duplo clique no card)",
+      "moreActionsAria": "Mais ações",
+      "checkingDeleteAria": "Verificando histórico...",
+      "tierDetailsAria": "Ver probabilidades da caixa misteriosa",
       "types": {
         "SingleUse": "Uso Único",
         "TimeBased": "Cupom",

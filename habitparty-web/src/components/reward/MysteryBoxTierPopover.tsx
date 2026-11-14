@@ -45,7 +45,7 @@ export function MysteryBoxTierPopover({
       style={style}
       aria-label={t("detailsAria", { name: tierName })}
       className={cn(
-        "w-64 sm:w-72 pointer-events-none animate-in fade-in zoom-in-95 duration-150",
+        "w-64 sm:w-72 max-w-[calc(100vw-24px)] max-h-[80dvh] overflow-y-auto overscroll-contain custom-scrollbar pointer-events-none animate-in fade-in zoom-in-95 duration-150",
         !style && "absolute z-50",
         !style && alignClass,
       )}

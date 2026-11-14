@@ -157,7 +157,8 @@ export const RoutineColumn = memo(function RoutineColumn({
         {...attributes}
         {...listeners}
         className={cn(
-          "flex flex-col cursor-grab active:cursor-grabbing group/header touch-none shrink-0 border-b border-white/6",
+          "flex flex-col cursor-grab active:cursor-grabbing group/header touch-manipulation shrink-0 border-b border-neutral-700/60 dark:border-white/6",
+          isDragging && "touch-none",
           isCompact ? "px-2.5 pt-2.5 pb-2" : "px-3.5 pt-3.5 pb-2.5",
         )}
       >
@@ -204,7 +205,7 @@ export const RoutineColumn = memo(function RoutineColumn({
                   ? "bg-success-500/15 border-success-500/40 text-success-500"
                   : completedTasks > 0
                     ? "bg-gold/15 border-gold/35 text-gold"
-                    : "bg-white/8 border-white/10 text-neutral-300",
+                    : "bg-surface dark:bg-white/8 border-neutral-700 dark:border-white/10 text-neutral-300",
               )}
             >
               {completedTasks > 0
@@ -225,7 +226,13 @@ export const RoutineColumn = memo(function RoutineColumn({
               onPointerDown={(e) => {
                 e.stopPropagation();
               }}
-              className="text-neutral-400 hover:text-gold p-1 rounded-md hover:bg-white/10 transition-colors cursor-pointer"
+              onMouseDown={(e) => {
+                e.stopPropagation();
+              }}
+              onTouchStart={(e) => {
+                e.stopPropagation();
+              }}
+              className="text-neutral-400 hover:text-gold p-1.5 sm:p-1 rounded-md hover:bg-white/10 transition-colors cursor-pointer"
             >
               <Plus size={isCompact ? 14 : 16} />
             </button>
@@ -240,7 +247,13 @@ export const RoutineColumn = memo(function RoutineColumn({
               onPointerDown={(e) => {
                 e.stopPropagation();
               }}
-              className="text-neutral-400 hover:text-gold p-1 rounded-md hover:bg-white/10 transition-colors cursor-pointer"
+              onMouseDown={(e) => {
+                e.stopPropagation();
+              }}
+              onTouchStart={(e) => {
+                e.stopPropagation();
+              }}
+              className="text-neutral-400 hover:text-gold p-1.5 sm:p-1 rounded-md hover:bg-white/10 transition-colors cursor-pointer"
               title={t("optionsTitle")}
             >
               <MoreVertical size={isCompact ? 14 : 16} />
@@ -253,7 +266,7 @@ export const RoutineColumn = memo(function RoutineColumn({
           <div
             aria-hidden="true"
             className={cn(
-              "w-full h-1 rounded-full bg-white/8 overflow-hidden",
+              "w-full h-1 rounded-full bg-neutral-700/30 dark:bg-white/8 overflow-hidden",
               isCompact ? "mt-1.5" : "mt-2",
             )}
           >
@@ -329,7 +342,7 @@ export const RoutineColumn = memo(function RoutineColumn({
 
           {/* Seção colapsável de ToDos concluídos na base da coluna */}
           {completedTodoTasks.length > 0 && (
-            <div className="flex flex-col gap-2 pt-1.5 mt-0.5 border-t border-white/8">
+            <div className="flex flex-col gap-2 pt-1.5 mt-0.5 border-t border-neutral-700/60 dark:border-white/8">
               <button
                 type="button"
                 onClick={() => setIsCompletedExpanded((prev) => !prev)}
@@ -349,7 +362,7 @@ export const RoutineColumn = memo(function RoutineColumn({
                 <span className="font-semibold">
                   {t("completedSectionLabel")}
                 </span>
-                <span className="ml-auto px-1.5 py-0.5 rounded-full bg-white/8 text-neutral-300 font-bold text-tiny leading-none">
+                <span className="ml-auto px-1.5 py-0.5 rounded-full bg-surface dark:bg-white/8 text-neutral-300 font-bold text-tiny leading-none">
                   {completedTodoTasks.length}
                 </span>
               </button>

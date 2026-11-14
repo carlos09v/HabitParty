@@ -121,7 +121,7 @@ export function BaseModal({
             type="button"
             onClick={onClose}
             disabled={preventClose}
-            className="absolute top-4 right-4 text-neutral-300 hover:text-gold transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 rounded-md disabled:opacity-50 cursor-pointer"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 p-1.5 sm:p-1 text-neutral-300 hover:text-gold transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 rounded-md disabled:opacity-50 cursor-pointer"
             aria-label="Fechar"
           >
             <X size={20} />
@@ -129,7 +129,7 @@ export function BaseModal({
         )}
 
         {headerIcon ? (
-          <div className="flex items-center gap-3 mb-4 pr-8">
+          <div className="flex items-center gap-3 mb-4 pr-9">
             <div
               className={cn(
                 "w-10 h-10 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center text-gold shadow-glow-gold-xs shrink-0 transition-colors",
@@ -156,7 +156,7 @@ export function BaseModal({
         ) : (
           <>
             {(title || headerExtra) && (
-              <div className="flex items-center gap-2 mb-4 pr-8">
+              <div className="flex items-center gap-2 mb-4 pr-9">
                 {headerExtra}
                 {title && (
                   <h2 className="text-label-g uppercase tracking-wider text-gold-pressed font-bold flex items-center gap-2 flex-wrap">

@@ -45,6 +45,7 @@ export const DEFAULT_ECONOMY_BARS: readonly EconomyBarData[] = [
 ] as const;
 
 export const DEFAULT_DASHBOARD_ADVANCED_FILTERS: DashboardAdvancedFilters = {
+  workspaceId: "all",
   taskType: "all",
   columnId: "all",
   difficulty: "all",

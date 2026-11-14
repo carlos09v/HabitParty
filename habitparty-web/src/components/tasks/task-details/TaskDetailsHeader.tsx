@@ -2,6 +2,7 @@
 
 import { Flame, FolderKanban, Pencil, X } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { TaskWorkspaceBadge } from "@/components/tasks/shared";
 import { useUserStore } from "@/store/userStore";
 import type { Task, TaskPriorityOption } from "@/types/task";
 import type { DatePickerEventSchedulePatch } from "@/types/ui";
@@ -13,6 +14,7 @@ import { TaskPriorityPicker } from "./TaskPriorityPicker";
 interface TaskDetailsHeaderProps {
   task: Task;
   columnTitle?: string;
+  workspaceName?: string;
   completed: boolean;
   isHabit: boolean;
   isDaily: boolean;
@@ -35,6 +37,7 @@ interface TaskDetailsHeaderProps {
 export function TaskDetailsHeader({
   task,
   columnTitle,
+  workspaceName,
   isHabit,
   isDaily,
   isTodo,
@@ -57,21 +60,24 @@ export function TaskDetailsHeader({
   const isDateLocked = isTaskHardcoreLocked(task, new Date(), userTimeZone);
 
   return (
-    <div className="flex items-center justify-between gap-2 border-b border-white/8 pb-2.5">
+    <div className="flex items-center justify-between gap-2 border-b border-neutral-700/60 dark:border-white/8 pb-2.5">
       <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-        {columnTitle && (
+        {(workspaceName || columnTitle) && (
           <>
-            <span
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface border border-neutral-700/80 dark:bg-white/6 dark:border-white/10 text-neutral-300 text-tiny font-semibold truncate max-w-[115px]"
-              title={columnTitle}
-            >
-              <FolderKanban
-                size={11}
-                className="text-amber-700 dark:text-gold/80 shrink-0"
-              />
-              <span className="truncate">{columnTitle}</span>
-            </span>
-            <div className="h-3.5 w-px bg-white/12 shrink-0" />
+            <TaskWorkspaceBadge workspaceName={workspaceName} size="header" />
+            {columnTitle && (
+              <span
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface border border-neutral-700/80 dark:bg-white/6 dark:border-white/10 text-neutral-300 text-tiny font-semibold truncate max-w-[115px]"
+                title={columnTitle}
+              >
+                <FolderKanban
+                  size={11}
+                  className="text-amber-700 dark:text-gold/80 shrink-0"
+                />
+                <span className="truncate">{columnTitle}</span>
+              </span>
+            )}
+            <div className="h-3.5 w-px bg-neutral-700/60 dark:bg-white/12 shrink-0" />
           </>
         )}
 
@@ -146,7 +152,7 @@ export function TaskDetailsHeader({
           <button
             type="button"
             onClick={onEdit}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer"
+            className="w-9 h-9 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer"
             aria-label={t("editFullAria")}
             title={t("editFullTitle")}
           >
@@ -157,7 +163,7 @@ export function TaskDetailsHeader({
           <button
             type="button"
             onClick={onClose}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-neutral-100 hover:bg-white/10 transition-colors cursor-pointer"
+            className="w-9 h-9 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-neutral-100 hover:bg-white/10 transition-colors cursor-pointer"
             aria-label={t("closeAria")}
             title={t("closeTitle")}
           >

@@ -167,7 +167,7 @@
       "workspaces": {
         "badge": "Organização",
         "title": "Ambientes Independentes",
-        "description": "Isole Projetos de Trabalho, Estudos e Vida Pessoal com 1 clique, com busca inteligente entre ambientes para localizar qualquer tarefa instantaneamente."
+        "description": "Isole Projetos de Trabalho, Estudos e Vida Pessoal com 1 clique, visualize e filtre todos os ambientes juntos no Dashboard e localize qualquer tarefa instantaneamente."
       },
       "analytics": {
         "badge": "Métricas",
@@ -247,19 +247,27 @@
         ]
       },
       "r14": {
-        "statusLabel": "Próximo Marco",
+        "statusLabel": "Concluído",
         "title": "Temas VIP, Amizades & Controles de Privacidade",
-        "tagline": "Personalize sua atmosfera visual com Temas VIP exclusivos, conecte-se com amigos por código e gerencie sua privacidade com total autonomia.",
+        "tagline": "Personalize sua atmosfera com 7 temas, conecte-se com amigos por código, proteja sua privacidade e compartilhe cards colecionáveis da sua jornada.",
         "features": [
-          "Temas Exclusivos VIP (Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold)",
-          "Rede de Amizades com busca rápida por @username e código de amigo exclusivo",
-          "Círculo de Conexões Sociais para acompanhar o nível e conquistas de amigos",
-          "Controles Granulares de Privacidade (visibilidade de hábitos, estatísticas e rotinas: Público, Amigos ou Privado)",
-          "Notificações de Atividade Social para pedidos de amizade e marcos da sua rede"
+          "Temas Atmosféricos: 4 Gratuitos (Dark Cósmico & Daylight + 1 Escuro alternativo [Dark Knight] e 1 Claro alternativo [Solar Parchment]) + 3 VIP (Cyberpunk Neon, Forest Ranger e tema Claro extra Royal Gold)",
+          "Rede de Amizades com busca rápida por @username, nome ou código exclusivo HP-XXXXXX",
+          "Círculo de Conexões Sociais e Perfis Públicos (/profile/[username]) para acompanhar streaks e conquistas de amigos",
+          "Controles Granulares de Privacidade (Público, Apenas Amigos ou Privado para Perfil, Estatísticas e Conquistas + política de convites)",
+          "Notificações de Atividade Social para solicitações recebidas, convites aceitos e marcos de nível ou conquistas"
+        ],
+        "extras": [
+          "Retrospectiva Anual (janela sazonal de 20/dez a 31/jan com 5 arquétipos comportamentais) e download de Cards PNG colecionáveis de Perfil e Retrospectiva",
+          "Modo unificado 'Todos os Workspaces' no Dashboard com pills rápidas + Foco Rápido (Play/Pause) direto nas linhas de tarefa",
+          "Detecção automática de fuso horário IANA por usuário, banner de divergência e Midnight Rollover local para rotinas e ofensivas",
+          "Descrições Rich-Text WYSIWYG (TipTap com formatação, marca-texto e links) e tags hierárquicas (>) com edição inline e contagem nos filtros",
+          "Movimentação de colunas Kanban entre workspaces, guia de preços por esforço na Loja e proteção de histórico antes de excluir tarefas ou recompensas",
+          "Vitrine aprimorada (editor de bio e painel de progresso de XP), alternância inteligente memorizando o último tema Claro/Escuro e upgrade para Spring Boot 4.1"
         ]
       },
       "r15": {
-        "statusLabel": "Marco Planejado",
+        "statusLabel": "Próximo Marco",
         "title": "Parties & Missões Diárias Cooperativas",
         "tagline": "A união faz a força: forme esquadrões focados de estudo e trabalho, cumpra metas coletivas e ganhe bônus compartilhados.",
         "features": [
@@ -338,6 +346,7 @@
           "Pomodoro & Modo Zen ilimitados",
           "Streaks de Hábitos e Tarefas Diárias",
           "Modo Hardcore para Tarefas, Hábitos e Diárias",
+          "4 Temas: Dark Cósmico & Daylight + 1 Escuro alternativo (Dark Knight) e 1 Claro alternativo (Solar Parchment)",
           "Efeitos sonoros e comemorações com confetes"
         ]
       },
@@ -353,8 +362,9 @@
           "🛡️ Insígnia Exclusiva Vitalícia de Membro Fundador no seu perfil para sempre",
           "👑 1 ano completo de Guardião Cósmico por R$ 59,90 (de R$ 99/ano)",
           "⭐ Reconhecimento perpétuo como pioneiro da história do HabitParty",
-          "🚀 Acesso prioritário a todos os lançamentos do Roadmap (Temas, Vitrine, Party e Guildas)",
+          "🚀 Acesso prioritário aos próximos lançamentos do Roadmap (Parties, Chat ao Vivo e Guildas)",
           "Agendamento de Afazeres como Eventos (horário de início/término ou dia inteiro)",
+          "3 temas atmosféricos exclusivos VIP (Cyberpunk Neon, Forest Ranger e tema Claro extra Royal Gold)",
           "Molduras animadas exclusivas para seu perfil e avatar",
           "Sons ambiente no Pomodoro (Chuva, Cafeteria, Fogueira, Lofi)",
           "Pacote exclusivo de ícones VIP para atividades, colunas e loja",
@@ -375,6 +385,7 @@
         "ctaText": "Desbloquear Plano Mensal 👑",
         "features": [
           "Agendamento de Afazeres como Eventos (horário de início/término ou dia inteiro)",
+          "3 temas atmosféricos exclusivos VIP (Cyberpunk Neon, Forest Ranger e tema Claro extra Royal Gold)",
           "Lembretes por e-mail expandidos (até 30 ativos e 100 disparos/mês)",
           "Molduras animadas exclusivas para seu perfil e avatar",
           "Sons ambiente no Pomodoro (Chuva, Cafeteria, Fogueira, Lofi)",
@@ -406,7 +417,7 @@
       },
       "freeVsPremium": {
         "question": "O HabitParty é gratuito? O que o plano Premium oferece?",
-        "answer": "O HabitParty possui um plano 100% gratuito com tudo o que você precisa: até 2 ambientes independentes, 4 colunas por ambiente, 4 atividades no Modo Foco, até 25 recompensas, mochila para 20 itens e até 5 lembretes por e-mail ativos simultaneamente (com cota de 20 disparos mensais) para seus afazeres. Para quem gerencia múltiplos projetos e busca foco profundo, o plano Guardião Cósmico traz capacidade expandida de lembretes por e-mail (até 30 ativos e 100 disparos mensais), molduras animadas para o perfil, geradores de sons ambiente (Chuva, Café, Lofi, Fogueira), pacote de ícones VIP, expansão para 4 ambientes, 6 colunas, 6 atividades de foco, até 100 recompensas e mochila para 100 itens."
+        "answer": "O HabitParty possui um plano 100% gratuito com tudo o que você precisa: até 2 ambientes independentes, 4 colunas por ambiente, 4 atividades no Modo Foco, até 25 recompensas, mochila para 20 itens, até 5 lembretes por e-mail ativos (20 disparos mensais) e 4 temas visuais (Dark Cósmico & Daylight + 1 tema escuro alternativo [Dark Knight] e 1 tema claro alternativo [Solar Parchment]). Para quem gerencia múltiplos projetos e busca foco profundo, o plano Guardião Cósmico traz 3 temas atmosféricos exclusivos VIP (Cyberpunk Neon, Forest Ranger e o tema claro extra Royal Gold), lembretes expandidos (até 30 ativos e 100 disparos mensais), eventos agendados, molduras animadas, geradores de sons ambiente (Chuva, Café, Lofi, Fogueira), pacote de ícones VIP e expansão para 4 ambientes, 6 colunas, 6 atividades de foco, até 100 recompensas e mochila para 100 itens."
       },
       "honestyShop": {
         "question": "Como funciona a Loja e por que é baseada na minha honestidade?",
@@ -417,8 +428,8 @@
         "answer": "O Modo Hardcore pode ser ativado para Afazeres (To-dos), Hábitos e Diárias. Se você falhar no compromisso do dia ou deixar o prazo fatal de um afazer expirar, o jogo desconta moedas da sua conta e reduz seu XP na virada da meia-noite. Além disso, em afazeres com prazo vencido a data fica congelada e a recompensa tardia é reduzida, criando uma consequência real que fortalece sua disciplina."
       },
       "partyGuild": {
-        "question": "O sistema de Party / Guilda com amigos já está disponível?",
-        "answer": "Atualmente você pode usar o HabitParty com foco total individual. O sistema de Guildas e Party em equipe está em fase final de desenvolvimento e será lançado em breve para você evoluir junto com amigos no mesmo ambiente."
+        "question": "O sistema social, de Party e Guilda com amigos já está disponível?",
+        "answer": "As amizades já estão no ar na v1.4! Você pode conectar-se por @username ou código exclusivo HP-XXXXXX, visitar Perfis Públicos com controles granulares de privacidade, exportar cards PNG de perfil e retrospectiva e receber notificações de marcos sociais. As Parties cooperativas (v1.5), Chat em Tempo Real (v1.6) e Guildas (v2.0+) são os próximos capítulos do Roadmap."
       },
       "dataPreservation": {
         "question": "O que acontece com minhas colunas e dados se o Premium acabar?",

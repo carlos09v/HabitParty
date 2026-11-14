@@ -73,6 +73,7 @@ export async function deleteTransactionsBatchAction(
     }
 
     updateTag("transactions");
+    updateTag("retrospective");
     return { success: true, data: undefined };
   } catch (err) {
     console.error("[HistoryAction:DeleteBatch]", err);
@@ -105,6 +106,7 @@ export async function deleteTransactionAction(
     }
 
     updateTag("transactions");
+    updateTag("retrospective");
     return { success: true, data: undefined };
   } catch (err) {
     console.error("[HistoryAction:Delete]", err);

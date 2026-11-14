@@ -3,7 +3,6 @@
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { updateTask } from "@/actions/taskActions";
 import {
   MAX_TASK_TAGS,
   normalizeTaskType,
@@ -14,6 +13,7 @@ import { useAnchoredPopoverPosition } from "@/hooks/useAnchoredPopoverPosition";
 import { useChecklist } from "@/hooks/useChecklist";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useIsClient } from "@/hooks/useIsClient";
+import { useTaskOptimisticAutoSave } from "@/hooks/useTaskOptimisticAutoSave";
 import { useUserStore } from "@/store/userStore";
 import type { ChecklistItem, Task, TaskPriorityOption } from "@/types/task";
 import type { TaskDetailsPopoverProps } from "@/types/task-ui";
@@ -22,14 +22,8 @@ import {
   isTaskHardcoreLocked,
   normalizeEventSchedulePatch,
 } from "@/utils/date";
-import { calculateTaskReward } from "@/utils/economy";
 import { mergeTaskTagsWithLimit, replaceTaskTag } from "@/utils/tags";
-import {
-  buildUpdateTaskPayload,
-  computeOptimisticHabitDelta,
-  mapTaskResponseToTask,
-  parseTaskTags,
-} from "@/utils/taskMapper";
+import { computeOptimisticHabitDelta, parseTaskTags } from "@/utils/taskMapper";
 
 export function useTaskDetailsPopover({
   isOpen,
@@ -48,26 +42,15 @@ export function useTaskDetailsPopover({
   const popoverRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
-  // Refs de sincronização imediata para auto-save e consolidação atômica sem closures defasadas
+  // Refs de sincronização imediata para flush ao fechar sem closures defasadas
   const titleRef = useRef(task?.title || "");
   const descRef = useRef(task?.description || "");
   const descriptionFlushRef = useRef<(() => string) | null>(null);
   const newItemRef = useRef("");
   const checklistRef = useRef<ChecklistItem[]>(task?.checklist || []);
-  const latestTaskRef = useRef<Task | undefined>(task);
-  const confirmedTaskRef = useRef<Task | undefined>(task);
-  const pendingFieldsRef = useRef<Partial<Task>>({});
-  const flushScheduledRef = useRef(false);
-  const saveChainRef = useRef<Promise<void>>(Promise.resolve());
-  const saveSequenceRef = useRef(0);
-  const isMountedRef = useRef(true);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
+  const syncChecklistRef = useRef<(nextList: ChecklistItem[]) => void>(
+    () => {},
+  );
 
   const mounted = useIsClient();
   const [completed, setCompleted] = useState(Boolean(task?.completed));
@@ -87,21 +70,9 @@ export function useTaskDetailsPopover({
   const [priority, setPriority] = useState<string>(task?.priority || "NONE");
   const [tags, setTags] = useState<string[]>(task?.tags || []);
 
-  const handleChecklistChanged = useCallback(
-    (nextList: ChecklistItem[]) => {
-      checklistRef.current = nextList;
-      const baseTask = latestTaskRef.current;
-      if (baseTask) {
-        const updatedTask = { ...baseTask, checklist: nextList };
-        latestTaskRef.current = updatedTask;
-        confirmedTaskRef.current = confirmedTaskRef.current
-          ? { ...confirmedTaskRef.current, checklist: nextList }
-          : updatedTask;
-        onTaskUpdate?.(updatedTask);
-      }
-    },
-    [onTaskUpdate],
-  );
+  const handleChecklistChanged = useCallback((nextList: ChecklistItem[]) => {
+    syncChecklistRef.current(nextList);
+  }, []);
 
   const {
     checklist,
@@ -124,7 +95,6 @@ export function useTaskDetailsPopover({
   const [isMobileScreen, setIsMobileScreen] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth < 640 : false,
   );
-  const syncedTaskIdRef = useRef<string | undefined>(task?.id);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -188,33 +158,36 @@ export function useTaskDetailsPopover({
     [],
   );
 
-  // Sincroniza dados locais e refs apenas quando uma tarefa diferente passa a ser exibida
-  useEffect(() => {
-    if (!task) {
-      syncedTaskIdRef.current = undefined;
-      latestTaskRef.current = undefined;
-      confirmedTaskRef.current = undefined;
-      pendingFieldsRef.current = {};
-      flushScheduledRef.current = false;
-      return;
-    }
-    if (syncedTaskIdRef.current === task.id) return;
-    syncedTaskIdRef.current = task.id;
-    latestTaskRef.current = task;
-    confirmedTaskRef.current = task;
-    pendingFieldsRef.current = {};
-    flushScheduledRef.current = false;
+  const handleNewTaskSelected = useCallback(
+    (newTask: Task) => {
+      const initialChecklist = newTask.checklist || [];
+      resetChecklist(initialChecklist);
+      checklistRef.current = initialChecklist;
+      setIsAddingTag(false);
+      setNewTagText("");
+      setIsAddingItem(false);
+      setNewItemText("");
+      newItemRef.current = "";
+    },
+    [resetChecklist],
+  );
 
-    applyFieldsToLocalState(task);
-    const initialChecklist = task.checklist || [];
-    resetChecklist(initialChecklist);
-    checklistRef.current = initialChecklist;
-    setIsAddingTag(false);
-    setNewTagText("");
-    setIsAddingItem(false);
-    setNewItemText("");
-    newItemRef.current = "";
-  }, [task, resetChecklist, applyFieldsToLocalState]);
+  const {
+    getCurrentTask,
+    setLatestTaskDraft,
+    saveTaskField,
+    syncChecklistIntoTask,
+  } = useTaskOptimisticAutoSave({
+    task,
+    checklistRef,
+    onTaskUpdate,
+    applyFieldsToLocalState,
+    onNewTaskSelected: handleNewTaskSelected,
+  });
+
+  useEffect(() => {
+    syncChecklistRef.current = syncChecklistIntoTask;
+  }, [syncChecklistIntoTask]);
 
   useEffect(() => {
     checklistRef.current = checklist;
@@ -225,111 +198,8 @@ export function useTaskDetailsPopover({
   const isDaily = taskType === "daily";
   const isTodo = taskType === "todo";
 
-  const saveTaskField = useCallback(
-    (fields: Partial<Task>) => {
-      const baseTask = latestTaskRef.current ?? task;
-      if (!baseTask) return;
-
-      const currentChecklist =
-        checklistRef.current.length > 0
-          ? checklistRef.current
-          : baseTask.checklist || [];
-
-      const mergedDraft: Task = {
-        ...baseTask,
-        checklist: currentChecklist,
-        ...fields,
-      };
-      const reward = calculateTaskReward({
-        ...mergedDraft,
-        isHardcoreModeEnabled: mergedDraft.isHardcoreModeEnabled,
-        dueDate: mergedDraft.dueDate,
-        isPenaltyApplied: mergedDraft.isPenaltyApplied,
-      });
-      const updated: Task = {
-        ...mergedDraft,
-        rewardXp: reward.xp,
-        rewardGold: reward.gold,
-      };
-
-      latestTaskRef.current = updated;
-      pendingFieldsRef.current = {
-        ...pendingFieldsRef.current,
-        ...fields,
-      };
-      saveSequenceRef.current += 1;
-      onTaskUpdate?.(updated);
-
-      if (flushScheduledRef.current) return;
-      flushScheduledRef.current = true;
-
-      queueMicrotask(() => {
-        flushScheduledRef.current = false;
-        const snapshotTask = latestTaskRef.current;
-        const patchedFields = pendingFieldsRef.current;
-        pendingFieldsRef.current = {};
-        if (!snapshotTask) return;
-
-        const batchSeq = saveSequenceRef.current;
-        const payload = buildUpdateTaskPayload(
-          snapshotTask,
-          undefined,
-          useUserStore.getState().user?.timezone,
-        );
-
-        saveChainRef.current = saveChainRef.current.then(async () => {
-          const previousConfirmed = confirmedTaskRef.current ?? snapshotTask;
-          const res = await updateTask(snapshotTask.id, payload);
-          if (!res.success) {
-            toast.error(res.error || t("saveChangesError"));
-            if (batchSeq === saveSequenceRef.current) {
-              latestTaskRef.current = previousConfirmed;
-              onTaskUpdate?.(previousConfirmed);
-              if (isMountedRef.current) {
-                applyFieldsToLocalState(previousConfirmed, patchedFields);
-              }
-            }
-          } else if (res.data) {
-            const mappedServer = mapTaskResponseToTask(
-              res.data,
-              snapshotTask.columnId || "",
-            );
-            const finalChecklist =
-              res.data.checklist && res.data.checklist.length > 0
-                ? res.data.checklist
-                : snapshotTask.checklist;
-            const syncedTask: Task = {
-              ...mappedServer,
-              title: res.data.name || snapshotTask.title,
-              checklist: finalChecklist,
-              totalFocusMinutes:
-                res.data.totalFocusMinutes ?? snapshotTask.totalFocusMinutes,
-              focusCyclesCount:
-                res.data.focusCyclesCount ?? snapshotTask.focusCyclesCount,
-            };
-            confirmedTaskRef.current = syncedTask;
-            if (batchSeq === saveSequenceRef.current) {
-              latestTaskRef.current = syncedTask;
-              onTaskUpdate?.(syncedTask);
-              if (isMountedRef.current) {
-                applyFieldsToLocalState(syncedTask, {
-                  dueDate: syncedTask.dueDate,
-                  dueTime: syncedTask.dueTime,
-                  startTime: syncedTask.startTime,
-                  dueEndTime: syncedTask.dueEndTime,
-                  isAllDay: syncedTask.isAllDay,
-                });
-              }
-            }
-          }
-        });
-      });
-    },
-    [task, onTaskUpdate, applyFieldsToLocalState, t],
-  );
-
   const flushPendingChanges = useCallback(() => {
-    const currentTask = latestTaskRef.current ?? task;
+    const currentTask = getCurrentTask();
     if (!currentTask) return;
 
     const flushedDesc = descriptionFlushRef.current?.();
@@ -358,7 +228,7 @@ export function useTaskDetailsPopover({
     if (pendingItem) {
       addChecklistItem(pendingItem);
     }
-  }, [task, saveTaskField, addChecklistItem]);
+  }, [getCurrentTask, saveTaskField, addChecklistItem]);
 
   const handleCloseWithSave = useCallback(() => {
     flushPendingChanges();
@@ -368,18 +238,18 @@ export function useTaskDetailsPopover({
   useClickOutside(popoverRef, handleCloseWithSave, { enabled: isOpen });
 
   const handleToggleTask = () => {
-    const currentTask = latestTaskRef.current ?? task;
+    const currentTask = getCurrentTask();
     if (!currentTask) return;
     const next = !completed;
     setCompleted(next);
     const updatedTask = { ...currentTask, completed: next };
-    latestTaskRef.current = updatedTask;
+    setLatestTaskDraft(updatedTask);
     onToggleComplete?.(currentTask.id, next);
     onTaskUpdate?.(updatedTask);
   };
 
   const handleHabitDelta = (delta: number) => {
-    const currentTask = latestTaskRef.current ?? task;
+    const currentTask = getCurrentTask();
     if (!currentTask) return;
     onHabitChange?.(currentTask.id, delta);
     const nextFields = computeOptimisticHabitDelta(
@@ -388,12 +258,12 @@ export function useTaskDetailsPopover({
       useUserStore.getState().user?.timezone,
     );
     const updatedTask = { ...currentTask, ...nextFields };
-    latestTaskRef.current = updatedTask;
+    setLatestTaskDraft(updatedTask);
     onTaskUpdate?.(updatedTask);
   };
 
   const handleTitleBlur = () => {
-    const currentTask = latestTaskRef.current ?? task;
+    const currentTask = getCurrentTask();
     if (!currentTask) return;
     const trimmed = title.trim().slice(0, TASK_TITLE_MAX_LENGTH);
     if (!trimmed) {
@@ -417,7 +287,7 @@ export function useTaskDetailsPopover({
   };
 
   const handleDescriptionBlur = () => {
-    const currentTask = latestTaskRef.current ?? task;
+    const currentTask = getCurrentTask();
     if (!currentTask) return;
     const trimmed = descRef.current.trim();
     if (trimmed !== (currentTask.description || "").trim()) {
@@ -426,7 +296,7 @@ export function useTaskDetailsPopover({
   };
 
   const handleDateChange = (newDate: string) => {
-    const currentTask = latestTaskRef.current ?? task;
+    const currentTask = getCurrentTask();
     if (
       !currentTask ||
       isTaskHardcoreLocked(
@@ -456,7 +326,7 @@ export function useTaskDetailsPopover({
   };
 
   const handleEventScheduleChange = (patch: DatePickerEventSchedulePatch) => {
-    const currentTask = latestTaskRef.current ?? task;
+    const currentTask = getCurrentTask();
     const userTimeZone = useUserStore.getState().user?.timezone;
     if (
       !currentTask ||

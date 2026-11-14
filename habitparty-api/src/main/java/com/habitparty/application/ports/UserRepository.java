@@ -27,6 +27,10 @@ public interface UserRepository {
   List<User> findAll();
   Optional<User> findByEmail(String email); // Para o LoginUseCase
   Optional<User> findByUsername(String username);
+
+  default Optional<User> findByUsernameIgnoreCase(String username) {
+    return findByUsername(username);
+  }
   Optional<User> findByStripeCustomerId(String stripeCustomerId);
   long countAll();
   long countByIsPremium(boolean isPremium);
@@ -53,5 +57,17 @@ public interface UserRepository {
 
   default List<User> findAllByIdsForUpdate(Collection<UUID> ids) {
     return findAllByIds(ids);
+  }
+
+  default Optional<User> findByFriendCode(String friendCode) {
+    return Optional.empty();
+  }
+
+  default boolean existsByFriendCode(String friendCode) {
+    return false;
+  }
+
+  default List<User> searchSocialUsers(String query, UUID excludeUserId, int limit) {
+    return List.of();
   }
 }

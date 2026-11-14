@@ -281,6 +281,7 @@ export function ShowcaseHighlightPickerModal({
             value={activeTab}
             onChange={(val) => setActiveTab(val)}
             size="sm"
+            className="w-full sm:w-auto"
           />
 
           {activeTab === "achievements" && unlockedAchievements.length > 0 && (
@@ -498,16 +499,16 @@ export function ShowcaseHighlightPickerModal({
         </div>
 
         {/* FOOTER */}
-        <div className="flex items-center justify-between gap-3 pt-4 border-t border-neutral-700 dark:border-primary/20">
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-neutral-700 dark:border-primary/20">
           <span className="text-xs text-neutral-400">
             {t("activeSlotLabel", { slot: activeSlot + 1 })}
           </span>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 w-full sm:w-auto">
             <button
               type="button"
               disabled={isPending}
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-neutral-300 hover:bg-surface-hover cursor-pointer"
+              className="flex-1 sm:flex-initial justify-center px-4 py-2 rounded-xl text-xs font-bold text-neutral-300 hover:bg-surface-hover cursor-pointer"
             >
               {t("cancelButton")}
             </button>
@@ -515,7 +516,7 @@ export function ShowcaseHighlightPickerModal({
               type="button"
               disabled={isPending}
               onClick={handleSave}
-              className="px-4 py-2 rounded-xl text-xs font-extrabold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs cursor-pointer"
+              className="flex-1 sm:flex-initial justify-center px-4 py-2 rounded-xl text-xs font-extrabold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs cursor-pointer"
             >
               {isPending ? t("savingButton") : t("saveButton")}
             </button>

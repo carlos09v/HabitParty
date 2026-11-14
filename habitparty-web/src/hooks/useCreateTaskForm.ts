@@ -536,6 +536,16 @@ export function useCreateTaskForm({
         }
         if (moveError) {
           toast.error(moveError || t("moveTaskColumnError"));
+          onSuccess?.(
+            {
+              ...draftTask,
+              columnId: originalColumnId || columnId,
+              checklist: finalChecklist,
+            },
+            originalColumnId || columnId,
+          );
+          onClose();
+          return;
         }
 
         toast.success(t("updateTaskSuccess"));

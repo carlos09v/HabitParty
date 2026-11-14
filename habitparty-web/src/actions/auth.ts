@@ -4,19 +4,18 @@ import { updateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { invalidateSessionCacheTags } from "@/actions/cacheInvalidation";
 import { type ActionState, getErrorMessage } from "@/actions/types";
 import { getServerAuthToken, serverApi } from "@/api/server";
+import {
+  DEFAULT_THEME_ID,
+  getThemePolarity,
+  isValidThemeId,
+  LIGHT_THEME_ID,
+  resolveAllowedTheme,
+} from "@/constants/themes";
 import type { CreateUserDTO, UserResponseDTO } from "@/types/user";
 import { isValidIanaTimeZone, TIMEZONE_COOKIE } from "@/utils/date";
-
-/**
- * Invalida as tags de cache privado associadas à sessão do usuário.
- */
-function invalidateSessionCacheTags() {
-  updateTag("user");
-  updateTag("workspaces");
-  updateTag("showcase");
-}
 
 /**
  * Salva os tokens JWT seguros nos cookies HTTP-only.
@@ -44,6 +43,8 @@ async function setAuthCookies(accessToken: string, refreshToken: string) {
   });
 }
 
+const PREFERENCE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+
 /**
  * Persiste o fuso horário IANA do usuário no cookie de sessão.
  */
@@ -52,19 +53,62 @@ async function setTimezoneCookieIfValid(timezone?: string | null) {
   const cookieStore = await cookies();
   cookieStore.set(TIMEZONE_COOKIE, timezone, {
     path: "/",
-    maxAge: 60 * 60 * 24 * 365,
+    maxAge: PREFERENCE_COOKIE_MAX_AGE,
     sameSite: "lax",
   });
 }
 
 /**
+ * Sincroniza os cookies visuais de tema a partir do perfil retornado pelo backend.
+ */
+async function setThemeCookiesFromUser(user?: UserResponseDTO) {
+  if (!user) return;
+  const cookieStore = await cookies();
+  const cookieOptions = {
+    path: "/",
+    maxAge: PREFERENCE_COOKIE_MAX_AGE,
+    sameSite: "lax" as const,
+  };
+
+  if (!user.theme || !isValidThemeId(user.theme)) {
+    cookieStore.delete("theme");
+    cookieStore.delete("lastDarkTheme");
+    cookieStore.delete("lastLightTheme");
+    return;
+  }
+
+  const resolvedTheme = resolveAllowedTheme(
+    user.theme,
+    Boolean(user.isPremium),
+  );
+  const polarity = getThemePolarity(resolvedTheme);
+
+  cookieStore.set("theme", resolvedTheme, cookieOptions);
+  cookieStore.set("sitePolarity", polarity, cookieOptions);
+  cookieStore.set(
+    "lastDarkTheme",
+    polarity === "dark" ? resolvedTheme : DEFAULT_THEME_ID,
+    cookieOptions,
+  );
+  cookieStore.set(
+    "lastLightTheme",
+    polarity === "light" ? resolvedTheme : LIGHT_THEME_ID,
+    cookieOptions,
+  );
+}
+
+/**
  * Finaliza a configuração de uma sessão autenticada (cookies de token,
- * sincronização de fuso horário, checagem opcional de workspaces e invalidação de cache).
+ * sincronização de fuso horário e tema, checagem opcional de workspaces e invalidação de cache).
  */
 async function finalizeAuthenticatedSession(
   accessToken: string,
   refreshToken: string,
-  options?: { checkWorkspaces?: boolean; initialIsNewUser?: boolean },
+  options?: {
+    checkWorkspaces?: boolean;
+    initialIsNewUser?: boolean;
+    useRouteRevalidation?: boolean;
+  },
 ): Promise<{ isNewUser: boolean }> {
   await setAuthCookies(accessToken, refreshToken);
 
@@ -94,12 +138,15 @@ async function finalizeAuthenticatedSession(
     }
 
     const meData = meResult.data as UserResponseDTO | undefined;
-    await setTimezoneCookieIfValid(meData?.timezone);
+    await Promise.all([
+      setTimezoneCookieIfValid(meData?.timezone),
+      setThemeCookiesFromUser(meData),
+    ]);
   } catch {
-    // Fallback silencioso caso o fuso seja sincronizado posteriormente no cliente
+    // Fallback silencioso caso o fuso ou tema sejam sincronizados posteriormente no cliente
   }
 
-  invalidateSessionCacheTags();
+  invalidateSessionCacheTags(options?.useRouteRevalidation);
   return { isNewUser };
 }
 
@@ -230,9 +277,34 @@ export async function signOut() {
     }
   }
 
+  const rawTheme = cookieStore.get("theme")?.value;
+  let decodedTheme: string | undefined;
+  if (rawTheme) {
+    try {
+      decodedTheme = decodeURIComponent(rawTheme);
+    } catch {
+      decodedTheme = rawTheme;
+    }
+  }
+  const rawSitePolarity = cookieStore.get("sitePolarity")?.value;
+  const polarityOnSignOut = isValidThemeId(decodedTheme)
+    ? getThemePolarity(decodedTheme)
+    : rawSitePolarity === "light" || rawSitePolarity === "dark"
+      ? rawSitePolarity
+      : "dark";
+
+  cookieStore.set("sitePolarity", polarityOnSignOut, {
+    path: "/",
+    maxAge: PREFERENCE_COOKIE_MAX_AGE,
+    sameSite: "lax",
+  });
+  cookieStore.delete("theme");
+  cookieStore.delete("lastDarkTheme");
+  cookieStore.delete("lastLightTheme");
   cookieStore.delete("habitparty_token");
   cookieStore.delete("habitparty_refresh_token");
   cookieStore.delete(TIMEZONE_COOKIE);
+  cookieStore.delete("activeWorkspaceId");
   invalidateSessionCacheTags();
   redirect("/signIn");
 }
@@ -324,6 +396,7 @@ export async function completeOAuthLogin(
   accessToken: string,
   refreshToken: string,
   _browserTimezone?: string,
+  options?: { useRouteRevalidation?: boolean },
 ): Promise<ActionState<{ isNewUser: boolean }>> {
   const t = await getTranslations("auth.errors");
 
@@ -334,7 +407,10 @@ export async function completeOAuthLogin(
   const { isNewUser } = await finalizeAuthenticatedSession(
     accessToken,
     refreshToken,
-    { checkWorkspaces: true },
+    {
+      checkWorkspaces: true,
+      useRouteRevalidation: options?.useRouteRevalidation,
+    },
   );
 
   return { success: true, data: { isNewUser } };
@@ -346,6 +422,7 @@ export async function completeOAuthLogin(
 export async function exchangeGoogleCode(
   code: string,
   browserTimezone?: string,
+  options?: { useRouteRevalidation?: boolean },
 ): Promise<ActionState<{ isNewUser: boolean }>> {
   const t = await getTranslations("auth.errors");
 
@@ -383,6 +460,7 @@ export async function exchangeGoogleCode(
       {
         checkWorkspaces: true,
         initialIsNewUser: Boolean(authResponse.isNewUser),
+        useRouteRevalidation: options?.useRouteRevalidation,
       },
     );
 

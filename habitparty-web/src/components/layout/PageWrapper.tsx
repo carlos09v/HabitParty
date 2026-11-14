@@ -4,7 +4,7 @@ import { cn } from "@/utils";
 interface PageWrapperProps {
   children: ReactNode;
   className?: string;
-  noScroll?: boolean;
+  noScroll?: boolean | "lg";
   isCompact?: boolean;
 }
 
@@ -14,11 +14,18 @@ export function PageWrapper({
   noScroll,
   isCompact = false,
 }: PageWrapperProps) {
+  const scrollClass =
+    noScroll === "lg"
+      ? "overflow-y-auto overflow-x-hidden lg:overflow-hidden"
+      : noScroll
+        ? "overflow-hidden"
+        : "overflow-y-auto overflow-x-hidden";
+
   return (
     <div
       className={cn(
         "flex-1 min-w-0 h-full flex flex-col custom-scrollbar",
-        noScroll ? "overflow-hidden" : "overflow-y-auto overflow-x-hidden",
+        scrollClass,
         isCompact
           ? "p-3 sm:p-4 md:p-5 gap-3 sm:gap-4"
           : "p-3.5 sm:p-5 md:p-6 gap-4 sm:gap-6",

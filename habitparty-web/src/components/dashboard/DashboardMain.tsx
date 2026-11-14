@@ -1,26 +1,36 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DashboardDailyBriefing } from "@/components/dashboard/DashboardDailyBriefing";
 import { DashboardListSummary } from "@/components/dashboard/DashboardListSummary";
 import { DashboardTasksPanel } from "@/components/dashboard/DashboardTasksPanel";
 import { RouteLoading } from "@/components/layout/RouteLoading";
 import { MAX_COLUMNS_PREMIUM, MAX_VISIBLE_COLUMNS } from "@/constants/routine";
-import { normalizeTaskType } from "@/constants/task";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import { useFocusTaskSync } from "@/hooks/useFocusTaskSync";
+import {
+  applyFocusCompletionToTask,
+  applyFocusRecordedToTask,
+  useFocusTaskSync,
+} from "@/hooks/useFocusTaskSync";
 import { useMidnightRollover } from "@/hooks/useMidnightRollover";
-import { useProgressStore } from "@/store/progressStore";
+import { useSyncWorkspaceSwitchReset } from "@/hooks/useSyncWorkspaceSwitchReset";
 import { useUserStore } from "@/store/userStore";
-import { useWorkspaceStore } from "@/store/workspaceStore";
-import type { DashboardMainProps } from "@/types/dashboard";
+import type {
+  DashboardColumnOption,
+  DashboardMainProps,
+} from "@/types/dashboard";
 import type { Task } from "@/types/task";
 import { cn, getTodayDateString } from "@/utils";
 import {
   getFirstName,
   hasCompletedTaskInTransactionsToday,
 } from "@/utils/dashboardMetrics";
+import {
+  buildReadOnlySets,
+  isTaskInReadOnlyScope,
+  resetTaskOnMidnightRollover,
+} from "@/utils/taskMapper";
 
 /**
  * Painel Principal do Dashboard.
@@ -30,8 +40,10 @@ import {
 export function DashboardMain({
   isCompact = false,
   initialTasks = [],
+  workspaces = [],
   activeWorkspaceId,
   initialColumns = [],
+  initialAllColumns = [],
   initialVisibleColumnIds,
   transactions = [],
   user = null,
@@ -39,10 +51,7 @@ export function DashboardMain({
   const t = useTranslations("dashboard.dailyBriefing");
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [columns, setColumns] = useState(initialColumns);
-  const [optimisticCompletedTodayIds, setOptimisticCompletedTodayIds] =
-    useState<Set<string>>(() => new Set());
-  const isSwitchingWorkspace = useWorkspaceStore((s) => s.isSwitchingWorkspace);
-  const storeActiveWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
+  const isSwitchingWorkspace = useSyncWorkspaceSwitchReset(activeWorkspaceId);
   const storeUser = useUserStore((s) => s.user);
   const setLastStreakSecuredDate = useUserStore(
     (s) => s.setLastStreakSecuredDate,
@@ -53,16 +62,7 @@ export function DashboardMain({
       : (user?.timezone ?? storeUser?.timezone);
 
   useMidnightRollover(userTimezone, () => {
-    setOptimisticCompletedTodayIds(new Set());
-    setTasks((prev) =>
-      prev.map((task) => {
-        const type = normalizeTaskType(task);
-        if (type === "daily" || type === "habit") {
-          return { ...task, completed: false, hasClaimedReward: false };
-        }
-        return task;
-      }),
-    );
+    setTasks((prev) => prev.map(resetTaskOnMidnightRollover));
   });
 
   useEffect(() => {
@@ -86,39 +86,25 @@ export function DashboardMain({
   }, [transactions, setLastStreakSecuredDate, userTimezone]);
 
   useFocusTaskSync({
+    onFocusRecorded: (taskId, durationMinutes, cycles) => {
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === taskId
+            ? applyFocusRecordedToTask(task, durationMinutes, cycles)
+            : task,
+        ),
+      );
+    },
     onTaskCompleted: (taskId) => {
-      setOptimisticCompletedTodayIds((prev) => {
-        const next = new Set(prev);
-        next.add(taskId);
-        return next;
-      });
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === taskId
+            ? applyFocusCompletionToTask(task, userTimezone)
+            : task,
+        ),
+      );
     },
   });
-
-  const handleTaskCompletedTodayChange = (
-    taskId: string,
-    completedToday: boolean,
-  ) => {
-    setOptimisticCompletedTodayIds((prev) => {
-      const next = new Set(prev);
-      if (completedToday) {
-        next.add(taskId);
-      } else {
-        next.delete(taskId);
-      }
-      return next;
-    });
-  };
-
-  useEffect(() => {
-    if (
-      isSwitchingWorkspace &&
-      (!storeActiveWorkspaceId || activeWorkspaceId === storeActiveWorkspaceId)
-    ) {
-      useWorkspaceStore.setState({ isSwitchingWorkspace: false });
-      useProgressStore.getState().done("workspace-switch");
-    }
-  }, [activeWorkspaceId, storeActiveWorkspaceId, isSwitchingWorkspace]);
 
   const handleColumnDeleted = (deletedColumnId: string) => {
     setTasks((prev) =>
@@ -129,6 +115,53 @@ export function DashboardMain({
   const isPremium = user?.isPremium ?? false;
   const maxColumns = isPremium ? MAX_COLUMNS_PREMIUM : MAX_VISIBLE_COLUMNS;
   const { isGamified } = useExperienceMode();
+
+  const activeWorkspace = useMemo(
+    () => workspaces.find((w) => w.id === activeWorkspaceId),
+    [workspaces, activeWorkspaceId],
+  );
+  const activeWorkspaceName = activeWorkspace?.name ?? "";
+  const isActiveWorkspaceReadOnly = Boolean(activeWorkspace?.isReadOnly);
+
+  const allColumns = useMemo<DashboardColumnOption[]>(() => {
+    const enrichedActive: DashboardColumnOption[] = columns.map((col) => ({
+      ...col,
+      workspaceId: activeWorkspaceId,
+      workspaceName: activeWorkspaceName,
+      isReadOnly: col.isReadOnly ?? isActiveWorkspaceReadOnly,
+    }));
+    const otherColumns = initialAllColumns.filter(
+      (col) => col.workspaceId !== activeWorkspaceId,
+    );
+    return [...enrichedActive, ...otherColumns];
+  }, [
+    columns,
+    initialAllColumns,
+    activeWorkspaceId,
+    activeWorkspaceName,
+    isActiveWorkspaceReadOnly,
+  ]);
+
+  const defaultWritableColumnId = useMemo(
+    () =>
+      allColumns.find((col) => !col.isReadOnly && col.id)?.id || columns[0]?.id,
+    [allColumns, columns],
+  );
+
+  // Exclui tarefas de workspaces excedentes (somente leitura no plano Free) da Meta de Hoje
+  const { readOnlyWorkspaceIds, readOnlyColumnIds } = useMemo(
+    () => buildReadOnlySets(workspaces, allColumns),
+    [workspaces, allColumns],
+  );
+
+  const briefingTasks = useMemo(
+    () =>
+      tasks.filter(
+        (task) =>
+          !isTaskInReadOnlyScope(task, readOnlyWorkspaceIds, readOnlyColumnIds),
+      ),
+    [tasks, readOnlyWorkspaceIds, readOnlyColumnIds],
+  );
 
   const defaultName = isGamified
     ? t("defaultNameGamified")
@@ -146,17 +179,18 @@ export function DashboardMain({
   return (
     <div
       className={cn(
-        "flex-1 min-w-0 flex flex-col overflow-y-auto custom-scrollbar transition-[padding,gap] duration-200",
-        isCompact ? "p-4 sm:p-5 gap-5" : "p-6 gap-8",
+        "@container flex-1 min-w-0 flex flex-col overflow-y-auto custom-scrollbar transition-[padding,gap] duration-200",
+        isCompact
+          ? "p-3 sm:p-4 pb-24 xl:pb-4 gap-3.5 sm:gap-4"
+          : "p-3.5 sm:p-4 md:p-5 pb-24 xl:pb-5 gap-4 sm:gap-5",
       )}
     >
       {/* Resumo Diário do Jogador (HUD com Metas e Indicadores Chave) */}
       <DashboardDailyBriefing
         firstName={firstName}
         streak={streak}
-        tasks={tasks}
+        tasks={briefingTasks}
         transactions={transactions}
-        hasOptimisticCompletionToday={optimisticCompletedTodayIds.size > 0}
         timezone={userTimezone}
       />
 
@@ -169,6 +203,10 @@ export function DashboardMain({
         onColumnDeleted={handleColumnDeleted}
         maxColumns={maxColumns}
         activeWorkspaceId={activeWorkspaceId}
+        activeWorkspaceName={
+          workspaces.length > 1 ? activeWorkspaceName : undefined
+        }
+        isReadOnly={isActiveWorkspaceReadOnly}
         isCompact={isCompact}
         isPremium={isPremium}
         tasks={tasks}
@@ -176,12 +214,13 @@ export function DashboardMain({
 
       {/* Seção: Filtros de Tarefas e Tabela com Paginação */}
       <DashboardTasksPanel
-        key={activeWorkspaceId}
         initialTasks={initialTasks}
         tasks={tasks}
         onTasksChange={setTasks}
-        onTaskCompletedTodayChange={handleTaskCompletedTodayChange}
-        columns={columns}
+        columns={allColumns}
+        workspaces={workspaces}
+        defaultColumnId={defaultWritableColumnId}
+        isReadOnly={isActiveWorkspaceReadOnly}
         isCompact={isCompact}
       />
     </div>

@@ -1,10 +1,16 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import type { components } from "@/api/schema";
 import { AVATAR_FRAMES, type AvatarFrameId } from "@/constants/avatarFrames";
+import { resolveThemeSessionState } from "@/constants/themes";
 import { useAvatarFrameStore } from "@/store/avatarFrameStore";
-import { useUIStore } from "@/store/uiStore";
+import {
+  applyThemeToDocument,
+  getThemePreferenceCookies,
+  setClientCookie,
+  useUIStore,
+} from "@/store/uiStore";
 import { useUserStore } from "@/store/userStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import type {
@@ -13,6 +19,7 @@ import type {
   ThemeMode,
   TimeFormat,
 } from "@/types/ui";
+import type { UserResponseDTO } from "@/types/user";
 import {
   getDateKeyInTimeZone,
   getTodayDateString,
@@ -22,10 +29,10 @@ import {
 import { getLevelProgress } from "@/utils/levels";
 
 type Workspace = components["schemas"]["WorkspaceResponseDTO"];
-type User = components["schemas"]["UserResponseDTO"];
+type User = UserResponseDTO;
 
 interface StoreInitializerProps {
-  theme?: ThemeMode;
+  theme?: ThemeMode | null;
   dateFormat?: DateFormat;
   timeFormat?: TimeFormat;
   experienceMode?: ExperienceMode;
@@ -34,6 +41,9 @@ interface StoreInitializerProps {
   user?: User | null;
   lastTaskCompletionAt?: string | null;
 }
+
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 function resolveSecuredStreakDateToday(
   lastTaskCompletionAt?: string | null,
@@ -67,7 +77,7 @@ function resolveValidAvatarFrame(frame?: string | null): AvatarFrameId {
 }
 
 export function StoreInitializer({
-  theme = "dark",
+  theme = null,
   dateFormat = "DD/MM/YYYY",
   timeFormat = "24h",
   experienceMode = "PRODUCTIVITY",
@@ -76,7 +86,8 @@ export function StoreInitializer({
   user = null,
   lastTaskCompletionAt = null,
 }: StoreInitializerProps) {
-  const initialized = useRef(false);
+  const initializedUI = useRef(false);
+  const initializedWorkspaces = useRef(false);
 
   const resolvedExperienceMode: ExperienceMode =
     user?.experienceMode === "PRODUCTIVITY" ||
@@ -84,54 +95,59 @@ export function StoreInitializer({
       ? user.experienceMode
       : experienceMode;
 
-  if (!initialized.current) {
-    useUIStore.setState({
-      hydrated: true,
-      theme,
-      dateFormat,
-      timeFormat,
-      experienceMode: resolvedExperienceMode,
-    });
-    if (workspaces.length > 0) {
-      useWorkspaceStore.setState({
-        workspaces,
-        activeWorkspaceId: activeWorkspaceId || workspaces[0]?.id || null,
-      });
-    }
-    if (user) {
-      useAvatarFrameStore.setState({
-        frameId: resolveValidAvatarFrame(user.avatarFrame),
-      });
-      const securedToday =
-        typeof window !== "undefined"
-          ? resolveSecuredStreakDateToday(lastTaskCompletionAt, user.timezone)
-          : null;
-      useUserStore.setState({
-        user: buildHydratedStoreUser(user),
-        is_Premium: user.isPremium ?? false,
-        ...(securedToday ? { lastStreakSecuredDate: securedToday } : {}),
-      });
-    }
-    initialized.current = true;
-  }
-
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (workspaces.length > 0) {
       const currentState = useWorkspaceStore.getState();
-      const resolvedActiveId =
-        activeWorkspaceId ||
-        currentState.activeWorkspaceId ||
-        workspaces[0]?.id ||
-        null;
+      const resolvedActiveId = initializedWorkspaces.current
+        ? activeWorkspaceId ||
+          currentState.activeWorkspaceId ||
+          workspaces[0]?.id ||
+          null
+        : activeWorkspaceId || workspaces[0]?.id || null;
       useWorkspaceStore.setState({
         workspaces,
         activeWorkspaceId: resolvedActiveId,
       });
+      initializedWorkspaces.current = true;
     }
   }, [workspaces, activeWorkspaceId]);
 
-  useEffect(() => {
-    if (!user) return;
+  useIsomorphicLayoutEffect(() => {
+    const {
+      theme: clientCookieTheme,
+      lastDarkTheme: cookieLastDark,
+      lastLightTheme: cookieLastLight,
+    } = getThemePreferenceCookies();
+    const effectiveCookieTheme = clientCookieTheme ?? theme ?? null;
+
+    if (!user) {
+      if (!initializedUI.current) {
+        const initialSession = resolveThemeSessionState({
+          cookieTheme: effectiveCookieTheme,
+          cookieLastDark,
+          cookieLastLight,
+          userTheme: null,
+          isPremium: false,
+        });
+        applyThemeToDocument(initialSession.theme, {
+          persistCookie: false,
+          updateLastPolarityCookie: false,
+          allowCustomThemes: true,
+        });
+        useUIStore.setState({
+          hydrated: true,
+          allowCustomThemes: true,
+          theme: initialSession.theme,
+          lastDarkTheme: initialSession.lastDarkTheme,
+          lastLightTheme: initialSession.lastLightTheme,
+          dateFormat,
+          timeFormat,
+          experienceMode: resolvedExperienceMode,
+        });
+        initializedUI.current = true;
+      }
+      return;
+    }
 
     setClientTimeZoneCookie(user.timezone);
 
@@ -146,6 +162,7 @@ export function StoreInitializer({
     const shouldSyncUser =
       isDifferentUser ||
       currentStoreUser?.avatarFrame !== user.avatarFrame ||
+      currentStoreUser?.theme !== user.theme ||
       currentStoreUser?.emailVerified !== user.emailVerified ||
       currentStoreUser?.experienceMode !== user.experienceMode ||
       currentStoreUser?.isPremium !== user.isPremium ||
@@ -155,6 +172,68 @@ export function StoreInitializer({
       currentStoreUser?.achievementPoints !== user.achievementPoints ||
       currentStoreUser?.timezone !== user.timezone ||
       currentStoreUser?.timezoneUpdatedAt !== user.timezoneUpdatedAt;
+
+    const isPremium = Boolean(user.isPremium);
+    const {
+      theme: allowedTheme,
+      lastDarkTheme: allowedLastDark,
+      lastLightTheme: allowedLastLight,
+    } = resolveThemeSessionState({
+      cookieTheme: effectiveCookieTheme,
+      cookieLastDark,
+      cookieLastLight,
+      userTheme: user.theme,
+      isPremium,
+    });
+
+    if (!clientCookieTheme || clientCookieTheme !== allowedTheme) {
+      applyThemeToDocument(allowedTheme, {
+        persistCookie: true,
+        updateLastPolarityCookie: true,
+        allowCustomThemes: true,
+      });
+    } else {
+      applyThemeToDocument(allowedTheme, {
+        persistCookie: false,
+        updateLastPolarityCookie: false,
+        allowCustomThemes: true,
+      });
+    }
+
+    if (cookieLastDark !== allowedLastDark) {
+      setClientCookie("lastDarkTheme", allowedLastDark);
+    }
+    if (cookieLastLight !== allowedLastLight) {
+      setClientCookie("lastLightTheme", allowedLastLight);
+    }
+
+    const currentUiState = useUIStore.getState();
+    if (!initializedUI.current) {
+      useUIStore.setState({
+        hydrated: true,
+        allowCustomThemes: true,
+        theme: allowedTheme,
+        lastDarkTheme: allowedLastDark,
+        lastLightTheme: allowedLastLight,
+        dateFormat,
+        timeFormat,
+        experienceMode: resolvedExperienceMode,
+      });
+      initializedUI.current = true;
+    } else if (
+      currentUiState.theme !== allowedTheme ||
+      currentUiState.lastDarkTheme !== allowedLastDark ||
+      currentUiState.lastLightTheme !== allowedLastLight ||
+      !currentUiState.allowCustomThemes ||
+      !currentUiState.hydrated
+    ) {
+      currentUiState.hydrateThemeState(
+        allowedTheme,
+        allowedLastDark,
+        allowedLastLight,
+        true,
+      );
+    }
 
     const nextSecuredDate =
       securedToday !== null
@@ -177,7 +256,7 @@ export function StoreInitializer({
       }
       useUserStore.setState({
         user: buildHydratedStoreUser(user),
-        is_Premium: user.isPremium ?? false,
+        is_Premium: isPremium,
         ...(shouldSyncSecuredDate
           ? { lastStreakSecuredDate: nextSecuredDate }
           : {}),
@@ -185,7 +264,14 @@ export function StoreInitializer({
     } else if (shouldSyncSecuredDate) {
       useUserStore.setState({ lastStreakSecuredDate: nextSecuredDate });
     }
-  }, [user, lastTaskCompletionAt]);
+  }, [
+    theme,
+    dateFormat,
+    timeFormat,
+    resolvedExperienceMode,
+    user,
+    lastTaskCompletionAt,
+  ]);
 
   return null;
 }

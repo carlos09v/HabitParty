@@ -3,12 +3,14 @@ package com.habitparty.application.usecases.boardcolumn;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.BoardColumnRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.ports.WorkspaceRepository;
+import com.habitparty.application.usecases.workspace.WorkspaceWriteGuard;
 import com.habitparty.core.domain.entities.BoardColumn;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.Workspace;
@@ -19,7 +21,6 @@ import com.habitparty.core.exceptions.ResourceNotFoundException;
 @Service
 @Transactional
 public class MoveBoardColumnUseCase {
-  private static final int FREE_ACTIVE_WORKSPACE_LIMIT = 2;
   private static final int FREE_COLUMN_LIMIT = 4;
   private static final int PREMIUM_COLUMN_LIMIT = 6;
   private static final int DEFAULT_VISIBLE_COLUMN_LIMIT = 4;
@@ -27,6 +28,7 @@ public class MoveBoardColumnUseCase {
   private final BoardColumnRepository port;
   private final WorkspaceRepository workspacePort;
   private final UserRepository userPort;
+  private WorkspaceWriteGuard workspaceWriteGuard;
 
   public MoveBoardColumnUseCase(
       BoardColumnRepository port,
@@ -35,6 +37,11 @@ public class MoveBoardColumnUseCase {
     this.port = port;
     this.workspacePort = workspacePort;
     this.userPort = userPort;
+  }
+
+  @Autowired(required = false)
+  public void setWorkspaceWriteGuard(WorkspaceWriteGuard workspaceWriteGuard) {
+    this.workspaceWriteGuard = workspaceWriteGuard;
   }
 
   public BoardColumn execute(UUID boardColumnId, MoveBoardColumnCommand command, UUID userIdLogado) {
@@ -61,7 +68,17 @@ public class MoveBoardColumnUseCase {
         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado!"));
 
     if (!user.isPremium()) {
-      validateFreeWorkspaceWriteAccess(userIdLogado, sourceWorkspaceId, targetWorkspaceId);
+      WorkspaceWriteGuard guard = workspaceWriteGuard != null
+          ? workspaceWriteGuard
+          : new WorkspaceWriteGuard(workspacePort, userPort, port);
+      guard.assertWorkspaceWritable(
+          user,
+          sourceWorkspaceId,
+          "O ambiente de origem está em modo somente-leitura no plano Free (máximo de 2 ambientes ativos). Faça upgrade para Premium para mover listas dele!");
+      guard.assertWorkspaceWritable(
+          user,
+          targetWorkspaceId,
+          "O ambiente de destino está em modo somente-leitura no plano Free (máximo de 2 ambientes ativos). Faça upgrade para Premium para mover listas para ele!");
     }
 
     int limit = user.isPremium() ? PREMIUM_COLUMN_LIMIT : FREE_COLUMN_LIMIT;
@@ -84,34 +101,5 @@ public class MoveBoardColumnUseCase {
 
     column.moveToWorkspace(targetWorkspaceId, newOrderIndex, isTargetVisible);
     return port.save(column);
-  }
-
-  private void validateFreeWorkspaceWriteAccess(
-      UUID userId,
-      UUID sourceWorkspaceId,
-      UUID targetWorkspaceId) {
-    List<Workspace> userWorkspaces = workspacePort.findAllByUserId(userId);
-    int sourceWsIndex = findWorkspaceIndex(userWorkspaces, sourceWorkspaceId);
-    int targetWsIndex = findWorkspaceIndex(userWorkspaces, targetWorkspaceId);
-
-    if (sourceWsIndex >= FREE_ACTIVE_WORKSPACE_LIMIT) {
-      throw new LimitExceededException(
-          "O ambiente de origem está em modo somente-leitura no plano Free (máximo de 2 ambientes ativos). Faça upgrade para Premium para mover listas dele!"
-      );
-    }
-    if (targetWsIndex >= FREE_ACTIVE_WORKSPACE_LIMIT) {
-      throw new LimitExceededException(
-          "O ambiente de destino está em modo somente-leitura no plano Free (máximo de 2 ambientes ativos). Faça upgrade para Premium para mover listas para ele!"
-      );
-    }
-  }
-
-  private int findWorkspaceIndex(List<Workspace> workspaces, UUID workspaceId) {
-    for (int i = 0; i < workspaces.size(); i++) {
-      if (workspaces.get(i).getId().equals(workspaceId)) {
-        return i;
-      }
-    }
-    return -1;
   }
 }

@@ -1,10 +1,12 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { REMINDER_OFFSET_DAYS } from "@/constants/task";
+import { DEFAULT_LOCALE, isValidLocale } from "@/i18n/config";
 import { getDashboardTransactions } from "@/services/dashboardService";
 import { getRawInventoryItems } from "@/services/inventoryService";
+import { getSocialNotifications } from "@/services/socialService";
 import { fetchWorkspaceBoardColumns } from "@/services/taskService";
 import { getCurrentUser } from "@/services/userService";
 import {
@@ -22,6 +24,8 @@ import {
   parseIsoDateUtcMs,
   parseServerDate,
 } from "@/utils/date";
+import { localizeLevelTitle } from "@/utils/levels";
+import { resolveAchievementCopy } from "@/utils/showcaseUtils";
 
 function isTimestampOnLocalDate(
   rawIso: string | undefined,
@@ -47,12 +51,22 @@ function isTimestampOnLocalDate(
 
 export interface SidebarNotification {
   id: string;
-  type: "overdue" | "today" | "streak" | "focus_item" | "reminder";
+  type:
+    | "overdue"
+    | "today"
+    | "streak"
+    | "focus_item"
+    | "reminder"
+    | "social_request"
+    | "social_accepted"
+    | "social_milestone";
   title: string;
   description: string;
   timestamp: string;
   severity: "danger" | "warning" | "info" | "gold";
   href: string;
+  socialNotificationId?: string;
+  persistedSeen?: boolean;
 }
 
 export interface SidebarNotificationsResponse {
@@ -74,22 +88,32 @@ export async function getSidebarNotificationsAction(
   clientTimezoneOffsetMinutes?: number,
 ): Promise<SidebarNotificationsResponse> {
   try {
-    const [cookieStore, t] = await Promise.all([
+    const [cookieStore, t, tCatalog, rawLocale] = await Promise.all([
       cookies(),
       getTranslations("notifications"),
+      getTranslations("showcase.catalog"),
+      getLocale(),
     ]);
+    const locale = isValidLocale(rawLocale) ? rawLocale : DEFAULT_LOCALE;
     const cookieWorkspaceId = cookieStore.get("activeWorkspaceId")?.value;
 
-    const [workspaces, user, inventoryItems, transactions, speculativeBoard] =
-      await Promise.all([
-        getWorkspaces(),
-        getCurrentUser(),
-        getRawInventoryItems(),
-        getDashboardTransactions(),
-        cookieWorkspaceId
-          ? fetchWorkspaceBoardColumns(cookieWorkspaceId)
-          : Promise.resolve(null),
-      ]);
+    const [
+      workspaces,
+      user,
+      inventoryItems,
+      transactions,
+      speculativeBoard,
+      socialFeed,
+    ] = await Promise.all([
+      getWorkspaces(),
+      getCurrentUser(),
+      getRawInventoryItems(),
+      getDashboardTransactions(),
+      cookieWorkspaceId
+        ? fetchWorkspaceBoardColumns(cookieWorkspaceId)
+        : Promise.resolve(null),
+      getSocialNotifications(15),
+    ]);
 
     const { activeWorkspaceId } = resolveActiveWorkspace(
       workspaces,
@@ -265,9 +289,108 @@ export async function getSidebarNotificationsAction(
       });
     }
 
+    const isGamified = user?.experienceMode !== "PRODUCTIVITY";
+
+    // 5. Notificações Sociais (pedidos, aceites, marcos de amigos)
+    for (const item of socialFeed.notifications) {
+      let parsedPayload: Record<string, string> = {};
+      if (item.payload) {
+        try {
+          parsedPayload = JSON.parse(item.payload) as Record<string, string>;
+        } catch {
+          parsedPayload = {};
+        }
+      }
+      const actorLabel =
+        item.actorFullName ||
+        (item.actorUsername ? `@${item.actorUsername}` : null) ||
+        parsedPayload.actorUsername ||
+        t("socialDefaultActor");
+      const actorHandle = item.actorUsername || parsedPayload.actorUsername;
+      const profileHref = actorHandle
+        ? `/profile/${encodeURIComponent(actorHandle)}`
+        : "/profile?tab=friends";
+
+      if (item.type === "FRIEND_REQUEST_RECEIVED") {
+        notifications.push({
+          id: `social-${item.id}`,
+          type: "social_request",
+          title: t("socialRequestTitle", { name: actorLabel }),
+          description: t("socialRequestDesc"),
+          timestamp: t("socialTimestamp"),
+          severity: "gold",
+          href: "/profile?tab=friends",
+          socialNotificationId: item.id,
+          persistedSeen: item.seen,
+        });
+      } else if (item.type === "FRIEND_REQUEST_ACCEPTED") {
+        notifications.push({
+          id: `social-${item.id}`,
+          type: "social_accepted",
+          title: t("socialAcceptedTitle", { name: actorLabel }),
+          description: t("socialAcceptedDesc"),
+          timestamp: t("socialTimestamp"),
+          severity: "info",
+          href: profileHref,
+          socialNotificationId: item.id,
+          persistedSeen: item.seen,
+        });
+      } else if (item.type === "FRIEND_MILESTONE_ACHIEVEMENT") {
+        const fallbackTitle =
+          parsedPayload.achievementTitle || t("socialDefaultAchievement");
+        const localizedAchievement = parsedPayload.achievementCode
+          ? resolveAchievementCopy(
+              {
+                code: parsedPayload.achievementCode,
+                title: fallbackTitle,
+                description: "",
+              },
+              isGamified,
+              tCatalog,
+            ).title
+          : fallbackTitle;
+
+        notifications.push({
+          id: `social-${item.id}`,
+          type: "social_milestone",
+          title: t("socialAchievementTitle", {
+            name: actorLabel,
+            achievement: localizedAchievement,
+          }),
+          description: t("socialAchievementDesc"),
+          timestamp: t("socialTimestamp"),
+          severity: "gold",
+          href: profileHref,
+          socialNotificationId: item.id,
+          persistedSeen: item.seen,
+        });
+      } else if (item.type === "FRIEND_MILESTONE_LEVEL") {
+        const levelKey =
+          parsedPayload.levelName || parsedPayload.levelTitle || "";
+        const localizedLevel = localizeLevelTitle(levelKey, locale, isGamified);
+
+        notifications.push({
+          id: `social-${item.id}`,
+          type: "social_milestone",
+          title: t("socialLevelTitle", {
+            name: actorLabel,
+            level: localizedLevel,
+          }),
+          description: t("socialLevelDesc"),
+          timestamp: t("socialTimestamp"),
+          severity: "gold",
+          href: profileHref,
+          socialNotificationId: item.id,
+          persistedSeen: item.seen,
+        });
+      }
+    }
+
+    const unreadCount = notifications.filter((n) => !n.persistedSeen).length;
+
     return {
       notifications,
-      unreadCount: notifications.length,
+      unreadCount,
     };
   } catch (err) {
     console.error("[getSidebarNotificationsAction]", err);

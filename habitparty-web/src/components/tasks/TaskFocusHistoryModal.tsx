@@ -50,6 +50,7 @@ export function TaskFocusHistoryModal({
   const { isGamified } = useExperienceMode();
   const { dateFormat } = useDateFormat();
   const { timeFormat } = useTimeFormat();
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
 
   const [page, setPage] = useState(0);
   const [records, setRecords] = useState<FocusRecord[]>([]);
@@ -211,7 +212,7 @@ export function TaskFocusHistoryModal({
               </div>
             </div>
 
-            <div className="hidden sm:flex items-center gap-2">
+            <div className="col-span-2 sm:col-span-1 flex items-center gap-2 pt-1.5 sm:pt-0 border-t border-neutral-700/60 dark:border-white/8 sm:border-t-0">
               <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0">
                 <Calendar size={15} />
               </div>
@@ -283,7 +284,7 @@ export function TaskFocusHistoryModal({
                         <span>
                           {formatDateTime(rec.endTime || rec.startTime, {
                             isLocal: true,
-                            timeZone: useUserStore.getState().user?.timezone,
+                            timeZone: userTimeZone,
                             locale,
                             dateFormat,
                             timeFormat,

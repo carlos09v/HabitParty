@@ -16,15 +16,6 @@ import {
 } from "@/i18n/config";
 import type { ExperienceMode } from "@/types/ui";
 
-export async function setThemeCookie(theme: "light" | "dark") {
-  const cookieStore = await cookies();
-  cookieStore.set("theme", theme, {
-    path: "/",
-    maxAge: 60 * 60 * 24 * 365, // 1 year
-    sameSite: "lax",
-  });
-}
-
 /**
  * Persiste o idioma escolhido.
  *

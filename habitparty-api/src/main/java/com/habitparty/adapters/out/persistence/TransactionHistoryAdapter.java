@@ -233,4 +233,24 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
     PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
     return repository.findAll(spec, pageRequest).map(mapper::toDomain);
   }
+
+  @Override
+  public List<TransactionHistory> findAllByUserIdAndPeriod(
+      UUID userId, LocalDateTime startInclusive, LocalDateTime endInclusive) {
+    if (userId == null || startInclusive == null || endInclusive == null) {
+      return List.of();
+    }
+    return repository.findAllByUser_IdAndCreatedAtBetweenOrderByCreatedAtAsc(userId, startInclusive, endInclusive)
+        .stream()
+        .map(mapper::toDomain)
+        .toList();
+  }
+
+  @Override
+  public java.util.Optional<LocalDateTime> findEarliestCreatedAtByUserId(UUID userId) {
+    if (userId == null) {
+      return java.util.Optional.empty();
+    }
+    return java.util.Optional.ofNullable(repository.findEarliestCreatedAtByUserId(userId));
+  }
 }

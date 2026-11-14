@@ -11,10 +11,9 @@ import {
   Languages,
   type LucideIcon,
   MonitorSmartphone,
-  Moon,
   Music,
   ShieldAlert,
-  Sun,
+  ShieldCheck,
   Swords,
   Target,
   UserCircle,
@@ -47,6 +46,7 @@ export const SETTINGS_TABS: readonly SettingsTabItem[] = [
   { id: "profile", icon: UserCircle },
   { id: "appearance", icon: MonitorSmartphone },
   { id: "audio", icon: Volume2 },
+  { id: "privacy", icon: ShieldCheck },
   { id: "security", icon: ShieldAlert },
 ] as const;
 
@@ -61,12 +61,6 @@ export function isValidSettingsTab(val?: string | null): val is SettingsTabId {
 export function resolveSettingsTab(val?: string | null): SettingsTabId {
   return isValidSettingsTab(val) ? val : "profile";
 }
-
-export const THEME_OPTIONS: readonly SettingsOptionConfig<"dark" | "light">[] =
-  [
-    { value: "dark", hasDefaultBadge: true, icon: Moon },
-    { value: "light", icon: Sun },
-  ] as const;
 
 export const EXPERIENCE_MODE_OPTIONS: readonly SettingsOptionConfig<ExperienceMode>[] =
   [

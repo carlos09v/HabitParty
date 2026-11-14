@@ -14,6 +14,7 @@ interface StoreColumnButtonUIProps {
   onOpenColumnsDrawer?: () => void;
   isCompact?: boolean;
   visibleCount: number;
+  totalCount: number;
   maxColumns: number;
   isDraggingColumn?: boolean;
   isOver?: boolean;
@@ -24,6 +25,7 @@ function StoreColumnButtonUI({
   onOpenColumnsDrawer,
   isCompact,
   visibleCount,
+  totalCount,
   maxColumns,
   isDraggingColumn = false,
   isOver = false,
@@ -32,6 +34,7 @@ function StoreColumnButtonUI({
   const t = useTranslations("tasks.filters");
   // Apenas considera "isOver" se o elemento arrastado for de fato uma Coluna, nunca um Card de Tarefa
   const isOverValid = isOver && isDraggingColumn;
+  const hasHiddenColumns = totalCount > visibleCount;
 
   return (
     <button
@@ -41,7 +44,12 @@ function StoreColumnButtonUI({
       title={
         isDraggingColumn
           ? t("storeColumnDropTitle")
-          : t("storeColumnManageTitle")
+          : hasHiddenColumns
+            ? t("storeColumnManageWithHiddenTitle", {
+                total: totalCount,
+                visible: visibleCount,
+              })
+            : t("storeColumnManageTitle")
       }
       className={cn(
         "flex items-center gap-1.5 rounded-lg border font-semibold shadow-xs transition-[transform,background-color,border-color,color] cursor-pointer select-none active:scale-98 shrink-0",
@@ -75,8 +83,13 @@ function StoreColumnButtonUI({
             : t("columnsLabel")}
       </span>
       <span className="text-primary dark:text-gold font-bold">
-        {visibleCount}/{maxColumns}
+        {totalCount}/{maxColumns}
       </span>
+      {hasHiddenColumns && !isDraggingColumn && (
+        <span className="rounded bg-surface border border-neutral-700/80 dark:bg-white/10 dark:border-white/10 px-1.5 py-0.5 text-[10px] font-medium leading-none text-neutral-300">
+          {t("visibleCountBadge", { count: visibleCount })}
+        </span>
+      )}
     </button>
   );
 }
@@ -117,6 +130,7 @@ export function RoutineFilters({
   isPremium = false,
   canCreateColumn = true,
   visibleColumnIds = [],
+  totalColumnsCount,
   onOpenColumnsDrawer,
   isDraggingColumn = false,
   enableDroppable = false,
@@ -124,6 +138,11 @@ export function RoutineFilters({
 }: RoutineFiltersProps) {
   const t = useTranslations("tasks.filters");
   const isCompact = propIsCompact ?? false;
+  const resolvedTotalCount = totalColumnsCount ?? visibleColumnIds.length;
+  const resolvedVisibleCount = Math.min(
+    visibleColumnIds.length,
+    resolvedTotalCount,
+  );
 
   const leftActions = (
     <RoutineFilterPopover
@@ -149,7 +168,8 @@ export function RoutineFilters({
         <DroppableStoreColumnButton
           onOpenColumnsDrawer={onOpenColumnsDrawer}
           isCompact={isCompact}
-          visibleCount={visibleColumnIds.length}
+          visibleCount={resolvedVisibleCount}
+          totalCount={resolvedTotalCount}
           maxColumns={maxColumns}
           isDraggingColumn={isDraggingColumn}
         />
@@ -157,7 +177,8 @@ export function RoutineFilters({
         <StoreColumnButtonUI
           onOpenColumnsDrawer={onOpenColumnsDrawer}
           isCompact={isCompact}
-          visibleCount={visibleColumnIds.length}
+          visibleCount={resolvedVisibleCount}
+          totalCount={resolvedTotalCount}
           maxColumns={maxColumns}
           isDraggingColumn={isDraggingColumn}
         />

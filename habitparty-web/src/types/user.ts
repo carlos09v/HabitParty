@@ -1,8 +1,18 @@
 import type { components } from "@/api/schema";
+import type { FriendRequestPolicy, PrivacyLevel } from "@/types/social";
 
-export type UserResponseDTO = components["schemas"]["UserResponseDTO"];
+export type UserResponseDTO = components["schemas"]["UserResponseDTO"] & {
+  theme?: string | null;
+  friendCode?: string;
+  profileVisibility?: PrivacyLevel;
+  statsVisibility?: PrivacyLevel;
+  achievementsVisibility?: PrivacyLevel;
+  friendRequestPolicy?: FriendRequestPolicy;
+};
 export type CreateUserDTO = components["schemas"]["CreateUserDTO"];
-export type UpdateUserDTO = components["schemas"]["UpdateUserDTO"];
+export type UpdateUserDTO = components["schemas"]["UpdateUserDTO"] & {
+  theme?: string;
+};
 export type UpdateUserPasswordDTO =
   components["schemas"]["UpdateUserPasswordDTO"];
 

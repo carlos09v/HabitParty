@@ -74,15 +74,15 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
   const sizeClasses = {
     sm: "w-44 h-44 sm:w-48 sm:h-48",
     md: "w-56 h-56 sm:w-64 sm:h-64",
-    lg: "w-72 h-72 sm:w-80 sm:h-80",
-    zen: "w-80 h-80 sm:w-96 sm:h-96 md:w-[420px] md:h-[420px]",
+    lg: "w-64 min-[380px]:w-72 sm:w-80 max-w-full aspect-square",
+    zen: "w-[min(19rem,calc(100dvw-2rem),46dvh)] sm:w-[min(24rem,52dvh)] md:w-[min(420px,55dvh)] aspect-square",
   }[size];
 
   const fontClasses = {
     sm: "text-3xl sm:text-4xl",
     md: "text-4xl sm:text-5xl",
-    lg: "text-5xl sm:text-6xl",
-    zen: "text-6xl sm:text-7xl md:text-8xl",
+    lg: "text-4xl min-[380px]:text-5xl sm:text-6xl",
+    zen: "text-5xl min-[400px]:text-6xl sm:text-7xl md:text-8xl",
   }[size];
 
   const content = (

@@ -249,7 +249,7 @@ export function MysteryBoxLootEditor({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
                 <IconPickerPopover
                   options={REWARD_ICONS}
                   value={slot.icon || "gift"}
@@ -269,7 +269,7 @@ export function MysteryBoxLootEditor({
                   className="h-[36px] px-2.5"
                 />
 
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-[140px]">
                   <Input
                     id={slotInputId}
                     type="text"
@@ -298,7 +298,7 @@ export function MysteryBoxLootEditor({
                 </div>
 
                 {isTimeBased && (
-                  <div className="w-24 shrink-0">
+                  <div className="w-full sm:w-24 sm:shrink-0">
                     <label htmlFor={slotMinutesId} className="sr-only">
                       {t("minutesAriaLabel", { max: maxCap })}
                     </label>

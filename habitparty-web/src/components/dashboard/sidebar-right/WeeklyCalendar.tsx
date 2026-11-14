@@ -94,7 +94,7 @@ export function WeeklyCalendar({
   return (
     <div className="flex flex-col gap-2.5 w-full">
       {/* Header do Widget com Intervalo da Semana e Ação "Hoje" */}
-      <div className="flex items-center justify-between gap-2 w-full">
+      <div className="flex flex-wrap items-center justify-between gap-2 w-full">
         <div className="flex items-center gap-2 min-w-0">
           <h4 className="text-subtitle-s font-bold text-neutral-100 truncate">
             {t("title")}
@@ -126,14 +126,14 @@ export function WeeklyCalendar({
         <button
           type="button"
           onClick={() => setWeekOffset((prev) => prev - 1)}
-          className="p-1 rounded hover:bg-surface dark:hover:bg-white/10 text-neutral-400 hover:text-neutral-100 transition-colors cursor-pointer shrink-0"
+          className="w-8 h-10 sm:w-7 sm:h-8 flex items-center justify-center rounded hover:bg-surface dark:hover:bg-white/10 text-neutral-400 hover:text-neutral-100 transition-colors cursor-pointer shrink-0"
           title={t("prevWeek")}
           aria-label={t("prevWeek")}
         >
           <ChevronLeft size={16} />
         </button>
 
-        <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-between">
+        <div className="flex items-center gap-0.5 sm:gap-1.5 flex-1 min-w-0 justify-between">
           {weekDays.map((day) => {
             const isSelected = urlDate === day.isoString;
             return (
@@ -216,7 +216,7 @@ export function WeeklyCalendar({
         <button
           type="button"
           onClick={() => setWeekOffset((prev) => prev + 1)}
-          className="p-1 rounded hover:bg-surface dark:hover:bg-white/10 text-neutral-400 hover:text-neutral-100 transition-colors cursor-pointer shrink-0"
+          className="w-8 h-10 sm:w-7 sm:h-8 flex items-center justify-center rounded hover:bg-surface dark:hover:bg-white/10 text-neutral-400 hover:text-neutral-100 transition-colors cursor-pointer shrink-0"
           title={t("nextWeek")}
           aria-label={t("nextWeek")}
         >

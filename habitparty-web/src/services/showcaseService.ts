@@ -4,6 +4,10 @@ import type {
   AchievementItemResponseDTO,
   UserShowcaseResponseDTO,
 } from "@/types/showcase";
+import type {
+  PublicUserShowcaseData,
+  UserRetrospectiveData,
+} from "@/types/social";
 
 /**
  * Carrega todos os dados da vitrine do usuário autenticado (estatísticas vitalícias,
@@ -58,5 +62,93 @@ export async function getUnseenAchievements(): Promise<
     return data as AchievementItemResponseDTO[];
   } catch {
     return [];
+  }
+}
+
+export async function getMyRetrospective(
+  year?: number,
+): Promise<UserRetrospectiveData | null> {
+  "use cache: private";
+  cacheLife("private30");
+  cacheTag("retrospective", "showcase");
+
+  try {
+    const token = await getServerAuthToken();
+    if (!token) {
+      return null;
+    }
+
+    const { data, error } = await serverApi.GET("/showcase/me/retrospective", {
+      params: year ? { query: { year } } : {},
+    });
+
+    if (error || !data) {
+      return null;
+    }
+
+    return data as UserRetrospectiveData;
+  } catch {
+    return null;
+  }
+}
+
+export async function getPublicUserShowcase(
+  username: string,
+): Promise<PublicUserShowcaseData | null> {
+  "use cache: private";
+  cacheLife("private30");
+  cacheTag("social", "showcase");
+
+  try {
+    const token = await getServerAuthToken();
+    if (!token || !username) {
+      return null;
+    }
+
+    const { data, error } = await serverApi.GET("/showcase/users/{username}", {
+      params: { path: { username: decodeURIComponent(username) } },
+    });
+
+    if (error || !data) {
+      return null;
+    }
+
+    return data as PublicUserShowcaseData;
+  } catch {
+    return null;
+  }
+}
+
+export async function getPublicUserRetrospective(
+  username: string,
+  year?: number,
+): Promise<UserRetrospectiveData | null> {
+  "use cache: private";
+  cacheLife("private30");
+  cacheTag("social", "retrospective");
+
+  try {
+    const token = await getServerAuthToken();
+    if (!token || !username) {
+      return null;
+    }
+
+    const { data, error } = await serverApi.GET(
+      "/showcase/users/{username}/retrospective",
+      {
+        params: {
+          path: { username: decodeURIComponent(username) },
+          ...(year ? { query: { year } } : {}),
+        },
+      },
+    );
+
+    if (error || !data) {
+      return null;
+    }
+
+    return data as UserRetrospectiveData;
+  } catch {
+    return null;
   }
 }

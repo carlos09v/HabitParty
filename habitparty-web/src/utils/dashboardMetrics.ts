@@ -1,5 +1,6 @@
 import { ALL_WEEK_DAYS, normalizeTaskType } from "@/constants/task";
 import type { AppLocale } from "@/i18n/config";
+import type { WeeklyCalendarTaskSummary } from "@/types/dashboard";
 import type { TransactionHistoryResponseDTO } from "@/types/history";
 import type { Task } from "@/types/task";
 import {
@@ -80,7 +81,7 @@ export function getFirstName(
  * - Hábitos (habit): incluídos apenas quando `options.includeHabits` é `true`.
  */
 export function isTaskScheduledForDate(
-  task: Task,
+  task: WeeklyCalendarTaskSummary,
   dateIso: string,
   options?: { includeHabits?: boolean },
 ): boolean {
@@ -195,7 +196,7 @@ export function isTaskScheduledForDate(
  * protegendo contra estado cliente defasado após a virada da meia-noite.
  */
 export function isTaskCompletedOnDate(
-  task: Task,
+  task: WeeklyCalendarTaskSummary,
   dateIso: string,
   timeZone?: string | null,
 ): boolean {
@@ -214,6 +215,26 @@ export function getTodayTasks(tasks: Task[], todayDateStr: string): Task[] {
   return tasks.filter((task) =>
     isTaskScheduledForDate(task, todayDateStr, { includeHabits: false }),
   );
+}
+
+/**
+ * Verifica se ao menos uma tarefa (incluindo hábitos ou To-Dos sem prazo) foi concluída hoje.
+ */
+export function hasAnyTaskCompletedOnDate(
+  tasks: WeeklyCalendarTaskSummary[],
+  dateIso: string,
+  timeZone?: string | null,
+): boolean {
+  return tasks.some((task) => {
+    if (!task.completed) return false;
+    if (task.lastCompletedAt) {
+      const parsed = parseServerDate(task.lastCompletedAt);
+      if (parsed) {
+        return getDateKeyInTimeZone(parsed, timeZone) === dateIso;
+      }
+    }
+    return isTaskScheduledForDate(task, dateIso, { includeHabits: false });
+  });
 }
 
 export function getTodayXp(
@@ -289,7 +310,7 @@ export interface WeeklyCalendarDayItem {
  * diferenciando conquistas/ofensiva (dias com ganho de XP/conclusão) de prazos reais de To-Dos.
  */
 export function buildWeeklyCalendarData(
-  tasks: Task[],
+  tasks: WeeklyCalendarTaskSummary[],
   transactions: TransactionHistoryResponseDTO[],
   weekOffset: number,
   todayIso: string,

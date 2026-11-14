@@ -221,6 +221,20 @@ public class TaskAdapter implements TaskRepository {
   }
 
   @Override
+  public List<Task> findDashboardActiveByBoardColumnIds(
+      List<UUID> boardColumnIds,
+      LocalDate minDueDate,
+      LocalDateTime minCompletedAt) {
+    if (boardColumnIds == null || boardColumnIds.isEmpty()) {
+      return List.of();
+    }
+    return toDomainList(port.findDashboardActiveByBoardColumnIdInOrderByOrderIndexAsc(
+        boardColumnIds,
+        minDueDate,
+        minCompletedAt));
+  }
+
+  @Override
   public int findMaxOrderIndexByBoardColumnId(UUID boardColumnId) {
     Integer maxIndex = port.findMaxOrderIndexByBoardColumnId(boardColumnId);
     return maxIndex != null ? maxIndex : -1;

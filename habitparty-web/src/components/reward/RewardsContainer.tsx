@@ -79,6 +79,7 @@ export function RewardsContainer({
     handleEditReward,
     handleEditFromContextMenu,
     handleDeleteFromContextMenu,
+    checkingDeleteRewardIds,
     rewardToDelete,
     setRewardToDelete,
     deleteRewardHistory,
@@ -248,6 +249,7 @@ export function RewardsContainer({
           viewMode={viewMode}
           isCompact={isCompact}
           currentCoins={currentCoins}
+          deletingRewardIds={checkingDeleteRewardIds}
           sensors={sensors}
           onDragEnd={handleDragEnd}
           onBuy={handleBuy}

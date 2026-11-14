@@ -16,9 +16,9 @@ import com.habitparty.application.ports.EmailDispatchLogRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.ports.WorkspaceRepository;
+import com.habitparty.application.usecases.workspace.WorkspaceWriteGuard;
 import com.habitparty.core.domain.entities.BoardColumn;
 import com.habitparty.core.domain.entities.User;
-import com.habitparty.core.domain.entities.Workspace;
 import com.habitparty.core.domain.entities.task.ChecklistItem;
 import com.habitparty.core.domain.entities.task.Daily;
 import com.habitparty.core.domain.entities.task.Habit;
@@ -39,6 +39,7 @@ public class CreateTaskUseCase {
   private final EmailDispatchLogRepository emailLogPort;
   private final WorkspaceRepository workspacePort;
   private final Clock clock;
+  private WorkspaceWriteGuard workspaceWriteGuard;
 
   @Autowired
   public CreateTaskUseCase(
@@ -65,6 +66,11 @@ public class CreateTaskUseCase {
     this(taskPort, boardColumnPort, userPort, emailLogPort, workspacePort, Clock.systemDefaultZone());
   }
 
+  @Autowired(required = false)
+  public void setWorkspaceWriteGuard(WorkspaceWriteGuard workspaceWriteGuard) {
+    this.workspaceWriteGuard = workspaceWriteGuard;
+  }
+
   public Task execute(UUID userIdLogado, UUID boardColumnId, CreateTaskCommand command) {
     BoardColumn column = boardColumnPort.findById(boardColumnId)
         .orElseThrow(() -> new ResourceNotFoundException("Coluna não encontrada."));
@@ -73,22 +79,13 @@ public class CreateTaskUseCase {
     User user = userPort.findById(userIdLogado)
         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
 
-    // Validação de Modo Somente-Leitura em Ambientes excedentes no plano Free (máx. 2 ambientes ativos)
-    if (!user.isPremium()) {
-      List<Workspace> userWorkspaces = workspacePort.findAllByUserId(userIdLogado);
-      int wsIndex = -1;
-      for (int i = 0; i < userWorkspaces.size(); i++) {
-        if (userWorkspaces.get(i).getId().equals(column.getWorkspaceId())) {
-          wsIndex = i;
-          break;
-        }
-      }
-      if (wsIndex >= 2) {
-        throw new LimitExceededException(
-            "Este ambiente está em modo somente-leitura no plano Free (máximo de 2 ambientes ativos). Faça upgrade para Premium para criar tarefas nele!"
-        );
-      }
-    }
+    WorkspaceWriteGuard guard = workspaceWriteGuard != null
+        ? workspaceWriteGuard
+        : new WorkspaceWriteGuard(workspacePort, userPort, boardColumnPort);
+    guard.assertWorkspaceWritable(
+        user,
+        column.getWorkspaceId(),
+        "Este ambiente está em modo somente-leitura no plano Free (máximo de 2 ambientes ativos). Faça upgrade para Premium para criar tarefas nele!");
 
     int maxIndex = taskPort.findMaxOrderIndexByBoardColumnId(boardColumnId);
     int newOrderIndex = maxIndex + 1;

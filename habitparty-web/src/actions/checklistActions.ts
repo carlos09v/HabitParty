@@ -158,6 +158,8 @@ export async function cloneTaskChecklistItems(
   const validItems = items.filter((item) => Boolean(item.name?.trim()));
   if (validItems.length === 0) return [];
 
+  // Sequencial intencionalmente: ChecklistItemJpaEntity não possui orderIndex no banco,
+  // portanto a ordem de exibição depende diretamente da ordem de inserção.
   const createdItems: ChecklistItemResponseDTO[] = [];
   for (const item of validItems) {
     try {
@@ -282,6 +284,8 @@ export async function syncTaskChecklistChanges(
   await Promise.all(persistedUpdates.values());
 
   const finalItems: ChecklistItemResponseDTO[] = [];
+  const pendingNewToggles: Array<{ index: number; itemId: string }> = [];
+
   for (const item of currentItems) {
     const name = item.name?.trim();
     if (!name) continue;
@@ -292,6 +296,7 @@ export async function syncTaskChecklistChanges(
       continue;
     }
 
+    // Sequencial apenas na criação para preservar ordem de inserção no banco
     const created = (await call(() =>
       serverApi.POST("/tasks/{taskId}/checklists", {
         params: { path: { taskId } },
@@ -300,17 +305,26 @@ export async function syncTaskChecklistChanges(
     )) as ChecklistItemResponseDTO | undefined;
     if (!created) continue;
 
+    const pushIndex = finalItems.push(created) - 1;
     if (item.isCompleted && created.id) {
-      const createdId = created.id;
-      const toggled = await call(() =>
-        serverApi.PATCH("/tasks/checklists/{itemId}/toggle", {
-          params: { path: { itemId: createdId } },
-        }),
-      );
-      finalItems.push((toggled as ChecklistItemResponseDTO) ?? created);
-    } else {
-      finalItems.push(created);
+      pendingNewToggles.push({ index: pushIndex, itemId: created.id });
     }
+  }
+
+  // Toggles de itens recém-criados já possuem ID e podem executar em paralelo sem afetar ordem
+  if (pendingNewToggles.length > 0) {
+    await Promise.all(
+      pendingNewToggles.map(async ({ index, itemId }) => {
+        const toggled = await call(() =>
+          serverApi.PATCH("/tasks/checklists/{itemId}/toggle", {
+            params: { path: { itemId } },
+          }),
+        );
+        if (toggled) {
+          finalItems[index] = toggled as ChecklistItemResponseDTO;
+        }
+      }),
+    );
   }
 
   if (hasChanges && !options?.skipInvalidation) invalidateChecklistTags();

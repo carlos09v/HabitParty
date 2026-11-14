@@ -12,6 +12,10 @@ import {
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getTasksBoardData } from "@/services/taskService";
 import { getCurrentUser } from "@/services/userService";
+import {
+  getVisibleColumnsCookieName,
+  parseVisibleColumnsCookie,
+} from "@/utils/columnVisibility";
 
 interface TasksPageProps {
   searchParams?: Promise<{
@@ -46,16 +50,10 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
   const maxAllowed = isPremium ? MAX_COLUMNS_PREMIUM : MAX_VISIBLE_COLUMNS;
   const workspaceId = activeWorkspace?.id || null;
 
-  const cookieKey = workspaceId ? `hp_visible_cols_${workspaceId}` : null;
-  const cookieVal = cookieKey ? cookieStore.get(cookieKey)?.value : null;
-  let parsedCookieIds: string[] | undefined;
-  if (cookieVal) {
-    try {
-      parsedCookieIds = JSON.parse(decodeURIComponent(cookieVal));
-    } catch {
-      // ignore
-    }
-  }
+  const cookieVal = workspaceId
+    ? cookieStore.get(getVisibleColumnsCookieName(workspaceId))?.value
+    : undefined;
+  const parsedCookieIds = parseVisibleColumnsCookie(cookieVal);
 
   const initialVisibleColumnIds = resolveVisibleColumnIds(
     initialColumns.map((c) => c.id),
@@ -66,7 +64,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
 
   return (
     <ScopedIntlProvider scope="tasks">
-      <PageWrapper noScroll>
+      <PageWrapper noScroll="lg">
         <Suspense fallback={null}>
           <TasksBoardContainer
             key={workspaceId || "empty"}

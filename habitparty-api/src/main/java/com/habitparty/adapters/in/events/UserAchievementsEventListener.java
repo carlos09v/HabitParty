@@ -25,6 +25,9 @@ public class UserAchievementsEventListener {
   public void onTaskCompleted(TaskCompletedEvent event) {
     if (event != null && event.userId() != null) {
       evaluateUserAchievementsUseCase.executeForUserId(event.userId());
+      if (event.reachedLevel() != null) {
+        evaluateUserAchievementsUseCase.notifyLevelMilestoneIfReached(event.userId(), event.reachedLevel());
+      }
     }
   }
 }

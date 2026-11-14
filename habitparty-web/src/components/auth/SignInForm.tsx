@@ -66,7 +66,7 @@ export function SignInForm({ initialError }: SignInFormProps = {}) {
         <div className="flex justify-end">
           <Link
             href="/forgot-password"
-            className="text-xs text-neutral-400 hover:text-gold transition-colors outline-none focus:outline-none focus-visible:underline focus-visible:ring-2 focus-visible:ring-gold focus-visible:rounded px-1"
+            className="inline-flex items-center py-1.5 sm:py-0.5 -my-1 sm:my-0 text-xs text-neutral-400 hover:text-gold transition-colors outline-none focus:outline-none focus-visible:underline focus-visible:ring-2 focus-visible:ring-gold focus-visible:rounded px-1"
           >
             {t("forgotPassword")}
           </Link>

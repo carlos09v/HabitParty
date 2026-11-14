@@ -9,16 +9,17 @@ import {
   useTaskMutations,
 } from "@/hooks/useTaskMutations";
 import { useUserStore } from "@/store/userStore";
+import type { DashboardColumnOption } from "@/types/dashboard";
 import type { Task } from "@/types/task";
+import { enrichTaskWithColumnWorkspace } from "@/utils/taskMapper";
 
 interface UseDashboardTaskActionsProps {
   tasks?: Task[];
+  columns?: DashboardColumnOption[];
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
   defaultColumnId?: string;
-  onTaskCompletedTodayChange?: (
-    taskId: string,
-    completedToday: boolean,
-  ) => void;
+  onTaskUpdatedInDetails?: (task: Task) => void;
+  onTaskDeleted?: (taskId: string) => void;
 }
 
 /**
@@ -27,12 +28,23 @@ interface UseDashboardTaskActionsProps {
  */
 export function useDashboardTaskActions({
   tasks,
+  columns,
   setTasks,
   defaultColumnId,
-  onTaskCompletedTodayChange,
+  onTaskUpdatedInDetails,
+  onTaskDeleted,
 }: UseDashboardTaskActionsProps) {
   const tasksRef = useRef(tasks);
   tasksRef.current = tasks;
+
+  const columnsRef = useRef(columns);
+  columnsRef.current = columns;
+
+  const enrichTaskWorkspace = useCallback(
+    (task: Task): Task =>
+      enrichTaskWithColumnWorkspace(task, columnsRef.current),
+    [],
+  );
 
   const findTask = useCallback(
     (taskId: string) => tasksRef.current?.find((t) => t.id === taskId),
@@ -41,7 +53,6 @@ export function useDashboardTaskActions({
 
   const onOptimisticToggle = useCallback(
     (taskId: string, completed: boolean) => {
-      onTaskCompletedTodayChange?.(taskId, completed);
       const nowIso = new Date().toISOString();
       setTasks((prev) =>
         prev.map((t) =>
@@ -49,14 +60,11 @@ export function useDashboardTaskActions({
         ),
       );
     },
-    [onTaskCompletedTodayChange, setTasks],
+    [setTasks],
   );
 
   const onOptimisticHabit = useCallback(
     (taskId: string, delta: number) => {
-      if (delta > 0) {
-        onTaskCompletedTodayChange?.(taskId, true);
-      }
       const timeZone = useUserStore.getState().user?.timezone;
       setTasks((prev) =>
         prev.map((t) =>
@@ -64,26 +72,26 @@ export function useDashboardTaskActions({
         ),
       );
     },
-    [onTaskCompletedTodayChange, setTasks],
+    [setTasks],
   );
 
   const onRollbackToggle = useCallback(
     (taskId: string, previousState: TaskToggleRollbackState) => {
-      onTaskCompletedTodayChange?.(taskId, previousState.completed);
       setTasks((prev) =>
         prev.map((t) =>
           t.id === taskId ? applyOptimisticTaskRollback(t, previousState) : t,
         ),
       );
     },
-    [onTaskCompletedTodayChange, setTasks],
+    [setTasks],
   );
 
   const onOptimisticDelete = useCallback(
     (task: Task) => {
+      onTaskDeleted?.(task.id);
       setTasks((prev) => prev.filter((t) => t.id !== task.id));
     },
-    [setTasks],
+    [onTaskDeleted, setTasks],
   );
 
   const onRollbackDelete = useCallback(
@@ -95,18 +103,27 @@ export function useDashboardTaskActions({
 
   const onTaskDuplicated = useCallback(
     (duplicatedTask: Task) => {
-      setTasks((prev) => [duplicatedTask, ...prev]);
+      const enriched = enrichTaskWorkspace(duplicatedTask);
+      setTasks((prev) => [enriched, ...prev]);
     },
-    [setTasks],
+    [enrichTaskWorkspace, setTasks],
   );
 
   const onReconcileTask = useCallback(
     (reconciledTask: Task) => {
+      const enriched = enrichTaskWorkspace(reconciledTask);
       setTasks((prev) =>
-        prev.map((t) => (t.id === reconciledTask.id ? reconciledTask : t)),
+        prev.map((t) => (t.id === enriched.id ? enriched : t)),
       );
     },
-    [setTasks],
+    [enrichTaskWorkspace, setTasks],
+  );
+
+  const handleTaskUpdatedInDetailsEnriched = useCallback(
+    (updatedTask: Task) => {
+      onTaskUpdatedInDetails?.(enrichTaskWorkspace(updatedTask));
+    },
+    [enrichTaskWorkspace, onTaskUpdatedInDetails],
   );
 
   const {
@@ -123,29 +140,32 @@ export function useDashboardTaskActions({
     onRollbackDelete,
     onTaskDuplicated,
     onReconcileTask,
+    onTaskUpdatedInDetails: handleTaskUpdatedInDetailsEnriched,
     defaultColumnId,
   });
 
   const handleTaskSaved = useCallback(
     (savedTask: Task) => {
+      const enriched = enrichTaskWorkspace(savedTask);
       setTasks((prev) => {
-        const exists = prev.some((t) => t.id === savedTask.id);
+        const exists = prev.some((t) => t.id === enriched.id);
         if (exists) {
-          return prev.map((t) => (t.id === savedTask.id ? savedTask : t));
+          return prev.map((t) => (t.id === enriched.id ? enriched : t));
         }
-        return [savedTask, ...prev];
+        return [enriched, ...prev];
       });
     },
-    [setTasks],
+    [enrichTaskWorkspace, setTasks],
   );
 
   const handleTaskDetailsUpdate = useCallback(
     (updatedTask: Task) => {
+      const enriched = enrichTaskWorkspace(updatedTask);
       setTasks((prev) =>
-        prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)),
+        prev.map((t) => (t.id === enriched.id ? enriched : t)),
       );
     },
-    [setTasks],
+    [enrichTaskWorkspace, setTasks],
   );
 
   return {

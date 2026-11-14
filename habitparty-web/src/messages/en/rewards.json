@@ -310,6 +310,7 @@
     "communicationError": "Internal server communication error.",
     "createFailed": "Failed to create reward.",
     "updateFailed": "Failed to update reward.",
+    "checkRewardHistoryFailed": "Failed to check reward history.",
     "deleteFailed": "Failed to delete reward.",
     "reorderFailed": "Failed to reorder rewards.",
     "redeemFailed": "Failed to redeem reward."

@@ -122,8 +122,36 @@ class UpdateUserProfileUseCaseTest {
     User user = createUser(userId, false);
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-    assertThrows(DomainValidationException.class, () -> useCase.updateTheme(userId, "cyberpunk-neon"));
+    assertThrows(DomainValidationException.class, () -> useCase.updateTheme(userId, "royal-gold"));
     verify(userRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("Deve permitir atualização para temas gratuitos dark-knight e solar-parchment")
+  void shouldAllowFreeAlternateThemesWithoutPremium() {
+    UUID userId = UUID.randomUUID();
+    User user = createUser(userId, false);
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    var lightResult = useCase.updateThemeWithEffectiveStreak(userId, "solar-parchment");
+    assertEquals("solar-parchment", lightResult.user().getTheme());
+
+    var darkResult = useCase.updateThemeWithEffectiveStreak(userId, "dark-knight");
+    assertEquals("dark-knight", darkResult.user().getTheme());
+  }
+
+  @Test
+  @DisplayName("Deve permitir atualização para tema VIP claro royal-gold quando usuário possui Premium")
+  void shouldAllowRoyalGoldThemeForPremiumUser() {
+    UUID userId = UUID.randomUUID();
+    User user = createUser(userId, true);
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    var result = useCase.updateThemeWithEffectiveStreak(userId, "royal-gold");
+    assertEquals("royal-gold", result.user().getTheme());
+    assertEquals("royal-gold", UserResponseDTO.fromDomain(result.user(), result.effectiveStreak()).theme());
   }
 
   @Test

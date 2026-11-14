@@ -23,10 +23,10 @@ export function DemoPlayerHeader({ level, xp, maxXp }: DemoPlayerHeaderProps) {
             {t("levelBadge", { level })}
           </div>
         </div>
-        <div>
-          <h3 className="text-sm font-bold text-neutral-50 flex items-center gap-2">
+        <div className="min-w-0">
+          <h3 className="text-sm font-bold text-neutral-50 flex items-center flex-wrap gap-1.5 sm:gap-2">
             {t("name")}
-            <span className="text-[10px] font-semibold text-primary-dark dark:text-primary-light px-2 py-0.5 rounded bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30">
+            <span className="text-[10px] font-semibold text-primary-dark dark:text-primary-light px-2 py-0.5 rounded bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30 whitespace-nowrap">
               {t("titleBadge")}
             </span>
           </h3>

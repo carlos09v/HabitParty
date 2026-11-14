@@ -15,6 +15,7 @@ import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsUseCase;
+import com.habitparty.application.usecases.workspace.WorkspaceWriteGuard;
 import com.habitparty.application.events.TaskCompletedEvent;
 import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.entities.User;
@@ -22,6 +23,7 @@ import com.habitparty.core.domain.entities.task.Habit;
 import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.domain.entities.task.Task.TaskReward;
 import com.habitparty.core.domain.enums.TransactionType;
+import com.habitparty.core.domain.enums.UserLevel;
 import com.habitparty.core.domain.enums.task.HabitType;
 import com.habitparty.core.domain.enums.task.TaskStatus;
 import com.habitparty.core.exceptions.DomainValidationException;
@@ -37,6 +39,7 @@ public class RecordHabitScoreUseCase {
   private final Clock clock;
   private final ApplicationEventPublisher eventPublisher;
   private DailyResetUseCase dailyResetUseCase;
+  private WorkspaceWriteGuard workspaceWriteGuard;
 
   @Autowired
   public RecordHabitScoreUseCase(
@@ -68,6 +71,11 @@ public class RecordHabitScoreUseCase {
     this.dailyResetUseCase = dailyResetUseCase;
   }
 
+  @Autowired(required = false)
+  public void setWorkspaceWriteGuard(WorkspaceWriteGuard workspaceWriteGuard) {
+    this.workspaceWriteGuard = workspaceWriteGuard;
+  }
+
   @Transactional
   public Task execute(UUID taskId, UUID userIdLogado, int delta) {
     if (dailyResetUseCase != null) {
@@ -83,6 +91,12 @@ public class RecordHabitScoreUseCase {
 
     User user = userPort.findById(userIdLogado)
         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+    if (workspaceWriteGuard != null) {
+      workspaceWriteGuard.assertColumnWritable(
+          user,
+          habit.getBoardColumnId(),
+          "Este ambiente está em modo somente-leitura no plano Free (máximo de 2 ambientes ativos). Faça upgrade para Premium para pontuar hábitos nele!");
+    }
     String columnName = TaskGamificationHelper.resolveColumnName(boardColumnPort, habit);
     LocalDate today = user.resolveLocalDate(clock);
     LocalDateTime now = user.resolveLocalDateTime(clock);
@@ -103,17 +117,23 @@ public class RecordHabitScoreUseCase {
         user.getStats().recordCleanHabitCycle();
       }
 
+      UserLevel levelBefore = user.getCurrentLevel();
       TaskGamificationHelper.awardTaskCompletion(
           user, habit, TransactionType.HABIT_COMPLETED, userPort, transactionPort, columnName, today);
+      UserLevel levelAfter = user.getCurrentLevel();
+      UserLevel reachedLevel = levelAfter.ordinal() > levelBefore.ordinal() ? levelAfter : null;
 
       habit.registerCompletion(now);
       habit.changeStatus(TaskStatus.COMPLETED);
       Task savedHabit = taskPort.save(habit);
 
       if (eventPublisher != null) {
-        eventPublisher.publishEvent(new TaskCompletedEvent(user.getId()));
+        eventPublisher.publishEvent(new TaskCompletedEvent(user.getId(), reachedLevel));
       } else if (evaluateUserAchievementsUseCase != null) {
         evaluateUserAchievementsUseCase.execute(user);
+        if (reachedLevel != null) {
+          evaluateUserAchievementsUseCase.notifyLevelMilestoneIfReached(user.getId(), reachedLevel);
+        }
       }
 
       return savedHabit;

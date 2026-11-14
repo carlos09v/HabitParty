@@ -167,7 +167,7 @@
       "workspaces": {
         "badge": "Organization",
         "title": "Independent Workspaces",
-        "description": "Isolate Work, Study, and Personal Life projects with 1 click, featuring smart cross-workspace search to locate any task instantly."
+        "description": "Isolate Work, Study, and Personal Life projects with 1 click, filter across all workspaces simultaneously on the Dashboard, and locate any task instantly."
       },
       "analytics": {
         "badge": "Analytics",
@@ -247,19 +247,27 @@
         ]
       },
       "r14": {
-        "statusLabel": "Next Milestone",
+        "statusLabel": "Completed",
         "title": "VIP Themes, Friendships & Privacy Controls",
-        "tagline": "Customize your visual atmosphere with exclusive VIP Themes, connect with friends via friend codes, and manage your privacy with complete autonomy.",
+        "tagline": "Customize your atmosphere across 7 themes, connect with friends via friend codes, control your privacy, and share collectible showcase cards.",
         "features": [
-          "Exclusive VIP Themes (Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold)",
-          "Friend Network with fast search by @username and unique friend code",
-          "Social Connection Circle to track consistency and achievements of your friends",
-          "Granular Privacy Controls (visibility of habits, stats, and routines: Public, Friends Only, or Private)",
-          "Social Activity Notifications for incoming requests and consistency milestones"
+          "Atmospheric Themes: 4 Free (Cosmic Dark & Daylight + 1 alternate Dark [Dark Knight] & 1 alternate Light [Solar Parchment]) + 3 VIP (Cyberpunk Neon, Forest Ranger & extra Light theme Royal Gold)",
+          "Friend Network with fast search by @username, name, or unique HP-XXXXXX friend code",
+          "Social Connection Circle & Public Profiles (/profile/[username]) to follow friends' streaks and achievements",
+          "Granular Privacy Controls (Public, Friends Only, or Private for Profile, Stats, and Achievements + invite policies)",
+          "Social Activity Notifications for friend requests, accepted invites, and level/achievement milestones"
+        ],
+        "extras": [
+          "Annual Retrospective (Dec 20 – Jan 31 seasonal window with 5 behavioral archetypes) & collectible PNG Profile/Retrospective card downloads",
+          "Unified 'All Workspaces' Dashboard mode with quick workspace pills + 1-click Quick Focus play/pause directly on task rows",
+          "Automatic per-user IANA timezone detection, mismatch banner, and local Midnight Rollover for routines and streaks",
+          "WYSIWYG Rich-Text descriptions (TipTap formatting, highlights & links) and hierarchical nested tags (>) with inline editing & counts",
+          "Cross-workspace Kanban column moves, reward effort price guidance, and transaction history checks before deleting tasks or rewards",
+          "Upgraded Showcase (bio editor & XP level panel), smart Dark/Light last-theme toggle memory, and Spring Boot 4.1 platform upgrade"
         ]
       },
       "r15": {
-        "statusLabel": "Planned Milestone",
+        "statusLabel": "Next Milestone",
         "title": "Parties & Cooperative Daily Quests",
         "tagline": "Strength in numbers: build focused study and work squads, tackle collective goals, and unlock shared reward multipliers.",
         "features": [
@@ -338,6 +346,7 @@
           "Unlimited Pomodoro & Zen Mode",
           "Habit & Daily Task Streaks",
           "Hardcore Mode for Tasks, Habits, and Dailies",
+          "4 Themes: Cosmic Dark & Daylight + 1 alternate Dark (Dark Knight) & 1 alternate Light (Solar Parchment)",
           "Sound effects and confetti celebrations"
         ]
       },
@@ -353,8 +362,9 @@
           "🛡️ Exclusive Lifetime Founding Member Badge on your profile forever",
           "👑 1 full year of Cosmic Guardian for $10.90 (down from $19.90/yr)",
           "⭐ Eternal recognition as a pioneer in HabitParty history",
-          "🚀 Priority access to all Roadmap releases (Themes, Showcase, Party & Guilds)",
+          "🚀 Priority access to upcoming Roadmap releases (Parties, Live Chat & Guilds)",
           "Schedule To-Dos as Events (start & end times or all-day)",
+          "3 exclusive VIP atmospheric themes (Cyberpunk Neon, Forest Ranger & extra Light theme Royal Gold)",
           "Exclusive animated frames for your profile and avatar",
           "Ambient sounds in Pomodoro (Rain, Coffee Shop, Campfire, Lofi)",
           "Exclusive VIP icon pack for activities, columns, and shop",
@@ -375,6 +385,7 @@
         "ctaText": "Unlock Monthly Plan 👑",
         "features": [
           "Schedule To-Dos as Events (start & end times or all-day)",
+          "3 exclusive VIP atmospheric themes (Cyberpunk Neon, Forest Ranger & extra Light theme Royal Gold)",
           "Expanded Email Reminders (up to 30 active & 100 sends/month)",
           "Exclusive animated frames for your profile and avatar",
           "Ambient sounds in Pomodoro (Rain, Coffee Shop, Campfire, Lofi)",
@@ -406,7 +417,7 @@
       },
       "freeVsPremium": {
         "question": "Is HabitParty free? What does the Premium plan offer?",
-        "answer": "HabitParty has a 100% free plan with everything you need: up to 2 independent workspaces, 4 columns per workspace, 4 Focus Mode activities, up to 25 rewards, a 20-item backpack, and up to 5 active email reminders simultaneously (with 20 monthly sends) for your to-dos. For those managing multiple projects and seeking deep focus, the Cosmic Guardian plan brings expanded email reminders (up to 30 active & 100 monthly sends), animated profile frames, ambient sound generators (Rain, Cafe, Lofi, Campfire), VIP icon packs, expansion to 4 workspaces, 6 columns, 6 focus activities, up to 100 rewards, and a 100-item backpack."
+        "answer": "HabitParty has a 100% free plan with everything you need: up to 2 independent workspaces, 4 columns per workspace, 4 Focus Mode activities, up to 25 rewards, a 20-item backpack, up to 5 active email reminders (20 monthly sends), and 4 visual themes (Cosmic Dark & Daylight plus 1 alternate Dark [Dark Knight] and 1 alternate Light [Solar Parchment]). For those managing multiple projects and seeking deep focus, the Cosmic Guardian plan adds 3 exclusive VIP atmospheric themes (Cyberpunk Neon, Forest Ranger, and the extra Light theme Royal Gold), expanded email reminders (up to 30 active & 100 monthly sends), scheduled events, animated profile frames, ambient sound generators (Rain, Cafe, Lofi, Campfire), VIP icon packs, and expansion to 4 workspaces, 6 columns, 6 focus activities, up to 100 rewards, and a 100-item backpack."
       },
       "honestyShop": {
         "question": "How does the Shop work and why is it based on honesty?",
@@ -417,8 +428,8 @@
         "answer": "Hardcore Mode can be enabled for To-dos, Habits, and Dailies. If you fail your daily commitment or let a task's deadline expire, the game deducts gold coins from your balance and reduces your XP at midnight. Additionally, overdue tasks have their due date locked and late rewards reduced, creating a real consequence that strengthens your discipline."
       },
       "partyGuild": {
-        "question": "Is the Party / Guild system with friends available yet?",
-        "answer": "Currently, you can use HabitParty with full solo focus. The team Guild and Party system is in its final stages of development and will launch soon so you can level up alongside friends in the same workspace."
+        "question": "Is the social, Party / Guild system with friends available yet?",
+        "answer": "Friends are already live in v1.4! You can connect via @username or unique HP-XXXXXX friend codes, view friends' Public Showcases with granular privacy controls, share PNG profile/retrospective cards, and receive social milestone notifications. Cooperative Parties (v1.5), Real-Time Chat (v1.6), and Guilds (v2.0+) are the next chapters on our Roadmap."
       },
       "dataPreservation": {
         "question": "What happens to my columns and data if Premium expires?",

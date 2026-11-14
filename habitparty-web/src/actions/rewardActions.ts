@@ -69,6 +69,36 @@ export async function updateReward(
   }
 }
 
+export async function checkRewardHasHistory(
+  rewardId: string,
+): Promise<ActionState<boolean>> {
+  const t = await getTranslations("rewards.actions");
+  try {
+    const { data, error } = await serverApi.GET(
+      "/rewards/{rewardId}/has-history",
+      {
+        params: { path: { rewardId } },
+        cache: "no-store",
+      },
+    );
+
+    if (error) {
+      return {
+        success: false,
+        error: getErrorMessage(error, t("checkRewardHistoryFailed")),
+      };
+    }
+
+    return { success: true, data: Boolean(data?.hasHistory) };
+  } catch (err) {
+    console.error("[RewardAction:CheckHasHistory]", err);
+    return {
+      success: false,
+      error: t("communicationError"),
+    };
+  }
+}
+
 export async function deleteReward(
   rewardId: string,
   deleteHistory = false,

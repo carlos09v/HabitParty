@@ -53,7 +53,7 @@ export default async function PublicRootLayout({
   setStaticLocale(rawLocale);
 
   return (
-    <RootShell locale={rawLocale} scope="public">
+    <RootShell locale={rawLocale} allowCustomThemes={false} scope="public">
       {children}
     </RootShell>
   );

@@ -14,10 +14,39 @@ import type {
   UpdateShowcaseProfileRequestDTO,
   UserShowcaseResponseDTO,
 } from "@/types/showcase";
+import type {
+  FriendsOverviewData,
+  PublicUserShowcaseData,
+  RespondFriendRequestResponse,
+  SearchSocialUserItem,
+  SendFriendRequestResponse,
+  SocialNotificationsFeed,
+  UpdatePrivacySettingsPayload,
+  UserRetrospectiveData,
+} from "@/types/social";
+import type { UserResponseDTO } from "@/types/user";
 import { getLocaleMode } from "@/utils/cookies";
 import type { paths } from "./schema";
 
 export type ExtendedApiPaths = paths & {
+  "/users/theme": {
+    patch: {
+      requestBody: {
+        content: {
+          "application/json": {
+            theme: string;
+          };
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            "application/json": UserResponseDTO;
+          };
+        };
+      };
+    };
+  };
   "/showcase/me": {
     get: {
       responses: {
@@ -78,6 +107,218 @@ export type ExtendedApiPaths = paths & {
         200: {
           content?: never;
         };
+        204: {
+          content?: never;
+        };
+      };
+    };
+  };
+  "/showcase/users/{username}": {
+    get: {
+      parameters: {
+        path: {
+          username: string;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            "application/json": PublicUserShowcaseData;
+          };
+        };
+      };
+    };
+  };
+  "/showcase/me/retrospective": {
+    get: {
+      parameters: {
+        query?: {
+          year?: number;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            "application/json": UserRetrospectiveData;
+          };
+        };
+      };
+    };
+  };
+  "/showcase/users/{username}/retrospective": {
+    get: {
+      parameters: {
+        path: {
+          username: string;
+        };
+        query?: {
+          year?: number;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            "application/json": UserRetrospectiveData;
+          };
+        };
+      };
+    };
+  };
+  "/users/me/friend-code/regenerate": {
+    post: {
+      responses: {
+        200: {
+          content: {
+            "application/json": UserResponseDTO;
+          };
+        };
+      };
+    };
+  };
+  "/users/me/privacy": {
+    patch: {
+      requestBody: {
+        content: {
+          "application/json": UpdatePrivacySettingsPayload;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            "application/json": UserResponseDTO;
+          };
+        };
+      };
+    };
+  };
+  "/friends": {
+    get: {
+      responses: {
+        200: {
+          content: {
+            "application/json": FriendsOverviewData;
+          };
+        };
+      };
+    };
+  };
+  "/friends/search": {
+    get: {
+      parameters: {
+        query: {
+          q: string;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            "application/json": SearchSocialUserItem[];
+          };
+        };
+      };
+    };
+  };
+  "/friends/requests": {
+    post: {
+      requestBody: {
+        content: {
+          "application/json": {
+            username?: string;
+            friendCode?: string;
+          };
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            "application/json": SendFriendRequestResponse;
+          };
+        };
+        201: {
+          content: {
+            "application/json": SendFriendRequestResponse;
+          };
+        };
+      };
+    };
+  };
+  "/friends/requests/{friendshipId}": {
+    patch: {
+      parameters: {
+        path: {
+          friendshipId: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": {
+            accept: boolean;
+          };
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            "application/json": RespondFriendRequestResponse;
+          };
+        };
+      };
+    };
+  };
+  "/friends/{friendshipId}": {
+    delete: {
+      parameters: {
+        path: {
+          friendshipId: string;
+        };
+      };
+      responses: {
+        204: {
+          content?: never;
+        };
+      };
+    };
+  };
+  "/friends/block/{userId}": {
+    post: {
+      parameters: {
+        path: {
+          userId: string;
+        };
+      };
+      responses: {
+        204: {
+          content?: never;
+        };
+      };
+    };
+  };
+  "/friends/notifications": {
+    get: {
+      parameters: {
+        query?: {
+          limit?: number;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            "application/json": SocialNotificationsFeed;
+          };
+        };
+      };
+    };
+  };
+  "/friends/notifications/seen": {
+    post: {
+      requestBody?: {
+        content: {
+          "application/json": {
+            notificationId?: string;
+          };
+        };
+      };
+      responses: {
         204: {
           content?: never;
         };

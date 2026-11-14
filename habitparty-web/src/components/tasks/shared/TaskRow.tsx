@@ -9,6 +9,8 @@ import {
   GripVertical,
   Loader2,
   MoreHorizontal,
+  Pause,
+  Play,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type CSSProperties, memo, useMemo } from "react";
@@ -24,6 +26,7 @@ import {
   TaskRewardBadges,
   TaskTagBadges,
   TaskTypeBadge,
+  TaskWorkspaceBadge,
   WeekDaysIndicator,
 } from "@/components/tasks/shared";
 import { TASK_TABLE_GRID_COLS } from "@/constants/task";
@@ -31,6 +34,8 @@ import {
   useDeferredSingleClick,
   useTaskItemMeta,
 } from "@/hooks/useTaskCardItem";
+import { useFocusTimerStore } from "@/store/focusTimerStore";
+import type { Task } from "@/types/task";
 import type { TaskRowProps } from "@/types/task-ui";
 import { cn } from "@/utils";
 import { getClickAnchorRect } from "@/utils/dom";
@@ -43,11 +48,160 @@ interface TaskRowContentProps extends TaskRowProps {
   isDragging?: boolean;
 }
 
+interface TaskRowScheduleLabelProps {
+  label: string;
+  isTodoEvent: boolean;
+  isOverdue: boolean;
+  isInProgress: boolean;
+  isToday: boolean;
+  hasDueDate: boolean;
+  isDone: boolean;
+  inProgressTitle?: string;
+  variant: "mobile" | "desktop";
+}
+
+function TaskRowScheduleLabel({
+  label,
+  isTodoEvent,
+  isOverdue,
+  isInProgress,
+  isToday,
+  hasDueDate,
+  isDone,
+  inProgressTitle,
+  variant,
+}: TaskRowScheduleLabelProps) {
+  const isActiveOverdue = isOverdue && !isDone;
+  const isActiveInProgress = isInProgress && !isDone;
+
+  return (
+    <span
+      title={isActiveInProgress ? inProgressTitle : undefined}
+      className={cn(
+        "truncate inline-flex items-center gap-1",
+        variant === "mobile"
+          ? "text-tiny font-medium"
+          : "text-body-s font-medium",
+        isActiveOverdue
+          ? variant === "mobile"
+            ? "text-danger-400 dark:text-danger-300 font-semibold"
+            : "text-danger-400 dark:text-danger-300 font-medium"
+          : isActiveInProgress
+            ? "text-emerald-600 dark:text-emerald-400 font-semibold"
+            : isToday
+              ? "text-gold font-semibold"
+              : hasDueDate
+                ? "text-neutral-300"
+                : "text-neutral-400 font-normal",
+      )}
+    >
+      {isActiveInProgress ? (
+        <span
+          aria-hidden="true"
+          className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse shrink-0"
+        />
+      ) : (
+        isTodoEvent && (
+          <CalendarClock
+            size={variant === "mobile" ? 11 : 12}
+            className="shrink-0 text-sky-600 dark:text-info"
+          />
+        )
+      )}
+      <span className="truncate">{label}</span>
+    </span>
+  );
+}
+
+function TaskRowFocusButton({
+  task,
+  isHabit,
+  isDone,
+  isCompact,
+  onStartFocus,
+}: {
+  task: Task;
+  isHabit: boolean;
+  isDone: boolean;
+  isCompact: boolean;
+  onStartFocus: (task: Task) => void;
+}) {
+  const t = useTranslations("dashboard.taskShared.actions");
+  const focusStatus = useFocusTimerStore((s) => {
+    if (s.target?.taskId !== task.id) return "none";
+    if (!s.isActive) return "linked";
+    return s.isPaused ? "paused" : "running";
+  });
+
+  const isActiveTarget = focusStatus !== "none";
+  const isTimerRunning = focusStatus === "running";
+
+  if (isHabit || (isDone && !isActiveTarget)) {
+    return null;
+  }
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    if (isActiveTarget) {
+      useFocusTimerStore.getState().toggleTimer();
+      return;
+    }
+    onStartFocus(task);
+  };
+
+  return (
+    <button
+      type="button"
+      onPointerDown={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
+      onClick={handleClick}
+      aria-label={
+        isActiveTarget
+          ? isTimerRunning
+            ? t("pauseFocusAria", { title: task.title })
+            : t("resumeFocusAria", { title: task.title })
+          : t("startFocusAria", { title: task.title })
+      }
+      title={
+        isActiveTarget
+          ? isTimerRunning
+            ? t("pauseFocusTitle")
+            : t("resumeFocusTitle")
+          : t("startFocusTitle")
+      }
+      className={cn(
+        "flex items-center justify-center rounded-lg border transition-colors cursor-pointer shrink-0",
+        isCompact
+          ? "w-7 h-7 pointer-coarse:w-8 pointer-coarse:h-8"
+          : "w-8 h-8 pointer-coarse:w-9 pointer-coarse:h-9",
+        isActiveTarget
+          ? "bg-gold text-on-gold border-gold font-bold shadow-glow-gold-xs hover:bg-gold-hover"
+          : "bg-primary/10 text-primary hover:bg-primary hover:text-white border-primary/20 hover:border-primary dark:bg-surface/80 dark:hover:bg-gold/20 dark:text-neutral-200 dark:hover:text-gold dark:border-primary/30 dark:hover:border-gold/50",
+      )}
+    >
+      {isActiveTarget && isTimerRunning ? (
+        <Pause size={isCompact ? 13 : 14} className="fill-on-gold" />
+      ) : (
+        <Play
+          size={isCompact ? 13 : 14}
+          className={
+            isActiveTarget ? "fill-on-gold ml-0.5" : "fill-current ml-0.5"
+          }
+        />
+      )}
+    </button>
+  );
+}
+
 const TaskRowContent = memo(function TaskRowContent({
   task,
   isSelected = false,
   columnId = task.columnId,
   columnTitle = task.category,
+  workspaceName,
+  isReadOnly = false,
   activeFilter,
   selectedDate,
   isSortable = false,
@@ -60,6 +214,7 @@ const TaskRowContent = memo(function TaskRowContent({
   onContextMenu,
   onOpenDetails,
   onEditTask,
+  onStartFocus,
   setNodeRef,
   style,
   attributes,
@@ -101,6 +256,13 @@ const TaskRowContent = memo(function TaskRowContent({
     activeFilter,
     selectedDate,
   });
+
+  const inProgressTitle =
+    dueDateInfo.isInProgress && !isDone
+      ? dueDateInfo.endTime
+        ? t("badges.eventInProgressTitle", { end: dueDateInfo.endTime })
+        : t("badges.eventInProgressAllDayTitle")
+      : undefined;
 
   const handleClick = (e: React.MouseEvent<HTMLElement>) => {
     if (isDragging) return;
@@ -144,11 +306,14 @@ const TaskRowContent = memo(function TaskRowContent({
         "relative grid items-center rounded-xl border transition-[background-color,border-color,opacity] duration-150 select-none group overflow-hidden",
         TASK_TABLE_GRID_COLS,
         isSortable
-          ? "cursor-grab active:cursor-grabbing touch-none"
-          : "cursor-pointer",
+          ? cn(
+              "cursor-grab active:cursor-grabbing touch-manipulation",
+              isDragging && "touch-none",
+            )
+          : "cursor-pointer touch-manipulation",
         isCompact
-          ? "gap-2.5 px-3 py-2 text-xs"
-          : "gap-4 px-4 py-2.5 text-body-s",
+          ? "gap-2.5 px-3 py-1.5 text-xs"
+          : "gap-2.5 @lg:gap-3 px-3 @lg:px-4 py-2 text-body-s",
         isTodo && dueDateInfo.isOverdue && !isDone
           ? "bg-danger-500/[0.03] border-y-danger-500/40 border-r-danger-500/40 hover:border-y-danger-500/60 hover:border-r-danger-500/60 hover:bg-danger-500/[0.06] hover:shadow-card-deep focus:outline-none focus-visible:ring-1 focus-visible:ring-danger-500/60"
           : isSelected
@@ -179,6 +344,7 @@ const TaskRowContent = memo(function TaskRowContent({
 
         {/* biome-ignore lint/a11y/noStaticElementInteractions: Evita propagação de clique para o pai */}
         <div
+          className="shrink-0"
           onClick={(e) => e.stopPropagation()}
           onDoubleClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
@@ -235,7 +401,7 @@ const TaskRowContent = memo(function TaskRowContent({
             {task.description && <TaskDescriptionBadge isCompact={isCompact} />}
           </div>
 
-          <div className="flex items-center gap-2 text-label-g text-neutral-400">
+          <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-label-g text-neutral-400 mt-0.5">
             {isHabit && (
               <TaskHabitScoreBadge
                 habitScore={habitScore}
@@ -249,16 +415,64 @@ const TaskRowContent = memo(function TaskRowContent({
               showStreak={true}
               showRewards={!isHabit}
             />
+            <span className="@2xl:hidden inline-flex items-center gap-1 min-w-0 empty:hidden">
+              {isDaily ? (
+                <WeekDaysIndicator
+                  daysOfWeek={task.daysOfWeek}
+                  isCompact={true}
+                />
+              ) : isTodo && dueDateInfo.hasDueDate ? (
+                <TaskRowScheduleLabel
+                  label={dueDateInfo.label}
+                  isTodoEvent={isTodoEvent}
+                  isOverdue={dueDateInfo.isOverdue}
+                  isInProgress={Boolean(dueDateInfo.isInProgress)}
+                  isToday={dueDateInfo.isToday}
+                  hasDueDate={dueDateInfo.hasDueDate}
+                  isDone={isDone}
+                  inProgressTitle={inProgressTitle}
+                  variant="mobile"
+                />
+              ) : null}
+            </span>
+            {(priorityMeta || workspaceName || columnTitle || displayTag) && (
+              <span className="@lg:hidden inline-flex items-center gap-1 min-w-0 flex-wrap">
+                {priorityMeta && (
+                  <TaskPriorityBadge
+                    priority={task.priority}
+                    isCompact={true}
+                    sizeVariant="card"
+                  />
+                )}
+                <TaskWorkspaceBadge
+                  workspaceName={workspaceName}
+                  size="xs"
+                  isCompact={true}
+                  isReadOnly={isReadOnly}
+                />
+                {(columnTitle || displayTag) && (
+                  <span className="text-tiny px-1.5 py-0.5 rounded bg-surface/80 dark:bg-white/5 border border-neutral-700/60 dark:border-white/10 text-neutral-300 truncate max-w-[110px]">
+                    {columnTitle || displayTag}
+                  </span>
+                )}
+              </span>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Coluna 2: Categoria / Coluna */}
-      <div className="hidden sm:flex items-center gap-1 min-w-0">
+      {/* Coluna 2: Ambiente (multi-workspace) + Categoria / Coluna */}
+      <div className="hidden @lg:flex items-center gap-1 min-w-0 flex-wrap">
+        <TaskWorkspaceBadge
+          workspaceName={workspaceName}
+          size="row"
+          isCompact={isCompact}
+          isReadOnly={isReadOnly}
+        />
         <TaskTagBadges
           primaryLabel={columnTitle || displayTag}
           primaryTitle={columnTitle || displayTagTitle}
-          fallbackLabel="-"
+          fallbackLabel={workspaceName ? undefined : "-"}
           hasExtraTags={hasExtraTags}
           extraTagsCount={extraTagsCount}
           extraTagsTitle={task.tags?.slice(1).join(", ")}
@@ -268,13 +482,19 @@ const TaskRowContent = memo(function TaskRowContent({
       </div>
 
       {/* Coluna 3: Badge do Tipo + Badge de Evento */}
-      <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap justify-start min-w-0">
         <TaskTypeBadge task={task} isCompact={isCompact} />
-        {isTodoEvent && <TaskEventBadge isCompact={isCompact} />}
+        {isTodoEvent && (
+          <TaskEventBadge
+            isCompact={isCompact}
+            isInProgress={Boolean(dueDateInfo.isInProgress && !isDone)}
+            endTime={dueDateInfo.endTime}
+          />
+        )}
       </div>
 
       {/* Coluna 4: Prioridade */}
-      <div className="hidden sm:flex items-center min-w-0">
+      <div className="hidden @lg:flex items-center justify-center min-w-0">
         {priorityMeta ? (
           <TaskPriorityBadge
             priority={task.priority}
@@ -282,40 +502,31 @@ const TaskRowContent = memo(function TaskRowContent({
             sizeVariant="row"
           />
         ) : (
-          <span className="text-neutral-500 text-tiny font-normal italic">
+          <span className="text-neutral-400 text-tiny font-normal italic">
             -
           </span>
         )}
       </div>
 
       {/* Coluna 5: Frequência / Prazo */}
-      <div className="hidden md:flex items-center min-w-0">
+      <div className="hidden @2xl:flex items-center min-w-0">
         {isDaily ? (
           <WeekDaysIndicator
             daysOfWeek={task.daysOfWeek}
             isCompact={isCompact}
           />
         ) : isTodo ? (
-          <span
-            className={cn(
-              "text-body-s font-medium truncate inline-flex items-center gap-1",
-              dueDateInfo.isOverdue
-                ? "text-danger-500 font-medium"
-                : dueDateInfo.isToday
-                  ? "text-gold font-semibold"
-                  : dueDateInfo.hasDueDate
-                    ? "text-neutral-300"
-                    : "text-neutral-400 font-normal",
-            )}
-          >
-            {isTodoEvent && (
-              <CalendarClock
-                size={12}
-                className="shrink-0 text-sky-600 dark:text-info"
-              />
-            )}
-            <span className="truncate">{dueDateInfo.label}</span>
-          </span>
+          <TaskRowScheduleLabel
+            label={dueDateInfo.label}
+            isTodoEvent={isTodoEvent}
+            isOverdue={dueDateInfo.isOverdue}
+            isInProgress={Boolean(dueDateInfo.isInProgress)}
+            isToday={dueDateInfo.isToday}
+            hasDueDate={dueDateInfo.hasDueDate}
+            isDone={isDone}
+            inProgressTitle={inProgressTitle}
+            variant="desktop"
+          />
         ) : (
           <span className="text-body-s text-neutral-400 font-medium truncate">
             {task.resetCounter === "DAILY"
@@ -329,8 +540,8 @@ const TaskRowContent = memo(function TaskRowContent({
         )}
       </div>
 
-      {/* Coluna 6: Ações (Spinner durante checagem de exclusão ou Menu de Opções) */}
-      <div className="flex items-center justify-end">
+      {/* Coluna 6: Ações (Foco rápido, Spinner durante checagem de exclusão ou Menu de Opções) */}
+      <div className="flex items-center justify-end gap-1 min-w-0">
         {isDeleteChecking ? (
           <output
             className="p-1 text-gold inline-flex items-center justify-center"
@@ -344,22 +555,35 @@ const TaskRowContent = memo(function TaskRowContent({
             />
           </output>
         ) : (
-          <button
-            type="button"
-            onPointerDown={(e) => e.stopPropagation()}
-            onDoubleClick={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onContextMenu) {
-                onContextMenu(e, task, columnId);
-              }
-            }}
-            aria-label={t("actions.taskOptionsAria", { title: task.title })}
-            title={t("actions.taskOptionsTitle")}
-            className="p-1 rounded text-neutral-400 group-hover:text-neutral-200 hover:text-gold-ink! dark:hover:text-gold! hover:bg-surface-hover! dark:hover:bg-white/10! focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/60 transition-colors cursor-pointer"
-          >
-            <MoreHorizontal size={isCompact ? 14 : 16} />
-          </button>
+          <>
+            {onStartFocus && (
+              <TaskRowFocusButton
+                task={task}
+                isHabit={isHabit}
+                isDone={isDone}
+                isCompact={isCompact}
+                onStartFocus={onStartFocus}
+              />
+            )}
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              onDoubleClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onContextMenu) {
+                  onContextMenu(e, task, columnId);
+                }
+              }}
+              aria-label={t("actions.taskOptionsAria", { title: task.title })}
+              title={t("actions.taskOptionsTitle")}
+              className="p-1.5 sm:p-1 rounded text-neutral-400 group-hover:text-neutral-200 hover:text-gold-ink! dark:hover:text-gold! hover:bg-surface-hover! dark:hover:bg-white/10! focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/60 transition-colors cursor-pointer"
+            >
+              <MoreHorizontal size={isCompact ? 14 : 16} />
+            </button>
+          </>
         )}
       </div>
     </ElementTag>

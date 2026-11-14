@@ -5,6 +5,7 @@ import {
   Camera,
   Eye,
   Settings,
+  Share2,
   ShieldCheck,
   Sparkles,
   Swords,
@@ -13,12 +14,13 @@ import {
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { ShowcaseBioEditor } from "@/components/showcase/ShowcaseBioEditor";
 import { ShowcaseLevelProgressPanel } from "@/components/showcase/ShowcaseLevelProgressPanel";
 import { FounderBadge } from "@/components/ui/FounderBadge";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { UserPlanBadge } from "@/components/ui/UserStatusBadges";
+import { getAvatarFrame } from "@/constants/avatarFrames";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useIdlePreload } from "@/hooks/useIdlePreload";
 import { useProfilePhotoUpload } from "@/hooks/useProfilePhotoUpload";
@@ -44,6 +46,9 @@ interface ShowcaseHeroHeaderProps {
   isVisitorMode: boolean;
   onToggleVisitorMode: () => void;
   isCompact?: boolean;
+  isOtherUser?: boolean;
+  onOpenPreviewCard?: () => void;
+  extraHeaderActions?: ReactNode;
 }
 
 export function ShowcaseHeroHeader({
@@ -52,14 +57,20 @@ export function ShowcaseHeroHeader({
   isVisitorMode,
   onToggleVisitorMode,
   isCompact = false,
+  isOtherUser = false,
+  onOpenPreviewCard,
+  extraHeaderActions,
 }: ShowcaseHeroHeaderProps) {
   const locale = useLocale() as AppLocale;
   const t = useTranslations("showcase.header");
   const { isGamified } = useExperienceMode();
 
   const storeUser = useUserStore((s) => s.user);
-  const user = storeUser || initialUser;
-  const activeFrameId = useActiveAvatarFrame();
+  const storeFrameId = useActiveAvatarFrame();
+  const user = isOtherUser ? initialUser : storeUser || initialUser;
+  const activeFrameId = isOtherUser
+    ? getAvatarFrame(initialUser.avatarFrame ?? undefined).id
+    : storeFrameId;
   const [isFramePickerOpen, setIsFramePickerOpen] = useState(false);
 
   const {
@@ -72,7 +83,7 @@ export function ShowcaseHeroHeader({
     handleDragLeave,
     handleDrop,
   } = useProfilePhotoUpload({
-    disabled: isVisitorMode,
+    disabled: isVisitorMode || isOtherUser,
     messages: {
       invalidImageToast: t("invalidImageToast"),
       imageSizeToast: t("imageSizeToast"),
@@ -94,14 +105,14 @@ export function ShowcaseHeroHeader({
   const formattedMemberSince = formatMonthYear(
     user?.createdAt,
     locale,
-    storeTimezone ?? user?.timezone,
+    isOtherUser ? user?.timezone : (storeTimezone ?? user?.timezone),
   );
 
   return (
     <>
       <section
         className={cn(
-          "relative overflow-hidden rounded-2xl border border-neutral-700 dark:border-primary/30 bg-card dark:bg-surface/65 shadow-card-deep dark:shadow-xl",
+          "@container relative overflow-hidden rounded-2xl border border-neutral-700 dark:border-primary/30 bg-card dark:bg-surface/65 shadow-card-deep dark:shadow-xl",
           isCompact ? "p-4 sm:p-6" : "p-5 sm:p-7",
         )}
       >
@@ -111,7 +122,7 @@ export function ShowcaseHeroHeader({
           className="pointer-events-none absolute inset-0 opacity-35 dark:opacity-100"
           style={{
             background:
-              "radial-gradient(280px circle at 94% 8%, rgba(237, 229, 57, 0.14), transparent 70%), radial-gradient(280px circle at 6% 92%, rgba(124, 58, 237, 0.2), transparent 70%)",
+              "radial-gradient(280px circle at 94% 8%, var(--hero-glow-top, rgba(237, 229, 57, 0.14)), transparent 70%), radial-gradient(280px circle at 6% 92%, var(--hero-glow-bottom, rgba(124, 58, 237, 0.2)), transparent 70%)",
           }}
         />
 
@@ -129,7 +140,20 @@ export function ShowcaseHeroHeader({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {!isVisitorMode && (
+            {extraHeaderActions}
+
+            {onOpenPreviewCard && (
+              <button
+                type="button"
+                onClick={onOpenPreviewCard}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold border bg-gold/15 hover:bg-gold/25 border-gold/40 text-amber-800 dark:text-gold transition-colors cursor-pointer"
+              >
+                <Share2 size={13} aria-hidden="true" />
+                <span>{t("shareCardButton")}</span>
+              </button>
+            )}
+
+            {!isVisitorMode && !isOtherUser && (
               <button
                 type="button"
                 onClick={() => setIsFramePickerOpen(true)}
@@ -140,26 +164,30 @@ export function ShowcaseHeroHeader({
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={() => {
-                setIsFramePickerOpen(false);
-                onToggleVisitorMode();
-              }}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer",
-                isVisitorMode
-                  ? "bg-amber-500/15 dark:bg-gold/20 border-amber-500/40 dark:border-gold text-amber-700 dark:text-gold shadow-glow-gold-xs"
-                  : "bg-surface/70 hover:bg-surface border-neutral-700 text-neutral-200 hover:border-primary/45 hover:text-neutral-50 dark:border-primary/25",
-              )}
-            >
-              <Eye size={13} />
-              <span>
-                {isVisitorMode ? t("ownerModeActive") : t("visitorModeActive")}
-              </span>
-            </button>
+            {!isOtherUser && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsFramePickerOpen(false);
+                  onToggleVisitorMode();
+                }}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer",
+                  isVisitorMode
+                    ? "bg-amber-500/15 dark:bg-gold/20 border-amber-500/40 dark:border-gold text-amber-700 dark:text-gold shadow-glow-gold-xs"
+                    : "bg-surface/70 hover:bg-surface border-neutral-700 text-neutral-200 hover:border-primary/45 hover:text-neutral-50 dark:border-primary/25",
+                )}
+              >
+                <Eye size={13} />
+                <span>
+                  {isVisitorMode
+                    ? t("ownerModeActive")
+                    : t("visitorModeActive")}
+                </span>
+              </button>
+            )}
 
-            {!isVisitorMode && (
+            {!isVisitorMode && !isOtherUser && (
               <Link
                 href="/settings?tab=profile"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-surface/70 hover:bg-surface border border-neutral-700 text-neutral-200 hover:border-primary/45 hover:text-neutral-50 dark:border-primary/25 transition-colors"
@@ -172,7 +200,7 @@ export function ShowcaseHeroHeader({
         </div>
 
         {/* AVISO DE MODO VISITANTE */}
-        {isVisitorMode && (
+        {isVisitorMode && !isOtherUser && (
           <div className="relative z-10 mb-5 flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2 text-xs font-medium text-amber-700 dark:text-gold">
             <Eye size={14} className="shrink-0" />
             <span>{t("visitorBanner")}</span>
@@ -180,11 +208,11 @@ export function ShowcaseHeroHeader({
         )}
 
         {/* CORPO DO CARTÃO HERO */}
-        <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col @4xl:flex-row items-start @4xl:items-center justify-between gap-6">
           {/* IDENTIDADE + AVATAR + BIO */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 flex-1 min-w-0 w-full">
             <div className="shrink-0 pl-1">
-              {!isVisitorMode ? (
+              {!isVisitorMode && !isOtherUser ? (
                 <div className="relative group shrink-0">
                   <button
                     type="button"
@@ -228,6 +256,21 @@ export function ShowcaseHeroHeader({
                           : t("changePhoto")}
                       </span>
                     </div>
+
+                    {/* Selo persistente de edição de foto em telas touch (< md) */}
+                    <span
+                      aria-hidden="true"
+                      className="md:hidden absolute -bottom-0.5 -right-0.5 z-30 w-7 h-7 rounded-full bg-surface border border-neutral-600 dark:border-primary/40 text-neutral-100 shadow-md flex items-center justify-center"
+                    >
+                      <Camera
+                        size={13}
+                        className={
+                          isPhotoPending
+                            ? "animate-spin text-amber-400 dark:text-gold"
+                            : undefined
+                        }
+                      />
+                    </span>
                   </button>
 
                   <input
@@ -251,13 +294,13 @@ export function ShowcaseHeroHeader({
             </div>
 
             <div className="flex flex-col gap-2 min-w-0 flex-1 w-full">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-headline-s font-extrabold text-neutral-50 truncate">
+              <div className="flex flex-wrap items-center gap-2 min-w-0">
+                <h1 className="text-2xl sm:text-headline-s font-extrabold text-neutral-50 truncate max-w-full">
                   {displayName}
                 </h1>
 
                 {username && (
-                  <span className="text-body-s font-medium text-neutral-400">
+                  <span className="text-body-s font-medium text-neutral-400 truncate max-w-full">
                     {username}
                   </span>
                 )}
@@ -292,7 +335,7 @@ export function ShowcaseHeroHeader({
               {/* BIO / LEMA DO PERFIL */}
               <ShowcaseBioEditor
                 currentBio={user?.bio}
-                isVisitorMode={isVisitorMode}
+                isVisitorMode={isVisitorMode || isOtherUser}
                 isGamified={isGamified}
               />
             </div>

@@ -66,4 +66,10 @@ public interface TransactionHistoryJpaRepository extends JpaRepository<Transacti
 
     @Query("SELECT COUNT(t) > 0 FROM TransactionHistoryJpaEntity t WHERE t.referenceId = :referenceId AND t.user.id = :userId")
     boolean existsByReferenceIdAndUserId(@Param("referenceId") UUID referenceId, @Param("userId") UUID userId);
+
+    List<TransactionHistoryJpaEntity> findAllByUser_IdAndCreatedAtBetweenOrderByCreatedAtAsc(
+            UUID userId, LocalDateTime startInclusive, LocalDateTime endInclusive);
+
+    @Query("SELECT MIN(t.createdAt) FROM TransactionHistoryJpaEntity t WHERE t.user.id = :userId")
+    LocalDateTime findEarliestCreatedAtByUserId(@Param("userId") UUID userId);
 }

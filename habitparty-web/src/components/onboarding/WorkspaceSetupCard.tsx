@@ -66,7 +66,7 @@ export function WorkspaceSetupCard({
                   onClick={() => onSelectChip(chip)}
                   disabled={disabled}
                   className={cn(
-                    "px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors cursor-pointer border",
+                    "px-2.5 py-1.5 sm:py-1 rounded-full text-[11px] font-medium transition-colors cursor-pointer border",
                     isChipActive
                       ? "bg-amber-500/15 border-amber-500/50 text-amber-800 dark:bg-gold/20 dark:border-gold/60 dark:text-gold font-bold shadow-2xs dark:shadow-sm"
                       : "bg-surface hover:bg-surface-hover border-neutral-700 text-neutral-200 hover:text-neutral-50 dark:bg-primary-dark/20 dark:border-primary/30 dark:text-neutral-300 dark:hover:text-neutral-100 dark:hover:bg-primary-dark/40",

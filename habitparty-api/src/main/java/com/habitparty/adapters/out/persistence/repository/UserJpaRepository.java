@@ -42,6 +42,9 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
   Optional<UserJpaEntity> findByUsername(String username);
 
   @EntityGraph(attributePaths = {"stats", "subscription"})
+  Optional<UserJpaEntity> findByUsernameIgnoreCase(String username);
+
+  @EntityGraph(attributePaths = {"stats", "subscription"})
   @Query("SELECT u FROM UserJpaEntity u LEFT JOIN u.subscription s WHERE s.stripeCustomerId = :stripeCustomerId")
   Optional<UserJpaEntity> findByStripeCustomerId(@Param("stripeCustomerId") String stripeCustomerId);
 
@@ -117,12 +120,40 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
   boolean isUserDueForDailyReset(@Param("id") UUID id, @Param("nowUtc") Instant nowUtc);
 
   @Lock(LockModeType.PESSIMISTIC_WRITE)
-  @EntityGraph(attributePaths = {"stats", "subscription"})
   @Query("SELECT u FROM UserJpaEntity u WHERE u.id = :id")
   Optional<UserJpaEntity> findByIdForUpdate(@Param("id") UUID id);
 
   @Lock(LockModeType.PESSIMISTIC_WRITE)
-  @EntityGraph(attributePaths = {"stats", "subscription"})
   @Query("SELECT u FROM UserJpaEntity u WHERE u.id IN :ids ORDER BY u.id ASC")
   List<UserJpaEntity> findAllByIdInForUpdate(@Param("ids") Collection<UUID> ids);
+
+  @EntityGraph(attributePaths = {"stats", "subscription"})
+  Optional<UserJpaEntity> findByFriendCodeIgnoreCase(String friendCode);
+
+  boolean existsByFriendCodeIgnoreCase(String friendCode);
+
+  @EntityGraph(attributePaths = {"stats", "subscription"})
+  @Query("""
+      SELECT u FROM UserJpaEntity u
+      WHERE u.id <> :excludeUserId
+        AND (
+          (UPPER(u.friendCode) = :exactCode
+            AND (u.profileVisibility <> com.habitparty.core.domain.enums.PrivacyLevel.PRIVATE
+                 OR u.friendRequestPolicy <> com.habitparty.core.domain.enums.FriendRequestPolicy.NONE))
+          OR (
+            u.profileVisibility <> com.habitparty.core.domain.enums.PrivacyLevel.PRIVATE
+            AND (
+              LOWER(u.username) LIKE :pattern
+              OR LOWER(u.fullName) LIKE :pattern
+            )
+          )
+        )
+      ORDER BY CASE WHEN UPPER(u.friendCode) = :exactCode THEN 0 ELSE 1 END,
+               u.username ASC
+      """)
+  List<UserJpaEntity> searchSocialUsers(
+      @Param("excludeUserId") UUID excludeUserId,
+      @Param("exactCode") String exactCode,
+      @Param("pattern") String pattern,
+      Pageable pageable);
 }

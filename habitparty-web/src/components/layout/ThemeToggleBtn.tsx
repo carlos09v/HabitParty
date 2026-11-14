@@ -19,8 +19,7 @@ export function ThemeToggleBtn({
   className,
 }: ThemeToggleBtnProps) {
   const t = useTranslations("ui.themeToggle");
-  const { theme, toggleTheme, mounted } = useThemeMode();
-  const isLight = theme === "light";
+  const { isLight, toggleTheme, mounted } = useThemeMode();
 
   if (!mounted) {
     if (variant === "icon") {
@@ -71,7 +70,7 @@ export function ThemeToggleBtn({
       >
         {isLight ? (
           <Moon
-            className="w-4 h-4 text-primary group-hover:text-gold transition-[transform,color] duration-200 group-hover:-rotate-12"
+            className="w-4 h-4 text-primary group-hover:text-primary-dark dark:group-hover:text-gold transition-[transform,color] duration-200 group-hover:-rotate-12"
             aria-hidden="true"
           />
         ) : (
@@ -101,7 +100,7 @@ export function ThemeToggleBtn({
       <div className="flex items-center gap-3">
         <span className="transition-colors">
           {isLight ? (
-            <Sun size={18} className="text-gold" aria-hidden="true" />
+            <Sun size={18} className="text-gold-ink" aria-hidden="true" />
           ) : (
             <Moon
               size={18}

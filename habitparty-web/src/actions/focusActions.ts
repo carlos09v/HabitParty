@@ -2,15 +2,18 @@
 
 import { getTranslations } from "next-intl/server";
 import { serverApi } from "@/api/server";
+import { getRequestLocale } from "@/i18n/request";
 import type {
   CreateFocusActivityDTO,
   CreateFocusRecordDTO,
+  FocusActivity,
   FocusActivityResponseDTO,
   FocusRecordResponseDTO,
   UpdateFocusActivityDTO,
   UpdateFocusActivityOrderDTO,
   UpdateFocusRecordDTO,
 } from "@/types/focus";
+import { mapFocusActivities } from "@/utils/focusMapper";
 import { invalidateFocusDomainTags } from "./cacheInvalidation";
 import { type ActionState, getErrorMessage } from "./types";
 
@@ -293,6 +296,35 @@ export async function getTaskFocusRecords(
     };
   } catch (err) {
     console.error("[FocusAction:GetByTask]", err);
+    return {
+      success: false,
+      error: t("communicationError"),
+    };
+  }
+}
+
+export async function listFocusActivities(): Promise<
+  ActionState<FocusActivity[]>
+> {
+  const t = await getTranslations("focus.actions");
+
+  try {
+    const { data, error } = await serverApi.GET("/focus-activities");
+
+    if (error || !data) {
+      return {
+        success: false,
+        error: getErrorMessage(error, t("communicationError")),
+      };
+    }
+
+    const locale = await getRequestLocale();
+    return {
+      success: true,
+      data: mapFocusActivities(data as FocusActivityResponseDTO[], locale),
+    };
+  } catch (err) {
+    console.error("[FocusAction:ListActivities]", err);
     return {
       success: false,
       error: t("communicationError"),

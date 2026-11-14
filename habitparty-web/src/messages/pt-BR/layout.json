@@ -96,7 +96,18 @@
     "reminderSingleTitle": "Lembrete: \"{name}\"",
     "reminderMultipleTitle": "{count} lembretes de tarefas ativos",
     "reminderDesc": "Prazo se aproximando — confira seus afazeres agendados.",
-    "reminderTimestamp": "Lembrete agendado"
+    "reminderTimestamp": "Lembrete agendado",
+    "socialDefaultActor": "Alguém da rede",
+    "socialTimestamp": "Social",
+    "socialRequestTitle": "{name} enviou um pedido de amizade",
+    "socialRequestDesc": "Abra seu perfil para aceitar ou recusar.",
+    "socialAcceptedTitle": "{name} aceitou seu pedido de amizade!",
+    "socialAcceptedDesc": "Vocês agora fazem parte da mesma rede.",
+    "socialAchievementTitle": "{name} desbloqueou \"{achievement}\"",
+    "socialDefaultAchievement": "uma nova conquista",
+    "socialAchievementDesc": "Visite o perfil para acompanhar essa conquista.",
+    "socialLevelTitle": "{name} alcançou {level}",
+    "socialLevelDesc": "Seu amigo acabou de evoluir de nível!"
   },
   "userProfile": {
     "defaultName": "Aventureiro",
@@ -152,7 +163,8 @@
     "stopAria": "Parar",
     "stopLabel": "Parar",
     "linkActivityBadge": "Vincular a uma atividade?",
-    "linkActivityTitle": "Vincular esta sessão de foco a uma atividade"
+    "linkActivityTitle": "Vincular esta sessão de foco a uma atividade",
+    "loadActivitiesError": "Não foi possível carregar as atividades."
   },
   "subscriptionAlert": {
     "ariaLabel": "Aviso de expiração da assinatura",

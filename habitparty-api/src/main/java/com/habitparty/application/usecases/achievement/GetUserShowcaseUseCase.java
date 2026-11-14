@@ -1,12 +1,15 @@
 package com.habitparty.application.usecases.achievement;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +17,8 @@ import com.habitparty.application.ports.AchievementRepository;
 import com.habitparty.application.ports.ProfileHighlightRepository;
 import com.habitparty.application.ports.UserAchievementRepository;
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.application.usecases.task.DailyResetUseCase;
+import com.habitparty.application.usecases.user.EffectiveStreakResolver;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.achievement.Achievement;
 import com.habitparty.core.domain.entities.achievement.ProfileHighlight;
@@ -28,22 +33,18 @@ public class GetUserShowcaseUseCase {
   private final UserAchievementRepository userAchievementPort;
   private final ProfileHighlightRepository profileHighlightPort;
   private final EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
-  private final com.habitparty.application.usecases.user.EffectiveStreakResolver effectiveStreakResolver;
-  private com.habitparty.application.usecases.task.DailyResetUseCase dailyResetUseCase;
+  private final EffectiveStreakResolver effectiveStreakResolver;
+  private final DailyResetUseCase dailyResetUseCase;
 
-  @org.springframework.beans.factory.annotation.Autowired(required = false)
-  public void setDailyResetUseCase(com.habitparty.application.usecases.task.DailyResetUseCase dailyResetUseCase) {
-    this.dailyResetUseCase = dailyResetUseCase;
-  }
-
-  @org.springframework.beans.factory.annotation.Autowired
+  @Autowired
   public GetUserShowcaseUseCase(
       UserRepository userPort,
       AchievementRepository achievementPort,
       UserAchievementRepository userAchievementPort,
       ProfileHighlightRepository profileHighlightPort,
       EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase,
-      com.habitparty.application.usecases.user.EffectiveStreakResolver effectiveStreakResolver) {
+      @Nullable EffectiveStreakResolver effectiveStreakResolver,
+      @Nullable DailyResetUseCase dailyResetUseCase) {
     this.userPort = userPort;
     this.achievementPort = achievementPort;
     this.userAchievementPort = userAchievementPort;
@@ -51,7 +52,25 @@ public class GetUserShowcaseUseCase {
     this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
     this.effectiveStreakResolver = effectiveStreakResolver != null
         ? effectiveStreakResolver
-        : new com.habitparty.application.usecases.user.EffectiveStreakResolver(null);
+        : new EffectiveStreakResolver(null);
+    this.dailyResetUseCase = dailyResetUseCase;
+  }
+
+  public GetUserShowcaseUseCase(
+      UserRepository userPort,
+      AchievementRepository achievementPort,
+      UserAchievementRepository userAchievementPort,
+      ProfileHighlightRepository profileHighlightPort,
+      EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase,
+      EffectiveStreakResolver effectiveStreakResolver) {
+    this(
+        userPort,
+        achievementPort,
+        userAchievementPort,
+        profileHighlightPort,
+        evaluateUserAchievementsUseCase,
+        effectiveStreakResolver,
+        null);
   }
 
   public GetUserShowcaseUseCase(
@@ -66,7 +85,8 @@ public class GetUserShowcaseUseCase {
         userAchievementPort,
         profileHighlightPort,
         evaluateUserAchievementsUseCase,
-        new com.habitparty.application.usecases.user.EffectiveStreakResolver(null));
+        new EffectiveStreakResolver(null),
+        null);
   }
 
   public record AchievementProgressItem(
@@ -96,7 +116,6 @@ public class GetUserShowcaseUseCase {
         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
 
     List<ProfileHighlight> highlights = profileHighlightPort.findAllByUserIdOrderByDisplayOrder(userId);
-    int highlightsCount = highlights.size();
 
     // Avalia conquistas pendentes reutilizando os destaques já carregados e evita reconsultar catálogo/desbloqueios
     var snapshot = evaluateUserAchievementsUseCase.executeWithSnapshot(user, highlights);
@@ -107,6 +126,31 @@ public class GetUserShowcaseUseCase {
         ? snapshot.allUserUnlocks()
         : userAchievementPort.findAllByUserId(userId);
 
+    return buildShowcaseResult(user, highlights, catalog, userUnlocks);
+  }
+
+  /**
+   * Leitura pura da vitrine (sem mutações de reset diário ou escrita de conquistas),
+   * segura para consultas de outros visitantes dentro de transações @Transactional(readOnly = true).
+   */
+  @Transactional(readOnly = true)
+  public UserShowcaseResult executeReadOnly(User preloadedUser) {
+    if (preloadedUser == null || preloadedUser.getId() == null) {
+      throw new ResourceNotFoundException("Usuário não encontrado.");
+    }
+    UUID userId = preloadedUser.getId();
+    List<ProfileHighlight> highlights = profileHighlightPort.findAllByUserIdOrderByDisplayOrder(userId);
+    List<Achievement> catalog = achievementPort.findAllOrdered();
+    List<UserAchievement> userUnlocks = userAchievementPort.findAllByUserId(userId);
+    return buildShowcaseResult(preloadedUser, highlights, catalog, userUnlocks);
+  }
+
+  private UserShowcaseResult buildShowcaseResult(
+      User user,
+      List<ProfileHighlight> highlights,
+      List<Achievement> catalog,
+      List<UserAchievement> userUnlocks) {
+    int highlightsCount = highlights.size();
     Map<UUID, UserAchievement> unlockMap = userUnlocks.stream()
         .collect(Collectors.toMap(UserAchievement::getAchievementId, Function.identity(), (a, b) -> a));
 
@@ -114,7 +158,7 @@ public class GetUserShowcaseUseCase {
     int totalPoints = 0;
     int maxPoints = 0;
 
-    List<AchievementProgressItem> items = new java.util.ArrayList<>(catalog.size());
+    List<AchievementProgressItem> items = new ArrayList<>(catalog.size());
     for (Achievement achievement : catalog) {
       maxPoints += achievement.getPoints();
       UserAchievement unlock = unlockMap.get(achievement.getId());

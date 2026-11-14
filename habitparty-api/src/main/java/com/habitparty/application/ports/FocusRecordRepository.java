@@ -60,4 +60,13 @@ public interface FocusRecordRepository {
 
   // Verifica se há registros de foco avulsos (sem atividade de foco vinculada) para a tarefa
   boolean existsStandaloneByTaskId(UUID taskId);
+
+  default List<FocusRecord> findAllByUserIdAndPeriod(
+      UUID userId, java.time.LocalDateTime startInclusive, java.time.LocalDateTime endInclusive) {
+    return List.of();
+  }
+
+  default java.util.Optional<java.time.LocalDateTime> findEarliestStartTimeByUserId(UUID userId) {
+    return java.util.Optional.empty();
+  }
 }

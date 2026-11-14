@@ -5,6 +5,7 @@ import {
   Backpack,
   Layers,
   ListTodo,
+  Loader2,
   Lock,
   Search,
   Timer,
@@ -41,6 +42,8 @@ export interface FocusStageTargetSelectorModalProps {
   onlyActivities?: boolean;
   /** Quando verdadeiro, oculta as abas de Atividades/Mochila e exibe apenas Tarefas para vincular à atividade atual */
   onlyTasks?: boolean;
+  /** Exibe estado de carregamento enquanto as atividades são buscadas sob demanda */
+  isLoadingActivities?: boolean;
   onSelectActivity?: (activity: FocusActivity) => void;
   /** Quando o alvo atual é uma tarefa direta, selecionar uma atividade vincula (Macro + Micro) mantendo o tempo */
   onLinkActivityToTask?: (activity: FocusActivity) => void;
@@ -61,6 +64,7 @@ export function FocusStageTargetSelectorModal({
   initialTab = "ACTIVITIES",
   onlyActivities = false,
   onlyTasks = false,
+  isLoadingActivities = false,
   onSelectActivity,
   onLinkActivityToTask,
   onSelectBackpackItem,
@@ -128,19 +132,19 @@ export function FocusStageTargetSelectorModal({
       <div className="flex flex-col gap-3 mt-1">
         {/* Abas: Atividades vs Tarefas vs Mochila (ocultadas quando o modal é exclusivo) */}
         {!isFilteredMode && (
-          <div className="flex items-center rounded-xl bg-surface dark:bg-surface/90 p-1 border border-neutral-700 dark:border-primary/30 w-full">
+          <div className="grid grid-cols-3 gap-1 rounded-xl bg-surface dark:bg-surface/90 p-1 border border-neutral-700 dark:border-primary/30 w-full">
             <button
               type="button"
               onClick={() => setSelectorTab("ACTIVITIES")}
               className={cn(
-                "flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer",
+                "min-w-0 px-1.5 sm:px-2 py-2 sm:py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer",
                 selectorTab === "ACTIVITIES"
                   ? "bg-gold text-on-gold shadow-glow-gold-xs"
                   : "text-neutral-400 hover:text-neutral-200",
               )}
             >
-              <Layers size={13} />
-              <span>
+              <Layers size={13} className="shrink-0" />
+              <span className="truncate">
                 {t("activitiesTab", { count: activeActivities.length })}
               </span>
             </button>
@@ -148,35 +152,50 @@ export function FocusStageTargetSelectorModal({
               type="button"
               onClick={() => setSelectorTab("TASKS")}
               className={cn(
-                "flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer",
+                "min-w-0 px-1.5 sm:px-2 py-2 sm:py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer",
                 selectorTab === "TASKS"
                   ? "bg-gold text-on-gold shadow-glow-gold-xs"
                   : "text-neutral-400 hover:text-neutral-200",
               )}
             >
-              <ListTodo size={13} />
-              <span>{t("tasksTab", { count: focusableTasks.length })}</span>
+              <ListTodo size={13} className="shrink-0" />
+              <span className="truncate">
+                {t("tasksTab", { count: focusableTasks.length })}
+              </span>
             </button>
             <button
               type="button"
               onClick={() => setSelectorTab("BACKPACK")}
               className={cn(
-                "flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer",
+                "min-w-0 px-1.5 sm:px-2 py-2 sm:py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer",
                 selectorTab === "BACKPACK"
                   ? "bg-gold text-on-gold shadow-glow-gold-xs"
                   : "text-neutral-400 hover:text-neutral-200",
               )}
             >
-              <Backpack size={13} />
-              <span>{t("backpackTab", { count: backpackItems.length })}</span>
+              <Backpack size={13} className="shrink-0" />
+              <span className="truncate">
+                {t("backpackTab", { count: backpackItems.length })}
+              </span>
             </button>
           </div>
         )}
 
         {/* Lista de Conteúdo */}
-        <div className="overflow-y-auto custom-scrollbar flex flex-col gap-2 pr-1 max-h-[340px]">
+        <div className="overflow-y-auto overscroll-contain custom-scrollbar flex flex-col gap-2 pr-1 max-h-[55dvh] sm:max-h-[340px]">
           {activeTab === "ACTIVITIES" ? (
-            activeActivities.length === 0 ? (
+            isLoadingActivities && activeActivities.length === 0 ? (
+              <output
+                aria-live="polite"
+                className="flex flex-col items-center justify-center gap-2 p-6 text-center text-xs text-neutral-400 border border-dashed border-neutral-700 dark:border-primary/30 rounded-xl"
+              >
+                <Loader2
+                  size={18}
+                  className="animate-spin text-primary-light dark:text-gold"
+                />
+                <span>{t("loadingActivities")}</span>
+              </output>
+            ) : activeActivities.length === 0 ? (
               <div className="p-6 text-center text-xs text-neutral-400 border border-dashed border-neutral-700 dark:border-primary/30 rounded-xl">
                 {t("emptyActivities")}
               </div>

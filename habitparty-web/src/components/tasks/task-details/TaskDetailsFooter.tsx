@@ -66,7 +66,7 @@ export function TaskDetailsFooter({
   }, [task, userTimeZone]);
 
   return (
-    <div className="flex items-center justify-between pt-2 border-t border-white/8 mt-0.5 min-w-0">
+    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-neutral-700/60 dark:border-white/8 mt-0.5 min-w-0">
       <div className="flex items-center gap-2 min-w-0 flex-wrap">
         {rewardEstimate && (
           <RewardPreview
@@ -77,7 +77,7 @@ export function TaskDetailsFooter({
         )}
 
         {task && (
-          <div className="flex items-center gap-1.5 pl-1 border-l border-white/10">
+          <div className="flex items-center gap-1.5 pl-1 border-l border-neutral-700 dark:border-white/10">
             <TaskRewardBadges
               task={task}
               showStreak={false}
@@ -97,7 +97,8 @@ export function TaskDetailsFooter({
             type="button"
             onClick={() => setIsMenuOpen((prev) => !prev)}
             title={t("moreOptionsTitle")}
-            className="p-1.5 rounded-lg text-neutral-300 hover:text-gold hover:bg-white/8 transition-colors cursor-pointer"
+            aria-label={t("moreOptionsTitle")}
+            className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg text-neutral-300 hover:text-gold hover:bg-white/8 transition-colors cursor-pointer"
           >
             <MoreHorizontal size={15} />
           </button>

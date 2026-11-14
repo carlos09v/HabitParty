@@ -19,10 +19,15 @@ import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.habitparty.application.ports.BoardColumnRepository;
 import com.habitparty.application.ports.EmailDispatchLogRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.application.ports.WorkspaceRepository;
+import com.habitparty.application.usecases.workspace.WorkspaceWriteGuard;
+import com.habitparty.core.domain.entities.BoardColumn;
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.domain.entities.Workspace;
 import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.domain.entities.task.Todo;
 import com.habitparty.core.domain.enums.UserGender;
@@ -33,6 +38,7 @@ import com.habitparty.core.domain.enums.task.TaskStatus;
 import com.habitparty.core.domain.enums.task.TaskType;
 import com.habitparty.core.domain.enums.task.TodoReminderType;
 import com.habitparty.core.exceptions.DomainValidationException;
+import com.habitparty.core.exceptions.LimitExceededException;
 
 class UpdateTaskUseCaseTest {
 
@@ -105,5 +111,50 @@ class UpdateTaskUseCaseTest {
 
     assertThrows(DomainValidationException.class,
         () -> useCase.execute(taskId, userId, disableHardcoreCommand));
+  }
+
+  @Test
+  @DisplayName("Bloqueia edição de tarefa pertencente ao 3º ambiente em modo somente-leitura no plano Free")
+  void blocksUpdatingTaskInReadOnlyFreeWorkspace() {
+    Clock fixedClock = Clock.fixed(Instant.parse("2026-11-14T12:00:00Z"), ZoneId.of("UTC"));
+    TaskRepository taskPort = mock(TaskRepository.class);
+    UserRepository userPort = mock(UserRepository.class);
+    EmailDispatchLogRepository emailLogPort = mock(EmailDispatchLogRepository.class);
+    WorkspaceRepository workspacePort = mock(WorkspaceRepository.class);
+    BoardColumnRepository columnPort = mock(BoardColumnRepository.class);
+
+    UpdateTaskUseCase useCase = new UpdateTaskUseCase(taskPort, userPort, emailLogPort, fixedClock);
+    useCase.setWorkspaceWriteGuard(new WorkspaceWriteGuard(workspacePort, userPort, columnPort));
+
+    UUID userId = UUID.randomUUID();
+    UUID ws1Id = UUID.randomUUID();
+    UUID ws2Id = UUID.randomUUID();
+    UUID ws3Id = UUID.randomUUID();
+    UUID lockedColId = UUID.randomUUID();
+    UUID taskId = UUID.randomUUID();
+
+    User freeUser = buildUser(userId, "America/Sao_Paulo");
+    Todo lockedTodo = new Todo(
+        taskId, lockedColId, userId, "Tarefa Bloqueada", null, 0,
+        TaskPriority.MEDIUM, List.of(), TaskDifficulty.MEDIUM, TaskStatus.PENDING,
+        TaskType.TODO, false, LocalDate.of(2026, 11, 20), LocalDateTime.of(2026, 11, 13, 10, 0),
+        List.of(), TodoReminderType.NONE, null, null);
+
+    when(taskPort.findById(taskId)).thenReturn(Optional.of(lockedTodo));
+    when(userPort.findById(userId)).thenReturn(Optional.of(freeUser));
+    when(columnPort.findById(lockedColId)).thenReturn(Optional.of(
+        new BoardColumn(lockedColId, userId, ws3Id, "Bloqueada", 0, "lock", true)));
+    when(workspacePort.findAllByUserId(userId)).thenReturn(List.of(
+        new Workspace(ws1Id, userId, "W1"),
+        new Workspace(ws2Id, userId, "W2"),
+        new Workspace(ws3Id, userId, "W3")));
+
+    UpdateTaskCommand command = new UpdateTaskCommand(
+        "Novo título", null, TaskPriority.MEDIUM, List.of(),
+        TaskDifficulty.MEDIUM, false, LocalDate.of(2026, 11, 20),
+        null, null, null, null, null, null, null, null,
+        TodoReminderType.NONE, null, false, null, null);
+
+    assertThrows(LimitExceededException.class, () -> useCase.execute(taskId, userId, command));
   }
 }

@@ -53,8 +53,12 @@ export function ContextMenu({
   useEffect(() => {
     if (!isOpen) return;
 
-    const handlePointerDown = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+    const handlePointerDown = (e: Event) => {
+      if (
+        menuRef.current &&
+        e.target instanceof Node &&
+        !menuRef.current.contains(e.target)
+      ) {
         onClose();
       }
     };
@@ -69,14 +73,14 @@ export function ContextMenu({
       onClose();
     };
 
-    // Use capturing phase so outside click is caught immediately
-    window.addEventListener("mousedown", handlePointerDown, true);
+    // Use capturing phase so outside click/tap is caught immediately
+    window.addEventListener("pointerdown", handlePointerDown, true);
     window.addEventListener("contextmenu", handlePointerDown, true);
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("scroll", handleScroll, true);
 
     return () => {
-      window.removeEventListener("mousedown", handlePointerDown, true);
+      window.removeEventListener("pointerdown", handlePointerDown, true);
       window.removeEventListener("contextmenu", handlePointerDown, true);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("scroll", handleScroll, true);
@@ -93,7 +97,7 @@ export function ContextMenu({
         left: `${adjustedPos.x}px`,
       }}
       className={cn(
-        "fixed z-[999] min-w-[150px] bg-popover border border-primary/40 rounded-lg p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-100",
+        "fixed z-[999] min-w-[150px] max-w-[calc(100vw-16px)] max-h-[calc(100dvh-16px)] overflow-y-auto overscroll-contain custom-scrollbar bg-popover border border-primary/40 rounded-lg p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-100",
         className,
       )}
       role="menu"
@@ -122,7 +126,7 @@ export function ContextMenu({
                   aria-expanded={isSubmenuOpen}
                   role="menuitem"
                   className={cn(
-                    "w-full flex items-center justify-between gap-2.5 px-3 py-2 text-xs font-semibold rounded-md transition-colors text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                    "w-full flex items-center justify-between gap-2.5 px-3 py-2 pointer-coarse:py-2.5 text-xs font-semibold rounded-md transition-colors text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                     isSubmenuOpen
                       ? "bg-white/10 text-gold"
                       : "text-neutral-200 hover:text-gold hover:bg-white/10",
@@ -166,7 +170,7 @@ export function ContextMenu({
                           }}
                           role="menuitem"
                           className={cn(
-                            "w-full flex items-center justify-between gap-2 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                            "w-full flex items-center justify-between gap-2 px-2.5 py-1.5 pointer-coarse:py-2 text-xs font-medium rounded-md transition-colors text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                             isChildActive &&
                               "bg-primary-light/15 text-gold font-semibold",
                             isChildDestructive
@@ -209,7 +213,7 @@ export function ContextMenu({
               }}
               role="menuitem"
               className={cn(
-                "w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-md transition-colors text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                "w-full flex items-center gap-2.5 px-3 py-2 pointer-coarse:py-2.5 text-xs font-semibold rounded-md transition-colors text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                 isDestructive
                   ? "text-red-400 hover:text-red-300 hover:bg-red-500/15"
                   : isWarning

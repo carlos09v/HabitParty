@@ -36,7 +36,7 @@ export function UsageModeSelector({
               onClick={() => onSelectMode(mode)}
               disabled={disabled}
               className={cn(
-                "flex flex-col items-start p-3 sm:p-3.5 rounded-xl border text-left transition-colors cursor-pointer relative",
+                "flex flex-col items-start h-full p-3 sm:p-3.5 rounded-xl border text-left transition-colors cursor-pointer relative",
                 "outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
                 isSelected
                   ? "border-primary bg-primary/10 shadow-sm text-neutral-50 ring-1 ring-primary/30 dark:border-gold dark:bg-primary-dark/60 dark:shadow-[0_0_14px_rgba(237,229,57,0.18)] dark:ring-1 dark:ring-gold/40 dark:text-neutral-50"
@@ -69,7 +69,7 @@ export function UsageModeSelector({
               <span className="text-body-s font-bold text-neutral-50">
                 {t(`modes.${mode.id}.title`)}
               </span>
-              <span className="text-tiny text-neutral-400 mt-0.5 leading-snug line-clamp-2">
+              <span className="text-tiny text-neutral-400 mt-0.5 leading-snug">
                 {t(`modes.${mode.id}.description`)}
               </span>
             </button>

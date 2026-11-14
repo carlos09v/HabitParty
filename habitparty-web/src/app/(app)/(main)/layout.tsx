@@ -17,7 +17,11 @@ import {
   getWorkspaces,
   resolveActiveWorkspace,
 } from "@/services/workspaceService";
-import { getDateFormat, getThemeMode, getTimeFormat } from "@/utils/cookies";
+import {
+  getDateFormat,
+  getOptionalThemeCookie,
+  getTimeFormat,
+} from "@/utils/cookies";
 import { getLatestTaskCompletionCreatedAt } from "@/utils/dashboardMetrics";
 
 export const instant = false;
@@ -36,7 +40,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     transactions,
     speculativeTasksCount,
   ] = await Promise.all([
-    getThemeMode(),
+    getOptionalThemeCookie(),
     getDateFormat(),
     getTimeFormat(),
     getWorkspaces(),

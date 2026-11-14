@@ -70,7 +70,7 @@ export function WelcomeCardsSettings({
   };
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="@container flex flex-col gap-5">
       {/* Barra de Status e Ação Rápida */}
       <div
         className={cn(
@@ -81,7 +81,7 @@ export function WelcomeCardsSettings({
             : "bg-gold/10 border-gold/30 text-gold",
         )}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           {hiddenCount > 0 ? (
             <EyeOff
               size={20}
@@ -90,7 +90,7 @@ export function WelcomeCardsSettings({
           ) : (
             <Sparkles size={20} className="shrink-0 text-gold" />
           )}
-          <div className="text-sm">
+          <div className="text-sm min-w-0">
             <span className="font-bold">{t("statusLabel")}</span>
             {hiddenCount === 0
               ? t("allVisible")
@@ -102,7 +102,7 @@ export function WelcomeCardsSettings({
           <button
             type="button"
             onClick={handleRestoreAll}
-            className="self-end sm:self-center px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 border-amber-500/35 dark:bg-amber-400/20 dark:hover:bg-amber-400/30 dark:text-amber-200 border dark:border-amber-400/30 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+            className="w-full sm:w-auto justify-center px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 border-amber-500/35 dark:bg-amber-400/20 dark:hover:bg-amber-400/30 dark:text-amber-200 border dark:border-amber-400/30 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
           >
             <RotateCcw size={13} />
             <span>{t("restoreAllBtn")}</span>
@@ -111,7 +111,7 @@ export function WelcomeCardsSettings({
       </div>
 
       {/* Grade de Cards Configuráveis */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
         {CONFIGURABLE_WELCOME_CARDS.map((card) => {
           const Icon = card.icon;
           const isHidden = isCardHidden(card.key);

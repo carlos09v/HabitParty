@@ -52,7 +52,7 @@ export function DailyFields({ form }: DailyFieldsProps) {
       />
 
       {/* Repetição & Intervalo */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Select
           label={t("repeatLabel")}
           options={DAILY_REPEAT_OPTIONS.map((opt) => ({
@@ -149,7 +149,7 @@ export function DailyFields({ form }: DailyFieldsProps) {
           <span className="text-body-s text-neutral-300 font-medium">
             {t("daysOfWeekLabel")}
           </span>
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5 sm:gap-1">
             {DAYS_OF_WEEK_OPTIONS.map((day) => {
               const isSelected = selectedDays.includes(day.id);
               return (
@@ -159,7 +159,7 @@ export function DailyFields({ form }: DailyFieldsProps) {
                   disabled={isPending}
                   onClick={() => toggleDayOfWeek(day.id)}
                   className={cn(
-                    "py-1.5 px-0.5 rounded-lg border text-tiny font-bold transition-colors cursor-pointer disabled:opacity-50 text-center flex items-center justify-center",
+                    "min-h-8 sm:min-h-0 py-1.5 px-0.5 rounded-lg border text-tiny font-bold transition-colors cursor-pointer disabled:opacity-50 text-center flex items-center justify-center",
                     isSelected
                       ? "border-primary bg-primary text-white shadow-xs dark:border-gold dark:bg-gold dark:text-on-gold dark:shadow-glow-gold-xs font-black"
                       : "border-neutral-600 bg-card text-neutral-200 hover:border-primary/50 hover:text-primary dark:border-primary/30 dark:bg-primary-dark/20 dark:text-neutral-300 dark:hover:text-gold dark:hover:border-gold/40",

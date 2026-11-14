@@ -59,7 +59,7 @@ export function PomodoroAlarmSection({
             : "opacity-55 pointer-events-none bg-surface/25 border-neutral-700 dark:bg-white/[0.02] dark:border-white/5",
         )}
       >
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             {timerVolume === 0 ? (
               <VolumeX size={18} className="text-neutral-400" />
@@ -80,7 +80,7 @@ export function PomodoroAlarmSection({
               onClick={() =>
                 soundEffects.playTimerStartSound(timerSoundType, timerVolume)
               }
-              className="px-2.5 py-1 text-xs font-bold rounded-lg bg-gold text-on-gold hover:bg-gold-hover transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
+              className="px-2.5 py-1.5 text-xs font-bold rounded-lg bg-gold text-on-gold hover:bg-gold-hover transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
             >
               <Sparkles size={13} />
               {t("testBtn")}

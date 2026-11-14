@@ -201,6 +201,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/rewards/{rewardId}/has-history": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Verifica histórico da recompensa
+     * @description Retorna se a recompensa possui registros de transações no Histórico.
+     */
+    get: operations["checkRewardHasHistory"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/rewards/reorder": {
     parameters: {
       query?: never;
@@ -387,6 +407,26 @@ export interface paths {
      * @description Cria um novo espaço de trabalho para o usuário.
      */
     post: operations["createWorkspace"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/workspaces/boards": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Obter Quadros de Todos os Workspaces
+     * @description Retorna todos os workspaces do usuário com todas as colunas (visíveis e ocultas) e respectivas tarefas para o Dashboard.
+     */
+    get: operations["getAllWorkspacesBoards"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1211,6 +1251,10 @@ export interface components {
       orderIndex?: number;
       icon?: string;
       tasks?: components["schemas"]["TaskResponseDTO"][];
+      /** Format: int64 */
+      totalTasks?: number;
+      /** Format: int64 */
+      completedTasks?: number;
     };
     ChecklistItemResponseDTO: {
       /** Format: uuid */
@@ -1293,6 +1337,9 @@ export interface components {
       checklist?: components["schemas"]["ChecklistItemResponseDTO"][];
     };
     TaskHistoryStatusResponseDTO: {
+      hasHistory?: boolean;
+    };
+    RewardHistoryStatusResponseDTO: {
       hasHistory?: boolean;
     };
     WorkspaceResponseDTO: {
@@ -2172,6 +2219,28 @@ export interface operations {
       };
     };
   };
+  checkRewardHasHistory: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        rewardId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["RewardHistoryStatusResponseDTO"];
+        };
+      };
+    };
+  };
   updateOrderIndex: {
     parameters: {
       query?: never;
@@ -2413,6 +2482,28 @@ export interface operations {
   getWorkspaceListByUserId: {
     parameters: {
       query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["WorkspaceResponseDTO"][];
+        };
+      };
+    };
+  };
+  getAllWorkspacesBoards: {
+    parameters: {
+      query?: {
+        excludeArchivedCompleted?: boolean;
+      };
       header?: never;
       path?: never;
       cookie?: never;

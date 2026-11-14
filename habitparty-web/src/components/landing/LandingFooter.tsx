@@ -29,7 +29,7 @@ export function LandingFooter() {
             <p className="text-sm text-neutral-300 max-w-sm leading-relaxed">
               {t("brandDescription")}
             </p>
-            <div className="flex items-center gap-3 pt-1">
+            <div className="flex items-center flex-wrap gap-3 pt-1">
               <a
                 href={SUPPORT_LINKS.githubRepo}
                 target="_blank"
@@ -144,9 +144,9 @@ export function LandingFooter() {
         </div>
 
         {/* Linha Inferior com Copyright */}
-        <div className="pt-8 border-t border-neutral-700/80 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-400">
+        <div className="pt-8 border-t border-neutral-700/80 dark:border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-neutral-400 text-center md:text-left">
           <p>{t("copyright", { year: currentYear })}</p>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center flex-wrap justify-center gap-4">
             <p className="text-center sm:text-right">{t("tagline")}</p>
             <div className="flex items-center gap-2">
               <LanguageToggleBtn variant="icon" />

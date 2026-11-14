@@ -136,7 +136,7 @@ export function TimezoneSettings({
           </div>
         </div>
         {hasBrowserMismatch && browserTimezone && browserOffset && (
-          <p className="text-xs text-neutral-300 pl-7">
+          <p className="text-xs text-neutral-300 pl-0 sm:pl-7">
             {t("browserDiffHint", {
               browserTz: browserTimezone,
               browserOffset,
@@ -188,7 +188,7 @@ export function TimezoneSettings({
           onClick={handleSave}
           disabled={!hasChanges || isCooldownActive || isPending}
           className={cn(
-            "shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-colors cursor-pointer",
+            "w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-colors cursor-pointer",
             "bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-sm",
             "disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none",
           )}

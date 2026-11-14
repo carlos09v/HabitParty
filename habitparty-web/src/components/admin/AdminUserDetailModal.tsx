@@ -174,20 +174,20 @@ export function AdminUserDetailModal({
       maxWidth="max-w-3xl"
       showCloseButton={false}
       borderColor="border-neutral-700 dark:border-white/10"
-      className="p-0 sm:p-0 bg-card dark:bg-surface rounded-2xl flex flex-col overflow-hidden max-h-[90vh]"
+      className="p-0 sm:p-0 bg-card dark:bg-surface rounded-2xl flex flex-col overflow-hidden max-h-[90dvh]"
     >
       {/* HEADER */}
-      <div className="flex items-center justify-between p-5 border-b border-neutral-700 dark:border-white/10 bg-surface/50 dark:bg-surface/90 shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-start sm:items-center justify-between gap-3 p-4 sm:p-5 border-b border-neutral-700 dark:border-white/10 bg-surface/50 dark:bg-surface/90 shrink-0">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <UserAvatar
             src={summary.profilePhotoUrl}
             name={summary.fullName}
             size="md"
             hasRing={summary.isPremium}
           />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-lg font-bold text-neutral-50 dark:text-neutral-100 truncate">
+              <h3 className="text-base sm:text-lg font-bold text-neutral-50 dark:text-neutral-100 truncate max-w-full">
                 {summary.fullName}
               </h3>
               <UserVerifiedBadge
@@ -223,7 +223,7 @@ export function AdminUserDetailModal({
       </div>
 
       {/* CORPO ROLÁVEL */}
-      <div className="p-6 overflow-y-auto custom-scrollbar space-y-6 flex-1">
+      <div className="p-4 sm:p-6 overflow-y-auto custom-scrollbar space-y-5 sm:space-y-6 flex-1">
         {/* DATAS DA CONTA E EXPIRAÇÃO DO PREMIUM */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="p-3.5 rounded-xl bg-surface/60 dark:bg-white/[0.03] border border-neutral-700 dark:border-white/10 flex items-center gap-3">
@@ -318,14 +318,19 @@ export function AdminUserDetailModal({
               return (
                 <div
                   key={item.key}
-                  className="p-3.5 rounded-xl bg-surface/60 dark:bg-white/[0.03] border border-neutral-700 dark:border-white/10 flex items-center justify-between"
+                  className="p-3.5 rounded-xl bg-surface/60 dark:bg-white/[0.03] border border-neutral-700 dark:border-white/10 flex items-center justify-between gap-2.5 min-w-0"
                 >
-                  <div className="flex items-center gap-2.5">
-                    <div className={cn("p-2 rounded-lg border", item.color)}>
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div
+                      className={cn(
+                        "p-2 rounded-lg border shrink-0",
+                        item.color,
+                      )}
+                    >
                       <Icon size={16} />
                     </div>
-                    <div>
-                      <p className="text-xs font-medium text-neutral-200">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-neutral-200 truncate">
                         {t(`storage.items.${item.key}`)}
                       </p>
                       <p className="text-label-g text-neutral-400 font-mono font-normal">
@@ -335,7 +340,7 @@ export function AdminUserDetailModal({
                       </p>
                     </div>
                   </div>
-                  <span className="font-mono text-xs font-bold text-neutral-200 dark:text-neutral-300">
+                  <span className="font-mono text-xs font-bold text-neutral-200 dark:text-neutral-300 shrink-0 whitespace-nowrap">
                     {formatted}
                   </span>
                 </div>
@@ -346,9 +351,12 @@ export function AdminUserDetailModal({
 
         {/* HISTÓRICO DE DISPAROS DE E-MAIL */}
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 text-sm font-bold text-neutral-200 uppercase tracking-wider">
-              <Mail size={16} className="text-amber-600 dark:text-amber-400" />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-3">
+            <div className="flex items-center gap-2 text-sm font-bold text-neutral-200 uppercase tracking-wider min-w-0">
+              <Mail
+                size={16}
+                className="text-amber-600 dark:text-amber-400 shrink-0"
+              />
               <span>{t("emails.title")}</span>
             </div>
             <span className="text-xs text-neutral-400 font-mono">
@@ -382,28 +390,28 @@ export function AdminUserDetailModal({
                 return (
                   <div
                     key={log.id}
-                    className="p-3.5 flex items-center justify-between gap-3 text-xs"
+                    className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 text-xs"
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex items-start sm:items-center gap-2.5 min-w-0 flex-1">
                       <div
                         className={cn(
-                          "w-2 h-2 rounded-full shrink-0",
+                          "w-2 h-2 rounded-full shrink-0 mt-1.5 sm:mt-0",
                           isSent
                             ? "bg-emerald-500 dark:bg-emerald-400 dark:shadow-[0_0_8px_#34d399]"
                             : "bg-red-500 dark:bg-red-400",
                         )}
                       />
-                      <div className="truncate">
+                      <div className="min-w-0 flex-1">
                         <p className="font-semibold text-neutral-200 truncate">
                           {localizedSubject}
                         </p>
-                        <p className="text-label-g text-neutral-400 font-normal">
+                        <p className="text-label-g text-neutral-400 font-normal break-all">
                           {t("emails.recipientPrefix", {
                             email: log.recipientEmail,
                           })}
                         </p>
                         {localizedError && (
-                          <p className="text-tiny text-red-600 dark:text-red-400 mt-0.5">
+                          <p className="text-tiny text-red-600 dark:text-red-400 mt-0.5 break-words">
                             {t("emails.errorPrefix", {
                               message: localizedError,
                             })}
@@ -412,10 +420,10 @@ export function AdminUserDetailModal({
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0">
+                    <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:gap-0 pl-4 sm:pl-0 sm:text-right shrink-0">
                       <span
                         className={cn(
-                          "px-2 py-0.5 rounded text-tiny font-bold uppercase tracking-wider",
+                          "px-2 py-0.5 rounded text-tiny font-bold uppercase tracking-wider whitespace-nowrap",
                           isSent
                             ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30"
                             : "bg-red-500/15 text-red-700 dark:text-red-400 border border-red-500/30",
@@ -425,7 +433,7 @@ export function AdminUserDetailModal({
                           ? t("emails.statusSent")
                           : t("emails.statusFailed")}
                       </span>
-                      <p className="text-tiny text-neutral-400 dark:text-neutral-500 mt-1 font-mono">
+                      <p className="text-tiny text-neutral-400 dark:text-neutral-500 sm:mt-1 font-mono whitespace-nowrap">
                         {dateFormatted}
                       </p>
                     </div>

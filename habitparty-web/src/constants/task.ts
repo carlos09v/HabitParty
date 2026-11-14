@@ -53,13 +53,15 @@ export const TASK_TYPE_META: Record<string, { label: string; color: string }> =
     HABIT: { label: "Hábito", color: "text-info bg-info/15 border-info/40" },
     DAILY: {
       label: "Diária",
-      color: "text-magenta bg-magenta/15 border-magenta/40",
+      color:
+        "text-magenta dark:text-fuchsia-300 bg-magenta/12 dark:bg-magenta/15 border-magenta/35 dark:border-magenta/40",
     },
     TODO: { label: "Afazer", color: "text-gold bg-gold/15 border-gold/40" },
     habit: { label: "Hábito", color: "text-info bg-info/15 border-info/40" },
     daily: {
       label: "Diária",
-      color: "text-magenta bg-magenta/15 border-magenta/40",
+      color:
+        "text-magenta dark:text-fuchsia-300 bg-magenta/12 dark:bg-magenta/15 border-magenta/35 dark:border-magenta/40",
     },
     todo: { label: "Afazer", color: "text-gold bg-gold/15 border-gold/40" },
   };
@@ -310,15 +312,17 @@ export const TASK_PRIORITY_META: Record<
 > = {
   HIGH: {
     label: "Alta",
-    color: "text-danger-500 fill-danger-500",
+    color:
+      "text-danger-400 dark:text-danger-300 fill-danger-400 dark:fill-danger-300",
     badgeColor:
-      "text-danger-500 bg-danger-500/20 border-danger-500/40 fill-danger-500",
+      "text-danger-300 bg-danger-500/15 dark:bg-danger-500/20 border-danger-500/35 dark:border-danger-400/40 fill-danger-300",
   },
   high: {
     label: "Alta",
-    color: "text-danger-500 fill-danger-500",
+    color:
+      "text-danger-400 dark:text-danger-300 fill-danger-400 dark:fill-danger-300",
     badgeColor:
-      "text-danger-500 bg-danger-500/20 border-danger-500/40 fill-danger-500",
+      "text-danger-300 bg-danger-500/15 dark:bg-danger-500/20 border-danger-500/35 dark:border-danger-400/40 fill-danger-300",
   },
   MEDIUM: {
     label: "Média",
@@ -543,9 +547,13 @@ export const PRIORITY_SORT_WEIGHTS: Readonly<Record<string, number>> = {
   none: 0,
 };
 
-/** Template de colunas CSS Grid compartilhado entre TaskTable, RoutineTaskList e TaskRow */
+/**
+ * Template de colunas CSS Grid compartilhado entre TaskTable, RoutineTaskList e TaskRow.
+ * Usa larguras fixas para Tipo, Prioridade e Ações para que cabeçalho e linhas com
+ * diferentes controles/badges mantenham exatamente o mesmo alinhamento vertical.
+ */
 export const TASK_TABLE_GRID_COLS =
-  "grid-cols-[minmax(0,1fr)_auto_40px] sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto_minmax(0,1fr)_40px] md:grid-cols-[minmax(0,2.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_40px]";
+  "grid-cols-[minmax(0,1fr)_5.25rem_4.25rem] @lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)_5.75rem_4.75rem_4.25rem] @2xl:grid-cols-[minmax(0,2.2fr)_minmax(0,1.1fr)_6.25rem_4.75rem_minmax(9rem,0.9fr)_4.25rem]";
 
 /** Dimensões padrão de ancoragem para o TaskDetailsPopover */
 export const TASK_DETAILS_POPOVER_OPTIONS = {

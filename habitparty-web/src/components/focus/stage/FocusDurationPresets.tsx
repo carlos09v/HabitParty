@@ -14,7 +14,7 @@ export function FocusDurationPresets({
   const t = useTranslations("focus.stage");
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex flex-wrap items-center justify-center gap-1.5">
       <span className="text-tiny text-neutral-400 mr-1">
         {t("durationLabel")}
       </span>

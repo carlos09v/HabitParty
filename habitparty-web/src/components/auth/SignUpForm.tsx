@@ -186,9 +186,9 @@ export function SignUpForm() {
         <PasswordStrengthIndicator password={passwordValue} />
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 w-full items-start">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full items-end">
         {/* Data de Nascimento */}
-        <div className="flex-1 w-full sm:w-auto min-w-0">
+        <div className="w-full min-w-0">
           <DatePicker
             label={t("birthdayLabel")}
             id="dob"
@@ -201,7 +201,7 @@ export function SignUpForm() {
         </div>
 
         {/* Gênero */}
-        <div className="flex-1 w-full sm:w-auto min-w-0">
+        <div className="w-full min-w-0">
           <Select
             label={t("genderLabel")}
             placeholder={t("genderPlaceholder")}

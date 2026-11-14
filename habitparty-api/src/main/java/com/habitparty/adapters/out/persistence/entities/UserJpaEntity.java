@@ -7,6 +7,8 @@ import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.habitparty.core.domain.enums.FriendRequestPolicy;
+import com.habitparty.core.domain.enums.PrivacyLevel;
 import com.habitparty.core.domain.enums.UserExperienceMode;
 import com.habitparty.core.domain.enums.UserGender;
 import com.habitparty.core.domain.enums.UserRole;
@@ -96,6 +98,25 @@ public class UserJpaEntity {
   @Column(name = "created_at", nullable = false, updatable = false)
   @CreationTimestamp
   private LocalDateTime createdAt;
+
+  @Column(name = "friend_code", nullable = false, unique = true, length = 12)
+  private String friendCode;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "profile_visibility", nullable = false, length = 20)
+  private PrivacyLevel profileVisibility = PrivacyLevel.PUBLIC;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "stats_visibility", nullable = false, length = 20)
+  private PrivacyLevel statsVisibility = PrivacyLevel.PUBLIC;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "achievements_visibility", nullable = false, length = 20)
+  private PrivacyLevel achievementsVisibility = PrivacyLevel.PUBLIC;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "friend_request_policy", nullable = false, length = 25)
+  private FriendRequestPolicy friendRequestPolicy = FriendRequestPolicy.EVERYONE;
 
   @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
   private UserStatsJpaEntity stats;

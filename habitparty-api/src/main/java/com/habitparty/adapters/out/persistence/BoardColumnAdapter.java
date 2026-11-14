@@ -1,8 +1,11 @@
 package com.habitparty.adapters.out.persistence;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
@@ -43,14 +46,30 @@ public class BoardColumnAdapter implements BoardColumnRepository {
 
     // Converte a Projeção nativa do Spring para o seu DTO limpo
     return projections.stream()
-        .map(p -> new BoardColumnSummaryDTO(
-            p.getId(),
-            p.getName(),
-            p.getIcon(),
-            p.getOrderIndex(),
-            p.getTotalTasks() != null ? p.getTotalTasks() : 0L,
-            p.getCompletedTasks() != null ? p.getCompletedTasks() : 0L))
+        .map(this::toSummaryDTO)
         .toList();
+  }
+
+  @Override
+  public Map<UUID, BoardColumnSummaryDTO> getColumnSummariesByWorkspaceIds(Collection<UUID> workspaceIds) {
+    if (workspaceIds == null || workspaceIds.isEmpty()) {
+      return Map.of();
+    }
+    return repository.findSummaryByWorkspaceIdIn(workspaceIds, TaskStatus.COMPLETED).stream()
+        .collect(Collectors.toMap(
+            BoardColumnSummaryProjection::getId,
+            this::toSummaryDTO,
+            (existing, ignored) -> existing));
+  }
+
+  private BoardColumnSummaryDTO toSummaryDTO(BoardColumnSummaryProjection projection) {
+    return new BoardColumnSummaryDTO(
+        projection.getId(),
+        projection.getName(),
+        projection.getIcon(),
+        projection.getOrderIndex(),
+        projection.getTotalTasks() != null ? projection.getTotalTasks() : 0L,
+        projection.getCompletedTasks() != null ? projection.getCompletedTasks() : 0L);
   }
 
   @Override
@@ -77,6 +96,16 @@ public class BoardColumnAdapter implements BoardColumnRepository {
     // 2. Converte a lista de entidades JPA para lista de Domínio
     return entities.stream()
         .map(entity -> boardColumnMapper.toDomain(entity))
+        .toList();
+  }
+
+  @Override
+  public List<BoardColumn> findAllByWorkspaceIds(List<UUID> workspaceIds) {
+    if (workspaceIds == null || workspaceIds.isEmpty()) {
+      return List.of();
+    }
+    return repository.findByWorkspace_IdInOrderByOrderIndexAsc(workspaceIds).stream()
+        .map(boardColumnMapper::toDomain)
         .toList();
   }
 

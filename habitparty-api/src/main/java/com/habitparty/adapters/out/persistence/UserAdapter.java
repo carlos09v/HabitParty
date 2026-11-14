@@ -2,12 +2,19 @@ package com.habitparty.adapters.out.persistence;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +38,9 @@ public class UserAdapter implements UserRepository {
 
   @Override
   public User save(User user) {
+    if (user.getFriendCode() == null || user.getFriendCode().isBlank()) {
+      user.setFriendCode(generateUniqueFriendCode());
+    }
     UserJpaEntity entity = userRepository.findById(user.getId())
         .map(existing -> {
           userMapper.updateEntityFromDomain(existing, user);
@@ -42,6 +52,16 @@ public class UserAdapter implements UserRepository {
     return userMapper.toDomain(savedEntity);
   }
 
+  private String generateUniqueFriendCode() {
+    for (int attempt = 0; attempt < 10; attempt++) {
+      String candidate = User.generateRandomFriendCode();
+      if (!userRepository.existsByFriendCodeIgnoreCase(candidate)) {
+        return candidate;
+      }
+    }
+    return User.generateRandomFriendCode();
+  }
+
   @Override
   public void saveAll(Collection<User> users) {
     if (users == null || users.isEmpty()) {
@@ -50,19 +70,22 @@ public class UserAdapter implements UserRepository {
 
     List<UUID> existingIds = users.stream()
         .map(User::getId)
-        .filter(java.util.Objects::nonNull)
+        .filter(Objects::nonNull)
         .toList();
 
-    java.util.Map<UUID, UserJpaEntity> existingById = existingIds.isEmpty()
-        ? java.util.Map.of()
+    Map<UUID, UserJpaEntity> existingById = existingIds.isEmpty()
+        ? Map.of()
         : userRepository.findAllById(existingIds).stream()
-            .collect(java.util.stream.Collectors.toMap(
+            .collect(Collectors.toMap(
                 UserJpaEntity::getId,
-                java.util.function.Function.identity(),
+                Function.identity(),
                 (a, b) -> a));
 
-    List<UserJpaEntity> entitiesToSave = new java.util.ArrayList<>(users.size());
+    List<UserJpaEntity> entitiesToSave = new ArrayList<>(users.size());
     for (User user : users) {
+      if (user.getFriendCode() == null || user.getFriendCode().isBlank()) {
+        user.setFriendCode(generateUniqueFriendCode());
+      }
       UserJpaEntity entity = user.getId() != null ? existingById.get(user.getId()) : null;
       if (entity != null) {
         userMapper.updateEntityFromDomain(entity, user);
@@ -128,6 +151,15 @@ public class UserAdapter implements UserRepository {
   }
 
   @Override
+  public Optional<User> findByUsernameIgnoreCase(String username) {
+    if (username == null || username.isBlank()) {
+      return Optional.empty();
+    }
+    return userRepository.findByUsernameIgnoreCase(username.trim())
+        .map(userMapper::toDomain);
+  }
+
+  @Override
   public Optional<User> findByStripeCustomerId(String stripeCustomerId) {
     return userRepository.findByStripeCustomerId(stripeCustomerId)
         .map(userMapper::toDomain);
@@ -186,5 +218,46 @@ public class UserAdapter implements UserRepository {
   @Override
   public List<UUID> findUserIdsDueForDailyReset(Instant nowUtc) {
     return userRepository.findUserIdsDueForDailyReset(nowUtc);
+  }
+
+  @Override
+  public Optional<User> findByFriendCode(String friendCode) {
+    String normalized = User.normalizeFriendCode(friendCode);
+    if (normalized == null) {
+      return Optional.empty();
+    }
+    return userRepository.findByFriendCodeIgnoreCase(normalized).map(userMapper::toDomain);
+  }
+
+  @Override
+  public boolean existsByFriendCode(String friendCode) {
+    String normalized = User.normalizeFriendCode(friendCode);
+    if (normalized == null) {
+      return false;
+    }
+    return userRepository.existsByFriendCodeIgnoreCase(normalized);
+  }
+
+  @Override
+  public List<User> searchSocialUsers(String query, UUID excludeUserId, int limit) {
+    if (query == null || query.isBlank() || excludeUserId == null) {
+      return List.of();
+    }
+    String trimmed = query.trim();
+    String cleanedUsername = trimmed.startsWith("@") ? trimmed.substring(1).trim() : trimmed;
+    if (cleanedUsername.isEmpty()) {
+      return List.of();
+    }
+    String exactCode = !trimmed.startsWith("@") ? User.normalizeFriendCode(trimmed) : null;
+    String pattern = "%" + cleanedUsername.toLowerCase(Locale.ROOT) + "%";
+    int safeLimit = Math.max(1, Math.min(limit, 30));
+    return userRepository.searchSocialUsers(
+            excludeUserId,
+            exactCode != null ? exactCode : "",
+            pattern,
+            PageRequest.of(0, safeLimit))
+        .stream()
+        .map(userMapper::toDomain)
+        .toList();
   }
 }

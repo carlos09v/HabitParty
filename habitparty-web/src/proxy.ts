@@ -16,7 +16,42 @@ const AUTH_ROUTES = [
 ];
 const ACCESS_COOKIE_NAME = "habitparty_token";
 const REFRESH_COOKIE_NAME = "habitparty_refresh_token";
+const THEME_SCOPE_HEADER = "x-habitparty-theme-scope";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+type ThemeScope = "default" | "app";
+
+function applyAccessCookie(response: NextResponse, tokenValue: string) {
+  response.cookies.set(ACCESS_COOKIE_NAME, tokenValue, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 2, // 2 horas
+  });
+}
+
+function createNextWithScope(
+  request: NextRequest,
+  themeScope: ThemeScope,
+  refreshedHeaders: Headers | null,
+  refreshedAccessToken: string | null,
+): NextResponse {
+  const headers = refreshedHeaders
+    ? new Headers(refreshedHeaders)
+    : new Headers(request.headers);
+  headers.set(THEME_SCOPE_HEADER, themeScope);
+
+  const response = NextResponse.next({
+    request: { headers },
+  });
+
+  if (refreshedAccessToken) {
+    applyAccessCookie(response, refreshedAccessToken);
+  }
+
+  return attachLocaleCookieIfMissing(request, response);
+}
 
 function resolveRequestLocale(request: NextRequest): "en" | "pt-BR" {
   const existingLocale = request.cookies.get(LOCALE_COOKIE_NAME)?.value;
@@ -55,7 +90,8 @@ export async function proxy(request: NextRequest) {
   // 1. Lendo os cookies de autenticação
   let token = request.cookies.get(ACCESS_COOKIE_NAME)?.value;
   const refreshToken = request.cookies.get(REFRESH_COOKIE_NAME)?.value;
-  let responseToPass: NextResponse | null = null;
+  let refreshedHeaders: Headers | null = null;
+  let refreshedAccessToken: string | null = null;
 
   // 2. Silent Refresh: se o access token expirou/sumiu, mas temos o refresh token
   if (!token && refreshToken) {
@@ -73,6 +109,7 @@ export async function proxy(request: NextRequest) {
 
         if (newToken) {
           token = newToken;
+          refreshedAccessToken = newToken;
 
           // Atualiza os headers da requisição interna para que os Server Components
           // já recebam o cookie atualizado nesta mesma renderização
@@ -93,21 +130,7 @@ export async function proxy(request: NextRequest) {
               )
               .join("; "),
           );
-
-          responseToPass = NextResponse.next({
-            request: {
-              headers: requestHeaders,
-            },
-          });
-
-          // Grava o cookie no navegador do usuário
-          responseToPass.cookies.set(ACCESS_COOKIE_NAME, newToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-            path: "/",
-            maxAge: 60 * 60 * 2, // 2 horas
-          });
+          refreshedHeaders = requestHeaders;
         }
       }
     } catch (err) {
@@ -138,9 +161,8 @@ export async function proxy(request: NextRequest) {
       new URL("/dashboard", request.url),
     );
 
-    if (responseToPass) {
-      const newCookie = responseToPass.cookies.get(ACCESS_COOKIE_NAME);
-      if (newCookie) redirectResponse.cookies.set(newCookie);
+    if (refreshedAccessToken) {
+      applyAccessCookie(redirectResponse, refreshedAccessToken);
     }
     return attachLocaleCookieIfMissing(request, redirectResponse);
   }
@@ -158,19 +180,23 @@ export async function proxy(request: NextRequest) {
     );
   }
 
-  // 5. Visitante acessando telas de login/cadastro -> permite visualização
+  // 5. Visitante acessando telas de login/cadastro -> permite visualização com tema padrão
   if (isAuthRoute) {
-    return attachLocaleCookieIfMissing(
+    return createNextWithScope(
       request,
-      responseToPass || NextResponse.next(),
+      "default",
+      refreshedHeaders,
+      refreshedAccessToken,
     );
   }
 
   // 5. Rota de Onboarding / First Step: acessível para configuração inicial
   if (pathname.startsWith("/firstStep")) {
-    return attachLocaleCookieIfMissing(
+    return createNextWithScope(
       request,
-      responseToPass || NextResponse.next(),
+      token ? "app" : "default",
+      refreshedHeaders,
+      refreshedAccessToken,
     );
   }
 
@@ -190,9 +216,11 @@ export async function proxy(request: NextRequest) {
     );
   }
 
-  return attachLocaleCookieIfMissing(
+  return createNextWithScope(
     request,
-    responseToPass || NextResponse.next(),
+    "app",
+    refreshedHeaders,
+    refreshedAccessToken,
   );
 }
 

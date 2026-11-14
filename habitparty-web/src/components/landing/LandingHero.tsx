@@ -34,7 +34,7 @@ export function LandingHero() {
           {/* Coluna Esquerda: Copy & CTAs (Tamanho equilibrado e escaneável) */}
           <div className="lg:col-span-7 text-center lg:text-left">
             {/* Pill Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-card dark:bg-surface/80 border border-neutral-700 dark:border-primary-light/30 shadow-xs dark:shadow-[0_0_15px_rgba(124,58,237,0.3)] mb-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
+            <div className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-2xl sm:rounded-full bg-card dark:bg-surface/80 border border-neutral-700 dark:border-primary-light/30 shadow-xs dark:shadow-[0_0_15px_rgba(124,58,237,0.3)] mb-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
               <Sparkles className="w-4 h-4 text-amber-600 dark:text-gold shrink-0" />
               <span className="text-xs sm:text-sm font-semibold text-neutral-200">
                 {t("badge")}
@@ -73,7 +73,7 @@ export function LandingHero() {
             </div>
 
             {/* Prova de Valor / Destaques */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-6 border-t border-neutral-700 dark:border-white/10">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-3 pt-6 border-t border-neutral-700 dark:border-white/10">
               {LANDING_HERO_HIGHLIGHT_CONFIGS.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -82,7 +82,7 @@ export function LandingHero() {
                     className="flex items-center justify-center lg:justify-start gap-2 p-2.5 rounded-lg bg-card dark:bg-surface/40 border border-neutral-700 dark:border-white/5 shadow-xs dark:shadow-none"
                   >
                     <Icon className={`w-4 h-4 shrink-0 ${item.colorClass}`} />
-                    <span className="text-xs font-medium text-neutral-200 truncate">
+                    <span className="text-xs font-medium text-neutral-200 leading-tight">
                       {t(`highlights.${item.id}`)}
                     </span>
                   </div>
@@ -100,7 +100,7 @@ export function LandingHero() {
               {/* Painel Principal Flutuante */}
               <div className="rounded-3xl bg-card dark:bg-surface/95 border border-neutral-700/90 dark:border-white/12 p-5 sm:p-6 shadow-xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.55)] space-y-4">
                 {/* Topo do Card: Emblema + Modos de Experiência */}
-                <div className="flex items-center justify-between gap-3 pb-3.5 border-b border-neutral-700/80 dark:border-white/10">
+                <div className="flex items-center justify-between flex-wrap gap-2.5 pb-3.5 border-b border-neutral-700/80 dark:border-white/10">
                   <div className="flex items-center gap-2.5">
                     <Image
                       src="/assets/favicon_io/android-chrome-192x192.png"
@@ -120,12 +120,12 @@ export function LandingHero() {
                   </div>
 
                   {/* Pill Dual: Modo Essencial | Modo Aventura */}
-                  <div className="inline-flex items-center gap-1 p-1 rounded-full bg-background/80 border border-neutral-700 dark:border-white/10 text-[10px] font-bold">
-                    <span className="px-2 py-0.5 rounded-full text-cyan-400 bg-cyan-500/10 border border-cyan-500/25 flex items-center gap-1">
+                  <div className="inline-flex items-center gap-1 p-1 rounded-full bg-background/80 border border-neutral-700 dark:border-white/10 text-[10px] font-bold shrink-0">
+                    <span className="px-2 py-0.5 rounded-full text-cyan-400 bg-cyan-500/10 border border-cyan-500/25 flex items-center gap-1 whitespace-nowrap">
                       <CoinIcon size={11} variant="credit" />
                       {t("preview.modeEssential")}
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-amber-800 bg-amber-500/15 border border-amber-500/35 dark:text-gold dark:bg-gold/15 dark:border-gold/30 flex items-center gap-1">
+                    <span className="px-2 py-0.5 rounded-full text-amber-800 bg-amber-500/15 border border-amber-500/35 dark:text-gold dark:bg-gold/15 dark:border-gold/30 flex items-center gap-1 whitespace-nowrap">
                       <CoinIcon size={11} variant="coin" />
                       {t("preview.modeAdventure")}
                     </span>
@@ -139,7 +139,7 @@ export function LandingHero() {
                       <CheckCircle2 className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 mb-0.5">
+                      <div className="flex items-center flex-wrap gap-1.5 mb-0.5">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-magenta">
                           {t("preview.dailyTag")}
                         </span>
@@ -164,8 +164,8 @@ export function LandingHero() {
                 </div>
 
                 {/* Card 2: Sessão de Foco Pomodoro */}
-                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-primary/15 via-background/70 to-magenta/10 border border-primary-light/30 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 text-left">
+                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-primary/15 via-background/70 to-magenta/10 border border-primary-light/30 flex items-center justify-between flex-wrap gap-3">
+                  <div className="flex items-center gap-3 min-w-0 text-left">
                     <div className="w-8 h-8 rounded-xl bg-primary/25 border border-primary-light/40 flex items-center justify-center text-primary-light shrink-0">
                       <Timer className="w-4 h-4" />
                     </div>

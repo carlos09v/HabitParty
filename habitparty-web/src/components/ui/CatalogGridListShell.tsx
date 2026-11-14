@@ -70,19 +70,21 @@ export function CatalogGridListShell({
         }
       >
         {viewMode === "card" ? (
-          <div
-            className={cn(
-              "grid grid-cols-1 sm:grid-cols-2 w-full pb-8",
-              gridClassName ??
-                (isCompact
-                  ? "lg:grid-cols-3 xl:grid-cols-4 gap-3.5"
-                  : "lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4"),
-            )}
-          >
-            {children}
+          <div className="@container w-full">
+            <div
+              className={cn(
+                "grid grid-cols-1 w-full pb-8",
+                gridClassName ??
+                  (isCompact
+                    ? "@min-[500px]:grid-cols-2 @min-[760px]:grid-cols-3 @min-[1040px]:grid-cols-4 gap-3.5"
+                    : "@min-[560px]:grid-cols-2 @min-[860px]:grid-cols-3 @min-[1160px]:grid-cols-4 gap-4"),
+              )}
+            >
+              {children}
+            </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-2.5 w-full pb-8">
+          <div className="@container flex flex-col gap-2.5 w-full pb-8">
             <ItemRowHeader isCompact={isCompact} mode={headerMode} />
             <ul
               className="flex flex-col gap-2 w-full"

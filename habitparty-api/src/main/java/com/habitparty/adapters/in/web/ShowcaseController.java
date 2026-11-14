@@ -11,8 +11,12 @@ import com.habitparty.adapters.in.web.dtos.request.UpdateShowcaseProfileRequestD
 import com.habitparty.adapters.in.web.dtos.response.UserResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.showcase.AchievementItemResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.showcase.ProfileHighlightResponseDTO;
+import com.habitparty.adapters.in.web.dtos.response.showcase.PublicUserShowcaseResponseDTO;
+import com.habitparty.adapters.in.web.dtos.response.showcase.UserRetrospectiveResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.showcase.UserShowcaseResponseDTO;
+import com.habitparty.application.usecases.achievement.GetPublicUserShowcaseUseCase;
 import com.habitparty.application.usecases.achievement.GetUnseenAchievementsUseCase;
+import com.habitparty.application.usecases.achievement.GetUserRetrospectiveUseCase;
 import com.habitparty.application.usecases.achievement.GetUserShowcaseUseCase;
 import com.habitparty.application.usecases.achievement.GetUserShowcaseUseCase.AchievementProgressItem;
 import com.habitparty.application.usecases.achievement.MarkAchievementsSeenUseCase;
@@ -20,7 +24,6 @@ import com.habitparty.application.usecases.achievement.UpdateProfileHighlightsUs
 import com.habitparty.application.usecases.achievement.UpdateProfileHighlightsUseCase.HighlightSlotCommand;
 import com.habitparty.application.usecases.achievement.UpdateShowcaseProfileUseCase;
 import com.habitparty.application.usecases.achievement.UpdateShowcaseProfileUseCase.UpdateShowcaseProfileCommand;
-import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.achievement.ProfileHighlight;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
@@ -34,6 +37,8 @@ public class ShowcaseController implements ShowcaseApi {
   private final UpdateShowcaseProfileUseCase updateShowcaseProfileUseCase;
   private final GetUnseenAchievementsUseCase getUnseenAchievementsUseCase;
   private final MarkAchievementsSeenUseCase markAchievementsSeenUseCase;
+  private final GetPublicUserShowcaseUseCase getPublicUserShowcaseUseCase;
+  private final GetUserRetrospectiveUseCase getUserRetrospectiveUseCase;
 
   @Override
   public ResponseEntity<UserShowcaseResponseDTO> getMyShowcase(AuthenticatedUser usuarioLogado) {
@@ -89,5 +94,30 @@ public class ShowcaseController implements ShowcaseApi {
   public ResponseEntity<Void> markAchievementsSeen(AuthenticatedUser usuarioLogado) {
     markAchievementsSeenUseCase.execute(usuarioLogado.id());
     return ResponseEntity.noContent().build();
+  }
+
+  @Override
+  public ResponseEntity<PublicUserShowcaseResponseDTO> getUserShowcaseByUsername(
+      AuthenticatedUser usuarioLogado,
+      String username) {
+    var result = getPublicUserShowcaseUseCase.execute(usuarioLogado.id(), username);
+    return ResponseEntity.ok(PublicUserShowcaseResponseDTO.fromDomain(result));
+  }
+
+  @Override
+  public ResponseEntity<UserRetrospectiveResponseDTO> getMyRetrospective(
+      AuthenticatedUser usuarioLogado,
+      Integer year) {
+    var result = getUserRetrospectiveUseCase.executeForSelf(usuarioLogado.id(), year);
+    return ResponseEntity.ok(UserRetrospectiveResponseDTO.fromDomain(result));
+  }
+
+  @Override
+  public ResponseEntity<UserRetrospectiveResponseDTO> getUserRetrospectiveByUsername(
+      AuthenticatedUser usuarioLogado,
+      String username,
+      Integer year) {
+    var result = getUserRetrospectiveUseCase.executeForUsername(usuarioLogado.id(), username, year);
+    return ResponseEntity.ok(UserRetrospectiveResponseDTO.fromDomain(result));
   }
 }

@@ -33,18 +33,24 @@ export function TaskTypeBadge({
     }
     if (taskType === "daily") {
       return (
-        <RotateCcw size={size} className="shrink-0 stroke-[2.5] text-magenta" />
+        <RotateCcw
+          size={size}
+          className="shrink-0 stroke-[2.5] text-magenta dark:text-fuchsia-300"
+        />
       );
     }
     return (
-      <CheckSquare size={size} className="shrink-0 stroke-[2.5] text-gold" />
+      <CheckSquare
+        size={size}
+        className="shrink-0 stroke-[2.5] text-gold-ink dark:text-gold"
+      />
     );
   };
 
   return (
     <span
       className={cn(
-        "rounded font-semibold border truncate shrink-0 uppercase transition-colors inline-flex items-center gap-1 leading-none",
+        "rounded font-semibold border max-w-full shrink-0 uppercase transition-colors inline-flex items-center gap-1 leading-none",
         isCompact
           ? "px-1.5 py-0.5 text-label-s tracking-normal leading-tight"
           : "px-2 py-0.5 text-label-m tracking-wide shadow-2xs",
@@ -53,7 +59,7 @@ export function TaskTypeBadge({
       )}
     >
       {renderIcon()}
-      <span>{t(taskType)}</span>
+      <span className="truncate">{t(taskType)}</span>
     </span>
   );
 }

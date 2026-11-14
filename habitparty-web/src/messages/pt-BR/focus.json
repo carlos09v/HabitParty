@@ -199,6 +199,7 @@
     "activitiesTab": "Atividades ({count})",
     "tasksTab": "Tarefas ({count})",
     "backpackTab": "Mochila ({count})",
+    "loadingActivities": "Carregando atividades...",
     "emptyActivities": "Nenhuma atividade cadastrada. Crie uma na tela principal.",
     "emptyTasks": "Nenhuma tarefa pendente (Diária ou Afazer) encontrada.",
     "searchTasksPlaceholder": "Buscar tarefa pelo título...",
@@ -286,7 +287,8 @@
     "startFocusAria": "Iniciar foco em {title}",
     "pauseFocusTitle": "Pausar Foco",
     "resumeFocusTitle": "Continuar Foco",
-    "startFocusTitle": "Iniciar Foco"
+    "startFocusTitle": "Iniciar Foco",
+    "moreActionsAria": "Mais ações para {title}"
   },
   "backpack": {
     "sectionAria": "Mochila em Foco",

@@ -59,7 +59,7 @@ export function FocusWeeklyChart({
           <button
             type="button"
             onClick={onPrevWeek}
-            className="p-1 rounded-md hover:bg-surface dark:hover:bg-white/10 text-neutral-400 hover:text-neutral-100 transition-colors cursor-pointer shrink-0"
+            className="min-w-7 min-h-7 pointer-coarse:min-w-9 pointer-coarse:min-h-9 p-1 rounded-md hover:bg-surface dark:hover:bg-white/10 text-neutral-400 hover:text-neutral-100 transition-colors cursor-pointer shrink-0 flex items-center justify-center"
             title={t("prevWeek")}
             aria-label={t("prevWeek")}
           >
@@ -89,7 +89,7 @@ export function FocusWeeklyChart({
             type="button"
             onClick={onNextWeek}
             disabled={weekOffset >= 0}
-            className="p-1 rounded-md hover:bg-surface dark:hover:bg-white/10 text-neutral-400 hover:text-neutral-100 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            className="min-w-7 min-h-7 pointer-coarse:min-w-9 pointer-coarse:min-h-9 p-1 rounded-md hover:bg-surface dark:hover:bg-white/10 text-neutral-400 hover:text-neutral-100 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
             title={t("nextWeek")}
             aria-label={t("nextWeek")}
           >
@@ -138,6 +138,9 @@ export function FocusWeeklyChart({
             <button
               type="button"
               key={item.dayLabel}
+              onClick={() =>
+                setHoveredIndex((prev) => (prev === index ? null : index))
+              }
               onMouseEnter={() => setHoveredIndex(index)}
               onMouseLeave={() => setHoveredIndex(null)}
               onFocus={() => setHoveredIndex(index)}

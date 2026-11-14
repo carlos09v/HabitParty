@@ -1,6 +1,7 @@
 export * from "./catalogMetrics";
 export * from "./cn";
 export * from "./confetti";
+export * from "./contextMenu";
 export * from "./dashboardMetrics";
 export * from "./date";
 export * from "./dom";

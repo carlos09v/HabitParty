@@ -157,7 +157,7 @@ export function CreateTaskModal({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
           {/* COLUNA 1 (ESQUERDA): DADOS BÁSICOS */}
           <div className="flex flex-col gap-3.5">
-            <div className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-white/10">
+            <div className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-neutral-700 dark:border-white/10">
               <FileText size={14} className="text-gold" />
               <span>{t("section1Title")}</span>
             </div>
@@ -171,7 +171,7 @@ export function CreateTaskModal({
 
           {/* COLUNA 2 (DIREITA): CONFIGURAÇÕES ESPECÍFICAS DO TIPO & RECOMPENSA */}
           <div className="flex flex-col gap-3.5">
-            <div className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-white/10">
+            <div className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-neutral-700 dark:border-white/10">
               <SlidersHorizontal size={14} className="text-gold" />
               <span>{t("section2Title")}</span>
             </div>
@@ -196,6 +196,11 @@ export function CreateTaskModal({
                 onChange={form.setIsHardcore}
                 disabled={form.isPending || isOverdueHardcoreLocked}
                 taskType={form.taskType}
+                dueDate={form.dueDate}
+                dueTime={form.dueTime}
+                startTime={form.startTime}
+                dueEndTime={form.dueEndTime}
+                isAllDay={form.isAllDay}
               />
             </div>
 
@@ -210,12 +215,12 @@ export function CreateTaskModal({
         </div>
 
         {/* RODAPÉ DE AÇÕES PADRONIZADO */}
-        <div className="flex items-center justify-end gap-2.5 pt-3.5 border-t border-white/10 mt-1">
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-2.5 pt-3.5 border-t border-neutral-700 dark:border-white/10 mt-1">
           <button
             type="button"
             onClick={onClose}
             disabled={form.isPending}
-            className="px-4 py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:text-neutral-50 hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+            className="w-full sm:w-auto px-4 py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:text-neutral-50 hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
           >
             <X size={14} />
             {t("cancel")}
@@ -223,7 +228,7 @@ export function CreateTaskModal({
           <button
             type="submit"
             disabled={form.isPending || !form.name.trim() || !form.columnId}
-            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
           >
             {form.isPending ? (
               <>

@@ -13,6 +13,16 @@ import type {
 } from "@/types/showcase";
 import type { UserResponseDTO } from "@/types/user";
 
+export type ShowcaseTabId = "overview" | "friends" | "retrospective";
+
+/**
+ * Normaliza o parâmetro de query `tab` da vitrine pública/pessoal.
+ */
+export function resolveShowcaseTab(val?: string | null): ShowcaseTabId {
+  if (val === "friends" || val === "retrospective") return val;
+  return "overview";
+}
+
 export interface ResolvedHighlightCard {
   rarity: AchievementRarity;
   iconKey: string;
@@ -54,6 +64,36 @@ export function resolveAchievementCopy(
     : achievement.description;
 
   return { title, description };
+}
+
+/**
+ * Resolve o título localizado da conquista mais rara exibida na retrospectiva.
+ */
+export function resolveRetrospectiveAchievementTitle(
+  retro:
+    | {
+        rarestAchievementCode?: string | null;
+        rarestAchievementTitle?: string | null;
+      }
+    | null
+    | undefined,
+  isGamified: boolean,
+  tCatalog: CatalogTranslator,
+): string | null {
+  if (!retro) return null;
+  if (!retro.rarestAchievementCode) {
+    return retro.rarestAchievementTitle ?? null;
+  }
+  const { title } = resolveAchievementCopy(
+    {
+      code: retro.rarestAchievementCode,
+      title: retro.rarestAchievementTitle ?? retro.rarestAchievementCode,
+      description: "",
+    },
+    isGamified,
+    tCatalog,
+  );
+  return title || null;
 }
 
 /**

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { LanguageToggleBtn } from "@/components/layout/LanguageToggleBtn";
+import { ThemeInitializer } from "@/components/layout/ThemeInitializer";
 import { ThemeToggleBtn } from "@/components/layout/ThemeToggleBtn";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { CosmicGalaxyIllustration } from "@/components/ui/CosmicGalaxyIllustration";
@@ -21,24 +22,25 @@ export default async function AuthLayout({
 
   return (
     <ScopedIntlProvider scope="auth">
-      <div className="relative min-h-[100dvh] w-full flex bg-background overflow-hidden">
+      <ThemeInitializer allowCustomThemes={false} />
+      <div className="relative min-h-[100dvh] w-full flex bg-background overflow-x-clip">
         {/* LADO ESQUERDO: Branding + Formulário Centralizado na Metade (50% do viewport) */}
-        <div className="w-full lg:w-1/2 min-h-[100dvh] flex flex-col justify-between p-4 sm:p-8 lg:p-16 relative z-10">
+        <div className="w-full lg:w-[56%] xl:w-1/2 min-h-[100dvh] flex flex-col justify-between p-4 pb-20 sm:p-8 lg:p-10 xl:p-16 relative z-10">
           {/* Top bar: Logo HabitParty e Alternadores de Idioma e Tema */}
-          <div className="flex items-center justify-between w-full max-w-[487px] mx-auto">
+          <div className="flex items-center justify-between gap-2 w-full max-w-[487px] mx-auto">
             <Link
               href={`/${locale}`}
-              className="inline-block transition-opacity hover:opacity-90"
+              className="inline-block shrink-0 transition-opacity hover:opacity-90"
             >
               <BrandLogo
                 alt="HabitParty"
                 width={251}
                 height={55}
-                className="w-auto h-11"
+                className="w-auto h-8 sm:h-10 lg:h-11"
                 priority
               />
             </Link>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <LanguageToggleBtn variant="icon" />
               <ThemeToggleBtn variant="icon" />
             </div>
@@ -56,7 +58,7 @@ export default async function AuthLayout({
         </div>
 
         {/* LADO DIREITO: Ilustração Cósmica da Galáxia (50% do viewport) */}
-        <div className="hidden lg:flex lg:w-1/2 relative min-h-screen items-center justify-end overflow-hidden pointer-events-none">
+        <div className="hidden lg:flex lg:w-[44%] xl:w-1/2 relative min-h-screen items-center justify-end overflow-hidden pointer-events-none">
           {/* Glow cósmico suave pré-composto na base e centro da galáxia */}
           <div
             aria-hidden="true"

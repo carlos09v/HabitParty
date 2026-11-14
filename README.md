@@ -19,12 +19,15 @@ An open-core productivity and gamification system featuring a strict mathematica
   * 🟩 **Easy** (0.75 🪙 / Credits • 5 XP / pts)
   * 🟨 **Medium** (2.50 🪙 / Credits • 15 XP / pts)
   * 🟪 **Hard** (5.00 🪙 / Credits • 30 XP / pts)
-* **Kanban Board & Multiple Workspaces:** Segregate different areas of your life (Work, Studies, Personal Routine) into isolated workspaces featuring customizable Kanban boards, columns, and smart cross-workspace search hints.
+* **Kanban Board & Multiple Workspaces:** Segregate different areas of your life (Work, Studies, Personal Routine) into isolated workspaces featuring customizable Kanban boards, cross-workspace column moves, smart cross-workspace search hints, and a unified **"All Workspaces"** Dashboard view.
+* **Atmospheric Themes (4 Free + 3 VIP):** Customize your workspace across **7 themes** — **4 Free** (2 Dark: *Cosmic Dark* & alternate *Dark Knight*; 2 Light: *Cosmic Daylight* & alternate *Solar Parchment*) and **3 VIP** (*Cyberpunk Neon*, *Forest Ranger*, and the extra VIP Light theme *Royal Gold*) — with polarity-aware Dark/Light toggle memory.
 * **Real-Life Reward Store:** Build your own catalog of leisure and recovery rewards categorized into packages (Single Use, Time-Based Coupons, or Mystery Boxes) balanced with your daily effort.
 * **🎁 Mystery Boxes (Optional RNG):** Weighted probability loot boxes calibrated mathematically across 4 tiers (Basic, Premium, Epic, Legendary) to bring excitement without breaking your personal economy.
 * **🎒 Inventory Backpack:** Purchased rewards are stored in your backpack to be consumed whenever you take your break or linked directly to a timed leisure focus session.
-* **⏱️ Focus Hero Stage (Pomodoro & Free Stopwatch):** Native immersion timer featuring daily diminishing returns (*daily soft cap* up to 6h), anti-AFK safeguards (90 min cap per session), and leisure safeguards (backpack leisure sessions yield zero coins).
-* **👑 VIP Personalization, Events & Ambient Sound:** Schedule To-Dos as timed or all-day Events, unlock animated cosmic avatar frames, procedural ambient noise synthesized natively in the browser via Web Audio API (Gentle Rain, Cozy Cafe, Lofi Zen, Fireplace), and an exclusive VIP icon package.
+* **⏱️ Focus Hero Stage (Pomodoro & Free Stopwatch):** Native immersion timer featuring 1-click Quick Focus from Dashboard task rows, daily diminishing returns (*daily soft cap* up to 6h), anti-AFK safeguards (90 min cap per session), and leisure safeguards (backpack leisure sessions yield zero coins).
+* **🤝 Friendship Network, Friend Codes & Granular Privacy:** Connect with up to 100 friends via `@username` or `HP-XXXXXX` friend codes, receive real-time social notifications for invites and milestones, and control independent visibility (`Public`, `Friends Only`, `Private`) for Profile, Stats, and Achievements.
+* **🏅 Public Showcase, Annual Retrospective & PNG Cards:** Share public `/profile/[username]` showcases, unlock seasonal Annual Retrospectives with 5 behavioral archetypes, and export high-resolution PNG Profile/Retrospective cards.
+* **👑 VIP Personalization, Events & Ambient Sound:** Schedule To-Dos as timed or all-day Events, unlock animated cosmic avatar frames, 3 VIP atmospheric themes (*Cyberpunk Neon*, *Forest Ranger*, *Royal Gold*), procedural ambient noise synthesized natively in the browser via Web Audio API (Gentle Rain, Cozy Cafe, Lofi Zen, Fireplace), and an exclusive VIP icon package.
 * **🛡️ Admin Dashboard & Observability (`/admin`):** Dedicated administrative panel for users with `ROLE_ADMIN` featuring real-time **Resend** monthly email quota telemetry, platform-wide task volume tracking, estimated PostgreSQL database storage footprint breakdown per user, role management, and email dispatch audit logs (`EmailDispatchLog`).
 * **✉️ Email Reminders & Notifications (Resend):** Automated task deadline reminders and password reset flows with per-user quota controls to prevent email flooding.
 * **🔑 Hybrid Authentication & Security:** Native support for social login via **Google OAuth 2.0** and standard email/password authentication using stateless JWT, Refresh Tokens, BCrypt password hashing, and Role-Based Access Control (RBAC).
@@ -255,11 +258,13 @@ npm run dev
 
 ---
 
-### 🎨 Release 1.4 — VIP Themes, Friendships & Privacy Controls
-* **VIP Atmospheric Themes:** Dynamic color schemes and cosmic atmospheres exclusive to Premium subscribers (e.g., *Dark Knight, Cyberpunk Neon, Forest Ranger, Royal Gold*).
-* **Friendship Network & Friend Codes:** Find players via @username or unique friend codes, send invites, and build your connected consistency circle.
-* **Granular Privacy Controls:** Configurable visibility settings for your routines, history, and productivity statistics (Public, Friends Only, or Private).
-* **Social Activity Notifications:** Elegant audio and visual alerts for incoming friend requests and consistency milestones within your network.
+### 🎨 Release 1.4 — VIP Themes, Friendships & Privacy Controls ✅ (Completed)
+* **Atmospheric Themes (Free & VIP):** Dynamic color schemes across 7 themes — **4 Free** — 2 Dark (*Cosmic Dark* default + *Dark Knight* alternate) and 2 Light (*Cosmic Daylight* default + *Solar Parchment* alternate) — plus **3 VIP themes** (*Cyberpunk Neon*, *Forest Ranger*, and the extra VIP Light theme *Royal Gold*), with polarity-aware Dark/Light toggle memory.
+* **Friendship Network & Friend Codes (`HP-XXXXXX`):** Find players via name, `@username`, or unique friend code (with regeneration and auto-accept on mutual invites), manage blocks/removals (up to 100 friends), and follow connections right from the Dashboard widget.
+* **Public Showcases & Granular Privacy Controls:** Visit `/profile/[username]` public profiles and independently configure visibility (`Public`, `Friends Only`, or `Private`) for Profile, Stats, and Achievements, plus friend request policies (`Everyone`, `Friend Code Only`, `None`).
+* **Social Activity Notifications:** Persistent in-app alerts with unread tracking for incoming friend requests, accepted invites, and friend level/achievement milestones.
+* **Annual Retrospective & Collectible PNG Cards:** Seasonal year-in-review (`Dec 20 – Jan 31`, `2-of-3` activity gates, and 5 behavioral archetypes) paired with Canvas-rendered PNG Profile and Retrospective card exports (Dark/Light palettes and optional Friend Code).
+* **Multi-Workspace Dashboard, Quick Focus & Platform Hardening:** Unified *"All Workspaces"* task view with quick workspace pills and Free-plan read-only guards, 1-click Quick Focus directly from task rows, reward deletion history checks, WYSIWYG rich-text descriptions (`2,000` chars), hierarchical `>` tags, per-user IANA timezones with automatic midnight rollover, and cross-workspace column moves.
 
 ---
 

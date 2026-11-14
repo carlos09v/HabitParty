@@ -172,7 +172,7 @@ export async function openMysteryBox(
     }
 
     if (!skipImmediateRevalidate) {
-      invalidateInventoryDomainTags(false, false);
+      invalidateInventoryDomainTags(false, true);
     }
     return { success: true, data: data as MysteryBoxOpenResult };
   } catch (err) {
@@ -185,5 +185,5 @@ export async function openMysteryBox(
 }
 
 export async function revalidateInventoryAfterRoulette(): Promise<void> {
-  invalidateInventoryDomainTags(false, false);
+  invalidateInventoryDomainTags(false, true);
 }

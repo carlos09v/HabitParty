@@ -242,10 +242,10 @@ export async function deleteTask(
       };
     }
 
-    invalidateTaskDomainTags({ includeColumnSummaries: true });
-    if (deleteHistory) {
-      updateTag("transactions");
-    }
+    invalidateTaskDomainTags({
+      includeColumnSummaries: true,
+      includeUserAndTransactions: deleteHistory,
+    });
     updateTag("focus-records");
     return { success: true, data };
   } catch (err) {

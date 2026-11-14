@@ -8,14 +8,16 @@ import {
   XCircle,
 } from "lucide-react";
 import { Toaster } from "sonner";
+import { getThemePolarity } from "@/constants/themes";
 import { useUIStore } from "@/store/uiStore";
 
 export function AppToaster() {
   const theme = useUIStore((state) => state.theme);
+  const polarity = getThemePolarity(theme);
 
   return (
     <Toaster
-      theme={theme}
+      theme={polarity}
       position="top-right"
       icons={{
         success: (

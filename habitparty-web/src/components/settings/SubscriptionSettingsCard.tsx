@@ -76,7 +76,7 @@ export function SubscriptionSettingsCard() {
         {/* BLOCO DE STATUS DO PLANO */}
         <div
           className={cn(
-            "rounded-xl border p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors",
+            "rounded-xl border p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors",
             isPremium
               ? "bg-linear-to-r from-gold/10 via-white dark:via-surface/60 to-gold/10 border-gold/40 shadow-glow-gold-xs"
               : "bg-surface/40 border-neutral-700 dark:border-neutral-700/60",
@@ -135,7 +135,7 @@ export function SubscriptionSettingsCard() {
           </div>
 
           {/* BOTÕES DE AÇÃO */}
-          <div className="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <div className="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
             {isPremium ? (
               <>
                 <button

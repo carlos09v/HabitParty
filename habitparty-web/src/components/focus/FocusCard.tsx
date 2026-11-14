@@ -7,6 +7,7 @@ import {
   Check,
   GripVertical,
   Lock,
+  MoreVertical,
   Pause,
   Play,
   Sparkles,
@@ -20,7 +21,11 @@ import type { AppLocale } from "@/i18n/config";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
 import type { FocusActivity } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
-import { cn } from "@/utils";
+import {
+  cn,
+  openContextMenuFromButton,
+  STOP_DRAG_PROPAGATION_PROPS,
+} from "@/utils";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
 import {
   formatBackpackItemRemainingTime,
@@ -219,7 +224,7 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
           <GripVertical
             size={14}
             aria-hidden="true"
-            className="text-neutral-500 opacity-0 group-hover:opacity-70 transition-opacity shrink-0 -ml-1 hidden sm:block"
+            className="text-neutral-500 opacity-45 sm:opacity-0 sm:group-hover:opacity-70 transition-opacity shrink-0 -ml-1"
           />
         )}
 
@@ -238,10 +243,10 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
         </div>
 
         <div className="flex flex-col min-w-0 flex-1">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
             <h4
               className={cn(
-                "font-semibold text-neutral-100 group-hover:text-primary dark:group-hover:text-gold transition-colors truncate",
+                "font-semibold text-neutral-100 group-hover:text-primary dark:group-hover:text-gold transition-colors truncate max-w-full",
                 isCompact ? "text-body-s" : "text-body-m",
               )}
             >
@@ -311,14 +316,12 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
         </div>
       </div>
 
-      {/* Direita: Ações (Play OU Check para Concluir) */}
-      <div
-        className="flex items-center gap-1.5 shrink-0"
-        onPointerDown={(e) => e.stopPropagation()}
-      >
+      {/* Direita: Ações (Play OU Check para Concluir + Mais Ações) */}
+      <div className="flex items-center gap-1.5 shrink-0">
         {!isActivity && isTimeDepleted ? (
           <button
             type="button"
+            {...STOP_DRAG_PROPAGATION_PROPS}
             onClick={(e) => {
               e.stopPropagation();
               const rect = (
@@ -334,7 +337,9 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
             title={t("completeItemTitle")}
             className={cn(
               "flex items-center justify-center rounded-lg border transition-colors cursor-pointer bg-emerald-500 hover:bg-emerald-400 text-neutral-950 border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] animate-pulse",
-              isCompact ? "w-8 h-8" : "w-9 h-9",
+              isCompact
+                ? "w-8 h-8 pointer-coarse:w-9 pointer-coarse:h-9"
+                : "w-9 h-9 pointer-coarse:w-10 pointer-coarse:h-10",
             )}
           >
             <Check size={isCompact ? 16 : 18} className="stroke-[3]" />
@@ -342,6 +347,7 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
         ) : isLocked ? (
           <button
             type="button"
+            {...STOP_DRAG_PROPAGATION_PROPS}
             onClick={(e) => {
               e.stopPropagation();
               props.onLockedClick?.();
@@ -350,7 +356,9 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
             title={t("lockedActivityTitle")}
             className={cn(
               "flex items-center justify-center rounded-lg border transition-[transform,background-color,border-color,color] duration-150 cursor-pointer bg-gold/10 hover:bg-gold/20 text-gold border-gold/30 hover:border-gold hover:shadow-glow-gold-xs active:scale-95",
-              isCompact ? "w-8 h-8" : "w-9 h-9",
+              isCompact
+                ? "w-8 h-8 pointer-coarse:w-9 pointer-coarse:h-9"
+                : "w-9 h-9 pointer-coarse:w-10 pointer-coarse:h-10",
             )}
           >
             <Lock size={isCompact ? 14 : 16} />
@@ -358,6 +366,7 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
         ) : (
           <button
             type="button"
+            {...STOP_DRAG_PROPAGATION_PROPS}
             onClick={handleActionClick}
             aria-label={
               isActiveTarget
@@ -375,7 +384,9 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
             }
             className={cn(
               "flex items-center justify-center rounded-lg border transition-colors cursor-pointer",
-              isCompact ? "w-8 h-8" : "w-9 h-9",
+              isCompact
+                ? "w-8 h-8 pointer-coarse:w-9 pointer-coarse:h-9"
+                : "w-9 h-9 pointer-coarse:w-10 pointer-coarse:h-10",
               isActiveTarget
                 ? "bg-gold text-on-gold border-gold font-bold shadow-glow-gold-xs hover:bg-gold-hover"
                 : "bg-primary/10 text-primary hover:bg-primary hover:text-white border-primary/20 hover:border-primary dark:bg-surface/80 dark:hover:bg-gold/20 dark:text-neutral-200 dark:hover:text-gold dark:border-primary/30 dark:hover:border-gold/50",
@@ -393,6 +404,22 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
             )}
           </button>
         )}
+
+        <button
+          type="button"
+          {...STOP_DRAG_PROPAGATION_PROPS}
+          onClick={(e) => openContextMenuFromButton(e, handleContextMenu)}
+          aria-label={t("moreActionsAria", { title })}
+          title={t("moreActionsAria", { title })}
+          className={cn(
+            "flex items-center justify-center rounded-lg border border-transparent text-neutral-400 hover:text-neutral-100 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold",
+            isCompact
+              ? "w-8 h-8 pointer-coarse:w-9 pointer-coarse:h-9"
+              : "w-9 h-9 pointer-coarse:w-10 pointer-coarse:h-10",
+          )}
+        >
+          <MoreVertical size={isCompact ? 15 : 16} aria-hidden="true" />
+        </button>
       </div>
     </article>
   );

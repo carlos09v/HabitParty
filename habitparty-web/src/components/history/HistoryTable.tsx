@@ -224,7 +224,7 @@ export function HistoryTable({
 
   return (
     <section
-      className="flex flex-col gap-2.5 w-full"
+      className="flex flex-col gap-2 w-full"
       aria-label={t("sectionAria")}
     >
       {/* BARRA DE SELEÇÃO / AÇÕES EM LOTE */}
@@ -241,14 +241,14 @@ export function HistoryTable({
       )}
 
       {/* WRAPPER COM ROLAGEM HORIZONTAL PARA DESKTOP/TABLET QUANDO NECESSÁRIO */}
-      <div className="w-full overflow-x-visible md:overflow-x-auto pb-1">
-        <div className="min-w-0 md:min-w-[760px] flex flex-col gap-2">
+      <div className="w-full overflow-x-visible md:overflow-x-auto pb-0.5">
+        <div className="min-w-0 md:min-w-[760px] flex flex-col gap-1.5">
           {/* CABEÇALHO DA TABELA (Apenas desktop/tablet) */}
           <div
             className={cn(
-              "hidden md:grid items-center text-xs font-semibold text-neutral-400 select-none",
+              "hidden md:grid items-center border-l-4 border-r border-transparent text-xs font-semibold text-neutral-400 select-none",
               showSelection ? HISTORY_GRID_COLS_SELECTABLE : HISTORY_GRID_COLS,
-              isCompact ? "gap-2.5 px-3 py-1.5" : "gap-3.5 px-4 py-2",
+              isCompact ? "gap-2.5 px-3 py-1" : "gap-3 px-3.5 py-1.5",
             )}
             aria-hidden="true"
           >
@@ -293,17 +293,17 @@ export function HistoryTable({
               </div>
             </div>
           ) : (
-            <div className="flex flex-col gap-4 min-h-[350px]">
+            <div className="flex flex-col gap-2.5">
               {groupedTransactions.map((group, groupIdx) => (
                 <div
                   key={group.dateKey}
                   className={cn(
-                    "flex flex-col gap-2",
+                    "flex flex-col gap-1.5",
                     groupIdx > 0 && "deferred-history-group",
                   )}
                 >
                   {/* Divisor de Dia ("Hoje", "Ontem", "Ter, 12 Out") */}
-                  <div className="flex items-center gap-2 px-1 pt-1">
+                  <div className="flex items-center gap-2 px-1">
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface/80 border border-primary/30 text-label-g font-bold text-neutral-200 shadow-xs">
                       <Calendar size={11} className="text-gold shrink-0" />
                       <span>{group.label}</span>
@@ -318,7 +318,7 @@ export function HistoryTable({
                   </div>
 
                   {/* Linhas do Dia */}
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-1.5">
                     {group.items.map((tx) => (
                       <HistoryRow
                         key={tx.id || `${tx.createdAt}-${tx.name}`}

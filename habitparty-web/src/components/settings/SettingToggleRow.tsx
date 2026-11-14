@@ -28,8 +28,8 @@ export function SettingToggleRow({
 }: SettingToggleRowProps) {
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-start gap-3">
+      <div className="flex items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-start gap-3 min-w-0 flex-1">
           <div
             className={cn(
               "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border mt-0.5",
@@ -38,8 +38,8 @@ export function SettingToggleRow({
           >
             {icon}
           </div>
-          <div className="flex flex-col">
-            <div className="text-body-m font-bold text-neutral-100 flex items-center gap-2">
+          <div className="flex flex-col min-w-0">
+            <div className="text-body-m font-bold text-neutral-100 flex items-center gap-2 flex-wrap">
               {title}
             </div>
             <p className="text-body-s text-neutral-400">{description}</p>

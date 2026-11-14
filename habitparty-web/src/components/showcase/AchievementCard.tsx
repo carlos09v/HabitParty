@@ -180,7 +180,7 @@ export function AchievementCard({
         )}
 
         {achievement.unlocked && (
-          <div className="flex items-center justify-between gap-2 pt-1">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
             {formattedUnlockDate ? (
               <span className="text-[11px] text-neutral-400">
                 {t("unlockedOn", { date: formattedUnlockDate })}
@@ -194,7 +194,7 @@ export function AchievementCard({
                 type="button"
                 onClick={() => onPinToShowcase(achievement)}
                 className={cn(
-                  "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer",
+                  "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer whitespace-nowrap shrink-0",
                   isPinnedInShowcase
                     ? "bg-gold/20 border-gold text-amber-700 dark:text-gold"
                     : "bg-surface/70 border-neutral-700 text-neutral-200 hover:border-gold/50 hover:text-amber-700 dark:border-primary/25 dark:text-neutral-300 dark:hover:text-gold",

@@ -83,6 +83,7 @@ export const TasksBoardModals = memo(function TasksBoardModals({
   isWorkspaceReadOnly,
   onMoveColumnToWorkspace,
   onMoveLockedWorkspace,
+  onStartFocus,
 }: TasksBoardModalsProps) {
   const t = useTranslations("tasks.container");
   const tFilters = useTranslations("tasks.filters");
@@ -218,6 +219,7 @@ export const TasksBoardModals = memo(function TasksBoardModals({
         }}
         onToggleComplete={handleToggleComplete}
         onHabitChange={handleHabitChange}
+        onStartFocus={onStartFocus}
         taskToDelete={taskToDelete}
         deleteHistory={deleteHistory}
         onDeleteHistoryChange={onDeleteHistoryChange}

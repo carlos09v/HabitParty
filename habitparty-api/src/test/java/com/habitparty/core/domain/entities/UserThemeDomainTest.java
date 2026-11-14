@@ -47,13 +47,21 @@ class UserThemeDomainTest {
   }
 
   @Test
-  @DisplayName("Usuário gratuito pode alternar entre os temas padrão ('light' e 'dark') com normalização")
+  @DisplayName("Usuário gratuito pode alternar entre os 4 temas gratuitos (2 escuros + 2 claros) com normalização")
   void freeUserCanSelectFreeThemesWithNormalization() {
     User user = createUser(false);
 
     user.updateTheme("  LIGHT ");
     assertEquals("light", user.getTheme());
     assertEquals("light", user.getEffectiveTheme());
+
+    user.updateTheme("  Solar-Parchment ");
+    assertEquals("solar-parchment", user.getTheme());
+    assertEquals("solar-parchment", user.getEffectiveTheme());
+
+    user.updateTheme("DARK-KNIGHT");
+    assertEquals("dark-knight", user.getTheme());
+    assertEquals("dark-knight", user.getEffectiveTheme());
 
     user.updateTheme("Dark");
     assertEquals("dark", user.getTheme());
@@ -65,12 +73,14 @@ class UserThemeDomainTest {
   void freeUserCannotEquipVipThemes() {
     User user = createUser(false);
 
-    DomainValidationException exception = assertThrows(
-        DomainValidationException.class,
-        () -> user.updateTheme("dark-knight")
-    );
+    for (String vipTheme : java.util.List.of("cyberpunk-neon", "forest-ranger", "royal-gold")) {
+      DomainValidationException exception = assertThrows(
+          DomainValidationException.class,
+          () -> user.updateTheme(vipTheme)
+      );
 
-    assertTrue(exception.getMessage().contains("Premium"));
+      assertTrue(exception.getMessage().contains("Premium"));
+    }
     assertEquals("dark", user.getTheme());
   }
 
@@ -87,6 +97,9 @@ class UserThemeDomainTest {
 
     user.updateTheme("forest-ranger");
     assertEquals("forest-ranger", user.getEffectiveTheme());
+
+    user.updateTheme("royal-gold");
+    assertEquals("royal-gold", user.getEffectiveTheme());
   }
 
   @Test
@@ -100,8 +113,8 @@ class UserThemeDomainTest {
   }
 
   @Test
-  @DisplayName("getEffectiveTheme deve reverter para 'dark' quando a assinatura Premium expira ou é cancelada")
-  void effectiveThemeShouldFallbackToDarkWhenPremiumExpires() {
+  @DisplayName("getEffectiveTheme deve preservar a polaridade (dark/light) ao reverter tema VIP quando Premium expira")
+  void effectiveThemeShouldPreservePolarityWhenPremiumExpires() {
     User user = createUser(true);
     user.updateTheme("cyberpunk-neon");
     assertEquals("cyberpunk-neon", user.getEffectiveTheme());
@@ -110,12 +123,19 @@ class UserThemeDomainTest {
     assertEquals("cyberpunk-neon", user.getTheme());
     assertEquals("dark", user.getEffectiveTheme());
 
-    // Se voltar a ser Premium sem trocar de tema, recupera a escolha anterior; se escolher light no plano Free, continua light
+    // Se voltar a ser Premium sem trocar de tema, recupera a escolha anterior
     user.setPremium(true);
     assertEquals("cyberpunk-neon", user.getEffectiveTheme());
 
+    // Tema VIP claro ('royal-gold') deve reverter para 'light' quando o Premium expira
+    user.updateTheme("royal-gold");
+    assertEquals("royal-gold", user.getEffectiveTheme());
+
     user.setPremium(false);
-    user.updateTheme("light");
+    assertEquals("royal-gold", user.getTheme());
     assertEquals("light", user.getEffectiveTheme());
+
+    user.updateTheme("solar-parchment");
+    assertEquals("solar-parchment", user.getEffectiveTheme());
   }
 }

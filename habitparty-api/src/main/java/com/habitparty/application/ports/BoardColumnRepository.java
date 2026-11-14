@@ -1,6 +1,8 @@
 package com.habitparty.application.ports;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -14,6 +16,11 @@ public interface BoardColumnRepository {
 
   // Essencial para carregar o quadro no front-end:
   List<BoardColumn> findAllByWorkspaceId(UUID workspaceId);
+
+  // Carrega todas as colunas (visíveis e ocultas) de múltiplos workspaces em lote para o Dashboard
+  default List<BoardColumn> findAllByWorkspaceIds(List<UUID> workspaceIds) {
+    return List.of();
+  }
 
   // Essencial para validar se a coluna existe antes de fazer algo com ela:
   Optional<BoardColumn> findById(UUID id);
@@ -33,6 +40,10 @@ public interface BoardColumnRepository {
   int getMaxOrderIndex(UUID workspaceId);
 
   List<BoardColumnSummaryDTO> getColumnSummaries(UUID workspaceId);
+
+  default Map<UUID, BoardColumnSummaryDTO> getColumnSummariesByWorkspaceIds(Collection<UUID> workspaceIds) {
+    return Map.of();
+  }
 
   void deleteAllByWorkspaceId(UUID workspaceId);
 

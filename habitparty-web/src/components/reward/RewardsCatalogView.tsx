@@ -22,6 +22,7 @@ interface RewardsCatalogViewProps {
   viewMode: ViewMode;
   isCompact: boolean;
   currentCoins?: number;
+  deletingRewardIds?: Set<string>;
   sensors: SensorDescriptor<SensorOptions>[];
   onDragEnd: (event: DragEndEvent) => void;
   onBuy: (reward: Reward) => void;
@@ -37,6 +38,7 @@ export function RewardsCatalogView({
   viewMode,
   isCompact,
   currentCoins,
+  deletingRewardIds,
   sensors,
   onDragEnd,
   onBuy,
@@ -111,6 +113,8 @@ export function RewardsCatalogView({
             ? currentCoins >= reward.price
             : true;
 
+        const isDeleteChecking = Boolean(deletingRewardIds?.has(reward.id));
+
         return viewMode === "card" ? (
           <RewardCard
             key={reward.id}
@@ -120,6 +124,7 @@ export function RewardsCatalogView({
             onContextMenu={onContextMenu}
             isCompact={isCompact}
             canAfford={canAfford}
+            isDeleteChecking={isDeleteChecking}
           />
         ) : (
           <RewardItemRow
@@ -130,6 +135,7 @@ export function RewardsCatalogView({
             onContextMenu={onContextMenu}
             isCompact={isCompact}
             canAfford={canAfford}
+            isDeleteChecking={isDeleteChecking}
           />
         );
       })}

@@ -88,7 +88,7 @@ export function SoundNotificationSettings() {
           }
           footer={
             notificationPermission === "denied" ? (
-              <p className="text-xs text-red-600 dark:text-red-400/90 pl-12">
+              <p className="text-xs text-red-600 dark:text-red-400/90 pl-0 sm:pl-12">
                 {t("browserDeniedHelp")}
               </p>
             ) : undefined

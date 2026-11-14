@@ -1,4 +1,4 @@
-import { updateTag } from "next/cache";
+import { revalidateTag, updateTag } from "next/cache";
 
 export interface InvalidateTaskDomainOptions {
   includeColumnSummaries?: boolean;
@@ -98,6 +98,19 @@ export function invalidateInventoryDomainTags(
  */
 export function invalidateShowcaseDomainTags(includeUser = false) {
   updateTag("showcase");
+  updateTag("retrospective");
+  if (includeUser) {
+    updateTag("user");
+  }
+}
+
+/**
+ * Invalida as tags de cache RSC da Rede de Amigos, Notificações Sociais e Privacidade.
+ */
+export function invalidateSocialDomainTags(includeUser = false) {
+  updateTag("social");
+  updateTag("showcase");
+  updateTag("retrospective");
   if (includeUser) {
     updateTag("user");
   }
@@ -109,4 +122,39 @@ export function invalidateShowcaseDomainTags(includeUser = false) {
 export function invalidateAdminDomainTags() {
   updateTag("admin-overview");
   updateTag("admin-users");
+}
+
+const SESSION_CACHE_TAGS = [
+  "user",
+  "workspaces",
+  "board_columns",
+  "dashboard-columns",
+  "kanban",
+  "tasks",
+  "dashboard-tasks",
+  "transactions",
+  "focus-activities",
+  "focus-records",
+  "rewards",
+  "inventory",
+  "showcase",
+  "retrospective",
+  "social",
+  "admin-overview",
+  "admin-users",
+] as const;
+
+/**
+ * Invalida as tags de cache privado associadas à sessão do usuário.
+ * Em Route Handlers, utiliza `revalidateTag(..., { expire: 0 })`, pois
+ * `updateTag` só é permitido dentro de Server Actions.
+ */
+export function invalidateSessionCacheTags(useRouteRevalidation = false) {
+  for (const tag of SESSION_CACHE_TAGS) {
+    if (useRouteRevalidation) {
+      revalidateTag(tag, { expire: 0 });
+    } else {
+      updateTag(tag);
+    }
+  }
 }

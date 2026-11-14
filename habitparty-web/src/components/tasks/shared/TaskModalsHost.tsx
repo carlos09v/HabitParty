@@ -49,11 +49,17 @@ function preloadSharedTaskModalChunks() {
 }
 
 export interface TaskModalsHostProps {
-  columns: ReadonlyArray<{ id?: string; name?: string; title?: string }>;
+  columns: ReadonlyArray<{
+    id?: string;
+    name?: string;
+    title?: string;
+    workspaceName?: string;
+  }>;
   formColumns: { id: string; title: string }[];
   availableTags?: string[];
   defaultColumnId?: string;
   defaultColumnTitle?: string;
+  showWorkspaceName?: boolean;
   contextMenu: {
     isOpen: boolean;
     position: { x: number; y: number };
@@ -83,6 +89,7 @@ export interface TaskModalsHostProps {
   onRequestDeleteTask: (task: Task, columnId?: string) => void;
   onToggleComplete: (taskId: string, completed: boolean) => void;
   onHabitChange?: (taskId: string, delta: number) => void;
+  onStartFocus?: (task: Task) => void;
   taskToDelete: { task: Task; columnId?: string } | null;
   deleteHistory: boolean;
   onDeleteHistoryChange: (checked: boolean) => void;
@@ -108,6 +115,7 @@ export function TaskModalsHost({
   availableTags = [],
   defaultColumnId,
   defaultColumnTitle = "Geral",
+  showWorkspaceName = false,
   contextMenu,
   onCloseContextMenu,
   selectedTaskDetails,
@@ -121,6 +129,7 @@ export function TaskModalsHost({
   onRequestDeleteTask,
   onToggleComplete,
   onHabitChange,
+  onStartFocus,
   taskToDelete,
   deleteHistory,
   onDeleteHistoryChange,
@@ -152,6 +161,7 @@ export function TaskModalsHost({
             contextMenu.columnId || task.columnId || defaultColumnId;
           onRequestDeleteTask(task, colId);
         },
+        onStartFocus,
         labels: {
           startFocus: tMenus("startFocus"),
           edit: tMenus("edit"),
@@ -166,6 +176,7 @@ export function TaskModalsHost({
       onOpenEditTask,
       onDuplicateTask,
       onRequestDeleteTask,
+      onStartFocus,
       tMenus,
     ],
   );
@@ -228,6 +239,17 @@ export function TaskModalsHost({
             defaultColumnTitle,
             selectedTaskDetails.columnId ?? undefined,
           )}
+          workspaceName={
+            showWorkspaceName
+              ? selectedTaskDetails.task.workspaceName ||
+                columns.find(
+                  (c) =>
+                    c.id ===
+                    (selectedTaskDetails.columnId ||
+                      selectedTaskDetails.task.columnId),
+                )?.workspaceName
+              : undefined
+          }
           anchorRect={selectedTaskDetails.anchorRect}
           onTaskUpdate={onTaskDetailsUpdate}
           onEdit={(task) => {

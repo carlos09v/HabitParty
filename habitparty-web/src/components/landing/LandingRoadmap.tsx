@@ -42,9 +42,9 @@ export function LandingRoadmap() {
                 <Crown className="w-5 h-5 fill-amber-500 dark:fill-gold" />
               </div>
               <div>
-                <h3 className="text-sm sm:text-base font-bold text-neutral-50 flex items-center gap-1.5">
+                <h3 className="text-sm sm:text-base font-bold text-neutral-50 flex items-center flex-wrap gap-1.5">
                   {t("founderBanner.title")}
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-gold text-neutral-950 font-black uppercase tracking-wider">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-gold text-neutral-950 font-black uppercase tracking-wider whitespace-nowrap shrink-0">
                     {t("founderBanner.spotsBadge")}
                   </span>
                 </h3>
@@ -103,11 +103,11 @@ export function LandingRoadmap() {
 
                 <div>
                   {/* Cabeçalho do Card: Versão e Status */}
-                  <div className="flex items-center justify-between gap-2 mb-5">
+                  <div className="flex items-center justify-between flex-wrap gap-2 mb-5">
                     <div className="flex items-center gap-2">
                       <span
                         className={cn(
-                          "text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full border flex items-center gap-1.5",
+                          "text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full border flex items-center gap-1.5 whitespace-nowrap",
                           isCompleted
                             ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300"
                             : "bg-surface dark:bg-white/5 border-neutral-700 dark:border-white/10 text-neutral-200",
@@ -125,7 +125,7 @@ export function LandingRoadmap() {
 
                     <span
                       className={cn(
-                        "text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full border inline-flex items-center gap-1.5",
+                        "text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full border inline-flex items-center gap-1.5 whitespace-nowrap",
                         item.statusBadgeColor,
                       )}
                     >
@@ -237,7 +237,7 @@ export function LandingRoadmap() {
                 </div>
 
                 {/* Rodapé do Card com Micro-Efeito */}
-                <div className="mt-8 pt-4 border-t border-neutral-700/40 dark:border-white/5 flex items-center justify-between text-tiny text-neutral-400">
+                <div className="mt-8 pt-4 border-t border-neutral-700/40 dark:border-white/5 flex items-center justify-between flex-wrap gap-2 text-tiny text-neutral-400">
                   <span className="flex items-center gap-1.5 font-medium">
                     {isCompleted ? (
                       <>
@@ -277,16 +277,16 @@ export function LandingRoadmap() {
               href={SUPPORT_LINKS.githubIssues}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-card hover:bg-surface dark:bg-surface/80 dark:hover:bg-surface border border-neutral-700 dark:border-white/15 hover:border-primary/40 dark:hover:border-gold/40 text-xs font-semibold text-neutral-200 hover:text-primary dark:hover:text-gold shadow-2xs dark:shadow-none transition-colors"
+              className="inline-flex items-center justify-center text-center gap-2 px-4 py-2 rounded-xl bg-card hover:bg-surface dark:bg-surface/80 dark:hover:bg-surface border border-neutral-700 dark:border-white/15 hover:border-primary/40 dark:hover:border-gold/40 text-xs font-semibold text-neutral-200 hover:text-primary dark:hover:text-gold shadow-2xs dark:shadow-none transition-colors"
             >
-              <Bug className="w-3.5 h-3.5 text-amber-600 dark:text-gold" />
+              <Bug className="w-3.5 h-3.5 text-amber-600 dark:text-gold shrink-0" />
               <span>{t("reportBugCta")}</span>
             </a>
             <a
               href={SUPPORT_LINKS.contactMailto}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-card hover:bg-surface dark:bg-surface/80 dark:hover:bg-surface border border-neutral-700 dark:border-white/15 hover:border-primary/40 dark:hover:border-gold/40 text-xs font-semibold text-neutral-200 hover:text-primary dark:hover:text-gold shadow-2xs dark:shadow-none transition-colors"
+              className="inline-flex items-center justify-center text-center gap-2 px-4 py-2 rounded-xl bg-card hover:bg-surface dark:bg-surface/80 dark:hover:bg-surface border border-neutral-700 dark:border-white/15 hover:border-primary/40 dark:hover:border-gold/40 text-xs font-semibold text-neutral-200 hover:text-primary dark:hover:text-gold shadow-2xs dark:shadow-none transition-colors"
             >
-              <Mail className="w-3.5 h-3.5 text-info" />
+              <Mail className="w-3.5 h-3.5 text-info shrink-0" />
               <span>
                 {t("contactCreatorCta", { email: SUPPORT_LINKS.contactEmail })}
               </span>

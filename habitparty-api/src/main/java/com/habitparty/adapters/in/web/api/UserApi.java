@@ -5,13 +5,21 @@ import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.habitparty.adapters.in.web.dtos.request.CreateUserDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserPasswordDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserThemeDTO;
+import com.habitparty.adapters.in.web.dtos.request.user.UpdatePrivacySettingsDTO;
 import com.habitparty.adapters.in.web.dtos.response.UserResponseDTO;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
@@ -70,5 +78,18 @@ public interface UserApi {
     ResponseEntity<Void> updateProfilePhoto(
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado,
         @RequestParam("file") MultipartFile photoFile
+    );
+
+    @Operation(summary = "Regenerar Código de Amigo", description = "Gera um novo Código de Amigo (HP-XXXXXX) exclusivo para o usuário autenticado.")
+    @PostMapping("/me/friend-code/regenerate")
+    ResponseEntity<UserResponseDTO> regenerateFriendCode(
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
+    );
+
+    @Operation(summary = "Atualizar Controles de Privacidade", description = "Atualiza visibilidade do perfil, métricas, conquistas e política de convites de amizade.")
+    @PatchMapping("/me/privacy")
+    ResponseEntity<UserResponseDTO> updatePrivacySettings(
+        @RequestBody @Valid UpdatePrivacySettingsDTO dto,
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 }

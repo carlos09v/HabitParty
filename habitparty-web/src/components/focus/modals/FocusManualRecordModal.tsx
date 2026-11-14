@@ -440,7 +440,7 @@ export function FocusManualRecordModal({
                           form.handleDurationInputChange(e.target.value)
                         }
                         icon={<Clock size={16} />}
-                        className="pr-16 font-bold tabular-nums"
+                        className="pr-20 font-bold tabular-nums"
                       />
                       <div className="absolute right-1.5 bottom-1.5 flex items-center gap-0.5">
                         <button
@@ -451,7 +451,7 @@ export function FocusManualRecordModal({
                             )
                           }
                           disabled={form.durationMinutes <= 1}
-                          className="p-1 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                          className="p-1.5 pointer-coarse:p-2 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                           aria-label="-5m"
                         >
                           <Minus size={13} />
@@ -464,7 +464,7 @@ export function FocusManualRecordModal({
                             )
                           }
                           disabled={form.durationMinutes >= 600}
-                          className="p-1 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                          className="p-1.5 pointer-coarse:p-2 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                           aria-label="+5m"
                         >
                           <Plus size={13} />
@@ -494,13 +494,13 @@ export function FocusManualRecordModal({
 
                         <div
                           id="pomo-stepper"
-                          className="flex items-center justify-between py-2 px-2.5 rounded-lg border border-neutral-600 bg-card shadow-xs dark:bg-primary-dark/20 dark:border-primary/30 dark:shadow-none"
+                          className="flex items-center justify-between py-1 px-1.5 rounded-lg border border-neutral-600 bg-card shadow-xs dark:bg-primary-dark/20 dark:border-primary/30 dark:shadow-none"
                         >
                           <button
                             type="button"
                             onClick={() => form.handleCompletedPomosStep(-1)}
                             disabled={form.completedPomos <= 1}
-                            className="p-0.5 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                            className="p-1.5 pointer-coarse:p-2 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                             aria-label={t("decreaseCyclesAria")}
                           >
                             <Minus size={14} />
@@ -514,7 +514,7 @@ export function FocusManualRecordModal({
                             type="button"
                             onClick={() => form.handleCompletedPomosStep(1)}
                             disabled={form.completedPomos >= 50}
-                            className="p-0.5 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                            className="p-1.5 pointer-coarse:p-2 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                             aria-label={t("increaseCyclesAria")}
                           >
                             <Plus size={14} />
@@ -544,7 +544,7 @@ export function FocusManualRecordModal({
                     align="left"
                   />
 
-                  <div className="grid grid-cols-2 gap-2.5 items-start">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-start">
                     <TimePicker
                       id="session-start-time"
                       label={t("startTimeLabel")}
@@ -569,7 +569,7 @@ export function FocusManualRecordModal({
 
             {/* Resumo sincronizado compacto na base do painel de tempo (apenas para Atividades) */}
             {form.targetType !== "ITEM" && (
-              <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-card dark:bg-white/5 border border-neutral-700 dark:border-white/10 text-tiny text-neutral-300">
+              <div className="flex flex-wrap items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-card dark:bg-white/5 border border-neutral-700 dark:border-white/10 text-tiny text-neutral-300">
                 <span>{t("syncedWindowLabel")}</span>
                 <strong className="text-amber-700 dark:text-gold font-semibold tabular-nums">
                   {t("syncedWindowSummary", {
@@ -592,12 +592,12 @@ export function FocusManualRecordModal({
         {/* ========================================================
             RODAPÉ DE AÇÕES DO MODAL
             ======================================================== */}
-        <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-neutral-700 dark:border-white/10">
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-3 border-t border-neutral-700 dark:border-white/10">
           <button
             type="button"
             onClick={onClose}
             disabled={form.isSubmitting}
-            className="px-4 py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:bg-surface dark:hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-1.5"
+            className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:bg-surface dark:hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
           >
             <X size={14} />
             {t("cancelButton")}
@@ -612,7 +612,7 @@ export function FocusManualRecordModal({
                 !form.selectedTaskId) ||
               (form.targetType === "ITEM" && !form.selectedItemId)
             }
-            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-colors cursor-pointer disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-lg text-xs font-bold bg-gold text-on-gold hover:bg-gold-hover shadow-glow-gold-xs transition-colors cursor-pointer disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
           >
             {form.isSubmitting ? (
               <>

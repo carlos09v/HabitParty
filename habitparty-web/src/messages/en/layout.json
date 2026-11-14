@@ -96,7 +96,18 @@
     "reminderSingleTitle": "Reminder: \"{name}\"",
     "reminderMultipleTitle": "{count} active task reminders",
     "reminderDesc": "Due date approaching — check your scheduled to-dos.",
-    "reminderTimestamp": "Scheduled reminder"
+    "reminderTimestamp": "Scheduled reminder",
+    "socialDefaultActor": "Someone",
+    "socialTimestamp": "Social",
+    "socialRequestTitle": "{name} sent you a friend request",
+    "socialRequestDesc": "Open your profile to accept or decline.",
+    "socialAcceptedTitle": "{name} accepted your friend request!",
+    "socialAcceptedDesc": "You are now connected in your social network.",
+    "socialAchievementTitle": "{name} unlocked \"{achievement}\"",
+    "socialDefaultAchievement": "a new achievement",
+    "socialAchievementDesc": "Visit their profile to see this milestone.",
+    "socialLevelTitle": "{name} reached {level}",
+    "socialLevelDesc": "Your friend just leveled up!"
   },
   "userProfile": {
     "defaultName": "Adventurer",
@@ -152,7 +163,8 @@
     "stopAria": "Stop",
     "stopLabel": "Stop",
     "linkActivityBadge": "Link to an activity?",
-    "linkActivityTitle": "Link this focus session to an activity"
+    "linkActivityTitle": "Link this focus session to an activity",
+    "loadActivitiesError": "Could not load activities."
   },
   "subscriptionAlert": {
     "ariaLabel": "Subscription expiration notice",

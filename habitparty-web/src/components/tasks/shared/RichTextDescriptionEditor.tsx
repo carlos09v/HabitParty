@@ -41,9 +41,30 @@ const NonInclusiveLink = Link.extend({
   },
 });
 
+function getExternalAnchorHref(event: MouseEvent): string | null {
+  const target =
+    event.target instanceof Element
+      ? event.target
+      : ((event.target as Node | null)?.parentElement ?? null);
+  const anchor = target?.closest("a");
+  const href = anchor?.getAttribute("href");
+  if (href && /^https?:\/\/\S+$/i.test(href)) {
+    return href;
+  }
+  return null;
+}
+
+function openExternalAnchor(event: MouseEvent): boolean {
+  const href = getExternalAnchorHref(event);
+  if (!href) return false;
+  event.preventDefault();
+  window.open(href, "_blank", "noopener,noreferrer");
+  return true;
+}
+
 /**
  * Editor WYSIWYG baseado em TipTap com serialização bidirecional para Markdown.
- * Suporta negrito, itálico, destaque, código inline, links clicáveis (Ctrl/Cmd + Click) e marcadores de lista reais
+ * Suporta negrito, itálico, destaque, código inline, links clicáveis (Ctrl/Cmd + Click ou clique com o scroll/botão do meio) e marcadores de lista reais
  * sem painéis extras de Preview nem inserção de texto placeholder nas listas.
  */
 export function RichTextDescriptionEditor({
@@ -153,15 +174,21 @@ export function RichTextDescriptionEditor({
         if (!(event.ctrlKey || event.metaKey) || event.button !== 0) {
           return false;
         }
-        const target = event.target as HTMLElement | null;
-        const anchor = target?.closest("a");
-        const href = anchor?.getAttribute("href");
-        if (href && /^https?:\/\/\S+$/i.test(href)) {
-          event.preventDefault();
-          window.open(href, "_blank", "noopener,noreferrer");
-          return true;
-        }
-        return false;
+        return openExternalAnchor(event);
+      },
+      handleDOMEvents: {
+        mousedown: (_view, event) => {
+          // Suprime autoscroll/cola do botão do meio ao pressionar sobre links http(s)
+          if (event.button === 1 && getExternalAnchorHref(event)) {
+            event.preventDefault();
+            return true;
+          }
+          return false;
+        },
+        auxclick: (_view, event) => {
+          if (event.button !== 1) return false;
+          return openExternalAnchor(event);
+        },
       },
       attributes: {
         ...(id ? { id } : {}),

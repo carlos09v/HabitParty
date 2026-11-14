@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import com.habitparty.adapters.in.web.dtos.request.CreateRewardDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateRewardDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateRewardOrderDTO;
+import com.habitparty.adapters.in.web.dtos.response.RewardHistoryStatusResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.RewardResponseDTO;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
@@ -35,6 +36,13 @@ public interface RewardApi {
     @PostMapping
     ResponseEntity<RewardResponseDTO> createReward(
         @RequestBody @Valid CreateRewardDTO requestDTO,
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
+    );
+
+    @Operation(summary = "Verifica histórico da recompensa", description = "Retorna se a recompensa possui registros de transações no Histórico.")
+    @GetMapping("/{rewardId}/has-history")
+    ResponseEntity<RewardHistoryStatusResponseDTO> checkRewardHasHistory(
+        @PathVariable UUID rewardId,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 

@@ -56,7 +56,7 @@ function TransactionSubtext({
   if (columnName) {
     return (
       <span
-        className="text-tiny text-neutral-400 font-normal inline-flex items-center gap-1 min-w-0"
+        className="text-tiny leading-tight text-neutral-400 font-normal inline-flex items-center gap-1 min-w-0"
         title={`${columnLabel} ${columnName}`}
       >
         <FolderKanban size={10} className="shrink-0" aria-hidden="true" />
@@ -67,7 +67,7 @@ function TransactionSubtext({
   }
   if (priceSnapshot != null && priceSnapshot > 0) {
     return (
-      <span className="text-tiny text-neutral-400 font-normal inline-flex items-center gap-1">
+      <span className="text-tiny leading-tight text-neutral-400 font-normal inline-flex items-center gap-1">
         {listPriceLabel} {formatCoins(priceSnapshot, { locale })}{" "}
         <CoinIcon size={10} />
       </span>
@@ -87,7 +87,7 @@ function TransactionMetaBadges({
 }) {
   if (metadata.isFocus && tags.length > 0) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gold/15 border border-gold/30 text-gold text-label-g font-bold">
+      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-gold/15 border border-gold/30 text-gold text-label-g font-bold">
         <Timer size={11} className="shrink-0" />
         {tags[0]}
       </span>
@@ -211,25 +211,25 @@ export const HistoryRow = memo(function HistoryRow({
         metadata.borderClass,
         isSelected &&
           "bg-gold/10 dark:bg-gold/8 border-y-gold/50 border-r-gold/50 dark:border-y-gold/45 dark:border-r-gold/45",
-        "flex flex-col gap-2 p-3",
+        "flex flex-col gap-1.5 p-2.5",
         "md:grid md:items-center",
         canSelect ? HISTORY_GRID_COLS_SELECTABLE : HISTORY_GRID_COLS,
         isCompact
-          ? "md:gap-2.5 md:px-3 md:py-2 md:text-xs"
-          : "md:gap-3.5 md:px-4 md:py-3 md:text-sm",
+          ? "md:gap-2.5 md:px-3 md:py-1 md:text-xs"
+          : "md:gap-3 md:px-3.5 md:py-1.5 md:text-xs",
       )}
       title={t("rowTitle")}
     >
       {/* 1. VISUALIZAÇÃO MOBILE (< md) */}
-      <div className="flex md:hidden flex-col gap-2 w-full">
+      <div className="flex md:hidden flex-col gap-1.5 w-full">
         <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
             {selectCheckbox}
-            <div className="w-8 h-8 rounded-lg bg-surface border border-white/10 flex items-center justify-center shrink-0 text-neutral-300 shadow-xs">
-              <IconComponent size={16} />
+            <div className="w-7 h-7 rounded-lg bg-surface border border-white/10 flex items-center justify-center shrink-0 text-neutral-300 shadow-xs">
+              <IconComponent size={14} />
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="font-bold text-neutral-100 text-sm truncate">
+              <span className="font-bold text-neutral-100 text-xs leading-tight truncate">
                 {rowName}
               </span>
               {subtext}
@@ -244,7 +244,7 @@ export const HistoryRow = memo(function HistoryRow({
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 flex-wrap pl-10 text-xs">
+        <div className="flex items-center gap-1 flex-wrap pl-9 text-xs">
           <span
             className={cn(
               "inline-flex items-center px-1.5 py-0.5 rounded-md border font-semibold text-label-g truncate",
@@ -257,7 +257,7 @@ export const HistoryRow = memo(function HistoryRow({
           <TransactionMetaBadges metadata={metadata} tags={tags} />
         </div>
 
-        <div className="flex items-center justify-between pt-1 border-t border-white/5 pl-10">
+        <div className="flex items-center justify-between pt-1 border-t border-white/5 pl-9">
           <span
             className="text-neutral-400 text-label-g font-medium"
             title={metadata.formattedDate}
@@ -286,13 +286,13 @@ export const HistoryRow = memo(function HistoryRow({
         </div>
       )}
 
-      <div className="hidden md:flex items-center gap-2.5 min-w-0">
-        <div className="w-7 h-7 rounded-lg bg-surface border border-white/10 flex items-center justify-center shrink-0 text-neutral-300 shadow-xs group-hover:border-white/20 transition-colors">
-          <IconComponent size={15} />
+      <div className="hidden md:flex items-center gap-2 min-w-0">
+        <div className="w-6 h-6 rounded-md bg-surface border border-white/10 flex items-center justify-center shrink-0 text-neutral-300 shadow-xs group-hover:border-white/20 transition-colors">
+          <IconComponent size={13} />
         </div>
         <div className="flex flex-col min-w-0">
           <span
-            className="font-bold text-neutral-100 truncate group-hover:text-primary dark:group-hover:text-gold transition-colors"
+            className="font-bold text-neutral-100 leading-tight truncate group-hover:text-primary dark:group-hover:text-gold transition-colors"
             title={transaction.name || t("defaultEventTitle")}
           >
             {rowName}
@@ -304,8 +304,7 @@ export const HistoryRow = memo(function HistoryRow({
       <div className="hidden md:block min-w-0">
         <span
           className={cn(
-            "inline-flex items-center px-2 py-0.5 rounded-md border font-semibold truncate",
-            isCompact ? "text-label-g" : "text-xs",
+            "inline-flex items-center px-1.5 py-0.5 rounded-md border font-semibold text-label-g leading-tight truncate",
             metadata.badgeClass,
           )}
         >

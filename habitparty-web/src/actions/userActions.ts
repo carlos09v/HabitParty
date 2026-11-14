@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import {
   invalidateFocusDomainTags,
+  invalidateSessionCacheTags,
+  invalidateSocialDomainTags,
   invalidateTaskDomainTags,
 } from "@/actions/cacheInvalidation";
 import { type ActionState, getErrorMessage } from "@/actions/types";
@@ -112,7 +114,7 @@ export async function updateUserProfilePhotoAction(
     const updatedUser = (await res
       .json()
       .catch(() => null)) as UserResponseDTO | null;
-    updateTag("user");
+    invalidateSocialDomainTags(true);
     return { success: true, data: updatedUser };
   } catch (err) {
     console.error("[UserAction:UpdatePhoto]", err);
@@ -170,6 +172,9 @@ export async function deleteUserAccountAction(): Promise<ActionState<void>> {
     const cookieStore = await cookies();
     cookieStore.delete("habitparty_token");
     cookieStore.delete("habitparty_refresh_token");
+    cookieStore.delete(TIMEZONE_COOKIE);
+    cookieStore.delete("activeWorkspaceId");
+    invalidateSessionCacheTags();
   } catch (err) {
     console.error("[UserAction:DeleteAccount]", err);
     return {

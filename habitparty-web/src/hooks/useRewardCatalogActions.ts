@@ -6,11 +6,16 @@ import {
   type MouseEvent,
   type SetStateAction,
   useCallback,
+  useRef,
   useState,
   useTransition,
 } from "react";
 import { toast } from "sonner";
-import { deleteReward, redeemReward } from "@/actions/rewardActions";
+import {
+  checkRewardHasHistory,
+  deleteReward,
+  redeemReward,
+} from "@/actions/rewardActions";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useUserStore } from "@/store/userStore";
 import type { Reward } from "@/types/reward";
@@ -123,6 +128,54 @@ export function useRewardCatalogActions({
 
   const [rewardToDelete, setRewardToDelete] = useState<Reward | null>(null);
   const [deleteRewardHistory, setDeleteRewardHistory] = useState(false);
+  const [checkingDeleteRewardIds, setCheckingDeleteRewardIds] = useState<
+    Set<string>
+  >(() => new Set());
+  const checkingIdsRef = useRef<Set<string>>(new Set());
+  const rewardsRef = useRef(rewards);
+  rewardsRef.current = rewards;
+
+  const setRewardCheckingState = useCallback(
+    (rewardId: string, isChecking: boolean) => {
+      if (isChecking) {
+        checkingIdsRef.current.add(rewardId);
+      } else {
+        checkingIdsRef.current.delete(rewardId);
+      }
+      setCheckingDeleteRewardIds(new Set(checkingIdsRef.current));
+    },
+    [],
+  );
+
+  const executeDeleteReward = useCallback(
+    async (target: Reward, shouldDeleteHistory: boolean) => {
+      const removedIndex = rewardsRef.current.findIndex(
+        (r) => r.id === target.id,
+      );
+      setRewards((prev) => prev.filter((r) => r.id !== target.id));
+
+      const res = await deleteReward(target.id, shouldDeleteHistory);
+      if (res.success) {
+        toast.success(t("toasts.deleteSuccess", { title: target.title }));
+        setRewardToDelete((prev) => (prev?.id === target.id ? null : prev));
+        return true;
+      }
+
+      setRewards((prev) => {
+        if (prev.some((r) => r.id === target.id)) return prev;
+        const next = [...prev];
+        const insertAt =
+          removedIndex >= 0 && removedIndex <= next.length
+            ? removedIndex
+            : next.length;
+        next.splice(insertAt, 0, target);
+        return next;
+      });
+      toast.error(res.error || t("toasts.deleteError"));
+      return false;
+    },
+    [setRewards, t],
+  );
 
   const handleEditFromContextMenu = useCallback(() => {
     if (contextMenu.reward) {
@@ -130,31 +183,35 @@ export function useRewardCatalogActions({
     }
   }, [contextMenu.reward, handleEditReward]);
 
-  const handleDeleteFromContextMenu = useCallback(() => {
-    if (contextMenu.reward) {
-      setDeleteRewardHistory(false);
-      setRewardToDelete(contextMenu.reward);
+  const handleDeleteFromContextMenu = useCallback(async () => {
+    const target = contextMenu.reward;
+    if (!target || checkingIdsRef.current.has(target.id)) return;
+
+    setRewardCheckingState(target.id, true);
+    try {
+      const res = await checkRewardHasHistory(target.id);
+      const hasHistory = !res.success || Boolean(res.data);
+
+      if (hasHistory) {
+        setDeleteRewardHistory(false);
+        setRewardToDelete(target);
+        return;
+      }
+
+      await executeDeleteReward(target, false);
+    } finally {
+      setRewardCheckingState(target.id, false);
     }
-  }, [contextMenu.reward]);
+  }, [contextMenu.reward, executeDeleteReward, setRewardCheckingState]);
 
   const handleConfirmDeleteReward = useCallback(() => {
     const target = rewardToDelete;
     if (!target || isDeleting) return;
 
-    const previousRewards = [...rewards];
-    setRewards((prev) => prev.filter((r) => r.id !== target.id));
-
     startDeleteTransition(async () => {
-      const res = await deleteReward(target.id, deleteRewardHistory);
-      if (res.success) {
-        toast.success(t("toasts.deleteSuccess", { title: target.title }));
-        setRewardToDelete(null);
-      } else {
-        setRewards(previousRewards);
-        toast.error(res.error || t("toasts.deleteError"));
-      }
+      await executeDeleteReward(target, deleteRewardHistory);
     });
-  }, [rewardToDelete, isDeleting, deleteRewardHistory, rewards, setRewards, t]);
+  }, [rewardToDelete, isDeleting, deleteRewardHistory, executeDeleteReward]);
 
   const handleRewardSuccess = useCallback(
     (savedReward: Reward) => {
@@ -177,6 +234,7 @@ export function useRewardCatalogActions({
     handleEditReward,
     handleEditFromContextMenu,
     handleDeleteFromContextMenu,
+    checkingDeleteRewardIds,
     rewardToDelete,
     setRewardToDelete,
     deleteRewardHistory,

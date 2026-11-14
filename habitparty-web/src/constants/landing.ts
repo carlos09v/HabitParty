@@ -197,28 +197,29 @@ export const LANDING_ROADMAP_CONFIGS: readonly LandingRoadmapConfig[] = [
   {
     id: "r14",
     release: "Release 1.4",
+    status: "completed",
+    statusBadgeColor:
+      "bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
+    icon: Palette,
+    iconBoxColor:
+      "bg-emerald-500/15 border-emerald-500/35 text-emerald-700 dark:border-emerald-500/40 dark:text-emerald-400 dark:shadow-[0_0_15px_rgba(16,185,129,0.15)]",
+    checkColor: "text-emerald-600 dark:text-emerald-400",
+    accentColor: "from-emerald-400 via-teal-400 to-emerald-500",
+    borderGlowColor: "hover:border-emerald-500/50",
+    hasExtras: true,
+  },
+  {
+    id: "r15",
+    release: "Release 1.5",
     status: "next",
     statusBadgeColor:
       "bg-amber-500/15 text-amber-800 border-amber-500/30 dark:bg-gold/15 dark:text-gold dark:border-gold/30",
-    icon: Palette,
+    icon: Users2,
     iconBoxColor:
       "bg-amber-500/10 border-amber-500/25 text-amber-700 dark:bg-card dark:border-white/15 dark:text-gold",
     checkColor: "text-amber-600 dark:text-gold",
     accentColor: "from-gold to-warning-500",
     borderGlowColor: "hover:border-gold/40",
-  },
-  {
-    id: "r15",
-    release: "Release 1.5",
-    status: "planned",
-    statusBadgeColor:
-      "bg-purple-500/10 text-purple-700 border-purple-500/25 dark:bg-primary/15 dark:text-primary-light dark:border-primary-light/30",
-    icon: Users2,
-    iconBoxColor:
-      "bg-purple-500/10 border-purple-500/25 text-purple-700 dark:bg-card dark:border-white/15 dark:text-primary-light",
-    checkColor: "text-purple-600 dark:text-primary-light",
-    accentColor: "from-primary to-primary-light",
-    borderGlowColor: "hover:border-primary/40",
   },
   {
     id: "r16",

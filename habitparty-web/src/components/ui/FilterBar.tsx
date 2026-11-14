@@ -40,19 +40,19 @@ export function FilterBar({
 
   return (
     <nav
-      className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between w-full gap-4"
+      className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between w-full gap-3 xl:gap-4"
       aria-label={t("navAria")}
     >
       <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
         {search && (
-          <div className="flex items-center gap-2 rounded-lg bg-card dark:bg-surface border border-neutral-600 dark:border-white/15 shadow-2xs dark:shadow-none w-full sm:w-auto sm:max-w-xs flex-1 transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 dark:focus-within:ring-0 dark:focus-within:border-primary-light dark:focus-within:shadow-[0_0_8px_rgba(168,99,255,0.25)] px-3 py-2.5 min-w-0 sm:min-w-56">
+          <div className="flex items-center gap-2 rounded-lg bg-card dark:bg-surface border border-neutral-600 dark:border-white/15 shadow-2xs dark:shadow-none w-full sm:w-auto sm:max-w-xs flex-1 transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 dark:focus-within:ring-0 dark:focus-within:border-primary-light dark:focus-within:shadow-[0_0_8px_rgba(168,99,255,0.25)] px-3 py-2.5 min-w-0 sm:min-w-44">
             <Search size={16} className="text-neutral-400 shrink-0" />
             <input
               type="text"
               value={search.value}
               onChange={(e) => search.onChange(e.target.value)}
               placeholder={search.placeholder || t("searchDefaultPlaceholder")}
-              className="w-full bg-transparent text-neutral-50 placeholder:text-neutral-400 focus:outline-none text-body-s"
+              className="w-full bg-transparent text-neutral-50 placeholder:text-neutral-400 focus:outline-none text-base sm:text-body-s"
             />
           </div>
         )}
@@ -140,7 +140,7 @@ export function FilterBar({
       )}
 
       {rightActions && (
-        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+        <div className="flex items-center gap-2 w-full sm:w-auto sm:shrink-0 flex-wrap">
           {rightActions}
         </div>
       )}
@@ -162,7 +162,7 @@ export function FilterBar({
           />
 
           {/* Painel do Bottom Sheet */}
-          <div className="relative w-full sm:max-w-md bg-card dark:bg-surface border-t sm:border border-neutral-700 dark:border-white/15 rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl flex flex-col gap-4 z-10 animate-in slide-in-from-bottom duration-300 max-h-[85dvh] overflow-y-auto custom-scrollbar">
+          <div className="relative w-full sm:max-w-md bg-card dark:bg-surface border-t sm:border border-neutral-700 dark:border-white/15 rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl flex flex-col gap-4 z-10 animate-in slide-in-from-bottom duration-300 max-h-[85dvh] overflow-y-auto overscroll-contain custom-scrollbar">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-neutral-700 dark:border-white/10 pb-3">
               <div className="flex items-center gap-2">

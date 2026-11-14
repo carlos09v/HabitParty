@@ -56,7 +56,7 @@ export async function ShowcaseStatsGrid({
       id: "focusTime",
       icon: <Hourglass size={20} />,
       iconClass:
-        "bg-purple-500/15 border-purple-500/35 text-purple-700 dark:text-purple-300",
+        "bg-primary/15 border-primary/35 text-primary dark:text-primary-light",
       label: isGamified ? t("focusTime.label") : t("focusTime.essentialLabel"),
       value: `${focusHours}h`,
       sub: t("focusTime.sub", {
@@ -80,14 +80,14 @@ export async function ShowcaseStatsGrid({
   ];
 
   return (
-    <section className="flex flex-col gap-3">
+    <section className="@container flex flex-col gap-3">
       <h2 className="text-body-m font-extrabold text-neutral-100">
         {isGamified ? t("sectionTitleGamified") : t("sectionTitleEssential")}
       </h2>
 
       <div
         className={cn(
-          "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
+          "grid grid-cols-1 @xl:grid-cols-2 @4xl:grid-cols-4",
           isCompact ? "gap-3" : "gap-4",
         )}
       >

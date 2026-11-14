@@ -2,19 +2,27 @@ package com.habitparty.application.usecases.task.checklistItem;
 
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.TaskRepository;
+import com.habitparty.application.usecases.workspace.WorkspaceWriteGuard;
 import com.habitparty.core.domain.entities.task.ChecklistItem;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
 public class DeleteChecklistItemUseCase {
   private final TaskRepository taskRepository;
+  private WorkspaceWriteGuard workspaceWriteGuard;
 
   public DeleteChecklistItemUseCase(TaskRepository taskRepository) {
     this.taskRepository = taskRepository;
+  }
+
+  @Autowired(required = false)
+  public void setWorkspaceWriteGuard(WorkspaceWriteGuard workspaceWriteGuard) {
+    this.workspaceWriteGuard = workspaceWriteGuard;
   }
 
   @Transactional
@@ -22,6 +30,14 @@ public class DeleteChecklistItemUseCase {
     ChecklistItem item = taskRepository.findChecklistItemByIdAndUserId(itemId, userIdLogado)
         .orElseThrow(() -> new ResourceNotFoundException("Item não encontrada."));
     item.validateOwnership(userIdLogado);
+
+    if (workspaceWriteGuard != null) {
+      workspaceWriteGuard.assertTaskWritable(
+          taskRepository,
+          item.getTaskId(),
+          userIdLogado,
+          "Este ambiente está em modo somente-leitura no plano Free (máximo de 2 ambientes ativos). Faça upgrade para Premium para editar checklists nele!");
+    }
 
     taskRepository.deleteChecklistItemById(itemId);
   }

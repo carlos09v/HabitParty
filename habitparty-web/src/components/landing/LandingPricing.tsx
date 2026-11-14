@@ -95,9 +95,10 @@ export async function LandingPricing() {
               <div
                 key={plan.id}
                 className={cn(
-                  "relative rounded-3xl p-6 sm:p-9 flex flex-col justify-between transition-[transform,border-color,box-shadow] duration-300",
+                  "relative rounded-3xl p-6 sm:p-8 lg:p-6 xl:p-8 flex flex-col justify-between transition-[transform,border-color,box-shadow] duration-300",
+                  (plan.isFounder || plan.highlight) && "mt-3 lg:mt-0",
                   plan.isFounder
-                    ? "bg-card dark:bg-gradient-to-b dark:from-surface dark:via-surface/95 dark:to-background border-2 border-amber-500/80 dark:border-gold shadow-lg dark:shadow-[0_0_45px_rgba(237,229,57,0.3)] hover:shadow-xl dark:hover:shadow-[0_0_60px_rgba(237,229,57,0.45)] sm:scale-[1.02] lg:-translate-y-2 z-10"
+                    ? "bg-card dark:bg-gradient-to-b dark:from-surface dark:via-surface/95 dark:to-background border-2 border-amber-500/80 dark:border-gold shadow-lg dark:shadow-[0_0_45px_rgba(237,229,57,0.3)] hover:shadow-xl dark:hover:shadow-[0_0_60px_rgba(237,229,57,0.45)] lg:scale-[1.02] lg:-translate-y-2 z-10"
                     : plan.highlight
                       ? "bg-card dark:bg-surface/80 border-2 border-primary-light shadow-md"
                       : "bg-card dark:bg-surface/60 border border-neutral-700 dark:border-white/10 hover:border-neutral-500 dark:hover:border-white/20 shadow-sm dark:shadow-card-deep",
@@ -105,25 +106,23 @@ export async function LandingPricing() {
               >
                 {/* Badge de Destaque Superior */}
                 {plan.isFounder ? (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gold text-neutral-950 font-black text-xs uppercase tracking-wider shadow-sm dark:shadow-glow-gold flex items-center gap-1.5 whitespace-nowrap">
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3.5 sm:px-4 py-1 rounded-full bg-gold text-neutral-950 font-black text-xs uppercase tracking-wider shadow-sm dark:shadow-glow-gold flex items-center gap-1.5 whitespace-nowrap">
                     <Flame className="w-3.5 h-3.5 fill-neutral-950" />
                     {isAvailable
                       ? t("cardBadges.spotsLeft", { remainingSlots })
                       : t("cardBadges.soldOut")}
                   </div>
                 ) : plan.highlight ? (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-primary-light text-white dark:text-neutral-950 font-black text-xs uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap">
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3.5 sm:px-4 py-1 rounded-full bg-primary-light text-white dark:text-neutral-950 font-black text-xs uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap">
                     <Sparkles className="w-3.5 h-3.5 fill-white dark:fill-neutral-950" />
                     {t("cardBadges.mostPopular")}
                   </div>
                 ) : null}
 
                 <div>
-                  <div className="flex items-center justify-between gap-2 mb-4">
+                  <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
                     <h3 className="text-xl sm:text-2xl font-bold text-neutral-50 flex items-center gap-2 min-w-0">
-                      <span className="truncate">
-                        {t(`plans.${plan.id}.name`)}
-                      </span>
+                      <span>{t(`plans.${plan.id}.name`)}</span>
                       {plan.isFounder && (
                         <Crown className="w-5 h-5 text-gold fill-gold shrink-0" />
                       )}
@@ -212,7 +211,7 @@ export async function LandingPricing() {
                 <Link
                   href={plan.ctaLink}
                   className={cn(
-                    "w-full py-4 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-[transform,background-color,border-color,color,box-shadow] duration-300 active:scale-95 cursor-pointer text-center",
+                    "w-full py-4 px-4 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-[transform,background-color,border-color,color,box-shadow] duration-300 active:scale-95 cursor-pointer text-center",
                     plan.isFounder
                       ? "bg-gold hover:bg-gold-hover text-neutral-950 shadow-sm dark:shadow-glow-gold hover:shadow-md dark:hover:shadow-[0_0_35px_rgba(237,229,57,0.55)]"
                       : plan.highlight

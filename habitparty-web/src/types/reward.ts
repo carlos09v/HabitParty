@@ -151,6 +151,7 @@ export interface RewardCardProps {
   onContextMenu?: (e: React.MouseEvent, reward: Reward) => void;
   isCompact?: boolean;
   canAfford?: boolean;
+  isDeleteChecking?: boolean;
 }
 
 export interface AddRewardCardProps {

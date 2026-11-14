@@ -15,6 +15,7 @@ import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsUseCase;
+import com.habitparty.application.usecases.workspace.WorkspaceWriteGuard;
 import com.habitparty.application.events.TaskCompletedEvent;
 import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.entities.User;
@@ -24,6 +25,7 @@ import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.domain.entities.task.Task.TaskReward;
 import com.habitparty.core.domain.entities.task.Todo;
 import com.habitparty.core.domain.enums.TransactionType;
+import com.habitparty.core.domain.enums.UserLevel;
 import com.habitparty.core.domain.enums.task.TaskStatus;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
@@ -37,6 +39,7 @@ public class ChangeTaskStatusUseCase {
   private final Clock clock;
   private final ApplicationEventPublisher eventPublisher;
   private DailyResetUseCase dailyResetUseCase;
+  private WorkspaceWriteGuard workspaceWriteGuard;
 
   @Autowired
   public ChangeTaskStatusUseCase(
@@ -66,6 +69,11 @@ public class ChangeTaskStatusUseCase {
     this.dailyResetUseCase = dailyResetUseCase;
   }
 
+  @Autowired(required = false)
+  public void setWorkspaceWriteGuard(WorkspaceWriteGuard workspaceWriteGuard) {
+    this.workspaceWriteGuard = workspaceWriteGuard;
+  }
+
   @Transactional
   public Task execute(UUID taskId, UUID userIdLogado, TaskStatus newStatus) {
     if (dailyResetUseCase != null) {
@@ -74,9 +82,16 @@ public class ChangeTaskStatusUseCase {
     Task task = taskPort.findById(taskId)
         .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada."));
     task.validateOwnership(userIdLogado);
+    if (workspaceWriteGuard != null) {
+      workspaceWriteGuard.assertColumnWritable(
+          task.getBoardColumnId(),
+          userIdLogado,
+          "Este ambiente está em modo somente-leitura no plano Free (máximo de 2 ambientes ativos). Faça upgrade para Premium para atualizar tarefas nele!");
+    }
 
     // 2. Só gera extrato e recompensa se o status mudou para COMPLETED e a recompensa ainda não foi resgatada
     User rewardedUser = null;
+    UserLevel reachedLevel = null;
     if (newStatus == TaskStatus.COMPLETED && task.getStatus() != TaskStatus.COMPLETED) {
       User user = userPort.findById(userIdLogado)
           .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
@@ -112,8 +127,13 @@ public class ChangeTaskStatusUseCase {
           case TODO -> TransactionType.TODO_COMPLETED;
         };
 
+        UserLevel levelBefore = user.getCurrentLevel();
         TaskGamificationHelper.awardTaskCompletion(
             user, task, txType, userPort, transactionPort, columnName, today);
+        UserLevel levelAfter = user.getCurrentLevel();
+        if (levelAfter.ordinal() > levelBefore.ordinal()) {
+          reachedLevel = levelAfter;
+        }
         task.registerCompletion(now);
         rewardedUser = user;
       }
@@ -127,9 +147,12 @@ public class ChangeTaskStatusUseCase {
 
     if (rewardedUser != null) {
       if (eventPublisher != null) {
-        eventPublisher.publishEvent(new TaskCompletedEvent(rewardedUser.getId()));
+        eventPublisher.publishEvent(new TaskCompletedEvent(rewardedUser.getId(), reachedLevel));
       } else if (evaluateUserAchievementsUseCase != null) {
         evaluateUserAchievementsUseCase.execute(rewardedUser);
+        if (reachedLevel != null) {
+          evaluateUserAchievementsUseCase.notifyLevelMilestoneIfReached(rewardedUser.getId(), reachedLevel);
+        }
       }
     }
 

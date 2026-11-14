@@ -27,11 +27,11 @@ export function UserRoleBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-tiny font-bold bg-magenta/15 text-magenta border border-magenta/35",
+          "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-tiny font-bold whitespace-nowrap shrink-0 bg-magenta/15 text-magenta border border-magenta/35",
           className,
         )}
       >
-        <Shield size={11} />
+        <Shield size={11} className="shrink-0" />
         {adminLabel}
       </span>
     );
@@ -44,11 +44,11 @@ export function UserRoleBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-tiny font-semibold bg-surface text-neutral-300 border border-neutral-700 dark:border-primary/20",
+        "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-tiny font-semibold whitespace-nowrap shrink-0 bg-surface text-neutral-300 border border-neutral-700 dark:border-primary/20",
         className,
       )}
     >
-      <UserIcon size={11} />
+      <UserIcon size={11} className="shrink-0" />
       {userLabel}
     </span>
   );
@@ -71,11 +71,11 @@ export function UserPlanBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-tiny font-bold bg-gold/20 text-amber-800 dark:text-gold border border-gold/40 shadow-2xs",
+          "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-tiny font-bold whitespace-nowrap shrink-0 bg-gold/20 text-amber-800 dark:text-gold border border-gold/40 shadow-2xs",
           className,
         )}
       >
-        <Crown size={11} className="stroke-2" />
+        <Crown size={11} className="stroke-2 shrink-0" />
         {premiumLabel}
       </span>
     );
@@ -84,11 +84,11 @@ export function UserPlanBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-tiny font-semibold bg-surface border border-neutral-700 dark:border-primary/25 text-neutral-300",
+        "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-tiny font-semibold whitespace-nowrap shrink-0 bg-surface border border-neutral-700 dark:border-primary/25 text-neutral-300",
         className,
       )}
     >
-      <Sparkles size={11} className="text-neutral-400" />
+      <Sparkles size={11} className="text-neutral-400 shrink-0" />
       {freeLabel}
     </span>
   );
@@ -112,7 +112,7 @@ export function UserVerifiedBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-label-m font-bold uppercase tracking-wider border",
+        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-label-m font-bold uppercase tracking-wider whitespace-nowrap shrink-0 border",
         isVerified
           ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/35"
           : "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/35",

@@ -45,6 +45,8 @@ export function TaskActionControl({
           <button
             type="button"
             onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             onDoubleClick={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
@@ -54,7 +56,9 @@ export function TaskActionControl({
             aria-label={t("positiveHabitAria")}
             className={cn(
               "rounded-md bg-success-500/20 border border-success-500/50 text-success-500 hover:bg-success-500 hover:border-success-500 hover:text-on-gold hover:shadow-[0_0_10px_rgba(0,201,80,0.35)] flex items-center justify-center font-bold transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shadow-2xs active:scale-90",
-              isCompact ? "w-5 h-5 text-label-m" : "w-6 h-6 text-tiny",
+              isCompact
+                ? "w-5 h-5 text-label-m"
+                : "w-7 h-7 sm:w-6 sm:h-6 text-tiny",
             )}
           >
             <Plus size={isCompact ? 11 : 13} className="stroke-3" />
@@ -64,6 +68,8 @@ export function TaskActionControl({
           <button
             type="button"
             onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             onDoubleClick={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
@@ -73,7 +79,9 @@ export function TaskActionControl({
             aria-label={t("negativeHabitAria")}
             className={cn(
               "rounded-md bg-danger-500/20 border border-danger-500/50 text-danger-500 hover:bg-danger-500 hover:border-danger-500 hover:text-white hover:shadow-[0_0_10px_rgba(251,44,54,0.35)] flex items-center justify-center font-bold transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shadow-2xs active:scale-90",
-              isCompact ? "w-5 h-5 text-label-m" : "w-6 h-6 text-tiny",
+              isCompact
+                ? "w-5 h-5 text-label-m"
+                : "w-7 h-7 sm:w-6 sm:h-6 text-tiny",
             )}
           >
             <Minus size={isCompact ? 11 : 13} className="stroke-3" />
@@ -93,6 +101,8 @@ export function TaskActionControl({
     <button
       type="button"
       onPointerDown={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.stopPropagation();
@@ -102,7 +112,7 @@ export function TaskActionControl({
       className={cn(
         "border-2 flex items-center justify-center transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shrink-0 active:scale-90",
         isDaily ? "rounded-full" : "rounded-md",
-        isCompact ? "w-4 h-4" : "w-5 h-5",
+        isCompact ? "w-4 h-4" : "w-6 h-6 sm:w-5 sm:h-5",
         completed
           ? "bg-gold border-gold text-on-gold shadow-glow-gold-xs"
           : isDaily

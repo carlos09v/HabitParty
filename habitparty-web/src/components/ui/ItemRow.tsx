@@ -2,13 +2,18 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Clock, GripVertical } from "lucide-react";
+import { Clock, GripVertical, Loader2, MoreVertical } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { memo, type default as React } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
-import { cn, formatCoins } from "@/utils";
+import {
+  cn,
+  formatCoins,
+  openContextMenuFromButton,
+  STOP_DRAG_PROPAGATION_PROPS,
+} from "@/utils";
 import { resolveCatalogItemVisuals } from "@/utils/catalogItemVisuals";
 import {
   formatBackpackItemRemainingTime,
@@ -39,6 +44,7 @@ export interface ItemRowProps {
   dragData?: Record<string, unknown>;
   inUse?: boolean;
   isActiveFocusSession?: boolean;
+  isDeleteChecking?: boolean;
 }
 
 /**
@@ -69,6 +75,7 @@ export const ItemRow = memo(function ItemRow({
   dragData,
   inUse = false,
   isActiveFocusSession,
+  isDeleteChecking = false,
 }: ItemRowProps) {
   const t = useTranslations("ui.itemCatalog");
   const locale = useLocale() as AppLocale;
@@ -138,9 +145,12 @@ export const ItemRow = memo(function ItemRow({
               leftAccentClass,
             ),
         "flex flex-col gap-2.5 p-3 sm:p-3.5",
-        "md:grid md:grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)_minmax(0,1.8fr)_minmax(0,1.2fr)_auto] md:items-center",
-        isCompact ? "md:gap-3 md:px-3 md:py-2" : "md:gap-4 md:px-4 md:py-2.5",
+        "md:grid md:grid-cols-[minmax(0,3.4fr)_minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.9fr)_auto] xl:grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)_minmax(0,1.7fr)_minmax(0,1.1fr)_auto] md:items-center",
+        isCompact
+          ? "md:gap-2.5 xl:gap-3 md:px-3 md:py-2"
+          : "md:gap-2.5 xl:gap-4 md:px-3.5 xl:px-4 md:py-2.5",
         onDoubleClick && "cursor-pointer",
+        isDeleteChecking && "opacity-75 pointer-events-none cursor-wait",
         isDragging && "transition-none! opacity-50 ring-2 ring-gold z-50",
       )}
     >
@@ -228,7 +238,7 @@ export const ItemRow = memo(function ItemRow({
       </div>
 
       {/* Container de Metadados: No Mobile fica em linha única com wrap; no Desktop usa `md:contents` para ocupar as Colunas 2, 3 e 4 do Grid */}
-      <div className="flex items-center gap-1.5 flex-wrap pl-6 md:pl-0 md:contents">
+      <div className="flex items-center gap-1.5 flex-wrap pl-0 min-[380px]:pl-6 md:pl-0 md:contents">
         {/* Coluna 2: Badge de Status (Em Foco) + Tipo */}
         <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
           {inUse && (
@@ -345,7 +355,7 @@ export const ItemRow = memo(function ItemRow({
       </div>
 
       {/* Coluna 5: Preço (Desktop) & Botões de Ação */}
-      <div className="flex items-center justify-end gap-2 md:gap-3.5 pt-1 md:pt-0 border-t border-neutral-700 dark:border-white/5 md:border-t-0 shrink-0">
+      <div className="flex flex-wrap sm:flex-nowrap items-center justify-end gap-1.5 sm:gap-2 md:gap-2.5 lg:gap-3.5 pt-1 md:pt-0 border-t border-neutral-700 dark:border-white/5 md:border-t-0 shrink-0">
         {typeof price === "number" && (
           <div
             className={cn(
@@ -378,7 +388,7 @@ export const ItemRow = memo(function ItemRow({
                   })
             }
             className={cn(
-              "rounded-md font-semibold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs border text-neutral-200",
+              "rounded-md font-semibold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs border text-neutral-200 pointer-coarse:min-h-9",
               disabled || inUse
                 ? "bg-white/5 border-white/10 text-neutral-400 cursor-not-allowed opacity-60"
                 : "border-neutral-600 dark:border-primary/40 bg-surface/80 hover:bg-primary/10 hover:border-primary/40 hover:text-primary dark:hover:bg-gold/15 dark:hover:border-gold/60 dark:hover:text-gold active:scale-95 cursor-pointer",
@@ -408,7 +418,7 @@ export const ItemRow = memo(function ItemRow({
                     })
           }
           className={cn(
-            "rounded-md font-semibold dark:font-bold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs",
+            "rounded-md font-semibold dark:font-bold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs pointer-coarse:min-h-9",
             isFocusNavigate || (!disabled && !inUse)
               ? "bg-gold hover:bg-gold-hover active:bg-gold-pressed text-on-gold border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1 focus-visible:ring-offset-card"
               : "bg-neutral-700/70 dark:bg-white/10 text-neutral-400 border border-neutral-600 dark:border-white/10 cursor-not-allowed opacity-75 dark:opacity-60",
@@ -419,6 +429,44 @@ export const ItemRow = memo(function ItemRow({
         >
           {actionLabel}
         </button>
+
+        {isDeleteChecking ? (
+          <output
+            className={cn(
+              "inline-flex items-center justify-center text-gold shrink-0",
+              isCompact
+                ? "w-7 h-7 pointer-coarse:w-9 pointer-coarse:h-9"
+                : "w-8 h-8 pointer-coarse:w-9 pointer-coarse:h-9",
+            )}
+            title={t("checkingDeleteAria")}
+            aria-label={t("checkingDeleteAria")}
+          >
+            <Loader2
+              size={isCompact ? 14 : 16}
+              className="animate-spin"
+              aria-hidden="true"
+            />
+          </output>
+        ) : (
+          onContextMenu && (
+            <button
+              type="button"
+              {...STOP_DRAG_PROPAGATION_PROPS}
+              onClick={(e) => openContextMenuFromButton(e, onContextMenu)}
+              onDoubleClick={(e) => e.stopPropagation()}
+              aria-label={t("moreActionsAria")}
+              title={t("moreActionsAria")}
+              className={cn(
+                "inline-flex items-center justify-center rounded-md border border-transparent text-neutral-400 hover:text-neutral-100 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold",
+                isCompact
+                  ? "w-7 h-7 pointer-coarse:w-9 pointer-coarse:h-9"
+                  : "w-8 h-8 pointer-coarse:w-9 pointer-coarse:h-9",
+              )}
+            >
+              <MoreVertical size={isCompact ? 14 : 16} aria-hidden="true" />
+            </button>
+          )
+        )}
       </div>
     </li>
   );

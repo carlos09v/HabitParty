@@ -24,7 +24,7 @@ export function ShowcaseLevelProgressPanel({
   const t = useTranslations("showcase.header");
 
   return (
-    <div className="flex flex-col sm:flex-row lg:flex-col gap-3 w-full lg:w-72 shrink-0">
+    <div className="grid grid-cols-1 @lg:grid-cols-2 @4xl:grid-cols-1 gap-3 w-full @4xl:w-72 shrink-0">
       {/* Card de Pontos de Conquista */}
       <div className="flex items-center gap-3.5 rounded-xl border border-amber-500/30 dark:border-gold/35 bg-amber-500/[0.08] dark:bg-gradient-to-br dark:from-gold/15 dark:via-amber-500/5 dark:to-transparent p-3.5">
         <div className="w-11 h-11 rounded-xl bg-gold/20 border border-gold/45 flex items-center justify-center text-amber-700 dark:text-gold shrink-0">

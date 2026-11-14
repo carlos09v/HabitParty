@@ -1,11 +1,18 @@
 "use client";
 
-import { Calendar, FilterX, SlidersHorizontal, X } from "lucide-react";
+import {
+  Calendar,
+  CheckCircle2,
+  Layers,
+  Lock,
+  Plus,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo } from "react";
-import { createPortal } from "react-dom";
+import { TaskAdvancedFilterPopover } from "@/components/dashboard/filters/TaskAdvancedFilterPopover";
 import { Select } from "@/components/ui/Select";
-import { Switch } from "@/components/ui/Switch";
 import {
   DASHBOARD_TASK_FILTERS,
   DEFAULT_DASHBOARD_ADVANCED_FILTERS,
@@ -15,10 +22,7 @@ import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useFloatingPopover } from "@/hooks/useFloatingPopover";
 import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
-import type {
-  DashboardAdvancedFilters,
-  TaskFiltersProps,
-} from "@/types/dashboard";
+import type { TaskFiltersProps } from "@/types/dashboard";
 import type { TaskFilterType } from "@/types/task";
 import { cn } from "@/utils";
 import { formatShortDate } from "@/utils/date";
@@ -29,8 +33,13 @@ export function TaskFilters({
   selectedDate,
   onClearDate,
   columns = [],
+  workspaces = [],
   advancedFilters = DEFAULT_DASHBOARD_ADVANCED_FILTERS,
   onAdvancedFiltersChange,
+  onCreateTask,
+  canCreateTask = true,
+  createTaskDisabledReason,
+  overdueCount = 0,
   isCompact: propIsCompact,
 }: TaskFiltersProps) {
   const t = useTranslations("dashboard.taskFilters");
@@ -39,6 +48,7 @@ export function TaskFilters({
   const { isGamified } = useExperienceMode();
   const userTimeZone = useUserStore((s) => s.user?.timezone);
   const isCompact = propIsCompact ?? false;
+  const hasMultipleWorkspaces = workspaces.length > 1;
   const {
     containerRef,
     triggerRef,
@@ -50,7 +60,7 @@ export function TaskFilters({
     floatingStyle,
   } = useFloatingPopover<HTMLDivElement, HTMLButtonElement, HTMLDivElement>({
     align: "right",
-    estimatedHeight: 360,
+    estimatedHeight: hasMultipleWorkspaces ? 430 : 360,
     estimatedWidth: 320,
     offset: 8,
     margin: 12,
@@ -59,6 +69,7 @@ export function TaskFilters({
 
   const activeFiltersCount = useMemo(() => {
     return (
+      (advancedFilters.workspaceId !== "all" ? 1 : 0) +
       (advancedFilters.taskType !== "all" ? 1 : 0) +
       (advancedFilters.columnId !== "all" ? 1 : 0) +
       (advancedFilters.difficulty !== "all" ? 1 : 0) +
@@ -77,17 +88,61 @@ export function TaskFilters({
     });
   }, [selectedDate, locale, dateFormat, userTimeZone]);
 
-  const columnOptions = useMemo(() => {
-    const opts = [{ value: "all", label: t("allColumns") }];
-    if (columns) {
-      for (const c of columns) {
-        if (c.id) {
-          opts.push({ value: c.id, label: c.name || t("untitledColumn") });
-        }
+  const workspaceOptions = useMemo(() => {
+    const opts = [{ value: "all", label: t("allWorkspaces") }];
+    for (const ws of workspaces) {
+      if (ws.id) {
+        opts.push({
+          value: ws.id,
+          label: ws.name || t("untitledWorkspace"),
+        });
       }
     }
     return opts;
-  }, [columns, t]);
+  }, [workspaces, t]);
+
+  const workspaceSelectOptions = useMemo(
+    () => [
+      { value: "", label: t("allWorkspaces") },
+      ...workspaces
+        .filter((ws): ws is typeof ws & { id: string } => Boolean(ws.id))
+        .map((ws) => {
+          const baseName = ws.name || t("untitledWorkspace");
+          return {
+            value: ws.id,
+            label: ws.isReadOnly
+              ? `${baseName} ${t("readOnlyWorkspaceSuffix")}`
+              : baseName,
+            icon: ws.isReadOnly ? (
+              <Lock size={12} className="text-neutral-400" aria-hidden="true" />
+            ) : undefined,
+          };
+        }),
+    ],
+    [workspaces, t],
+  );
+
+  const columnOptions = useMemo(() => {
+    const opts = [{ value: "all", label: t("allColumns") }];
+    const scopedColumns =
+      advancedFilters.workspaceId === "all"
+        ? columns
+        : columns.filter((c) => c.workspaceId === advancedFilters.workspaceId);
+
+    for (const c of scopedColumns) {
+      if (c.id) {
+        const baseName = c.name || t("untitledColumn");
+        const label =
+          advancedFilters.workspaceId === "all" &&
+          hasMultipleWorkspaces &&
+          c.workspaceName
+            ? `${baseName} (${c.workspaceName})`
+            : baseName;
+        opts.push({ value: c.id, label });
+      }
+    }
+    return opts;
+  }, [columns, advancedFilters.workspaceId, hasMultipleWorkspaces, t]);
 
   const taskTypeOptions = useMemo(
     () => [
@@ -128,222 +183,248 @@ export function TaskFilters({
     onAdvancedFiltersChange?.(DEFAULT_DASHBOARD_ADVANCED_FILTERS);
   };
 
-  return (
-    <nav
-      className="flex items-center justify-between gap-4 w-full relative"
-      aria-label={t("ariaLabel")}
-    >
-      {/* Pílulas de filtro */}
-      <div
-        className="flex items-center gap-2 overflow-x-auto custom-scrollbar px-1 py-1 -mx-1"
-        role="tablist"
-      >
-        {/* Pílula do dia específico se houver data selecionada */}
-        {selectedDate && (
-          <button
-            type="button"
-            role="tab"
-            id="tab-date"
-            aria-selected={true}
-            aria-controls="panel-date"
-            onClick={onClearDate}
-            className={cn(
-              "flex items-center gap-1.5 rounded-lg font-bold transition-colors whitespace-nowrap cursor-pointer shadow-xs bg-gold text-on-gold group shrink-0",
-              isCompact ? "px-2.5 py-1 text-xs" : "px-3.5 py-1.5 text-sm",
-            )}
-            title={t("clearDateTitle")}
-          >
-            <Calendar size={isCompact ? 12 : 14} className="shrink-0" />
-            <span>
-              {t("datePillLabel", { date: formattedDateLabel || "" })}
-            </span>
-            <X
-              size={isCompact ? 12 : 14}
-              className="shrink-0 group-hover:scale-125 transition-transform ml-0.5"
-            />
-          </button>
-        )}
+  const handleWorkspaceChange = (workspaceId: string) => {
+    const keepColumn =
+      workspaceId === "all" ||
+      columns.some(
+        (c) =>
+          c.id === advancedFilters.columnId && c.workspaceId === workspaceId,
+      );
+    onAdvancedFiltersChange?.({
+      ...advancedFilters,
+      workspaceId,
+      columnId: keepColumn ? advancedFilters.columnId : "all",
+    });
+  };
 
-        {DASHBOARD_TASK_FILTERS.map((f) => {
-          const isSelected = !selectedDate && activeFilter === f.id;
-          return (
+  const handleToggleQuickHideCompleted = () => {
+    onAdvancedFiltersChange?.({
+      ...advancedFilters,
+      hideCompleted: !advancedFilters.hideCompleted,
+    });
+  };
+
+  return (
+    <div className="w-full relative">
+      <nav
+        className="flex items-center justify-between gap-2.5 w-full flex-wrap"
+        aria-label={t("ariaLabel")}
+      >
+        <div
+          className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto custom-scrollbar px-1 py-1 -mx-1 min-w-0"
+          role="tablist"
+        >
+          {selectedDate && (
             <button
-              key={f.id}
               type="button"
               role="tab"
-              aria-selected={isSelected}
-              aria-controls={`panel-${f.id}`}
-              id={`tab-${f.id}`}
-              onClick={() => handleSelectStandardFilter(f.id)}
+              id="tab-date"
+              aria-selected={true}
+              aria-controls="panel-date"
+              onClick={onClearDate}
               className={cn(
-                "rounded-lg font-medium transition-colors whitespace-nowrap cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold focus:ring-offset-1 focus:ring-offset-background shrink-0",
-                isCompact ? "px-2.5 py-1 text-xs" : "px-3.5 py-1.5 text-sm",
-                isSelected
-                  ? "bg-gold text-on-gold font-bold border-transparent shadow-xs"
-                  : "bg-surface dark:bg-primary-dark/20 text-neutral-200 dark:text-neutral-100 hover:bg-surface-hover dark:hover:bg-primary-dark/40 border border-neutral-700 dark:border-primary/30 shadow-none",
+                "flex items-center gap-1.5 rounded-lg font-bold transition-colors whitespace-nowrap cursor-pointer shadow-xs bg-gold text-on-gold group shrink-0",
+                isCompact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-xs",
               )}
+              title={t("clearDateTitle")}
             >
-              {t(`tabs.${f.id}`)}
+              <Calendar size={isCompact ? 12 : 14} className="shrink-0" />
+              <span>
+                {t("datePillLabel", { date: formattedDateLabel || "" })}
+              </span>
+              <X
+                size={isCompact ? 12 : 14}
+                className="shrink-0 group-hover:scale-125 transition-transform ml-0.5"
+              />
             </button>
-          );
-        })}
-      </div>
-
-      {/* Botão de opções e filtros avançados com Popover */}
-      <div ref={containerRef} className="relative shrink-0">
-        <button
-          ref={triggerRef}
-          type="button"
-          onClick={togglePopover}
-          title={t("advancedButtonTitle")}
-          aria-expanded={showPopover}
-          aria-label={t("openAdvancedAria")}
-          className={cn(
-            "flex items-center gap-1.5 rounded-lg border transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-gold cursor-pointer",
-            isCompact ? "p-1.5 text-xs" : "p-2 text-sm",
-            activeFiltersCount > 0
-              ? "bg-amber-500/15 border-amber-500/50 text-amber-700 dark:bg-gold/15 dark:border-gold/60 dark:text-gold shadow-glow-gold-xs font-semibold"
-              : "bg-surface dark:bg-primary-dark/20 hover:bg-surface-hover dark:hover:bg-primary-dark/40 border-neutral-700 dark:border-primary/30 text-neutral-300 hover:text-primary dark:hover:text-gold shadow-none",
           )}
-        >
-          <SlidersHorizontal
-            size={isCompact ? 15 : 18}
-            className={
-              activeFiltersCount > 0 ? "text-amber-700 dark:text-gold" : ""
-            }
-            aria-hidden="true"
-          />
-          {activeFiltersCount > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full text-tiny font-bold bg-gold text-on-gold">
-              {activeFiltersCount}
+
+          {DASHBOARD_TASK_FILTERS.map((f) => {
+            const isSelected = !selectedDate && activeFilter === f.id;
+            const showOverdueBadge = f.id === "overdue" && overdueCount > 0;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                role="tab"
+                aria-selected={isSelected}
+                aria-controls={`panel-${f.id}`}
+                id={`tab-${f.id}`}
+                aria-label={
+                  showOverdueBadge
+                    ? `${t(`tabs.${f.id}`)} — ${t("overdueBadgeAria", { count: overdueCount })}`
+                    : undefined
+                }
+                onClick={() => handleSelectStandardFilter(f.id)}
+                className={cn(
+                  "inline-flex items-center rounded-lg font-medium transition-colors whitespace-nowrap cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold focus:ring-offset-1 focus:ring-offset-background shrink-0",
+                  isCompact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-xs",
+                  isSelected
+                    ? "bg-gold text-on-gold font-bold border border-transparent shadow-xs"
+                    : cn(
+                        "bg-surface dark:bg-primary-dark/20 text-neutral-200 dark:text-neutral-100 hover:bg-surface-hover dark:hover:bg-primary-dark/40 border border-neutral-700 dark:border-primary/30 shadow-none",
+                        selectedDate && "opacity-65 hover:opacity-100",
+                      ),
+                )}
+              >
+                <span>{t(`tabs.${f.id}`)}</span>
+                {showOverdueBadge && (
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none tabular-nums",
+                      isSelected
+                        ? "bg-on-gold/20 text-on-gold"
+                        : "bg-danger-500/15 text-danger-600 dark:bg-danger-500/25 dark:text-danger-300",
+                    )}
+                  >
+                    {overdueCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto flex-wrap">
+          {hasMultipleWorkspaces && (
+            <Select
+              variant="filter"
+              compact={true}
+              usePortal={true}
+              align="right"
+              icon={<Layers size={13} aria-hidden="true" />}
+              placeholder={t("allWorkspaces")}
+              aria-label={t("workspaceFilterAria")}
+              options={workspaceSelectOptions}
+              value={
+                advancedFilters.workspaceId === "all"
+                  ? ""
+                  : advancedFilters.workspaceId
+              }
+              onChange={(val) => handleWorkspaceChange(val || "all")}
+              className="max-w-[175px]"
+              dropdownClassName="w-56"
+              triggerClassName={cn(
+                "font-medium transition-colors",
+                isCompact ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-xs",
+                advancedFilters.workspaceId !== "all"
+                  ? "bg-amber-500/15! border-amber-500/50! text-amber-800! dark:bg-gold/15! dark:border-gold/60! dark:text-gold! font-bold!"
+                  : "bg-surface! dark:bg-primary-dark/20! hover:bg-surface-hover! dark:hover:bg-primary-dark/40! border-neutral-700! dark:border-primary/30! text-neutral-300! hover:text-neutral-100!",
+              )}
+            />
+          )}
+
+          <button
+            type="button"
+            onClick={handleToggleQuickHideCompleted}
+            aria-pressed={advancedFilters.hideCompleted}
+            aria-label={t("quickHideCompletedAria")}
+            title={t("quickHideCompleted")}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-lg border font-medium transition-colors whitespace-nowrap cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold",
+              isCompact ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-xs",
+              advancedFilters.hideCompleted
+                ? "bg-emerald-500/15 border-emerald-600/45 text-emerald-800 dark:bg-emerald-500/15 dark:border-emerald-400/50 dark:text-emerald-300 font-semibold"
+                : "bg-surface dark:bg-primary-dark/20 hover:bg-surface-hover dark:hover:bg-primary-dark/40 border-neutral-700 dark:border-primary/30 text-neutral-300 hover:text-neutral-100",
+            )}
+          >
+            <CheckCircle2
+              size={isCompact ? 13 : 14}
+              className="shrink-0"
+              aria-hidden="true"
+            />
+            <span className="hidden @3xl:inline">
+              {t("quickHideCompleted")}
             </span>
-          )}
-        </button>
+          </button>
 
-        {/* Popover de Filtros Avançados */}
-        {showPopover &&
-          shouldRenderPortal &&
-          coords &&
-          createPortal(
-            <div
-              ref={popoverRef}
-              role="dialog"
-              aria-modal="false"
-              aria-label={t("advancedTitle")}
-              style={floatingStyle}
+          <div ref={containerRef} className="relative shrink-0">
+            <button
+              ref={triggerRef}
+              type="button"
+              onClick={togglePopover}
+              title={t("advancedButtonTitle")}
+              aria-expanded={showPopover}
+              aria-label={t("openAdvancedAria")}
               className={cn(
-                "w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] rounded-xl bg-popover border border-neutral-700 dark:border-primary/40 p-4 shadow-xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-3",
-                coords.placement === "top" ? "origin-bottom" : "origin-top",
+                "flex items-center gap-1.5 rounded-lg border transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-gold cursor-pointer",
+                isCompact ? "p-1.5 text-xs" : "p-1.5 sm:p-2 text-xs",
+                activeFiltersCount > 0
+                  ? "bg-amber-500/15 border-amber-500/50 text-amber-700 dark:bg-gold/15 dark:border-gold/60 dark:text-gold shadow-glow-gold-xs font-semibold"
+                  : "bg-surface dark:bg-primary-dark/20 hover:bg-surface-hover dark:hover:bg-primary-dark/40 border-neutral-700 dark:border-primary/30 text-neutral-300 hover:text-primary dark:hover:text-gold shadow-none",
               )}
             >
-              {/* Cabeçalho do Popover */}
-              <div className="flex items-center justify-between pb-2 border-b border-neutral-700 dark:border-white/10">
-                <span className="text-xs font-bold text-neutral-100 flex items-center gap-1.5">
-                  <SlidersHorizontal
-                    size={13}
-                    className="text-amber-700 dark:text-gold"
-                  />
-                  {t("advancedTitle")}
+              <SlidersHorizontal
+                size={isCompact ? 14 : 16}
+                className={
+                  activeFiltersCount > 0 ? "text-amber-700 dark:text-gold" : ""
+                }
+                aria-hidden="true"
+              />
+              {activeFiltersCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full text-tiny font-bold bg-gold text-on-gold">
+                  {activeFiltersCount}
                 </span>
-                {activeFiltersCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleResetAdvanced}
-                    className="flex items-center gap-1 text-tiny text-neutral-400 hover:text-danger-500 font-semibold transition-colors cursor-pointer"
-                  >
-                    <FilterX size={12} />
-                    <span>{t("clearButton")}</span>
-                  </button>
-                )}
-              </div>
-
-              {/* Filtro por Tipo de Tarefa */}
-              <Select
-                id="filter-task-type"
-                label={t("taskTypeLabel")}
-                compact
-                value={advancedFilters.taskType}
-                onChange={(val) =>
-                  onAdvancedFiltersChange?.({
-                    ...advancedFilters,
-                    taskType: val as DashboardAdvancedFilters["taskType"],
-                  })
-                }
-                options={taskTypeOptions}
-              />
-
-              {/* Filtro por Lista / Coluna */}
-              {columns && columns.length > 0 && (
-                <Select
-                  id="filter-column"
-                  label={t("columnLabel")}
-                  compact
-                  value={advancedFilters.columnId}
-                  onChange={(val) =>
-                    onAdvancedFiltersChange?.({
-                      ...advancedFilters,
-                      columnId: val,
-                    })
-                  }
-                  options={columnOptions}
-                />
               )}
+            </button>
 
-              {/* Filtro por Dificuldade / Esforço */}
-              <Select
-                id="filter-difficulty"
-                label={isGamified ? t("difficultyLabel") : t("effortLabel")}
-                compact
-                value={advancedFilters.difficulty}
-                onChange={(val) =>
-                  onAdvancedFiltersChange?.({
-                    ...advancedFilters,
-                    difficulty: val as DashboardAdvancedFilters["difficulty"],
-                  })
-                }
-                options={difficultyOptions}
+            {showPopover && shouldRenderPortal && coords && (
+              <TaskAdvancedFilterPopover
+                popoverRef={popoverRef}
+                floatingStyle={floatingStyle}
+                placement={coords.placement}
+                activeFiltersCount={activeFiltersCount}
+                advancedFilters={advancedFilters}
+                hasMultipleWorkspaces={hasMultipleWorkspaces}
+                workspaceOptions={workspaceOptions}
+                columnOptions={columnOptions}
+                hasColumns={columns.length > 0}
+                taskTypeOptions={taskTypeOptions}
+                difficultyOptions={difficultyOptions}
+                sortOptions={sortOptions}
+                isGamified={isGamified}
+                onWorkspaceChange={handleWorkspaceChange}
+                onAdvancedFiltersChange={onAdvancedFiltersChange}
+                onReset={handleResetAdvanced}
               />
+            )}
+          </div>
 
-              {/* Ordenação */}
-              <Select
-                id="filter-sort"
-                label={t("sortByLabel")}
-                compact
-                value={advancedFilters.sortBy}
-                onChange={(val) =>
-                  onAdvancedFiltersChange?.({
-                    ...advancedFilters,
-                    sortBy: val as DashboardAdvancedFilters["sortBy"],
-                  })
-                }
-                options={sortOptions}
+          {onCreateTask && (
+            <>
+              <span
+                className="hidden sm:block h-5 w-px bg-neutral-700/70 dark:bg-white/10"
+                aria-hidden="true"
               />
-
-              {/* Toggle Ocultar Concluídas */}
-              <div className="flex items-center justify-between pt-2 border-t border-neutral-700 dark:border-white/10 group">
-                <label
-                  htmlFor="filter-hide-completed"
-                  className="text-xs text-neutral-200 group-hover:text-primary dark:group-hover:text-gold transition-colors font-medium cursor-pointer select-none"
-                >
-                  {t("hideCompletedLabel")}
-                </label>
-                <Switch
-                  id="filter-hide-completed"
-                  size="sm"
-                  checked={advancedFilters.hideCompleted}
-                  onCheckedChange={(checked) =>
-                    onAdvancedFiltersChange?.({
-                      ...advancedFilters,
-                      hideCompleted: checked,
-                    })
-                  }
-                  aria-label={t("hideCompletedLabel")}
+              <button
+                type="button"
+                onClick={onCreateTask}
+                disabled={!canCreateTask}
+                aria-label={t("newTaskAria")}
+                title={
+                  !canCreateTask ? createTaskDisabledReason : t("newTaskAria")
+                }
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-lg font-bold border transition-[color,background-color,border-color,box-shadow,transform] whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-gold",
+                  isCompact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-xs",
+                  canCreateTask
+                    ? "bg-gold hover:bg-gold-light text-on-gold border-gold cursor-pointer shadow-xs hover:shadow-glow-gold-xs active:scale-95"
+                    : "bg-surface/60 border-neutral-700 text-neutral-400 cursor-not-allowed opacity-70",
+                )}
+              >
+                <Plus
+                  size={isCompact ? 13 : 15}
+                  strokeWidth={2.5}
+                  className="shrink-0"
+                  aria-hidden="true"
                 />
-              </div>
-            </div>,
-            document.body,
+                <span>{t("newTaskButton")}</span>
+              </button>
+            </>
           )}
-      </div>
-    </nav>
+        </div>
+      </nav>
+    </div>
   );
 }

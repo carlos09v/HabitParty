@@ -26,6 +26,7 @@ import com.habitparty.core.domain.entities.focus.FocusReward;
 import com.habitparty.core.domain.entities.focus.FocusRewardCalculator;
 import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.domain.enums.TransactionType;
+import com.habitparty.core.domain.enums.UserLevel;
 import com.habitparty.core.domain.enums.task.TaskType;
 import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.LimitExceededException;
@@ -239,12 +240,15 @@ public class CreateFocusRecordUseCase {
           ? loadedUser
           : userPort.findById(userIdLogado)
               .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+      UserLevel levelBefore = user.getCurrentLevel();
       if (reward.xp() > 0) {
         user.addXp(reward.xp());
       }
       if (reward.coins().compareTo(BigDecimal.ZERO) > 0) {
         user.addCoins(reward.coins());
       }
+      UserLevel levelAfter = user.getCurrentLevel();
+      UserLevel reachedLevel = levelAfter.ordinal() > levelBefore.ordinal() ? levelAfter : null;
       long focusDurationMinutes = Math.max(
           0,
           java.time.Duration.between(userStartTime.atZone(userZone), userEndTime.atZone(userZone)).toMinutes());
@@ -268,6 +272,9 @@ public class CreateFocusRecordUseCase {
       userPort.save(user);
       if (evaluateUserAchievementsUseCase != null) {
         evaluateUserAchievementsUseCase.execute(user);
+        if (reachedLevel != null) {
+          evaluateUserAchievementsUseCase.notifyLevelMilestoneIfReached(user.getId(), reachedLevel);
+        }
       }
     }
 

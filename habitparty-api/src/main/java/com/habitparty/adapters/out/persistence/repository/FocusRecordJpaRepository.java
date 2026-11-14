@@ -73,4 +73,10 @@ public interface FocusRecordJpaRepository extends JpaRepository<FocusRecordJpaEn
         AND f.focusActivityId IS NULL
   """)
   boolean existsStandaloneByTaskId(@Param("taskId") UUID taskId);
+
+  List<FocusRecordJpaEntity> findAllByUserIdAndStartTimeBetweenOrderByStartTimeAsc(
+      UUID userId, LocalDateTime startInclusive, LocalDateTime endInclusive);
+
+  @Query("SELECT MIN(f.startTime) FROM FocusRecordJpaEntity f WHERE f.userId = :userId AND f.inventoryItemId IS NULL")
+  LocalDateTime findEarliestProductiveStartTimeByUserId(@Param("userId") UUID userId);
 }

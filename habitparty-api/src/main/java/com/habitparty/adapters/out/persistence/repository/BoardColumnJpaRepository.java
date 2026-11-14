@@ -1,5 +1,6 @@
 package com.habitparty.adapters.out.persistence.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,6 +19,8 @@ public interface BoardColumnJpaRepository extends JpaRepository<BoardColumnJpaEn
     List<BoardColumnJpaEntity> findByWorkspaceIdAndIsVisibleTrueOrderByOrderIndexAsc(UUID workspaceId);
 
     List<BoardColumnJpaEntity> findByWorkspace_Id(UUID workspaceId);
+
+    List<BoardColumnJpaEntity> findByWorkspace_IdInOrderByOrderIndexAsc(Collection<UUID> workspaceIds);
 
     // 1. Query para o Reordenamento na Deleção (Shift Down)
     @Transactional
@@ -62,6 +65,24 @@ public interface BoardColumnJpaRepository extends JpaRepository<BoardColumnJpaEn
             """)
     List<BoardColumnSummaryProjection> findSummaryByWorkspaceId(
             @Param("workspaceId") UUID workspaceId,
+            @Param("completedStatus") TaskStatus completedStatus);
+
+    @Query("""
+                SELECT
+                    b.id AS id,
+                    b.name AS name,
+                    b.icon AS icon,
+                    b.orderIndex AS orderIndex,
+                    COUNT(t.id) AS totalTasks,
+                    SUM(CASE WHEN t.status = :completedStatus THEN 1 ELSE 0 END) AS completedTasks
+                FROM BoardColumnJpaEntity b
+                LEFT JOIN TaskJpaEntity t ON t.boardColumnId = b.id
+                WHERE b.workspace.id IN :workspaceIds
+                GROUP BY b.id, b.name, b.icon, b.orderIndex
+                ORDER BY b.orderIndex ASC
+            """)
+    List<BoardColumnSummaryProjection> findSummaryByWorkspaceIdIn(
+            @Param("workspaceIds") Collection<UUID> workspaceIds,
             @Param("completedStatus") TaskStatus completedStatus);
 
     @Modifying

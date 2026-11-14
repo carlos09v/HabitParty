@@ -1,5 +1,6 @@
 package com.habitparty.adapters.in.web;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,7 +14,11 @@ import com.habitparty.adapters.in.web.dtos.request.CreateUserDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserPasswordDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserThemeDTO;
+import com.habitparty.adapters.in.web.dtos.request.user.UpdatePrivacySettingsDTO;
 import com.habitparty.adapters.in.web.dtos.response.UserResponseDTO;
+import com.habitparty.application.usecases.social.RegenerateFriendCodeUseCase;
+import com.habitparty.application.usecases.social.UpdatePrivacySettingsCommand;
+import com.habitparty.application.usecases.social.UpdatePrivacySettingsUseCase;
 import com.habitparty.application.usecases.user.CreateUserCommand;
 import com.habitparty.application.usecases.user.CreateUserUseCase;
 import com.habitparty.application.usecases.user.DeleteUserUseCase;
@@ -38,6 +43,8 @@ public class UserController implements UserApi {
   private final UpdateProfilePhotoUseCase updateProfilePhotoUseCase;
   private final UpdateUserPasswordUseCase updateUserPasswordUseCase;
   private final UpdateUserProfileUseCase updateUserProfileUseCase;
+  private final RegenerateFriendCodeUseCase regenerateFriendCodeUseCase;
+  private final UpdatePrivacySettingsUseCase updatePrivacySettingsUseCase;
 
   @Override
   public ResponseEntity<UserResponseDTO> createUser(CreateUserDTO requestDto) {
@@ -119,9 +126,28 @@ public class UserController implements UserApi {
     UUID userId = usuarioLogado.id();
     try {
       updateProfilePhotoUseCase.execute(userId, photoFile.getInputStream(), photoFile.getOriginalFilename(), photoFile.getSize());
-    } catch (java.io.IOException e) {
+    } catch (IOException e) {
       throw new RuntimeException("Falha ao processar arquivo para upload.", e);
     }
     return ResponseEntity.noContent().build();
+  }
+
+  @Override
+  public ResponseEntity<UserResponseDTO> regenerateFriendCode(AuthenticatedUser usuarioLogado) {
+    var result = regenerateFriendCodeUseCase.execute(usuarioLogado.id());
+    return ResponseEntity.ok(UserResponseDTO.fromDomain(result.user(), result.effectiveStreak()));
+  }
+
+  @Override
+  public ResponseEntity<UserResponseDTO> updatePrivacySettings(
+      UpdatePrivacySettingsDTO dto,
+      AuthenticatedUser usuarioLogado) {
+    var command = new UpdatePrivacySettingsCommand(
+        dto.profileVisibility(),
+        dto.statsVisibility(),
+        dto.achievementsVisibility(),
+        dto.friendRequestPolicy());
+    var result = updatePrivacySettingsUseCase.execute(usuarioLogado.id(), command);
+    return ResponseEntity.ok(UserResponseDTO.fromDomain(result.user(), result.effectiveStreak()));
   }
 }

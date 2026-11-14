@@ -307,8 +307,8 @@ export function RoutineColumnsDrawer({
                   size={16}
                   className="text-amber-700 dark:text-gold shrink-0 mt-0.5"
                 />
-                <div className="flex flex-col text-label-s">
-                  <span className="font-bold text-amber-800 dark:text-gold">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-bold text-amber-800 dark:text-gold">
                     {columns.length - maxColumns === 1
                       ? isGamified
                         ? t("storedInBackpackSingular", {
@@ -347,8 +347,8 @@ export function RoutineColumnsDrawer({
 
           <div className="rounded-xl bg-card border border-neutral-700 dark:border-white/10 p-3 flex items-start gap-2.5">
             <Sparkles size={16} className="text-gold shrink-0 mt-0.5" />
-            <div className="flex flex-col gap-0.5 text-label-s text-neutral-300">
-              <span className="font-bold text-neutral-100">
+            <div className="flex flex-col gap-0.5 text-neutral-300">
+              <span className="text-xs font-bold text-neutral-100">
                 {isPremium ? t("premiumBenefitTitle") : t("routineBoardTitle")}
               </span>
               <p className="text-neutral-400 text-tiny leading-relaxed">

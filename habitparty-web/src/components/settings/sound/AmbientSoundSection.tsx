@@ -57,8 +57,8 @@ export function AmbientSoundSection({
       />
 
       {/* SELEÇÃO E CONTROLE DE VOLUME DO AMBIENTE */}
-      <div className="rounded-xl border border-neutral-700 bg-surface/45 dark:border-white/10 dark:bg-white/5 p-4 flex flex-col gap-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+      <div className="@container rounded-xl border border-neutral-700 bg-surface/45 dark:border-white/10 dark:bg-white/5 p-4 flex flex-col gap-4">
+        <div className="grid grid-cols-1 @lg:grid-cols-2 @3xl:grid-cols-3 gap-2.5">
           {AMBIENT_SOUND_OPTIONS.map((sound) => {
             const isSelected = ambientSoundType === sound.id;
             const isPlaying = isAmbientPlaying && isSelected;
@@ -112,7 +112,7 @@ export function AmbientSoundSection({
 
         {isPremium && (
           <div className="pt-3 border-t border-neutral-700 dark:border-white/10 flex flex-col gap-2">
-            <div className="flex items-center justify-between text-xs text-neutral-300">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-300">
               <span className="flex items-center gap-1.5 font-semibold">
                 <Sliders size={13} className="text-gold" />
                 {t("ambientVolumeTitle")}
@@ -133,7 +133,7 @@ export function AmbientSoundSection({
                   onChangeAmbientVolume(parseFloat(e.target.value))
                 }
                 aria-label={t("ambientVolumeAria")}
-                className="w-full h-1.5 bg-neutral-700 dark:bg-primary/40 rounded-lg appearance-none cursor-pointer accent-gold"
+                className="w-full h-2 bg-neutral-700 dark:bg-primary/40 rounded-lg appearance-none cursor-pointer accent-gold"
               />
               <span className="text-xs text-neutral-400 font-semibold">
                 100%

@@ -9,6 +9,7 @@ import {
   normalizeTaskType,
   TASK_PRIORITY_META,
 } from "@/constants/task";
+import { useMinuteTicker } from "@/hooks/useMinuteTicker";
 import { useTaskProgress } from "@/hooks/useTaskProgress";
 import type { AppLocale } from "@/i18n/config";
 import { useUIStore } from "@/store/uiStore";
@@ -61,6 +62,13 @@ export function useTaskItemMeta({
   const isHabit = taskType === "habit";
   const isDaily = taskType === "daily";
   const isTodo = taskType === "todo";
+  const needsMinuteTick = Boolean(
+    isTodo &&
+      !isDone &&
+      task.dueDate &&
+      (task.dueTime || task.startTime || task.dueEndTime),
+  );
+  useMinuteTicker(needsMinuteTick);
   const isTodoEvent = Boolean(
     isTodo && (task.isAllDay || task.startTime || task.dueEndTime),
   );

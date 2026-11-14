@@ -7,6 +7,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,11 +16,13 @@ import com.habitparty.application.ports.AchievementRepository;
 import com.habitparty.application.ports.ProfileHighlightRepository;
 import com.habitparty.application.ports.UserAchievementRepository;
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.application.usecases.social.NotifyFriendsMilestoneUseCase;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.achievement.Achievement;
 import com.habitparty.core.domain.entities.achievement.ProfileHighlight;
 import com.habitparty.core.domain.entities.achievement.UserAchievement;
 import com.habitparty.core.domain.enums.AchievementCode;
+import com.habitparty.core.domain.enums.UserLevel;
 
 @Service
 public class EvaluateUserAchievementsUseCase {
@@ -26,21 +30,33 @@ public class EvaluateUserAchievementsUseCase {
   private final UserAchievementRepository userAchievementPort;
   private final ProfileHighlightRepository profileHighlightPort;
   private final UserRepository userPort;
+  private final NotifyFriendsMilestoneUseCase socialMilestoneNotifier;
 
   public record EvaluationSnapshot(
       List<Achievement> catalog,
       List<UserAchievement> allUserUnlocks,
       List<Achievement> newlyUnlocked) {}
 
+  @Autowired
+  public EvaluateUserAchievementsUseCase(
+      AchievementRepository achievementPort,
+      UserAchievementRepository userAchievementPort,
+      ProfileHighlightRepository profileHighlightPort,
+      UserRepository userPort,
+      @Nullable NotifyFriendsMilestoneUseCase socialMilestoneNotifier) {
+    this.achievementPort = achievementPort;
+    this.userAchievementPort = userAchievementPort;
+    this.profileHighlightPort = profileHighlightPort;
+    this.userPort = userPort;
+    this.socialMilestoneNotifier = socialMilestoneNotifier;
+  }
+
   public EvaluateUserAchievementsUseCase(
       AchievementRepository achievementPort,
       UserAchievementRepository userAchievementPort,
       ProfileHighlightRepository profileHighlightPort,
       UserRepository userPort) {
-    this.achievementPort = achievementPort;
-    this.userAchievementPort = userAchievementPort;
-    this.profileHighlightPort = profileHighlightPort;
-    this.userPort = userPort;
+    this(achievementPort, userAchievementPort, profileHighlightPort, userPort, null);
   }
 
   @Transactional
@@ -56,6 +72,13 @@ public class EvaluateUserAchievementsUseCase {
     return userPort.findById(userId)
         .map(this::execute)
         .orElseGet(List::of);
+  }
+
+  @Transactional
+  public void notifyLevelMilestoneIfReached(UUID userId, UserLevel reachedLevel) {
+    if (socialMilestoneNotifier != null && userId != null && reachedLevel != null) {
+      socialMilestoneNotifier.notifyLevelMilestone(userId, reachedLevel);
+    }
   }
 
   @Transactional
@@ -125,6 +148,12 @@ public class EvaluateUserAchievementsUseCase {
       allUnlocks = new ArrayList<>(existingUnlocks.size() + savedNew.size());
       allUnlocks.addAll(existingUnlocks);
       allUnlocks.addAll(savedNew.isEmpty() ? newlyUnlockedRecords : savedNew);
+
+      if (socialMilestoneNotifier != null) {
+        for (Achievement unlocked : newlyUnlockedAchievements) {
+          socialMilestoneNotifier.notifyAchievementUnlocked(user.getId(), unlocked);
+        }
+      }
     }
 
     if (user.getStats() != null && user.getStats().getAchievementPoints() != totalPointsCalculated) {

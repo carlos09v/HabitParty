@@ -140,7 +140,7 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
               e.stopPropagation();
               onRequestDelete(rec);
             }}
-            className="w-6 h-6 rounded flex items-center justify-center text-neutral-400 hover:text-red-400 hover:bg-red-500/15 opacity-85 group-hover/row:opacity-100 transition-[opacity,color,background-color] duration-150 cursor-pointer"
+            className="min-w-8 min-h-8 sm:min-w-7 sm:min-h-7 pointer-coarse:min-w-9 pointer-coarse:min-h-9 rounded flex items-center justify-center text-neutral-400 hover:text-red-400 hover:bg-red-500/15 opacity-85 group-hover/row:opacity-100 transition-[opacity,color,background-color] duration-150 cursor-pointer shrink-0"
             title={t("deleteRecordAria")}
             aria-label={t("deleteRecordAria")}
           >
@@ -241,7 +241,7 @@ export function FocusRecentRecords({
   );
 
   return (
-    <div className="flex flex-col gap-2.5 w-full flex-1 min-h-0">
+    <div className="flex flex-col gap-2.5 w-full xl:flex-1 xl:min-h-0">
       {/* Header com Título, Contador e Ações (+ e ...) */}
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-1.5 text-neutral-300">
@@ -262,7 +262,7 @@ export function FocusRecentRecords({
             onClick={onAddRecord}
             title={t("addRecordAria")}
             aria-label={t("addRecordAria")}
-            className="w-7 h-7 rounded-lg border border-neutral-700 dark:border-primary/30 bg-card dark:bg-surface/70 hover:bg-amber-500/15 dark:hover:bg-gold/20 text-neutral-300 hover:text-amber-700 dark:hover:text-gold hover:border-amber-500/40 dark:hover:border-gold/50 flex items-center justify-center transition-colors cursor-pointer shadow-xs"
+            className="min-w-8 min-h-8 pointer-coarse:min-w-9 pointer-coarse:min-h-9 rounded-lg border border-neutral-700 dark:border-primary/30 bg-card dark:bg-surface/70 hover:bg-amber-500/15 dark:hover:bg-gold/20 text-neutral-300 hover:text-amber-700 dark:hover:text-gold hover:border-amber-500/40 dark:hover:border-gold/50 flex items-center justify-center transition-colors cursor-pointer shadow-xs"
           >
             <Plus size={14} />
           </button>
@@ -273,7 +273,7 @@ export function FocusRecentRecords({
             onClick={onOptionsClick}
             title={t("viewFullHistoryAria")}
             aria-label={t("viewFullHistoryAria")}
-            className="w-7 h-7 rounded-lg border border-neutral-700 dark:border-primary/30 bg-card dark:bg-surface/70 hover:bg-surface-hover dark:hover:bg-white/15 text-neutral-400 hover:text-neutral-100 transition-colors flex items-center justify-center cursor-pointer shadow-xs"
+            className="min-w-8 min-h-8 pointer-coarse:min-w-9 pointer-coarse:min-h-9 rounded-lg border border-neutral-700 dark:border-primary/30 bg-card dark:bg-surface/70 hover:bg-surface-hover dark:hover:bg-white/15 text-neutral-400 hover:text-neutral-100 transition-colors flex items-center justify-center cursor-pointer shadow-xs"
           >
             <History size={14} />
           </button>
@@ -281,7 +281,7 @@ export function FocusRecentRecords({
       </div>
 
       {/* Lista de Registros */}
-      <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar flex-1 pr-1">
+      <div className="flex flex-col gap-2 xl:overflow-y-auto xl:overscroll-contain xl:min-h-[180px] custom-scrollbar xl:flex-1 xl:pr-1">
         {records.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-6 text-center rounded-xl border border-dashed border-primary/30 bg-surface/30">
             <Timer size={24} className="text-neutral-500 mb-1" />

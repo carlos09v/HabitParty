@@ -45,10 +45,12 @@ export interface TaskRowProps {
   task: Task;
   isSelected?: boolean;
   isCompact?: boolean;
+  isReadOnly?: boolean;
   activeFilter?: string;
   selectedDate?: string | null;
   columnId?: string;
   columnTitle?: string;
+  workspaceName?: string;
   isSortable?: boolean;
   isOverlay?: boolean;
   isDeleteChecking?: boolean;
@@ -58,6 +60,7 @@ export interface TaskRowProps {
   onContextMenu?: (e: React.MouseEvent, task: Task, columnId?: string) => void;
   onOpenDetails?: (task: Task, anchorRect?: DOMRect, columnId?: string) => void;
   onEditTask?: (task: Task, columnId?: string) => void;
+  onStartFocus?: (task: Task) => void;
 }
 
 export interface TaskDetailsPopoverProps {
@@ -65,6 +68,7 @@ export interface TaskDetailsPopoverProps {
   onClose: () => void;
   task: Task | null;
   columnTitle?: string;
+  workspaceName?: string;
   availableTags?: string[];
   anchorRect?: DOMRect | null;
   onTaskUpdate?: (updatedTask: Task) => void;
@@ -155,13 +159,13 @@ export interface TasksBoardModalsProps {
   handleTaskSaved: (task: Task, columnId: string) => void;
   selectedTaskDetails: {
     task: Task;
-    columnId: string;
+    columnId?: string;
     anchorRect?: DOMRect | null;
   } | null;
   setSelectedTaskDetails: Dispatch<
     SetStateAction<{
       task: Task;
-      columnId: string;
+      columnId?: string;
       anchorRect?: DOMRect | null;
     } | null>
   >;
@@ -205,6 +209,7 @@ export interface TasksBoardModalsProps {
   handleTaskDetailsUpdate: (task: Task) => void;
   handleToggleComplete: (taskId: string, completed: boolean) => void;
   handleHabitChange?: (taskId: string, delta: number) => void;
+  onStartFocus?: (task: Task) => void;
   isColumnsDrawerOpen: boolean;
   setIsColumnsDrawerOpen: (open: boolean) => void;
   toggleColumnVisibility: (id: string) => void;
@@ -299,6 +304,7 @@ export interface RoutineTaskListProps {
   onContextMenu: (e: React.MouseEvent, task: Task, columnId: string) => void;
   onToggleComplete: (taskId: string, completed: boolean) => void;
   onHabitChange: (taskId: string, delta: number) => void;
+  onStartFocus?: (task: Task) => void;
   dndState?: {
     sensors: ReturnType<typeof import("@dnd-kit/core").useSensors>;
     activeColumn: BoardColumn | null;
@@ -330,6 +336,7 @@ export interface RoutineTaskListSectionProps {
   onContextMenu: (e: React.MouseEvent, task: Task, columnId: string) => void;
   onToggleComplete: (taskId: string, completed: boolean) => void;
   onHabitChange: (taskId: string, delta: number) => void;
+  onStartFocus?: (task: Task) => void;
 }
 
 export interface RoutineQuickAddFormProps {
@@ -421,6 +428,7 @@ export interface RoutineFiltersProps {
   isPremium?: boolean;
   canCreateColumn?: boolean;
   visibleColumnIds?: string[];
+  totalColumnsCount?: number;
   onOpenColumnsDrawer?: () => void;
   isDraggingColumn?: boolean;
   enableDroppable?: boolean;

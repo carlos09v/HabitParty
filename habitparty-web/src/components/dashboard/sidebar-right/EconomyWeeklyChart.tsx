@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import type { AppLocale } from "@/i18n/config";
 import type { EconomyBarData } from "@/types/dashboard";
@@ -23,6 +23,21 @@ export function EconomyWeeklyChart({
   const t = useTranslations("dashboard.sidebarRight.economyWidget");
   const locale = useLocale() as AppLocale;
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (hoveredIndex === null) return;
+    const handlePointerDown = (e: PointerEvent) => {
+      if (
+        chartContainerRef.current &&
+        !chartContainerRef.current.contains(e.target as Node)
+      ) {
+        setHoveredIndex(null);
+      }
+    };
+    window.addEventListener("pointerdown", handlePointerDown);
+    return () => window.removeEventListener("pointerdown", handlePointerDown);
+  }, [hoveredIndex]);
 
   const activeHoveredBar =
     hoveredIndex !== null ? displayBars[hoveredIndex] : null;
@@ -64,6 +79,7 @@ export function EconomyWeeklyChart({
 
       {/* Barras do gráfico com barras duplas (Ganhos vs Gastos) e tooltip flutuante */}
       <div
+        ref={chartContainerRef}
         className={cn(
           "w-full flex items-end justify-between gap-2 sm:gap-3 px-2 border-b border-neutral-700 dark:border-white/10 relative",
           isCompact ? "h-14" : "h-16",
@@ -82,22 +98,41 @@ export function EconomyWeeklyChart({
             earned: formatCoins(bar.gold, { locale }),
             spent: formatCoins(bar.spent ?? 0, { locale }),
           });
+          const tooltipPositionClass =
+            index === 0
+              ? "left-0"
+              : index === 1
+                ? "-left-4"
+                : index === displayBars.length - 1
+                  ? "right-0"
+                  : index === displayBars.length - 2
+                    ? "-right-4"
+                    : "left-1/2 -translate-x-1/2";
 
           return (
             <button
               type="button"
               key={bar.label}
+              onClick={() =>
+                setHoveredIndex((prev) => (prev === index ? null : index))
+              }
               onMouseEnter={() => setHoveredIndex(index)}
               onMouseLeave={() => setHoveredIndex(null)}
               onFocus={() => setHoveredIndex(index)}
               onBlur={() => setHoveredIndex(null)}
-              className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group/bar relative cursor-pointer bg-transparent border-0 p-0 focus:outline-none"
+              className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group/bar relative cursor-pointer bg-transparent border-0 p-0 focus:outline-none touch-manipulation"
               title={barSummary}
               aria-label={barSummary}
+              aria-expanded={isHovered}
             >
-              {/* Balãozinho flutuante detalhado no hover */}
+              {/* Balãozinho flutuante detalhado no hover/toque */}
               {isHovered && (
-                <div className="tooltip-dark absolute -top-20 px-2.5 py-1.5 rounded-lg border border-white/15 text-neutral-100 shadow-xl pointer-events-none whitespace-nowrap z-30 transform -translate-y-1 flex flex-col gap-0.5 text-tiny">
+                <div
+                  className={cn(
+                    "tooltip-dark absolute bottom-full mb-2 px-2.5 py-1.5 rounded-lg border border-white/15 text-neutral-100 shadow-xl pointer-events-none whitespace-nowrap z-30 flex flex-col gap-0.5 text-tiny",
+                    tooltipPositionClass,
+                  )}
+                >
                   <span className="font-bold text-neutral-300 border-b border-white/10 pb-0.5">
                     {fullLabel}
                   </span>

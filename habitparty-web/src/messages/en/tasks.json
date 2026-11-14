@@ -24,6 +24,7 @@
   },
   "container": {
     "boardAria": "Routines board",
+    "currentSessionFallback": "Current Session",
     "defaultColumnTitle": "Column",
     "defaultWorkspaceName": "Workspace",
     "toastColumnHidden": "List \"{title}\" stored! Show it again anytime using the columns button.",
@@ -52,9 +53,11 @@
   "filters": {
     "storeColumnDropTitle": "Drop here to hide and store this column",
     "storeColumnManageTitle": "Manage columns and board visibility",
+    "storeColumnManageWithHiddenTitle": "Manage columns ({total} created, {visible} visible on board)",
     "dropHere": "Drop to store",
     "storeDragging": "Store",
     "columnsLabel": "Columns",
+    "visibleCountBadge": "{count} visible",
     "newColumnFreeLimitTitle": "Limit of {max} lists reached (Free plan)",
     "newColumnMaxReachedTitle": "Limit of {max} lists reached",
     "newColumnCreateTitle": "Create new column",
@@ -435,6 +438,10 @@
       "todoPenaltyTitle": "⚡ 50% Penalty (Gold/XP):",
       "todoPenaltyTitleProductivity": "⚡ 50% Point Penalty:",
       "todoPenaltyDesc": "If not completed by 23:59 on the due date, deducts 50% of the task's value from your balance.",
+      "todoPenaltyWithTimeDesc": "If not completed by {time} on the due date, deducts 50% of the task's value from your balance.",
+      "todoPenaltyEventDesc": "If not completed by the end of the event date, deducts 50% of the task's value from your balance.",
+      "todoPenaltyOverdueDesc": "The deadline has already passed: without timely completion, deducts 50% of the task's value from your balance.",
+      "todoPenaltyEventOverdueDesc": "This event's time has already passed: without timely completion, deducts 50% of the task's value from your balance.",
       "todoLateDeliveryTitle": "Late Completion:",
       "todoLateDeliveryDesc": "Completing late pays only half the reward.",
       "whenToActivateTitle": "🎯 When to enable?",
@@ -453,6 +460,7 @@
       "routineSubtitle": "For non-negotiable goals: charges a penalty if missed today",
       "routineSubtitleProductivity": "For non-negotiable goals: applies a penalty if missed today",
       "todoActiveAlert": "High Risk Active: 50% penalty if not completed by the due date. Date cannot be postponed once overdue.",
+      "todoActiveOverdueAlert": "High Risk Active: the deadline has already passed (50% penalty applies and postponing locks after the due date).",
       "routineActiveAlert": "High Risk Active: 50% penalty in Coins and XP if not completed today."
     }
   },

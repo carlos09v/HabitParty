@@ -74,7 +74,7 @@ export const FocusStageHeaderBar = memo(function FocusStageHeaderBar({
 
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-bold text-neutral-100 text-subtitle-s sm:text-subtitle-m truncate max-w-[180px] xs:max-w-xs sm:max-w-md">
+            <h3 className="font-bold text-neutral-100 text-subtitle-s sm:text-subtitle-m truncate max-w-[180px] sm:max-w-sm md:max-w-md">
               {target?.name || t("noActivitySelected")}
             </h3>
 
@@ -125,7 +125,7 @@ export const FocusStageHeaderBar = memo(function FocusStageHeaderBar({
       </div>
 
       {/* Direita: Switcher Modo + Áudio + Botão Modo Zen */}
-      <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap ml-auto shrink-0">
+      <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap ml-auto sm:shrink-0">
         {/* Switcher Pomodoro / Cronômetro */}
         {!isInventoryItem && !isActive && (
           <div className="flex items-center rounded-xl bg-surface dark:bg-surface/90 p-1 border border-neutral-700 dark:border-primary/35 shadow-inner">

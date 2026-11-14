@@ -8,7 +8,7 @@ export function LandingCtaBanner() {
   return (
     <section className="py-16 md:py-24 relative overflow-hidden">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <div className="relative rounded-3xl p-8 sm:p-12 md:p-16 text-center bg-card dark:bg-gradient-to-b dark:from-surface/90 dark:to-background/90 border border-primary/25 dark:border-primary-light/40 shadow-card-active dark:shadow-[0_0_50px_rgba(124,58,237,0.3)] overflow-hidden">
+        <div className="relative rounded-3xl p-6 sm:p-12 md:p-16 text-center bg-card dark:bg-gradient-to-b dark:from-surface/90 dark:to-background/90 border border-primary/25 dark:border-primary-light/40 shadow-card-active dark:shadow-[0_0_50px_rgba(124,58,237,0.3)] overflow-hidden">
           {/* Orbes internos */}
           <div className="cosmic-orb absolute -top-36 left-1/2 -translate-x-1/2 w-[560px] h-[420px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(237,229,57,0.18)_0%,transparent_70%)] pointer-events-none opacity-40 dark:opacity-100" />
           <div className="cosmic-orb absolute -bottom-36 -right-4 w-[480px] h-[480px] rounded-full bg-[radial-gradient(circle,rgba(237,43,229,0.22)_0%,transparent_70%)] pointer-events-none opacity-35 dark:opacity-100" />

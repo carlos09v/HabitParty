@@ -310,6 +310,7 @@
     "communicationError": "Erro interno de comunicação com o servidor.",
     "createFailed": "Falha ao criar recompensa.",
     "updateFailed": "Falha ao atualizar recompensa.",
+    "checkRewardHistoryFailed": "Falha ao verificar o histórico da recompensa.",
     "deleteFailed": "Falha ao excluir recompensa.",
     "reorderFailed": "Falha ao reordenar recompensas.",
     "redeemFailed": "Falha ao resgatar recompensa."

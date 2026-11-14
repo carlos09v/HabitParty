@@ -174,7 +174,7 @@ export function Sidebar({
                 label={t("adminPanel")}
                 onClick={onClose}
               >
-                <Shield size={18} className="text-purple-400" />
+                <Shield size={18} className="text-primary-light" />
               </SidebarLink>
             )}
 

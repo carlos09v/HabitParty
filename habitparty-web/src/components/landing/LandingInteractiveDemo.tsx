@@ -141,16 +141,16 @@ export function LandingInteractiveDemo() {
         {/* Mockup da Janela do App */}
         <div className="relative rounded-2xl bg-card dark:bg-surface/95 border border-neutral-700 dark:border-white/15 shadow-xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.6)] overflow-hidden">
           {/* Top Bar estilo Sistema Operacional / App Window */}
-          <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 bg-surface/90 dark:bg-neutral-900/60 border-b border-neutral-700 dark:border-white/10">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5 bg-surface/90 dark:bg-neutral-900/60 border-b border-neutral-700 dark:border-white/10">
+            <div className="flex items-center gap-2 min-w-0">
               <div className="w-3 h-3 rounded-full bg-danger-500/80" />
               <div className="w-3 h-3 rounded-full bg-warning-500/80" />
               <div className="w-3 h-3 rounded-full bg-success-500/80" />
-              <span className="ml-2 text-xs font-medium text-neutral-400 hidden sm:inline">
+              <span className="ml-2 text-xs font-medium text-neutral-400 hidden sm:inline truncate">
                 {t("windowTitle")}
               </span>
             </div>
-            <div className="flex items-center gap-4 text-xs font-medium text-neutral-200">
+            <div className="flex items-center gap-3 sm:gap-4 shrink-0 text-xs font-medium text-neutral-200">
               <span className="flex items-center gap-1 text-gold font-bold">
                 <CoinIcon size={14} variant="coin" />
                 {t("goldStatus", { gold })}
@@ -166,7 +166,7 @@ export function LandingInteractiveDemo() {
           <DemoPlayerHeader level={level} xp={xp} maxXp={maxXp} />
 
           {/* Grid de Quests e Ações Interativas */}
-          <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 bg-surface/30">
+          <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 bg-surface/30">
             <DemoHabitCard
               waterCount={waterCount}
               onMinus={handleWaterMinus}
@@ -199,7 +199,7 @@ export function LandingInteractiveDemo() {
 
           {/* Toast de Recompensa Flutuante */}
           {toastMessage && (
-            <div className="absolute top-4 right-4 z-30 animate-in fade-in slide-in-from-top-3 duration-300">
+            <div className="absolute top-14 sm:top-4 right-3 sm:right-4 left-3 sm:left-auto max-w-[calc(100%-1.5rem)] sm:max-w-sm z-30 animate-in fade-in slide-in-from-top-3 duration-300">
               <div className="px-4 py-2.5 rounded-xl bg-gold text-neutral-950 font-bold text-xs shadow-glow-gold flex items-center gap-2 border border-gold-hover/40 dark:border-yellow-200">
                 <Sparkles className="w-4 h-4 fill-neutral-950" />
                 <span>{toastMessage}</span>

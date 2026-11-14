@@ -48,15 +48,15 @@ export function ExperienceModeSelector({
               disabled={disabled}
               onClick={() => onSelectExperienceMode(option.id)}
               className={cn(
-                "flex flex-col items-start p-2.5 sm:p-3 rounded-xl border text-left transition-colors cursor-pointer relative",
+                "flex flex-col items-start h-full p-2.5 sm:p-3 rounded-xl border text-left transition-colors cursor-pointer relative",
                 "outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
                 isSelected
                   ? "border-primary bg-primary/10 shadow-sm text-neutral-50 ring-1 ring-primary/30 dark:border-gold dark:bg-primary-dark/60 dark:shadow-[0_0_14px_rgba(237,229,57,0.18)] dark:ring-1 dark:ring-gold/40 dark:text-neutral-50"
                   : "border-neutral-700 bg-card hover:bg-surface-hover hover:border-neutral-500 text-neutral-300 dark:border-primary/25 dark:bg-surface/40 dark:hover:bg-surface/70 dark:hover:border-primary/50 dark:text-neutral-300",
               )}
             >
-              <div className="flex items-center justify-between w-full mb-1">
-                <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-between flex-wrap gap-1.5 w-full mb-1">
+                <div className="flex items-center gap-1.5 min-w-0">
                   <div
                     className={cn(
                       "p-1.5 rounded-lg transition-colors",
@@ -69,7 +69,7 @@ export function ExperienceModeSelector({
                   </div>
                   <span
                     className={cn(
-                      "text-[9.5px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border",
+                      "text-[9.5px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border whitespace-nowrap shrink-0",
                       isSelected
                         ? "bg-primary/15 text-primary-dark border-primary/30 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
                         : "bg-surface text-neutral-400 border-neutral-700 dark:bg-white/5 dark:text-neutral-400 dark:border-white/10",
@@ -94,7 +94,7 @@ export function ExperienceModeSelector({
               <span className="text-xs sm:text-body-s font-bold text-neutral-50">
                 {t(`modes.${option.id}.title`)}
               </span>
-              <span className="text-tiny text-neutral-400 dark:text-neutral-300/80 mt-0.5 leading-snug line-clamp-2">
+              <span className="text-tiny text-neutral-400 dark:text-neutral-300/80 mt-0.5 leading-snug">
                 {t(`modes.${option.id}.description`)}
               </span>
             </button>
@@ -124,7 +124,7 @@ export function ExperienceModeSelector({
               disabled={disabled}
               onClick={() => onToggleSounds(true)}
               className={cn(
-                "px-2 py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer border",
+                "px-2.5 py-1.5 sm:px-2 sm:py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer border",
                 uiSoundsEnabled
                   ? "bg-primary/15 text-primary-dark border-primary/30 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
                   : "border-transparent text-neutral-400 hover:text-neutral-200",
@@ -137,7 +137,7 @@ export function ExperienceModeSelector({
               disabled={disabled}
               onClick={() => onToggleSounds(false)}
               className={cn(
-                "px-2 py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer border",
+                "px-2.5 py-1.5 sm:px-2 sm:py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer border",
                 !uiSoundsEnabled
                   ? "bg-primary/15 text-primary-dark border-primary/30 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
                   : "border-transparent text-neutral-400 hover:text-neutral-200",

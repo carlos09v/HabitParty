@@ -2,13 +2,14 @@ package com.habitparty.application.usecases.boardcolumn;
 
 import java.util.List;
 import java.util.UUID;
-import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.BoardColumnRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.ports.WorkspaceRepository;
+import com.habitparty.application.usecases.workspace.WorkspaceWriteGuard;
 import com.habitparty.core.domain.entities.BoardColumn;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.Workspace;
@@ -21,11 +22,17 @@ public class CreateBoardColumnUseCase {
   private final WorkspaceRepository workspacePort;
   private final UserRepository userPort;
   private final BoardColumnRepository port;
+  private WorkspaceWriteGuard workspaceWriteGuard;
 
   public CreateBoardColumnUseCase(WorkspaceRepository workspacePort, BoardColumnRepository port, UserRepository userPort) {
     this.workspacePort = workspacePort;
     this.port = port;
     this.userPort = userPort;
+  }
+
+  @Autowired(required = false)
+  public void setWorkspaceWriteGuard(WorkspaceWriteGuard workspaceWriteGuard) {
+    this.workspaceWriteGuard = workspaceWriteGuard;
   }
 
   public BoardColumn execute(CreateBoardColumnCommand command, UUID userIdLogado) {
@@ -38,22 +45,13 @@ public class CreateBoardColumnUseCase {
     User user = userPort.findById(userIdLogado)
         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado!"));
 
-    // Validação de Modo Somente-Leitura em Ambientes excedentes no plano Free (máx. 2 ambientes ativos)
-    if (!user.isPremium()) {
-      List<Workspace> userWorkspaces = workspacePort.findAllByUserId(userIdLogado);
-      int wsIndex = -1;
-      for (int i = 0; i < userWorkspaces.size(); i++) {
-        if (userWorkspaces.get(i).getId().equals(command.workspaceId())) {
-          wsIndex = i;
-          break;
-        }
-      }
-      if (wsIndex >= 2) {
-        throw new LimitExceededException(
-            "Este ambiente está em modo somente-leitura no plano Free (máximo de 2 ambientes ativos). Faça upgrade para Premium para criar listas nele!"
-        );
-      }
-    }
+    WorkspaceWriteGuard guard = workspaceWriteGuard != null
+        ? workspaceWriteGuard
+        : new WorkspaceWriteGuard(workspacePort, userPort, port);
+    guard.assertWorkspaceWritable(
+        user,
+        command.workspaceId(),
+        "Este ambiente está em modo somente-leitura no plano Free (máximo de 2 ambientes ativos). Faça upgrade para Premium para criar listas nele!");
 
     // Define o limite absoluto: 6 para Premium, 4 para Free
     int limit = user.isPremium() ? 6 : 4;

@@ -166,4 +166,24 @@ public class FocusRecordAdapter implements FocusRecordRepository {
     }
     return repository.existsStandaloneByTaskId(taskId);
   }
+
+  @Override
+  public List<FocusRecord> findAllByUserIdAndPeriod(
+      UUID userId, LocalDateTime startInclusive, LocalDateTime endInclusive) {
+    if (userId == null || startInclusive == null || endInclusive == null) {
+      return List.of();
+    }
+    return repository.findAllByUserIdAndStartTimeBetweenOrderByStartTimeAsc(userId, startInclusive, endInclusive)
+        .stream()
+        .map(mapper::toDomain)
+        .toList();
+  }
+
+  @Override
+  public java.util.Optional<LocalDateTime> findEarliestStartTimeByUserId(UUID userId) {
+    if (userId == null) {
+      return java.util.Optional.empty();
+    }
+    return java.util.Optional.ofNullable(repository.findEarliestProductiveStartTimeByUserId(userId));
+  }
 }

@@ -1,7 +1,7 @@
 import { create } from "zustand";
-import type { components } from "@/api/schema";
+import type { UserResponseDTO } from "@/types/user";
 
-export type UserResponseDTO = components["schemas"]["UserResponseDTO"];
+export type { UserResponseDTO };
 
 export interface UserState {
   user: UserResponseDTO | null;

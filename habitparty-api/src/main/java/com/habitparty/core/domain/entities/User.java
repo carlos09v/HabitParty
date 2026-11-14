@@ -1,6 +1,7 @@
 package com.habitparty.core.domain.entities;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.DateTimeException;
 import java.time.Instant;
@@ -8,10 +9,16 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneId;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import com.habitparty.core.domain.enums.FriendRequestPolicy;
+import com.habitparty.core.domain.enums.PrivacyLevel;
 import com.habitparty.core.domain.enums.SubscriptionStatus;
 import com.habitparty.core.domain.enums.UserExperienceMode;
 import com.habitparty.core.domain.enums.UserGender;
@@ -23,29 +30,34 @@ public class User {
   public static final String DEFAULT_TIMEZONE = "America/Sao_Paulo";
   public static final long TIMEZONE_CHANGE_COOLDOWN_HOURS = 24L;
   public static final String DEFAULT_THEME = "dark";
+  public static final String DEFAULT_LIGHT_THEME = "light";
+  public static final Set<String> LIGHT_THEMES = Set.of(
+      "light",
+      "solar-parchment",
+      "royal-gold"
+  );
   public static final Set<String> FREE_THEMES = Set.of(
-      "dark",
-      "light"
-  );
-  public static final Set<String> PREMIUM_THEMES = Set.of(
-      "dark-knight",
-      "cyberpunk-neon",
-      "forest-ranger"
-  );
-  public static final Set<String> VALID_THEMES = Set.of(
       "dark",
       "light",
       "dark-knight",
-      "cyberpunk-neon",
-      "forest-ranger"
+      "solar-parchment"
   );
+  public static final Set<String> PREMIUM_THEMES = Set.of(
+      "cyberpunk-neon",
+      "forest-ranger",
+      "royal-gold"
+  );
+  public static final Set<String> VALID_THEMES = Stream.concat(
+      FREE_THEMES.stream(),
+      PREMIUM_THEMES.stream()
+  ).collect(Collectors.toUnmodifiableSet());
   public static final Set<String> VALID_AVATAR_FRAMES = Set.of(
       "none",
       "cosmic_gold",
-      "neon_arcane",
-      "emerald_nature",
-      "crimson_ember",
-      "celestial_diamond"
+      "cyber_neon",
+      "fire_phoenix",
+      "emerald_mystic",
+      "amethyst_void"
   );
 
   private UUID id;
@@ -68,6 +80,18 @@ public class User {
   private LocalDate lastDailyResetDate;
   private Instant nextDailyResetAt;
   private LocalDateTime createdAt;
+
+  // Social & Privacidade (v1.4)
+  private String friendCode;
+  private PrivacyLevel profileVisibility = PrivacyLevel.PUBLIC;
+  private PrivacyLevel statsVisibility = PrivacyLevel.PUBLIC;
+  private PrivacyLevel achievementsVisibility = PrivacyLevel.PUBLIC;
+  private FriendRequestPolicy friendRequestPolicy = FriendRequestPolicy.EVERYONE;
+
+  private static final String FRIEND_CODE_PREFIX = "HP-";
+  private static final String FRIEND_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  private static final int FRIEND_CODE_RANDOM_LENGTH = 6;
+  private static final SecureRandom FRIEND_CODE_RANDOM = new SecureRandom();
 
   // Sub-entidades do Agregado (1:1 com PK compartilhada no banco)
   private UserStats stats;
@@ -575,6 +599,13 @@ public class User {
     return themeId != null && PREMIUM_THEMES.contains(themeId.trim().toLowerCase());
   }
 
+  public static String getFallbackThemeForPolarity(String themeId) {
+    if (themeId != null && LIGHT_THEMES.contains(themeId.trim().toLowerCase())) {
+      return DEFAULT_LIGHT_THEME;
+    }
+    return DEFAULT_THEME;
+  }
+
   public String getTheme() {
     return (theme != null && !theme.isBlank()) ? theme.trim().toLowerCase() : DEFAULT_THEME;
   }
@@ -589,7 +620,7 @@ public class User {
       return DEFAULT_THEME;
     }
     if (PREMIUM_THEMES.contains(current) && !this.isPremium()) {
-      return DEFAULT_THEME;
+      return getFallbackThemeForPolarity(current);
     }
     return current;
   }
@@ -635,40 +666,40 @@ public class User {
 
   // --- FUSO HORÁRIO E CONTROLE IDEMPOTENTE DE VIRADA DIÁRIA ---
 
-  private static final java.util.Map<String, String> CANONICAL_ZONE_ALIASES = java.util.Map.ofEntries(
-      java.util.Map.entry("Z", "UTC"),
-      java.util.Map.entry("GMT", "UTC"),
-      java.util.Map.entry("GMT+0", "UTC"),
-      java.util.Map.entry("GMT-0", "UTC"),
-      java.util.Map.entry("GMT0", "UTC"),
-      java.util.Map.entry("Etc/GMT", "UTC"),
-      java.util.Map.entry("Etc/GMT+0", "UTC"),
-      java.util.Map.entry("Etc/GMT-0", "UTC"),
-      java.util.Map.entry("Etc/GMT0", "UTC"),
-      java.util.Map.entry("Etc/UTC", "UTC"),
-      java.util.Map.entry("Etc/Universal", "UTC"),
-      java.util.Map.entry("Etc/Zulu", "UTC"),
-      java.util.Map.entry("Universal", "UTC"),
-      java.util.Map.entry("Zulu", "UTC"),
-      java.util.Map.entry("Asia/Calcutta", "Asia/Kolkata"),
-      java.util.Map.entry("Asia/Saigon", "Asia/Ho_Chi_Minh"),
-      java.util.Map.entry("Asia/Katmandu", "Asia/Kathmandu"),
-      java.util.Map.entry("Asia/Rangoon", "Asia/Yangon"),
-      java.util.Map.entry("Europe/Kiev", "Europe/Kyiv"),
-      java.util.Map.entry("America/Buenos_Aires", "America/Argentina/Buenos_Aires"),
-      java.util.Map.entry("America/Godthab", "America/Nuuk"),
-      java.util.Map.entry("Brazil/East", "America/Sao_Paulo"),
-      java.util.Map.entry("Brazil/West", "America/Manaus"),
-      java.util.Map.entry("US/Eastern", "America/New_York"),
-      java.util.Map.entry("US/Central", "America/Chicago"),
-      java.util.Map.entry("US/Mountain", "America/Denver"),
-      java.util.Map.entry("US/Pacific", "America/Los_Angeles"),
-      java.util.Map.entry("US/Hawaii", "Pacific/Honolulu"),
-      java.util.Map.entry("US/Alaska", "America/Anchorage"),
-      java.util.Map.entry("Africa/Asmera", "Africa/Asmara"),
-      java.util.Map.entry("Atlantic/Faeroe", "Atlantic/Faroe"),
-      java.util.Map.entry("Pacific/Ponape", "Pacific/Pohnpei"),
-      java.util.Map.entry("Pacific/Truk", "Pacific/Chuuk")
+  private static final Map<String, String> CANONICAL_ZONE_ALIASES = Map.ofEntries(
+      Map.entry("Z", "UTC"),
+      Map.entry("GMT", "UTC"),
+      Map.entry("GMT+0", "UTC"),
+      Map.entry("GMT-0", "UTC"),
+      Map.entry("GMT0", "UTC"),
+      Map.entry("Etc/GMT", "UTC"),
+      Map.entry("Etc/GMT+0", "UTC"),
+      Map.entry("Etc/GMT-0", "UTC"),
+      Map.entry("Etc/GMT0", "UTC"),
+      Map.entry("Etc/UTC", "UTC"),
+      Map.entry("Etc/Universal", "UTC"),
+      Map.entry("Etc/Zulu", "UTC"),
+      Map.entry("Universal", "UTC"),
+      Map.entry("Zulu", "UTC"),
+      Map.entry("Asia/Calcutta", "Asia/Kolkata"),
+      Map.entry("Asia/Saigon", "Asia/Ho_Chi_Minh"),
+      Map.entry("Asia/Katmandu", "Asia/Kathmandu"),
+      Map.entry("Asia/Rangoon", "Asia/Yangon"),
+      Map.entry("Europe/Kiev", "Europe/Kyiv"),
+      Map.entry("America/Buenos_Aires", "America/Argentina/Buenos_Aires"),
+      Map.entry("America/Godthab", "America/Nuuk"),
+      Map.entry("Brazil/East", "America/Sao_Paulo"),
+      Map.entry("Brazil/West", "America/Manaus"),
+      Map.entry("US/Eastern", "America/New_York"),
+      Map.entry("US/Central", "America/Chicago"),
+      Map.entry("US/Mountain", "America/Denver"),
+      Map.entry("US/Pacific", "America/Los_Angeles"),
+      Map.entry("US/Hawaii", "Pacific/Honolulu"),
+      Map.entry("US/Alaska", "America/Anchorage"),
+      Map.entry("Africa/Asmera", "Africa/Asmara"),
+      Map.entry("Atlantic/Faeroe", "Atlantic/Faroe"),
+      Map.entry("Pacific/Ponape", "Pacific/Pohnpei"),
+      Map.entry("Pacific/Truk", "Pacific/Chuuk")
   );
 
   public static ZoneId canonicalizeZoneId(ZoneId zone) {
@@ -814,5 +845,111 @@ public class User {
 
   public void setNextDailyResetAt(Instant nextDailyResetAt) {
     this.nextDailyResetAt = nextDailyResetAt;
+  }
+
+  public static String generateRandomFriendCode() {
+    StringBuilder sb = new StringBuilder(FRIEND_CODE_PREFIX.length() + FRIEND_CODE_RANDOM_LENGTH);
+    sb.append(FRIEND_CODE_PREFIX);
+    for (int i = 0; i < FRIEND_CODE_RANDOM_LENGTH; i++) {
+      int idx = FRIEND_CODE_RANDOM.nextInt(FRIEND_CODE_ALPHABET.length());
+      sb.append(FRIEND_CODE_ALPHABET.charAt(idx));
+    }
+    return sb.toString();
+  }
+
+  public static String normalizeFriendCode(String raw) {
+    if (raw == null) {
+      return null;
+    }
+    String cleaned = raw.trim().toUpperCase(Locale.ROOT);
+    if (cleaned.isEmpty()) {
+      return null;
+    }
+    if (cleaned.startsWith(FRIEND_CODE_PREFIX)) {
+      String suffix = cleaned.substring(FRIEND_CODE_PREFIX.length());
+      return isAlphanumericCodeSuffix(suffix) ? cleaned : null;
+    }
+    if (cleaned.length() == FRIEND_CODE_RANDOM_LENGTH && isAlphanumericCodeSuffix(cleaned)) {
+      return FRIEND_CODE_PREFIX + cleaned;
+    }
+    return null;
+  }
+
+  private static boolean isAlphanumericCodeSuffix(String value) {
+    if (value == null || value.isEmpty() || value.length() > 9) {
+      return false;
+    }
+    for (int i = 0; i < value.length(); i++) {
+      char c = value.charAt(i);
+      if (!((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public void assignFriendCodeIfMissing() {
+    if (this.friendCode == null || this.friendCode.isBlank()) {
+      this.friendCode = generateRandomFriendCode();
+    }
+  }
+
+  public void updatePrivacySettings(
+      PrivacyLevel profileVisibility,
+      PrivacyLevel statsVisibility,
+      PrivacyLevel achievementsVisibility,
+      FriendRequestPolicy friendRequestPolicy) {
+    if (profileVisibility != null) {
+      this.profileVisibility = profileVisibility;
+    }
+    if (statsVisibility != null) {
+      this.statsVisibility = statsVisibility;
+    }
+    if (achievementsVisibility != null) {
+      this.achievementsVisibility = achievementsVisibility;
+    }
+    if (friendRequestPolicy != null) {
+      this.friendRequestPolicy = friendRequestPolicy;
+    }
+  }
+
+  public String getFriendCode() {
+    return friendCode;
+  }
+
+  public void setFriendCode(String friendCode) {
+    this.friendCode = normalizeFriendCode(friendCode);
+  }
+
+  public PrivacyLevel getProfileVisibility() {
+    return profileVisibility != null ? profileVisibility : PrivacyLevel.PUBLIC;
+  }
+
+  public void setProfileVisibility(PrivacyLevel profileVisibility) {
+    this.profileVisibility = profileVisibility != null ? profileVisibility : PrivacyLevel.PUBLIC;
+  }
+
+  public PrivacyLevel getStatsVisibility() {
+    return statsVisibility != null ? statsVisibility : PrivacyLevel.PUBLIC;
+  }
+
+  public void setStatsVisibility(PrivacyLevel statsVisibility) {
+    this.statsVisibility = statsVisibility != null ? statsVisibility : PrivacyLevel.PUBLIC;
+  }
+
+  public PrivacyLevel getAchievementsVisibility() {
+    return achievementsVisibility != null ? achievementsVisibility : PrivacyLevel.PUBLIC;
+  }
+
+  public void setAchievementsVisibility(PrivacyLevel achievementsVisibility) {
+    this.achievementsVisibility = achievementsVisibility != null ? achievementsVisibility : PrivacyLevel.PUBLIC;
+  }
+
+  public FriendRequestPolicy getFriendRequestPolicy() {
+    return friendRequestPolicy != null ? friendRequestPolicy : FriendRequestPolicy.EVERYONE;
+  }
+
+  public void setFriendRequestPolicy(FriendRequestPolicy friendRequestPolicy) {
+    this.friendRequestPolicy = friendRequestPolicy != null ? friendRequestPolicy : FriendRequestPolicy.EVERYONE;
   }
 }

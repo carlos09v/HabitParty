@@ -7,6 +7,7 @@ import {
   KeyRound,
   Languages,
   Palette,
+  ShieldCheck,
   Swords,
   User as UserIcon,
   Volume2,
@@ -19,6 +20,7 @@ import { DangerZoneCard } from "@/components/settings/DangerZoneCard";
 import { DateFormatSettings } from "@/components/settings/DateFormatSettings";
 import { ExperienceModeSettings } from "@/components/settings/ExperienceModeSettings";
 import { LanguageSettings } from "@/components/settings/LanguageSettings";
+import { PrivacySettingsCard } from "@/components/settings/PrivacySettingsCard";
 import { ProfileForm } from "@/components/settings/ProfileForm";
 import { ProfileHeaderCard } from "@/components/settings/ProfileHeaderCard";
 import { SettingsCard } from "@/components/settings/SettingsCard";
@@ -62,7 +64,7 @@ export default async function SettingsPage({
         <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto pb-16">
           {/* HEADER */}
           <header className="flex flex-col gap-1 border-b border-primary/20 pb-4">
-            <h1 className="text-headline-s font-bold text-neutral-50 dark:drop-shadow-md">
+            <h1 className="text-2xl sm:text-headline-s font-bold text-neutral-50 dark:drop-shadow-md">
               {t("headerTitle")}
             </h1>
             <p className="text-body-m text-neutral-300">
@@ -176,6 +178,15 @@ export default async function SettingsPage({
                   icon={<Volume2 className="text-gold" size={20} />}
                 >
                   <SoundNotificationSettings />
+                </SettingsCard>
+              ),
+              privacy: (
+                <SettingsCard
+                  title={t("cards.privacy")}
+                  description={t("cards.privacyDesc")}
+                  icon={<ShieldCheck size={18} className="text-gold" />}
+                >
+                  <PrivacySettingsCard initialUser={user || null} />
                 </SettingsCard>
               ),
               security: (

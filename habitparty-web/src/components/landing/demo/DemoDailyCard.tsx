@@ -26,7 +26,7 @@ export function DemoDailyCard({
       )}
     >
       <div>
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
           <span className="text-tiny font-bold text-amber-700 dark:text-warning-500 uppercase tracking-wider bg-amber-500/10 dark:bg-warning-500/10 px-2 py-0.5 rounded flex items-center gap-1">
             <Flame className="w-3 h-3 fill-current" />
             {t("streakBadge", { count: studyStreak })}
@@ -46,7 +46,7 @@ export function DemoDailyCard({
         <p className="text-xs text-neutral-400 mt-1">{t("resetNote")}</p>
       </div>
 
-      <div className="mt-4 pt-3 border-t border-neutral-700/60 dark:border-white/5 flex items-center justify-between">
+      <div className="mt-4 pt-3 border-t border-neutral-700/60 dark:border-white/5 flex items-center justify-between flex-wrap gap-2">
         <span className="text-tiny text-neutral-400">
           {isStudyDone ? t("statusDone") : t("statusPending")}
         </span>

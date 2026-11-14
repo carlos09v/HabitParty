@@ -48,24 +48,31 @@ export function Pagination({
 
   const navBtnClass = cn(
     "rounded-lg border border-neutral-700 dark:border-white/20 bg-card dark:bg-surface text-neutral-300 hover:bg-surface-hover hover:text-neutral-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gold flex items-center justify-center cursor-pointer",
-    isCompact ? "p-1" : "p-1.5",
+    isCompact
+      ? "min-w-8 h-8 p-1.5 sm:min-w-7 sm:h-7 sm:p-1"
+      : "min-w-9 h-9 p-2 sm:min-w-8 sm:h-8 sm:p-1.5",
   );
 
   const disabledNavBtnClass = cn(
     "rounded-lg border border-neutral-700 dark:border-white/10 bg-surface/50 text-neutral-500 opacity-40 cursor-not-allowed flex items-center justify-center",
-    isCompact ? "p-1" : "p-1.5",
+    isCompact
+      ? "min-w-8 h-8 p-1.5 sm:min-w-7 sm:h-7 sm:p-1"
+      : "min-w-9 h-9 p-2 sm:min-w-8 sm:h-8 sm:p-1.5",
   );
 
   return (
     <nav
       className={cn(
-        "flex items-center justify-between gap-4 border-t border-neutral-700 dark:border-white/10 text-sm",
+        "flex flex-wrap items-center justify-center sm:justify-between gap-2 sm:gap-4 border-t border-neutral-700 dark:border-white/10 text-sm",
         isCompact ? "py-1.5 px-2" : "py-3 px-2",
       )}
       aria-label={t("navAriaLabel", { itemLabel: resolvedItemLabel })}
     >
       {/* Contagem de itens */}
-      <span className="text-xs text-neutral-400" aria-live="polite">
+      <span
+        className="text-xs text-neutral-400 text-center sm:text-left"
+        aria-live="polite"
+      >
         {t.rich("showingRange", {
           range: `${startItem}-${endItem}`,
           total: totalItems,
@@ -77,7 +84,7 @@ export function Pagination({
       </span>
 
       {/* Controles da paginação */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center justify-center gap-1.5">
         {prevDisabled ? (
           <button
             type="button"
@@ -127,7 +134,9 @@ export function Pagination({
           const pageAriaLabel = t("pageNumber", { page });
           const pageItemClass = cn(
             "px-2 rounded-lg font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-gold focus:ring-offset-1 focus:ring-offset-background flex items-center justify-center cursor-pointer",
-            isCompact ? "min-w-7 h-7 text-label-g" : "min-w-8 h-8 text-xs",
+            isCompact
+              ? "min-w-8 h-8 sm:min-w-7 sm:h-7 text-label-g"
+              : "min-w-9 h-9 sm:min-w-8 sm:h-8 text-xs",
             isActive
               ? "bg-gold text-on-gold shadow-sm"
               : "border border-neutral-700 dark:border-white/20 bg-card dark:bg-surface text-neutral-300 hover:bg-surface-hover hover:text-neutral-100",

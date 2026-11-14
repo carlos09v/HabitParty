@@ -228,10 +228,10 @@ export function FocusMain({
       {/* Área Rolável de Conteúdo */}
       <div
         className={cn(
-          "flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col pr-1",
+          "flex-1 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] custom-scrollbar flex flex-col",
           isCompact
             ? "p-3 sm:p-4 gap-3 sm:gap-4 pb-6"
-            : "p-5 sm:p-6 gap-5 sm:gap-6 pb-8",
+            : "p-3.5 sm:p-6 gap-4 sm:gap-6 pb-8",
         )}
       >
         {/* 1. Card de Boas-Vindas (inicia colapsado por padrão para priorizar o Palco Heróico) */}

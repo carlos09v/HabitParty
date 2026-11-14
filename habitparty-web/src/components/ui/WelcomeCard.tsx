@@ -110,8 +110,10 @@ export function WelcomeCard({
           setInternalExpanded(isVal);
           onToggle?.(isVal);
         } else if (defaultExpanded !== undefined) {
-          setInternalExpanded(defaultExpanded);
-          onToggle?.(defaultExpanded);
+          const isMobile = window.matchMedia("(max-width: 767px)").matches;
+          const initialExpanded = isMobile ? false : defaultExpanded;
+          setInternalExpanded(initialExpanded);
+          onToggle?.(initialExpanded);
         }
       } catch {
         // localStorage indisponível ou em modo anônimo restrito
@@ -206,7 +208,7 @@ export function WelcomeCard({
 
               <h2
                 className={cn(
-                  "font-extrabold text-neutral-50 group-hover:text-primary dark:group-hover:text-gold transition-colors truncate shrink-0 tracking-tight",
+                  "font-extrabold text-neutral-50 group-hover:text-primary dark:group-hover:text-gold transition-colors truncate min-w-0 tracking-tight",
                   isExpanded
                     ? compact
                       ? "text-base sm:text-lg"

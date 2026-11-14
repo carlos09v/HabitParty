@@ -32,6 +32,14 @@ public interface TaskRepository {
   // Busca em lote todas as tarefas de múltiplas colunas (elimina N+1)
   List<Task> findByBoardColumnIdInOrderByOrderIndexAsc(List<UUID> boardColumnIds);
 
+  // Busca em lote para o Dashboard excluindo TODOs concluídos fora da janela recente
+  default List<Task> findDashboardActiveByBoardColumnIds(
+      List<UUID> boardColumnIds,
+      LocalDate minDueDate,
+      LocalDateTime minCompletedAt) {
+    return findByBoardColumnIdInOrderByOrderIndexAsc(boardColumnIds);
+  }
+
   // Busca paginada das tarefas recorrentes (HABIT/DAILY) para o rollover diário em lotes
   List<Task> findRecurringTasksPage(int page, int size);
 

@@ -40,6 +40,7 @@ function MysteryBoxTierCard({
 }: MysteryBoxTierCardProps) {
   const t = useTranslations("rewards.mysteryBox");
   const tOptions = useTranslations("rewards.options");
+  const tTierPopover = useTranslations("rewards.tierPopover");
   const locale = useLocale() as AppLocale;
 
   const {
@@ -49,6 +50,7 @@ function MysteryBoxTierCard({
     isOpen,
     open,
     close,
+    toggle,
     coords,
     shouldRenderPortal,
     floatingStyle,
@@ -69,6 +71,16 @@ function MysteryBoxTierCard({
   return (
     <div
       ref={containerRef}
+      onPointerEnter={(e) => {
+        if (e.pointerType === "mouse") {
+          open();
+        }
+      }}
+      onPointerLeave={(e) => {
+        if (e.pointerType === "mouse") {
+          close();
+        }
+      }}
       className="relative flex flex-col items-center h-full w-full"
     >
       {/* Card Interativo da Caixa */}
@@ -78,8 +90,6 @@ function MysteryBoxTierCard({
         aria-pressed={selected}
         disabled={disabled}
         onClick={() => onSelect(tier)}
-        onMouseEnter={open}
-        onMouseLeave={close}
         onFocus={(e) => {
           if (e.currentTarget.matches(":focus-visible")) {
             open();
@@ -178,6 +188,25 @@ function MysteryBoxTierCard({
         </div>
       </button>
 
+      {/* Botão tátil e de teclado para abrir as probabilidades sem hover */}
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={(e) => {
+          e.stopPropagation();
+          toggle();
+        }}
+        aria-expanded={isOpen}
+        aria-label={tTierPopover("detailsAria", { name: tierName })}
+        title={tTierPopover("detailsAria", { name: tierName })}
+        className={cn(
+          "absolute top-1 left-1 z-10 inline-flex items-center justify-center rounded-md text-neutral-400 hover:text-gold hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer min-w-7 min-h-7 pointer-coarse:min-w-8 pointer-coarse:min-h-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold",
+          disabled && "opacity-50 cursor-not-allowed",
+        )}
+      >
+        <HelpCircle size={13} aria-hidden="true" />
+      </button>
+
       {/* Popover via Portal (position: fixed) para sobrepor o modal sem expandir scroll */}
       {shouldRenderPortal &&
         isOpen &&
@@ -215,10 +244,10 @@ export function MysteryBoxSelector({
 
   return (
     <div className="flex flex-col gap-2 w-full animate-in fade-in slide-in-from-top-1 duration-200">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <span
           id="mystery-box-grid-label"
-          className="text-body-s text-neutral-300 font-medium flex items-center gap-1.5"
+          className="text-body-s text-neutral-300 font-medium flex flex-wrap items-center gap-x-1.5 gap-y-0.5"
         >
           <span>{t("levelLabel")}</span>
           <span className="text-gold">*</span>
@@ -226,7 +255,7 @@ export function MysteryBoxSelector({
             {t("hoverHint")}
           </span>
         </span>
-        <span className="text-label-m text-primary dark:text-primary-light flex items-center gap-1">
+        <span className="text-label-m text-primary dark:text-primary-light flex items-center gap-1 shrink-0">
           <HelpCircle size={12} />
           <span>{t("raritiesCount")}</span>
         </span>

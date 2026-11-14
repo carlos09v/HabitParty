@@ -2,6 +2,7 @@
 
 import { CalendarCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useMemo } from "react";
 import { TaskRow } from "@/components/tasks/shared/TaskRow";
 import { Pagination } from "@/components/ui/Pagination";
 import {
@@ -15,13 +16,18 @@ import { useUserStore } from "@/store/userStore";
 import type { TaskTableProps } from "@/types/dashboard";
 import { cn } from "@/utils";
 import { formatShortDate } from "@/utils/date";
-import { resolveTaskColumnTitle } from "@/utils/taskMapper";
+import {
+  buildReadOnlySets,
+  isTaskInReadOnlyScope,
+  resolveTaskColumnTitle,
+} from "@/utils/taskMapper";
 
 export function TaskTable({
   itemsPerPage = 3,
   currentPage = 1,
   tasks,
   columns,
+  workspaces = [],
   activeFilter = "today",
   onToggle,
   onHabitChange,
@@ -32,12 +38,28 @@ export function TaskTable({
   onPageChange,
   isCompact = false,
   deletingTaskIds,
+  onStartFocus,
 }: TaskTableProps) {
   const t = useTranslations("dashboard.taskTable");
   const locale = useLocale() as AppLocale;
   const { dateFormat } = useDateFormat();
   const userTimeZone = useUserStore((s) => s.user?.timezone);
   const totalItems = tasks.length;
+  const hasMultipleWorkspaces = workspaces.length > 1;
+  const columnWorkspaceMap = useMemo(() => {
+    const map = new Map<string, string>();
+    if (!columns || !hasMultipleWorkspaces) return map;
+    for (const col of columns) {
+      if (col.id && col.workspaceName) {
+        map.set(col.id, col.workspaceName);
+      }
+    }
+    return map;
+  }, [columns, hasMultipleWorkspaces]);
+  const { readOnlyWorkspaceIds, readOnlyColumnIds } = useMemo(
+    () => buildReadOnlySets(workspaces, columns),
+    [workspaces, columns],
+  );
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
 
@@ -80,23 +102,38 @@ export function TaskTable({
       id={panelId}
       role="tabpanel"
       aria-labelledby={tabId}
-      className="flex flex-col gap-2.5 w-full"
+      className="@container flex flex-col gap-2 w-full"
       aria-label={t("ariaLabel")}
     >
       {/* Cabeçalho da Grade Responsivo */}
       <div
         className={cn(
-          "grid items-center text-xs font-semibold text-neutral-300",
+          "grid items-center text-xs font-semibold text-neutral-300 border-l-4 border-r border-transparent",
           TASK_TABLE_GRID_COLS,
-          isCompact ? "gap-2.5 px-3 py-1.5" : "gap-4 px-4 py-2",
+          isCompact
+            ? "gap-2.5 px-3 py-1.5"
+            : "gap-2.5 @lg:gap-3 px-3 @lg:px-4 py-2",
         )}
         aria-hidden="true"
       >
-        <span className="pl-13">{t("colName")}</span>
-        <span className="hidden sm:block">{t("colList")}</span>
-        <span>{t("colType")}</span>
-        <span className="hidden sm:block">{t("colPriority")}</span>
-        <span className="hidden md:block">{t("colSchedule")}</span>
+        <span
+          className={cn(
+            "min-w-0 truncate",
+            isCompact ? "pl-6.5" : "pl-8.5 sm:pl-7.5",
+          )}
+        >
+          {t("colName")}
+        </span>
+        <span className="hidden @lg:block min-w-0">
+          {hasMultipleWorkspaces ? t("colWorkspaceList") : t("colList")}
+        </span>
+        <span className="min-w-0">{t("colType")}</span>
+        <span className="hidden @lg:block text-center min-w-0">
+          {t("colPriority")}
+        </span>
+        <span className="hidden @2xl:block min-w-0 truncate">
+          {t("colSchedule")}
+        </span>
         <span className="text-right sr-only">{t("colActions")}</span>
       </div>
 
@@ -121,7 +158,7 @@ export function TaskTable({
           </div>
         </div>
       ) : (
-        <ul className="flex flex-col gap-2 w-full p-0 m-0 list-none">
+        <ul className="flex flex-col gap-1.5 w-full p-0 m-0 list-none">
           {paginatedTasks.map((task, idx) => (
             <li
               key={task.id}
@@ -134,6 +171,19 @@ export function TaskTable({
                     ? resolveTaskColumnTitle(task, columns, "")
                     : undefined
                 }
+                workspaceName={
+                  hasMultipleWorkspaces
+                    ? task.workspaceName ||
+                      (task.columnId
+                        ? columnWorkspaceMap.get(task.columnId)
+                        : undefined)
+                    : undefined
+                }
+                isReadOnly={isTaskInReadOnlyScope(
+                  task,
+                  readOnlyWorkspaceIds,
+                  readOnlyColumnIds,
+                )}
                 activeFilter={activeFilter}
                 selectedDate={selectedDate}
                 isDeleteChecking={Boolean(deletingTaskIds?.has(task.id))}
@@ -142,6 +192,7 @@ export function TaskTable({
                 onContextMenu={onContextMenu}
                 onOpenDetails={onOpenDetails}
                 onEditTask={onEditTask}
+                onStartFocus={onStartFocus}
                 isCompact={isCompact}
               />
             </li>

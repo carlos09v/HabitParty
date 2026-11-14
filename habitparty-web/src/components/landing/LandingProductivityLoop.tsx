@@ -28,14 +28,14 @@ export function LandingProductivityLoop() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 max-w-2xl lg:max-w-none mx-auto relative">
           {LANDING_PRODUCTIVITY_STEP_CONFIGS.map((step) => {
             const Icon = step.icon;
             return (
               <div
                 key={step.id}
                 className={cn(
-                  "relative p-8 rounded-2xl bg-card dark:bg-surface/90 border border-neutral-700 dark:border-white/10 shadow-sm dark:shadow-card-deep flex flex-col justify-between group hover:scale-[1.02] transition-[transform,border-color,box-shadow] duration-300",
+                  "relative p-6 lg:p-8 rounded-2xl bg-card dark:bg-surface/90 border border-neutral-700 dark:border-white/10 shadow-sm dark:shadow-card-deep flex flex-col justify-between group hover:scale-[1.02] transition-[transform,border-color,box-shadow] duration-300",
                   step.borderColor,
                 )}
               >

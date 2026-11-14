@@ -40,9 +40,9 @@ export function SegmentedControl<T extends string = string>({
       aria-label={ariaLabel}
       className={cn(
         "grid p-1 bg-surface/80 rounded-xl border border-primary/25 gap-1.5 select-none",
-        options.length === 2 && "grid-cols-2",
-        options.length === 3 && "grid-cols-3",
-        options.length === 4 && "grid-cols-4",
+        options.length === 2 && "grid-cols-1 min-[360px]:grid-cols-2",
+        options.length === 3 && "grid-cols-1 min-[500px]:grid-cols-3",
+        options.length === 4 && "grid-cols-2 sm:grid-cols-4",
         options.length > 4 && "grid-cols-2 sm:grid-cols-3 md:grid-cols-4",
         className,
       )}
@@ -62,8 +62,10 @@ export function SegmentedControl<T extends string = string>({
             disabled={isDisabled}
             onClick={() => onChange(option.value)}
             className={cn(
-              "rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer outline-none",
-              size === "sm" ? "py-2 px-3 text-xs" : "py-2.5 px-3.5 text-body-s",
+              "min-w-0 rounded-lg font-semibold transition-colors flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer outline-none",
+              size === "sm"
+                ? "py-2 px-2.5 sm:px-3 text-xs"
+                : "py-2 sm:py-2.5 px-2.5 sm:px-3.5 text-xs sm:text-body-s",
               isSelected
                 ? "bg-gold/20 border border-gold text-gold font-bold shadow-glow-gold-xs"
                 : "text-neutral-400 hover:text-neutral-200 hover:bg-white/5 border border-transparent",

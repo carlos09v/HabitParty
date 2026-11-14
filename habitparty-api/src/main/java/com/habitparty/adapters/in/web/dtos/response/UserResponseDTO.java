@@ -7,6 +7,8 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.domain.enums.FriendRequestPolicy;
+import com.habitparty.core.domain.enums.PrivacyLevel;
 import com.habitparty.core.domain.enums.SubscriptionStatus;
 import com.habitparty.core.domain.enums.UserExperienceMode;
 import com.habitparty.core.domain.enums.UserGender;
@@ -47,7 +49,12 @@ public record UserResponseDTO(
         int totalXp,
         int currentStreak,
         int highestStreak,
-        int achievementPoints) {
+        int achievementPoints,
+        String friendCode,
+        PrivacyLevel profileVisibility,
+        PrivacyLevel statsVisibility,
+        PrivacyLevel achievementsVisibility,
+        FriendRequestPolicy friendRequestPolicy) {
     public static UserResponseDTO fromDomain(User user) {
         return fromDomain(user, user.getCurrentStreak());
     }
@@ -86,6 +93,11 @@ public record UserResponseDTO(
                 user.getTotalXp(),
                 effectiveStreak,
                 user.getHighestStreak(),
-                user.getStats() != null ? user.getStats().getAchievementPoints() : 0);
+                user.getStats() != null ? user.getStats().getAchievementPoints() : 0,
+                user.getFriendCode(),
+                user.getProfileVisibility(),
+                user.getStatsVisibility(),
+                user.getAchievementsVisibility(),
+                user.getFriendRequestPolicy());
     }
 }

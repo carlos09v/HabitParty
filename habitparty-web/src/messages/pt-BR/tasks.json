@@ -24,6 +24,7 @@
   },
   "container": {
     "boardAria": "Quadro de rotinas",
+    "currentSessionFallback": "Sessão Atual",
     "defaultColumnTitle": "Coluna",
     "defaultWorkspaceName": "Ambiente",
     "toastColumnHidden": "Lista \"{title}\" guardada! Reexiba a qualquer momento no botão de colunas.",
@@ -52,9 +53,11 @@
   "filters": {
     "storeColumnDropTitle": "Solte aqui para ocultar e guardar esta coluna",
     "storeColumnManageTitle": "Gerenciar colunas e visibilidade no quadro",
+    "storeColumnManageWithHiddenTitle": "Gerenciar colunas ({total} criadas, {visible} visíveis no quadro)",
     "dropHere": "Solte para guardar",
     "storeDragging": "Guardar",
     "columnsLabel": "Colunas",
+    "visibleCountBadge": "{count, plural, one {# visível} other {# visíveis}}",
     "newColumnFreeLimitTitle": "Limite de {max} listas atingido (plano Free)",
     "newColumnMaxReachedTitle": "Limite de {max} listas atingido",
     "newColumnCreateTitle": "Criar nova coluna",
@@ -435,6 +438,10 @@
       "todoPenaltyTitle": "⚡ Multa de 50% (Ouro/XP):",
       "todoPenaltyTitleProductivity": "⚡ Penalidade de Pontos (50%):",
       "todoPenaltyDesc": "Se não concluir até as 23:59 do prazo, deduz 50% do valor da tarefa do seu saldo.",
+      "todoPenaltyWithTimeDesc": "Se não concluir até {time} do prazo, deduz 50% do valor da tarefa do seu saldo.",
+      "todoPenaltyEventDesc": "Se não concluir até o fim da data do evento, deduz 50% do valor da tarefa do seu saldo.",
+      "todoPenaltyOverdueDesc": "O prazo já venceu: sem conclusão no prazo, deduz 50% do valor da tarefa do seu saldo.",
+      "todoPenaltyEventOverdueDesc": "O horário deste evento já passou: sem conclusão no prazo, deduz 50% do valor da tarefa do seu saldo.",
       "todoLateDeliveryTitle": "Entrega Tardia:",
       "todoLateDeliveryDesc": "Concluir atrasado paga apenas metade da recompensa.",
       "whenToActivateTitle": "🎯 Quando ativar?",
@@ -453,6 +460,7 @@
       "routineSubtitle": "Para metas inegociáveis: cobra multa se falhar no dia",
       "routineSubtitleProductivity": "Para metas inegociáveis: aplica penalidade se falhar no dia",
       "todoActiveAlert": "Alto Risco Ativo: 50% de penalidade se não cumprido até o prazo. A data não poderá ser adiada após o vencimento.",
+      "todoActiveOverdueAlert": "Alto Risco Ativo: o prazo já foi ultrapassado (sujeito à penalidade de 50% e bloqueio de adiamento após o vencimento).",
       "routineActiveAlert": "Alto Risco Ativo: 50% de penalidade em Moedas e XP se não cumprida hoje."
     }
   },

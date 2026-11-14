@@ -69,11 +69,14 @@ export function ShowcaseHighlightsSection({
   const hasAnyHighlight = visibleSlots.length > 0;
 
   return (
-    <section className="flex flex-col gap-4">
+    <section className="@container flex flex-col gap-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
           <h2 className="text-body-l font-extrabold text-neutral-50 flex items-center gap-2">
-            <Sparkles size={18} className="text-amber-700 dark:text-gold" />
+            <Sparkles
+              size={18}
+              className="text-amber-700 dark:text-gold shrink-0"
+            />
             <span>{isGamified ? t("titleGamified") : t("titleEssential")}</span>
           </h2>
           <p className="text-body-s text-neutral-300 mt-0.5">
@@ -100,16 +103,16 @@ export function ShowcaseHighlightsSection({
       ) : (
         <div
           className={cn(
-            "grid grid-cols-1 sm:grid-cols-2",
+            "grid grid-cols-1 @xl:grid-cols-2",
             isVisitorMode
               ? visibleSlots.length === 1
                 ? "max-w-md"
                 : visibleSlots.length === 2
-                  ? "lg:grid-cols-2 max-w-2xl"
+                  ? "@xl:grid-cols-2 max-w-2xl"
                   : visibleSlots.length === 3
-                    ? "lg:grid-cols-3"
-                    : "lg:grid-cols-4"
-              : "lg:grid-cols-4",
+                    ? "@3xl:grid-cols-3"
+                    : "@4xl:grid-cols-4"
+              : "@4xl:grid-cols-4",
             isCompact ? "gap-3" : "gap-4",
           )}
         >
@@ -149,7 +152,7 @@ export function ShowcaseHighlightsSection({
                   )}
                 />
 
-                <div className="relative z-10 flex items-start justify-between gap-2 w-full">
+                <div className="relative z-10 flex items-start justify-between gap-2 w-full min-w-0">
                   <div
                     className={cn(
                       "w-11 h-11 rounded-xl border flex items-center justify-center shrink-0",
@@ -160,10 +163,10 @@ export function ShowcaseHighlightsSection({
                     <AchievementIcon iconKey={resolved.iconKey} size={22} />
                   </div>
 
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-end gap-1 min-w-0">
                     <span
                       className={cn(
-                        "px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border",
+                        "px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border text-right max-w-full",
                         theme.badgeBg,
                         theme.badgeText,
                         theme.badgeBorder,

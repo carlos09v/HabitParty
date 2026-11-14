@@ -36,6 +36,7 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
   onContextMenu,
   onToggleComplete,
   onHabitChange,
+  onStartFocus,
 }: RoutineTaskListSectionProps) {
   const t = useTranslations("tasks.taskList");
   const {
@@ -119,11 +120,14 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
       aria-label={t("sectionAria", { title: column.title })}
     >
       {/* Header da Seção da Coluna */}
-      <div className="flex items-center justify-between gap-3 border-b border-white/8 pb-2">
+      <div className="flex items-center justify-between gap-3 border-b border-neutral-700/60 dark:border-white/8 pb-2">
         <div
           {...attributes}
           {...listeners}
-          className="flex items-center gap-2 cursor-grab active:cursor-grabbing touch-none select-none py-0.5 px-1 rounded-lg hover:bg-white/5 transition-colors group/col-header min-w-0 flex-1"
+          className={cn(
+            "flex items-center gap-2 cursor-grab active:cursor-grabbing touch-manipulation select-none py-0.5 px-1 rounded-lg hover:bg-white/5 transition-colors group/col-header min-w-0 flex-1",
+            isDragging && "touch-none",
+          )}
           title={t("dragListTitle", { title: column.title })}
         >
           {/* Grip de Reordenação da Coluna na Lista */}
@@ -147,7 +151,7 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
           >
             {column.title}
           </h3>
-          <span className="text-tiny font-bold px-1.5 py-0.5 rounded-full bg-white/10 border border-white/15 text-neutral-300 shrink-0">
+          <span className="text-tiny font-bold px-1.5 py-0.5 rounded-full bg-surface dark:bg-white/10 border border-neutral-700 dark:border-white/15 text-neutral-300 shrink-0">
             {column.tasks.length}
           </span>
         </div>
@@ -155,6 +159,8 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
         <button
           type="button"
           onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
           onClick={() => onAddTaskToColumn(column.id)}
           title={t("addTaskInColumnTitle", { title: column.title })}
           className={cn(
@@ -169,7 +175,7 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
 
       {/* Lista de Linhas de Tarefa Sortable */}
       {column.tasks.length === 0 ? (
-        <div className="py-6 px-4 text-center rounded-lg border border-dashed border-white/10 text-neutral-500 text-tiny bg-primary-dark/5">
+        <div className="py-6 px-4 text-center rounded-lg border border-dashed border-neutral-700/70 dark:border-white/10 text-neutral-500 text-tiny bg-primary-dark/5">
           {t("emptyColumnState")}
         </div>
       ) : (
@@ -190,6 +196,7 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
                 onContextMenu={handleRowContextMenu}
                 onToggleCompleted={onToggleComplete}
                 onHabitChange={onHabitChange}
+                onStartFocus={onStartFocus}
               />
             ))}
           </ul>
@@ -212,6 +219,7 @@ export function RoutineTaskList({
   onContextMenu,
   onToggleComplete,
   onHabitChange,
+  onStartFocus,
   dndState,
 }: RoutineTaskListProps) {
   const t = useTranslations("tasks.taskList");
@@ -228,26 +236,37 @@ export function RoutineTaskList({
   );
 
   const listContent = (
-    <div className="flex-1 min-h-0 w-full flex flex-col gap-6 overflow-y-auto overflow-x-hidden pr-1 pb-10">
+    <div className="@container flex-1 min-h-0 w-full flex flex-col gap-6 overflow-y-auto overflow-x-hidden pr-1 pb-10">
       {/* Cabeçalho tabular global */}
       <div
         className={cn(
-          "hidden md:grid items-center text-xs font-semibold text-neutral-400 border-b border-white/10 select-none",
+          "hidden @lg:grid items-center text-xs font-semibold text-neutral-400 border-b border-b-neutral-700 dark:border-b-white/10 border-l-4 border-l-transparent border-r border-r-transparent select-none",
           TASK_TABLE_GRID_COLS,
-          isCompact ? "gap-2.5 px-3 py-1.5" : "gap-4 px-4 py-2",
+          isCompact
+            ? "gap-2.5 px-3 py-1.5"
+            : "gap-2.5 @lg:gap-3 px-3 @lg:px-4 py-2",
         )}
         aria-hidden="true"
       >
-        <span className="pl-8">{t("headerTaskName")}</span>
-        <span>{t("headerList")}</span>
-        <span>{t("headerType")}</span>
-        <span>{t("headerPriority")}</span>
-        <span>{t("headerFrequencyDue")}</span>
-        <span className="text-right pr-2">{t("headerActions")}</span>
+        <span
+          className={cn(
+            "min-w-0 truncate",
+            isCompact ? "pl-14" : "pl-16 sm:pl-15",
+          )}
+        >
+          {t("headerTaskName")}
+        </span>
+        <span className="min-w-0">{t("headerList")}</span>
+        <span className="min-w-0">{t("headerType")}</span>
+        <span className="text-center min-w-0">{t("headerPriority")}</span>
+        <span className="hidden @2xl:block min-w-0 truncate">
+          {t("headerFrequencyDue")}
+        </span>
+        <span className="text-right pr-1 min-w-0">{t("headerActions")}</span>
       </div>
 
       {visibleColumns.length === 0 ? (
-        <div className="w-full flex flex-col items-center justify-center text-center py-16 px-4 rounded-2xl border border-dashed border-white/15 bg-primary-dark/10">
+        <div className="w-full flex flex-col items-center justify-center text-center py-16 px-4 rounded-2xl border border-dashed border-neutral-700/80 dark:border-white/15 bg-primary-dark/10">
           <CalendarCheck size={32} className="text-neutral-500 mb-2" />
           <p className="text-body-m font-bold text-neutral-200">
             {t("noVisibleColumnsTitle")}
@@ -257,7 +276,7 @@ export function RoutineTaskList({
           </p>
         </div>
       ) : totalTasksCount === 0 ? (
-        <div className="w-full flex flex-col items-center justify-center text-center py-16 px-4 rounded-2xl border border-dashed border-white/15 bg-primary-dark/10">
+        <div className="w-full flex flex-col items-center justify-center text-center py-16 px-4 rounded-2xl border border-dashed border-neutral-700/80 dark:border-white/15 bg-primary-dark/10">
           <CalendarCheck size={32} className="text-gold mb-2" />
           <p className="text-body-m font-bold text-neutral-200">
             {t("allClearTitle")}
@@ -285,6 +304,7 @@ export function RoutineTaskList({
               onContextMenu={onContextMenu}
               onToggleComplete={onToggleComplete}
               onHabitChange={onHabitChange}
+              onStartFocus={onStartFocus}
             />
           ))}
         </SortableContext>
@@ -313,7 +333,7 @@ export function RoutineTaskList({
             <span className="font-bold text-neutral-100 text-sm">
               {dndState.activeColumn.title}
             </span>
-            <span className="text-tiny font-bold px-1.5 py-0.5 rounded-full bg-white/10 text-neutral-300">
+            <span className="text-tiny font-bold px-1.5 py-0.5 rounded-full bg-surface dark:bg-white/10 text-neutral-300">
               {t("overlayTasksCount", {
                 count: dndState.activeColumn.tasks.length,
               })}
@@ -330,6 +350,7 @@ export function RoutineTaskList({
                   ?.title
               }
               isCompact={isCompact}
+              onStartFocus={onStartFocus}
               isSortable
               isOverlay
             />

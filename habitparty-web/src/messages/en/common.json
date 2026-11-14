@@ -291,6 +291,9 @@
       "inFocus": "In Focus",
       "doubleClickEditHint": "Double-click the card to edit",
       "quickEditButtonTitle": "Edit (or double-click card)",
+      "moreActionsAria": "More actions",
+      "checkingDeleteAria": "Checking history...",
+      "tierDetailsAria": "View mystery box odds",
       "types": {
         "SingleUse": "Single-Use",
         "TimeBased": "Voucher",

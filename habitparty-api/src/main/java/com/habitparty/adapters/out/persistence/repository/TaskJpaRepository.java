@@ -24,6 +24,26 @@ public interface TaskJpaRepository extends JpaRepository<TaskJpaEntity, UUID> {
     // Busca todas as tarefas das colunas informadas em lote (elimina N+1)
     List<TaskJpaEntity> findByBoardColumnIdInOrderByOrderIndexAsc(List<UUID> boardColumnIds);
 
+    // Busca tarefas ativas para o Dashboard em lote, filtrando TODOs concluídos arquivados (mais antigos que o corte)
+    @Query("""
+        SELECT t
+        FROM TaskJpaEntity t
+        LEFT JOIN TodoJpaEntity td ON td.id = t.id
+        WHERE t.boardColumnId IN :boardColumnIds
+          AND (
+            t.taskType <> 'TODO'
+            OR t.status <> 'COMPLETED'
+            OR (t.dueDate IS NOT NULL AND t.dueDate >= :minDueDate)
+            OR (td.completedAt IS NOT NULL AND td.completedAt >= :minCompletedAt)
+            OR (t.dueDate IS NULL AND td.completedAt IS NULL AND t.createdAt >= :minCompletedAt)
+          )
+        ORDER BY t.orderIndex ASC
+    """)
+    List<TaskJpaEntity> findDashboardActiveByBoardColumnIdInOrderByOrderIndexAsc(
+        @Param("boardColumnIds") Collection<UUID> boardColumnIds,
+        @Param("minDueDate") LocalDate minDueDate,
+        @Param("minCompletedAt") LocalDateTime minCompletedAt);
+
     // Exemplo de busca com validação de usuário
     Optional<TaskJpaEntity> findByIdAndUserId(UUID id, UUID userId);
 

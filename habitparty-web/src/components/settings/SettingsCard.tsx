@@ -35,7 +35,7 @@ export function SettingsCard({
         isDanger
           ? "border border-red-500/25 dark:border-red-500/30 bg-red-500/[0.04] dark:bg-red-950/15"
           : "border border-neutral-700 dark:border-primary/20 bg-card dark:bg-surface/45 shadow-xs dark:shadow-none",
-        isCompact ? "p-4 sm:p-5 gap-4" : "p-6 gap-5",
+        isCompact ? "p-4 sm:p-5 gap-4" : "p-4 sm:p-6 gap-4 sm:gap-5",
         className,
       )}
     >
@@ -44,11 +44,11 @@ export function SettingsCard({
         <div className="flex flex-col gap-1 min-w-0 flex-1">
           <h3
             className={cn(
-              "text-subtitle-s font-bold flex items-center gap-2",
+              "text-subtitle-s font-bold flex items-center gap-2 flex-wrap",
               isDanger ? "text-red-600 dark:text-red-400" : "text-neutral-50",
             )}
           >
-            {icon}
+            {icon && <span className="shrink-0 flex items-center">{icon}</span>}
             <span>{title}</span>
           </h3>
           {description && (
@@ -58,7 +58,9 @@ export function SettingsCard({
           )}
         </div>
 
-        {headerAction && <div className="shrink-0">{headerAction}</div>}
+        {headerAction && (
+          <div className="w-full sm:w-auto shrink-0">{headerAction}</div>
+        )}
       </div>
 
       {/* Conteúdo Interativo */}

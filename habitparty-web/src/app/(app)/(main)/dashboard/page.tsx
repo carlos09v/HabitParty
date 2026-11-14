@@ -9,10 +9,35 @@ import { Loading } from "@/components/ui/Loading";
 import {
   MAX_COLUMNS_PREMIUM,
   MAX_VISIBLE_COLUMNS,
-  resolveVisibleColumnIds,
+  resolveDashboardVisibleColumnIds,
 } from "@/constants/routine";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getDashboardData } from "@/services/dashboardService";
+import type { WeeklyCalendarTaskSummary } from "@/types/dashboard";
+import {
+  getVisibleColumnsCookieName,
+  parseVisibleColumnsCookie,
+} from "@/utils/columnVisibility";
+
+function toWeeklyCalendarTaskSummary(
+  task: import("@/types/task").Task,
+): WeeklyCalendarTaskSummary {
+  return {
+    id: task.id,
+    type: task.type,
+    taskType: task.taskType,
+    habitType: task.habitType,
+    resetCounter: task.resetCounter,
+    completed: task.completed,
+    dueDate: task.dueDate,
+    startDate: task.startDate,
+    repeatType: task.repeatType,
+    repeatEvery: task.repeatEvery,
+    daysOfWeek: task.daysOfWeek,
+    monthlyOption: task.monthlyOption,
+    lastCompletedAt: task.lastCompletedAt,
+  };
+}
 
 type PageProps = {
   searchParams: Promise<{ workspaceId?: string }>;
@@ -52,9 +77,11 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   }
 
   const {
+    workspaces,
     activeWorkspaceId,
     initialTasks,
     initialColumns,
+    initialAllColumns,
     transactions,
     userBalance,
     weeklyEarnings,
@@ -67,23 +94,19 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const isPremium = user?.isPremium ?? false;
   const maxAllowed = isPremium ? MAX_COLUMNS_PREMIUM : MAX_VISIBLE_COLUMNS;
-  const cookieKey = activeWorkspaceId
-    ? `hp_visible_cols_${activeWorkspaceId}`
-    : null;
-  const cookieVal = cookieKey ? cookieStore.get(cookieKey)?.value : null;
-  let parsedCookieIds: string[] | undefined;
-  if (cookieVal) {
-    try {
-      parsedCookieIds = JSON.parse(decodeURIComponent(cookieVal));
-    } catch {
-      // ignore
-    }
-  }
-  const initialVisibleColumnIds = resolveVisibleColumnIds(
-    initialColumns.map((c) => c.id || "").filter(Boolean),
-    parsedCookieIds,
+
+  const activeCookieVal = activeWorkspaceId
+    ? cookieStore.get(getVisibleColumnsCookieName(activeWorkspaceId))?.value
+    : undefined;
+  const savedActiveIds = parseVisibleColumnsCookie(activeCookieVal);
+  const initialVisibleColumnIds = resolveDashboardVisibleColumnIds(
+    initialColumns,
+    savedActiveIds,
     maxAllowed,
   );
+
+  // Colunas ocultas no drawer Kanban continuam compondo o Dashboard (tarefas, metas e calendário)
+  const calendarTasks = initialTasks.map(toWeeklyCalendarTaskSummary);
 
   return (
     <ScopedIntlProvider scope="dashboard">
@@ -97,8 +120,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         >
           <DashboardMain
             initialTasks={initialTasks}
+            workspaces={workspaces}
             activeWorkspaceId={activeWorkspaceId}
             initialColumns={initialColumns}
+            initialAllColumns={initialAllColumns}
             initialVisibleColumnIds={initialVisibleColumnIds}
             transactions={transactions}
             user={user}
@@ -112,7 +137,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           weeklySpent={weeklySpent}
           bars={bars}
           transactions={transactions}
-          tasks={initialTasks}
+          tasks={calendarTasks}
           activities={focusActivities}
           records={focusRecords}
         />

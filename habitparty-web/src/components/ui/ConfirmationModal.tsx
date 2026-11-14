@@ -124,12 +124,12 @@ export function ConfirmationModal({
           </label>
         )}
 
-        <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-neutral-700 dark:border-white/10">
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-2.5 pt-3 border-t border-neutral-700 dark:border-white/10">
           <button
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="px-4 py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:bg-surface-hover dark:hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50"
+            className="w-full sm:w-auto px-4 py-2 rounded-lg text-xs font-semibold text-neutral-300 hover:bg-surface-hover dark:hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50 text-center"
           >
             {resolvedCancelText}
           </button>
@@ -137,7 +137,7 @@ export function ConfirmationModal({
             type="button"
             onClick={onConfirm}
             disabled={isLoading}
-            className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-50 ${confirmBtnClasses}`}
+            className={`w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-50 ${confirmBtnClasses}`}
           >
             {isLoading ? (
               <>

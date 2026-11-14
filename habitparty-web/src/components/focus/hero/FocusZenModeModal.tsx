@@ -99,7 +99,7 @@ export function FocusZenModeModal({
       aria-modal="true"
       aria-label={t("dialogAria")}
       className={cn(
-        "fixed inset-0 z-50 flex flex-col justify-between p-6 sm:p-12 select-none animate-in fade-in duration-200 transition-colors",
+        "fixed inset-0 z-50 flex flex-col justify-between p-4 sm:p-10 md:p-12 overflow-y-auto overscroll-contain custom-scrollbar select-none animate-in fade-in duration-200 transition-colors",
         isDimmed
           ? "zen-dimmed-dark bg-background"
           : "bg-surface dark:bg-background",
@@ -117,11 +117,11 @@ export function FocusZenModeModal({
       />
 
       {/* Top Bar Zen: Info do Alvo + Dimmer Local + Botão Fechar (controles periféricos atenuados) */}
-      <div className="relative z-10 flex items-center justify-between w-full max-w-4xl mx-auto opacity-60 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
-        <div className="flex items-center gap-3">
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-2.5 w-full max-w-4xl mx-auto opacity-80 sm:opacity-60 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
           <div
             className={cn(
-              "w-10 h-10 rounded-xl flex items-center justify-center border",
+              "w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center border shrink-0",
               isBreak
                 ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400"
                 : "bg-gold/20 border-gold/50 text-gold",
@@ -129,11 +129,11 @@ export function FocusZenModeModal({
           >
             <TargetIcon size={20} />
           </div>
-          <div className="flex flex-col">
-            <span className="font-bold text-neutral-100 text-body-m">
+          <div className="flex flex-col min-w-0">
+            <span className="font-bold text-neutral-100 text-body-m truncate">
               {target?.name || t("defaultTitle")}
             </span>
-            <span className="text-tiny text-neutral-400">
+            <span className="text-tiny text-neutral-400 truncate">
               {isBreak
                 ? t("restorativeBreak")
                 : mode === "POMO"
@@ -143,7 +143,7 @@ export function FocusZenModeModal({
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
           <span className="text-tiny text-neutral-400 hidden md:inline">
             {t.rich("pressEscHint", {
               kbd: (chunks) => (
@@ -160,7 +160,7 @@ export function FocusZenModeModal({
               onClick={() => setIsLightsOff((prev) => !prev)}
               aria-pressed={isLightsOff}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-colors cursor-pointer",
+                "flex items-center gap-1.5 px-2.5 sm:px-3 min-h-9 rounded-xl border text-xs font-semibold transition-colors cursor-pointer",
                 isLightsOff
                   ? "border-gold/50 bg-gold/15 text-gold hover:bg-gold/25"
                   : "border-neutral-700 bg-card/80 text-neutral-300 hover:text-neutral-50 hover:border-neutral-500 shadow-2xs",
@@ -168,7 +168,7 @@ export function FocusZenModeModal({
               title={isLightsOff ? t("lightsOnTitle") : t("lightsOffTitle")}
             >
               {isLightsOff ? <Sun size={15} /> : <Moon size={15} />}
-              <span>
+              <span className="hidden min-[380px]:inline">
                 {isLightsOff ? t("lightsOnButton") : t("lightsOffButton")}
               </span>
             </button>
@@ -177,8 +177,9 @@ export function FocusZenModeModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-neutral-700 bg-card/80 dark:bg-surface/80 text-neutral-300 hover:text-neutral-50 dark:hover:text-white hover:border-neutral-500 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 min-h-9 rounded-xl border border-neutral-700 bg-card/80 dark:bg-surface/80 text-neutral-300 hover:text-neutral-50 dark:hover:text-white hover:border-neutral-500 transition-colors cursor-pointer"
             title={t("exitTitle")}
+            aria-label={t("exitTitle")}
           >
             <Minimize2 size={16} />
             <span className="text-xs font-semibold">{t("exitButton")}</span>
@@ -187,11 +188,11 @@ export function FocusZenModeModal({
       </div>
 
       {/* Centro Zen: Timer Gigante */}
-      <div className="relative z-10 flex flex-col items-center justify-center my-auto">
+      <div className="relative z-10 flex flex-col items-center justify-center my-auto py-4 w-full">
         <FocusStageTimerCircle size="zen" onToggle={onToggleTimer} />
 
         {/* Controles de Ação no Modo Zen */}
-        <div className="flex items-center justify-center gap-4 mt-8">
+        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-6 sm:mt-8 w-full max-w-md px-2">
           {isActive && (
             <button
               type="button"
@@ -256,7 +257,7 @@ export function FocusZenModeModal({
       </div>
 
       {/* Rodapé Zen: Controles de Áudio (periférico atenuado) */}
-      <div className="relative z-10 flex items-center justify-center w-full max-w-md mx-auto opacity-60 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
+      <div className="relative z-10 flex items-center justify-center w-full max-w-md mx-auto pt-4 opacity-80 sm:opacity-60 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
         <FocusStageAudioControls
           isSoundEnabled={isSoundEnabled}
           timerSoundType={timerSoundType}

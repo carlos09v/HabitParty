@@ -3,8 +3,11 @@
 import { useTranslations } from "next-intl";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { FREE_ACTIVE_WORKSPACE_LIMIT } from "@/constants/routine";
 import type { BoardColumn } from "@/types/task";
 import type { WorkspaceResponseDTO } from "@/types/workspace";
+
+export { FREE_ACTIVE_WORKSPACE_LIMIT };
 
 export interface UseWorkspaceWriteGuardOptions {
   workspaces: WorkspaceResponseDTO[];
@@ -38,7 +41,8 @@ export function useWorkspaceWriteGuard({
     return idx >= 0 ? idx : 0;
   }, [workspaces, activeWorkspaceId]);
 
-  const isWorkspaceReadOnly = !isPremium && activeWorkspaceIndex >= 2;
+  const isWorkspaceReadOnly =
+    !isPremium && activeWorkspaceIndex >= FREE_ACTIVE_WORKSPACE_LIMIT;
 
   const ensureWriteAccess = useCallback(
     (errorMessage: string): boolean => {
@@ -72,7 +76,7 @@ export function useWorkspaceWriteGuard({
         .map((ws, index) => ({
           id: ws.id || "",
           name: ws.name || t("defaultWorkspaceName"),
-          isLocked: !isPremium && index >= 2,
+          isLocked: !isPremium && index >= FREE_ACTIVE_WORKSPACE_LIMIT,
         }))
         .filter((ws) => ws.id && ws.id !== activeWorkspaceId),
     [workspaces, activeWorkspaceId, isPremium, t],

@@ -122,6 +122,24 @@ function computeTaskTimeStatus(
   return { isTodayTimeOverdue, isInProgress };
 }
 
+/** Verifica se um Afazer previsto para hoje já ultrapassou seu horário limite no fuso informado. */
+export function isTodoTimeOverdueToday(
+  scheduleInput: {
+    dueTime?: string | null;
+    startTime?: string | null;
+    dueEndTime?: string | null;
+    isAllDay?: boolean | null;
+  },
+  now: Date = new Date(),
+  timeZone?: string | null,
+): boolean {
+  const schedule = resolveTaskScheduleStrings({
+    ...scheduleInput,
+    locale: "pt-BR",
+  });
+  return computeTaskTimeStatus(schedule, 0, now, timeZone).isTodayTimeOverdue;
+}
+
 export function getTaskDueDateInfo(
   dueDate?: string | null,
   options?: {

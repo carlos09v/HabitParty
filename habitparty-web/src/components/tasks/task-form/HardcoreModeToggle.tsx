@@ -9,17 +9,26 @@ import {
   ShieldAlert,
   Zap,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { Switch } from "@/components/ui/Switch";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import type { AppLocale } from "@/i18n/config";
+import { useUIStore } from "@/store/uiStore";
+import { useUserStore } from "@/store/userStore";
 import { cn } from "@/utils";
+import { formatTimeDisplay, getTaskDueDateInfo } from "@/utils/date";
 
 interface HardcoreModeToggleProps {
   isHardcore: boolean;
   onChange: (value: boolean) => void;
   disabled?: boolean;
   taskType?: "HABIT" | "DAILY" | "TODO" | string;
+  dueDate?: string;
+  dueTime?: string;
+  startTime?: string;
+  dueEndTime?: string;
+  isAllDay?: boolean;
 }
 
 export function HardcoreModeToggle({
@@ -27,10 +36,51 @@ export function HardcoreModeToggle({
   onChange,
   disabled = false,
   taskType,
+  dueDate,
+  dueTime,
+  startTime,
+  dueEndTime,
+  isAllDay = false,
 }: HardcoreModeToggleProps) {
   const t = useTranslations("tasks.taskModal.hardcore");
+  const locale = useLocale() as AppLocale;
+  const timeFormat = useUIStore((s) => s.timeFormat);
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
   const { isGamified } = useExperienceMode();
   const isTodo = (taskType || "").toUpperCase() === "TODO";
+  const isTodoEvent = Boolean(isTodo && (isAllDay || startTime || dueEndTime));
+
+  const todoDueInfo = isTodo
+    ? getTaskDueDateInfo(dueDate, {
+        locale,
+        dueTime,
+        startTime,
+        dueEndTime,
+        isAllDay,
+        timeFormat,
+        timeZone: userTimeZone,
+      })
+    : null;
+  const isTodoOverdue = Boolean(todoDueInfo?.isOverdue);
+  const deadlineTimeDisplay =
+    todoDueInfo?.endTime ??
+    (!isAllDay && !startTime && dueTime
+      ? formatTimeDisplay(dueTime.slice(0, 5), { timeFormat, locale })
+      : null);
+
+  const todoPenaltyDescription = isTodoOverdue
+    ? isTodoEvent
+      ? t("todoPenaltyEventOverdueDesc")
+      : t("todoPenaltyOverdueDesc")
+    : deadlineTimeDisplay
+      ? t("todoPenaltyWithTimeDesc", { time: deadlineTimeDisplay })
+      : isTodoEvent
+        ? t("todoPenaltyEventDesc")
+        : t("todoPenaltyDesc");
+
+  const todoActiveAlertText = isTodoOverdue
+    ? t("todoActiveOverdueAlert")
+    : t("todoActiveAlert");
 
   const title = isGamified
     ? t("title")
@@ -100,7 +150,7 @@ export function HardcoreModeToggle({
                           : t("todoPenaltyTitleProductivity")}
                       </span>
                       <span className="text-neutral-300">
-                        {t("todoPenaltyDesc")}
+                        {todoPenaltyDescription}
                       </span>
                     </li>
                     <li className="flex items-start gap-1.5">
@@ -189,7 +239,7 @@ export function HardcoreModeToggle({
       {isHardcore && (
         <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-danger-500/10 border border-danger-500/30 text-danger-400 text-tiny font-medium animate-in fade-in duration-200">
           <AlertTriangle size={13} className="shrink-0 text-danger-400" />
-          <span>{isTodo ? t("todoActiveAlert") : t("routineActiveAlert")}</span>
+          <span>{isTodo ? todoActiveAlertText : t("routineActiveAlert")}</span>
         </div>
       )}
     </div>

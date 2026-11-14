@@ -65,6 +65,9 @@ export function Select({
   const isInline = variant === "inline";
   const isFilter = variant === "filter";
   const isAutoWidth = isInline || isFilter;
+  const hasExplicitWidth = Boolean(
+    className && /\b(w-full|w-\S+|flex-1)\b/.test(className),
+  );
 
   const itemHeight = isInline ? 30 : compact ? 36 : 40;
   const maxAllowedHeight = isInline ? 192 : 240;
@@ -150,7 +153,7 @@ export function Select({
           : isFilter
             ? cn(
                 !shouldRenderPortal && "top-full mt-2",
-                "w-48 max-h-60 p-1.5 flex flex-col gap-0.5",
+                "w-48 max-w-[calc(100vw-1.5rem)] max-h-60 p-1.5 flex flex-col gap-0.5",
                 !shouldRenderPortal &&
                   (align === "right" ? "right-0 left-auto" : "left-0"),
               )
@@ -220,7 +223,11 @@ export function Select({
     <div
       ref={containerRef}
       className={cn(
-        isAutoWidth ? "relative inline-block" : "flex flex-col w-full relative",
+        isAutoWidth
+          ? hasExplicitWidth
+            ? "relative block"
+            : "relative inline-block"
+          : "flex flex-col w-full relative",
         !isAutoWidth && "gap-1.5",
         isOpen && "z-30",
         className,
@@ -273,6 +280,7 @@ export function Select({
             : isFilter
               ? cn(
                   "gap-2 rounded-lg bg-surface border font-medium focus:outline-none focus:ring-2 focus:ring-gold/50",
+                  hasExplicitWidth && "w-full justify-between",
                   compact ? "px-2 py-1 text-xs" : "px-3 py-2 text-sm",
                   currentValue
                     ? "border-gold text-gold font-bold"

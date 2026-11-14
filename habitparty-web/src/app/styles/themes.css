@@ -1,0 +1,519 @@
+/* ==========================================================================
+   Theme Palettes & Semantic Atmosphere Tokens
+   - Free Dark (2): dark (Default), dark-knight
+   - Free Light (2): light (Default), solar-parchment
+   - VIP Themes (3): cyberpunk-neon (Dark), forest-ranger (Dark), royal-gold (Light)
+   ========================================================================== */
+
+:root,
+html[data-theme="dark"] {
+  color-scheme: dark;
+  accent-color: var(--color-primary);
+
+  /* Sombras semânticas dinâmicas por tema */
+  --theme-shadow-glow-gold: 0 0 15px rgba(237, 229, 57, 0.3);
+  --theme-shadow-glow-gold-md: 0 0 12px rgba(237, 229, 57, 0.25);
+  --theme-shadow-glow-gold-sm: 0 0 10px rgba(237, 229, 57, 0.15);
+  --theme-shadow-glow-gold-xs: 0 0 6px rgba(237, 229, 57, 0.4);
+  --theme-shadow-glow-magenta: 0 0 10px rgba(237, 43, 229, 0.45);
+  --theme-shadow-card-deep: 0 15px 30px rgba(0, 0, 0, 0.5);
+  --theme-shadow-card-active: 0 12px 24px rgba(0, 0, 0, 0.45);
+  --theme-shadow-popover-dark: 0 12px 28px rgba(0, 0, 0, 0.6);
+
+  /* Ambient Mesh Orbs (.cosmic-ambient-*) */
+  --ambient-glow-1: rgba(237, 43, 229, 0.08);
+  --ambient-glow-2: rgba(64, 57, 237, 0.1);
+  --ambient-glow-3: rgba(124, 58, 237, 0.15);
+  --ambient-onboarding-1: rgba(237, 43, 229, 0.11);
+  --ambient-onboarding-2: rgba(64, 57, 237, 0.15);
+  --ambient-onboarding-3: rgba(124, 58, 237, 0.14);
+  --ambient-auth-1: rgba(64, 57, 237, 0.24);
+  --ambient-auth-2: rgba(124, 58, 237, 0.2);
+
+  /* Profile Showcase Hero Radial Glows */
+  --hero-glow-top: rgba(237, 229, 57, 0.14);
+  --hero-glow-bottom: rgba(124, 58, 237, 0.2);
+
+  /* Sidebar Workspace Switcher (.border-gradient-switcher) */
+  --switcher-bg-start: rgba(124, 58, 237, 0.3);
+  --switcher-bg-end: rgba(33, 4, 89, 0.6);
+  --switcher-border-start: rgba(168, 99, 255, 0.6);
+  --switcher-border-end: rgba(124, 58, 237, 0.25);
+  --switcher-border-hover-start: rgba(168, 99, 255, 0.85);
+  --switcher-border-hover-end: rgba(124, 58, 237, 0.45);
+
+  /* Scrollbar (.custom-scrollbar) */
+  --scrollbar-thumb: rgba(123, 115, 141, 0.3);
+  --scrollbar-thumb-hover: rgba(237, 229, 57, 0.5);
+}
+
+/* ==========================================================================
+   FREE LIGHT 1 (Default): COSMIC DAYLIGHT — Alabaster Slate & Royal Gold
+   ========================================================================== */
+html.light {
+  color-scheme: light;
+  accent-color: var(--color-primary);
+
+  /* Superfícies Neutras Frias (Alabaster / Slate) */
+  --color-background: rgb(245 245 248);
+  --color-surface: rgb(236 236 242);
+  --color-surface-hover: rgb(226 226 236);
+  --color-card: rgb(255 255 255);
+  --color-card-hover: rgb(250 250 253);
+  --color-popover: rgb(255 255 255);
+
+  /* Tríade de Marca */
+  --color-primary-dark: rgb(91 33 182);
+  --color-primary: rgb(109 40 217);
+  --color-primary-light: rgb(124 58 237);
+
+  /* Gamificação */
+  --color-gold: rgb(245 184 21);
+  --color-gold-hover: rgb(224 163 11);
+  --color-gold-pressed: rgb(200 138 4);
+  --color-gold-ink: rgb(158 72 7);
+  --color-on-gold: rgb(30 30 42);
+  --color-magenta: rgb(162 28 175);
+  --color-blue: rgb(67 56 202);
+
+  /* Funcionais WCAG AA (>= 4.6:1 inclusive em surface) */
+  --color-info: rgb(3 105 161);
+  --color-info-hover: rgb(7 89 133);
+  --color-success-300: rgb(20 122 56);
+  --color-success-400: rgb(20 122 56);
+  --color-success-500: rgb(22 163 74);
+  --color-success-hover: rgb(21 128 61);
+  --color-warning-400: rgb(194 65 12);
+  --color-warning-500: rgb(234 88 12);
+  --color-warning-hover: rgb(194 65 12);
+  --color-danger-300: rgb(185 28 28);
+  --color-danger-400: rgb(200 30 30);
+  --color-danger-500: rgb(220 38 38);
+  --color-danger-hover: rgb(185 28 28);
+
+  /* Escala Neutra Invertida */
+  --color-neutral-50: rgb(30 30 42);
+  --color-neutral-100: rgb(42 42 56);
+  --color-neutral-200: rgb(59 59 77);
+  --color-neutral-300: rgb(78 78 99);
+  --color-neutral-400: rgb(100 100 122);
+  --color-neutral-500: rgb(133 133 155);
+  --color-neutral-600: rgb(198 198 214);
+  --color-neutral-700: rgb(220 220 232);
+  --color-neutral-800: rgb(232 232 240);
+  --color-neutral-900: rgb(245 245 248);
+
+  /* Elevação Física Limpa */
+  --theme-shadow-glow-gold:
+    0 2px 8px -1px rgba(180, 120, 0, 0.16), 0 1px 2px rgba(15, 15, 30, 0.05);
+  --theme-shadow-glow-gold-md:
+    0 2px 6px -1px rgba(180, 120, 0, 0.12), 0 1px 2px rgba(15, 15, 30, 0.04);
+  --theme-shadow-glow-gold-sm: 0 1px 3px rgba(15, 15, 30, 0.05);
+  --theme-shadow-glow-gold-xs: 0 1px 2px rgba(15, 15, 30, 0.04);
+  --theme-shadow-glow-magenta: 0 2px 8px -1px rgba(162, 28, 175, 0.12);
+  --theme-shadow-card-deep:
+    0 2px 8px -2px rgba(15, 15, 30, 0.06), 0 1px 2px -1px rgba(15, 15, 30, 0.04);
+  --theme-shadow-card-active:
+    0 4px 12px -2px rgba(15, 15, 30, 0.08),
+    0 8px 16px -4px rgba(15, 15, 30, 0.06);
+  --theme-shadow-popover-dark:
+    0 12px 32px -4px rgba(15, 15, 30, 0.12),
+    0 2px 6px -1px rgba(15, 15, 30, 0.06);
+
+  --hero-glow-top: rgba(234, 179, 8, 0.14);
+  --hero-glow-bottom: rgba(109, 40, 217, 0.12);
+
+  --switcher-bg-start: rgba(124, 58, 237, 0.08);
+  --switcher-bg-end: rgba(255, 255, 255, 0.85);
+  --switcher-border-start: rgba(124, 58, 237, 0.35);
+  --switcher-border-end: rgba(124, 58, 237, 0.15);
+  --switcher-border-hover-start: rgba(124, 58, 237, 0.55);
+  --switcher-border-hover-end: rgba(124, 58, 237, 0.25);
+
+  --scrollbar-thumb: rgba(30, 30, 42, 0.14);
+  --scrollbar-thumb-hover: rgba(109, 40, 217, 0.35);
+}
+
+/* Aliases compartilhados para temas com paleta própria (sem :where para superar :root (0,1,0)) */
+html.light,
+html[data-theme="dark-knight"],
+html[data-theme="cyberpunk-neon"],
+html[data-theme="forest-ranger"] {
+  --color-gold-warm: var(--color-gold);
+  --color-gold-warm-hover: var(--color-gold-hover);
+  --color-gold-warm-pressed: var(--color-gold-pressed);
+}
+
+html[data-theme="dark-knight"],
+html[data-theme="cyberpunk-neon"],
+html[data-theme="forest-ranger"] {
+  --color-gold-ink: var(--color-gold);
+}
+
+/* ==========================================================================
+   FREE DARK 2: DARK KNIGHT — Obsidian Slate, Cobalt Steel & Tactical Gold
+   ========================================================================== */
+html[data-theme="dark-knight"] {
+  color-scheme: dark;
+  accent-color: var(--color-primary);
+
+  --color-background: rgb(11 13 18);
+  --color-popover: rgb(17 21 30);
+  --color-surface: rgb(21 26 37);
+  --color-surface-hover: rgb(29 36 51);
+  --color-card: rgb(24 30 43);
+  --color-card-hover: rgb(32 40 57);
+
+  --color-primary-dark: rgb(30 58 138);
+  --color-primary: rgb(37 99 235);
+  --color-primary-light: rgb(96 165 250);
+
+  --color-gold: rgb(245 197 24);
+  --color-gold-hover: rgb(221 169 11);
+  --color-gold-pressed: rgb(184 134 11);
+  --color-on-gold: rgb(15 18 24);
+
+  --color-magenta: rgb(192 132 252);
+  --color-blue: rgb(129 140 248);
+
+  --color-neutral-50: rgb(248 250 252);
+  --color-neutral-100: rgb(241 245 249);
+  --color-neutral-200: rgb(226 232 240);
+  --color-neutral-300: rgb(203 213 225);
+  --color-neutral-400: rgb(148 163 184);
+  --color-neutral-500: rgb(100 116 139);
+  --color-neutral-600: rgb(71 85 105);
+  --color-neutral-700: rgb(51 65 85);
+  --color-neutral-800: rgb(30 41 59);
+  --color-neutral-900: rgb(15 23 42);
+
+  --theme-shadow-glow-gold: 0 0 12px rgb(245 197 24 / 0.28);
+  --theme-shadow-glow-gold-md: 0 0 11px rgb(245 197 24 / 0.24);
+  --theme-shadow-glow-gold-sm: 0 0 10px rgb(245 197 24 / 0.22);
+  --theme-shadow-glow-gold-xs: 0 0 12px rgb(245 197 24 / 0.18);
+  --theme-shadow-glow-magenta: 0 0 14px rgb(96 165 250 / 0.22);
+
+  --ambient-glow-1: rgba(245, 197, 24, 0.05);
+  --ambient-glow-2: rgba(96, 165, 250, 0.09);
+  --ambient-glow-3: rgba(37, 99, 235, 0.14);
+  --ambient-onboarding-1: rgba(245, 197, 24, 0.07);
+  --ambient-onboarding-2: rgba(96, 165, 250, 0.12);
+  --ambient-onboarding-3: rgba(37, 99, 235, 0.14);
+  --ambient-auth-1: rgba(96, 165, 250, 0.16);
+  --ambient-auth-2: rgba(37, 99, 235, 0.2);
+
+  --hero-glow-top: rgba(245, 197, 24, 0.12);
+  --hero-glow-bottom: rgba(37, 99, 235, 0.2);
+
+  --switcher-bg-start: rgba(37, 99, 235, 0.26);
+  --switcher-bg-end: rgba(15, 23, 42, 0.72);
+  --switcher-border-start: rgba(96, 165, 250, 0.56);
+  --switcher-border-end: rgba(245, 197, 24, 0.25);
+  --switcher-border-hover-start: rgba(96, 165, 250, 0.82);
+  --switcher-border-hover-end: rgba(245, 197, 24, 0.48);
+
+  --scrollbar-thumb: rgba(96, 165, 250, 0.32);
+  --scrollbar-thumb-hover: rgba(245, 197, 24, 0.56);
+}
+
+/* ==========================================================================
+   FREE LIGHT 2: SOLAR PARCHMENT — Warm Parchment, Pine Teal & Harvest Gold
+   ========================================================================== */
+html[data-theme="solar-parchment"] {
+  color-scheme: light;
+  accent-color: var(--color-primary);
+
+  --color-background: rgb(245 239 228);
+  --color-surface: rgb(235 226 209);
+  --color-surface-hover: rgb(225 213 191);
+  --color-card: rgb(253 251 246);
+  --color-card-hover: rgb(249 245 236);
+  --color-popover: rgb(253 251 246);
+
+  --color-primary-dark: rgb(17 94 89);
+  --color-primary: rgb(13 107 99);
+  --color-primary-light: rgb(13 148 136);
+
+  --color-gold: rgb(245 184 21);
+  --color-gold-hover: rgb(224 163 11);
+  --color-gold-pressed: rgb(200 138 4);
+  --color-gold-ink: rgb(146 64 14);
+  --color-on-gold: rgb(30 25 18);
+  --color-magenta: rgb(157 23 77);
+  --color-blue: rgb(29 78 216);
+
+  /* Funcionais calibrados para pergaminho quente (>= 4.5:1 em surface) */
+  --color-info: rgb(3 105 161);
+  --color-info-hover: rgb(7 89 133);
+  --color-success-300: rgb(20 108 52);
+  --color-success-400: rgb(20 108 52);
+  --color-success-500: rgb(21 128 61);
+  --color-success-hover: rgb(22 101 52);
+
+  /* Escala neutra quente (sépia/nogueira, >= 4.9:1 até neutral-400 em surface) */
+  --color-neutral-50: rgb(36 30 24);
+  --color-neutral-100: rgb(54 46 37);
+  --color-neutral-200: rgb(71 61 50);
+  --color-neutral-300: rgb(92 80 67);
+  --color-neutral-400: rgb(106 94 81);
+  --color-neutral-500: rgb(142 127 110);
+  --color-neutral-600: rgb(204 192 173);
+  --color-neutral-700: rgb(222 213 197);
+  --color-neutral-800: rgb(235 227 213);
+  --color-neutral-900: rgb(245 239 228);
+
+  --theme-shadow-glow-gold:
+    0 2px 8px -1px rgba(146, 64, 14, 0.14), 0 1px 2px rgba(36, 30, 24, 0.06);
+  --theme-shadow-glow-gold-md:
+    0 2px 6px -1px rgba(146, 64, 14, 0.11), 0 1px 2px rgba(36, 30, 24, 0.05);
+  --theme-shadow-glow-gold-sm: 0 1px 3px rgba(36, 30, 24, 0.06);
+  --theme-shadow-glow-gold-xs: 0 1px 2px rgba(36, 30, 24, 0.05);
+  --theme-shadow-glow-magenta: 0 2px 8px -1px rgba(157, 23, 77, 0.12);
+  --theme-shadow-card-deep:
+    0 2px 8px -2px rgba(36, 30, 24, 0.07), 0 1px 2px -1px rgba(36, 30, 24, 0.05);
+  --theme-shadow-card-active:
+    0 4px 12px -2px rgba(36, 30, 24, 0.09),
+    0 8px 16px -4px rgba(36, 30, 24, 0.06);
+  --theme-shadow-popover-dark:
+    0 12px 32px -4px rgba(36, 30, 24, 0.13),
+    0 2px 6px -1px rgba(36, 30, 24, 0.06);
+
+  --ambient-glow-1: rgba(217, 119, 6, 0.08);
+  --ambient-glow-2: rgba(13, 107, 99, 0.08);
+  --ambient-glow-3: rgba(245, 184, 21, 0.1);
+  --ambient-onboarding-1: rgba(217, 119, 6, 0.1);
+  --ambient-onboarding-2: rgba(13, 107, 99, 0.12);
+  --ambient-onboarding-3: rgba(245, 184, 21, 0.1);
+  --ambient-auth-1: rgba(217, 119, 6, 0.16);
+  --ambient-auth-2: rgba(13, 107, 99, 0.15);
+
+  --hero-glow-top: rgba(245, 184, 21, 0.18);
+  --hero-glow-bottom: rgba(13, 107, 99, 0.14);
+
+  --switcher-bg-start: rgba(13, 107, 99, 0.09);
+  --switcher-bg-end: rgba(253, 251, 246, 0.92);
+  --switcher-border-start: rgba(13, 107, 99, 0.36);
+  --switcher-border-end: rgba(146, 64, 14, 0.18);
+  --switcher-border-hover-start: rgba(13, 107, 99, 0.58);
+  --switcher-border-hover-end: rgba(146, 64, 14, 0.34);
+
+  --scrollbar-thumb: rgba(71, 61, 50, 0.18);
+  --scrollbar-thumb-hover: rgba(13, 107, 99, 0.42);
+}
+
+/* ==========================================================================
+   VIP 1: CYBERPUNK NEON — Deep Midnight Navy, Electric Cyan & Neon Magenta
+   ========================================================================== */
+html[data-theme="cyberpunk-neon"] {
+  color-scheme: dark;
+  accent-color: var(--color-primary-light);
+
+  --color-background: rgb(9 12 24);
+  --color-popover: rgb(13 18 35);
+  --color-surface: rgb(16 22 42);
+  --color-surface-hover: rgb(23 32 58);
+  --color-card: rgb(20 28 52);
+  --color-card-hover: rgb(28 38 70);
+
+  --color-primary-dark: rgb(16 85 112);
+  --color-primary: rgb(14 116 144);
+  --color-primary-light: rgb(34 211 238);
+
+  --color-gold: rgb(250 235 55);
+  --color-gold-hover: rgb(230 214 38);
+  --color-gold-pressed: rgb(202 186 24);
+  --color-on-gold: rgb(12 15 28);
+
+  --color-magenta: rgb(255 46 230);
+  --color-blue: rgb(56 189 248);
+
+  --color-neutral-50: rgb(244 248 255);
+  --color-neutral-100: rgb(232 240 254);
+  --color-neutral-200: rgb(214 226 250);
+  --color-neutral-300: rgb(194 209 235);
+  --color-neutral-400: rgb(140 160 196);
+  --color-neutral-500: rgb(95 116 156);
+  --color-neutral-600: rgb(64 82 117);
+  --color-neutral-700: rgb(41 54 82);
+  --color-neutral-800: rgb(26 35 56);
+  --color-neutral-900: rgb(13 18 32);
+
+  --theme-shadow-glow-gold: 0 0 12px rgb(250 235 55 / 0.3);
+  --theme-shadow-glow-gold-md: 0 0 11px rgb(250 235 55 / 0.26);
+  --theme-shadow-glow-gold-sm: 0 0 10px rgb(250 235 55 / 0.24);
+  --theme-shadow-glow-gold-xs: 0 0 12px rgb(250 235 55 / 0.2);
+  --theme-shadow-glow-magenta: 0 0 16px rgb(255 46 230 / 0.28);
+
+  --ambient-glow-1: rgba(255, 46, 230, 0.09);
+  --ambient-glow-2: rgba(34, 211, 238, 0.12);
+  --ambient-glow-3: rgba(14, 116, 144, 0.16);
+  --ambient-onboarding-1: rgba(255, 46, 230, 0.11);
+  --ambient-onboarding-2: rgba(34, 211, 238, 0.14);
+  --ambient-onboarding-3: rgba(14, 116, 144, 0.16);
+  --ambient-auth-1: rgba(255, 46, 230, 0.18);
+  --ambient-auth-2: rgba(34, 211, 238, 0.2);
+
+  --hero-glow-top: rgba(250, 235, 55, 0.14);
+  --hero-glow-bottom: rgba(255, 46, 230, 0.18);
+
+  --switcher-bg-start: rgba(14, 116, 144, 0.34);
+  --switcher-bg-end: rgba(13, 18, 35, 0.74);
+  --switcher-border-start: rgba(34, 211, 238, 0.62);
+  --switcher-border-end: rgba(255, 46, 230, 0.32);
+  --switcher-border-hover-start: rgba(34, 211, 238, 0.88);
+  --switcher-border-hover-end: rgba(255, 46, 230, 0.56);
+
+  --scrollbar-thumb: rgba(34, 211, 238, 0.34);
+  --scrollbar-thumb-hover: rgba(255, 46, 230, 0.58);
+}
+
+/* ==========================================================================
+   VIP 2: FOREST RANGER — Deep Canopy Moss, Emerald & Warm Lantern Amber
+   ========================================================================== */
+html[data-theme="forest-ranger"] {
+  color-scheme: dark;
+  accent-color: var(--color-primary-light);
+
+  --color-background: rgb(7 20 15);
+  --color-popover: rgb(11 29 22);
+  --color-surface: rgb(14 38 29);
+  --color-surface-hover: rgb(20 51 39);
+  --color-card: rgb(18 46 35);
+  --color-card-hover: rgb(24 61 47);
+
+  --color-primary-dark: rgb(6 78 59);
+  --color-primary: rgb(4 120 87);
+  --color-primary-light: rgb(52 211 153);
+
+  --color-gold: rgb(251 191 36);
+  --color-gold-hover: rgb(234 172 22);
+  --color-gold-pressed: rgb(210 148 12);
+  --color-on-gold: rgb(10 25 18);
+
+  --color-magenta: rgb(232 121 249);
+  --color-blue: rgb(45 212 191);
+
+  --color-neutral-50: rgb(242 251 247);
+  --color-neutral-100: rgb(229 246 239);
+  --color-neutral-200: rgb(210 236 224);
+  --color-neutral-300: rgb(188 218 204);
+  --color-neutral-400: rgb(134 173 155);
+  --color-neutral-500: rgb(92 130 112);
+  --color-neutral-600: rgb(61 97 80);
+  --color-neutral-700: rgb(39 68 55);
+  --color-neutral-800: rgb(23 45 35);
+  --color-neutral-900: rgb(10 22 17);
+
+  --theme-shadow-glow-gold: 0 0 12px rgb(251 191 36 / 0.28);
+  --theme-shadow-glow-gold-md: 0 0 11px rgb(251 191 36 / 0.24);
+  --theme-shadow-glow-gold-sm: 0 0 10px rgb(251 191 36 / 0.22);
+  --theme-shadow-glow-gold-xs: 0 0 12px rgb(251 191 36 / 0.18);
+  --theme-shadow-glow-magenta: 0 0 14px rgb(232 121 249 / 0.22);
+
+  --ambient-glow-1: rgba(52, 211, 153, 0.11);
+  --ambient-glow-2: rgba(251, 191, 36, 0.06);
+  --ambient-glow-3: rgba(4, 120, 87, 0.16);
+  --ambient-onboarding-1: rgba(52, 211, 153, 0.11);
+  --ambient-onboarding-2: rgba(251, 191, 36, 0.07);
+  --ambient-onboarding-3: rgba(4, 120, 87, 0.16);
+  --ambient-auth-1: rgba(52, 211, 153, 0.18);
+  --ambient-auth-2: rgba(4, 120, 87, 0.22);
+
+  --hero-glow-top: rgba(251, 191, 36, 0.13);
+  --hero-glow-bottom: rgba(4, 120, 87, 0.24);
+
+  --switcher-bg-start: rgba(4, 120, 87, 0.32);
+  --switcher-bg-end: rgba(11, 29, 22, 0.74);
+  --switcher-border-start: rgba(52, 211, 153, 0.58);
+  --switcher-border-end: rgba(251, 191, 36, 0.26);
+  --switcher-border-hover-start: rgba(52, 211, 153, 0.84);
+  --switcher-border-hover-end: rgba(251, 191, 36, 0.48);
+
+  --scrollbar-thumb: rgba(52, 211, 153, 0.32);
+  --scrollbar-thumb-hover: rgba(251, 191, 36, 0.58);
+}
+
+/* ==========================================================================
+   VIP 3: ROYAL GOLD — Silk Ivory Porcelain, Imperial Amber & Crown Gold
+   ========================================================================== */
+html[data-theme="royal-gold"] {
+  color-scheme: light;
+  accent-color: var(--color-primary);
+
+  --color-background: rgb(251 247 236);
+  --color-surface: rgb(243 235 216);
+  --color-surface-hover: rgb(234 224 199);
+  --color-card: rgb(255 254 250);
+  --color-card-hover: rgb(252 249 240);
+  --color-popover: rgb(255 254 250);
+
+  --color-primary-dark: rgb(107 63 0);
+  --color-primary: rgb(138 84 0);
+  --color-primary-light: rgb(180 118 8);
+
+  --color-gold: rgb(234 179 8);
+  --color-gold-hover: rgb(212 156 4);
+  --color-gold-pressed: rgb(186 132 0);
+  --color-gold-ink: rgb(138 84 0);
+  --color-on-gold: rgb(28 20 8);
+  --color-magenta: rgb(136 19 55);
+  --color-blue: rgb(30 64 175);
+
+  /* Funcionais calibrados para marfim dourado (>= 4.6:1 em surface) */
+  --color-info: rgb(3 105 161);
+  --color-info-hover: rgb(7 89 133);
+  --color-success-300: rgb(20 108 52);
+  --color-success-400: rgb(20 108 52);
+  --color-success-500: rgb(21 128 61);
+  --color-success-hover: rgb(22 101 52);
+
+  /* Escala neutra bronze/espresso (>= 5.8:1 até neutral-400 em surface) */
+  --color-neutral-50: rgb(34 25 14);
+  --color-neutral-100: rgb(51 39 24);
+  --color-neutral-200: rgb(68 53 34);
+  --color-neutral-300: rgb(90 71 47);
+  --color-neutral-400: rgb(107 86 58);
+  --color-neutral-500: rgb(140 120 86);
+  --color-neutral-600: rgb(214 200 170);
+  --color-neutral-700: rgb(230 218 192);
+  --color-neutral-800: rgb(241 232 212);
+  --color-neutral-900: rgb(251 247 236);
+
+  --theme-shadow-glow-gold:
+    0 3px 10px -1px rgba(138, 84, 0, 0.2), 0 1px 2px rgba(34, 25, 14, 0.06);
+  --theme-shadow-glow-gold-md:
+    0 2px 8px -1px rgba(138, 84, 0, 0.16), 0 1px 2px rgba(34, 25, 14, 0.05);
+  --theme-shadow-glow-gold-sm: 0 1px 3px rgba(138, 84, 0, 0.09);
+  --theme-shadow-glow-gold-xs: 0 1px 2px rgba(138, 84, 0, 0.08);
+  --theme-shadow-glow-magenta: 0 2px 8px -1px rgba(136, 19, 55, 0.14);
+  --theme-shadow-card-deep:
+    0 2px 10px -2px rgba(107, 63, 0, 0.1), 0 1px 2px -1px rgba(34, 25, 14, 0.05);
+  --theme-shadow-card-active:
+    0 4px 14px -2px rgba(138, 84, 0, 0.14),
+    0 8px 18px -4px rgba(34, 25, 14, 0.07);
+  --theme-shadow-popover-dark:
+    0 12px 32px -4px rgba(107, 63, 0, 0.16),
+    0 2px 6px -1px rgba(34, 25, 14, 0.06);
+
+  --ambient-glow-1: rgba(234, 179, 8, 0.14);
+  --ambient-glow-2: rgba(138, 84, 0, 0.08);
+  --ambient-glow-3: rgba(136, 19, 55, 0.06);
+  --ambient-onboarding-1: rgba(234, 179, 8, 0.15);
+  --ambient-onboarding-2: rgba(138, 84, 0, 0.1);
+  --ambient-onboarding-3: rgba(136, 19, 55, 0.08);
+  --ambient-auth-1: rgba(234, 179, 8, 0.18);
+  --ambient-auth-2: rgba(138, 84, 0, 0.14);
+
+  --hero-glow-top: rgba(234, 179, 8, 0.24);
+  --hero-glow-bottom: rgba(138, 84, 0, 0.14);
+
+  --switcher-bg-start: rgba(234, 179, 8, 0.14);
+  --switcher-bg-end: rgba(255, 254, 250, 0.94);
+  --switcher-border-start: rgba(180, 118, 8, 0.45);
+  --switcher-border-end: rgba(138, 84, 0, 0.22);
+  --switcher-border-hover-start: rgba(138, 84, 0, 0.65);
+  --switcher-border-hover-end: rgba(234, 179, 8, 0.48);
+
+  --scrollbar-thumb: rgba(138, 84, 0, 0.22);
+  --scrollbar-thumb-hover: rgba(138, 84, 0, 0.48);
+}

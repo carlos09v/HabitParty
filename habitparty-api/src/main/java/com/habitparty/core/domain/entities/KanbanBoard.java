@@ -9,6 +9,12 @@ public record KanbanBoard(
 ) {
   public record KanbanColumn(
       BoardColumn column,
-      List<Task> tasks
-  ) {}
+      List<Task> tasks,
+      Long totalTasks,
+      Long completedTasks
+  ) {
+    public KanbanColumn(BoardColumn column, List<Task> tasks) {
+      this(column, tasks, null, null);
+    }
+  }
 }

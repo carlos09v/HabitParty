@@ -106,11 +106,6 @@ export function InventoryCatalogView({
       isCompact={isCompact}
       headerMode="inventory"
       listAriaLabel={t("listAriaLabel")}
-      gridClassName={
-        isCompact
-          ? "lg:grid-cols-3 xl:grid-cols-4 gap-3.5"
-          : "lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4"
-      }
       sensors={sensors}
       onDragEnd={onDragEnd}
     >

@@ -180,12 +180,15 @@ export function AchievementsGallery({
   const categoryTabs: CategoryFilter[] = ["ALL", ...ACHIEVEMENT_CATEGORIES];
 
   return (
-    <section className="flex flex-col gap-4">
+    <section className="@container flex flex-col gap-4">
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-body-l font-extrabold text-neutral-50 flex items-center gap-2">
-            <Trophy size={18} className="text-amber-700 dark:text-gold" />
+            <Trophy
+              size={18}
+              className="text-amber-700 dark:text-gold shrink-0"
+            />
             <span>{isGamified ? t("titleGamified") : t("titleEssential")}</span>
           </h2>
           <p className="text-body-s text-neutral-300 mt-0.5">
@@ -253,6 +256,7 @@ export function AchievementsGallery({
                 setCurrentPage(1);
               }}
               size="sm"
+              className="w-full md:w-auto"
             />
           ) : undefined
         }
@@ -261,6 +265,7 @@ export function AchievementsGallery({
             <Select
               compact
               variant="filter"
+              className="w-full"
               icon={
                 <Sparkles size={14} className="text-amber-600 dark:text-gold" />
               }
@@ -278,14 +283,14 @@ export function AchievementsGallery({
 
       {/* GRID OF ACHIEVEMENT CARDS */}
       {filteredAchievements.length === 0 ? (
-        <div className="rounded-2xl border border-neutral-700 dark:border-primary/20 bg-card dark:bg-surface/35 shadow-2xs dark:shadow-none p-10 text-center text-body-s text-neutral-400">
+        <div className="rounded-2xl border border-neutral-700 dark:border-primary/20 bg-card dark:bg-surface/35 shadow-2xs dark:shadow-none p-6 sm:p-10 text-center text-body-s text-neutral-400">
           {isVisitorMode ? t("emptyVisitorGallery") : t("emptySearch")}
         </div>
       ) : (
         <div className="flex flex-col gap-4">
           <div
             className={cn(
-              "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
+              "grid grid-cols-1 @xl:grid-cols-2 @4xl:grid-cols-3",
               isCompact ? "gap-3" : "gap-4",
             )}
           >

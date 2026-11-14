@@ -38,6 +38,11 @@ public class UserMapper {
     entity.setTimezoneUpdatedAt(domain.getTimezoneUpdatedAt());
     entity.setLastDailyResetDate(domain.getLastDailyResetDate());
     entity.setNextDailyResetAt(domain.getNextDailyResetAt());
+    entity.setFriendCode(domain.getFriendCode());
+    entity.setProfileVisibility(domain.getProfileVisibility());
+    entity.setStatsVisibility(domain.getStatsVisibility());
+    entity.setAchievementsVisibility(domain.getAchievementsVisibility());
+    entity.setFriendRequestPolicy(domain.getFriendRequestPolicy());
     entity.setBirthDate(domain.getBirthDate());
     entity.setProfilePhotoUrl(domain.getProfilePhotoUrl().orElse(null));
     entity.setBio(domain.getBio().orElse(null));
@@ -175,6 +180,11 @@ public class UserMapper {
     user.setTimezoneUpdatedAt(entity.getTimezoneUpdatedAt());
     user.setLastDailyResetDate(entity.getLastDailyResetDate());
     user.setNextDailyResetAt(entity.getNextDailyResetAt());
+    user.setFriendCode(entity.getFriendCode());
+    user.setProfileVisibility(entity.getProfileVisibility());
+    user.setStatsVisibility(entity.getStatsVisibility());
+    user.setAchievementsVisibility(entity.getAchievementsVisibility());
+    user.setFriendRequestPolicy(entity.getFriendRequestPolicy());
     return user;
   }
 }

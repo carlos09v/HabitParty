@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.habitparty.application.ports.EmailDispatchLogRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.application.usecases.workspace.WorkspaceWriteGuard;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.task.Daily;
 import com.habitparty.core.domain.entities.task.Habit;
@@ -31,6 +32,7 @@ public class UpdateTaskUseCase {
   private final UserRepository userPort;
   private final EmailDispatchLogRepository emailLogPort;
   private final Clock clock;
+  private WorkspaceWriteGuard workspaceWriteGuard;
 
   @Autowired
   public UpdateTaskUseCase(
@@ -51,12 +53,23 @@ public class UpdateTaskUseCase {
     this(port, userPort, emailLogPort, Clock.systemDefaultZone());
   }
 
+  @Autowired(required = false)
+  public void setWorkspaceWriteGuard(WorkspaceWriteGuard workspaceWriteGuard) {
+    this.workspaceWriteGuard = workspaceWriteGuard;
+  }
+
   public Task execute(UUID taskId, UUID userIdLogado, UpdateTaskCommand command) {
     Task task = port.findById(taskId)
         .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada."));
     task.validateOwnership(userIdLogado);
 
     User loadedUser = userPort != null ? userPort.findById(userIdLogado).orElse(null) : null;
+    if (workspaceWriteGuard != null && loadedUser != null) {
+      workspaceWriteGuard.assertColumnWritable(
+          loadedUser,
+          task.getBoardColumnId(),
+          "Este ambiente está em modo somente-leitura no plano Free (máximo de 2 ambientes ativos). Faça upgrade para Premium para editar tarefas nele!");
+    }
     ZoneId userZone = loadedUser != null ? loadedUser.resolveZoneId(clock.getZone()) : clock.getZone();
     LocalDate today = loadedUser != null ? loadedUser.resolveLocalDate(clock) : LocalDate.now(clock);
 

@@ -2,8 +2,9 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { BoardColumn, Task, TaskTypeOption } from "@/types/task";
-import type { ColumnInsertTarget, InitialTaskFormData } from "@/types/task-ui";
+import { useTaskInteractionModals } from "@/hooks/useTaskInteractionModals";
+import type { BoardColumn } from "@/types/task";
+import type { ColumnInsertTarget } from "@/types/task-ui";
 
 interface UseBoardModalsOptions {
   initialOpenCreateColumn?: boolean;
@@ -46,35 +47,15 @@ export function useBoardModals({
     }
   }, [initialOpenCreateColumn, searchParams]);
 
-  // Modal: Criar / Editar Tarefa
-  const [taskModalState, setTaskModalState] = useState<{
-    isOpen: boolean;
-    columnId?: string;
-    defaultTaskType?: TaskTypeOption;
-    initialTitle?: string;
-    initialValues?: InitialTaskFormData;
-    taskToEdit?: Task | null;
-  }>({ isOpen: false, taskToEdit: null });
-
-  // Popover: Detalhes Rápidos da Tarefa
-  const [selectedTaskDetails, setSelectedTaskDetails] = useState<{
-    task: Task;
-    columnId: string;
-    anchorRect?: DOMRect | null;
-  } | null>(null);
-
-  // Menu de Contexto (botão direito na tarefa)
-  const [contextMenu, setContextMenu] = useState<{
-    isOpen: boolean;
-    position: { x: number; y: number };
-    task: Task | null;
-    columnId: string | null;
-  }>({
-    isOpen: false,
-    position: { x: 0, y: 0 },
-    task: null,
-    columnId: null,
-  });
+  const {
+    taskModalState,
+    setTaskModalState,
+    selectedTaskDetails,
+    setSelectedTaskDetails,
+    contextMenu,
+    setContextMenu,
+    handleOpenTaskContextMenu,
+  } = useTaskInteractionModals();
 
   // Menu de Contexto da Coluna (3 pontos)
   const [columnContextMenu, setColumnContextMenu] = useState<{
@@ -179,20 +160,6 @@ export function useBoardModals({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [selectedColumnId, clearColumnQueryParam]);
-
-  const handleOpenTaskContextMenu = useCallback(
-    (e: React.MouseEvent, task: Task, columnId: string) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setContextMenu({
-        isOpen: true,
-        position: { x: e.clientX, y: e.clientY },
-        task,
-        columnId,
-      });
-    },
-    [],
-  );
 
   const handleOpenColumnContextMenu = useCallback(
     (e: React.MouseEvent, column: BoardColumn) => {

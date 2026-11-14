@@ -2,7 +2,8 @@
 
 import { FilterX, SlidersHorizontal, Tag } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useId, useState } from "react";
+import { useId } from "react";
+import { createPortal } from "react-dom";
 import {
   STATUS_FILTER_OPTIONS,
   TASK_TYPE_FILTER_OPTIONS,
@@ -14,6 +15,7 @@ import {
   toPriorityMessageKey,
 } from "@/constants/task";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useFloatingPopover } from "@/hooks/useFloatingPopover";
 import type {
   BoardFilterState,
   TaskDifficultyOption,
@@ -40,20 +42,24 @@ export function RoutineFilterPopover({
 }: RoutineFilterPopoverProps) {
   const t = useTranslations("tasks.filters.popover");
   const { isGamified } = useExperienceMode();
-  const [showFilterPopover, setShowFilterPopover] = useState(false);
   const popoverId = useId();
-
-  useEffect(() => {
-    if (!showFilterPopover) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.stopPropagation();
-        setShowFilterPopover(false);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [showFilterPopover]);
+  const {
+    containerRef,
+    triggerRef,
+    popoverRef,
+    isOpen: showFilterPopover,
+    toggle: toggleFilterPopover,
+    coords,
+    shouldRenderPortal,
+    floatingStyle,
+  } = useFloatingPopover<HTMLDivElement, HTMLButtonElement, HTMLDivElement>({
+    align: "left",
+    estimatedHeight: 400,
+    estimatedWidth: 320,
+    offset: 8,
+    margin: 12,
+    zIndex: 130,
+  });
 
   const activeFiltersCount =
     (filters.taskType !== "all" ? 1 : 0) +
@@ -77,10 +83,11 @@ export function RoutineFilterPopover({
   };
 
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative">
       <button
+        ref={triggerRef}
         type="button"
-        onClick={() => setShowFilterPopover(!showFilterPopover)}
+        onClick={toggleFilterPopover}
         aria-expanded={showFilterPopover}
         aria-controls={popoverId}
         className={cn(
@@ -109,20 +116,21 @@ export function RoutineFilterPopover({
         )}
       </button>
 
-      {showFilterPopover && (
-        <>
-          <button
-            type="button"
-            aria-label={t("closeAria")}
-            className="fixed inset-0 z-40 cursor-default bg-transparent border-none p-0 m-0"
-            onClick={() => setShowFilterPopover(false)}
-          />
-
+      {showFilterPopover &&
+        shouldRenderPortal &&
+        coords &&
+        createPortal(
           <div
+            ref={popoverRef}
             id={popoverId}
             role="dialog"
+            aria-modal="false"
             aria-label={t("title")}
-            className="absolute left-0 top-full mt-2 w-80 rounded-xl bg-popover border border-neutral-700 dark:border-white/20 p-4 shadow-lg dark:shadow-popover-dark z-50 animate-in fade-in zoom-in-95 duration-150"
+            style={floatingStyle}
+            className={cn(
+              "w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] rounded-xl bg-popover border border-neutral-700 dark:border-white/20 p-4 shadow-lg dark:shadow-popover-dark animate-in fade-in zoom-in-95 duration-150",
+              coords.placement === "top" ? "origin-bottom" : "origin-top",
+            )}
           >
             {/* Cabeçalho do Popover */}
             <div className="flex items-center justify-between pb-2 border-b border-neutral-700 dark:border-white/10 mb-3">
@@ -377,9 +385,9 @@ export function RoutineFilterPopover({
                 </div>
               )}
             </div>
-          </div>
-        </>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

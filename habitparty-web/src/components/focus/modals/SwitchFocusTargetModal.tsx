@@ -147,7 +147,7 @@ export function SwitchFocusTargetModal({
                 <ArrowRightLeft size={18} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-body-s font-bold text-neutral-100">
                     {t("transferTitle")}
                   </span>
@@ -296,13 +296,13 @@ export function SwitchFocusTargetModal({
         </div>
 
         {/* Rodapé com botão de Cancelar / Manter Atual */}
-        <div className="flex items-center justify-end pt-3 border-t border-neutral-700 dark:border-primary/20">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end pt-3 border-t border-neutral-700 dark:border-primary/20">
           <button
             type="button"
             onClick={onClose}
             disabled={isSaving}
             className={cn(
-              "px-4 py-2 rounded-lg text-xs font-semibold text-neutral-400 hover:text-neutral-100 hover:bg-surface dark:hover:bg-white/10 transition-colors cursor-pointer",
+              "w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg text-xs font-semibold text-neutral-400 hover:text-neutral-100 hover:bg-surface dark:hover:bg-white/10 transition-colors cursor-pointer",
               isSaving && "opacity-50 cursor-not-allowed",
             )}
           >

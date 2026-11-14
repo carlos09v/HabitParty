@@ -45,6 +45,7 @@ export async function createWorkspaceAction(
     }
 
     updateTag("workspaces");
+    invalidateTaskDomainTags({ includeColumnSummaries: true });
 
     return { success: true, data: createdWorkspace };
   } catch (err) {
@@ -80,6 +81,7 @@ export async function updateWorkspaceAction(
     }
 
     updateTag("workspaces");
+    invalidateTaskDomainTags({ includeColumnSummaries: true });
 
     return { success: true, data: data as WorkspaceResponseDTO };
   } catch (err) {

@@ -43,12 +43,12 @@ export function DeleteWorkspaceModal({
         {t("descriptionSuffix")}
       </p>
 
-      <div className="flex justify-end gap-3">
+      <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 sm:gap-3">
         <button
           type="button"
           onClick={onClose}
           disabled={isLoading}
-          className="px-4 py-2 text-body-s text-neutral-300 hover:text-neutral-50 transition-colors focus:outline-none rounded-lg disabled:opacity-50 cursor-pointer"
+          className="w-full sm:w-auto px-4 py-2 text-body-s text-neutral-300 hover:text-neutral-50 transition-colors focus:outline-none rounded-lg disabled:opacity-50 cursor-pointer text-center"
         >
           {t("cancel")}
         </button>
@@ -56,7 +56,7 @@ export function DeleteWorkspaceModal({
           type="button"
           onClick={onConfirm}
           disabled={isLoading}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-600/80 dark:hover:bg-red-600 border border-red-600 dark:border-red-500/50 rounded-lg text-white text-body-s font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-red-400/50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-600/80 dark:hover:bg-red-600 border border-red-600 dark:border-red-500/50 rounded-lg text-white text-body-s font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-red-400/50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           {isLoading ? (
             <>

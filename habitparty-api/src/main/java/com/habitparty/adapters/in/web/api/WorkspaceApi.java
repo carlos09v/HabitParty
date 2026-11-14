@@ -55,4 +55,13 @@ public interface WorkspaceApi {
         @PathVariable UUID workspaceId,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
+
+    @Operation(
+        summary = "Obter Quadros de Todos os Workspaces",
+        description = "Retorna todos os workspaces do usuário com todas as colunas (visíveis e ocultas) e respectivas tarefas para o Dashboard.")
+    @GetMapping("/boards")
+    ResponseEntity<List<WorkspaceResponseDTO>> getAllWorkspacesBoards(
+        @RequestParam(required = false, defaultValue = "false") boolean excludeArchivedCompleted,
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
+    );
 }

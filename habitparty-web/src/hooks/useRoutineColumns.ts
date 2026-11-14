@@ -19,55 +19,11 @@ import {
 } from "@/hooks/useFocusTaskSync";
 import type { BoardColumn } from "@/types/task";
 import type { ColumnInsertTarget } from "@/types/task-ui";
-
-function persistVisibleColumnsForWorkspace(
-  targetWorkspaceId: string | null | undefined,
-  ids: string[],
-) {
-  if (!targetWorkspaceId) return;
-  try {
-    localStorage.setItem(
-      `habitparty_visible_columns_${targetWorkspaceId}`,
-      JSON.stringify(ids),
-    );
-  } catch {
-    // localStorage indisponível ou bloqueado
-  }
-  try {
-    // biome-ignore lint/suspicious/noDocumentCookie: Persiste colunas visíveis por workspace no cliente
-    document.cookie = `hp_visible_cols_${targetWorkspaceId}=${encodeURIComponent(
-      JSON.stringify(ids),
-    )}; path=/; max-age=31536000; SameSite=Lax`;
-  } catch {
-    // falha silenciosa em ambientes restritos
-  }
-}
-
-function appendVisibleColumnIfSpaceAllows(
-  targetWorkspaceId: string,
-  columnId: string,
-  maxAllowed: number,
-) {
-  try {
-    const raw = localStorage.getItem(
-      `habitparty_visible_columns_${targetWorkspaceId}`,
-    );
-    if (!raw) return;
-    const parsed = JSON.parse(raw);
-    if (
-      Array.isArray(parsed) &&
-      !parsed.includes(columnId) &&
-      parsed.length < maxAllowed
-    ) {
-      persistVisibleColumnsForWorkspace(targetWorkspaceId, [
-        ...parsed,
-        columnId,
-      ]);
-    }
-  } catch {
-    // localStorage indisponível ou inválido
-  }
-}
+import {
+  appendVisibleColumnIfSpaceAllows,
+  persistVisibleColumnsClient,
+  readVisibleColumnsStorage,
+} from "@/utils/columnVisibility";
 
 /**
  * Estado do quadro de rotina: colunas, visibilidade e mutações de colunas.
@@ -87,10 +43,6 @@ export function useRoutineColumns(
   const [isDeletingColumn, setIsDeletingColumn] = useState(false);
   const maxAllowed = isPremium ? MAX_COLUMNS_PREMIUM : MAX_VISIBLE_COLUMNS;
 
-  const storageKey = workspaceId
-    ? `habitparty_visible_columns_${workspaceId}`
-    : null;
-
   // 1. Inicializa o estado com a preferência do Cookie (se vinda do SSR) ou com o padrão das primeiras colunas
   const [visibleColumnIds, setVisibleColumnIds] = useState<string[]>(() =>
     resolveVisibleColumnIds(
@@ -109,38 +61,29 @@ export function useRoutineColumns(
 
   const persistVisibleColumns = useCallback(
     (ids: string[]) => {
-      persistVisibleColumnsForWorkspace(workspaceId, ids);
+      persistVisibleColumnsClient(workspaceId, ids);
     },
     [workspaceId],
   );
 
   // 2. Carrega preferências do localStorage no mount como fallback se o cookie ainda não existia
   useEffect(() => {
-    if (!storageKey) return;
+    const stored = readVisibleColumnsStorage(workspaceId);
+    if (!stored || stored.length === 0) return;
 
-    try {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const allIds = initialColumns.map((c) => c.id);
-          const resolved = resolveVisibleColumnIds(
-            allIds,
-            parsed,
-            maxAllowed,
-            targetColumnId,
-          );
-          if (resolved.length > 0) {
-            setVisibleColumnIds(resolved);
-            persistVisibleColumns(resolved);
-          }
-        }
-      }
-    } catch {
-      // ignore
+    const allIds = initialColumns.map((c) => c.id);
+    const resolved = resolveVisibleColumnIds(
+      allIds,
+      stored,
+      maxAllowed,
+      targetColumnId,
+    );
+    if (resolved.length > 0) {
+      setVisibleColumnIds(resolved);
+      persistVisibleColumns(resolved);
     }
   }, [
-    storageKey,
+    workspaceId,
     maxAllowed,
     initialColumns,
     targetColumnId,

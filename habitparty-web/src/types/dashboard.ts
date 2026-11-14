@@ -9,6 +9,40 @@ export type ColumnSummaryDTO = components["schemas"]["BoardColumnSummaryDTO"];
 export type TransactionHistoryDTO =
   components["schemas"]["TransactionHistoryResponseDTO"];
 
+export interface DashboardWorkspaceOption {
+  id: string;
+  name: string;
+  isReadOnly?: boolean;
+}
+
+export interface DashboardColumnOption extends ColumnSummaryDTO {
+  workspaceId?: string;
+  workspaceName?: string;
+  isVisible?: boolean;
+  isReadOnly?: boolean;
+  totalTasks?: number;
+  completedTasks?: number;
+  archivedTotalCount?: number;
+  archivedCompletedCount?: number;
+}
+
+export type WeeklyCalendarTaskSummary = Pick<
+  Task,
+  | "id"
+  | "type"
+  | "taskType"
+  | "habitType"
+  | "resetCounter"
+  | "completed"
+  | "dueDate"
+  | "startDate"
+  | "repeatType"
+  | "repeatEvery"
+  | "daysOfWeek"
+  | "monthlyOption"
+  | "lastCompletedAt"
+>;
+
 export interface EconomyBarData {
   label: string;
   periodLabel?: string;
@@ -28,6 +62,7 @@ export interface EconomyWidgetProps {
 }
 
 export interface DashboardAdvancedFilters {
+  workspaceId: string;
   taskType: "all" | "HABIT" | "DAILY" | "TODO";
   columnId: string;
   difficulty: "all" | "TRIVIAL" | "EASY" | "MEDIUM" | "HARD";
@@ -38,8 +73,10 @@ export interface DashboardAdvancedFilters {
 export interface DashboardMainProps {
   isCompact?: boolean;
   initialTasks?: Task[];
+  workspaces?: DashboardWorkspaceOption[];
   activeWorkspaceId?: string;
-  initialColumns?: ColumnSummaryDTO[];
+  initialColumns?: DashboardColumnOption[];
+  initialAllColumns?: DashboardColumnOption[];
   initialVisibleColumnIds?: string[];
   transactions?: TransactionHistoryDTO[];
   user?: UserResponseDTO | null;
@@ -50,18 +87,21 @@ export interface DashboardDailyBriefingProps {
   streak: number;
   tasks: Task[];
   transactions: TransactionHistoryDTO[];
-  hasOptimisticCompletionToday?: boolean;
   timezone?: string | null;
 }
 
 export interface DashboardListSummaryProps {
-  initialColumns: ColumnSummaryDTO[];
+  initialColumns: DashboardColumnOption[];
   initialVisibleColumnIds?: string[];
-  columns?: ColumnSummaryDTO[];
-  onColumnsChange?: React.Dispatch<React.SetStateAction<ColumnSummaryDTO[]>>;
+  columns?: DashboardColumnOption[];
+  onColumnsChange?: React.Dispatch<
+    React.SetStateAction<DashboardColumnOption[]>
+  >;
   onColumnDeleted?: (columnId: string) => void;
   maxColumns: number;
   activeWorkspaceId?: string;
+  activeWorkspaceName?: string;
+  isReadOnly?: boolean;
   isCompact?: boolean;
   isPremium?: boolean;
   tasks?: Task[];
@@ -69,14 +109,13 @@ export interface DashboardListSummaryProps {
 
 export interface DashboardTasksPanelProps {
   initialTasks: Task[];
-  columns: ColumnSummaryDTO[];
+  columns: DashboardColumnOption[];
+  workspaces?: DashboardWorkspaceOption[];
+  defaultColumnId?: string;
   isCompact?: boolean;
+  isReadOnly?: boolean;
   tasks?: Task[];
   onTasksChange?: React.Dispatch<React.SetStateAction<Task[]>>;
-  onTaskCompletedTodayChange?: (
-    taskId: string,
-    completedToday: boolean,
-  ) => void;
 }
 
 export interface DashboardWidgetsDataProps {
@@ -87,7 +126,7 @@ export interface DashboardWidgetsDataProps {
   weeklySpent?: number;
   bars?: EconomyBarData[];
   transactions?: TransactionHistoryDTO[];
-  tasks?: Task[];
+  tasks?: WeeklyCalendarTaskSummary[];
   activities?: FocusActivity[];
   records?: FocusRecord[];
 }
@@ -107,7 +146,7 @@ export interface DashboardMobileDrawerProps {
 export interface WeeklyCalendarProps {
   isCompact?: boolean;
   transactions?: TransactionHistoryDTO[];
-  tasks?: Task[];
+  tasks?: WeeklyCalendarTaskSummary[];
   onSelectDay?: (isoString: string) => void;
 }
 
@@ -124,7 +163,8 @@ export interface PartyWidgetProps {
 
 export interface TaskTableProps {
   tasks: Task[];
-  columns?: ColumnSummaryDTO[];
+  columns?: DashboardColumnOption[];
+  workspaces?: DashboardWorkspaceOption[];
   itemsPerPage?: number;
   currentPage?: number;
   activeFilter?: TaskFilterType;
@@ -137,6 +177,7 @@ export interface TaskTableProps {
   selectedDate?: string | null;
   onPageChange?: (page: number) => void;
   deletingTaskIds?: ReadonlySet<string>;
+  onStartFocus?: (task: Task) => void;
 }
 
 export interface TaskFiltersProps {
@@ -144,8 +185,13 @@ export interface TaskFiltersProps {
   onFilterChange?: (filter: TaskFilterType) => void;
   selectedDate?: string | null;
   onClearDate?: () => void;
-  columns?: ColumnSummaryDTO[];
+  columns?: DashboardColumnOption[];
+  workspaces?: DashboardWorkspaceOption[];
   advancedFilters?: DashboardAdvancedFilters;
   onAdvancedFiltersChange?: (filters: DashboardAdvancedFilters) => void;
+  onCreateTask?: () => void;
+  canCreateTask?: boolean;
+  createTaskDisabledReason?: string;
+  overdueCount?: number;
   isCompact?: boolean;
 }

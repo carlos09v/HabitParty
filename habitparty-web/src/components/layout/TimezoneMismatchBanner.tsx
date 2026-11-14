@@ -110,7 +110,7 @@ export function TimezoneMismatchBanner({
     <aside
       aria-label={t("ariaLabel")}
       aria-live="polite"
-      className="w-full shrink-0 border-b border-sky-500/35 dark:border-sky-400/30 bg-sky-50 dark:bg-[#19223B] px-4 py-2.5 z-20"
+      className="w-full shrink-0 border-b border-sky-500/35 dark:border-sky-400/30 bg-sky-50 dark:bg-surface/95 px-4 py-2.5 z-20"
     >
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
         <div className="flex items-center gap-2.5 min-w-0">

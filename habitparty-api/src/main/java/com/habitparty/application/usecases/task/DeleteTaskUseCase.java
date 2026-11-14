@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.habitparty.application.ports.FocusRecordRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
+import com.habitparty.application.usecases.workspace.WorkspaceWriteGuard;
 import com.habitparty.core.domain.entities.focus.FocusRecord;
 import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
@@ -20,6 +21,7 @@ public class DeleteTaskUseCase {
   private final TaskRepository taskPort;
   private final TransactionHistoryRepository transactionPort;
   private FocusRecordRepository focusRecordPort;
+  private WorkspaceWriteGuard workspaceWriteGuard;
 
   public DeleteTaskUseCase(TaskRepository taskPort, TransactionHistoryRepository transactionPort) {
     this.taskPort = taskPort;
@@ -29,6 +31,11 @@ public class DeleteTaskUseCase {
   @Autowired(required = false)
   public void setFocusRecordPort(FocusRecordRepository focusRecordPort) {
     this.focusRecordPort = focusRecordPort;
+  }
+
+  @Autowired(required = false)
+  public void setWorkspaceWriteGuard(WorkspaceWriteGuard workspaceWriteGuard) {
+    this.workspaceWriteGuard = workspaceWriteGuard;
   }
 
   public void execute(UUID taskId, UUID userIdLogado) {
@@ -43,6 +50,12 @@ public class DeleteTaskUseCase {
     Task task = taskPort.findById(taskId)
         .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada."));
     task.validateOwnership(userIdLogado);
+    if (workspaceWriteGuard != null) {
+      workspaceWriteGuard.assertColumnWritable(
+          task.getBoardColumnId(),
+          userIdLogado,
+          "Este ambiente está em modo somente-leitura no plano Free (máximo de 2 ambientes ativos). Faça upgrade para Premium para excluir tarefas nele!");
+    }
 
     if (focusRecordPort != null) {
       if (deleteHistory) {

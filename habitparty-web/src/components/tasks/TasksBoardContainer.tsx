@@ -5,7 +5,7 @@ import { restrictToWindowEdges } from "@dnd-kit/modifiers";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { RouteLoading } from "@/components/layout/RouteLoading";
 import { RoutineBoard } from "@/components/tasks/RoutineBoard";
@@ -16,20 +16,25 @@ import { RoutineTaskList } from "@/components/tasks/RoutineTaskList";
 import { WorkspaceReadOnlyBanner } from "@/components/tasks/WorkspaceReadOnlyBanner";
 import { WorkspaceSearchHintBanner } from "@/components/tasks/WorkspaceSearchHintBanner";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
-import { normalizeTaskType } from "@/constants/task";
 import { WELCOME_CARD_DETAILS } from "@/constants/welcomeCards";
 import { useBoardFilters } from "@/hooks/useBoardFilters";
 import { useBoardModals } from "@/hooks/useBoardModals";
 import { useBoardTaskActions } from "@/hooks/useBoardTaskActions";
+import {
+  applyFocusCompletionToTask,
+  applyFocusRecordedToTask,
+  useFocusTaskSync,
+} from "@/hooks/useFocusTaskSync";
 import { useMidnightRollover } from "@/hooks/useMidnightRollover";
+import { useQuickFocusTask } from "@/hooks/useQuickFocusTask";
 import { useRoutineBoardDnd } from "@/hooks/useRoutineBoardDnd";
 import { useRoutineBoardLayout } from "@/hooks/useRoutineBoardLayout";
 import { useRoutineColumns } from "@/hooks/useRoutineColumns";
+import { useSyncWorkspaceSwitchReset } from "@/hooks/useSyncWorkspaceSwitchReset";
 import { useTaskDeleteFlow } from "@/hooks/useTaskDeleteFlow";
 import { useViewMode } from "@/hooks/useViewMode";
 import { useWorkspaceWriteGuard } from "@/hooks/useWorkspaceWriteGuard";
 import type { AppLocale } from "@/i18n/config";
-import { useProgressStore } from "@/store/progressStore";
 import { useUserStore } from "@/store/userStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import type { CreateTaskDTO, Task, TaskTypeOption } from "@/types/task";
@@ -39,6 +44,7 @@ import type {
 } from "@/types/task-ui";
 import { cn } from "@/utils";
 import { calculateTasksWelcomeStats } from "@/utils/catalogMetrics";
+import { resetTaskOnMidnightRollover } from "@/utils/taskMapper";
 
 const TasksBoardModals = dynamic(
   () =>
@@ -52,6 +58,14 @@ const UpgradePremiumModal = dynamic(
   () =>
     import("@/components/subscription/UpgradePremiumModal").then((mod) => ({
       default: mod.UpgradePremiumModal,
+    })),
+  { ssr: false },
+);
+
+const SwitchFocusTargetModal = dynamic(
+  () =>
+    import("@/components/focus/modals/SwitchFocusTargetModal").then((mod) => ({
+      default: mod.SwitchFocusTargetModal,
     })),
   { ssr: false },
 );
@@ -80,24 +94,12 @@ export function TasksBoardContainer({
   const activeWorkspaceIdFromStore = useWorkspaceStore(
     (state) => state.activeWorkspaceId,
   );
-  const isSwitchingWorkspace = useWorkspaceStore(
-    (state) => state.isSwitchingWorkspace,
-  );
+  const isSwitchingWorkspace = useSyncWorkspaceSwitchReset(workspaceIdProp);
   const workspaces = useWorkspaceStore((state) => state.workspaces);
   const is_Premium = isPremiumProp ?? userStorePremium;
   const activeWorkspaceId = workspaceIdProp ?? activeWorkspaceIdFromStore;
   const isCompact = isCompactProp ?? false;
 
-  useEffect(() => {
-    if (
-      isSwitchingWorkspace &&
-      (!activeWorkspaceIdFromStore ||
-        workspaceIdProp === activeWorkspaceIdFromStore)
-    ) {
-      useWorkspaceStore.setState({ isSwitchingWorkspace: false });
-      useProgressStore.getState().done("workspace-switch");
-    }
-  }, [workspaceIdProp, activeWorkspaceIdFromStore, isSwitchingWorkspace]);
   const [viewMode, setViewMode] = useViewMode("tasks", "card");
   const [isColumnsDrawerOpen, setIsColumnsDrawerOpen] = useState(false);
 
@@ -132,13 +134,7 @@ export function TasksBoardContainer({
     setColumns((prev) =>
       prev.map((col) => ({
         ...col,
-        tasks: col.tasks.map((task) => {
-          const type = normalizeTaskType(task);
-          if (type === "daily" || type === "habit") {
-            return { ...task, completed: false, hasClaimedReward: false };
-          }
-          return task;
-        }),
+        tasks: col.tasks.map(resetTaskOnMidnightRollover),
       })),
     );
   });
@@ -207,6 +203,50 @@ export function TasksBoardContainer({
     },
     [setSelectedTaskDetails],
   );
+
+  const {
+    pendingFocusTask,
+    currentFocusTarget,
+    clearPendingFocusTask,
+    handleStartFocusTask,
+    handleSaveAndStartFocusTask,
+    handleDiscardAndStartFocusTask,
+  } = useQuickFocusTask();
+
+  const syncFocusTaskUpdate = useCallback(
+    (taskId: string, updater: (task: Task) => Task) => {
+      setColumns((prev) =>
+        prev.map((col) => {
+          if (!col.tasks.some((task) => task.id === taskId)) return col;
+          return {
+            ...col,
+            tasks: col.tasks.map((task) =>
+              task.id === taskId ? updater(task) : task,
+            ),
+          };
+        }),
+      );
+      setSelectedTaskDetails((prev) =>
+        prev && prev.task.id === taskId
+          ? { ...prev, task: updater(prev.task) }
+          : prev,
+      );
+    },
+    [setColumns, setSelectedTaskDetails],
+  );
+
+  useFocusTaskSync({
+    onFocusRecorded: (taskId, durationMinutes, cycles) => {
+      syncFocusTaskUpdate(taskId, (task) =>
+        applyFocusRecordedToTask(task, durationMinutes, cycles),
+      );
+    },
+    onTaskCompleted: (taskId) => {
+      syncFocusTaskUpdate(taskId, (task) =>
+        applyFocusCompletionToTask(task, userTimezone),
+      );
+    },
+  });
 
   const handleOpenColumnsDrawer = useCallback(() => {
     setIsColumnsDrawerOpen(true);
@@ -389,6 +429,7 @@ export function TasksBoardContainer({
     isPremium: is_Premium,
     canCreateColumn: isWorkspaceReadOnly ? false : canCreateColumn,
     visibleColumnIds,
+    totalColumnsCount: columns.length,
     onOpenColumnsDrawer: handleOpenColumnsDrawer,
     onOpenCreateColumn: handleOpenCreateColumn,
     onOpenCreateTask: handleOpenCreateTask,
@@ -450,7 +491,7 @@ export function TasksBoardContainer({
           </div>
 
           <section
-            className="flex-1 min-h-0 min-w-0 flex flex-col"
+            className="flex-1 min-h-[440px] sm:min-h-[500px] lg:min-h-0 min-w-0 flex flex-col"
             aria-label={t("boardAria")}
           >
             <RoutineBoard
@@ -519,7 +560,7 @@ export function TasksBoardContainer({
           </div>
 
           <section
-            className="flex-1 min-h-0 min-w-0 flex flex-col"
+            className="flex-1 min-h-[440px] sm:min-h-[500px] lg:min-h-0 min-w-0 flex flex-col"
             aria-label={t("boardAria")}
           >
             <RoutineTaskList
@@ -535,6 +576,7 @@ export function TasksBoardContainer({
               onContextMenu={handleOpenTaskContextMenu}
               onToggleComplete={handleToggleComplete}
               onHabitChange={handleHabitChange}
+              onStartFocus={handleStartFocusTask}
               dndState={boardDnd}
             />
           </section>
@@ -586,12 +628,28 @@ export function TasksBoardContainer({
         isWorkspaceReadOnly={isWorkspaceReadOnly}
         onMoveColumnToWorkspace={handleMoveColumnToWorkspaceSafe}
         onMoveLockedWorkspace={handleMoveLockedWorkspace}
+        onStartFocus={handleStartFocusTask}
       />
 
       {isUpgradeModalOpen && (
         <UpgradePremiumModal
           isOpen={isUpgradeModalOpen}
           onClose={() => setIsUpgradeModalOpen(false)}
+        />
+      )}
+
+      {pendingFocusTask && (
+        <SwitchFocusTargetModal
+          isOpen={pendingFocusTask !== null}
+          onClose={clearPendingFocusTask}
+          currentName={currentFocusTarget?.name || t("currentSessionFallback")}
+          newTargetName={pendingFocusTask.title}
+          isCurrentInventory={currentFocusTarget?.type === "inventory"}
+          isCurrentTask={currentFocusTarget?.type === "task"}
+          isNewTask={true}
+          onTransfer={() => {}}
+          onSaveAndStartNew={handleSaveAndStartFocusTask}
+          onDiscardAndStartNew={handleDiscardAndStartFocusTask}
         />
       )}
     </>

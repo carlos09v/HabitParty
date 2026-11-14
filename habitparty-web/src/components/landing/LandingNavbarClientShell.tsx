@@ -48,14 +48,14 @@ export function LandingNavbarClientShell({
         "fixed top-0 left-0 right-0 z-50 transition-[background-color,border-color,padding,box-shadow] duration-300",
         isScrolled
           ? "bg-card/95 dark:bg-background/95 border-b border-neutral-700/80 dark:border-white/10 shadow-xs dark:shadow-lg dark:shadow-black/20 py-3"
-          : "bg-card/95 dark:bg-transparent border-b border-neutral-700/60 dark:border-transparent py-4 md:py-5",
+          : "bg-card/95 dark:bg-transparent border-b border-neutral-700/60 dark:border-transparent py-4 lg:py-5",
       )}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
         {desktopBarContent}
 
         {/* Mobile Actions & Menu Button */}
-        <div className="flex md:hidden items-center gap-2">
+        <div className="flex lg:hidden items-center gap-1.5 sm:gap-2 shrink-0">
           <LanguageToggleBtn variant="icon" />
           <ThemeToggleBtn variant="icon" />
           <button
@@ -76,14 +76,14 @@ export function LandingNavbarClientShell({
 
       {/* Mobile Dropdown */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-card dark:bg-surface border-b border-neutral-700 dark:border-white/10 px-6 py-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 shadow-xl">
-          <nav className="flex flex-col space-y-3 text-base font-medium text-neutral-200">
+        <div className="lg:hidden bg-card dark:bg-surface border-b border-neutral-700 dark:border-white/10 px-6 py-6 space-y-4 max-h-[calc(100dvh-4.5rem)] overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-200 shadow-xl">
+          <nav className="flex flex-col space-y-2 text-base font-medium text-neutral-200">
             {links.map((link) => (
               <a
                 key={link.id}
                 href={link.href}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="py-1 hover:text-primary dark:hover:text-gold transition-colors"
+                className="py-2 hover:text-primary dark:hover:text-gold transition-colors"
               >
                 {link.label}
               </a>

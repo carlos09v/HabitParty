@@ -114,7 +114,7 @@ export function RoutineBoard({
       {/* Quadro Kanban: Colunas fluidas com rolagem horizontal suave quando necessário */}
       <div
         className={cn(
-          "w-full h-full min-h-0 flex-1 overflow-x-auto custom-scrollbar min-w-0",
+          "w-full h-full min-h-0 flex-1 overflow-x-auto custom-scrollbar min-w-0 snap-x snap-proximity sm:snap-none",
           isCompact ? "pb-2 pt-1 px-1" : "pb-4 pt-2 px-1.5",
         )}
       >
@@ -135,7 +135,7 @@ export function RoutineBoard({
               <div
                 key={column.id}
                 className={cn(
-                  "h-full shrink-0 flex flex-col",
+                  "h-full shrink-0 flex flex-col snap-center sm:snap-align-none",
                   resolveColumnWidthClass(column.id),
                 )}
               >

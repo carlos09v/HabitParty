@@ -17,6 +17,7 @@ import com.habitparty.application.usecases.task.DailyResetUseCase;
 import com.habitparty.application.usecases.user.UserTimeResolver;
 import com.habitparty.application.usecases.workspace.CreateWorkspaceUseCase;
 import com.habitparty.application.usecases.workspace.DeleteWorkspaceUseCase;
+import com.habitparty.application.usecases.workspace.GetAllWorkspacesBoardsUseCase;
 import com.habitparty.application.usecases.workspace.GetFullKanbanBoardUseCase;
 import com.habitparty.application.usecases.workspace.ListUserWorkspacesUseCase;
 import com.habitparty.application.usecases.workspace.UpdateWorkspaceUseCase;
@@ -33,6 +34,7 @@ public class WorkspaceController implements WorkspaceApi {
   private final ListUserWorkspacesUseCase listUserWorkspacesUseCase;
   private final UpdateWorkspaceUseCase updateWorkspaceUseCase;
   private final GetFullKanbanBoardUseCase getFullKanbanBoardUseCase;
+  private final GetAllWorkspacesBoardsUseCase getAllWorkspacesBoardsUseCase;
   private final UserTimeResolver userTimeResolver;
   private DailyResetUseCase dailyResetUseCase;
 
@@ -92,13 +94,31 @@ public class WorkspaceController implements WorkspaceApi {
       UUID workspaceId,
       AuthenticatedUser usuarioLogado) {
     UUID userId = usuarioLogado.id();
-    if (dailyResetUseCase != null) {
-      dailyResetUseCase.resetUserIfDue(userId);
-    }
+    resetUserIfDue(userId);
     var kanbanBoard = getFullKanbanBoardUseCase.execute(workspaceId, userId);
     ZoneId userZone = userTimeResolver.resolveZone(userId);
     LocalDate today = LocalDate.now(userTimeResolver.clock().withZone(userZone));
     return ResponseEntity.ok(WorkspaceResponseDTO.fromKanbanBoard(
         kanbanBoard, today, userZone));
+  }
+
+  @Override
+  public ResponseEntity<List<WorkspaceResponseDTO>> getAllWorkspacesBoards(
+      boolean excludeArchivedCompleted,
+      AuthenticatedUser usuarioLogado) {
+    UUID userId = usuarioLogado.id();
+    resetUserIfDue(userId);
+    ZoneId userZone = userTimeResolver.resolveZone(userId);
+    LocalDate today = LocalDate.now(userTimeResolver.clock().withZone(userZone));
+    var boards = getAllWorkspacesBoardsUseCase.execute(userId, excludeArchivedCompleted, today);
+    return ResponseEntity.ok(boards.stream()
+        .map(board -> WorkspaceResponseDTO.fromKanbanBoard(board, today, userZone))
+        .toList());
+  }
+
+  private void resetUserIfDue(UUID userId) {
+    if (dailyResetUseCase != null) {
+      dailyResetUseCase.resetUserIfDue(userId);
+    }
   }
 }

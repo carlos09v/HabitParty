@@ -3,6 +3,7 @@ package com.habitparty.application.usecases.user;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,10 +11,12 @@ import com.habitparty.application.ports.BoardColumnRepository;
 import com.habitparty.application.ports.EmailDispatchLogRepository;
 import com.habitparty.application.ports.FocusActivityRepository;
 import com.habitparty.application.ports.FocusRecordRepository;
+import com.habitparty.application.ports.FriendshipRepository;
 import com.habitparty.application.ports.InventoryItemRepository;
 import com.habitparty.application.ports.ProfileHighlightRepository;
 import com.habitparty.application.ports.RefreshTokenRepository;
 import com.habitparty.application.ports.RewardRepository;
+import com.habitparty.application.ports.SocialNotificationRepository;
 import com.habitparty.application.ports.StoragePort;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
@@ -40,8 +43,47 @@ public class DeleteUserUseCase {
     private final RefreshTokenRepository refreshTokenPort;
     private final UserTokenRepository userTokenPort;
     private final EmailDispatchLogRepository emailDispatchLogPort;
-    private UserAchievementRepository userAchievementPort;
-    private ProfileHighlightRepository profileHighlightPort;
+    private final UserAchievementRepository userAchievementPort;
+    private final ProfileHighlightRepository profileHighlightPort;
+    private final FriendshipRepository friendshipPort;
+    private final SocialNotificationRepository socialNotificationPort;
+
+    @Autowired
+    public DeleteUserUseCase(UserRepository port,
+            StoragePort storagePort,
+            TaskRepository taskPort,
+            BoardColumnRepository boardColumnPort,
+            WorkspaceRepository workspacePort,
+            RewardRepository rewardPort,
+            InventoryItemRepository inventoryItemPort,
+            FocusRecordRepository focusRecordPort,
+            FocusActivityRepository focusActivityPort,
+            TransactionHistoryRepository transactionHistoryPort,
+            RefreshTokenRepository refreshTokenPort,
+            UserTokenRepository userTokenPort,
+            EmailDispatchLogRepository emailDispatchLogPort,
+            @Nullable UserAchievementRepository userAchievementPort,
+            @Nullable ProfileHighlightRepository profileHighlightPort,
+            @Nullable FriendshipRepository friendshipPort,
+            @Nullable SocialNotificationRepository socialNotificationPort) {
+        this.port = port;
+        this.storagePort = storagePort;
+        this.taskPort = taskPort;
+        this.boardColumnPort = boardColumnPort;
+        this.workspacePort = workspacePort;
+        this.rewardPort = rewardPort;
+        this.inventoryItemPort = inventoryItemPort;
+        this.focusRecordPort = focusRecordPort;
+        this.focusActivityPort = focusActivityPort;
+        this.transactionHistoryPort = transactionHistoryPort;
+        this.refreshTokenPort = refreshTokenPort;
+        this.userTokenPort = userTokenPort;
+        this.emailDispatchLogPort = emailDispatchLogPort;
+        this.userAchievementPort = userAchievementPort;
+        this.profileHighlightPort = profileHighlightPort;
+        this.friendshipPort = friendshipPort;
+        this.socialNotificationPort = socialNotificationPort;
+    }
 
     public DeleteUserUseCase(UserRepository port,
             StoragePort storagePort,
@@ -56,27 +98,24 @@ public class DeleteUserUseCase {
             RefreshTokenRepository refreshTokenPort,
             UserTokenRepository userTokenPort,
             EmailDispatchLogRepository emailDispatchLogPort) {
-        this.port = port;
-        this.storagePort = storagePort;
-        this.taskPort = taskPort;
-        this.boardColumnPort = boardColumnPort;
-        this.workspacePort = workspacePort;
-        this.rewardPort = rewardPort;
-        this.inventoryItemPort = inventoryItemPort;
-        this.focusRecordPort = focusRecordPort;
-        this.focusActivityPort = focusActivityPort;
-        this.transactionHistoryPort = transactionHistoryPort;
-        this.refreshTokenPort = refreshTokenPort;
-        this.userTokenPort = userTokenPort;
-        this.emailDispatchLogPort = emailDispatchLogPort;
-    }
-
-    @Autowired(required = false)
-    public void setShowcaseCleanupPorts(
-        UserAchievementRepository userAchievementPort,
-        ProfileHighlightRepository profileHighlightPort) {
-        this.userAchievementPort = userAchievementPort;
-        this.profileHighlightPort = profileHighlightPort;
+        this(
+            port,
+            storagePort,
+            taskPort,
+            boardColumnPort,
+            workspacePort,
+            rewardPort,
+            inventoryItemPort,
+            focusRecordPort,
+            focusActivityPort,
+            transactionHistoryPort,
+            refreshTokenPort,
+            userTokenPort,
+            emailDispatchLogPort,
+            null,
+            null,
+            null,
+            null);
     }
 
     public void execute(UUID id) {
@@ -101,6 +140,12 @@ public class DeleteUserUseCase {
         }
         if (userAchievementPort != null) {
             userAchievementPort.deleteAllByUserId(id);
+        }
+        if (friendshipPort != null) {
+            friendshipPort.deleteAllByUserId(id);
+        }
+        if (socialNotificationPort != null) {
+            socialNotificationPort.deleteAllByUserId(id);
         }
 
         // 3. Remove o usuário (e por cascade 1:1 remove user_stats e user_subscriptions)

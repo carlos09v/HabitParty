@@ -51,6 +51,7 @@ export function mapTaskResponseToTask(
   taskDto: TaskResponseDTO,
   columnId: string,
   timeZone?: string | null,
+  workspaceMeta?: { id?: string; name?: string },
 ): Task {
   const normalizedDifficulty = taskDto.difficulty
     ? normalizeTaskDifficulty(taskDto.difficulty)
@@ -128,6 +129,8 @@ export function mapTaskResponseToTask(
     totalFocusMinutes: taskDto.totalFocusMinutes ?? 0,
     focusCyclesCount: taskDto.focusCyclesCount ?? 0,
     columnId: columnId,
+    workspaceId: workspaceMeta?.id,
+    workspaceName: workspaceMeta?.name,
     order: taskDto.orderIndex || 0,
     checklist: taskDto.checklist || [],
   };
@@ -148,7 +151,10 @@ export function mapWorkspaceToBoardColumns(
     order: col.orderIndex || 0,
     icon: col.icon || "sun",
     tasks: (col.tasks || []).map((t) =>
-      mapTaskResponseToTask(t, col.id || "", timeZone),
+      mapTaskResponseToTask(t, col.id || "", timeZone, {
+        id: workspace.id,
+        name: workspace.name,
+      }),
     ),
   }));
 }
@@ -607,4 +613,95 @@ export function buildQuickCreateTaskPayload(
       order: 0,
     },
   };
+}
+
+/**
+ * Reseta estados diários/hábitos locais durante a virada da meia-noite no cliente
+ * para evitar exibição defasada enquanto a próxima sincronização SSR ocorre.
+ */
+export function resetTaskOnMidnightRollover(task: Task): Task {
+  const type = normalizeTaskType(task);
+  if (type === "daily" || type === "habit") {
+    return { ...task, completed: false, hasClaimedReward: false };
+  }
+  return task;
+}
+
+/**
+ * Preenche `workspaceId` e `workspaceName` na tarefa a partir da coluna correspondente,
+ * útil após criação/edição/duplicação otimista em visões multi-workspace como o Dashboard.
+ */
+export function enrichTaskWithColumnWorkspace(
+  task: Task,
+  columns?: ReadonlyArray<{
+    id?: string;
+    workspaceId?: string;
+    workspaceName?: string;
+  }>,
+): Task {
+  if (!task.columnId || !columns?.length) return task;
+  const matchedCol = columns.find((c) => c.id === task.columnId);
+  if (!matchedCol?.workspaceId) return task;
+  if (
+    task.workspaceId === matchedCol.workspaceId &&
+    task.workspaceName === matchedCol.workspaceName
+  ) {
+    return task;
+  }
+  return {
+    ...task,
+    workspaceId: matchedCol.workspaceId,
+    workspaceName: matchedCol.workspaceName,
+  };
+}
+
+/**
+ * Constrói os conjuntos de IDs somente-leitura para workspaces excedentes e suas colunas.
+ */
+export function buildReadOnlySets(
+  workspaces: ReadonlyArray<{ id?: string; isReadOnly?: boolean }>,
+  columns?: ReadonlyArray<{
+    id?: string;
+    workspaceId?: string;
+    isReadOnly?: boolean;
+  }>,
+): {
+  readOnlyWorkspaceIds: Set<string>;
+  readOnlyColumnIds: Set<string>;
+} {
+  const readOnlyWorkspaceIds = new Set<string>();
+  for (const ws of workspaces) {
+    if (ws.id && ws.isReadOnly) {
+      readOnlyWorkspaceIds.add(ws.id);
+    }
+  }
+
+  const readOnlyColumnIds = new Set<string>();
+  for (const col of columns ?? []) {
+    if (
+      col.id &&
+      (col.isReadOnly ||
+        (col.workspaceId && readOnlyWorkspaceIds.has(col.workspaceId)))
+    ) {
+      readOnlyColumnIds.add(col.id);
+    }
+  }
+
+  return { readOnlyWorkspaceIds, readOnlyColumnIds };
+}
+
+/**
+ * Verifica se uma tarefa pertence a um workspace ou coluna bloqueada para escrita.
+ */
+export function isTaskInReadOnlyScope(
+  task: Pick<Task, "workspaceId" | "columnId">,
+  readOnlyWorkspaceIds: ReadonlySet<string>,
+  readOnlyColumnIds: ReadonlySet<string>,
+  overrideColumnId?: string,
+): boolean {
+  const effectiveColumnId = overrideColumnId || task.columnId;
+  return Boolean(
+    (task.workspaceId && readOnlyWorkspaceIds.has(task.workspaceId)) ||
+      (effectiveColumnId && readOnlyColumnIds.has(effectiveColumnId)),
+  );
 }

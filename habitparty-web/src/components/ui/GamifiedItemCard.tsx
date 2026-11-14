@@ -2,15 +2,22 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Clock } from "lucide-react";
+import { Clock, HelpCircle, Loader2, MoreVertical } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { memo, type default as React, useState } from "react";
+import { memo, type default as React, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { MysteryBoxTierPopover } from "@/components/reward/MysteryBoxTierPopover";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useFloatingPopover } from "@/hooks/useFloatingPopover";
 import type { AppLocale } from "@/i18n/config";
 import type { MysteryBoxLootItem } from "@/types/reward";
-import { cn, formatCoins } from "@/utils";
+import {
+  cn,
+  formatCoins,
+  openContextMenuFromButton,
+  STOP_DRAG_PROPAGATION_PROPS,
+} from "@/utils";
 import { resolveCatalogItemVisuals } from "@/utils/catalogItemVisuals";
 import {
   formatBackpackItemRemainingTime,
@@ -40,6 +47,7 @@ export interface GamifiedItemCardProps {
   dragData?: Record<string, unknown>;
   inUse?: boolean;
   isActiveFocusSession?: boolean;
+  isDeleteChecking?: boolean;
   lootItems?: MysteryBoxLootItem[];
 }
 
@@ -69,6 +77,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
   dragData,
   inUse = false,
   isActiveFocusSession,
+  isDeleteChecking = false,
   lootItems,
 }: GamifiedItemCardProps) {
   const t = useTranslations("ui.itemCatalog");
@@ -98,30 +107,6 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
     includeMysteryTier: true,
   });
 
-  const [isHovered, setIsHovered] = useState(false);
-  const [popoverPlacement, setPopoverPlacement] = useState<{
-    side: "left" | "right";
-    vertical: "top" | "bottom";
-  }>({ side: "right", vertical: "top" });
-
-  const handleMysteryEnterOrFocus = (
-    e: React.MouseEvent<HTMLElement> | React.FocusEvent<HTMLElement>,
-  ) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const spaceRight = window.innerWidth - rect.right;
-    const spaceBelow = window.innerHeight - rect.top;
-
-    const side = spaceRight < 310 ? "left" : "right";
-    const vertical = spaceBelow < 380 && rect.bottom > 380 ? "bottom" : "top";
-
-    setPopoverPlacement({ side, vertical });
-    setIsHovered(true);
-  };
-
-  const handleMysteryLeave = () => {
-    setIsHovered(false);
-  };
-
   const {
     attributes,
     listeners,
@@ -134,6 +119,34 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
     data: dragData || { id },
   });
 
+  const {
+    containerRef: tierContainerRef,
+    popoverRef: tierPopoverRef,
+    isOpen: isTierPopoverOpen,
+    open: openTierPopover,
+    close: closeTierPopover,
+    toggle: toggleTierPopover,
+    coords: tierPopoverCoords,
+    shouldRenderPortal: shouldRenderTierPortal,
+    floatingStyle: tierFloatingStyle,
+  } = useFloatingPopover<HTMLElement, HTMLElement, HTMLElement>({
+    align: "right",
+    estimatedWidth: 288,
+    estimatedHeight: 340,
+    margin: 12,
+    offset: 8,
+    zIndex: 80,
+    disabled: !isMystery || !mysteryTier || isDragging,
+  });
+
+  const setCardRefs = useCallback(
+    (node: HTMLElement | null) => {
+      setNodeRef(node);
+      tierContainerRef.current = node;
+    },
+    [setNodeRef, tierContainerRef],
+  );
+
   const style = {
     transform: CSS.Translate.toString(transform),
     transition: isDragging ? undefined : transition,
@@ -143,7 +156,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
 
   return (
     <article
-      ref={setNodeRef}
+      ref={setCardRefs}
       style={style}
       {...attributes}
       {...listeners}
@@ -157,21 +170,54 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
         onDoubleClick(e);
       }}
       onContextMenu={onContextMenu}
-      onMouseEnter={isMystery ? handleMysteryEnterOrFocus : undefined}
-      onMouseLeave={isMystery ? handleMysteryLeave : undefined}
-      onFocus={isMystery ? handleMysteryEnterOrFocus : undefined}
-      onBlur={isMystery ? handleMysteryLeave : undefined}
+      onPointerEnter={
+        isMystery
+          ? (e) => {
+              if (e.pointerType === "mouse") {
+                openTierPopover();
+              }
+            }
+          : undefined
+      }
+      onPointerLeave={
+        isMystery
+          ? (e) => {
+              if (e.pointerType === "mouse") {
+                closeTierPopover();
+              }
+            }
+          : undefined
+      }
+      onFocus={
+        isMystery
+          ? (e) => {
+              if (
+                e.target === e.currentTarget &&
+                e.currentTarget.matches(":focus-visible")
+              ) {
+                openTierPopover();
+              }
+            }
+          : undefined
+      }
+      onBlur={
+        isMystery
+          ? (e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                closeTierPopover();
+              }
+            }
+          : undefined
+      }
       className={cn(
-        "relative flex flex-col justify-between rounded-xl bg-card dark:bg-linear-to-b dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,transform] duration-150 group select-none shadow-xs dark:shadow-sm hover:shadow-card-deep hover:-translate-y-0.5",
-        isHovered && isMystery && !isDragging
-          ? "overflow-visible z-40"
-          : "overflow-hidden",
+        "relative flex flex-col justify-between rounded-xl bg-card dark:bg-linear-to-b dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,transform] duration-150 group select-none shadow-xs dark:shadow-sm hover:shadow-card-deep hover:-translate-y-0.5 overflow-hidden",
         inUse
           ? "border-amber-500/45 bg-card dark:border-amber-500/40 dark:bg-amber-500/5"
           : packageGlow ||
               "border-neutral-700 hover:border-amber-500/50 dark:border-white/15 dark:hover:border-gold/50",
         isCompact ? "p-2.5 gap-2" : "p-3.5 gap-2.5",
         onDoubleClick && "cursor-pointer",
+        isDeleteChecking && "opacity-75 pointer-events-none cursor-wait",
         isDragging && "transition-none! opacity-50 ring-2 ring-gold z-50",
       )}
     >
@@ -210,55 +256,117 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
           </div>
 
           <div className="flex flex-col flex-1 min-w-0 gap-0.5">
-            <div className="flex items-center justify-between gap-1.5 w-full min-w-0">
-              <h4
-                className={cn(
-                  "font-bold text-neutral-100 truncate group-hover:text-primary dark:group-hover:text-gold transition-colors leading-tight",
-                  isCompact ? "text-xs" : "text-body-s",
-                )}
-              >
-                {title}
-              </h4>
-
-              <div className="flex items-center gap-1 shrink-0">
-                {inUse && (
-                  <span className="inline-flex items-center gap-1 font-bold rounded border border-amber-500/40 bg-amber-500/15 text-amber-800 dark:text-amber-300 text-tiny px-1.5 py-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
-                    {t("inFocus")}
-                  </span>
-                )}
-
-                {typeof quantity === "number" && (
-                  <span
-                    className={cn(
-                      "font-bold bg-surface border border-neutral-700 dark:bg-white/10 dark:border-white/20 text-neutral-100 px-1.5 py-0.5",
-                      isCompact
-                        ? "text-tiny rounded"
-                        : "text-label-g rounded-md",
-                    )}
-                  >
-                    {quantity}x
-                  </span>
-                )}
-
-                <span
+            <div className="flex items-start justify-between gap-1.5 w-full min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5 min-w-0 flex-1">
+                <h4
                   className={cn(
-                    "inline-flex items-center gap-1 border font-medium leading-none shrink-0 text-tiny px-1.5 py-0.5",
-                    isCompact ? "rounded" : "rounded-md",
-                    typeMeta?.color ||
-                      "text-neutral-200 bg-white/10 border-white/20",
+                    "font-bold text-neutral-100 truncate max-w-full group-hover:text-primary dark:group-hover:text-gold transition-colors leading-tight",
+                    isCompact ? "text-xs" : "text-body-s",
                   )}
                 >
-                  {typeMeta?.icon && (
-                    <typeMeta.icon
-                      size={isCompact ? 9 : 10}
-                      className="shrink-0"
-                      aria-hidden="true"
-                    />
+                  {title}
+                </h4>
+
+                <div className="flex flex-wrap items-center gap-1 shrink-0">
+                  {inUse && (
+                    <span className="inline-flex items-center gap-1 font-bold rounded border border-amber-500/40 bg-amber-500/15 text-amber-800 dark:text-amber-300 text-tiny px-1.5 py-0.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
+                      {t("inFocus")}
+                    </span>
                   )}
-                  <span>{t(`types.${typeKey}`)}</span>
-                </span>
+
+                  {typeof quantity === "number" && (
+                    <span
+                      className={cn(
+                        "font-bold bg-surface border border-neutral-700 dark:bg-white/10 dark:border-white/20 text-neutral-100 px-1.5 py-0.5",
+                        isCompact
+                          ? "text-tiny rounded"
+                          : "text-label-g rounded-md",
+                      )}
+                    >
+                      {quantity}x
+                    </span>
+                  )}
+
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 border font-medium leading-none shrink-0 text-tiny px-1.5 py-0.5",
+                      isCompact ? "rounded" : "rounded-md",
+                      typeMeta?.color ||
+                        "text-neutral-200 bg-white/10 border-white/20",
+                    )}
+                  >
+                    {typeMeta?.icon && (
+                      <typeMeta.icon
+                        size={isCompact ? 9 : 10}
+                        className="shrink-0"
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span>{t(`types.${typeKey}`)}</span>
+                  </span>
+                </div>
               </div>
+
+              {((isMystery && mysteryTier) ||
+                onContextMenu ||
+                isDeleteChecking) && (
+                <div className="flex items-center gap-0.5 shrink-0 -mr-1 -mt-0.5">
+                  {isMystery && mysteryTier && (
+                    <button
+                      type="button"
+                      {...STOP_DRAG_PROPAGATION_PROPS}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTierPopover();
+                      }}
+                      onDoubleClick={(e) => e.stopPropagation()}
+                      aria-expanded={isTierPopoverOpen}
+                      aria-label={t("tierDetailsAria")}
+                      title={t("tierDetailsAria")}
+                      className="inline-flex items-center justify-center rounded-md text-neutral-400 hover:text-gold hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer min-w-7 min-h-7 pointer-coarse:min-w-8 pointer-coarse:min-h-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                    >
+                      <HelpCircle
+                        size={isCompact ? 13 : 14}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  )}
+
+                  {isDeleteChecking ? (
+                    <output
+                      className="inline-flex items-center justify-center text-gold min-w-7 min-h-7 pointer-coarse:min-w-8 pointer-coarse:min-h-8"
+                      title={t("checkingDeleteAria")}
+                      aria-label={t("checkingDeleteAria")}
+                    >
+                      <Loader2
+                        size={isCompact ? 14 : 15}
+                        className="animate-spin"
+                        aria-hidden="true"
+                      />
+                    </output>
+                  ) : (
+                    onContextMenu && (
+                      <button
+                        type="button"
+                        {...STOP_DRAG_PROPAGATION_PROPS}
+                        onClick={(e) =>
+                          openContextMenuFromButton(e, onContextMenu)
+                        }
+                        onDoubleClick={(e) => e.stopPropagation()}
+                        aria-label={t("moreActionsAria")}
+                        title={t("moreActionsAria")}
+                        className="inline-flex items-center justify-center rounded-md text-neutral-400 hover:text-neutral-100 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer min-w-7 min-h-7 pointer-coarse:min-w-8 pointer-coarse:min-h-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                      >
+                        <MoreVertical
+                          size={isCompact ? 14 : 15}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    )
+                  )}
+                </div>
+              )}
             </div>
 
             {description && description.trim() !== "" ? (
@@ -348,7 +456,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
       </div>
 
       {/* BASE: Preço (na Loja) ou Status + Botões de Ação */}
-      <footer className="flex items-center justify-between pt-2.5 border-t border-neutral-700 dark:border-white/10 w-full gap-2">
+      <footer className="flex flex-wrap items-center justify-between pt-2.5 border-t border-neutral-700 dark:border-white/10 w-full gap-2">
         <div className="flex items-center min-w-0">
           {typeof price === "number" ? (
             <div
@@ -377,11 +485,11 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
 
         <div
           className={cn(
-            "flex items-center gap-2 shrink-0",
+            "flex flex-wrap items-center justify-end gap-2 shrink-0 ml-auto",
             typeof price !== "number" &&
               secondaryActionLabel &&
               onSecondaryAction &&
-              "w-full justify-end",
+              "w-full",
           )}
         >
           {secondaryActionLabel && onSecondaryAction && (
@@ -400,7 +508,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                     })
               }
               className={cn(
-                "rounded-lg font-semibold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs border text-neutral-200",
+                "rounded-lg font-semibold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs border text-neutral-200 pointer-coarse:min-h-9",
                 inUse
                   ? "bg-white/5 border-white/10 text-neutral-400 cursor-not-allowed opacity-60"
                   : "border-neutral-600 dark:border-primary/40 bg-surface/80 hover:bg-primary/10 hover:border-primary/40 hover:text-primary dark:hover:bg-gold/15 dark:hover:border-gold/60 dark:hover:text-gold active:scale-95 cursor-pointer",
@@ -435,7 +543,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                         })
             }
             className={cn(
-              "rounded-lg font-semibold dark:font-bold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs",
+              "rounded-lg font-semibold dark:font-bold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs pointer-coarse:min-h-9",
               typeof price !== "number" &&
                 secondaryActionLabel &&
                 onSecondaryAction &&
@@ -451,23 +559,23 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
         </div>
       </footer>
 
-      {/* Popover Informativo com Chances e Drops da Caixa Misteriosa */}
-      {isHovered && isMystery && mysteryTier && !isDragging && (
-        <MysteryBoxTierPopover
-          tier={mysteryTier}
-          customPrice={price}
-          customLootItems={lootItems}
-          alignClass={cn(
-            "max-sm:left-1/2 max-sm:-translate-x-1/2 max-sm:top-full max-sm:mt-2",
-            popoverPlacement.vertical === "bottom"
-              ? "sm:bottom-0 sm:top-auto"
-              : "sm:top-0 sm:bottom-auto",
-            popoverPlacement.side === "right"
-              ? "sm:left-full sm:right-auto sm:ml-3 sm:translate-x-0"
-              : "sm:right-full sm:left-auto sm:mr-3 sm:translate-x-0",
-          )}
-        />
-      )}
+      {/* Popover Informativo com Chances e Drops da Caixa Misteriosa (Portal para evitar clip em PageWrapper) */}
+      {shouldRenderTierPortal &&
+        isTierPopoverOpen &&
+        isMystery &&
+        mysteryTier &&
+        !isDragging &&
+        tierPopoverCoords &&
+        createPortal(
+          <MysteryBoxTierPopover
+            tier={mysteryTier}
+            customPrice={price}
+            customLootItems={lootItems}
+            popoverRef={tierPopoverRef}
+            style={tierFloatingStyle}
+          />,
+          document.body,
+        )}
     </article>
   );
 });

@@ -113,8 +113,8 @@ export function HelpFaqSection({
                 type="button"
                 onClick={() => setSearchQuery("")}
                 className={cn(
-                  "flex items-center gap-1 px-3 rounded-xl border border-neutral-700 dark:border-white/10 bg-card dark:bg-white/5 text-neutral-300 hover:text-neutral-100 hover:bg-surface-hover dark:hover:bg-white/10 transition-colors text-xs font-semibold cursor-pointer",
-                  isCompact ? "py-1" : "py-1.5",
+                  "w-full sm:w-auto flex items-center justify-center gap-1 px-3 rounded-xl border border-neutral-700 dark:border-white/10 bg-card dark:bg-white/5 text-neutral-300 hover:text-neutral-100 hover:bg-surface-hover dark:hover:bg-white/10 transition-colors text-xs font-semibold cursor-pointer",
+                  isCompact ? "py-1.5 sm:py-1" : "py-2 sm:py-1.5",
                 )}
               >
                 <X size={14} />
@@ -130,12 +130,12 @@ export function HelpFaqSection({
           ========================================== */}
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <HelpCircle className="text-gold" size={20} />
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <HelpCircle className="text-gold shrink-0" size={20} />
             <h2 className="text-body-m sm:text-subtitle-s font-bold text-neutral-100">
               {t("sectionTitle")}
             </h2>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-surface dark:bg-white/10 text-neutral-300 border border-neutral-700 dark:border-white/10">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-surface dark:bg-white/10 text-neutral-300 border border-neutral-700 dark:border-white/10 shrink-0">
               {filteredFaqs.length}{" "}
               {filteredFaqs.length === 1
                 ? t("topicSingular")
@@ -163,7 +163,7 @@ export function HelpFaqSection({
         </div>
 
         {filteredFaqs.length === 0 ? (
-          <div className="p-12 rounded-2xl bg-card dark:bg-surface/20 border border-neutral-700 dark:border-primary/20 shadow-xs dark:shadow-none text-center flex flex-col items-center justify-center gap-3">
+          <div className="p-6 sm:p-12 rounded-2xl bg-card dark:bg-surface/20 border border-neutral-700 dark:border-primary/20 shadow-xs dark:shadow-none text-center flex flex-col items-center justify-center gap-3">
             <Search className="text-neutral-400" size={32} />
             <p className="text-body-m font-bold text-neutral-200">
               {t("emptyTitle", { query: searchQuery })}

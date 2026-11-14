@@ -98,7 +98,7 @@ export function TimezoneSelectDropdown({
             placeholder={t("searchPlaceholder")}
             aria-label={t("searchPlaceholder")}
             className={cn(
-              "w-full rounded-lg pl-9 pr-8 py-2.5 text-body-s transition-colors",
+              "w-full rounded-lg pl-9 pr-9 py-2.5 text-base sm:text-body-s transition-colors",
               "bg-card border border-neutral-600 text-neutral-100 placeholder:text-neutral-400",
               "dark:bg-primary-dark/20 dark:border-primary/30",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 dark:focus-visible:border-primary-light",
@@ -108,7 +108,7 @@ export function TimezoneSelectDropdown({
             <button
               type="button"
               onClick={() => setSearchQuery("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-100 cursor-pointer p-0.5"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-100 cursor-pointer p-1.5 rounded-md"
               aria-label="Clear search"
             >
               <X size={14} />
@@ -161,7 +161,7 @@ export function TimezoneSelectDropdown({
                     : "text-neutral-200 hover:bg-surface-hover/70 border border-transparent",
                 )}
               >
-                <span className="flex items-center gap-2 min-w-0">
+                <span className="flex items-center gap-2 min-w-0 flex-1">
                   <span
                     className={cn(
                       "w-4 h-4 rounded-full flex items-center justify-center shrink-0",

@@ -7,6 +7,9 @@ import {
   CheckCheck,
   Flame,
   Sparkles,
+  Trophy,
+  UserCheck,
+  UserPlus,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -16,6 +19,7 @@ import {
   getSidebarNotificationsAction,
   type SidebarNotification,
 } from "@/actions/notificationActions";
+import { markSocialNotificationsSeenAction } from "@/actions/socialActions";
 import { useAnchoredPopoverPosition } from "@/hooks/useAnchoredPopoverPosition";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useUserStore } from "@/store/userStore";
@@ -220,6 +224,10 @@ export function SidebarNotificationsPopover({
     (n) => !dismissedIds.has(n.id),
   );
 
+  const unreadNotifications = activeNotifications.filter(
+    (n) => !n.socialNotificationId || !n.persistedSeen,
+  );
+
   const criticalNotifications = activeNotifications.filter(
     (n) => n.severity === "danger" || n.severity === "warning",
   );
@@ -227,12 +235,24 @@ export function SidebarNotificationsPopover({
   const displayedNotifications =
     activeTab === "CRITICAL" ? criticalNotifications : activeNotifications;
 
-  const unreadCount = activeNotifications.length;
+  const unreadCount = unreadNotifications.length;
   const hasCritical = criticalNotifications.length > 0;
 
   const handleDismissAll = () => {
+    const hasUnseenSocial = activeNotifications.some(
+      (n) => n.socialNotificationId && !n.persistedSeen,
+    );
+    if (hasUnseenSocial) {
+      void markSocialNotificationsSeenAction();
+    }
+
     const nextDismissed = new Set(notifications.map((n) => n.id));
     setDismissedIds(nextDismissed);
+    setNotifications((prev) =>
+      prev.map((n) =>
+        n.socialNotificationId ? { ...n, persistedSeen: true } : n,
+      ),
+    );
     if (typeof window !== "undefined") {
       try {
         window.localStorage.setItem(
@@ -245,6 +265,19 @@ export function SidebarNotificationsPopover({
     }
   };
 
+  const handleNotificationClick = (n: SidebarNotification) => {
+    if (n.socialNotificationId && !n.persistedSeen) {
+      const socialId = n.socialNotificationId;
+      setNotifications((prev) =>
+        prev.map((item) =>
+          item.id === n.id ? { ...item, persistedSeen: true } : item,
+        ),
+      );
+      void markSocialNotificationsSeenAction(socialId);
+    }
+    closePopover();
+  };
+
   const getNotificationIcon = (type: SidebarNotification["type"]) => {
     switch (type) {
       case "overdue":
@@ -255,6 +288,12 @@ export function SidebarNotificationsPopover({
         return <Flame size={15} className="text-amber-400 shrink-0" />;
       case "focus_item":
         return <Sparkles size={15} className="text-gold shrink-0" />;
+      case "social_request":
+        return <UserPlus size={15} className="text-amber-400 shrink-0" />;
+      case "social_accepted":
+        return <UserCheck size={15} className="text-emerald-400 shrink-0" />;
+      case "social_milestone":
+        return <Trophy size={15} className="text-gold shrink-0" />;
       default:
         return <Calendar size={15} className="text-sky-400 shrink-0" />;
     }
@@ -435,8 +474,13 @@ export function SidebarNotificationsPopover({
                 <Link
                   key={n.id}
                   href={n.href}
-                  onClick={closePopover}
-                  className="group/item flex items-start gap-2.5 p-2.5 rounded-xl border border-neutral-700 dark:border-primary/20 bg-surface/50 hover:bg-card-hover/90 hover:border-primary/40 dark:hover:border-gold/40 transition-colors text-left"
+                  onClick={() => handleNotificationClick(n)}
+                  className={cn(
+                    "group/item flex items-start gap-2.5 p-2.5 rounded-xl border bg-surface/50 hover:bg-card-hover/90 hover:border-primary/40 dark:hover:border-gold/40 transition-colors text-left",
+                    n.socialNotificationId && !n.persistedSeen
+                      ? "border-amber-500/45 dark:border-gold/45 bg-amber-500/[0.06] dark:bg-gold/[0.06]"
+                      : "border-neutral-700 dark:border-primary/20",
+                  )}
                 >
                   <div className="mt-0.5">{getNotificationIcon(n.type)}</div>
                   <div className="flex-1 min-w-0 flex flex-col gap-0.5">

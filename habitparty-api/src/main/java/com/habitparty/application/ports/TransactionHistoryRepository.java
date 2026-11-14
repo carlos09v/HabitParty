@@ -74,4 +74,13 @@ public interface TransactionHistoryRepository {
 
   // Verifica se existem registros no histórico vinculados a uma origem do usuário
   boolean existsByReferenceIdAndUserId(UUID referenceId, UUID userId);
+
+  default List<TransactionHistory> findAllByUserIdAndPeriod(
+      UUID userId, LocalDateTime startInclusive, LocalDateTime endInclusive) {
+    return List.of();
+  }
+
+  default java.util.Optional<LocalDateTime> findEarliestCreatedAtByUserId(UUID userId) {
+    return java.util.Optional.empty();
+  }
 }

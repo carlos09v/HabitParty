@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
       accessToken,
       refreshToken,
       browserTimezone,
+      { useRouteRevalidation: true },
     );
     if (res.success) {
       const targetPath = res.data?.isNewUser ? "/firstStep" : "/dashboard";
@@ -50,7 +51,9 @@ export async function GET(request: NextRequest) {
   }
 
   if (code) {
-    const res = await exchangeGoogleCode(code, browserTimezone);
+    const res = await exchangeGoogleCode(code, browserTimezone, {
+      useRouteRevalidation: true,
+    });
     if (res.success) {
       const targetPath = res.data?.isNewUser ? "/firstStep" : "/dashboard";
       const response = NextResponse.redirect(new URL(targetPath, request.url));

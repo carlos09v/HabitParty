@@ -51,6 +51,8 @@ export interface Task extends Omit<TaskResponseDTO, "id" | "difficulty"> {
   importance?: HabitImportance;
   difficulty?: TaskDifficultyOption | string;
   columnId?: string;
+  workspaceId?: string;
+  workspaceName?: string;
   order?: number;
   isPenaltyApplied?: boolean;
   monthlyOption?: DailyRepeatMonthlyOption;

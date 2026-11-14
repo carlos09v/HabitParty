@@ -1,11 +1,8 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  DASHBOARD_TASK_FILTERS,
-  DEFAULT_DASHBOARD_ADVANCED_FILTERS,
-} from "@/constants/dashboard";
+import { useCallback, useEffect, useMemo } from "react";
+import { DASHBOARD_TASK_FILTERS } from "@/constants/dashboard";
 import {
   DIFFICULTY_SORT_WEIGHTS,
   normalizeTaskDifficulty,
@@ -28,6 +25,7 @@ import {
   getDatePartsInTimeZone,
   getOffsetDateString,
 } from "@/utils/date";
+import { isTodoTimeOverdueToday } from "@/utils/taskSchedule";
 
 export { syncDashboardFilterUrl, useDashboardFilterStore };
 
@@ -55,18 +53,98 @@ function isDailyScheduledBetween(
   return false;
 }
 
-export function useDashboardTaskFilters(tasks: Task[]) {
+function isTodoTaskOverdue(
+  task: Task,
+  todayIso: string,
+  now: Date,
+  timeZone?: string | null,
+): boolean {
+  if (normalizeTaskType(task) !== "todo" || task.completed || !task.dueDate) {
+    return false;
+  }
+  const datePart = task.dueDate.split("T")[0];
+  if (datePart < todayIso) {
+    return true;
+  }
+  return datePart === todayIso && isTodoTimeOverdueToday(task, now, timeZone);
+}
+
+function matchesStructuralAdvancedFilters(
+  task: Task,
+  advancedFilters: DashboardAdvancedFilters,
+): boolean {
+  if (
+    advancedFilters.workspaceId !== "all" &&
+    task.workspaceId !== advancedFilters.workspaceId
+  ) {
+    return false;
+  }
+  if (
+    advancedFilters.taskType !== "all" &&
+    normalizeTaskType(task).toUpperCase() !== advancedFilters.taskType
+  ) {
+    return false;
+  }
+  if (
+    advancedFilters.columnId !== "all" &&
+    task.columnId !== advancedFilters.columnId
+  ) {
+    return false;
+  }
+  if (
+    advancedFilters.difficulty !== "all" &&
+    normalizeTaskDifficulty(task.difficulty) !== advancedFilters.difficulty
+  ) {
+    return false;
+  }
+  return true;
+}
+
+export function useDashboardTaskFilters(
+  tasks: Task[],
+  validWorkspaceIds?: string[],
+  validColumnIds?: string[],
+) {
   const searchParams = useSearchParams();
   const userTimeZone = useUserStore((s) => s.user?.timezone);
   const activeFilter = useDashboardFilterStore((s) => s.activeFilter);
   const selectedDate = useDashboardFilterStore((s) => s.selectedDate);
+  const advancedFilters = useDashboardFilterStore((s) => s.advancedFilters);
   const setStoreFilter = useDashboardFilterStore((s) => s.setFilter);
   const setStoreSelectedDate = useDashboardFilterStore(
     (s) => s.setSelectedDate,
   );
+  const setAdvancedFilters = useDashboardFilterStore(
+    (s) => s.setAdvancedFilters,
+  );
 
-  const [advancedFilters, setAdvancedFilters] =
-    useState<DashboardAdvancedFilters>(DEFAULT_DASHBOARD_ADVANCED_FILTERS);
+  // Higieniza workspaceId / columnId persistidos caso o ambiente ou lista não exista mais
+  useEffect(() => {
+    const invalidWorkspace =
+      advancedFilters.workspaceId !== "all" &&
+      validWorkspaceIds &&
+      validWorkspaceIds.length > 0 &&
+      !validWorkspaceIds.includes(advancedFilters.workspaceId);
+    const invalidColumn =
+      advancedFilters.columnId !== "all" &&
+      validColumnIds &&
+      validColumnIds.length > 0 &&
+      !validColumnIds.includes(advancedFilters.columnId);
+
+    if (invalidWorkspace || invalidColumn) {
+      setAdvancedFilters((prev) => ({
+        ...prev,
+        workspaceId: invalidWorkspace ? "all" : prev.workspaceId,
+        columnId: invalidWorkspace || invalidColumn ? "all" : prev.columnId,
+      }));
+    }
+  }, [
+    advancedFilters.workspaceId,
+    advancedFilters.columnId,
+    validWorkspaceIds,
+    validColumnIds,
+    setAdvancedFilters,
+  ]);
 
   // Inicializa a partir da URL na montagem (ou quando a URL muda externamente)
   const urlFilterParam = searchParams.get("filter");
@@ -167,7 +245,6 @@ export function useDashboardTaskFilters(tasks: Task[]) {
       const datePart = task.dueDate.split("T")[0];
       const [year, month] = datePart.split("-").map(Number);
 
-      const isPast = datePart < todayIso;
       const isWithin7Days = datePart >= todayIso && datePart <= next7DaysIso;
       const isThisMonth = year === nowParts.year && month === nowParts.month;
 
@@ -177,7 +254,7 @@ export function useDashboardTaskFilters(tasks: Task[]) {
         case "this_month":
           return isThisMonth;
         case "overdue":
-          return isPast && !task.completed;
+          return isTodoTaskOverdue(task, todayIso, now, userTimeZone);
         case "nodate":
           return false;
         default:
@@ -186,22 +263,9 @@ export function useDashboardTaskFilters(tasks: Task[]) {
     });
 
     // 2. Filtros Avançados
-    if (advancedFilters.taskType !== "all") {
-      result = result.filter(
-        (t) => normalizeTaskType(t).toUpperCase() === advancedFilters.taskType,
-      );
-    }
-
-    if (advancedFilters.columnId !== "all") {
-      result = result.filter((t) => t.columnId === advancedFilters.columnId);
-    }
-
-    if (advancedFilters.difficulty !== "all") {
-      result = result.filter(
-        (t) =>
-          normalizeTaskDifficulty(t.difficulty) === advancedFilters.difficulty,
-      );
-    }
+    result = result.filter((t) =>
+      matchesStructuralAdvancedFilters(t, advancedFilters),
+    );
 
     if (advancedFilters.hideCompleted) {
       result = result.filter((t) => !t.completed);
@@ -240,6 +304,16 @@ export function useDashboardTaskFilters(tasks: Task[]) {
     return result;
   }, [tasks, selectedDate, effectiveFilter, advancedFilters, userTimeZone]);
 
+  const overdueCount = useMemo(() => {
+    const now = new Date();
+    const todayIso = getTodayDateString(now, userTimeZone);
+    return tasks.filter(
+      (task) =>
+        isTodoTaskOverdue(task, todayIso, now, userTimeZone) &&
+        matchesStructuralAdvancedFilters(task, advancedFilters),
+    ).length;
+  }, [tasks, advancedFilters, userTimeZone]);
+
   return {
     activeFilter: effectiveFilter,
     setActiveFilter,
@@ -248,5 +322,6 @@ export function useDashboardTaskFilters(tasks: Task[]) {
     advancedFilters,
     setAdvancedFilters,
     filteredTasks,
+    overdueCount,
   };
 }

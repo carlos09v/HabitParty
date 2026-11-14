@@ -48,7 +48,9 @@ public record WorkspaceResponseDTO(
     List<BoardColumnResponseDTO> columnDTOs = board.columns().stream()
         .map(col -> BoardColumnResponseDTO.fromDomain(
             col.column(),
-            col.tasks().stream().map(t -> TaskResponseDTO.fromDomain(t, effectiveDate, effectiveZone)).toList()
+            col.tasks().stream().map(t -> TaskResponseDTO.fromDomain(t, effectiveDate, effectiveZone)).toList(),
+            col.totalTasks(),
+            col.completedTasks()
         ))
         .toList();
 

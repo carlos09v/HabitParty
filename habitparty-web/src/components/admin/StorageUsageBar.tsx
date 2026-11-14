@@ -44,7 +44,7 @@ export function StorageUsageBar({
   }
 
   return (
-    <div className="flex flex-col gap-1 min-w-[130px]">
+    <div className="flex flex-col gap-1 min-w-0 w-full sm:min-w-[130px]">
       <div className="flex items-center gap-1.5">
         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-success-500/10 text-emerald-700 dark:text-success-500 border border-success-500/25 font-bold text-label-g">
           <HardDrive size={11} />

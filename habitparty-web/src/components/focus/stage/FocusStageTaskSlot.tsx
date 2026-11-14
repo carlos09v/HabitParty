@@ -113,13 +113,13 @@ export const FocusStageTaskSlot = memo(function FocusStageTaskSlot({
             onClick={onUnlinkTask}
             title={t("unlinkTask")}
             aria-label={t("unlinkTask")}
-            className="w-6 h-6 rounded-lg flex items-center justify-center bg-card/80 dark:bg-surface hover:bg-red-500/20 border border-neutral-700 dark:border-primary/30 hover:border-red-500/40 text-neutral-400 hover:text-red-400 transition-colors cursor-pointer shrink-0"
+            className="min-w-8 min-h-8 sm:min-w-7 sm:min-h-7 pointer-coarse:min-w-9 pointer-coarse:min-h-9 rounded-lg flex items-center justify-center bg-card/80 dark:bg-surface hover:bg-red-500/20 border border-neutral-700 dark:border-primary/30 hover:border-red-500/40 text-neutral-400 hover:text-red-400 transition-colors cursor-pointer shrink-0"
           >
             <X size={13} />
           </button>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
           <button
             type="button"
             onClick={() =>
