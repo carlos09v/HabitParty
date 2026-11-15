@@ -15,5 +15,7 @@ export type UpdateUserDTO = components["schemas"]["UpdateUserDTO"] & {
 };
 export type UpdateUserPasswordDTO =
   components["schemas"]["UpdateUserPasswordDTO"];
+export type ResetAccountDTO = components["schemas"]["ResetAccountDTO"];
+export type AccountResetScope = ResetAccountDTO["scope"];
 
 export type GenderType = "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_TO_SAY";

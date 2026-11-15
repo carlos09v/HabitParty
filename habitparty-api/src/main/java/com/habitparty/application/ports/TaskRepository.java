@@ -71,6 +71,8 @@ public interface TaskRepository {
 
   void deleteAllByUserId(UUID userId);
 
+  void resetMetricsByUserId(UUID userId);
+
   Page<DashboardTaskDTO> findDashboardTasks(UUID workspaceId, String filter, LocalDate today, Pageable pageable);
 
   // Busca textual (nome/descrição) agregada por workspace, em todos os workspaces do usuário

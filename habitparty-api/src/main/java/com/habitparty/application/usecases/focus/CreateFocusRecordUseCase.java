@@ -20,6 +20,7 @@ import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsU
 import com.habitparty.core.domain.entities.InventoryItem;
 import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.domain.entities.UserStats;
 import com.habitparty.core.domain.entities.focus.FocusActivity;
 import com.habitparty.core.domain.entities.focus.FocusRecord;
 import com.habitparty.core.domain.entities.focus.FocusReward;
@@ -234,8 +235,15 @@ public class CreateFocusRecordUseCase {
       taskPort.save(loadedTask);
     }
 
-    // 4. Credita XP e moedas ao perfil do usuário (reutilizando loadedUser se já carregado)
-    if (reward.xp() > 0 || reward.coins().compareTo(BigDecimal.ZERO) > 0) {
+    // 4. Credita XP, moedas e estatísticas de foco (reutilizando loadedUser se já carregado).
+    // Sessões >= MIN_FOCUS_MINUTES_FOR_STATS mantêm estatísticas e conquistas mesmo após o soft cap diário de XP/moedas.
+    long focusDurationMinutes = Math.max(
+        0,
+        java.time.Duration.between(userStartTime.atZone(userZone), userEndTime.atZone(userZone)).toMinutes());
+    boolean hasCurrencyRewards = reward.xp() > 0 || reward.coins().compareTo(BigDecimal.ZERO) > 0;
+    boolean qualifiesForFocusStats = focusDurationMinutes >= UserStats.MIN_FOCUS_MINUTES_FOR_STATS;
+
+    if (hasCurrencyRewards || qualifiesForFocusStats) {
       User user = loadedUser != null
           ? loadedUser
           : userPort.findById(userIdLogado)
@@ -249,11 +257,8 @@ public class CreateFocusRecordUseCase {
       }
       UserLevel levelAfter = user.getCurrentLevel();
       UserLevel reachedLevel = levelAfter.ordinal() > levelBefore.ordinal() ? levelAfter : null;
-      long focusDurationMinutes = Math.max(
-          0,
-          java.time.Duration.between(userStartTime.atZone(userZone), userEndTime.atZone(userZone)).toMinutes());
       int completedPomos = savedRecord.getCompletedPomos().orElse(0);
-      if (user.getStats() != null) {
+      if (user.getStats() != null && qualifiesForFocusStats) {
         user.getStats().recordFocusCompleted((int) focusDurationMinutes, completedPomos);
         user.getStats().recordFocusTimeOfDay(
             userStartTime, userEndTime, (int) focusDurationMinutes);

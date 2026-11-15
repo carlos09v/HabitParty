@@ -19,6 +19,7 @@ import {
 } from "@/constants/achievements";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
+import { useUserStore } from "@/store/userStore";
 import type {
   AchievementItemResponseDTO,
   HighlightSlotInputDTO,
@@ -232,6 +233,7 @@ export function ShowcaseHighlightPickerModal({
       }
       soundEffects.playTaskCompleteSound();
       toast.success(t("savedToast"));
+      useUserStore.getState().triggerAchievementCheck();
       if (res.data) {
         onSaved(res.data);
       }

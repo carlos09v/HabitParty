@@ -20,7 +20,7 @@
     "subscription": "Subscription",
     "subscriptionDesc": "Plan, limits, and billing",
     "security": "Security",
-    "securityDesc": "Password, sessions, and deletion",
+    "securityDesc": "Password, data reset, and deletion",
     "navAria": "Settings Navigation"
   },
   "cards": {
@@ -48,6 +48,8 @@
     "privacyDesc": "Control who can view your showcase, statistics, achievements, and send friend requests.",
     "changePassword": "Change Password",
     "changePasswordDesc": "Update your account password. Choose a strong password with letters, numbers, and symbols.",
+    "accountReset": "Reset Account Data",
+    "accountResetDesc": "Restart your journey by clearing only metrics and achievements, or wiping all content without creating a new account.",
     "dangerZone": "Danger Zone",
     "dangerZoneDesc": "Deleting your account will permanently wipe all your data, tasks, coins, items, and history on HabitParty. This action is irreversible."
   },
@@ -429,6 +431,26 @@
     "cardDesc": "Deleting your account will permanently erase all your progress, tasks, coins, items, and history in HabitParty. This action cannot be undone.",
     "errorToast": "Error deleting account."
   },
+  "accountReset": {
+    "metricsBadge": "Keeps content",
+    "metricsTitle": "Reset Metrics & Achievements",
+    "metricsDesc": "Clears XP, level, coins/gold, overall streak, achievements, profile highlights, transaction history, focus records, and task streaks/focus counters. Your workspaces, board columns, tasks, checklists, rewards, backpack items, and subscription stay intact.",
+    "metricsButton": "Reset Metrics",
+    "metricsModalTitle": "Reset metrics, XP, and achievements?",
+    "metricsModalDesc": "This will permanently reset your XP, coins, overall streak, achievements, profile highlights, transaction statement, logged focus sessions, and task streaks/counters. Your tasks, columns, workspaces, rewards, and account will be kept.",
+    "metricsModalConfirm": "Yes, reset metrics",
+    "metricsSuccessToast": "Metrics, XP, and achievements have been reset!",
+    "completeBadge": "Full wipe",
+    "completeTitle": "Complete Account Reset",
+    "completeDesc": "Deletes all content created by you (workspaces, columns, tasks, checklists, rewards, inventory, focus activities & logs, transactions, achievements, and notifications) and clears bio/avatar frame, while keeping your login, friends, and active subscription.",
+    "completeButton": "Complete Reset",
+    "completeModalTitle": "Delete all data and start from scratch?",
+    "completeModalDesc": "This action permanently deletes all your workspaces, columns, tasks, checklists, rewards, items, focus activities & records, transactions, achievements, and bio/frame. Your login credentials, email, friends, and active subscription stay preserved so you do not have to sign up again.",
+    "completeModalConfirm": "Yes, wipe everything and reset",
+    "completeSuccessToast": "Account completely reset! Ready for a fresh start.",
+    "modalCancel": "Cancel",
+    "errorToast": "Could not complete account reset."
+  },
   "subscribeButton": {
     "defaultLabel": "Go Premium"
   },
@@ -517,6 +539,8 @@
     "uploadPhotoNetworkError": "Network error while uploading profile photo.",
     "updatePasswordError": "Failed to change password. Please verify current password.",
     "updatePasswordNetworkError": "Error communicating with server to change password.",
+    "resetAccountError": "Could not reset account. Please try again.",
+    "resetAccountNetworkError": "Communication error while resetting account data.",
     "deleteAccountError": "Could not delete account. Please try again.",
     "deleteAccountNetworkError": "Communication error while deleting account."
   },

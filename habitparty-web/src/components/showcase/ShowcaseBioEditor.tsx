@@ -54,6 +54,7 @@ export function ShowcaseBioEditor({
       updateUserPartial({ bio: trimmed });
       setIsEditingBio(false);
       toast.success(t("bioSaved"));
+      useUserStore.getState().triggerAchievementCheck();
     });
   };
 

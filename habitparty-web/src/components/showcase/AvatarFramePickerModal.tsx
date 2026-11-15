@@ -74,6 +74,7 @@ function AvatarFrameSelectorGrid({
           name: t(`frames.${frameId}.name`),
         }),
       );
+      useUserStore.getState().triggerAchievementCheck();
     });
   };
 

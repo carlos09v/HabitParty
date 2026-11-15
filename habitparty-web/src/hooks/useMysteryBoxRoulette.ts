@@ -14,6 +14,7 @@ import {
   ROULETTE_TRACK_LENGTH,
   ROULETTE_WINNING_INDEX,
 } from "@/constants/reward";
+import { useUserStore } from "@/store/userStore";
 import type { InventoryItem, MysteryBoxOpenResult } from "@/types/inventory";
 import type { PackageLevel, RouletteItem } from "@/types/reward";
 import { getMysteryBoxTier, toPackageMessageKey } from "@/utils/rewardMapper";
@@ -146,6 +147,7 @@ export function useMysteryBoxRoulette({
       if (pendingRevalidationRef.current) {
         pendingRevalidationRef.current = false;
         void revalidateInventoryAfterRoulette();
+        useUserStore.getState().triggerAchievementCheck();
       }
     };
   }, []);
@@ -249,6 +251,7 @@ export function useMysteryBoxRoulette({
           pendingRevalidationRef.current = false;
           void revalidateInventoryAfterRoulette();
         }
+        useUserStore.getState().triggerAchievementCheck();
       }, 4600);
     } catch (_err) {
       setIsOpeningServer(false);

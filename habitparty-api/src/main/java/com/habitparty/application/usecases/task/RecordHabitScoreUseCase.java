@@ -109,14 +109,6 @@ public class RecordHabitScoreUseCase {
       // Garante que eventual streak expirado por falta de rollover seja zerado antes do bônus/incremento
       habit.refreshStreakForDate(today);
 
-      // Domínio do Impulso: primeira ação positiva no ciclo de um Hábito Misto (BOTH) sem nenhuma recaída negativa
-      if (habit.getHabitType() == HabitType.BOTH
-          && habit.getPositiveCount() == 0
-          && habit.getNegativeCount() == 0
-          && user.getStats() != null) {
-        user.getStats().recordCleanHabitCycle();
-      }
-
       UserLevel levelBefore = user.getCurrentLevel();
       TaskGamificationHelper.awardTaskCompletion(
           user, habit, TransactionType.HABIT_COMPLETED, userPort, transactionPort, columnName, today);

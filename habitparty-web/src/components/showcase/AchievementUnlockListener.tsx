@@ -33,16 +33,49 @@ export function AchievementUnlockListener() {
   const tCatalog = useTranslations("showcase.catalog");
   const { isGamified } = useExperienceMode();
 
+  const achievementCheckSeq = useUserStore((s) => s.achievementCheckSeq);
+  const achievementSessionEpoch = useUserStore(
+    (s) => s.achievementSessionEpoch,
+  );
   const checkTriggerKey = useUserStore((s) =>
     s.user?.id
-      ? `${s.user.id}:${s.user.totalXp ?? 0}:${s.user.currentCoins ?? 0}:${s.user.achievementPoints ?? 0}`
+      ? `${s.user.id}:${s.user.totalXp ?? 0}:${s.user.currentCoins ?? 0}:${s.user.achievementPoints ?? 0}:${s.achievementCheckSeq}`
       : null,
   );
   const shownCodesRef = useRef<Set<string>>(new Set());
   const isCheckingRef = useRef(false);
+  const pendingRecheckRef = useRef(false);
+  const lastHandledSeqRef = useRef(0);
+  const lastSessionEpochRef = useRef(achievementSessionEpoch);
 
   useEffect(() => {
-    if (!checkTriggerKey || isCheckingRef.current || pathname === "/profile") {
+    if (lastSessionEpochRef.current !== achievementSessionEpoch) {
+      lastSessionEpochRef.current = achievementSessionEpoch;
+      shownCodesRef.current.clear();
+    }
+  }, [achievementSessionEpoch]);
+
+  useEffect(() => {
+    if (lastSessionEpochRef.current !== achievementSessionEpoch) {
+      lastSessionEpochRef.current = achievementSessionEpoch;
+      shownCodesRef.current.clear();
+    }
+
+    const isExplicitCheck = achievementCheckSeq > lastHandledSeqRef.current;
+
+    if (!checkTriggerKey) {
+      return;
+    }
+
+    // Visita passiva à /profile delega ao ShowcaseContainer; checagens explícitas após ações seguem mostrando toast
+    if (pathname === "/profile" && !isExplicitCheck) {
+      return;
+    }
+
+    if (isCheckingRef.current) {
+      if (isExplicitCheck) {
+        pendingRecheckRef.current = true;
+      }
       return;
     }
 
@@ -57,8 +90,17 @@ export function AchievementUnlockListener() {
     };
 
     const runCheck = async () => {
-      if (isCheckingRef.current || cancelled) return;
+      if (cancelled) return;
+      if (isCheckingRef.current) {
+        if (isExplicitCheck) {
+          pendingRecheckRef.current = true;
+        }
+        return;
+      }
       isCheckingRef.current = true;
+      if (isExplicitCheck) {
+        lastHandledSeqRef.current = achievementCheckSeq;
+      }
 
       try {
         const res = await fetchUnseenAchievementsAction();
@@ -84,9 +126,6 @@ export function AchievementUnlockListener() {
 
         // Toca o novo efeito sonoro cristalino de conquista desbloqueada
         soundEffects.playAchievementUnlockSound(highestRarity);
-
-        // Marca como vistas no servidor
-        void markAchievementsSeenAction();
 
         // Exibe toast celebratório para até 3 conquistas simultâneas
         freshUnseen.slice(0, 3).forEach((achievement) => {
@@ -171,8 +210,17 @@ export function AchievementUnlockListener() {
             { duration: 6500 },
           );
         });
+
+        await markAchievementsSeenAction();
+        if (!cancelled && pathname === "/profile") {
+          router.refresh();
+        }
       } finally {
         isCheckingRef.current = false;
+        if (pendingRecheckRef.current) {
+          pendingRecheckRef.current = false;
+          useUserStore.getState().triggerAchievementCheck();
+        }
       }
     };
 
@@ -195,6 +243,8 @@ export function AchievementUnlockListener() {
       }
     };
   }, [
+    achievementCheckSeq,
+    achievementSessionEpoch,
     checkTriggerKey,
     isGamified,
     pathname,

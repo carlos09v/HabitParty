@@ -953,6 +953,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/users/me/reset": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Redefinir Dados da Conta
+     * @description Redefine métricas ou todo o conteúdo do usuário logado sem excluir sua conta.
+     */
+    post: operations["resetUserAccount"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/transactions": {
     parameters: {
       query?: never;
@@ -1796,6 +1816,10 @@ export interface components {
     UpdateUserPasswordDTO: {
       currentPassword: string;
       newPassword: string;
+    };
+    ResetAccountDTO: {
+      /** @enum {string} */
+      scope: "METRICS" | "COMPLETE";
     };
     PageTransactionHistoryResponseDTO: {
       /** Format: int32 */
@@ -3216,6 +3240,30 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  resetUserAccount: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ResetAccountDTO"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["UserResponseDTO"];
+        };
       };
     };
   };

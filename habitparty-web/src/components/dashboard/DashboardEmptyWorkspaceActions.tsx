@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { createWorkspaceAction } from "@/actions/workspaceActions";
 import { CreateWorkspaceModal } from "@/components/layout/CreateWorkspaceModal";
+import { useUserStore } from "@/store/userStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 
 export function DashboardEmptyWorkspaceActions() {
@@ -28,6 +29,7 @@ export function DashboardEmptyWorkspaceActions() {
           workspaces: [...state.workspaces, response.data],
           activeWorkspaceId: response.data.id || null,
         }));
+        useUserStore.getState().triggerAchievementCheck();
       } else {
         toast.error(!response.success ? response.error : t("createErrorToast"));
       }

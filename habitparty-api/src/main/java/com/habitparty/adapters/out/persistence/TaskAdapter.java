@@ -292,4 +292,11 @@ public class TaskAdapter implements TaskRepository {
     checklistRepository.deleteAllByUserId(userId);
     port.deleteAllByUserId(userId);
   }
+
+  @Override
+  public void resetMetricsByUserId(UUID userId) {
+    port.resetHabitMetricsByUserId(userId);
+    port.resetDailyMetricsByUserId(userId);
+    port.resetTaskFocusMetricsByUserId(userId);
+  }
 }

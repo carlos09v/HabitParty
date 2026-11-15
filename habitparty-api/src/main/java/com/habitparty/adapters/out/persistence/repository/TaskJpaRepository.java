@@ -163,6 +163,18 @@ public interface TaskJpaRepository extends JpaRepository<TaskJpaEntity, UUID> {
     @Query("DELETE FROM TaskJpaEntity t WHERE t.userId = :userId")
     void deleteAllByUserId(@Param("userId") UUID userId);
 
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE TaskJpaEntity t SET t.totalFocusMinutes = 0, t.focusCyclesCount = 0 WHERE t.userId = :userId")
+    void resetTaskFocusMetricsByUserId(@Param("userId") UUID userId);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE HabitJpaEntity h SET h.currentStreak = 0, h.positiveCount = 0, h.negativeCount = 0, h.lastCompletedAt = null WHERE h.id IN (SELECT t.id FROM TaskJpaEntity t WHERE t.userId = :userId)")
+    void resetHabitMetricsByUserId(@Param("userId") UUID userId);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE DailyJpaEntity d SET d.currentStreak = 0, d.lastCompletedAt = null WHERE d.id IN (SELECT t.id FROM TaskJpaEntity t WHERE t.userId = :userId)")
+    void resetDailyMetricsByUserId(@Param("userId") UUID userId);
+
     // Projeção escalar: [workspaceId, workspaceName, count] — busca case-insensitive em nome e descrição
     @Query("""
         SELECT w.id, w.name, COUNT(t)

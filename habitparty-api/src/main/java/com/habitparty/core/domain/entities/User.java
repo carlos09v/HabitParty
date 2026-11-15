@@ -266,6 +266,15 @@ public class User {
     this.stats = stats != null ? stats : UserStats.createInitial(this.id);
   }
 
+  public void resetStats() {
+    this.stats = UserStats.createInitial(this.id);
+  }
+
+  public void resetShowcaseCosmetics() {
+    this.bio = null;
+    this.avatarFrame = "none";
+  }
+
   public UserLevel getCurrentLevel() {
     return stats.getCurrentLevel();
   }

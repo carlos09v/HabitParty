@@ -150,6 +150,7 @@ export function WorkspaceSwitcher({
           workspaces: [...workspaces, response.data],
           activeWorkspaceId: newWorkspaceId ?? activeWorkspaceId,
         });
+        useUserStore.getState().triggerAchievementCheck();
         if (newWorkspaceId && isWorkspaceRoute) {
           const params = new URLSearchParams(
             searchParams ? searchParams.toString() : "",

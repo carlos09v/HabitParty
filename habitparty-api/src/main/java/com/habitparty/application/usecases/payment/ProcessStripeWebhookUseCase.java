@@ -14,6 +14,7 @@ import com.habitparty.application.ports.PaymentEventRepository;
 import com.habitparty.application.ports.PaymentGatewayPort;
 import com.habitparty.application.ports.PaymentWebhookEvent;
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsUseCase;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.enums.PaymentEventStatus;
 import com.habitparty.core.domain.enums.SubscriptionStatus;
@@ -25,6 +26,7 @@ public class ProcessStripeWebhookUseCase {
   private final UserRepository userRepository;
   private final PaymentEventRepository paymentEventRepository;
   private final PaymentGatewayPort paymentGatewayPort;
+  private EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
 
   public ProcessStripeWebhookUseCase(
       UserRepository userRepository,
@@ -40,6 +42,12 @@ public class ProcessStripeWebhookUseCase {
     this.userRepository = userRepository;
     this.paymentEventRepository = paymentEventRepository;
     this.paymentGatewayPort = paymentGatewayPort;
+  }
+
+  @Autowired(required = false)
+  public void setEvaluateUserAchievementsUseCase(
+      EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
+    this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
   }
 
   @Transactional
@@ -165,6 +173,9 @@ public class ProcessStripeWebhookUseCase {
       int days = checkout.days() > 0 ? checkout.days() : 30;
       user.extendSubscriptionDays(days);
       userRepository.save(user);
+      if (isFounder) {
+        evaluateAchievementsIfPresent(user);
+      }
       log.info("Assinatura via Pix ativada/estendida com sucesso para o usuário {}: +{} dias (até {})",
           user.getId(), days, user.getSubscriptionEndsAt());
       return user.getId();
@@ -180,8 +191,14 @@ public class ProcessStripeWebhookUseCase {
 
       user.activateSubscription(checkout.customerId(), subscriptionId, endsAt);
       userRepository.save(user);
+      if (isFounder) {
+        evaluateAchievementsIfPresent(user);
+      }
       log.info("Assinatura recorrente ({}) inicializada para o usuário {}: subscriptionId={}, endsAt={}",
           plan, user.getId(), subscriptionId, endsAt);
+    } else if (isFounder) {
+      userRepository.save(user);
+      evaluateAchievementsIfPresent(user);
     }
 
     return user.getId();
@@ -201,11 +218,13 @@ public class ProcessStripeWebhookUseCase {
       user.setStripeCustomerId(subUpdated.customerId());
     }
 
+    boolean founderGranted = false;
     if (subUpdated.metadata() != null) {
       String planMeta = subUpdated.metadata().get("plan");
       String isFounderMeta = subUpdated.metadata().get("isFounder");
       if ("FOUNDER_ANNUAL".equalsIgnoreCase(planMeta) || "true".equalsIgnoreCase(isFounderMeta)) {
         user.grantFounderStatus();
+        founderGranted = true;
       }
     }
 
@@ -224,9 +243,18 @@ public class ProcessStripeWebhookUseCase {
     }
 
     userRepository.save(user);
+    if (founderGranted) {
+      evaluateAchievementsIfPresent(user);
+    }
     log.info("Status da assinatura do usuário {} atualizado para {} (endsAt: {})",
         user.getId(), user.getSubscriptionStatus(), user.getSubscriptionEndsAt());
     return user.getId();
+  }
+
+  private void evaluateAchievementsIfPresent(User user) {
+    if (evaluateUserAchievementsUseCase != null) {
+      evaluateUserAchievementsUseCase.execute(user);
+    }
   }
 
   private UUID handleSubscriptionDeleted(PaymentWebhookEvent.SubscriptionDeleted subDeleted) {

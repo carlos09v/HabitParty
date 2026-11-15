@@ -14,6 +14,7 @@ import { type ActionState, getErrorMessage } from "@/actions/types";
 import { getServerAuthToken, serverApi } from "@/api/server";
 import type { ExperienceMode } from "@/types/ui";
 import type {
+  AccountResetScope,
   UpdateUserDTO,
   UpdateUserPasswordDTO,
   UserResponseDTO,
@@ -150,6 +151,41 @@ export async function updateUserPasswordAction(
     return {
       success: false,
       error: t("updatePasswordNetworkError"),
+    };
+  }
+}
+
+/**
+ * Redefine métricas ou todo o conteúdo da conta sem excluir o usuário
+ */
+export async function resetUserAccountAction(
+  scope: AccountResetScope,
+): Promise<ActionState<UserResponseDTO>> {
+  const t = await getTranslations("settings.userActions");
+  try {
+    const { data, error } = await serverApi.POST("/users/me/reset", {
+      body: { scope },
+    });
+
+    if (error || !data) {
+      return {
+        success: false,
+        error: getErrorMessage(error, t("resetAccountError")),
+      };
+    }
+
+    if (scope === "COMPLETE") {
+      const cookieStore = await cookies();
+      cookieStore.delete("activeWorkspaceId");
+    }
+    invalidateSessionCacheTags();
+
+    return { success: true, data: data as UserResponseDTO };
+  } catch (err) {
+    console.error("[UserAction:ResetAccount]", err);
+    return {
+      success: false,
+      error: t("resetAccountNetworkError"),
     };
   }
 }

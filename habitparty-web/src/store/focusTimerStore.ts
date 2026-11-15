@@ -496,6 +496,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
               if (isFinished) {
                 triggerCelebrationConfetti();
                 toast.success(tStoreMsg("couponTimeDepletedToast"));
+                useUserStore.getState().triggerAchievementCheck();
               } else {
                 const timeStr = formatDurationMinSec(exactSeconds);
                 toast.success(
@@ -511,6 +512,9 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
               const coins = recordData?.coinsEarned ?? 0;
 
               const rewardResult = awardUserRewards(xp, coins);
+              if (xp <= 0 && coins <= 0) {
+                useUserStore.getState().triggerAchievementCheck();
+              }
 
               const taskAction = resolvedTaskId
                 ? {

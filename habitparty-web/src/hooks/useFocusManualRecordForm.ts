@@ -507,6 +507,10 @@ export function useFocusManualRecordForm({
             toast.success(t("toasts.itemTimeLogged"));
           }
 
+          if (targetType === "ITEM" || (xp <= 0 && coins <= 0)) {
+            useUserStore.getState().triggerAchievementCheck();
+          }
+
           onSuccess?.();
           onClose();
         } else {

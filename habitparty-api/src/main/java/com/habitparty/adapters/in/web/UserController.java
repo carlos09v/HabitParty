@@ -14,6 +14,7 @@ import com.habitparty.adapters.in.web.dtos.request.CreateUserDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserPasswordDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserThemeDTO;
+import com.habitparty.adapters.in.web.dtos.request.user.ResetAccountDTO;
 import com.habitparty.adapters.in.web.dtos.request.user.UpdatePrivacySettingsDTO;
 import com.habitparty.adapters.in.web.dtos.response.UserResponseDTO;
 import com.habitparty.application.usecases.social.RegenerateFriendCodeUseCase;
@@ -24,6 +25,7 @@ import com.habitparty.application.usecases.user.CreateUserUseCase;
 import com.habitparty.application.usecases.user.DeleteUserUseCase;
 import com.habitparty.application.usecases.user.FindAllUsersUseCase;
 import com.habitparty.application.usecases.user.FindUserByIdUseCase;
+import com.habitparty.application.usecases.user.ResetUserAccountUseCase;
 import com.habitparty.application.usecases.user.UpdateProfilePhotoUseCase;
 import com.habitparty.application.usecases.user.UpdateUserPasswordUseCase;
 import com.habitparty.application.usecases.user.UpdateUserProfileCommand;
@@ -45,6 +47,7 @@ public class UserController implements UserApi {
   private final UpdateUserProfileUseCase updateUserProfileUseCase;
   private final RegenerateFriendCodeUseCase regenerateFriendCodeUseCase;
   private final UpdatePrivacySettingsUseCase updatePrivacySettingsUseCase;
+  private final ResetUserAccountUseCase resetUserAccountUseCase;
 
   @Override
   public ResponseEntity<UserResponseDTO> createUser(CreateUserDTO requestDto) {
@@ -83,6 +86,14 @@ public class UserController implements UserApi {
     UUID userId = usuarioLogado.id();
     deleteUserUseCase.execute(userId);
     return ResponseEntity.noContent().build();
+  }
+
+  @Override
+  public ResponseEntity<UserResponseDTO> resetUserAccount(
+      ResetAccountDTO dto,
+      AuthenticatedUser usuarioLogado) {
+    User resetUser = resetUserAccountUseCase.execute(usuarioLogado.id(), dto.scope());
+    return ResponseEntity.ok(UserResponseDTO.fromDomain(resetUser, 0));
   }
 
   @Override

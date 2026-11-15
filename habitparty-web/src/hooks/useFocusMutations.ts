@@ -163,13 +163,16 @@ export function useFocusMutations({
             new Date(now.getTime() - item.remainingSeconds * 1000),
             userTimeZone,
           );
-          await createFocusRecord({
+          const focusRes = await createFocusRecord({
             inventoryItemId: item.inventoryItemId,
             recordType: "STOPWATCH",
             completedPomos: 0,
             startTime,
             endTime,
           });
+          if (focusRes.success) {
+            useUserStore.getState().triggerAchievementCheck();
+          }
         }
 
         const res = await consumeInventoryItem(item.inventoryItemId);

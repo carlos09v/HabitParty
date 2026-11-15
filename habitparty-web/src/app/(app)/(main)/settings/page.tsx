@@ -7,6 +7,7 @@ import {
   KeyRound,
   Languages,
   Palette,
+  RotateCcw,
   ShieldCheck,
   Swords,
   User as UserIcon,
@@ -15,6 +16,7 @@ import {
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { PageWrapper } from "@/components/layout/PageWrapper";
+import { AccountResetCard } from "@/components/settings/AccountResetCard";
 import { ChangePasswordCard } from "@/components/settings/ChangePasswordCard";
 import { DangerZoneCard } from "@/components/settings/DangerZoneCard";
 import { DateFormatSettings } from "@/components/settings/DateFormatSettings";
@@ -198,6 +200,15 @@ export default async function SettingsPage({
                     icon={<KeyRound size={18} className="text-gold" />}
                   >
                     <ChangePasswordCard />
+                  </SettingsCard>
+
+                  {/* Redefinição de Dados da Conta */}
+                  <SettingsCard
+                    title={t("cards.accountReset")}
+                    description={t("cards.accountResetDesc")}
+                    icon={<RotateCcw size={18} className="text-amber-400" />}
+                  >
+                    <AccountResetCard />
                   </SettingsCard>
 
                   {/* Zona de Perigo / Exclusão de Conta */}

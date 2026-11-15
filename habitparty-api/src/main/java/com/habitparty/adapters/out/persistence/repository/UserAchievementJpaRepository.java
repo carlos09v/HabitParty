@@ -16,11 +16,11 @@ public interface UserAchievementJpaRepository extends JpaRepository<UserAchievem
 
   List<UserAchievementJpaEntity> findAllByUserIdAndSeenFalseOrderByUnlockedAtDesc(UUID userId);
 
-  @Modifying
+  @Modifying(flushAutomatically = true, clearAutomatically = true)
   @Query("UPDATE UserAchievementJpaEntity ua SET ua.seen = true WHERE ua.userId = :userId AND ua.seen = false")
   void markAllSeenByUserId(@Param("userId") UUID userId);
 
-  @Modifying
+  @Modifying(flushAutomatically = true, clearAutomatically = true)
   @Query("DELETE FROM UserAchievementJpaEntity ua WHERE ua.userId = :userId")
   void deleteAllByUserId(@Param("userId") UUID userId);
 }

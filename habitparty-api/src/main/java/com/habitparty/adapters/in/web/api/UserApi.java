@@ -19,6 +19,7 @@ import com.habitparty.adapters.in.web.dtos.request.CreateUserDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserPasswordDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserThemeDTO;
+import com.habitparty.adapters.in.web.dtos.request.user.ResetAccountDTO;
 import com.habitparty.adapters.in.web.dtos.request.user.UpdatePrivacySettingsDTO;
 import com.habitparty.adapters.in.web.dtos.response.UserResponseDTO;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
@@ -49,6 +50,13 @@ public interface UserApi {
     @Operation(summary = "Deletar Conta do Usuário", description = "Exclui a conta do usuário logado.")
     @DeleteMapping("/me")
     ResponseEntity<Void> deleteUser(
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
+    );
+
+    @Operation(summary = "Redefinir Dados da Conta", description = "Redefine métricas ou todo o conteúdo do usuário logado sem excluir sua conta.")
+    @PostMapping("/me/reset")
+    ResponseEntity<UserResponseDTO> resetUserAccount(
+        @RequestBody @Valid ResetAccountDTO dto,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 

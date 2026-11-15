@@ -9,6 +9,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -24,6 +25,7 @@ import com.habitparty.application.ports.BoardColumnRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsUseCase;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.task.Daily;
 import com.habitparty.core.domain.entities.task.Habit;
@@ -45,6 +47,7 @@ public class DailyResetUseCase {
   private final Clock clock;
   private final TransactionOperations transactionOperations;
   private final BoardColumnRepository boardColumnPort;
+  private EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
 
   @Autowired
   public DailyResetUseCase(TaskRepository port, TransactionHistoryRepository transactionPort, UserRepository userPort,
@@ -60,6 +63,12 @@ public class DailyResetUseCase {
   public DailyResetUseCase(TaskRepository port, TransactionHistoryRepository transactionPort, UserRepository userPort,
       Clock clock, TransactionOperations transactionOperations) {
     this(port, transactionPort, userPort, clock, transactionOperations, null);
+  }
+
+  @Autowired(required = false)
+  public void setEvaluateUserAchievementsUseCase(
+      EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
+    this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
   }
 
   public record RolloverSummary(int processedUsers, int updatedTasks, int overdueHardcoreTodos, int expiredStreaks) {}
@@ -184,7 +193,7 @@ public class DailyResetUseCase {
 
     List<Task> changedTasks = new ArrayList<>();
     List<Task> failedRecurringHardcoreTasks = new ArrayList<>();
-    List<UUID> cleanNegativeHabitUsers = new ArrayList<>();
+    List<UUID> cleanHabitCycleUsers = new ArrayList<>();
 
     List<Task> recurringTasks = port.findRecurringTasksByUserIds(dueTodayById.keySet());
     for (Task task : recurringTasks) {
@@ -194,7 +203,7 @@ public class DailyResetUseCase {
       }
       LocalDate previousResetDate = previousResetById.get(task.getUserId());
       RolloverOutcome outcome = switch (task) {
-        case Habit h -> processHabitRollover(h, userToday, previousResetDate, cleanNegativeHabitUsers);
+        case Habit h -> processHabitRollover(h, userToday, previousResetDate, cleanHabitCycleUsers);
         case Daily d -> processDailyRollover(d, userToday);
         default -> new RolloverOutcome(false, false);
       };
@@ -212,7 +221,7 @@ public class DailyResetUseCase {
 
     applyHardcorePenalties(failedRecurringHardcoreTasks, "Falhou: ", usersById, dirtyUsers, dueTodayById);
     applyHardcorePenalties(overdueTodos, "Falhou no prazo: ", usersById, dirtyUsers, dueTodayById);
-    rewardCleanNegativeHabits(cleanNegativeHabitUsers, usersById, dirtyUsers);
+    rewardCleanHabitCycles(cleanHabitCycleUsers, usersById, dirtyUsers);
 
     int expiredStreaks = expireInactiveUserStreaks(dueTodayById, dueZonesById, usersById, dirtyUsers);
 
@@ -228,6 +237,14 @@ public class DailyResetUseCase {
     }
     if (!dirtyUsers.isEmpty()) {
       userPort.saveAll(dirtyUsers.values());
+    }
+    if (evaluateUserAchievementsUseCase != null && !cleanHabitCycleUsers.isEmpty()) {
+      for (UUID userId : new LinkedHashSet<>(cleanHabitCycleUsers)) {
+        User user = usersById.get(userId);
+        if (user != null) {
+          evaluateUserAchievementsUseCase.execute(user);
+        }
+      }
     }
 
     return new RolloverSummary(dueTodayById.size(), changedTasks.size(), overdueTodos.size(), expiredStreaks);
@@ -254,7 +271,7 @@ public class DailyResetUseCase {
   }
 
   private RolloverOutcome processHabitRollover(
-      Habit habit, LocalDate userToday, LocalDate previousResetDate, List<UUID> cleanNegativeHabitUsers) {
+      Habit habit, LocalDate userToday, LocalDate previousResetDate, List<UUID> cleanHabitCycleUsers) {
     if (habit.getLastCompletedAt() != null && habit.isInSameCycle(userToday)) {
       return new RolloverOutcome(false, false);
     }
@@ -268,12 +285,15 @@ public class DailyResetUseCase {
     if (isResetBoundary) {
       if (habit.getHabitType() == HabitType.NEGATIVE) {
         if (habit.getNegativeCount() == 0) {
-          cleanNegativeHabitUsers.add(habit.getUserId());
+          cleanHabitCycleUsers.add(habit.getUserId());
         }
         habit.resetCycleCounts();
         return new RolloverOutcome(true, false);
       }
       if (habit.getStatus() == TaskStatus.COMPLETED) {
+        if (habit.getHabitType() == HabitType.BOTH && habit.getNegativeCount() == 0) {
+          cleanHabitCycleUsers.add(habit.getUserId());
+        }
         breakExpiredHabitStreakIfNeeded(habit, userToday);
         habit.resetCycleCounts();
         habit.changeStatus(TaskStatus.PENDING);
@@ -437,7 +457,7 @@ public class DailyResetUseCase {
     }
   }
 
-  private void rewardCleanNegativeHabits(
+  private void rewardCleanHabitCycles(
       List<UUID> cleanUserIds,
       Map<UUID, User> usersById,
       Map<UUID, User> dirtyUsers) {

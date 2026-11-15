@@ -20,7 +20,7 @@
     "subscription": "Assinatura",
     "subscriptionDesc": "Plano, limites e cobrança",
     "security": "Segurança",
-    "securityDesc": "Senha, sessões e exclusão",
+    "securityDesc": "Senha, redefinição de dados e exclusão",
     "navAria": "Navegação de Configurações"
   },
   "cards": {
@@ -48,6 +48,8 @@
     "privacyDesc": "Controle quem pode visualizar seu perfil, estatísticas, conquistas e enviar pedidos de amizade.",
     "changePassword": "Alterar Senha",
     "changePasswordDesc": "Atualize a senha de acesso à sua conta. Utilize uma senha forte com letras, números e símbolos.",
+    "accountReset": "Redefinir Dados da Conta",
+    "accountResetDesc": "Recomece sua jornada zerando apenas métricas e conquistas ou limpando todo o conteúdo sem precisar criar outra conta.",
     "dangerZone": "Zona de Perigo",
     "dangerZoneDesc": "A exclusão da sua conta apagará permanentemente todos os seus dados, tarefas, moedas, itens e histórico no HabitParty. Esta ação é irreversível."
   },
@@ -429,6 +431,26 @@
     "cardDesc": "A exclusão da sua conta apagará permanentemente todos os seus dados, tarefas, moedas, itens e histórico no HabitParty. Esta ação é irreversível.",
     "errorToast": "Erro ao excluir conta."
   },
+  "accountReset": {
+    "metricsBadge": "Preserva conteúdo",
+    "metricsTitle": "Resetar Métricas & Conquistas",
+    "metricsDesc": "Zera XP, nível, moedas/ouro, sequência geral, conquistas, destaques, histórico de transações, registros de foco e contadores/streaks das tarefas. Seus workspaces, colunas, tarefas, checklist, recompensas, mochilas e assinatura permanecem intactos.",
+    "metricsButton": "Resetar Métricas",
+    "metricsModalTitle": "Resetar métricas, XP e conquistas?",
+    "metricsModalDesc": "Isso zerará permanentemente seu XP, moedas, ofensiva geral, conquistas, destaques de perfil, extrato de transações, sessões de foco registradas e contadores/streaks das tarefas. Suas tarefas, colunas, workspaces, recompensas e conta serão mantidos.",
+    "metricsModalConfirm": "Sim, resetar métricas",
+    "metricsSuccessToast": "Métricas, XP e conquistas foram zerados com sucesso!",
+    "completeBadge": "Limpeza total",
+    "completeTitle": "Reset Completo da Conta",
+    "completeDesc": "Apaga todo o conteúdo criado por você (workspaces, colunas, tarefas, checklist, recompensas, mochila, atividades e registros de foco, transações, conquistas e notificações) e limpa bio/moldura, mantendo seu login, amizades e assinatura ativa.",
+    "completeButton": "Reset Completo",
+    "completeModalTitle": "Apagar todos os dados e recomeçar do zero?",
+    "completeModalDesc": "Esta ação excluirá permanentemente todos os seus workspaces, colunas, tarefas, checklists, recompensas, itens, atividades/registros de foco, transações, conquistas e bio/moldura. Sua conta, e-mail, amigos e assinatura ativa serão preservados para você continuar sem precisar se cadastrar novamente.",
+    "completeModalConfirm": "Sim, apagar tudo e resetar",
+    "completeSuccessToast": "Conta redefinida completamente! Tudo pronto para um novo começo.",
+    "modalCancel": "Cancelar",
+    "errorToast": "Não foi possível concluir o reset da conta."
+  },
   "subscribeButton": {
     "defaultLabel": "Seja Premium"
   },
@@ -517,6 +539,8 @@
     "uploadPhotoNetworkError": "Erro de rede ao enviar foto de perfil.",
     "updatePasswordError": "Falha ao alterar senha. Verifique a senha atual.",
     "updatePasswordNetworkError": "Erro ao comunicar com o servidor para troca de senha.",
+    "resetAccountError": "Não foi possível redefinir a conta. Tente novamente.",
+    "resetAccountNetworkError": "Erro de comunicação ao redefinir os dados da conta.",
     "deleteAccountError": "Não foi possível excluir a conta. Tente novamente.",
     "deleteAccountNetworkError": "Erro de comunicação ao excluir conta."
   },

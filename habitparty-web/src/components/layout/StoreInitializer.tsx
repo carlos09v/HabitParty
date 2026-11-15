@@ -96,8 +96,8 @@ export function StoreInitializer({
       : experienceMode;
 
   useIsomorphicLayoutEffect(() => {
+    const currentState = useWorkspaceStore.getState();
     if (workspaces.length > 0) {
-      const currentState = useWorkspaceStore.getState();
       const resolvedActiveId = initializedWorkspaces.current
         ? activeWorkspaceId ||
           currentState.activeWorkspaceId ||
@@ -109,6 +109,14 @@ export function StoreInitializer({
         activeWorkspaceId: resolvedActiveId,
       });
       initializedWorkspaces.current = true;
+    } else if (
+      initializedWorkspaces.current ||
+      currentState.workspaces.length > 0
+    ) {
+      useWorkspaceStore.setState({
+        workspaces: [],
+        activeWorkspaceId: null,
+      });
     }
   }, [workspaces, activeWorkspaceId]);
 
