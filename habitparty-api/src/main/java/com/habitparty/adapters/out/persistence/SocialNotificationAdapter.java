@@ -12,6 +12,7 @@ import com.habitparty.adapters.out.persistence.mappers.SocialNotificationMapper;
 import com.habitparty.adapters.out.persistence.repository.SocialNotificationJpaRepository;
 import com.habitparty.application.ports.SocialNotificationRepository;
 import com.habitparty.core.domain.entities.social.SocialNotification;
+import com.habitparty.core.domain.enums.SocialNotificationType;
 
 @Component
 public class SocialNotificationAdapter implements SocialNotificationRepository {
@@ -30,6 +31,15 @@ public class SocialNotificationAdapter implements SocialNotificationRepository {
   public List<SocialNotification> findRecentByRecipientId(UUID recipientId, int limit) {
     int safeLimit = Math.max(1, Math.min(limit, 100));
     return repository.findByRecipientIdOrderByCreatedAtDesc(recipientId, PageRequest.of(0, safeLimit))
+        .stream()
+        .map(mapper::toDomain)
+        .toList();
+  }
+
+  @Override
+  public List<SocialNotification> findUnseenRecentByRecipientId(UUID recipientId, int limit) {
+    int safeLimit = Math.max(1, Math.min(limit, 100));
+    return repository.findByRecipientIdAndSeenFalseOrderByCreatedAtDesc(recipientId, PageRequest.of(0, safeLimit))
         .stream()
         .map(mapper::toDomain)
         .toList();
@@ -71,6 +81,18 @@ public class SocialNotificationAdapter implements SocialNotificationRepository {
   @Transactional
   public void markSeenByIdAndRecipientId(UUID notificationId, UUID recipientId) {
     repository.markSeenByIdAndRecipientId(notificationId, recipientId);
+  }
+
+  @Override
+  @Transactional
+  public void markSeenByReferenceIdAndType(UUID referenceId, SocialNotificationType type) {
+    repository.markSeenByReferenceIdAndType(referenceId, type);
+  }
+
+  @Override
+  @Transactional
+  public void markSeenBetweenUsers(UUID userId, UUID otherUserId) {
+    repository.markSeenBetweenUsers(userId, otherUserId);
   }
 
   @Override

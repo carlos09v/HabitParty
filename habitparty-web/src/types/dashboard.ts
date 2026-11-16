@@ -98,6 +98,13 @@ export interface DashboardListSummaryProps {
     React.SetStateAction<DashboardColumnOption[]>
   >;
   onColumnDeleted?: (columnId: string) => void;
+  workspaces?: DashboardWorkspaceOption[];
+  onColumnMoved?: (
+    columnId: string,
+    targetWorkspaceId: string,
+    targetWorkspaceName: string,
+  ) => void;
+  createColumnTrigger?: number;
   maxColumns: number;
   activeWorkspaceId?: string;
   activeWorkspaceName?: string;
@@ -116,6 +123,8 @@ export interface DashboardTasksPanelProps {
   isReadOnly?: boolean;
   tasks?: Task[];
   onTasksChange?: React.Dispatch<React.SetStateAction<Task[]>>;
+  hasColumns?: boolean;
+  onCreateFirstColumn?: () => void;
 }
 
 export interface DashboardWidgetsDataProps {
@@ -165,6 +174,9 @@ export interface TaskTableProps {
   tasks: Task[];
   columns?: DashboardColumnOption[];
   workspaces?: DashboardWorkspaceOption[];
+  emptyVariant?: "default" | "no_columns" | "no_columns_readonly";
+  emptyActionLabel?: string;
+  onEmptyAction?: () => void;
   itemsPerPage?: number;
   currentPage?: number;
   activeFilter?: TaskFilterType;

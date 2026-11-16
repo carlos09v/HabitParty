@@ -23,6 +23,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   compact?: boolean;
   label?: ReactNode;
   icon?: ReactNode;
+  endAdornment?: ReactNode;
   error?: string;
   hint?: string;
 }
@@ -140,6 +141,9 @@ export interface WelcomeCardStat {
   icon?: LucideIcon;
   variant?: "default" | "gold" | "success" | "primary" | "warning" | "info";
   hint?: string;
+  onClick?: () => void;
+  active?: boolean;
+  ariaLabel?: string;
 }
 
 export interface WelcomeCardProps {
@@ -149,6 +153,7 @@ export interface WelcomeCardProps {
   imageSrc?: string;
   icon?: LucideIcon;
   stats?: WelcomeCardStat[];
+  headingLevel?: "h1" | "h2";
   isExpanded?: boolean;
   defaultExpanded?: boolean;
   onToggle?: (expanded: boolean) => void;

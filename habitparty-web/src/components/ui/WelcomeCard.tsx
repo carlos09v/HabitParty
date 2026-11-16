@@ -1,9 +1,10 @@
 "use client";
 
-import { ChevronDown, Sparkles, X } from "lucide-react";
+import { HelpCircle, Sparkles, X } from "lucide-react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useId, useState } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import {
@@ -11,9 +12,67 @@ import {
   WELCOME_CARD_DETAILS,
 } from "@/constants/welcomeCards";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useFloatingPopover } from "@/hooks/useFloatingPopover";
 import { useWelcomeCards } from "@/store/welcomeCardsStore";
-import type { WelcomeCardProps } from "@/types/ui";
+import type { WelcomeCardProps, WelcomeCardStat } from "@/types/ui";
 import { cn } from "@/utils";
+
+function getStatCardVariantClasses(
+  variant: WelcomeCardStat["variant"],
+  isInteractive: boolean,
+  isActive: boolean,
+): string {
+  const baseByVariant =
+    variant === "gold"
+      ? "bg-card dark:bg-gold/10 border-neutral-700 dark:border-gold/30"
+      : variant === "success"
+        ? "bg-card dark:bg-emerald-500/10 border-neutral-700 dark:border-emerald-500/30"
+        : variant === "info"
+          ? "bg-card dark:bg-sky-500/15 border-neutral-700 dark:border-sky-400/40"
+          : variant === "primary"
+            ? "bg-card dark:bg-white/5 border-neutral-700 dark:border-primary-light/35"
+            : variant === "warning"
+              ? "bg-card dark:bg-amber-500/10 border-neutral-700 dark:border-amber-500/30"
+              : "bg-card dark:bg-white/5 border-neutral-700 dark:border-white/10";
+
+  const interactiveClasses = isInteractive
+    ? "cursor-pointer hover:border-amber-500/50 dark:hover:border-gold/55 hover:bg-surface/70 dark:hover:bg-white/[0.08] focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 active:scale-[0.99]"
+    : "";
+
+  const activeClasses = isActive
+    ? "ring-2 ring-amber-500/60 dark:ring-gold/75 border-amber-500/60 dark:border-gold/70 shadow-glow-gold-xs"
+    : "";
+
+  return cn(baseByVariant, interactiveClasses, activeClasses);
+}
+
+function getStatIconClasses(variant: WelcomeCardStat["variant"]): string {
+  if (variant === "gold") {
+    return "bg-amber-500/10 dark:bg-gold/20 border-amber-500/25 dark:border-gold/30 text-amber-700 dark:text-gold";
+  }
+  if (variant === "success") {
+    return "bg-emerald-500/10 dark:bg-emerald-500/20 border-emerald-500/25 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400";
+  }
+  if (variant === "info") {
+    return "bg-info/10 dark:bg-sky-500/25 border-info/25 dark:border-sky-400/30 text-info dark:text-sky-300";
+  }
+  if (variant === "primary") {
+    return "bg-indigo-500/10 dark:bg-primary/30 border-indigo-500/25 dark:border-primary-light/30 text-indigo-700 dark:text-white";
+  }
+  if (variant === "warning") {
+    return "bg-orange-500/10 dark:bg-amber-500/20 border-orange-500/25 dark:border-amber-500/30 text-orange-700 dark:text-amber-400";
+  }
+  return "bg-surface dark:bg-white/10 border-neutral-700 dark:border-white/15 text-neutral-200";
+}
+
+function getStatValueClasses(variant: WelcomeCardStat["variant"]): string {
+  if (variant === "gold") return "text-amber-700 dark:text-gold";
+  if (variant === "success") return "text-emerald-700 dark:text-emerald-400";
+  if (variant === "info") return "text-info dark:text-sky-300";
+  if (variant === "primary") return "text-indigo-700 dark:text-neutral-50";
+  if (variant === "warning") return "text-orange-700 dark:text-amber-400";
+  return "text-neutral-50";
+}
 
 export function WelcomeCard({
   title,
@@ -22,9 +81,7 @@ export function WelcomeCard({
   imageSrc,
   icon,
   stats,
-  isExpanded: externalIsExpanded,
-  defaultExpanded,
-  onToggle,
+  headingLevel = "h1",
   compact = false,
   className,
   imageWidth,
@@ -35,11 +92,17 @@ export function WelcomeCard({
 }: WelcomeCardProps) {
   const t = useTranslations("ui.welcomeCard");
   const { isGamified } = useExperienceMode();
-  const [internalExpanded, setInternalExpanded] = useState(
-    defaultExpanded ?? false,
-  );
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const { isCardHidden, hideCard } = useWelcomeCards();
+  const guidePopoverId = useId();
+
+  const guidePopover = useFloatingPopover({
+    align: "right",
+    estimatedWidth: 360,
+    estimatedHeight: 280,
+    offset: 8,
+    margin: 12,
+  });
 
   const getCardText = (
     field: string,
@@ -72,11 +135,11 @@ export function WelcomeCard({
   const resolvedImageWidth =
     imageWidth ??
     (compact ? defaultDetail?.compactWidth : defaultDetail?.normalWidth) ??
-    (compact ? 130 : 165);
+    120;
   const resolvedImageHeight =
     imageHeight ??
     (compact ? defaultDetail?.compactHeight : defaultDetail?.normalHeight) ??
-    (compact ? 75 : 95);
+    72;
 
   const resolvedTitle = getCardText("title", fallbackTitle) || fallbackTitle;
   const resolvedSubtitle =
@@ -87,360 +150,335 @@ export function WelcomeCard({
       t.has(
         `cards.${storageKey}.bullet0Gamified` as Parameters<typeof t.has>[0],
       ));
-  const resolvedBullets = hasLocalizedBullets
-    ? [
-        getCardText("bullet0", fallbackBullets[0]) || fallbackBullets[0] || "",
-        getCardText("bullet1", fallbackBullets[1]) || fallbackBullets[1] || "",
-        getCardText("bullet2", fallbackBullets[2]) || fallbackBullets[2] || "",
-      ]
-    : fallbackBullets;
+  const resolvedBullets = (
+    hasLocalizedBullets
+      ? [
+          getCardText("bullet0", fallbackBullets[0]) ||
+            fallbackBullets[0] ||
+            "",
+          getCardText("bullet1", fallbackBullets[1]) ||
+            fallbackBullets[1] ||
+            "",
+          getCardText("bullet2", fallbackBullets[2]) ||
+            fallbackBullets[2] ||
+            "",
+        ]
+      : fallbackBullets
+  ).filter(Boolean);
 
   const HeaderIcon =
     icon ??
     CONFIGURABLE_WELCOME_CARDS.find((card) => card.key === storageKey)?.icon ??
     Sparkles;
 
-  // Carrega estado de expansão salvo do localStorage se storageKey estiver configurada
-  useEffect(() => {
-    if (storageKey) {
-      try {
-        const saved = localStorage.getItem(`habitparty_welcome_${storageKey}`);
-        if (saved !== null) {
-          const isVal = saved === "true";
-          setInternalExpanded(isVal);
-          onToggle?.(isVal);
-        } else if (defaultExpanded !== undefined) {
-          const isMobile = window.matchMedia("(max-width: 767px)").matches;
-          const initialExpanded = isMobile ? false : defaultExpanded;
-          setInternalExpanded(initialExpanded);
-          onToggle?.(initialExpanded);
-        }
-      } catch {
-        // localStorage indisponível ou em modo anônimo restrito
-      }
-    }
-  }, [storageKey, onToggle, defaultExpanded]);
-
-  // Se o card estiver ocultado pelo usuário nas configurações ou via modal, não renderiza
+  // Mantem respeito a ocultacao configurada em WelcomeCardsSettings
   if (storageKey && isCardHidden(storageKey)) {
     return null;
   }
-
-  const isExpanded =
-    externalIsExpanded !== undefined ? externalIsExpanded : internalExpanded;
 
   const isDismissible =
     dismissible !== undefined
       ? dismissible
       : Boolean(storageKey && storageKey !== "dashboard");
 
-  const handleToggle = () => {
-    const next = !isExpanded;
-    if (storageKey) {
-      try {
-        localStorage.setItem(`habitparty_welcome_${storageKey}`, String(next));
-      } catch {
-        // ignore
-      }
-    }
-
-    if (onToggle) {
-      onToggle(next);
-    } else {
-      setInternalExpanded(next);
-    }
-  };
+  const hasQuickGuide = resolvedBullets.length > 0 || Boolean(resolvedImageSrc);
 
   const handleConfirmDismiss = () => {
     if (storageKey) {
       hideCard(storageKey);
     }
+    guidePopover.close();
     setIsConfirmModalOpen(false);
     onDismiss?.();
     toast.info(t("toastHiddenFull"));
   };
 
+  const HeadingTag = headingLevel;
+
   return (
     <>
       <section
         className={cn(
-          "w-full shrink-0 bg-linear-to-br from-purple-500/[0.04] via-white to-amber-500/[0.03] dark:from-primary-dark/50 dark:via-surface/80 dark:to-primary-dark/35 border border-neutral-700 dark:border-primary/35 shadow-xs dark:shadow-[0_0_20px_rgba(124,58,237,0.1)] relative overflow-hidden",
-          isExpanded
-            ? compact
-              ? "rounded-xl p-3.5 sm:p-4"
-              : "rounded-2xl p-4 sm:p-6"
-            : compact
-              ? "rounded-xl px-3 py-2 sm:px-3.5 sm:py-2.5"
-              : "rounded-2xl px-4 py-2.5 sm:px-6 sm:py-3.5",
+          "w-full shrink-0 bg-linear-to-r from-purple-500/[0.04] via-card to-amber-500/[0.03] dark:from-primary-dark/45 dark:via-surface/85 dark:to-primary-dark/30 border border-neutral-700 dark:border-primary/35 shadow-xs dark:shadow-[0_0_16px_rgba(124,58,237,0.08)] relative rounded-2xl",
+          compact
+            ? "px-3.5 py-2.5 sm:px-4 sm:py-3"
+            : "px-4 py-3 sm:px-5 sm:py-3.5",
           className,
         )}
         aria-label={t("sectionAria", { title: resolvedTitle })}
       >
-        {/* Header com Toggle, Ícone Temático e Botão de Ocultar Card */}
-        <div className="w-full flex items-center justify-between gap-2 z-20">
-          <button
-            type="button"
-            className="flex-1 text-left bg-transparent border-none p-0 flex items-center justify-between gap-3 cursor-pointer group select-none focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-lg min-w-0"
-            onClick={handleToggle}
-            aria-expanded={isExpanded}
-          >
-            {/* Esquerda: Chevron animado + Ícone Temático + Título + Preview de subtítulo quando encolhido */}
-            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 sm:gap-4">
+          {/* Esquerda: Identidade e proposito da pagina */}
+          <div className="flex items-start sm:items-center justify-between gap-3 min-w-0 flex-1">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
               <div
                 className={cn(
-                  "text-neutral-400 group-hover:text-primary dark:group-hover:text-gold transition-transform duration-300 shrink-0 flex items-center justify-center",
-                  !isExpanded && "-rotate-90",
+                  "rounded-xl bg-primary/10 dark:bg-gold/15 border border-primary/25 dark:border-gold/30 flex items-center justify-center text-primary dark:text-gold shrink-0",
+                  compact ? "w-9 h-9" : "w-10 h-10",
                 )}
                 aria-hidden="true"
               >
-                <ChevronDown size={compact ? 18 : 20} />
+                <HeaderIcon size={compact ? 17 : 19} />
               </div>
 
-              <div
-                className={cn(
-                  "rounded-lg bg-primary/10 dark:bg-gold/15 border border-primary/25 dark:border-gold/30 flex items-center justify-center text-primary dark:text-gold shrink-0 transition-colors group-hover:bg-primary/15 dark:group-hover:bg-gold/25",
-                  compact ? "w-6 h-6" : "w-7 h-7 sm:w-8 sm:h-8",
-                )}
-                aria-hidden="true"
-              >
-                <HeaderIcon size={compact ? 13 : 16} />
-              </div>
-
-              <h2
-                className={cn(
-                  "font-extrabold text-neutral-50 group-hover:text-primary dark:group-hover:text-gold transition-colors truncate min-w-0 tracking-tight",
-                  isExpanded
-                    ? compact
-                      ? "text-base sm:text-lg"
-                      : "text-lg sm:text-xl"
-                    : "text-sm sm:text-base",
-                )}
-              >
-                {resolvedTitle}
-              </h2>
-
-              {/* Resumo inteligente em linha exibido apenas quando colapsado */}
-              {!isExpanded && resolvedSubtitle && (
-                <span className="text-body-s text-neutral-300 font-normal truncate hidden lg:inline-block min-w-0 flex-1">
-                  — {resolvedSubtitle}
-                </span>
-              )}
-            </div>
-
-            {/* Direita: Preview de métricas (quando colapsado) + Indicador textual [Expandir / Recolher] */}
-            <div className="flex items-center gap-2 shrink-0 ml-2">
-              {!isExpanded && stats && stats.length > 0 && (
-                <div className="hidden md:flex items-center gap-1.5">
-                  {stats.map((stat) => {
-                    const Icon = stat.icon;
-                    return (
-                      <span
-                        key={stat.label}
-                        className={cn(
-                          "text-xs font-semibold px-2.5 py-0.5 rounded-md border flex items-center gap-1.5 transition-colors whitespace-nowrap",
-                          stat.variant === "gold"
-                            ? "text-amber-700 dark:text-gold border-amber-500/30 dark:border-gold/30 bg-amber-500/10 dark:bg-gold/10"
-                            : stat.variant === "success"
-                              ? "text-emerald-700 dark:text-emerald-400 border-emerald-500/30 dark:border-emerald-500/30 bg-emerald-500/10"
-                              : stat.variant === "info"
-                                ? "text-info dark:text-sky-300 border-info/35 dark:border-sky-400/40 bg-info/10 dark:bg-sky-500/15"
-                                : stat.variant === "primary"
-                                  ? "text-indigo-700 dark:text-white border-indigo-500/30 dark:border-primary-light/40 bg-indigo-500/10 dark:bg-primary/25"
-                                  : stat.variant === "warning"
-                                    ? "text-orange-700 dark:text-amber-400 border-orange-500/30 dark:border-amber-500/30 bg-orange-500/10 dark:bg-amber-500/10"
-                                    : "text-neutral-200 border-neutral-700 dark:border-white/10 bg-white dark:bg-white/5",
-                        )}
-                        title={`${stat.label}: ${stat.value}`}
-                      >
-                        {Icon && <Icon size={12} className="shrink-0" />}
-                        <span>{stat.value}</span>
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
-
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-white dark:bg-white/5 border border-neutral-700 dark:border-white/10 text-neutral-300 group-hover:text-primary dark:group-hover:text-gold group-hover:border-primary/30 dark:group-hover:border-gold/30 transition-colors flex items-center gap-1">
-                {isExpanded ? t("collapse") : t("expand")}
-              </span>
-            </div>
-          </button>
-
-          {/* Botão de Fechar / Ocultar Permanentemente (apenas para cards dismissíveis) */}
-          {isDismissible && (
-            <div className="flex items-center pl-1.5 sm:pl-2 border-l border-neutral-700 dark:border-white/10 shrink-0">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsConfirmModalOpen(true);
-                }}
-                className="p-1 sm:p-1.5 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-white/10 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-400/40"
-                title={t("hideForeverTitle")}
-                aria-label={t("hideForeverAria")}
-              >
-                <X size={compact ? 16 : 18} />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Conteúdo Expansível em 2 Andares (Topo: Texto + Ilustração | Base: 3 Cards de Indicadores em Largura Total) */}
-        <div
-          className={cn(
-            "grid transition-[grid-template-rows,opacity,margin] duration-300 ease-in-out",
-            isExpanded
-              ? "grid-rows-[1fr] opacity-100 mt-3.5 sm:mt-4"
-              : "grid-rows-[0fr] opacity-0 mt-0 pointer-events-none",
-          )}
-        >
-          <div className="overflow-hidden min-h-0">
-            <div className="flex flex-col gap-4 sm:gap-5 z-10">
-              {/* Bloco Superior: Subtítulo e Marcadores à esquerda + Ilustração SVG à direita */}
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
-                <div className="flex flex-col gap-2.5 min-w-0 flex-1 max-w-3xl">
-                  {resolvedSubtitle && (
-                    <p
-                      className={cn(
-                        "text-primary dark:text-gold font-semibold leading-snug",
-                        compact ? "text-body-s" : "text-body-s sm:text-body-m",
-                      )}
-                    >
-                      {resolvedSubtitle}
-                    </p>
+              <div className="min-w-0 flex-1">
+                <HeadingTag
+                  className={cn(
+                    "font-extrabold text-neutral-50 tracking-tight truncate",
+                    compact ? "text-base sm:text-lg" : "text-lg sm:text-xl",
                   )}
-
-                  <ul className="flex flex-col gap-1.5 text-body-s text-neutral-200 list-none p-0 m-0">
-                    {resolvedBullets.map((bullet) => (
-                      <li
-                        key={bullet}
-                        className="flex items-start gap-2.5 leading-relaxed"
-                      >
-                        <span
-                          className="w-1.5 h-1.5 rounded-full bg-primary/70 dark:bg-gold/80 mt-2 shrink-0 dark:shadow-glow-gold-xs"
-                          aria-hidden="true"
-                        />
-                        <span>{bullet}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {resolvedImageSrc && (
-                  <div
-                    className={cn(
-                      "shrink-0 flex items-center justify-center self-center relative rounded-xl bg-white dark:bg-white/[0.03] border border-neutral-700 dark:border-white/10 shadow-2xs dark:shadow-none p-2.5",
-                      compact
-                        ? "w-28 h-20 sm:w-36 sm:h-22"
-                        : "w-36 h-24 sm:w-44 sm:h-28",
-                    )}
-                  >
-                    <div
-                      className="absolute inset-0 bg-radial from-primary-light/12 to-transparent dark:from-primary-light/18 rounded-full pointer-events-none"
-                      aria-hidden="true"
-                    />
-                    <Image
-                      src={resolvedImageSrc}
-                      alt={t("illustrationAlt", { title: resolvedTitle })}
-                      width={resolvedImageWidth}
-                      height={resolvedImageHeight}
-                      priority
-                      className="object-contain max-h-full w-auto drop-shadow-none dark:drop-shadow-[0_6px_14px_rgba(0,0,0,0.35)] relative z-10"
-                    />
-                  </div>
+                >
+                  {resolvedTitle}
+                </HeadingTag>
+                {resolvedSubtitle && (
+                  <p className="text-xs sm:text-body-s text-neutral-300 leading-snug line-clamp-2 xl:line-clamp-1 mt-0.5">
+                    {resolvedSubtitle}
+                  </p>
                 )}
               </div>
+            </div>
 
-              {/* Bloco Inferior: 3 Cards de Indicadores em Largura Total (w-full), nunca espremidos */}
-              {stats && stats.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full pt-3.5 border-t border-neutral-700 dark:border-white/10">
-                  {stats.map((stat) => {
-                    const Icon = stat.icon;
-                    return (
-                      <div
-                        key={stat.label}
-                        className={cn(
-                          "flex items-center gap-3.5 rounded-xl border transition-colors duration-150 min-w-0",
-                          compact ? "p-2.5 sm:p-3" : "p-3 sm:p-3.5",
-                          stat.variant === "gold"
-                            ? "bg-white dark:bg-gold/10 border-neutral-700 dark:border-gold/30 hover:border-amber-500/40 dark:hover:border-gold/50 shadow-xs dark:shadow-glow-gold-xs"
-                            : stat.variant === "success"
-                              ? "bg-white dark:bg-emerald-500/10 border-neutral-700 dark:border-emerald-500/30 hover:border-emerald-500/40 dark:hover:border-emerald-500/50 shadow-xs dark:shadow-none"
-                              : stat.variant === "info"
-                                ? "bg-white dark:bg-sky-500/15 border-neutral-700 dark:border-sky-400/40 hover:border-info/55 dark:hover:border-sky-400/60 shadow-xs dark:shadow-[0_0_12px_rgba(56,189,248,0.12)]"
-                                : stat.variant === "primary"
-                                  ? "bg-white dark:bg-white/5 border-neutral-700 dark:border-primary-light/40 hover:border-indigo-500/40 dark:hover:border-primary-light/60 shadow-xs"
-                                  : stat.variant === "warning"
-                                    ? "bg-white dark:bg-amber-500/10 border-neutral-700 dark:border-amber-500/30 hover:border-orange-500/40 dark:hover:border-amber-500/50 shadow-xs dark:shadow-none"
-                                    : "bg-white dark:bg-white/5 border-neutral-700 dark:border-white/10 hover:border-primary/40 shadow-xs dark:shadow-none",
-                        )}
-                      >
-                        {Icon && (
-                          <div
-                            className={cn(
-                              "rounded-lg shrink-0 flex items-center justify-center border",
-                              compact ? "w-9 h-9" : "w-10 h-10",
-                              stat.variant === "gold"
-                                ? "bg-amber-500/10 dark:bg-gold/20 border-amber-500/25 dark:border-gold/30 text-amber-700 dark:text-gold"
-                                : stat.variant === "success"
-                                  ? "bg-emerald-500/10 dark:bg-emerald-500/20 border-emerald-500/25 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400"
-                                  : stat.variant === "info"
-                                    ? "bg-info/10 dark:bg-sky-500/25 border-info/25 dark:border-sky-400/30 text-info dark:text-sky-300"
-                                    : stat.variant === "primary"
-                                      ? "bg-indigo-500/10 dark:bg-primary/30 border-indigo-500/25 dark:border-primary-light/30 text-indigo-700 dark:text-white"
-                                      : stat.variant === "warning"
-                                        ? "bg-orange-500/10 dark:bg-amber-500/20 border-orange-500/25 dark:border-amber-500/30 text-orange-700 dark:text-amber-400"
-                                        : "bg-surface dark:bg-white/10 border-neutral-700 dark:border-white/15 text-neutral-200",
-                            )}
-                          >
-                            <Icon size={compact ? 18 : 20} />
-                          </div>
-                        )}
-                        <div className="flex flex-col min-w-0 flex-1">
-                          <span className="text-[10px] sm:text-[11px] font-bold text-neutral-400 uppercase tracking-wider truncate">
-                            {stat.label}
-                          </span>
-                          <span
-                            className={cn(
-                              "font-extrabold truncate",
-                              compact
-                                ? "text-sm sm:text-base"
-                                : "text-base sm:text-lg",
-                              stat.variant === "gold"
-                                ? "text-amber-700 dark:text-gold"
-                                : stat.variant === "success"
-                                  ? "text-emerald-700 dark:text-emerald-400"
-                                  : stat.variant === "info"
-                                    ? "text-info dark:text-sky-300"
-                                    : stat.variant === "primary"
-                                      ? "text-indigo-700 dark:text-neutral-50"
-                                      : stat.variant === "warning"
-                                        ? "text-orange-700 dark:text-amber-400"
-                                        : "text-neutral-50",
-                            )}
-                          >
-                            {stat.value}
-                          </span>
-                          {stat.hint && (
-                            <span
-                              className="text-xs text-neutral-300 truncate"
-                              title={stat.hint}
-                            >
-                              {stat.hint}
-                            </span>
+            {/* Acoes rapidas no topo direito em mobile/tablet */}
+            <div className="flex items-center gap-1 shrink-0 xl:hidden">
+              {hasQuickGuide && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    guidePopover.triggerRef.current = e.currentTarget;
+                    guidePopover.toggle();
+                  }}
+                  aria-expanded={guidePopover.isOpen}
+                  aria-controls={guidePopoverId}
+                  title={t("quickGuideTitle")}
+                  aria-label={t("quickGuideAria")}
+                  className={cn(
+                    "w-8 h-8 rounded-lg border flex items-center justify-center transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50",
+                    guidePopover.isOpen
+                      ? "bg-primary/15 dark:bg-gold/20 border-primary/40 dark:border-gold/50 text-primary dark:text-gold"
+                      : "bg-surface/80 dark:bg-white/5 border-neutral-700 dark:border-white/10 text-neutral-300 hover:text-primary dark:hover:text-gold hover:border-primary/35 dark:hover:border-gold/35",
+                  )}
+                >
+                  <HelpCircle size={15} />
+                </button>
+              )}
+              {isDismissible && (
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmModalOpen(true)}
+                  className="w-8 h-8 rounded-lg border border-transparent text-neutral-400 hover:text-red-400 hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
+                  title={t("hideForeverTitle")}
+                  aria-label={t("hideForeverAria")}
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Direita: 3 KPIs vivos/clicaveis + controles desktop */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 min-w-0">
+            {stats && stats.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 xl:flex xl:items-center gap-2 w-full xl:w-auto min-w-0">
+                {stats.map((stat) => {
+                  const Icon = stat.icon;
+                  const isInteractive = typeof stat.onClick === "function";
+                  const isActive = Boolean(stat.active);
+                  const pillClasses = cn(
+                    "flex items-center gap-2.5 rounded-xl border transition-[border-color,background-color,box-shadow,transform] duration-150 min-w-0 text-left",
+                    compact ? "px-2.5 py-1.5" : "px-3 py-1.5 sm:px-3.5 sm:py-2",
+                    getStatCardVariantClasses(
+                      stat.variant,
+                      isInteractive,
+                      isActive,
+                    ),
+                  );
+
+                  const pillContent = (
+                    <>
+                      {Icon && (
+                        <div
+                          className={cn(
+                            "rounded-lg shrink-0 flex items-center justify-center border",
+                            compact ? "w-7 h-7" : "w-8 h-8",
+                            getStatIconClasses(stat.variant),
                           )}
+                          aria-hidden="true"
+                        >
+                          <Icon size={compact ? 14 : 16} />
                         </div>
+                      )}
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider truncate">
+                          {stat.label}
+                        </span>
+                        <span
+                          className={cn(
+                            "font-extrabold truncate leading-tight",
+                            compact ? "text-xs sm:text-sm" : "text-sm",
+                            getStatValueClasses(stat.variant),
+                          )}
+                        >
+                          {stat.value}
+                        </span>
+                        {stat.hint && (
+                          <span className="text-[11px] text-neutral-400 truncate max-w-[175px]">
+                            {stat.hint}
+                          </span>
+                        )}
                       </div>
+                    </>
+                  );
+
+                  if (isInteractive) {
+                    return (
+                      <button
+                        key={stat.label}
+                        type="button"
+                        onClick={stat.onClick}
+                        aria-pressed={isActive}
+                        aria-label={
+                          stat.ariaLabel ??
+                          `${stat.label}: ${stat.value}${stat.hint ? ` (${stat.hint})` : ""}`
+                        }
+                        title={
+                          stat.hint
+                            ? `${stat.label}: ${stat.value} — ${stat.hint}`
+                            : `${stat.label}: ${stat.value}`
+                        }
+                        className={pillClasses}
+                      >
+                        {pillContent}
+                      </button>
                     );
-                  })}
-                </div>
+                  }
+
+                  return (
+                    <div
+                      key={stat.label}
+                      className={pillClasses}
+                      title={
+                        stat.hint
+                          ? `${stat.label}: ${stat.value} — ${stat.hint}`
+                          : `${stat.label}: ${stat.value}`
+                      }
+                    >
+                      {pillContent}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Botoes Guia Rapido (?) e Ocultar (X) em desktop */}
+            <div className="hidden xl:flex items-center gap-1 pl-2 border-l border-neutral-700 dark:border-white/10 shrink-0">
+              {hasQuickGuide && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    guidePopover.triggerRef.current = e.currentTarget;
+                    guidePopover.toggle();
+                  }}
+                  aria-expanded={guidePopover.isOpen}
+                  aria-controls={guidePopoverId}
+                  title={t("quickGuideTitle")}
+                  aria-label={t("quickGuideAria")}
+                  className={cn(
+                    "w-8 h-8 rounded-lg border flex items-center justify-center transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50",
+                    guidePopover.isOpen
+                      ? "bg-primary/15 dark:bg-gold/20 border-primary/40 dark:border-gold/50 text-primary dark:text-gold"
+                      : "bg-surface/80 dark:bg-white/5 border-neutral-700 dark:border-white/10 text-neutral-300 hover:text-primary dark:hover:text-gold hover:border-primary/35 dark:hover:border-gold/35",
+                  )}
+                >
+                  <HelpCircle size={15} />
+                </button>
+              )}
+
+              {isDismissible && (
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmModalOpen(true)}
+                  className="w-8 h-8 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
+                  title={t("hideForeverTitle")}
+                  aria-label={t("hideForeverAria")}
+                >
+                  <X size={16} />
+                </button>
               )}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Modal de Confirmação para Ocultar Card */}
+      {/* Popover Sob Demanda: Guia Rapido da Tela */}
+      {hasQuickGuide &&
+        guidePopover.isOpen &&
+        guidePopover.shouldRenderPortal &&
+        guidePopover.floatingStyle &&
+        createPortal(
+          <section
+            ref={guidePopover.popoverRef}
+            id={guidePopoverId}
+            aria-label={t("quickGuideTitle")}
+            style={guidePopover.floatingStyle}
+            className="w-[min(calc(100vw-24px),24rem)] rounded-2xl border border-neutral-700 dark:border-primary/40 bg-card dark:bg-surface p-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+          >
+            <div className="flex items-start justify-between gap-3 mb-2.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-primary/15 dark:bg-gold/15 border border-primary/25 dark:border-gold/30 flex items-center justify-center text-primary dark:text-gold shrink-0">
+                  <HeaderIcon size={14} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-extrabold text-neutral-50 truncate">
+                    {t("quickGuideTitle")}
+                  </p>
+                  <p className="text-[11px] text-neutral-400 truncate">
+                    {resolvedTitle}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={guidePopover.close}
+                aria-label={t("quickGuideCloseAria")}
+                className="w-7 h-7 rounded-lg text-neutral-400 hover:text-neutral-100 hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            {resolvedImageSrc && (
+              <div className="mb-3 rounded-xl bg-white dark:bg-white/[0.03] border border-neutral-700 dark:border-white/10 p-2.5 flex items-center justify-center h-24 overflow-hidden">
+                <Image
+                  src={resolvedImageSrc}
+                  alt={t("illustrationAlt", { title: resolvedTitle })}
+                  width={resolvedImageWidth}
+                  height={resolvedImageHeight}
+                  className="object-contain max-h-full w-auto"
+                />
+              </div>
+            )}
+
+            {resolvedBullets.length > 0 && (
+              <ul className="flex flex-col gap-2 text-xs text-neutral-200 list-none p-0 m-0">
+                {resolvedBullets.map((bullet) => (
+                  <li
+                    key={bullet}
+                    className="flex items-start gap-2 leading-relaxed"
+                  >
+                    <span
+                      className="w-1.5 h-1.5 rounded-full bg-primary/70 dark:bg-gold/80 mt-1.5 shrink-0"
+                      aria-hidden="true"
+                    />
+                    <span>{bullet}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>,
+          document.body,
+        )}
+
+      {/* Modal de Confirmacao para Ocultar Card */}
       {isDismissible && (
         <ConfirmationModal
           isOpen={isConfirmModalOpen}

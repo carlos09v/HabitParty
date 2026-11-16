@@ -83,6 +83,9 @@ public class TransactionHistoryJpaEntity {
   @Column(name = "column_name_snapshot")
   private String columnNameSnapshot;
 
+  @Column(name = "description_snapshot")
+  private String descriptionSnapshot;
+
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
 }

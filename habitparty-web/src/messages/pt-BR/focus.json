@@ -21,6 +21,12 @@
     }
   },
   "main": {
+    "back": {
+      "tasks": "Voltar para Tarefas",
+      "dashboard": "Voltar para Visão Geral",
+      "inventoryGamified": "Voltar para Mochila",
+      "inventoryProductivity": "Voltar para Inventário"
+    },
     "welcomeStats": {
       "activitiesLabel": "Atividades de Foco",
       "activitiesValue": "{count, plural, one {# atividade} other {# atividades}}",
@@ -91,6 +97,7 @@
     "longBreakBadge": "🌴 Pausa Longa (15m)",
     "shortBreakBadge": "☕ Pausa Curta (5m)",
     "activeFocusBadge": "⚡ Foco Ativo",
+    "overtimeBadge": "⏱️ Tempo Excedente",
     "pausedBadge": "Pausada 👑",
     "modeBackpackCoupon": "Cupom da Mochila",
     "modeBackpackCouponGamified": "Cupom da Mochila",
@@ -125,7 +132,9 @@
     "resetTitle": "Reiniciar tempo",
     "resetButton": "Reiniciar",
     "skipBreakTitle": "Pular pausa e voltar ao foco agora",
-    "skipBreakButton": "Pular Pausa"
+    "skipBreakButton": "Pular Pausa",
+    "startBreakTitle": "Salvar tempo (incluindo excedente) e iniciar pausa ({minutes}m)",
+    "startBreakButton": "Iniciar Pausa ({minutes}m)"
   },
   "zenMode": {
     "dialogAria": "Modo Zen de Foco",
@@ -146,7 +155,9 @@
     "start": "Começar",
     "skipBreakTitle": "Pular pausa",
     "skipBreak": "Pular",
-    "completeTitle": "Concluir sessão"
+    "completeTitle": "Concluir sessão",
+    "startBreakTitle": "Salvar tempo e iniciar pausa ({minutes}m)",
+    "startBreakButton": "Iniciar Pausa ({minutes}m)"
   },
   "stage": {
     "durationLabel": "Duração:"
@@ -200,7 +211,8 @@
     "tasksTab": "Tarefas ({count})",
     "backpackTab": "Mochila ({count})",
     "loadingActivities": "Carregando atividades...",
-    "emptyActivities": "Nenhuma atividade cadastrada. Crie uma na tela principal.",
+    "emptyActivities": "Nenhuma atividade cadastrada no momento.",
+    "createActivityButton": "Criar primeira atividade",
     "emptyTasks": "Nenhuma tarefa pendente (Diária ou Afazer) encontrada.",
     "searchTasksPlaceholder": "Buscar tarefa pelo título...",
     "macroMicroHint": "Vincular uma tarefa aqui contabilizará o foco simultaneamente em \"{activityName}\" e na tarefa.",
@@ -234,6 +246,8 @@
       "breakPaused": "Pausa Pausada",
       "readyToRest": "Pronto para Descansar",
       "focusing": "Focando",
+      "overtime": "Tempo Excedente",
+      "overtimePaused": "Excedente Pausado",
       "paused": "Pausado",
       "readyToStart": "Pronto para Iniciar"
     },
@@ -313,6 +327,8 @@
     "longBreakLabel": "longa (15 min)",
     "shortBreakLabel": "curta (5 min)",
     "cycleCompletedToast": "🍅 Ciclo {cycles} concluído! Iniciando pausa {breakLabel}. Relaxe um pouco!",
+    "overtimeStartedToast": "🍅 Meta do ciclo concluída! Contando o excedente até você iniciar a pausa ou encerrar.",
+    "breakStartedToast": "☕ Ciclo {cycles} salvo! Iniciando pausa {breakLabel}. Relaxe um pouco!",
     "selectTargetToStartToast": "Selecione uma atividade, tarefa ou item da mochila para iniciar o foco.",
     "itemAlreadyCompletedToast": "🎉 Este item já concluiu seu tempo. Clique no botão de Concluir (Check) para resgatá-lo.",
     "breakSkippedToast": "Pausa pulada. Pronto para focar!",
@@ -341,10 +357,13 @@
     "titlePausedPrefix": "⏸️ Pausado",
     "titleBreakPrefix": "☕ Pausa",
     "titleFocusPrefix": "🔥 Foco",
+    "titleOvertimePrefix": "⏱️ Excedente",
     "breakEndedTitle": "HabitParty - Pausa Concluída!",
     "breakEndedBody": "Pronto para o próximo ciclo de foco?",
     "cycleCompletedTitle": "HabitParty - Ciclo Concluído!",
-    "cycleCompletedBody": "🍅 Ciclo {cycles} concluído! Iniciando pausa {breakLabel}. Relaxe um pouco!"
+    "cycleCompletedBody": "🍅 Ciclo {cycles} concluído! Iniciando pausa {breakLabel}. Relaxe um pouco!",
+    "overtimeStartedTitle": "HabitParty - Meta do Ciclo Concluída!",
+    "overtimeStartedBody": "🍅 Meta de foco atingida! Contando o excedente até você iniciar a pausa ou encerrar."
   },
   "sidebar": {
     "ariaLabel": "Painel de métricas e histórico de foco",
@@ -414,7 +433,9 @@
     "deleteConfirmDescription": "Tem certeza que deseja excluir permanentemente o registro da sessão <strong>\"{name}\"</strong>? Esta ação é irreversível.",
     "deleteConfirmButton": "Sim, excluir",
     "deleteHistoryLabel": "Excluir também do Histórico",
-    "deleteHistoryHint": "Remove o registro desta sessão do extrato. Moedas e XP já recebidos não são alterados."
+    "deleteHistoryHint": "Remove o registro desta sessão do extrato. Moedas e XP já recebidos não são alterados.",
+    "showMore": "Ver mais",
+    "loadingMore": "Carregando..."
   },
   "recordDetails": {
     "dialogAriaLabel": "Editar Registro de Foco",
@@ -522,6 +543,9 @@
     "editTitle": "Editar Atividade",
     "createDescription": "Cadastre uma nova atividade importante para gerenciar suas sessões.",
     "editDescription": "Atualize as informações e o modo padrão desta atividade.",
+    "entertainmentWarningTitle": "Apenas atividades produtivas",
+    "entertainmentWarningPill": "Sem recompensas",
+    "entertainmentWarning": "Uma atividade de foco nunca deve ser uma recompensa ou entretenimento. Para lazer (jogos, séries, redes sociais), crie um Cupom na Loja de Recompensas.",
     "nameLabel": "Nome da Atividade",
     "iconPickerTitle": "Ícone da Atividade",
     "namePlaceholder": "Ex: Estudos, Programação, Leitura...",

@@ -19,6 +19,7 @@ import com.habitparty.core.domain.entities.reward.MysteryBoxResult;
 import com.habitparty.core.domain.entities.reward.MysteryBoxLootTable;
 import com.habitparty.core.domain.entities.reward.Reward;
 import com.habitparty.core.domain.enums.InventoryItemStatus;
+import com.habitparty.core.domain.enums.RewardCategory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
 import com.habitparty.core.domain.enums.TransactionType;
@@ -58,69 +59,84 @@ public class RedeemRewardUseCase {
     User user = userPort.findById(userIdLogado)
         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
 
-    // Limite de itens no inventário (20 Free / 100 Premium)
-    int maxItems = user.isPremium() ? 100 : 20;
-    int totalItems = inventoryItemRepositoryPort.countByUserId(userIdLogado);
-    if (totalItems >= maxItems) {
-      throw new LimitExceededException(user.isPremium()
-          ? "Sua mochila está lotada com 100 itens! Consuma alguns antes de comprar mais."
-          : "Sua mochila atingiu o limite de 20 itens do plano gratuito! Consuma alguns itens ou assine o Premium para expandir para 100 itens.");
+    Reward.validateCategoryAndType(reward.getCategory().orElse(null), reward.getType());
+
+    boolean isImmediateDebtSettlement =
+        reward.getCategory().map(category -> category == RewardCategory.DEBT).orElse(false)
+            && reward.getType() == RewardType.SINGLE_USE;
+
+    // Limite de itens no inventário (20 Free / 100 Premium) - apenas para itens que vão para a mochila
+    if (!isImmediateDebtSettlement) {
+      int maxItems = user.isPremium() ? 100 : 20;
+      int totalItems = inventoryItemRepositoryPort.countByUserId(userIdLogado);
+      if (totalItems >= maxItems) {
+        throw new LimitExceededException(user.isPremium()
+            ? "Sua mochila está lotada com 100 itens! Consuma alguns antes de comprar mais."
+            : "Sua mochila atingiu o limite de 20 itens do plano gratuito! Consuma alguns itens ou assine o Premium para expandir para 100 itens.");
+      }
     }
 
-    // 3. Regra de Negócio: Desconta o dinheiro usando BigDecimal e incrementa contador de resgates
+    // 3. Regra de Negócio: Desconta o dinheiro usando BigDecimal; pagamento de dívida não conta como resgate de recompensa/conquista
     user.spendMoney(reward.getPrice());
-    if (user.getStats() != null) {
+    if (!isImmediateDebtSettlement && user.getStats() != null) {
       user.getStats().recordRewardRedeemed();
     }
 
-    // 4. Calcula o novo índice da mochila
-    int maxIndex = inventoryItemRepositoryPort.getMaxOrderIndex(userIdLogado);
-    int newIndex = maxIndex + 1;
-
-    // === INÍCIO DA LÓGICA DOS SNAPSHOTS ===
-    String finalName = reward.getName();
-    String finalIcon = reward.getIcon().orElse(null);
-    Integer finalMinutes = reward.getBaseDurationMinutes().orElse(null); // Pega o tempo base da recompensa
-    RewardType finalType = reward.getType(); // <- Pega o tipo inicial
-    RewardPackageLevel finalPackageLevel = reward.getPackageLevel().orElse(null);
-
-    if (reward.getType() == RewardType.MISTERY_BOX) {
-      finalType = RewardType.MISTERY_BOX;
-      finalMinutes = null;
-      if (finalIcon == null || finalIcon.isBlank()) {
-        finalIcon = "mystery_box";
-      }
-      if (finalPackageLevel == null) {
-        finalPackageLevel = RewardPackageLevel.BASIC;
-      }
-    }
-
-    // 5. Cria o item copiando os Snapshots
-    InventoryItem newItem = new InventoryItem(
-        UUID.randomUUID(),
-        userIdLogado,
-        reward.getId(),
-        finalName,
-        reward.getPrice(),
-        finalType,
-        InventoryItemStatus.AVAILABLE,
-        newIndex,
-        finalIcon,
-        finalPackageLevel,
-        finalMinutes != null ? finalMinutes * 60 : null,
-        LocalDateTime.now(),
-        reward.getLootItems()); // acquiredAt puro no domínio + snapshot dos prêmios da Mystery Box
-
-    // 6. Salva usando as portas corretas
+    // 4. Salva usuário e avalia conquistas antes de decidir persistência na mochila
     userPort.save(user); // update no price
-    if (evaluateUserAchievementsUseCase != null) {
+    if (!isImmediateDebtSettlement && evaluateUserAchievementsUseCase != null) {
       evaluateUserAchievementsUseCase.execute(user);
     }
 
-    // -> Inventory_Item -> cria o item na mochila
-    inventoryItemRepositoryPort.save(newItem);
+    // Dívida é descontada e liquidada imediatamente, sem ir para a mochila
+    if (!isImmediateDebtSettlement) {
+      int maxIndex = inventoryItemRepositoryPort.getMaxOrderIndex(userIdLogado);
+      int newIndex = maxIndex + 1;
 
-    // -> Transaction_History -> Cria o recibo da compra
+      // === INÍCIO DA LÓGICA DOS SNAPSHOTS ===
+      String finalName = reward.getName();
+      String finalIcon = reward.getIcon().orElse(null);
+      Integer finalMinutes = reward.getBaseDurationMinutes().orElse(null); // Pega o tempo base da recompensa
+      RewardType finalType = reward.getType(); // <- Pega o tipo inicial
+      RewardPackageLevel finalPackageLevel = reward.getPackageLevel().orElse(null);
+
+      if (reward.getType() == RewardType.MISTERY_BOX) {
+        finalType = RewardType.MISTERY_BOX;
+        finalMinutes = null;
+        if (finalIcon == null || finalIcon.isBlank()) {
+          finalIcon = "mystery_box";
+        }
+        if (finalPackageLevel == null) {
+          finalPackageLevel = RewardPackageLevel.BASIC;
+        }
+      }
+
+      // 5. Cria o item copiando os Snapshots
+      InventoryItem newItem = new InventoryItem(
+          UUID.randomUUID(),
+          userIdLogado,
+          reward.getId(),
+          finalName,
+          reward.getPrice(),
+          finalType,
+          InventoryItemStatus.AVAILABLE,
+          newIndex,
+          finalIcon,
+          finalPackageLevel,
+          finalMinutes != null ? finalMinutes * 60 : null,
+          LocalDateTime.now(),
+          reward.getLootItems()); // acquiredAt puro no domínio + snapshot dos prêmios da Mystery Box
+
+      // -> Inventory_Item -> cria o item na mochila
+      inventoryItemRepositoryPort.save(newItem);
+    }
+
+    String rewardDescriptionSnapshot = reward.getDescription()
+        .map(String::trim)
+        .filter(desc -> !desc.isEmpty())
+        .orElse(null);
+
+    // -> Transaction_History -> Cria o recibo da compra / quitação da dívida
    TransactionHistory transaction = new TransactionHistory(
         null, // O Domínio gera o UUID
         userIdLogado, 
@@ -134,6 +150,8 @@ public class RedeemRewardUseCase {
         reward.getPackageLevel().orElse(null),
         null, // difficulty (não se aplica)
         reward.getTags(), // tagsSnapshot
+        null, // columnNameSnapshot
+        rewardDescriptionSnapshot,
         null // createdAt
     );
 

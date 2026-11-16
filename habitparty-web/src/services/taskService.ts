@@ -12,7 +12,7 @@ import type { BoardColumn } from "@/types/task";
 import type { WorkspaceResponseDTO } from "@/types/workspace";
 import { getUserTimezoneCookie } from "@/utils/cookies";
 import {
-  mapTaskResponseToTask,
+  computeArchivedColumnCountsFromTotals,
   mapWorkspaceToBoardColumns,
 } from "@/utils/taskMapper";
 
@@ -63,49 +63,48 @@ export async function fetchWorkspaceBoardColumns(workspaceId: string): Promise<{
   cacheLife("private30");
   cacheTag("kanban", "tasks", "dashboard-tasks");
 
-  const [{ data: kanbanBoard }, allColumnsSummary, userTimeZone] =
-    await Promise.all([
-      serverApi.GET("/workspaces/{workspaceId}/kanban", {
-        params: { path: { workspaceId } },
-      }),
-      getWorkspaceColumnsSummary(workspaceId),
-      getUserTimezoneCookie(),
-    ]);
-
-  const kanbanColumns = kanbanBoard
-    ? mapWorkspaceToBoardColumns(kanbanBoard, userTimeZone)
-    : [];
-
-  const summaries: ColumnSummaryDTO[] = allColumnsSummary || [];
-  const kanbanColIds = new Set(kanbanColumns.map((c) => c.id));
-  const missingSummaries = summaries.filter(
-    (col) => col.id && !kanbanColIds.has(col.id),
-  );
-
-  const missingColumnsWithTasks = await Promise.all(
-    missingSummaries.map(async (col) => {
-      const columnId = col.id || "";
-      const { data: tasksDto } = await serverApi.GET(
-        "/tasks/column/{boardColumnId}",
-        {
-          params: { path: { boardColumnId: columnId } },
-        },
-      );
-      const tasks = (tasksDto || []).map((t) =>
-        mapTaskResponseToTask(t, columnId, userTimeZone),
-      );
-      return {
-        id: columnId,
-        title: col.name || "Lista",
-        icon: col.icon || "sun",
-        order: col.orderIndex ?? kanbanColumns.length,
-        tasks,
-      };
+  const [{ data: kanbanBoard }, userTimeZone] = await Promise.all([
+    serverApi.GET("/workspaces/{workspaceId}/kanban", {
+      params: {
+        path: { workspaceId },
+        query: { excludeArchivedCompleted: true, includeHidden: true },
+      },
     }),
-  );
+    getUserTimezoneCookie(),
+  ]);
 
-  const columns = [...kanbanColumns, ...missingColumnsWithTasks].sort(
-    (a, b) => a.order - b.order,
+  const columns = (
+    kanbanBoard ? mapWorkspaceToBoardColumns(kanbanBoard, userTimeZone) : []
+  ).sort((a, b) => a.order - b.order);
+
+  const summaries: DashboardColumnOption[] = (kanbanBoard?.columns || []).map(
+    (col) => {
+      const loadedTasks = col.tasks || [];
+      const loadedCompleted = loadedTasks.filter(
+        (t) => t.status === "COMPLETED",
+      ).length;
+      const totalTasks = col.totalTasks ?? loadedTasks.length;
+      const completedTasks = col.completedTasks ?? loadedCompleted;
+      const { archivedTotalCount, archivedCompletedCount } =
+        computeArchivedColumnCountsFromTotals(
+          loadedTasks.length,
+          loadedCompleted,
+          totalTasks,
+          completedTasks,
+        );
+      return {
+        id: col.id,
+        name: col.name,
+        icon: col.icon,
+        orderIndex: col.orderIndex,
+        isVisible: col.isVisible,
+        totalTasks,
+        completedTasks,
+        archivedTotalCount,
+        archivedCompletedCount,
+        workspaceId,
+      };
+    },
   );
 
   return { columns, summaries };
@@ -154,6 +153,13 @@ export async function fetchAllWorkspacesBoards(): Promise<
           ).length;
           const totalTasks = col.totalTasks ?? loadedTotal;
           const completedTasks = col.completedTasks ?? loadedCompleted;
+          const { archivedTotalCount, archivedCompletedCount } =
+            computeArchivedColumnCountsFromTotals(
+              loadedTotal,
+              loadedCompleted,
+              totalTasks,
+              completedTasks,
+            );
           return {
             id: col.id,
             name: col.name,
@@ -162,11 +168,8 @@ export async function fetchAllWorkspacesBoards(): Promise<
             isVisible: col.isVisible,
             totalTasks,
             completedTasks,
-            archivedTotalCount: Math.max(0, totalTasks - loadedTotal),
-            archivedCompletedCount: Math.max(
-              0,
-              completedTasks - loadedCompleted,
-            ),
+            archivedTotalCount,
+            archivedCompletedCount,
             workspaceId,
             workspaceName,
           };

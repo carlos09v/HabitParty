@@ -3,12 +3,20 @@
 import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import {
+  DEFAULT_LONG_BREAK_MINUTES,
+  DEFAULT_SHORT_BREAK_MINUTES,
+} from "@/constants/focus";
+import {
   setFocusTimerTranslators,
   useFocusTimerStore,
 } from "@/store/focusTimerStore";
 import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
 import type { FocusTimerControlsState, FocusTimerState } from "@/types/focus";
-import { formatFocusDisplayTime } from "@/utils/focusFormatters";
+import {
+  formatFocusDisplayTime,
+  getFocusOvertimeSeconds,
+  isFocusOvertime,
+} from "@/utils/focusFormatters";
 import { setFocusBrowserTranslations } from "@/utils/focusTimerBrowser";
 
 interface UseFocusTimerOptions {
@@ -56,12 +64,19 @@ export function useFocusTimerControls({
       s.secondsRemaining > 0 &&
       s.target?.type !== "inventory",
   );
+  const isOvertime = useFocusTimerStore((s) => isFocusOvertime(s));
+  const nextBreakMinutes = useFocusTimerStore((s) =>
+    (s.completedCycles + 1) % 4 === 0
+      ? DEFAULT_LONG_BREAK_MINUTES
+      : DEFAULT_SHORT_BREAK_MINUTES,
+  );
 
   const toggleTimer = useFocusTimerStore((s) => s.toggleTimer);
   const pauseTimer = useFocusTimerStore((s) => s.pauseTimer);
   const resumeTimer = useFocusTimerStore((s) => s.resumeTimer);
   const resetTimer = useFocusTimerStore((s) => s.resetTimer);
   const skipBreak = useFocusTimerStore((s) => s.skipBreak);
+  const startBreak = useFocusTimerStore((s) => s.startBreak);
   const completeSession = useFocusTimerStore((s) => s.completeSession);
   const changeMode = useFocusTimerStore((s) => s.changeMode);
   const changeDuration = useFocusTimerStore((s) => s.changeDuration);
@@ -101,6 +116,7 @@ export function useFocusTimerControls({
       titlePausedPrefix: tNotifications("titlePausedPrefix"),
       titleBreakPrefix: tNotifications("titleBreakPrefix"),
       titleFocusPrefix: tNotifications("titleFocusPrefix"),
+      titleOvertimePrefix: tNotifications("titleOvertimePrefix"),
     });
   }, [tStore, tNotifications]);
 
@@ -121,6 +137,7 @@ export function useFocusTimerControls({
     hasElapsedSeconds,
     canComplete,
     isPartialPomo,
+    isOvertime,
   };
 
   return {
@@ -137,6 +154,8 @@ export function useFocusTimerControls({
     hasElapsedSeconds,
     canComplete,
     isPartialPomo,
+    isOvertime,
+    nextBreakMinutes,
 
     // Preferências de som sincronizadas com soundPreferencesStore
     isSoundEnabled,
@@ -150,6 +169,7 @@ export function useFocusTimerControls({
     resumeTimer,
     resetTimer,
     skipBreak,
+    startBreak,
     completeSession,
     changeMode,
     changeDuration,
@@ -189,12 +209,29 @@ export function useFocusTimerDisplay() {
   const isInventoryItem = target?.type === "inventory";
   const isBreak = phase === "SHORT_BREAK" || phase === "LONG_BREAK";
   const isCountdown = mode === "POMO" || isInventoryItem || isBreak;
-
-  const displaySeconds = isCountdown ? secondsRemaining : elapsedSeconds;
-  const formattedTime = formatFocusDisplayTime({
+  const isOvertime = isFocusOvertime({
     mode,
+    phase,
     secondsRemaining,
     elapsedSeconds,
+    totalDurationSeconds,
+    target,
+  });
+  const overtimeSeconds = isOvertime
+    ? getFocusOvertimeSeconds({ elapsedSeconds, totalDurationSeconds })
+    : 0;
+
+  const displaySeconds = isOvertime
+    ? overtimeSeconds
+    : isCountdown
+      ? secondsRemaining
+      : elapsedSeconds;
+  const formattedTime = formatFocusDisplayTime({
+    mode,
+    phase,
+    secondsRemaining,
+    elapsedSeconds,
+    totalDurationSeconds,
     target,
   });
 
@@ -219,6 +256,8 @@ export function useFocusTimerDisplay() {
     mode,
     phase,
     isBreak,
+    isOvertime,
+    overtimeSeconds,
     target,
     isActive,
     isPaused,

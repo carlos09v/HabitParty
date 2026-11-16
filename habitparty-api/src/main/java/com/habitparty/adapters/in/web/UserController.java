@@ -92,7 +92,8 @@ public class UserController implements UserApi {
   public ResponseEntity<UserResponseDTO> resetUserAccount(
       ResetAccountDTO dto,
       AuthenticatedUser usuarioLogado) {
-    User resetUser = resetUserAccountUseCase.execute(usuarioLogado.id(), dto.scope());
+    boolean deleteHistory = Boolean.TRUE.equals(dto.deleteHistory());
+    User resetUser = resetUserAccountUseCase.execute(usuarioLogado.id(), dto.scope(), deleteHistory);
     return ResponseEntity.ok(UserResponseDTO.fromDomain(resetUser, 0));
   }
 

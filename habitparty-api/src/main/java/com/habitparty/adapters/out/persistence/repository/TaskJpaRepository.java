@@ -44,6 +44,24 @@ public interface TaskJpaRepository extends JpaRepository<TaskJpaEntity, UUID> {
         @Param("minDueDate") LocalDate minDueDate,
         @Param("minCompletedAt") LocalDateTime minCompletedAt);
 
+    // Complemento exato da query acima para carregamento sob demanda das tarefas concluídas antigas da coluna
+    @Query("""
+        SELECT t
+        FROM TaskJpaEntity t
+        LEFT JOIN TodoJpaEntity td ON td.id = t.id
+        WHERE t.boardColumnId = :boardColumnId
+          AND t.taskType = 'TODO'
+          AND t.status = 'COMPLETED'
+          AND (t.dueDate IS NULL OR t.dueDate < :minDueDate)
+          AND (td.completedAt IS NULL OR td.completedAt < :minCompletedAt)
+          AND (t.dueDate IS NOT NULL OR td.completedAt IS NOT NULL OR t.createdAt < :minCompletedAt)
+        ORDER BY td.completedAt DESC NULLS LAST, t.orderIndex ASC
+    """)
+    List<TaskJpaEntity> findArchivedCompletedTodosByBoardColumnId(
+        @Param("boardColumnId") UUID boardColumnId,
+        @Param("minDueDate") LocalDate minDueDate,
+        @Param("minCompletedAt") LocalDateTime minCompletedAt);
+
     // Exemplo de busca com validação de usuário
     Optional<TaskJpaEntity> findByIdAndUserId(UUID id, UUID userId);
 

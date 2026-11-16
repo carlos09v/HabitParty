@@ -6,7 +6,13 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronDown, GripVertical, MoreVertical, Plus } from "lucide-react";
+import {
+  ChevronDown,
+  GripVertical,
+  Loader2,
+  MoreVertical,
+  Plus,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { getColumnIcon } from "@/constants/routine";
@@ -32,6 +38,8 @@ export const RoutineColumn = memo(function RoutineColumn({
   onOpenColumnMenu,
   onToggleComplete,
   onHabitChange,
+  onLoadArchivedCompleted,
+  forceExpandCompleted = false,
   isOverlay = false,
 }: RoutineColumnProps) {
   const t = useTranslations("tasks.column");
@@ -40,7 +48,18 @@ export const RoutineColumn = memo(function RoutineColumn({
   const columnRef = useRef<HTMLDivElement | null>(null);
 
   const [isQuickAdding, setIsQuickAdding] = useState(false);
-  const [isCompletedExpanded, setIsCompletedExpanded] = useState(false);
+  const [isCompletedExpanded, setIsCompletedExpanded] =
+    useState(forceExpandCompleted);
+  const [isLoadingArchivedCompleted, setIsLoadingArchivedCompleted] =
+    useState(false);
+
+  useEffect(() => {
+    if (forceExpandCompleted) {
+      setIsCompletedExpanded(true);
+    }
+  }, [forceExpandCompleted]);
+  const archivedTotalCount = column.archivedTotalCount ?? 0;
+  const archivedCompletedCount = column.archivedCompletedCount ?? 0;
 
   const {
     attributes,
@@ -102,7 +121,7 @@ export const RoutineColumn = memo(function RoutineColumn({
 
   const { totalTasks, completedTasks, progressPercent, isAllDone } =
     useMemo(() => {
-      const total = column.tasks.length;
+      const total = column.tasks.length + archivedTotalCount;
       if (total === 0) {
         return {
           totalTasks: 0,
@@ -111,7 +130,7 @@ export const RoutineColumn = memo(function RoutineColumn({
           isAllDone: false,
         };
       }
-      const done = column.tasks.filter((taskItem) => {
+      const loadedDone = column.tasks.filter((taskItem) => {
         const isHabitTask = (taskItem.type || "").toLowerCase() === "habit";
         if (isHabitTask) {
           return (
@@ -120,13 +139,24 @@ export const RoutineColumn = memo(function RoutineColumn({
         }
         return Boolean(taskItem.completed);
       }).length;
+      const done = loadedDone + archivedCompletedCount;
       return {
         totalTasks: total,
         completedTasks: done,
         progressPercent: Math.round((done / total) * 100),
         isAllDone: done === total,
       };
-    }, [column.tasks]);
+    }, [column.tasks, archivedTotalCount, archivedCompletedCount]);
+
+  const handleLoadArchived = async () => {
+    if (!onLoadArchivedCompleted || isLoadingArchivedCompleted) return;
+    setIsLoadingArchivedCompleted(true);
+    try {
+      await onLoadArchivedCompleted(column.id);
+    } finally {
+      setIsLoadingArchivedCompleted(false);
+    }
+  };
 
   const handleTriggerAdd = () => {
     if (onQuickCreateTask) {
@@ -341,7 +371,7 @@ export const RoutineColumn = memo(function RoutineColumn({
           )}
 
           {/* Seção colapsável de ToDos concluídos na base da coluna */}
-          {completedTodoTasks.length > 0 && (
+          {(completedTodoTasks.length > 0 || archivedCompletedCount > 0) && (
             <div className="flex flex-col gap-2 pt-1.5 mt-0.5 border-t border-neutral-700/60 dark:border-white/8">
               <button
                 type="button"
@@ -363,7 +393,7 @@ export const RoutineColumn = memo(function RoutineColumn({
                   {t("completedSectionLabel")}
                 </span>
                 <span className="ml-auto px-1.5 py-0.5 rounded-full bg-surface dark:bg-white/8 text-neutral-300 font-bold text-tiny leading-none">
-                  {completedTodoTasks.length}
+                  {completedTodoTasks.length + archivedCompletedCount}
                 </span>
               </button>
 
@@ -389,6 +419,36 @@ export const RoutineColumn = memo(function RoutineColumn({
                       onHabitChange={onHabitChange}
                     />
                   ))}
+
+                  {archivedCompletedCount > 0 && onLoadArchivedCompleted && (
+                    <button
+                      type="button"
+                      disabled={isLoadingArchivedCompleted}
+                      onClick={handleLoadArchived}
+                      className={cn(
+                        "w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-neutral-700/70 dark:border-white/10 text-neutral-400 hover:text-gold hover:border-gold/40 hover:bg-gold/5 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait",
+                        isCompact
+                          ? "px-2 py-1.5 text-tiny"
+                          : "px-3 py-2 text-xs",
+                      )}
+                    >
+                      {isLoadingArchivedCompleted ? (
+                        <>
+                          <Loader2
+                            size={13}
+                            className="animate-spin shrink-0"
+                          />
+                          <span>{t("loadingArchivedCompleted")}</span>
+                        </>
+                      ) : (
+                        <span>
+                          {t("loadArchivedCompleted", {
+                            count: archivedCompletedCount,
+                          })}
+                        </span>
+                      )}
+                    </button>
+                  )}
                 </div>
               )}
             </div>

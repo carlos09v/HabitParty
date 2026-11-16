@@ -3,6 +3,7 @@ package com.habitparty.application.usecases.task;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,8 +77,16 @@ public class RecordHabitScoreUseCase {
     this.workspaceWriteGuard = workspaceWriteGuard;
   }
 
+  public record HabitScoreResult(Task task, boolean rewardGranted) {
+  }
+
   @Transactional
   public Task execute(UUID taskId, UUID userIdLogado, int delta) {
+    return executeWithResult(taskId, userIdLogado, delta).task();
+  }
+
+  @Transactional
+  public HabitScoreResult executeWithResult(UUID taskId, UUID userIdLogado, int delta) {
     if (dailyResetUseCase != null) {
       dailyResetUseCase.resetUserIfDue(userIdLogado);
     }
@@ -109,26 +118,40 @@ public class RecordHabitScoreUseCase {
       // Garante que eventual streak expirado por falta de rollover seja zerado antes do bônus/incremento
       habit.refreshStreakForDate(today);
 
-      UserLevel levelBefore = user.getCurrentLevel();
-      TaskGamificationHelper.awardTaskCompletion(
-          user, habit, TransactionType.HABIT_COMPLETED, userPort, transactionPort, columnName, today);
-      UserLevel levelAfter = user.getCurrentLevel();
-      UserLevel reachedLevel = levelAfter.ordinal() > levelBefore.ordinal() ? levelAfter : null;
+      ZoneId userZone = user.resolveZoneId(ZoneId.systemDefault());
+      long rewardedToday = transactionPort.countByUserIdAndReferenceIdAndTypeOnDate(
+          user.getId(),
+          habit.getId(),
+          TransactionType.HABIT_COMPLETED,
+          today,
+          userZone);
+      boolean grantReward = rewardedToday < Habit.MAX_DAILY_REWARDED_SCORES;
+
+      UserLevel reachedLevel = null;
+      if (grantReward) {
+        UserLevel levelBefore = user.getCurrentLevel();
+        TaskGamificationHelper.awardTaskCompletion(
+            user, habit, TransactionType.HABIT_COMPLETED, userPort, transactionPort, columnName, today);
+        UserLevel levelAfter = user.getCurrentLevel();
+        reachedLevel = levelAfter.ordinal() > levelBefore.ordinal() ? levelAfter : null;
+      }
 
       habit.registerCompletion(now);
       habit.changeStatus(TaskStatus.COMPLETED);
       Task savedHabit = taskPort.save(habit);
 
-      if (eventPublisher != null) {
-        eventPublisher.publishEvent(new TaskCompletedEvent(user.getId(), reachedLevel));
-      } else if (evaluateUserAchievementsUseCase != null) {
-        evaluateUserAchievementsUseCase.execute(user);
-        if (reachedLevel != null) {
-          evaluateUserAchievementsUseCase.notifyLevelMilestoneIfReached(user.getId(), reachedLevel);
+      if (grantReward) {
+        if (eventPublisher != null) {
+          eventPublisher.publishEvent(new TaskCompletedEvent(user.getId(), reachedLevel));
+        } else if (evaluateUserAchievementsUseCase != null) {
+          evaluateUserAchievementsUseCase.execute(user);
+          if (reachedLevel != null) {
+            evaluateUserAchievementsUseCase.notifyLevelMilestoneIfReached(user.getId(), reachedLevel);
+          }
         }
       }
 
-      return savedHabit;
+      return new HabitScoreResult(savedHabit, grantReward);
     } else if (delta < 0) {
       if (habit.getHabitType() == HabitType.POSITIVE) {
         throw new DomainValidationException("Este hábito é do tipo Positivo e não permite pontuação negativa.");
@@ -145,6 +168,6 @@ public class RecordHabitScoreUseCase {
       transactionPort.save(negativeTransaction);
     }
 
-    return taskPort.save(habit);
+    return new HabitScoreResult(taskPort.save(habit), false);
   }
 }

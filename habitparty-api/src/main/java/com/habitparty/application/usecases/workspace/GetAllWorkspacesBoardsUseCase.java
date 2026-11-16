@@ -18,7 +18,6 @@ import com.habitparty.core.domain.entities.BoardColumn;
 import com.habitparty.core.domain.entities.KanbanBoard;
 import com.habitparty.core.domain.entities.Workspace;
 import com.habitparty.core.domain.entities.task.Task;
-import com.habitparty.core.domain.enums.task.TaskStatus;
 
 /**
  * Carrega todos os workspaces do usuário com todas as suas colunas (visíveis e ocultas)
@@ -82,7 +81,7 @@ public class GetAllWorkspacesBoardsUseCase {
         .map(workspace -> {
           List<BoardColumn> wsColumns = columnsByWorkspace.getOrDefault(workspace.getId(), List.of());
           List<KanbanBoard.KanbanColumn> kanbanColumns = wsColumns.stream()
-              .map(column -> toKanbanColumn(
+              .map(column -> KanbanBoard.KanbanColumn.from(
                   column,
                   tasksByColumn.getOrDefault(column.getId(), List.of()),
                   excludeArchivedCompleted,
@@ -91,20 +90,5 @@ public class GetAllWorkspacesBoardsUseCase {
           return new KanbanBoard(workspace, kanbanColumns);
         })
         .toList();
-  }
-
-  private KanbanBoard.KanbanColumn toKanbanColumn(
-      BoardColumn column,
-      List<Task> tasks,
-      boolean excludeArchivedCompleted,
-      BoardColumnSummaryDTO summary) {
-    if (!excludeArchivedCompleted) {
-      return new KanbanBoard.KanbanColumn(column, tasks);
-    }
-    if (summary != null) {
-      return new KanbanBoard.KanbanColumn(column, tasks, summary.totalTasks(), summary.completedTasks());
-    }
-    long completedCount = tasks.stream().filter(t -> t.getStatus() == TaskStatus.COMPLETED).count();
-    return new KanbanBoard.KanbanColumn(column, tasks, (long) tasks.size(), completedCount);
   }
 }

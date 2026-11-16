@@ -112,6 +112,53 @@ export function DashboardMain({
     );
   };
 
+  const [createColumnTrigger, setCreateColumnTrigger] = useState(0);
+  const [otherColumns, setOtherColumns] = useState<DashboardColumnOption[]>(
+    () =>
+      initialAllColumns.filter((col) => col.workspaceId !== activeWorkspaceId),
+  );
+
+  useEffect(() => {
+    setOtherColumns(
+      initialAllColumns.filter((col) => col.workspaceId !== activeWorkspaceId),
+    );
+  }, [initialAllColumns, activeWorkspaceId]);
+
+  const handleColumnMoved = (
+    columnId: string,
+    targetWorkspaceId: string,
+    targetWorkspaceName: string,
+  ) => {
+    const movedColumn = columns.find((col) => col.id === columnId);
+    const targetIsReadOnly = Boolean(
+      workspaces.find((ws) => ws.id === targetWorkspaceId)?.isReadOnly,
+    );
+
+    if (movedColumn) {
+      setOtherColumns((prev) => [
+        ...prev.filter((col) => col.id !== columnId),
+        {
+          ...movedColumn,
+          workspaceId: targetWorkspaceId,
+          workspaceName: targetWorkspaceName,
+          isReadOnly: targetIsReadOnly,
+        },
+      ]);
+    }
+
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.columnId === columnId
+          ? {
+              ...task,
+              workspaceId: targetWorkspaceId,
+              workspaceName: targetWorkspaceName,
+            }
+          : task,
+      ),
+    );
+  };
+
   const isPremium = user?.isPremium ?? false;
   const maxColumns = isPremium ? MAX_COLUMNS_PREMIUM : MAX_VISIBLE_COLUMNS;
   const { isGamified } = useExperienceMode();
@@ -130,13 +177,10 @@ export function DashboardMain({
       workspaceName: activeWorkspaceName,
       isReadOnly: col.isReadOnly ?? isActiveWorkspaceReadOnly,
     }));
-    const otherColumns = initialAllColumns.filter(
-      (col) => col.workspaceId !== activeWorkspaceId,
-    );
     return [...enrichedActive, ...otherColumns];
   }, [
     columns,
-    initialAllColumns,
+    otherColumns,
     activeWorkspaceId,
     activeWorkspaceName,
     isActiveWorkspaceReadOnly,
@@ -201,6 +245,9 @@ export function DashboardMain({
         columns={columns}
         onColumnsChange={setColumns}
         onColumnDeleted={handleColumnDeleted}
+        workspaces={workspaces}
+        onColumnMoved={handleColumnMoved}
+        createColumnTrigger={createColumnTrigger}
         maxColumns={maxColumns}
         activeWorkspaceId={activeWorkspaceId}
         activeWorkspaceName={
@@ -219,6 +266,8 @@ export function DashboardMain({
         onTasksChange={setTasks}
         columns={allColumns}
         workspaces={workspaces}
+        hasColumns={columns.length > 0}
+        onCreateFirstColumn={() => setCreateColumnTrigger((n) => n + 1)}
         defaultColumnId={defaultWritableColumnId}
         isReadOnly={isActiveWorkspaceReadOnly}
         isCompact={isCompact}

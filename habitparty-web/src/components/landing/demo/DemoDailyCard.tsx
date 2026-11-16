@@ -22,7 +22,7 @@ export function DemoDailyCard({
         "p-4 rounded-xl border flex flex-col justify-between transition-colors",
         isStudyDone
           ? "bg-success-500/10 border-success-500/40"
-          : "bg-card dark:bg-card/70 border-neutral-700 dark:border-white/10 hover:border-primary-light/40 shadow-xs dark:shadow-sm",
+          : "bg-card dark:bg-card/70 border-neutral-700 dark:border-white/10 shadow-none",
       )}
     >
       <div>
@@ -32,7 +32,7 @@ export function DemoDailyCard({
             {t("streakBadge", { count: studyStreak })}
           </span>
           <span className="text-xs font-bold text-amber-700 dark:text-gold flex items-center gap-1">
-            <CoinIcon size={13} variant="coin" /> +25
+            <CoinIcon size={13} variant="coin" /> +5
           </span>
         </div>
         <h4

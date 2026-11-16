@@ -166,6 +166,9 @@
     "addTaskHeaderTitle": "Quick add task to this column",
     "completedProgressTitle": "{completed} of {total} completed",
     "completedSectionLabel": "Completed",
+    "loadArchivedCompleted": "Load +{count} older completed",
+    "loadingArchivedCompleted": "Loading completed...",
+    "loadArchivedCompletedError": "Could not load older completed tasks.",
     "emptyState": "No tasks here",
     "emptyStateCta": "Click to create your first task",
     "addTaskFooterButton": "Add task"

@@ -13,7 +13,11 @@ import type {
   UpdateFocusActivityOrderDTO,
   UpdateFocusRecordDTO,
 } from "@/types/focus";
-import { mapFocusActivities } from "@/utils/focusMapper";
+import {
+  type FocusRecordsPageResult,
+  mapFocusActivities,
+  normalizeFocusRecordsPage,
+} from "@/utils/focusMapper";
 import { invalidateFocusDomainTags } from "./cacheInvalidation";
 import { type ActionState, getErrorMessage } from "./types";
 
@@ -325,6 +329,85 @@ export async function listFocusActivities(): Promise<
     };
   } catch (err) {
     console.error("[FocusAction:ListActivities]", err);
+    return {
+      success: false,
+      error: t("communicationError"),
+    };
+  }
+}
+
+export type FocusRecordsPageData = FocusRecordsPageResult;
+
+/**
+ * Busca registros de foco do usuário de forma paginada para "Ver mais" na sidebar.
+ */
+export async function getFocusRecordsPage(
+  page = 0,
+  size = 100,
+): Promise<ActionState<FocusRecordsPageData>> {
+  const t = await getTranslations("focus.actions");
+  try {
+    const safePage = Math.max(page, 0);
+    const safeSize = Math.min(Math.max(size, 1), 100);
+    const { data, error } = await serverApi.GET("/focus-records/me", {
+      params: {
+        query: { page: safePage, size: safeSize },
+      },
+    });
+
+    if (error) {
+      return {
+        success: false,
+        error: getErrorMessage(error, t("communicationError")),
+      };
+    }
+
+    return {
+      success: true,
+      data: normalizeFocusRecordsPage(data, safePage),
+    };
+  } catch (err) {
+    console.error("[FocusAction:GetRecordsPage]", err);
+    return {
+      success: false,
+      error: t("communicationError"),
+    };
+  }
+}
+
+/**
+ * Busca registros de foco filtrados por atividade específica (paginação direta no servidor).
+ */
+export async function getFocusActivityRecordsPage(
+  activityId: string,
+  page = 0,
+): Promise<ActionState<FocusRecordsPageData>> {
+  const t = await getTranslations("focus.actions");
+  try {
+    const safePage = Math.max(page, 0);
+    const { data, error } = await serverApi.GET(
+      "/focus-records/activity/{activityId}",
+      {
+        params: {
+          path: { activityId },
+          query: { page: safePage },
+        },
+      },
+    );
+
+    if (error) {
+      return {
+        success: false,
+        error: getErrorMessage(error, t("communicationError")),
+      };
+    }
+
+    return {
+      success: true,
+      data: normalizeFocusRecordsPage(data, safePage),
+    };
+  } catch (err) {
+    console.error("[FocusAction:GetActivityRecordsPage]", err);
     return {
       success: false,
       error: t("communicationError"),

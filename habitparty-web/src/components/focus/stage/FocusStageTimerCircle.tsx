@@ -3,7 +3,10 @@
 import { useTranslations } from "next-intl";
 import { useFocusTimerDisplay } from "@/hooks/useFocusTimer";
 import { cn } from "@/utils";
-import { formatFocusTime } from "@/utils/focusFormatters";
+import {
+  formatFocusDisplayTime,
+  isFocusOvertime,
+} from "@/utils/focusFormatters";
 
 export interface FocusStageTimerCircleProps {
   mode?: "POMO" | "STOPWATCH";
@@ -37,6 +40,14 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
   const size = props.size ?? "lg";
 
   const isBreak = phase === "SHORT_BREAK" || phase === "LONG_BREAK";
+  const isOvertime = isFocusOvertime({
+    mode,
+    phase,
+    secondsRemaining,
+    elapsedSeconds,
+    totalDurationSeconds,
+    target: isInventoryItem ? { type: "inventory" } : undefined,
+  });
 
   // Cálculo da porcentagem de progresso para o círculo SVG
   let progressPercent = 0;
@@ -66,9 +77,14 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
 
   const displayTime =
     props.secondsRemaining !== undefined || props.elapsedSeconds !== undefined
-      ? mode === "POMO" || isInventoryItem || isBreak
-        ? formatFocusTime(secondsRemaining)
-        : formatFocusTime(elapsedSeconds)
+      ? formatFocusDisplayTime({
+          mode,
+          phase,
+          secondsRemaining,
+          elapsedSeconds,
+          totalDurationSeconds,
+          target: isInventoryItem ? { type: "inventory" } : undefined,
+        })
       : storeDisplay.formattedTime;
 
   const sizeClasses = {
@@ -105,7 +121,9 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
             "transition-colors duration-500",
             isBreak
               ? "stroke-emerald-500/20 dark:stroke-emerald-950/40"
-              : "stroke-neutral-700 dark:stroke-white/10",
+              : isOvertime
+                ? "stroke-cyan-500/25 dark:stroke-cyan-950/45"
+                : "stroke-neutral-700 dark:stroke-white/10",
           )}
         />
         {/* Halo sutil estático sem filtro SVG drop-shadow a 1Hz */}
@@ -120,7 +138,11 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
           fill="transparent"
           className={cn(
             "transition-colors duration-300",
-            isBreak ? "stroke-emerald-400/20" : "stroke-gold/18",
+            isBreak
+              ? "stroke-emerald-600/25 dark:stroke-emerald-400/20"
+              : isOvertime
+                ? "stroke-cyan-600/25 dark:stroke-cyan-400/25"
+                : "stroke-gold/25 dark:stroke-gold/18",
           )}
         />
         {/* Círculo de progresso animado (1Hz sem rasterizar drop-shadow nem transition-all) */}
@@ -135,7 +157,11 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
           fill="transparent"
           className={cn(
             "transition-colors duration-300",
-            isBreak ? "stroke-emerald-400" : "stroke-gold",
+            isBreak
+              ? "stroke-emerald-600 dark:stroke-emerald-400"
+              : isOvertime
+                ? "stroke-cyan-600 dark:stroke-cyan-400"
+                : "stroke-gold",
           )}
         />
       </svg>
@@ -153,7 +179,9 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
             fontClasses,
             isBreak
               ? "text-emerald-400 dark:text-emerald-300"
-              : "text-neutral-50",
+              : isOvertime
+                ? "text-cyan-300 dark:text-cyan-200"
+                : "text-neutral-50",
           )}
         >
           {displayTime}
@@ -168,7 +196,9 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
               : "text-xs px-3 py-0.5 tracking-wider",
             isBreak
               ? "bg-emerald-500/15 dark:bg-emerald-950/70 border-emerald-500/40 text-emerald-400 dark:text-emerald-300 shadow-2xs dark:shadow-[0_0_12px_rgba(16,185,129,0.25)]"
-              : "bg-white/10 border-white/15 text-neutral-300",
+              : isOvertime
+                ? "bg-cyan-500/15 dark:bg-cyan-500/20 border-cyan-600/45 dark:border-cyan-400/45 text-cyan-800 dark:text-cyan-200 shadow-2xs dark:shadow-[0_0_12px_rgba(34,211,238,0.25)]"
+                : "bg-white/10 border-white/15 text-neutral-300",
           )}
         >
           {isBreak
@@ -179,11 +209,15 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
               : isPaused
                 ? t("status.breakPaused")
                 : t("status.readyToRest")
-            : isRunning
-              ? t("status.focusing")
-              : isPaused
-                ? t("status.paused")
-                : t("status.readyToStart")}
+            : isOvertime
+              ? isRunning
+                ? t("status.overtime")
+                : t("status.overtimePaused")
+              : isRunning
+                ? t("status.focusing")
+                : isPaused
+                  ? t("status.paused")
+                  : t("status.readyToStart")}
         </span>
 
         {/* Ciclos de Pomodoro */}

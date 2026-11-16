@@ -21,7 +21,8 @@
       "SHOPPING": "Shopping",
       "DEVELOPMENT": "Development",
       "LUCK": "Luck",
-      "HOBBIES": "Hobbies"
+      "HOBBIES": "Hobbies",
+      "DEBT": "Debt"
     },
     "packages": {
       "all": "All Packages",
@@ -56,13 +57,15 @@
     "addProductProductivity": "New Reward",
     "buy": "Buy",
     "buyProductivity": "Redeem",
+    "payDebt": "Pay Debt",
     "insufficientCoinsShort": "Insufficient coins",
     "insufficientCreditsShort": "Insufficient credits",
     "filters": {
       "category": "Categories",
       "type": "Type",
       "packageLevel": "Package",
-      "sortBy": "Sort"
+      "sortBy": "Sort",
+      "affordableActive": "Within balance"
     },
     "empty": {
       "showcaseEmptyTitle": "Your rewards showcase is empty! 🛍️",
@@ -92,6 +95,8 @@
       "buySuccess": "You bought \"{title}\"! The item was sent to your Backpack.",
       "buySuccessGamified": "You bought \"{title}\"! The item was sent to your Backpack.",
       "buySuccessProductivity": "You redeemed \"{title}\"! The item was added to your Inventory.",
+      "debtPaidSuccessGamified": "Debt \"{title}\" settled! Coins were deducted directly.",
+      "debtPaidSuccessProductivity": "Debt \"{title}\" paid! Credits were deducted directly.",
       "serverError": "Server communication error.",
       "deleteSuccess": "Reward \"{title}\" deleted successfully!",
       "deleteError": "Error deleting reward."
@@ -100,6 +105,7 @@
   "card": {
     "buy": "Buy",
     "buyProductivity": "Redeem",
+    "payDebt": "Pay Debt",
     "addRewardAria": "Add new reward",
     "addProduct": "Add Product",
     "addProductProductivity": "New Reward"
@@ -119,6 +125,17 @@
     "descriptionPlaceholder": "Details or rules for enjoying your reward...",
     "typeLabel": "Reward Type",
     "categoryLabel": "Category",
+    "debtToggleLabel": "Log as Debt",
+    "debtToggleAria": "Enable immediate debt settlement mode",
+    "debtToggleSubtitle": "Direct settlement: deducts coins right away without sending to Backpack.",
+    "debtToggleSubtitleProductivity": "Direct settlement: deducts credits right away without sending to Inventory.",
+    "debtTooltipTitle": "What is Debt for?",
+    "debtTooltipAria": "Learn what Debt mode is for",
+    "debtTooltipBody": "Use this when you go over a leisure time limit or indulge in an urgent distraction before earning enough coins.",
+    "debtTooltipPointDirect": "Clicking Pay Debt deducts coins and settles it immediately without creating a Backpack item.",
+    "debtTooltipPointDirectProductivity": "Clicking Pay Debt deducts credits and settles it immediately without creating an Inventory item.",
+    "debtTooltipPointExample": "Does not count as a reward redemption for achievements and can be filtered later until settled.",
+    "debtTooltipPointExampleProductivity": "Remains easy to filter so you can settle it as soon as you earn enough credits.",
     "durationLabel": "Activity Duration (minutes)",
     "durationHint": "(time that will be consumed in Focus)",
     "durationPlaceholder": "E.g., 30, 60, 120",

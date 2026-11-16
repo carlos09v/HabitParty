@@ -33,6 +33,8 @@ public class TransactionHistory {
   private final List<String> tagsSnapshot;
   // Nome da lista (BoardColumn) da tarefa no momento da transação
   private final String columnNameSnapshot;
+  // Descrição (snapshot da recompensa no momento da transação)
+  private final String descriptionSnapshot;
 
   public TransactionHistory(UUID id, UUID userId, UUID referenceId,
       BigDecimal goldAmount, int xpAmount, BigDecimal priceSnapshot,
@@ -40,7 +42,7 @@ public class TransactionHistory {
       String iconSnapshot, RewardPackageLevel packageLevelSnapshot,
       TaskDifficulty difficultySnapshot, List<String> tagsSnapshot, LocalDateTime createdAt) {
     this(id, userId, referenceId, goldAmount, xpAmount, priceSnapshot, transactionType, nameSnapshot,
-        iconSnapshot, packageLevelSnapshot, difficultySnapshot, tagsSnapshot, null, createdAt);
+        iconSnapshot, packageLevelSnapshot, difficultySnapshot, tagsSnapshot, null, null, createdAt);
   }
 
   public TransactionHistory(UUID id, UUID userId, UUID referenceId,
@@ -49,6 +51,16 @@ public class TransactionHistory {
       String iconSnapshot, RewardPackageLevel packageLevelSnapshot,
       TaskDifficulty difficultySnapshot, List<String> tagsSnapshot, String columnNameSnapshot,
       LocalDateTime createdAt) {
+    this(id, userId, referenceId, goldAmount, xpAmount, priceSnapshot, transactionType, nameSnapshot,
+        iconSnapshot, packageLevelSnapshot, difficultySnapshot, tagsSnapshot, columnNameSnapshot, null, createdAt);
+  }
+
+  public TransactionHistory(UUID id, UUID userId, UUID referenceId,
+      BigDecimal goldAmount, int xpAmount, BigDecimal priceSnapshot,
+      TransactionType transactionType, String nameSnapshot,
+      String iconSnapshot, RewardPackageLevel packageLevelSnapshot,
+      TaskDifficulty difficultySnapshot, List<String> tagsSnapshot, String columnNameSnapshot,
+      String descriptionSnapshot, LocalDateTime createdAt) {
 
     // Validações de integridade do Livro-Caixa
     if (userId == null)
@@ -75,6 +87,7 @@ public class TransactionHistory {
     this.difficultySnapshot = difficultySnapshot;
     this.tagsSnapshot = tagsSnapshot;
     this.columnNameSnapshot = columnNameSnapshot;
+    this.descriptionSnapshot = descriptionSnapshot;
     this.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
   }
 
@@ -141,5 +154,9 @@ public class TransactionHistory {
 
   public Optional<String> getColumnNameSnapshot() {
     return Optional.ofNullable(columnNameSnapshot);
+  }
+
+  public Optional<String> getDescriptionSnapshot() {
+    return Optional.ofNullable(descriptionSnapshot);
   }
 }

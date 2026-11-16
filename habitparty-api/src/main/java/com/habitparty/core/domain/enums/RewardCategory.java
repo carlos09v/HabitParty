@@ -7,7 +7,8 @@ public enum RewardCategory {
     SHOPPING("Compras"),
     DEVELOPMENT("Desenvolvimento"),
     LUCK("Sorte"),
-    HOBBIES("Hobbies");
+    HOBBIES("Hobbies"),
+    DEBT("Dívida");
 
     private final String description;
 

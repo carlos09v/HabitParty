@@ -20,49 +20,59 @@
     "closeMenu": "Fechar menu"
   },
   "hero": {
-    "badge": "Escolha entre Produtividade Imersiva ou Gameficação (RPG)",
+    "badge": "Escolha entre Modo Essencial (Limpo) ou Modo Aventura (RPG)",
     "titleLine1": "Sua rotina não precisa ser um fardo. ",
     "titleHighlight": "Torne-a consistente e recompensadora.",
-    "subtitle": "Gerencie tarefas, hábitos e projetos em quadros Kanban ágeis. Escolha entre o Modo Essencial com estética executiva ou o Modo Aventura com moedas de ouro, XP e recompensas reais.",
+    "subtitle": "Gerencie hábitos, rotinas diárias e projetos em quadros Kanban com foco Pomodoro. Equilibre dever e lazer na proporção real 3:1 a 4:1 — no Modo Essencial executivo ou no Modo Aventura com moedas de ouro e XP.",
     "primaryCta": "Começar Gratuitamente",
     "secondaryCta": "Explorar o App ao Vivo",
     "highlights": {
       "levels": "Níveis de Foco e XP",
-      "streaks": "Streaks e Dailies",
+      "streaks": "Ofensivas e Diárias",
       "pomodoro": "Pomodoro & Modo Zen",
-      "shop": "Loja de Recompensas"
+      "shop": "Loja Equilibrada 3:1–4:1"
     },
     "preview": {
+      "modeSwitcherLabel": "Alternar estilo de visualização entre Modo Essencial e Modo Aventura",
+      "levelEssential": "Nv. 12 • Alta Performance",
+      "levelAdventure": "Nv. 12 • Aventureiro",
       "modeEssential": "Modo Essencial",
       "modeAdventure": "Modo Aventura",
       "dailyTag": "Diária • Hardcore",
+      "dailyTagEssential": "Rotina • Prazo Rígido",
       "dailyTitle": "1h de Estudo & Foco Profundo",
       "streakBadge": "14 dias 🔥",
-      "xpReward": "+60 XP",
-      "coinReward": "+25",
+      "xpReward": "+30 XP",
+      "pointsReward": "+30 pts",
+      "coinReward": "+5",
+      "creditsReward": "+5 Créditos",
       "focusTag": "Pomodoro Zen",
       "focusStatus": "Ciclo 03 • Em Foco",
       "rewardTag": "Recompensa Pessoal",
+      "rewardTagEssential": "Recompensa Direta",
       "rewardTitle": "Sessão de Jogos / Cinema (1h)",
-      "rewardAction": "Resgatado ✓"
+      "rewardAction": "Resgatado ✓",
+      "rewardActionEssential": "No Inventário ✓",
+      "ratioNoteAdventure": "Equilíbrio 3:1–4:1 • ~15 🪙/dia financiam 1h de lazer sem culpa",
+      "ratioNoteEssential": "Equilíbrio 3:1–4:1 • ~15 Créditos/dia financiam 1h de pausa sem culpa"
     }
   },
   "demo": {
     "badge": "Demonstração Interativa",
     "title": "Sinta a satisfação de evoluir na prática.",
-    "subtitle": "Clique nos botões e tarefas abaixo. No HabitParty, cada esforço real gera recompensas imediatas com som, XP e moedas de ouro.",
-    "windowTitle": "HabitParty Cosmic Studio • Demonstração ao Vivo",
+    "subtitle": "Clique nos botões e tarefas abaixo. No HabitParty, cada esforço real gera recompensas calibradas com som, XP e moedas.",
+    "windowTitle": "HabitParty • Demonstração ao Vivo",
     "goldStatus": "{gold} Ouro",
     "levelStatus": "Nível {level}",
-    "footerHint": "Simulação interativa: clique nos botões para sentir a sensação imediata de recompensa.",
-    "footerHighlight": "No HabitParty: seus hábitos diários viram ouro e evolução de verdade ✨",
+    "footerHint": "Simulação interativa: clique nos botões abaixo para sentir o retorno imediato.",
+    "footerHighlight": "No HabitParty: seu esforço vira lazer merecido na medida certa ✨",
     "toasts": {
       "habitLevelUp": "🎉 SUBIU DE NÍVEL! Nível {level} alcançado!",
-      "habitScored": "+15 XP • +5 Moedas de Ouro!",
-      "habitDecremented": "Hábito decrementado",
-      "dailyLevelUp": "🎉 LEVEL UP! Nível {level}!",
-      "dailyCompleted": "⚔️ Missão Cumprida! +60 XP • +25 Ouro!",
-      "dailyReopened": "Missão reaberta",
+      "habitScored": "+10 XP • +2 Moedas de Ouro!",
+      "habitDecremented": "Registro reduzido",
+      "dailyLevelUp": "🎉 SUBIU DE NÍVEL! Nível {level}!",
+      "dailyCompleted": "⚔️ Rotina Concluída! +30 XP • +5 Moedas!",
+      "dailyReopened": "Rotina reaberta",
       "timerStarted": "⏱️ Modo Hiperfoco Iniciado! Respire fundo.",
       "timerPaused": "Pausa no cronômetro."
     },
@@ -82,13 +92,13 @@
       "decreaseAria": "Diminuir copo"
     },
     "dailyCard": {
-      "streakBadge": "{count, plural, one {Streak # dia} other {Streak # dias}}",
+      "streakBadge": "{count, plural, one {Ofensiva: # dia} other {Ofensiva: # dias}}",
       "title": "💻 1h de Estudo Profundo",
-      "resetNote": "Reseta à meia-noite se não for concluída.",
+      "resetNote": "Renova à meia-noite se não for concluída.",
       "statusDone": "Concluída!",
-      "statusPending": "Completar Quest:",
+      "statusPending": "Concluir rotina:",
       "buttonDone": "Feito!",
-      "buttonPending": "Concluir (+60 XP)"
+      "buttonPending": "Concluir (+30 XP)"
     },
     "focusCard": {
       "badge": "Foco Zen",
@@ -120,9 +130,9 @@
         "footer": "Sons Ambientes & Modo Zen"
       },
       "step3": {
-        "tag": "Recompensas & Lazer",
+        "tag": "Recompensas & Lazer (3:1 a 4:1)",
         "title": "Recompense sua Dedicação",
-        "description": "Transforme disciplina em momentos merecidos. Desfrute de pausas sem culpa, tempo livre ou itens da sua própria loja pessoal, seja acumulando pontos ou moedas de ouro.",
+        "description": "Economia calibrada na proporção 3:1 a 4:1: ~3 a 4 horas de dever (~15 moedas) pagam 1 hora de lazer livre. Troque seu saldo por pausas sem culpa usando Créditos (Modo Essencial) ou Moedas & Caixas Misteriosas (Modo Aventura).",
         "footer": "Loja Pessoal & Caixas Misteriosas"
       }
     }
@@ -150,34 +160,34 @@
         "description": "Todo o poder da produtividade gamificada no seu ritmo: adote o Modo Essencial para uma interface executiva com Créditos, Pontos e foco direto nas entregas; ou ative o Modo Aventura com moedas de ouro, XP e Caixas Misteriosas. Alterne com 1 clique sempre que quiser."
       },
       "rewardShop": {
-        "badge": "Economia Real",
+        "badge": "Proporção 3:1 a 4:1",
         "title": "Loja de Recompensas & Caixas Misteriosas",
-        "description": "Cadastre os mimos da sua vida real (ex: 'Sessão de Cinema', '1h de Game') ou tente a sorte abrindo Caixas Misteriosas com recompensas épicas."
+        "description": "Cadastre seus prêmios reais (ex: 30m ou 1h de lazer com guia de preço automático 3:1–4:1) ou tente a sorte abrindo Caixas Misteriosas no Modo Aventura."
       },
       "partyGuild": {
-        "badge": "Em Breve",
-        "title": "Sistema de Party e Guilda",
-        "description": "Em breve: convide amigos para a sua guilda no seu ambiente, acompanhem o progresso mútuo e celebrem vitórias em equipe."
+        "badge": "Social & Co-op",
+        "title": "Rede de Amigos, Parties e Guildas",
+        "description": "Conecte-se hoje mesmo por @username ou código exclusivo HP-XXXXXX com controles de privacidade. Em breve: esquadrões cooperativos e guildas."
       },
       "hardcoreMode": {
         "badge": "Disciplina Real",
         "title": "Prazo Rígido & Modo Hardcore",
-        "description": "Para compromissos inegociáveis. Falhar na meta do dia ou perder o prazo de afazeres bloqueia adiamentos e aplica penalidade imediata de 50%, fortalecendo sua responsabilidade."
+        "description": "Para compromissos inegociáveis. Falhar na rotina do dia ou deixar um afazer vencer bloqueia adiamentos e aplica multa de 50%, protegendo sua constância."
       },
       "workspaces": {
         "badge": "Organização",
-        "title": "Ambientes Independentes",
-        "description": "Isole Projetos de Trabalho, Estudos e Vida Pessoal com 1 clique, visualize e filtre todos os ambientes juntos no Dashboard e localize qualquer tarefa instantaneamente."
+        "title": "Ambientes Independentes & Tags",
+        "description": "Separe Trabalho, Estudos e Vida Pessoal, organize com tags hierárquicas (>), visualize tudo junto no Dashboard e encontre qualquer tarefa na hora."
       },
       "analytics": {
-        "badge": "Métricas",
-        "title": "Gráficos de Histórico & Economia",
-        "description": "Acompanhe relatórios visuais da sua semana: horas de foco acumuladas, fluxo de ouro ganho e evolução da consistência."
+        "badge": "Métricas & Social",
+        "title": "Histórico, Amigos & Retrospectiva",
+        "description": "Acompanhe horas de foco e fluxo de ganhos, conecte-se com amigos com privacidade granular e exporte Cards PNG de perfil e retrospectiva."
       },
       "soundEffects": {
-        "badge": "Imersão",
-        "title": "Efeitos Sonoros Gratificantes",
-        "description": "Sinta a dopamina a cada conquista: áudios satisfatórios de vitória, tintilar de moedas e sino relaxante para o foco."
+        "badge": "Personalização",
+        "title": "7 Temas Visuais & Áudio Nativo",
+        "description": "Alterne entre 7 temas visuais (4 gratuitos + 3 VIP), paisagens sonoras no Pomodoro e feedbacks sonoros de conquista."
       }
     }
   },
@@ -196,74 +206,75 @@
     "extrasLabel": "Extras desta versão:",
     "cardFooter": "Entrega contínua no ecossistema",
     "cardFooterCompleted": "Entregue e ativo no ecossistema",
+    "cardFooterPlannedTag": "Ecossistema HabitParty",
     "feedbackPrompt": "Tem sugestões para as próximas versões ou encontrou algum bug? Participe diretamente da evolução do HabitParty:",
     "reportBugCta": "Reportar Bug ou Sugerir Ideia (GitHub)",
     "contactCreatorCta": "Falar com o Criador ({email})",
     "items": {
       "r11": {
         "statusLabel": "Concluído",
-        "title": "Internacionalização & Modos de Experiência",
-        "tagline": "Expansão global bilíngue, perfis adaptativos de produtividade e blindagem estrutural de segurança e performance.",
+        "title": "Idiomas & Modos de Experiência",
+        "tagline": "Suporte completo bilíngue, dois perfis visuais de produtividade e reforço na segurança da conta.",
         "features": [
-          "Internacionalização (i18n): Suporte completo a Inglês (EN) e Português (PT-BR)",
-          "Alternância instantânea de idioma em todas as telas sem recarregar a aplicação",
-          "Modos de Experiência (Modo Essencial vs. Modo Aventura): escolha entre estética executiva com créditos e pontos ou aventura gamificada com moedas de ouro e caixas misteriosas",
-          "Verificação progressiva de e-mail para segurança da conta e ativação de alertas"
+          "Suporte completo em Português (PT-BR) e Inglês (EN)",
+          "Troca instantânea de idioma em todas as telas sem recarregar a página",
+          "Modos de Experiência (Modo Essencial vs. Modo Aventura): escolha entre estética executiva com Créditos e Pontos ou jornada RPG com moedas de ouro e Caixas Misteriosas",
+          "Verificação de e-mail para proteger sua conta e liberar lembretes"
         ],
         "extras": [
-          "Proteção Anti-Bot multicamada (Rate Limiting por IP, Honeypot invisível e bloqueio de e-mails temporários)",
-          "Refatoração arquitetural do banco de dados e índices de alta performance",
-          "Personalização de formato global de horário (12h AM/PM ou 24h) e preferências de interface"
+          "Proteção automática contra cadastros falsos e spams",
+          "Otimização de velocidade nas telas e carregamentos diários",
+          "Escolha global de formato de horário (12h AM/PM ou 24h) e preferências de interface"
         ]
       },
       "r12": {
         "statusLabel": "Concluído",
         "title": "Modo Claro, Conquistas & Perfis Públicos",
-        "tagline": "Interface luminosa com alto contraste, troféus da disciplina, perfil público e vitrine de destaques.",
+        "tagline": "Interface luminosa de alto conforto visual, troféus da disciplina, perfil público e vitrine de destaques.",
         "features": [
-          "Modo Claro (Light Theme) com alto contraste e legibilidade impecável para uso diurno",
-          "Alternância dinâmica de tema (Dark Cósmico vs. Cosmic Daylight)",
-          "Sistema de Conquistas Pessoais com dezenas de troféus e medalhas automáticas",
-          "Nova tela 'Minhas Conquistas' para acompanhar sua evolução de aventureiro",
-          "Páginas Públicas de Aventureiro para compartilhar nível, consistência e streaks",
-          "Vitrine de Destaques para organizar e fixar suas insígnias e troféus favoritos no topo do perfil"
+          "Modo Claro (Cosmic Daylight) com alto contraste para uso diurno confortável",
+          "Alternância rápida de tema claro/escuro na barra lateral",
+          "Sistema de Conquistas Pessoais com 63 medalhas automáticas (incluindo 8 secretas)",
+          "Galeria dedicada de Conquistas para acompanhar sua evolução",
+          "Páginas Públicas de Perfil para compartilhar nível, consistência e ofensivas",
+          "Vitrine de Destaques para fixar até 4 insígnias e troféus favoritos no topo do perfil"
         ]
       },
       "r13": {
         "statusLabel": "Concluído",
         "title": "Eventos no Kanban, Gestão em Lote & Foco em Tarefas",
-        "tagline": "Transforme afazeres em eventos com início e término, gerencie extratos em lote com snapshot de listas e associe o timer de foco a tarefas.",
+        "tagline": "Agende afazeres como eventos com hora marcada, audite o histórico em lote e ligue o Pomodoro às suas tarefas.",
         "features": [
-          "Foco Vinculado a Tarefas & Métricas de Esforço: timer integrado em 1 clique, histórico de tempo por card e conclusão automática",
-          "Afazeres como Eventos (VIP): agendamento com início e término ou dia inteiro, indicador pulsante 'Em andamento' no Kanban e novo DatePicker universal",
-          "Gestão em Lote e Snapshots de Listas no Histórico: seleção múltipla, exclusão em massa e retenção persistente da coluna de origem",
-          "Busca Global Entre Ambientes: banner inteligente que detecta tarefas em outros workspaces e permite alternar com 1 clique"
+          "Foco ligado às tarefas: timer em 1 clique, histórico de tempo por cartão e conclusão automática",
+          "Afazeres como Eventos (VIP): agendamento com início e término ou dia inteiro e selo pulsante 'Em andamento' no quadro",
+          "Gestão em lote no Histórico: seleção múltipla, exclusão em massa e preservação do nome da coluna de origem",
+          "Busca inteligente entre ambientes para encontrar e alternar tarefas com 1 clique"
         ],
         "extras": [
-          "Formato de Horário Global (12h AM/PM vs 24h) sincronizado em relógios, cards, histórico e foco",
-          "Descrições expandidas para até 2.000 caracteres com contador dinâmico e alertas visuais",
-          "Notificador de quebra de ofensiva com alertas amigáveis de incentivo ao recomeço",
-          "Sincronização na exclusão de sessões de foco e tarefas com opção de limpar registros vinculados no Histórico"
+          "Formato de horário global (12h AM/PM ou 24h) sincronizado em todas as telas",
+          "Descrições ampliadas até 2.000 caracteres com contador dinâmico em tempo real",
+          "Alertas de quebra de ofensiva com incentivo amigável para recomeçar",
+          "Exclusão sincronizada opcional ao apagar tarefas ou sessões de foco vinculadas ao Histórico"
         ]
       },
       "r14": {
         "statusLabel": "Concluído",
-        "title": "Temas VIP, Amizades & Controles de Privacidade",
-        "tagline": "Personalize sua atmosfera com 7 temas, conecte-se com amigos por código, proteja sua privacidade e compartilhe cards colecionáveis da sua jornada.",
+        "title": "7 Temas, Rede de Amigos & Privacidade Granular",
+        "tagline": "Personalize sua atmosfera com 7 temas, conecte-se com amigos por código, proteja seus dados e baixe cards colecionáveis.",
         "features": [
-          "Temas Atmosféricos: 4 Gratuitos (Dark Cósmico & Daylight + 1 Escuro alternativo [Dark Knight] e 1 Claro alternativo [Solar Parchment]) + 3 VIP (Cyberpunk Neon, Forest Ranger e tema Claro extra Royal Gold)",
-          "Rede de Amizades com busca rápida por @username, nome ou código exclusivo HP-XXXXXX",
-          "Círculo de Conexões Sociais e Perfis Públicos (/profile/[username]) para acompanhar streaks e conquistas de amigos",
-          "Controles Granulares de Privacidade (Público, Apenas Amigos ou Privado para Perfil, Estatísticas e Conquistas + política de convites)",
-          "Notificações de Atividade Social para solicitações recebidas, convites aceitos e marcos de nível ou conquistas"
+          "7 Temas Visuais: 4 Gratuitos (Dark Cósmico, Cosmic Daylight, Cavaleiro das Trevas e Pergaminho Solar) + 3 VIP (Cyberpunk Neon, Guardião da Floresta e Ouro Real)",
+          "Rede de Amigos com busca rápida por @username, nome ou código exclusivo HP-XXXXXX",
+          "Perfis Públicos (/profile/[username]) para acompanhar ofensivas e conquistas de amigos",
+          "Controles Granulares de Privacidade (Público, Apenas Amigos ou Privado) para perfil, estatísticas, ofensivas e convites",
+          "Notificações sociais para pedidos de amizade, convites aceitos e marcos importantes"
         ],
         "extras": [
-          "Retrospectiva Anual (janela sazonal de 20/dez a 31/jan com 5 arquétipos comportamentais) e download de Cards PNG colecionáveis de Perfil e Retrospectiva",
-          "Modo unificado 'Todos os Workspaces' no Dashboard com pills rápidas + Foco Rápido (Play/Pause) direto nas linhas de tarefa",
-          "Detecção automática de fuso horário IANA por usuário, banner de divergência e Midnight Rollover local para rotinas e ofensivas",
-          "Descrições Rich-Text WYSIWYG (TipTap com formatação, marca-texto e links) e tags hierárquicas (>) com edição inline e contagem nos filtros",
-          "Movimentação de colunas Kanban entre workspaces, guia de preços por esforço na Loja e proteção de histórico antes de excluir tarefas ou recompensas",
-          "Vitrine aprimorada (editor de bio e painel de progresso de XP), alternância inteligente memorizando o último tema Claro/Escuro e upgrade para Spring Boot 4.1"
+          "Retrospectiva Anual (20/dez a 31/jan com 5 arquétipos comportamentais) e download de Cards PNG colecionáveis de Perfil e Retrospectiva",
+          "Visão unificada 'Todos os Ambientes' no Dashboard + Foco Rápido direto nas linhas de tarefa",
+          "Sincronização automática de fuso horário garantindo virada de rotinas e ofensivas à meia-noite local",
+          "Descrições com formatação Rich-Text (listas, negrito e links) e tags hierárquicas (>) com contagem nos filtros",
+          "Movimentação de colunas entre ambientes, guia de preços 3:1–4:1 na Loja e proteção de histórico antes de excluir itens",
+          "Editor de bio na Vitrine e alternância inteligente memorizando seu último tema Claro/Escuro favorito"
         ]
       },
       "r15": {
@@ -271,36 +282,36 @@
         "title": "Parties & Missões Diárias Cooperativas",
         "tagline": "A união faz a força: forme esquadrões focados de estudo e trabalho, cumpra metas coletivas e ganhe bônus compartilhados.",
         "features": [
-          "Formação de Parties (esquadrões de foco de 4 a 6 aventureiros) via código de convite rápido",
-          "Missões Diárias Cooperativas (Co-op Daily Quests) com bônus coletivo de ouro e XP se todos cumprirem",
-          "Painel de Consistência da Party com acompanhamento em tempo real das diárias do grupo",
-          "Cofre Compartilhado e Insígnias Cooperativas exclusivas para os membros do esquadrão",
+          "Formação de Parties (esquadrões de foco de 4 a 6 pessoas) via código de convite rápido",
+          "Missões Diárias Cooperativas com bônus coletivo de moedas e XP quando todos cumprem a meta",
+          "Painel de Consistência da Party com acompanhamento em tempo real das rotinas do grupo",
+          "Cofre Compartilhado e insígnias cooperativas exclusivas para membros do esquadrão",
           "Celebrações em equipe a cada marco diário concluído com sucesso"
         ]
       },
       "r16": {
         "statusLabel": "Marco Planejado",
         "title": "Chat em Tempo Real, Presença ao Vivo & Alertas",
-        "tagline": "Comunicação instantânea e presença ao vivo: converse com seu esquadrão, envie reações de incentivo e sinta o apoio mútuo em tempo real.",
+        "tagline": "Comunicação instantânea e presença ao vivo: converse com seu grupo, envie reações de incentivo e sinta o apoio mútuo em tempo real.",
         "features": [
-          "Chat Integrado em Tempo Real (WebSockets) com canal exclusivo da Party e mensagens diretas (DM) entre amigos",
+          "Chat integrado em tempo real com canal exclusivo da Party e mensagens diretas entre amigos",
           "Status de Presença ao Vivo (indicador de foco em tempo real, pausas e disponibilidade)",
-          "Reações Rápidas e Emojis de Incentivo em 1 clique durante as sessões de foco",
-          "Alertas Sonoros e Notificações Imediatas para novas mensagens e conquistas em equipe",
-          "Modo Não Perturbe integrado para manter o foco total durante sessões de deep work"
+          "Reações rápidas e emojis de incentivo em 1 clique durante as sessões de foco",
+          "Alertas sonoros e notificações imediatas para novas mensagens e conquistas em equipe",
+          "Modo Não Perturbe integrado para manter o foco total durante sessões profundas"
         ]
       },
       "r20": {
-        "statusLabel": "Grande Marco MMO & Mobile",
-        "title": "App Mobile, Guildas & O MMO Social Completo",
-        "tagline": "O ápice do HabitParty: aplicativo nativo no seu bolso, mega guildas, guerras cooperativas contra chefões e rankings mundiais.",
+        "statusLabel": "Grande Marco Mobile & Social",
+        "title": "App Mobile, Guildas & Desafios Comunitários",
+        "tagline": "O ápice do HabitParty: aplicativo nativo no seu bolso, grandes guildas temáticas, desafios em equipe e rankings mundiais.",
         "features": [
           "Aplicativo Mobile oficial (iOS & Android) com widgets, check-in rápido e notificações push nativas",
-          "Sincronização em tempo real do Modo Foco e Pomodoro entre PC e smartphone",
-          "Guildas Temáticas de grande porte (Concursos, Devs, Saúde, Academia, Idiomas)",
-          "Quests & Raids contra Chefões Mundiais que perdem HP conforme você estuda e foca",
-          "Leaderboards Globais de consistência (Global, entre Amigos e entre Guildas rivais)",
-          "Temporadas competitivas com recompensas e títulos cosméticos lendários"
+          "Sincronização em tempo real do Modo Foco e Pomodoro entre computador e celular",
+          "Guildas Temáticas de grande porte (Concursos, Programação, Saúde, Academia, Idiomas)",
+          "Missões contra Chefões em grupo que perdem energia conforme a comunidade foca e entrega tarefas",
+          "Rankings de consistência (Global, entre Amigos e entre Guildas)",
+          "Temporadas sazonais com títulos e recompensas cosméticas especiais"
         ]
       }
     }
@@ -312,7 +323,7 @@
     "title": "Planos desenhados para o seu ritmo.",
     "subtitle": "Comece 100% de graça ou garanta uma das <gold>{remainingSlots} vagas</gold> de Fundador com acesso completo e insígnia vitalícia no seu perfil.",
     "promoBanner": {
-      "tag": "Special Early Adopter",
+      "tag": "Oferta de Lançamento",
       "spotsRemaining": "Vagas Restantes: Apenas {remainingSlots} de 30",
       "soldOut": "Lote Promocional Esgotado",
       "headline": "Ganhe o Plano Anual por apenas <gold>{founderPrice}</gold> e uma Insígnia Vitalícia de Membro Fundador.",
@@ -346,7 +357,7 @@
           "Pomodoro & Modo Zen ilimitados",
           "Streaks de Hábitos e Tarefas Diárias",
           "Modo Hardcore para Tarefas, Hábitos e Diárias",
-          "4 Temas: Dark Cósmico & Daylight + 1 Escuro alternativo (Dark Knight) e 1 Claro alternativo (Solar Parchment)",
+          "4 Temas: Dark Cósmico, Cosmic Daylight, Cavaleiro das Trevas e Pergaminho Solar",
           "Efeitos sonoros e comemorações com confetes"
         ]
       },
@@ -364,7 +375,7 @@
           "⭐ Reconhecimento perpétuo como pioneiro da história do HabitParty",
           "🚀 Acesso prioritário aos próximos lançamentos do Roadmap (Parties, Chat ao Vivo e Guildas)",
           "Agendamento de Afazeres como Eventos (horário de início/término ou dia inteiro)",
-          "3 temas atmosféricos exclusivos VIP (Cyberpunk Neon, Forest Ranger e tema Claro extra Royal Gold)",
+          "3 temas atmosféricos exclusivos VIP (Cyberpunk Neon, Guardião da Floresta e Ouro Real)",
           "Molduras animadas exclusivas para seu perfil e avatar",
           "Sons ambiente no Pomodoro (Chuva, Cafeteria, Fogueira, Lofi)",
           "Pacote exclusivo de ícones VIP para atividades, colunas e loja",
@@ -385,7 +396,7 @@
         "ctaText": "Desbloquear Plano Mensal 👑",
         "features": [
           "Agendamento de Afazeres como Eventos (horário de início/término ou dia inteiro)",
-          "3 temas atmosféricos exclusivos VIP (Cyberpunk Neon, Forest Ranger e tema Claro extra Royal Gold)",
+          "3 temas atmosféricos exclusivos VIP (Cyberpunk Neon, Guardião da Floresta e Ouro Real)",
           "Lembretes por e-mail expandidos (até 30 ativos e 100 disparos/mês)",
           "Molduras animadas exclusivas para seu perfil e avatar",
           "Sons ambiente no Pomodoro (Chuva, Cafeteria, Fogueira, Lofi)",
@@ -417,7 +428,7 @@
       },
       "freeVsPremium": {
         "question": "O HabitParty é gratuito? O que o plano Premium oferece?",
-        "answer": "O HabitParty possui um plano 100% gratuito com tudo o que você precisa: até 2 ambientes independentes, 4 colunas por ambiente, 4 atividades no Modo Foco, até 25 recompensas, mochila para 20 itens, até 5 lembretes por e-mail ativos (20 disparos mensais) e 4 temas visuais (Dark Cósmico & Daylight + 1 tema escuro alternativo [Dark Knight] e 1 tema claro alternativo [Solar Parchment]). Para quem gerencia múltiplos projetos e busca foco profundo, o plano Guardião Cósmico traz 3 temas atmosféricos exclusivos VIP (Cyberpunk Neon, Forest Ranger e o tema claro extra Royal Gold), lembretes expandidos (até 30 ativos e 100 disparos mensais), eventos agendados, molduras animadas, geradores de sons ambiente (Chuva, Café, Lofi, Fogueira), pacote de ícones VIP e expansão para 4 ambientes, 6 colunas, 6 atividades de foco, até 100 recompensas e mochila para 100 itens."
+        "answer": "O HabitParty possui um plano 100% gratuito com tudo o que você precisa: até 2 ambientes independentes, 4 colunas por ambiente, 4 atividades no Modo Foco, até 25 recompensas, mochila para 20 itens, até 5 lembretes por e-mail ativos (20 disparos mensais) e 4 temas visuais (Dark Cósmico, Cosmic Daylight, Cavaleiro das Trevas e Pergaminho Solar). Para quem gerencia múltiplos projetos e busca foco profundo, o plano Guardião Cósmico traz 3 temas exclusivos VIP (Cyberpunk Neon, Guardião da Floresta e Ouro Real), lembretes expandidos (até 30 ativos e 100 disparos mensais), eventos agendados, molduras animadas, geradores de sons ambiente (Chuva, Café, Lofi, Fogueira), pacote de ícones VIP e expansão para 4 ambientes, 6 colunas, 6 atividades de foco, até 100 recompensas e mochila para 100 itens."
       },
       "honestyShop": {
         "question": "Como funciona a Loja e por que é baseada na minha honestidade?",

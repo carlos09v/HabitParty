@@ -7,6 +7,7 @@ import {
   ListTodo,
   Loader2,
   Lock,
+  Plus,
   Search,
   Timer,
   X,
@@ -51,6 +52,7 @@ export interface FocusStageTargetSelectorModalProps {
   onSelectTask?: (task: { id: string; title: string }) => void;
   onUnlinkTask?: () => void;
   onOpenUpgradeModal?: () => void;
+  onCreateActivity?: () => void;
 }
 
 export function FocusStageTargetSelectorModal({
@@ -71,6 +73,7 @@ export function FocusStageTargetSelectorModal({
   onSelectTask,
   onUnlinkTask,
   onOpenUpgradeModal,
+  onCreateActivity,
 }: FocusStageTargetSelectorModalProps) {
   const t = useTranslations("focus.targetSelector");
   const [selectorTab, setSelectorTab] = useState<
@@ -196,8 +199,21 @@ export function FocusStageTargetSelectorModal({
                 <span>{t("loadingActivities")}</span>
               </output>
             ) : activeActivities.length === 0 ? (
-              <div className="p-6 text-center text-xs text-neutral-400 border border-dashed border-neutral-700 dark:border-primary/30 rounded-xl">
-                {t("emptyActivities")}
+              <div className="p-6 flex flex-col items-center justify-center gap-3 text-center text-xs text-neutral-400 border border-dashed border-neutral-700 dark:border-primary/30 rounded-xl">
+                <p>{t("emptyActivities")}</p>
+                {onCreateActivity && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onCreateActivity();
+                    }}
+                    className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-gold hover:bg-gold-hover text-on-gold text-xs font-bold shadow-glow-gold-xs transition-colors cursor-pointer"
+                  >
+                    <Plus size={14} aria-hidden="true" />
+                    <span>{t("createActivityButton")}</span>
+                  </button>
+                )}
               </div>
             ) : (
               <>

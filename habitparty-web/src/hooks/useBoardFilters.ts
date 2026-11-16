@@ -54,6 +54,13 @@ export function useBoardFilters(
     if (!hasFilter) return columns;
 
     const q = deferredSearchQuery.toLowerCase().trim();
+    const canKeepArchivedCompleted =
+      filters.status === "completed" &&
+      q === "" &&
+      (filters.taskType === "all" || filters.taskType === "TODO") &&
+      filters.difficulty === "all" &&
+      filters.priority === "all" &&
+      filters.tag === null;
 
     return columns.map((col) => {
       const nextTasks = col.tasks.filter((task) => {
@@ -98,13 +105,26 @@ export function useBoardFilters(
         return true;
       });
 
-      if (nextTasks.length === col.tasks.length) {
+      const nextArchivedTotal = canKeepArchivedCompleted
+        ? col.archivedTotalCount
+        : 0;
+      const nextArchivedCompleted = canKeepArchivedCompleted
+        ? col.archivedCompletedCount
+        : 0;
+
+      if (
+        nextTasks.length === col.tasks.length &&
+        nextArchivedTotal === col.archivedTotalCount &&
+        nextArchivedCompleted === col.archivedCompletedCount
+      ) {
         return col;
       }
 
       return {
         ...col,
         tasks: nextTasks,
+        archivedTotalCount: nextArchivedTotal,
+        archivedCompletedCount: nextArchivedCompleted,
       };
     });
   }, [columns, deferredSearchQuery, filters]);

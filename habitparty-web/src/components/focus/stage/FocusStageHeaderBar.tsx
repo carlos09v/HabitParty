@@ -19,6 +19,7 @@ interface FocusStageHeaderBarProps {
   phase: FocusPhase;
   mode: FocusRecordType;
   isBreak: boolean;
+  isOvertime?: boolean;
   isRunning: boolean;
   isActive: boolean;
   isInventoryItem: boolean;
@@ -39,6 +40,7 @@ export const FocusStageHeaderBar = memo(function FocusStageHeaderBar({
   phase,
   mode,
   isBreak,
+  isOvertime = false,
   isRunning,
   isActive,
   isInventoryItem,
@@ -85,6 +87,11 @@ export const FocusStageHeaderBar = memo(function FocusStageHeaderBar({
                 {phase === "LONG_BREAK"
                   ? t("longBreakBadge")
                   : t("shortBreakBadge")}
+              </span>
+            ) : isOvertime ? (
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-cyan-500/15 dark:bg-cyan-500/20 border border-cyan-500/45 text-cyan-800 dark:text-cyan-300 text-label-g font-bold animate-pulse shrink-0 whitespace-nowrap">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400" />
+                {t("overtimeBadge")}
               </span>
             ) : isRunning ? (
               <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 dark:bg-gold/20 border border-amber-500/45 dark:border-gold/50 text-amber-800 dark:text-gold text-label-g font-bold animate-pulse shrink-0 whitespace-nowrap">

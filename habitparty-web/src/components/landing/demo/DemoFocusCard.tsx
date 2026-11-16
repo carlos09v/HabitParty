@@ -16,7 +16,7 @@ export function DemoFocusCard({
   const t = useTranslations("landing.demo.focusCard");
 
   return (
-    <div className="p-4 rounded-xl bg-card dark:bg-card/70 border border-neutral-700 dark:border-white/10 shadow-xs dark:shadow-sm flex flex-col justify-between hover:border-primary-light/40 transition-colors md:col-span-2 lg:col-span-1">
+    <div className="p-4 rounded-xl bg-card dark:bg-card/70 border border-neutral-700 dark:border-white/10 shadow-none flex flex-col justify-between md:col-span-2 lg:col-span-1">
       <div>
         <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
           <span className="text-tiny font-bold text-info uppercase tracking-wider bg-info/10 px-2 py-0.5 rounded flex items-center gap-1">

@@ -62,7 +62,7 @@ export function ProfileHeaderCard({
         {/* AVATAR COM LINK PARA VITRINE DE PERFIL (/profile) */}
         <div className="relative group shrink-0">
           <Link
-            href="/profile"
+            href="/profile?from=settings"
             className="relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-gold cursor-pointer transition-transform group-hover:scale-[1.02] block"
             title={t("viewProfileTitle")}
             aria-label={t("viewProfileTitle")}

@@ -11,6 +11,7 @@ export function Input({
   id,
   className,
   icon,
+  endAdornment,
   type = "text",
   compact = false,
   error,
@@ -89,6 +90,12 @@ export function Input({
           >
             {isPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
+        )}
+
+        {!isPasswordInput && endAdornment && (
+          <div className="absolute right-1.5 flex items-center gap-0.5">
+            {endAdornment}
+          </div>
         )}
       </div>
 

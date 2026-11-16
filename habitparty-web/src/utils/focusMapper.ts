@@ -82,3 +82,43 @@ export function mapFocusRecords(
     return mapFocusRecordDtoToRecord(dto, matchedActivity, timeZone);
   });
 }
+
+export interface FocusRecordsPageResult {
+  records: FocusRecordResponseDTO[];
+  totalElements: number;
+  totalPages: number;
+  currentPage: number;
+  hasMore: boolean;
+}
+
+/**
+ * Normaliza os metadados de paginação Spring Data para registros de foco.
+ */
+export function normalizeFocusRecordsPage(
+  data:
+    | {
+        content?: FocusRecordResponseDTO[];
+        totalElements?: number;
+        totalPages?: number;
+        number?: number;
+        last?: boolean;
+      }
+    | undefined
+    | null,
+  fallbackPage = 0,
+): FocusRecordsPageResult {
+  const records = data?.content || [];
+  const totalPages = data?.totalPages ?? 0;
+  const totalElements = data?.totalElements ?? records.length;
+  const currentPage = data?.number !== undefined ? data.number : fallbackPage;
+  const hasMore =
+    data?.last !== undefined ? !data.last : currentPage + 1 < totalPages;
+
+  return {
+    records,
+    totalElements,
+    totalPages,
+    currentPage,
+    hasMore,
+  };
+}

@@ -4,8 +4,12 @@ import { BarChart2, Timer } from "lucide-react";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+  getFocusActivityRecordsPage,
+  getFocusRecordsPage,
+} from "@/actions/focusActions";
 import { MAX_FOCUS_ACTIVITIES_FREE } from "@/constants/focus";
 import { useFocusAnalytics } from "@/hooks/useFocusAnalytics";
 import { executeDeleteFocusRecord } from "@/hooks/useFocusMutations";
@@ -20,6 +24,7 @@ import type {
 } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn } from "@/utils";
+import { mapFocusRecords } from "@/utils/focusMapper";
 import { FocusMain } from "./FocusMain";
 import { FocusSidebarRight } from "./sidebar-right/FocusSidebarRight";
 
@@ -57,6 +62,9 @@ interface FocusContainerProps {
   initialActivities: FocusActivity[];
   initialBackpackItems: InventoryItemResponseDTO[];
   initialRecords: FocusRecord[];
+  initialTotalRecordsCount?: number;
+  initialHasMoreRecords?: boolean;
+  initialLoadedRecordsPage?: number;
   initialFocusableTasks?: FocusableTaskItem[];
   initialSelectedActivityId?: string | null;
   initialCreateActivity?: boolean;
@@ -67,6 +75,9 @@ export function FocusContainer({
   initialActivities,
   initialBackpackItems,
   initialRecords,
+  initialTotalRecordsCount,
+  initialHasMoreRecords = false,
+  initialLoadedRecordsPage = 0,
   initialFocusableTasks = [],
   initialSelectedActivityId = null,
   initialCreateActivity = false,
@@ -187,6 +198,54 @@ export function FocusContainer({
     onSessionSaved: handleSessionSaved,
   });
 
+  const [extraRecords, setExtraRecords] = useState<FocusRecord[]>([]);
+  const [loadedRecordsPage, setLoadedRecordsPage] = useState(
+    initialLoadedRecordsPage,
+  );
+  const [hasMoreServerRecords, setHasMoreServerRecords] = useState(
+    initialHasMoreRecords,
+  );
+  const [totalServerRecords, setTotalServerRecords] = useState(
+    initialTotalRecordsCount ?? initialRecords.length,
+  );
+  const [activityPagination, setActivityPagination] = useState<
+    Record<
+      string,
+      { nextPage: number; hasMore: boolean; totalElements: number }
+    >
+  >({});
+  const [isLoadingMoreRecords, setIsLoadingMoreRecords] = useState(false);
+  const hasPaginatedBeyondInitialRef = useRef(false);
+
+  useEffect(() => {
+    setTotalServerRecords(initialTotalRecordsCount ?? initialRecords.length);
+    if (!hasPaginatedBeyondInitialRef.current) {
+      setLoadedRecordsPage(initialLoadedRecordsPage);
+      setHasMoreServerRecords(initialHasMoreRecords);
+    }
+  }, [
+    initialRecords.length,
+    initialHasMoreRecords,
+    initialLoadedRecordsPage,
+    initialTotalRecordsCount,
+  ]);
+
+  const allRecords = useMemo(() => {
+    if (extraRecords.length === 0) return initialRecords;
+    const seen = new Set(initialRecords.map((r) => r.id));
+    const merged = [...initialRecords];
+    for (const rec of extraRecords) {
+      if (!seen.has(rec.id)) {
+        seen.add(rec.id);
+        merged.push(rec);
+      }
+    }
+    merged.sort(
+      (a, b) => new Date(b.endTime).getTime() - new Date(a.endTime).getTime(),
+    );
+    return merged;
+  }, [initialRecords, extraRecords]);
+
   const {
     weekOffset,
     handlePrevWeek,
@@ -194,6 +253,8 @@ export function FocusContainer({
     handleResetWeek,
     selectedActivity,
     recentRecords,
+    relevantRecordsCount,
+    showMoreRecords,
     metrics,
     weeklyDays,
     totalWeekMinutes,
@@ -201,9 +262,117 @@ export function FocusContainer({
     weekDateRange,
   } = useFocusAnalytics({
     initialActivities,
-    initialRecords,
+    initialRecords: allRecords,
     selectedActivityId,
   });
+
+  const userTimeZone = useUserStore((s) => s.user?.timezone);
+
+  const selectedActivityPagination = selectedActivityId
+    ? activityPagination[selectedActivityId]
+    : undefined;
+
+  const hasMoreRecordsToShow = selectedActivityId
+    ? recentRecords.length < relevantRecordsCount ||
+      (hasMoreServerRecords && (selectedActivityPagination?.hasMore ?? true))
+    : recentRecords.length < relevantRecordsCount || hasMoreServerRecords;
+
+  const displayedTotalRecordsCount = selectedActivityId
+    ? selectedActivityPagination
+      ? Math.max(relevantRecordsCount, selectedActivityPagination.totalElements)
+      : relevantRecordsCount
+    : Math.max(totalServerRecords, allRecords.length);
+
+  const handleShowMoreRecords = useCallback(async () => {
+    const nextVisibleTarget = recentRecords.length + 10;
+    const serverHasMoreForCurrentScope = selectedActivityId
+      ? hasMoreServerRecords && (selectedActivityPagination?.hasMore ?? true)
+      : hasMoreServerRecords;
+
+    if (
+      recentRecords.length < relevantRecordsCount &&
+      (nextVisibleTarget <= relevantRecordsCount ||
+        !serverHasMoreForCurrentScope)
+    ) {
+      showMoreRecords(10);
+      return;
+    }
+
+    if (!serverHasMoreForCurrentScope || isLoadingMoreRecords) {
+      showMoreRecords(10);
+      return;
+    }
+
+    setIsLoadingMoreRecords(true);
+    try {
+      if (selectedActivityId) {
+        const nextPage =
+          selectedActivityPagination?.nextPage ??
+          Math.floor(Math.max(0, relevantRecordsCount - 1) / 20);
+        const res = await getFocusActivityRecordsPage(
+          selectedActivityId,
+          nextPage,
+        );
+        if (!res.success || !res.data) {
+          toast.error(!res.success ? res.error : t("deleteRecordError"));
+          return;
+        }
+
+        const mapped = mapFocusRecords(
+          res.data.records,
+          initialActivities,
+          userTimeZone,
+        );
+        if (mapped.length > 0) {
+          setExtraRecords((prev) => [...prev, ...mapped]);
+        }
+        setActivityPagination((prev) => ({
+          ...prev,
+          [selectedActivityId]: {
+            nextPage: res.data.currentPage + 1,
+            hasMore: res.data.hasMore,
+            totalElements: res.data.totalElements,
+          },
+        }));
+        showMoreRecords(10);
+        return;
+      }
+
+      const res = await getFocusRecordsPage(loadedRecordsPage + 1, 100);
+      if (!res.success || !res.data) {
+        toast.error(!res.success ? res.error : t("deleteRecordError"));
+        return;
+      }
+
+      hasPaginatedBeyondInitialRef.current = true;
+      const mapped = mapFocusRecords(
+        res.data.records,
+        initialActivities,
+        userTimeZone,
+      );
+      if (mapped.length > 0) {
+        setExtraRecords((prev) => [...prev, ...mapped]);
+      }
+      setLoadedRecordsPage(res.data.currentPage);
+      setHasMoreServerRecords(res.data.hasMore);
+      setTotalServerRecords(res.data.totalElements);
+      showMoreRecords(10);
+    } finally {
+      setIsLoadingMoreRecords(false);
+    }
+  }, [
+    recentRecords.length,
+    relevantRecordsCount,
+    selectedActivityId,
+    selectedActivityPagination,
+    hasMoreServerRecords,
+    isLoadingMoreRecords,
+    loadedRecordsPage,
+    initialActivities,
+    userTimeZone,
+    showMoreRecords,
+    t,
+  ]);
 
   // Há tempo de foco real pendente de decisão apenas na fase WORK com segundos decorridos (> 0s)
   const hasUnsavedWorkSession = phase === "WORK" && hasElapsedSeconds;
@@ -513,13 +682,31 @@ export function FocusContainer({
     recordId: string,
     deleteHistory: boolean,
   ) => {
+    const deletedRecord = allRecords.find((r) => r.id === recordId);
     await executeDeleteFocusRecord(
       recordId,
       {
         success: t("deleteRecordSuccess"),
         error: t("deleteRecordError"),
       },
-      undefined,
+      () => {
+        setExtraRecords((prev) => prev.filter((r) => r.id !== recordId));
+        setTotalServerRecords((prev) => Math.max(0, prev - 1));
+        const activityId = deletedRecord?.focusActivityId;
+        if (activityId) {
+          setActivityPagination((prev) => {
+            const current = prev[activityId];
+            if (!current) return prev;
+            return {
+              ...prev,
+              [activityId]: {
+                ...current,
+                totalElements: Math.max(0, current.totalElements - 1),
+              },
+            };
+          });
+        }
+      },
       deleteHistory,
     );
   };
@@ -585,6 +772,10 @@ export function FocusContainer({
           activities={initialActivities}
           backpackItems={initialBackpackItems}
           focusableTasks={focusableTasks}
+          todaySummary={{
+            minutes: metrics.todayFocusMinutes,
+            sessionsCount: metrics.todayRecordsCount,
+          }}
           isPremium={is_Premium}
           selectedActivityId={selectedActivityId}
           selectedBackpackItemId={selectedBackpackItemId}
@@ -606,6 +797,10 @@ export function FocusContainer({
         weeklyDays={weeklyDays}
         totalWeekMinutes={totalWeekMinutes}
         recentRecords={recentRecords}
+        totalRecordsCount={displayedTotalRecordsCount}
+        hasMoreRecords={hasMoreRecordsToShow}
+        isLoadingMoreRecords={isLoadingMoreRecords}
+        onShowMoreRecords={handleShowMoreRecords}
         weekOffset={weekOffset}
         weekLabel={weekLabel}
         weekDateRange={weekDateRange}
@@ -634,7 +829,7 @@ export function FocusContainer({
           activities={initialActivities}
           backpackItems={initialBackpackItems}
           focusableTasks={focusableTasks}
-          records={initialRecords}
+          records={allRecords}
           initialActivityId={manualInitialActivityId}
           initialItemId={manualInitialItemId}
         />

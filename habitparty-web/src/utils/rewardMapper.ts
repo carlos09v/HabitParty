@@ -89,6 +89,9 @@ export function toCategoryMessageKey(cat?: string | null): CategoryMessageKey {
     case "Hobbies":
     case "HOBBIES":
       return "HOBBIES";
+    case "Dívida":
+    case "DEBT":
+      return "DEBT";
     default:
       return "NONE";
   }
@@ -161,6 +164,7 @@ export const BACKEND_TO_UI_CATEGORY: Record<string, RewardCategory> = {
   DEVELOPMENT: "Desenvolvimento",
   LUCK: "Sorte",
   HOBBIES: "Hobbies",
+  DEBT: "Dívida",
 };
 
 export const UI_TO_BACKEND_CATEGORY: Record<
@@ -181,6 +185,8 @@ export const UI_TO_BACKEND_CATEGORY: Record<
   LUCK: "LUCK",
   Hobbies: "HOBBIES",
   HOBBIES: "HOBBIES",
+  Dívida: "DEBT",
+  DEBT: "DEBT",
 };
 
 export const BACKEND_TO_UI_PACKAGE: Record<string, PackageLevel> = {

@@ -100,8 +100,9 @@ public class FriendshipController implements FriendshipApi {
   @Override
   public ResponseEntity<SocialNotificationsFeedResponseDTO> listNotifications(
       AuthenticatedUser usuarioLogado,
-      int limit) {
-    var result = listSocialNotificationsUseCase.execute(usuarioLogado.id(), limit);
+      int limit,
+      boolean unseenOnly) {
+    var result = listSocialNotificationsUseCase.execute(usuarioLogado.id(), limit, unseenOnly);
     return ResponseEntity.ok(SocialNotificationsFeedResponseDTO.fromDomain(result));
   }
 

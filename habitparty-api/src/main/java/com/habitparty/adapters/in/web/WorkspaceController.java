@@ -92,12 +92,15 @@ public class WorkspaceController implements WorkspaceApi {
   @Override
   public ResponseEntity<WorkspaceResponseDTO> getFullKanbanBoard(
       UUID workspaceId,
+      boolean excludeArchivedCompleted,
+      boolean includeHidden,
       AuthenticatedUser usuarioLogado) {
     UUID userId = usuarioLogado.id();
     resetUserIfDue(userId);
-    var kanbanBoard = getFullKanbanBoardUseCase.execute(workspaceId, userId);
     ZoneId userZone = userTimeResolver.resolveZone(userId);
     LocalDate today = LocalDate.now(userTimeResolver.clock().withZone(userZone));
+    var kanbanBoard = getFullKanbanBoardUseCase.execute(
+        workspaceId, userId, excludeArchivedCompleted, includeHidden, today);
     return ResponseEntity.ok(WorkspaceResponseDTO.fromKanbanBoard(
         kanbanBoard, today, userZone));
   }

@@ -11,9 +11,9 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { CalendarCheck, GripVertical, Plus } from "lucide-react";
+import { CalendarCheck, GripVertical, Loader2, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TaskRow } from "@/components/tasks/shared/TaskRow";
 import { getColumnIcon } from "@/constants/routine";
 import { TASK_TABLE_GRID_COLS } from "@/constants/task";
@@ -37,8 +37,14 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
   onToggleComplete,
   onHabitChange,
   onStartFocus,
+  onLoadArchivedCompleted,
 }: RoutineTaskListSectionProps) {
   const t = useTranslations("tasks.taskList");
+  const tColumn = useTranslations("tasks.column");
+  const [isLoadingArchivedCompleted, setIsLoadingArchivedCompleted] =
+    useState(false);
+  const archivedTotalCount = column.archivedTotalCount ?? 0;
+  const archivedCompletedCount = column.archivedCompletedCount ?? 0;
   const {
     attributes,
     listeners,
@@ -152,7 +158,7 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
             {column.title}
           </h3>
           <span className="text-tiny font-bold px-1.5 py-0.5 rounded-full bg-surface dark:bg-white/10 border border-neutral-700 dark:border-white/15 text-neutral-300 shrink-0">
-            {column.tasks.length}
+            {column.tasks.length + archivedTotalCount}
           </span>
         </div>
 
@@ -174,33 +180,70 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
       </div>
 
       {/* Lista de Linhas de Tarefa Sortable */}
-      {column.tasks.length === 0 ? (
+      {column.tasks.length === 0 && archivedCompletedCount === 0 ? (
         <div className="py-6 px-4 text-center rounded-lg border border-dashed border-neutral-700/70 dark:border-white/10 text-neutral-500 text-tiny bg-primary-dark/5">
           {t("emptyColumnState")}
         </div>
       ) : (
-        <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-          <ul className="flex flex-col gap-2 w-full p-0 m-0 list-none min-h-6">
-            {column.tasks.map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                isSelected={selectedTaskId === task.id}
-                isDeleteChecking={Boolean(deletingTaskIds?.has(task.id))}
-                columnId={column.id}
-                columnTitle={column.title}
-                isCompact={isCompact}
-                isSortable={true}
-                onOpenDetails={handleOpenRowDetails}
-                onEditTask={onEditTask ? handleEditRowTask : undefined}
-                onContextMenu={handleRowContextMenu}
-                onToggleCompleted={onToggleComplete}
-                onHabitChange={onHabitChange}
-                onStartFocus={onStartFocus}
-              />
-            ))}
-          </ul>
-        </SortableContext>
+        <>
+          {column.tasks.length > 0 && (
+            <SortableContext
+              items={taskIds}
+              strategy={verticalListSortingStrategy}
+            >
+              <ul className="flex flex-col gap-2 w-full p-0 m-0 list-none min-h-6">
+                {column.tasks.map((task) => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    isSelected={selectedTaskId === task.id}
+                    isDeleteChecking={Boolean(deletingTaskIds?.has(task.id))}
+                    columnId={column.id}
+                    columnTitle={column.title}
+                    isCompact={isCompact}
+                    isSortable={true}
+                    onOpenDetails={handleOpenRowDetails}
+                    onEditTask={onEditTask ? handleEditRowTask : undefined}
+                    onContextMenu={handleRowContextMenu}
+                    onToggleCompleted={onToggleComplete}
+                    onHabitChange={onHabitChange}
+                    onStartFocus={onStartFocus}
+                  />
+                ))}
+              </ul>
+            </SortableContext>
+          )}
+
+          {archivedCompletedCount > 0 && onLoadArchivedCompleted && (
+            <button
+              type="button"
+              disabled={isLoadingArchivedCompleted}
+              onClick={async () => {
+                if (isLoadingArchivedCompleted) return;
+                setIsLoadingArchivedCompleted(true);
+                try {
+                  await onLoadArchivedCompleted(column.id);
+                } finally {
+                  setIsLoadingArchivedCompleted(false);
+                }
+              }}
+              className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-neutral-700/70 dark:border-white/10 px-3 py-2 text-xs text-neutral-400 hover:text-gold hover:border-gold/40 hover:bg-gold/5 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+            >
+              {isLoadingArchivedCompleted ? (
+                <>
+                  <Loader2 size={13} className="animate-spin shrink-0" />
+                  <span>{tColumn("loadingArchivedCompleted")}</span>
+                </>
+              ) : (
+                <span>
+                  {tColumn("loadArchivedCompleted", {
+                    count: archivedCompletedCount,
+                  })}
+                </span>
+              )}
+            </button>
+          )}
+        </>
       )}
     </section>
   );
@@ -220,6 +263,7 @@ export function RoutineTaskList({
   onToggleComplete,
   onHabitChange,
   onStartFocus,
+  onLoadArchivedCompleted,
   dndState,
 }: RoutineTaskListProps) {
   const t = useTranslations("tasks.taskList");
@@ -231,7 +275,11 @@ export function RoutineTaskList({
   );
 
   const totalTasksCount = useMemo(
-    () => visibleColumns.reduce((acc, col) => acc + col.tasks.length, 0),
+    () =>
+      visibleColumns.reduce(
+        (acc, col) => acc + col.tasks.length + (col.archivedTotalCount ?? 0),
+        0,
+      ),
     [visibleColumns],
   );
 
@@ -305,6 +353,7 @@ export function RoutineTaskList({
               onToggleComplete={onToggleComplete}
               onHabitChange={onHabitChange}
               onStartFocus={onStartFocus}
+              onLoadArchivedCompleted={onLoadArchivedCompleted}
             />
           ))}
         </SortableContext>

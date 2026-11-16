@@ -40,6 +40,14 @@ public interface TaskRepository {
     return findByBoardColumnIdInOrderByOrderIndexAsc(boardColumnIds);
   }
 
+  // Busca sob demanda apenas os TODOs concluídos arquivados (fora da janela recente) de uma coluna
+  default List<Task> findArchivedCompletedTodosByBoardColumnId(
+      UUID boardColumnId,
+      LocalDate minDueDate,
+      LocalDateTime minCompletedAt) {
+    return List.of();
+  }
+
   // Busca paginada das tarefas recorrentes (HABIT/DAILY) para o rollover diário em lotes
   List<Task> findRecurringTasksPage(int page, int size);
 

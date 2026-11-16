@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { getArchivedCompletedColumnTasks } from "@/actions/taskActions";
 import { RouteLoading } from "@/components/layout/RouteLoading";
 import { RoutineBoard } from "@/components/tasks/RoutineBoard";
 import { RoutineColumn } from "@/components/tasks/RoutineColumn";
@@ -16,6 +17,7 @@ import { RoutineTaskList } from "@/components/tasks/RoutineTaskList";
 import { WorkspaceReadOnlyBanner } from "@/components/tasks/WorkspaceReadOnlyBanner";
 import { WorkspaceSearchHintBanner } from "@/components/tasks/WorkspaceSearchHintBanner";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
+import { DEFAULT_BOARD_FILTERS } from "@/constants/task";
 import { WELCOME_CARD_DETAILS } from "@/constants/welcomeCards";
 import { useBoardFilters } from "@/hooks/useBoardFilters";
 import { useBoardModals } from "@/hooks/useBoardModals";
@@ -44,7 +46,10 @@ import type {
 } from "@/types/task-ui";
 import { cn } from "@/utils";
 import { calculateTasksWelcomeStats } from "@/utils/catalogMetrics";
-import { resetTaskOnMidnightRollover } from "@/utils/taskMapper";
+import {
+  mapTaskResponseToTask,
+  resetTaskOnMidnightRollover,
+} from "@/utils/taskMapper";
 
 const TasksBoardModals = dynamic(
   () =>
@@ -85,6 +90,7 @@ export function TasksBoardContainer({
   isCompact: isCompactProp,
 }: TasksBoardContainerProps) {
   const t = useTranslations("tasks.container");
+  const tColumn = useTranslations("tasks.column");
   const locale = useLocale() as AppLocale;
   const searchParams = useSearchParams();
   const effectiveTargetColumnId =
@@ -293,6 +299,49 @@ export function TasksBoardContainer({
     [toggleColumnVisibility, t],
   );
 
+  const handleLoadArchivedCompleted = useCallback(
+    async (columnId: string) => {
+      const res = await getArchivedCompletedColumnTasks(columnId);
+      if (!res.success || !res.data) {
+        toast.error(
+          (!res.success ? res.error : undefined) ||
+            tColumn("loadArchivedCompletedError"),
+        );
+        return;
+      }
+
+      const activeWorkspace = workspaces.find(
+        (ws) => ws.id === activeWorkspaceId,
+      );
+      const workspaceMeta = activeWorkspace
+        ? { id: activeWorkspace.id, name: activeWorkspace.name }
+        : activeWorkspaceId
+          ? { id: activeWorkspaceId }
+          : undefined;
+
+      const mappedArchivedTasks = res.data.map((taskDto) =>
+        mapTaskResponseToTask(taskDto, columnId, userTimezone, workspaceMeta),
+      );
+
+      setColumns((prev) =>
+        prev.map((col) => {
+          if (col.id !== columnId) return col;
+          const existingIds = new Set(col.tasks.map((item) => item.id));
+          const uniqueArchived = mappedArchivedTasks.filter(
+            (item) => !existingIds.has(item.id),
+          );
+          return {
+            ...col,
+            tasks: [...col.tasks, ...uniqueArchived],
+            archivedTotalCount: 0,
+            archivedCompletedCount: 0,
+          };
+        }),
+      );
+    },
+    [activeWorkspaceId, setColumns, tColumn, userTimezone, workspaces],
+  );
+
   // Instância única de Drag-and-Drop compartilhada entre modo Card e modo Lista
   const boardDnd = useRoutineBoardDnd({
     columns: filteredColumns,
@@ -302,10 +351,61 @@ export function TasksBoardContainer({
     onHideColumn: handleHideColumn,
   });
 
-  const { stats: tasksStats } = useMemo(
-    () => calculateTasksWelcomeStats(columns, undefined, locale),
-    [columns, locale],
-  );
+  const hasActiveBoardFilters =
+    filters.taskType !== "all" ||
+    filters.difficulty !== "all" ||
+    filters.priority !== "all" ||
+    filters.status !== "all" ||
+    filters.tag !== null ||
+    Boolean(searchQuery);
+
+  const tasksStats = useMemo(() => {
+    const { stats } = calculateTasksWelcomeStats(columns, undefined, locale);
+    return stats.map((stat, index) => {
+      if (index === 0) {
+        return {
+          ...stat,
+          onClick: hasActiveBoardFilters
+            ? () => {
+                setFilters(DEFAULT_BOARD_FILTERS);
+                setSearchQuery("");
+              }
+            : undefined,
+        };
+      }
+      if (index === 1) {
+        return {
+          ...stat,
+          active: filters.status === "completed",
+          onClick: () =>
+            setFilters((prev) => ({
+              ...prev,
+              status: prev.status === "completed" ? "all" : "completed",
+            })),
+        };
+      }
+      if (index === 2) {
+        return {
+          ...stat,
+          active: filters.taskType === "HABIT",
+          onClick: () =>
+            setFilters((prev) => ({
+              ...prev,
+              taskType: prev.taskType === "HABIT" ? "all" : "HABIT",
+            })),
+        };
+      }
+      return stat;
+    });
+  }, [
+    columns,
+    locale,
+    hasActiveBoardFilters,
+    filters.status,
+    filters.taskType,
+    setFilters,
+    setSearchQuery,
+  ]);
 
   const columnStructureKey = columns.map((c) => `${c.id}:${c.title}`).join("|");
   // biome-ignore lint/correctness/useExhaustiveDependencies: Atualiza apenas quando colunas sao adicionadas ou renomeadas
@@ -513,6 +613,8 @@ export function TasksBoardContainer({
               onOpenColumnMenu={handleOpenColumnContextMenu}
               onToggleComplete={handleToggleComplete}
               onHabitChange={handleHabitChange}
+              onLoadArchivedCompleted={handleLoadArchivedCompleted}
+              forceExpandCompleted={filters.status === "completed"}
             />
           </section>
 
@@ -577,6 +679,7 @@ export function TasksBoardContainer({
               onToggleComplete={handleToggleComplete}
               onHabitChange={handleHabitChange}
               onStartFocus={handleStartFocusTask}
+              onLoadArchivedCompleted={handleLoadArchivedCompleted}
               dndState={boardDnd}
             />
           </section>

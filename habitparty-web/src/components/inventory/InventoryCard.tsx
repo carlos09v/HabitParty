@@ -36,7 +36,7 @@ export const InventoryCard = memo(function InventoryCard({
 
   const handleAction = useCallback(() => {
     executeInventoryItemAction(item, {
-      onOpenFocus: () => router.push("/focus"),
+      onOpenFocus: () => router.push("/focus?from=inventory"),
       onOpenMysteryBox,
       onSendToFocus,
       onUse,
@@ -111,7 +111,7 @@ export const InventoryItemRow = memo(function InventoryItemRow({
 
   const handleAction = useCallback(() => {
     executeInventoryItemAction(item, {
-      onOpenFocus: () => router.push("/focus"),
+      onOpenFocus: () => router.push("/focus?from=inventory"),
       onOpenMysteryBox,
       onSendToFocus,
       onUse,

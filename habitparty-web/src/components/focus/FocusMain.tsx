@@ -2,9 +2,11 @@
 
 import { Timer } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ContextMenu } from "@/components/ui/ContextMenu";
+import { ContextualBackButton } from "@/components/ui/ContextualBackButton";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useFocusContextMenu } from "@/hooks/useFocusContextMenu";
@@ -55,6 +57,10 @@ interface FocusMainProps {
   activities: FocusActivity[];
   backpackItems: InventoryItemResponseDTO[];
   focusableTasks?: FocusableTaskItem[];
+  todaySummary?: {
+    minutes: number;
+    sessionsCount: number;
+  };
   isPremium?: boolean;
   selectedActivityId?: string | null;
   selectedBackpackItemId?: string | null;
@@ -77,6 +83,7 @@ export function FocusMain({
   activities,
   backpackItems,
   focusableTasks = [],
+  todaySummary,
   isPremium = false,
   selectedActivityId,
   selectedBackpackItemId,
@@ -94,6 +101,8 @@ export function FocusMain({
   const t = useTranslations("focus.main");
   const { isGamified } = useExperienceMode();
   const controls = useFocusTimerControls();
+  const searchParams = useSearchParams();
+  const fromSource = searchParams.get("from");
   useIdlePreload(preloadFocusMainModalChunks);
 
   const { isActive, isPaused, target } = controls;
@@ -217,11 +226,51 @@ export function FocusMain({
 
   const locale = useLocale() as AppLocale;
 
-  const focusWelcomeStats = useMemo(
-    () =>
-      calculateFocusWelcomeStats(activities, backpackItems, locale, isGamified),
-    [activities, backpackItems, locale, isGamified],
-  );
+  const focusWelcomeStats = useMemo(() => {
+    const scrollToSection = (sectionId: string) => {
+      document
+        .getElementById(sectionId)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
+    const stats = calculateFocusWelcomeStats(
+      activities,
+      backpackItems,
+      locale,
+      isGamified,
+      todaySummary,
+    );
+
+    return stats.map((stat, index) => {
+      if (index === 0) {
+        return {
+          ...stat,
+          onClick: () => scrollToSection("focus-activities-section"),
+        };
+      }
+      if (index === 1) {
+        return {
+          ...stat,
+          onClick: () => scrollToSection("focus-backpack-section"),
+        };
+      }
+      return stat;
+    });
+  }, [activities, backpackItems, locale, isGamified, todaySummary]);
+
+  const backTarget =
+    fromSource === "tasks"
+      ? { href: "/tasks", label: t("back.tasks") }
+      : fromSource === "dashboard"
+        ? { href: "/dashboard", label: t("back.dashboard") }
+        : fromSource === "inventory"
+          ? {
+              href: "/inventory",
+              label: isGamified
+                ? t("back.inventoryGamified")
+                : t("back.inventoryProductivity"),
+            }
+          : null;
 
   return (
     <div className="relative flex-1 min-w-0 h-full flex flex-col overflow-hidden">
@@ -234,12 +283,19 @@ export function FocusMain({
             : "p-3.5 sm:p-6 gap-4 sm:gap-6 pb-8",
         )}
       >
-        {/* 1. Card de Boas-Vindas (inicia colapsado por padrão para priorizar o Palco Heróico) */}
+        {backTarget && (
+          <div className="flex items-center">
+            <ContextualBackButton
+              fallbackHref={backTarget.href}
+              label={backTarget.label}
+            />
+          </div>
+        )}
+
         <WelcomeCard
           storageKey="focus"
           stats={focusWelcomeStats}
           compact={isCompact}
-          defaultExpanded={false}
         />
 
         {/* 2. Palco de Foco Heróico */}
@@ -253,6 +309,7 @@ export function FocusMain({
           onStartFocusTask={onStartFocusTask}
           onChangeMode={onChangeMode}
           onOpenUpgradeModal={handleOpenUpgradeModal}
+          onCreateActivity={handleOpenCreateModal}
           initialLinkActivity={initialLinkActivity}
           isCompact={isCompact}
         />

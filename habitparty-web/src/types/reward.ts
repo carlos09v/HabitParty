@@ -35,7 +35,8 @@ export type CategoryMessageKey =
   | "SHOPPING"
   | "DEVELOPMENT"
   | "LUCK"
-  | "HOBBIES";
+  | "HOBBIES"
+  | "DEBT";
 
 export type RewardTypeMessageKey = "SingleUse" | "TimeBased" | "MysteryBox";
 
@@ -107,7 +108,8 @@ export type RewardCategory =
   | "Compras"
   | "Desenvolvimento"
   | "Sorte"
-  | "Hobbies";
+  | "Hobbies"
+  | "Dívida";
 export type PackageLevel =
   | NonNullable<RewardResponseDTO["packageLevel"]>
   | "Nenhum"

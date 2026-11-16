@@ -8,6 +8,7 @@ import {
   formatTimeZoneOffsetLabel,
   getSupportedTimeZones,
   isValidIanaTimeZone,
+  PRIMARY_IANA_TIMEZONES,
 } from "@/utils/date";
 
 interface TimezoneOptionItem {
@@ -68,14 +69,19 @@ export function TimezoneSelectDropdown({
         .map((tz) => allZoneItems.find((item) => item.value === tz))
         .filter((item): item is TimezoneOptionItem => Boolean(item));
       const pinnedSet = new Set(pinnedUnique);
+      const primarySet = new Set(PRIMARY_IANA_TIMEZONES);
       return [
         ...pinnedItems,
-        ...allZoneItems.filter((item) => !pinnedSet.has(item.value)),
+        ...allZoneItems.filter(
+          (item) => primarySet.has(item.value) && !pinnedSet.has(item.value),
+        ),
       ];
     }
 
     return allZoneItems.filter((item) => item.searchText.includes(query));
   }, [allZoneItems, browserTimezone, searchQuery, selectedTimezone]);
+
+  const isSearchActive = searchQuery.trim().length > 0;
 
   const handleUseBrowserTimezone = () => {
     if (!browserTimezone) return;
@@ -133,6 +139,15 @@ export function TimezoneSelectDropdown({
           </button>
         )}
       </div>
+
+      {!isSearchActive && (
+        <p className="text-xs text-neutral-400">
+          {t("primaryListHint", {
+            shown: filteredZones.length,
+            total: allZoneItems.length,
+          })}
+        </p>
+      )}
 
       <div
         role="listbox"

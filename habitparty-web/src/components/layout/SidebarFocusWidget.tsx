@@ -2,6 +2,7 @@
 
 import {
   Check,
+  Coffee,
   Link2,
   ListTodo,
   Pause,
@@ -12,7 +13,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   type MouseEvent,
@@ -30,7 +31,10 @@ import { useFocusTimerStore } from "@/store/focusTimerStore";
 import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
 import type { FocusActivity } from "@/types/focus";
 import { cn } from "@/utils";
-import { formatFocusDisplayTime } from "@/utils/focusFormatters";
+import {
+  formatFocusDisplayTime,
+  isFocusOvertime,
+} from "@/utils/focusFormatters";
 import { getRewardIcon } from "@/utils/rewardMapper";
 import { soundEffects } from "@/utils/soundEffects";
 
@@ -52,6 +56,7 @@ const UpgradePremiumModal = dynamic(
 
 export function SidebarFocusWidget() {
   const router = useRouter();
+  const pathname = usePathname();
   const t = useTranslations("focusWidget");
   const [mounted, setMounted] = useState(false);
 
@@ -59,12 +64,17 @@ export function SidebarFocusWidget() {
   const isActive = useFocusTimerStore((s) => s.isActive);
   const isPaused = useFocusTimerStore((s) => s.isPaused);
   const mode = useFocusTimerStore((s) => s.mode);
+  const phase = useFocusTimerStore((s) => s.phase);
   const secondsRemaining = useFocusTimerStore((s) => s.secondsRemaining);
+  const totalDurationSeconds = useFocusTimerStore(
+    (s) => s.totalDurationSeconds,
+  );
   const elapsedSeconds = useFocusTimerStore((s) => s.elapsedSeconds);
   const target = useFocusTimerStore((s) => s.target);
 
   const toggleTimer = useFocusTimerStore((s) => s.toggleTimer);
-  const resetTimer = useFocusTimerStore((s) => s.resetTimer);
+  const stopFromWidget = useFocusTimerStore((s) => s.stopFromWidget);
+  const startBreak = useFocusTimerStore((s) => s.startBreak);
   const completeSession = useFocusTimerStore((s) => s.completeSession);
   const linkActivityToTask = useFocusTimerStore((s) => s.linkActivityToTask);
 
@@ -180,6 +190,10 @@ export function SidebarFocusWidget() {
             setIsLinkActivityModalOpen(false);
             setIsUpgradeModalOpen(true);
           }}
+          onCreateActivity={() => {
+            setIsLinkActivityModalOpen(false);
+            router.push("/focus?createActivity=true");
+          }}
         />
       )}
 
@@ -200,7 +214,13 @@ export function SidebarFocusWidget() {
   };
 
   const handleCardClick = () => {
-    router.push("/focus");
+    const source =
+      pathname === "/dashboard" ||
+      pathname === "/tasks" ||
+      pathname === "/inventory"
+        ? pathname.slice(1)
+        : null;
+    router.push(source ? `/focus?from=${source}` : "/focus");
   };
 
   const AmbientIcon = AMBIENT_ICONS[ambientSoundType] || Volume2;
@@ -273,7 +293,16 @@ export function SidebarFocusWidget() {
 
   // CASO 2: Timer Ativo (com ou sem Som Ambiente)
   const isRunning = isActive && !isPaused;
+  const isBreak = phase === "SHORT_BREAK" || phase === "LONG_BREAK";
   const isInventory = target?.type === "inventory";
+  const isOvertime = isFocusOvertime({
+    mode,
+    phase,
+    secondsRemaining,
+    elapsedSeconds,
+    totalDurationSeconds,
+    target,
+  });
   const TargetIcon =
     target?.type === "task"
       ? ListTodo
@@ -285,8 +314,10 @@ export function SidebarFocusWidget() {
 
   const displayTime = formatFocusDisplayTime({
     mode,
+    phase,
     secondsRemaining,
     elapsedSeconds,
+    totalDurationSeconds,
     target,
   });
 
@@ -381,9 +412,11 @@ export function SidebarFocusWidget() {
             <span
               className={cn(
                 "font-mono font-black text-xs tracking-tight transition-colors",
-                isRunning
-                  ? "text-amber-700 dark:text-gold"
-                  : "text-neutral-200",
+                isOvertime
+                  ? "text-cyan-600 dark:text-cyan-300"
+                  : isRunning
+                    ? "text-amber-700 dark:text-gold"
+                    : "text-neutral-200",
               )}
             >
               {displayTime}
@@ -418,8 +451,24 @@ export function SidebarFocusWidget() {
               )}
             </button>
 
+            {/* Iniciar Pausa (quando em tempo excedente) */}
+            {isOvertime && !isBreak && (
+              <button
+                type="button"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  await startBreak();
+                }}
+                title={t("startBreakTitle")}
+                aria-label={t("startBreakAria")}
+                className="w-5 h-5 rounded flex items-center justify-center border border-cyan-500/40 bg-cyan-500/15 text-cyan-700 hover:bg-cyan-500/25 hover:border-cyan-600 dark:border-cyan-400/45 dark:bg-cyan-500/20 dark:text-cyan-200 dark:hover:bg-cyan-500/30 transition-colors cursor-pointer shadow-xs"
+              >
+                <Coffee size={10} />
+              </button>
+            )}
+
             {/* Concluir / Salvar */}
-            {elapsedSeconds >= 60 && (
+            {elapsedSeconds >= 60 && !isBreak && (
               <button
                 type="button"
                 onClick={async (e) => {
@@ -443,12 +492,12 @@ export function SidebarFocusWidget() {
             )}
 
             {/* Reset / Parar */}
-            {isActive && (
+            {hasActiveTimer && (
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  resetTimer();
+                  stopFromWidget();
                 }}
                 title={t("stopResetTitle")}
                 aria-label={t("stopAria")}

@@ -1,18 +1,9 @@
-import {
-  ArrowRight,
-  CheckCircle2,
-  Flame,
-  Gift,
-  Sparkles,
-  Timer,
-  Trophy,
-} from "lucide-react";
-import Image from "next/image";
+import { ArrowRight, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { CoinIcon } from "@/components/ui/CoinIcon";
 import { CosmicGalaxyIllustration } from "@/components/ui/CosmicGalaxyIllustration";
 import { LANDING_HERO_HIGHLIGHT_CONFIGS } from "@/constants/landing";
+import { LandingHeroPreview } from "./LandingHeroPreview";
 
 export function LandingHero() {
   const t = useTranslations("landing.hero");
@@ -72,14 +63,14 @@ export function LandingHero() {
               </a>
             </div>
 
-            {/* Prova de Valor / Destaques */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-3 pt-6 border-t border-neutral-700 dark:border-white/10">
+            {/* Prova de Valor / Destaques informativos (planos, sem estilo de botão) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-2.5 pt-6 border-t border-neutral-700 dark:border-white/10">
               {LANDING_HERO_HIGHLIGHT_CONFIGS.map((item) => {
                 const Icon = item.icon;
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center justify-center lg:justify-start gap-2 p-2.5 rounded-lg bg-card dark:bg-surface/40 border border-neutral-700 dark:border-white/5 shadow-xs dark:shadow-none"
+                    className="flex items-center justify-center lg:justify-start gap-2 px-2 py-1.5 rounded-lg bg-surface/40 dark:bg-white/[0.03]"
                   >
                     <Icon className={`w-4 h-4 shrink-0 ${item.colorClass}`} />
                     <span className="text-xs font-medium text-neutral-200 leading-tight">
@@ -91,123 +82,8 @@ export function LandingHero() {
             </div>
           </div>
 
-          {/* Coluna Direita: Preview Visual dos Cards do Ecossistema */}
-          <div className="lg:col-span-5 relative">
-            <div className="relative mx-auto max-w-md lg:max-w-none">
-              {/* Glow Cósmico Traseiro (pré-composto com gradiente radial, sem blur-2xl) */}
-              <div className="absolute -inset-6 rounded-[2rem] bg-[radial-gradient(ellipse_at_center,rgba(124,58,237,0.16)_0%,rgba(237,43,229,0.08)_45%,transparent_72%)] dark:bg-[radial-gradient(ellipse_at_center,rgba(124,58,237,0.28)_0%,rgba(237,229,57,0.1)_42%,rgba(237,43,229,0.18)_58%,transparent_75%)] -z-10 pointer-events-none" />
-
-              {/* Painel Principal Flutuante */}
-              <div className="rounded-3xl bg-card dark:bg-surface/95 border border-neutral-700/90 dark:border-white/12 p-5 sm:p-6 shadow-xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.55)] space-y-4">
-                {/* Topo do Card: Emblema + Modos de Experiência */}
-                <div className="flex items-center justify-between flex-wrap gap-2.5 pb-3.5 border-b border-neutral-700/80 dark:border-white/10">
-                  <div className="flex items-center gap-2.5">
-                    <Image
-                      src="/assets/favicon_io/android-chrome-192x192.png"
-                      alt="HabitParty"
-                      width={36}
-                      height={36}
-                      className="w-9 h-9 object-contain shrink-0 drop-shadow-xs"
-                    />
-                    <div className="text-left">
-                      <span className="text-xs font-extrabold text-neutral-50 tracking-tight block">
-                        HabitParty
-                      </span>
-                      <span className="text-[10px] text-neutral-400 font-medium block">
-                        Nv. 12 • Aventureiro
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Pill Dual: Modo Essencial | Modo Aventura */}
-                  <div className="inline-flex items-center gap-1 p-1 rounded-full bg-background/80 border border-neutral-700 dark:border-white/10 text-[10px] font-bold shrink-0">
-                    <span className="px-2 py-0.5 rounded-full text-cyan-400 bg-cyan-500/10 border border-cyan-500/25 flex items-center gap-1 whitespace-nowrap">
-                      <CoinIcon size={11} variant="credit" />
-                      {t("preview.modeEssential")}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-amber-800 bg-amber-500/15 border border-amber-500/35 dark:text-gold dark:bg-gold/15 dark:border-gold/30 flex items-center gap-1 whitespace-nowrap">
-                      <CoinIcon size={11} variant="coin" />
-                      {t("preview.modeAdventure")}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Card 1: Tarefa Diária / Quest */}
-                <div className="p-3.5 rounded-2xl bg-background/70 dark:bg-background/60 border border-neutral-700/80 dark:border-white/10 flex items-center justify-between gap-3 hover:border-gold/40 transition-colors">
-                  <div className="flex items-center gap-3 min-w-0 text-left">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
-                      <CheckCircle2 className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center flex-wrap gap-1.5 mb-0.5">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-magenta">
-                          {t("preview.dailyTag")}
-                        </span>
-                        <span className="text-[10px] font-semibold text-amber-800 bg-amber-500/10 border border-amber-500/25 dark:text-amber-400 px-1.5 py-0.5 rounded-full">
-                          {t("preview.streakBadge")}
-                        </span>
-                      </div>
-                      <p className="text-xs sm:text-sm font-bold text-neutral-50 truncate">
-                        {t("preview.dailyTitle")}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    <span className="text-[11px] font-extrabold text-info font-mono bg-info/10 px-2 py-0.5 rounded-md border border-info/25">
-                      {t("preview.xpReward")}
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-amber-800 bg-amber-500/10 border border-amber-500/30 dark:text-gold font-mono dark:bg-gold/10 px-2 py-0.5 rounded-md dark:border-gold/25">
-                      <CoinIcon size={11} variant="coin" />
-                      {t("preview.coinReward")}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Card 2: Sessão de Foco Pomodoro */}
-                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-primary/15 via-background/70 to-magenta/10 border border-primary-light/30 flex items-center justify-between flex-wrap gap-3">
-                  <div className="flex items-center gap-3 min-w-0 text-left">
-                    <div className="w-8 h-8 rounded-xl bg-primary/25 border border-primary-light/40 flex items-center justify-center text-primary-light shrink-0">
-                      <Timer className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-primary-light block">
-                        {t("preview.focusTag")}
-                      </span>
-                      <span className="text-xs font-semibold text-neutral-200">
-                        {t("preview.focusStatus")}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Flame className="w-4 h-4 text-amber-600 dark:text-gold animate-pulse" />
-                    <span className="text-base sm:text-lg font-black font-mono text-neutral-50 tracking-wider">
-                      24:59
-                    </span>
-                  </div>
-                </div>
-
-                {/* Card 3: Recompensa / Loja */}
-                <div className="p-3.5 rounded-2xl bg-background/70 dark:bg-background/60 border border-neutral-700/80 dark:border-white/10 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0 text-left">
-                    <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/35 text-amber-700 dark:bg-gold/15 dark:border-gold/35 dark:text-gold flex items-center justify-center shrink-0">
-                      <Gift className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-gold block">
-                        {t("preview.rewardTag")}
-                      </span>
-                      <p className="text-xs sm:text-sm font-bold text-neutral-50 truncate">
-                        {t("preview.rewardTitle")}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 rounded-lg whitespace-nowrap shrink-0">
-                    {t("preview.rewardAction")}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Coluna Direita: Preview Interativo dos Modos Essencial vs. Aventura */}
+          <LandingHeroPreview />
         </div>
       </div>
     </section>

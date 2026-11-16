@@ -47,6 +47,9 @@ export function DashboardListSummary({
   columns: controlledColumns,
   onColumnsChange,
   onColumnDeleted,
+  workspaces,
+  onColumnMoved,
+  createColumnTrigger,
   maxColumns,
   activeWorkspaceId,
   activeWorkspaceName,
@@ -66,6 +69,7 @@ export function DashboardListSummary({
     surplusCount,
     isLimitReached,
     columnCountsMap,
+    availableTargetWorkspaces,
     contextMenu,
     setContextMenu,
     columnToEdit,
@@ -84,12 +88,17 @@ export function DashboardListSummary({
     handleColumnSaved,
     handleRequestEditColumn,
     handleRequestDeleteColumn,
+    handleMoveColumnToWorkspace,
+    handleMoveLockedWorkspace,
   } = useDashboardListSummary({
     initialColumns,
     initialVisibleColumnIds,
     columns: controlledColumns,
     onColumnsChange,
     onColumnDeleted,
+    workspaces,
+    onColumnMoved,
+    createColumnTrigger,
     maxColumns,
     activeWorkspaceId,
     isReadOnly,
@@ -101,6 +110,16 @@ export function DashboardListSummary({
     () =>
       buildColumnContextMenuItems({
         column: contextMenu.column,
+        availableWorkspaces: availableTargetWorkspaces,
+        isSourceWorkspaceReadOnly: isReadOnly,
+        onMoveToWorkspace: (col, targetWorkspaceId, targetWorkspaceName) => {
+          void handleMoveColumnToWorkspace(
+            col,
+            targetWorkspaceId,
+            targetWorkspaceName,
+          );
+        },
+        onMoveLockedWorkspace: handleMoveLockedWorkspace,
         onEdit: handleRequestEditColumn,
         onDelete: handleRequestDeleteColumn,
         labels: {
@@ -110,10 +129,18 @@ export function DashboardListSummary({
           compact: tMenu("compact"),
           normal: tMenu("normal"),
           wide: tMenu("wide"),
+          moveTo: tMenu("moveTo"),
+          noTargetWorkspaces: tMenu("noTargetWorkspaces"),
+          vipBadge: tMenu("vipBadge"),
+          readOnlyHint: tMenu("readOnlyWorkspaceHint"),
         },
       }),
     [
       contextMenu.column,
+      availableTargetWorkspaces,
+      isReadOnly,
+      handleMoveColumnToWorkspace,
+      handleMoveLockedWorkspace,
       handleRequestEditColumn,
       handleRequestDeleteColumn,
       tMenu,
@@ -279,8 +306,8 @@ export function DashboardListSummary({
           <li className="list-none min-w-0 col-span-2 sm:col-span-1">
             <ListCard
               compact={isCompact}
-              title={t("addCard")}
-              subtitle={t("addCardSubtitle")}
+              title={t("addFirstCard")}
+              subtitle={t("addFirstCardSubtitle")}
               isAdd={true}
               onClick={handleOpenCreateModal}
               icon={<Plus size={isCompact ? 15 : 17} aria-hidden="true" />}

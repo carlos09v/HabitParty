@@ -1,8 +1,7 @@
 "use client";
 
-import { ArrowLeft, Lock, Sparkles, Trophy } from "lucide-react";
+import { Lock, Sparkles, Trophy } from "lucide-react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
@@ -11,6 +10,7 @@ import { PublicFriendActionButtons } from "@/components/showcase/PublicFriendAct
 import { RetrospectivePanel } from "@/components/showcase/RetrospectivePanel";
 import { ShowcaseHeroHeader } from "@/components/showcase/ShowcaseHeroHeader";
 import { ShowcaseHighlightsSection } from "@/components/showcase/ShowcaseHighlightsSection";
+import { ContextualBackButton } from "@/components/ui/ContextualBackButton";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import {
   DEFAULT_MAX_ACHIEVEMENT_POINTS,
@@ -154,13 +154,12 @@ export function PublicShowcaseView({
   return (
     <div className="flex flex-col w-full max-w-6xl mx-auto pb-16 gap-6">
       <div className="flex items-center justify-between gap-3">
-        <Link
-          href="/profile?tab=friends"
-          className="inline-flex items-center gap-2 text-xs font-bold text-neutral-300 hover:text-amber-800 dark:hover:text-gold transition-colors"
-        >
-          <ArrowLeft size={14} aria-hidden="true" />
-          <span>{t("backToFriends")}</span>
-        </Link>
+        <ContextualBackButton
+          fallbackHref="/profile?tab=friends"
+          preferHistoryBack
+          label={t("backToFriends")}
+          historyLabel={t("backToPrevious")}
+        />
 
         {data.relationshipStatus === "SELF" && (
           <span className="text-xs font-medium text-neutral-400">

@@ -53,6 +53,13 @@ public class Reward {
     this.lootItems = type == RewardType.MISTERY_BOX ? lootItems : null;
   }
 
+  public static void validateCategoryAndType(RewardCategory category, RewardType type) {
+    if (category == RewardCategory.DEBT && type != RewardType.SINGLE_USE) {
+      throw new DomainValidationException(
+          "Recompensas na categoria Dívida devem ser do tipo Uso Único.");
+    }
+  }
+
   public void validateOwnership(UUID userIdLogado) {
     if (!this.userId.equals(userIdLogado)) {
       throw new UnauthorizedException("Você não tem permissão!");
@@ -128,6 +135,8 @@ public class Reward {
         this.lootItems = MysteryBoxLootTable.validateAndNormalizeLootItems(this.packageLevel, this.lootItems);
       }
     }
+
+    validateCategoryAndType(this.category, this.type);
   }
 
   public void updateOrderIndex(int newOrderIndex) {

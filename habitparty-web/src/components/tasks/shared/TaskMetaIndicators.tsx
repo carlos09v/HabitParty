@@ -53,10 +53,8 @@ export function TaskFocusTimeBadge({
 }) {
   const t = useTranslations("dashboard.taskShared.badges");
   const focusState = useFocusTimerStore((s) => {
-    if (s.target?.taskId !== taskId) return "none";
-    if (s.isActive && !s.isPaused) return "running";
-    if (s.isActive) return "paused";
-    return "linked";
+    if (s.target?.taskId !== taskId || !s.isActive) return "none";
+    return s.isPaused ? "paused" : "running";
   });
 
   if (focusState === "none" && totalFocusMinutes <= 0) {

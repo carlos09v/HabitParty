@@ -13,10 +13,10 @@ import { DemoPlayerHeader } from "./demo/DemoPlayerHeader";
 
 export function LandingInteractiveDemo() {
   const t = useTranslations("landing.demo");
-  const [xp, setXp] = useState(720);
-  const maxXp = 1000;
+  const [xp, setXp] = useState(75);
+  const maxXp = 100;
   const [level, setLevel] = useState(14);
-  const [gold, setGold] = useState(380);
+  const [gold, setGold] = useState(10);
 
   // Estados dos hábitos simulados
   const [waterCount, setWaterCount] = useState(3);
@@ -60,9 +60,9 @@ export function LandingInteractiveDemo() {
 
   const handleWaterPlus = (e: React.MouseEvent) => {
     setWaterCount((prev) => prev + 1);
-    setGold((prev) => prev + 5);
+    setGold((prev) => prev + 2);
 
-    const newXp = xp + 15;
+    const newXp = xp + 10;
     if (newXp >= maxXp) {
       const nextLevel = level + 1;
       setLevel(nextLevel);
@@ -88,8 +88,8 @@ export function LandingInteractiveDemo() {
     if (!isStudyDone) {
       setIsStudyDone(true);
       setStudyStreak((s) => s + 1);
-      setGold((g) => g + 25);
-      const newXp = xp + 60;
+      setGold((g) => g + 5);
+      const newXp = xp + 30;
 
       if (newXp >= maxXp) {
         const nextLevel = level + 1;
@@ -106,8 +106,8 @@ export function LandingInteractiveDemo() {
     } else {
       setIsStudyDone(false);
       setStudyStreak((s) => Math.max(1, s - 1));
-      setGold((g) => Math.max(0, g - 25));
-      setXp((x) => Math.max(0, x - 60));
+      setGold((g) => Math.max(0, g - 5));
+      setXp((x) => Math.max(0, x - 30));
       showToast(t("toasts.dailyReopened"));
     }
   };

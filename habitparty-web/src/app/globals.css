@@ -333,6 +333,7 @@ html.light select option {
   }
   :where(html.light) .text-cyan-400,
   :where(html.light) .text-cyan-300,
+  :where(html.light) .text-cyan-200,
   :where(html.light) .text-sky-400,
   :where(html.light) .text-sky-300 {
     color: var(--color-info);

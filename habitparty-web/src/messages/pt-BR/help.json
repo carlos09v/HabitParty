@@ -8,7 +8,8 @@
   },
   "page": {
     "title": "Central de Ajuda & Guia",
-    "subtitle": "Tire todas as suas dúvidas sobre economia matemática, regras de hábitos, recompensas e progressão no HabitParty.",
+    "subtitle": "Tire todas as suas dúvidas sobre economia matemática (3:1 a 4:1), modos de experiência, regras de hábitos e novidades do HabitParty.",
+    "changelogJump": "Changelog & Roadmap",
     "support": {
       "title": "Precisa falar conosco ou encontrou algum bug?",
       "descriptionBeforeIssue": "Para reportar problemas técnicos ou sugerir melhorias, abra uma ",
@@ -24,19 +25,19 @@
     "steps": {
       "1": {
         "title": "Planeje sua Rotina",
-        "description": "Organize seus afazeres em Hábitos contínuos, Diárias recorrentes e Afazeres (To-Dos) pontuais com checklists e prazos."
+        "description": "Organize seus afazeres em Hábitos contínuos, Diárias recorrentes e Afazeres pontuais com checklists, tags hierárquicas e prazos."
       },
       "2": {
-        "title": "Execute com Foco e Constância",
-        "description": "Conclua tarefas reais. O motor matemático pontua sua consistência, creditando XP e Moedas (🪙) no Modo Aventura ou Pontos (pts) e Créditos no Modo Essencial."
+        "title": "Execute na Proporção 3:1 a 4:1",
+        "description": "Cada entrega e sessão de foco segue o equilíbrio 3:1 a 4:1: ~3 a 4h produtivas (~15 🪙) financiam 1h de lazer. Escolha entre Moedas/XP (Aventura) ou Créditos/Pontos (Essencial)."
       },
       "3": {
         "title": "Recompense sua Dedicação",
-        "description": "Defina suas próprias recompensas na Loja: pausas merecidas, momentos de lazer, pacotes de tempo livre ou Caixas Misteriosas (no Modo Aventura)."
+        "description": "Defina seus próprios prêmios na Loja com preços justos (ex: 30 min = 8 🪙, 1h = 15 🪙) ou abra Caixas Misteriosas no Modo Aventura."
       },
       "4": {
-        "title": "Desfrute sem Procrastinação",
-        "description": "Consulte seu Inventário/Mochila, usufrua do descanso merecido com a mente tranquila e mantenha sua disciplina sustentável."
+        "title": "Desfrute sem Culpa",
+        "description": "Use seus itens no Inventário/Mochila, aproveite o descanso que você realmente conquistou e mantenha sua disciplina sustentável."
       }
     }
   },
@@ -66,6 +67,93 @@
       "INVENTORY": "Mochila",
       "FOCUS": "Foco & Pomodoro",
       "LEVELS": "Níveis & XP"
+    }
+  },
+  "changelog": {
+    "sectionTitle": "Novidades, Changelog & Roadmap",
+    "sectionSubtitle": "Acompanhe tudo o que já foi entregue no ecossistema e o que vem a seguir na evolução do HabitParty.",
+    "tabsAriaLabel": "Alternar entre histórico de versões e próximos marcos",
+    "currentBadge": "Versão Atual",
+    "tabs": {
+      "changelog": "Changelog (v1.1 – v1.4)",
+      "roadmap": "Roadmap (v1.5 – v2.0+)"
+    },
+    "items": {
+      "v14": {
+        "statusLabel": "Lançado",
+        "title": "Temas Atmosféricos, Rede de Amigos, Privacidade & Retrospectiva",
+        "summary": "Personalize sua experiência com 7 temas, conecte-se com amigos com privacidade granular e gere cards colecionáveis da sua jornada.",
+        "highlights": [
+          "7 Temas Visuais: 4 gratuitos (Dark Cósmico, Cosmic Daylight, Cavaleiro das Trevas e Pergaminho Solar) + 3 VIP (Cyberpunk Neon, Guardião da Floresta e Ouro Real)",
+          "Rede de Amigos (/friends) por @username ou código exclusivo HP-XXXXXX, Perfis Públicos e notificações de atividade social",
+          "Privacidade Granular (Público, Apenas Amigos ou Privado) para perfil, estatísticas, ofensivas e política de convites",
+          "Retrospectiva Anual sazonal (20/dez a 31/jan) com 5 arquétipos e download de Cards PNG de Perfil e Retrospectiva",
+          "Descrições com formatação Rich-Text, Tags Hierárquicas (>), Foco Rápido nas linhas e modo 'Todos os Ambientes' no Dashboard",
+          "Sincronização de fuso horário local garantindo virada das rotinas e ofensivas à meia-noite da sua região"
+        ]
+      },
+      "v13": {
+        "statusLabel": "Lançado",
+        "title": "Foco Ligado a Tarefas, Eventos no Kanban & Gestão de Histórico",
+        "summary": "Integre sessões Pomodoro diretamente às suas tarefas, agende eventos com hora marcada e audite seu extrato em lote.",
+        "highlights": [
+          "Timer de Foco ligado a qualquer tarefa com acompanhamento de tempo dedicado e conclusão automática",
+          "Afazeres como Eventos (VIP) com horário de início/término ou dia inteiro e selo 'Em andamento' ao vivo",
+          "Exclusão em lote no Histórico com preservação do nome da coluna original mesmo se o quadro mudar",
+          "Busca inteligente entre múltiplos ambientes e escolha global de relógio (12h AM/PM ou 24h)"
+        ]
+      },
+      "v12": {
+        "statusLabel": "Lançado",
+        "title": "Modo Claro, 63 Conquistas & Vitrine do Perfil",
+        "summary": "Novo tema diurno de alto contraste, sistema completo de medalhas e perfil personalizável.",
+        "highlights": [
+          "Tema Claro Cosmic Daylight de alto conforto visual com alternância rápida na barra lateral",
+          "63 Conquistas em 5 raridades (incluindo 8 medalhas secretas) com pontuação de prestígio",
+          "Vitrine do Perfil (/profile) com frase/bio, 4 espaços de destaque e Modo Visão de Visitante"
+        ]
+      },
+      "v11": {
+        "statusLabel": "Lançado",
+        "title": "Modos Essencial vs. Aventura & Idioma Bilíngue",
+        "summary": "Escolha como prefere enxergar sua produtividade e alterne idiomas instantaneamente.",
+        "highlights": [
+          "Dois Estilos de Experiência: Modo Essencial (Créditos, Pontos e estética limpa) ou Modo Aventura (Moedas, XP e Caixas Misteriosas)",
+          "Suporte completo em Português (PT-BR) e Inglês (EN) em todas as telas",
+          "Alertas por e-mail configuráveis para prazos de afazeres"
+        ]
+      },
+      "v15": {
+        "statusLabel": "Próximo Marco",
+        "title": "Parties & Missões Diárias Cooperativas",
+        "summary": "Monte esquadrões de 4 a 6 amigos para manter a consistência em grupo e conquistar bônus coletivos.",
+        "highlights": [
+          "Criação de Parties por código de convite com painel de acompanhamento diário da equipe",
+          "Missões Diárias Cooperativas com bônus compartilhados quando todo o grupo cumpre a meta",
+          "Cofre compartilhado e insígnias exclusivas de trabalho em equipe"
+        ]
+      },
+      "v16": {
+        "statusLabel": "Planejado",
+        "title": "Chat em Tempo Real & Presença de Foco",
+        "summary": "Acompanhe quem do seu grupo está em foco ao vivo e envie incentivos rápidos sem distrações.",
+        "highlights": [
+          "Chat integrado entre membros da Party e mensagens diretas entre amigos",
+          "Status de presença ao vivo (em foco, em pausa ou disponível) e modo Não Perturbe",
+          "Reações rápidas de incentivo entre sessões Pomodoro"
+        ]
+      },
+      "v20": {
+        "statusLabel": "Visão de Longo Prazo",
+        "title": "App Mobile Nativo, Guildas Temáticas & Chefões Mundiais",
+        "summary": "Leve o HabitParty no bolso com widgets nativos e participe de grandes comunidades de disciplina.",
+        "highlights": [
+          "Aplicativo iOS e Android com widgets, check-in rápido e sincronização de Foco com o computador",
+          "Guildas por área de interesse (Estudos, Programação, Saúde, Idiomas)",
+          "Missões contra Chefões em grupo que perdem vida conforme a comunidade foca e entrega tarefas",
+          "Temporadas e rankings de consistência entre amigos e guildas"
+        ]
+      }
     }
   }
 }

@@ -235,6 +235,20 @@ public class TaskAdapter implements TaskRepository {
   }
 
   @Override
+  public List<Task> findArchivedCompletedTodosByBoardColumnId(
+      UUID boardColumnId,
+      LocalDate minDueDate,
+      LocalDateTime minCompletedAt) {
+    if (boardColumnId == null) {
+      return List.of();
+    }
+    return toDomainList(port.findArchivedCompletedTodosByBoardColumnId(
+        boardColumnId,
+        minDueDate,
+        minCompletedAt));
+  }
+
+  @Override
   public int findMaxOrderIndexByBoardColumnId(UUID boardColumnId) {
     Integer maxIndex = port.findMaxOrderIndexByBoardColumnId(boardColumnId);
     return maxIndex != null ? maxIndex : -1;

@@ -21,7 +21,8 @@
       "SHOPPING": "Compras",
       "DEVELOPMENT": "Desenvolvimento",
       "LUCK": "Sorte",
-      "HOBBIES": "Hobbies"
+      "HOBBIES": "Hobbies",
+      "DEBT": "Dívida"
     },
     "packages": {
       "all": "Todos os Pacotes",
@@ -56,13 +57,15 @@
     "addProductProductivity": "Nova Recompensa",
     "buy": "Comprar",
     "buyProductivity": "Resgatar",
+    "payDebt": "Pagar Dívida",
     "insufficientCoinsShort": "Moedas insuficientes",
     "insufficientCreditsShort": "Créditos insuficientes",
     "filters": {
       "category": "Categorias",
       "type": "Tipo",
       "packageLevel": "Pacote",
-      "sortBy": "Ordenar"
+      "sortBy": "Ordenar",
+      "affordableActive": "Com saldo suficiente"
     },
     "empty": {
       "showcaseEmptyTitle": "Sua vitrine de recompensas está vazia! 🛍️",
@@ -92,6 +95,8 @@
       "buySuccess": "Você comprou \"{title}\"! O item foi enviado para a sua Mochila.",
       "buySuccessGamified": "Você comprou \"{title}\"! O item foi enviado para a sua Mochila.",
       "buySuccessProductivity": "Você resgatou \"{title}\"! O item foi adicionado ao seu Inventário.",
+      "debtPaidSuccessGamified": "Dívida \"{title}\" quitada! As moedas foram descontadas diretamente.",
+      "debtPaidSuccessProductivity": "Dívida \"{title}\" paga! Os créditos foram descontados diretamente.",
       "serverError": "Erro de comunicação com o servidor.",
       "deleteSuccess": "Recompensa \"{title}\" excluída com sucesso!",
       "deleteError": "Erro ao excluir recompensa."
@@ -100,6 +105,7 @@
   "card": {
     "buy": "Comprar",
     "buyProductivity": "Resgatar",
+    "payDebt": "Pagar Dívida",
     "addRewardAria": "Adicionar nova recompensa",
     "addProduct": "Adicionar Produto",
     "addProductProductivity": "Nova Recompensa"
@@ -119,6 +125,17 @@
     "descriptionPlaceholder": "Detalhes ou regras para desfrutar da sua recompensa...",
     "typeLabel": "Tipo de Recompensa",
     "categoryLabel": "Categoria",
+    "debtToggleLabel": "Registrar como Dívida",
+    "debtToggleAria": "Ativar modo de dívida imediata",
+    "debtToggleSubtitle": "Quitação direta: desconta moedas na hora, sem ir para a Mochila.",
+    "debtToggleSubtitleProductivity": "Quitação direta: desconta créditos na hora, sem ir para o Inventário.",
+    "debtTooltipTitle": "Para que serve a Dívida?",
+    "debtTooltipAria": "Saiba para que serve o modo Dívida",
+    "debtTooltipBody": "Use quando você ultrapassar o tempo permitido de um lazer ou assistir/consumir algo urgente sem ter saldo suficiente no momento.",
+    "debtTooltipPointDirect": "Ao clicar em Pagar Dívida, as moedas são descontadas e a dívida é quitada na hora (sem item na Mochila).",
+    "debtTooltipPointDirectProductivity": "Ao clicar em Pagar Dívida, os créditos são descontados e a dívida é quitada na hora (sem item no Inventário).",
+    "debtTooltipPointExample": "Não conta como resgate de recompensa nas conquistas e fica visível para filtrar quando precisar quitar.",
+    "debtTooltipPointExampleProductivity": "Fica registrada como compromisso pendente para quitar assim que tiver créditos.",
     "durationLabel": "Duração da Atividade (minutos)",
     "durationHint": "(tempo que será consumido no Foco)",
     "durationPlaceholder": "Ex: 30, 60, 120",

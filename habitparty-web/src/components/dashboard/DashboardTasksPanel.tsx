@@ -46,8 +46,11 @@ export function DashboardTasksPanel({
   workspaces = [],
   defaultColumnId: explicitDefaultColumnId,
   isCompact = false,
+  isReadOnly = false,
   tasks: externalTasks,
   onTasksChange,
+  hasColumns = true,
+  onCreateFirstColumn,
 }: DashboardTasksPanelProps) {
   const t = useTranslations("dashboard.tasksPanel");
   const searchParams = useSearchParams();
@@ -479,6 +482,20 @@ export function DashboardTasksPanel({
         onEditTask={handleEditTask}
         onStartFocus={handleStartFocusTask}
         selectedDate={selectedDate}
+        emptyVariant={
+          !hasColumns
+            ? isReadOnly
+              ? "no_columns_readonly"
+              : "no_columns"
+            : "default"
+        }
+        onEmptyAction={
+          !hasColumns
+            ? isReadOnly
+              ? () => setIsUpgradeModalOpen(true)
+              : onCreateFirstColumn
+            : undefined
+        }
         isCompact={isCompact}
         deletingTaskIds={checkingDeleteTaskIds}
       />

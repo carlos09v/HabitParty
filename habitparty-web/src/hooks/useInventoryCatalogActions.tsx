@@ -305,7 +305,7 @@ export function useInventoryCatalogActions({
         {
           label: t("contextMenu.openInFocus"),
           icon: <Flame size={15} />,
-          onClick: () => router.push("/focus"),
+          onClick: () => router.push("/focus?from=inventory"),
         },
         {
           label: isGamified

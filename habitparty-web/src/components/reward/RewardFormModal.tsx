@@ -2,8 +2,10 @@
 
 import {
   Check,
+  Clock,
   FileText,
   Gift,
+  Info,
   Loader2,
   Package,
   SlidersHorizontal,
@@ -15,12 +17,15 @@ import { BaseModal } from "@/components/ui/BaseModal";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { DescriptionCharCounter } from "@/components/ui/DescriptionCharCounter";
 import { IconPickerPopover } from "@/components/ui/IconPickerPopover";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { Input } from "@/components/ui/Input";
+import { NumberStepperInput } from "@/components/ui/NumberStepperInput";
 import {
   SegmentedControl,
   type SegmentedControlOption,
 } from "@/components/ui/SegmentedControl";
 import { Select } from "@/components/ui/Select";
+import { Switch } from "@/components/ui/Switch";
 import { Textarea } from "@/components/ui/Textarea";
 import {
   COUPON_PACKAGE_OPTIONS,
@@ -41,6 +46,7 @@ import type {
   RewardType,
 } from "@/types/reward";
 import { cn } from "@/utils";
+import { formatFocusMinutes } from "@/utils/focusFormatters";
 import {
   analyzeRewardPrice,
   type RewardPriceAnalysis,
@@ -83,7 +89,7 @@ function RewardPriceField({
 }: RewardPriceFieldProps) {
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 min-h-5">
         <label
           htmlFor="rewardPrice"
           className="text-body-s text-neutral-100 font-medium"
@@ -165,7 +171,8 @@ export function RewardFormModal({
     type,
     handleTypeChange,
     category,
-    setCategory,
+    handleCategoryChange,
+    handleDebtToggleChange,
     packageLevel,
     setPackageLevel,
     handleMysteryBoxTierSelect,
@@ -420,13 +427,16 @@ export function RewardFormModal({
     </div>
   );
 
+  const isDebtCategory = toCategoryMessageKey(category) === "DEBT";
+  const numericDuration = Number.parseInt(baseDurationMinutes || "0", 10) || 0;
+
   const categoryField = (
-    <div className="flex flex-col gap-3 pt-1 border-t border-neutral-700/50 dark:border-white/5">
+    <div className="flex flex-col gap-2.5 pt-1 border-t border-neutral-700/50 dark:border-white/5">
       <Select
         id="rewardCategory"
         label={t("categoryLabel")}
         value={category}
-        onChange={(val) => setCategory(val as RewardCategory)}
+        onChange={(val) => handleCategoryChange(val as RewardCategory)}
         options={categoryOptions}
         disabled={isPending}
         compact
@@ -625,18 +635,20 @@ export function RewardFormModal({
 
             {type === "TimeBased" ? (
               <div className="flex flex-col gap-3 p-3.5 rounded-xl bg-background border border-neutral-700 dark:bg-surface/30 dark:border-white/10">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
                   {/* Duração ao lado do Custo */}
                   <div className="flex flex-col gap-1.5">
-                    <label
-                      htmlFor="rewardDuration"
-                      className="text-body-s text-neutral-100 font-medium"
-                    >
-                      {t("durationLabel")} <span className="text-gold">*</span>
-                    </label>
-                    <Input
+                    <div className="flex items-center justify-between gap-2 min-h-5">
+                      <label
+                        htmlFor="rewardDuration"
+                        className="text-body-s text-neutral-100 font-medium"
+                      >
+                        {t("durationLabel")}{" "}
+                        <span className="text-gold">*</span>
+                      </label>
+                    </div>
+                    <NumberStepperInput
                       id="rewardDuration"
-                      type="number"
                       min={5}
                       max={1440}
                       step={5}
@@ -650,11 +662,32 @@ export function RewardFormModal({
                           handleBaseDurationChange("5");
                         }
                       }}
+                      onStep={(delta) => {
+                        const base = Number.isFinite(numericDuration)
+                          ? numericDuration
+                          : 0;
+                        const next = Math.min(1440, Math.max(5, base + delta));
+                        handleBaseDurationChange(String(next));
+                      }}
+                      decrementDisabled={numericDuration <= 5}
+                      incrementDisabled={numericDuration >= 1440}
                       placeholder={t("durationPlaceholder")}
                       compact
+                      icon={<Clock size={16} />}
                       className="font-semibold h-[42px]"
                       disabled={isPending}
                     />
+                    {numericDuration >= 60 && (
+                      <div className="flex items-center">
+                        <span
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/35 text-emerald-700 dark:text-emerald-300 text-label-m font-bold tabular-nums"
+                          aria-live="polite"
+                        >
+                          <Clock size={11} aria-hidden="true" />
+                          <span>= {formatFocusMinutes(numericDuration)}</span>
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Custo */}
@@ -813,7 +846,77 @@ export function RewardFormModal({
               </div>
             )}
 
-            {categoryField}
+            {type === "TimeBased" && categoryField}
+
+            {type === "SingleUse" && (
+              <>
+                <div
+                  className={cn(
+                    "flex items-center justify-between gap-3 p-3.5 rounded-xl border transition-colors",
+                    isDebtCategory
+                      ? "bg-rose-500/10 border-rose-500/35 dark:bg-rose-500/10 dark:border-rose-400/40"
+                      : "bg-background border-neutral-700 dark:bg-surface/30 dark:border-white/10",
+                  )}
+                >
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <label
+                        htmlFor="rewardDebtToggle"
+                        className="text-body-s font-semibold text-neutral-100 cursor-pointer select-none"
+                      >
+                        {t("debtToggleLabel")}
+                      </label>
+                      <InfoTooltip
+                        title={t("debtTooltipTitle")}
+                        icon={
+                          <Info
+                            size={14}
+                            className="text-rose-600 dark:text-rose-300 shrink-0"
+                          />
+                        }
+                        size={14}
+                        align="left"
+                        side="top"
+                        ariaLabel={t("debtTooltipAria")}
+                      >
+                        <p className="text-neutral-300 leading-relaxed text-label-g">
+                          {t("debtTooltipBody")}
+                        </p>
+                        <ul className="flex flex-col gap-1 py-0.5 text-label-g text-neutral-200">
+                          <li>
+                            •{" "}
+                            {isGamified
+                              ? t("debtTooltipPointDirect")
+                              : t("debtTooltipPointDirectProductivity")}
+                          </li>
+                          <li>
+                            •{" "}
+                            {isGamified
+                              ? t("debtTooltipPointExample")
+                              : t("debtTooltipPointExampleProductivity")}
+                          </li>
+                        </ul>
+                      </InfoTooltip>
+                    </div>
+                    <span className="text-tiny text-neutral-400">
+                      {isGamified
+                        ? t("debtToggleSubtitle")
+                        : t("debtToggleSubtitleProductivity")}
+                    </span>
+                  </div>
+
+                  <Switch
+                    id="rewardDebtToggle"
+                    checked={isDebtCategory}
+                    onCheckedChange={handleDebtToggleChange}
+                    disabled={isPending}
+                    aria-label={t("debtToggleAria")}
+                  />
+                </div>
+
+                {!isDebtCategory && categoryField}
+              </>
+            )}
           </>
         )}
 

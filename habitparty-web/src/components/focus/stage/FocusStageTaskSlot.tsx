@@ -15,6 +15,7 @@ import type { FocusActiveTarget } from "@/types/focus";
 interface FocusStageTaskSlotProps {
   target: FocusActiveTarget | null;
   isInventoryItem: boolean;
+  isSessionIdle?: boolean;
   onOpenLinkTask: () => void;
   onOpenLinkActivity: () => void;
   onCompleteLinkedTask: (taskId: string, taskName?: string) => void;
@@ -28,6 +29,7 @@ interface FocusStageTaskSlotProps {
 export const FocusStageTaskSlot = memo(function FocusStageTaskSlot({
   target,
   isInventoryItem,
+  isSessionIdle = true,
   onOpenLinkTask,
   onOpenLinkActivity,
   onCompleteLinkedTask,
@@ -43,14 +45,28 @@ export const FocusStageTaskSlot = memo(function FocusStageTaskSlot({
   if (target.type === "task") {
     return (
       <div className="w-full rounded-xl border border-primary/30 dark:border-primary/40 bg-surface/70 dark:bg-surface/60 px-3 py-2 flex flex-col gap-2">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <ListTodo
-            size={13}
-            className="text-primary dark:text-gold shrink-0"
-          />
-          <span className="text-[11px] font-bold text-neutral-200 truncate">
-            {t("taskSessionBadge")}
-          </span>
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <ListTodo
+              size={13}
+              className="text-primary dark:text-gold shrink-0"
+            />
+            <span className="text-[11px] font-bold text-neutral-200 truncate">
+              {t("taskSessionBadge")}
+            </span>
+          </div>
+
+          {isSessionIdle && (
+            <button
+              type="button"
+              onClick={onUnlinkTask}
+              title={t("unlinkTask")}
+              aria-label={t("unlinkTask")}
+              className="min-w-8 min-h-8 sm:min-w-7 sm:min-h-7 pointer-coarse:min-w-9 pointer-coarse:min-h-9 rounded-lg flex items-center justify-center bg-card/80 dark:bg-surface hover:bg-red-500/20 border border-neutral-700 dark:border-primary/30 hover:border-red-500/40 text-neutral-400 hover:text-red-400 transition-colors cursor-pointer shrink-0"
+            >
+              <X size={13} />
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5 flex-wrap">

@@ -4,13 +4,17 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.FriendshipRepository;
+import com.habitparty.application.ports.SocialNotificationRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.usecases.user.UserTimeResolver;
 import com.habitparty.core.domain.entities.social.Friendship;
+import com.habitparty.core.domain.enums.SocialNotificationType;
 import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
@@ -20,14 +24,25 @@ public class RemoveOrBlockFriendUseCase {
   private final FriendshipRepository friendshipRepository;
   private final UserRepository userRepository;
   private final UserTimeResolver timeResolver;
+  private final SocialNotificationRepository notificationRepository;
 
   public RemoveOrBlockFriendUseCase(
       FriendshipRepository friendshipRepository,
       UserRepository userRepository,
       UserTimeResolver timeResolver) {
+    this(friendshipRepository, userRepository, timeResolver, null);
+  }
+
+  @Autowired
+  public RemoveOrBlockFriendUseCase(
+      FriendshipRepository friendshipRepository,
+      UserRepository userRepository,
+      UserTimeResolver timeResolver,
+      @Nullable SocialNotificationRepository notificationRepository) {
     this.friendshipRepository = friendshipRepository;
     this.userRepository = userRepository;
     this.timeResolver = timeResolver;
+    this.notificationRepository = notificationRepository;
   }
 
   @Transactional
@@ -37,6 +52,10 @@ public class RemoveOrBlockFriendUseCase {
 
     friendship.ensureCanDelete(actorId);
     friendshipRepository.delete(friendship);
+    if (notificationRepository != null) {
+      notificationRepository.markSeenByReferenceIdAndType(
+          friendshipId, SocialNotificationType.FRIEND_REQUEST_RECEIVED);
+    }
   }
 
   @Transactional
@@ -56,6 +75,10 @@ public class RemoveOrBlockFriendUseCase {
     } else {
       blocked = Friendship.createBlocked(blockerId, targetUserId, now);
     }
-    return friendshipRepository.save(blocked);
+    Friendship saved = friendshipRepository.save(blocked);
+    if (notificationRepository != null) {
+      notificationRepository.markSeenBetweenUsers(blockerId, targetUserId);
+    }
+    return saved;
   }
 }

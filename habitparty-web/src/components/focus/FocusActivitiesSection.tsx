@@ -107,20 +107,21 @@ export function FocusActivitiesSection({
 
   return (
     <section
+      id="focus-activities-section"
       className="flex flex-col gap-3 w-full"
       aria-label={t("sectionAria")}
     >
       {/* Header com Título, Chip de Filtro, Contador e Botão de Criar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
-          <h3
+          <h2
             className={cn(
               "font-bold text-neutral-100",
               isCompact ? "text-body-m sm:text-subtitle-s" : "text-subtitle-s",
             )}
           >
             {t("title")}
-          </h3>
+          </h2>
 
           {/* Chip de Filtro Ativo (Visível, Discreto e Imediato) */}
           {selectedActivity && (

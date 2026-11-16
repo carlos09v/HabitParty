@@ -72,4 +72,19 @@ public interface TransactionHistoryJpaRepository extends JpaRepository<Transacti
 
     @Query("SELECT MIN(t.createdAt) FROM TransactionHistoryJpaEntity t WHERE t.user.id = :userId")
     LocalDateTime findEarliestCreatedAtByUserId(@Param("userId") UUID userId);
+
+    @Query("""
+        SELECT COUNT(t) FROM TransactionHistoryJpaEntity t
+        WHERE t.user.id = :userId
+          AND t.referenceId = :referenceId
+          AND t.transactionType = :transactionType
+          AND t.createdAt >= :startInclusive
+          AND t.createdAt < :endExclusive
+    """)
+    long countHabitScoreTransactionsInRange(
+        @Param("userId") UUID userId,
+        @Param("referenceId") UUID referenceId,
+        @Param("transactionType") TransactionType transactionType,
+        @Param("startInclusive") LocalDateTime startInclusive,
+        @Param("endExclusive") LocalDateTime endExclusive);
 }

@@ -8,7 +8,7 @@ import { useUserStore } from "@/store/userStore";
 import type { UserResponseDTO } from "@/types/user";
 import { cn } from "@/utils";
 import {
-  areTimeZonesEquivalent,
+  areTimeZonesClockEquivalent,
   canonicalizeTimeZone,
   DEFAULT_TIMEZONE,
   detectBrowserTimeZone,
@@ -81,7 +81,7 @@ export function TimezoneMismatchBanner({
       browserTimezone &&
       !isCooldownActive &&
       isValidIanaTimeZone(accountTimezone) &&
-      !areTimeZonesEquivalent(accountTimezone, browserTimezone) &&
+      !areTimeZonesClockEquivalent(accountTimezone, browserTimezone) &&
       pairKey &&
       dismissedPairKey !== pairKey,
   );

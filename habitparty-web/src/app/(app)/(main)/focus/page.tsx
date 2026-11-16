@@ -28,8 +28,15 @@ type PageProps = {
 export default async function FocusPage({ searchParams }: PageProps) {
   const resolvedSearchParams = await searchParams;
 
-  const { activities, backpackItems, initialRecords, focusableTasks } =
-    await getFocusPageData();
+  const {
+    activities,
+    backpackItems,
+    initialRecords,
+    totalRecordsCount,
+    hasMoreRecords,
+    initialLoadedRecordsPage,
+    focusableTasks,
+  } = await getFocusPageData();
 
   return (
     <ScopedIntlProvider scope="focus">
@@ -38,6 +45,9 @@ export default async function FocusPage({ searchParams }: PageProps) {
           initialActivities={activities}
           initialBackpackItems={backpackItems}
           initialRecords={initialRecords}
+          initialTotalRecordsCount={totalRecordsCount}
+          initialHasMoreRecords={hasMoreRecords}
+          initialLoadedRecordsPage={initialLoadedRecordsPage}
           initialFocusableTasks={focusableTasks}
           initialSelectedActivityId={resolvedSearchParams.activityId || null}
           initialCreateActivity={resolvedSearchParams.createActivity === "true"}

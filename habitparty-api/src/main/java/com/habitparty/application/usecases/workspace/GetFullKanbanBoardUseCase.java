@@ -1,7 +1,11 @@
 package com.habitparty.application.usecases.workspace;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.habitparty.application.ports.BoardColumnRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.WorkspaceRepository;
+import com.habitparty.application.ports.projections.BoardColumnSummaryDTO;
 import com.habitparty.core.domain.entities.BoardColumn;
 import com.habitparty.core.domain.entities.KanbanBoard;
 import com.habitparty.core.domain.entities.Workspace;
@@ -17,6 +22,17 @@ import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
 public class GetFullKanbanBoardUseCase {
+  public static final int ARCHIVE_CUTOFF_DAYS = 7;
+
+  public record ArchiveWindow(LocalDate minDueDate, LocalDateTime minCompletedAt) {
+  }
+
+  public static ArchiveWindow resolveArchiveWindow(LocalDate referenceToday) {
+    LocalDate effectiveToday = referenceToday != null ? referenceToday : LocalDate.now();
+    LocalDate minDueDate = effectiveToday.minusDays(ARCHIVE_CUTOFF_DAYS);
+    return new ArchiveWindow(minDueDate, minDueDate.atStartOfDay());
+  }
+
   private final WorkspaceRepository port;
   private final BoardColumnRepository columnRepository;
   private final TaskRepository taskRepository;
@@ -30,24 +46,68 @@ public class GetFullKanbanBoardUseCase {
 
   @Transactional(readOnly = true)
   public KanbanBoard execute(UUID workspaceId, UUID userIdLogado) {
+    return execute(workspaceId, userIdLogado, false, false, LocalDate.now());
+  }
+
+  @Transactional(readOnly = true)
+  public KanbanBoard execute(
+      UUID workspaceId,
+      UUID userIdLogado,
+      boolean excludeArchivedCompleted,
+      LocalDate referenceToday) {
+    return execute(workspaceId, userIdLogado, excludeArchivedCompleted, false, referenceToday);
+  }
+
+  @Transactional(readOnly = true)
+  public KanbanBoard execute(
+      UUID workspaceId,
+      UUID userIdLogado,
+      boolean excludeArchivedCompleted,
+      boolean includeHidden,
+      LocalDate referenceToday) {
     Workspace workspace = port.findById(workspaceId)
         .orElseThrow(() -> new ResourceNotFoundException("Workspace não encontrado!"));
     workspace.validateOwnership(userIdLogado);
 
-    // 2. Pega as Colunas Visíveis daquele Workspace
-    List<BoardColumn> columns = columnRepository.findVisibleByWorkspaceId(workspaceId);
+    // 2. Pega as colunas (visíveis ou todas) do Workspace
+    List<BoardColumn> columns = includeHidden
+        ? columnRepository.findAllByWorkspaceId(workspaceId)
+        : columnRepository.findVisibleByWorkspaceId(workspaceId);
+    List<UUID> columnIds = columns.stream().map(BoardColumn::getId).toList();
+
+    Map<UUID, BoardColumnSummaryDTO> summariesByColumnId = (excludeArchivedCompleted && !columnIds.isEmpty())
+        ? columnRepository.getColumnSummaries(workspaceId).stream()
+            .collect(Collectors.toMap(
+                BoardColumnSummaryDTO::id,
+                summary -> summary,
+                (existing, ignored) -> existing))
+        : Map.of();
 
     // 3. Busca todas as tarefas das colunas em uma única consulta em lote (elimina N+1)
-    List<UUID> columnIds = columns.stream().map(BoardColumn::getId).toList();
-    List<Task> allTasks = taskRepository.findByBoardColumnIdInOrderByOrderIndexAsc(columnIds);
-    java.util.Map<UUID, List<Task>> tasksByColumn = allTasks.stream()
-        .collect(java.util.stream.Collectors.groupingBy(Task::getBoardColumnId));
+    List<Task> allTasks;
+    if (columnIds.isEmpty()) {
+      allTasks = List.of();
+    } else if (excludeArchivedCompleted) {
+      ArchiveWindow archiveWindow = resolveArchiveWindow(referenceToday);
+      allTasks = taskRepository.findDashboardActiveByBoardColumnIds(
+          columnIds,
+          archiveWindow.minDueDate(),
+          archiveWindow.minCompletedAt());
+    } else {
+      allTasks = taskRepository.findByBoardColumnIdInOrderByOrderIndexAsc(columnIds);
+    }
 
-    // 4. Monta as colunas do Kanban com as tarefas já agrupadas em memória
-    List<KanbanBoard.KanbanColumn> kanbanColumns = columns.stream().map(column -> {
-      List<Task> tasks = tasksByColumn.getOrDefault(column.getId(), List.of());
-      return new KanbanBoard.KanbanColumn(column, tasks);
-    }).toList();
+    Map<UUID, List<Task>> tasksByColumn = allTasks.stream()
+        .collect(Collectors.groupingBy(Task::getBoardColumnId));
+
+    // 4. Monta as colunas do Kanban com as tarefas já agrupadas e totais reais preservados
+    List<KanbanBoard.KanbanColumn> kanbanColumns = columns.stream()
+        .map(column -> KanbanBoard.KanbanColumn.from(
+            column,
+            tasksByColumn.getOrDefault(column.getId(), List.of()),
+            excludeArchivedCompleted,
+            summariesByColumnId.get(column.getId())))
+        .toList();
 
     return new KanbanBoard(workspace, kanbanColumns);
   }

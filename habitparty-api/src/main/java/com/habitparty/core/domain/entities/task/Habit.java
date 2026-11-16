@@ -24,6 +24,12 @@ public class Habit extends Task {
   private int positiveCount;
   private int negativeCount;
 
+  /**
+   * Limite diário de registros positivos de um mesmo hábito que concedem XP/Moedas e entram no histórico financeiro.
+   * Registros além do teto continuam incrementando {@code positiveCount} normalmente.
+   */
+  public static final int MAX_DAILY_REWARDED_SCORES = 8;
+
   public Habit(// --- Campos da Base (Task) ---
       UUID id, UUID boardColumnId, UUID userId, String name,
       String description, int orderIndex, TaskPriority priority,

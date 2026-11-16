@@ -7,6 +7,7 @@ import { useUpdateTimezone } from "@/hooks/useUpdateTimezone";
 import { useUserStore } from "@/store/userStore";
 import { cn } from "@/utils";
 import {
+  areTimeZonesClockEquivalent,
   areTimeZonesEquivalent,
   DEFAULT_TIMEZONE,
   detectBrowserTimeZone,
@@ -101,7 +102,7 @@ export function TimezoneSettings({
 
   const hasBrowserMismatch = Boolean(
     browserTimezone &&
-      !areTimeZonesEquivalent(persistedTimezone, browserTimezone),
+      !areTimeZonesClockEquivalent(persistedTimezone, browserTimezone),
   );
 
   const hasChanges = !areTimeZonesEquivalent(

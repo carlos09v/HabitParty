@@ -49,6 +49,8 @@ public class RespondFriendRequestUseCase {
     if (!accept) {
       friendship.ensureCanDelete(actorId);
       friendshipRepository.delete(friendship);
+      notificationRepository.markSeenByReferenceIdAndType(
+          friendshipId, SocialNotificationType.FRIEND_REQUEST_RECEIVED);
       return new RespondFriendRequestResult(friendshipId, false);
     }
 
@@ -65,6 +67,8 @@ public class RespondFriendRequestUseCase {
     }
 
     Friendship saved = friendshipRepository.save(friendship);
+    notificationRepository.markSeenByReferenceIdAndType(
+        saved.getId(), SocialNotificationType.FRIEND_REQUEST_RECEIVED);
     User actor = userRepository.findById(actorId).orElse(null);
 
     notificationRepository.save(SocialNotification.create(

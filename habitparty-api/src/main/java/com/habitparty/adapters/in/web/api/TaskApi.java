@@ -33,6 +33,13 @@ public interface TaskApi {
     @GetMapping("/column/{boardColumnId}")
     ResponseEntity<List<TaskResponseDTO>> getTaskListByColumnId(
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser userIdLogado,
+        @PathVariable UUID boardColumnId,
+        @RequestParam(required = false, defaultValue = "false") boolean excludeArchivedCompleted);
+
+    @Operation(summary = "Lista tarefas concluídas arquivadas por coluna", description = "Retorna sob demanda apenas os afazeres concluídos antigos excluídos da carga inicial da coluna.")
+    @GetMapping("/column/{boardColumnId}/archived-completed")
+    ResponseEntity<List<TaskResponseDTO>> getArchivedCompletedTasksByColumnId(
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser userIdLogado,
         @PathVariable UUID boardColumnId);
 
     @Operation(summary = "Dashboard de Tarefas", description = "Lista as tarefas para o dashboard filtrado.")

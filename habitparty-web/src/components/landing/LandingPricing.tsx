@@ -95,13 +95,13 @@ export async function LandingPricing() {
               <div
                 key={plan.id}
                 className={cn(
-                  "relative rounded-3xl p-6 sm:p-8 lg:p-6 xl:p-8 flex flex-col justify-between transition-[transform,border-color,box-shadow] duration-300",
+                  "relative rounded-3xl p-6 sm:p-8 lg:p-6 xl:p-8 flex flex-col justify-between",
                   (plan.isFounder || plan.highlight) && "mt-3 lg:mt-0",
                   plan.isFounder
-                    ? "bg-card dark:bg-gradient-to-b dark:from-surface dark:via-surface/95 dark:to-background border-2 border-amber-500/80 dark:border-gold shadow-lg dark:shadow-[0_0_45px_rgba(237,229,57,0.3)] hover:shadow-xl dark:hover:shadow-[0_0_60px_rgba(237,229,57,0.45)] lg:scale-[1.02] lg:-translate-y-2 z-10"
+                    ? "bg-card dark:bg-gradient-to-b dark:from-surface dark:via-surface/95 dark:to-background border-2 border-amber-500/80 dark:border-gold shadow-lg dark:shadow-[0_0_45px_rgba(237,229,57,0.3)] lg:scale-[1.02] lg:-translate-y-2 z-10"
                     : plan.highlight
                       ? "bg-card dark:bg-surface/80 border-2 border-primary-light shadow-md"
-                      : "bg-card dark:bg-surface/60 border border-neutral-700 dark:border-white/10 hover:border-neutral-500 dark:hover:border-white/20 shadow-sm dark:shadow-card-deep",
+                      : "bg-card dark:bg-surface/60 border border-neutral-700 dark:border-white/10 shadow-none",
                 )}
               >
                 {/* Badge de Destaque Superior */}

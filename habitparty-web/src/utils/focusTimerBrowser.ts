@@ -5,7 +5,10 @@ import type {
   FocusRecordType,
   FocusTimerState,
 } from "@/types/focus";
-import { formatFocusTime } from "@/utils/focusFormatters";
+import {
+  formatFocusDisplayTime,
+  isFocusOvertime,
+} from "@/utils/focusFormatters";
 
 /**
  * Dispara notificação nativa do navegador ao término de um ciclo ou pausa.
@@ -31,6 +34,7 @@ export interface FocusBrowserTranslations {
   titlePausedPrefix: string;
   titleBreakPrefix: string;
   titleFocusPrefix: string;
+  titleOvertimePrefix: string;
 }
 
 const FALLBACK_BROWSER_TRANSLATIONS: Record<
@@ -42,12 +46,14 @@ const FALLBACK_BROWSER_TRANSLATIONS: Record<
     titlePausedPrefix: "⏸️ Paused",
     titleBreakPrefix: "☕ Break",
     titleFocusPrefix: "🔥 Focus",
+    titleOvertimePrefix: "⏱️ Overtime",
   },
   "pt-BR": {
     defaultDocumentTitle: "Foco & Pomodoro | HabitParty",
     titlePausedPrefix: "⏸️ Pausado",
     titleBreakPrefix: "☕ Pausa",
     titleFocusPrefix: "🔥 Foco",
+    titleOvertimePrefix: "⏱️ Excedente",
   },
 };
 
@@ -90,6 +96,7 @@ export function updateDocumentTitle(state: {
   phase: FocusPhase;
   secondsRemaining: number;
   elapsedSeconds: number;
+  totalDurationSeconds?: number;
   target: FocusTimerState["target"];
 }) {
   if (typeof document === "undefined") return;
@@ -109,17 +116,15 @@ export function updateDocumentTitle(state: {
   }
 
   const isBreak = state.phase === "SHORT_BREAK" || state.phase === "LONG_BREAK";
-  const isCountdown =
-    state.mode === "POMO" || state.target?.type === "inventory" || isBreak;
-  const displaySeconds = isCountdown
-    ? state.secondsRemaining
-    : state.elapsedSeconds;
-  const timeStr = formatFocusTime(displaySeconds);
+  const isOvertime = isFocusOvertime(state);
+  const timeStr = formatFocusDisplayTime(state);
   const statusPrefix = state.isPaused
     ? i18n.titlePausedPrefix
     : isBreak
       ? i18n.titleBreakPrefix
-      : i18n.titleFocusPrefix;
+      : isOvertime
+        ? i18n.titleOvertimePrefix
+        : i18n.titleFocusPrefix;
   const targetLabel = state.target?.name ? ` • ${state.target.name}` : "";
 
   document.title = `(${timeStr}) ${statusPrefix}${targetLabel} | HabitParty`;

@@ -81,10 +81,10 @@ export function LandingRoadmap() {
               <div
                 key={item.id}
                 className={cn(
-                  "relative rounded-3xl p-6 sm:p-8 flex flex-col justify-between transition-[transform,border-color,box-shadow] duration-300 group",
+                  "relative rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-none",
                   isCompleted
-                    ? "bg-gradient-to-b from-emerald-500/[0.06] via-card to-card dark:from-emerald-950/30 dark:via-surface/70 dark:to-surface/50 border border-emerald-500/30 dark:border-emerald-500/40 hover:border-emerald-500/60 dark:hover:border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.06)] hover:shadow-[0_0_35px_rgba(16,185,129,0.16)] hover:-translate-y-1"
-                    : "bg-card/95 dark:bg-surface/60 border border-neutral-700/80 dark:border-white/10 hover:border-neutral-500 dark:hover:border-white/25 shadow-sm dark:shadow-card-deep hover:-translate-y-1",
+                    ? "bg-gradient-to-b from-emerald-500/[0.05] via-card to-card dark:from-emerald-950/25 dark:via-surface/65 dark:to-surface/45 border border-emerald-500/30 dark:border-emerald-500/35"
+                    : "bg-card/90 dark:bg-surface/55 border border-neutral-700/80 dark:border-white/10",
                   item.borderGlowColor,
                   index === LANDING_ROADMAP_CONFIGS.length - 1 &&
                     "md:col-span-2",
@@ -93,10 +93,8 @@ export function LandingRoadmap() {
                 {/* Linha Decorativa do Topo */}
                 <div
                   className={cn(
-                    "absolute top-0 left-8 right-8 h-1 rounded-t-full bg-gradient-to-r transition-opacity",
-                    isCompleted
-                      ? "opacity-100 shadow-[0_0_12px_rgba(16,185,129,0.5)]"
-                      : "opacity-60 group-hover:opacity-100",
+                    "absolute top-0 left-8 right-8 h-1 rounded-t-full bg-gradient-to-r",
+                    isCompleted ? "opacity-100" : "opacity-75",
                     item.accentColor,
                   )}
                 />
@@ -107,10 +105,10 @@ export function LandingRoadmap() {
                     <div className="flex items-center gap-2">
                       <span
                         className={cn(
-                          "text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full border flex items-center gap-1.5 whitespace-nowrap",
+                          "text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md flex items-center gap-1.5 whitespace-nowrap",
                           isCompleted
-                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300"
-                            : "bg-surface dark:bg-white/5 border-neutral-700 dark:border-white/10 text-neutral-200",
+                            ? "bg-emerald-500/12 text-emerald-800 dark:text-emerald-300"
+                            : "bg-surface/80 dark:bg-white/5 text-neutral-200",
                         )}
                       >
                         {isCompleted && (
@@ -125,7 +123,7 @@ export function LandingRoadmap() {
 
                     <span
                       className={cn(
-                        "text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full border inline-flex items-center gap-1.5 whitespace-nowrap",
+                        "text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md inline-flex items-center gap-1.5 whitespace-nowrap",
                         item.statusBadgeColor,
                       )}
                     >
@@ -140,21 +138,14 @@ export function LandingRoadmap() {
                   <div className="flex items-start gap-4 mb-4">
                     <div
                       className={cn(
-                        "w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-xs",
+                        "w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0",
                         item.iconBoxColor,
                       )}
                     >
                       <Icon className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3
-                        className={cn(
-                          "text-xl sm:text-2xl font-bold transition-colors leading-snug flex items-center gap-2",
-                          isCompleted
-                            ? "text-neutral-50 group-hover:text-emerald-700 dark:group-hover:text-emerald-400"
-                            : "text-neutral-50 group-hover:text-primary dark:group-hover:text-gold",
-                        )}
-                      >
+                      <h3 className="text-xl sm:text-2xl font-bold text-neutral-50 leading-snug flex items-center gap-2">
                         <span>{t(`items.${item.id}.title`)}</span>
                         {isCompleted && (
                           <span
@@ -202,10 +193,10 @@ export function LandingRoadmap() {
                       <div className="mt-4 pt-4 border-t border-neutral-700/70 dark:border-white/10 space-y-2.5">
                         <span
                           className={cn(
-                            "inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border",
+                            "inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md",
                             isCompleted
-                              ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
-                              : "text-amber-800 dark:text-gold bg-amber-500/10 dark:bg-gold/10 border-amber-500/30 dark:border-gold/30",
+                              ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400"
+                              : "text-amber-800 dark:text-gold bg-amber-500/12 dark:bg-gold/12",
                           )}
                         >
                           <PlusCircle className="w-3 h-3" />
@@ -261,7 +252,7 @@ export function LandingRoadmap() {
                         : "text-neutral-400",
                     )}
                   >
-                    {isCompleted ? item.release : "Gamification System"}
+                    {isCompleted ? item.release : t("cardFooterPlannedTag")}
                   </span>
                 </div>
               </div>

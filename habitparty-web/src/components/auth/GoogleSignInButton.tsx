@@ -2,7 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { type ButtonHTMLAttributes, useState } from "react";
+import { type ButtonHTMLAttributes, useEffect, useState } from "react";
 import { GoogleLogoIcon } from "@/components/ui/GoogleLogoIcon";
 import { cn } from "@/utils";
 import { BROWSER_TIMEZONE_COOKIE, detectBrowserTimeZone } from "@/utils/date";
@@ -25,6 +25,28 @@ export function GoogleSignInButton({
   const [internalPending, setInternalPending] = useState(false);
   const isPending = externalPending ?? internalPending;
   const resolvedLabel = label ?? t("googleButton");
+
+  useEffect(() => {
+    const resetPending = () => {
+      if (document.visibilityState === "visible") {
+        setInternalPending(false);
+      }
+    };
+
+    const handlePageShow = () => {
+      setInternalPending(false);
+    };
+
+    window.addEventListener("pageshow", handlePageShow);
+    window.addEventListener("focus", resetPending);
+    document.addEventListener("visibilitychange", resetPending);
+
+    return () => {
+      window.removeEventListener("pageshow", handlePageShow);
+      window.removeEventListener("focus", resetPending);
+      document.removeEventListener("visibilitychange", resetPending);
+    };
+  }, []);
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (onClick) {

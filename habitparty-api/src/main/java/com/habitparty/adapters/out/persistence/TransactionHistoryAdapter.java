@@ -253,4 +253,45 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
     }
     return java.util.Optional.ofNullable(repository.findEarliestCreatedAtByUserId(userId));
   }
+
+  @Override
+  public long countByUserIdAndReferenceIdAndTypeInRange(
+      UUID userId,
+      UUID referenceId,
+      TransactionType transactionType,
+      LocalDateTime startInclusive,
+      LocalDateTime endExclusive) {
+    if (userId == null || referenceId == null || transactionType == null
+        || startInclusive == null || endExclusive == null) {
+      return 0L;
+    }
+    return repository.countHabitScoreTransactionsInRange(
+        userId,
+        referenceId,
+        transactionType,
+        startInclusive,
+        endExclusive);
+  }
+
+  @Override
+  public long countByUserIdAndReferenceIdAndTypeOnDate(
+      UUID userId,
+      UUID referenceId,
+      TransactionType transactionType,
+      LocalDate targetDate,
+      ZoneId userZone) {
+    if (userId == null || referenceId == null || transactionType == null) {
+      return 0L;
+    }
+    ZoneId effectiveZone = resolveZone(userZone);
+    LocalDate effectiveDate = targetDate != null ? targetDate : LocalDate.now(clock.withZone(effectiveZone));
+    LocalDateTime startInclusive = toStorageDateTime(effectiveDate, LocalTime.MIN, effectiveZone);
+    LocalDateTime endExclusive = toStorageDateTime(effectiveDate.plusDays(1), LocalTime.MIN, effectiveZone);
+    return repository.countHabitScoreTransactionsInRange(
+        userId,
+        referenceId,
+        transactionType,
+        startInclusive,
+        endExclusive);
+  }
 }

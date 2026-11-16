@@ -1,9 +1,9 @@
 "use client";
 
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { reorderRewards } from "@/actions/rewardActions";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { ContextMenu } from "@/components/ui/ContextMenu";
@@ -51,6 +51,8 @@ export function RewardsContainer({
   const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
 
+  const [onlyAffordable, setOnlyAffordable] = useState(false);
+
   const {
     viewMode,
     setViewMode,
@@ -60,6 +62,11 @@ export function RewardsContainer({
     handleClearFilters,
   } = useItemCatalogFilters("rewards");
 
+  const handleClearAllFilters = useCallback(() => {
+    handleClearFilters();
+    setOnlyAffordable(false);
+  }, [handleClearFilters]);
+
   const {
     items: rewards,
     setItems: setRewards,
@@ -68,7 +75,7 @@ export function RewardsContainer({
   } = useReorderableList<Reward>({
     initialItems: initialRewards,
     onReorderServerAction: reorderRewards,
-    isFiltering,
+    isFiltering: isFiltering || onlyAffordable,
   });
 
   const {
@@ -148,6 +155,8 @@ export function RewardsContainer({
     [isGamified, rewards],
   );
 
+  const resolvedCoins = currentCoins ?? 0;
+
   const filteredRewards = useMemo(() => {
     let result = visibleRewardsForMode.filter((r) => {
       if (
@@ -163,6 +172,9 @@ export function RewardsContainer({
         const normalizedPkg = r.packageLevel || "Nenhum";
         if (normalizedPkg !== filters.packageLevel) return false;
       }
+      if (onlyAffordable && r.price > resolvedCoins) {
+        return false;
+      }
       return true;
     });
 
@@ -175,18 +187,41 @@ export function RewardsContainer({
     }
 
     return result;
-  }, [visibleRewardsForMode, filters]);
+  }, [visibleRewardsForMode, filters, onlyAffordable, resolvedCoins]);
 
-  const resolvedCoins = currentCoins ?? 0;
-
-  const { stats: welcomeStats } = useMemo(() => {
-    return calculateRewardWelcomeStats(
+  const welcomeStats = useMemo(() => {
+    const { stats } = calculateRewardWelcomeStats(
       visibleRewardsForMode,
       resolvedCoins,
       locale,
       isGamified,
     );
-  }, [visibleRewardsForMode, resolvedCoins, locale, isGamified]);
+    return stats.map((stat, index) => {
+      if (index === 1) {
+        return {
+          ...stat,
+          active: onlyAffordable,
+          onClick: () => setOnlyAffordable((prev) => !prev),
+        };
+      }
+      if (index === 2) {
+        return {
+          ...stat,
+          onClick:
+            isFiltering || onlyAffordable ? handleClearAllFilters : undefined,
+        };
+      }
+      return stat;
+    });
+  }, [
+    visibleRewardsForMode,
+    resolvedCoins,
+    locale,
+    isGamified,
+    onlyAffordable,
+    isFiltering,
+    handleClearAllFilters,
+  ]);
 
   return (
     <>
@@ -233,7 +268,19 @@ export function RewardsContainer({
             },
           ]}
           onDropdownChange={(id, value) => handleFilterChange({ [id]: value })}
-          onClearDropdowns={handleClearFilters}
+          onClearDropdowns={handleClearAllFilters}
+          middleActions={
+            onlyAffordable ? (
+              <button
+                type="button"
+                onClick={() => setOnlyAffordable(false)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/45 bg-emerald-500/15 px-2.5 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/25 transition-colors cursor-pointer"
+              >
+                <span>{t("filters.affordableActive")}</span>
+                <X size={13} aria-hidden="true" />
+              </button>
+            ) : undefined
+          }
           rightActions={
             <PrimaryActionButton
               label={isGamified ? t("addProduct") : t("addProductProductivity")}
@@ -256,7 +303,7 @@ export function RewardsContainer({
           onEdit={handleEditReward}
           onContextMenu={handleContextMenu}
           onAddProduct={handleAddProduct}
-          onClearFilters={handleClearFilters}
+          onClearFilters={handleClearAllFilters}
         />
       </section>
 

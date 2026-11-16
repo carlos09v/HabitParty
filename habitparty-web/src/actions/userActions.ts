@@ -160,11 +160,15 @@ export async function updateUserPasswordAction(
  */
 export async function resetUserAccountAction(
   scope: AccountResetScope,
+  deleteHistory = false,
 ): Promise<ActionState<UserResponseDTO>> {
   const t = await getTranslations("settings.userActions");
   try {
     const { data, error } = await serverApi.POST("/users/me/reset", {
-      body: { scope },
+      body: {
+        scope,
+        deleteHistory: scope === "COMPLETE" ? true : deleteHistory,
+      },
     });
 
     if (error || !data) {

@@ -12,6 +12,7 @@ import {
   Timer,
 } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { useFocusTaskSync } from "@/hooks/useFocusTaskSync";
@@ -34,6 +35,9 @@ export function TaskDetailsFocusSection({
   onOpenFocusHistory,
 }: TaskDetailsFocusSectionProps) {
   const t = useTranslations("tasks.detailsPopover.focusSection");
+  const pathname = usePathname();
+  const focusHref =
+    pathname === "/dashboard" ? "/focus?from=dashboard" : "/focus?from=tasks";
 
   const isTargetTask = useFocusTimerStore((s) => s.target?.taskId === task.id);
   const isTimerActive = useFocusTimerStore((s) => s.isActive);
@@ -176,7 +180,7 @@ export function TaskDetailsFocusSection({
                 )}
               </button>
               <Link
-                href="/focus"
+                href={focusHref}
                 title={t("openStageTooltip")}
                 className="w-7 h-7 rounded-lg border border-neutral-700 dark:border-primary/30 bg-card hover:border-gold/40 text-neutral-300 hover:text-gold flex items-center justify-center transition-colors"
               >

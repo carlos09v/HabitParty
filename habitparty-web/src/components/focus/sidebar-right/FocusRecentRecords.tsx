@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  ChevronDown,
   History,
+  Loader2,
   MessageSquare,
   Pencil,
   Plus,
@@ -154,6 +156,10 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
 
 interface FocusRecentRecordsProps {
   records: FocusRecord[];
+  totalRecordsCount?: number;
+  hasMoreRecords?: boolean;
+  isLoadingMore?: boolean;
+  onShowMore?: () => void;
   onAddRecord?: () => void;
   onOptionsClick?: () => void;
   /** Exclui o registro; `deleteHistory` remove também o registro correspondente no Histórico. */
@@ -166,6 +172,10 @@ interface FocusRecentRecordsProps {
 
 export function FocusRecentRecords({
   records,
+  totalRecordsCount,
+  hasMoreRecords = false,
+  isLoadingMore = false,
+  onShowMore,
   onAddRecord,
   onOptionsClick,
   onDeleteRecord,
@@ -253,7 +263,7 @@ export function FocusRecentRecords({
 
         <div className="flex items-center gap-1.5">
           <span className="text-tiny text-neutral-400 font-medium mr-1">
-            {t("sessionsCount", { count: records.length })}
+            {t("sessionsCount", { count: totalRecordsCount ?? records.length })}
           </span>
 
           {/* Botão + (Novo Registro) */}
@@ -297,16 +307,40 @@ export function FocusRecentRecords({
             )}
           </div>
         ) : (
-          records.map((rec) => (
-            <FocusRecentRecordItem
-              key={rec.id}
-              record={rec}
-              isCompact={isCompact}
-              onRowClick={handleRowClick}
-              onContextMenu={handleContextMenu}
-              onRequestDelete={onDeleteRecord ? handleRequestDelete : undefined}
-            />
-          ))
+          <>
+            {records.map((rec) => (
+              <FocusRecentRecordItem
+                key={rec.id}
+                record={rec}
+                isCompact={isCompact}
+                onRowClick={handleRowClick}
+                onContextMenu={handleContextMenu}
+                onRequestDelete={
+                  onDeleteRecord ? handleRequestDelete : undefined
+                }
+              />
+            ))}
+            {hasMoreRecords && onShowMore && (
+              <button
+                type="button"
+                onClick={onShowMore}
+                disabled={isLoadingMore}
+                className="mt-1 flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl border border-neutral-700 dark:border-primary/30 bg-card/80 dark:bg-surface/40 hover:bg-surface-hover dark:hover:bg-white/10 text-xs font-semibold text-neutral-300 hover:text-gold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isLoadingMore ? (
+                  <>
+                    <Loader2 size={13} className="animate-spin text-gold" />
+                    <span>{t("loadingMore")}</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown size={14} />
+                    <span>{t("showMore")}</span>
+                  </>
+                )}
+              </button>
+            )}
+          </>
         )}
       </div>
 

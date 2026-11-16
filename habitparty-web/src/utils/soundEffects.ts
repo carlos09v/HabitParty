@@ -12,7 +12,10 @@ import {
 class SoundEffectsManager {
   private ctx: AudioContext | null = null;
   private unlockListenersAttached = false;
-  private pendingUnlockCallbacks: Array<(ctx: AudioContext) => void> = [];
+  private pendingUnlockCallbacks: Array<{
+    fn: (ctx: AudioContext) => void;
+    expiresAt: number;
+  }> = [];
 
   private ensureUnlockListeners() {
     if (typeof window === "undefined" || this.unlockListenersAttached) return;
@@ -51,10 +54,12 @@ class SoundEffectsManager {
   }
 
   private flushPendingCallbacks(ctx: AudioContext) {
+    const now = Date.now();
     const callbacks = this.pendingUnlockCallbacks.splice(0);
-    for (const cb of callbacks) {
+    for (const item of callbacks) {
+      if (item.expiresAt < now) continue;
       try {
-        cb(ctx);
+        item.fn(ctx);
       } catch (_e) {}
     }
   }
@@ -84,7 +89,22 @@ class SoundEffectsManager {
    * Se estiver suspenso por política de autoplay (ex: recarregamento da página),
    * tenta resumir imediatamente e, caso exija gesto do usuário, enfileira para tocar no 1º gesto.
    */
-  private runWithContext(fn: (ctx: AudioContext) => void) {
+  private enqueuePendingCallback(fn: (ctx: AudioContext) => void) {
+    // Mantém apenas os últimos 2 efeitos recentes (TTL curto) para não tocar sons antigos após troca de aba
+    if (this.pendingUnlockCallbacks.length >= 2) {
+      this.pendingUnlockCallbacks.shift();
+    }
+    this.pendingUnlockCallbacks.push({
+      fn,
+      expiresAt: Date.now() + 1500,
+    });
+  }
+
+  private runWithContext(
+    fn: (ctx: AudioContext) => void,
+    options: { queueIfSuspended?: boolean } = {},
+  ) {
+    const { queueIfSuspended = true } = options;
     const ctx = this.getContext();
     if (!ctx) return;
     if (ctx.state === "running") {
@@ -94,27 +114,28 @@ class SoundEffectsManager {
       return;
     }
 
-    this.ensureUnlockListeners();
+    if (queueIfSuspended) {
+      this.ensureUnlockListeners();
+    }
+    const requestedAt = Date.now();
     ctx
       .resume()
       .then(() => {
         if (ctx.state === "running") {
+          if (!queueIfSuspended && Date.now() - requestedAt > 1500) {
+            return;
+          }
           try {
             fn(ctx);
           } catch (_e) {}
-        } else {
-          // Mantém apenas os últimos 2 efeitos pendentes para não acumular sons antigos
-          if (this.pendingUnlockCallbacks.length >= 2) {
-            this.pendingUnlockCallbacks.shift();
-          }
-          this.pendingUnlockCallbacks.push(fn);
+        } else if (queueIfSuspended) {
+          this.enqueuePendingCallback(fn);
         }
       })
       .catch(() => {
-        if (this.pendingUnlockCallbacks.length >= 2) {
-          this.pendingUnlockCallbacks.shift();
+        if (queueIfSuspended) {
+          this.enqueuePendingCallback(fn);
         }
-        this.pendingUnlockCallbacks.push(fn);
       });
   }
 
@@ -267,33 +288,43 @@ class SoundEffectsManager {
    */
   playNotificationSound() {
     if (!this.getPreferences().uiSoundsEnabled) return;
+    if (
+      typeof document !== "undefined" &&
+      document.visibilityState !== "visible"
+    ) {
+      return;
+    }
 
-    this.runWithContext((ctx) => {
-      const now = ctx.currentTime;
+    // Som automático de alerta não deve ficar enfileirado esperando o próximo clique na tela
+    this.runWithContext(
+      (ctx) => {
+        const now = ctx.currentTime;
 
-      const bells = [
-        { freq: 783.99, delay: 0, dur: 0.28, peak: 0.18 }, // G5
-        { freq: 1174.66, delay: 0.11, dur: 0.45, peak: 0.22 }, // D6
-      ];
+        const bells = [
+          { freq: 783.99, delay: 0, dur: 0.28, peak: 0.18 }, // G5
+          { freq: 1174.66, delay: 0.11, dur: 0.45, peak: 0.22 }, // D6
+        ];
 
-      bells.forEach((b) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const start = now + b.delay;
+        bells.forEach((b) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const start = now + b.delay;
 
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(b.freq, start);
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(b.freq, start);
 
-        gain.gain.setValueAtTime(b.peak, start);
-        gain.gain.exponentialRampToValueAtTime(0.001, start + b.dur);
+          gain.gain.setValueAtTime(b.peak, start);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + b.dur);
 
-        osc.connect(gain);
-        gain.connect(ctx.destination);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
 
-        osc.start(start);
-        osc.stop(start + b.dur);
-      });
-    });
+          osc.start(start);
+          osc.stop(start + b.dur);
+        });
+      },
+      { queueIfSuspended: false },
+    );
   }
 
   /**

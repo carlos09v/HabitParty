@@ -51,6 +51,7 @@ export interface SettingsOptionItem<T extends string | boolean> {
 
 export type SettingsTabId =
   | "profile"
+  | "preferences"
   | "appearance"
   | "audio"
   | "privacy"

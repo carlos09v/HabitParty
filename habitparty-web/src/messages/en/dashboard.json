@@ -82,6 +82,14 @@
     "optionsAria": "Options for list {name}",
     "addCard": "Add",
     "addCardSubtitle": "New list",
+    "addFirstCard": "Create first list",
+    "addFirstCardSubtitle": "Start here",
+    "defaultWorkspaceName": "another workspace",
+    "readOnlyMoveSourceToast": "This workspace is in read-only mode (Locked). Reactivate VIP to move lists from it!",
+    "readOnlyMoveTargetToast": "The \"{workspace}\" workspace is in read-only mode (Locked). Reactivate VIP to move lists into it!",
+    "moveColumnSuccess": "Column \"{title}\" moved to \"{workspace}\"!",
+    "moveColumnError": "Error moving column to the target workspace.",
+    "moveColumnUnexpectedError": "Unexpected error while moving column.",
     "deleteColumnSuccess": "Column \"{title}\" deleted successfully!",
     "deleteColumnError": "Failed to delete column.",
     "deleteColumnUnexpectedError": "Unexpected error while deleting column.",
@@ -169,6 +177,16 @@
     "emptyDateTitle": "All clear on this date! 🎉",
     "emptyDateDesc": "No tasks scheduled for {date}.",
     "empty": {
+      "noColumns": {
+        "title": "First, create your first list!",
+        "description": "This workspace doesn't have any lists yet. Create your first one (e.g. To Do, Routines, Studies) to unlock task creation.",
+        "action": "Create first list"
+      },
+      "noColumnsReadOnly": {
+        "title": "Empty workspace in read-only mode",
+        "description": "This workspace has no lists yet and is locked from new creations on the Free plan.",
+        "action": "Reactivate VIP"
+      },
       "today": {
         "title": "All clear for today! 🎉",
         "description": "You have no pending tasks for today."
@@ -350,6 +368,7 @@
       "markedPending": "Task marked as pending.",
       "habitScoreError": "Failed to record habit score.",
       "habitRecorded": "Habit logged!",
+      "habitRewardCapReached": "Habit logged! Daily reward limit ({limit}x/day) reached for this habit — your progress still counts.",
       "decayHabit": "{stage} (-{percent}% formed habit)",
       "positiveHabitSuccess": "Positive habit logged successfully!",
       "habitPenalty": "Habit penalty logged!",

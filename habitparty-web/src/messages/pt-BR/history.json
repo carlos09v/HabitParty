@@ -137,7 +137,8 @@
     "linkedTagsLabel": "Tags vinculadas:",
     "deleteButton": "Excluir",
     "closeButton": "Fechar",
-    "columnLabel": "Lista:"
+    "columnLabel": "Lista:",
+    "descriptionLabel": "Descrição da recompensa"
   },
   "utils": {
     "unknownDate": "Data desconhecida",

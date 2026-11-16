@@ -107,6 +107,8 @@ public class SendFriendRequestUseCase {
         validateFriendLimits(requester.getId(), target.getId());
         existing.accept(requester.getId(), now);
         Friendship saved = friendshipRepository.save(existing);
+        notificationRepository.markSeenByReferenceIdAndType(
+            saved.getId(), SocialNotificationType.FRIEND_REQUEST_RECEIVED);
         notificationRepository.save(SocialNotification.create(
             target.getId(),
             requester.getId(),

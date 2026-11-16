@@ -20,6 +20,12 @@ export function useFriendshipMutations(
   const tFriends = useTranslations("showcase.friends");
   const [isMutating, startMutateTransition] = useTransition();
 
+  const notifySidebarNotificationsChanged = () => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("habitparty:notifications-changed"));
+    }
+  };
+
   const sendFriendRequest = (
     payload: { username?: string; friendCode?: string },
     targetUsername: string,
@@ -35,6 +41,9 @@ export function useFriendshipMutations(
           ? tFriends("autoAcceptedToast", { username: targetUsername })
           : tFriends("requestSentToast", { username: targetUsername }),
       );
+      if (res.data.autoAccepted) {
+        notifySidebarNotificationsChanged();
+      }
       await options.onMutated?.();
     });
   };
@@ -51,6 +60,7 @@ export function useFriendshipMutations(
           ? tFriends("acceptSuccessToast")
           : tFriends("declineSuccessToast"),
       );
+      notifySidebarNotificationsChanged();
       await options.onMutated?.();
     });
   };
@@ -65,6 +75,7 @@ export function useFriendshipMutations(
       toast.success(
         wasBlocked ? tFriends("unblockedToast") : tFriends("removedToast"),
       );
+      notifySidebarNotificationsChanged();
       await options.onMutated?.();
     });
   };
@@ -77,6 +88,7 @@ export function useFriendshipMutations(
         return;
       }
       toast.success(tFriends("blockedToast"));
+      notifySidebarNotificationsChanged();
       await options.onMutated?.();
     });
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarCheck } from "lucide-react";
+import { CalendarCheck, FolderPlus, Lock, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { TaskRow } from "@/components/tasks/shared/TaskRow";
@@ -39,6 +39,9 @@ export function TaskTable({
   isCompact = false,
   deletingTaskIds,
   onStartFocus,
+  emptyVariant = "default",
+  emptyActionLabel,
+  onEmptyAction,
 }: TaskTableProps) {
   const t = useTranslations("dashboard.taskTable");
   const locale = useLocale() as AppLocale;
@@ -76,23 +79,42 @@ export function TaskTable({
     ? DASHBOARD_EMPTY_MESSAGES[activeFilter].icon
     : CalendarCheck;
 
-  const emptyMeta = selectedDate
+  const isNoColumns = emptyVariant === "no_columns";
+  const isNoColumnsReadOnly = emptyVariant === "no_columns_readonly";
+
+  const emptyMeta = isNoColumns
     ? {
-        title: t("emptyDateTitle"),
-        description: t("emptyDateDesc", { date: formattedDate }),
-        icon: CalendarCheck,
+        title: t("empty.noColumns.title"),
+        description: t("empty.noColumns.description"),
+        actionLabel: emptyActionLabel || t("empty.noColumns.action"),
+        icon: FolderPlus,
       }
-    : isDashboardStandardFilterId(activeFilter)
+    : isNoColumnsReadOnly
       ? {
-          title: t(`empty.${activeFilter}.title`),
-          description: t(`empty.${activeFilter}.description`),
-          icon: EmptyIcon,
+          title: t("empty.noColumnsReadOnly.title"),
+          description: t("empty.noColumnsReadOnly.description"),
+          actionLabel: emptyActionLabel || t("empty.noColumnsReadOnly.action"),
+          icon: Lock,
         }
-      : {
-          title: t("emptyFallbackTitle"),
-          description: t("emptyFallbackDesc"),
-          icon: CalendarCheck,
-        };
+      : selectedDate
+        ? {
+            title: t("emptyDateTitle"),
+            description: t("emptyDateDesc", { date: formattedDate }),
+            icon: CalendarCheck,
+          }
+        : isDashboardStandardFilterId(activeFilter)
+          ? {
+              title: t(`empty.${activeFilter}.title`),
+              description: t(`empty.${activeFilter}.description`),
+              icon: EmptyIcon,
+            }
+          : {
+              title: t("emptyFallbackTitle"),
+              description: t("emptyFallbackDesc"),
+              icon: CalendarCheck,
+            };
+
+  const EmptyStateIcon = emptyMeta.icon;
 
   const panelId = selectedDate ? "panel-date" : `panel-${activeFilter}`;
   const tabId = selectedDate ? "tab-date" : `tab-${activeFilter}`;
@@ -146,7 +168,7 @@ export function TaskTable({
           )}
         >
           <div className="w-12 h-12 rounded-full bg-primary/10 dark:bg-primary/25 border border-primary/25 dark:border-primary/40 flex items-center justify-center text-primary dark:text-gold shadow-xs">
-            <EmptyIcon size={24} aria-hidden="true" />
+            <EmptyStateIcon size={24} aria-hidden="true" />
           </div>
           <div className="flex flex-col gap-1">
             <h4 className="text-body-m font-bold text-neutral-100">
@@ -156,6 +178,16 @@ export function TaskTable({
               {emptyMeta.description}
             </p>
           </div>
+          {emptyMeta.actionLabel && onEmptyAction && (
+            <button
+              type="button"
+              onClick={onEmptyAction}
+              className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-white font-semibold px-4 py-2 text-xs shadow-sm transition-colors cursor-pointer"
+            >
+              <Plus size={15} aria-hidden="true" />
+              <span>{emptyMeta.actionLabel}</span>
+            </button>
+          )}
         </div>
       ) : (
         <ul className="flex flex-col gap-1.5 w-full p-0 m-0 list-none">

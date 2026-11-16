@@ -448,7 +448,14 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
             </span>
           )}
           {hasValidCategory && (
-            <span className="font-medium rounded bg-surface/80 border border-neutral-700/80 dark:bg-white/8 dark:border-white/10 text-neutral-300 text-tiny px-1.5 py-0.5 leading-none">
+            <span
+              className={cn(
+                "font-medium rounded border text-tiny px-1.5 py-0.5 leading-none",
+                categoryMessageKey === "DEBT"
+                  ? "bg-rose-500/15 border-rose-500/35 text-rose-700 dark:text-rose-300"
+                  : "bg-surface/80 border-neutral-700/80 dark:bg-white/8 dark:border-white/10 text-neutral-300",
+              )}
+            >
               {t(`categories.${categoryMessageKey}`)}
             </span>
           )}

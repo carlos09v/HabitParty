@@ -53,6 +53,8 @@ public interface WorkspaceApi {
     @GetMapping("/{workspaceId}/kanban")
     ResponseEntity<WorkspaceResponseDTO> getFullKanbanBoard(
         @PathVariable UUID workspaceId,
+        @RequestParam(required = false, defaultValue = "false") boolean excludeArchivedCompleted,
+        @RequestParam(required = false, defaultValue = "false") boolean includeHidden,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 

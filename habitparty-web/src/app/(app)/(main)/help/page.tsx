@@ -2,12 +2,14 @@ import {
   Bug,
   GitBranch,
   HelpCircle,
+  History,
   Mail,
   MessageSquareHeart,
 } from "lucide-react";
 import type { Metadata } from "next";
 import { cacheLife, cacheTag } from "next/cache";
 import { getLocale, getTranslations } from "next-intl/server";
+import { HelpChangelogSection } from "@/components/help/HelpChangelogSection";
 import { HelpFaqSection } from "@/components/help/HelpFaqSection";
 import { HelpProductivityCycle } from "@/components/help/HelpProductivityCycle";
 import { PageWrapper } from "@/components/layout/PageWrapper";
@@ -39,7 +41,7 @@ async function HelpStaticContent({ locale }: { locale: AppLocale }) {
     <PageWrapper>
       <div className="flex flex-col gap-8 w-full max-w-6xl mx-auto pb-16">
         {/* CABEÇALHO DA PÁGINA */}
-        <header className="flex items-end justify-between border-b border-primary/20 pb-4">
+        <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-primary/20 pb-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 mb-1">
               <HelpCircle className="text-gold shrink-0" size={28} />
@@ -51,6 +53,16 @@ async function HelpStaticContent({ locale }: { locale: AppLocale }) {
               {t("subtitle")}
             </p>
           </div>
+          <a
+            href="#novidades"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-card hover:bg-surface dark:bg-surface/60 dark:hover:bg-surface border border-neutral-700 dark:border-primary/30 text-xs font-bold text-neutral-100 hover:text-amber-700 dark:hover:text-gold transition-colors shrink-0 self-start sm:self-auto whitespace-nowrap"
+          >
+            <History
+              size={15}
+              className="text-emerald-600 dark:text-emerald-400 shrink-0"
+            />
+            <span>{t("changelogJump")}</span>
+          </a>
         </header>
 
         {/* CICLO DE PRODUTIVIDADE (Server Component) */}
@@ -58,6 +70,9 @@ async function HelpStaticContent({ locale }: { locale: AppLocale }) {
 
         {/* FAQ INTERATIVO + TABELAS DE ECONOMIA INTEGRADAS À BUSCA */}
         <HelpFaqSection faqs={faqs} tables={tables} />
+
+        {/* CHANGELOG & ROADMAP DO ECOSSISTEMA */}
+        <HelpChangelogSection />
 
         {/* CARD DE SUPORTE, CONTATO E REPORT DE BUGS */}
         <section className="rounded-2xl border border-neutral-700 dark:border-primary/30 bg-card dark:bg-surface/60 shadow-xs dark:shadow-none p-4 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 sm:gap-6">

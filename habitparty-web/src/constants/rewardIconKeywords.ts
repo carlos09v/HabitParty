@@ -195,6 +195,13 @@ export const REWARD_ICON_KEYWORD_MAP: Record<string, string> = {
   chave: "key",
   key: "key",
   cofre: "key",
+  divida: "ticket",
+  dividas: "ticket",
+  debt: "ticket",
+  debts: "ticket",
+  excesso: "ticket",
+  urgencia: "ticket",
+  urgent: "ticket",
   caveira: "skull",
   skull: "skull",
 };

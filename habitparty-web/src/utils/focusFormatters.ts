@@ -35,31 +35,79 @@ export function formatFocusTime(seconds: number): string {
 }
 
 /**
+ * Indica se um ciclo Pomodoro de trabalho atingiu 00:00 e está contando tempo excedente.
+ */
+export function isFocusOvertime(timerState: {
+  mode: "POMO" | "STOPWATCH";
+  phase?: "WORK" | "SHORT_BREAK" | "LONG_BREAK";
+  secondsRemaining: number;
+  elapsedSeconds: number;
+  totalDurationSeconds?: number;
+  target?: { type?: "activity" | "inventory" | "task" } | null;
+}): boolean {
+  const isBreak =
+    timerState.phase === "SHORT_BREAK" || timerState.phase === "LONG_BREAK";
+  return (
+    !isBreak &&
+    timerState.mode === "POMO" &&
+    timerState.target?.type !== "inventory" &&
+    timerState.secondsRemaining === 0 &&
+    timerState.elapsedSeconds >= (timerState.totalDurationSeconds ?? 1)
+  );
+}
+
+/**
+ * Retorna os segundos excedentes após o término do ciclo Pomodoro de trabalho.
+ */
+export function getFocusOvertimeSeconds(timerState: {
+  elapsedSeconds: number;
+  totalDurationSeconds?: number;
+}): number {
+  return Math.max(
+    0,
+    timerState.elapsedSeconds - (timerState.totalDurationSeconds ?? 0),
+  );
+}
+
+/**
  * Retorna os segundos a serem exibidos no mostrador do timer:
  * Contagem regressiva para Pomodoro ou Item da Mochila com saldo,
+ * contagem excedente em overtime de Pomodoro,
  * ou contagem progressiva para Cronômetro livre.
  */
 export function getFocusDisplaySeconds(timerState: {
   mode: "POMO" | "STOPWATCH";
+  phase?: "WORK" | "SHORT_BREAK" | "LONG_BREAK";
   secondsRemaining: number;
   elapsedSeconds: number;
+  totalDurationSeconds?: number;
   target?: { type?: "activity" | "inventory" | "task" } | null;
 }): number {
+  if (isFocusOvertime(timerState)) {
+    return getFocusOvertimeSeconds(timerState);
+  }
+  const isBreak =
+    timerState.phase === "SHORT_BREAK" || timerState.phase === "LONG_BREAK";
   const isCountdown =
-    timerState.mode === "POMO" || timerState.target?.type === "inventory";
+    timerState.mode === "POMO" ||
+    timerState.target?.type === "inventory" ||
+    isBreak;
   return isCountdown ? timerState.secondsRemaining : timerState.elapsedSeconds;
 }
 
 /**
- * Formata diretamente o tempo de exibição atual do timer para string legível (MM:SS ou HH:MM:SS).
+ * Formata diretamente o tempo de exibição atual do timer para string legível (MM:SS, HH:MM:SS ou +MM:SS em excedente).
  */
 export function formatFocusDisplayTime(timerState: {
   mode: "POMO" | "STOPWATCH";
+  phase?: "WORK" | "SHORT_BREAK" | "LONG_BREAK";
   secondsRemaining: number;
   elapsedSeconds: number;
+  totalDurationSeconds?: number;
   target?: { type?: "activity" | "inventory" | "task" } | null;
 }): string {
-  return formatFocusTime(getFocusDisplaySeconds(timerState));
+  const formatted = formatFocusTime(getFocusDisplaySeconds(timerState));
+  return isFocusOvertime(timerState) ? `+${formatted}` : formatted;
 }
 
 /**

@@ -27,6 +27,47 @@ import {
 import { localizeLevelTitle } from "@/utils/levels";
 import { resolveAchievementCopy } from "@/utils/showcaseUtils";
 
+const rtfCache = new Map<string, Intl.RelativeTimeFormat>();
+
+function getRelativeTimeFormatter(localeTag: string): Intl.RelativeTimeFormat {
+  let formatter = rtfCache.get(localeTag);
+  if (!formatter) {
+    formatter = new Intl.RelativeTimeFormat(localeTag, {
+      numeric: "auto",
+      style: "short",
+    });
+    rtfCache.set(localeTag, formatter);
+  }
+  return formatter;
+}
+
+function formatRelativeSocialTimestamp(
+  createdAt: string | undefined,
+  locale: string,
+  fallback: string,
+): string {
+  const parsed = parseServerDate(createdAt);
+  if (!parsed) return fallback;
+
+  const diffSeconds = Math.round((parsed.getTime() - Date.now()) / 1000);
+  const absSeconds = Math.abs(diffSeconds);
+  const rtf = getRelativeTimeFormatter(locale === "en" ? "en-US" : "pt-BR");
+
+  if (absSeconds < 60) {
+    return rtf.format(0, "second");
+  }
+  if (absSeconds < 3600) {
+    return rtf.format(Math.round(diffSeconds / 60), "minute");
+  }
+  if (absSeconds < 86400) {
+    return rtf.format(Math.round(diffSeconds / 3600), "hour");
+  }
+  if (absSeconds < 2592000) {
+    return rtf.format(Math.round(diffSeconds / 86400), "day");
+  }
+  return rtf.format(Math.round(diffSeconds / 2592000), "month");
+}
+
 function isTimestampOnLocalDate(
   rawIso: string | undefined,
   targetDateStr: string,
@@ -291,8 +332,9 @@ export async function getSidebarNotificationsAction(
 
     const isGamified = user?.experienceMode !== "PRODUCTIVITY";
 
-    // 5. Notificações Sociais (pedidos, aceites, marcos de amigos)
+    // 5. Notificações Sociais não lidas (pedidos, aceites, marcos de amigos)
     for (const item of socialFeed.notifications) {
+      if (item.seen) continue;
       let parsedPayload: Record<string, string> = {};
       if (item.payload) {
         try {
@@ -310,6 +352,11 @@ export async function getSidebarNotificationsAction(
       const profileHref = actorHandle
         ? `/profile/${encodeURIComponent(actorHandle)}`
         : "/profile?tab=friends";
+      const relativeTimestamp = formatRelativeSocialTimestamp(
+        item.createdAt,
+        locale,
+        t("socialTimestamp"),
+      );
 
       if (item.type === "FRIEND_REQUEST_RECEIVED") {
         notifications.push({
@@ -317,7 +364,7 @@ export async function getSidebarNotificationsAction(
           type: "social_request",
           title: t("socialRequestTitle", { name: actorLabel }),
           description: t("socialRequestDesc"),
-          timestamp: t("socialTimestamp"),
+          timestamp: relativeTimestamp,
           severity: "gold",
           href: "/profile?tab=friends",
           socialNotificationId: item.id,
@@ -329,7 +376,7 @@ export async function getSidebarNotificationsAction(
           type: "social_accepted",
           title: t("socialAcceptedTitle", { name: actorLabel }),
           description: t("socialAcceptedDesc"),
-          timestamp: t("socialTimestamp"),
+          timestamp: relativeTimestamp,
           severity: "info",
           href: profileHref,
           socialNotificationId: item.id,
@@ -358,7 +405,7 @@ export async function getSidebarNotificationsAction(
             achievement: localizedAchievement,
           }),
           description: t("socialAchievementDesc"),
-          timestamp: t("socialTimestamp"),
+          timestamp: relativeTimestamp,
           severity: "gold",
           href: profileHref,
           socialNotificationId: item.id,
@@ -377,7 +424,7 @@ export async function getSidebarNotificationsAction(
             level: localizedLevel,
           }),
           description: t("socialLevelDesc"),
-          timestamp: t("socialTimestamp"),
+          timestamp: relativeTimestamp,
           severity: "gold",
           href: profileHref,
           socialNotificationId: item.id,

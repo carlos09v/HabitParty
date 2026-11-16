@@ -224,6 +224,8 @@ export function calculateTasksWelcomeStats(
         if (t.completed) completedCount++;
         if ((t.type || "").toLowerCase() === "habit") habitsCount++;
       }
+      totalTasks += col.archivedTotalCount ?? 0;
+      completedCount += col.archivedCompletedCount ?? 0;
     }
   } else {
     const tasks = columnsOrTasks as Task[];
@@ -279,10 +281,21 @@ export function calculateFocusWelcomeStats(
   backpackItems: InventoryItemResponseDTO[] = [],
   locale: AppLocale = "pt-BR",
   isGamified = true,
+  todaySummary?: {
+    minutes: number;
+    sessionsCount: number;
+  },
 ): WelcomeCardStat[] {
   const isEn = locale === "en";
   const activitiesCount = activities.length;
   const backpackCount = backpackItems.length;
+  const todayMinutes = Math.max(0, Math.round(todaySummary?.minutes ?? 0));
+  const todaySessions = Math.max(0, todaySummary?.sessionsCount ?? 0);
+
+  const formattedTodayDuration =
+    todayMinutes >= 60
+      ? `${Math.floor(todayMinutes / 60)}h ${todayMinutes % 60 > 0 ? `${todayMinutes % 60}m` : ""}`.trim()
+      : `${todayMinutes} min`;
 
   return [
     {
@@ -324,17 +337,22 @@ export function calculateFocusWelcomeStats(
               : "vincule itens pelo Inventário",
     },
     {
-      label: isEn ? "Session Modes" : "Modos de Sessão",
-      value: isEn ? "Pomodoro & Free" : "Pomodoro & Livre",
+      label: isEn ? "Focus Today" : "Foco Hoje",
+      value: formattedTodayDuration,
       icon: Timer,
-      variant: "primary",
-      hint: isGamified
-        ? isEn
-          ? "earn XP and coins per minute"
-          : "ganhe XP e moedas por minuto"
-        : isEn
-          ? "log your focus time and build consistency"
-          : "registre seu tempo de concentração e consistência",
+      variant: todayMinutes > 0 ? "success" : "primary",
+      hint:
+        todaySessions > 0
+          ? isEn
+            ? `${todaySessions} ${todaySessions === 1 ? "session logged today" : "sessions logged today"}`
+            : `${todaySessions} ${todaySessions === 1 ? "sessão concluída hoje" : "sessões concluídas hoje"}`
+          : isGamified
+            ? isEn
+              ? "Pomodoro & Free • earn XP/coins"
+              : "Pomodoro & Livre • ganhe XP/moedas"
+            : isEn
+              ? "Pomodoro & Stopwatch • build focus"
+              : "Pomodoro & Cronômetro • gere ritmo",
     },
   ];
 }

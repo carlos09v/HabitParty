@@ -7,6 +7,7 @@ import {
   Check,
   Copy,
   ExternalLink,
+  FileText,
   FolderKanban,
   HelpCircle,
   Tag,
@@ -117,6 +118,7 @@ export function TransactionDetailPopover({
   const xp = transaction.xpAmount ?? 0;
   const priceSnapshot = transaction.priceSnapshot;
   const tags = transaction.tags || [];
+  const description = transaction.description?.trim();
 
   const handleCopyId = () => {
     if (!transaction.id) return;
@@ -257,6 +259,24 @@ export function TransactionDetailPopover({
               </div>
             </div>
           </div>
+
+          {/* DESCRIÇÃO (SNAPSHOT DE RECOMPENSA) */}
+          {description && (
+            <div className="flex items-start gap-2 px-3 py-2 rounded-xl bg-surface/50 border border-neutral-700/70 dark:bg-white/[0.03] dark:border-white/10">
+              <FileText
+                size={13}
+                className="text-neutral-400 shrink-0 mt-0.5"
+                aria-hidden="true"
+              />
+              <p
+                title={description}
+                className="text-xs text-neutral-300 leading-relaxed line-clamp-2 break-words"
+              >
+                <span className="sr-only">{t("descriptionLabel")}: </span>
+                {description}
+              </p>
+            </div>
+          )}
 
           {/* DETALHES CONTEXTUAIS DA TAREFA / RECOMPENSA */}
           <div className="flex flex-col gap-2 text-xs text-neutral-300">

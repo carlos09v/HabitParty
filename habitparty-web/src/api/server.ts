@@ -298,6 +298,7 @@ export type ExtendedApiPaths = paths & {
       parameters: {
         query?: {
           limit?: number;
+          unseenOnly?: boolean;
         };
       };
       responses: {

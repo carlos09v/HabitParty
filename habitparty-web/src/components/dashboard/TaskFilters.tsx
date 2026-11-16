@@ -60,8 +60,9 @@ export function TaskFilters({
     floatingStyle,
   } = useFloatingPopover<HTMLDivElement, HTMLButtonElement, HTMLDivElement>({
     align: "right",
-    estimatedHeight: hasMultipleWorkspaces ? 430 : 360,
-    estimatedWidth: 320,
+    estimatedHeight: hasMultipleWorkspaces ? 330 : 270,
+    estimatedWidth: 440,
+    maxAllowedHeight: 420,
     offset: 8,
     margin: 12,
     zIndex: 130,

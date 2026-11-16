@@ -26,6 +26,10 @@ const FALLBACK_STORE_MESSAGES: Record<
     shortBreakLabel: "short (5 min)",
     cycleCompletedToast:
       "🍅 Cycle {cycles} completed! Starting {breakLabel} break. Relax a little!",
+    overtimeStartedToast:
+      "🍅 Cycle goal reached! Counting overtime until you start your break or finish.",
+    breakStartedToast:
+      "☕ Cycle {cycles} saved! Starting {breakLabel} break. Relax a little!",
     selectTargetToStartToast:
       "Select an activity or backpack item to start focusing.",
     itemAlreadyCompletedToast:
@@ -58,8 +62,10 @@ const FALLBACK_STORE_MESSAGES: Record<
       "Pausa concluída! Pronto para o próximo ciclo de foco?",
     longBreakLabel: "longa (15 min)",
     shortBreakLabel: "curta (5 min)",
-    cycleCompletedToast:
-      "🍅 Ciclo {cycles} concluído! Iniciando pausa {breakLabel}. Relaxe um pouco!",
+    overtimeStartedToast:
+      "🍅 Meta do ciclo concluída! Contando o excedente até você iniciar a pausa ou encerrar.",
+    breakStartedToast:
+      "☕ Ciclo {cycles} salvo! Iniciando pausa {breakLabel}. Relaxe um pouco!",
     selectTargetToStartToast:
       "Selecione uma atividade, tarefa ou item da mochila para iniciar o foco.",
     itemAlreadyCompletedToast:
@@ -102,6 +108,9 @@ const FALLBACK_NOTIFICATION_MESSAGES: Record<
     cycleCompletedTitle: "HabitParty - Cycle Completed!",
     cycleCompletedBody:
       "🍅 Cycle {cycles} completed! Starting {breakLabel} break. Relax a little!",
+    overtimeStartedTitle: "HabitParty - Cycle Goal Reached!",
+    overtimeStartedBody:
+      "🍅 Focus goal completed! Counting overtime until you start your break or finish.",
   },
   "pt-BR": {
     breakEndedTitle: "HabitParty - Pausa Concluída!",
@@ -109,6 +118,9 @@ const FALLBACK_NOTIFICATION_MESSAGES: Record<
     cycleCompletedTitle: "HabitParty - Ciclo Concluído!",
     cycleCompletedBody:
       "🍅 Ciclo {cycles} concluído! Iniciando pausa {breakLabel}. Relaxe um pouco!",
+    overtimeStartedTitle: "HabitParty - Meta do Ciclo Concluída!",
+    overtimeStartedBody:
+      "🍅 Meta de foco atingida! Contando o excedente até você iniciar a pausa ou encerrar.",
   },
 };
 

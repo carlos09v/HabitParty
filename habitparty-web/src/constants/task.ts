@@ -609,3 +609,9 @@ export const MARKDOWN_FORMAT_OPTIONS: ReadonlyArray<{
     labelClass: "font-mono text-label-g",
   },
 ] as const;
+
+/** Limite diário de registros positivos por hábito que concedem XP/Ouro (espelha Habit.MAX_DAILY_REWARDED_SCORES). */
+export const MAX_DAILY_REWARDED_HABIT_SCORES = 8;
+
+/** Cooldown mínimo no cliente para evitar cliques duplos / rajadas acidentais nos botões +/- de hábitos. */
+export const HABIT_SCORE_COOLDOWN_MS = 450;

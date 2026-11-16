@@ -2,6 +2,7 @@
 
 import {
   CheckCircle2,
+  Coffee,
   FastForward,
   Minimize2,
   Moon,
@@ -28,6 +29,8 @@ interface FocusZenModeModalProps {
   isOpen: boolean;
   onClose: () => void;
   isBreak: boolean;
+  isOvertime?: boolean;
+  nextBreakMinutes?: number;
   isRunning: boolean;
   isActive: boolean;
   mode: FocusRecordType;
@@ -40,6 +43,7 @@ interface FocusZenModeModalProps {
   onToggleTimer: () => void;
   onResetTimer: () => void;
   onSkipBreak: () => void;
+  onStartBreak?: () => void;
   onComplete: () => void;
   onToggleSound: () => void;
   onChangeSoundType: (type: TimerSoundType) => void;
@@ -53,6 +57,8 @@ export function FocusZenModeModal({
   isOpen,
   onClose,
   isBreak,
+  isOvertime = false,
+  nextBreakMinutes = 5,
   isRunning,
   isActive,
   mode,
@@ -64,6 +70,7 @@ export function FocusZenModeModal({
   onToggleTimer,
   onResetTimer,
   onSkipBreak,
+  onStartBreak,
   onComplete,
   onToggleSound,
   onChangeSoundType,
@@ -239,6 +246,20 @@ export function FocusZenModeModal({
             >
               <FastForward size={18} />
               <span>{t("skipBreak")}</span>
+            </button>
+          )}
+
+          {isOvertime && !isBreak && onStartBreak && (
+            <button
+              type="button"
+              onClick={onStartBreak}
+              title={t("startBreakTitle", { minutes: nextBreakMinutes })}
+              className="px-5 py-4 rounded-2xl border border-cyan-400/50 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 font-bold text-sm flex items-center gap-2 cursor-pointer shadow-lg transition-[opacity,background-color,border-color,color] duration-150"
+            >
+              <Coffee size={18} />
+              <span>
+                {t("startBreakButton", { minutes: nextBreakMinutes })}
+              </span>
             </button>
           )}
 

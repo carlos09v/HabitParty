@@ -52,6 +52,7 @@ public class CreateRewardUseCase {
 
     // 1. Regra da Categoria (Se vier null do comando, já vira NONE na variável)
     RewardCategory categoriaFinal = command.category() != null ? command.category() : RewardCategory.NONE;
+    Reward.validateCategoryAndType(categoriaFinal, command.type());
 
     // 2. Extrai os valores originais do comando para tratar
     Integer durationFinal = command.baseDurationMinutes();

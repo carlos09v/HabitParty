@@ -2,10 +2,10 @@
 
 import {
   Check,
+  Clock,
   Hourglass,
+  Info,
   Loader2,
-  Minus,
-  Plus,
   Target,
   Timer,
   X,
@@ -19,12 +19,15 @@ import {
 } from "@/actions/focusActions";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { IconPickerPopover } from "@/components/ui/IconPickerPopover";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { Input } from "@/components/ui/Input";
+import { NumberStepperInput } from "@/components/ui/NumberStepperInput";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { DEFAULT_POMO_MINUTES, FOCUS_ICONS } from "@/constants/focus";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
 import type { FocusActivity, FocusRecordType } from "@/types/focus";
 import { cn } from "@/utils";
+import { formatFocusMinutes } from "@/utils/focusFormatters";
 import { suggestFocusIconFromName } from "@/utils/iconSuggestion";
 import { soundEffects } from "@/utils/soundEffects";
 
@@ -186,16 +189,32 @@ export function FocusActivityModal({
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-2">
         {/* Nome da Atividade e Ícone Integrados */}
         <div className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between">
-            <label
-              htmlFor="activity-name"
-              className="text-body-s text-neutral-100 font-medium"
-            >
-              {t("nameLabel")} <span className="text-gold">*</span>
-            </label>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0 flex-wrap">
+              <label
+                htmlFor="activity-name"
+                className="text-body-s text-neutral-100 font-medium"
+              >
+                {t("nameLabel")} <span className="text-gold">*</span>
+              </label>
+              <InfoTooltip
+                title={t("entertainmentWarningTitle")}
+                icon={<Info size={14} className="text-gold shrink-0" />}
+                triggerLabel={t("entertainmentWarningPill")}
+                size={12}
+                align="left"
+                side="bottom"
+                ariaLabel={t("entertainmentWarningTitle")}
+                triggerClassName="bg-surface/80 border-neutral-700/80 text-neutral-400 hover:text-amber-700 hover:bg-amber-500/10 hover:border-amber-500/35 focus:text-amber-700 dark:bg-white/5 dark:border-white/10 dark:text-neutral-400 dark:hover:text-gold dark:hover:bg-gold/10 dark:hover:border-gold/30 dark:focus:text-gold"
+              >
+                <p className="text-neutral-300 leading-relaxed text-label-g">
+                  {t("entertainmentWarning")}
+                </p>
+              </InfoTooltip>
+            </div>
             <span
               className={cn(
-                "text-tiny tabular-nums transition-colors",
+                "text-tiny tabular-nums transition-colors shrink-0",
                 name.length >= MAX_FOCUS_ACTIVITY_NAME_LENGTH
                   ? "text-gold font-semibold"
                   : "text-neutral-400",
@@ -257,42 +276,42 @@ export function FocusActivityModal({
 
         {/* Meta de tempo em minutos (apenas se Pomodoro) */}
         {recordType === "POMO" && (
-          <div className="relative flex items-end">
-            <Input
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <label
+                htmlFor="target-minutes"
+                className="text-body-s text-neutral-100 font-medium"
+              >
+                {t("cycleDurationLabel")}
+              </label>
+              {targetTimeMinutes >= 60 && (
+                <span
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/35 text-emerald-700 dark:text-emerald-300 text-label-m font-bold tabular-nums shrink-0"
+                  aria-live="polite"
+                >
+                  <Clock size={11} aria-hidden="true" />
+                  <span>= {formatFocusMinutes(targetTimeMinutes)}</span>
+                </span>
+              )}
+            </div>
+            <NumberStepperInput
               id="target-minutes"
-              label={t("cycleDurationLabel")}
-              type="number"
               min={5}
               max={180}
               step={5}
               value={targetTimeMinutes}
               onChange={(e) => setTargetTimeMinutes(Number(e.target.value))}
-              className="pr-20 font-semibold tabular-nums"
+              onStep={(delta) =>
+                setTargetTimeMinutes((prev) =>
+                  Math.min(180, Math.max(5, prev + delta)),
+                )
+              }
+              decrementDisabled={targetTimeMinutes <= 5 || isSubmitting}
+              incrementDisabled={targetTimeMinutes >= 180 || isSubmitting}
+              disabled={isSubmitting}
+              icon={<Clock size={16} />}
+              className="font-semibold"
             />
-            <div className="absolute right-1.5 bottom-1.5 flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() =>
-                  setTargetTimeMinutes((prev) => Math.max(5, prev - 5))
-                }
-                disabled={targetTimeMinutes <= 5 || isSubmitting}
-                className="p-1.5 pointer-coarse:p-2 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                aria-label="-5m"
-              >
-                <Minus size={14} />
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setTargetTimeMinutes((prev) => Math.min(180, prev + 5))
-                }
-                disabled={targetTimeMinutes >= 180 || isSubmitting}
-                className="p-1.5 pointer-coarse:p-2 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                aria-label="+5m"
-              >
-                <Plus size={14} />
-              </button>
-            </div>
           </div>
         )}
 

@@ -40,7 +40,7 @@ export function ActivityWidgetRow({
   return (
     <div className="relative w-full group/act">
       <Link
-        href={`/focus?activityId=${activity.id}`}
+        href={`/focus?activityId=${activity.id}&from=dashboard`}
         onContextMenu={(e) => onContextMenu(e, activity)}
         title={t("rightClickHint", {
           name: activity.name,

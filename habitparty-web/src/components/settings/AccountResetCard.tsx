@@ -23,14 +23,16 @@ export function AccountResetCard({ isCompact }: ProfileCardBaseProps) {
   const [pendingScope, setPendingScope] = useState<AccountResetScope | null>(
     null,
   );
+  const [deleteHistory, setDeleteHistory] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const handleConfirmReset = () => {
     if (!pendingScope) return;
     const scope = pendingScope;
+    const shouldDeleteHistory = scope === "COMPLETE" ? true : deleteHistory;
 
     startTransition(async () => {
-      const res = await resetUserAccountAction(scope);
+      const res = await resetUserAccountAction(scope, shouldDeleteHistory);
       if (!res.success) {
         toast.error(res.error || t("errorToast"));
         return;
@@ -72,6 +74,7 @@ export function AccountResetCard({ isCompact }: ProfileCardBaseProps) {
           : t("metricsSuccessToast"),
       );
       setPendingScope(null);
+      setDeleteHistory(false);
       router.refresh();
     });
   };
@@ -105,7 +108,10 @@ export function AccountResetCard({ isCompact }: ProfileCardBaseProps) {
           <button
             type="button"
             disabled={isPending}
-            onClick={() => setPendingScope("METRICS")}
+            onClick={() => {
+              setDeleteHistory(false);
+              setPendingScope("METRICS");
+            }}
             className={cn(
               "w-full sm:w-auto justify-center rounded-xl border border-amber-500/35 bg-amber-500/10 text-amber-700 hover:bg-amber-600 hover:text-white dark:border-amber-500/45 dark:bg-amber-500/15 dark:text-amber-300 transition-colors font-bold cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 shrink-0 flex items-center gap-2 shadow-xs",
               isCompact ? "px-3.5 py-2 text-xs" : "px-4 py-2.5 text-sm",
@@ -154,7 +160,12 @@ export function AccountResetCard({ isCompact }: ProfileCardBaseProps) {
 
       <ConfirmationModal
         isOpen={pendingScope !== null}
-        onClose={() => !isPending && setPendingScope(null)}
+        onClose={() => {
+          if (!isPending) {
+            setPendingScope(null);
+            setDeleteHistory(false);
+          }
+        }}
         onConfirm={handleConfirmReset}
         title={
           isCompleteScope ? t("completeModalTitle") : t("metricsModalTitle")
@@ -168,6 +179,10 @@ export function AccountResetCard({ isCompact }: ProfileCardBaseProps) {
         cancelText={t("modalCancel")}
         variant={isCompleteScope ? "danger" : "warning"}
         isLoading={isPending}
+        checkboxLabel={isCompleteScope ? undefined : t("deleteHistoryLabel")}
+        checkboxHint={isCompleteScope ? undefined : t("deleteHistoryHint")}
+        checkboxChecked={isCompleteScope ? undefined : deleteHistory}
+        onCheckboxChange={isCompleteScope ? undefined : setDeleteHistory}
       />
     </>
   );

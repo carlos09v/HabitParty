@@ -34,6 +34,7 @@ import com.habitparty.core.domain.entities.social.Friendship;
 import com.habitparty.core.domain.enums.FriendRequestPolicy;
 import com.habitparty.core.domain.enums.FriendshipStatus;
 import com.habitparty.core.domain.enums.PrivacyLevel;
+import com.habitparty.core.domain.enums.SocialNotificationType;
 import com.habitparty.core.domain.enums.UserRole;
 import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.UnauthorizedException;
@@ -163,6 +164,8 @@ class FriendshipUseCasesTest {
     assertTrue(result.autoAccepted());
     assertEquals(FriendshipStatus.ACCEPTED, result.friendship().getStatus());
     assertEquals("HP-BOB222", result.targetUser().friendCode());
+    verify(notifRepo).markSeenByReferenceIdAndType(
+        bobToAlice.getId(), SocialNotificationType.FRIEND_REQUEST_RECEIVED);
   }
 
   @Test
@@ -220,5 +223,42 @@ class FriendshipUseCasesTest {
 
     assertThrows(UnauthorizedException.class, () -> blocked.ensureCanDelete(blockedId));
     blocked.ensureCanDelete(blockerId);
+  }
+
+  @Test
+  void shouldClearPendingFriendRequestNotificationOnRespondAndFilterUnseenList() {
+    UUID requesterId = UUID.randomUUID();
+    UUID addresseeId = UUID.randomUUID();
+    User requester = verifiedUser(requesterId, "req", "HP-REQ111");
+    User addressee = verifiedUser(addresseeId, "addr", "HP-ADD222");
+    Friendship pending = Friendship.createPending(requesterId, addresseeId, Instant.now());
+
+    UserRepository userRepo = mock(UserRepository.class);
+    FriendshipRepository friendshipRepo = mock(FriendshipRepository.class);
+    SocialNotificationRepository notifRepo = mock(SocialNotificationRepository.class);
+
+    when(friendshipRepo.findById(pending.getId())).thenReturn(Optional.of(pending));
+    when(friendshipRepo.countAcceptedByUserId(any())).thenReturn(0L);
+    when(friendshipRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(userRepo.findById(addresseeId)).thenReturn(Optional.of(addressee));
+
+    RespondFriendRequestUseCase respondUseCase = new RespondFriendRequestUseCase(
+        friendshipRepo,
+        userRepo,
+        notifRepo,
+        new UserTimeResolver(userRepo, Clock.systemUTC()));
+
+    respondUseCase.execute(addresseeId, pending.getId(), true);
+    verify(notifRepo).markSeenByReferenceIdAndType(
+        pending.getId(), SocialNotificationType.FRIEND_REQUEST_RECEIVED);
+
+    when(notifRepo.findUnseenRecentByRecipientId(addresseeId, 15)).thenReturn(List.of());
+    when(notifRepo.countUnseenByRecipientId(addresseeId)).thenReturn(0L);
+    ListSocialNotificationsUseCase listUseCase = new ListSocialNotificationsUseCase(notifRepo, userRepo);
+    var feed = listUseCase.execute(addresseeId, 15, true);
+    assertTrue(feed.notifications().isEmpty());
+    verify(notifRepo).findUnseenRecentByRecipientId(addresseeId, 15);
+    verify(notifRepo, never()).findRecentByRecipientId(any(), org.mockito.ArgumentMatchers.anyInt());
+    assertEquals(requesterId, requester.getId());
   }
 }

@@ -74,6 +74,10 @@ export interface BoardColumn {
   order: number;
   icon?: string;
   tasks: Task[];
+  /** Quantidade total de tarefas da coluna no banco (inclui concluídas arquivadas quando excluídas do GET). */
+  archivedTotalCount?: number;
+  /** Quantidade de tarefas concluídas arquivadas ainda não carregadas nesta coluna. */
+  archivedCompletedCount?: number;
 }
 
 export type TaskFilterType =

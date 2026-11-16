@@ -62,9 +62,13 @@ public class TaskController implements TaskApi {
   }
 
   private TaskResponseDTO toDto(Task task, UUID userId) {
+    return toDto(task, userId, null);
+  }
+
+  private TaskResponseDTO toDto(Task task, UUID userId, Boolean rewardGranted) {
     ZoneId userZone = userTimeResolver.resolveZone(userId);
     LocalDate userToday = LocalDate.now(userTimeResolver.clock().withZone(userZone));
-    return TaskResponseDTO.fromDomain(task, userToday, userZone);
+    return TaskResponseDTO.fromDomain(task, userToday, userZone, rewardGranted);
   }
 
   @Override
@@ -77,15 +81,39 @@ public class TaskController implements TaskApi {
   @Override
   public ResponseEntity<List<TaskResponseDTO>> getTaskListByColumnId(
       AuthenticatedUser userIdLogado,
+      UUID boardColumnId,
+      boolean excludeArchivedCompleted) {
+    UUID userId = userIdLogado.id();
+    if (dailyResetUseCase != null) {
+      dailyResetUseCase.resetUserIfDue(userId);
+    }
+
+    ZoneId userZone = userTimeResolver.resolveZone(userId);
+    LocalDate referenceDate = LocalDate.now(userTimeResolver.clock().withZone(userZone));
+    List<Task> tasks = listTasksByColumnUseCase.execute(
+        boardColumnId,
+        userId,
+        excludeArchivedCompleted,
+        referenceDate);
+    List<TaskResponseDTO> responseList = tasks.stream()
+        .map(t -> TaskResponseDTO.fromDomain(t, referenceDate, userZone))
+        .toList();
+
+    return ResponseEntity.ok(responseList);
+  }
+
+  @Override
+  public ResponseEntity<List<TaskResponseDTO>> getArchivedCompletedTasksByColumnId(
+      AuthenticatedUser userIdLogado,
       UUID boardColumnId) {
     UUID userId = userIdLogado.id();
     if (dailyResetUseCase != null) {
       dailyResetUseCase.resetUserIfDue(userId);
     }
 
-    List<Task> tasks = listTasksByColumnUseCase.execute(boardColumnId, userId);
     ZoneId userZone = userTimeResolver.resolveZone(userId);
     LocalDate referenceDate = LocalDate.now(userTimeResolver.clock().withZone(userZone));
+    List<Task> tasks = listTasksByColumnUseCase.executeArchivedCompleted(boardColumnId, userId, referenceDate);
     List<TaskResponseDTO> responseList = tasks.stream()
         .map(t -> TaskResponseDTO.fromDomain(t, referenceDate, userZone))
         .toList();
@@ -201,7 +229,7 @@ public class TaskController implements TaskApi {
       AuthenticatedUser userIdLogado,
       int delta) {
     UUID userId = userIdLogado.id();
-    Task updatedHabit = recordHabitScoreUseCase.execute(taskId, userId, delta);
-    return ResponseEntity.ok(toDto(updatedHabit, userId));
+    var result = recordHabitScoreUseCase.executeWithResult(taskId, userId, delta);
+    return ResponseEntity.ok(toDto(result.task(), userId, delta > 0 ? result.rewardGranted() : null));
   }
 }

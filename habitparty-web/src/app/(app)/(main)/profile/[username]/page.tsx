@@ -1,6 +1,5 @@
-import { ArrowLeft, UserX } from "lucide-react";
+import { UserX } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
@@ -8,6 +7,7 @@ import { PageWrapper } from "@/components/layout/PageWrapper";
 import { RouteLoading } from "@/components/layout/RouteLoading";
 import { PublicShowcaseView } from "@/components/showcase/PublicShowcaseView";
 import { ShowcaseStatsGrid } from "@/components/showcase/ShowcaseStatsGrid";
+import { ContextualBackButton } from "@/components/ui/ContextualBackButton";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import {
   getPublicUserRetrospective,
@@ -63,13 +63,13 @@ async function PublicProfileContent({ params }: PublicProfilePageProps) {
           </h1>
           <p className="text-xs text-neutral-400 mt-1">{t("notFoundDesc")}</p>
         </div>
-        <Link
-          href="/profile?tab=friends"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold bg-gold text-on-gold hover:bg-amber-300 transition-colors"
-        >
-          <ArrowLeft size={14} aria-hidden="true" />
-          <span>{t("backToFriends")}</span>
-        </Link>
+        <ContextualBackButton
+          fallbackHref="/profile?tab=friends"
+          preferHistoryBack
+          label={t("backToFriends")}
+          historyLabel={t("backToPrevious")}
+          className="px-4 py-2 rounded-xl bg-gold text-on-gold hover:bg-amber-300 hover:text-on-gold dark:hover:bg-amber-300 dark:hover:text-on-gold font-extrabold"
+        />
       </div>
     );
   }

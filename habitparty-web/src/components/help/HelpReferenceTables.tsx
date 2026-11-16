@@ -1,4 +1,13 @@
-import { BookOpen, Coins, Flame, Sparkles, Timer, Trophy } from "lucide-react";
+import {
+  BookOpen,
+  Coins,
+  Flame,
+  Scale,
+  SlidersHorizontal,
+  Sparkles,
+  Timer,
+  Trophy,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { HelpReferenceTable } from "@/components/help/HelpReferenceTable";
@@ -29,6 +38,23 @@ export function HelpReferenceTables({
 }: HelpReferenceTablesProps) {
   const t = useTranslations("help.tables");
   const tables: TableConfig[] = [
+    ...(helpTables.experienceModes
+      ? [
+          {
+            id: "experienceModes",
+            entry: helpTables.experienceModes,
+            icon: (
+              <SlidersHorizontal
+                className="text-primary dark:text-primary-light"
+                size={18}
+              />
+            ),
+            highlightColumnIndex: 3,
+            highlightColorClass: "text-amber-700 dark:text-gold",
+            secondaryBoldColumnIndex: 0,
+          },
+        ]
+      : []),
     {
       id: "difficulties",
       entry: helpTables.difficulties,
@@ -36,6 +62,22 @@ export function HelpReferenceTables({
       highlightColumnIndex: 2,
       highlightColorClass: "text-amber-700 dark:text-gold",
     },
+    ...(helpTables.habitImportance
+      ? [
+          {
+            id: "habitImportance",
+            entry: helpTables.habitImportance,
+            icon: (
+              <Sparkles
+                className="text-emerald-600 dark:text-success-500"
+                size={18}
+              />
+            ),
+            highlightColumnIndex: 2,
+            highlightColorClass: "text-amber-700 dark:text-gold",
+          },
+        ]
+      : []),
     {
       id: "habitDecay",
       entry: helpTables.habitDecay,
@@ -43,6 +85,18 @@ export function HelpReferenceTables({
       highlightColumnIndex: 2,
       highlightColorClass: "text-amber-700 dark:text-gold",
     },
+    ...(helpTables.rewardPricing
+      ? [
+          {
+            id: "rewardPricing",
+            entry: helpTables.rewardPricing,
+            icon: <Scale className="text-amber-600 dark:text-gold" size={18} />,
+            highlightColumnIndex: 1,
+            highlightColorClass: "text-amber-700 dark:text-gold",
+            secondaryBoldColumnIndex: 0,
+          },
+        ]
+      : []),
     {
       id: "focusRewards",
       entry: helpTables.focusRewards,

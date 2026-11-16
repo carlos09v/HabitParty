@@ -82,7 +82,7 @@ const MAIN_SHELL_PATHS = [
 
 export const SCOPE_CLIENT_PATHS: Record<MessageScope, readonly string[]> = {
   base: BASE_PATHS,
-  public: [...BASE_PATHS, "landing.demo"],
+  public: [...BASE_PATHS, "landing.demo", "landing.hero.preview"],
   auth: [
     ...BASE_PATHS,
     "ui.input",
@@ -189,6 +189,7 @@ export const SCOPE_CLIENT_PATHS: Record<MessageScope, readonly string[]> = {
     ...MAIN_PAGE_SHARED_PATHS,
     "help.faq",
     "help.tables",
+    "help.changelog",
     "ui.filterBar",
     "ui.select",
     "ui.viewMode",
@@ -224,7 +225,13 @@ export const SERVER_ONLY_PATHS: readonly string[] = [
   "metadata",
   "landing.metadata",
   "landing.navbar",
-  "landing.hero",
+  "landing.hero.badge",
+  "landing.hero.titleLine1",
+  "landing.hero.titleHighlight",
+  "landing.hero.subtitle",
+  "landing.hero.primaryCta",
+  "landing.hero.secondaryCta",
+  "landing.hero.highlights",
   "landing.productivityLoop",
   "landing.manifesto",
   "landing.features",

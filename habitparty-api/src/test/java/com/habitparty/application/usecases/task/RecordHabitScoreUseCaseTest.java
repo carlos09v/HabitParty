@@ -194,4 +194,59 @@ class RecordHabitScoreUseCaseTest {
     assertEquals(110, user.getTotalXp());
     assertEquals(new BigDecimal("11.75"), user.getCurrentCoins());
   }
+
+  @Test
+  @DisplayName("Deve conceder recompensa normalmente enquanto registros positivos de hoje estiverem abaixo do teto diário")
+  void testHabitGrantsRewardWhenBelowDailyCap() {
+    Habit habit = new Habit(
+        taskId, UUID.randomUUID(), userId, "Beber Água", "200ml",
+        0, TaskPriority.MEDIUM, List.of("Saúde"), TaskDifficulty.EASY,
+        TaskStatus.COMPLETED, TaskType.HABIT, false, null,
+        LocalDateTime.now().minusDays(2), List.of(), 1, HabitType.POSITIVE,
+        HabitResetCounter.DAILY, HabitImportanceType.NORMAL, LocalDateTime.now(), 7, 0);
+
+    when(taskPort.findById(taskId)).thenReturn(Optional.of(habit));
+    when(userPort.findById(userId)).thenReturn(Optional.of(user));
+    when(transactionPort.countByUserIdAndReferenceIdAndTypeOnDate(
+        eq(userId), eq(taskId), eq(TransactionType.HABIT_COMPLETED), any(), any()))
+        .thenReturn((long) (Habit.MAX_DAILY_REWARDED_SCORES - 1));
+    when(transactionPort.countCompletedTasksToday(eq(userId), any())).thenReturn(7);
+    when(taskPort.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    var result = recordHabitScoreUseCase.executeWithResult(taskId, userId, 1);
+
+    Habit updated = (Habit) result.task();
+    assertTrue(result.rewardGranted());
+    assertEquals(8, updated.getPositiveCount());
+    verify(userPort).save(user);
+    verify(transactionPort).save(any(TransactionHistory.class));
+  }
+
+  @Test
+  @DisplayName("Deve incrementar o hábito sem conceder XP/moedas quando atingir o teto diário de recompensas")
+  void testHabitSkipsRewardWhenDailyCapReached() {
+    Habit habit = new Habit(
+        taskId, UUID.randomUUID(), userId, "Beber Água", "200ml",
+        0, TaskPriority.MEDIUM, List.of("Saúde"), TaskDifficulty.EASY,
+        TaskStatus.COMPLETED, TaskType.HABIT, false, null,
+        LocalDateTime.now().minusDays(2), List.of(), 1, HabitType.POSITIVE,
+        HabitResetCounter.DAILY, HabitImportanceType.NORMAL, LocalDateTime.now(), 8, 0);
+
+    when(taskPort.findById(taskId)).thenReturn(Optional.of(habit));
+    when(userPort.findById(userId)).thenReturn(Optional.of(user));
+    when(transactionPort.countByUserIdAndReferenceIdAndTypeOnDate(
+        eq(userId), eq(taskId), eq(TransactionType.HABIT_COMPLETED), any(), any()))
+        .thenReturn((long) Habit.MAX_DAILY_REWARDED_SCORES);
+    when(taskPort.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    var result = recordHabitScoreUseCase.executeWithResult(taskId, userId, 1);
+
+    Habit updated = (Habit) result.task();
+    assertFalse(result.rewardGranted());
+    assertEquals(9, updated.getPositiveCount());
+    assertEquals(100, user.getTotalXp());
+    assertEquals(new BigDecimal("10.00"), user.getCurrentCoins());
+    verify(userPort, never()).save(any());
+    verify(transactionPort, never()).save(any());
+  }
 }

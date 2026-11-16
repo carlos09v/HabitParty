@@ -2,6 +2,7 @@
 
 import {
   CheckCircle2,
+  Coffee,
   FastForward,
   ListTodo,
   Lock,
@@ -85,6 +86,7 @@ interface FocusHeroStageProps {
   onStartFocusTask?: (task: { id: string; title: string }) => void;
   onChangeMode?: (mode: FocusRecordType) => void;
   onOpenUpgradeModal?: () => void;
+  onCreateActivity?: () => void;
   initialLinkActivity?: boolean;
   isCompact?: boolean;
 }
@@ -99,6 +101,7 @@ export function FocusHeroStage({
   onStartFocusTask,
   onChangeMode: propOnChangeMode,
   onOpenUpgradeModal,
+  onCreateActivity,
   initialLinkActivity = false,
   isCompact = false,
 }: FocusHeroStageProps) {
@@ -125,11 +128,14 @@ export function FocusHeroStage({
     totalDurationSeconds,
     canComplete,
     isPartialPomo,
+    isOvertime,
+    nextBreakMinutes,
     isSoundEnabled,
     timerSoundType,
     toggleTimer,
     resetTimer,
     skipBreak,
+    startBreak,
     completeSession,
     changeDuration,
     toggleSound,
@@ -279,6 +285,14 @@ export function FocusHeroStage({
     await completeSession();
   }, [target, completeSession]);
 
+  const handleStartBreak = useCallback(async () => {
+    if (!target) {
+      setIsTargetModalOpen(true);
+      return;
+    }
+    await startBreak();
+  }, [target, startBreak]);
+
   // Atalhos de teclado globais para produtividade (Space = Play/Pause, Z = Modo Zen)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -354,6 +368,7 @@ export function FocusHeroStage({
           phase={phase}
           mode={mode}
           isBreak={isBreak}
+          isOvertime={isOvertime}
           isRunning={isRunning}
           isActive={isActive}
           isInventoryItem={isInventoryItem}
@@ -418,6 +433,21 @@ export function FocusHeroStage({
               </button>
             )}
 
+            {/* 2a. Botão Iniciar Pausa (quando ciclo Pomodoro atingiu 00:00 e está em excedente) */}
+            {isOvertime && !isBreak && (
+              <button
+                type="button"
+                onClick={handleStartBreak}
+                title={t("startBreakTitle", { minutes: nextBreakMinutes })}
+                className="w-full py-2.5 px-5 rounded-xl border border-cyan-500/45 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-800 dark:text-cyan-200 font-bold text-sm flex items-center justify-center gap-2 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shadow-sm hover:scale-[1.01]"
+              >
+                <Coffee size={17} />
+                <span>
+                  {t("startBreakButton", { minutes: nextBreakMinutes })}
+                </span>
+              </button>
+            )}
+
             {/* 2. Botão Concluir Sessão (quando canComplete e não em pausa) */}
             {canComplete && !isBreak && (
               <button
@@ -443,6 +473,7 @@ export function FocusHeroStage({
             <FocusStageTaskSlot
               target={target}
               isInventoryItem={isInventoryItem}
+              isSessionIdle={!isActive && !controls.hasElapsedSeconds}
               onOpenLinkTask={handleOpenLinkTaskModal}
               onOpenLinkActivity={handleOpenLinkActivityModal}
               onCompleteLinkedTask={controls.completeLinkedTask}
@@ -503,6 +534,8 @@ export function FocusHeroStage({
           isOpen={isZenModeOpen}
           onClose={() => setIsZenModeOpen(false)}
           isBreak={isBreak}
+          isOvertime={isOvertime}
+          nextBreakMinutes={nextBreakMinutes}
           isRunning={isRunning}
           isActive={isActive}
           mode={mode}
@@ -515,6 +548,7 @@ export function FocusHeroStage({
           onToggleTimer={handleToggleTimer}
           onResetTimer={resetTimer}
           onSkipBreak={skipBreak}
+          onStartBreak={handleStartBreak}
           onComplete={handleComplete}
           onToggleSound={toggleSound}
           onChangeSoundType={setTimerSoundType}
@@ -544,6 +578,7 @@ export function FocusHeroStage({
           onSelectTask={handleSelectTask}
           onUnlinkTask={controls.unlinkTaskFromTarget}
           onOpenUpgradeModal={onOpenUpgradeModal}
+          onCreateActivity={onCreateActivity}
         />
       )}
     </>

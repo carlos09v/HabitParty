@@ -166,8 +166,8 @@ class ResetUserAccountUseCaseTest {
   }
 
   @Test
-  @DisplayName("METRICS deve zerar stats, conquistas, transações, histórico e métricas de tasks preservando conteúdo")
-  void shouldResetOnlyMetricsAndGamificationOnMetricsScope() {
+  @DisplayName("METRICS sem deleteHistory deve zerar stats, conquistas e métricas de tasks preservando histórico e conteúdo")
+  void shouldResetOnlyMetricsAndGamificationOnMetricsScopeWithoutDeletingHistoryByDefault() {
     UUID userId = UUID.randomUUID();
     User user = createPopulatedUser(userId);
     when(userPort.findByIdForUpdate(userId)).thenReturn(Optional.of(user));
@@ -191,8 +191,8 @@ class ResetUserAccountUseCaseTest {
     assertEquals("cosmic_gold", result.getAvatarFrame());
     assertEquals("royal-gold", result.getTheme());
 
-    verify(transactionHistoryPort).deleteAllByUserId(userId);
-    verify(focusRecordPort).deleteAllByUserId(userId);
+    verify(transactionHistoryPort, never()).deleteAllByUserId(any());
+    verify(focusRecordPort, never()).deleteAllByUserId(any());
     verify(profileHighlightPort).deleteAllByUserId(userId);
     verify(userAchievementPort).deleteAllByUserId(userId);
     verify(taskPort).resetMetricsByUserId(userId);
@@ -205,6 +205,25 @@ class ResetUserAccountUseCaseTest {
     verify(inventoryItemPort, never()).deleteAllByUserId(any());
     verify(rewardPort, never()).deleteAllByUserId(any());
     verify(socialNotificationPort, never()).deleteAllByUserId(any());
+  }
+
+  @Test
+  @DisplayName("METRICS com deleteHistory=true deve apagar também transações e registros de foco mantendo conteúdo")
+  void shouldDeleteHistoryOnMetricsScopeWhenExplicitlyRequested() {
+    UUID userId = UUID.randomUUID();
+    User user = createPopulatedUser(userId);
+    when(userPort.findByIdForUpdate(userId)).thenReturn(Optional.of(user));
+    when(userPort.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    useCase.execute(userId, AccountResetScope.METRICS, true);
+
+    verify(transactionHistoryPort).deleteAllByUserId(userId);
+    verify(focusRecordPort).deleteAllByUserId(userId);
+    verify(profileHighlightPort).deleteAllByUserId(userId);
+    verify(userAchievementPort).deleteAllByUserId(userId);
+    verify(taskPort).resetMetricsByUserId(userId);
+    verify(taskPort, never()).deleteAllByUserId(any());
+    verify(workspacePort, never()).deleteAllByUserId(any());
   }
 
   @Test

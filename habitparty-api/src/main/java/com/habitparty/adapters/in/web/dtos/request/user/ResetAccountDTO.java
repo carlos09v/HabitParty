@@ -6,5 +6,6 @@ import jakarta.validation.constraints.NotNull;
 
 public record ResetAccountDTO(
     @NotNull(message = "O escopo do reset é obrigatório.")
-    AccountResetScope scope) {
+    AccountResetScope scope,
+    Boolean deleteHistory) {
 }

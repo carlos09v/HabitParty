@@ -249,6 +249,8 @@ export interface RoutineBoardProps {
   onOpenColumnMenu?: (e: React.MouseEvent, column: BoardColumn) => void;
   onToggleComplete?: (taskId: string, completed: boolean) => void;
   onHabitChange?: (taskId: string, delta: number) => void;
+  onLoadArchivedCompleted?: (columnId: string) => Promise<void>;
+  forceExpandCompleted?: boolean;
   onQuickCreateTask?: (
     title: string,
     columnId: string,
@@ -283,6 +285,8 @@ export interface RoutineColumnProps {
   onOpenColumnMenu?: (e: React.MouseEvent, column: BoardColumn) => void;
   onToggleComplete?: (taskId: string, completed: boolean) => void;
   onHabitChange?: (taskId: string, delta: number) => void;
+  onLoadArchivedCompleted?: (columnId: string) => Promise<void>;
+  forceExpandCompleted?: boolean;
   isOverlay?: boolean;
 }
 
@@ -305,6 +309,7 @@ export interface RoutineTaskListProps {
   onToggleComplete: (taskId: string, completed: boolean) => void;
   onHabitChange: (taskId: string, delta: number) => void;
   onStartFocus?: (task: Task) => void;
+  onLoadArchivedCompleted?: (columnId: string) => Promise<void>;
   dndState?: {
     sensors: ReturnType<typeof import("@dnd-kit/core").useSensors>;
     activeColumn: BoardColumn | null;
@@ -337,6 +342,7 @@ export interface RoutineTaskListSectionProps {
   onToggleComplete: (taskId: string, completed: boolean) => void;
   onHabitChange: (taskId: string, delta: number) => void;
   onStartFocus?: (task: Task) => void;
+  onLoadArchivedCompleted?: (columnId: string) => Promise<void>;
 }
 
 export interface RoutineQuickAddFormProps {

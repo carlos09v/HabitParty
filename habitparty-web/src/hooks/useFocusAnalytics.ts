@@ -36,6 +36,33 @@ export function useFocusAnalytics({
     setWeekOffset(0);
   }, []);
 
+  const [paginationState, setPaginationState] = useState<{
+    activityId: string | null;
+    visibleCount: number;
+  }>({
+    activityId: selectedActivityId,
+    visibleCount: 10,
+  });
+
+  const visibleRecordCount =
+    paginationState.activityId === selectedActivityId
+      ? paginationState.visibleCount
+      : 10;
+
+  const showMoreRecords = useCallback(
+    (step = 10) => {
+      setPaginationState((prev) => {
+        const baseCount =
+          prev.activityId === selectedActivityId ? prev.visibleCount : 10;
+        return {
+          activityId: selectedActivityId,
+          visibleCount: baseCount + step,
+        };
+      });
+    },
+    [selectedActivityId],
+  );
+
   const selectedActivity = useMemo(() => {
     if (!selectedActivityId) return null;
     return initialActivities.find((a) => a.id === selectedActivityId) || null;
@@ -49,8 +76,8 @@ export function useFocusAnalytics({
   }, [initialRecords, selectedActivityId]);
 
   const recentRecords = useMemo(
-    () => relevantRecords.slice(0, 10),
-    [relevantRecords],
+    () => relevantRecords.slice(0, visibleRecordCount),
+    [relevantRecords, visibleRecordCount],
   );
 
   const { metrics, weeklyDays, totalWeekMinutes, weekLabel, weekDateRange } =
@@ -71,6 +98,9 @@ export function useFocusAnalytics({
     handleResetWeek,
     selectedActivity,
     recentRecords,
+    relevantRecordsCount: relevantRecords.length,
+    visibleRecordCount,
+    showMoreRecords,
     metrics,
     weeklyDays,
     totalWeekMinutes,

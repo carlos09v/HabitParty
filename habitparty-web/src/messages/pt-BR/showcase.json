@@ -6,6 +6,7 @@
   "loading": {
     "ariaLabel": "Carregando vitrine do perfil e conquistas"
   },
+  "backToSettings": "Voltar para Configurações",
   "actions": {
     "unauthorized": "Sua sessão expirou. Faça login novamente.",
     "updateHighlightsError": "Não foi possível salvar os destaques da vitrine.",
@@ -782,6 +783,7 @@
   },
   "publicProfile": {
     "backToFriends": "Voltar para Amigos",
+    "backToPrevious": "Voltar",
     "notFoundTitle": "Perfil não encontrado",
     "notFoundDesc": "Este @username não existe ou não está mais ativo.",
     "privateProfileTitle": "Vitrine Privada",

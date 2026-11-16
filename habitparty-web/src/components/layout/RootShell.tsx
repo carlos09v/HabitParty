@@ -1,9 +1,10 @@
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
-import type { ReactNode } from "react";
+import { type ReactNode, Suspense } from "react";
 import { AppToaster } from "@/components/layout/AppToaster";
 import { CookieConsentBanner } from "@/components/layout/CookieConsentBanner";
 import { LocaleSwitchWatcher } from "@/components/layout/LocaleSwitchWatcher";
+import { NavigationTracker } from "@/components/layout/NavigationTracker";
 import { ThemeInitializer } from "@/components/layout/ThemeInitializer";
 import { ThemeInitScript } from "@/components/layout/ThemeInitScript";
 import { TopProgressBar } from "@/components/layout/TopProgressBar";
@@ -88,6 +89,9 @@ export async function RootShell({
           />
           <TopProgressBar />
           <LocaleSwitchWatcher />
+          <Suspense fallback={null}>
+            <NavigationTracker />
+          </Suspense>
           {children}
           <AppToaster />
           <CookieConsentBanner />

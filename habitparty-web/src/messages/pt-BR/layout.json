@@ -157,6 +157,8 @@
     "resumeAria": "Continuar",
     "savePartialTitle": "Salvar tempo parcial (ciclo incompleto)",
     "completeSaveTitle": "Concluir sessão e salvar registro",
+    "startBreakTitle": "Salvar tempo e iniciar pausa",
+    "startBreakAria": "Iniciar pausa",
     "savePartialAria": "Salvar tempo parcial",
     "completeSaveAria": "Concluir e Salvar",
     "stopResetTitle": "Parar / Reiniciar tempo",

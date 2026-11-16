@@ -114,6 +114,7 @@ export interface FocusTimerState {
   totalDurationSeconds: number;
   elapsedSeconds: number;
   completedCycles: number;
+  hasTriggeredOvertimeAlert?: boolean;
   target: FocusActiveTarget | null;
   startedAt: string | null;
 }
@@ -129,4 +130,5 @@ export interface FocusTimerControlsState {
   hasElapsedSeconds: boolean;
   canComplete: boolean;
   isPartialPomo?: boolean;
+  isOvertime?: boolean;
 }

@@ -31,6 +31,7 @@ export async function getFriendsOverview(): Promise<FriendsOverviewData | null> 
 /** Exclusivo para Server Actions do sino de notificações (sem cache estático). */
 export async function getSocialNotifications(
   limit = 20,
+  unseenOnly = true,
 ): Promise<SocialNotificationsFeed> {
   try {
     const token = await getServerAuthToken();
@@ -39,7 +40,7 @@ export async function getSocialNotifications(
     }
 
     const { data, error } = await serverApi.GET("/friends/notifications", {
-      params: { query: { limit } },
+      params: { query: { limit, unseenOnly } },
       cache: "no-store",
     });
 

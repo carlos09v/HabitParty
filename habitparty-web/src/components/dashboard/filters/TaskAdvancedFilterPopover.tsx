@@ -61,7 +61,7 @@ export function TaskAdvancedFilterPopover({
       aria-label={t("advancedTitle")}
       style={floatingStyle}
       className={cn(
-        "w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] rounded-xl bg-popover border border-neutral-700 dark:border-primary/40 p-4 shadow-xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-3",
+        "w-[calc(100vw-1.5rem)] sm:w-[440px] max-w-[calc(100vw-1.5rem)] rounded-xl bg-popover border border-neutral-700 dark:border-primary/40 p-4 shadow-xl animate-in fade-in zoom-in-95 duration-150 overflow-hidden flex flex-col gap-3",
         placement === "top" ? "origin-bottom" : "origin-top",
       )}
     >
@@ -85,94 +85,98 @@ export function TaskAdvancedFilterPopover({
         )}
       </div>
 
-      {hasMultipleWorkspaces && (
-        <Select
-          id="filter-workspace"
-          label={t("workspaceLabel")}
-          compact
-          value={advancedFilters.workspaceId}
-          onChange={onWorkspaceChange}
-          options={workspaceOptions}
-        />
-      )}
+      <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar flex-1 min-h-0 pr-0.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 [&>*]:min-w-0 [&>*:last-child:nth-child(odd)]:sm:col-span-2">
+          {hasMultipleWorkspaces && (
+            <Select
+              id="filter-workspace"
+              label={t("workspaceLabel")}
+              compact
+              value={advancedFilters.workspaceId}
+              onChange={onWorkspaceChange}
+              options={workspaceOptions}
+            />
+          )}
 
-      <Select
-        id="filter-task-type"
-        label={t("taskTypeLabel")}
-        compact
-        value={advancedFilters.taskType}
-        onChange={(val) =>
-          onAdvancedFiltersChange?.({
-            ...advancedFilters,
-            taskType: val as DashboardAdvancedFilters["taskType"],
-          })
-        }
-        options={taskTypeOptions}
-      />
+          <Select
+            id="filter-task-type"
+            label={t("taskTypeLabel")}
+            compact
+            value={advancedFilters.taskType}
+            onChange={(val) =>
+              onAdvancedFiltersChange?.({
+                ...advancedFilters,
+                taskType: val as DashboardAdvancedFilters["taskType"],
+              })
+            }
+            options={taskTypeOptions}
+          />
 
-      {hasColumns && (
-        <Select
-          id="filter-column"
-          label={t("columnLabel")}
-          compact
-          value={advancedFilters.columnId}
-          onChange={(val) =>
-            onAdvancedFiltersChange?.({
-              ...advancedFilters,
-              columnId: val,
-            })
-          }
-          options={columnOptions}
-        />
-      )}
+          {hasColumns && (
+            <Select
+              id="filter-column"
+              label={t("columnLabel")}
+              compact
+              value={advancedFilters.columnId}
+              onChange={(val) =>
+                onAdvancedFiltersChange?.({
+                  ...advancedFilters,
+                  columnId: val,
+                })
+              }
+              options={columnOptions}
+            />
+          )}
 
-      <Select
-        id="filter-difficulty"
-        label={isGamified ? t("difficultyLabel") : t("effortLabel")}
-        compact
-        value={advancedFilters.difficulty}
-        onChange={(val) =>
-          onAdvancedFiltersChange?.({
-            ...advancedFilters,
-            difficulty: val as DashboardAdvancedFilters["difficulty"],
-          })
-        }
-        options={difficultyOptions}
-      />
+          <Select
+            id="filter-difficulty"
+            label={isGamified ? t("difficultyLabel") : t("effortLabel")}
+            compact
+            value={advancedFilters.difficulty}
+            onChange={(val) =>
+              onAdvancedFiltersChange?.({
+                ...advancedFilters,
+                difficulty: val as DashboardAdvancedFilters["difficulty"],
+              })
+            }
+            options={difficultyOptions}
+          />
 
-      <Select
-        id="filter-sort"
-        label={t("sortByLabel")}
-        compact
-        value={advancedFilters.sortBy}
-        onChange={(val) =>
-          onAdvancedFiltersChange?.({
-            ...advancedFilters,
-            sortBy: val as DashboardAdvancedFilters["sortBy"],
-          })
-        }
-        options={sortOptions}
-      />
+          <Select
+            id="filter-sort"
+            label={t("sortByLabel")}
+            compact
+            value={advancedFilters.sortBy}
+            onChange={(val) =>
+              onAdvancedFiltersChange?.({
+                ...advancedFilters,
+                sortBy: val as DashboardAdvancedFilters["sortBy"],
+              })
+            }
+            options={sortOptions}
+          />
+        </div>
 
-      <div className="flex items-center justify-between pt-2 border-t border-neutral-700 dark:border-white/10 group">
-        <label
-          htmlFor="filter-hide-completed"
-          className="text-xs text-neutral-200 group-hover:text-primary dark:group-hover:text-gold transition-colors font-medium cursor-pointer select-none"
-        >
-          {t("hideCompletedLabel")}
-        </label>
-        <Switch
-          id="filter-hide-completed"
-          size="sm"
-          checked={advancedFilters.hideCompleted}
-          onCheckedChange={(checked) =>
-            onAdvancedFiltersChange?.({
-              ...advancedFilters,
-              hideCompleted: checked,
-            })
-          }
-          aria-label={t("hideCompletedLabel")}
-        />
+        <div className="flex items-center justify-between pt-2 border-t border-neutral-700 dark:border-white/10 group">
+          <label
+            htmlFor="filter-hide-completed"
+            className="text-xs text-neutral-200 group-hover:text-primary dark:group-hover:text-gold transition-colors font-medium cursor-pointer select-none"
+          >
+            {t("hideCompletedLabel")}
+          </label>
+          <Switch
+            id="filter-hide-completed"
+            size="sm"
+            checked={advancedFilters.hideCompleted}
+            onCheckedChange={(checked) =>
+              onAdvancedFiltersChange?.({
+                ...advancedFilters,
+                hideCompleted: checked,
+              })
+            }
+            aria-label={t("hideCompletedLabel")}
+          />
+        </div>
       </div>
     </div>,
     document.body,

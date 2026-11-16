@@ -286,7 +286,10 @@ export const ItemRow = memo(function ItemRow({
           {hasValidCategory && (
             <span
               className={cn(
-                "text-label-m font-medium bg-surface/80 border border-neutral-700/80 dark:bg-white/10 dark:border-white/10 text-neutral-300 truncate rounded",
+                "text-label-m font-medium border truncate rounded",
+                categoryMessageKey === "DEBT"
+                  ? "bg-rose-500/15 border-rose-500/35 text-rose-700 dark:text-rose-300"
+                  : "bg-surface/80 border-neutral-700/80 dark:bg-white/10 dark:border-white/10 text-neutral-300",
                 isCompact ? "px-1.5 py-0.5" : "px-2 py-0.5",
               )}
             >

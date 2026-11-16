@@ -396,3 +396,31 @@ export async function searchTasksAcrossWorkspacesAction(
     return [];
   }
 }
+
+export async function getArchivedCompletedColumnTasks(
+  boardColumnId: string,
+): Promise<ActionState<TaskResponseDTO[]>> {
+  const t = await getTranslations("tasks.column");
+  try {
+    const { data, error } = await serverApi.GET(
+      "/tasks/column/{boardColumnId}/archived-completed",
+      {
+        params: { path: { boardColumnId } },
+      },
+    );
+
+    if (error || !data) {
+      return {
+        success: false,
+        error: getErrorMessage(error, t("loadArchivedCompletedError")),
+      };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, t("loadArchivedCompletedError")),
+    };
+  }
+}

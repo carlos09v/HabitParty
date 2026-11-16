@@ -30,6 +30,8 @@ export function RoutineBoard({
   onOpenColumnMenu,
   onToggleComplete,
   onHabitChange,
+  onLoadArchivedCompleted,
+  forceExpandCompleted = false,
   onQuickCreateTask,
 }: RoutineBoardProps) {
   const t = useTranslations("tasks.board");
@@ -155,6 +157,8 @@ export function RoutineBoard({
                   onOpenColumnMenu={onOpenColumnMenu}
                   onToggleComplete={onToggleComplete}
                   onHabitChange={onHabitChange}
+                  onLoadArchivedCompleted={onLoadArchivedCompleted}
+                  forceExpandCompleted={forceExpandCompleted}
                 />
               </div>
             ))}

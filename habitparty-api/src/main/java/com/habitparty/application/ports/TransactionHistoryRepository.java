@@ -1,5 +1,6 @@
 package com.habitparty.application.ports;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collection;
@@ -82,5 +83,33 @@ public interface TransactionHistoryRepository {
 
   default java.util.Optional<LocalDateTime> findEarliestCreatedAtByUserId(UUID userId) {
     return java.util.Optional.empty();
+  }
+
+  default long countByUserIdAndReferenceIdAndTypeInRange(
+      UUID userId,
+      UUID referenceId,
+      TransactionType transactionType,
+      LocalDateTime startInclusive,
+      LocalDateTime endExclusive) {
+    return 0L;
+  }
+
+  default long countByUserIdAndReferenceIdAndTypeOnDate(
+      UUID userId,
+      UUID referenceId,
+      TransactionType transactionType,
+      LocalDate targetDate,
+      ZoneId userZone) {
+    ZoneId systemZone = ZoneId.systemDefault();
+    ZoneId effectiveZone = userZone != null ? userZone : systemZone;
+    LocalDate effectiveDate = targetDate != null ? targetDate : LocalDate.now(effectiveZone);
+    LocalDateTime startInclusive = effectiveDate.atStartOfDay(effectiveZone)
+        .withZoneSameInstant(systemZone)
+        .toLocalDateTime();
+    LocalDateTime endExclusive = effectiveDate.plusDays(1).atStartOfDay(effectiveZone)
+        .withZoneSameInstant(systemZone)
+        .toLocalDateTime();
+    return countByUserIdAndReferenceIdAndTypeInRange(
+        userId, referenceId, transactionType, startInclusive, endExclusive);
   }
 }

@@ -21,6 +21,12 @@
     }
   },
   "main": {
+    "back": {
+      "tasks": "Back to Tasks",
+      "dashboard": "Back to Overview",
+      "inventoryGamified": "Back to Backpack",
+      "inventoryProductivity": "Back to Inventory"
+    },
     "welcomeStats": {
       "activitiesLabel": "Focus Activities",
       "activitiesValue": "{count, plural, one {# activity} other {# activities}}",
@@ -91,6 +97,7 @@
     "longBreakBadge": "🌴 Long Break (15m)",
     "shortBreakBadge": "☕ Short Break (5m)",
     "activeFocusBadge": "⚡ Active Focus",
+    "overtimeBadge": "⏱️ Overtime",
     "pausedBadge": "Paused 👑",
     "modeBackpackCoupon": "Backpack Coupon",
     "modeBackpackCouponGamified": "Backpack Coupon",
@@ -125,7 +132,9 @@
     "resetTitle": "Reset time",
     "resetButton": "Reset",
     "skipBreakTitle": "Skip break and return to focus now",
-    "skipBreakButton": "Skip Break"
+    "skipBreakButton": "Skip Break",
+    "startBreakTitle": "Save elapsed time (including overtime) and start break ({minutes}m)",
+    "startBreakButton": "Start Break ({minutes}m)"
   },
   "zenMode": {
     "dialogAria": "Focus Zen Mode",
@@ -146,7 +155,9 @@
     "start": "Start",
     "skipBreakTitle": "Skip break",
     "skipBreak": "Skip",
-    "completeTitle": "Complete session"
+    "completeTitle": "Complete session",
+    "startBreakTitle": "Save time and start break ({minutes}m)",
+    "startBreakButton": "Start Break ({minutes}m)"
   },
   "stage": {
     "durationLabel": "Duration:"
@@ -200,7 +211,8 @@
     "tasksTab": "Tasks ({count})",
     "backpackTab": "Backpack ({count})",
     "loadingActivities": "Loading activities...",
-    "emptyActivities": "No activities registered. Create one on the main screen.",
+    "emptyActivities": "No activities registered right now.",
+    "createActivityButton": "Create first activity",
     "emptyTasks": "No pending tasks (Daily or To-Do) found.",
     "searchTasksPlaceholder": "Search task by title...",
     "macroMicroHint": "Linking a task here will log focus time to both \"{activityName}\" and the task simultaneously.",
@@ -234,6 +246,8 @@
       "breakPaused": "Break Paused",
       "readyToRest": "Ready to Rest",
       "focusing": "Focusing",
+      "overtime": "Overtime",
+      "overtimePaused": "Overtime Paused",
       "paused": "Paused",
       "readyToStart": "Ready to Start"
     },
@@ -313,6 +327,8 @@
     "longBreakLabel": "long (15 min)",
     "shortBreakLabel": "short (5 min)",
     "cycleCompletedToast": "🍅 Cycle {cycles} completed! Starting {breakLabel} break. Relax a little!",
+    "overtimeStartedToast": "🍅 Cycle goal reached! Counting overtime until you start your break or finish.",
+    "breakStartedToast": "☕ Cycle {cycles} saved! Starting {breakLabel} break. Relax a little!",
     "selectTargetToStartToast": "Select an activity, task, or backpack item to start focusing.",
     "itemAlreadyCompletedToast": "🎉 This item has already completed its time. Click the Complete (Check) button to redeem it.",
     "breakSkippedToast": "Break skipped. Ready to focus!",
@@ -341,10 +357,13 @@
     "titlePausedPrefix": "⏸️ Paused",
     "titleBreakPrefix": "☕ Break",
     "titleFocusPrefix": "🔥 Focus",
+    "titleOvertimePrefix": "⏱️ Overtime",
     "breakEndedTitle": "HabitParty - Break Completed!",
     "breakEndedBody": "Ready for the next focus cycle?",
     "cycleCompletedTitle": "HabitParty - Cycle Completed!",
-    "cycleCompletedBody": "🍅 Cycle {cycles} completed! Starting {breakLabel} break. Relax a little!"
+    "cycleCompletedBody": "🍅 Cycle {cycles} completed! Starting {breakLabel} break. Relax a little!",
+    "overtimeStartedTitle": "HabitParty - Cycle Goal Reached!",
+    "overtimeStartedBody": "🍅 Focus goal completed! Counting overtime until you start your break or finish."
   },
   "sidebar": {
     "ariaLabel": "Focus metrics and history panel",
@@ -414,7 +433,9 @@
     "deleteConfirmDescription": "Are you sure you want to permanently delete the session record <strong>\"{name}\"</strong>? This action cannot be undone.",
     "deleteConfirmButton": "Yes, delete",
     "deleteHistoryLabel": "Also delete from History",
-    "deleteHistoryHint": "Removes this session's entry from your history. Coins and XP already earned are not changed."
+    "deleteHistoryHint": "Removes this session's entry from your history. Coins and XP already earned are not changed.",
+    "showMore": "Show more",
+    "loadingMore": "Loading..."
   },
   "recordDetails": {
     "dialogAriaLabel": "Edit Focus Record",
@@ -522,6 +543,9 @@
     "editTitle": "Edit Activity",
     "createDescription": "Register an important new activity to manage your sessions.",
     "editDescription": "Update the details and default mode for this activity.",
+    "entertainmentWarningTitle": "Productive activities only",
+    "entertainmentWarningPill": "No rewards",
+    "entertainmentWarning": "A focus activity must never be a reward or entertainment. For leisure (games, shows, social media), create a Voucher in the Rewards Store.",
     "nameLabel": "Activity Name",
     "iconPickerTitle": "Activity Icon",
     "namePlaceholder": "E.g., Exam Prep, Coding, Reading...",

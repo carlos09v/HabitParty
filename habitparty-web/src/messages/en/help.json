@@ -8,7 +8,8 @@
   },
   "page": {
     "title": "Help Center & Guide",
-    "subtitle": "Find answers to all your questions about the mathematical economy, habit rules, rewards, and progression in HabitParty.",
+    "subtitle": "Find clear answers about the 3:1–4:1 economy, experience modes, habit rules, rewards, and platform updates in HabitParty.",
+    "changelogJump": "Changelog & Roadmap",
     "support": {
       "title": "Need to reach us or found a bug?",
       "descriptionBeforeIssue": "To report technical issues or suggest improvements, open a ",
@@ -24,19 +25,19 @@
     "steps": {
       "1": {
         "title": "Plan Your Routine",
-        "description": "Organize your tasks into ongoing Habits, recurring Dailies, and one-off To-Dos with checklists and deadlines."
+        "description": "Organize your workflow into ongoing Habits, recurring Dailies, and one-off To-Dos with checklists, hierarchical tags, and deadlines."
       },
       "2": {
-        "title": "Execute with Focus & Consistency",
-        "description": "Complete real tasks. The mathematical engine scores your consistency, granting XP and Coins (🪙) in Adventure Mode or Points (pts) and Credits in Essential Mode."
+        "title": "Execute on the 3:1 to 4:1 Ratio",
+        "description": "Every deliverable and focus session follows a 3:1 to 4:1 balance: ~3–4 productive hours (~15 🪙) earn 1h of rest. Choose Coins/XP (Adventure) or Credits/Points (Essential)."
       },
       "3": {
         "title": "Reward Your Dedication",
-        "description": "Set up your own rewards in the Store: breaks, leisure, free-time blocks, or lucky Mystery Boxes (in Adventure Mode)."
+        "description": "Price your personal rewards fairly in the Store (e.g., 30m = 8 🪙, 1h = 15 🪙) or open Mystery Boxes in Adventure Mode."
       },
       "4": {
         "title": "Enjoy Guilt-Free",
-        "description": "Access your Inventory/Backpack, enjoy your earned rest with peace of mind, and keep your discipline sustainable."
+        "description": "Use your redeemed items from Inventory/Backpack, enjoy well-earned leisure with peace of mind, and sustain long-term discipline."
       }
     }
   },
@@ -66,6 +67,93 @@
       "INVENTORY": "Backpack",
       "FOCUS": "Focus & Pomodoro",
       "LEVELS": "Levels & XP"
+    }
+  },
+  "changelog": {
+    "sectionTitle": "What's New, Changelog & Roadmap",
+    "sectionSubtitle": "See everything recently shipped in HabitParty and explore the upcoming chapters on our roadmap.",
+    "tabsAriaLabel": "Switch between release changelog and upcoming roadmap",
+    "currentBadge": "Current Release",
+    "tabs": {
+      "changelog": "Changelog (v1.1 – v1.4)",
+      "roadmap": "Roadmap (v1.5 – v2.0+)"
+    },
+    "items": {
+      "v14": {
+        "statusLabel": "Released",
+        "title": "Atmospheric Themes, Friend Network, Privacy & Retrospective",
+        "summary": "Customize your workspace across 7 themes, connect with friends using granular privacy controls, and export collectible PNG journey cards.",
+        "highlights": [
+          "7 Visual Themes: 4 Free (Cosmic Dark, Cosmic Daylight, Dark Knight, and Solar Parchment) + 3 VIP (Cyberpunk Neon, Forest Ranger, and Royal Gold)",
+          "Friend Network (/friends) by @username or unique HP-XXXXXX code, Public Showcases, and social activity bell notifications",
+          "Granular Privacy Controls (Public, Friends Only, or Private) for profile visibility, stats, streaks, and request permissions",
+          "Seasonal Annual Retrospective (Dec 20 – Jan 31) with 5 behavioral archetypes and downloadable PNG Profile & Retrospective cards",
+          "Rich-Text task descriptions, Hierarchical Tags (>), inline Quick Focus on task rows, and unified 'All Workspaces' Dashboard view",
+          "Automatic timezone sync so daily rollovers, streak checks, and reminders align with midnight in your local region"
+        ]
+      },
+      "v13": {
+        "statusLabel": "Released",
+        "title": "Task-Linked Focus, Kanban Events & Bulk Ledger Control",
+        "summary": "Link Pomodoro timers directly to tasks, schedule timed events on your board, and manage transaction history in bulk.",
+        "highlights": [
+          "Task-linked Focus timer with 1-click start, per-card time history, and optional auto-completion",
+          "To-Dos as Events (VIP) with start/end times or all-day schedules and a live 'In progress' board badge",
+          "Bulk History deletion with original Kanban column snapshots preserved even if boards change later",
+          "Cross-Workspace Search and global 12h AM/PM or 24h time format synchronization"
+        ]
+      },
+      "v12": {
+        "statusLabel": "Released",
+        "title": "Daylight Theme, 63 Achievements & Profile Showcase",
+        "summary": "Crisp daytime reading theme, complete trophy progression, and a customizable profile showcase.",
+        "highlights": [
+          "High-contrast Cosmic Daylight light theme with quick toggle in the sidebar",
+          "63 permanent Achievements across 5 rarity tiers (including 8 secret medals) with prestige points",
+          "Profile Showcase (/profile) with custom bio, 4 trophy highlight slots, and Visitor View preview"
+        ]
+      },
+      "v11": {
+        "statusLabel": "Released",
+        "title": "Essential vs. Adventure Modes & Bilingual Support",
+        "summary": "Switch between executive productivity or RPG immersion and change languages anytime.",
+        "highlights": [
+          "Two Experience Modes: Essential Mode (Credits, Points & clean UI) or Adventure Mode (Gold Coins, XP & Mystery Boxes)",
+          "Full English (EN) and Portuguese (PT-BR) support across the entire application",
+          "Configurable email deadline reminders for To-Dos"
+        ]
+      },
+      "v15": {
+        "statusLabel": "Next Milestone",
+        "title": "Parties & Cooperative Daily Quests",
+        "summary": "Team up in small squads of 4 to 6 friends to stay consistent together and earn shared bonuses.",
+        "highlights": [
+          "Fast squad creation via invite code with a live team daily consistency dashboard",
+          "Cooperative Daily Quests with shared bonus rewards when every member completes their goals",
+          "Shared vault and exclusive team loyalty badges"
+        ]
+      },
+      "v16": {
+        "statusLabel": "Planned",
+        "title": "Real-Time Chat & Live Focus Presence",
+        "summary": "See when friends or squadmates are actively focusing and send quick encouragement without leaving flow.",
+        "highlights": [
+          "Integrated Party chat and direct messages between connected friends",
+          "Live focus presence indicators (focusing, on break, available) with Do Not Disturb mode",
+          "1-click motivational reactions during Pomodoro sessions"
+        ]
+      },
+      "v20": {
+        "statusLabel": "Long-Term Vision",
+        "title": "Native Mobile App, Thematic Guilds & World Bosses",
+        "summary": "Carry HabitParty in your pocket with native widgets and join community-wide discipline challenges.",
+        "highlights": [
+          "Native iOS & Android app with home-screen widgets, quick check-ins, and live desktop Focus sync",
+          "Large thematic Guilds organized by goals (Studying, Coding, Fitness, Languages)",
+          "Cooperative World Boss events that take damage as the community logs focus and finishes tasks",
+          "Seasonal consistency leaderboards among friends and guilds"
+        ]
+      }
     }
   }
 }

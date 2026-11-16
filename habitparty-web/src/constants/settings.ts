@@ -14,6 +14,7 @@ import {
   Music,
   ShieldAlert,
   ShieldCheck,
+  SlidersHorizontal,
   Swords,
   Target,
   UserCircle,
@@ -44,6 +45,7 @@ export const GENDER_OPTIONS: readonly GenderOption[] = [
 
 export const SETTINGS_TABS: readonly SettingsTabItem[] = [
   { id: "profile", icon: UserCircle },
+  { id: "preferences", icon: SlidersHorizontal },
   { id: "appearance", icon: MonitorSmartphone },
   { id: "audio", icon: Volume2 },
   { id: "privacy", icon: ShieldCheck },

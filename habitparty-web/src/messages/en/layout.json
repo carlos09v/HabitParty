@@ -157,6 +157,8 @@
     "resumeAria": "Resume",
     "savePartialTitle": "Save partial time (incomplete cycle)",
     "completeSaveTitle": "Complete session and save log",
+    "startBreakTitle": "Save time and start break",
+    "startBreakAria": "Start break",
     "savePartialAria": "Save partial time",
     "completeSaveAria": "Complete and Save",
     "stopResetTitle": "Stop / Reset time",

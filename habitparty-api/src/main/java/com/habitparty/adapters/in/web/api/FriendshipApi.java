@@ -74,7 +74,8 @@ public interface FriendshipApi {
   @Operation(summary = "Listar notificações sociais", description = "Retorna notificações recentes de pedidos de amizade, aceites e marcos de amigos.")
   ResponseEntity<SocialNotificationsFeedResponseDTO> listNotifications(
       @AuthenticationPrincipal AuthenticatedUser usuarioLogado,
-      @RequestParam(name = "limit", defaultValue = "20") int limit);
+      @RequestParam(name = "limit", defaultValue = "20") int limit,
+      @RequestParam(name = "unseenOnly", defaultValue = "false") boolean unseenOnly);
 
   @PostMapping("/notifications/seen")
   @Operation(summary = "Marcar notificações sociais como vistas", description = "Marca todas as notificações sociais do usuário como lidas (ou apenas uma se notificationId for informado).")

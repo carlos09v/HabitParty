@@ -18,6 +18,7 @@ public record TransactionHistoryResponseDTO(
     UUID referenceId,
     TransactionType transactionType,
     String name,
+    String description,
     
     // Os campos que eram Optional no Domínio viram nulos (null) automaticamente no JSON se não existirem
     BigDecimal goldAmount,
@@ -45,6 +46,7 @@ public record TransactionHistoryResponseDTO(
         tx.getReferenceId().orElse(null),
         tx.getTransactionType(),
         tx.getNameSnapshot(),
+        tx.getDescriptionSnapshot().orElse(null),
         tx.getGoldAmount().orElse(null),
         tx.getXpAmount(),
         tx.getPriceSnapshot().orElse(null),

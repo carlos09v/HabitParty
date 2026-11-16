@@ -20,49 +20,59 @@
     "closeMenu": "Close menu"
   },
   "hero": {
-    "badge": "Choose between Immersive Productivity or Gamification (RPG)",
+    "badge": "Choose between Essential Mode (Clean) or Adventure Mode (RPG)",
     "titleLine1": "Your routine doesn't have to be a burden. ",
-    "titleHighlight": "Make it legendary and consistent.",
-    "subtitle": "Manage tasks, habits, and projects on agile Kanban boards. Choose between Essential Mode with an executive aesthetic or Adventure Mode with gold coins, XP, and real rewards.",
+    "titleHighlight": "Make it rewarding and consistent.",
+    "subtitle": "Manage habits, daily routines, and projects on agile Kanban boards with Pomodoro focus. Balance duty and leisure on a calibrated 3:1 to 4:1 ratio — in executive Essential Mode or gamified Adventure Mode.",
     "primaryCta": "Start for Free",
     "secondaryCta": "Explore Live Interactive Demo",
     "highlights": {
       "levels": "Focus Levels & XP",
       "streaks": "Streaks & Dailies",
       "pomodoro": "Pomodoro & Zen Mode",
-      "shop": "Reward Shop"
+      "shop": "3:1–4:1 Balanced Shop"
     },
     "preview": {
+      "modeSwitcherLabel": "Switch preview style between Essential Mode and Adventure Mode",
+      "levelEssential": "Lv. 12 • High Performance",
+      "levelAdventure": "Lv. 12 • Adventurer",
       "modeEssential": "Essential Mode",
       "modeAdventure": "Adventure Mode",
       "dailyTag": "Daily • Hardcore",
+      "dailyTagEssential": "Routine • Strict Deadline",
       "dailyTitle": "1h Deep Study & Focus",
       "streakBadge": "14 days 🔥",
-      "xpReward": "+60 XP",
-      "coinReward": "+25",
+      "xpReward": "+30 XP",
+      "pointsReward": "+30 pts",
+      "coinReward": "+5",
+      "creditsReward": "+5 Credits",
       "focusTag": "Zen Pomodoro",
       "focusStatus": "Cycle 03 • Focusing",
       "rewardTag": "Personal Reward",
+      "rewardTagEssential": "Direct Reward",
       "rewardTitle": "Gaming / Movie Session (1h)",
-      "rewardAction": "Redeemed ✓"
+      "rewardAction": "Redeemed ✓",
+      "rewardActionEssential": "In Inventory ✓",
+      "ratioNoteAdventure": "3:1–4:1 Ratio • ~15 🪙/day funds 1h of guilt-free leisure",
+      "ratioNoteEssential": "3:1–4:1 Ratio • ~15 Credits/day funds 1h of guilt-free downtime"
     }
   },
   "demo": {
     "badge": "Interactive Demo",
     "title": "Feel the satisfaction of leveling up in practice.",
-    "subtitle": "Click the buttons and tasks below. In HabitParty, every real effort triggers instant rewards with sound, XP, and gold coins.",
-    "windowTitle": "HabitParty Cosmic Studio • Live Demo",
+    "subtitle": "Click the buttons and tasks below. In HabitParty, real effort generates calibrated rewards with sound, XP, and gold coins.",
+    "windowTitle": "HabitParty • Live Demo",
     "goldStatus": "{gold} Gold",
     "levelStatus": "Level {level}",
-    "footerHint": "Interactive simulation: click the buttons to experience the immediate reward feedback.",
-    "footerHighlight": "In HabitParty: your daily habits turn into real gold and progress ✨",
+    "footerHint": "Interactive simulation: click the buttons below to feel immediate feedback.",
+    "footerHighlight": "In HabitParty: your effort turns into well-earned leisure in fair measure ✨",
     "toasts": {
       "habitLevelUp": "🎉 LEVEL UP! Level {level} reached!",
-      "habitScored": "+15 XP • +5 Gold Coins!",
-      "habitDecremented": "Habit decremented",
+      "habitScored": "+10 XP • +2 Gold Coins!",
+      "habitDecremented": "Log decreased",
       "dailyLevelUp": "🎉 LEVEL UP! Level {level}!",
-      "dailyCompleted": "⚔️ Quest Completed! +60 XP • +25 Gold!",
-      "dailyReopened": "Quest reopened",
+      "dailyCompleted": "⚔️ Routine Completed! +30 XP • +5 Coins!",
+      "dailyReopened": "Routine reopened",
       "timerStarted": "⏱️ Hyperfocus Mode Started! Take a deep breath.",
       "timerPaused": "Timer paused."
     },
@@ -86,9 +96,9 @@
       "title": "💻 1h Deep Study",
       "resetNote": "Resets at midnight if not completed.",
       "statusDone": "Completed!",
-      "statusPending": "Complete Quest:",
+      "statusPending": "Complete routine:",
       "buttonDone": "Done!",
-      "buttonPending": "Complete (+60 XP)"
+      "buttonPending": "Complete (+30 XP)"
     },
     "focusCard": {
       "badge": "Zen Focus",
@@ -120,9 +130,9 @@
         "footer": "Ambient Sounds & Zen Mode"
       },
       "step3": {
-        "tag": "Rewards & Leisure",
+        "tag": "Rewards & Leisure (3:1 to 4:1)",
         "title": "Reward your Dedication",
-        "description": "Turn discipline into well-earned downtime. Enjoy guilt-free breaks, free-time blocks, or custom rewards from your store, using consistency points or gold coins.",
+        "description": "Calibrated on a 3:1 to 4:1 duty-to-reward ratio: ~3 to 4 hours of real work (~15 coins) earn 1 hour of guilt-free leisure. Redeem breaks or personal prizes using Credits (Essential Mode) or Gold Coins & Mystery Boxes (Adventure Mode).",
         "footer": "Personal Shop & Mystery Boxes"
       }
     }
@@ -150,14 +160,14 @@
         "description": "All the power of gamified productivity at your pace: adopt Essential Mode for a clean executive interface with Credits, Points, and direct focus on deliverables; or activate Adventure Mode with gold coins, XP, and Mystery Boxes. Switch anytime with 1 click."
       },
       "rewardShop": {
-        "badge": "Real Economy",
+        "badge": "3:1 to 4:1 Economy",
         "title": "Reward Shop & Mystery Boxes",
-        "description": "Register your real-life treats (e.g., 'Movie Night', '1h Gaming') or test your luck opening Mystery Boxes with epic rewards."
+        "description": "Register your real-life treats (with 3:1–4:1 automatic effort-based price guidance) or test your luck opening Mystery Boxes in Adventure Mode."
       },
       "partyGuild": {
-        "badge": "Coming Soon",
-        "title": "Party & Guild System",
-        "description": "Coming soon: invite friends to your guild in your workspace, track mutual progress, and celebrate victories together."
+        "badge": "Social & Co-op",
+        "title": "Friend Network, Parties & Guilds",
+        "description": "Connect today via @username or unique HP-XXXXXX code with granular privacy controls. Next up: cooperative squads and guilds."
       },
       "hardcoreMode": {
         "badge": "Real Discipline",
@@ -166,18 +176,18 @@
       },
       "workspaces": {
         "badge": "Organization",
-        "title": "Independent Workspaces",
-        "description": "Isolate Work, Study, and Personal Life projects with 1 click, filter across all workspaces simultaneously on the Dashboard, and locate any task instantly."
+        "title": "Independent Workspaces & Tags",
+        "description": "Isolate Work, Study, and Personal Life, organize with hierarchical tags (>), filter all workspaces together on the Dashboard, and find any task instantly."
       },
       "analytics": {
-        "badge": "Analytics",
-        "title": "History & Economy Analytics",
-        "description": "Track visual weekly reports: accumulated focus hours, gold flow, and consistency evolution."
+        "badge": "Metrics & Social",
+        "title": "History, Friends & Retrospective",
+        "description": "Track focus hours and earnings flow, connect with friends using granular privacy controls, and export collectible PNG profile and retrospective cards."
       },
       "soundEffects": {
-        "badge": "Immersion",
-        "title": "Gratifying Sound Effects",
-        "description": "Feel the dopamine with every achievement: satisfying victory chimes, clinking coins, and a relaxing focus bell."
+        "badge": "Customization",
+        "title": "7 Visual Themes & Native Audio",
+        "description": "Switch across 7 themes (4 free + 3 VIP), Pomodoro ambient soundscapes, and gratifying achievement audio feedback."
       }
     }
   },
@@ -196,111 +206,112 @@
     "extrasLabel": "Release extras:",
     "cardFooter": "Continuous ecosystem delivery",
     "cardFooterCompleted": "Delivered and live in the ecosystem",
+    "cardFooterPlannedTag": "HabitParty Ecosystem",
     "feedbackPrompt": "Have suggestions for upcoming releases or found a bug? Take part directly in HabitParty's evolution:",
     "reportBugCta": "Report Bug or Suggest Idea (GitHub)",
     "contactCreatorCta": "Talk to the Creator ({email})",
     "items": {
       "r11": {
         "statusLabel": "Completed",
-        "title": "Internationalization & Experience Modes",
-        "tagline": "Bilingual global expansion, adaptive productivity profiles, and structural security and performance hardening.",
+        "title": "Bilingual Support & Experience Modes",
+        "tagline": "Full English and Portuguese support, two adaptive productivity profiles, and stronger account protection.",
         "features": [
-          "Internationalization (i18n): Full support for English (EN) and Portuguese (PT-BR)",
+          "Full support for English (EN) and Portuguese (PT-BR)",
           "Instant language switching across all screens without reloading the app",
-          "Experience Modes (Essential Mode vs. Adventure Mode): choose between an executive aesthetic with credits and points or a gamified adventure with gold coins and mystery boxes",
-          "Progressive email verification for account security and alert activation"
+          "Experience Modes (Essential Mode vs. Adventure Mode): choose between an executive aesthetic with Credits and Points or an RPG journey with gold coins and Mystery Boxes",
+          "Progressive email verification to protect your account and unlock alerts"
         ],
         "extras": [
-          "Multi-layer Anti-Bot protection (IP Rate Limiting, invisible Honeypot, and disposable email blocking)",
-          "Database architectural refactoring and high-performance indexes",
+          "Automatic protection against fake signups and disposable emails",
+          "Performance tuning for faster daily board loading and transitions",
           "Global time format customization (12h AM/PM or 24h) and interface preferences"
         ]
       },
       "r12": {
         "statusLabel": "Completed",
         "title": "Light Theme, Achievements & Public Profiles",
-        "tagline": "Crisp high-contrast daytime mode, discipline trophies, public adventurer profiles, and highlight showcase.",
+        "tagline": "Crisp high-contrast daytime mode, discipline trophies, public profiles, and a customizable highlight showcase.",
         "features": [
-          "Light Theme with high contrast and crisp readability for daytime productivity",
-          "Dynamic theme switcher (Cosmic Dark vs. Cosmic Daylight)",
-          "Personal Achievements system with dozens of automated trophies and medals",
-          "New 'My Achievements' screen to track your adventurer progression",
-          "Public Adventurer Pages to share level, consistency, and streaks",
-          "Highlight Showcase to organize and pin your favorite badges and trophies at the top of your profile"
+          "Cosmic Daylight light theme with high contrast and comfortable daytime readability",
+          "Quick Light/Dark theme toggle directly from the sidebar",
+          "Personal Achievements system with 63 automated medals (including 8 secret trophies)",
+          "Dedicated Achievements Gallery to track your discipline milestones",
+          "Public Profile pages to share level, consistency, and streaks",
+          "Highlight Showcase to organize and pin up to 4 favorite badges and trophies at the top of your profile"
         ]
       },
       "r13": {
         "statusLabel": "Completed",
         "title": "Kanban Events, Bulk History & Task-Linked Focus",
-        "tagline": "Schedule To-Dos as timed events, manage transaction ledgers in bulk with column snapshots, and link focus timers to tasks.",
+        "tagline": "Schedule To-Dos as timed events, manage transaction ledgers in bulk, and link Pomodoro timers directly to tasks.",
         "features": [
-          "Task-Linked Focus & Effort Metrics: 1-click timer launch, card-level time tracking, and auto-completion",
-          "To-Dos as Events (VIP): schedule with start & end times or all-day, live pulsing 'In progress' badge on Kanban, and integrated universal DatePicker",
-          "Bulk Ledger Management & Column Snapshots: multi-selection, batch deletion, and persistent Kanban list retention",
-          "Cross-Workspace Search: intelligent banner detecting matching tasks in other workspaces with 1-click switching"
+          "Task-Linked Focus timers: 1-click launch, card-level time tracking, and optional auto-completion",
+          "To-Dos as Events (VIP): schedule with start & end times or all-day and track a live 'In progress' badge on Kanban",
+          "Bulk Ledger Management: multi-selection, batch deletion, and original Kanban column snapshot preservation",
+          "Cross-Workspace Search: smart banner detecting matching tasks in other workspaces with 1-click switching"
         ],
         "extras": [
-          "Configurable Global Time Format (12h AM/PM vs 24h) synced across cards, details, history, and focus",
-          "Expanded task descriptions up to 2,000 characters with real-time char counter and limit alerts",
-          "Streak lost notification with compassionate encouragement to restart",
-          "Synchronized deletion option for tasks and focus records to clean up linked History entries"
+          "Global Time Format (12h AM/PM vs 24h) synced across cards, details, history, and focus logs",
+          "Expanded task descriptions up to 2,000 characters with a real-time character counter",
+          "Friendly streak-recovery alerts encouraging fresh restarts",
+          "Optional synchronized cleanup of linked History entries when deleting tasks or focus logs"
         ]
       },
       "r14": {
         "statusLabel": "Completed",
-        "title": "VIP Themes, Friendships & Privacy Controls",
-        "tagline": "Customize your atmosphere across 7 themes, connect with friends via friend codes, control your privacy, and share collectible showcase cards.",
+        "title": "7 Themes, Friend Network & Granular Privacy",
+        "tagline": "Customize your atmosphere across 7 themes, connect via friend codes, control privacy, and share collectible cards.",
         "features": [
-          "Atmospheric Themes: 4 Free (Cosmic Dark & Daylight + 1 alternate Dark [Dark Knight] & 1 alternate Light [Solar Parchment]) + 3 VIP (Cyberpunk Neon, Forest Ranger & extra Light theme Royal Gold)",
+          "7 Atmospheric Themes: 4 Free (Cosmic Dark, Cosmic Daylight, Dark Knight & Solar Parchment) + 3 VIP (Cyberpunk Neon, Forest Ranger & Royal Gold)",
           "Friend Network with fast search by @username, name, or unique HP-XXXXXX friend code",
-          "Social Connection Circle & Public Profiles (/profile/[username]) to follow friends' streaks and achievements",
-          "Granular Privacy Controls (Public, Friends Only, or Private for Profile, Stats, and Achievements + invite policies)",
-          "Social Activity Notifications for friend requests, accepted invites, and level/achievement milestones"
+          "Public Profiles (/profile/[username]) to follow friends' streaks and achievements",
+          "Granular Privacy Controls (Public, Friends Only, or Private) for profile visibility, stats, streaks, and invite policies",
+          "Social Activity Notifications for incoming requests, accepted invites, and milestones"
         ],
         "extras": [
-          "Annual Retrospective (Dec 20 – Jan 31 seasonal window with 5 behavioral archetypes) & collectible PNG Profile/Retrospective card downloads",
-          "Unified 'All Workspaces' Dashboard mode with quick workspace pills + 1-click Quick Focus play/pause directly on task rows",
-          "Automatic per-user IANA timezone detection, mismatch banner, and local Midnight Rollover for routines and streaks",
-          "WYSIWYG Rich-Text descriptions (TipTap formatting, highlights & links) and hierarchical nested tags (>) with inline editing & counts",
-          "Cross-workspace Kanban column moves, reward effort price guidance, and transaction history checks before deleting tasks or rewards",
-          "Upgraded Showcase (bio editor & XP level panel), smart Dark/Light last-theme toggle memory, and Spring Boot 4.1 platform upgrade"
+          "Annual Retrospective (Dec 20 – Jan 31 seasonal window with 5 behavioral archetypes) & downloadable PNG Profile/Retrospective cards",
+          "Unified 'All Workspaces' Dashboard view + 1-click Quick Focus play/pause directly on task rows",
+          "Automatic timezone synchronization so daily rollovers, streak checks, and reminders align with local midnight",
+          "Rich-Text task descriptions (lists, formatting & links) and hierarchical nested tags (>) with inline editing & filter counts",
+          "Cross-workspace Kanban column moves, 3:1–4:1 reward price guidance, and transaction ledger safety checks",
+          "Upgraded Showcase (bio editor & XP panel) and smart toggle memory recalling your favorite Light/Dark theme"
         ]
       },
       "r15": {
         "statusLabel": "Next Milestone",
         "title": "Parties & Cooperative Daily Quests",
-        "tagline": "Strength in numbers: build focused study and work squads, tackle collective goals, and unlock shared reward multipliers.",
+        "tagline": "Strength in numbers: build focused study and work squads, tackle collective goals, and unlock shared bonuses.",
         "features": [
-          "Party Formation (focus squads of 4 to 6 adventurers) via instant invite codes",
-          "Cooperative Daily Quests with shared gold and XP bonuses when everyone succeeds",
-          "Party Consistency Dashboard with real-time overview of squad dailies and active sessions",
-          "Shared Team Vault and exclusive co-op loyalty badges for squad members",
-          "Team celebrations for every daily collective milestone achieved"
+          "Party Formation (focus squads of 4 to 6 people) via quick invite codes",
+          "Cooperative Daily Quests with shared coin and XP bonuses when everyone succeeds",
+          "Party Consistency Dashboard with real-time overview of squad daily routines",
+          "Shared Team Vault and exclusive co-op badges for squad members",
+          "Team celebrations for every collective milestone achieved"
         ]
       },
       "r16": {
         "statusLabel": "Planned Milestone",
         "title": "Real-Time Chat, Live Presence & Instant Alerts",
-        "tagline": "Instant communication and live presence: chat with your squad, send motivational reactions, and feel mutual accountability in real time.",
+        "tagline": "Instant communication and live focus presence: chat with your squad, send encouragement reactions, and stay motivated together.",
         "features": [
-          "Built-in Real-Time Chat (WebSockets) with dedicated Party channels and direct messages (DM) between friends",
-          "Live Presence Status (real-time focus badges, break indicators, and availability)",
-          "Quick 1-Click Reactions and Encouragement Emojis during team focus blocks",
-          "Instant Sound and Visual Notifications for incoming messages and team milestones",
+          "Built-in Real-Time Chat with dedicated Party channels and direct messages between friends",
+          "Live Presence Status (real-time focus indicators, break status, and availability)",
+          "Quick 1-Click Reactions and encouragement emojis during shared focus blocks",
+          "Instant sound and visual alerts for incoming messages and team milestones",
           "Built-in Do Not Disturb mode for uninterrupted deep work sessions"
         ]
       },
       "r20": {
-        "statusLabel": "Major MMO & Mobile Milestone",
-        "title": "Mobile App, Guilds & Full Social MMO",
-        "tagline": "The pinnacle of HabitParty: native app in your pocket, mega guilds, co-op boss raids, and global leaderboards.",
+        "statusLabel": "Major Mobile & Social Milestone",
+        "title": "Mobile App, Guilds & Community Challenges",
+        "tagline": "The pinnacle of HabitParty: native app in your pocket, large thematic guilds, co-op boss events, and global consistency rankings.",
         "features": [
           "Official Mobile App (iOS & Android) with widgets, quick check-in, and native push notifications",
           "Real-time Focus Mode and Pomodoro synchronization between PC and smartphone",
-          "Large Thematic Guilds (Exams, Devs, Health, Fitness, Languages)",
-          "World Boss Quests & Raids that lose HP as you study and focus",
-          "Global Consistency Leaderboards (Global, Friends, and Rival Guilds)",
-          "Competitive seasons with legendary cosmetic titles and rewards"
+          "Large Thematic Guilds (Exams, Developers, Health, Fitness, Languages)",
+          "Cooperative Boss Events that lose energy as the community focuses and finishes tasks",
+          "Consistency Leaderboards (Global, Friends, and Guilds)",
+          "Seasonal events with special titles and cosmetic rewards"
         ]
       }
     }
@@ -312,7 +323,7 @@
     "title": "Plans designed for your pace.",
     "subtitle": "Start 100% free or claim one of the <gold>{remainingSlots} Founder spots</gold> with full access and a lifetime badge on your profile.",
     "promoBanner": {
-      "tag": "Special Early Adopter",
+      "tag": "Early Bird Launch Offer",
       "spotsRemaining": "Spots Remaining: Only {remainingSlots} of 30",
       "soldOut": "Promotional Batch Sold Out",
       "headline": "Get the Annual Plan for only <gold>{founderPrice}</gold> plus a Lifetime Founding Member Badge.",

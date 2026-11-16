@@ -128,8 +128,7 @@ function TaskRowFocusButton({
 }) {
   const t = useTranslations("dashboard.taskShared.actions");
   const focusStatus = useFocusTimerStore((s) => {
-    if (s.target?.taskId !== task.id) return "none";
-    if (!s.isActive) return "linked";
+    if (s.target?.taskId !== task.id || !s.isActive) return "none";
     return s.isPaused ? "paused" : "running";
   });
 

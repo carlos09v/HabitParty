@@ -1,9 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { deleteBoardColumn } from "@/actions/boardColumnActions";
+import {
+  deleteBoardColumn,
+  moveBoardColumnToWorkspace,
+} from "@/actions/boardColumnActions";
+import type { ColumnMoveWorkspaceOption } from "@/components/tasks/shared";
 import { resolveDashboardVisibleColumnIds } from "@/constants/routine";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import type {
@@ -23,6 +27,9 @@ export function useDashboardListSummary({
   columns: controlledColumns,
   onColumnsChange,
   onColumnDeleted,
+  workspaces = [],
+  onColumnMoved,
+  createColumnTrigger = 0,
   maxColumns,
   activeWorkspaceId,
   isReadOnly = false,
@@ -35,6 +42,9 @@ export function useDashboardListSummary({
   | "columns"
   | "onColumnsChange"
   | "onColumnDeleted"
+  | "workspaces"
+  | "onColumnMoved"
+  | "createColumnTrigger"
   | "maxColumns"
   | "activeWorkspaceId"
   | "isReadOnly"
@@ -266,12 +276,108 @@ export function useDashboardListSummary({
     setColumnToDelete(col);
   };
 
+  const prevCreateTriggerRef = useRef(createColumnTrigger);
+  const handleOpenCreateModalRef = useRef(handleOpenCreateModal);
+  handleOpenCreateModalRef.current = handleOpenCreateModal;
+  useEffect(() => {
+    if (createColumnTrigger > prevCreateTriggerRef.current) {
+      prevCreateTriggerRef.current = createColumnTrigger;
+      handleOpenCreateModalRef.current();
+    }
+  }, [createColumnTrigger]);
+
+  const availableTargetWorkspaces = useMemo<ColumnMoveWorkspaceOption[]>(
+    () =>
+      workspaces
+        .filter((ws) => ws.id !== activeWorkspaceId)
+        .map((ws) => ({
+          id: ws.id,
+          name: ws.name,
+          isLocked: Boolean(ws.isReadOnly),
+        })),
+    [workspaces, activeWorkspaceId],
+  );
+
+  const handleMoveLockedWorkspace = (
+    reason: "source" | "target",
+    name?: string,
+  ) => {
+    toast.warning(
+      reason === "source"
+        ? t("readOnlyMoveSourceToast")
+        : t("readOnlyMoveTargetToast", {
+            workspace: name || t("defaultWorkspaceName"),
+          }),
+    );
+    setIsUpgradeModalOpen(true);
+  };
+
+  const handleMoveColumnToWorkspace = async (
+    col: BoardColumn,
+    targetWorkspaceId: string,
+    targetWorkspaceName: string,
+  ) => {
+    if (isReadOnly) {
+      handleMoveLockedWorkspace("source");
+      return;
+    }
+
+    const targetWs = workspaces.find((ws) => ws.id === targetWorkspaceId);
+    if (targetWs?.isReadOnly) {
+      handleMoveLockedWorkspace("target", targetWorkspaceName || targetWs.name);
+      return;
+    }
+
+    setContextMenu((prev) => ({ ...prev, isOpen: false, column: null }));
+
+    try {
+      const response = await moveBoardColumnToWorkspace(col.id, {
+        targetWorkspaceId,
+      });
+
+      if (!response.success) {
+        toast.error(response.error || t("moveColumnError"));
+        return;
+      }
+
+      const nextColumns = columns.filter((c) => c.id !== col.id);
+      const remainingIds = nextColumns
+        .map((c) => c.id)
+        .filter((id): id is string => Boolean(id));
+
+      const nextVisibleIds = removeVisibleColumnIfPresent(
+        activeWorkspaceId,
+        col.id,
+        remainingIds,
+        savedVisibleIds,
+      );
+      if (nextVisibleIds) {
+        setSavedVisibleIds(nextVisibleIds);
+      }
+
+      setColumns(nextColumns);
+      const resolvedWorkspaceName =
+        targetWorkspaceName || targetWs?.name || t("defaultWorkspaceName");
+      onColumnMoved?.(col.id, targetWorkspaceId, resolvedWorkspaceName);
+
+      toast.success(
+        t("moveColumnSuccess", {
+          title: col.title || t("untitled"),
+          workspace: resolvedWorkspaceName,
+        }),
+      );
+    } catch {
+      toast.error(t("moveColumnUnexpectedError"));
+    }
+  };
+
   return {
     columns,
     activeColumns,
     surplusCount,
     isLimitReached,
     columnCountsMap,
+    availableTargetWorkspaces,
     contextMenu,
     setContextMenu,
     columnToEdit,
@@ -290,5 +396,7 @@ export function useDashboardListSummary({
     handleColumnSaved,
     handleRequestEditColumn,
     handleRequestDeleteColumn,
+    handleMoveColumnToWorkspace,
+    handleMoveLockedWorkspace,
   };
 }

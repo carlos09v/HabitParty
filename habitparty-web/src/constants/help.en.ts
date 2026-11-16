@@ -34,19 +34,20 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
     id: "experience-modes",
     category: "OVERVIEW",
     question:
-      "What is the difference between Essential Mode (Productivity) and Adventure Mode (RPG)?",
+      "What is the difference between Essential Mode (Focus & Productivity) and Adventure Mode (RPG Immersion)?",
     answer:
-      "HabitParty offers two experience profiles powered by the exact same mathematical consistency engine, Kanban boards, Pomodoro timer, and transaction history, adapting terminology, visual indicators, and reward mechanics to your workflow:",
+      "HabitParty offers two visual and conceptual modes powered by the exact same mathematical engine, 3:1–4:1 economy rules, Kanban boards, and Pomodoro timer — only the aesthetic, wording, and optional Store RNG adapt:",
     bullets: [
-      "Essential Mode (Productivity): Gamified productivity with a clean, executive aesthetic. It replaces Gold Coins with Credits and XP with Points (pts), uses professional progression titles (Beginner to High Performance), shows discreet Effort indicators (instead of swords), focuses on direct personal rewards in the Store (without Mystery Box RNG), and uses executive terminology ('Strict Deadline' instead of 'Hardcore Mode' and 'Inventory' instead of 'Backpack').",
-      "Adventure Mode (RPG Immersion): Full RPG gamification with immediate dopamine feedback. It turns your daily grind into quests with Gold Coins (🪙) and lifetime XP, adventurer ranks (Novice to Legend), sword icons for task difficulty, high-stakes Hardcore Mode, Mystery Boxes (Gacha/RNG) in the Store, an item Backpack, and celebratory sound effects.",
-      "1:1 Equivalence & Instant Switching: 1 Gold Coin equals 1 Credit, and 1 XP equals 1 Point (pts). You choose your profile during onboarding and can switch anytime in Settings > Appearance > Experience Style with 1 click, keeping all your balance, level, and history intact.",
+      "Essential Mode (Clean Focus & Productivity): Sober, executive aesthetic without fantasy clutter. Uses Credits (instead of coins) and Points (pts), displays professional ranks (Beginner to High Performance), shows clean Effort indicators (no swords), keeps the Store focused on direct rewards (no Mystery Box RNG), and uses terms like 'Strict Deadline' and 'Inventory'.",
+      "Adventure Mode (RPG Immersion): Full themed RPG experience with playful reward feedback. Turns deliverables into Gold Coins (🪙) and XP, displays adventurer ranks (Novice to Legend), sword icons for difficulty, Hardcore Mode, Mystery Boxes (luck draws by rarity) in the Store, a Backpack, and celebratory audio.",
+      "1:1 Equivalence & Instant Switching: 1 Gold Coin = 1 Credit and 1 XP = 1 Point (pts). Choose your profile during onboarding and switch anytime in Settings > Appearance > Experience Style with 1 click, keeping all balances, history, and levels intact.",
     ],
     tags: [
       "experience",
       "essential mode",
       "adventure mode",
       "productivity",
+      "immersion",
       "gamification",
       "credits",
       "points",
@@ -63,13 +64,21 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
     category: "TASKS",
     question: "What is the difference between Habits, Dailies, and To-Dos?",
     answer:
-      "HabitParty splits your routine into three well-defined modes to keep your mind focused:",
+      "HabitParty divides your routine into three complementary models and lets you organize everything with Hierarchical Tags (e.g., 'Study > English' using '>') to filter from broad areas to specifics:",
     bullets: [
-      "Habits: Ongoing actions that can be positive (+), negative (-), or mixed. They have no fixed date and work with Importance (Low, Normal, High) and a Streak system.",
-      "Dailies: Recurring routines that must be done on specific weekdays (e.g., Mondays and Wednesdays). They reset periodically.",
-      "To-Dos: One-off tasks with a due date and optional deadline time (free), scheduled reminders, subtask checklists, and rich descriptions up to 5,000 characters. Premium subscribers can also schedule To-Dos as Events (with start & end times or all-day duration) featuring a live pulsing 'In progress' badge on the board.",
+      "Habits: Ongoing actions that can be positive (+), negative (-), or mixed. They have no fixed date, use Importance (Low, Normal, High), and include a Quick Focus button right on each row.",
+      "Dailies: Recurring routines scheduled for specific weekdays (e.g., Mondays and Wednesdays). They automatically reset at midnight in your local timezone.",
+      "To-Dos: One-off tasks with a due date and optional deadline time (free), scheduled reminders, subtask checklists, and Rich-Text descriptions (lists, bold, links) up to 2,000 characters. Premium subscribers can also schedule To-Dos as Events (with start & end times or all-day duration) featuring a live pulsing 'In progress' badge.",
     ],
-    tags: ["tasks", "habits", "dailies", "to-do", "routine"],
+    tags: [
+      "tasks",
+      "habits",
+      "dailies",
+      "to-do",
+      "routine",
+      "tags",
+      "rich-text",
+    ],
     highlightBadge: "Structure",
     actionLink: { label: "View My Tasks", href: "/tasks" },
   },
@@ -123,10 +132,28 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
   {
     id: "economy-inflation",
     category: "ECONOMY",
-    question: "Why are coin and XP values so strict?",
+    question:
+      "Why are coin values so strict? How does the 3:1 to 4:1 Duty-vs-Reward ratio work?",
     answer:
-      "HabitParty's economy is calibrated so that you need a truly productive day (completing medium and hard tasks) to accumulate between 60 and 80 coins. If the system paid hundreds of coins for any simple action, the feeling of achievement would be destroyed by artificial inflation. User honesty is the core engine of the app's effectiveness.",
-    tags: ["economy", "math", "gold", "inflation", "rules"],
+      "HabitParty's closed economy is calibrated around a real-world 3:1 to 4:1 balance between productive duty and leisure rewards. A solid productive day typically earns around 15 to 20 coins (with an official benchmark of 15 🪙/day):",
+    bullets: [
+      "3:1 to 4:1 Balance (Effort vs. Leisure): Roughly 3 to 4 hours of real productive effort (medium/hard tasks, habits, and focus blocks) generate ~15 🪙 — the exact preset price for 1 hour of guilt-free leisure in the Store (15 🪙). Around 1.5–2 hours of effort earns ~8 🪙 for a 30-minute break.",
+      "Anti-Inflation Integrity: If simple actions paid dozens of coins immediately, leisure hours would become artificially cheap and lose their psychological value.",
+      "Identical in Essential Mode: In Essential Mode, the same math displays as Credits and Points (1 🪙 = 1 Credit), keeping the exact same 3:1 to 4:1 ratio. Personal honesty when scoring deliverables is the core engine of the app.",
+    ],
+    tags: [
+      "economy",
+      "math",
+      "3:1",
+      "4:1",
+      "duty",
+      "reward",
+      "gold",
+      "credits",
+      "inflation",
+      "rules",
+    ],
+    highlightBadge: "3:1–4:1 Ratio",
   },
   {
     id: "habit-reset",
@@ -218,6 +245,7 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
       "Focus Ambient Sounds: Relaxing sounds natively synthesized in the Pomodoro (Gentle Rain, Coffee Shop, Zen Lofi, and Campfire).",
       "VIP Icon Pack: An exclusive collection of golden icons for columns, routines, focus, and store items.",
       "Expanded Capacity: Up to 4 Workspaces (double the free plan), up to 6 columns per board, up to 6 custom Focus activities, a backpack expanded to 100 items, and up to 100 registered rewards.",
+      "7 Atmospheric Visual Themes: The Free plan already includes 4 full themes (Cosmic Dark, Cosmic Daylight, Dark Knight, and Solar Parchment). Premium unlocks 3 exclusive VIP themes: Cyberpunk Neon, Forest Ranger, and Royal Gold.",
       "Profile Highlight: Cosmic Guardian VIP badge and a stellar golden ring on your avatar.",
       "Plans & Payment: $1.99/month or $19.90/year (~17% savings), paid by recurring credit card.",
     ],
@@ -389,5 +417,55 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
     ],
     highlightBadge: "New • 1.3",
     actionLink: { label: "Open History", href: "/history" },
+  },
+  {
+    id: "friends-privacy-network",
+    category: "OVERVIEW",
+    question:
+      "How do the Friend Network (/friends), HP-XXXXXX Friend Codes, and Privacy controls work?",
+    answer:
+      "On the Friends page (/friends), you can connect with others while keeping full control over what stays visible and never exposing private task lists or transaction ledgers:",
+    bullets: [
+      "Search & Unique Code: Find people by @username, name, or unique Friend Code (HP-XXXXXX). You also control in Settings who can send requests (Everyone, Friend Code Only, or Nobody).",
+      "Real-Time Social Alerts: Incoming friend requests, acceptances, and social milestones appear in the Sidebar notification bell.",
+      "Public Showcase & Granular Privacy: Visiting a friend's profile shows only the highlights they allow. In Settings > Privacy, you can independently hide XP/level, streaks, focus hours, or opt out of search discovery altogether.",
+    ],
+    tags: [
+      "friends",
+      "social",
+      "privacy",
+      "code",
+      "hp-",
+      "username",
+      "showcase",
+      "notifications",
+    ],
+    highlightBadge: "New • 1.4",
+    actionLink: { label: "Open Friends Network", href: "/friends" },
+  },
+  {
+    id: "retrospective-and-customization",
+    category: "OVERVIEW",
+    question:
+      "How do the Annual Retrospective, PNG Cards, 7 Themes, and Timezone Rollover work?",
+    answer:
+      "Beyond daily planning, v1.4 introduces seasonal summaries and deep customization tailored to your local schedule:",
+    bullets: [
+      "Annual Retrospective & PNG Cards: Between Dec 20 and Jan 31, a seasonal banner on your Profile (/profile) reveals your year-in-review with 1 of 5 behavioral archetypes (based on consistency, focus, and execution). Collectible PNG cards for both Profile and Retrospective can be downloaded anytime.",
+      "Timezone & Midnight Rollover: HabitParty automatically syncs your timezone so daily resets, streak deadlines, and reminders always align with your local midnight.",
+      "7 Themes & Inline Quick Focus: Switch between 4 Free themes (2 dark, 2 light) and 3 VIP themes in Settings > Appearance, and launch a Focus timer directly from any Habit, Daily, or To-Do row.",
+    ],
+    tags: [
+      "retrospective",
+      "png",
+      "card",
+      "archetypes",
+      "themes",
+      "timezone",
+      "midnight",
+      "quick focus",
+    ],
+    highlightBadge: "New • 1.4",
+    actionLink: { label: "Customize Appearance", href: "/settings" },
   },
 ];

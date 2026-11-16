@@ -36,20 +36,21 @@ export function FocusBackpackSection({
 
   return (
     <section
+      id="focus-backpack-section"
       className="flex flex-col gap-3 w-full"
       aria-label={t("sectionAria")}
     >
       {/* Header com Título, Contador e Link para a Mochila */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <h3
+          <h2
             className={cn(
               "font-bold text-neutral-100",
               isCompact ? "text-body-m sm:text-subtitle-s" : "text-subtitle-s",
             )}
           >
             {t("title")}
-          </h3>
+          </h2>
 
           <div
             className="flex items-center gap-1 px-2 py-0.5 rounded-lg border border-primary/30 bg-surface/60 text-neutral-300 text-xs font-semibold tabular-nums"

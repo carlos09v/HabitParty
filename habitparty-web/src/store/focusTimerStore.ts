@@ -77,6 +77,7 @@ function buildIdleTimerPatch(
     elapsedSeconds: 0,
     startedAt: null,
     lastTickTimestamp: null,
+    hasTriggeredOvertimeAlert: false,
     ...overrides,
   };
 }
@@ -84,6 +85,7 @@ function buildIdleTimerPatch(
 export interface FocusTimerStoreState extends FocusTimerState {
   phase: FocusPhase;
   lastTickTimestamp: number | null;
+  hasTriggeredOvertimeAlert: boolean;
   onSessionSavedCallback: (() => void) | null;
 
   // Preferências de som delegadas ao soundPreferencesStore (fonte única da verdade)
@@ -100,8 +102,13 @@ export interface FocusTimerStoreState extends FocusTimerState {
   pauseTimer: () => void;
   resumeTimer: () => void;
   resetTimer: () => void;
+  stopFromWidget: () => void;
   skipBreak: () => void;
-  completeSession: (notes?: string) => Promise<boolean>;
+  startBreak: () => Promise<boolean>;
+  completeSession: (
+    notes?: string,
+    options?: { suppressCompleteSound?: boolean },
+  ) => Promise<boolean>;
   changeMode: (newMode: FocusRecordType) => void;
   changeDuration: (minutes: number) => void;
   startFocusActivity: (activity: FocusActivity) => void;
@@ -139,6 +146,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       totalDurationSeconds: DEFAULT_POMO_MINUTES * 60,
       elapsedSeconds: 0,
       completedCycles: 0,
+      hasTriggeredOvertimeAlert: false,
       target: null,
       startedAt: null,
       lastTickTimestamp: null,
@@ -180,14 +188,47 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
 
         const isBreak =
           state.phase === "SHORT_BREAK" || state.phase === "LONG_BREAK";
+        const isWorkPomo =
+          !isBreak &&
+          state.mode === "POMO" &&
+          state.target?.type !== "inventory";
         const isCountdown =
           state.mode === "POMO" ||
           state.target?.type === "inventory" ||
           isBreak;
 
+        if (isWorkPomo) {
+          const nextElapsed = state.elapsedSeconds + delta;
+          const nextRemaining = Math.max(0, state.secondsRemaining - delta);
+          const justCompletedCycle =
+            !state.hasTriggeredOvertimeAlert && nextRemaining === 0;
+
+          set({
+            secondsRemaining: nextRemaining,
+            elapsedSeconds: nextElapsed,
+            lastTickTimestamp: now,
+            hasTriggeredOvertimeAlert:
+              state.hasTriggeredOvertimeAlert || justCompletedCycle,
+          });
+          updateDocumentTitle(get());
+
+          if (justCompletedCycle) {
+            if (useSoundPreferencesStore.getState().timerSoundsEnabled) {
+              soundEffects.playFocusSessionCompleteSound();
+            }
+            triggerCelebrationConfetti();
+            toast.success(tStoreMsg("overtimeStartedToast"));
+            sendBrowserNotification(
+              tNotifMsg("overtimeStartedTitle"),
+              tNotifMsg("overtimeStartedBody"),
+            );
+          }
+          return;
+        }
+
         if (isCountdown) {
           if (state.secondsRemaining <= delta) {
-            // Ciclo concluído: soma exatamente os segundos restantes para fechar 100% da duração
+            // Ciclo concluído (Pausa ou Cupom de Mochila): soma exatamente os segundos restantes
             stopGlobalTicker();
             const finalElapsed = state.elapsedSeconds + state.secondsRemaining;
             set({
@@ -215,64 +256,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
               return;
             }
 
-            // 2. Foco de trabalho em Pomodoro
-            if (state.mode === "POMO" && state.target?.type !== "inventory") {
-              get()
-                .completeSession()
-                .then((success) => {
-                  if (success) {
-                    const cycles = get().completedCycles;
-                    const isLongBreak = cycles > 0 && cycles % 4 === 0;
-                    const breakMinutes = isLongBreak
-                      ? DEFAULT_LONG_BREAK_MINUTES
-                      : DEFAULT_SHORT_BREAK_MINUTES;
-                    const breakSeconds = breakMinutes * 60;
-
-                    if (
-                      useSoundPreferencesStore.getState().timerSoundsEnabled
-                    ) {
-                      soundEffects.playBreakStartSound();
-                    }
-                    triggerCelebrationConfetti();
-
-                    const nextPhase: FocusPhase = isLongBreak
-                      ? "LONG_BREAK"
-                      : "SHORT_BREAK";
-                    const breakLabel = isLongBreak
-                      ? tStoreMsg("longBreakLabel")
-                      : tStoreMsg("shortBreakLabel");
-                    toast.success(
-                      tStoreMsg("cycleCompletedToast", {
-                        cycles,
-                        breakLabel,
-                      }),
-                    );
-                    sendBrowserNotification(
-                      tNotifMsg("cycleCompletedTitle"),
-                      tNotifMsg("cycleCompletedBody", {
-                        cycles,
-                        breakLabel,
-                      }),
-                    );
-
-                    set({
-                      phase: nextPhase,
-                      isActive: true,
-                      isPaused: false,
-                      secondsRemaining: breakSeconds,
-                      totalDurationSeconds: breakSeconds,
-                      elapsedSeconds: 0,
-                      startedAt: new Date().toISOString(),
-                      lastTickTimestamp: Date.now(),
-                    });
-                    updateDocumentTitle(get());
-                    startGlobalTicker(get().tick);
-                  }
-                });
-              return;
-            }
-
-            // 3. Caso cupom de inventário ou outro countdown
+            // 2. Caso cupom de inventário ou outro countdown
             get().completeSession();
             return;
           }
@@ -396,6 +380,33 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         updateDocumentTitle(get());
       },
 
+      stopFromWidget: () => {
+        stopGlobalTicker();
+        set((prev) => {
+          if (prev.target?.type === "task") {
+            return buildIdleTimerPatch(DEFAULT_POMO_MINUTES * 60, {
+              mode: "POMO",
+              target: null,
+            });
+          }
+          if (prev.target?.type === "activity") {
+            const duration =
+              (prev.target.targetMinutes || DEFAULT_POMO_MINUTES) * 60;
+            return buildIdleTimerPatch(duration, {
+              target: {
+                ...prev.target,
+                taskId: undefined,
+                taskName: undefined,
+              },
+            });
+          }
+          const duration =
+            prev.totalDurationSeconds || DEFAULT_POMO_MINUTES * 60;
+          return buildIdleTimerPatch(duration, { target: prev.target });
+        });
+        updateDocumentTitle(get());
+      },
+
       skipBreak: () => {
         stopGlobalTicker();
         const state = get();
@@ -406,7 +417,62 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         toast.info(tStoreMsg("breakSkippedToast"));
       },
 
-      completeSession: async (notes?: string) => {
+      startBreak: async () => {
+        const state = get();
+        if (state.phase === "SHORT_BREAK" || state.phase === "LONG_BREAK") {
+          return true;
+        }
+        const success = await get().completeSession(undefined, {
+          suppressCompleteSound: true,
+        });
+        if (!success) {
+          return false;
+        }
+
+        const cycles = get().completedCycles;
+        const isLongBreak = cycles > 0 && cycles % 4 === 0;
+        const breakMinutes = isLongBreak
+          ? DEFAULT_LONG_BREAK_MINUTES
+          : DEFAULT_SHORT_BREAK_MINUTES;
+        const breakSeconds = breakMinutes * 60;
+        const nextPhase: FocusPhase = isLongBreak
+          ? "LONG_BREAK"
+          : "SHORT_BREAK";
+        const breakLabel = isLongBreak
+          ? tStoreMsg("longBreakLabel")
+          : tStoreMsg("shortBreakLabel");
+
+        if (useSoundPreferencesStore.getState().timerSoundsEnabled) {
+          soundEffects.playBreakStartSound();
+        }
+        triggerCelebrationConfetti();
+        toast.info(
+          tStoreMsg("breakStartedToast", {
+            cycles,
+            breakLabel,
+          }),
+        );
+
+        set({
+          phase: nextPhase,
+          isActive: true,
+          isPaused: false,
+          secondsRemaining: breakSeconds,
+          totalDurationSeconds: breakSeconds,
+          elapsedSeconds: 0,
+          startedAt: new Date().toISOString(),
+          lastTickTimestamp: Date.now(),
+          hasTriggeredOvertimeAlert: false,
+        });
+        updateDocumentTitle(get());
+        startGlobalTicker(get().tick);
+        return true;
+      },
+
+      completeSession: async (
+        notes?: string,
+        options?: { suppressCompleteSound?: boolean },
+      ) => {
         if (isCompletingSession) {
           return false;
         }
@@ -529,7 +595,9 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
                 : undefined;
 
               if (!rewardResult.didLevelUp) {
-                soundEffects.playFocusSessionCompleteSound();
+                if (!options?.suppressCompleteSound) {
+                  soundEffects.playFocusSessionCompleteSound();
+                }
                 if (xp > 0 || coins > 0) {
                   const isGamified =
                     useUIStore.getState().experienceMode === "GAMIFIED";
@@ -1178,6 +1246,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         totalDurationSeconds: state.totalDurationSeconds,
         elapsedSeconds: state.elapsedSeconds,
         completedCycles: state.completedCycles,
+        hasTriggeredOvertimeAlert: state.hasTriggeredOvertimeAlert,
         // Nunca persiste alvo de mochila se não houver foco ativamente em execução
         target:
           state.target?.type === "inventory" && !state.isActive

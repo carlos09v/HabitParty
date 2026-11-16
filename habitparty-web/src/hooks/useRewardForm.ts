@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { createReward, updateReward } from "@/actions/rewardActions";
 import {
@@ -20,6 +20,7 @@ import {
   mapRewardFormToCreatePayload,
   mapRewardFormToUpdatePayload,
   suggestRewardIconFromTitle,
+  toCategoryMessageKey,
   toPackageMessageKey,
 } from "@/utils/rewardMapper";
 import { soundEffects } from "@/utils/soundEffects";
@@ -47,6 +48,7 @@ export function useRewardForm({
   const [price, setPrice] = useState("10");
   const [type, setType] = useState<RewardType>("SingleUse");
   const [category, setCategory] = useState<RewardCategory>("Nenhum");
+  const lastRegularCategoryRef = useRef<RewardCategory>("Nenhum");
   const [packageLevel, setPackageLevel] = useState<PackageLevel>("Nenhum");
   const [baseDurationMinutes, setBaseDurationMinutes] = useState("30");
   const [selectedIcon, setSelectedIcon] = useState("gamepad");
@@ -72,7 +74,11 @@ export function useRewardForm({
           rewardToEdit.price !== undefined ? String(rewardToEdit.price) : "10",
         );
         setType((rewardToEdit.type as RewardType) || "SingleUse");
-        setCategory((rewardToEdit.category as RewardCategory) || "Nenhum");
+        const initialCat =
+          (rewardToEdit.category as RewardCategory) || "Nenhum";
+        setCategory(initialCat);
+        lastRegularCategoryRef.current =
+          toCategoryMessageKey(initialCat) === "DEBT" ? "Nenhum" : initialCat;
         const initialPkg =
           (rewardToEdit.packageLevel as PackageLevel) || "Nenhum";
         setPackageLevel(initialPkg);
@@ -111,6 +117,7 @@ export function useRewardForm({
         setPrice("10");
         setType("SingleUse");
         setCategory("Nenhum");
+        lastRegularCategoryRef.current = "Nenhum";
         setPackageLevel("Nenhum");
         setBaseDurationMinutes("30");
         setSelectedIcon("gamepad");
@@ -258,6 +265,9 @@ export function useRewardForm({
 
   const handleTypeChange = (newType: RewardType) => {
     setType(newType);
+    if (newType !== "SingleUse" && toCategoryMessageKey(category) === "DEBT") {
+      setCategory(lastRegularCategoryRef.current || "Nenhum");
+    }
     setHasManuallyEditedPrice(false);
     if (newType === "MysteryBox") {
       if (packageLevel === "Nenhum" || packageLevel === "NONE") {
@@ -403,6 +413,24 @@ export function useRewardForm({
     }
   };
 
+  const handleCategoryChange = (nextCategory: RewardCategory) => {
+    setCategory(nextCategory);
+    if (toCategoryMessageKey(nextCategory) !== "DEBT") {
+      lastRegularCategoryRef.current = nextCategory;
+    }
+  };
+
+  const handleDebtToggleChange = (isDebt: boolean) => {
+    if (isDebt) {
+      if (toCategoryMessageKey(category) !== "DEBT") {
+        lastRegularCategoryRef.current = category;
+      }
+      setCategory("Dívida");
+    } else {
+      setCategory(lastRegularCategoryRef.current || "Nenhum");
+    }
+  };
+
   const handleIconSelect = (iconId: string) => {
     setSelectedIcon(iconId);
     setHasManuallyChangedIcon(true);
@@ -425,6 +453,8 @@ export function useRewardForm({
     handleTypeChange,
     category,
     setCategory,
+    handleCategoryChange,
+    handleDebtToggleChange,
     packageLevel,
     setPackageLevel,
     handleMysteryBoxTierSelect,

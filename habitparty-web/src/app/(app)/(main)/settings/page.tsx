@@ -102,17 +102,8 @@ export default async function SettingsPage({
                   </SettingsCard>
                 </>
               ),
-              appearance: (
+              preferences: (
                 <>
-                  {/* TEMA DA INTERFACE */}
-                  <SettingsCard
-                    title={t("cards.appearanceTheme")}
-                    description={t("cards.appearanceThemeDesc")}
-                    icon={<Palette size={18} className="text-gold" />}
-                  >
-                    <ThemeSettings />
-                  </SettingsCard>
-
                   {/* MODO DE EXPERIÊNCIA: GAMIFICADO VS PRODUTIVIDADE */}
                   <SettingsCard
                     title={t("cards.experienceMode")}
@@ -133,6 +124,18 @@ export default async function SettingsPage({
                     <LanguageSettings />
                   </SettingsCard>
 
+                  {/* FUSO HORÁRIO */}
+                  <SettingsCard
+                    title={t("cards.timezone")}
+                    description={t("cards.timezoneDesc")}
+                    icon={<Globe size={18} className="text-gold" />}
+                  >
+                    <TimezoneSettings
+                      initialTimezone={user?.timezone}
+                      initialTimezoneUpdatedAt={user?.timezoneUpdatedAt}
+                    />
+                  </SettingsCard>
+
                   {/* FORMATO DE DATA */}
                   <SettingsCard
                     title={t("cards.dateFormat")}
@@ -150,17 +153,17 @@ export default async function SettingsPage({
                   >
                     <TimeFormatSettings />
                   </SettingsCard>
-
-                  {/* FUSO HORÁRIO */}
+                </>
+              ),
+              appearance: (
+                <>
+                  {/* TEMA DA INTERFACE */}
                   <SettingsCard
-                    title={t("cards.timezone")}
-                    description={t("cards.timezoneDesc")}
-                    icon={<Globe size={18} className="text-gold" />}
+                    title={t("cards.appearanceTheme")}
+                    description={t("cards.appearanceThemeDesc")}
+                    icon={<Palette size={18} className="text-gold" />}
                   >
-                    <TimezoneSettings
-                      initialTimezone={user?.timezone}
-                      initialTimezoneUpdatedAt={user?.timezoneUpdatedAt}
-                    />
+                    <ThemeSettings />
                   </SettingsCard>
 
                   {/* CARDS DE BOAS-VINDAS */}

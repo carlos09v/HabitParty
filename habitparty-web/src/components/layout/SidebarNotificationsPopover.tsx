@@ -35,6 +35,8 @@ const POPOVER_OPTIONS = {
 };
 
 const DISMISSED_STORAGE_PREFIX = "habitparty:notifications-dismissed:";
+const ALERTED_SESSION_PREFIX = "habitparty:notifications-alerted:";
+const alertedIdsMemoryCache = new Map<string, Set<string>>();
 
 function getDismissedStorageKey(
   dateStr = getTodayDateString(
@@ -43,6 +45,51 @@ function getDismissedStorageKey(
   ),
 ): string {
   return `${DISMISSED_STORAGE_PREFIX}${dateStr}`;
+}
+
+function readStoredIdSet(
+  storage: Storage | undefined,
+  key: string,
+): Set<string> {
+  if (!storage) return new Set();
+  try {
+    const raw = storage.getItem(key);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(parsed.filter((v): v is string => typeof v === "string"));
+  } catch {
+    return new Set();
+  }
+}
+
+function getAlertedIdsForDay(dateStr: string): Set<string> {
+  let cached = alertedIdsMemoryCache.get(dateStr);
+  if (!cached) {
+    cached = readStoredIdSet(
+      typeof window !== "undefined" ? window.sessionStorage : undefined,
+      `${ALERTED_SESSION_PREFIX}${dateStr}`,
+    );
+    alertedIdsMemoryCache.set(dateStr, cached);
+  }
+  return cached;
+}
+
+function markNotificationsAlerted(dateStr: string, ids: string[]): void {
+  if (ids.length === 0) return;
+  const alerted = getAlertedIdsForDay(dateStr);
+  for (const id of ids) {
+    alerted.add(id);
+  }
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(
+      `${ALERTED_SESSION_PREFIX}${dateStr}`,
+      JSON.stringify(Array.from(alerted)),
+    );
+  } catch {
+    // Ignora erro caso sessionStorage não esteja disponível
+  }
 }
 
 export interface SidebarNotificationsPopoverProps {
@@ -62,7 +109,6 @@ export function SidebarNotificationsPopover({
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
-  const hasPlayedInitialSoundRef = useRef(false);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
 
   const loadNotifications = useCallback((playAlertOnNew = false) => {
@@ -77,12 +123,35 @@ export function SidebarNotificationsPopover({
         now.getTimezoneOffset(),
       );
       setNotifications(res.notifications);
+      if (!playAlertOnNew || res.notifications.length === 0) {
+        return;
+      }
+
+      const storedDismissed = readStoredIdSet(
+        typeof window !== "undefined" ? window.localStorage : undefined,
+        getDismissedStorageKey(localDateStr),
+      );
+      const activeUnseenIds = res.notifications
+        .filter(
+          (n) =>
+            !storedDismissed.has(n.id) &&
+            !(n.socialNotificationId && n.persistedSeen),
+        )
+        .map((n) => n.id);
+
+      if (activeUnseenIds.length === 0) return;
+
+      const alreadyAlerted = getAlertedIdsForDay(localDateStr);
+      const unalertedIds = activeUnseenIds.filter(
+        (id) => !alreadyAlerted.has(id),
+      );
+      if (unalertedIds.length === 0) return;
+
+      markNotificationsAlerted(localDateStr, unalertedIds);
       if (
-        playAlertOnNew &&
-        !hasPlayedInitialSoundRef.current &&
-        res.notifications.length > 0
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible"
       ) {
-        hasPlayedInitialSoundRef.current = true;
         soundEffects.playNotificationSound();
       }
     });
@@ -148,10 +217,18 @@ export function SidebarNotificationsPopover({
       scheduleRefresh();
     };
 
+    const handleNotificationsChanged = () => {
+      loadNotifications(false);
+    };
+
     window.addEventListener("habitparty:tasks-changed", handleTasksUpdated);
     window.addEventListener(
       "habitparty:task-completed-from-focus",
       handleFocusTaskCompleted,
+    );
+    window.addEventListener(
+      "habitparty:notifications-changed",
+      handleNotificationsChanged,
     );
 
     return () => {
@@ -168,6 +245,10 @@ export function SidebarNotificationsPopover({
       window.removeEventListener(
         "habitparty:task-completed-from-focus",
         handleFocusTaskCompleted,
+      );
+      window.removeEventListener(
+        "habitparty:notifications-changed",
+        handleNotificationsChanged,
       );
     };
   }, [loadNotifications]);
@@ -221,11 +302,8 @@ export function SidebarNotificationsPopover({
   );
 
   const activeNotifications = notifications.filter(
-    (n) => !dismissedIds.has(n.id),
-  );
-
-  const unreadNotifications = activeNotifications.filter(
-    (n) => !n.socialNotificationId || !n.persistedSeen,
+    (n) =>
+      !dismissedIds.has(n.id) && !(n.socialNotificationId && n.persistedSeen),
   );
 
   const criticalNotifications = activeNotifications.filter(
@@ -235,24 +313,22 @@ export function SidebarNotificationsPopover({
   const displayedNotifications =
     activeTab === "CRITICAL" ? criticalNotifications : activeNotifications;
 
-  const unreadCount = unreadNotifications.length;
+  const unreadCount = activeNotifications.length;
   const hasCritical = criticalNotifications.length > 0;
 
   const handleDismissAll = () => {
-    const hasUnseenSocial = activeNotifications.some(
-      (n) => n.socialNotificationId && !n.persistedSeen,
+    const hasSocialNotifications = activeNotifications.some((n) =>
+      Boolean(n.socialNotificationId),
     );
-    if (hasUnseenSocial) {
+    if (hasSocialNotifications) {
       void markSocialNotificationsSeenAction();
     }
 
-    const nextDismissed = new Set(notifications.map((n) => n.id));
-    setDismissedIds(nextDismissed);
-    setNotifications((prev) =>
-      prev.map((n) =>
-        n.socialNotificationId ? { ...n, persistedSeen: true } : n,
-      ),
+    const nextDismissed = new Set(
+      notifications.filter((n) => !n.socialNotificationId).map((n) => n.id),
     );
+    setDismissedIds(nextDismissed);
+    setNotifications((prev) => prev.filter((n) => !n.socialNotificationId));
     if (typeof window !== "undefined") {
       try {
         window.localStorage.setItem(
@@ -266,13 +342,9 @@ export function SidebarNotificationsPopover({
   };
 
   const handleNotificationClick = (n: SidebarNotification) => {
-    if (n.socialNotificationId && !n.persistedSeen) {
+    if (n.socialNotificationId) {
       const socialId = n.socialNotificationId;
-      setNotifications((prev) =>
-        prev.map((item) =>
-          item.id === n.id ? { ...item, persistedSeen: true } : item,
-        ),
-      );
+      setNotifications((prev) => prev.filter((item) => item.id !== n.id));
       void markSocialNotificationsSeenAction(socialId);
     }
     closePopover();

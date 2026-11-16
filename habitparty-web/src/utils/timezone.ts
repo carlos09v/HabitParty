@@ -3,9 +3,9 @@ export const TIMEZONE_COOKIE = "hp_timezone";
 export const BROWSER_TIMEZONE_COOKIE = "hp_browser_tz";
 export const TIMEZONE_CHANGE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
-const FALLBACK_IANA_TIMEZONES = [
+/** Lista curada de fusos canônicos principais exibidos antes de uma busca textual, evitando duplicatas regionais do mesmo horário. */
+export const PRIMARY_IANA_TIMEZONES: readonly string[] = [
   "America/Sao_Paulo",
-  "America/Fortaleza",
   "America/Manaus",
   "America/Rio_Branco",
   "America/Argentina/Buenos_Aires",
@@ -18,14 +18,12 @@ const FALLBACK_IANA_TIMEZONES = [
   "America/Los_Angeles",
   "America/Toronto",
   "America/Vancouver",
+  "UTC",
   "Europe/Lisbon",
   "Europe/London",
   "Europe/Madrid",
   "Europe/Paris",
   "Europe/Berlin",
-  "Europe/Rome",
-  "Europe/Amsterdam",
-  "UTC",
   "Africa/Johannesburg",
   "Asia/Dubai",
   "Asia/Kolkata",
@@ -38,16 +36,22 @@ const FALLBACK_IANA_TIMEZONES = [
   "Pacific/Auckland",
 ];
 
+const validTimeZoneCache = new Map<string, boolean>();
+
 /**
  * Valida se uma string representa um fuso horário IANA reconhecido pelo runtime JS.
  */
 export function isValidIanaTimeZone(tz?: string | null): tz is string {
   const clean = tz?.trim();
   if (!clean) return false;
+  const cached = validTimeZoneCache.get(clean);
+  if (cached !== undefined) return cached;
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: clean });
+    validTimeZoneCache.set(clean, true);
     return true;
   } catch {
+    validTimeZoneCache.set(clean, false);
     return false;
   }
 }
@@ -66,6 +70,40 @@ export interface ZonedDateParts {
   minute: number;
   second: number;
   weekday: number;
+}
+
+const datePartsFormatterCache = new Map<string, Intl.DateTimeFormat>();
+const offsetFormatterCache = new Map<string, Intl.DateTimeFormat>();
+const canonicalTimeZoneCache = new Map<string, string>();
+
+function getDatePartsFormatter(timeZone: string): Intl.DateTimeFormat {
+  let formatter = datePartsFormatterCache.get(timeZone);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+    });
+    datePartsFormatterCache.set(timeZone, formatter);
+  }
+  return formatter;
+}
+
+function getOffsetFormatter(timeZone: string): Intl.DateTimeFormat {
+  let formatter = offsetFormatterCache.get(timeZone);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      timeZoneName: "shortOffset",
+    });
+    offsetFormatterCache.set(timeZone, formatter);
+  }
+  return formatter;
 }
 
 /**
@@ -89,16 +127,7 @@ export function getDatePartsInTimeZone(
     };
   }
 
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: validTz,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(date);
+  const parts = getDatePartsFormatter(validTz).formatToParts(date);
 
   const map: Record<string, string> = {};
   for (const part of parts) {
@@ -134,14 +163,17 @@ export function getDateKeyInTimeZone(
  * Normaliza aliases IANA antigos (ex: Asia/Calcutta -> Asia/Kolkata) para comparação justa.
  */
 export function canonicalizeTimeZone(tz?: string | null): string | null {
-  if (!isValidIanaTimeZone(tz)) return null;
+  const clean = tz?.trim();
+  if (!clean || !isValidIanaTimeZone(clean)) return null;
+  const cached = canonicalTimeZoneCache.get(clean);
+  if (cached) return cached;
   try {
-    const resolved = new Intl.DateTimeFormat("en-US", {
-      timeZone: tz.trim(),
-    }).resolvedOptions().timeZone;
-    return resolved || tz.trim();
+    const resolved = getOffsetFormatter(clean).resolvedOptions().timeZone;
+    const result = resolved || clean;
+    canonicalTimeZoneCache.set(clean, result);
+    return result;
   } catch {
-    return tz.trim();
+    return clean;
   }
 }
 
@@ -178,14 +210,39 @@ export function areTimeZonesEquivalent(
 }
 
 /**
- * Formata o deslocamento UTC atual de uma zona IANA (ex: "UTC-03:00", "UTC+09:00").
+ * Verifica se dois fusos IANA seguem exatamente o mesmo relógio/regra de UTC ao longo do ano
+ * (ex: America/Sao_Paulo, America/Bahia e America/Maceio ambos em UTC-03:00).
  */
-export function formatTimeZoneOffsetLabel(tz: string): string {
+export function areTimeZonesClockEquivalent(
+  a?: string | null,
+  b?: string | null,
+  referenceDate: Date = new Date(),
+): boolean {
+  if (areTimeZonesEquivalent(a, b)) return true;
+  if (!isValidIanaTimeZone(a) || !isValidIanaTimeZone(b)) return false;
+
+  const sampleDates = [
+    referenceDate,
+    new Date(Date.UTC(referenceDate.getUTCFullYear(), 0, 1, 12, 0, 0)),
+    new Date(Date.UTC(referenceDate.getUTCFullYear(), 6, 1, 12, 0, 0)),
+  ];
+
+  return sampleDates.every(
+    (sample) =>
+      formatTimeZoneOffsetLabel(a, sample) ===
+      formatTimeZoneOffsetLabel(b, sample),
+  );
+}
+
+/**
+ * Formata o deslocamento UTC de uma zona IANA (ex: "UTC-03:00", "UTC+09:00").
+ */
+export function formatTimeZoneOffsetLabel(
+  tz: string,
+  date: Date = new Date(),
+): string {
   try {
-    const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone: tz,
-      timeZoneName: "shortOffset",
-    }).formatToParts(new Date());
+    const parts = getOffsetFormatter(tz).formatToParts(date);
     const offsetRaw = parts.find((p) => p.type === "timeZoneName")?.value ?? "";
     if (!offsetRaw || offsetRaw === "GMT" || offsetRaw === "UTC") {
       return "UTC+00:00";
@@ -211,15 +268,13 @@ export function getSupportedTimeZones(): string[] {
     if (typeof intlWithSupportedValues.supportedValuesOf === "function") {
       const list = intlWithSupportedValues.supportedValuesOf("timeZone");
       if (Array.isArray(list) && list.length > 0) {
-        return Array.from(
-          new Set([...FALLBACK_IANA_TIMEZONES, ...list]),
-        ).sort();
+        return Array.from(new Set([...PRIMARY_IANA_TIMEZONES, ...list])).sort();
       }
     }
   } catch {
     // Fallback para lista curada
   }
-  return [...FALLBACK_IANA_TIMEZONES].sort();
+  return [...PRIMARY_IANA_TIMEZONES].sort();
 }
 
 export function hasTimeZoneSuffix(dateStr: string): boolean {

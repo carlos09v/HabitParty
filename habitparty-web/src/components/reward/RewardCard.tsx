@@ -8,6 +8,7 @@ import { ItemRow } from "@/components/ui/ItemRow";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AddRewardCardProps, RewardCardProps } from "@/types/reward";
 import { cn } from "@/utils";
+import { toCategoryMessageKey } from "@/utils/rewardMapper";
 
 export const RewardCard = memo(function RewardCard({
   reward,
@@ -41,6 +42,13 @@ export const RewardCard = memo(function RewardCard({
     [reward],
   );
 
+  const isDebt = toCategoryMessageKey(reward.category) === "DEBT";
+  const actionLabel = isDebt
+    ? t("payDebt")
+    : isGamified
+      ? t("buy")
+      : t("buyProductivity");
+
   return (
     <GamifiedItemCard
       id={reward.id}
@@ -55,7 +63,7 @@ export const RewardCard = memo(function RewardCard({
       price={reward.price}
       canAfford={canAfford}
       isDeleteChecking={isDeleteChecking}
-      actionLabel={isGamified ? t("buy") : t("buyProductivity")}
+      actionLabel={actionLabel}
       onAction={handleBuy}
       onDoubleClick={onEdit ? handleDoubleClick : undefined}
       onContextMenu={handleContextMenu}
@@ -97,6 +105,13 @@ export const RewardItemRow = memo(function RewardItemRow({
     [reward],
   );
 
+  const isDebt = toCategoryMessageKey(reward.category) === "DEBT";
+  const actionLabel = isDebt
+    ? t("payDebt")
+    : isGamified
+      ? t("buy")
+      : t("buyProductivity");
+
   return (
     <ItemRow
       id={reward.id}
@@ -116,7 +131,7 @@ export const RewardItemRow = memo(function RewardItemRow({
             : t("insufficientCreditsShort")
           : undefined
       }
-      actionLabel={isGamified ? t("buy") : t("buyProductivity")}
+      actionLabel={actionLabel}
       onAction={handleBuy}
       onDoubleClick={onEdit ? handleDoubleClick : undefined}
       onContextMenu={handleContextMenu}

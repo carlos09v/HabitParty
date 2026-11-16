@@ -44,6 +44,34 @@ const PRIORITY_MAP: Record<string, HabitImportance> = {
   high: "high",
 };
 
+export function computeArchivedColumnCountsFromTotals(
+  loadedTotal: number,
+  loadedCompleted: number,
+  totalTasks?: number | null,
+  completedTasks?: number | null,
+): { archivedTotalCount: number; archivedCompletedCount: number } {
+  const resolvedTotal = totalTasks ?? loadedTotal;
+  const resolvedCompleted = completedTasks ?? loadedCompleted;
+  return {
+    archivedTotalCount: Math.max(0, resolvedTotal - loadedTotal),
+    archivedCompletedCount: Math.max(0, resolvedCompleted - loadedCompleted),
+  };
+}
+
+export function computeArchivedColumnCounts(
+  tasks: Pick<Task, "completed">[],
+  totalTasks?: number | null,
+  completedTasks?: number | null,
+): { archivedTotalCount: number; archivedCompletedCount: number } {
+  const loadedCompleted = tasks.filter((t) => Boolean(t.completed)).length;
+  return computeArchivedColumnCountsFromTotals(
+    tasks.length,
+    loadedCompleted,
+    totalTasks,
+    completedTasks,
+  );
+}
+
 /**
  * Mapeia o DTO do backend para a entidade Task da UI no Kanban.
  */
@@ -145,18 +173,30 @@ export function mapWorkspaceToBoardColumns(
 ): BoardColumn[] {
   if (!workspace.columns) return [];
 
-  return workspace.columns.map((col: BoardColumnResponseDTO) => ({
-    id: col.id || "",
-    title: col.name || "",
-    order: col.orderIndex || 0,
-    icon: col.icon || "sun",
-    tasks: (col.tasks || []).map((t) =>
+  return workspace.columns.map((col: BoardColumnResponseDTO) => {
+    const mappedTasks = (col.tasks || []).map((t) =>
       mapTaskResponseToTask(t, col.id || "", timeZone, {
         id: workspace.id,
         name: workspace.name,
       }),
-    ),
-  }));
+    );
+    const { archivedTotalCount, archivedCompletedCount } =
+      computeArchivedColumnCounts(
+        mappedTasks,
+        col.totalTasks,
+        col.completedTasks,
+      );
+
+    return {
+      id: col.id || "",
+      title: col.name || "",
+      order: col.orderIndex || 0,
+      icon: col.icon || "sun",
+      tasks: mappedTasks,
+      archivedTotalCount,
+      archivedCompletedCount,
+    };
+  });
 }
 
 /**

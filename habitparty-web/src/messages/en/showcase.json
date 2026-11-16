@@ -6,6 +6,7 @@
   "loading": {
     "ariaLabel": "Loading profile showcase and achievements"
   },
+  "backToSettings": "Back to Settings",
   "actions": {
     "unauthorized": "Your session has expired. Please sign in again.",
     "updateHighlightsError": "Could not save showcase highlights.",
@@ -782,6 +783,7 @@
   },
   "publicProfile": {
     "backToFriends": "Back to Friends",
+    "backToPrevious": "Back",
     "notFoundTitle": "Profile not found",
     "notFoundDesc": "This @username does not exist or is no longer active.",
     "privateProfileTitle": "Private Showcase",

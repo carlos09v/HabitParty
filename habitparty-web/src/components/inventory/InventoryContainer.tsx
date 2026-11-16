@@ -136,9 +136,47 @@ export function InventoryContainer({
     return result;
   }, [items, filters]);
 
-  const { stats: welcomeStats } = useMemo(() => {
-    return calculateInventoryWelcomeStats(items, locale, isGamified);
-  }, [items, locale, isGamified]);
+  const welcomeStats = useMemo(() => {
+    const { stats } = calculateInventoryWelcomeStats(items, locale, isGamified);
+    return stats.map((stat, index) => {
+      if (index === 0) {
+        return {
+          ...stat,
+          onClick: isFiltering ? handleClearFilters : undefined,
+        };
+      }
+      if (index === 1) {
+        return {
+          ...stat,
+          active: filters.status === "IN_FOCUS",
+          onClick: () =>
+            handleFilterChange({
+              status: filters.status === "IN_FOCUS" ? "" : "IN_FOCUS",
+            }),
+        };
+      }
+      if (index === 2) {
+        return {
+          ...stat,
+          active: filters.type === "SingleUse",
+          onClick: () =>
+            handleFilterChange({
+              type: filters.type === "SingleUse" ? "" : "SingleUse",
+            }),
+        };
+      }
+      return stat;
+    });
+  }, [
+    items,
+    locale,
+    isGamified,
+    isFiltering,
+    filters.status,
+    filters.type,
+    handleFilterChange,
+    handleClearFilters,
+  ]);
 
   return (
     <>

@@ -137,7 +137,8 @@
     "linkedTagsLabel": "Linked tags:",
     "deleteButton": "Delete",
     "closeButton": "Close",
-    "columnLabel": "List:"
+    "columnLabel": "List:",
+    "descriptionLabel": "Reward description"
   },
   "utils": {
     "unknownDate": "Unknown date",

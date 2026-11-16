@@ -17,6 +17,10 @@ interface FocusSidebarRightProps {
   weeklyDays: WeeklyFocusDayData[];
   totalWeekMinutes: number;
   recentRecords: FocusRecord[];
+  totalRecordsCount?: number;
+  hasMoreRecords?: boolean;
+  isLoadingMoreRecords?: boolean;
+  onShowMoreRecords?: () => void;
   weekOffset?: number;
   weekLabel?: string;
   weekDateRange?: string;
@@ -40,6 +44,10 @@ export function FocusSidebarRight({
   weeklyDays,
   totalWeekMinutes,
   recentRecords,
+  totalRecordsCount,
+  hasMoreRecords = false,
+  isLoadingMoreRecords = false,
+  onShowMoreRecords,
   weekOffset = 0,
   weekLabel,
   weekDateRange,
@@ -115,6 +123,10 @@ export function FocusSidebarRight({
       {/* 3. Foco em Registro (Histórico Recente com botões + e ...) */}
       <FocusRecentRecords
         records={recentRecords}
+        totalRecordsCount={totalRecordsCount}
+        hasMoreRecords={hasMoreRecords}
+        isLoadingMore={isLoadingMoreRecords}
+        onShowMore={onShowMoreRecords}
         onAddRecord={onAddRecord}
         onOptionsClick={onOptionsClick}
         onDeleteRecord={onDeleteRecord}

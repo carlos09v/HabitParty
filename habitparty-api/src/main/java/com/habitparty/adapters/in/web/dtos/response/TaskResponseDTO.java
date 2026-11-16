@@ -71,6 +71,7 @@ public record TaskResponseDTO(
         Boolean sendEmailReminder,
         Boolean emailReminderSent,
         Boolean isRewardClaimed,
+        @JsonInclude(JsonInclude.Include.NON_NULL) Boolean rewardGranted,
         OffsetDateTime lastCompletedAt,
 
         // --- Métricas de Foco Vinculado ---
@@ -88,6 +89,14 @@ public record TaskResponseDTO(
     }
 
     public static TaskResponseDTO fromDomain(Task task, LocalDate referenceDate, ZoneId zoneId) {
+        return fromDomain(task, referenceDate, zoneId, null);
+    }
+
+    public static TaskResponseDTO fromDomain(
+            Task task,
+            LocalDate referenceDate,
+            ZoneId zoneId,
+            Boolean rewardGranted) {
         LocalDate effectiveDate = referenceDate != null ? referenceDate : LocalDate.now();
         ZoneId effectiveZone = zoneId != null ? zoneId : ZoneId.systemDefault();
         // Converte o checklist para DTO (se existir)
@@ -154,6 +163,7 @@ public record TaskResponseDTO(
                 task instanceof Todo t ? t.isSendEmailReminder() : null,
                 task instanceof Todo t ? t.isEmailReminderSent() : null,
                 task.isRewardAlreadyClaimed(effectiveDate),
+                rewardGranted,
                 lastCompletedAt,
 
                 // Métricas de Foco

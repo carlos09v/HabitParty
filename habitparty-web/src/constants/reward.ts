@@ -212,6 +212,7 @@ export const CATEGORY_LABELS: Partial<Record<string, string>> = {
   Desenvolvimento: "Desenvolvimento",
   Sorte: "Sorte",
   Hobbies: "Hobbies",
+  Dívida: "Dívida",
 };
 
 export const REWARD_CATEGORY_OPTIONS: SelectOption[] = [
@@ -345,10 +346,12 @@ export const REWARD_PACKAGE_OPTIONS: SelectOption[] = [
 
 export const REWARD_FORM_CATEGORY_OPTIONS: SelectOption[] = (
   Object.keys(CATEGORY_LABELS) as RewardCategory[]
-).map((cat) => ({
-  value: cat,
-  label: cat,
-}));
+)
+  .filter((cat) => cat !== "Dívida")
+  .map((cat) => ({
+    value: cat,
+    label: cat,
+  }));
 
 export const REWARD_FORM_TYPE_KEYS = Object.keys(
   REWARD_TYPE_META,

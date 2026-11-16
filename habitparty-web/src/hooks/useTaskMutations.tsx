@@ -10,6 +10,10 @@ import {
   deleteTask,
   recordHabitScore,
 } from "@/actions/taskActions";
+import {
+  HABIT_SCORE_COOLDOWN_MS,
+  MAX_DAILY_REWARDED_HABIT_SCORES,
+} from "@/constants/task";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
@@ -138,6 +142,8 @@ export function useTaskMutations({
   const { isGamified } = useExperienceMode();
   const [isPending, startTransition] = useTransition();
   const rewardedTaskIdsRef = useRef<Set<string>>(new Set());
+  const inFlightHabitTasksRef = useRef<Set<string>>(new Set());
+  const habitLastActionAtRef = useRef<Map<string, number>>(new Map());
 
   const xpLabel = isGamified ? t("xpLabel") : t("xpLabelProductivity");
   const goldLabel = isGamified ? t("goldLabel") : t("goldLabelProductivity");
@@ -298,8 +304,17 @@ export function useTaskMutations({
 
   const handleHabitChange = useCallback(
     (taskId: string, delta: number) => {
+      if (inFlightHabitTasksRef.current.has(taskId)) return;
+
+      const now = Date.now();
+      const lastActionAt = habitLastActionAtRef.current.get(taskId) ?? 0;
+      if (now - lastActionAt < HABIT_SCORE_COOLDOWN_MS) return;
+
       const targetTask = findTask(taskId);
       if (!targetTask) return;
+
+      inFlightHabitTasksRef.current.add(taskId);
+      habitLastActionAtRef.current.set(taskId, now);
 
       // Atualização otimista imediata na visualização do usuário
       onOptimisticHabit(taskId, delta);
@@ -310,107 +325,120 @@ export function useTaskMutations({
       }
 
       startTransition(async () => {
-        const res = await recordHabitScore(taskId, delta);
+        try {
+          const res = await recordHabitScore(taskId, delta);
 
-        if (!res.success) {
-          toast.error(res.error || t("habitScoreError"));
-          // Rollback otimista revertendo o incremento ou decremento
-          onOptimisticHabit(taskId, -delta);
-          return;
-        }
-
-        // Reconcilia os contadores e streak exatos retornados pelo backend
-        const reconciledTask = res.data
-          ? mergeTaskWithResponseDTO(targetTask, res.data)
-          : null;
-        if (reconciledTask) {
-          onReconcileTask?.(reconciledTask);
-          onTaskUpdatedInDetails?.(reconciledTask);
-        }
-        notifyTasksChanged({ completedToday: delta > 0 });
-
-        if (delta > 0) {
-          const rewardStreak = resolveRewardStreakBeforeAction(
-            targetTask,
-            res.data?.currentStreak,
-          );
-
-          const breakdown = getTaskRewardBreakdown({
-            taskType: targetTask.type,
-            importanceType: targetTask.importanceType,
-            resetCounter: targetTask.resetCounter,
-            currentStreak: rewardStreak,
-            locale,
-          });
-
-          const xp = breakdown.finalReward.xp;
-          const gold = breakdown.finalReward.gold;
-
-          const rewardResult = awardUserRewards(xp, gold, {
-            locale,
-            levelUpTitle: tLevelUp("title"),
-            congratsPrefix: tLevelUp("congratsPrefix"),
-            congratsSuffix: tLevelUp("congratsSuffix"),
-            isTaskCompletion: true,
-          });
-
-          // Se não subiu de nível, exibe o toast padrão do hábito
-          if (!rewardResult.didLevelUp) {
-            if (xp > 0 || gold > 0) {
-              toast.success(
-                <span>
-                  {t("habitRecorded")} (
-                  <strong>
-                    +{xp} {xpLabel}
-                  </strong>{" "}
-                  •{" "}
-                  <strong>
-                    +{formatCoins(gold, { locale })} {goldLabel}
-                  </strong>
-                  )
-                  {breakdown.hasDecay && (
-                    <span className="block text-label-g text-neutral-400 mt-0.5 font-normal">
-                      {t("decayHabit", {
-                        stage: breakdown.stageLabel,
-                        percent: breakdown.decayPercentage,
-                      })}
-                    </span>
-                  )}
-                </span>,
-              );
-            } else {
-              toast.success(t("positiveHabitSuccess"));
-            }
+          if (!res.success) {
+            toast.error(res.error || t("habitScoreError"));
+            // Rollback otimista revertendo o incremento ou decremento
+            onOptimisticHabit(taskId, -delta);
+            return;
           }
-        } else if (delta < 0) {
-          // Penalidade por hábito negativo
-          const penalty = calculateTaskPenalty({
-            taskType: targetTask.type,
-            importanceType: targetTask.importanceType,
-            resetCounter: targetTask.resetCounter,
-            currentStreak:
-              targetTask.currentStreak ??
-              targetTask.streak ??
-              targetTask.positiveCount ??
-              0,
-          });
 
-          const penaltyResult = deductUserPenalty(penalty.xp, penalty.gold);
+          // Reconcilia os contadores e streak exatos retornados pelo backend
+          const reconciledTask = res.data
+            ? mergeTaskWithResponseDTO(targetTask, res.data)
+            : null;
+          if (reconciledTask) {
+            onReconcileTask?.(reconciledTask);
+            onTaskUpdatedInDetails?.(reconciledTask);
+          }
+          notifyTasksChanged({ completedToday: delta > 0 });
 
-          toast.error(
-            <span>
-              {t("habitPenalty")} (
-              <strong>
-                -{penaltyResult.xpDeducted} {xpLabel}
-              </strong>{" "}
-              •{" "}
-              <strong>
-                -{formatCoins(penaltyResult.coinsDeducted, { locale })}{" "}
-                {goldLabel}
-              </strong>
-              )
-            </span>,
-          );
+          if (delta > 0) {
+            if (res.data?.rewardGranted === false) {
+              toast.info(
+                t("habitRewardCapReached", {
+                  limit: MAX_DAILY_REWARDED_HABIT_SCORES,
+                }),
+              );
+              return;
+            }
+
+            const rewardStreak = resolveRewardStreakBeforeAction(
+              targetTask,
+              res.data?.currentStreak,
+            );
+
+            const breakdown = getTaskRewardBreakdown({
+              taskType: targetTask.type,
+              importanceType: targetTask.importanceType,
+              resetCounter: targetTask.resetCounter,
+              currentStreak: rewardStreak,
+              locale,
+            });
+
+            const xp = breakdown.finalReward.xp;
+            const gold = breakdown.finalReward.gold;
+
+            const rewardResult = awardUserRewards(xp, gold, {
+              locale,
+              levelUpTitle: tLevelUp("title"),
+              congratsPrefix: tLevelUp("congratsPrefix"),
+              congratsSuffix: tLevelUp("congratsSuffix"),
+              isTaskCompletion: true,
+            });
+
+            // Se não subiu de nível, exibe o toast padrão do hábito
+            if (!rewardResult.didLevelUp) {
+              if (xp > 0 || gold > 0) {
+                toast.success(
+                  <span>
+                    {t("habitRecorded")} (
+                    <strong>
+                      +{xp} {xpLabel}
+                    </strong>{" "}
+                    •{" "}
+                    <strong>
+                      +{formatCoins(gold, { locale })} {goldLabel}
+                    </strong>
+                    )
+                    {breakdown.hasDecay && (
+                      <span className="block text-label-g text-neutral-400 mt-0.5 font-normal">
+                        {t("decayHabit", {
+                          stage: breakdown.stageLabel,
+                          percent: breakdown.decayPercentage,
+                        })}
+                      </span>
+                    )}
+                  </span>,
+                );
+              } else {
+                toast.success(t("positiveHabitSuccess"));
+              }
+            }
+          } else if (delta < 0) {
+            // Penalidade por hábito negativo
+            const penalty = calculateTaskPenalty({
+              taskType: targetTask.type,
+              importanceType: targetTask.importanceType,
+              resetCounter: targetTask.resetCounter,
+              currentStreak:
+                targetTask.currentStreak ??
+                targetTask.streak ??
+                targetTask.positiveCount ??
+                0,
+            });
+
+            const penaltyResult = deductUserPenalty(penalty.xp, penalty.gold);
+
+            toast.error(
+              <span>
+                {t("habitPenalty")} (
+                <strong>
+                  -{penaltyResult.xpDeducted} {xpLabel}
+                </strong>{" "}
+                •{" "}
+                <strong>
+                  -{formatCoins(penaltyResult.coinsDeducted, { locale })}{" "}
+                  {goldLabel}
+                </strong>
+                )
+              </span>,
+            );
+          }
+        } finally {
+          inFlightHabitTasksRef.current.delete(taskId);
         }
       });
     },

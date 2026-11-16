@@ -67,19 +67,20 @@ export const HELP_FAQS: HelpFaqItem[] = [
     id: "experience-modes",
     category: "OVERVIEW",
     question:
-      "Qual a diferença entre o Modo Essencial (Produtividade) e o Modo Aventura (RPG)?",
+      "Qual a diferença entre o Modo Essencial (Foco & Produtividade) e o Modo Aventura (Imersão RPG)?",
     answer:
-      "O HabitParty oferece dois perfis de experiência que compartilham o mesmo motor matemático de consistência, quadros Kanban, Pomodoro e extrato, adaptando a linguagem, os indicadores visuais e a mecânica de recompensas ao seu estilo:",
+      "O HabitParty oferece dois modos visuais e conceituais que rodam sobre exatamente o mesmo motor matemático, regra 3:1–4:1, quadros Kanban e Pomodoro — mudando apenas a estética, a nomenclatura e a presença de sorteios na Loja:",
     bullets: [
-      "Modo Essencial (Produtividade): Produtividade gamificada com estética executiva e limpa. Substitui Moedas de Ouro por Créditos e XP por Pontos (pts), adota títulos profissionais de evolução (Iniciante a Alta Performance), usa indicadores discretos de Esforço (em vez de espadas), foca em recompensas pessoais diretas na Loja (sem sorteios de Caixas Misteriosas) e utiliza termos corporativos/acadêmicos ('Prazo Rígido' em vez de 'Modo Hardcore' e 'Inventário' em vez de 'Mochila').",
-      "Modo Aventura (Imersão RPG): Experiência gamificada completa com feedback imediato de dopamina. Converte suas entregas em Moedas de Ouro (🪙) e XP vitalício, exibe títulos de aventureiro (Novato a Lenda), ícones de espadas para dificuldade, Modo Hardcore com risco disciplinar, Caixas Misteriosas (Gacha/RNG) na Loja, Mochila de itens e efeitos sonoros comemorativos.",
-      "Conversão 1:1 e Troca Livre: 1 Moeda de Ouro equivale exatamente a 1 Crédito, e 1 XP equivale a 1 Ponto (pts). Você escolhe seu perfil no primeiro acesso e pode alternar quando quiser em Configurações > Aparência > Estilo de Experiência com 1 clique, sem perder nenhum saldo, nível ou histórico.",
+      "Modo Essencial (Foco & Produtividade Limpa): Estética executiva, sóbria e direta ao ponto. Usa Créditos (em vez de moedas) e Pontos (pts), exibe patentes profissionais (Iniciante a Alta Performance), indicadores discretos de Esforço (sem espadas), Loja exclusivamente com recompensas diretas (sem Caixas Misteriosas/sorteios) e termos como 'Prazo Rígido' e 'Inventário'.",
+      "Modo Aventura (Imersão RPG): Experiência temática de jogo com feedback visual de recompensa e fantasia. Converte suas entregas em Moedas de Ouro (🪙) e XP, exibe patentes de aventureiro (Novato a Lenda), ícones de espadas para dificuldade, Modo Hardcore, Caixas Misteriosas (sorteios RNG por raridade) na Loja, Mochila e efeitos sonoros comemorativos.",
+      "Conversão 1:1 e Alternância Livre: 1 Moeda de Ouro = 1 Crédito e 1 XP = 1 Ponto (pts). Você escolhe seu modo no onboarding e pode alternar quando quiser em Configurações > Aparência > Estilo de Experiência em 1 clique, sem perder histórico, nível nem saldo.",
     ],
     tags: [
       "experiência",
       "modo essencial",
       "modo aventura",
       "produtividade",
+      "imersão",
       "gamificação",
       "créditos",
       "pontos",
@@ -96,13 +97,21 @@ export const HELP_FAQS: HelpFaqItem[] = [
     category: "TASKS",
     question: "Qual a diferença entre Hábitos, Diárias e Afazeres?",
     answer:
-      "O HabitParty divide sua rotina em três modalidades bem definidas para manter sua mente focada:",
+      "O HabitParty divide sua rotina em três modalidades complementares e permite organizá-las com Tags Hierárquicas (ex: 'Estudos > Inglês' usando '>') para filtrar do macro ao detalhe:",
     bullets: [
-      "Hábitos: Ações contínuas que podem ser positivas (+), negativas (-) ou mistas. Não possuem data fixa e operam com Importância (Baixa, Normal, Alta) e sistema de ofensiva (Streak).",
-      "Diárias (Dailies): Rotinas recorrentes que devem ser feitas em dias específicos da semana (ex: segundas e quartas). Resetam periodicamente.",
-      "Afazeres (To-Dos): Tarefas pontuais com prazo de entrega (data e horário limite gratuitos), lembretes programados, checklists de subtarefas e descrições de até 5.000 caracteres. Assinantes Premium também podem agendar Afazeres como Eventos (com horário de início e término ou dia inteiro) e acompanhar o selo pulsante 'Em andamento' ao vivo no quadro.",
+      "Hábitos: Ações contínuas que podem ser positivas (+), negativas (-) ou mistas. Não possuem data fixa, usam Importância (Baixa, Normal, Alta) e contam com botão de Foco Rápido na própria linha.",
+      "Diárias (Dailies): Rotinas recorrentes programadas para dias específicos da semana (ex: segundas e quartas). Renovam automaticamente na virada do dia no seu fuso horário.",
+      "Afazeres (To-Dos): Tarefas pontuais com prazo de entrega (data e horário limite gratuitos), lembretes programados, checklists de subtarefas e descrições em Rich-Text (listas, negrito e links) de até 2.000 caracteres. Assinantes Premium também podem agendar Afazeres como Eventos (com horário de início e término ou dia inteiro) e acompanhar o selo pulsante 'Em andamento' no quadro.",
     ],
-    tags: ["tarefas", "hábitos", "diárias", "to-do", "rotina"],
+    tags: [
+      "tarefas",
+      "hábitos",
+      "diárias",
+      "to-do",
+      "rotina",
+      "tags",
+      "rich-text",
+    ],
     highlightBadge: "Estrutura",
     actionLink: { label: "Ver Minhas Tarefas", href: "/tasks" },
   },
@@ -157,10 +166,28 @@ export const HELP_FAQS: HelpFaqItem[] = [
   {
     id: "economy-inflation",
     category: "ECONOMY",
-    question: "Por que os valores de moedas e XP são rigorosos?",
+    question:
+      "Por que os valores de moedas são rigorosos? Como funciona a proporção 3:1 a 4:1 (Dever vs. Recompensa)?",
     answer:
-      "A economia do HabitParty foi calibrada para que você precise de um dia produtivo real (completando tarefas médias e difíceis) para acumular entre 60 e 80 moedas. Se o sistema pagasse centenas de moedas por qualquer ação simples, a sensação de conquista seria destruída por inflação artificial. A honestidade do usuário é o motor central da eficácia do app.",
-    tags: ["economia", "matemática", "ouro", "inflação", "regras"],
+      "A economia fechada do HabitParty segue a proporção real de 3:1 a 4:1 entre dever produtivo e recompensa de lazer. Um dia produtivo padrão rende cerca de 15 a 20 moedas (com referência oficial de 15 🪙/dia):",
+    bullets: [
+      "Proporção 3:1 a 4:1 (Esforço vs. Lazer): Cerca de 3 a 4 horas de produtividade real (combinando tarefas médias/difíceis, hábitos e blocos de foco) geram ~15 🪙 — exatamente o preço sugerido para 1 hora de lazer livre na Loja (15 🪙). Já ~1h30 a 2h de esforço rendem ~8 🪙, suficientes para 30 minutos de pausa sem culpa.",
+      "Prevenção de Inflação Artificial: Se tarefas triviais ou fáceis pagassem dezenas de moedas, 1 hora de descanso ficaria artificialmente barata e o app perderia o efeito psicológico de recompensa merecida.",
+      "Mesma Proporção no Modo Essencial: No Modo Essencial, o mesmo cálculo aparece como Créditos e Pontos (1 🪙 = 1 Crédito), preservando intacta a relação 3:1 a 4:1. A honestidade ao pontuar cada entrega é o motor central da sua evolução.",
+    ],
+    tags: [
+      "economia",
+      "matemática",
+      "3:1",
+      "4:1",
+      "dever",
+      "recompensa",
+      "ouro",
+      "créditos",
+      "inflação",
+      "regras",
+    ],
+    highlightBadge: "Proporção 3:1–4:1",
   },
   {
     id: "habit-reset",
@@ -252,6 +279,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "Sons Ambientes de Foco: Sons relaxantes sintetizados nativamente no Pomodoro (Chuva Suave, Cafeteria, Lofi Zen e Fogueira).",
       "Pacote de Ícones VIP: Coleção exclusiva de ícones dourados para colunas, rotinas, foco e itens da loja.",
       "Capacidade Expandida: Até 4 Ambientes/Workspaces (o dobro do free), até 6 colunas por quadro, até 6 atividades personalizadas no Modo Foco, mochila expandida para 100 itens e até 100 recompensas cadastradas.",
+      "7 Temas Visuais Atmosféricos: A conta gratuita já inclui 4 temas completos (Dark Cósmico, Cosmic Daylight, Cavaleiro das Trevas e Pergaminho Solar). O plano Premium desbloqueia mais 3 temas exclusivos VIP: Cyberpunk Neon, Guardião da Floresta e Ouro Real.",
       "Destaque no Perfil: Emblema VIP de Guardião Cósmico e anel dourado estelar no avatar.",
       "Planos e Pagamento: R$ 9,90/mês ou R$ 99,00/ano (economia de ~17%), com suporte a Cartão de Crédito recorrente ou Pix Avulso de 30/365 dias sem renovação automática.",
     ],
@@ -441,6 +469,56 @@ export const HELP_FAQS: HelpFaqItem[] = [
     ],
     highlightBadge: "Novo • 1.3",
     actionLink: { label: "Abrir Histórico", href: "/history" },
+  },
+  {
+    id: "friends-privacy-network",
+    category: "OVERVIEW",
+    question:
+      "Como funcionam a Rede de Amigos (/friends), o Código HP-XXXXXX e a Privacidade?",
+    answer:
+      "Na tela Amigos (/friends), você pode se conectar com amigos mantendo total controle sobre o que compartilha e sem expor suas listas privadas de tarefas ou financeiro:",
+    bullets: [
+      "Busca & Código Único: Encontre pessoas por @username, nome ou pelo Código de Amigo exclusivo (HP-XXXXXX). Você também define nas Configurações quem pode enviar solicitações (Todos, Apenas por Código de Amigo ou Ninguém).",
+      "Alertas Sociais em Tempo Real: Pedidos de amizade recebidos, aceites e marcos de amigos aparecem no sino de notificações da Sidebar.",
+      "Vitrine Pública & Privacidade Granular: Ao visitar o perfil de um amigo, você vê apenas os destaques públicos permitidos por ele. Em Configurações > Privacidade, é possível ocultar separadamente XP/nível, ofensivas, horas de foco ou até remover seu perfil das buscas.",
+    ],
+    tags: [
+      "amigos",
+      "social",
+      "privacidade",
+      "código",
+      "hp-",
+      "username",
+      "vitrine",
+      "notificações",
+    ],
+    highlightBadge: "Novo • 1.4",
+    actionLink: { label: "Abrir Rede de Amigos", href: "/friends" },
+  },
+  {
+    id: "retrospective-and-customization",
+    category: "OVERVIEW",
+    question:
+      "Como funcionam a Retrospectiva Anual, os Cards PNG, os 7 Temas e o Fuso Horário?",
+    answer:
+      "Além do controle de rotina diário, a v1.4 trouxe recursos sazonais e de personalização profunda para refletir sua jornada no seu próprio ritmo e horário:",
+    bullets: [
+      "Retrospectiva Anual & Cards PNG: Entre 20 de dezembro e 31 de janeiro, um banner sazonal no seu Perfil (/profile) gera seu resumo do ano com 1 de 5 arquétipos comportamentais (baseados em consistência, foco e execução). Você pode baixar Cards PNG colecionáveis da Retrospectiva e do seu Perfil a qualquer momento.",
+      "Fuso Horário & Virada de Dia Local: O app sincroniza seu fuso horário automaticamente para que a virada da meia-noite (renovação de Diárias, ofensivas e alertas) respeite sempre o relógio da sua região.",
+      "7 Temas & Foco Rápido nas Tarefas: Alterne entre 4 temas gratuitos (2 escuros e 2 claros) e 3 temas VIP em Configurações > Aparência, e inicie um Pomodoro/Cronômetro diretamente pelo ícone de play nas linhas de Hábitos, Diárias e Afazeres.",
+    ],
+    tags: [
+      "retrospectiva",
+      "png",
+      "card",
+      "arquétipos",
+      "temas",
+      "fuso horário",
+      "meia-noite",
+      "foco rápido",
+    ],
+    highlightBadge: "Novo • 1.4",
+    actionLink: { label: "Personalizar Aparência", href: "/settings" },
   },
 ];
 

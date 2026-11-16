@@ -35,7 +35,7 @@ export function LandingProductivityLoop() {
               <div
                 key={step.id}
                 className={cn(
-                  "relative p-6 lg:p-8 rounded-2xl bg-card dark:bg-surface/90 border border-neutral-700 dark:border-white/10 shadow-sm dark:shadow-card-deep flex flex-col justify-between group hover:scale-[1.02] transition-[transform,border-color,box-shadow] duration-300",
+                  "relative p-6 lg:p-8 rounded-2xl bg-card/85 dark:bg-surface/85 border border-neutral-700/80 dark:border-white/10 shadow-none flex flex-col justify-between",
                   step.borderColor,
                 )}
               >
@@ -43,7 +43,7 @@ export function LandingProductivityLoop() {
                   <div className="flex items-center justify-between mb-6">
                     <span
                       className={cn(
-                        "text-4xl font-black transition-colors font-mono",
+                        "text-4xl font-black font-mono",
                         step.numberColor,
                       )}
                     >
@@ -51,7 +51,7 @@ export function LandingProductivityLoop() {
                     </span>
                     <div
                       className={cn(
-                        "w-12 h-12 rounded-xl shadow-xs dark:shadow-md flex items-center justify-center",
+                        "w-12 h-12 rounded-xl flex items-center justify-center",
                         step.iconBoxClass,
                       )}
                     >
@@ -64,7 +64,7 @@ export function LandingProductivityLoop() {
                   <span className="inline-block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">
                     {t(`steps.${step.id}.tag`)}
                   </span>
-                  <h3 className="text-xl font-bold text-neutral-50 mb-3 group-hover:text-primary dark:group-hover:text-gold transition-colors">
+                  <h3 className="text-xl font-bold text-neutral-50 mb-3">
                     {t(`steps.${step.id}.title`)}
                   </h3>
                   <p className="text-sm text-neutral-300 leading-relaxed">
@@ -72,7 +72,7 @@ export function LandingProductivityLoop() {
                   </p>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-neutral-700/60 dark:border-white/5 flex items-center gap-2 text-xs font-semibold text-neutral-400 group-hover:text-neutral-100 dark:group-hover:text-neutral-200 transition-colors">
+                <div className="mt-6 pt-4 border-t border-neutral-700/60 dark:border-white/5 flex items-center gap-2 text-xs font-semibold text-neutral-300">
                   <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-gold" />
                   <span>{t(`steps.${step.id}.footer`)}</span>
                 </div>

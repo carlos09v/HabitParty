@@ -11,6 +11,7 @@ import { FriendsNetworkPanel } from "@/components/showcase/FriendsNetworkPanel";
 import { RetrospectivePanel } from "@/components/showcase/RetrospectivePanel";
 import { ShowcaseHeroHeader } from "@/components/showcase/ShowcaseHeroHeader";
 import { ShowcaseHighlightsSection } from "@/components/showcase/ShowcaseHighlightsSection";
+import { ContextualBackButton } from "@/components/ui/ContextualBackButton";
 import { MAX_SHOWCASE_HIGHLIGHTS } from "@/constants/achievements";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useIdlePreload } from "@/hooks/useIdlePreload";
@@ -198,6 +199,15 @@ export function ShowcaseContainer({
 
   return (
     <div className="flex flex-col w-full max-w-6xl mx-auto pb-16 gap-6">
+      {searchParams.get("from") === "settings" && (
+        <div className="flex items-center">
+          <ContextualBackButton
+            fallbackHref="/settings"
+            label={t("backToSettings")}
+          />
+        </div>
+      )}
+
       {/* HERO HEADER: AVATAR + MOLDURA + BIO + NÍVEL + BOTÃO CARD */}
       <ShowcaseHeroHeader
         user={initialShowcase.user}

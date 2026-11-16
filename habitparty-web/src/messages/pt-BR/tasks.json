@@ -166,6 +166,9 @@
     "addTaskHeaderTitle": "Adicionar tarefa rápida nesta coluna",
     "completedProgressTitle": "{completed} de {total} concluídas",
     "completedSectionLabel": "Concluído",
+    "loadArchivedCompleted": "Carregar +{count} concluídas antigas",
+    "loadingArchivedCompleted": "Carregando concluídas...",
+    "loadArchivedCompletedError": "Não foi possível carregar as tarefas concluídas antigas.",
     "emptyState": "Nenhuma tarefa aqui",
     "emptyStateCta": "Clique para criar a primeira tarefa",
     "addTaskFooterButton": "Adicionar tarefa"

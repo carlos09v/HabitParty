@@ -12,12 +12,22 @@ import type {
   FocusRecordResponseDTO,
 } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
-import { mapFocusActivities, mapFocusRecords } from "@/utils/focusMapper";
+import {
+  type FocusRecordsPageResult,
+  mapFocusActivities,
+  mapFocusRecords,
+  normalizeFocusRecordsPage,
+} from "@/utils/focusMapper";
+
+export type { FocusRecordsPageResult };
 
 export interface FocusPageData {
   activities: FocusActivity[];
   backpackItems: InventoryItemResponseDTO[];
   initialRecords: FocusRecord[];
+  totalRecordsCount: number;
+  hasMoreRecords: boolean;
+  initialLoadedRecordsPage: number;
   focusableTasks: FocusableTaskItem[];
 }
 
@@ -64,6 +74,41 @@ export async function getFocusActivitiesAndItems(): Promise<{
   return { activities, backpackItems };
 }
 
+async function fetchFocusRecordsPageUncached(
+  page = 0,
+  size = 100,
+): Promise<FocusRecordsPageResult | null> {
+  const safePage = Math.max(page, 0);
+  const safeSize = Math.min(Math.max(size, 1), 100);
+  const { data: myRecordsPage, error } = await serverApi
+    .GET("/focus-records/me", {
+      params: {
+        query: { page: safePage, size: safeSize },
+      },
+    })
+    .catch(() => ({ data: null, error: true }));
+
+  if (error || !myRecordsPage?.content) {
+    return null;
+  }
+
+  return normalizeFocusRecordsPage(myRecordsPage, safePage);
+}
+
+/**
+ * Busca uma página bruta de registros de foco do usuário com metadados de paginação (`private30`).
+ */
+export async function fetchUserFocusRecordsPage(
+  page = 0,
+  size = 100,
+): Promise<FocusRecordsPageResult | null> {
+  "use cache: private";
+  cacheLife("private30");
+  cacheTag("focus-records");
+
+  return fetchFocusRecordsPageUncached(page, size);
+}
+
 /**
  * Busca os DTOs brutos de registros recentes de foco do usuário (atividades e tarefas)
  * em uma única chamada cacheada (`private30`).
@@ -75,16 +120,9 @@ export async function fetchRawUserFocusRecords(
   cacheLife("private30");
   cacheTag("focus-records");
 
-  const { data: myRecordsPage, error } = await serverApi
-    .GET("/focus-records/me", {
-      params: {
-        query: { page: 0, size: 250 },
-      },
-    })
-    .catch(() => ({ data: null, error: true }));
-
-  if (!error && myRecordsPage?.content) {
-    return myRecordsPage.content;
+  const firstPage = await fetchFocusRecordsPageUncached(0, 100);
+  if (firstPage) {
+    return firstPage.records;
   }
 
   if (activityIds.length === 0) {
@@ -192,21 +230,51 @@ export async function getFocusableTasks(): Promise<FocusableTaskItem[]> {
  * Obtém todos os dados iniciais necessários para a renderização da tela de Foco.
  */
 export async function getFocusPageData(): Promise<FocusPageData> {
-  const [{ activities, backpackItems }, focusableTasks, prefetchedRawRecords] =
+  const [{ activities, backpackItems }, focusableTasks, firstRecordsPage] =
     await Promise.all([
       getFocusActivitiesAndItems(),
       getFocusableTasks(),
-      fetchRawUserFocusRecords(),
+      fetchUserFocusRecordsPage(0, 100),
     ]);
+
+  // Preserva janela ampliada (até 300 registros) para análises semanais sem custo extra a quem tem <= 100
+  let combinedRawRecords = firstRecordsPage?.records;
+  let lastFetchedPage = firstRecordsPage;
+
+  if (firstRecordsPage?.hasMore) {
+    const extraPageNumbers = [1];
+    if (firstRecordsPage.totalPages > 2) {
+      extraPageNumbers.push(2);
+    }
+    const extraPages = (
+      await Promise.all(
+        extraPageNumbers.map((page) => fetchUserFocusRecordsPage(page, 100)),
+      )
+    ).filter((page): page is FocusRecordsPageResult => Boolean(page));
+
+    if (extraPages.length > 0) {
+      combinedRawRecords = [
+        ...firstRecordsPage.records,
+        ...extraPages.flatMap((page) => page.records),
+      ];
+      lastFetchedPage = extraPages[extraPages.length - 1];
+    }
+  }
+
   const initialRecords = await getFocusInitialRecords(
     activities,
-    prefetchedRawRecords.length > 0 ? prefetchedRawRecords : undefined,
+    combinedRawRecords,
   );
 
   return {
     activities,
     backpackItems,
     initialRecords,
+    totalRecordsCount: lastFetchedPage
+      ? lastFetchedPage.totalElements
+      : initialRecords.length,
+    hasMoreRecords: lastFetchedPage ? lastFetchedPage.hasMore : false,
+    initialLoadedRecordsPage: lastFetchedPage ? lastFetchedPage.currentPage : 0,
     focusableTasks,
   };
 }

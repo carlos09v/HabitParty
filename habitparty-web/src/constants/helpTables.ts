@@ -1,7 +1,11 @@
 import { RARITY_THEMES } from "@/constants/achievements";
 import { FOCUS_REWARD_RULES } from "@/constants/focus";
-import { MYSTERY_BOX_TIERS } from "@/constants/reward";
-import { DIFFICULTY_REWARDS } from "@/constants/task";
+import {
+  COUPON_PACKAGE_OPTIONS,
+  MYSTERY_BOX_TIERS,
+  SINGLE_USE_TIER_OPTIONS,
+} from "@/constants/reward";
+import { DIFFICULTY_REWARDS, HABIT_IMPORTANCE_REWARDS } from "@/constants/task";
 import type { AppLocale } from "@/i18n/config";
 import rewardsEn from "@/messages/en/rewards.json";
 import type { HelpTableEntry } from "@/types/help";
@@ -13,6 +17,7 @@ import {
   LEVEL_TITLES_PRODUCTIVITY_PT,
   USER_LEVELS,
 } from "@/utils/levels";
+import { DAILY_PRODUCTIVE_COINS_BENCHMARK } from "@/utils/rewardEconomy";
 
 interface LevelProgressionMeta {
   englishName?: string;
@@ -150,18 +155,51 @@ interface AchievementRarityCopyItem {
   examples: string;
 }
 
+interface HabitImportanceCopyItem {
+  key: keyof typeof HABIT_IMPORTANCE_REWARDS;
+  icon: string;
+  label: string;
+  description: string;
+}
+
+interface RewardPricingMetaItem {
+  modelLabel: string;
+  effortEquivalent: string;
+  balanceRule: string;
+}
+
 interface HelpTablesLocaleCopy {
+  experienceModes: {
+    title: string;
+    description: string;
+    columns: [string, string, string, string];
+    rows: Array<[string, string, string, string]>;
+  };
   difficulties: {
     title: string;
     description: string;
     columns: [string, string, string, string];
     items: DifficultyCopyItem[];
   };
+  habitImportance: {
+    title: string;
+    description: string;
+    columns: [string, string, string, string];
+    items: HabitImportanceCopyItem[];
+  };
   habitDecay: {
     title: string;
     description: string;
     columns: [string, string, string, string];
     rows: Array<[string, string, string, string]>;
+  };
+  rewardPricing: {
+    title: string;
+    description: string;
+    columns: [string, string, string, string];
+    coupons: Record<"30" | "60" | "180" | "480", RewardPricingMetaItem>;
+    singleUseBasicPremium: RewardPricingMetaItem;
+    singleUseEpicLegendary: RewardPricingMetaItem;
   };
   mysteryBoxes: {
     title: string;
@@ -193,6 +231,56 @@ interface HelpTablesLocaleCopy {
 
 const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
   "pt-BR": {
+    experienceModes: {
+      title:
+        "⚖️ Comparativo: Modo Essencial (Foco & Produtividade) vs. Modo Aventura (Imersão RPG)",
+      description:
+        "Os dois modos compartilham exatamente o mesmo motor matemático, regras de economia 3:1–4:1, Kanban e Foco. A diferença está apenas na estética, na linguagem e nas mecânicas opcionais de sorteio.",
+      columns: [
+        "Conceito no App",
+        "Modo Essencial (Produtividade Limpa)",
+        "Modo Aventura (Imersão RPG)",
+        "Equivalência / Regra",
+      ],
+      rows: [
+        [
+          "Moeda de Troca",
+          "Créditos",
+          "Moedas de Ouro (🪙)",
+          "Conversão exata 1:1 (1 Crédito = 1 🪙)",
+        ],
+        [
+          "Experiência / Nível",
+          "Pontos (pts) & Patentes Executivas",
+          "XP & Patentes RPG (Novato a Lenda)",
+          "1 Ponto = 1 XP (nunca é gasto na Loja)",
+        ],
+        [
+          "Nível de Esforço",
+          "Esforço Discreto (Trivial a Difícil)",
+          "Espadas de Dificuldade",
+          "Mesma remuneração matemática",
+        ],
+        [
+          "Compromisso Alto",
+          "Prazo Rígido (Afazer) / Compromisso Diário",
+          "Modo Hardcore",
+          "Atraso paga 50%; falha noturna desconta 50%",
+        ],
+        [
+          "Itens Resgatados",
+          "Inventário",
+          "Mochila",
+          "Mesmos cupons e prêmios pessoais salvos",
+        ],
+        [
+          "Loja de Recompensas",
+          "Recompensas Diretas (sem sorteios)",
+          "Recompensas Diretas + Caixas Misteriosas (RNG)",
+          "Troca livre em 1 clique nas Configurações",
+        ],
+      ],
+    },
     difficulties: {
       title: "Economia Rígida: Dificuldades e Recompensas",
       description:
@@ -234,36 +322,120 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
         },
       ],
     },
-    habitDecay: {
-      title: "Hábitos: Importância e Decaimento por Ofensiva (Streak)",
+    habitImportance: {
+      title: "Hábitos: Recompensas Base por Importância",
       description:
-        "Conforme você repete um hábito, ele exige menos esforço cerebral. Para evitar inflação e estimular novos desafios, a recompensa decai com o streak.",
+        "Hábitos contínuos usam Importância (em vez de dificuldade) para definir a recompensa base antes do ajuste progressivo por ofensiva.",
+      columns: [
+        "Nível",
+        "Importância",
+        "Recompensa Base (100%)",
+        "Exemplos de Aplicação",
+      ],
+      items: [
+        {
+          key: "LOW",
+          icon: "🟢",
+          label: "Baixa",
+          description:
+            "Micro-ações de manutenção rápida (ex: beber água, alongar 2 min, tomar vitamina).",
+        },
+        {
+          key: "NORMAL",
+          icon: "🟡",
+          label: "Normal",
+          description:
+            "Rotinas construtivas do dia a dia (ex: ler 15 min, caminhar, revisar agenda).",
+        },
+        {
+          key: "HIGH",
+          icon: "🟣",
+          label: "Alta",
+          description:
+            "Hábitos-chave de alto atrito e impacto (ex: treino completo, zero redes sociais pela manhã, estudo diário).",
+        },
+      ],
+    },
+    habitDecay: {
+      title: "Hábitos: Decaimento Progressivo por Ofensiva (Streak)",
+      description:
+        "Conforme você repete um hábito, ele exige menos esforço consciente. Para evitar inflação e estimular novos desafios, a recompensa reduz nas etapas de consolidação.",
       columns: [
         "Fase do Hábito",
-        "Dias Consecutivos (Streak)",
+        "Ofensiva (Diário / Semanal / Mensal)",
         "% da Recompensa",
         "Objetivo Psicológico",
       ],
       rows: [
         [
           "Fase de Resistência",
-          "Dias 1 a 6",
+          "Diário: 1–6 dias • Semanal: < 2 sem. • Mensal: 1º mês",
           "100% da Recompensa",
           "Energia máxima de ativação para engajamento e quebra da inércia inicial.",
         ],
         [
           "Fase de Adaptação",
-          "Dias 7 a 20",
+          "Diário: 7–20 dias • Semanal: 2–7 sem. • Mensal: 2–5 meses",
           "75% da Recompensa",
           "Consolidação da rotina; o cérebro começa a automatizar o processo.",
         ],
         [
           "Hábito Formado",
-          "Dias 21 ou mais",
+          "Diário: 21+ dias • Semanal: 8+ sem. • Mensal: 6+ meses",
           "50% da Recompensa",
           "Comportamento automatizado; incentiva assumir novos desafios e metas.",
         ],
       ],
+    },
+    rewardPricing: {
+      title:
+        "⚖️ Proporção 3:1 a 4:1: Preços Calibrados da Loja (Dever vs. Lazer)",
+      description:
+        "Um dia útil padrão bem focado rende cerca de 15 a 20 🪙 (referência diária de 15 🪙). Os presets da Loja seguem a proporção 3:1 a 4:1: cerca de 3 a 4 horas de esforço real financiam 1 hora de lazer sem culpa.",
+      columns: [
+        "Modelo / Pacote de Lazer",
+        "Preço Sugerido",
+        "Esforço Equivalente (Dever)",
+        "Equilíbrio & Uso Recomendado (3:1 a 4:1)",
+      ],
+      coupons: {
+        "30": {
+          modelLabel: "⏱️ Cupom Básico (30 min de lazer)",
+          effortEquivalent: "~1h30 a 2h produtivas (ex: 3 Tarefas Médias)",
+          balanceRule:
+            "Proporção ~3:1 a 4:1: ~metade da meta diária (~8 🪙) libera 30 min de pausa livre.",
+        },
+        "60": {
+          modelLabel: "⏱️ Cupom Premium (60 min de lazer)",
+          effortEquivalent: "3h a 4h produtivas (~1 dia padrão = 15 🪙)",
+          balanceRule:
+            "Referência 3:1–4:1 oficial: cumprir seu dever do dia garante 1h de lazer sem culpa.",
+        },
+        "180": {
+          modelLabel: "⏱️ Cupom Épico (180 min / 3h de lazer)",
+          effortEquivalent: "~2,5 a 3 dias produtivos consistentes",
+          balanceRule:
+            "Pacote com desconto (~11%) para sessões longas de jogos, filmes ou fim de semana.",
+        },
+        "480": {
+          modelLabel: "⏱️ Cupom Lendário (480 min / 8h livres)",
+          effortEquivalent: "~6 a 7 dias inteiros de alta disciplina",
+          balanceRule:
+            "Dia livre completo / folga estendida (economia de ~21% vs. cupons avulsos).",
+        },
+      },
+      singleUseBasicPremium: {
+        modelLabel: "🎁 Uso Único: Mimo Rápido / Diário",
+        effortEquivalent: "Meia jornada a 1 dia produtivo",
+        balanceRule:
+          "Ex: café especial, episódio avulso ou doce sem comprometer o saldo semanal.",
+      },
+      singleUseEpicLegendary: {
+        modelLabel: "👑 Uso Único: Marco Semanal / Épico",
+        effortEquivalent: "4 dias (Épico) a 12+ dias (Lendário) de foco",
+        balanceRule:
+          "Ex: delivery especial, passeio, livro novo ou grande recompensa pessoal.",
+      },
     },
     mysteryBoxes: {
       title: "🎁 Caixas Misteriosas (Loot Tables & Probabilidades RNG)",
@@ -376,6 +548,56 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
     },
   },
   en: {
+    experienceModes: {
+      title:
+        "⚖️ Comparison: Essential Mode (Focus & Productivity) vs. Adventure Mode (RPG Immersion)",
+      description:
+        "Both modes run on the exact same mathematical engine, 3:1–4:1 economy rules, Kanban boards, and Focus timers. Only the visuals, terminology, and optional RNG Store mechanics adapt.",
+      columns: [
+        "App Concept",
+        "Essential Mode (Clean Productivity)",
+        "Adventure Mode (RPG Immersion)",
+        "Equivalence / Rule",
+      ],
+      rows: [
+        [
+          "Currency",
+          "Credits",
+          "Gold Coins (🪙)",
+          "Exact 1:1 ratio (1 Credit = 1 🪙)",
+        ],
+        [
+          "Progression / Level",
+          "Points (pts) & Executive Ranks",
+          "XP & RPG Ranks (Novice to Legend)",
+          "1 Point = 1 XP (never spent in the Store)",
+        ],
+        [
+          "Effort Rating",
+          "Clean Effort Tiers (Trivial to Hard)",
+          "Difficulty Swords",
+          "Identical mathematical payouts",
+        ],
+        [
+          "High Accountability",
+          "Strict Deadline / Daily Commitment",
+          "Hardcore Mode",
+          "Overdue yields 50%; missed deadline fines 50%",
+        ],
+        [
+          "Redeemed Items",
+          "Inventory",
+          "Backpack",
+          "Same saved coupons & personal rewards",
+        ],
+        [
+          "Rewards Store",
+          "Direct Rewards (no RNG)",
+          "Direct Rewards + Mystery Boxes (RNG)",
+          "Switch anytime with 1 click in Settings",
+        ],
+      ],
+    },
     difficulties: {
       title: "Strict Economy: Difficulties & Rewards",
       description:
@@ -417,36 +639,114 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
         },
       ],
     },
-    habitDecay: {
-      title: "Habits: Importance & Streak Decay",
+    habitImportance: {
+      title: "Habits: Base Rewards by Importance",
       description:
-        "As you repeat a habit, it demands less mental effort. To avoid inflation and encourage new challenges, the reward decays with the streak.",
+        "Ongoing habits use Importance (instead of difficulty) to set their base payout before streak consolidation decay applies.",
+      columns: ["Level", "Importance", "Base Reward (100%)", "Usage Examples"],
+      items: [
+        {
+          key: "LOW",
+          icon: "🟢",
+          label: "Low",
+          description:
+            "Quick maintenance micro-actions (e.g., drink water, 2-min stretch, take vitamins).",
+        },
+        {
+          key: "NORMAL",
+          icon: "🟡",
+          label: "Normal",
+          description:
+            "Regular constructive routines (e.g., read 15 min, go for a walk, review planner).",
+        },
+        {
+          key: "HIGH",
+          icon: "🟣",
+          label: "High",
+          description:
+            "High-friction keystone habits (e.g., full workout, no social media until noon, daily deep study).",
+        },
+      ],
+    },
+    habitDecay: {
+      title: "Habits: Progressive Streak Decay",
+      description:
+        "As you repeat a habit, it requires less conscious willpower. To avoid inflation and encourage fresh challenges, rewards step down as the habit consolidates.",
       columns: [
         "Habit Phase",
-        "Consecutive Days (Streak)",
+        "Streak (Daily / Weekly / Monthly)",
         "% of Reward",
         "Psychological Goal",
       ],
       rows: [
         [
           "Resistance Phase",
-          "Days 1 to 6",
+          "Daily: 1–6d • Weekly: < 2 wks • Monthly: 1st mo",
           "100% of Reward",
           "Maximum activation energy to engage and break initial inertia.",
         ],
         [
           "Adaptation Phase",
-          "Days 7 to 20",
+          "Daily: 7–20d • Weekly: 2–7 wks • Monthly: 2–5 mos",
           "75% of Reward",
           "Routine consolidation; the brain starts automating the process.",
         ],
         [
           "Habit Formed",
-          "Day 21 or more",
+          "Daily: 21+d • Weekly: 8+ wks • Monthly: 6+ mos",
           "50% of Reward",
           "Automated behavior; encourages taking on new challenges and goals.",
         ],
       ],
+    },
+    rewardPricing: {
+      title: "⚖️ 3:1 to 4:1 Ratio: Calibrated Store Pricing (Duty vs. Leisure)",
+      description:
+        "A solid productive day typically earns around 15 to 20 🪙 (with a 15 🪙 daily benchmark). Store presets enforce a 3:1 to 4:1 ratio: roughly 3 to 4 hours of real effort buy 1 hour of guilt-free leisure.",
+      columns: [
+        "Leisure Model / Package",
+        "Suggested Price",
+        "Equivalent Productive Effort",
+        "Balance & Usage (3:1 to 4:1 Rule)",
+      ],
+      coupons: {
+        "30": {
+          modelLabel: "⏱️ Basic Coupon (30 min leisure)",
+          effortEquivalent: "~1.5h to 2h of effort (~3 Medium tasks)",
+          balanceRule:
+            "~3:1 to 4:1 ratio: ~half of the daily benchmark (~8 🪙) unlocks a 30-min break.",
+        },
+        "60": {
+          modelLabel: "⏱️ Premium Coupon (60 min leisure)",
+          effortEquivalent: "3h to 4h of deep work (~1 standard day = 15 🪙)",
+          balanceRule:
+            "Official 3:1–4:1 benchmark: hitting your daily benchmark earns 1h of guilt-free rest.",
+        },
+        "180": {
+          modelLabel: "⏱️ Epic Coupon (180 min / 3h leisure)",
+          effortEquivalent: "~2.5 to 3 consistent productive days",
+          balanceRule:
+            "Bundle discount (~11%) for weekend gaming, movie nights, or longer hobbies.",
+        },
+        "480": {
+          modelLabel: "⏱️ Legendary Coupon (480 min / 8h free)",
+          effortEquivalent: "~6 to 7 full days of disciplined execution",
+          balanceRule:
+            "Full day off / extended break (~21% savings compared to single blocks).",
+        },
+      },
+      singleUseBasicPremium: {
+        modelLabel: "🎁 Single-Use: Quick / Daily Treat",
+        effortEquivalent: "Half-day to 1 full productive day",
+        balanceRule:
+          "E.g., specialty coffee, one episode, or snack without unbalancing your week.",
+      },
+      singleUseEpicLegendary: {
+        modelLabel: "👑 Single-Use: Weekly / Epic Milestone",
+        effortEquivalent: "4 days (Epic) to 12+ days (Legendary) of focus",
+        balanceRule:
+          "E.g., dinner treat, outing, new book, or major personal reward.",
+      },
     },
     mysteryBoxes: {
       title: "🎁 Mystery Boxes (Loot Tables & RNG Odds)",
@@ -571,8 +871,22 @@ export function buildHelpTables(
   const formatCoinValue = (value: number) => formatCoins(value, { locale });
   const levelProgressionMeta = LEVEL_PROGRESSION_META[locale];
   const mysteryBoxLabels = MYSTERY_BOX_PACKAGE_LABELS[locale];
+  const couponPriceByMinutes = (minutes: number, fallback: number) =>
+    COUPON_PACKAGE_OPTIONS.find((opt) => opt.suggestedMinutes === minutes)
+      ?.suggestedPrice ?? fallback;
+  const singleUsePriceById = (
+    id: (typeof SINGLE_USE_TIER_OPTIONS)[number]["id"],
+  ) =>
+    SINGLE_USE_TIER_OPTIONS.find((opt) => opt.id === id)?.suggestedPrice ?? 0;
 
   return {
+    experienceModes: {
+      title: copy.experienceModes.title,
+      description: copy.experienceModes.description,
+      category: "OVERVIEW",
+      columns: copy.experienceModes.columns,
+      rows: copy.experienceModes.rows,
+    },
     difficulties: {
       title: copy.difficulties.title,
       description: copy.difficulties.description,
@@ -588,6 +902,22 @@ export function buildHelpTables(
         ];
       }),
     },
+    habitImportance: {
+      title: copy.habitImportance.title,
+      description: copy.habitImportance.description,
+      category: "TASKS",
+      categories: ["TASKS", "ECONOMY"],
+      columns: copy.habitImportance.columns,
+      rows: copy.habitImportance.items.map((item) => {
+        const reward = HABIT_IMPORTANCE_REWARDS[item.key];
+        return [
+          item.icon,
+          item.label,
+          `${reward.xp} XP • ${formatCoinValue(reward.gold)} 🪙`,
+          item.description,
+        ];
+      }),
+    },
     habitDecay: {
       title: copy.habitDecay.title,
       description: copy.habitDecay.description,
@@ -595,6 +925,51 @@ export function buildHelpTables(
       categories: ["TASKS", "ECONOMY"],
       columns: copy.habitDecay.columns,
       rows: copy.habitDecay.rows,
+    },
+    rewardPricing: {
+      title: copy.rewardPricing.title,
+      description: copy.rewardPricing.description,
+      category: "REWARDS",
+      categories: ["REWARDS", "ECONOMY"],
+      columns: copy.rewardPricing.columns,
+      rows: [
+        [
+          copy.rewardPricing.coupons["30"].modelLabel,
+          `${formatCoinValue(couponPriceByMinutes(30, 8))} 🪙`,
+          copy.rewardPricing.coupons["30"].effortEquivalent,
+          copy.rewardPricing.coupons["30"].balanceRule,
+        ],
+        [
+          copy.rewardPricing.coupons["60"].modelLabel,
+          `${formatCoinValue(couponPriceByMinutes(60, DAILY_PRODUCTIVE_COINS_BENCHMARK))} 🪙`,
+          copy.rewardPricing.coupons["60"].effortEquivalent,
+          copy.rewardPricing.coupons["60"].balanceRule,
+        ],
+        [
+          copy.rewardPricing.coupons["180"].modelLabel,
+          `${formatCoinValue(couponPriceByMinutes(180, 40))} 🪙`,
+          copy.rewardPricing.coupons["180"].effortEquivalent,
+          copy.rewardPricing.coupons["180"].balanceRule,
+        ],
+        [
+          copy.rewardPricing.coupons["480"].modelLabel,
+          `${formatCoinValue(couponPriceByMinutes(480, 95))} 🪙`,
+          copy.rewardPricing.coupons["480"].effortEquivalent,
+          copy.rewardPricing.coupons["480"].balanceRule,
+        ],
+        [
+          copy.rewardPricing.singleUseBasicPremium.modelLabel,
+          `${formatCoinValue(singleUsePriceById("BASIC"))} / ${formatCoinValue(singleUsePriceById("PREMIUM"))} 🪙`,
+          copy.rewardPricing.singleUseBasicPremium.effortEquivalent,
+          copy.rewardPricing.singleUseBasicPremium.balanceRule,
+        ],
+        [
+          copy.rewardPricing.singleUseEpicLegendary.modelLabel,
+          `${formatCoinValue(singleUsePriceById("EPIC"))} / ${formatCoinValue(singleUsePriceById("LEGENDARY"))} 🪙`,
+          copy.rewardPricing.singleUseEpicLegendary.effortEquivalent,
+          copy.rewardPricing.singleUseEpicLegendary.balanceRule,
+        ],
+      ],
     },
     mysteryBoxes: {
       title: copy.mysteryBoxes.title,

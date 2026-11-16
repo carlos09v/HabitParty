@@ -106,6 +106,15 @@ public class ResetUserAccountUseCase {
    */
   @Transactional
   public User execute(UUID userId, AccountResetScope scope) {
+    return execute(userId, scope, false);
+  }
+
+  /**
+   * Redefine os dados do usuário conforme o escopo escolhido.
+   * No modo METRICS, preserva o histórico de transações e registros de foco a menos que {@code deleteHistory} seja verdadeiro.
+   */
+  @Transactional
+  public User execute(UUID userId, AccountResetScope scope, boolean deleteHistory) {
     if (scope == null) {
       throw new DomainValidationException("O escopo do reset é obrigatório.");
     }
@@ -113,9 +122,11 @@ public class ResetUserAccountUseCase {
     User user = userPort.findByIdForUpdate(userId)
         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado!"));
 
-    // Comum aos dois modos: zera métricas/economia/conquistas e limpa históricos
-    transactionHistoryPort.deleteAllByUserId(userId);
-    focusRecordPort.deleteAllByUserId(userId);
+    boolean shouldDeleteHistory = scope == AccountResetScope.COMPLETE || deleteHistory;
+    if (shouldDeleteHistory) {
+      transactionHistoryPort.deleteAllByUserId(userId);
+      focusRecordPort.deleteAllByUserId(userId);
+    }
     if (profileHighlightPort != null) {
       profileHighlightPort.deleteAllByUserId(userId);
     }

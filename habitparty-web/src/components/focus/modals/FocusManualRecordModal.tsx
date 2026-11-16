@@ -19,7 +19,7 @@ import {
 import { useTranslations } from "next-intl";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { DatePicker } from "@/components/ui/DatePicker";
-import { Input } from "@/components/ui/Input";
+import { NumberStepperInput } from "@/components/ui/NumberStepperInput";
 import { RewardPreview } from "@/components/ui/reward/RewardPreview";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Select } from "@/components/ui/Select";
@@ -319,64 +319,41 @@ export function FocusManualRecordModal({
                     </div>
                   </div>
 
-                  <div className="relative flex items-end">
-                    <Input
-                      id="duration-minutes"
-                      label={t("durationToDeductLabel", {
-                        minutes: form.selectedItemMinutes,
-                      })}
-                      type="number"
-                      compact
-                      min={0}
-                      max={
+                  <NumberStepperInput
+                    id="duration-minutes"
+                    label={t("durationToDeductLabel", {
+                      minutes: form.selectedItemMinutes,
+                    })}
+                    compact
+                    min={0}
+                    max={
+                      form.selectedItemMinutes > 0
+                        ? form.selectedItemMinutes
+                        : undefined
+                    }
+                    value={form.durationInput}
+                    onChange={(e) =>
+                      form.handleDurationInputChange(e.target.value)
+                    }
+                    onStep={(delta) =>
+                      form.setDurationMinutes(
                         form.selectedItemMinutes > 0
-                          ? form.selectedItemMinutes
-                          : undefined
-                      }
-                      value={form.durationInput}
-                      onChange={(e) =>
-                        form.handleDurationInputChange(e.target.value)
-                      }
-                      icon={<Clock size={16} />}
-                      className="pr-16 font-bold tabular-nums"
-                    />
-                    <div className="absolute right-1.5 bottom-1.5 flex items-center gap-0.5">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          form.setDurationMinutes(
-                            Math.max(1, form.durationMinutes - 5),
-                          )
-                        }
-                        disabled={form.durationMinutes <= 1}
-                        className="p-1 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                        aria-label="-5m"
-                      >
-                        <Minus size={13} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          form.setDurationMinutes(
-                            form.selectedItemMinutes > 0
-                              ? Math.min(
-                                  form.selectedItemMinutes,
-                                  form.durationMinutes + 5,
-                                )
-                              : form.durationMinutes + 5,
-                          )
-                        }
-                        disabled={
-                          form.selectedItemMinutes > 0 &&
-                          form.durationMinutes >= form.selectedItemMinutes
-                        }
-                        className="p-1 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                        aria-label="+5m"
-                      >
-                        <Plus size={13} />
-                      </button>
-                    </div>
-                  </div>
+                          ? Math.min(
+                              form.selectedItemMinutes,
+                              Math.max(1, form.durationMinutes + delta),
+                            )
+                          : Math.max(1, form.durationMinutes + delta),
+                      )
+                    }
+                    decrementDisabled={form.durationMinutes <= 1}
+                    incrementDisabled={
+                      form.selectedItemMinutes > 0 &&
+                      form.durationMinutes >= form.selectedItemMinutes
+                    }
+                    icon={<Clock size={16} />}
+                    iconSize={13}
+                    className="font-bold"
+                  />
                   <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-card dark:bg-white/5 border border-neutral-700 dark:border-white/10 text-caption text-neutral-300">
                     <span>{t("remainingBalanceAfterLog")}</span>
                     <strong className="text-amber-700 dark:text-gold font-semibold tabular-nums">
@@ -427,50 +404,30 @@ export function FocusManualRecordModal({
                         : "grid-cols-1",
                     )}
                   >
-                    <div className="relative flex items-end">
-                      <Input
-                        id="duration-minutes"
-                        label={t("totalMinutesLabel")}
-                        type="number"
-                        compact
-                        min={0}
-                        max={600}
-                        value={form.durationInput}
-                        onChange={(e) =>
-                          form.handleDurationInputChange(e.target.value)
-                        }
-                        icon={<Clock size={16} />}
-                        className="pr-20 font-bold tabular-nums"
-                      />
-                      <div className="absolute right-1.5 bottom-1.5 flex items-center gap-0.5">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            form.setDurationMinutes(
-                              Math.max(1, form.durationMinutes - 5),
-                            )
-                          }
-                          disabled={form.durationMinutes <= 1}
-                          className="p-1.5 pointer-coarse:p-2 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                          aria-label="-5m"
-                        >
-                          <Minus size={13} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            form.setDurationMinutes(
-                              Math.min(600, form.durationMinutes + 5),
-                            )
-                          }
-                          disabled={form.durationMinutes >= 600}
-                          className="p-1.5 pointer-coarse:p-2 rounded-md text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-neutral-700/50 dark:hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                          aria-label="+5m"
-                        >
-                          <Plus size={13} />
-                        </button>
-                      </div>
-                    </div>
+                    <NumberStepperInput
+                      id="duration-minutes"
+                      label={t("totalMinutesLabel")}
+                      compact
+                      min={0}
+                      max={600}
+                      value={form.durationInput}
+                      onChange={(e) =>
+                        form.handleDurationInputChange(e.target.value)
+                      }
+                      onStep={(delta) =>
+                        form.setDurationMinutes(
+                          Math.min(
+                            600,
+                            Math.max(1, form.durationMinutes + delta),
+                          ),
+                        )
+                      }
+                      decrementDisabled={form.durationMinutes <= 1}
+                      incrementDisabled={form.durationMinutes >= 600}
+                      icon={<Clock size={16} />}
+                      iconSize={13}
+                      className="font-bold"
+                    />
 
                     {form.recordType === "POMO" && (
                       <div className="flex flex-col gap-1.5">

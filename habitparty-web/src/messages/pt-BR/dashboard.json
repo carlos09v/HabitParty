@@ -82,6 +82,14 @@
     "optionsAria": "Opções da lista {name}",
     "addCard": "Adicionar",
     "addCardSubtitle": "Nova lista",
+    "addFirstCard": "Criar primeira lista",
+    "addFirstCardSubtitle": "Comece por aqui",
+    "defaultWorkspaceName": "outro ambiente",
+    "readOnlyMoveSourceToast": "Este ambiente está em modo somente leitura (Bloqueado). Reative o plano VIP para mover listas dele!",
+    "readOnlyMoveTargetToast": "O ambiente \"{workspace}\" está em modo somente leitura (Bloqueado). Reative o plano VIP para mover listas para ele!",
+    "moveColumnSuccess": "Coluna \"{title}\" movida para \"{workspace}\"!",
+    "moveColumnError": "Erro ao mover coluna para o ambiente de destino.",
+    "moveColumnUnexpectedError": "Erro inesperado ao mover coluna.",
     "deleteColumnSuccess": "Coluna \"{title}\" excluída com sucesso!",
     "deleteColumnError": "Falha ao excluir coluna.",
     "deleteColumnUnexpectedError": "Erro inesperado ao excluir coluna.",
@@ -169,6 +177,16 @@
     "emptyDateTitle": "Tudo limpo nesta data! 🎉",
     "emptyDateDesc": "Não há tarefas agendadas para o dia {date}.",
     "empty": {
+      "noColumns": {
+        "title": "Primeiro, crie sua primeira lista!",
+        "description": "Este ambiente ainda não tem nenhuma lista. Crie a primeira (ex: A Fazer, Rotinas, Estudos) para liberar a criação de tarefas.",
+        "action": "Criar primeira lista"
+      },
+      "noColumnsReadOnly": {
+        "title": "Ambiente sem listas no modo somente leitura",
+        "description": "Este ambiente ainda não possui listas e está bloqueado para novas criações no plano gratuito.",
+        "action": "Reativar VIP"
+      },
       "today": {
         "title": "Tudo limpo por hoje! 🎉",
         "description": "Você não possui nenhuma tarefa pendente para hoje."
@@ -350,6 +368,7 @@
       "markedPending": "Tarefa marcada como pendente.",
       "habitScoreError": "Erro ao registrar pontuação do hábito.",
       "habitRecorded": "Hábito registrado!",
+      "habitRewardCapReached": "Hábito registrado! Limite diário de recompensas ({limit}x/dia) atingido para este hábito — seu progresso continua contando.",
       "decayHabit": "{stage} (-{percent}% por hábito consolidado)",
       "positiveHabitSuccess": "Hábito positivo registrado com sucesso!",
       "habitPenalty": "Penalidade de hábito registrada!",

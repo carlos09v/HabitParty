@@ -19,6 +19,7 @@ import {
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useUserStore } from "@/store/userStore";
 import type { Reward } from "@/types/reward";
+import { toCategoryMessageKey } from "@/utils/rewardMapper";
 import { soundEffects } from "@/utils/soundEffects";
 
 interface UseRewardCatalogActionsParams {
@@ -83,10 +84,15 @@ export function useRewardCatalogActions({
         }
 
         soundEffects.playBuySound();
+        const isDebt = toCategoryMessageKey(reward.category) === "DEBT";
         toast.success(
-          isGamified
-            ? t("toasts.buySuccessGamified", { title: reward.title })
-            : t("toasts.buySuccessProductivity", { title: reward.title }),
+          isDebt
+            ? isGamified
+              ? t("toasts.debtPaidSuccessGamified", { title: reward.title })
+              : t("toasts.debtPaidSuccessProductivity", { title: reward.title })
+            : isGamified
+              ? t("toasts.buySuccessGamified", { title: reward.title })
+              : t("toasts.buySuccessProductivity", { title: reward.title }),
         );
       } catch (_error) {
         toast.error(t("toasts.serverError"));

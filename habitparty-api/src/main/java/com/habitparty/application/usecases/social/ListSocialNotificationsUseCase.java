@@ -53,7 +53,14 @@ public class ListSocialNotificationsUseCase {
 
   @Transactional(readOnly = true)
   public SocialNotificationsResult execute(UUID recipientId, int limit) {
-    List<SocialNotification> raw = notificationRepository.findRecentByRecipientId(recipientId, limit);
+    return execute(recipientId, limit, false);
+  }
+
+  @Transactional(readOnly = true)
+  public SocialNotificationsResult execute(UUID recipientId, int limit, boolean unseenOnly) {
+    List<SocialNotification> raw = unseenOnly
+        ? notificationRepository.findUnseenRecentByRecipientId(recipientId, limit)
+        : notificationRepository.findRecentByRecipientId(recipientId, limit);
     long unseenCount = notificationRepository.countUnseenByRecipientId(recipientId);
 
     Set<UUID> actorIds = raw.stream()
