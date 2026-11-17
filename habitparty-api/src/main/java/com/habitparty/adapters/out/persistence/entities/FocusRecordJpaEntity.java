@@ -59,6 +59,9 @@ public class FocusRecordJpaEntity {
   @Column(name = "completed_pomos")
   private Integer completedPomos;
 
+  @Column(name = "pomo_target_minutes")
+  private Integer pomoTargetMinutes;
+
   @Column(name = "duration_minutes", nullable = false)
   private int durationMinutes;
 

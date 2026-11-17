@@ -70,6 +70,29 @@ public interface TaskRepository {
   // Para quando a coluna estiver vazia e a primeira task precisar do index 0
   int findMaxOrderIndexByBoardColumnId(UUID boardColumnId);
 
+  default Optional<Integer> findOrderIndexByIdAndBoardColumnIdAndUserId(
+      UUID taskId,
+      UUID boardColumnId,
+      UUID userId) {
+    return findById(taskId)
+        .filter(t -> t.getUserId().equals(userId) && t.getBoardColumnId().equals(boardColumnId))
+        .map(Task::getOrderIndex);
+  }
+
+  default void shiftOrderIndexUpAfter(UUID boardColumnId, int afterOrderIndex) {
+    List<Task> columnTasks = findByBoardColumnIdOrderByOrderIndexAsc(boardColumnId);
+    List<Task> shiftedTasks = new java.util.ArrayList<>();
+    for (Task colTask : columnTasks) {
+      if (colTask.getOrderIndex() > afterOrderIndex) {
+        colTask.moveTo(boardColumnId, colTask.getOrderIndex() + 1);
+        shiftedTasks.add(colTask);
+      }
+    }
+    if (!shiftedTasks.isEmpty()) {
+      saveAll(shiftedTasks);
+    }
+  }
+
   void deleteById(UUID id);
 
   // Cascata do boardColumn

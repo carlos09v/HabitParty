@@ -102,9 +102,16 @@ export function useDashboardTaskActions({
   );
 
   const onTaskDuplicated = useCallback(
-    (duplicatedTask: Task) => {
+    (duplicatedTask: Task, _targetColumnId: string, sourceTaskId?: string) => {
       const enriched = enrichTaskWorkspace(duplicatedTask);
-      setTasks((prev) => [enriched, ...prev]);
+      setTasks((prev) => {
+        if (!sourceTaskId) return [enriched, ...prev];
+        const sourceIndex = prev.findIndex((t) => t.id === sourceTaskId);
+        if (sourceIndex === -1) return [enriched, ...prev];
+        const nextTasks = [...prev];
+        nextTasks.splice(sourceIndex + 1, 0, enriched);
+        return nextTasks;
+      });
     },
     [enrichTaskWorkspace, setTasks],
   );
@@ -131,6 +138,7 @@ export function useDashboardTaskActions({
     handleHabitChange,
     handleDeleteTask,
     handleDuplicateTask,
+    duplicatingTaskIds,
   } = useTaskMutations({
     findTask,
     onOptimisticToggle,
@@ -173,6 +181,7 @@ export function useDashboardTaskActions({
     handleHabitChange,
     handleDeleteTask,
     handleDuplicateTask,
+    duplicatingTaskIds,
     handleTaskSaved,
     handleTaskDetailsUpdate,
   };

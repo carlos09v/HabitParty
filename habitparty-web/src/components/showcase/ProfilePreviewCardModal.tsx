@@ -13,6 +13,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { BaseModal } from "@/components/ui/BaseModal";
+import { useUserStore } from "@/store/userStore";
 import type {
   AchievementItemResponseDTO,
   ProfileHighlightResponseDTO,
@@ -57,6 +58,16 @@ export function ProfilePreviewCardModal({
   activeFrameId,
 }: ProfilePreviewCardModalProps) {
   const t = useTranslations("showcase.previewCard");
+  const authenticatedUser = useUserStore((s) => s.user);
+  const isUnauthorizedTarget = Boolean(
+    authenticatedUser &&
+      ((user.id && authenticatedUser.id !== user.id) ||
+        (!user.id &&
+          user.username &&
+          authenticatedUser.username &&
+          authenticatedUser.username.toLowerCase() !==
+            user.username.toLowerCase())),
+  );
 
   const canShowRetrospective = Boolean(retrospective?.eligible);
   const [mode, setMode] = useState<"profile" | "retrospective">(
@@ -106,7 +117,7 @@ export function ProfilePreviewCardModal({
   });
 
   useEffect(() => {
-    if (!isOpen || !previewCanvasRef.current) return;
+    if (!isOpen || !previewCanvasRef.current || isUnauthorizedTarget) return;
     const controller = new AbortController();
     setIsCanvasReady(false);
     void renderProfileOrRetrospectiveCanvas(
@@ -120,9 +131,14 @@ export function ProfilePreviewCardModal({
       }
     });
     return () => controller.abort();
-  }, [isOpen, renderInput]);
+  }, [isOpen, isUnauthorizedTarget, renderInput]);
+
+  if (isUnauthorizedTarget) {
+    return null;
+  }
 
   const handleDownloadPng = async () => {
+    if (isUnauthorizedTarget) return;
     setIsDownloading(true);
     try {
       let targetCanvas = previewCanvasRef.current;

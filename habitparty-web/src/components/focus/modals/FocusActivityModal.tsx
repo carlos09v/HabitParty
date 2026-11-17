@@ -11,13 +11,14 @@ import {
   X,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 import {
   createFocusActivity,
   updateFocusActivity,
 } from "@/actions/focusActions";
 import { BaseModal } from "@/components/ui/BaseModal";
+import { DurationHoursBadge } from "@/components/ui/DurationHoursBadge";
 import { IconPickerPopover } from "@/components/ui/IconPickerPopover";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { Input } from "@/components/ui/Input";
@@ -27,7 +28,6 @@ import { DEFAULT_POMO_MINUTES, FOCUS_ICONS } from "@/constants/focus";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
 import type { FocusActivity, FocusRecordType } from "@/types/focus";
 import { cn } from "@/utils";
-import { formatFocusMinutes } from "@/utils/focusFormatters";
 import { suggestFocusIconFromName } from "@/utils/iconSuggestion";
 import { soundEffects } from "@/utils/soundEffects";
 
@@ -48,6 +48,7 @@ export function FocusActivityModal({
 }: FocusActivityModalProps) {
   const t = useTranslations("focus.activityModal");
   const isEditing = Boolean(activityToEdit);
+  const durationHoursHintId = useId();
 
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("book");
@@ -284,15 +285,11 @@ export function FocusActivityModal({
               >
                 {t("cycleDurationLabel")}
               </label>
-              {targetTimeMinutes >= 60 && (
-                <span
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/35 text-emerald-700 dark:text-emerald-300 text-label-m font-bold tabular-nums shrink-0"
-                  aria-live="polite"
-                >
-                  <Clock size={11} aria-hidden="true" />
-                  <span>= {formatFocusMinutes(targetTimeMinutes)}</span>
-                </span>
-              )}
+              <DurationHoursBadge
+                id={durationHoursHintId}
+                minutes={targetTimeMinutes}
+                className="shrink-0"
+              />
             </div>
             <NumberStepperInput
               id="target-minutes"
@@ -310,6 +307,9 @@ export function FocusActivityModal({
               incrementDisabled={targetTimeMinutes >= 180 || isSubmitting}
               disabled={isSubmitting}
               icon={<Clock size={16} />}
+              aria-describedby={
+                targetTimeMinutes >= 60 ? durationHoursHintId : undefined
+              }
               className="font-semibold"
             />
           </div>

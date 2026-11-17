@@ -254,8 +254,9 @@ class ChangeTaskStatusUseCaseTest {
     assertTrue(todoTask.isRewardAlreadyClaimed());
 
     // Conclui novamente: status vai para COMPLETED, mas NÃO soma XP/Ouro de novo
-    changeTaskStatusUseCase.execute(taskId, userId, TaskStatus.COMPLETED);
-    assertEquals(TaskStatus.COMPLETED, todoTask.getStatus());
+    var secondResult = changeTaskStatusUseCase.executeWithResult(taskId, userId, TaskStatus.COMPLETED);
+    assertEquals(TaskStatus.COMPLETED, secondResult.task().getStatus());
+    assertFalse(secondResult.rewardGranted());
     assertEquals(xpAfterFirstCompletion, user.getTotalXp());
     assertEquals(coinsAfterFirstCompletion, user.getCurrentCoins());
     verify(transactionPort, times(1)).save(any(TransactionHistory.class));

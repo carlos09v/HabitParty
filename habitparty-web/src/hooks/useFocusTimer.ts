@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import {
   DEFAULT_LONG_BREAK_MINUTES,
   DEFAULT_SHORT_BREAK_MINUTES,
+  FOCUS_REWARD_RULES,
 } from "@/constants/focus";
 import {
   setFocusTimerTranslators,
@@ -15,6 +16,8 @@ import type { FocusTimerControlsState, FocusTimerState } from "@/types/focus";
 import {
   formatFocusDisplayTime,
   getFocusOvertimeSeconds,
+  getFocusProgressPercent,
+  getFocusTimerDerivedState,
   isFocusOvertime,
 } from "@/utils/focusFormatters";
 import { setFocusBrowserTranslations } from "@/utils/focusTimerBrowser";
@@ -65,6 +68,16 @@ export function useFocusTimerControls({
       s.target?.type !== "inventory",
   );
   const isOvertime = useFocusTimerStore((s) => isFocusOvertime(s));
+  const isSavingSession = useFocusTimerStore((s) => s.isSavingSession);
+  const isCompletingLinkedTask = useFocusTimerStore(
+    (s) => s.isCompletingLinkedTask,
+  );
+  const isSessionRewardCapped = useFocusTimerStore(
+    (s) =>
+      s.phase === "WORK" &&
+      s.target?.type !== "inventory" &&
+      s.elapsedSeconds >= FOCUS_REWARD_RULES.MAX_EFFECTIVE_MINUTES * 60,
+  );
   const nextBreakMinutes = useFocusTimerStore((s) =>
     (s.completedCycles + 1) % 4 === 0
       ? DEFAULT_LONG_BREAK_MINUTES
@@ -138,6 +151,9 @@ export function useFocusTimerControls({
     canComplete,
     isPartialPomo,
     isOvertime,
+    isSavingSession,
+    isCompletingLinkedTask,
+    isSessionRewardCapped,
   };
 
   return {
@@ -155,6 +171,9 @@ export function useFocusTimerControls({
     canComplete,
     isPartialPomo,
     isOvertime,
+    isSavingSession,
+    isCompletingLinkedTask,
+    isSessionRewardCapped,
     nextBreakMinutes,
 
     // Preferências de som sincronizadas com soundPreferencesStore
@@ -205,23 +224,23 @@ export function useFocusTimerDisplay() {
   const isPaused = useFocusTimerStore((s) => s.isPaused);
   const completedCycles = useFocusTimerStore((s) => s.completedCycles);
 
-  const isRunning = isActive && !isPaused;
-  const isInventoryItem = target?.type === "inventory";
-  const isBreak = phase === "SHORT_BREAK" || phase === "LONG_BREAK";
-  const isCountdown = mode === "POMO" || isInventoryItem || isBreak;
-  const isOvertime = isFocusOvertime({
+  const derived = getFocusTimerDerivedState({
+    isActive,
+    isPaused,
     mode,
     phase,
     secondsRemaining,
     elapsedSeconds,
     totalDurationSeconds,
+    completedCycles,
     target,
   });
-  const overtimeSeconds = isOvertime
+  const isCountdown = mode === "POMO" || derived.isInventory || derived.isBreak;
+  const overtimeSeconds = derived.isOvertime
     ? getFocusOvertimeSeconds({ elapsedSeconds, totalDurationSeconds })
     : 0;
 
-  const displaySeconds = isOvertime
+  const displaySeconds = derived.isOvertime
     ? overtimeSeconds
     : isCountdown
       ? secondsRemaining
@@ -235,16 +254,14 @@ export function useFocusTimerDisplay() {
     target,
   });
 
-  let progressPercent = 0;
-  if (isCountdown) {
-    progressPercent =
-      totalDurationSeconds > 0
-        ? ((totalDurationSeconds - secondsRemaining) / totalDurationSeconds) *
-          100
-        : 0;
-  } else {
-    progressPercent = ((elapsedSeconds % 3600) / 3600) * 100;
-  }
+  const progressPercent = getFocusProgressPercent({
+    mode,
+    phase,
+    secondsRemaining,
+    elapsedSeconds,
+    totalDurationSeconds,
+    target,
+  });
 
   return {
     displaySeconds,
@@ -255,14 +272,18 @@ export function useFocusTimerDisplay() {
     totalDurationSeconds,
     mode,
     phase,
-    isBreak,
-    isOvertime,
+    isBreak: derived.isBreak,
+    isOvertime: derived.isOvertime,
     overtimeSeconds,
     target,
     isActive,
     isPaused,
-    isRunning,
-    isInventoryItem,
+    isRunning: derived.isRunning,
+    isInventoryItem: derived.isInventory,
+    canComplete: derived.canComplete,
+    isPartialPomo: derived.isPartialPomo,
+    isSessionRewardCapped: derived.isSessionRewardCapped,
+    nextBreakMinutes: derived.nextBreakMinutes,
     completedCycles,
   };
 }

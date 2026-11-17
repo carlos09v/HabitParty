@@ -1618,6 +1618,8 @@ export interface components {
       /** Format: int32 */
       completedPomos?: number;
       /** Format: int32 */
+      pomoTargetMinutes?: number;
+      /** Format: int32 */
       durationMinutes?: number;
       /** Format: int32 */
       xpEarned?: number;
@@ -1740,6 +1742,8 @@ export interface components {
       startTime?: string;
       dueEndTime?: string;
       isAllDay?: boolean;
+      /** Format: uuid */
+      afterTaskId?: string;
     };
     TaskSearchWorkspaceCountDTO: {
       /** Format: uuid */
@@ -1788,6 +1792,8 @@ export interface components {
       recordType?: "POMO" | "STOPWATCH";
       /** Format: int32 */
       completedPomos?: number;
+      /** Format: int32 */
+      pomoTargetMinutes?: number;
     };
     CreateFocusActivityDTO: {
       name: string;

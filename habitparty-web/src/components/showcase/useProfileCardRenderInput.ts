@@ -26,6 +26,7 @@ const RARITY_HEX: Record<AchievementRarity, string> = {
 };
 
 export interface ProfilePreviewCardUser {
+  id?: string | null;
   fullName?: string | null;
   username?: string | null;
   profilePhotoUrl?: string | null;

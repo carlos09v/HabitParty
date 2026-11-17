@@ -161,7 +161,7 @@ export function RetrospectivePanel({
               </fieldset>
             )}
 
-            {retro.eligible && onOpenExportModal && (
+            {isOwnProfile && retro.eligible && onOpenExportModal && (
               <button
                 type="button"
                 onClick={() => onOpenExportModal(retro)}

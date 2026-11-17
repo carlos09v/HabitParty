@@ -77,6 +77,7 @@ export interface TaskDetailsPopoverProps {
   onHabitChange?: (taskId: string, delta: number) => void;
   onEdit?: (task: Task) => void;
   onDuplicate?: (task: Task) => void;
+  isDuplicating?: boolean;
   onOpenFocusHistory?: (task: Task) => void;
 }
 
@@ -85,6 +86,7 @@ export interface TaskDetailsFooterProps {
   columnTitle?: string;
   onDeleteTask: () => void;
   onDuplicateTask?: () => void;
+  isDuplicating?: boolean;
   onOpenEdit?: () => void;
 }
 
@@ -200,6 +202,7 @@ export interface TasksBoardModalsProps {
   isDeletingColumn: boolean;
   handleDeleteColumn: (col: BoardColumn) => Promise<boolean>;
   handleDuplicateTask: (task: Task, columnId: string) => void;
+  duplicatingTaskIds?: Set<string>;
   taskToDelete: { task: Task; columnId?: string } | null;
   deleteHistory: boolean;
   onDeleteHistoryChange: (checked: boolean) => void;
@@ -251,6 +254,7 @@ export interface RoutineBoardProps {
   onHabitChange?: (taskId: string, delta: number) => void;
   onLoadArchivedCompleted?: (columnId: string) => Promise<void>;
   forceExpandCompleted?: boolean;
+  activeDraggedTaskId?: string | null;
   onQuickCreateTask?: (
     title: string,
     columnId: string,
@@ -287,6 +291,7 @@ export interface RoutineColumnProps {
   onHabitChange?: (taskId: string, delta: number) => void;
   onLoadArchivedCompleted?: (columnId: string) => Promise<void>;
   forceExpandCompleted?: boolean;
+  activeDraggedTaskId?: string | null;
   isOverlay?: boolean;
 }
 

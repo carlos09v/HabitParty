@@ -95,6 +95,8 @@ export function InventoryContainer({
     handleConfirmDiscard,
     handleUseItem,
     handleSendToFocus,
+    usingItemIds,
+    sendingItemIds,
     contextMenu,
     closeContextMenu,
     handleItemContextMenu,
@@ -229,6 +231,8 @@ export function InventoryContainer({
           onDragEnd={handleDragEnd}
           onUse={handleUseItem}
           onSendToFocus={handleSendToFocus}
+          usingItemIds={usingItemIds}
+          sendingItemIds={sendingItemIds}
           onOpenMysteryBox={handleOpenMysteryBox}
           onContextMenu={handleItemContextMenu}
           onClearFilters={handleClearFilters}

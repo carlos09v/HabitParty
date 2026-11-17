@@ -7,6 +7,7 @@ import {
   FolderInput,
   Layers,
   LayoutGrid,
+  Loader2,
   Lock,
   Maximize2,
   Minimize2,
@@ -29,6 +30,7 @@ export function buildTaskContextMenuItems(options: {
   onDuplicate: (task: Task) => void;
   onDelete: (task: Task) => void;
   onStartFocus?: (task: Task) => void;
+  isDuplicating?: boolean;
   labels?: {
     startFocus?: string;
     edit?: string;
@@ -36,7 +38,15 @@ export function buildTaskContextMenuItems(options: {
     delete?: string;
   };
 }): ContextMenuItem[] {
-  const { task, onEdit, onDuplicate, onDelete, onStartFocus, labels } = options;
+  const {
+    task,
+    onEdit,
+    onDuplicate,
+    onDelete,
+    onStartFocus,
+    isDuplicating = false,
+    labels,
+  } = options;
   const canFocus =
     Boolean(task) &&
     normalizeTaskType(task as Task) !== "habit" &&
@@ -70,7 +80,12 @@ export function buildTaskContextMenuItems(options: {
     },
     {
       label: labels?.duplicate || "Duplicar",
-      icon: <Copy size={14} />,
+      icon: isDuplicating ? (
+        <Loader2 size={14} className="animate-spin" />
+      ) : (
+        <Copy size={14} />
+      ),
+      disabled: isDuplicating,
       onClick: () => {
         if (task) onDuplicate(task);
       },

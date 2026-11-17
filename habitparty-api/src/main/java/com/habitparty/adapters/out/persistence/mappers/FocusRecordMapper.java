@@ -24,6 +24,7 @@ public class FocusRecordMapper {
     entity.setEndTime(domain.getEndTime());
     entity.setRecordType(domain.getRecordType().orElse(null));
     entity.setCompletedPomos(domain.getCompletedPomos().orElse(null));
+    entity.setPomoTargetMinutes(domain.getPomoTargetMinutes().orElse(null));
     entity.setDurationMinutes(domain.getDurationMinutes());
     entity.setXpEarned(domain.getXpEarned().orElse(0));
     entity.setCoinsEarned(domain.getCoinsEarned().orElse(BigDecimal.ZERO));
@@ -46,6 +47,7 @@ public class FocusRecordMapper {
         entity.getEndTime(),
         entity.getRecordType(),
         entity.getCompletedPomos(),
+        entity.getPomoTargetMinutes(),
         entity.getXpEarned() != null ? entity.getXpEarned() : 0,
         entity.getCoinsEarned() != null ? entity.getCoinsEarned() : BigDecimal.ZERO
     );

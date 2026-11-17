@@ -5,7 +5,9 @@ import {
   Coffee,
   Link2,
   ListTodo,
+  Loader2,
   Pause,
+  PictureInPicture2,
   Play,
   RotateCcw,
   Timer,
@@ -27,13 +29,14 @@ import { listFocusActivities } from "@/actions/focusActions";
 import type { ActionState } from "@/actions/types";
 import { getFocusIcon } from "@/constants/focus";
 import { AMBIENT_ICONS } from "@/constants/settings";
+import { useFocusPipAction } from "@/hooks/useFocusPipAction";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
 import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
 import type { FocusActivity } from "@/types/focus";
 import { cn } from "@/utils";
 import {
   formatFocusDisplayTime,
-  isFocusOvertime,
+  getFocusTimerDerivedState,
 } from "@/utils/focusFormatters";
 import { getRewardIcon } from "@/utils/rewardMapper";
 import { soundEffects } from "@/utils/soundEffects";
@@ -58,6 +61,7 @@ export function SidebarFocusWidget() {
   const router = useRouter();
   const pathname = usePathname();
   const t = useTranslations("focusWidget");
+  const { isPipOpen, isPipSupported, togglePip } = useFocusPipAction();
   const [mounted, setMounted] = useState(false);
 
   // Estados do Timer
@@ -71,6 +75,7 @@ export function SidebarFocusWidget() {
   );
   const elapsedSeconds = useFocusTimerStore((s) => s.elapsedSeconds);
   const target = useFocusTimerStore((s) => s.target);
+  const isSavingSession = useFocusTimerStore((s) => s.isSavingSession);
 
   const toggleTimer = useFocusTimerStore((s) => s.toggleTimer);
   const stopFromWidget = useFocusTimerStore((s) => s.stopFromWidget);
@@ -292,17 +297,17 @@ export function SidebarFocusWidget() {
   }
 
   // CASO 2: Timer Ativo (com ou sem Som Ambiente)
-  const isRunning = isActive && !isPaused;
-  const isBreak = phase === "SHORT_BREAK" || phase === "LONG_BREAK";
-  const isInventory = target?.type === "inventory";
-  const isOvertime = isFocusOvertime({
-    mode,
-    phase,
-    secondsRemaining,
-    elapsedSeconds,
-    totalDurationSeconds,
-    target,
-  });
+  const { isRunning, isBreak, isInventory, isOvertime } =
+    getFocusTimerDerivedState({
+      isActive,
+      isPaused,
+      mode,
+      phase,
+      secondsRemaining,
+      elapsedSeconds,
+      totalDurationSeconds,
+      target,
+    });
   const TargetIcon =
     target?.type === "task"
       ? ListTodo
@@ -431,6 +436,7 @@ export function SidebarFocusWidget() {
             {/* Play / Pause */}
             <button
               type="button"
+              disabled={isSavingSession}
               onClick={(e) => {
                 e.stopPropagation();
                 toggleTimer();
@@ -438,7 +444,7 @@ export function SidebarFocusWidget() {
               title={isRunning ? t("pauseTitle") : t("resumeTitle")}
               aria-label={isRunning ? t("pauseAria") : t("resumeAria")}
               className={cn(
-                "w-5 h-5 rounded flex items-center justify-center border transition-colors cursor-pointer shadow-xs",
+                "w-5 h-5 rounded flex items-center justify-center border transition-colors cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed",
                 isRunning
                   ? "bg-gold text-on-gold border-gold hover:bg-gold-hover"
                   : "bg-surface hover:bg-primary/15 text-neutral-200 hover:text-primary border-neutral-600 dark:hover:bg-gold/20 dark:hover:text-gold dark:border-primary/30",
@@ -455,15 +461,29 @@ export function SidebarFocusWidget() {
             {isOvertime && !isBreak && (
               <button
                 type="button"
+                disabled={isSavingSession}
+                aria-busy={isSavingSession}
                 onClick={async (e) => {
                   e.stopPropagation();
                   await startBreak();
                 }}
-                title={t("startBreakTitle")}
-                aria-label={t("startBreakAria")}
-                className="w-5 h-5 rounded flex items-center justify-center border border-cyan-500/40 bg-cyan-500/15 text-cyan-700 hover:bg-cyan-500/25 hover:border-cyan-600 dark:border-cyan-400/45 dark:bg-cyan-500/20 dark:text-cyan-200 dark:hover:bg-cyan-500/30 transition-colors cursor-pointer shadow-xs"
+                title={
+                  isSavingSession
+                    ? t("savingSessionTitle")
+                    : t("startBreakTitle")
+                }
+                aria-label={
+                  isSavingSession
+                    ? t("savingSessionTitle")
+                    : t("startBreakAria")
+                }
+                className="w-5 h-5 rounded flex items-center justify-center border border-cyan-500/40 bg-cyan-500/15 text-cyan-700 hover:bg-cyan-500/25 hover:border-cyan-600 dark:border-cyan-400/45 dark:bg-cyan-500/20 dark:text-cyan-200 dark:hover:bg-cyan-500/30 transition-colors cursor-pointer shadow-xs disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <Coffee size={10} />
+                {isSavingSession ? (
+                  <Loader2 size={10} className="animate-spin" />
+                ) : (
+                  <Coffee size={10} />
+                )}
               </button>
             )}
 
@@ -471,23 +491,55 @@ export function SidebarFocusWidget() {
             {elapsedSeconds >= 60 && !isBreak && (
               <button
                 type="button"
+                disabled={isSavingSession}
+                aria-busy={isSavingSession}
                 onClick={async (e) => {
                   e.stopPropagation();
                   await completeSession();
                 }}
                 title={
-                  mode === "POMO" && secondsRemaining > 0 && !isInventory
-                    ? t("savePartialTitle")
-                    : t("completeSaveTitle")
+                  isSavingSession
+                    ? t("savingSessionTitle")
+                    : mode === "POMO" && secondsRemaining > 0 && !isInventory
+                      ? t("savePartialTitle")
+                      : t("completeSaveTitle")
                 }
                 aria-label={
-                  mode === "POMO" && secondsRemaining > 0 && !isInventory
-                    ? t("savePartialAria")
-                    : t("completeSaveAria")
+                  isSavingSession
+                    ? t("savingSessionTitle")
+                    : mode === "POMO" && secondsRemaining > 0 && !isInventory
+                      ? t("savePartialAria")
+                      : t("completeSaveAria")
                 }
-                className="w-5 h-5 rounded flex items-center justify-center border border-emerald-500/35 bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25 hover:border-emerald-600 dark:border-emerald-500/40 dark:bg-emerald-500/20 dark:text-emerald-300 dark:hover:bg-emerald-500/30 dark:hover:border-emerald-400 transition-colors cursor-pointer shadow-xs"
+                className="w-5 h-5 rounded flex items-center justify-center border border-emerald-500/35 bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25 hover:border-emerald-600 dark:border-emerald-500/40 dark:bg-emerald-500/20 dark:text-emerald-300 dark:hover:bg-emerald-500/30 dark:hover:border-emerald-400 transition-colors cursor-pointer shadow-xs disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <Check size={10} className="stroke-[2.5]" />
+                {isSavingSession ? (
+                  <Loader2 size={10} className="animate-spin" />
+                ) : (
+                  <Check size={10} className="stroke-[2.5]" />
+                )}
+              </button>
+            )}
+
+            {/* Picture-in-Picture */}
+            {isPipSupported && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void togglePip();
+                }}
+                aria-pressed={isPipOpen}
+                title={isPipOpen ? t("pipCloseTitle") : t("pipOpenTitle")}
+                aria-label={isPipOpen ? t("pipCloseTitle") : t("pipOpenTitle")}
+                className={cn(
+                  "w-5 h-5 rounded flex items-center justify-center border transition-colors cursor-pointer shadow-xs",
+                  isPipOpen
+                    ? "bg-gold/20 text-gold border-gold/60"
+                    : "bg-surface/80 text-neutral-300 border-primary/30 hover:text-gold hover:border-gold/50",
+                )}
+              >
+                <PictureInPicture2 size={10} />
               </button>
             )}
 
@@ -495,13 +547,14 @@ export function SidebarFocusWidget() {
             {hasActiveTimer && (
               <button
                 type="button"
+                disabled={isSavingSession}
                 onClick={(e) => {
                   e.stopPropagation();
                   stopFromWidget();
                 }}
                 title={t("stopResetTitle")}
                 aria-label={t("stopAria")}
-                className="w-5 h-5 rounded flex items-center justify-center border border-primary/30 bg-surface/80 text-neutral-400 hover:text-red-400 hover:border-red-500/40 hover:bg-red-500/10 transition-colors cursor-pointer shadow-xs"
+                className="w-5 h-5 rounded flex items-center justify-center border border-primary/30 bg-surface/80 text-neutral-400 hover:text-red-400 hover:border-red-500/40 hover:bg-red-500/10 transition-colors cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <RotateCcw size={9} />
               </button>

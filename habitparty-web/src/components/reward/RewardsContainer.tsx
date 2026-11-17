@@ -98,6 +98,7 @@ export function RewardsContainer({
     handleAddProduct,
     handleCloseFormModal,
     handleRewardSuccess,
+    redeemingRewardIds,
     handleBuy,
   } = useRewardCatalogActions({ rewards, setRewards });
 
@@ -297,6 +298,7 @@ export function RewardsContainer({
           isCompact={isCompact}
           currentCoins={currentCoins}
           deletingRewardIds={checkingDeleteRewardIds}
+          redeemingRewardIds={redeemingRewardIds}
           sensors={sensors}
           onDragEnd={handleDragEnd}
           onBuy={handleBuy}

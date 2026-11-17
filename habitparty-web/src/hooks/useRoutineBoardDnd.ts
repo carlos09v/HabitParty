@@ -67,6 +67,7 @@ export function useRoutineBoardDnd({
 
   const [activeColumn, setActiveColumn] = useState<BoardColumn | null>(null);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const activeDragTypeRef = useRef<"Column" | "Task" | null>(null);
   const lastOverIdRef = useRef<UniqueIdentifier | null>(null);
   const recentlyMovedToNewContainer = useRef(false);
   const initialDragColumnsRef = useRef<BoardColumn[] | null>(null);
@@ -94,7 +95,9 @@ export function useRoutineBoardDnd({
    */
   const collisionDetection: CollisionDetection = useCallback((args) => {
     // 1. Ao arrastar uma Coluna: detecta colisão prioritária no botão de guardar ou contra outras Colunas pelo centro
-    if (args.active.data.current?.type === "Column") {
+    const dragType =
+      args.active.data.current?.type ?? activeDragTypeRef.current;
+    if (dragType === "Column") {
       const storeButton = args.droppableContainers.find(
         (c) =>
           c.id === "store-column-button" ||
@@ -199,6 +202,12 @@ export function useRoutineBoardDnd({
 
   const onDragStart = ({ active }: DragStartEvent) => {
     const data = active.data.current;
+    activeDragTypeRef.current =
+      data?.type === "Column"
+        ? "Column"
+        : data?.type === "Task"
+          ? "Task"
+          : null;
     setActiveColumn(data?.type === "Column" ? data.column : null);
     setActiveTask(data?.type === "Task" ? data.task : null);
     lastOverIdRef.current = null;
@@ -208,7 +217,8 @@ export function useRoutineBoardDnd({
 
   const onDragOver = ({ active, over }: DragOverEvent) => {
     if (!over || active.id === over.id) return;
-    if (active.data.current?.type !== "Task") return;
+    const dragType = active.data.current?.type ?? activeDragTypeRef.current;
+    if (dragType !== "Task") return;
 
     const currentCols = columnsRef.current;
     const fromCol = findColumnByTask(currentCols, active.id);
@@ -241,6 +251,7 @@ export function useRoutineBoardDnd({
       columnsRef.current = initialDragColumnsRef.current;
       setColumns(initialDragColumnsRef.current);
     }
+    activeDragTypeRef.current = null;
     setActiveColumn(null);
     setActiveTask(null);
     lastOverIdRef.current = null;
@@ -250,6 +261,8 @@ export function useRoutineBoardDnd({
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     const previousColumns = initialDragColumnsRef.current ?? columnsRef.current;
+    const type = active.data.current?.type ?? activeDragTypeRef.current;
+    activeDragTypeRef.current = null;
     setActiveColumn(null);
     setActiveTask(null);
     lastOverIdRef.current = null;
@@ -258,7 +271,6 @@ export function useRoutineBoardDnd({
     if (!over) return;
 
     const currentCols = columnsRef.current;
-    const type = active.data.current?.type;
 
     if (type === "Column") {
       if (

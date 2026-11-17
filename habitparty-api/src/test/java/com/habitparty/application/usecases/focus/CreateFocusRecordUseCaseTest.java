@@ -404,4 +404,21 @@ class CreateFocusRecordUseCaseTest {
     assertEquals(OffsetDateTime.of(tokyoStart, ZoneOffset.ofHours(9)), dto.startTime());
     assertEquals(OffsetDateTime.of(tokyoEnd, ZoneOffset.ofHours(9)), dto.endTime());
   }
+
+  @Test
+  @DisplayName("Deve rejeitar pomoTargetMinutes fora do intervalo permitido (1..180)")
+  void shouldRejectOutOfRangePomoTargetMinutes() {
+    CreateFocusRecordCommand command = new CreateFocusRecordCommand(
+        activityId,
+        null,
+        null,
+        "Sessão inválida",
+        LocalDateTime.of(2026, 10, 16, 9, 0),
+        LocalDateTime.of(2026, 10, 16, 9, 30),
+        FocusRecordType.POMO,
+        1,
+        300);
+
+    assertThrows(DomainValidationException.class, () -> useCase.execute(userId, command));
+  }
 }

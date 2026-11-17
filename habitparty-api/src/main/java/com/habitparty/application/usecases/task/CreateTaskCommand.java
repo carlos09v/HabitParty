@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.UUID;
 
 import com.habitparty.core.domain.enums.task.DailyDaysOfWeek;
 import com.habitparty.core.domain.enums.task.DailyRepeatMonthlyOption;
@@ -39,8 +40,22 @@ public record CreateTaskCommand(
     LocalTime dueTime,
     LocalTime startTime,
     LocalTime dueEndTime,
-    Boolean isAllDay
+    Boolean isAllDay,
+    UUID afterTaskId
 ) {
+  public CreateTaskCommand(
+      String name, String description, TaskPriority priority, List<String> tags,
+      TaskDifficulty difficulty, TaskType taskType, boolean isHardcoreModeEnabled,
+      LocalDate dueDate, HabitType habitType, HabitResetCounter resetCounter,
+      HabitImportanceType importanceType, LocalDate startDate, DailyRepeatType repeatType,
+      Integer repeatEvery, List<DailyDaysOfWeek> daysOfWeek, DailyRepeatMonthlyOption monthlyOption,
+      TodoReminderType reminderType, LocalDateTime customReminderAt, Boolean sendEmailReminder,
+      LocalTime dueTime, LocalTime startTime, LocalTime dueEndTime, Boolean isAllDay) {
+    this(name, description, priority, tags, difficulty, taskType, isHardcoreModeEnabled,
+        dueDate, habitType, resetCounter, importanceType, startDate, repeatType,
+        repeatEvery, daysOfWeek, monthlyOption, reminderType, customReminderAt, sendEmailReminder,
+        dueTime, startTime, dueEndTime, isAllDay, null);
+  }
   public CreateTaskCommand(
       String name, String description, TaskPriority priority, List<String> tags,
       TaskDifficulty difficulty, TaskType taskType, boolean isHardcoreModeEnabled,

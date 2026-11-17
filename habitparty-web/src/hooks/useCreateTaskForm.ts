@@ -228,6 +228,9 @@ export function useCreateTaskForm({
       setStartTime("");
       setDueEndTime("");
       setIsAllDay(false);
+      if (taskType === "TODO") {
+        setIsHardcore(false);
+      }
     }
   };
 
@@ -238,7 +241,12 @@ export function useCreateTaskForm({
       useUserStore.getState().user?.timezone,
     );
 
-    if (normalized.dueDate !== undefined) setDueDate(normalized.dueDate);
+    if (normalized.dueDate !== undefined) {
+      setDueDate(normalized.dueDate);
+      if (!normalized.dueDate && taskType === "TODO") {
+        setIsHardcore(false);
+      }
+    }
     if (normalized.dueTime !== undefined) setDueTime(normalized.dueTime);
     if (normalized.startTime !== undefined) setStartTime(normalized.startTime);
     if (normalized.dueEndTime !== undefined) {
@@ -280,6 +288,18 @@ export function useCreateTaskForm({
 
   const handleTaskTypeChange = (type: TaskTypeOption) => {
     setTaskType(type);
+    if (type === "TODO" && !dueDate) {
+      setIsHardcore(false);
+    } else if (type === "HABIT" && habitType === "NEGATIVE") {
+      setIsHardcore(false);
+    }
+  };
+
+  const handleHabitTypeChange = (type: HabitTypeOption) => {
+    setHabitType(type);
+    if (type === "NEGATIVE" && taskType === "HABIT") {
+      setIsHardcore(false);
+    }
   };
 
   const sessionKey = isOpen
@@ -616,7 +636,7 @@ export function useCreateTaskForm({
     isHardcore,
     setIsHardcore,
     habitType,
-    setHabitType,
+    setHabitType: handleHabitTypeChange,
     resetCounter,
     setResetCounter,
     importanceType,

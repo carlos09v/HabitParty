@@ -255,6 +255,25 @@ public class TaskAdapter implements TaskRepository {
   }
 
   @Override
+  public Optional<Integer> findOrderIndexByIdAndBoardColumnIdAndUserId(
+      UUID taskId,
+      UUID boardColumnId,
+      UUID userId) {
+    if (taskId == null || boardColumnId == null || userId == null) {
+      return Optional.empty();
+    }
+    return port.findOrderIndexByIdAndBoardColumnIdAndUserId(taskId, boardColumnId, userId);
+  }
+
+  @Override
+  public void shiftOrderIndexUpAfter(UUID boardColumnId, int afterOrderIndex) {
+    if (boardColumnId == null) {
+      return;
+    }
+    port.shiftOrderIndexUpAfter(boardColumnId, afterOrderIndex);
+  }
+
+  @Override
   public void deleteById(UUID id) {
     port.deleteById(id);
   }

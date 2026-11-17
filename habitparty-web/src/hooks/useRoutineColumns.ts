@@ -13,11 +13,12 @@ import {
   MAX_VISIBLE_COLUMNS,
   resolveVisibleColumnIds,
 } from "@/constants/routine";
+import { normalizeTaskType } from "@/constants/task";
 import {
   applyFocusRecordedToTask,
   useFocusTaskSync,
 } from "@/hooks/useFocusTaskSync";
-import type { BoardColumn } from "@/types/task";
+import type { BoardColumn, Task } from "@/types/task";
 import type { ColumnInsertTarget } from "@/types/task-ui";
 import {
   appendVisibleColumnIfSpaceAllows,
@@ -58,6 +59,19 @@ export function useRoutineColumns(
 
   const visibleColumnIdsRef = useRef(visibleColumnIds);
   visibleColumnIdsRef.current = visibleColumnIds;
+
+  const loadedArchivedTaskIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    void workspaceId;
+    loadedArchivedTaskIdsRef.current.clear();
+  }, [workspaceId]);
+
+  const registerLoadedArchivedTasks = useCallback((tasks: Task[]) => {
+    for (const task of tasks) {
+      loadedArchivedTaskIdsRef.current.add(task.id);
+    }
+  }, []);
 
   const persistVisibleColumns = useCallback(
     (ids: string[]) => {
@@ -110,30 +124,66 @@ export function useRoutineColumns(
     });
   }, [targetColumnId, initialColumns, maxAllowed, persistVisibleColumns]);
 
-  // Sincroniza colunas mantendo tarefas otimistas
+  // Sincroniza colunas mantendo tarefas otimistas e arquivadas carregadas sob demanda
   useEffect(() => {
-    setColumns((current) =>
-      initialColumns.map((newCol) => {
-        const currentCol = current.find((c) => c.id === newCol.id);
-        if (!currentCol) return newCol;
+    const serverTaskIds = new Set(
+      initialColumns.flatMap((col) => col.tasks.map((t) => t.id)),
+    );
+    for (const id of serverTaskIds) {
+      loadedArchivedTaskIdsRef.current.delete(id);
+    }
 
-        const optimisticTasks = currentCol.tasks.filter((t) =>
-          t.id.startsWith("temp-"),
-        );
-        if (optimisticTasks.length > 0) {
-          const serverTaskIds = new Set(newCol.tasks.map((t) => t.id));
-          const unsaved = optimisticTasks.filter(
-            (t) => !serverTaskIds.has(t.id),
-          );
-          return {
-            ...newCol,
-            tasks: [...newCol.tasks, ...unsaved],
-          };
+    setColumns((current) => {
+      const preservedArchivedByCol = new Map<string, Task[]>();
+      if (loadedArchivedTaskIdsRef.current.size > 0) {
+        for (const currentCol of current) {
+          for (const task of currentCol.tasks) {
+            if (
+              loadedArchivedTaskIdsRef.current.has(task.id) &&
+              !serverTaskIds.has(task.id)
+            ) {
+              const list = preservedArchivedByCol.get(currentCol.id) ?? [];
+              list.push(
+                task.columnId === currentCol.id
+                  ? task
+                  : { ...task, columnId: currentCol.id },
+              );
+              preservedArchivedByCol.set(currentCol.id, list);
+            }
+          }
+        }
+      }
+
+      return initialColumns.map((newCol) => {
+        const currentCol = current.find((c) => c.id === newCol.id);
+        const optimisticTasks =
+          currentCol?.tasks.filter(
+            (t) => t.id.startsWith("temp-") && !serverTaskIds.has(t.id),
+          ) ?? [];
+        const preservedArchived = preservedArchivedByCol.get(newCol.id) ?? [];
+
+        if (optimisticTasks.length === 0 && preservedArchived.length === 0) {
+          return newCol;
         }
 
-        return newCol;
-      }),
-    );
+        const completedArchivedPreserved = preservedArchived.filter(
+          (t) => normalizeTaskType(t) === "todo" && t.completed,
+        ).length;
+
+        return {
+          ...newCol,
+          tasks: [...newCol.tasks, ...optimisticTasks, ...preservedArchived],
+          archivedTotalCount: Math.max(
+            0,
+            (newCol.archivedTotalCount ?? 0) - completedArchivedPreserved,
+          ),
+          archivedCompletedCount: Math.max(
+            0,
+            (newCol.archivedCompletedCount ?? 0) - completedArchivedPreserved,
+          ),
+        };
+      });
+    });
   }, [initialColumns]);
 
   // Atualiza métricas de foco e conclusão em tempo real quando sessões finalizam no SidebarFocusWidget
@@ -409,6 +459,7 @@ export function useRoutineColumns(
   return {
     columns,
     setColumns,
+    registerLoadedArchivedTasks,
     visibleColumnIds,
     setVisibleColumnIds,
     toggleColumnVisibility,

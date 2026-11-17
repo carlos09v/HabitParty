@@ -6,6 +6,7 @@ import {
   Backpack,
   Check,
   GripVertical,
+  Loader2,
   Lock,
   MoreVertical,
   Pause,
@@ -26,7 +27,6 @@ import {
   openContextMenuFromButton,
   STOP_DRAG_PROPAGATION_PROPS,
 } from "@/utils";
-import { triggerCelebrationConfetti } from "@/utils/confetti";
 import {
   formatBackpackItemRemainingTime,
   isBackpackItemTimeDepleted,
@@ -60,6 +60,7 @@ export interface FocusBackpackCardVariantProps extends FocusCardBaseProps {
   variant: "backpack";
   item: InventoryItemResponseDTO;
   isSelected?: boolean;
+  isConsuming?: boolean;
   onSelect?: (item: InventoryItemResponseDTO) => void;
   onStartFocus: (item: InventoryItemResponseDTO) => void;
   onContextMenu: (e: React.MouseEvent, item: InventoryItemResponseDTO) => void;
@@ -93,6 +94,7 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
   const activity = isActivity ? props.activity : null;
   const isLocked = isActivity ? Boolean(props.isLocked) : false;
   const item = !isActivity ? props.item : null;
+  const isConsuming = !isActivity ? Boolean(props.isConsuming) : false;
   const isSelected = Boolean(props.isSelected);
   const isDraggable = isActivity && !isLocked && Boolean(sortableListeners);
 
@@ -116,7 +118,7 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
     ? activity?.name || ""
     : item?.rewardName || t("defaultItemName");
 
-  const handleCardClick = (e?: React.MouseEvent) => {
+  const handleCardClick = () => {
     if (isLocked) {
       props.onLockedClick?.();
       return;
@@ -125,14 +127,9 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
       props.onSelect(activity);
     } else if (!isActivity && item) {
       if (isTimeDepleted) {
-        if (e) {
-          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-          triggerCelebrationConfetti(
-            rect.left + rect.width / 2,
-            rect.top + rect.height / 2,
-          );
+        if (!isConsuming) {
+          props.onConsume?.(item);
         }
-        props.onConsume?.(item);
       } else if (props.onSelect) {
         props.onSelect(item);
       }
@@ -321,28 +318,30 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
         {!isActivity && isTimeDepleted ? (
           <button
             type="button"
+            disabled={isConsuming}
+            aria-busy={isConsuming}
             {...STOP_DRAG_PROPAGATION_PROPS}
             onClick={(e) => {
               e.stopPropagation();
-              const rect = (
-                e.currentTarget as HTMLElement
-              ).getBoundingClientRect();
-              triggerCelebrationConfetti(
-                rect.left + rect.width / 2,
-                rect.top + rect.height / 2,
-              );
-              if (item) props.onConsume?.(item);
+              if (item && !isConsuming) {
+                props.onConsume?.(item);
+              }
             }}
             aria-label={t("completeItemAria", { title })}
             title={t("completeItemTitle")}
             className={cn(
-              "flex items-center justify-center rounded-lg border transition-colors cursor-pointer bg-emerald-500 hover:bg-emerald-400 text-neutral-950 border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] animate-pulse",
+              "flex items-center justify-center rounded-lg border transition-colors cursor-pointer bg-emerald-500 hover:bg-emerald-400 text-neutral-950 border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] disabled:opacity-65 disabled:cursor-not-allowed",
+              !isConsuming && "animate-pulse",
               isCompact
                 ? "w-8 h-8 pointer-coarse:w-9 pointer-coarse:h-9"
                 : "w-9 h-9 pointer-coarse:w-10 pointer-coarse:h-10",
             )}
           >
-            <Check size={isCompact ? 16 : 18} className="stroke-[3]" />
+            {isConsuming ? (
+              <Loader2 size={isCompact ? 16 : 18} className="animate-spin" />
+            ) : (
+              <Check size={isCompact ? 16 : 18} className="stroke-[3]" />
+            )}
           </button>
         ) : isLocked ? (
           <button

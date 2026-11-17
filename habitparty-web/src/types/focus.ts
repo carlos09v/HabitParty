@@ -46,6 +46,7 @@ export interface FocusRecord {
   endTime: string;
   recordType: FocusRecordType;
   completedPomos?: number;
+  pomoTargetMinutes?: number;
   durationMinutes: number;
   xpEarned?: number;
   coinsEarned?: number;
@@ -131,4 +132,7 @@ export interface FocusTimerControlsState {
   canComplete: boolean;
   isPartialPomo?: boolean;
   isOvertime?: boolean;
+  isSavingSession?: boolean;
+  isCompletingLinkedTask?: boolean;
+  isSessionRewardCapped?: boolean;
 }

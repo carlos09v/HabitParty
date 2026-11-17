@@ -23,8 +23,10 @@ import type {
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
 import { getTodayDateString, toLocalISOString } from "@/utils/date";
+import { formatCoins, getTaskRewardBreakdown } from "@/utils/economy";
 import { formatDurationMinSec } from "@/utils/focusFormatters";
 import {
+  getBrowserDocumentLocale,
   optimizedFocusStorage,
   registerFocusTimerWindowListeners,
   sendBrowserNotification,
@@ -40,23 +42,89 @@ import { soundEffects } from "@/utils/soundEffects";
 
 export { setFocusTimerTranslators };
 
-let globalTimerInterval: NodeJS.Timeout | null = null;
+let globalTimerInterval: ReturnType<typeof setInterval> | null = null;
+let globalTimerWorker: Worker | null = null;
+let activeGlobalTickFn: (() => void) | null = null;
 let isCompletingSession = false;
+let isCompletingLinkedTaskGuard = false;
 
-function startGlobalTicker(tickFn: () => void) {
-  if (typeof window === "undefined") return;
-  if (globalTimerInterval) {
-    clearInterval(globalTimerInterval);
-  }
+function startFallbackInterval() {
+  if (typeof window === "undefined" || globalTimerInterval) return;
   globalTimerInterval = setInterval(() => {
-    tickFn();
+    activeGlobalTickFn?.();
   }, 1000);
 }
 
-function stopGlobalTicker() {
+function ensureTimerWorker(): Worker | null {
+  if (typeof window === "undefined" || typeof Worker === "undefined") {
+    return null;
+  }
+  if (globalTimerWorker) return globalTimerWorker;
+  try {
+    const worker = new Worker("/focus-timer-worker.js");
+    worker.onmessage = (event: MessageEvent) => {
+      if (event.data === "tick") {
+        // Worker ativo: dispensa o interval de fallback sujeito a throttling em segundo plano
+        if (globalTimerInterval) {
+          clearInterval(globalTimerInterval);
+          globalTimerInterval = null;
+        }
+        activeGlobalTickFn?.();
+      }
+    };
+    worker.onerror = () => {
+      try {
+        worker.terminate();
+      } catch {
+        // Ignore terminate error
+      }
+      if (globalTimerWorker === worker) {
+        globalTimerWorker = null;
+      }
+      if (activeGlobalTickFn) {
+        startFallbackInterval();
+      }
+    };
+    globalTimerWorker = worker;
+    return worker;
+  } catch {
+    return null;
+  }
+}
+
+function startGlobalTicker(tickFn: () => void) {
+  if (typeof window === "undefined") return;
+  activeGlobalTickFn = tickFn;
+
   if (globalTimerInterval) {
     clearInterval(globalTimerInterval);
     globalTimerInterval = null;
+  }
+  // Mantém fallback ativo até o Worker confirmar o primeiro tick
+  startFallbackInterval();
+
+  const worker = ensureTimerWorker();
+  if (worker) {
+    try {
+      worker.postMessage("start");
+    } catch {
+      // Fallback já está ativo
+    }
+  }
+}
+
+function stopGlobalTicker() {
+  activeGlobalTickFn = null;
+  if (globalTimerInterval) {
+    clearInterval(globalTimerInterval);
+    globalTimerInterval = null;
+  }
+  if (globalTimerWorker) {
+    try {
+      globalTimerWorker.postMessage("stop");
+    } catch {
+      // Ignore postMessage error
+    }
   }
 }
 
@@ -86,6 +154,8 @@ export interface FocusTimerStoreState extends FocusTimerState {
   phase: FocusPhase;
   lastTickTimestamp: number | null;
   hasTriggeredOvertimeAlert: boolean;
+  isSavingSession: boolean;
+  isCompletingLinkedTask: boolean;
   onSessionSavedCallback: (() => void) | null;
 
   // Preferências de som delegadas ao soundPreferencesStore (fonte única da verdade)
@@ -107,7 +177,10 @@ export interface FocusTimerStoreState extends FocusTimerState {
   startBreak: () => Promise<boolean>;
   completeSession: (
     notes?: string,
-    options?: { suppressCompleteSound?: boolean },
+    options?: {
+      suppressCompleteSound?: boolean;
+      suppressLinkedTaskAction?: boolean;
+    },
   ) => Promise<boolean>;
   changeMode: (newMode: FocusRecordType) => void;
   changeDuration: (minutes: number) => void;
@@ -147,6 +220,8 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       elapsedSeconds: 0,
       completedCycles: 0,
       hasTriggeredOvertimeAlert: false,
+      isSavingSession: false,
+      isCompletingLinkedTask: false,
       target: null,
       startedAt: null,
       lastTickTimestamp: null,
@@ -177,14 +252,25 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           ? now - state.lastTickTimestamp
           : 1000;
 
-        // Evita avanço duplicado caso visibilitychange e setInterval disparem no mesmo segundo
-        if (elapsedMs < 850) {
+        // Se o relógio do sistema recuou (> 1.5s), reancora para evitar congelamento
+        if (elapsedMs < -1500) {
+          set({ lastTickTimestamp: now });
+          return;
+        }
+
+        // Evita avanço duplicado caso visibilitychange, Worker e PiP disparem no mesmo segundo
+        if (elapsedMs < 900) {
           return;
         }
 
         const delta = state.lastTickTimestamp
-          ? Math.max(1, Math.round(elapsedMs / 1000))
+          ? elapsedMs < 1000
+            ? 1
+            : Math.floor(elapsedMs / 1000)
           : 1;
+        const nextTickTimestamp = state.lastTickTimestamp
+          ? state.lastTickTimestamp + delta * 1000
+          : now;
 
         const isBreak =
           state.phase === "SHORT_BREAK" || state.phase === "LONG_BREAK";
@@ -206,7 +292,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           set({
             secondsRemaining: nextRemaining,
             elapsedSeconds: nextElapsed,
-            lastTickTimestamp: now,
+            lastTickTimestamp: nextTickTimestamp,
             hasTriggeredOvertimeAlert:
               state.hasTriggeredOvertimeAlert || justCompletedCycle,
           });
@@ -264,20 +350,23 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           set((prev) => ({
             secondsRemaining: Math.max(0, prev.secondsRemaining - delta),
             elapsedSeconds: prev.elapsedSeconds + delta,
-            lastTickTimestamp: now,
+            lastTickTimestamp: nextTickTimestamp,
           }));
           updateDocumentTitle(get());
         } else {
           // Cronômetro livre (enquanto a aba estiver aberta)
           set((prev) => ({
             elapsedSeconds: prev.elapsedSeconds + delta,
-            lastTickTimestamp: now,
+            lastTickTimestamp: nextTickTimestamp,
           }));
           updateDocumentTitle(get());
         }
       },
 
       toggleTimer: () => {
+        if (isCompletingSession || get().isSavingSession) {
+          return;
+        }
         const state = get();
         const soundPrefs = useSoundPreferencesStore.getState();
 
@@ -368,6 +457,9 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       },
 
       resetTimer: () => {
+        if (isCompletingSession || get().isSavingSession) {
+          return;
+        }
         stopGlobalTicker();
         set((prev) => {
           const isBreak =
@@ -381,6 +473,9 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       },
 
       stopFromWidget: () => {
+        if (isCompletingSession || get().isSavingSession) {
+          return;
+        }
         stopGlobalTicker();
         set((prev) => {
           if (prev.target?.type === "task") {
@@ -408,6 +503,9 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       },
 
       skipBreak: () => {
+        if (isCompletingSession || get().isSavingSession) {
+          return;
+        }
         stopGlobalTicker();
         const state = get();
         const workDuration =
@@ -418,6 +516,9 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       },
 
       startBreak: async () => {
+        if (isCompletingSession || get().isSavingSession) {
+          return false;
+        }
         const state = get();
         if (state.phase === "SHORT_BREAK" || state.phase === "LONG_BREAK") {
           return true;
@@ -471,9 +572,12 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
 
       completeSession: async (
         notes?: string,
-        options?: { suppressCompleteSound?: boolean },
+        options?: {
+          suppressCompleteSound?: boolean;
+          suppressLinkedTaskAction?: boolean;
+        },
       ) => {
-        if (isCompletingSession) {
+        if (isCompletingSession || get().isSavingSession) {
           return false;
         }
         const state = get();
@@ -494,6 +598,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
 
         const wasRunning = state.isActive && !state.isPaused;
         isCompletingSession = true;
+        set({ isSavingSession: true });
         stopGlobalTicker();
 
         const isInventory = state.target?.type === "inventory";
@@ -509,6 +614,10 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         const recordType: FocusRecordType = isInventory
           ? "STOPWATCH"
           : state.mode;
+        const pomoTargetMinutes =
+          recordType === "POMO"
+            ? Math.max(1, Math.round(state.totalDurationSeconds / 60))
+            : undefined;
         const isCompletedPomo =
           !isInventory &&
           state.mode === "POMO" &&
@@ -534,6 +643,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             taskId: resolvedTaskId,
             recordType,
             completedPomos: isCompletedPomo ? 1 : 0,
+            pomoTargetMinutes,
             startTime,
             endTime,
             notes:
@@ -582,17 +692,18 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
                 useUserStore.getState().triggerAchievementCheck();
               }
 
-              const taskAction = resolvedTaskId
-                ? {
-                    label: tStoreMsg("completeLinkedTaskAction"),
-                    onClick: () => {
-                      void get().completeLinkedTask(
-                        resolvedTaskId,
-                        resolvedTaskName,
-                      );
-                    },
-                  }
-                : undefined;
+              const taskAction =
+                resolvedTaskId && !options?.suppressLinkedTaskAction
+                  ? {
+                      label: tStoreMsg("completeLinkedTaskAction"),
+                      onClick: () => {
+                        void get().completeLinkedTask(
+                          resolvedTaskId,
+                          resolvedTaskName,
+                        );
+                      },
+                    }
+                  : undefined;
 
               if (!rewardResult.didLevelUp) {
                 if (!options?.suppressCompleteSound) {
@@ -609,7 +720,9 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
                       {
                         time: timeStr,
                         xp,
-                        coins: Number(coins).toFixed(2),
+                        coins: formatCoins(Number(coins), {
+                          locale: getBrowserDocumentLocale(),
+                        }),
                       },
                     ),
                     taskAction
@@ -668,10 +781,14 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           return false;
         } finally {
           isCompletingSession = false;
+          set({ isSavingSession: false });
         }
       },
 
       changeMode: (newMode: FocusRecordType) => {
+        if (isCompletingSession || get().isSavingSession) {
+          return;
+        }
         stopGlobalTicker();
         set((prev) => {
           if (prev.target?.type === "inventory") {
@@ -691,6 +808,9 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       },
 
       changeDuration: (minutes: number) => {
+        if (isCompletingSession || get().isSavingSession) {
+          return;
+        }
         set((prev) => {
           if (prev.target?.type === "inventory") {
             return prev;
@@ -985,31 +1105,120 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       },
 
       completeLinkedTask: async (taskId: string, taskName?: string) => {
+        if (isCompletingLinkedTaskGuard || get().isCompletingLinkedTask) {
+          return false;
+        }
+        isCompletingLinkedTaskGuard = true;
+        set({ isCompletingLinkedTask: true });
+
         try {
+          const stateBeforeComplete = get();
+          const isDirectTaskTarget =
+            stateBeforeComplete.target?.type === "task" &&
+            (stateBeforeComplete.target.taskId ||
+              stateBeforeComplete.target.id) === taskId;
+          if (
+            isDirectTaskTarget &&
+            stateBeforeComplete.phase === "WORK" &&
+            stateBeforeComplete.elapsedSeconds >= 60
+          ) {
+            const sessionSaved = await get().completeSession(undefined, {
+              suppressCompleteSound: true,
+              suppressLinkedTaskAction: true,
+            });
+            if (!sessionSaved) {
+              return false;
+            }
+          }
+
           const res = await changeTaskStatus(taskId, "COMPLETED");
           if (res.success) {
-            useUserStore
-              .getState()
-              .markStreakSecuredToday(
-                getTodayDateString(
-                  new Date(),
-                  useUserStore.getState().user?.timezone,
-                ),
+            const taskData = res.data;
+            const locale = getBrowserDocumentLocale();
+            const userTimeZone = useUserStore.getState().user?.timezone;
+            const resolvedName = taskName || taskData?.name || "Tarefa";
+            const rewardGranted = taskData?.rewardGranted !== false;
+
+            if (!rewardGranted) {
+              useUserStore
+                .getState()
+                .markStreakSecuredToday(
+                  getTodayDateString(new Date(), userTimeZone),
+                );
+              soundEffects.playTaskCompleteSound();
+              triggerCelebrationConfetti();
+              toast.success(
+                tStoreMsg("linkedTaskCompletedNoRewardToast", {
+                  name: resolvedName,
+                }),
               );
-            triggerCelebrationConfetti();
-            toast.success(
-              tStoreMsg("linkedTaskCompletedToast", {
-                name: taskName || "Tarefa",
-              }),
-            );
+            } else {
+              const rewardStreak =
+                taskData?.taskType === "DAILY" &&
+                typeof taskData.currentStreak === "number"
+                  ? Math.max(0, taskData.currentStreak - 1)
+                  : taskData?.currentStreak;
+              const breakdown = getTaskRewardBreakdown({
+                taskType: taskData?.taskType,
+                difficulty: taskData?.difficulty,
+                importanceType: taskData?.importanceType,
+                repeatType: taskData?.repeatType,
+                resetCounter: taskData?.resetCounter,
+                currentStreak: rewardStreak,
+                isHardcoreModeEnabled: taskData?.isHardcoreModeEnabled,
+                dueDate: taskData?.dueDate,
+                isPenaltyApplied: taskData?.isPenaltyApplied,
+                locale,
+                timeZone: userTimeZone,
+              });
+              const xp = breakdown.finalReward.xp;
+              const gold = breakdown.finalReward.gold;
+              const rewardResult = awardUserRewards(xp, gold, {
+                locale,
+                isTaskCompletion: true,
+              });
+
+              if (!rewardResult.didLevelUp) {
+                soundEffects.playTaskCompleteSound();
+                triggerCelebrationConfetti();
+                if (xp > 0 || gold > 0) {
+                  const isGamified =
+                    useUIStore.getState().experienceMode === "GAMIFIED";
+                  toast.success(
+                    tStoreMsg(
+                      isGamified
+                        ? "linkedTaskCompletedRewardsToast"
+                        : "linkedTaskCompletedRewardsToastProductivity",
+                      {
+                        name: resolvedName,
+                        xp,
+                        coins: formatCoins(gold, { locale }),
+                      },
+                    ),
+                  );
+                } else {
+                  toast.success(
+                    tStoreMsg("linkedTaskCompletedToast", {
+                      name: resolvedName,
+                    }),
+                  );
+                }
+              }
+            }
+
             if (typeof window !== "undefined") {
               window.dispatchEvent(
                 new CustomEvent("habitparty:task-completed-from-focus", {
                   detail: { taskId, updatedTask: res.data },
                 }),
               );
-              window.dispatchEvent(new CustomEvent("habitparty:tasks-changed"));
+              window.dispatchEvent(
+                new CustomEvent("habitparty:tasks-changed", {
+                  detail: { completedToday: true },
+                }),
+              );
             }
+            let shouldFinalizeDirectTaskSession = false;
             set((prev) => {
               if (!prev.target) return prev;
               const currentTaskId =
@@ -1026,12 +1235,20 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
                   },
                 };
               }
+              shouldFinalizeDirectTaskSession = true;
               return {
                 ...prev,
-                target: null,
+                ...buildIdleTimerPatch(DEFAULT_POMO_MINUTES * 60, {
+                  mode: "POMO",
+                  target: null,
+                }),
               };
             });
-            get().onSessionSavedCallback?.();
+            if (shouldFinalizeDirectTaskSession) {
+              stopGlobalTicker();
+              updateDocumentTitle(get());
+              get().onSessionSavedCallback?.();
+            }
             return true;
           }
           toast.error(res.error || tStoreMsg("linkedTaskCompleteFailedToast"));
@@ -1039,6 +1256,9 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         } catch {
           toast.error(tStoreMsg("linkedTaskCompleteFailedToast"));
           return false;
+        } finally {
+          isCompletingLinkedTaskGuard = false;
+          set({ isCompletingLinkedTask: false });
         }
       },
 

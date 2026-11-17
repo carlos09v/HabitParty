@@ -122,7 +122,7 @@ export function TaskFocusHistoryModal({
           error: t("deleteRecordError"),
         },
         () => {
-          const removedMins = pendingDeleteRecord.durationMinutes;
+          const removedMins = Math.max(1, pendingDeleteRecord.durationMinutes);
           const removedPomos = pendingDeleteRecord.completedPomos ?? 0;
           const nextMins = Math.max(0, localMinutes - removedMins);
           const nextCycles = Math.max(0, localCycles - removedPomos);
@@ -158,6 +158,7 @@ export function TaskFocusHistoryModal({
           }
         },
         deleteHistory,
+        pendingDeleteRecord,
       );
       setPendingDeleteRecord(null);
     } finally {

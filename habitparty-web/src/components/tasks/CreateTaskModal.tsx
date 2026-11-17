@@ -191,17 +191,23 @@ export function CreateTaskModal({
               </div>
 
               {/* MODO HARDCORE */}
-              <HardcoreModeToggle
-                isHardcore={form.isHardcore}
-                onChange={form.setIsHardcore}
-                disabled={form.isPending || isOverdueHardcoreLocked}
-                taskType={form.taskType}
-                dueDate={form.dueDate}
-                dueTime={form.dueTime}
-                startTime={form.startTime}
-                dueEndTime={form.dueEndTime}
-                isAllDay={form.isAllDay}
-              />
+              {(form.taskType === "DAILY" ||
+                (form.taskType === "TODO" &&
+                  (Boolean(form.dueDate) || form.isHardcore)) ||
+                (form.taskType === "HABIT" &&
+                  (form.habitType !== "NEGATIVE" || form.isHardcore))) && (
+                <HardcoreModeToggle
+                  isHardcore={form.isHardcore}
+                  onChange={form.setIsHardcore}
+                  disabled={form.isPending || isOverdueHardcoreLocked}
+                  taskType={form.taskType}
+                  dueDate={form.dueDate}
+                  dueTime={form.dueTime}
+                  startTime={form.startTime}
+                  dueEndTime={form.dueEndTime}
+                  isAllDay={form.isAllDay}
+                />
+              )}
             </div>
 
             {/* Estimativa de Recompensa padronizada na coluna direita */}

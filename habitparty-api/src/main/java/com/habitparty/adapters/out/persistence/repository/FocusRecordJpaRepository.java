@@ -79,4 +79,16 @@ public interface FocusRecordJpaRepository extends JpaRepository<FocusRecordJpaEn
 
   @Query("SELECT MIN(f.startTime) FROM FocusRecordJpaEntity f WHERE f.userId = :userId AND f.inventoryItemId IS NULL")
   LocalDateTime findEarliestProductiveStartTimeByUserId(@Param("userId") UUID userId);
+
+  @Query("""
+      SELECT COALESCE(MAX(f.durationMinutes), 0)
+      FROM FocusRecordJpaEntity f
+      WHERE f.userId = :userId
+        AND f.inventoryItemId IS NULL
+        AND f.id <> :excludedRecordId
+        AND f.durationMinutes >= 10
+  """)
+  int findMaxProductiveDurationMinutesExcludingRecord(
+      @Param("userId") UUID userId,
+      @Param("excludedRecordId") UUID excludedRecordId);
 }

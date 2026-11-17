@@ -16,6 +16,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { DescriptionCharCounter } from "@/components/ui/DescriptionCharCounter";
+import { DurationHoursBadge } from "@/components/ui/DurationHoursBadge";
 import { IconPickerPopover } from "@/components/ui/IconPickerPopover";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { Input } from "@/components/ui/Input";
@@ -46,7 +47,6 @@ import type {
   RewardType,
 } from "@/types/reward";
 import { cn } from "@/utils";
-import { formatFocusMinutes } from "@/utils/focusFormatters";
 import {
   analyzeRewardPrice,
   type RewardPriceAnalysis,
@@ -237,6 +237,7 @@ export function RewardFormModal({
   const [activeMysteryTab, setActiveMysteryTab] =
     useState<MysteryBoxFormTab>("identity");
   const mysteryTabBaseId = useId();
+  const durationHoursHintId = useId();
   const mysteryTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   useEffect(() => {
@@ -674,20 +675,16 @@ export function RewardFormModal({
                       placeholder={t("durationPlaceholder")}
                       compact
                       icon={<Clock size={16} />}
+                      aria-describedby={
+                        numericDuration >= 60 ? durationHoursHintId : undefined
+                      }
                       className="font-semibold h-[42px]"
                       disabled={isPending}
                     />
-                    {numericDuration >= 60 && (
-                      <div className="flex items-center">
-                        <span
-                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/35 text-emerald-700 dark:text-emerald-300 text-label-m font-bold tabular-nums"
-                          aria-live="polite"
-                        >
-                          <Clock size={11} aria-hidden="true" />
-                          <span>= {formatFocusMinutes(numericDuration)}</span>
-                        </span>
-                      </div>
-                    )}
+                    <DurationHoursBadge
+                      id={durationHoursHintId}
+                      minutes={numericDuration}
+                    />
                   </div>
 
                   {/* Custo */}

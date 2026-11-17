@@ -25,6 +25,8 @@ interface InventoryCatalogViewProps {
   totalItemsCount: number;
   viewMode: ViewMode;
   isCompact: boolean;
+  usingItemIds?: Set<string>;
+  sendingItemIds?: Set<string>;
   sensors: SensorDescriptor<SensorOptions>[];
   onDragEnd: (event: DragEndEvent) => void;
   onUse: (item: InventoryItem) => void;
@@ -39,6 +41,8 @@ export function InventoryCatalogView({
   totalItemsCount,
   viewMode,
   isCompact,
+  usingItemIds,
+  sendingItemIds,
   sensors,
   onDragEnd,
   onUse,
@@ -109,8 +113,10 @@ export function InventoryCatalogView({
       sensors={sensors}
       onDragEnd={onDragEnd}
     >
-      {filteredItems.map((item) =>
-        viewMode === "card" ? (
+      {filteredItems.map((item) => {
+        const isUsing = Boolean(usingItemIds?.has(item.id));
+        const isSendingToFocus = Boolean(sendingItemIds?.has(item.id));
+        return viewMode === "card" ? (
           <InventoryCard
             key={item.id}
             item={item}
@@ -119,6 +125,8 @@ export function InventoryCatalogView({
             onOpenMysteryBox={onOpenMysteryBox}
             onContextMenu={onContextMenu}
             isCompact={isCompact}
+            isUsing={isUsing}
+            isSendingToFocus={isSendingToFocus}
           />
         ) : (
           <InventoryItemRow
@@ -129,9 +137,11 @@ export function InventoryCatalogView({
             onOpenMysteryBox={onOpenMysteryBox}
             onContextMenu={onContextMenu}
             isCompact={isCompact}
+            isUsing={isUsing}
+            isSendingToFocus={isSendingToFocus}
           />
-        ),
-      )}
+        );
+      })}
     </CatalogGridListShell>
   );
 }

@@ -156,6 +156,7 @@ export function FocusMain({
     isDeletingActivity,
     handleConfirmDeleteActivity,
     handleConsumeItem,
+    consumingItemIds,
   } = useFocusMutations({
     activities,
     selectedActivityId,
@@ -343,6 +344,7 @@ export function FocusMain({
           onStartFocus={onStartFocusItem}
           onContextMenu={openItemMenu}
           onConsume={handleConsumeItem}
+          consumingItemIds={consumingItemIds}
           isCompact={isCompact}
         />
       </div>

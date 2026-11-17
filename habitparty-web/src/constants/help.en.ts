@@ -218,7 +218,7 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
     bullets: [
       "Minimum Time: Sessions under 10 minutes are discarded and earn 0 XP and 0 coins.",
       "Anti-AFK Cap: If the timer is left running for hours, payout is limited to a maximum of 90 continuous minutes.",
-      "Daily Cap & Diminishing Returns (Soft Cap): The first 4 daily hours of focus pay 100%. Between 4h and 6h pay 50% (natural fatigue). Above 6h of daily focus, new sessions earn no XP or coins to prevent burnout and hyperinflation (time is still logged in your stats).",
+      "Daily Cap & Diminishing Returns Stair-Step (Soft Cap): The first 4 daily hours of focus pay 100%. Between 4h and 6h pay 50%, and between 6h and 8h pay 25% (natural fatigue). Above 8h of daily focus, new sessions earn no XP or coins to prevent burnout and hyperinflation (time is still logged in your stats).",
       "Leisure Earns Nothing: Sessions with backpack inventory items have a fixed yield of 0 XP and 0 coins.",
     ],
     tags: ["focus", "economy", "anti-afk", "daily cap", "rewards"],

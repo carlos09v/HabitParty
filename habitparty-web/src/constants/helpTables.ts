@@ -493,8 +493,8 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
       safetyLocks: [
         "🛡️ Travas de Segurança",
         "Geral",
-        "Teto Diário: 6h",
-        "Mínimo 10m para pontuar. 4h-6h diárias pagam 50%. Acima de 6h paga 0%. Mochila não pontua.",
+        "Teto Diário: 8h",
+        "Mínimo 10m para pontuar. 4h–6h pagam 50%, 6h–8h pagam 25% e acima de 8h paga 0%. Mochila não pontua.",
       ],
     },
     achievementRarities: {
@@ -804,8 +804,8 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
       safetyLocks: [
         "🛡️ Safety Locks",
         "General",
-        "Daily Cap: 6h",
-        "Minimum 10m to score. 4h–6h daily pays 50%. Above 6h pays 0%. Backpack items don't score.",
+        "Daily Cap: 8h",
+        "Minimum 10m to score. 4h–6h pays 50%, 6h–8h pays 25%, and above 8h pays 0%. Backpack items don't score.",
       ],
     },
     achievementRarities: {

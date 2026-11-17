@@ -48,6 +48,8 @@ export interface InventoryCardProps {
   onOpenMysteryBox?: (item: InventoryItem) => void;
   onContextMenu?: (e: React.MouseEvent, item: InventoryItem) => void;
   isCompact?: boolean;
+  isUsing?: boolean;
+  isSendingToFocus?: boolean;
 }
 
 export type {

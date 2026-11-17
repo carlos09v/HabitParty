@@ -12,12 +12,18 @@ import {
   consumeInventoryItem,
   returnItemToBackpack,
 } from "@/actions/inventoryActions";
+import { useInFlightSet } from "@/hooks/useInFlightSet";
 import { useUserStore } from "@/store/userStore";
-import type { FocusActiveTarget, FocusActivity } from "@/types/focus";
+import type {
+  FocusActiveTarget,
+  FocusActivity,
+  FocusRecord,
+} from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
 import { toLocalISOString } from "@/utils/date";
 import { getBrowserDocumentLocale } from "@/utils/focusTimerBrowser";
+import { deductUserPenalty } from "@/utils/gamification";
 import { soundEffects } from "@/utils/soundEffects";
 
 interface UseFocusMutationsParams {
@@ -47,7 +53,12 @@ export function useFocusMutations({
   const [returnModalItem, setReturnModalItem] =
     useState<InventoryItemResponseDTO | null>(null);
   const [isReturningToBackpack, setIsReturningToBackpack] = useState(false);
-  const [isConsumingItem, setIsConsumingItem] = useState(false);
+  const {
+    activeIds: consumingItemIds,
+    has: isItemConsuming,
+    setPending: setItemConsuming,
+  } = useInFlightSet();
+  const isConsumingItem = consumingItemIds.size > 0;
 
   const [deleteModalActivity, setDeleteModalActivity] =
     useState<FocusActivity | null>(null);
@@ -150,8 +161,9 @@ export function useFocusMutations({
 
   const handleConsumeItem = useCallback(
     async (item: InventoryItemResponseDTO) => {
-      if (!item.inventoryItemId || isConsumingItem) return;
-      setIsConsumingItem(true);
+      const itemId = item.inventoryItemId;
+      if (!itemId || isItemConsuming(itemId)) return;
+      setItemConsuming(itemId, true);
       try {
         // Registra sessão residual apenas quando há pelo menos 1 minuto restante
         // (remainingSeconds === 1 é a marcação do backend de cupom já zerado pronto para resgate)
@@ -164,7 +176,7 @@ export function useFocusMutations({
             userTimeZone,
           );
           const focusRes = await createFocusRecord({
-            inventoryItemId: item.inventoryItemId,
+            inventoryItemId: itemId,
             recordType: "STOPWATCH",
             completedPomos: 0,
             startTime,
@@ -175,7 +187,7 @@ export function useFocusMutations({
           }
         }
 
-        const res = await consumeInventoryItem(item.inventoryItemId);
+        const res = await consumeInventoryItem(itemId);
         if (res.success) {
           soundEffects.playFocusSessionCompleteSound();
           triggerCelebrationConfetti();
@@ -185,7 +197,7 @@ export function useFocusMutations({
             }),
           );
 
-          if (activeTarget?.id === item.inventoryItemId) {
+          if (activeTarget?.id === itemId) {
             onResetTarget();
             if (activities.length > 0) {
               onSelectActivityTarget(activities[0]);
@@ -202,17 +214,18 @@ export function useFocusMutations({
       } catch {
         toast.error(t("consumeItemError"));
       } finally {
-        setIsConsumingItem(false);
+        setItemConsuming(itemId, false);
       }
     },
     [
       activeTarget?.id,
       activities,
-      isConsumingItem,
+      isItemConsuming,
       onResetTarget,
       onSelectActivityTarget,
       onSelectActivity,
       onRefreshData,
+      setItemConsuming,
       t,
     ],
   );
@@ -222,6 +235,7 @@ export function useFocusMutations({
     setReturnModalItem,
     isReturningToBackpack,
     isConsumingItem,
+    consumingItemIds,
     handleConfirmReturnToBackpack,
     deleteModalActivity,
     setDeleteModalActivity: openDeleteActivityModal,
@@ -244,10 +258,25 @@ export async function executeDeleteFocusRecord(
   },
   onSuccess?: () => void,
   deleteHistory = false,
+  deletedRecord?: Pick<
+    FocusRecord,
+    "inventoryItemId" | "xpEarned" | "coinsEarned"
+  >,
 ) {
   const isEn = getBrowserDocumentLocale() === "en";
   const res = await deleteFocusRecord(recordId, deleteHistory);
   if (res.success) {
+    if (
+      deletedRecord &&
+      !deletedRecord.inventoryItemId &&
+      ((deletedRecord.xpEarned ?? 0) > 0 ||
+        (deletedRecord.coinsEarned ?? 0) > 0)
+    ) {
+      deductUserPenalty(
+        deletedRecord.xpEarned ?? 0,
+        deletedRecord.coinsEarned ?? 0,
+      );
+    }
     toast.success(
       messages?.success ??
         (isEn

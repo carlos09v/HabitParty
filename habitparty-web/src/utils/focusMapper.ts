@@ -58,6 +58,7 @@ export function mapFocusRecordDtoToRecord(
     endTime: dto.endTime || toLocalISOString(new Date(), timeZone),
     recordType: dto.recordType || "POMO",
     completedPomos: dto.completedPomos,
+    pomoTargetMinutes: dto.pomoTargetMinutes,
     durationMinutes: dto.durationMinutes || 0,
     xpEarned: dto.inventoryItemId ? 0 : (dto.xpEarned ?? 0),
     coinsEarned: dto.inventoryItemId ? 0 : Number(dto.coinsEarned ?? 0),

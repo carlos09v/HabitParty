@@ -180,7 +180,10 @@ export function ShowcaseContainer({
   };
 
   const storeUser = useUserStore((s) => s.user);
-  const resolvedUser = storeUser || initialShowcase.user;
+  const resolvedUser =
+    storeUser && storeUser.id === initialShowcase.user.id
+      ? storeUser
+      : initialShowcase.user;
   const friendsCount = initialFriendsOverview?.friendsCount ?? 0;
   const pendingRequestsCount =
     initialFriendsOverview?.incomingRequests.length ?? 0;

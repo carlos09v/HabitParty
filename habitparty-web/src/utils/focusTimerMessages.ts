@@ -55,6 +55,12 @@ const FALLBACK_STORE_MESSAGES: Record<
     taskLinkedToast: 'Task "{name}" linked to focus!',
     completeLinkedTaskAction: "Complete task",
     linkedTaskCompletedToast: 'Task "{name}" marked as completed!',
+    linkedTaskCompletedRewardsToast:
+      'Task "{name}" completed! (+{xp} XP • +{coins} 🪙)',
+    linkedTaskCompletedRewardsToastProductivity:
+      'Task "{name}" completed! (+{xp} Points • +{coins} Credits)',
+    linkedTaskCompletedNoRewardToast:
+      'Task "{name}" marked as completed! (Reward already granted earlier)',
     linkedTaskCompleteFailedToast: "Could not complete the linked task.",
   },
   "pt-BR": {
@@ -93,6 +99,12 @@ const FALLBACK_STORE_MESSAGES: Record<
     taskLinkedToast: 'Tarefa "{name}" vinculada ao foco!',
     completeLinkedTaskAction: "Concluir tarefa",
     linkedTaskCompletedToast: 'Tarefa "{name}" marcada como concluída!',
+    linkedTaskCompletedRewardsToast:
+      'Tarefa "{name}" concluída! (+{xp} XP • +{coins} 🪙)',
+    linkedTaskCompletedRewardsToastProductivity:
+      'Tarefa "{name}" concluída! (+{xp} Pontos • +{coins} Créditos)',
+    linkedTaskCompletedNoRewardToast:
+      'Tarefa "{name}" marcada como concluída! (Recompensa já concedida anteriormente)',
     linkedTaskCompleteFailedToast:
       "Não foi possível concluir a tarefa vinculada.",
   },

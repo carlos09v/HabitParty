@@ -142,7 +142,7 @@ export function ShowcaseHeroHeader({
           <div className="flex items-center gap-2 flex-wrap">
             {extraHeaderActions}
 
-            {onOpenPreviewCard && (
+            {!isOtherUser && onOpenPreviewCard && (
               <button
                 type="button"
                 onClick={onOpenPreviewCard}

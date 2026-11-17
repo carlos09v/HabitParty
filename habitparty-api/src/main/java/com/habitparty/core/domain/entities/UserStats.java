@@ -252,20 +252,69 @@ public class UserStats {
   }
 
   /**
+   * Estorna os ganhos e contadores de uma sessão de foco excluída.
+   * Garante que o XP nunca caia abaixo do mínimo do nível atual e que o saldo de moedas nunca fique negativo.
+   */
+  public void revertFocusSession(
+      int xpToRevert,
+      BigDecimal coinsToRevert,
+      int durationMinutes,
+      int completedPomos) {
+    if (xpToRevert > 0) {
+      int minXpForCurrentLevel = this.getCurrentLevel().getMinXpRequired();
+      this.totalXp = Math.max(minXpForCurrentLevel, this.totalXp - xpToRevert);
+    }
+
+    if (coinsToRevert != null && coinsToRevert.compareTo(BigDecimal.ZERO) > 0) {
+      this.currentCoins = this.currentCoins.subtract(coinsToRevert);
+      if (this.currentCoins.compareTo(BigDecimal.ZERO) < 0) {
+        this.currentCoins = BigDecimal.ZERO;
+      }
+      this.totalGoldEarned = this.totalGoldEarned.subtract(coinsToRevert);
+      if (this.totalGoldEarned.compareTo(BigDecimal.ZERO) < 0) {
+        this.totalGoldEarned = BigDecimal.ZERO;
+      }
+    }
+
+    if (durationMinutes >= MIN_FOCUS_MINUTES_FOR_STATS) {
+      this.totalFocusMinutes = Math.max(0, this.totalFocusMinutes - durationMinutes);
+      this.totalFocusSessions = Math.max(0, this.totalFocusSessions - 1);
+    }
+
+    if (completedPomos > 0) {
+      this.totalPomodorosCompleted = Math.max(0, this.totalPomodorosCompleted - completedPomos);
+    }
+
+    this.updatedAt = LocalDateTime.now();
+  }
+
+  /**
    * Registra o horário da sessão de foco para as conquistas secretas de período
    * (Coruja da Meia-Noite e Madrugador). Usa o horário local enviado pelo cliente.
    */
   public void recordFocusTimeOfDay(LocalDateTime startTime, LocalDateTime endTime, int durationMinutes) {
+    adjustFocusTimeOfDayCounters(startTime, endTime, durationMinutes, 1);
+  }
+
+  /**
+   * Estorna os contadores de período do dia caso uma sessão de foco seja excluída.
+   */
+  public void revertFocusTimeOfDay(LocalDateTime startTime, LocalDateTime endTime, int durationMinutes) {
+    adjustFocusTimeOfDayCounters(startTime, endTime, durationMinutes, -1);
+  }
+
+  private void adjustFocusTimeOfDayCounters(
+      LocalDateTime startTime, LocalDateTime endTime, int durationMinutes, int delta) {
     if (durationMinutes < MIN_FOCUS_MINUTES_FOR_STATS || startTime == null || endTime == null) {
       return;
     }
     int endHour = endTime.getHour();
     if (endHour >= NIGHT_OWL_START_HOUR || endHour < NIGHT_OWL_END_HOUR) {
-      this.totalNightFocusSessions += 1;
+      this.totalNightFocusSessions = Math.max(0, this.totalNightFocusSessions + delta);
     }
     int startHour = startTime.getHour();
     if (startHour >= EARLY_BIRD_START_HOUR && startHour < EARLY_BIRD_END_HOUR) {
-      this.totalEarlyFocusSessions += 1;
+      this.totalEarlyFocusSessions = Math.max(0, this.totalEarlyFocusSessions + delta);
     }
     this.updatedAt = LocalDateTime.now();
   }

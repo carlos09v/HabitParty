@@ -154,6 +154,7 @@ export interface RewardCardProps {
   isCompact?: boolean;
   canAfford?: boolean;
   isDeleteChecking?: boolean;
+  isRedeeming?: boolean;
 }
 
 export interface AddRewardCardProps {

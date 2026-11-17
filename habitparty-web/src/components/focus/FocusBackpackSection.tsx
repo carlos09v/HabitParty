@@ -16,6 +16,7 @@ interface FocusBackpackSectionProps {
   onStartFocus: (item: InventoryItemResponseDTO) => void;
   onContextMenu: (e: React.MouseEvent, item: InventoryItemResponseDTO) => void;
   onConsume?: (item: InventoryItemResponseDTO) => void;
+  consumingItemIds?: Set<string>;
   isCompact?: boolean;
 }
 
@@ -30,6 +31,7 @@ export function FocusBackpackSection({
   onStartFocus,
   onContextMenu,
   onConsume,
+  consumingItemIds,
   isCompact = false,
 }: FocusBackpackSectionProps) {
   const t = useTranslations("focus.backpack");
@@ -111,6 +113,10 @@ export function FocusBackpackSection({
               onStartFocus={onStartFocus}
               onContextMenu={onContextMenu}
               onConsume={onConsume}
+              isConsuming={Boolean(
+                item.inventoryItemId &&
+                  consumingItemIds?.has(item.inventoryItemId),
+              )}
               isCompact={isCompact}
             />
           ))}

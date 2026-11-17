@@ -157,7 +157,8 @@ public class TaskController implements TaskApi {
         dto.dueDate(), dto.habitType(), dto.resetCounter(), dto.importanceType(),
         dto.startDate(), dto.repeatType(), dto.repeatEvery(), dto.daysOfWeek(),
         dto.monthlyOption(), dto.reminderType(), dto.customReminderAt(),
-        dto.sendEmailReminder(), dto.dueTime(), dto.startTime(), dto.dueEndTime(), dto.isAllDay()
+        dto.sendEmailReminder(), dto.dueTime(), dto.startTime(), dto.dueEndTime(), dto.isAllDay(),
+        dto.afterTaskId()
     );
     Task createdTask = createTaskUseCase.execute(userId, boardColumnId, command);
     return ResponseEntity.status(HttpStatus.CREATED).body(toDto(createdTask, userId));
@@ -219,8 +220,9 @@ public class TaskController implements TaskApi {
       AuthenticatedUser userIdLogado,
       TaskStatus newStatus) {
     UUID userId = userIdLogado.id();
-    Task updatedTask = changeTaskStatusUseCase.execute(taskId, userId, newStatus);
-    return ResponseEntity.ok(toDto(updatedTask, userId));
+    var result = changeTaskStatusUseCase.executeWithResult(taskId, userId, newStatus);
+    Boolean rewardGranted = newStatus == TaskStatus.COMPLETED ? result.rewardGranted() : null;
+    return ResponseEntity.ok(toDto(result.task(), userId, rewardGranted));
   }
 
   @Override

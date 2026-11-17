@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { type ReactNode, Suspense } from "react";
 import { EmailVerificationBanner } from "@/components/auth/EmailVerificationBanner";
+import { FocusPipHost } from "@/components/focus/FocusPipHost";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { StoreInitializer } from "@/components/layout/StoreInitializer";
@@ -84,6 +85,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         <Suspense fallback={null}>
           <PaymentFeedbackListener />
           <AchievementUnlockListener />
+          <FocusPipHost />
           <StreakLostNotifier
             userId={user?.id}
             currentStreak={user?.currentStreak}

@@ -186,4 +186,12 @@ public class FocusRecordAdapter implements FocusRecordRepository {
     }
     return java.util.Optional.ofNullable(repository.findEarliestProductiveStartTimeByUserId(userId));
   }
+
+  @Override
+  public int findMaxProductiveDurationMinutesExcludingRecord(UUID userId, UUID excludedRecordId) {
+    if (userId == null || excludedRecordId == null) {
+      return 0;
+    }
+    return repository.findMaxProductiveDurationMinutesExcludingRecord(userId, excludedRecordId);
+  }
 }

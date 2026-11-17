@@ -5,6 +5,8 @@ import java.util.UUID;
 
 import com.habitparty.core.domain.enums.FocusRecordType;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
 public record CreateFocusRecordDTO(
@@ -18,7 +20,10 @@ public record CreateFocusRecordDTO(
     @NotNull(message = "O horário de fim é obrigatório.") LocalDateTime endTime,
 
     FocusRecordType recordType,
-    Integer completedPomos
+    Integer completedPomos,
+    @Min(value = 1, message = "A duração alvo do Pomodoro deve ser de pelo menos 1 minuto.")
+    @Max(value = 180, message = "A duração alvo do Pomodoro não pode exceder 180 minutos.")
+    Integer pomoTargetMinutes
 ) {
 
 }

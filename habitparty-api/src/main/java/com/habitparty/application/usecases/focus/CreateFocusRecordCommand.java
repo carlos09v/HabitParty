@@ -13,8 +13,21 @@ public record CreateFocusRecordCommand(
     LocalDateTime startTime,
     LocalDateTime endTime,
     FocusRecordType recordType,
-    Integer completedPomos
+    Integer completedPomos,
+    Integer pomoTargetMinutes
 ) {
+  public CreateFocusRecordCommand(
+      UUID focusActivityId,
+      UUID inventoryItemId,
+      UUID taskId,
+      String notes,
+      LocalDateTime startTime,
+      LocalDateTime endTime,
+      FocusRecordType recordType,
+      Integer completedPomos) {
+    this(focusActivityId, inventoryItemId, taskId, notes, startTime, endTime, recordType, completedPomos, null);
+  }
+
   public CreateFocusRecordCommand(
       UUID focusActivityId,
       UUID inventoryItemId,
@@ -23,6 +36,6 @@ public record CreateFocusRecordCommand(
       LocalDateTime endTime,
       FocusRecordType recordType,
       Integer completedPomos) {
-    this(focusActivityId, inventoryItemId, null, notes, startTime, endTime, recordType, completedPomos);
+    this(focusActivityId, inventoryItemId, null, notes, startTime, endTime, recordType, completedPomos, null);
   }
 }

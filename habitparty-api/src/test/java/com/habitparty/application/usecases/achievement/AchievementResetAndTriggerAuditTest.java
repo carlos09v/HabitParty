@@ -218,7 +218,7 @@ class AchievementResetAndTriggerAuditTest {
   }
 
   @Test
-  @DisplayName("CreateFocusRecordUseCase contabiliza UserStats e avalia conquistas mesmo após o soft cap diário de 6h")
+  @DisplayName("CreateFocusRecordUseCase contabiliza UserStats e avalia conquistas mesmo após o soft cap diário de 8h")
   void createFocusRecordUpdatesStatsAndEvaluatesAchievementsWhenRewardIsSoftCapped() {
     UUID userId = UUID.randomUUID();
     UUID activityId = UUID.randomUUID();
@@ -243,7 +243,7 @@ class AchievementResetAndTriggerAuditTest {
 
     when(userPort.findById(userId)).thenReturn(Optional.of(user));
     when(focusActivityPort.findById(activityId)).thenReturn(Optional.of(activity));
-    when(focusRecordPort.sumFocusMinutesToday(any(), any())).thenReturn(FocusRewardCalculator.DAILY_TIER2_MINUTES);
+    when(focusRecordPort.sumFocusMinutesToday(any(), any())).thenReturn(FocusRewardCalculator.DAILY_TIER3_MINUTES);
     when(focusRecordPort.save(any(FocusRecord.class))).thenAnswer(inv -> inv.getArgument(0));
     when(userPort.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 

@@ -17,8 +17,10 @@ import {
   X,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useId } from "react";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { DurationHoursBadge } from "@/components/ui/DurationHoursBadge";
 import { NumberStepperInput } from "@/components/ui/NumberStepperInput";
 import { RewardPreview } from "@/components/ui/reward/RewardPreview";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -68,6 +70,7 @@ export function FocusManualRecordModal({
   onSuccess,
 }: FocusManualRecordModalProps) {
   const t = useTranslations("focus.manualRecord");
+  const durationHoursHintId = useId();
   const form = useFocusManualRecordForm({
     isOpen,
     activities,
@@ -319,41 +322,52 @@ export function FocusManualRecordModal({
                     </div>
                   </div>
 
-                  <NumberStepperInput
-                    id="duration-minutes"
-                    label={t("durationToDeductLabel", {
-                      minutes: form.selectedItemMinutes,
-                    })}
-                    compact
-                    min={0}
-                    max={
-                      form.selectedItemMinutes > 0
-                        ? form.selectedItemMinutes
-                        : undefined
-                    }
-                    value={form.durationInput}
-                    onChange={(e) =>
-                      form.handleDurationInputChange(e.target.value)
-                    }
-                    onStep={(delta) =>
-                      form.setDurationMinutes(
+                  <div className="flex flex-col gap-1.5">
+                    <NumberStepperInput
+                      id="duration-minutes"
+                      label={t("durationToDeductLabel", {
+                        minutes: form.selectedItemMinutes,
+                      })}
+                      compact
+                      min={0}
+                      max={
                         form.selectedItemMinutes > 0
-                          ? Math.min(
-                              form.selectedItemMinutes,
-                              Math.max(1, form.durationMinutes + delta),
-                            )
-                          : Math.max(1, form.durationMinutes + delta),
-                      )
-                    }
-                    decrementDisabled={form.durationMinutes <= 1}
-                    incrementDisabled={
-                      form.selectedItemMinutes > 0 &&
-                      form.durationMinutes >= form.selectedItemMinutes
-                    }
-                    icon={<Clock size={16} />}
-                    iconSize={13}
-                    className="font-bold"
-                  />
+                          ? form.selectedItemMinutes
+                          : undefined
+                      }
+                      value={form.durationInput}
+                      onChange={(e) =>
+                        form.handleDurationInputChange(e.target.value)
+                      }
+                      onStep={(delta) =>
+                        form.setDurationMinutes(
+                          form.selectedItemMinutes > 0
+                            ? Math.min(
+                                form.selectedItemMinutes,
+                                Math.max(1, form.durationMinutes + delta),
+                              )
+                            : Math.max(1, form.durationMinutes + delta),
+                        )
+                      }
+                      decrementDisabled={form.durationMinutes <= 1}
+                      incrementDisabled={
+                        form.selectedItemMinutes > 0 &&
+                        form.durationMinutes >= form.selectedItemMinutes
+                      }
+                      icon={<Clock size={16} />}
+                      iconSize={13}
+                      aria-describedby={
+                        form.durationMinutes >= 60
+                          ? durationHoursHintId
+                          : undefined
+                      }
+                      className="font-bold"
+                    />
+                    <DurationHoursBadge
+                      id={durationHoursHintId}
+                      minutes={form.durationMinutes}
+                    />
+                  </div>
                   <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-card dark:bg-white/5 border border-neutral-700 dark:border-white/10 text-caption text-neutral-300">
                     <span>{t("remainingBalanceAfterLog")}</span>
                     <strong className="text-amber-700 dark:text-gold font-semibold tabular-nums">
@@ -398,36 +412,47 @@ export function FocusManualRecordModal({
                   {/* Linha com Minutos Totais e Stepper de Ciclos */}
                   <div
                     className={cn(
-                      "grid gap-2.5 items-end",
+                      "grid gap-2.5 items-start",
                       form.recordType === "POMO"
                         ? "grid-cols-1 sm:grid-cols-2"
                         : "grid-cols-1",
                     )}
                   >
-                    <NumberStepperInput
-                      id="duration-minutes"
-                      label={t("totalMinutesLabel")}
-                      compact
-                      min={0}
-                      max={600}
-                      value={form.durationInput}
-                      onChange={(e) =>
-                        form.handleDurationInputChange(e.target.value)
-                      }
-                      onStep={(delta) =>
-                        form.setDurationMinutes(
-                          Math.min(
-                            600,
-                            Math.max(1, form.durationMinutes + delta),
-                          ),
-                        )
-                      }
-                      decrementDisabled={form.durationMinutes <= 1}
-                      incrementDisabled={form.durationMinutes >= 600}
-                      icon={<Clock size={16} />}
-                      iconSize={13}
-                      className="font-bold"
-                    />
+                    <div className="flex flex-col gap-1.5">
+                      <NumberStepperInput
+                        id="duration-minutes"
+                        label={t("totalMinutesLabel")}
+                        compact
+                        min={0}
+                        max={600}
+                        value={form.durationInput}
+                        onChange={(e) =>
+                          form.handleDurationInputChange(e.target.value)
+                        }
+                        onStep={(delta) =>
+                          form.setDurationMinutes(
+                            Math.min(
+                              600,
+                              Math.max(1, form.durationMinutes + delta),
+                            ),
+                          )
+                        }
+                        decrementDisabled={form.durationMinutes <= 1}
+                        incrementDisabled={form.durationMinutes >= 600}
+                        icon={<Clock size={16} />}
+                        iconSize={13}
+                        aria-describedby={
+                          form.durationMinutes >= 60
+                            ? durationHoursHintId
+                            : undefined
+                        }
+                        className="font-bold"
+                      />
+                      <DurationHoursBadge
+                        id={durationHoursHintId}
+                        minutes={form.durationMinutes}
+                      />
+                    </div>
 
                     {form.recordType === "POMO" && (
                       <div className="flex flex-col gap-1.5">

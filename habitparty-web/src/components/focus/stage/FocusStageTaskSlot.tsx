@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Layers,
   ListTodo,
+  Loader2,
   Plus,
   X,
 } from "lucide-react";
@@ -16,6 +17,7 @@ interface FocusStageTaskSlotProps {
   target: FocusActiveTarget | null;
   isInventoryItem: boolean;
   isSessionIdle?: boolean;
+  isCompletingLinkedTask?: boolean;
   onOpenLinkTask: () => void;
   onOpenLinkActivity: () => void;
   onCompleteLinkedTask: (taskId: string, taskName?: string) => void;
@@ -30,6 +32,7 @@ export const FocusStageTaskSlot = memo(function FocusStageTaskSlot({
   target,
   isInventoryItem,
   isSessionIdle = true,
+  isCompletingLinkedTask = false,
   onOpenLinkTask,
   onOpenLinkActivity,
   onCompleteLinkedTask,
@@ -73,6 +76,7 @@ export const FocusStageTaskSlot = memo(function FocusStageTaskSlot({
           {target.taskId && (
             <button
               type="button"
+              disabled={isCompletingLinkedTask}
               onClick={() =>
                 onCompleteLinkedTask(
                   target.taskId as string,
@@ -80,10 +84,18 @@ export const FocusStageTaskSlot = memo(function FocusStageTaskSlot({
                 )
               }
               title={t("completeLinkedTask")}
-              className="flex-1 min-w-[120px] inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition-colors cursor-pointer"
+              className="flex-1 min-w-[120px] inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <CheckCircle2 size={13} />
-              <span>{t("completeLinkedTaskShort")}</span>
+              {isCompletingLinkedTask ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <CheckCircle2 size={13} />
+              )}
+              <span>
+                {isCompletingLinkedTask
+                  ? t("completingLinkedTaskShort")
+                  : t("completeLinkedTaskShort")}
+              </span>
             </button>
           )}
 
@@ -138,14 +150,23 @@ export const FocusStageTaskSlot = memo(function FocusStageTaskSlot({
         <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
           <button
             type="button"
+            disabled={isCompletingLinkedTask}
             onClick={() =>
               onCompleteLinkedTask(target.taskId as string, target.taskName)
             }
             title={t("completeLinkedTask")}
-            className="flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition-colors cursor-pointer"
+            className="flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <CheckCircle2 size={13} />
-            <span>{t("completeLinkedTaskShort")}</span>
+            {isCompletingLinkedTask ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : (
+              <CheckCircle2 size={13} />
+            )}
+            <span>
+              {isCompletingLinkedTask
+                ? t("completingLinkedTaskShort")
+                : t("completeLinkedTaskShort")}
+            </span>
           </button>
 
           <button

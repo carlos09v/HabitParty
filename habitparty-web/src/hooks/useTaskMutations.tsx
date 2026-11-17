@@ -15,6 +15,7 @@ import {
   MAX_DAILY_REWARDED_HABIT_SCORES,
 } from "@/constants/task";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useInFlightSet } from "@/hooks/useInFlightSet";
 import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import type { Task } from "@/types/task";
@@ -28,6 +29,7 @@ import { soundEffects } from "@/utils/soundEffects";
 import {
   buildCreateTaskPayloadFromTask,
   computeOptimisticHabitDelta,
+  mapTaskResponseToTask,
   mergeTaskWithResponseDTO,
 } from "@/utils/taskMapper";
 
@@ -113,7 +115,11 @@ export interface UseTaskMutationsOptions {
   ) => void;
   onOptimisticDelete?: (task: Task, columnId?: string) => void;
   onRollbackDelete?: (task: Task, columnId?: string) => void;
-  onTaskDuplicated?: (duplicatedTask: Task, targetColumnId: string) => void;
+  onTaskDuplicated?: (
+    duplicatedTask: Task,
+    targetColumnId: string,
+    sourceTaskId?: string,
+  ) => void;
   onTaskUpdatedInDetails?: (task: Task) => void;
   onReconcileTask?: (task: Task) => void;
   defaultColumnId?: string;
@@ -141,6 +147,11 @@ export function useTaskMutations({
   const locale = useLocale() as AppLocale;
   const { isGamified } = useExperienceMode();
   const [isPending, startTransition] = useTransition();
+  const {
+    activeIds: duplicatingTaskIds,
+    has: isTaskDuplicating,
+    setPending: setTaskDuplicating,
+  } = useInFlightSet();
   const rewardedTaskIdsRef = useRef<Set<string>>(new Set());
   const inFlightHabitTasksRef = useRef<Set<string>>(new Set());
   const habitLastActionAtRef = useRef<Map<string, number>>(new Map());
@@ -206,7 +217,9 @@ export function useTaskMutations({
                 : t("todoCompleted");
 
           // Proteção contra ganho múltiplo de Ouro/XP ao marcar e desmarcar a mesma tarefa/diária
-          if (alreadyRewarded) {
+          const serverAlreadyRewarded =
+            alreadyRewarded || res.data?.rewardGranted === false;
+          if (serverAlreadyRewarded) {
             toast.success(
               <span>
                 {completionLabel}{" "}
@@ -475,47 +488,79 @@ export function useTaskMutations({
 
   const handleDuplicateTask = useCallback(
     async (task: Task, targetColumnId?: string) => {
+      if (isTaskDuplicating(task.id)) {
+        return;
+      }
+
       const colId = targetColumnId || task.columnId || defaultColumnId;
       if (!colId) {
         toast.error(t("duplicateColumnError"));
         return;
       }
 
-      const payload = buildCreateTaskPayloadFromTask(
-        task,
-        useUserStore.getState().user?.timezone,
-      );
-      const res = await createTask(colId, payload, task.checklist);
-      if (!res.success) {
-        toast.error(res.error || t("duplicateError"));
-        return;
+      setTaskDuplicating(task.id, true);
+      try {
+        const userTimeZone = useUserStore.getState().user?.timezone;
+        const basePayload = buildCreateTaskPayloadFromTask(task, userTimeZone);
+        const payload = task.id.startsWith("temp-")
+          ? basePayload
+          : { ...basePayload, afterTaskId: task.id };
+
+        const res = await createTask(colId, payload, task.checklist);
+        if (!res.success) {
+          toast.error(res.error || t("duplicateError"));
+          return;
+        }
+
+        const clonedChecklist =
+          res.data?.checklist && res.data.checklist.length > 0
+            ? res.data.checklist
+            : task.checklist;
+
+        const duplicatedTask: Task = res.data
+          ? {
+              ...mapTaskResponseToTask(res.data, colId, userTimeZone, {
+                id: task.workspaceId,
+                name: task.workspaceName,
+              }),
+              checklist: clonedChecklist,
+            }
+          : {
+              ...task,
+              id: `dup-${Date.now()}`,
+              status: "PENDING",
+              completed: false,
+              hasClaimedReward: false,
+              isRewardClaimed: false,
+              streak: 0,
+              currentStreak: 0,
+              positiveCount: 0,
+              negativeCount: 0,
+              totalFocusMinutes: 0,
+              focusCyclesCount: 0,
+              lastCompletedAt: undefined,
+              isPenaltyApplied: false,
+              emailReminderSent: false,
+              columnId: colId,
+              order: task.order,
+              checklist: clonedChecklist,
+            };
+
+        onTaskDuplicated?.(duplicatedTask, colId, task.id);
+        notifyTasksChanged();
+        soundEffects.playCreateSound();
+        toast.success(t("duplicateSuccess", { title: task.title }));
+      } finally {
+        setTaskDuplicating(task.id, false);
       }
-
-      const newTaskId = res.data?.id;
-      const clonedChecklist =
-        res.data?.checklist && res.data.checklist.length > 0
-          ? res.data.checklist
-          : task.checklist;
-
-      const duplicatedTask: Task = {
-        ...task,
-        id: newTaskId || `dup-${Date.now()}`,
-        completed: false,
-        hasClaimedReward: false,
-        streak: 0,
-        positiveCount: 0,
-        negativeCount: 0,
-        columnId: colId,
-        order: 0,
-        checklist: clonedChecklist,
-      };
-
-      onTaskDuplicated?.(duplicatedTask, colId);
-      notifyTasksChanged();
-      soundEffects.playCreateSound();
-      toast.success(t("duplicateSuccess", { title: task.title }));
     },
-    [defaultColumnId, onTaskDuplicated, t],
+    [
+      defaultColumnId,
+      isTaskDuplicating,
+      onTaskDuplicated,
+      setTaskDuplicating,
+      t,
+    ],
   );
 
   return {
@@ -523,6 +568,7 @@ export function useTaskMutations({
     handleHabitChange,
     handleDeleteTask,
     handleDuplicateTask,
+    duplicatingTaskIds,
     isPending,
   };
 }

@@ -202,6 +202,7 @@ export function DashboardTasksPanel({
     handleHabitChange,
     handleDeleteTask,
     handleDuplicateTask,
+    duplicatingTaskIds,
     handleTaskSaved,
     handleTaskDetailsUpdate,
   } = useDashboardTaskActions({
@@ -520,6 +521,7 @@ export function DashboardTasksPanel({
         }}
         onTaskDetailsUpdate={guardedTaskDetailsUpdate}
         onDuplicateTask={guardedDuplicateTask}
+        duplicatingTaskIds={duplicatingTaskIds}
         onRequestDeleteTask={guardedRequestDeleteTask}
         onToggleComplete={guardedToggleComplete}
         onHabitChange={guardedHabitChange}

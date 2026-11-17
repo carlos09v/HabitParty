@@ -17,6 +17,7 @@ import {
   redeemReward,
 } from "@/actions/rewardActions";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useInFlightSet } from "@/hooks/useInFlightSet";
 import { useUserStore } from "@/store/userStore";
 import type { Reward } from "@/types/reward";
 import { toCategoryMessageKey } from "@/utils/rewardMapper";
@@ -37,7 +38,11 @@ export function useRewardCatalogActions({
   const currentCoins = useUserStore((s) => s.user?.currentCoins);
   const updateUserPartial = useUserStore((s) => s.updateUserPartial);
 
-  const [isRedeeming, setIsRedeeming] = useState(false);
+  const {
+    activeIds: redeemingRewardIds,
+    has: isRewardRedeeming,
+    setPending: setRewardRedeeming,
+  } = useInFlightSet();
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingReward, setEditingReward] = useState<Reward | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
@@ -54,9 +59,10 @@ export function useRewardCatalogActions({
 
   const handleBuy = useCallback(
     async (reward: Reward) => {
-      if (isRedeeming) return;
+      if (isRewardRedeeming(reward.id)) return;
 
-      if (typeof currentCoins === "number" && currentCoins < reward.price) {
+      const latestCoins = useUserStore.getState().user?.currentCoins;
+      if (typeof latestCoins === "number" && latestCoins < reward.price) {
         toast.error(
           isGamified
             ? t("toasts.insufficientCoins")
@@ -65,7 +71,7 @@ export function useRewardCatalogActions({
         return;
       }
 
-      setIsRedeeming(true);
+      setRewardRedeeming(reward.id, true);
       try {
         const res = await redeemReward(reward.id);
         if (!res.success) {
@@ -73,10 +79,11 @@ export function useRewardCatalogActions({
           return;
         }
 
-        if (typeof currentCoins === "number") {
+        const freshCoins = useUserStore.getState().user?.currentCoins;
+        if (typeof freshCoins === "number") {
           const nextCoins = Math.max(
             0,
-            Math.round((currentCoins - reward.price) * 100) / 100,
+            Math.round((freshCoins - reward.price) * 100) / 100,
           );
           updateUserPartial({
             currentCoins: nextCoins,
@@ -97,10 +104,10 @@ export function useRewardCatalogActions({
       } catch (_error) {
         toast.error(t("toasts.serverError"));
       } finally {
-        setIsRedeeming(false);
+        setRewardRedeeming(reward.id, false);
       }
     },
-    [isGamified, isRedeeming, currentCoins, updateUserPartial, t],
+    [isGamified, isRewardRedeeming, setRewardRedeeming, updateUserPartial, t],
   );
 
   const handleAddProduct = useCallback(() => {
@@ -134,24 +141,13 @@ export function useRewardCatalogActions({
 
   const [rewardToDelete, setRewardToDelete] = useState<Reward | null>(null);
   const [deleteRewardHistory, setDeleteRewardHistory] = useState(false);
-  const [checkingDeleteRewardIds, setCheckingDeleteRewardIds] = useState<
-    Set<string>
-  >(() => new Set());
-  const checkingIdsRef = useRef<Set<string>>(new Set());
+  const {
+    activeIds: checkingDeleteRewardIds,
+    has: isRewardChecking,
+    setPending: setRewardCheckingState,
+  } = useInFlightSet();
   const rewardsRef = useRef(rewards);
   rewardsRef.current = rewards;
-
-  const setRewardCheckingState = useCallback(
-    (rewardId: string, isChecking: boolean) => {
-      if (isChecking) {
-        checkingIdsRef.current.add(rewardId);
-      } else {
-        checkingIdsRef.current.delete(rewardId);
-      }
-      setCheckingDeleteRewardIds(new Set(checkingIdsRef.current));
-    },
-    [],
-  );
 
   const executeDeleteReward = useCallback(
     async (target: Reward, shouldDeleteHistory: boolean) => {
@@ -191,7 +187,7 @@ export function useRewardCatalogActions({
 
   const handleDeleteFromContextMenu = useCallback(async () => {
     const target = contextMenu.reward;
-    if (!target || checkingIdsRef.current.has(target.id)) return;
+    if (!target || isRewardChecking(target.id)) return;
 
     setRewardCheckingState(target.id, true);
     try {
@@ -208,7 +204,12 @@ export function useRewardCatalogActions({
     } finally {
       setRewardCheckingState(target.id, false);
     }
-  }, [contextMenu.reward, executeDeleteReward, setRewardCheckingState]);
+  }, [
+    contextMenu.reward,
+    executeDeleteReward,
+    isRewardChecking,
+    setRewardCheckingState,
+  ]);
 
   const handleConfirmDeleteReward = useCallback(() => {
     const target = rewardToDelete;
@@ -252,6 +253,7 @@ export function useRewardCatalogActions({
     handleCloseFormModal,
     handleRewardSuccess,
     isDeleting,
+    redeemingRewardIds,
     handleBuy,
   };
 }

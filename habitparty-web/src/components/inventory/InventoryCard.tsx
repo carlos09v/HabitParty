@@ -9,21 +9,34 @@ import type { InventoryCardProps } from "@/types/inventory";
 import {
   executeInventoryItemAction,
   getInventoryItemActionMeta,
+  resolveInventoryItemLoadingState,
 } from "@/utils/inventoryHelpers";
 
-export const InventoryCard = memo(function InventoryCard({
-  item,
-  onUse,
-  onSendToFocus,
-  onOpenMysteryBox,
-  onContextMenu,
-  isCompact = false,
-}: InventoryCardProps) {
+function useInventoryItemCardPresentation(
+  {
+    item,
+    onUse,
+    onSendToFocus,
+    onOpenMysteryBox,
+    onContextMenu,
+    isUsing = false,
+    isSendingToFocus = false,
+  }: Pick<
+    InventoryCardProps,
+    | "item"
+    | "onUse"
+    | "onSendToFocus"
+    | "onOpenMysteryBox"
+    | "onContextMenu"
+    | "isUsing"
+    | "isSendingToFocus"
+  >,
+  translationNamespace: "inventory.card" | "inventory.helpers",
+) {
   const router = useRouter();
-  const t = useTranslations("inventory.card");
-  const reward = item.reward;
+  const t = useTranslations(translationNamespace);
 
-  const { isInFocus, actionLabel, secondaryActionLabel } = useMemo(
+  const meta = useMemo(
     () =>
       getInventoryItemActionMeta(item, {
         openInFocus: t("openInFocus"),
@@ -33,6 +46,9 @@ export const InventoryCard = memo(function InventoryCard({
       }),
     [item, t],
   );
+
+  const { isPrimaryLoading, isSecondaryLoading } =
+    resolveInventoryItemLoadingState(meta, { isUsing, isSendingToFocus });
 
   const handleAction = useCallback(() => {
     executeInventoryItemAction(item, {
@@ -44,8 +60,8 @@ export const InventoryCard = memo(function InventoryCard({
   }, [item, router, onOpenMysteryBox, onSendToFocus, onUse]);
 
   const handleSecondaryAction = useMemo(
-    () => (secondaryActionLabel && onUse ? () => onUse(item) : undefined),
-    [secondaryActionLabel, onUse, item],
+    () => (meta.secondaryActionLabel && onUse ? () => onUse(item) : undefined),
+    [meta.secondaryActionLabel, onUse, item],
   );
 
   const handleContextMenu = useCallback(
@@ -58,6 +74,53 @@ export const InventoryCard = memo(function InventoryCard({
   const dragData = useMemo(
     () => ({ type: "InventoryItem" as const, item }),
     [item],
+  );
+
+  return {
+    isInFocus: meta.isInFocus,
+    actionLabel: meta.actionLabel,
+    secondaryActionLabel: meta.secondaryActionLabel,
+    isPrimaryLoading,
+    isSecondaryLoading,
+    handleAction,
+    handleSecondaryAction,
+    handleContextMenu,
+    dragData,
+  };
+}
+
+export const InventoryCard = memo(function InventoryCard({
+  item,
+  onUse,
+  onSendToFocus,
+  onOpenMysteryBox,
+  onContextMenu,
+  isCompact = false,
+  isUsing = false,
+  isSendingToFocus = false,
+}: InventoryCardProps) {
+  const reward = item.reward;
+  const {
+    isInFocus,
+    actionLabel,
+    secondaryActionLabel,
+    isPrimaryLoading,
+    isSecondaryLoading,
+    handleAction,
+    handleSecondaryAction,
+    handleContextMenu,
+    dragData,
+  } = useInventoryItemCardPresentation(
+    {
+      item,
+      onUse,
+      onSendToFocus,
+      onOpenMysteryBox,
+      onContextMenu,
+      isUsing,
+      isSendingToFocus,
+    },
+    "inventory.card",
   );
 
   return (
@@ -75,6 +138,8 @@ export const InventoryCard = memo(function InventoryCard({
       quantity={item.quantity}
       inUse={isInFocus}
       isActiveFocusSession={isInFocus}
+      isActionLoading={isPrimaryLoading}
+      isSecondaryActionLoading={isSecondaryLoading}
       actionLabel={actionLabel}
       onAction={handleAction}
       secondaryActionLabel={secondaryActionLabel}
@@ -93,46 +158,31 @@ export const InventoryItemRow = memo(function InventoryItemRow({
   onOpenMysteryBox,
   onContextMenu,
   isCompact = false,
+  isUsing = false,
+  isSendingToFocus = false,
 }: InventoryCardProps) {
-  const router = useRouter();
-  const t = useTranslations("inventory.helpers");
   const reward = item.reward;
-
-  const { isInFocus, actionLabel, secondaryActionLabel } = useMemo(
-    () =>
-      getInventoryItemActionMeta(item, {
-        openInFocus: t("openInFocus"),
-        openBox: t("openBox"),
-        sendToFocus: t("sendToFocus"),
-        use: t("use"),
-      }),
-    [item, t],
-  );
-
-  const handleAction = useCallback(() => {
-    executeInventoryItemAction(item, {
-      onOpenFocus: () => router.push("/focus?from=inventory"),
-      onOpenMysteryBox,
-      onSendToFocus,
+  const {
+    isInFocus,
+    actionLabel,
+    secondaryActionLabel,
+    isPrimaryLoading,
+    isSecondaryLoading,
+    handleAction,
+    handleSecondaryAction,
+    handleContextMenu,
+    dragData,
+  } = useInventoryItemCardPresentation(
+    {
+      item,
       onUse,
-    });
-  }, [item, router, onOpenMysteryBox, onSendToFocus, onUse]);
-
-  const handleSecondaryAction = useMemo(
-    () => (secondaryActionLabel && onUse ? () => onUse(item) : undefined),
-    [secondaryActionLabel, onUse, item],
-  );
-
-  const handleContextMenu = useCallback(
-    (e: React.MouseEvent) => {
-      onContextMenu?.(e, item);
+      onSendToFocus,
+      onOpenMysteryBox,
+      onContextMenu,
+      isUsing,
+      isSendingToFocus,
     },
-    [onContextMenu, item],
-  );
-
-  const dragData = useMemo(
-    () => ({ type: "InventoryItem" as const, item }),
-    [item],
+    "inventory.helpers",
   );
 
   return (
@@ -149,6 +199,8 @@ export const InventoryItemRow = memo(function InventoryItemRow({
       quantity={item.quantity}
       inUse={isInFocus}
       isActiveFocusSession={isInFocus}
+      isActionLoading={isPrimaryLoading}
+      isSecondaryActionLoading={isSecondaryLoading}
       actionLabel={actionLabel}
       onAction={handleAction}
       secondaryActionLabel={secondaryActionLabel}

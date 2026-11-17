@@ -62,6 +62,25 @@ export function getInventoryItemActionMeta(
   };
 }
 
+/**
+ * Resolve os estados de carregamento dos botões primário e secundário do card/linha de inventário.
+ */
+export function resolveInventoryItemLoadingState(
+  meta: Pick<InventoryItemActionMeta, "isInFocus" | "isMystery" | "isCoupon">,
+  loading?: { isUsing?: boolean; isSendingToFocus?: boolean },
+): { isPrimaryLoading: boolean; isSecondaryLoading: boolean } {
+  const isUsing = Boolean(loading?.isUsing);
+  const isSendingToFocus = Boolean(loading?.isSendingToFocus);
+  const isPrimaryLoading =
+    meta.isInFocus || meta.isMystery
+      ? false
+      : meta.isCoupon
+        ? isSendingToFocus
+        : isUsing;
+  const isSecondaryLoading = meta.isCoupon && !meta.isInFocus ? isUsing : false;
+  return { isPrimaryLoading, isSecondaryLoading };
+}
+
 export interface InventoryActionDispatchers {
   onOpenFocus: () => void;
   onOpenMysteryBox?: (item: InventoryItem) => void;

@@ -5,6 +5,7 @@ import {
   Coffee,
   FastForward,
   ListTodo,
+  Loader2,
   Lock,
   Pause,
   Play,
@@ -16,6 +17,7 @@ import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { memo, useCallback, useEffect, useState } from "react";
 import { getFocusIcon, MAX_FOCUS_ACTIVITIES_FREE } from "@/constants/focus";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import {
   useFocusSessionNotes,
   useFocusTimerControls,
@@ -106,6 +108,7 @@ export function FocusHeroStage({
   isCompact = false,
 }: FocusHeroStageProps) {
   const t = useTranslations("focus.hero");
+  const { isGamified } = useExperienceMode();
   const controls = useFocusTimerControls();
   const isPremium = useUserStore((s) => s.is_Premium);
   useIdlePreload(preloadFocusHeroModalChunks);
@@ -129,6 +132,9 @@ export function FocusHeroStage({
     canComplete,
     isPartialPomo,
     isOvertime,
+    isSavingSession = false,
+    isCompletingLinkedTask = false,
+    isSessionRewardCapped = false,
     nextBreakMinutes,
     isSoundEnabled,
     timerSoundType,
@@ -388,8 +394,16 @@ export function FocusHeroStage({
             ========================================================================= */}
         <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 my-1 sm:my-2">
           {/* Esquerda: Círculo do Timer (Tamanho SM compacto, limpo e direto) */}
-          <div className="shrink-0 flex flex-col items-center justify-center">
+          <div className="shrink-0 flex flex-col items-center justify-center gap-2">
             <FocusStageTimerCircle size="sm" onToggle={handleToggleTimer} />
+            {isGamified && isSessionRewardCapped && (
+              <div
+                title={t("sessionCapReachedTitle")}
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-amber-500/40 bg-amber-500/12 text-amber-800 dark:text-amber-300 text-[11px] font-semibold max-w-[240px] text-center leading-tight"
+              >
+                <span>{t("sessionCapReachedBadge")}</span>
+              </div>
+            )}
           </div>
 
           {/* Direita: Coluna Completa de Ações (Flex Column) */}
@@ -408,10 +422,11 @@ export function FocusHeroStage({
             ) : (
               <button
                 type="button"
+                disabled={isSavingSession}
                 onClick={handleToggleTimer}
                 title={t("spaceShortcutTitle")}
                 className={cn(
-                  "w-full py-3 px-5 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-[transform,background-color,color] duration-150 cursor-pointer shadow-md",
+                  "w-full py-3 px-5 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-[transform,background-color,color] duration-150 cursor-pointer shadow-md disabled:opacity-60 disabled:cursor-not-allowed",
                   isBreak
                     ? "bg-emerald-500 hover:bg-emerald-400 text-neutral-950 shadow-sm dark:shadow-[0_0_16px_rgba(16,185,129,0.4)]"
                     : isRunning
@@ -437,13 +452,21 @@ export function FocusHeroStage({
             {isOvertime && !isBreak && (
               <button
                 type="button"
+                disabled={isSavingSession}
+                aria-busy={isSavingSession}
                 onClick={handleStartBreak}
                 title={t("startBreakTitle", { minutes: nextBreakMinutes })}
-                className="w-full py-2.5 px-5 rounded-xl border border-cyan-500/45 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-800 dark:text-cyan-200 font-bold text-sm flex items-center justify-center gap-2 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shadow-sm hover:scale-[1.01]"
+                className="w-full py-2.5 px-5 rounded-xl border border-cyan-500/45 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-800 dark:text-cyan-200 font-bold text-sm flex items-center justify-center gap-2 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shadow-sm hover:scale-[1.01] disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <Coffee size={17} />
+                {isSavingSession ? (
+                  <Loader2 size={17} className="animate-spin" />
+                ) : (
+                  <Coffee size={17} />
+                )}
                 <span>
-                  {t("startBreakButton", { minutes: nextBreakMinutes })}
+                  {isSavingSession
+                    ? t("savingSessionButton")
+                    : t("startBreakButton", { minutes: nextBreakMinutes })}
                 </span>
               </button>
             )}
@@ -452,19 +475,27 @@ export function FocusHeroStage({
             {canComplete && !isBreak && (
               <button
                 type="button"
+                disabled={isSavingSession}
+                aria-busy={isSavingSession}
                 onClick={handleComplete}
                 title={
                   isPartialPomo
                     ? t("savePartialTitle")
                     : t("completeSessionTitle")
                 }
-                className="w-full py-2.5 px-5 rounded-xl border border-emerald-500/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-800 dark:text-emerald-300 font-bold text-sm flex items-center justify-center gap-2 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shadow-sm hover:scale-[1.01]"
+                className="w-full py-2.5 px-5 rounded-xl border border-emerald-500/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-800 dark:text-emerald-300 font-bold text-sm flex items-center justify-center gap-2 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shadow-sm hover:scale-[1.01] disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <CheckCircle2 size={17} />
+                {isSavingSession ? (
+                  <Loader2 size={17} className="animate-spin" />
+                ) : (
+                  <CheckCircle2 size={17} />
+                )}
                 <span>
-                  {isPartialPomo
-                    ? t("savePartialButton")
-                    : t("completeSessionButton")}
+                  {isSavingSession
+                    ? t("savingSessionButton")
+                    : isPartialPomo
+                      ? t("savePartialButton")
+                      : t("completeSessionButton")}
                 </span>
               </button>
             )}
@@ -474,6 +505,7 @@ export function FocusHeroStage({
               target={target}
               isInventoryItem={isInventoryItem}
               isSessionIdle={!isActive && !controls.hasElapsedSeconds}
+              isCompletingLinkedTask={isCompletingLinkedTask}
               onOpenLinkTask={handleOpenLinkTaskModal}
               onOpenLinkActivity={handleOpenLinkActivityModal}
               onCompleteLinkedTask={controls.completeLinkedTask}
@@ -494,9 +526,10 @@ export function FocusHeroStage({
                 {isActive ? (
                   <button
                     type="button"
+                    disabled={isSavingSession}
                     onClick={resetTimer}
                     title={t("resetTitle")}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/30 bg-surface/80 text-neutral-300 hover:text-gold hover:border-gold/50 text-xs font-semibold transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/30 bg-surface/80 text-neutral-300 hover:text-gold hover:border-gold/50 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <RotateCcw size={14} />
                     <span>{t("resetButton")}</span>
@@ -509,9 +542,10 @@ export function FocusHeroStage({
                 {isBreak && (
                   <button
                     type="button"
+                    disabled={isSavingSession}
                     onClick={skipBreak}
                     title={t("skipBreakTitle")}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 text-emerald-400 dark:text-emerald-300 text-xs font-semibold transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 text-emerald-400 dark:text-emerald-300 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FastForward size={14} />
                     <span>{t("skipBreakButton")}</span>
@@ -538,6 +572,8 @@ export function FocusHeroStage({
           nextBreakMinutes={nextBreakMinutes}
           isRunning={isRunning}
           isActive={isActive}
+          isSavingSession={isSavingSession}
+          isSessionRewardCapped={isSessionRewardCapped}
           mode={mode}
           phase={phase}
           target={target}

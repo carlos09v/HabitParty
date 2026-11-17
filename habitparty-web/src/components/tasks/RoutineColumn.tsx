@@ -40,6 +40,7 @@ export const RoutineColumn = memo(function RoutineColumn({
   onHabitChange,
   onLoadArchivedCompleted,
   forceExpandCompleted = false,
+  activeDraggedTaskId = null,
   isOverlay = false,
 }: RoutineColumnProps) {
   const t = useTranslations("tasks.column");
@@ -111,13 +112,29 @@ export const RoutineColumn = memo(function RoutineColumn({
     return { activeTasks: active, completedTodoTasks: completedTodos };
   }, [column.tasks]);
 
-  const taskIds = useMemo(
+  const draggedCompletedTask = useMemo(
     () =>
-      isCompletedExpanded
-        ? [...activeTasks, ...completedTodoTasks].map((t) => t.id)
-        : activeTasks.map((t) => t.id),
-    [activeTasks, completedTodoTasks, isCompletedExpanded],
+      !isCompletedExpanded && activeDraggedTaskId
+        ? completedTodoTasks.find((t) => t.id === activeDraggedTaskId)
+        : undefined,
+    [activeDraggedTaskId, completedTodoTasks, isCompletedExpanded],
   );
+
+  const taskIds = useMemo(() => {
+    if (isCompletedExpanded) {
+      return [...activeTasks, ...completedTodoTasks].map((t) => t.id);
+    }
+    const ids = activeTasks.map((t) => t.id);
+    if (draggedCompletedTask) {
+      ids.push(draggedCompletedTask.id);
+    }
+    return ids;
+  }, [
+    activeTasks,
+    completedTodoTasks,
+    draggedCompletedTask,
+    isCompletedExpanded,
+  ]);
 
   const { totalTasks, completedTasks, progressPercent, isAllDone } =
     useMemo(() => {
@@ -451,6 +468,20 @@ export const RoutineColumn = memo(function RoutineColumn({
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Mantém o card concluído arrastado montado caso o usuário passe por cima de uma coluna com Concluídos recolhido */}
+          {!isCompletedExpanded && draggedCompletedTask && (
+            <div
+              aria-hidden="true"
+              className="h-0 overflow-hidden pointer-events-none opacity-0"
+            >
+              <RoutineTaskCard
+                task={draggedCompletedTask}
+                columnId={column.id}
+                isCompact={isCompact || widthPreset === "compact"}
+              />
             </div>
           )}
         </SortableContext>

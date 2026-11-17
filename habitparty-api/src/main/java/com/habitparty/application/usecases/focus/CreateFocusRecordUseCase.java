@@ -93,7 +93,10 @@ public class CreateFocusRecordUseCase {
         command.startTime(),
         command.endTime(),
         command.recordType(),
-        command.completedPomos());
+        command.completedPomos(),
+        command.pomoTargetMinutes(),
+        0,
+        BigDecimal.ZERO);
 
     FocusActivity loadedActivity = null;
     User loadedUser = null;
@@ -222,6 +225,7 @@ public class CreateFocusRecordUseCase {
         serverEndTime,
         record.getRecordType().orElse(null),
         record.getCompletedPomos().orElse(null),
+        record.getPomoTargetMinutes().orElse(null),
         reward.xp(),
         reward.coins());
 

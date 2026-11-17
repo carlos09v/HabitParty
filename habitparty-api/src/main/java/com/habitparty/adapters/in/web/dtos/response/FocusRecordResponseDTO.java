@@ -23,6 +23,7 @@ public record FocusRecordResponseDTO(
     OffsetDateTime endTime,
     FocusRecordType recordType,
     Integer completedPomos,
+    Integer pomoTargetMinutes,
     int durationMinutes,
     Integer xpEarned,
     BigDecimal coinsEarned) {
@@ -44,6 +45,7 @@ public record FocusRecordResponseDTO(
         toOffsetDateTime(record.getEndTime(), effectiveZone),
         record.getRecordType().orElse(null),
         record.getCompletedPomos().orElse(null),
+        record.getPomoTargetMinutes().orElse(null),
         record.getDurationMinutes(),
         record.getXpEarned().orElse(0),
         record.getCoinsEarned().orElse(BigDecimal.ZERO));

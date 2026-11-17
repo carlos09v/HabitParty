@@ -4,9 +4,11 @@ import {
   CheckCircle2,
   Coffee,
   FastForward,
+  Loader2,
   Minimize2,
   Moon,
   Pause,
+  PictureInPicture2,
   Play,
   RotateCcw,
   Sun,
@@ -14,6 +16,8 @@ import {
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useFocusPipAction } from "@/hooks/useFocusPipAction";
 import { useThemeMode } from "@/hooks/useThemeMode";
 import type {
   FocusActiveTarget,
@@ -33,6 +37,8 @@ interface FocusZenModeModalProps {
   nextBreakMinutes?: number;
   isRunning: boolean;
   isActive: boolean;
+  isSavingSession?: boolean;
+  isSessionRewardCapped?: boolean;
   mode: FocusRecordType;
   phase: FocusPhase;
   target: FocusActiveTarget | null;
@@ -61,6 +67,8 @@ export function FocusZenModeModal({
   nextBreakMinutes = 5,
   isRunning,
   isActive,
+  isSavingSession = false,
+  isSessionRewardCapped = false,
   mode,
   target,
   canComplete,
@@ -76,7 +84,9 @@ export function FocusZenModeModal({
   onChangeSoundType,
 }: FocusZenModeModalProps) {
   const t = useTranslations("focus.zenMode");
+  const { isGamified } = useExperienceMode();
   const { isLight } = useThemeMode();
+  const { isPipOpen, isPipSupported, togglePip } = useFocusPipAction();
   const [isLightsOff, setIsLightsOff] = useState(false);
 
   // Fecha o Modo Zen com a tecla Esc e bloqueia scroll do body enquanto aberto
@@ -181,6 +191,26 @@ export function FocusZenModeModal({
             </button>
           )}
 
+          {isPipSupported && (
+            <button
+              type="button"
+              onClick={() => void togglePip()}
+              aria-pressed={isPipOpen}
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 sm:px-3 min-h-9 rounded-xl border text-xs font-semibold transition-colors cursor-pointer",
+                isPipOpen
+                  ? "border-gold/50 bg-gold/15 text-gold hover:bg-gold/25"
+                  : "border-neutral-700 bg-card/80 dark:bg-surface/80 text-neutral-300 hover:text-neutral-50 dark:hover:text-white hover:border-neutral-500",
+              )}
+              title={isPipOpen ? t("pipCloseTitle") : t("pipOpenTitle")}
+            >
+              <PictureInPicture2 size={15} />
+              <span className="hidden min-[380px]:inline">
+                {t("pipButton")}
+              </span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={onClose}
@@ -198,15 +228,25 @@ export function FocusZenModeModal({
       <div className="relative z-10 flex flex-col items-center justify-center my-auto py-4 w-full">
         <FocusStageTimerCircle size="zen" onToggle={onToggleTimer} />
 
+        {isGamified && isSessionRewardCapped && (
+          <div
+            title={t("sessionCapReachedTitle")}
+            className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-amber-500/40 bg-amber-500/12 text-amber-700 dark:text-amber-300 text-xs font-semibold shadow-2xs"
+          >
+            <span>{t("sessionCapReachedBadge")}</span>
+          </div>
+        )}
+
         {/* Controles de Ação no Modo Zen */}
         <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-6 sm:mt-8 w-full max-w-md px-2">
           {isActive && (
             <button
               type="button"
+              disabled={isSavingSession}
               onClick={onResetTimer}
               title={t("resetTitle")}
               aria-label={t("resetTitle")}
-              className="w-14 h-14 rounded-2xl border border-neutral-700 bg-card/80 dark:bg-surface/80 text-neutral-300 hover:text-gold hover:border-gold/50 flex items-center justify-center transition-[opacity,color,border-color,background-color] duration-150 cursor-pointer shadow-lg opacity-60 hover:opacity-100 focus-visible:opacity-100"
+              className="w-14 h-14 rounded-2xl border border-neutral-700 bg-card/80 dark:bg-surface/80 text-neutral-300 hover:text-gold hover:border-gold/50 flex items-center justify-center transition-[opacity,color,border-color,background-color] duration-150 cursor-pointer shadow-lg opacity-60 hover:opacity-100 focus-visible:opacity-100 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <RotateCcw size={22} />
             </button>
@@ -214,9 +254,10 @@ export function FocusZenModeModal({
 
           <button
             type="button"
+            disabled={isSavingSession}
             onClick={onToggleTimer}
             className={cn(
-              "px-10 py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2.5 transition-[transform,background-color,color] duration-150 cursor-pointer shadow-xl",
+              "px-10 py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2.5 transition-[transform,background-color,color] duration-150 cursor-pointer shadow-xl disabled:opacity-60 disabled:cursor-not-allowed",
               isBreak
                 ? "bg-emerald-500 hover:bg-emerald-400 text-neutral-950 shadow-md dark:shadow-[0_0_24px_rgba(16,185,129,0.5)]"
                 : isRunning
@@ -240,9 +281,10 @@ export function FocusZenModeModal({
           {isBreak && (
             <button
               type="button"
+              disabled={isSavingSession}
               onClick={onSkipBreak}
               title={t("skipBreakTitle")}
-              className="px-5 py-4 rounded-2xl border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-400 dark:text-emerald-300 font-bold text-sm flex items-center gap-2 cursor-pointer shadow-lg opacity-60 hover:opacity-100 focus-visible:opacity-100 transition-[opacity,background-color,border-color,color] duration-150"
+              className="px-5 py-4 rounded-2xl border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-400 dark:text-emerald-300 font-bold text-sm flex items-center gap-2 cursor-pointer shadow-lg opacity-60 hover:opacity-100 focus-visible:opacity-100 transition-[opacity,background-color,border-color,color] duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <FastForward size={18} />
               <span>{t("skipBreak")}</span>
@@ -252,11 +294,20 @@ export function FocusZenModeModal({
           {isOvertime && !isBreak && onStartBreak && (
             <button
               type="button"
+              disabled={isSavingSession}
               onClick={onStartBreak}
-              title={t("startBreakTitle", { minutes: nextBreakMinutes })}
-              className="px-5 py-4 rounded-2xl border border-cyan-400/50 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 font-bold text-sm flex items-center gap-2 cursor-pointer shadow-lg transition-[opacity,background-color,border-color,color] duration-150"
+              title={
+                isSavingSession
+                  ? t("savingSessionTitle")
+                  : t("startBreakTitle", { minutes: nextBreakMinutes })
+              }
+              className="px-5 py-4 rounded-2xl border border-cyan-400/50 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 font-bold text-sm flex items-center gap-2 cursor-pointer shadow-lg transition-[opacity,background-color,border-color,color] duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <Coffee size={18} />
+              {isSavingSession ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Coffee size={18} />
+              )}
               <span>
                 {t("startBreakButton", { minutes: nextBreakMinutes })}
               </span>
@@ -266,12 +317,22 @@ export function FocusZenModeModal({
           {canComplete && !isBreak && (
             <button
               type="button"
+              disabled={isSavingSession}
+              aria-busy={isSavingSession}
               onClick={onComplete}
-              title={t("completeTitle")}
-              aria-label={t("completeTitle")}
-              className="w-14 h-14 rounded-2xl border border-emerald-500/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 dark:text-emerald-300 flex items-center justify-center transition-[opacity,background-color,border-color,color] duration-150 cursor-pointer shadow-lg opacity-60 hover:opacity-100 focus-visible:opacity-100"
+              title={
+                isSavingSession ? t("savingSessionTitle") : t("completeTitle")
+              }
+              aria-label={
+                isSavingSession ? t("savingSessionTitle") : t("completeTitle")
+              }
+              className="w-14 h-14 rounded-2xl border border-emerald-500/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 dark:text-emerald-300 flex items-center justify-center transition-[opacity,background-color,border-color,color] duration-150 cursor-pointer shadow-lg opacity-60 hover:opacity-100 focus-visible:opacity-100 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <CheckCircle2 size={24} />
+              {isSavingSession ? (
+                <Loader2 size={24} className="animate-spin" />
+              ) : (
+                <CheckCircle2 size={24} />
+              )}
             </button>
           )}
         </div>

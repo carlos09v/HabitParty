@@ -74,8 +74,15 @@ public class ChangeTaskStatusUseCase {
     this.workspaceWriteGuard = workspaceWriteGuard;
   }
 
+  public record ExecutionResult(Task task, boolean rewardGranted) {}
+
   @Transactional
   public Task execute(UUID taskId, UUID userIdLogado, TaskStatus newStatus) {
+    return executeWithResult(taskId, userIdLogado, newStatus).task();
+  }
+
+  @Transactional
+  public ExecutionResult executeWithResult(UUID taskId, UUID userIdLogado, TaskStatus newStatus) {
     if (dailyResetUseCase != null) {
       dailyResetUseCase.resetUserIfDue(userIdLogado);
     }
@@ -156,6 +163,6 @@ public class ChangeTaskStatusUseCase {
       }
     }
 
-    return savedTask;
+    return new ExecutionResult(savedTask, rewardedUser != null);
   }
 }

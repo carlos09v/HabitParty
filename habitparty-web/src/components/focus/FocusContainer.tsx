@@ -708,6 +708,7 @@ export function FocusContainer({
         }
       },
       deleteHistory,
+      deletedRecord,
     );
   };
 

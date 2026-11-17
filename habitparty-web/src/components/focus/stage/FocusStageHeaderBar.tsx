@@ -1,9 +1,16 @@
 "use client";
 
-import { ArrowRightLeft, Lock, type LucideIcon, Maximize2 } from "lucide-react";
+import {
+  ArrowRightLeft,
+  Lock,
+  type LucideIcon,
+  Maximize2,
+  PictureInPicture2,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { memo } from "react";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useFocusPipAction } from "@/hooks/useFocusPipAction";
 import type {
   FocusActiveTarget,
   FocusPhase,
@@ -56,6 +63,7 @@ export const FocusStageHeaderBar = memo(function FocusStageHeaderBar({
 }: FocusStageHeaderBarProps) {
   const t = useTranslations("focus.hero");
   const { isGamified } = useExperienceMode();
+  const { isPipOpen, isPipSupported, togglePip } = useFocusPipAction();
 
   return (
     <div className="relative z-30 flex flex-wrap items-center justify-between gap-3 mb-2 sm:mb-3">
@@ -171,6 +179,28 @@ export const FocusStageHeaderBar = memo(function FocusStageHeaderBar({
           onChangeSoundType={onChangeSoundType}
           onOpenUpgradeModal={onOpenUpgradeModal}
         />
+
+        {/* Botão Picture-in-Picture / Timer Flutuante */}
+        {isPipSupported && (
+          <button
+            type="button"
+            onClick={() => void togglePip()}
+            aria-pressed={isPipOpen}
+            title={isPipOpen ? t("pipCloseTitle") : t("pipOpenTitle")}
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-bold transition-colors cursor-pointer shadow-2xs dark:shadow-sm group",
+              isPipOpen
+                ? "border-gold/60 bg-gold/15 text-amber-800 dark:text-gold"
+                : "border-neutral-700 dark:border-primary/30 bg-surface dark:bg-surface/90 hover:bg-amber-500/15 dark:hover:bg-gold/15 hover:border-amber-500/45 dark:hover:border-gold/50 text-neutral-200 hover:text-amber-700 dark:hover:text-gold",
+            )}
+          >
+            <PictureInPicture2
+              size={14}
+              className="group-hover:scale-110 transition-transform text-amber-600 dark:text-gold"
+            />
+            <span className="hidden md:inline">{t("pipButton")}</span>
+          </button>
+        )}
 
         {/* Botão Modo Zen / Tela Cheia */}
         <button

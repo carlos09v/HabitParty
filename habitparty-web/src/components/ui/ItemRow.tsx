@@ -45,6 +45,8 @@ export interface ItemRowProps {
   inUse?: boolean;
   isActiveFocusSession?: boolean;
   isDeleteChecking?: boolean;
+  isActionLoading?: boolean;
+  isSecondaryActionLoading?: boolean;
 }
 
 /**
@@ -76,6 +78,8 @@ export const ItemRow = memo(function ItemRow({
   inUse = false,
   isActiveFocusSession,
   isDeleteChecking = false,
+  isActionLoading = false,
+  isSecondaryActionLoading = false,
 }: ItemRowProps) {
   const t = useTranslations("ui.itemCatalog");
   const locale = useLocale() as AppLocale;
@@ -118,7 +122,8 @@ export const ItemRow = memo(function ItemRow({
     transition: isDragging ? undefined : transition,
   };
 
-  const isPrimaryDisabled = disabled || (inUse && !isFocusNavigate);
+  const isBusy = isActionLoading || isSecondaryActionLoading;
+  const isPrimaryDisabled = disabled || (inUse && !isFocusNavigate) || isBusy;
 
   return (
     <li
@@ -380,7 +385,8 @@ export const ItemRow = memo(function ItemRow({
             type="button"
             onClick={onSecondaryAction}
             onDoubleClick={(e) => e.stopPropagation()}
-            disabled={disabled || inUse}
+            disabled={disabled || inUse || isBusy}
+            aria-busy={isSecondaryActionLoading}
             aria-label={`${secondaryActionLabel} ${title}`}
             title={
               inUse
@@ -391,14 +397,17 @@ export const ItemRow = memo(function ItemRow({
                   })
             }
             className={cn(
-              "rounded-md font-semibold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs border text-neutral-200 pointer-coarse:min-h-9",
-              disabled || inUse
+              "inline-flex items-center justify-center gap-1 rounded-md font-semibold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs border text-neutral-200 pointer-coarse:min-h-9",
+              disabled || inUse || isBusy
                 ? "bg-white/5 border-white/10 text-neutral-400 cursor-not-allowed opacity-60"
                 : "border-neutral-600 dark:border-primary/40 bg-surface/80 hover:bg-primary/10 hover:border-primary/40 hover:text-primary dark:hover:bg-gold/15 dark:hover:border-gold/60 dark:hover:text-gold active:scale-95 cursor-pointer",
               isCompact ? "px-2 py-0.5 text-label-g" : "px-2.5 py-1 text-xs",
             )}
           >
-            {secondaryActionLabel}
+            {isSecondaryActionLoading && (
+              <Loader2 size={12} className="animate-spin shrink-0" />
+            )}
+            <span>{secondaryActionLabel}</span>
           </button>
         )}
 
@@ -407,6 +416,7 @@ export const ItemRow = memo(function ItemRow({
           onClick={onAction}
           onDoubleClick={(e) => e.stopPropagation()}
           disabled={isPrimaryDisabled}
+          aria-busy={isActionLoading}
           aria-label={`${actionLabel} ${title}`}
           title={
             isFocusNavigate
@@ -421,8 +431,8 @@ export const ItemRow = memo(function ItemRow({
                     })
           }
           className={cn(
-            "rounded-md font-semibold dark:font-bold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs pointer-coarse:min-h-9",
-            isFocusNavigate || (!disabled && !inUse)
+            "inline-flex items-center justify-center gap-1.5 rounded-md font-semibold dark:font-bold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs pointer-coarse:min-h-9",
+            !isBusy && (isFocusNavigate || (!disabled && !inUse))
               ? "bg-gold hover:bg-gold-hover active:bg-gold-pressed text-on-gold border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1 focus-visible:ring-offset-card"
               : "bg-neutral-700/70 dark:bg-white/10 text-neutral-400 border border-neutral-600 dark:border-white/10 cursor-not-allowed opacity-75 dark:opacity-60",
             isCompact
@@ -430,7 +440,10 @@ export const ItemRow = memo(function ItemRow({
               : "px-3 py-1.5 text-xs sm:py-1",
           )}
         >
-          {actionLabel}
+          {isActionLoading && (
+            <Loader2 size={12} className="animate-spin shrink-0" />
+          )}
+          <span>{actionLabel}</span>
         </button>
 
         {isDeleteChecking ? (

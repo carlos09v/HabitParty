@@ -253,7 +253,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
     bullets: [
       "Tempo Mínimo: Sessões com menos de 10 minutos são consideradas descartadas e geram 0 XP e 0 moedas.",
       "Teto Anti-AFK: Se o timer for esquecido ligado por horas, a remuneração é limitada a no máximo 90 minutos contínuos.",
-      "Teto Diário & Rendimento Decrescente (Soft Cap): As primeiras 4 horas diárias de foco pagam 100%. Entre 4h e 6h pagam 50% (fadiga natural). Acima de 6h de foco diário, novas sessões não geram XP nem moedas para evitar burnout e hiperinflação (o tempo continua registrado nas estatísticas).",
+      "Teto Diário & Rendimento Decrescente em Escada (Soft Cap): As primeiras 4 horas diárias de foco pagam 100%. Entre 4h e 6h pagam 50%, e entre 6h e 8h pagam 25% (fadiga natural). Acima de 8h de foco diário, novas sessões não geram XP nem moedas para evitar burnout e hiperinflação (o tempo continua registrado nas estatísticas).",
       "Lazer Não Gera Renda: Sessões de itens de inventário da mochila têm rendimento fixo de 0 XP e 0 moedas.",
     ],
     tags: ["foco", "economia", "anti-afk", "teto diário", "recompensas"],

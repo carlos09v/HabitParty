@@ -113,6 +113,7 @@ export function TasksBoardContainer({
   const {
     columns,
     setColumns,
+    registerLoadedArchivedTasks,
     visibleColumnIds,
     toggleColumnVisibility,
     showAllColumns,
@@ -261,6 +262,7 @@ export function TasksBoardContainer({
   // 4. Hook de Ações e Mutações de Tarefas
   const {
     handleDuplicateTask,
+    duplicatingTaskIds,
     handleTaskSaved,
     handleQuickCreateTask,
     handleDeleteTask,
@@ -323,6 +325,8 @@ export function TasksBoardContainer({
         mapTaskResponseToTask(taskDto, columnId, userTimezone, workspaceMeta),
       );
 
+      registerLoadedArchivedTasks(mappedArchivedTasks);
+
       setColumns((prev) =>
         prev.map((col) => {
           if (col.id !== columnId) return col;
@@ -339,7 +343,14 @@ export function TasksBoardContainer({
         }),
       );
     },
-    [activeWorkspaceId, setColumns, tColumn, userTimezone, workspaces],
+    [
+      activeWorkspaceId,
+      registerLoadedArchivedTasks,
+      setColumns,
+      tColumn,
+      userTimezone,
+      workspaces,
+    ],
   );
 
   // Instância única de Drag-and-Drop compartilhada entre modo Card e modo Lista
@@ -615,6 +626,7 @@ export function TasksBoardContainer({
               onHabitChange={handleHabitChange}
               onLoadArchivedCompleted={handleLoadArchivedCompleted}
               forceExpandCompleted={filters.status === "completed"}
+              activeDraggedTaskId={boardDnd.activeTask?.id}
             />
           </section>
 
@@ -712,6 +724,7 @@ export function TasksBoardContainer({
         isDeletingColumn={isDeletingColumn}
         handleDeleteColumn={handleDeleteColumn}
         handleDuplicateTask={handleDuplicateTask}
+        duplicatingTaskIds={duplicatingTaskIds}
         taskToDelete={taskToDelete}
         deleteHistory={deleteHistory}
         onDeleteHistoryChange={setDeleteHistory}

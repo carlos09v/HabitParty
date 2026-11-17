@@ -64,6 +64,7 @@ export const TasksBoardModals = memo(function TasksBoardModals({
   isDeletingColumn,
   handleDeleteColumn,
   handleDuplicateTask,
+  duplicatingTaskIds,
   taskToDelete,
   deleteHistory,
   onDeleteHistoryChange,
@@ -212,6 +213,7 @@ export const TasksBoardModals = memo(function TasksBoardModals({
             handleDuplicateTask(task, columnId);
           }
         }}
+        duplicatingTaskIds={duplicatingTaskIds}
         onRequestDeleteTask={(task, columnId) => {
           if (columnId) {
             requestDeleteTask(task, columnId);

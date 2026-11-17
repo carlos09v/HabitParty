@@ -69,6 +69,18 @@ public interface TaskJpaRepository extends JpaRepository<TaskJpaEntity, UUID> {
     @Query("SELECT COALESCE(MAX(t.orderIndex), -1) FROM TaskJpaEntity t WHERE t.boardColumnId = :boardColumnId")
     Integer findMaxOrderIndexByBoardColumnId(@Param("boardColumnId") UUID boardColumnId);
 
+    @Query("SELECT t.orderIndex FROM TaskJpaEntity t WHERE t.id = :taskId AND t.boardColumnId = :boardColumnId AND t.userId = :userId")
+    Optional<Integer> findOrderIndexByIdAndBoardColumnIdAndUserId(
+        @Param("taskId") UUID taskId,
+        @Param("boardColumnId") UUID boardColumnId,
+        @Param("userId") UUID userId);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE TaskJpaEntity t SET t.orderIndex = t.orderIndex + 1 WHERE t.boardColumnId = :boardColumnId AND t.orderIndex > :afterOrderIndex")
+    void shiftOrderIndexUpAfter(
+        @Param("boardColumnId") UUID boardColumnId,
+        @Param("afterOrderIndex") int afterOrderIndex);
+
     // Busca paginada (ordenação estável por id) das tarefas recorrentes que precisam de reset diário
     @Query("SELECT t FROM TaskJpaEntity t WHERE t.taskType IN ('HABIT', 'DAILY') ORDER BY t.id")
     List<TaskJpaEntity> findRecurringTasks(Pageable pageable);

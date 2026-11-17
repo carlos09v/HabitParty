@@ -33,6 +33,7 @@ export function TaskDetailsPopover({
   onHabitChange,
   onEdit,
   onDuplicate,
+  isDuplicating = false,
   onOpenFocusHistory,
 }: TaskDetailsPopoverProps) {
   const t = useTranslations("tasks.detailsPopover");
@@ -264,6 +265,7 @@ export function TaskDetailsPopover({
           columnTitle={columnTitle}
           onDeleteTask={handleDeleteTask}
           onDuplicateTask={onDuplicate ? handleDuplicateTask : undefined}
+          isDuplicating={isDuplicating}
           onOpenEdit={handleOpenFullModal}
         />
       </div>

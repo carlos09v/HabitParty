@@ -1,7 +1,6 @@
 "use client";
 
 import { Lock, Sparkles, Trophy } from "lucide-react";
-import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
@@ -27,14 +26,6 @@ import type {
 } from "@/types/social";
 import type { UserResponseDTO } from "@/types/user";
 import { cn } from "@/utils";
-
-const ProfilePreviewCardModal = dynamic(
-  () =>
-    import("@/components/showcase/ProfilePreviewCardModal").then(
-      (mod) => mod.ProfilePreviewCardModal,
-    ),
-  { ssr: false },
-);
 
 function mapSocialSummaryToUserDTO(
   summary: SocialUserSummary,
@@ -81,15 +72,6 @@ export function PublicShowcaseView({
   const [activeTab, setActiveTab] = useState<"overview" | "retrospective">(
     "overview",
   );
-  const [previewModalState, setPreviewModalState] = useState<{
-    isOpen: boolean;
-    mode: "profile" | "retrospective";
-    retro: UserRetrospectiveData | null;
-  }>({
-    isOpen: false,
-    mode: "profile",
-    retro: retrospective,
-  });
 
   const {
     isMutating,
@@ -220,13 +202,6 @@ export function PublicShowcaseView({
             isVisitorMode
             isOtherUser
             onToggleVisitorMode={() => {}}
-            onOpenPreviewCard={() =>
-              setPreviewModalState({
-                isOpen: true,
-                mode: "profile",
-                retro: retrospective,
-              })
-            }
             extraHeaderActions={friendActions}
           />
 
@@ -335,36 +310,8 @@ export function PublicShowcaseView({
                 isGamified={isGamified}
                 isOwnProfile={false}
                 targetUsername={data.user.username}
-                onOpenExportModal={(retroData) =>
-                  setPreviewModalState({
-                    isOpen: true,
-                    mode: "retrospective",
-                    retro: retroData,
-                  })
-                }
               />
             </div>
-          )}
-
-          {previewModalState.isOpen && (
-            <ProfilePreviewCardModal
-              isOpen={previewModalState.isOpen}
-              onClose={() =>
-                setPreviewModalState((prev) => ({ ...prev, isOpen: false }))
-              }
-              initialMode={previewModalState.mode}
-              isGamified={isGamified}
-              user={mappedUser}
-              activeFrameId={mappedUser.avatarFrame}
-              stats={data.canViewStats ? fallbackStats : null}
-              highlights={data.highlights}
-              achievements={data.canViewAchievements ? data.achievements : []}
-              retrospective={
-                data.canViewStats
-                  ? (previewModalState.retro ?? retrospective)
-                  : null
-              }
-            />
           )}
         </>
       )}

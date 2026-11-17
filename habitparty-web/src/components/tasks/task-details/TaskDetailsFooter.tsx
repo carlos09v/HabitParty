@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Copy, Loader2, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useRef, useState } from "react";
 import { TaskHardcoreBadge, TaskRewardBadges } from "@/components/tasks/shared";
@@ -17,6 +17,7 @@ export function TaskDetailsFooter({
   task,
   onDeleteTask,
   onDuplicateTask,
+  isDuplicating = false,
   onOpenEdit,
 }: TaskDetailsFooterProps) {
   const t = useTranslations("tasks.detailsPopover.footer");
@@ -121,13 +122,18 @@ export function TaskDetailsFooter({
               {onDuplicateTask && (
                 <button
                   type="button"
+                  disabled={isDuplicating}
                   onClick={() => {
                     setIsMenuOpen(false);
                     onDuplicateTask();
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-200 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer"
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-200 hover:text-gold hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Copy size={12} />
+                  {isDuplicating ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : (
+                    <Copy size={12} />
+                  )}
                   <span>{t("duplicate")}</span>
                 </button>
               )}

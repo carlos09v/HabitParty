@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.UUID;
 
 import com.habitparty.core.domain.enums.task.DailyDaysOfWeek;
 import com.habitparty.core.domain.enums.task.DailyRepeatMonthlyOption;
@@ -70,7 +71,10 @@ public record CreateTaskDTO(
     Boolean sendEmailReminder,
     LocalTime startTime,
     LocalTime dueEndTime,
-    Boolean isAllDay
+    Boolean isAllDay,
+
+    // --- Posicionamento opcional (ex: duplicar abaixo da tarefa referente) ---
+    UUID afterTaskId
 ) {
 
 }

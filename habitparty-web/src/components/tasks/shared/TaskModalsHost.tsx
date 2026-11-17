@@ -86,6 +86,7 @@ export interface TaskModalsHostProps {
   onTaskSaved: (savedTask: Task, targetColumnId: string) => void;
   onTaskDetailsUpdate: (updatedTask: Task) => void;
   onDuplicateTask: (task: Task, columnId?: string) => void;
+  duplicatingTaskIds?: Set<string>;
   onRequestDeleteTask: (task: Task, columnId?: string) => void;
   onToggleComplete: (taskId: string, completed: boolean) => void;
   onHabitChange?: (taskId: string, delta: number) => void;
@@ -126,6 +127,7 @@ export function TaskModalsHost({
   onTaskSaved,
   onTaskDetailsUpdate,
   onDuplicateTask,
+  duplicatingTaskIds,
   onRequestDeleteTask,
   onToggleComplete,
   onHabitChange,
@@ -162,6 +164,9 @@ export function TaskModalsHost({
           onRequestDeleteTask(task, colId);
         },
         onStartFocus,
+        isDuplicating: Boolean(
+          contextMenu.task && duplicatingTaskIds?.has(contextMenu.task.id),
+        ),
         labels: {
           startFocus: tMenus("startFocus"),
           edit: tMenus("edit"),
@@ -173,6 +178,7 @@ export function TaskModalsHost({
       contextMenu.task,
       contextMenu.columnId,
       defaultColumnId,
+      duplicatingTaskIds,
       onOpenEditTask,
       onDuplicateTask,
       onRequestDeleteTask,
@@ -266,6 +272,9 @@ export function TaskModalsHost({
             );
             onCloseTaskDetails();
           }}
+          isDuplicating={Boolean(
+            duplicatingTaskIds?.has(selectedTaskDetails.task.id),
+          )}
           onDelete={(_taskId) => {
             onRequestDeleteTask(
               selectedTaskDetails.task,

@@ -73,7 +73,8 @@ export const FOCUS_REWARD_RULES = {
   STOPWATCH_XP_PER_30_MIN: 7,
   STOPWATCH_COINS_PER_30_MIN: 0.4,
   DAILY_SOFT_CAP_MINUTES: 240,
-  DAILY_HARD_CAP_MINUTES: 360,
+  DAILY_TIER2_CAP_MINUTES: 360,
+  DAILY_HARD_CAP_MINUTES: 480,
 } as const;
 
 /** Opções de ícones temáticos para atividades de foco */

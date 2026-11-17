@@ -69,4 +69,8 @@ public interface FocusRecordRepository {
   default java.util.Optional<java.time.LocalDateTime> findEarliestStartTimeByUserId(UUID userId) {
     return java.util.Optional.empty();
   }
+
+  default int findMaxProductiveDurationMinutesExcludingRecord(UUID userId, UUID excludedRecordId) {
+    return 0;
+  }
 }

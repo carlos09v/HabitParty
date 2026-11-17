@@ -5,6 +5,7 @@ import { useFocusTimerDisplay } from "@/hooks/useFocusTimer";
 import { cn } from "@/utils";
 import {
   formatFocusDisplayTime,
+  getFocusProgressPercent,
   isFocusOvertime,
 } from "@/utils/focusFormatters";
 
@@ -50,24 +51,19 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
   });
 
   // Cálculo da porcentagem de progresso para o círculo SVG
-  let progressPercent = 0;
-  if (
+  const progressPercent =
     props.mode !== undefined ||
     props.secondsRemaining !== undefined ||
     props.phase !== undefined
-  ) {
-    if (mode === "POMO" || isInventoryItem || isBreak) {
-      progressPercent =
-        totalDurationSeconds > 0
-          ? ((totalDurationSeconds - secondsRemaining) / totalDurationSeconds) *
-            100
-          : 0;
-    } else {
-      progressPercent = ((elapsedSeconds % 3600) / 3600) * 100;
-    }
-  } else {
-    progressPercent = storeDisplay.progressPercent;
-  }
+      ? getFocusProgressPercent({
+          mode,
+          phase,
+          secondsRemaining,
+          elapsedSeconds,
+          totalDurationSeconds,
+          target: isInventoryItem ? { type: "inventory" } : undefined,
+        })
+      : storeDisplay.progressPercent;
 
   // Raio e circunferência para o SVG stroke
   const radius = 120;

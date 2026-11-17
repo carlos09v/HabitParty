@@ -12,6 +12,8 @@ import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.UnauthorizedException;
 
 public class FocusRecord {
+  public static final int MAX_POMO_TARGET_MINUTES = 180;
+
   private final UUID id;
   private final UUID userId;
   private final UUID focusActivityId;
@@ -25,6 +27,7 @@ public class FocusRecord {
 
   private final FocusRecordType recordType;
   private final Integer completedPomos;
+  private final Integer pomoTargetMinutes;
 
   private final Integer xpEarned;
   private final BigDecimal coinsEarned;
@@ -55,6 +58,14 @@ public class FocusRecord {
       UUID taskId, String taskNameSnapshot, String notes,
       LocalDateTime startTime, LocalDateTime endTime, FocusRecordType recordType,
       Integer completedPomos, Integer xpEarned, BigDecimal coinsEarned) {
+    this(id, userId, focusActivityId, inventoryItemId, taskId, taskNameSnapshot, notes, startTime, endTime,
+        recordType, completedPomos, null, xpEarned, coinsEarned);
+  }
+
+  public FocusRecord(UUID id, UUID userId, UUID focusActivityId, UUID inventoryItemId,
+      UUID taskId, String taskNameSnapshot, String notes,
+      LocalDateTime startTime, LocalDateTime endTime, FocusRecordType recordType,
+      Integer completedPomos, Integer pomoTargetMinutes, Integer xpEarned, BigDecimal coinsEarned) {
     // 1. Validações Básicas
     if (userId == null) {
       throw new DomainValidationException("O ID do usuário é obrigatório.");
@@ -81,9 +92,18 @@ public class FocusRecord {
         throw new DomainValidationException(
             "A quantidade de pomodoros concluídos é obrigatória e não pode ser negativa.");
       }
+      if (id == null && pomoTargetMinutes != null
+          && (pomoTargetMinutes < 1 || pomoTargetMinutes > MAX_POMO_TARGET_MINUTES)) {
+        throw new DomainValidationException(
+            "A duração alvo do Pomodoro deve estar entre 1 e " + MAX_POMO_TARGET_MINUTES + " minutos.");
+      }
       this.completedPomos = completedPomos;
+      this.pomoTargetMinutes = (pomoTargetMinutes != null && pomoTargetMinutes > 0 && pomoTargetMinutes <= MAX_POMO_TARGET_MINUTES)
+          ? pomoTargetMinutes
+          : null;
     } else {
       this.completedPomos = null;
+      this.pomoTargetMinutes = null;
     }
 
     this.id = id != null ? id : UUID.randomUUID();
@@ -160,6 +180,10 @@ public class FocusRecord {
 
   public Optional<Integer> getCompletedPomos() {
     return Optional.ofNullable(completedPomos);
+  }
+
+  public Optional<Integer> getPomoTargetMinutes() {
+    return Optional.ofNullable(pomoTargetMinutes);
   }
 
   public Optional<Integer> getXpEarned() {

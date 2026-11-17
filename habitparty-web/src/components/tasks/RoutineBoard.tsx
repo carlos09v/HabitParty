@@ -32,6 +32,7 @@ export function RoutineBoard({
   onHabitChange,
   onLoadArchivedCompleted,
   forceExpandCompleted = false,
+  activeDraggedTaskId = null,
   onQuickCreateTask,
 }: RoutineBoardProps) {
   const t = useTranslations("tasks.board");
@@ -159,6 +160,7 @@ export function RoutineBoard({
                   onHabitChange={onHabitChange}
                   onLoadArchivedCompleted={onLoadArchivedCompleted}
                   forceExpandCompleted={forceExpandCompleted}
+                  activeDraggedTaskId={activeDraggedTaskId}
                 />
               </div>
             ))}

@@ -87,8 +87,19 @@ public class CreateTaskUseCase {
         column.getWorkspaceId(),
         "Este ambiente está em modo somente-leitura no plano Free (máximo de 2 ambientes ativos). Faça upgrade para Premium para criar tarefas nele!");
 
-    int maxIndex = taskPort.findMaxOrderIndexByBoardColumnId(boardColumnId);
-    int newOrderIndex = maxIndex + 1;
+    Integer resolvedOrderIndex = null;
+    if (command.afterTaskId() != null) {
+      resolvedOrderIndex = taskPort
+          .findOrderIndexByIdAndBoardColumnIdAndUserId(command.afterTaskId(), boardColumnId, userIdLogado)
+          .map(refOrder -> {
+            taskPort.shiftOrderIndexUpAfter(boardColumnId, refOrder);
+            return refOrder + 1;
+          })
+          .orElse(null);
+    }
+    int newOrderIndex = resolvedOrderIndex != null
+        ? resolvedOrderIndex
+        : taskPort.findMaxOrderIndexByBoardColumnId(boardColumnId) + 1;
 
     UUID newTaskId = UUID.randomUUID();
     ZoneId userZone = user.resolveZoneId(clock.getZone());

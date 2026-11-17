@@ -168,7 +168,21 @@ class FocusRewardCalculatorTest {
   }
 
   @Test
-  @DisplayName("Teto diário: após 6 horas (360 min) diárias acumuladas, recompensa é ZERO")
+  @DisplayName("Escada diária: entre 6h e 8h diárias acumuladas aplica 25% de recompensa")
+  void shouldApplyTwentyFivePercentInThirdTierZone() {
+    LocalDateTime start = LocalDateTime.of(2026, 10, 16, 16, 0);
+    LocalDateTime end = LocalDateTime.of(2026, 10, 16, 16, 30); // 30 min (base: 8 XP, 0.50 moedas -> 25%: 2 XP, 0.13)
+    FocusRecord record = new FocusRecord(
+        null, userId, activityId, null, null,
+        start, end, FocusRecordType.POMO, 1);
+
+    FocusReward reward = FocusRewardCalculator.calculate(record, 360);
+    assertEquals(2, reward.xp());
+    assertEquals(new BigDecimal("0.13"), reward.coins());
+  }
+
+  @Test
+  @DisplayName("Teto diário: após 8 horas (480 min) diárias acumuladas, recompensa é ZERO")
   void shouldReturnZeroAboveDailyCap() {
     LocalDateTime start = LocalDateTime.of(2026, 10, 16, 18, 0);
     LocalDateTime end = LocalDateTime.of(2026, 10, 16, 18, 30); // 30 min
@@ -176,9 +190,39 @@ class FocusRewardCalculatorTest {
         null, userId, activityId, null, null,
         start, end, FocusRecordType.POMO, 1);
 
-    // Usuário já tem 360 minutos hoje
-    FocusReward reward = FocusRewardCalculator.calculate(record, 360);
+    // Usuário já tem 480 minutos hoje
+    FocusReward reward = FocusRewardCalculator.calculate(record, 480);
     assertEquals(0, reward.xp());
     assertEquals(new BigDecimal("0.00"), reward.coins());
+  }
+
+  @Test
+  @DisplayName("Pomodoro continuativo: mantém 1 pomo configurado e calcula excedente como Cronômetro")
+  void shouldRewardConfiguredPomodoroPlusStopwatchOvertime() {
+    LocalDateTime start = LocalDateTime.of(2026, 10, 16, 10, 0);
+    LocalDateTime end = LocalDateTime.of(2026, 10, 16, 10, 55); // 55 min = 25m pomo + 30m excedente
+    FocusRecord record = new FocusRecord(
+        null, userId, activityId, null, null, null, null,
+        start, end, FocusRecordType.POMO, 1, 25, 0, BigDecimal.ZERO);
+
+    // 25m pomo (8 XP, 0.50) + 30m stopwatch (7 XP, 0.40) = 15 XP e 0.90 moedas
+    FocusReward reward = FocusRewardCalculator.calculate(record, 0);
+    assertEquals(15, reward.xp());
+    assertEquals(new BigDecimal("0.90"), reward.coins());
+  }
+
+  @Test
+  @DisplayName("Pomodoro continuativo de 2h respeita teto de 90 min somando 1 pomo + excedente até 90m")
+  void shouldCapOvertimePomodoroAtNinetyMinutesTotal() {
+    LocalDateTime start = LocalDateTime.of(2026, 10, 16, 10, 0);
+    LocalDateTime end = LocalDateTime.of(2026, 10, 16, 12, 0); // 120 min -> cap 90m (25m pomo + 65m excedente)
+    FocusRecord record = new FocusRecord(
+        null, userId, activityId, null, null, null, null,
+        start, end, FocusRecordType.POMO, 1, 25, 0, BigDecimal.ZERO);
+
+    // 25m pomo = 8 XP, 0.50 | 65m stopwatch = 15.1667 XP, 0.8667 | total = 23 XP, 1.37
+    FocusReward reward = FocusRewardCalculator.calculate(record, 0);
+    assertEquals(23, reward.xp());
+    assertEquals(new BigDecimal("1.37"), reward.coins());
   }
 }

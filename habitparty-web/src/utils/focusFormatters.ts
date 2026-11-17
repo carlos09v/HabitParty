@@ -4,6 +4,11 @@
 
 export { parseLocalDate, parseServerDate, toLocalISOString } from "./date";
 
+import {
+  DEFAULT_LONG_BREAK_MINUTES,
+  DEFAULT_SHORT_BREAK_MINUTES,
+  FOCUS_REWARD_RULES,
+} from "@/constants/focus";
 import type { AppLocale } from "@/i18n/config";
 import type { DateFormat, TimeFormat } from "@/types/ui";
 import {
@@ -108,6 +113,91 @@ export function formatFocusDisplayTime(timerState: {
 }): string {
   const formatted = formatFocusTime(getFocusDisplaySeconds(timerState));
   return isFocusOvertime(timerState) ? `+${formatted}` : formatted;
+}
+
+export interface FocusTimerDerivedMeta {
+  isRunning: boolean;
+  isBreak: boolean;
+  isInventory: boolean;
+  isOvertime: boolean;
+  canComplete: boolean;
+  isPartialPomo: boolean;
+  isSessionRewardCapped: boolean;
+  nextBreakMinutes: number;
+}
+
+/**
+ * Calcula o percentual de progresso (0..100) do ciclo Pomodoro, pausa, cupom ou cronômetro.
+ */
+export function getFocusProgressPercent(timerState: {
+  mode: "POMO" | "STOPWATCH";
+  phase?: "WORK" | "SHORT_BREAK" | "LONG_BREAK";
+  secondsRemaining: number;
+  elapsedSeconds: number;
+  totalDurationSeconds?: number;
+  target?: { type?: "activity" | "inventory" | "task" } | null;
+}): number {
+  const isBreak =
+    timerState.phase === "SHORT_BREAK" || timerState.phase === "LONG_BREAK";
+  const isInventory = timerState.target?.type === "inventory";
+  const isCountdown = timerState.mode === "POMO" || isInventory || isBreak;
+
+  if (isCountdown) {
+    const total = timerState.totalDurationSeconds ?? 0;
+    if (total <= 0) return 0;
+    const raw = ((total - timerState.secondsRemaining) / total) * 100;
+    return Math.min(100, Math.max(0, raw));
+  }
+
+  const raw = ((timerState.elapsedSeconds % 3600) / 3600) * 100;
+  return Math.min(100, Math.max(0, raw));
+}
+
+/**
+ * Deriva estados visuais e de controle do timer de foco em uma única função pura,
+ * evitando duplicação entre Display, Widget lateral, PiP e Host.
+ */
+export function getFocusTimerDerivedState(timerState: {
+  isActive: boolean;
+  isPaused: boolean;
+  mode: "POMO" | "STOPWATCH";
+  phase?: "WORK" | "SHORT_BREAK" | "LONG_BREAK";
+  secondsRemaining: number;
+  elapsedSeconds: number;
+  totalDurationSeconds?: number;
+  completedCycles?: number;
+  target?: { type?: "activity" | "inventory" | "task" } | null;
+}): FocusTimerDerivedMeta {
+  const isRunning = timerState.isActive && !timerState.isPaused;
+  const isBreak =
+    timerState.phase === "SHORT_BREAK" || timerState.phase === "LONG_BREAK";
+  const isInventory = timerState.target?.type === "inventory";
+  const isOvertime = isFocusOvertime(timerState);
+  const canComplete = !isBreak && timerState.elapsedSeconds >= 60;
+  const isPartialPomo =
+    !isBreak &&
+    !isInventory &&
+    timerState.mode === "POMO" &&
+    timerState.secondsRemaining > 0;
+  const isSessionRewardCapped =
+    !isBreak &&
+    !isInventory &&
+    timerState.elapsedSeconds >= FOCUS_REWARD_RULES.MAX_EFFECTIVE_MINUTES * 60;
+  const nextBreakMinutes =
+    ((timerState.completedCycles ?? 0) + 1) % 4 === 0
+      ? DEFAULT_LONG_BREAK_MINUTES
+      : DEFAULT_SHORT_BREAK_MINUTES;
+
+  return {
+    isRunning,
+    isBreak,
+    isInventory,
+    isOvertime,
+    canComplete,
+    isPartialPomo,
+    isSessionRewardCapped,
+    nextBreakMinutes,
+  };
 }
 
 /**

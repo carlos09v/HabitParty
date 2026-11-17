@@ -21,6 +21,7 @@ import {
 } from "@/actions/inventoryActions";
 import type { ContextMenuItem } from "@/components/ui/ContextMenu";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useInFlightSet } from "@/hooks/useInFlightSet";
 import type { InventoryItem } from "@/types/inventory";
 import { getInventoryItemActionMeta } from "@/utils/inventoryHelpers";
 import { soundEffects } from "@/utils/soundEffects";
@@ -65,8 +66,18 @@ export function useInventoryCatalogActions({
   const t = useTranslations("inventory.container");
   const { isGamified } = useExperienceMode();
 
-  const [isUsing, setIsUsing] = useState(false);
-  const [isSendingToFocus, setIsSendingToFocus] = useState(false);
+  const {
+    activeIds: usingItemIds,
+    has: isItemUsing,
+    setPending: setItemUsing,
+  } = useInFlightSet();
+  const {
+    activeIds: sendingItemIds,
+    has: isItemSending,
+    setPending: setItemSending,
+  } = useInFlightSet();
+  const isUsing = usingItemIds.size > 0;
+  const isSendingToFocus = sendingItemIds.size > 0;
   const [isReturningToBackpack, setIsReturningToBackpack] = useState(false);
   const [openingBoxItem, setOpeningBoxItem] = useState<InventoryItem | null>(
     null,
@@ -96,8 +107,8 @@ export function useInventoryCatalogActions({
 
   const handleUseItem = useCallback(
     async (item: InventoryItem) => {
-      if (isUsing) return;
-      setIsUsing(true);
+      if (isItemUsing(item.id) || isItemSending(item.id)) return;
+      setItemUsing(item.id, true);
       const targetItemId = item.itemIds?.[0] || item.inventoryItemId || item.id;
       try {
         const res = await consumeInventoryItem(targetItemId);
@@ -111,16 +122,16 @@ export function useInventoryCatalogActions({
       } catch (_error) {
         toast.error(t("toasts.serverError"));
       } finally {
-        setIsUsing(false);
+        setItemUsing(item.id, false);
       }
     },
-    [isUsing, setItems, t],
+    [isItemSending, isItemUsing, setItemUsing, setItems, t],
   );
 
   const handleSendToFocus = useCallback(
     async (item: InventoryItem) => {
-      if (isSendingToFocus) return;
-      setIsSendingToFocus(true);
+      if (isItemSending(item.id) || isItemUsing(item.id)) return;
+      setItemSending(item.id, true);
       const targetItemId = item.itemIds?.[0] || item.inventoryItemId || item.id;
       try {
         const res = await sendItemToFocus(targetItemId);
@@ -171,10 +182,10 @@ export function useInventoryCatalogActions({
       } catch (_error) {
         toast.error(t("toasts.serverError"));
       } finally {
-        setIsSendingToFocus(false);
+        setItemSending(item.id, false);
       }
     },
-    [isSendingToFocus, setItems, t],
+    [isItemSending, isItemUsing, setItemSending, setItems, t],
   );
 
   const handleItemContextMenu = useCallback(
@@ -312,12 +323,15 @@ export function useInventoryCatalogActions({
             ? t("contextMenu.returnToBackpackGamified")
             : t("contextMenu.returnToBackpackProductivity"),
           icon: <Undo2 size={15} />,
+          disabled: isReturningToBackpack,
           onClick: () => handleReturnToBackpack(target),
         },
       ];
     }
 
     const actions: ContextMenuItem[] = [];
+    const targetBusy =
+      usingItemIds.has(target.id) || sendingItemIds.has(target.id);
 
     if (isMystery) {
       actions.push({
@@ -330,11 +344,13 @@ export function useInventoryCatalogActions({
         {
           label: t("contextMenu.sendToFocus"),
           icon: <Flame size={15} />,
+          disabled: targetBusy,
           onClick: () => handleSendToFocus(target),
         },
         {
           label: t("contextMenu.useImmediately"),
           icon: <Zap size={15} />,
+          disabled: targetBusy,
           onClick: () => handleUseItem(target),
         },
       );
@@ -342,6 +358,7 @@ export function useInventoryCatalogActions({
       actions.push({
         label: t("contextMenu.useItem"),
         icon: <Zap size={15} />,
+        disabled: targetBusy,
         onClick: () => handleUseItem(target),
       });
     }
@@ -357,6 +374,9 @@ export function useInventoryCatalogActions({
   }, [
     contextMenu.item,
     isGamified,
+    isReturningToBackpack,
+    sendingItemIds,
+    usingItemIds,
     t,
     router,
     handleReturnToBackpack,
@@ -368,6 +388,8 @@ export function useInventoryCatalogActions({
   return {
     isUsing,
     isSendingToFocus,
+    usingItemIds,
+    sendingItemIds,
     isReturningToBackpack,
     openingBoxItem,
     handleOpenMysteryBox,

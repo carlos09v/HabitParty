@@ -276,13 +276,24 @@ export function useBoardTaskActions({
   );
 
   const onTaskDuplicated = useCallback(
-    (duplicatedTask: Task, targetColumnId: string) => {
+    (duplicatedTask: Task, targetColumnId: string, sourceTaskId?: string) => {
       setColumns((prev) =>
-        prev.map((col) =>
-          col.id === targetColumnId
-            ? { ...col, tasks: [...col.tasks, duplicatedTask] }
-            : col,
-        ),
+        prev.map((col) => {
+          if (col.id !== targetColumnId) return col;
+          if (!sourceTaskId) {
+            return { ...col, tasks: [...col.tasks, duplicatedTask] };
+          }
+          const sourceIndex = col.tasks.findIndex((t) => t.id === sourceTaskId);
+          if (sourceIndex === -1) {
+            return { ...col, tasks: [...col.tasks, duplicatedTask] };
+          }
+          const nextTasks = [...col.tasks];
+          nextTasks.splice(sourceIndex + 1, 0, duplicatedTask);
+          return {
+            ...col,
+            tasks: nextTasks.map((t, idx) => ({ ...t, order: idx })),
+          };
+        }),
       );
     },
     [setColumns],
@@ -307,6 +318,7 @@ export function useBoardTaskActions({
     handleHabitChange,
     handleDeleteTask,
     handleDuplicateTask,
+    duplicatingTaskIds,
   } = useTaskMutations({
     findTask,
     onOptimisticToggle,
@@ -321,6 +333,7 @@ export function useBoardTaskActions({
 
   return {
     handleDuplicateTask,
+    duplicatingTaskIds,
     handleTaskSaved,
     handleQuickCreateTask,
     handleDeleteTask,

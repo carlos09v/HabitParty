@@ -18,6 +18,7 @@ export const RewardCard = memo(function RewardCard({
   isCompact = false,
   canAfford = true,
   isDeleteChecking = false,
+  isRedeeming = false,
 }: RewardCardProps) {
   const t = useTranslations("rewards.card");
   const { isGamified } = useExperienceMode();
@@ -63,6 +64,7 @@ export const RewardCard = memo(function RewardCard({
       price={reward.price}
       canAfford={canAfford}
       isDeleteChecking={isDeleteChecking}
+      isActionLoading={isRedeeming}
       actionLabel={actionLabel}
       onAction={handleBuy}
       onDoubleClick={onEdit ? handleDoubleClick : undefined}
@@ -81,6 +83,7 @@ export const RewardItemRow = memo(function RewardItemRow({
   isCompact = false,
   canAfford = true,
   isDeleteChecking = false,
+  isRedeeming = false,
 }: RewardCardProps) {
   const t = useTranslations("rewards.container");
   const { isGamified } = useExperienceMode();
@@ -137,6 +140,7 @@ export const RewardItemRow = memo(function RewardItemRow({
       onContextMenu={handleContextMenu}
       isCompact={isCompact}
       isDeleteChecking={isDeleteChecking}
+      isActionLoading={isRedeeming}
       dragData={dragData}
     />
   );
