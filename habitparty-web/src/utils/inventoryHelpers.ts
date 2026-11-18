@@ -6,7 +6,6 @@ export interface InventoryItemActionMeta {
   isCoupon: boolean;
   isInFocus: boolean;
   actionLabel: string;
-  secondaryActionLabel?: string;
 }
 
 export interface InventoryItemActionLabels {
@@ -18,7 +17,7 @@ export interface InventoryItemActionLabels {
 
 /**
  * Normaliza e resolve as propriedades de apresentação e ações de um item do inventário.
- * Centraliza a regra de negócio para evitar duplicações entre InventoryCard e ItemRow/InventoryContainer.
+ * Centraliza a regra de negócio para evitar duplicações entre InventoryCard, InventoryItemRow e InventoryContainer.
  */
 export function getInventoryItemActionMeta(
   item: InventoryItem,
@@ -51,34 +50,30 @@ export function getInventoryItemActionMeta(
         ? sendToFocusLabel
         : useLabel;
 
-  const secondaryActionLabel = !isInFocus && isCoupon ? useLabel : undefined;
-
   return {
     isMystery,
     isCoupon,
     isInFocus,
     actionLabel,
-    secondaryActionLabel,
   };
 }
 
 /**
- * Resolve os estados de carregamento dos botões primário e secundário do card/linha de inventário.
+ * Resolve o estado de carregamento da ação principal do card/linha de inventário.
  */
 export function resolveInventoryItemLoadingState(
   meta: Pick<InventoryItemActionMeta, "isInFocus" | "isMystery" | "isCoupon">,
   loading?: { isUsing?: boolean; isSendingToFocus?: boolean },
-): { isPrimaryLoading: boolean; isSecondaryLoading: boolean } {
+): { isPrimaryLoading: boolean } {
   const isUsing = Boolean(loading?.isUsing);
   const isSendingToFocus = Boolean(loading?.isSendingToFocus);
   const isPrimaryLoading =
     meta.isInFocus || meta.isMystery
       ? false
       : meta.isCoupon
-        ? isSendingToFocus
+        ? isSendingToFocus || isUsing
         : isUsing;
-  const isSecondaryLoading = meta.isCoupon && !meta.isInFocus ? isUsing : false;
-  return { isPrimaryLoading, isSecondaryLoading };
+  return { isPrimaryLoading };
 }
 
 export interface InventoryActionDispatchers {

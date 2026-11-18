@@ -47,12 +47,14 @@ export function invalidateFocusDomainTags(
   }
   if (options.records) {
     updateTag("focus-records");
+    updateTag("retrospective");
     updateTag("showcase");
   }
   if (options.rewardsAndInventory) {
     updateTag("inventory");
     updateTag("user");
     updateTag("transactions");
+    updateTag("retrospective");
     updateTag("showcase");
   }
   if (options.tasks) {

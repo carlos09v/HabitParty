@@ -13,14 +13,57 @@ import type {
 } from "@/types/showcase";
 import type { UserResponseDTO } from "@/types/user";
 
-export type ShowcaseTabId = "overview" | "friends" | "retrospective";
+export type ShowcaseTabId =
+  | "overview"
+  | "progression"
+  | "friends"
+  | "retrospective";
 
 /**
  * Normaliza o parâmetro de query `tab` da vitrine pública/pessoal.
  */
 export function resolveShowcaseTab(val?: string | null): ShowcaseTabId {
-  if (val === "friends" || val === "retrospective") return val;
+  if (val === "progression" || val === "friends" || val === "retrospective") {
+    return val;
+  }
   return "overview";
+}
+
+/**
+ * Navegação por teclado seguindo o padrão WAI-ARIA para abas (`tablist` / `tab`).
+ */
+export function handleTabListKeyDown(e: {
+  key: string;
+  preventDefault: () => void;
+  currentTarget: HTMLButtonElement;
+}): void {
+  const tabs = Array.from(
+    e.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
+      '[role="tab"]:not([disabled])',
+    ) ?? [],
+  );
+  if (tabs.length <= 1) return;
+
+  const currentIndex = tabs.indexOf(e.currentTarget);
+  if (currentIndex === -1) return;
+
+  let nextIndex = -1;
+  if (e.key === "ArrowRight") {
+    nextIndex = (currentIndex + 1) % tabs.length;
+  } else if (e.key === "ArrowLeft") {
+    nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+  } else if (e.key === "Home") {
+    nextIndex = 0;
+  } else if (e.key === "End") {
+    nextIndex = tabs.length - 1;
+  }
+
+  if (nextIndex !== -1) {
+    e.preventDefault();
+    const targetTab = tabs[nextIndex];
+    targetTab.focus();
+    targetTab.click();
+  }
 }
 
 export interface ResolvedHighlightCard {

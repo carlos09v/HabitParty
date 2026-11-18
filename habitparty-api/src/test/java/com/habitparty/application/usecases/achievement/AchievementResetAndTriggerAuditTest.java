@@ -243,7 +243,7 @@ class AchievementResetAndTriggerAuditTest {
 
     when(userPort.findById(userId)).thenReturn(Optional.of(user));
     when(focusActivityPort.findById(activityId)).thenReturn(Optional.of(activity));
-    when(focusRecordPort.sumFocusMinutesToday(any(), any())).thenReturn(FocusRewardCalculator.DAILY_TIER3_MINUTES);
+    when(focusRecordPort.sumFocusMinutesOnDate(any(), any(), any())).thenReturn(FocusRewardCalculator.DAILY_TIER3_MINUTES);
     when(focusRecordPort.save(any(FocusRecord.class))).thenAnswer(inv -> inv.getArgument(0));
     when(userPort.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 

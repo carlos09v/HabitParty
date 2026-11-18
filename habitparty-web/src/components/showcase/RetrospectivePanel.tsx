@@ -14,7 +14,7 @@ import {
   Trophy,
   Zap,
 } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
@@ -42,6 +42,7 @@ export function RetrospectivePanel({
   onOpenExportModal,
 }: RetrospectivePanelProps) {
   const locale = useLocale() as AppLocale;
+  const format = useFormatter();
   const t = useTranslations("showcase.retrospective");
   const tRarities = useTranslations("showcase.rarities");
   const tCatalog = useTranslations("showcase.catalog");
@@ -334,7 +335,7 @@ export function RetrospectivePanel({
                       : t("metrics.xpEarnedEssential")}
                   </span>
                   <p className="text-xl font-black text-neutral-50 tabular-nums">
-                    {retro.xpEarned.toLocaleString(locale)}
+                    {format.number(retro.xpEarned)}
                   </p>
                   <p className="text-[11px] text-neutral-400">
                     {isGamified

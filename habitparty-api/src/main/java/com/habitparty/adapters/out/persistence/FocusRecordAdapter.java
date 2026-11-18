@@ -1,5 +1,6 @@
 package com.habitparty.adapters.out.persistence;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -143,11 +144,18 @@ public class FocusRecordAdapter implements FocusRecordRepository {
   public int sumFocusMinutesToday(UUID userId, ZoneId userZone) {
     ZoneId effectiveZone = userZone != null ? userZone : clock.getZone();
     LocalDate today = LocalDate.now(clock.withZone(effectiveZone));
-    LocalDateTime startOfDay = today.atTime(LocalTime.MIN)
+    return sumFocusMinutesOnDate(userId, today, effectiveZone);
+  }
+
+  @Override
+  public int sumFocusMinutesOnDate(UUID userId, LocalDate targetDate, ZoneId userZone) {
+    ZoneId effectiveZone = userZone != null ? userZone : clock.getZone();
+    LocalDate effectiveDate = targetDate != null ? targetDate : LocalDate.now(clock.withZone(effectiveZone));
+    LocalDateTime startOfDay = effectiveDate.atTime(LocalTime.MIN)
         .atZone(effectiveZone)
         .withZoneSameInstant(ZoneId.systemDefault())
         .toLocalDateTime();
-    LocalDateTime endOfDay = today.atTime(23, 59, 59, 999999999)
+    LocalDateTime endOfDay = effectiveDate.atTime(23, 59, 59, 999999999)
         .atZone(effectiveZone)
         .withZoneSameInstant(ZoneId.systemDefault())
         .toLocalDateTime();
@@ -193,5 +201,50 @@ public class FocusRecordAdapter implements FocusRecordRepository {
       return 0;
     }
     return repository.findMaxProductiveDurationMinutesExcludingRecord(userId, excludedRecordId);
+  }
+
+  @Override
+  public int findMaxProductiveDurationMinutesExcludingRecords(UUID userId, List<UUID> excludedRecordIds) {
+    if (userId == null) {
+      return 0;
+    }
+    if (excludedRecordIds == null || excludedRecordIds.isEmpty()) {
+      return repository.findMaxProductiveDurationMinutesByUserId(userId);
+    }
+    if (excludedRecordIds.size() == 1) {
+      return repository.findMaxProductiveDurationMinutesExcludingRecord(userId, excludedRecordIds.get(0));
+    }
+    return repository.findMaxProductiveDurationMinutesExcludingRecords(userId, excludedRecordIds);
+  }
+
+  @Override
+  public ActivityDeletionSummary summarizeImpactByFocusActivityId(UUID focusActivityId) {
+    if (focusActivityId == null) {
+      return new ActivityDeletionSummary(0L, 0, BigDecimal.ZERO);
+    }
+    FocusRecordJpaRepository.FocusActivityImpactProjection projection =
+        repository.summarizeImpactByFocusActivityId(focusActivityId);
+    if (projection == null) {
+      return new ActivityDeletionSummary(0L, 0, BigDecimal.ZERO);
+    }
+    long totalCount = projection.getTotalRecordsCount();
+    int totalXp = projection.getTotalXpEarned() != null
+        ? Math.toIntExact(projection.getTotalXpEarned())
+        : 0;
+    BigDecimal totalCoins = projection.getTotalCoinsEarned() != null
+        ? projection.getTotalCoinsEarned()
+        : BigDecimal.ZERO;
+    return new ActivityDeletionSummary(totalCount, totalXp, totalCoins);
+  }
+
+  @Override
+  public int updateFocusRewards(UUID recordId, int xpEarned, BigDecimal coinsEarned) {
+    if (recordId == null) {
+      return 0;
+    }
+    return repository.updateRewardsById(
+        recordId,
+        Math.max(0, xpEarned),
+        coinsEarned != null ? coinsEarned : BigDecimal.ZERO);
   }
 }

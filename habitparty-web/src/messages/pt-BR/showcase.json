@@ -56,6 +56,8 @@
     }
   },
   "header": {
+    "defaultDisplayNameGamified": "Aventureiro",
+    "defaultDisplayNameEssential": "Membro",
     "badgeGamified": "Vitrine do Aventureiro",
     "badgeEssential": "Vitrine de Desempenho",
     "visitorModeActive": "Visão de Visitante",
@@ -82,6 +84,7 @@
     "unlockedCountLabel": "{unlocked} de {total} medalhas",
     "xpProgressLabel": "{xp} XP acumulados • Faltam {remaining} XP para {nextTitle}",
     "maxLevelReached": "Nível Máximo Alcançado ({xp} XP)",
+    "openProgressionHint": "Ver pirâmide de patentes",
     "shareCardButton": "Card & Compartilhar",
     "viewRetrospectiveCta": "Retrospectiva {year}",
     "retrospectiveBannerTitle": "Sua Retrospectiva {year} está disponível!",
@@ -625,6 +628,7 @@
   "tabs": {
     "navAria": "Seções do Perfil",
     "overview": "Vitrine & Conquistas",
+    "progression": "Progressão",
     "friends": "Amigos ({count})",
     "friendsPending": "{count} {count, plural, one {novo} other {novos}}",
     "retrospective": "Retrospectiva"
@@ -796,5 +800,92 @@
     "ownProfileNotice": "Este é o seu perfil público.",
     "openOwnEditor": "Editar Minha Vitrine",
     "downloadCardBtn": "Baixar Card"
+  },
+  "progression": {
+    "titleGamified": "Pirâmide de Patentes & Escalada",
+    "titleEssential": "Escada de Progressão & Níveis",
+    "subtitleGamified": "Do Novato à Lenda: visualize onde você está na hierarquia, descubra quanto falta até o topo e compare sua jornada com amigos.",
+    "subtitleEssential": "Acompanhe os 10 marcos de pontuação acumulada, metas de consistência e o esforço estimado até o próximo nível.",
+    "summaryCards": {
+      "currentRankLabel": "Patente Atual",
+      "totalXpLabel": "Experiência Total",
+      "nextMilestoneLabel": "Próximo Degrau",
+      "nextMilestoneMax": "Topo Alcançado",
+      "unlockedTiersLabel": "{unlocked} de {total} patentes",
+      "remainingXpHint": "Faltam {xp} XP"
+    },
+    "pyramid": {
+      "navAria": "Degraus da pirâmide de patentes",
+      "rankNumberLabel": "Degrau {rank}/10",
+      "youBadge": "Você está aqui",
+      "playerBadge": "Posição atual",
+      "unlockedBadge": "Alcançado",
+      "lockedBadge": "Bloqueado",
+      "friendsHereAria": "Ver {count} {count, plural, one {amigo} other {amigos}} nesta patente",
+      "friendsHereTitle": "Amigos nesta patente ({count})",
+      "friendXpMeta": "{xp} XP",
+      "viewFriendProfile": "Visitar vitrine",
+      "xpThresholdLabel": "{minXp} XP"
+    },
+    "eras": {
+      "foundation": "Era I • Fundação",
+      "consistency": "Era II • Consistência",
+      "mastery": "Era III • Maestria",
+      "apex": "Era IV • Elite & Topo"
+    },
+    "inspector": {
+      "headerTitle": "Raio-X do Degrau Selecionado",
+      "selectHint": "Clique em qualquer patente da pirâmide para simular o esforço até ela.",
+      "thresholdRange": "{minXp} XP até {maxXp} XP",
+      "topRankRange": "A partir de {minXp} XP (Topo Máximo)",
+      "statusUnlocked": "Degrau Conquistado",
+      "statusCurrent": "Seu Degrau Atual",
+      "statusLocked": "Próximo Objetivo",
+      "modeSubtitle": "Equivalente no {mode}: {title}",
+      "adventureModeName": "Modo Aventura",
+      "essentialModeName": "Modo Essencial",
+      "tierProgressLabel": "Progresso nesta patente",
+      "alreadyReachedDesc": "Você já ultrapassou a meta mínima deste degrau! Sua jornada segue firme rumo aos patamares superiores.",
+      "topReachedDesc": "Você conquistou a patente máxima do HabitParty! Todas as patentes da pirâmide estão desbloqueadas.",
+      "remainingToUnlock": "Faltam {xp} XP para desbloquear {title}"
+    },
+    "simulator": {
+      "title": "Simulador de Esforço até Este Degrau",
+      "infoTitle": "Como o simulador calcula?",
+      "infoDesc": "Os cálculos usam as recompensas matemáticas reais do sistema (+15 XP por tarefa Média, +30 XP por Difícil, +10 XP por Hábito Normal, +8 XP por Pomodoro padrão e +15 XP por Deep Work 50m+).",
+      "paceLabel": "Seu ritmo diário:",
+      "paceUnit": "XP/dia",
+      "estimatedTimeLabel": "Tempo estimado no ritmo escolhido:",
+      "daysEstimate": "~{days} {days, plural, one {dia} other {dias}}",
+      "readyNow": "Já alcançado!",
+      "mediumTasks": "Tarefas Médias",
+      "hardTasks": "Tarefas Difíceis",
+      "normalHabits": "Hábitos Normais",
+      "standardPomos": "Pomodoros Padrão",
+      "deepWorkPomos": "Deep Work (50m+)",
+      "xpPerAction": "+{xp} XP cada"
+    },
+    "achievement": {
+      "title": "Conquista Vinculada a este Degrau",
+      "unlockedStatus": "Medalha desbloqueada",
+      "lockedStatus": "Ainda bloqueada",
+      "pointsValue": "+{points} pts",
+      "noAchievementRank": "Este degrau é um marco de evolução pura (não possui medalha individual associada)."
+    },
+    "sourcesGuide": {
+      "title": "Fontes de XP (nunca é gasto na Loja)",
+      "tooltipTitle": "Como subir na pirâmide?",
+      "tooltipAria": "Entenda como ganhar XP e evoluir sua patente",
+      "tooltipIntro": "Ao contrário das moedas (🪙), seu XP é vitalício e nunca diminui ao comprar recompensas na Loja:",
+      "tasksLabel": "• Afazeres (To-Dos):",
+      "tasksDesc": "De +2 XP (Trivial) até +30 XP (Difícil) mantendo 100% no prazo.",
+      "dailiesLabel": "• Diárias (Dailies):",
+      "dailiesDesc": "100% da dificuldade nos dias agendados + bônus de +10% após 14 execuções seguidas.",
+      "habitsLabel": "• Hábitos (+):",
+      "habitsDesc": "De +5 XP (Baixo) até +25 XP (Alto) para impulsionar consistência contínua.",
+      "focusLabel": "• Sessões de Foco:",
+      "focusDesc": "Pomodoro Padrão (+8 XP/ciclo), Deep Work 50m+ (+15 XP/ciclo) e Cronômetro Livre (+7 XP a cada 30m).",
+      "noSpendNote": "💡 Somente penalidades do Modo Hardcore (ou perda de XP em Hábitos negativos no limite) podem reduzir XP dentro da mesma patente, com trava anti-rebaixamento."
+    }
   }
 }

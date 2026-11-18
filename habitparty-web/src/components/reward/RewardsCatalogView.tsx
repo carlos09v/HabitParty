@@ -7,14 +7,14 @@ import type {
 } from "@dnd-kit/core";
 import { Plus, SearchX, Store } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { MouseEvent } from "react";
+import { type MouseEvent, useMemo } from "react";
 import { CatalogEmptyState } from "@/components/ui/CatalogEmptyState";
 import { CatalogGridListShell } from "@/components/ui/CatalogGridListShell";
 import { ItemRowHeader } from "@/components/ui/ItemRow";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { Reward } from "@/types/reward";
 import type { ViewMode } from "@/types/ui";
-import { AddRewardCard, RewardCard, RewardItemRow } from "./RewardCard";
+import { RewardCard, RewardItemRow } from "./RewardCard";
 
 interface RewardsCatalogViewProps {
   filteredRewards: Reward[];
@@ -51,6 +51,11 @@ export function RewardsCatalogView({
 }: RewardsCatalogViewProps) {
   const t = useTranslations("rewards.container");
   const { isGamified } = useExperienceMode();
+
+  const itemIds = useMemo(
+    () => filteredRewards.map((r) => r.id),
+    [filteredRewards],
+  );
 
   if (filteredRewards.length === 0) {
     const isStoreEmpty = totalVisibleRewardsCount === 0;
@@ -102,7 +107,7 @@ export function RewardsCatalogView({
   return (
     <CatalogGridListShell
       dndContextId="rewards-dnd-context"
-      itemIds={filteredRewards.map((r) => r.id)}
+      itemIds={itemIds}
       viewMode={viewMode}
       isCompact={isCompact}
       headerMode="reward"
@@ -127,6 +132,7 @@ export function RewardsCatalogView({
             onContextMenu={onContextMenu}
             isCompact={isCompact}
             canAfford={canAfford}
+            currentCoins={currentCoins}
             isDeleteChecking={isDeleteChecking}
             isRedeeming={isRedeeming}
           />
@@ -144,11 +150,6 @@ export function RewardsCatalogView({
           />
         );
       })}
-      <AddRewardCard
-        onClick={onAddProduct}
-        viewMode={viewMode === "card" ? "card" : "list"}
-        isCompact={isCompact}
-      />
     </CatalogGridListShell>
   );
 }

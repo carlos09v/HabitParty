@@ -3,8 +3,9 @@
 import { Calendar, Flame, Sparkles, Target } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import type { AppLocale } from "@/i18n/config";
+import { type AppLocale, toIntlLocale } from "@/i18n/config";
 import type { DashboardDailyBriefingProps } from "@/types/dashboard";
 import { cn } from "@/utils";
 import {
@@ -130,15 +131,12 @@ export function DashboardDailyBriefing({
   })();
 
   // Data formatada para o cabeçalho no fuso local do navegador (ex: Terça-feira, 20 de out.)
-  const formattedDay = now.toLocaleDateString(
-    locale === "en" ? "en-US" : "pt-BR",
-    {
-      weekday: "long",
-      day: "numeric",
-      month: "short",
-      ...(resolvedTimeZone ? { timeZone: resolvedTimeZone } : {}),
-    },
-  );
+  const formattedDay = now.toLocaleDateString(toIntlLocale(locale), {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    ...(resolvedTimeZone ? { timeZone: resolvedTimeZone } : {}),
+  });
   const capitalizedDay =
     formattedDay.charAt(0).toUpperCase() + formattedDay.slice(1);
 
@@ -255,26 +253,22 @@ export function DashboardDailyBriefing({
             </span>
             {totalTodayTasks > 0 ? (
               <div className="flex items-center gap-2 mt-1 min-w-0">
-                <div
-                  className="h-1.5 flex-1 rounded-full bg-neutral-700 dark:bg-white/10 overflow-hidden"
-                  role="progressbar"
-                  aria-valuenow={completedTodayTasks}
-                  aria-valuemin={0}
-                  aria-valuemax={totalTodayTasks}
-                  aria-label={t("progressAriaLabel", {
+                <ProgressBar
+                  percent={completionPercent}
+                  className="h-1.5 flex-1 bg-neutral-700 dark:bg-white/10"
+                  fillClassName={cn(
+                    "transition-transform duration-500 ease-out",
+                    isAllCompleted
+                      ? "bg-linear-to-r from-emerald-500 to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                      : "bg-linear-to-r from-gold to-amber-400 shadow-glow-gold-xs",
+                  )}
+                  ariaValueNow={completedTodayTasks}
+                  ariaValueMin={0}
+                  ariaValueMax={totalTodayTasks}
+                  ariaLabel={t("progressAriaLabel", {
                     percent: completionPercent,
                   })}
-                >
-                  <div
-                    className={cn(
-                      "h-full w-full origin-left transition-transform duration-500 ease-out",
-                      isAllCompleted
-                        ? "bg-linear-to-r from-emerald-500 to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
-                        : "bg-linear-to-r from-gold to-amber-400 shadow-glow-gold-xs",
-                    )}
-                    style={{ transform: `scaleX(${completionPercent / 100})` }}
-                  />
-                </div>
+                />
                 <span
                   key={`goal-${tzRenderKey}`}
                   className={cn(

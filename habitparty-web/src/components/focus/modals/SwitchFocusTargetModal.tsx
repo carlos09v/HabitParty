@@ -50,9 +50,8 @@ export function SwitchFocusTargetModal({
 
   const timeDisplay = formatDurationMinSec(elapsedSeconds);
 
-  // Transferência direta só é permitida entre atividades normais
-  const canTransfer =
-    !isCurrentInventory && !isCurrentTask && !isNewInventory && !isNewTask;
+  // Transferência direta é permitida entre quaisquer alvos produtivos (atividades e tarefas)
+  const canTransfer = !isCurrentInventory && !isNewInventory;
 
   // Sessões só podem ser salvas a partir de 1 minuto (60 segundos)
   const canSaveCurrent = elapsedSeconds >= 60;
@@ -106,6 +105,13 @@ export function SwitchFocusTargetModal({
             <span className="flex items-center gap-1 text-label-g font-semibold text-amber-700 dark:text-gold mt-0.5">
               <Timer size={12} />
               {t("elapsed", { time: timeDisplay })}
+            </span>
+            <span className="text-label-g text-neutral-400 mt-0.5">
+              {isCurrentInventory
+                ? t("targetTypeInventory")
+                : isCurrentTask
+                  ? t("targetTypeTask")
+                  : t("targetTypeActivity")}
             </span>
           </div>
 

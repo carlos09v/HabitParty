@@ -11,12 +11,14 @@ import com.habitparty.adapters.in.web.api.FocusActivityApi;
 import com.habitparty.adapters.in.web.dtos.request.CreateFocusActivityDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateFocusActivityDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateFocusActivityOrderDTO;
+import com.habitparty.adapters.in.web.dtos.response.FocusActivityDeletionSummaryResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.FocusActivityResponseDTO;
 import com.habitparty.application.usecases.focus.CreateFocusActivityCommand;
 import com.habitparty.application.usecases.focus.CreateFocusActivityUseCase;
 import com.habitparty.application.usecases.focus.DeleteFocusActivityUseCase;
 import com.habitparty.application.usecases.focus.FocusActivityOrderCommand;
 import com.habitparty.application.usecases.focus.GetFocusActivitiesUseCase;
+import com.habitparty.application.usecases.focus.GetFocusActivityDeletionSummaryUseCase;
 import com.habitparty.application.usecases.focus.ReorderFocusActivitiesUseCase;
 import com.habitparty.application.usecases.focus.UpdateFocusActivityCommand;
 import com.habitparty.application.usecases.focus.UpdateFocusActivityUseCase;
@@ -32,6 +34,7 @@ public class FocusActivityController implements FocusActivityApi {
   private final DeleteFocusActivityUseCase deleteUseCase;
   private final GetFocusActivitiesUseCase getUseCase;
   private final ReorderFocusActivitiesUseCase reorderUseCase;
+  private final GetFocusActivityDeletionSummaryUseCase deletionSummaryUseCase;
 
   @Override
   public ResponseEntity<FocusActivityResponseDTO> create(
@@ -60,6 +63,14 @@ public class FocusActivityController implements FocusActivityApi {
     var command = new UpdateFocusActivityCommand(dto.name(), dto.icon(), dto.recordType(), dto.pomoTimeMinutes());
     var activity = updateUseCase.execute(usuarioLogado.id(), activityId, command);
     return ResponseEntity.ok(FocusActivityResponseDTO.fromDomain(activity));
+  }
+
+  @Override
+  public ResponseEntity<FocusActivityDeletionSummaryResponseDTO> getDeletionSummary(
+      UUID activityId,
+      AuthenticatedUser usuarioLogado) {
+    var summary = deletionSummaryUseCase.execute(usuarioLogado.id(), activityId);
+    return ResponseEntity.ok(FocusActivityDeletionSummaryResponseDTO.fromDomain(summary));
   }
 
   @Override

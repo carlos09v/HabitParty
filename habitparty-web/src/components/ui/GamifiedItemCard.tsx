@@ -2,12 +2,15 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Clock, HelpCircle, Loader2, MoreVertical } from "lucide-react";
+import { Check, HelpCircle, Loader2, MoreVertical } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { memo, type default as React, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { MysteryBoxTierPopover } from "@/components/reward/MysteryBoxTierPopover";
-import { CoinIcon } from "@/components/ui/CoinIcon";
+import {
+  CatalogItemDurationBadge,
+  CatalogItemPricePill,
+} from "@/components/ui/CatalogItemBadges";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useFloatingPopover } from "@/hooks/useFloatingPopover";
 import type { AppLocale } from "@/i18n/config";
@@ -19,10 +22,7 @@ import {
   STOP_DRAG_PROPAGATION_PROPS,
 } from "@/utils";
 import { resolveCatalogItemVisuals } from "@/utils/catalogItemVisuals";
-import {
-  formatBackpackItemRemainingTime,
-  formatFocusMinutes,
-} from "@/utils/focusFormatters";
+import { formatFocusMinutes } from "@/utils/focusFormatters";
 
 export interface GamifiedItemCardProps {
   id: string;
@@ -37,11 +37,10 @@ export interface GamifiedItemCardProps {
   isCompact?: boolean;
   quantity?: number;
   price?: number;
+  currentCoins?: number;
   canAfford?: boolean;
   actionLabel: string;
   onAction?: () => void;
-  secondaryActionLabel?: string;
-  onSecondaryAction?: () => void;
   onDoubleClick?: (e: React.MouseEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
   dragData?: Record<string, unknown>;
@@ -49,12 +48,11 @@ export interface GamifiedItemCardProps {
   isActiveFocusSession?: boolean;
   isDeleteChecking?: boolean;
   isActionLoading?: boolean;
-  isSecondaryActionLoading?: boolean;
   lootItems?: MysteryBoxLootItem[];
 }
 
 /**
- * Card gamificado unificado e memoizado para itens da Vitrine (Rewards) e da Mochila (Inventory).
+ * Card unificado e memoizado para itens da Vitrine (Rewards) e da Mochila (Inventory).
  */
 export const GamifiedItemCard = memo(function GamifiedItemCard({
   id,
@@ -69,11 +67,10 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
   isCompact = false,
   quantity,
   price,
+  currentCoins,
   canAfford = true,
   actionLabel,
   onAction,
-  secondaryActionLabel,
-  onSecondaryAction,
   onDoubleClick,
   onContextMenu,
   dragData,
@@ -81,7 +78,6 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
   isActiveFocusSession,
   isDeleteChecking = false,
   isActionLoading = false,
-  isSecondaryActionLoading = false,
   lootItems,
 }: GamifiedItemCardProps) {
   const t = useTranslations("ui.itemCatalog");
@@ -156,8 +152,35 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
     transition: isDragging ? undefined : transition,
   };
 
-  const isBusy = isActionLoading || isSecondaryActionLoading;
-  const isPrimaryDisabled = !canAfford || (inUse && !isFocusNavigate) || isBusy;
+  const isPrimaryDisabled =
+    !canAfford || (inUse && !isFocusNavigate) || isActionLoading;
+  const trimmedDescription = description?.trim() ?? "";
+
+  const showStoreProgress =
+    typeof price === "number" && price > 0 && typeof currentCoins === "number";
+
+  const clampedCoins = showStoreProgress ? Math.max(0, currentCoins) : 0;
+  const isProgressComplete =
+    showStoreProgress && canAfford && clampedCoins >= price;
+  const missingCoins =
+    showStoreProgress && !isProgressComplete
+      ? Math.max(0.01, Math.round((price - clampedCoins) * 100) / 100)
+      : 0;
+  const progressPercent = showStoreProgress
+    ? isProgressComplete
+      ? 100
+      : clampedCoins <= 0
+        ? 0
+        : Math.min(99, Math.max(4, Math.round((clampedCoins / price) * 100)))
+    : 0;
+
+  const showInlineDurationInType =
+    typeKey === "TimeBased" &&
+    Boolean(baseDurationMinutes) &&
+    remainingSeconds === undefined;
+
+  const isDebtCategory = categoryMessageKey === "DEBT";
+  const showSubtleCategory = hasValidCategory && !isDebtCategory;
 
   return (
     <article
@@ -215,12 +238,12 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
           : undefined
       }
       className={cn(
-        "relative flex flex-col justify-between rounded-xl bg-card dark:bg-linear-to-b dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,transform] duration-150 group select-none shadow-xs dark:shadow-sm hover:shadow-card-deep hover:-translate-y-0.5 overflow-hidden",
+        "relative flex flex-col rounded-xl bg-card dark:bg-linear-to-b dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,transform] duration-150 group select-none shadow-xs dark:shadow-sm hover:shadow-card-deep hover:-translate-y-0.5 overflow-hidden",
         inUse
           ? "border-amber-500/45 bg-card dark:border-amber-500/40 dark:bg-amber-500/5"
           : packageGlow ||
               "border-neutral-700 hover:border-amber-500/50 dark:border-white/15 dark:hover:border-gold/50",
-        isCompact ? "p-2.5 gap-2" : "p-3.5 gap-2.5",
+        isCompact ? "p-3 gap-2.5" : "p-3.5 gap-3",
         onDoubleClick && "cursor-pointer",
         isDeleteChecking && "opacity-75 pointer-events-none cursor-wait",
         isDragging && "transition-none! opacity-50 ring-2 ring-gold z-50",
@@ -238,12 +261,12 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
         />
       )}
 
-      {/* TOPO INTEGRADO: Ícone + Título/Descrição + Badges de Tipo/Quantidade */}
-      <div className="flex flex-col gap-2 w-full min-w-0">
-        <header className="flex items-start gap-2.5 w-full min-w-0">
+      {/* ZONA 1: Cabeçalho limpo (Ícone + Título + Ações secundárias + Metadados enxutos) */}
+      <header className="flex items-start gap-3 w-full min-w-0">
+        <div className="relative shrink-0">
           <div
             className={cn(
-              "rounded-xl border flex items-center justify-center transition-[transform,border-color,color,background-color] duration-200 shrink-0 group-hover:scale-105",
+              "rounded-xl border flex items-center justify-center transition-[transform,border-color,color,background-color] duration-200 group-hover:scale-105",
               packageIconTheme ||
                 (typeKey === "TimeBased"
                   ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 group-hover:border-emerald-500/40 dark:bg-white/10 dark:border-white/15 dark:text-primary-light dark:group-hover:text-gold dark:group-hover:border-gold/40"
@@ -260,280 +283,225 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
             />
           </div>
 
-          <div className="flex flex-col flex-1 min-w-0 gap-0.5">
-            <div className="flex items-start justify-between gap-1.5 w-full min-w-0">
-              <div className="flex flex-wrap items-center gap-1.5 min-w-0 flex-1">
-                <h4
-                  className={cn(
-                    "font-bold text-neutral-100 truncate max-w-full group-hover:text-primary dark:group-hover:text-gold transition-colors leading-tight",
-                    isCompact ? "text-xs" : "text-body-s",
-                  )}
-                >
-                  {title}
-                </h4>
+          {typeof quantity === "number" && (
+            <span className="absolute -bottom-1 -right-1.5 px-1.5 py-px rounded-md bg-popover border border-neutral-600 dark:border-gold/45 text-neutral-50 dark:text-gold text-[10px] font-black leading-tight tabular-nums shadow-xs">
+              {quantity}x
+            </span>
+          )}
+        </div>
 
-                <div className="flex flex-wrap items-center gap-1 shrink-0">
-                  {inUse && (
-                    <span className="inline-flex items-center gap-1 font-bold rounded border border-amber-500/40 bg-amber-500/15 text-amber-800 dark:text-amber-300 text-tiny px-1.5 py-0.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
-                      {t("inFocus")}
-                    </span>
-                  )}
+        <div className="flex flex-col flex-1 min-w-0 gap-1">
+          <div className="flex items-start justify-between gap-1.5 w-full min-w-0">
+            <h4
+              className={cn(
+                "font-bold text-neutral-100 truncate min-w-0 flex-1 group-hover:text-primary dark:group-hover:text-gold transition-colors leading-snug pt-0.5",
+                isCompact ? "text-xs" : "text-body-s",
+              )}
+              title={title}
+            >
+              {title}
+            </h4>
 
-                  {typeof quantity === "number" && (
-                    <span
-                      className={cn(
-                        "font-bold bg-surface border border-neutral-700 dark:bg-white/10 dark:border-white/20 text-neutral-100 px-1.5 py-0.5",
-                        isCompact
-                          ? "text-tiny rounded"
-                          : "text-label-g rounded-md",
-                      )}
-                    >
-                      {quantity}x
-                    </span>
-                  )}
-
-                  <span
-                    className={cn(
-                      "inline-flex items-center gap-1 border font-medium leading-none shrink-0 text-tiny px-1.5 py-0.5",
-                      isCompact ? "rounded" : "rounded-md",
-                      typeMeta?.color ||
-                        "text-neutral-200 bg-white/10 border-white/20",
-                    )}
+            {((isMystery && mysteryTier) ||
+              onContextMenu ||
+              isDeleteChecking) && (
+              <div className="flex items-center gap-0.5 shrink-0 -mr-1 -mt-0.5">
+                {isMystery && mysteryTier && (
+                  <button
+                    type="button"
+                    {...STOP_DRAG_PROPAGATION_PROPS}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleTierPopover();
+                    }}
+                    onDoubleClick={(e) => e.stopPropagation()}
+                    aria-expanded={isTierPopoverOpen}
+                    aria-label={t("tierDetailsAria")}
+                    title={t("tierDetailsAria")}
+                    className="inline-flex items-center justify-center rounded-md text-neutral-400 hover:text-gold hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer min-w-7 min-h-7 pointer-coarse:min-w-8 pointer-coarse:min-h-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                   >
-                    {typeMeta?.icon && (
-                      <typeMeta.icon
-                        size={isCompact ? 9 : 10}
-                        className="shrink-0"
-                        aria-hidden="true"
-                      />
-                    )}
-                    <span>{t(`types.${typeKey}`)}</span>
-                  </span>
-                </div>
-              </div>
+                    <HelpCircle size={isCompact ? 13 : 14} aria-hidden="true" />
+                  </button>
+                )}
 
-              {((isMystery && mysteryTier) ||
-                onContextMenu ||
-                isDeleteChecking) && (
-                <div className="flex items-center gap-0.5 shrink-0 -mr-1 -mt-0.5">
-                  {isMystery && mysteryTier && (
+                {isDeleteChecking ? (
+                  <output
+                    className="inline-flex items-center justify-center text-gold min-w-7 min-h-7 pointer-coarse:min-w-8 pointer-coarse:min-h-8"
+                    title={t("checkingDeleteAria")}
+                    aria-label={t("checkingDeleteAria")}
+                  >
+                    <Loader2
+                      size={isCompact ? 14 : 15}
+                      className="animate-spin"
+                      aria-hidden="true"
+                    />
+                  </output>
+                ) : (
+                  onContextMenu && (
                     <button
                       type="button"
                       {...STOP_DRAG_PROPAGATION_PROPS}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleTierPopover();
-                      }}
+                      onClick={(e) =>
+                        openContextMenuFromButton(e, onContextMenu)
+                      }
                       onDoubleClick={(e) => e.stopPropagation()}
-                      aria-expanded={isTierPopoverOpen}
-                      aria-label={t("tierDetailsAria")}
-                      title={t("tierDetailsAria")}
-                      className="inline-flex items-center justify-center rounded-md text-neutral-400 hover:text-gold hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer min-w-7 min-h-7 pointer-coarse:min-w-8 pointer-coarse:min-h-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                      aria-label={t("moreActionsAria")}
+                      title={t("moreActionsAria")}
+                      className="inline-flex items-center justify-center rounded-md text-neutral-400 hover:text-neutral-100 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer min-w-7 min-h-7 pointer-coarse:min-w-8 pointer-coarse:min-h-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                     >
-                      <HelpCircle
-                        size={isCompact ? 13 : 14}
+                      <MoreVertical
+                        size={isCompact ? 14 : 15}
                         aria-hidden="true"
                       />
                     </button>
-                  )}
-
-                  {isDeleteChecking ? (
-                    <output
-                      className="inline-flex items-center justify-center text-gold min-w-7 min-h-7 pointer-coarse:min-w-8 pointer-coarse:min-h-8"
-                      title={t("checkingDeleteAria")}
-                      aria-label={t("checkingDeleteAria")}
-                    >
-                      <Loader2
-                        size={isCompact ? 14 : 15}
-                        className="animate-spin"
-                        aria-hidden="true"
-                      />
-                    </output>
-                  ) : (
-                    onContextMenu && (
-                      <button
-                        type="button"
-                        {...STOP_DRAG_PROPAGATION_PROPS}
-                        onClick={(e) =>
-                          openContextMenuFromButton(e, onContextMenu)
-                        }
-                        onDoubleClick={(e) => e.stopPropagation()}
-                        aria-label={t("moreActionsAria")}
-                        title={t("moreActionsAria")}
-                        className="inline-flex items-center justify-center rounded-md text-neutral-400 hover:text-neutral-100 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer min-w-7 min-h-7 pointer-coarse:min-w-8 pointer-coarse:min-h-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
-                      >
-                        <MoreVertical
-                          size={isCompact ? 14 : 15}
-                          aria-hidden="true"
-                        />
-                      </button>
-                    )
-                  )}
-                </div>
-              )}
-            </div>
-
-            {description && description.trim() !== "" ? (
-              <p
-                className={cn(
-                  "text-neutral-400 truncate leading-tight",
-                  isCompact ? "text-label-g" : "text-xs",
+                  )
                 )}
-              >
-                {description}
-              </p>
-            ) : (
-              <p
-                className={cn(
-                  "text-neutral-400 italic truncate leading-tight",
-                  isCompact ? "text-label-g" : "text-xs",
-                )}
-              >
-                {typeKey === "TimeBased"
-                  ? t("fallbackDescriptions.timeBased")
-                  : isMystery
-                    ? t("fallbackDescriptions.mystery")
-                    : t("fallbackDescriptions.singleUse")}
-              </p>
+              </div>
             )}
           </div>
-        </header>
 
-        {/* LINHA DE BADGES: Duração em Destaque + Raridade + Categoria */}
-        <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-          {typeKey === "TimeBased" || remainingSeconds !== undefined ? (
-            remainingSeconds !== undefined && remainingSeconds !== null ? (
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border font-bold tracking-tight leading-none",
-                  isCompact ? "text-tiny" : "text-label-g",
-                  remainingSeconds <= 1
-                    ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-300"
-                    : "bg-amber-500/15 border-amber-500/40 text-amber-800 dark:bg-gold/15 dark:border-gold/40 dark:text-gold dark:shadow-glow-gold-xs",
-                )}
-              >
-                <Clock
-                  size={isCompact ? 10 : 12}
+          {/* Sub-linha enxuta: Status Em Foco + Tipo (+ Duração inline) + Raridade/Dívida + Categoria discreta */}
+          <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+            {inUse && (
+              <span className="inline-flex items-center gap-1 font-bold rounded-md border border-amber-500/40 bg-amber-500/15 text-amber-800 dark:text-amber-300 text-tiny px-1.5 py-0.5 leading-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
+                {t("inFocus")}
+              </span>
+            )}
+
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 border font-medium leading-none shrink-0 text-tiny px-1.5 py-0.5 rounded-md",
+                typeMeta?.color ||
+                  "text-neutral-200 bg-white/10 border-white/20",
+              )}
+            >
+              {typeMeta?.icon && (
+                <typeMeta.icon
+                  size={isCompact ? 9 : 10}
                   className="shrink-0"
                   aria-hidden="true"
                 />
-                <span className="truncate">
-                  {formatBackpackItemRemainingTime(remainingSeconds, locale)}
-                </span>
+              )}
+              <span>
+                {t(`types.${typeKey}`)}
+                {showInlineDurationInType && baseDurationMinutes
+                  ? ` · ${formatFocusMinutes(baseDurationMinutes)}`
+                  : ""}
               </span>
-            ) : baseDurationMinutes ? (
+            </span>
+
+            {hasValidPackage && (
               <span
                 className={cn(
-                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-md border font-extrabold tracking-tight leading-none bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-300 dark:shadow-[0_0_10px_rgba(16,185,129,0.12)]",
-                  isCompact ? "text-tiny" : "text-label-g",
+                  "font-semibold rounded-md border text-tiny px-1.5 py-0.5 leading-none shrink-0",
+                  packageBadgeColor,
                 )}
-                title={t("durationTitle", { minutes: baseDurationMinutes })}
               >
-                <Clock
-                  size={isCompact ? 10 : 12}
-                  className="text-emerald-700 dark:text-emerald-400 shrink-0"
-                  aria-hidden="true"
-                />
-                <span className="truncate">
-                  {formatFocusMinutes(baseDurationMinutes)}
-                </span>
+                {t(`packages.${packageMessageKey}`)}
               </span>
-            ) : null
-          ) : null}
+            )}
 
-          {hasValidPackage && (
-            <span
-              className={cn(
-                "font-semibold rounded border text-tiny px-1.5 py-0.5 leading-none",
-                packageBadgeColor,
-              )}
-            >
-              {t(`packages.${packageMessageKey}`)}
-            </span>
-          )}
-          {hasValidCategory && (
-            <span
-              className={cn(
-                "font-medium rounded border text-tiny px-1.5 py-0.5 leading-none",
-                categoryMessageKey === "DEBT"
-                  ? "bg-rose-500/15 border-rose-500/35 text-rose-700 dark:text-rose-300"
-                  : "bg-surface/80 border-neutral-700/80 dark:bg-white/8 dark:border-white/10 text-neutral-300",
-              )}
-            >
-              {t(`categories.${categoryMessageKey}`)}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* BASE: Preço (na Loja) ou Status + Botões de Ação */}
-      <footer className="flex flex-wrap items-center justify-between pt-2.5 border-t border-neutral-700 dark:border-white/10 w-full gap-2">
-        <div className="flex items-center min-w-0">
-          {typeof price === "number" ? (
-            <div
-              className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border",
-                isGamified
-                  ? "bg-amber-500/10 border-amber-500/25 text-neutral-50 dark:bg-gold/10 dark:border-gold/25 dark:text-neutral-100"
-                  : "bg-sky-500/10 border-sky-500/25 text-sky-900 dark:bg-sky-500/15 dark:border-sky-400/30 dark:text-sky-100",
-              )}
-            >
-              <CoinIcon size={15} withGlow />
-              <span className="text-xs font-extrabold">
-                {formatCoins(price, { locale })}
+            {isDebtCategory && (
+              <span className="font-semibold rounded-md border text-tiny px-1.5 py-0.5 leading-none shrink-0 bg-rose-500/15 border-rose-500/35 text-rose-700 dark:text-rose-300">
+                {t("categories.DEBT")}
               </span>
-            </div>
-          ) : !(secondaryActionLabel && onSecondaryAction) ? (
-            <span className="text-neutral-400 font-medium truncate text-tiny">
-              {inUse
-                ? t("statuses.activeSession")
-                : isMystery
-                  ? t("statuses.sealedBox")
-                  : t("statuses.available")}
-            </span>
-          ) : null}
-        </div>
+            )}
 
-        <div
+            {showSubtleCategory && (
+              <span className="text-tiny text-neutral-400 font-medium truncate">
+                · {t(`categories.${categoryMessageKey}`)}
+              </span>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* ZONA 2: Descrição real do usuário (sem placeholder genérico falso) */}
+      {trimmedDescription !== "" && (
+        <p
           className={cn(
-            "flex flex-wrap items-center justify-end gap-2 shrink-0 ml-auto",
-            typeof price !== "number" &&
-              secondaryActionLabel &&
-              onSecondaryAction &&
-              "w-full",
+            "text-neutral-300 leading-relaxed line-clamp-2",
+            isCompact ? "text-label-g" : "text-xs",
           )}
         >
-          {secondaryActionLabel && onSecondaryAction && (
-            <button
-              type="button"
-              onClick={onSecondaryAction}
-              onDoubleClick={(e) => e.stopPropagation()}
-              disabled={inUse || isBusy}
-              aria-busy={isSecondaryActionLoading}
-              aria-label={`${secondaryActionLabel} ${title}`}
-              title={
-                inUse
-                  ? t("tooltips.inUse")
-                  : t("tooltips.actionTarget", {
-                      action: secondaryActionLabel,
-                      title,
-                    })
-              }
+          {trimmedDescription}
+        </p>
+      )}
+
+      {/* ZONA 3: Rodapé (Progresso quando falta saldo + Preço/Status + Ação única) */}
+      <footer className="mt-auto flex flex-col gap-2 pt-2.5 border-t border-neutral-700/80 dark:border-white/10 w-full">
+        {showStoreProgress && (
+          <div className="flex flex-col gap-1 w-full">
+            <div
               className={cn(
-                "inline-flex items-center justify-center gap-1.5 rounded-lg font-semibold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs border text-neutral-200 pointer-coarse:min-h-9",
-                inUse || isBusy
-                  ? "bg-white/5 border-white/10 text-neutral-400 cursor-not-allowed opacity-60"
-                  : "border-neutral-600 dark:border-primary/40 bg-surface/80 hover:bg-primary/10 hover:border-primary/40 hover:text-primary dark:hover:bg-gold/15 dark:hover:border-gold/60 dark:hover:text-gold active:scale-95 cursor-pointer",
-                isCompact ? "px-2.5 py-1 text-label-g" : "px-3 py-1.5 text-xs",
+                "flex items-center justify-between gap-2 text-[10px]",
+                isProgressComplete
+                  ? "font-semibold text-emerald-700 dark:text-emerald-400"
+                  : "font-medium text-neutral-400",
               )}
             >
-              {isSecondaryActionLoading && (
-                <Loader2 size={12} className="animate-spin shrink-0" />
-              )}
-              <span>{secondaryActionLabel}</span>
-            </button>
-          )}
+              <span className="inline-flex items-center gap-1 min-w-0">
+                {isProgressComplete && (
+                  <Check size={10} className="shrink-0" aria-hidden="true" />
+                )}
+                <span className="truncate">
+                  {isProgressComplete
+                    ? t("readyToRedeemHint")
+                    : isGamified
+                      ? t("missingCoinsHint", {
+                          missing: formatCoins(missingCoins, { locale }),
+                        })
+                      : t("missingCreditsHint", {
+                          missing: formatCoins(missingCoins, { locale }),
+                        })}
+                </span>
+              </span>
+              <span className="tabular-nums shrink-0">{progressPercent}%</span>
+            </div>
+            <div
+              className="h-1 w-full rounded-full bg-neutral-800/80 dark:bg-white/10 overflow-hidden"
+              aria-hidden="true"
+            >
+              <div
+                className={cn(
+                  "h-full rounded-full transition-[width,background-color] duration-300",
+                  isProgressComplete
+                    ? "bg-emerald-500/80 dark:bg-emerald-400/80"
+                    : "bg-amber-500/80 dark:bg-gold/75",
+                )}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between gap-2 w-full">
+          <div className="flex items-center min-w-0">
+            {typeof price === "number" ? (
+              <CatalogItemPricePill price={price} canAfford={canAfford} />
+            ) : remainingSeconds !== undefined && remainingSeconds !== null ? (
+              <CatalogItemDurationBadge
+                remainingSeconds={remainingSeconds}
+                isCompact={isCompact}
+                variant="pill"
+              />
+            ) : baseDurationMinutes ? (
+              <CatalogItemDurationBadge
+                baseDurationMinutes={baseDurationMinutes}
+                isCompact={isCompact}
+                variant="pill"
+              />
+            ) : (
+              <span className="text-neutral-400 font-medium truncate text-tiny">
+                {inUse
+                  ? t("statuses.activeSession")
+                  : isMystery
+                    ? t("statuses.sealedBox")
+                    : t("statuses.available")}
+              </span>
+            )}
+          </div>
 
           <button
             type="button"
@@ -560,12 +528,8 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                         })
             }
             className={cn(
-              "inline-flex items-center justify-center gap-1.5 rounded-lg font-semibold dark:font-bold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs pointer-coarse:min-h-9",
-              typeof price !== "number" &&
-                secondaryActionLabel &&
-                onSecondaryAction &&
-                "flex-1 sm:flex-initial text-center",
-              !isBusy && (isFocusNavigate || (canAfford && !inUse))
+              "inline-flex items-center justify-center gap-1.5 rounded-lg font-semibold dark:font-bold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs shrink-0 pointer-coarse:min-h-9",
+              !isActionLoading && (isFocusNavigate || (canAfford && !inUse))
                 ? "bg-gold hover:bg-gold-hover active:bg-gold-pressed text-on-gold border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1 focus-visible:ring-offset-card"
                 : "bg-neutral-700/70 dark:bg-white/10 text-neutral-400 border border-neutral-600 dark:border-white/10 cursor-not-allowed opacity-75 dark:opacity-60",
               isCompact ? "px-2.5 py-1 text-label-g" : "px-3.5 py-1.5 text-xs",

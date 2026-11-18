@@ -2,7 +2,7 @@ import { ArrowRight, Flame, UserPlus, Users } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { UserAvatar } from "@/components/ui/UserAvatar";
-import { getAvatarFrame } from "@/constants/avatarFrames";
+import { resolveAvatarFrameId } from "@/constants/avatarFrames";
 import { getFriendsOverview } from "@/services/socialService";
 import type { PartyWidgetProps } from "@/types/dashboard";
 import { cn } from "@/utils";
@@ -107,9 +107,7 @@ export async function PartyWidget({
                         name={displayName}
                         size="sm"
                         hasRing={friend.isPremium}
-                        frameId={
-                          getAvatarFrame(friend.avatarFrame ?? undefined).id
-                        }
+                        frameId={resolveAvatarFrameId(friend.avatarFrame)}
                       />
                       <div className="flex flex-col min-w-0">
                         <span className="text-xs font-semibold text-neutral-100 group-hover:text-amber-700 dark:group-hover:text-gold transition-colors truncate">

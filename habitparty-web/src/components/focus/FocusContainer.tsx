@@ -107,14 +107,52 @@ export function FocusContainer({
         );
       }
     };
+    const handleTaskFocusRecorded = (event: Event) => {
+      const detail = (
+        event as CustomEvent<{
+          taskId?: string;
+          durationMinutes?: number;
+          completedPomos?: number;
+        }>
+      ).detail;
+      if (!detail?.taskId) return;
+      const minsDelta = Number(detail.durationMinutes ?? 0);
+      const cyclesDelta = Number(detail.completedPomos ?? 0);
+      if (minsDelta === 0 && cyclesDelta === 0) return;
+      setFocusableTasks((prev) =>
+        prev.map((task) =>
+          task.id === detail.taskId
+            ? {
+                ...task,
+                totalFocusMinutes: Math.max(
+                  0,
+                  (task.totalFocusMinutes ?? 0) + minsDelta,
+                ),
+                focusCyclesCount: Math.max(
+                  0,
+                  (task.focusCyclesCount ?? 0) + cyclesDelta,
+                ),
+              }
+            : task,
+        ),
+      );
+    };
     window.addEventListener(
       "habitparty:task-completed-from-focus",
       handleTaskCompleted,
+    );
+    window.addEventListener(
+      "habitparty:task-focus-recorded",
+      handleTaskFocusRecorded,
     );
     return () => {
       window.removeEventListener(
         "habitparty:task-completed-from-focus",
         handleTaskCompleted,
+      );
+      window.removeEventListener(
+        "habitparty:task-focus-recorded",
+        handleTaskFocusRecorded,
       );
     };
   }, []);
@@ -199,6 +237,15 @@ export function FocusContainer({
   });
 
   const [extraRecords, setExtraRecords] = useState<FocusRecord[]>([]);
+  const [editedRecordsById, setEditedRecordsById] = useState<
+    Record<string, FocusRecord>
+  >({});
+  const [deletedActivityIds, setDeletedActivityIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [preservedActivityIds, setPreservedActivityIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [loadedRecordsPage, setLoadedRecordsPage] = useState(
     initialLoadedRecordsPage,
   );
@@ -218,33 +265,62 @@ export function FocusContainer({
   const hasPaginatedBeyondInitialRef = useRef(false);
 
   useEffect(() => {
+    setEditedRecordsById({});
+    setDeletedActivityIds(new Set());
+    setPreservedActivityIds(new Set());
     setTotalServerRecords(initialTotalRecordsCount ?? initialRecords.length);
     if (!hasPaginatedBeyondInitialRef.current) {
       setLoadedRecordsPage(initialLoadedRecordsPage);
       setHasMoreServerRecords(initialHasMoreRecords);
     }
   }, [
-    initialRecords.length,
+    initialRecords,
     initialHasMoreRecords,
     initialLoadedRecordsPage,
     initialTotalRecordsCount,
   ]);
 
   const allRecords = useMemo(() => {
-    if (extraRecords.length === 0) return initialRecords;
-    const seen = new Set(initialRecords.map((r) => r.id));
-    const merged = [...initialRecords];
-    for (const rec of extraRecords) {
-      if (!seen.has(rec.id)) {
-        seen.add(rec.id);
-        merged.push(rec);
+    const transformRecord = (rec: FocusRecord): FocusRecord | null => {
+      if (rec.focusActivityId && deletedActivityIds.has(rec.focusActivityId)) {
+        return null;
+      }
+      const patched = editedRecordsById[rec.id] ?? rec;
+      if (
+        patched.focusActivityId &&
+        preservedActivityIds.has(patched.focusActivityId)
+      ) {
+        return {
+          ...patched,
+          focusActivityId: undefined,
+          activityName: undefined,
+          activityIcon: undefined,
+        };
+      }
+      return patched;
+    };
+
+    const seen = new Set<string>();
+    const merged: FocusRecord[] = [];
+    for (const rawList of [initialRecords, extraRecords]) {
+      for (const rawRec of rawList) {
+        if (seen.has(rawRec.id)) continue;
+        seen.add(rawRec.id);
+        const transformed = transformRecord(rawRec);
+        if (transformed) merged.push(transformed);
       }
     }
     merged.sort(
       (a, b) => new Date(b.endTime).getTime() - new Date(a.endTime).getTime(),
     );
     return merged;
-  }, [initialRecords, extraRecords]);
+  }, [
+    initialRecords,
+    extraRecords,
+    editedRecordsById,
+    deletedActivityIds,
+    preservedActivityIds,
+  ]);
 
   const {
     weekOffset,
@@ -322,6 +398,7 @@ export function FocusContainer({
           res.data.records,
           initialActivities,
           userTimeZone,
+          initialBackpackItems,
         );
         if (mapped.length > 0) {
           setExtraRecords((prev) => [...prev, ...mapped]);
@@ -349,6 +426,7 @@ export function FocusContainer({
         res.data.records,
         initialActivities,
         userTimeZone,
+        initialBackpackItems,
       );
       if (mapped.length > 0) {
         setExtraRecords((prev) => [...prev, ...mapped]);
@@ -369,6 +447,7 @@ export function FocusContainer({
     isLoadingMoreRecords,
     loadedRecordsPage,
     initialActivities,
+    initialBackpackItems,
     userTimeZone,
     showMoreRecords,
     t,
@@ -622,6 +701,13 @@ export function FocusContainer({
     ) {
       transferTarget(pendingSwitchTarget.activity);
       setSelectedActivityId(pendingSwitchTarget.activity.id);
+    } else if (
+      pendingSwitchTarget.type === "task" &&
+      pendingSwitchTarget.task
+    ) {
+      selectTaskTarget(pendingSwitchTarget.task);
+      setSelectedActivityId(null);
+      setSelectedBackpackItemId(null);
     }
     setPendingSwitchTarget(null);
   };
@@ -691,6 +777,12 @@ export function FocusContainer({
       },
       () => {
         setExtraRecords((prev) => prev.filter((r) => r.id !== recordId));
+        setEditedRecordsById((prev) => {
+          if (!(recordId in prev)) return prev;
+          const next = { ...prev };
+          delete next[recordId];
+          return next;
+        });
         setTotalServerRecords((prev) => Math.max(0, prev - 1));
         const activityId = deletedRecord?.focusActivityId;
         if (activityId) {
@@ -706,11 +798,81 @@ export function FocusContainer({
             };
           });
         }
+        if (deletedRecord?.taskId && typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("habitparty:task-focus-recorded", {
+              detail: {
+                taskId: deletedRecord.taskId,
+                durationMinutes: -Math.max(1, deletedRecord.durationMinutes),
+                completedPomos: -(deletedRecord.completedPomos ?? 0),
+              },
+            }),
+          );
+        }
       },
       deleteHistory,
       deletedRecord,
     );
   };
+
+  const handleRecordUpdated = useCallback((updatedRecord: FocusRecord) => {
+    setEditedRecordsById((prev) => ({
+      ...prev,
+      [updatedRecord.id]: updatedRecord,
+    }));
+  }, []);
+
+  const handleActivityDeleted = useCallback(
+    (activityId: string, deleteHistory: boolean) => {
+      if (deleteHistory) {
+        const affectedRecords = allRecords.filter(
+          (r) => r.focusActivityId === activityId,
+        );
+        if (typeof window !== "undefined") {
+          const taskDeltas = new Map<
+            string,
+            { minutes: number; pomos: number }
+          >();
+          for (const rec of affectedRecords) {
+            if (!rec.taskId) continue;
+            const prev = taskDeltas.get(rec.taskId) ?? { minutes: 0, pomos: 0 };
+            taskDeltas.set(rec.taskId, {
+              minutes: prev.minutes + Math.max(1, rec.durationMinutes),
+              pomos: prev.pomos + (rec.completedPomos ?? 0),
+            });
+          }
+          taskDeltas.forEach((delta, taskId) => {
+            window.dispatchEvent(
+              new CustomEvent("habitparty:task-focus-recorded", {
+                detail: {
+                  taskId,
+                  durationMinutes: -delta.minutes,
+                  completedPomos: -delta.pomos,
+                },
+              }),
+            );
+          });
+        }
+        setDeletedActivityIds((prev) => new Set(prev).add(activityId));
+        setExtraRecords((prev) =>
+          prev.filter((r) => r.focusActivityId !== activityId),
+        );
+        setTotalServerRecords((prev) =>
+          Math.max(0, prev - affectedRecords.length),
+        );
+        setActivityPagination((prev) => {
+          if (!(activityId in prev)) return prev;
+          const next = { ...prev };
+          delete next[activityId];
+          return next;
+        });
+      } else {
+        setPreservedActivityIds((prev) => new Set(prev).add(activityId));
+      }
+      router.refresh();
+    },
+    [allRecords, router],
+  );
 
   const handleOpenManualRecordModal = (params?: {
     activityId?: string;
@@ -787,6 +949,7 @@ export function FocusContainer({
           onStartFocusTask={handleStartFocusTask}
           onChangeMode={handleChangeMode}
           onOpenManualRecord={handleOpenManualRecordModal}
+          onActivityDeleted={handleActivityDeleted}
           initialCreateActivity={initialCreateActivity}
           initialLinkActivity={shouldOpenLinkActivityModal}
         />
@@ -811,6 +974,7 @@ export function FocusContainer({
         onAddRecord={() => handleOpenManualRecordModal()}
         onOptionsClick={() => router.push("/history?tab=FOCUS")}
         onDeleteRecord={handleDeleteRecord}
+        onRecordUpdated={handleRecordUpdated}
         selectedActivityName={selectedActivity?.name}
         onClearSelectedActivity={() => handleSelectActivity(null)}
         className={cn(

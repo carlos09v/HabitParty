@@ -5,6 +5,7 @@ import type {
   FocusRecord,
   FocusRecordResponseDTO,
 } from "@/types/focus";
+import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { toLocalISOString } from "./date";
 
 /**
@@ -43,6 +44,7 @@ export function mapFocusRecordDtoToRecord(
   dto: FocusRecordResponseDTO,
   activity?: FocusActivity,
   timeZone?: string | null,
+  inventoryItem?: InventoryItemResponseDTO,
 ): FocusRecord {
   return {
     id: dto.id || crypto.randomUUID(),
@@ -51,6 +53,8 @@ export function mapFocusRecordDtoToRecord(
     activityName: activity?.name,
     activityIcon: activity?.icon,
     inventoryItemId: dto.inventoryItemId,
+    itemName: inventoryItem?.rewardName,
+    itemIcon: inventoryItem?.rewardIcon,
     taskId: dto.taskId,
     taskNameSnapshot: dto.taskNameSnapshot,
     notes: dto.notes,
@@ -66,21 +70,40 @@ export function mapFocusRecordDtoToRecord(
 }
 
 /**
- * Mapeia uma lista de registros associando os metadados da atividade correspondente.
+ * Mapeia uma lista de registros associando os metadados da atividade ou cupom da mochila correspondente.
  */
 export function mapFocusRecords(
   dtos: FocusRecordResponseDTO[] | undefined | null,
   activities: FocusActivity[] = [],
   timeZone?: string | null,
+  inventoryItems: InventoryItemResponseDTO[] = [],
 ): FocusRecord[] {
   if (!dtos || dtos.length === 0) return [];
   const activityMap = new Map(activities.map((act) => [act.id, act]));
+  const inventoryMap = new Map(
+    inventoryItems
+      .filter(
+        (
+          item,
+        ): item is InventoryItemResponseDTO & { inventoryItemId: string } =>
+          Boolean(item.inventoryItemId),
+      )
+      .map((item) => [item.inventoryItemId, item]),
+  );
 
   return dtos.map((dto) => {
     const matchedActivity = dto.focusActivityId
       ? activityMap.get(dto.focusActivityId)
       : undefined;
-    return mapFocusRecordDtoToRecord(dto, matchedActivity, timeZone);
+    const matchedItem = dto.inventoryItemId
+      ? inventoryMap.get(dto.inventoryItemId)
+      : undefined;
+    return mapFocusRecordDtoToRecord(
+      dto,
+      matchedActivity,
+      timeZone,
+      matchedItem,
+    );
   });
 }
 

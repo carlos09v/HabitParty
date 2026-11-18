@@ -153,6 +153,23 @@ export function calculateInventoryWelcomeStats(
     )
     .reduce((acc, item) => acc + (item.quantity || 1), 0);
 
+  const mysteryCount = items
+    .filter(
+      (item) =>
+        item.reward?.type === "MISTERY_BOX" ||
+        item.reward?.type === "MysteryBox",
+    )
+    .reduce((acc, item) => acc + (item.quantity || 1), 0);
+
+  const typeHintParts = [
+    `${couponCount} ${couponCount === 1 ? (isEn ? "voucher" : "cupom") : isEn ? "vouchers" : "cupons"}`,
+  ];
+  if (isGamified && mysteryCount > 0) {
+    typeHintParts.push(
+      `${mysteryCount} ${mysteryCount === 1 ? (isEn ? "box" : "caixa") : isEn ? "boxes" : "caixas"}`,
+    );
+  }
+
   const stats: WelcomeCardStat[] = [
     {
       label: isGamified
@@ -188,7 +205,7 @@ export function calculateInventoryWelcomeStats(
         : `${singleUseCount} Uso Único`,
       icon: Sparkles,
       variant: "success",
-      hint: `${couponCount} ${couponCount === 1 ? (isEn ? "stored voucher" : "cupom guardado") : isEn ? "stored vouchers" : "cupons guardados"}`,
+      hint: typeHintParts.join(" • "),
     },
   ];
 

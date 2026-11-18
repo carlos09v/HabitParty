@@ -56,6 +56,10 @@ export function TaskDetailsHeader({
   const t = useTranslations("tasks.detailsPopover.header");
   const userTimeZone = useUserStore((s) => s.user?.timezone);
   const streak = task.streak ?? task.currentStreak ?? 0;
+  const isCycleBasedDaily =
+    isDaily &&
+    ((task.repeatType != null && task.repeatType.toUpperCase() !== "DAILY") ||
+      (task.repeatEvery ?? 1) > 1);
   const habitScore = (task.positiveCount ?? 0) - (task.negativeCount ?? 0);
   const isDateLocked = isTaskHardcoreLocked(task, new Date(), userTimeZone);
 
@@ -129,13 +133,17 @@ export function TaskDetailsHeader({
             {streak > 0 && (
               <span
                 className="flex items-center gap-1 text-tiny text-warning-500 font-bold shrink-0"
-                title={t("streakTitle", { streak })}
+                title={t(
+                  isCycleBasedDaily ? "streakCyclesTitle" : "streakTitle",
+                  { streak },
+                )}
               >
                 <Flame
                   size={12}
                   className="fill-warning-500 text-warning-500"
                 />
-                {streak}d
+                {streak}
+                {isCycleBasedDaily ? "x" : "d"}
               </span>
             )}
           </div>

@@ -228,17 +228,17 @@ export function calculateFocusRewardEstimate(
         };
       }
     } else if (minutesPerPomo <= FOCUS_REWARD_RULES.STANDARD_POMO_MAX_MINUTES) {
-      // Pomodoro padrão (25 a 40 min)
+      // Pomodoro padrão (25 a 49 min)
       baseXp = completedPomos * FOCUS_REWARD_RULES.STANDARD_XP_PER_CYCLE;
       baseCoins = completedPomos * FOCUS_REWARD_RULES.STANDARD_COINS_PER_CYCLE;
     } else {
-      // Pomodoro longo / Deep work (> 40 min)
+      // Pomodoro longo / Deep work (>= 50 min)
       baseXp = completedPomos * FOCUS_REWARD_RULES.DEEP_WORK_XP_PER_CYCLE;
       baseCoins = completedPomos * FOCUS_REWARD_RULES.DEEP_WORK_COINS_PER_CYCLE;
       if (!notice) {
         notice = {
           type: "info",
-          title: `Deep Work (> ${FOCUS_REWARD_RULES.STANDARD_POMO_MAX_MINUTES}m)`,
+          title: `Deep Work (${FOCUS_REWARD_RULES.DEEP_WORK_MIN_MINUTES}m+)`,
           message: isEn
             ? `Extended uninterrupted session qualifies for the maximum bonus (+${FOCUS_REWARD_RULES.DEEP_WORK_COINS_PER_CYCLE.toFixed(2)} 🪙/cycle)!`
             : `Sessão estendida ininterrupta qualifica para a bonificação máxima (+${FOCUS_REWARD_RULES.DEEP_WORK_COINS_PER_CYCLE.toFixed(2)} 🪙/ciclo)!`,

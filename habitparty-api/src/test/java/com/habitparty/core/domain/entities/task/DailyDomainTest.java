@@ -77,19 +77,50 @@ class DailyDomainTest {
   }
 
   @Test
-  @DisplayName("Calcula recompensa com decaimento quando atinge rotina (streak >= 21)")
-  void testCalculateRewardWithStreakDecay() {
-    // 21 repetições para DAILY é a rotina formada (multiplicador 0.5)
-    for (int i = 0; i < 21; i++) {
+  @DisplayName("Daily não sofre decaimento antes de atingir 14 conclusões em sequência")
+  void testDailyDoesNotDecayBeforeBonusThreshold() {
+    for (int i = 0; i < 13; i++) {
       daily.registerCompletion();
     }
-    assertEquals(21, daily.getCurrentStreak());
+    assertEquals(13, daily.getCurrentStreak());
 
     Task.TaskReward reward = daily.calculateReward();
-    // 15 * 0.5 = 7 XP
-    assertEquals(7, reward.xp());
-    // 2.50 * 0.5 = 1.25 coins
-    assertEquals(new BigDecimal("1.25"), reward.coins());
+    assertEquals(15, reward.xp());
+    assertEquals(new BigDecimal("2.50"), reward.coins());
+  }
+
+  @Test
+  @DisplayName("Calcula recompensa com bônus de +10% quando atinge 14 conclusões em sequência")
+  void testCalculateRewardWithConsistencyBonus() {
+    for (int i = 0; i < 14; i++) {
+      daily.registerCompletion();
+    }
+    assertEquals(14, daily.getCurrentStreak());
+
+    Task.TaskReward mediumReward = daily.calculateReward();
+    // MEDIUM: 15 * 1.10 = 16.5 -> 17 XP; 2.50 * 1.10 = 2.75 coins
+    assertEquals(17, mediumReward.xp());
+    assertEquals(new BigDecimal("2.75"), mediumReward.coins());
+
+    Daily easyDaily = new Daily(
+        UUID.randomUUID(), columnId, userId, "Ler 5 páginas", null, 1,
+        TaskPriority.MEDIUM, List.of(), TaskDifficulty.EASY, TaskStatus.PENDING,
+        TaskType.DAILY, false, LocalDate.now(), LocalDateTime.now(), List.of(),
+        14, LocalDate.now(), DailyRepeatType.DAILY, 1, null, null, LocalDateTime.now());
+    Task.TaskReward easyReward = easyDaily.calculateReward();
+    // EASY: 5 * 1.10 = 5.5 -> 6 XP; 0.75 * 1.10 = 0.825 -> 0.83 coins
+    assertEquals(6, easyReward.xp());
+    assertEquals(new BigDecimal("0.83"), easyReward.coins());
+
+    Daily hardDaily = new Daily(
+        UUID.randomUUID(), columnId, userId, "Treino pesado", null, 1,
+        TaskPriority.HIGH, List.of(), TaskDifficulty.HARD, TaskStatus.PENDING,
+        TaskType.DAILY, false, LocalDate.now(), LocalDateTime.now(), List.of(),
+        21, LocalDate.now(), DailyRepeatType.DAILY, 1, null, null, LocalDateTime.now());
+    Task.TaskReward hardReward = hardDaily.calculateReward();
+    // HARD: 30 * 1.10 = 33 XP; 5.00 * 1.10 = 5.50 coins (flat cap, não acumula além de 10%)
+    assertEquals(33, hardReward.xp());
+    assertEquals(new BigDecimal("5.50"), hardReward.coins());
   }
 
   @Test
@@ -196,5 +227,91 @@ class DailyDomainTest {
     assertTrue(biweeklyMultiDay.isStreakStillActive(LocalDate.of(2026, 3, 3)));
     // Na quinta após NÃO concluir quarta (última conclusão segunda), nextExpected (quarta) < quinta -> streak quebra
     assertFalse(biweeklyMultiDay.isStreakStillActive(LocalDate.of(2026, 3, 5)));
+  }
+
+  @Test
+  @DisplayName("Daily WEEKLY 3x/semana (Seg/Qua/Sex) incrementa streak por execuções agendadas até alcançar bônus de 14")
+  void testWeeklyThreeTimesPerWeekReachesFourteenExecutionsBonus() {
+    LocalDate currentDue = LocalDate.of(2026, 3, 2); // Segunda
+    Daily gymDaily = new Daily(
+        UUID.randomUUID(),
+        columnId,
+        userId,
+        "Academia Seg/Qua/Sex",
+        null,
+        0,
+        TaskPriority.HIGH,
+        List.of("saude"),
+        TaskDifficulty.MEDIUM,
+        TaskStatus.PENDING,
+        TaskType.DAILY,
+        false,
+        currentDue,
+        currentDue.atStartOfDay(),
+        List.of(),
+        0,
+        currentDue,
+        DailyRepeatType.WEEKLY,
+        1,
+        List.of(DailyDaysOfWeek.MONDAY, DailyDaysOfWeek.WEDNESDAY, DailyDaysOfWeek.FRIDAY),
+        null,
+        null
+    );
+
+    for (int i = 0; i < 14; i++) {
+      LocalDate scheduledDay = gymDaily.getDueDate().orElseThrow();
+      gymDaily.refreshStreakForDate(scheduledDay);
+      gymDaily.registerCompletion(scheduledDay.atTime(18, 0));
+      gymDaily.changeStatus(TaskStatus.COMPLETED);
+
+      // Simula virada do dia seguinte até a próxima ocorrência agendada
+      LocalDate nextDay = scheduledDay.plusDays(1);
+      assertTrue(gymDaily.isStreakStillActive(nextDay));
+      gymDaily.changeStatus(TaskStatus.PENDING);
+      gymDaily.advanceDueDateToAtLeast(nextDay);
+    }
+
+    assertEquals(14, gymDaily.getCurrentStreak());
+    LocalDate fifteenthScheduledDay = gymDaily.getDueDate().orElseThrow();
+    assertTrue(gymDaily.isStreakStillActive(fifteenthScheduledDay));
+    Task.TaskReward bonusReward = gymDaily.calculateReward(fifteenthScheduledDay);
+    assertEquals(17, bonusReward.xp());
+    assertEquals(new BigDecimal("2.75"), bonusReward.coins());
+  }
+
+  @Test
+  @DisplayName("Daily concluída antecipadamente e rolada para a próxima ocorrência preserva streak até a nova data")
+  void testEarlyCompletionRolloverPreservesStreak() {
+    LocalDate wednesday = LocalDate.of(2026, 3, 4);
+    LocalDate friday = LocalDate.of(2026, 3, 6);
+
+    Daily earlyCompleted = new Daily(
+        UUID.randomUUID(),
+        columnId,
+        userId,
+        "Academia",
+        null,
+        0,
+        TaskPriority.MEDIUM,
+        List.of(),
+        TaskDifficulty.MEDIUM,
+        TaskStatus.PENDING,
+        TaskType.DAILY,
+        false,
+        friday, // dueDate já rolada para sexta após concluir quarta antecipadamente na terça
+        LocalDateTime.of(2026, 3, 1, 8, 0),
+        List.of(),
+        2,
+        LocalDate.of(2026, 3, 2),
+        DailyRepeatType.WEEKLY,
+        1,
+        List.of(DailyDaysOfWeek.MONDAY, DailyDaysOfWeek.WEDNESDAY, DailyDaysOfWeek.FRIDAY),
+        null,
+        LocalDateTime.of(2026, 3, 3, 19, 0) // concluída antecipadamente na terça
+    );
+
+    assertTrue(earlyCompleted.isStreakStillActive(wednesday));
+    assertTrue(earlyCompleted.isStreakStillActive(friday));
+    assertFalse(earlyCompleted.isStreakStillActive(friday.plusDays(1)));
   }
 }

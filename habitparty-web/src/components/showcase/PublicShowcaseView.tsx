@@ -1,31 +1,61 @@
 "use client";
 
-import { Lock, Sparkles, Trophy } from "lucide-react";
+import { Lock, Mountain, Sparkles, Trophy } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useId, useState } from "react";
 import { AchievementsGallery } from "@/components/showcase/AchievementsGallery";
+import { LockedSectionNotice } from "@/components/showcase/LockedSectionNotice";
 import { PublicFriendActionButtons } from "@/components/showcase/PublicFriendActionButtons";
-import { RetrospectivePanel } from "@/components/showcase/RetrospectivePanel";
 import { ShowcaseHeroHeader } from "@/components/showcase/ShowcaseHeroHeader";
 import { ShowcaseHighlightsSection } from "@/components/showcase/ShowcaseHighlightsSection";
+import {
+  getShowcaseTabIds,
+  type ShowcaseTabItem,
+  ShowcaseTabPanelFallback,
+  ShowcaseTabs,
+} from "@/components/showcase/ShowcaseTabs";
 import { ContextualBackButton } from "@/components/ui/ContextualBackButton";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import {
   DEFAULT_MAX_ACHIEVEMENT_POINTS,
   DEFAULT_TOTAL_ACHIEVEMENTS_COUNT,
 } from "@/constants/achievements";
-import { getAvatarFrame } from "@/constants/avatarFrames";
+import { resolveAvatarFrameId } from "@/constants/avatarFrames";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useFriendshipMutations } from "@/hooks/useFriendshipMutations";
+import { useIdlePreload } from "@/hooks/useIdlePreload";
 import type { ShowcaseStatsResponseDTO } from "@/types/showcase";
 import type {
+  FriendConnectionItem,
   PublicUserShowcaseData,
   SocialUserSummary,
   UserRetrospectiveData,
 } from "@/types/social";
 import type { UserResponseDTO } from "@/types/user";
-import { cn } from "@/utils";
+
+const EMPTY_FRIENDS: FriendConnectionItem[] = [];
+
+type PublicShowcaseTabId = "overview" | "progression" | "retrospective";
+
+const preloadProgressionPanel = () =>
+  import("@/components/showcase/ProgressionPyramidPanel").then(
+    (mod) => mod.ProgressionPyramidPanel,
+  );
+
+const ProgressionPyramidPanel = dynamic(preloadProgressionPanel, {
+  loading: ShowcaseTabPanelFallback,
+});
+
+const preloadRetrospectivePanel = () =>
+  import("@/components/showcase/RetrospectivePanel").then(
+    (mod) => mod.RetrospectivePanel,
+  );
+
+const RetrospectivePanel = dynamic(preloadRetrospectivePanel, {
+  loading: ShowcaseTabPanelFallback,
+});
 
 function mapSocialSummaryToUserDTO(
   summary: SocialUserSummary,
@@ -68,10 +98,9 @@ export function PublicShowcaseView({
   const t = useTranslations("showcase.publicProfile");
   const tTabs = useTranslations("showcase.tabs");
   const { isGamified } = useExperienceMode();
+  const tabsBaseId = useId();
 
-  const [activeTab, setActiveTab] = useState<"overview" | "retrospective">(
-    "overview",
-  );
+  const [activeTab, setActiveTab] = useState<PublicShowcaseTabId>("overview");
 
   const {
     isMutating,
@@ -80,6 +109,16 @@ export function PublicShowcaseView({
     removeConnection,
     blockUser,
   } = useFriendshipMutations({ onMutated: () => router.refresh() });
+
+  const canShowProgressionTab = Boolean(
+    data.canViewProfile && data.canViewStats,
+  );
+  const canShowRetroTab = Boolean(
+    data.canViewProfile && data.canViewStats && retrospective?.eligible,
+  );
+
+  useIdlePreload(preloadProgressionPanel, undefined, canShowProgressionTab);
+  useIdlePreload(preloadRetrospectivePanel, undefined, canShowRetroTab);
 
   const mappedUser = mapSocialSummaryToUserDTO(data.user);
   const displayName = data.user.fullName || data.user.username;
@@ -129,9 +168,31 @@ export function PublicShowcaseView({
     />
   );
 
-  const canShowRetroTab = Boolean(
-    data.canViewProfile && data.canViewStats && retrospective?.eligible,
-  );
+  const tabs: ShowcaseTabItem<PublicShowcaseTabId>[] = [
+    { id: "overview", label: tTabs("overview"), icon: Trophy },
+    ...(canShowProgressionTab
+      ? [
+          {
+            id: "progression" as const,
+            label: tTabs("progression"),
+            icon: Mountain,
+          },
+        ]
+      : []),
+    ...(canShowRetroTab
+      ? [
+          {
+            id: "retrospective" as const,
+            label: tTabs("retrospective"),
+            icon: Sparkles,
+          },
+        ]
+      : []),
+  ];
+
+  const overviewIds = getShowcaseTabIds(tabsBaseId, "overview");
+  const progressionIds = getShowcaseTabIds(tabsBaseId, "progression");
+  const retrospectiveIds = getShowcaseTabIds(tabsBaseId, "retrospective");
 
   return (
     <div className="flex flex-col w-full max-w-6xl mx-auto pb-16 gap-6">
@@ -159,7 +220,7 @@ export function PublicShowcaseView({
                 name={displayName}
                 size="lg"
                 hasRing={data.user.isPremium}
-                frameId={getAvatarFrame(data.user.avatarFrame ?? undefined).id}
+                frameId={resolveAvatarFrameId(data.user.avatarFrame)}
               />
               <div className="min-w-0">
                 <h1 className="text-xl sm:text-2xl font-extrabold text-neutral-50 truncate">
@@ -202,51 +263,32 @@ export function PublicShowcaseView({
             isVisitorMode
             isOtherUser
             onToggleVisitorMode={() => {}}
+            onOpenProgression={
+              canShowProgressionTab
+                ? () => setActiveTab("progression")
+                : undefined
+            }
             extraHeaderActions={friendActions}
           />
 
-          {canShowRetroTab && (
-            <div
-              role="tablist"
-              aria-label={tTabs("navAria")}
-              className="flex items-center gap-2 p-1.5 rounded-2xl bg-surface dark:bg-surface/90 border border-neutral-700 dark:border-primary/20 w-fit"
-            >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === "overview"}
-                onClick={() => setActiveTab("overview")}
-                className={cn(
-                  "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer",
-                  activeTab === "overview"
-                    ? "bg-gold text-on-gold shadow-glow-gold-xs"
-                    : "text-neutral-300 hover:text-neutral-50 hover:bg-white/5",
-                )}
-              >
-                <Trophy size={15} aria-hidden="true" />
-                <span>{tTabs("overview")}</span>
-              </button>
-
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === "retrospective"}
-                onClick={() => setActiveTab("retrospective")}
-                className={cn(
-                  "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer",
-                  activeTab === "retrospective"
-                    ? "bg-gold text-on-gold shadow-glow-gold-xs"
-                    : "text-neutral-300 hover:text-neutral-50 hover:bg-white/5",
-                )}
-              >
-                <Sparkles size={15} aria-hidden="true" />
-                <span>{tTabs("retrospective")}</span>
-              </button>
-            </div>
+          {(canShowProgressionTab || canShowRetroTab) && (
+            <ShowcaseTabs
+              baseId={tabsBaseId}
+              ariaLabel={tTabs("navAria")}
+              tabs={tabs}
+              activeTab={activeTab}
+              onSelectTab={setActiveTab}
+              className="w-fit max-w-full"
+            />
           )}
 
           {activeTab === "overview" && (
-            <div role="tabpanel" className="flex flex-col gap-7">
+            <div
+              id={overviewIds.panelId}
+              role="tabpanel"
+              aria-labelledby={overviewIds.tabId}
+              className="flex flex-col gap-7"
+            >
               <ShowcaseHighlightsSection
                 user={mappedUser}
                 stats={fallbackStats}
@@ -259,21 +301,10 @@ export function PublicShowcaseView({
               {data.canViewStats && statsSlot ? (
                 statsSlot
               ) : (
-                <section className="rounded-2xl border border-dashed border-neutral-700 dark:border-primary/25 bg-card/70 dark:bg-surface/40 p-5 flex items-center gap-3">
-                  <Lock
-                    size={18}
-                    className="text-neutral-400 shrink-0"
-                    aria-hidden="true"
-                  />
-                  <div>
-                    <h2 className="text-sm font-bold text-neutral-100">
-                      {t("statsLockedTitle")}
-                    </h2>
-                    <p className="text-xs text-neutral-400 mt-0.5">
-                      {t("statsLockedDesc")}
-                    </p>
-                  </div>
-                </section>
+                <LockedSectionNotice
+                  title={t("statsLockedTitle")}
+                  description={t("statsLockedDesc")}
+                />
               )}
 
               {data.canViewAchievements ? (
@@ -284,27 +315,36 @@ export function PublicShowcaseView({
                   onPinAchievement={() => {}}
                 />
               ) : (
-                <section className="rounded-2xl border border-dashed border-neutral-700 dark:border-primary/25 bg-card/70 dark:bg-surface/40 p-5 flex items-center gap-3">
-                  <Lock
-                    size={18}
-                    className="text-neutral-400 shrink-0"
-                    aria-hidden="true"
-                  />
-                  <div>
-                    <h2 className="text-sm font-bold text-neutral-100">
-                      {t("achievementsLockedTitle")}
-                    </h2>
-                    <p className="text-xs text-neutral-400 mt-0.5">
-                      {t("achievementsLockedDesc")}
-                    </p>
-                  </div>
-                </section>
+                <LockedSectionNotice
+                  title={t("achievementsLockedTitle")}
+                  description={t("achievementsLockedDesc")}
+                />
               )}
             </div>
           )}
 
+          {activeTab === "progression" && canShowProgressionTab && (
+            <div
+              id={progressionIds.panelId}
+              role="tabpanel"
+              aria-labelledby={progressionIds.tabId}
+            >
+              <ProgressionPyramidPanel
+                user={mappedUser}
+                stats={fallbackStats}
+                achievements={data.canViewAchievements ? data.achievements : []}
+                friends={EMPTY_FRIENDS}
+                isVisitorMode
+              />
+            </div>
+          )}
+
           {activeTab === "retrospective" && canShowRetroTab && (
-            <div role="tabpanel">
+            <div
+              id={retrospectiveIds.panelId}
+              role="tabpanel"
+              aria-labelledby={retrospectiveIds.tabId}
+            >
               <RetrospectivePanel
                 initialRetrospective={retrospective}
                 isGamified={isGamified}

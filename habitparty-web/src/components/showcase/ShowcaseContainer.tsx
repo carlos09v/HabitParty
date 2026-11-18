@@ -1,16 +1,20 @@
 "use client";
 
-import { Download, Sparkles, Trophy, Users } from "lucide-react";
+import { Download, Mountain, Sparkles, Trophy, Users } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useId, useState } from "react";
 import { markAchievementsSeenAction } from "@/actions/showcaseActions";
 import { AchievementsGallery } from "@/components/showcase/AchievementsGallery";
-import { FriendsNetworkPanel } from "@/components/showcase/FriendsNetworkPanel";
-import { RetrospectivePanel } from "@/components/showcase/RetrospectivePanel";
 import { ShowcaseHeroHeader } from "@/components/showcase/ShowcaseHeroHeader";
 import { ShowcaseHighlightsSection } from "@/components/showcase/ShowcaseHighlightsSection";
+import {
+  getShowcaseTabIds,
+  type ShowcaseTabItem,
+  ShowcaseTabPanelFallback,
+  ShowcaseTabs,
+} from "@/components/showcase/ShowcaseTabs";
 import { ContextualBackButton } from "@/components/ui/ContextualBackButton";
 import { MAX_SHOWCASE_HIGHLIGHTS } from "@/constants/achievements";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
@@ -23,10 +27,40 @@ import type {
   UserShowcaseResponseDTO,
 } from "@/types/showcase";
 import type {
+  FriendConnectionItem,
   FriendsOverviewData,
   UserRetrospectiveData,
 } from "@/types/social";
-import { cn, resolveShowcaseTab, type ShowcaseTabId } from "@/utils";
+import { resolveShowcaseTab, type ShowcaseTabId } from "@/utils";
+
+const EMPTY_FRIENDS: FriendConnectionItem[] = [];
+
+const preloadProgressionPanel = () =>
+  import("@/components/showcase/ProgressionPyramidPanel").then(
+    (mod) => mod.ProgressionPyramidPanel,
+  );
+
+const ProgressionPyramidPanel = dynamic(preloadProgressionPanel, {
+  loading: ShowcaseTabPanelFallback,
+});
+
+const preloadFriendsPanel = () =>
+  import("@/components/showcase/FriendsNetworkPanel").then(
+    (mod) => mod.FriendsNetworkPanel,
+  );
+
+const FriendsNetworkPanel = dynamic(preloadFriendsPanel, {
+  loading: ShowcaseTabPanelFallback,
+});
+
+const preloadRetrospectivePanel = () =>
+  import("@/components/showcase/RetrospectivePanel").then(
+    (mod) => mod.RetrospectivePanel,
+  );
+
+const RetrospectivePanel = dynamic(preloadRetrospectivePanel, {
+  loading: ShowcaseTabPanelFallback,
+});
 
 const preloadHighlightPickerModal = () =>
   import("@/components/showcase/ShowcaseHighlightPickerModal").then(
@@ -66,6 +100,7 @@ export function ShowcaseContainer({
   const activeFrameId = useActiveAvatarFrame();
   const searchParams = useSearchParams();
   const urlTabParam = searchParams.get("tab");
+  const tabsBaseId = useId();
 
   const [activeTab, setActiveTab] = useState<ShowcaseTabId>(initialTab);
   const [highlights, setHighlights] = useState<ProfileHighlightResponseDTO[]>(
@@ -91,11 +126,12 @@ export function ShowcaseContainer({
 
   useIdlePreload(preloadHighlightPickerModal);
   useIdlePreload(preloadPreviewCardModal);
+  useIdlePreload(preloadProgressionPanel);
+  useIdlePreload(preloadFriendsPanel);
+  useIdlePreload(preloadRetrospectivePanel);
 
   useEffect(() => {
-    if (urlTabParam) {
-      setActiveTab(resolveShowcaseTab(urlTabParam));
-    }
+    setActiveTab(resolveShowcaseTab(urlTabParam));
   }, [urlTabParam]);
 
   useEffect(() => {
@@ -200,6 +236,26 @@ export function ShowcaseContainer({
         )
     : "";
 
+  const tabs: ShowcaseTabItem<ShowcaseTabId>[] = [
+    { id: "overview", label: t("tabs.overview"), icon: Trophy },
+    { id: "progression", label: t("tabs.progression"), icon: Mountain },
+    {
+      id: "friends",
+      label: t("tabs.friends", { count: friendsCount }),
+      icon: Users,
+      badge:
+        pendingRequestsCount > 0
+          ? t("tabs.friendsPending", { count: pendingRequestsCount })
+          : undefined,
+    },
+    { id: "retrospective", label: t("tabs.retrospective"), icon: Sparkles },
+  ];
+
+  const overviewIds = getShowcaseTabIds(tabsBaseId, "overview");
+  const progressionIds = getShowcaseTabIds(tabsBaseId, "progression");
+  const friendsIds = getShowcaseTabIds(tabsBaseId, "friends");
+  const retrospectiveIds = getShowcaseTabIds(tabsBaseId, "retrospective");
+
   return (
     <div className="flex flex-col w-full max-w-6xl mx-auto pb-16 gap-6">
       {searchParams.get("from") === "settings" && (
@@ -213,10 +269,11 @@ export function ShowcaseContainer({
 
       {/* HERO HEADER: AVATAR + MOLDURA + BIO + NÍVEL + BOTÃO CARD */}
       <ShowcaseHeroHeader
-        user={initialShowcase.user}
+        user={resolvedUser}
         stats={initialShowcase.stats}
         isVisitorMode={isVisitorMode}
         onToggleVisitorMode={() => setIsVisitorMode((prev) => !prev)}
+        onOpenProgression={() => handleSelectTab("progression")}
         onOpenPreviewCard={() =>
           setPreviewModalState({
             isOpen: true,
@@ -226,76 +283,23 @@ export function ShowcaseContainer({
         }
       />
 
-      {/* NAVEGAÇÃO DE ABAS DO PERFIL: VITRINE | AMIGOS | RETROSPECTIVA */}
-      <div
-        role="tablist"
-        aria-label={t("tabs.navAria")}
-        className="flex items-center gap-2 p-1.5 rounded-2xl bg-surface dark:bg-surface/90 border border-neutral-700 dark:border-primary/20 overflow-x-auto custom-scrollbar"
-      >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "overview"}
-          onClick={() => handleSelectTab("overview")}
-          className={cn(
-            "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer",
-            activeTab === "overview"
-              ? "bg-gold text-on-gold shadow-glow-gold-xs"
-              : "text-neutral-300 hover:text-neutral-50 hover:bg-white/5",
-          )}
-        >
-          <Trophy size={15} aria-hidden="true" />
-          <span>{t("tabs.overview")}</span>
-        </button>
-
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "friends"}
-          onClick={() => handleSelectTab("friends")}
-          className={cn(
-            "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer",
-            activeTab === "friends"
-              ? "bg-gold text-on-gold shadow-glow-gold-xs"
-              : "text-neutral-300 hover:text-neutral-50 hover:bg-white/5",
-          )}
-        >
-          <Users size={15} aria-hidden="true" />
-          <span>{t("tabs.friends", { count: friendsCount })}</span>
-          {pendingRequestsCount > 0 && (
-            <span
-              className={cn(
-                "px-2 py-0.5 rounded-full text-[10px] font-extrabold",
-                activeTab === "friends"
-                  ? "bg-black/20 text-on-gold"
-                  : "bg-amber-500/20 text-amber-300 border border-amber-500/40",
-              )}
-            >
-              {t("tabs.friendsPending", { count: pendingRequestsCount })}
-            </span>
-          )}
-        </button>
-
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "retrospective"}
-          onClick={() => handleSelectTab("retrospective")}
-          className={cn(
-            "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer",
-            activeTab === "retrospective"
-              ? "bg-gold text-on-gold shadow-glow-gold-xs"
-              : "text-neutral-300 hover:text-neutral-50 hover:bg-white/5",
-          )}
-        >
-          <Sparkles size={15} aria-hidden="true" />
-          <span>{t("tabs.retrospective")}</span>
-        </button>
-      </div>
+      {/* NAVEGAÇÃO DE ABAS DO PERFIL: VITRINE | PROGRESSÃO | AMIGOS | RETROSPECTIVA */}
+      <ShowcaseTabs
+        baseId={tabsBaseId}
+        ariaLabel={t("tabs.navAria")}
+        tabs={tabs}
+        activeTab={activeTab}
+        onSelectTab={handleSelectTab}
+      />
 
       {/* ABA 1: VITRINE & CONQUISTAS */}
       {activeTab === "overview" && (
-        <div role="tabpanel" className="flex flex-col gap-7">
+        <div
+          id={overviewIds.panelId}
+          role="tabpanel"
+          aria-labelledby={overviewIds.tabId}
+          className="flex flex-col gap-7"
+        >
           {showSeasonalRetroBanner && initialRetrospective && (
             <section className="rounded-2xl border border-amber-500/45 dark:border-gold/45 bg-gradient-to-r from-amber-500/15 via-primary/15 to-surface/60 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3">
@@ -339,7 +343,7 @@ export function ShowcaseContainer({
 
           {/* VITRINE DE DESTAQUES (4 SLOTS PERSONALIZÁVEIS) */}
           <ShowcaseHighlightsSection
-            user={initialShowcase.user}
+            user={resolvedUser}
             stats={initialShowcase.stats}
             highlights={highlights}
             achievements={initialShowcase.achievements}
@@ -360,16 +364,42 @@ export function ShowcaseContainer({
         </div>
       )}
 
-      {/* ABA 2: REDE SOCIAL & AMIGOS */}
+      {/* ABA 2: PIRÂMIDE DE PROGRESSÃO & PATENTES */}
+      {activeTab === "progression" && (
+        <div
+          id={progressionIds.panelId}
+          role="tabpanel"
+          aria-labelledby={progressionIds.tabId}
+        >
+          <ProgressionPyramidPanel
+            user={resolvedUser}
+            stats={initialShowcase.stats}
+            achievements={initialShowcase.achievements}
+            friends={initialFriendsOverview?.friends ?? EMPTY_FRIENDS}
+            activeFrameId={activeFrameId}
+            isVisitorMode={isVisitorMode}
+          />
+        </div>
+      )}
+
+      {/* ABA 3: REDE SOCIAL & AMIGOS */}
       {activeTab === "friends" && (
-        <div role="tabpanel">
+        <div
+          id={friendsIds.panelId}
+          role="tabpanel"
+          aria-labelledby={friendsIds.tabId}
+        >
           <FriendsNetworkPanel initialOverview={initialFriendsOverview} />
         </div>
       )}
 
-      {/* ABA 3: RETROSPECTIVA ANUAL */}
+      {/* ABA 4: RETROSPECTIVA ANUAL */}
       {activeTab === "retrospective" && (
-        <div role="tabpanel">
+        <div
+          id={retrospectiveIds.panelId}
+          role="tabpanel"
+          aria-labelledby={retrospectiveIds.tabId}
+        >
           <RetrospectivePanel
             initialRetrospective={initialRetrospective}
             isGamified={isGamified}
@@ -391,7 +421,7 @@ export function ShowcaseContainer({
           key={pickerState.slotIndex}
           isOpen={pickerState.isOpen}
           initialSlotIndex={pickerState.slotIndex}
-          user={initialShowcase.user}
+          user={resolvedUser}
           stats={initialShowcase.stats}
           highlights={highlights}
           achievements={initialShowcase.achievements}

@@ -269,9 +269,7 @@ export function mapRewardFormToCreatePayload(
   const backendType = UI_TO_BACKEND_REWARD_TYPE[input.type] || "SINGLE_USE";
   const backendCategory = UI_TO_BACKEND_CATEGORY[input.category] || "NONE";
   const backendPackageLevel =
-    input.type === "SingleUse"
-      ? undefined
-      : UI_TO_BACKEND_PACKAGE[input.packageLevel || "Nenhum"] || "NONE";
+    UI_TO_BACKEND_PACKAGE[input.packageLevel || "Nenhum"] || "NONE";
 
   return {
     name: input.title.trim(),

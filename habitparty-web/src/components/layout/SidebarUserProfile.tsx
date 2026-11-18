@@ -9,6 +9,7 @@ import type { components } from "@/api/schema";
 import { SubscriptionExpirationAlert } from "@/components/subscription/SubscriptionExpirationAlert";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { FounderBadge } from "@/components/ui/FounderBadge";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
@@ -206,12 +207,13 @@ export function SidebarUserProfile({
           </div>
         </div>
 
-        <div
-          className="h-2 w-full bg-neutral-700 dark:bg-neutral-900 border border-neutral-600/70 dark:border-white/5 rounded-full overflow-hidden"
-          role="progressbar"
-          aria-valuenow={currentXp}
-          aria-valuemin={0}
-          aria-valuemax={targetXp}
+        <ProgressBar
+          percent={xpPercent}
+          className="h-2 bg-neutral-700 dark:bg-neutral-900 border border-neutral-600/70 dark:border-white/5"
+          fillClassName="bg-gold transition-transform duration-500 ease-out shadow-glow-gold-xs"
+          ariaValueNow={currentXp}
+          ariaValueMin={0}
+          ariaValueMax={targetXp}
           title={
             !progress.isMaxLevel
               ? isGamified
@@ -233,12 +235,7 @@ export function SidebarUserProfile({
                 ? t("progressMaxTitle", { currentXp, levelTitle })
                 : t("progressPtsMaxTitle", { currentXp, levelTitle })
           }
-        >
-          <div
-            className="h-full w-full origin-left bg-gold transition-transform duration-500 ease-out shadow-glow-gold-xs"
-            style={{ transform: `scaleX(${xpPercent / 100})` }}
-          />
-        </div>
+        />
       </div>
 
       {user?.isPremium && (

@@ -1,8 +1,10 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { serverApi } from "@/api/server";
+import { FREE_ACTIVE_WORKSPACE_LIMIT } from "@/constants/routine";
 import { getRequestLocale } from "@/i18n/request";
 import { getRawInventoryItems } from "@/services/inventoryService";
 import { fetchWorkspaceBoardColumns } from "@/services/taskService";
+import { getCurrentUser } from "@/services/userService";
 import { getWorkspaces } from "@/services/workspaceService";
 import type {
   FocusActivity,
@@ -59,6 +61,7 @@ export async function getRawFocusActivities(): Promise<
 export async function getFocusActivitiesAndItems(): Promise<{
   activities: FocusActivity[];
   backpackItems: InventoryItemResponseDTO[];
+  allInventoryItems: InventoryItemResponseDTO[];
 }> {
   const [rawActivities, allInventoryItems, locale] = await Promise.all([
     getRawFocusActivities(),
@@ -71,7 +74,7 @@ export async function getFocusActivitiesAndItems(): Promise<{
     (item) => item.status === "IN_FOCUS",
   );
 
-  return { activities, backpackItems };
+  return { activities, backpackItems, allInventoryItems };
 }
 
 async function fetchFocusRecordsPageUncached(
@@ -153,11 +156,12 @@ export async function fetchRawUserFocusRecords(
 }
 
 /**
- * Carrega os registros recentes de foco (atividades e tarefas) para visualização na sidebar.
+ * Carrega os registros recentes de foco (atividades, tarefas e cupons) para visualização na sidebar.
  */
 export async function getFocusInitialRecords(
   activities: FocusActivity[],
   prefetchedRawRecords?: FocusRecordResponseDTO[],
+  inventoryItems: InventoryItemResponseDTO[] = [],
 ): Promise<FocusRecord[]> {
   const sortedActivityIds = (activities || [])
     .map((act) => act.id)
@@ -168,7 +172,12 @@ export async function getFocusInitialRecords(
     prefetchedRawRecords !== undefined
       ? prefetchedRawRecords
       : await fetchRawUserFocusRecords(sortedActivityIds);
-  const initialRecords = mapFocusRecords(rawRecords, activities);
+  const initialRecords = mapFocusRecords(
+    rawRecords,
+    activities,
+    undefined,
+    inventoryItems,
+  );
 
   // Ordena do mais recente para o mais antigo
   initialRecords.sort(
@@ -180,15 +189,27 @@ export async function getFocusInitialRecords(
 
 /**
  * Carrega as tarefas Diárias e Afazeres pendentes do usuário para vínculo rápido no Palco de Foco.
+ * Respeita o limite de ambientes ativos no plano Free (somente-leitura não recebe novas sessões concluídas).
  */
 export async function getFocusableTasks(): Promise<FocusableTaskItem[]> {
+  "use cache: private";
+  cacheLife("private30");
+  cacheTag("tasks", "kanban", "workspaces", "user");
+
   try {
-    const workspaces = await getWorkspaces();
+    const [workspaces, user] = await Promise.all([
+      getWorkspaces(),
+      getCurrentUser(),
+    ]);
     if (!workspaces || workspaces.length === 0) return [];
 
+    const isPremium = user?.isPremium ?? false;
+    const allowedWorkspaces = isPremium
+      ? workspaces
+      : workspaces.slice(0, FREE_ACTIVE_WORKSPACE_LIMIT);
+
     const boards = await Promise.all(
-      workspaces
-        .slice(0, 4)
+      allowedWorkspaces
         .filter((ws) => Boolean(ws.id))
         .map(async (ws) => {
           const { columns } = await fetchWorkspaceBoardColumns(ws.id as string);
@@ -226,22 +247,19 @@ export async function getFocusableTasks(): Promise<FocusableTaskItem[]> {
   }
 }
 
-/**
- * Obtém todos os dados iniciais necessários para a renderização da tela de Foco.
- */
-export async function getFocusPageData(): Promise<FocusPageData> {
-  const [{ activities, backpackItems }, focusableTasks, firstRecordsPage] =
-    await Promise.all([
-      getFocusActivitiesAndItems(),
-      getFocusableTasks(),
-      fetchUserFocusRecordsPage(0, 100),
-    ]);
+async function fetchInitialRecordsBundle(): Promise<{
+  combinedRawRecords?: FocusRecordResponseDTO[];
+  lastFetchedPage: FocusRecordsPageResult | null;
+}> {
+  const firstRecordsPage = await fetchUserFocusRecordsPage(0, 100);
+  if (!firstRecordsPage) {
+    return { combinedRawRecords: undefined, lastFetchedPage: null };
+  }
 
-  // Preserva janela ampliada (até 300 registros) para análises semanais sem custo extra a quem tem <= 100
-  let combinedRawRecords = firstRecordsPage?.records;
+  let combinedRawRecords = firstRecordsPage.records;
   let lastFetchedPage = firstRecordsPage;
 
-  if (firstRecordsPage?.hasMore) {
+  if (firstRecordsPage.hasMore) {
     const extraPageNumbers = [1];
     if (firstRecordsPage.totalPages > 2) {
       extraPageNumbers.push(2);
@@ -261,9 +279,27 @@ export async function getFocusPageData(): Promise<FocusPageData> {
     }
   }
 
+  return { combinedRawRecords, lastFetchedPage };
+}
+
+/**
+ * Obtém todos os dados iniciais necessários para a renderização da tela de Foco.
+ */
+export async function getFocusPageData(): Promise<FocusPageData> {
+  const [
+    { activities, backpackItems, allInventoryItems },
+    focusableTasks,
+    { combinedRawRecords, lastFetchedPage },
+  ] = await Promise.all([
+    getFocusActivitiesAndItems(),
+    getFocusableTasks(),
+    fetchInitialRecordsBundle(),
+  ]);
+
   const initialRecords = await getFocusInitialRecords(
     activities,
     combinedRawRecords,
+    allInventoryItems,
   );
 
   return {

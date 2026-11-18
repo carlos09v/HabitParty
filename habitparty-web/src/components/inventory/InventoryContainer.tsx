@@ -2,13 +2,14 @@
 
 import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
-import { useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { reorderInventory } from "@/actions/inventoryActions";
 import { InventoryCatalogView } from "@/components/inventory/InventoryCatalogView";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
+import { REWARD_CATEGORY_OPTIONS } from "@/constants/reward";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useInventoryCatalogActions } from "@/hooks/useInventoryCatalogActions";
 import { useItemCatalogFilters } from "@/hooks/useItemCatalogFilters";
@@ -17,6 +18,11 @@ import type { AppLocale } from "@/i18n/config";
 import type { InventoryItem } from "@/types/inventory";
 import type { SelectOption } from "@/types/ui";
 import { calculateInventoryWelcomeStats } from "@/utils/catalogMetrics";
+import {
+  isMysteryBoxReward,
+  toCategoryMessageKey,
+  toRewardTypeMessageKey,
+} from "@/utils/rewardMapper";
 
 const MysteryBoxRouletteModal = dynamic(
   () =>
@@ -35,34 +41,32 @@ export function InventoryContainer({
 }) {
   const locale = useLocale() as AppLocale;
   const t = useTranslations("inventory.container");
+  const tRewardOptions = useTranslations("rewards.options");
   const { isGamified } = useExperienceMode();
 
-  const statusOptions = useMemo<SelectOption[]>(
-    () => [
-      { label: t("filters.statusAll"), value: "" },
-      { label: t("filters.statusAvailable"), value: "AVAILABLE" },
-      { label: t("filters.statusInFocus"), value: "IN_FOCUS" },
-    ],
-    [t],
-  );
+  const itemsRef = useRef<InventoryItem[]>(initialItems);
 
-  const typeOptions = useMemo<SelectOption[]>(
-    () => [
-      { label: t("filters.typeAll"), value: "" },
-      { label: t("filters.typeSingleUse"), value: "SingleUse" },
-      { label: t("filters.typeTimeBased"), value: "TimeBased" },
-      { label: t("filters.typeMysteryBox"), value: "MysteryBox" },
-    ],
-    [t],
-  );
+  const handleReorderInventory = useCallback(
+    async (updates: { id: string; newIndex: number }[]) => {
+      const stackById = new Map(
+        itemsRef.current.map((item) => [item.id, item]),
+      );
+      let flatIndex = 0;
+      const expandedUpdates: { itemId: string; newIndex: number }[] = [];
 
-  const sortOptions = useMemo<SelectOption[]>(
-    () => [
-      { label: t("filters.sortDefault"), value: "" },
-      { label: t("filters.sortQuantityDesc"), value: "quantity-desc" },
-      { label: t("filters.sortName"), value: "name" },
-    ],
-    [t],
+      for (const update of updates) {
+        const stack = stackById.get(update.id);
+        const physicalIds = stack?.itemIds?.length
+          ? stack.itemIds
+          : [update.id];
+        for (const itemId of physicalIds) {
+          expandedUpdates.push({ itemId, newIndex: flatIndex++ });
+        }
+      }
+
+      return reorderInventory(expandedUpdates);
+    },
+    [],
   );
 
   const {
@@ -77,18 +81,71 @@ export function InventoryContainer({
   const { items, setItems, sensors, handleDragEnd } =
     useReorderableList<InventoryItem>({
       initialItems,
-      onReorderServerAction: async (updates) => {
-        return reorderInventory(
-          updates.map((u) => ({ itemId: u.id, newIndex: u.newIndex })),
-        );
-      },
+      onReorderServerAction: handleReorderInventory,
       isFiltering,
     });
+
+  itemsRef.current = items;
+
+  const hasMysteryItems = useMemo(
+    () =>
+      items.some((item) =>
+        isMysteryBoxReward(
+          item.reward?.type || item.itemType,
+          item.reward?.icon || item.iconName,
+        ),
+      ),
+    [items],
+  );
+
+  const statusOptions = useMemo<SelectOption[]>(
+    () => [
+      { label: t("filters.statusAll"), value: "" },
+      { label: t("filters.statusAvailable"), value: "AVAILABLE" },
+      { label: t("filters.statusInFocus"), value: "IN_FOCUS" },
+    ],
+    [t],
+  );
+
+  const typeOptions = useMemo<SelectOption[]>(() => {
+    const base: SelectOption[] = [
+      { label: t("filters.typeAll"), value: "" },
+      { label: t("filters.typeSingleUse"), value: "SingleUse" },
+      { label: t("filters.typeTimeBased"), value: "TimeBased" },
+    ];
+    if (isGamified || hasMysteryItems) {
+      base.push({ label: t("filters.typeMysteryBox"), value: "MysteryBox" });
+    }
+    return base;
+  }, [hasMysteryItems, isGamified, t]);
+
+  const categoryOptions = useMemo<SelectOption[]>(
+    () =>
+      REWARD_CATEGORY_OPTIONS.filter((opt) => opt.value !== "Dívida").map(
+        (opt) => ({
+          value: opt.value,
+          label: opt.value
+            ? tRewardOptions(`categories.${toCategoryMessageKey(opt.value)}`)
+            : tRewardOptions("categories.all"),
+        }),
+      ),
+    [tRewardOptions],
+  );
+
+  const sortOptions = useMemo<SelectOption[]>(
+    () => [
+      { label: t("filters.sortDefault"), value: "" },
+      { label: t("filters.sortQuantityDesc"), value: "quantity-desc" },
+      { label: t("filters.sortName"), value: "name" },
+    ],
+    [t],
+  );
 
   const {
     openingBoxItem,
     handleOpenMysteryBox,
     handleCloseMysteryBox,
+    handleMysteryBoxOpened,
     itemToDiscard,
     setItemToDiscard,
     isDiscarding,
@@ -104,19 +161,22 @@ export function InventoryContainer({
   } = useInventoryCatalogActions({ items, setItems });
 
   const filteredItems = useMemo(() => {
+    const searchLower = filters.search.trim().toLowerCase();
+
     let result = items.filter((item) => {
       const matchSearch =
-        !filters.search ||
-        item.reward.title
-          .toLowerCase()
-          .includes(filters.search.toLowerCase()) ||
-        item.reward.description
-          .toLowerCase()
-          .includes(filters.search.toLowerCase());
+        !searchLower ||
+        item.reward.title.toLowerCase().includes(searchLower) ||
+        (item.reward.description || "").toLowerCase().includes(searchLower);
 
-      const matchType = !filters.type || item.reward.type === filters.type;
+      const matchType =
+        !filters.type ||
+        toRewardTypeMessageKey(item.reward.type) ===
+          toRewardTypeMessageKey(filters.type);
       const matchCat =
-        !filters.category || item.reward.category === filters.category;
+        !filters.category ||
+        toCategoryMessageKey(item.reward.category) ===
+          toCategoryMessageKey(filters.category);
 
       const matchStatus =
         !filters.status ||
@@ -131,12 +191,12 @@ export function InventoryContainer({
       result = [...result].sort((a, b) => b.quantity - a.quantity);
     } else if (filters.sortBy === "name") {
       result = [...result].sort((a, b) =>
-        a.reward.title.localeCompare(b.reward.title),
+        a.reward.title.localeCompare(b.reward.title, locale),
       );
     }
 
     return result;
-  }, [items, filters]);
+  }, [items, filters, locale]);
 
   const welcomeStats = useMemo(() => {
     const { stats } = calculateInventoryWelcomeStats(items, locale, isGamified);
@@ -204,6 +264,12 @@ export function InventoryContainer({
               label: t("filters.statusLabel"),
               options: statusOptions,
               value: filters.status || "",
+            },
+            {
+              id: "category",
+              label: t("filters.categoryLabel"),
+              options: categoryOptions,
+              value: filters.category || "",
             },
             {
               id: "type",
@@ -278,6 +344,7 @@ export function InventoryContainer({
           isOpen={Boolean(openingBoxItem)}
           onClose={handleCloseMysteryBox}
           item={openingBoxItem}
+          onSuccess={handleMysteryBoxOpened}
         />
       )}
     </>

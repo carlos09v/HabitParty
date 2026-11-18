@@ -1,6 +1,12 @@
 "use client";
 
-import { AlertTriangle, ChevronDown, Info, Sparkles } from "lucide-react";
+import {
+  AlertTriangle,
+  ChevronDown,
+  Info,
+  Sparkles,
+  TrendingUp,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { CoinAmount } from "@/components/ui/reward/CoinAmount";
@@ -118,7 +124,14 @@ export function RewardPreview({
             </div>
 
             {estimate.stageLabel && (
-              <span className="text-[10px] font-bold text-primary dark:text-purple-300 bg-primary/10 dark:bg-purple-500/15 border border-primary/25 dark:border-purple-500/30 px-1.5 py-0.5 rounded">
+              <span
+                className={cn(
+                  "text-[10px] font-bold px-1.5 py-0.5 rounded border",
+                  estimate.status === "boosted"
+                    ? "text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500/30"
+                    : "text-primary dark:text-purple-300 bg-primary/10 dark:bg-purple-500/15 border-primary/25 dark:border-purple-500/30",
+                )}
+              >
                 {estimate.stageLabel}
               </span>
             )}
@@ -233,13 +246,20 @@ export function RewardPreview({
                     "flex items-start gap-2 p-2 rounded-lg border text-xs leading-snug",
                     notice.tone === "warning"
                       ? "bg-amber-500/10 border-amber-500/35 text-amber-800 dark:text-amber-200"
-                      : "bg-sky-500/10 dark:bg-blue-500/10 border-sky-500/30 dark:border-blue-500/30 text-sky-800 dark:text-blue-200",
+                      : notice.tone === "success"
+                        ? "bg-emerald-500/10 border-emerald-500/35 text-emerald-800 dark:text-emerald-200"
+                        : "bg-sky-500/10 dark:bg-blue-500/10 border-sky-500/30 dark:border-blue-500/30 text-sky-800 dark:text-blue-200",
                   )}
                 >
                   {notice.tone === "warning" ? (
                     <AlertTriangle
                       size={14}
                       className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5"
+                    />
+                  ) : notice.tone === "success" ? (
+                    <TrendingUp
+                      size={14}
+                      className="shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5"
                     />
                   ) : (
                     <Info

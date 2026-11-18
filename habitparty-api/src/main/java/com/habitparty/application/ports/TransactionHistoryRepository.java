@@ -1,5 +1,6 @@
 package com.habitparty.application.ports;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -111,5 +112,18 @@ public interface TransactionHistoryRepository {
         .toLocalDateTime();
     return countByUserIdAndReferenceIdAndTypeInRange(
         userId, referenceId, transactionType, startInclusive, endExclusive);
+  }
+
+  default long countMismatchedFocusCompletedTimestamps() {
+    return 0L;
+  }
+
+  default int syncFocusCompletedTimestamps() {
+    return 0;
+  }
+
+  default int updateFocusRewardSnapshot(
+      UUID referenceId, UUID userId, int xpAmount, BigDecimal goldAmount) {
+    return 0;
   }
 }

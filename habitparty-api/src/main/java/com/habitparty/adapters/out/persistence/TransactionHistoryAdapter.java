@@ -1,5 +1,6 @@
 package com.habitparty.adapters.out.persistence;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -293,5 +294,28 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
         transactionType,
         startInclusive,
         endExclusive);
+  }
+
+  @Override
+  public long countMismatchedFocusCompletedTimestamps() {
+    return repository.countMismatchedFocusCompletedTimestamps();
+  }
+
+  @Override
+  public int syncFocusCompletedTimestamps() {
+    return repository.syncFocusCompletedTimestampsWithFocusRecords();
+  }
+
+  @Override
+  public int updateFocusRewardSnapshot(
+      UUID referenceId, UUID userId, int xpAmount, BigDecimal goldAmount) {
+    if (referenceId == null || userId == null) {
+      return 0;
+    }
+    return repository.updateFocusRewardSnapshot(
+        referenceId,
+        userId,
+        Math.max(0, xpAmount),
+        goldAmount != null ? goldAmount : BigDecimal.ZERO);
   }
 }

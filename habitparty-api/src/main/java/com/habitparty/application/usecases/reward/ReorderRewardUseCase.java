@@ -33,12 +33,14 @@ public class ReorderRewardUseCase {
     for (RewardOrderCommand cmd : newOrderList) {
       Reward reward = mapaRecompensas.get(cmd.id());
 
-      if (reward != null) { // Evita NullPointer caso o front mande um ID que não existe
+      if (reward != null && reward.getOrder_index() != cmd.newIndex()) { // Evita UPDATE desnecessário quando índice não mudou
         reward.updateOrderIndex(cmd.newIndex());
         updatedRewards.add(reward);
       }
     }
 
-    port.saveAll(updatedRewards);
+    if (!updatedRewards.isEmpty()) {
+      port.saveAll(updatedRewards);
+    }
   }
 }

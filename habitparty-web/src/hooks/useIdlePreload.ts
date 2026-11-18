@@ -6,9 +6,13 @@ import { useEffect } from "react";
  * Pré-carrega chunks `dynamic()` no período ocioso do navegador após a página estabilizar,
  * eliminando o atraso de rede/parse na 1ª abertura sem competir com a hidratação inicial.
  */
-export function useIdlePreload(preload: () => void, delayFallbackMs = 1200) {
+export function useIdlePreload(
+  preload: () => void,
+  delayFallbackMs = 1200,
+  enabled = true,
+) {
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (!enabled || typeof window === "undefined") return;
 
     if ("requestIdleCallback" in window) {
       const idleId = window.requestIdleCallback(
@@ -22,5 +26,5 @@ export function useIdlePreload(preload: () => void, delayFallbackMs = 1200) {
 
     const timerId = globalThis.setTimeout(preload, delayFallbackMs);
     return () => globalThis.clearTimeout(timerId);
-  }, [preload, delayFallbackMs]);
+  }, [preload, delayFallbackMs, enabled]);
 }

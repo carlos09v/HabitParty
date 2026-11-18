@@ -60,6 +60,12 @@ public class Reward {
     }
   }
 
+  public static void validatePrice(BigDecimal price) {
+    if (price == null || price.compareTo(BigDecimal.ZERO) <= 0) {
+      throw new DomainValidationException("O preço deve ser maior que zero.");
+    }
+  }
+
   public void validateOwnership(UUID userIdLogado) {
     if (!this.userId.equals(userIdLogado)) {
       throw new UnauthorizedException("Você não tem permissão!");
@@ -87,9 +93,7 @@ public class Reward {
     }
 
     if (newPrice != null) {
-      if (newPrice.compareTo(BigDecimal.ZERO) < 0) {
-        throw new DomainValidationException("O preço não pode ser negativo.");
-      }
+      validatePrice(newPrice);
       this.price = newPrice;
     }
 
@@ -110,9 +114,11 @@ public class Reward {
     }
 
     if (this.type == RewardType.SINGLE_USE) {
-      this.packageLevel = null;
       this.baseDurationMinutes = null;
       this.lootItems = null;
+      if (newPackageLevel != null) {
+        this.packageLevel = newPackageLevel;
+      }
     } else if (this.type == RewardType.TIME_BASED) {
       this.lootItems = null;
       if (newPackageLevel != null) {

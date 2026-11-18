@@ -4,7 +4,7 @@ import {
   normalizeTaskDifficulty,
   normalizeTaskType,
 } from "@/constants/task";
-import type { AppLocale } from "@/i18n/config";
+import { type AppLocale, toIntlLocale } from "@/i18n/config";
 import type { EconomyBarData } from "@/types/dashboard";
 import type { TransactionHistoryResponseDTO } from "@/types/history";
 import {
@@ -43,7 +43,7 @@ export function formatCoins(
   if (Number.isNaN(num)) return "0";
 
   const { compact = false, maxDecimals = 2, locale = "pt-BR" } = options;
-  const intlLocale = locale === "en" ? "en-US" : "pt-BR";
+  const intlLocale = toIntlLocale(locale);
 
   if (compact && Math.abs(num) >= 1000) {
     return new Intl.NumberFormat(intlLocale, {
@@ -225,13 +225,18 @@ export interface TaskRewardCalculationInput {
   timeZone?: string | null;
 }
 
-export type RewardStage = "INITIAL" | "ADAPTATION" | "FORMED";
+export type RewardStage =
+  | "INITIAL"
+  | "ADAPTATION"
+  | "FORMED"
+  | "CONSISTENCY_BONUS";
 
 export interface TaskRewardBreakdown {
   baseReward: { xp: number; gold: number };
   finalReward: { xp: number; gold: number };
   multiplier: number;
   decayPercentage: number;
+  bonusPercentage: number;
   stage: RewardStage;
   stageLabel: string;
   stageBadgeVariant: "emerald" | "amber" | "purple";
@@ -241,13 +246,33 @@ export interface TaskRewardBreakdown {
     formed: number;
   };
   explanation: string;
-  unit: "repetições" | "dias de ofensiva";
+  unit: "repetições" | "dias de ofensiva" | "ciclos agendados";
   hasDecay: boolean;
+  hasBonus: boolean;
+}
+
+/**
+ * Arredonda para cima na metade (RoundingMode.HALF_UP do BigDecimal no backend),
+ * usado para o bônus de consistência em Daily.
+ */
+function roundHalfUpTwoDecimals(value: number): number {
+  const scaled = Number((value * 100).toPrecision(12));
+  const floor = Math.floor(scaled);
+  const fraction = scaled - floor;
+  const rounded = fraction >= 0.5 ? floor + 1 : floor;
+  return rounded / 100;
+}
+
+function roundHalfUpInt(value: number): number {
+  const scaled = Number(value.toPrecision(12));
+  const floor = Math.floor(scaled);
+  const fraction = scaled - floor;
+  return fraction >= 0.5 ? floor + 1 : floor;
 }
 
 /**
  * Arredonda para 2 casas decimais seguindo RoundingMode.HALF_DOWN do BigDecimal no backend
- * (ex: 0.375 -> 0.37), usado nas recompensas reduzidas de Habit, Daily e Todo.
+ * (ex: 0.375 -> 0.37), usado nas recompensas reduzidas de Habit e Todo.
  */
 function roundHalfDownTwoDecimals(value: number): number {
   const scaled = Number((value * 100).toPrecision(12));
@@ -264,7 +289,8 @@ function roundHalfDownTwoDecimals(value: number): number {
 export function getTaskRewardBreakdown(
   task: TaskRewardCalculationInput,
 ): TaskRewardBreakdown {
-  const isEn = task.locale === "en";
+  const locale: AppLocale = task.locale ?? "pt-BR";
+  const isEn = locale === "en";
   const normalizedType = normalizeTaskType(task);
   const currentCount =
     task.currentStreak ?? task.streak ?? task.positiveCount ?? 0;
@@ -314,14 +340,19 @@ export function getTaskRewardBreakdown(
       0.01,
       roundHalfDownTwoDecimals(base.gold * multiplier),
     );
+    const baseCoinsFormatted = formatCoins(base.gold, { locale });
 
-    let explanation = `Recompensa base integral ($${base.gold.toFixed(2)}). Você realizou ${currentCount} repetição(ões).`;
+    let explanation = isEn
+      ? `Initial stage: 100% of base reward (${baseCoinsFormatted} 🪙). At ${adaptationThreshold} repetitions, it will enter the adaptation stage (-25%).`
+      : `Fase inicial: 100% da recompensa base (${baseCoinsFormatted} 🪙). Ao atingir ${adaptationThreshold} repetições, entrará na fase de adaptação (-25%).`;
     if (stage === "FORMED") {
-      explanation = `Hábito consolidado (${currentCount}/${habitFormedThreshold} repetições). Paga 50% da base ($${base.gold.toFixed(2)}) para evitar inflação e incentivar novos hábitos!`;
+      explanation = isEn
+        ? `Formed habit (${currentCount}/${habitFormedThreshold} repetitions). Pays 50% of base (${baseCoinsFormatted} 🪙) to prevent inflation and encourage new habits!`
+        : `Hábito consolidado (${currentCount}/${habitFormedThreshold} repetições). Paga 50% da base (${baseCoinsFormatted} 🪙) para evitar inflação e incentivar novos hábitos!`;
     } else if (stage === "ADAPTATION") {
-      explanation = `Fase de adaptação (${currentCount}/${adaptationThreshold} repetições). Paga 75% da base ($${base.gold.toFixed(2)}). Ao atingir ${habitFormedThreshold}, passará para 50%.`;
-    } else {
-      explanation = `Fase inicial: 100% da recompensa base ($${base.gold.toFixed(2)}). Ao atingir ${adaptationThreshold} repetições, entrará na fase de adaptação (-25%).`;
+      explanation = isEn
+        ? `Adaptation stage (${currentCount}/${adaptationThreshold} repetitions). Pays 75% of base (${baseCoinsFormatted} 🪙). At ${habitFormedThreshold}, it will adjust to 50%.`
+        : `Fase de adaptação (${currentCount}/${adaptationThreshold} repetições). Paga 75% da base (${baseCoinsFormatted} 🪙). Ao atingir ${habitFormedThreshold}, passará para 50%.`;
     }
 
     return {
@@ -329,6 +360,7 @@ export function getTaskRewardBreakdown(
       finalReward: { xp: finalXp, gold: finalGold },
       multiplier,
       decayPercentage,
+      bonusPercentage: 0,
       stage,
       stageLabel,
       stageBadgeVariant,
@@ -340,6 +372,7 @@ export function getTaskRewardBreakdown(
       explanation,
       unit: "repetições",
       hasDecay: decayPercentage > 0,
+      hasBonus: false,
     };
   }
 
@@ -352,70 +385,57 @@ export function getTaskRewardBreakdown(
       ? rawDifficulty
       : "MEDIUM";
   const base = DIFFICULTY_REWARDS[diffKey];
+  const baseCoinsFormatted = formatCoins(base.gold, { locale });
 
   if (normalizedType === "daily") {
-    const repeatType = (task.repeatType || "DAILY").toUpperCase();
-    const daysToForm =
-      repeatType === "WEEKLY"
-        ? 8
-        : repeatType === "MONTHLY"
-          ? 6
-          : repeatType === "YEARLY"
-            ? 3
-            : 21;
-    const adaptationThreshold = Math.max(1, Math.floor(daysToForm / 3));
+    const consistencyBonusThreshold = 14;
+    const hasConsistencyBonus = currentCount >= consistencyBonusThreshold;
+    const multiplier = hasConsistencyBonus ? 1.1 : 1.0;
+    const bonusPercentage = hasConsistencyBonus ? 10 : 0;
+    const stage: RewardStage = hasConsistencyBonus
+      ? "CONSISTENCY_BONUS"
+      : "INITIAL";
+    const stageLabel = hasConsistencyBonus
+      ? isEn
+        ? "Consistency Bonus"
+        : "Bônus de Consistência"
+      : isEn
+        ? "Base Routine"
+        : "Rotina Base";
 
-    let multiplier = 1.0;
-    let stage: RewardStage = "INITIAL";
-    let stageLabel = isEn ? "Initial Stage" : "Fase Inicial";
-    let decayPercentage = 0;
-    let stageBadgeVariant: "emerald" | "amber" | "purple" = "emerald";
-
-    if (currentCount >= daysToForm) {
-      multiplier = 0.5;
-      stage = "FORMED";
-      stageLabel = isEn ? "Consolidated Routine" : "Rotina Consolidada";
-      decayPercentage = 50;
-      stageBadgeVariant = "purple";
-    } else if (currentCount >= adaptationThreshold) {
-      multiplier = 0.75;
-      stage = "ADAPTATION";
-      stageLabel = isEn ? "In Adaptation" : "Em Adaptação";
-      decayPercentage = 25;
-      stageBadgeVariant = "amber";
-    }
-
-    const finalXp = Math.max(1, Math.floor(base.xp * multiplier));
+    const finalXp = Math.max(1, roundHalfUpInt(base.xp * multiplier));
     const finalGold = Math.max(
       0.01,
-      roundHalfDownTwoDecimals(base.gold * multiplier),
+      roundHalfUpTwoDecimals(base.gold * multiplier),
     );
+    const finalCoinsFormatted = formatCoins(finalGold, { locale });
 
-    let explanation = `Ofensiva de ${currentCount} dia(s). Recompensa base integral ($${base.gold.toFixed(2)}).`;
-    if (stage === "FORMED") {
-      explanation = `Rotina consolidada (${currentCount}/${daysToForm} dias de ofensiva). Paga 50% da base ($${base.gold.toFixed(2)}) para evitar inflação e incentivar novos desafios!`;
-    } else if (stage === "ADAPTATION") {
-      explanation = `Adaptação da rotina (${currentCount}/${adaptationThreshold} dias). Paga 75% da base ($${base.gold.toFixed(2)}). Ao atingir ${daysToForm} dias, passará para 50%.`;
-    } else {
-      explanation = `Fase inicial: 100% da recompensa base ($${base.gold.toFixed(2)}). Ao atingir ${adaptationThreshold} dias, entrará em adaptação (-25%).`;
-    }
+    const explanation = hasConsistencyBonus
+      ? isEn
+        ? `Consistency bonus active (${currentCount}/${consistencyBonusThreshold} scheduled completions)! You earn +10% on base (${baseCoinsFormatted} 🪙 -> ${finalCoinsFormatted} 🪙) with no decay.`
+        : `Bônus de consistência ativo (${currentCount}/${consistencyBonusThreshold} ciclos agendados)! Você ganha +10% sobre a base (${baseCoinsFormatted} 🪙 -> ${finalCoinsFormatted} 🪙) sem decaimento.`
+      : isEn
+        ? `Routine at full yield: 100% of base reward (${baseCoinsFormatted} 🪙), with no decay. Reaching ${consistencyBonusThreshold} consecutive scheduled completions (${currentCount}/${consistencyBonusThreshold}) unlocks a +10% bonus.`
+        : `Rotina com rendimento integral: 100% da recompensa base (${baseCoinsFormatted} 🪙), sem decaimento. Ao atingir ${consistencyBonusThreshold} execuções seguidas nos dias agendados (${currentCount}/${consistencyBonusThreshold}), você desbloqueia +10% de bônus.`;
 
     return {
       baseReward: { xp: base.xp, gold: base.gold },
       finalReward: { xp: finalXp, gold: finalGold },
       multiplier,
-      decayPercentage,
+      decayPercentage: 0,
+      bonusPercentage,
       stage,
       stageLabel,
-      stageBadgeVariant,
+      stageBadgeVariant: "emerald",
       currentCount,
       thresholds: {
-        adaptation: adaptationThreshold,
-        formed: daysToForm,
+        adaptation: consistencyBonusThreshold,
+        formed: consistencyBonusThreshold,
       },
       explanation,
-      unit: "dias de ofensiva",
-      hasDecay: decayPercentage > 0,
+      unit: "ciclos agendados",
+      hasDecay: false,
+      hasBonus: hasConsistencyBonus,
     };
   }
 
@@ -432,12 +452,14 @@ export function getTaskRewardBreakdown(
   if (isLateHardcoreTodo) {
     const finalXp = Math.max(1, Math.floor(base.xp * 0.5));
     const finalGold = Math.max(0.01, roundHalfDownTwoDecimals(base.gold * 0.5));
+    const finalCoinsFormatted = formatCoins(finalGold, { locale });
 
     return {
       baseReward: { xp: base.xp, gold: base.gold },
       finalReward: { xp: finalXp, gold: finalGold },
       multiplier: 0.5,
       decayPercentage: 50,
+      bonusPercentage: 0,
       stage: "FORMED",
       stageLabel: isEn
         ? "Late Delivery (Hardcore)"
@@ -445,9 +467,12 @@ export function getTaskRewardBreakdown(
       stageBadgeVariant: "amber",
       currentCount: 0,
       thresholds: { adaptation: 0, formed: 0 },
-      explanation: `Afazer concluído após o prazo no Modo Hardcore. Rendimento reduzido em 50% ($${base.gold.toFixed(2)} -> $${finalGold.toFixed(2)}).`,
+      explanation: isEn
+        ? `To-Do completed past due in Hardcore Mode. Reward reduced by 50% (${baseCoinsFormatted} 🪙 -> ${finalCoinsFormatted} 🪙).`
+        : `Afazer concluído após o prazo no Modo Hardcore. Rendimento reduzido em 50% (${baseCoinsFormatted} 🪙 -> ${finalCoinsFormatted} 🪙).`,
       unit: "repetições",
       hasDecay: true,
+      hasBonus: false,
     };
   }
 
@@ -457,15 +482,18 @@ export function getTaskRewardBreakdown(
     finalReward: { xp: base.xp, gold: base.gold },
     multiplier: 1.0,
     decayPercentage: 0,
+    bonusPercentage: 0,
     stage: "INITIAL",
     stageLabel: isEn ? "Standard" : "Padrão",
     stageBadgeVariant: "emerald",
     currentCount: 0,
     thresholds: { adaptation: 0, formed: 0 },
-    explanation:
-      "Tarefas do tipo Afazer (To-Do) concedem sempre 100% da recompensa da dificuldade ao serem concluídas.",
+    explanation: isEn
+      ? "To-Do tasks always award 100% of their difficulty reward upon completion."
+      : "Tarefas do tipo Afazer (To-Do) concedem sempre 100% da recompensa da dificuldade ao serem concluídas.",
     unit: "repetições",
     hasDecay: false,
+    hasBonus: false,
   };
 }
 
@@ -507,21 +535,36 @@ export function toTaskRewardEstimate(
 ): import("@/types/reward").RewardEstimate {
   const locale = options?.locale ?? "pt-BR";
   const isEn = locale === "en";
+  const normalizedType = options?.taskType
+    ? normalizeTaskType({ type: options.taskType })
+    : undefined;
   const notices: import("@/types/reward").RewardEstimateNotice[] = [];
 
-  if (breakdown.hasDecay) {
+  if (breakdown.hasBonus) {
+    notices.push({
+      tone: "success",
+      title: `${breakdown.stageLabel} (+${breakdown.bonusPercentage}%)`,
+      message: breakdown.explanation,
+    });
+  } else if (breakdown.hasDecay) {
     notices.push({
       tone: "info",
       title: `${breakdown.stageLabel} (-${breakdown.decayPercentage}%)`,
       message: breakdown.explanation,
     });
-  } else if (options?.taskType !== "TODO") {
+  } else if (normalizedType === "daily") {
+    notices.push({
+      tone: "info",
+      title: "Base 100%",
+      message: breakdown.explanation,
+    });
+  } else if (normalizedType !== "todo") {
     notices.push({
       tone: "info",
       title: "Base 100%",
       message: isEn
-        ? "Full reward at the start. As you consolidate the habit/routine (7 and 21 days), gains gradually adjust to 75% and 50%."
-        : "Recompensa integral no início. Ao consolidar o hábito/rotina (7 e 21 dias), o ganho ajusta gradualmente para 75% e 50%.",
+        ? `Full reward at the start. As you consolidate the habit (${breakdown.thresholds.adaptation} and ${breakdown.thresholds.formed} reps), gains gradually adjust to 75% and 50%.`
+        : `Recompensa integral no início. Ao consolidar o hábito (${breakdown.thresholds.adaptation} e ${breakdown.thresholds.formed} reps), o ganho ajusta gradualmente para 75% e 50%.`,
     });
   }
 
@@ -541,23 +584,43 @@ export function toTaskRewardEstimate(
         label: isEn ? "Base Reward" : "Recompensa Base",
         value: `+${formatCoins(breakdown.baseReward.gold, { locale })} 🪙 / +${breakdown.baseReward.xp} XP`,
       },
-      ...(breakdown.hasDecay
+      ...(breakdown.hasBonus
         ? [
             {
-              label: isEn ? "Habit Adjustment" : "Ajuste de Hábito",
-              value: `-${breakdown.decayPercentage}% (${breakdown.stageLabel})`,
+              label: isEn ? "Routine Bonus" : "Bônus de Rotina",
+              value: `+${breakdown.bonusPercentage}% (${breakdown.stageLabel})`,
             },
           ]
-        : []),
+        : breakdown.hasDecay
+          ? [
+              {
+                label:
+                  normalizedType === "todo"
+                    ? isEn
+                      ? "Hardcore Penalty"
+                      : "Penalidade Hardcore"
+                    : isEn
+                      ? "Habit Adjustment"
+                      : "Ajuste de Hábito",
+                value: `-${breakdown.decayPercentage}% (${breakdown.stageLabel})`,
+              },
+            ]
+          : []),
     ];
 
   return {
     gold: breakdown.finalReward.gold,
     xp: breakdown.finalReward.xp,
-    status: breakdown.hasDecay ? "reduced" : "full",
-    stageLabel: breakdown.hasDecay
-      ? `${breakdown.stageLabel} (-${breakdown.decayPercentage}%)`
-      : undefined,
+    status: breakdown.hasBonus
+      ? "boosted"
+      : breakdown.hasDecay
+        ? "reduced"
+        : "full",
+    stageLabel: breakdown.hasBonus
+      ? `${breakdown.stageLabel} (+${breakdown.bonusPercentage}%)`
+      : breakdown.hasDecay
+        ? `${breakdown.stageLabel} (-${breakdown.decayPercentage}%)`
+        : undefined,
     notices,
     breakdown: breakdownItems,
   };

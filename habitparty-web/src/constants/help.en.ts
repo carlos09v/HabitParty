@@ -67,7 +67,7 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
       "HabitParty divides your routine into three complementary models and lets you organize everything with Hierarchical Tags (e.g., 'Study > English' using '>') to filter from broad areas to specifics:",
     bullets: [
       "Habits: Ongoing actions that can be positive (+), negative (-), or mixed. They have no fixed date, use Importance (Low, Normal, High), and include a Quick Focus button right on each row.",
-      "Dailies: Recurring routines scheduled for specific weekdays (e.g., Mondays and Wednesdays). They automatically reset at midnight in your local timezone.",
+      "Dailies: Recurring routines scheduled for specific weekdays (e.g., Mondays and Wednesdays). They automatically reset at midnight in your local timezone, pay 100% base reward with no decay, and unlock a +10% consistency bonus after 14 consecutive scheduled completions.",
       "To-Dos: One-off tasks with a due date and optional deadline time (free), scheduled reminders, subtask checklists, and Rich-Text descriptions (lists, bold, links) up to 2,000 characters. Premium subscribers can also schedule To-Dos as Events (with start & end times or all-day duration) featuring a live pulsing 'In progress' badge.",
     ],
     tags: [

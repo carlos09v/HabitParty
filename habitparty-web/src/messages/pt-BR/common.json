@@ -303,7 +303,7 @@
       "tierDetailsAria": "Ver probabilidades da caixa misteriosa",
       "types": {
         "SingleUse": "Uso Único",
-        "TimeBased": "Cupom",
+        "TimeBased": "Cupom de Tempo",
         "MysteryBox": "Caixa Misteriosa"
       },
       "packages": {
@@ -331,6 +331,10 @@
       "durationTitle": "Duração do cupom: {minutes} minutos",
       "couponDurationFallback": "Cupom",
       "instantUseDuration": "Uso Imediato",
+      "mysteryDrawDuration": "Sorteio",
+      "missingCoinsHint": "Faltam {missing} moedas",
+      "missingCreditsHint": "Faltam {missing} créditos",
+      "readyToRedeemHint": "Saldo suficiente",
       "statuses": {
         "activeSession": "Sessão ativa",
         "sealedBox": "Caixa lacrada",

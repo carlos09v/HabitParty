@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ArrowRight,
   Check,
   Clock,
   FileText,
@@ -9,7 +10,10 @@ import {
   Loader2,
   Package,
   SlidersHorizontal,
+  Sparkles,
+  Ticket,
   X,
+  Zap,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
@@ -30,7 +34,7 @@ import { Switch } from "@/components/ui/Switch";
 import { Textarea } from "@/components/ui/Textarea";
 import {
   COUPON_PACKAGE_OPTIONS,
-  calculateSuggestedCouponPrice,
+  getMysteryBadgeVariantClass,
   REWARD_DESCRIPTION_MAX_LENGTH,
   REWARD_FORM_CATEGORY_OPTIONS,
   REWARD_FORM_TYPE_KEYS,
@@ -52,6 +56,7 @@ import {
   type RewardPriceAnalysis,
 } from "@/utils/rewardEconomy";
 import {
+  getMysteryBoxTier,
   toCategoryMessageKey,
   toPackageMessageKey,
   toRewardTypeMessageKey,
@@ -106,7 +111,7 @@ function RewardPriceField({
         id="rewardPrice"
         type="number"
         step="any"
-        min="0"
+        min="0.01"
         max={99999}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -175,6 +180,7 @@ export function RewardFormModal({
     handleDebtToggleChange,
     packageLevel,
     setPackageLevel,
+    handleSingleUseTierSelect,
     handleMysteryBoxTierSelect,
     baseDurationMinutes,
     setBaseDurationMinutes,
@@ -233,11 +239,13 @@ export function RewardFormModal({
   }, [type, price, baseDurationMinutes, packageLevel]);
 
   const hasPriceWarning = priceAnalysis.status !== "ok";
-  const isMysteryBox = type === "MysteryBox";
+  const resolvedTypeKey = toRewardTypeMessageKey(type);
+  const isMysteryBox = resolvedTypeKey === "MysteryBox";
   const [activeMysteryTab, setActiveMysteryTab] =
     useState<MysteryBoxFormTab>("identity");
   const mysteryTabBaseId = useId();
   const durationHoursHintId = useId();
+  const typeGuideId = useId();
   const mysteryTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   useEffect(() => {
@@ -350,6 +358,13 @@ export function RewardFormModal({
     handleSubmit(e);
   };
 
+  const titlePlaceholder =
+    resolvedTypeKey === "TimeBased"
+      ? t("titlePlaceholderTimeBased")
+      : resolvedTypeKey === "MysteryBox"
+        ? t("titlePlaceholderMysteryBox")
+        : t("titlePlaceholderSingleUse");
+
   const titleField = (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between">
@@ -385,7 +400,7 @@ export function RewardFormModal({
           onChange={(e) =>
             handleTitleChange(e.target.value.slice(0, MAX_REWARD_TITLE_LENGTH))
           }
-          placeholder={t("titlePlaceholder")}
+          placeholder={titlePlaceholder}
           compact
           className="h-[42px]"
           required
@@ -393,9 +408,6 @@ export function RewardFormModal({
           disabled={isPending}
         />
       </div>
-      <span className="text-label-g text-neutral-400">
-        {t("iconHelperText")}
-      </span>
     </div>
   );
 
@@ -430,9 +442,10 @@ export function RewardFormModal({
 
   const isDebtCategory = toCategoryMessageKey(category) === "DEBT";
   const numericDuration = Number.parseInt(baseDurationMinutes || "0", 10) || 0;
+  const activeTier = getMysteryBoxTier(packageLevel);
 
   const categoryField = (
-    <div className="flex flex-col gap-2.5 pt-1 border-t border-neutral-700/50 dark:border-white/5">
+    <div className="flex flex-col gap-1.5">
       <Select
         id="rewardCategory"
         label={t("categoryLabel")}
@@ -445,6 +458,43 @@ export function RewardFormModal({
       />
     </div>
   );
+
+  const typeGuideConfig =
+    resolvedTypeKey === "TimeBased"
+      ? {
+          icon: Ticket,
+          badgeClass:
+            "bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-300",
+          containerClass:
+            "bg-emerald-500/[0.06] border-emerald-500/25 dark:bg-emerald-500/10 dark:border-emerald-500/25",
+          title: t("typeGuides.TimeBased.title"),
+          description: isGamified
+            ? t("typeGuides.TimeBased.descriptionGamified")
+            : t("typeGuides.TimeBased.descriptionProductivity"),
+        }
+      : resolvedTypeKey === "MysteryBox"
+        ? {
+            icon: Sparkles,
+            badgeClass:
+              "bg-amber-500/15 text-amber-700 border-amber-500/35 dark:text-gold",
+            containerClass:
+              "bg-amber-500/[0.06] border-amber-500/25 dark:bg-gold/10 dark:border-gold/25",
+            title: t("typeGuides.MysteryBox.title"),
+            description: t("typeGuides.MysteryBox.description"),
+          }
+        : {
+            icon: Zap,
+            badgeClass:
+              "bg-purple-500/15 text-purple-700 border-purple-500/30 dark:text-purple-300",
+            containerClass:
+              "bg-purple-500/[0.06] border-purple-500/25 dark:bg-primary/10 dark:border-primary/30",
+            title: t("typeGuides.SingleUse.title"),
+            description: isGamified
+              ? t("typeGuides.SingleUse.descriptionGamified")
+              : t("typeGuides.SingleUse.descriptionProductivity"),
+          };
+
+  const GuideIcon = typeGuideConfig.icon;
 
   return (
     <BaseModal
@@ -461,43 +511,72 @@ export function RewardFormModal({
             ? t("createDescription")
             : t("createDescriptionProductivity")
       }
-      maxWidth={isMysteryBox ? "max-w-3xl" : "max-w-lg"}
-      className={cn(
-        "transition-[max-width] duration-200",
-        isMysteryBox && "sm:p-5",
-      )}
+      maxWidth="max-w-3xl"
+      className="sm:p-5"
       preventClose={isPending}
     >
       <form
         onSubmit={handleFormSubmit}
         noValidate={isMysteryBox}
-        className={cn("flex flex-col", isMysteryBox ? "gap-3" : "gap-4")}
+        className="flex flex-col gap-3"
       >
-        {/* 1. SELETOR DE TIPO NO TOPO (SegmentedControl) */}
-        <div className="flex flex-col gap-1.5">
-          <span className="text-body-s text-neutral-100 font-medium select-none">
+        {/* 1. SELETOR DE TIPO NO TOPO + EXPLICAÇÃO COMPACTA */}
+        <fieldset
+          aria-describedby={typeGuideId}
+          className="border-0 p-0 m-0 min-w-0"
+        >
+          <legend className="text-body-s text-neutral-100 font-medium select-none mb-1.5 p-0">
             {t("typeLabel")} <span className="text-gold">*</span>
-          </span>
-          <SegmentedControl<RewardType>
-            options={segmentedTypeOptions}
-            value={type}
-            onChange={(val) => {
-              handleTypeChange(val);
-              setActiveMysteryTab("identity");
-            }}
-            disabled={isPending}
-            size="md"
-          />
-          {isProductivity && (
-            <div className="flex items-center gap-2 p-2.5 rounded-xl bg-surface/50 border border-primary/20 text-xs text-neutral-300 mt-1">
-              <Package size={15} className="text-gold shrink-0" />
-              <span>{t("mysteryBoxAdventureHint")}</span>
+          </legend>
+          <div className="flex flex-col gap-1.5">
+            <SegmentedControl<RewardType>
+              options={segmentedTypeOptions}
+              value={type}
+              onChange={(val) => {
+                handleTypeChange(val);
+                setActiveMysteryTab("identity");
+              }}
+              disabled={isPending}
+              size="md"
+              ariaLabel={t("typeLabel")}
+            />
+
+            <div
+              id={typeGuideId}
+              className={cn(
+                "flex items-start sm:items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs transition-colors",
+                typeGuideConfig.containerClass,
+              )}
+            >
+              <span
+                className={cn(
+                  "w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 sm:mt-0",
+                  typeGuideConfig.badgeClass,
+                )}
+                aria-hidden="true"
+              >
+                <GuideIcon size={12} />
+              </span>
+              <p className="text-label-g text-neutral-300 leading-snug min-w-0">
+                <strong className="font-bold text-neutral-100">
+                  {typeGuideConfig.title}
+                </strong>
+                {" · "}
+                <span>{typeGuideConfig.description}</span>
+              </p>
             </div>
-          )}
-        </div>
+
+            {isProductivity && (
+              <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-surface/50 border border-primary/20 text-label-g text-neutral-300">
+                <Package size={14} className="text-gold shrink-0" />
+                <span>{t("mysteryBoxAdventureHint")}</span>
+              </div>
+            )}
+          </div>
+        </fieldset>
 
         {isMysteryBox ? (
-          /* MODO EM 2 ABAS PARA MYSTERY BOX: ELIMINA SCROLL VERTICAL */
+          /* MODO EM 2 ABAS PARA MYSTERY BOX */
           <div className="flex flex-col gap-3">
             <div
               role="tablist"
@@ -555,7 +634,7 @@ export function RewardFormModal({
               })}
             </div>
 
-            {/* ABA 1: DADOS, CUSTO, RARIDADE & CATEGORIA */}
+            {/* ABA 1: DADOS, CUSTO, RARIDADE & PREVIEW DOS PRÊMIOS */}
             <div
               role="tabpanel"
               id={`${mysteryTabBaseId}-panel-identity`}
@@ -590,7 +669,7 @@ export function RewardFormModal({
                   </div>
                 </div>
 
-                {/* COLUNA DIREITA: RARIDADE (2x2) & CATEGORIA */}
+                {/* COLUNA DIREITA: RARIDADE (2x2), PREVIEW DOS PRÊMIOS & CATEGORIA */}
                 <div className="flex flex-col gap-3">
                   <MysteryBoxSelector
                     layout="2x2"
@@ -604,6 +683,48 @@ export function RewardFormModal({
                     }
                     disabled={isPending}
                   />
+
+                  <div className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-background border border-neutral-700 dark:bg-surface/30 dark:border-white/10">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-tiny font-bold text-neutral-200">
+                        {t("mysteryLootPreviewLabel")}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setActiveMysteryTab("loot")}
+                        className="inline-flex items-center gap-1 text-tiny font-bold text-primary dark:text-gold hover:underline cursor-pointer"
+                      >
+                        <span>{t("mysteryCustomizeLootCta")}</span>
+                        <ArrowRight size={11} aria-hidden="true" />
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {lootItems.map((slot, idx) => {
+                        const drop = activeTier.dropRates[idx];
+                        const badgeClass = getMysteryBadgeVariantClass(
+                          drop?.badgeVariant,
+                        );
+                        return (
+                          <span
+                            key={`${idx}-${slot.name}`}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-card dark:bg-white/5 border border-neutral-700/80 dark:border-white/10 text-[10px] text-neutral-200 max-w-full"
+                          >
+                            <span
+                              className={cn(
+                                "px-1 py-px rounded border font-black tabular-nums leading-none",
+                                badgeClass,
+                              )}
+                            >
+                              {drop?.percentage ?? 33}%
+                            </span>
+                            <span className="truncate max-w-[110px]">
+                              {slot.name || "..."}
+                            </span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
 
                   {categoryField}
                 </div>
@@ -629,301 +750,315 @@ export function RewardFormModal({
             </div>
           </div>
         ) : (
-          /* LAYOUT COMPACTO EM 1 COLUNA PARA USO ÚNICO E CUPOM */
-          <>
-            {titleField}
-            {descriptionField}
+          /* LAYOUT EM 2 COLUNAS NO DESKTOP PARA USO ÚNICO E CUPOM DE TEMPO */
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+            {/* COLUNA ESQUERDA: IDENTIDADE & CATEGORIA */}
+            <div className="md:col-span-5 flex flex-col gap-3">
+              {titleField}
+              {descriptionField}
+              {(resolvedTypeKey === "TimeBased" || !isDebtCategory) &&
+                categoryField}
+            </div>
 
-            {type === "TimeBased" ? (
-              <div className="flex flex-col gap-3 p-3.5 rounded-xl bg-background border border-neutral-700 dark:bg-surface/30 dark:border-white/10">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
-                  {/* Duração ao lado do Custo */}
+            {/* COLUNA DIREITA: ECONOMIA & REGRAS */}
+            <div className="md:col-span-7 flex flex-col gap-3">
+              {resolvedTypeKey === "TimeBased" ? (
+                <div className="flex flex-col gap-2.5 p-3 rounded-xl bg-background border border-neutral-700 dark:bg-surface/30 dark:border-white/10">
+                  {/* Atalhos Rápidos ACIMA dos inputs para não sobrescrever após digitação */}
                   <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between gap-2 min-h-5">
-                      <label
-                        htmlFor="rewardDuration"
-                        className="text-body-s text-neutral-100 font-medium"
-                      >
-                        {t("durationLabel")}{" "}
-                        <span className="text-gold">*</span>
-                      </label>
+                    <div className="flex items-baseline justify-between gap-2 flex-wrap">
+                      <span className="text-body-s text-neutral-100 font-medium">
+                        {t("packageLevelLabel")}
+                      </span>
+                      <span className="text-label-m text-neutral-400">
+                        {t("packageLevelHint")}
+                      </span>
                     </div>
-                    <NumberStepperInput
-                      id="rewardDuration"
-                      min={5}
-                      max={1440}
-                      step={5}
-                      value={baseDurationMinutes}
-                      onChange={(e) => handleBaseDurationChange(e.target.value)}
-                      onBlur={() => {
-                        if (
-                          !baseDurationMinutes ||
-                          Number(baseDurationMinutes) < 5
-                        ) {
-                          handleBaseDurationChange("5");
-                        }
-                      }}
-                      onStep={(delta) => {
-                        const base = Number.isFinite(numericDuration)
-                          ? numericDuration
-                          : 0;
-                        const next = Math.min(1440, Math.max(5, base + delta));
-                        handleBaseDurationChange(String(next));
-                      }}
-                      decrementDisabled={numericDuration <= 5}
-                      incrementDisabled={numericDuration >= 1440}
-                      placeholder={t("durationPlaceholder")}
-                      compact
-                      icon={<Clock size={16} />}
-                      aria-describedby={
-                        numericDuration >= 60 ? durationHoursHintId : undefined
-                      }
-                      className="font-semibold h-[42px]"
-                      disabled={isPending}
-                    />
-                    <DurationHoursBadge
-                      id={durationHoursHintId}
-                      minutes={numericDuration}
-                    />
-                  </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {COUPON_PACKAGE_OPTIONS.map((pkg) => {
+                        const isSelected =
+                          toPackageMessageKey(packageLevel) ===
+                          toPackageMessageKey(pkg.id);
 
-                  {/* Custo */}
-                  <RewardPriceField
-                    label={
-                      isGamified ? t("priceLabel") : t("priceLabelProductivity")
-                    }
-                    value={price}
-                    onChange={handlePriceChange}
-                    placeholder={t("pricePlaceholder")}
-                    disabled={isPending}
-                    hasWarning={hasPriceWarning}
-                  />
-                </div>
-
-                <RewardPriceGuidance
-                  type={type}
-                  price={price}
-                  durationMinutes={baseDurationMinutes}
-                  packageLevel={packageLevel}
-                  analysis={priceAnalysis}
-                  onApplySuggestedPrice={applySuggestedPrice}
-                  disabled={isPending}
-                />
-
-                {/* Chips de Pacote / Atalhos de Tempo */}
-                <div className="flex flex-col gap-1.5 pt-0.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-body-s text-neutral-100 font-medium">
-                      {t("packageLevelLabel")}
-                    </span>
-                    <span className="text-label-m text-neutral-400">
-                      {t("packageLevelHint")}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {COUPON_PACKAGE_OPTIONS.map((pkg) => {
-                      const isSelected =
-                        packageLevel === pkg.id ||
-                        (pkg.id === "Nenhum" &&
-                          (!packageLevel ||
-                            packageLevel === "NONE" ||
-                            packageLevel === "Nenhum"));
-
-                      return (
-                        <button
-                          key={pkg.id}
-                          type="button"
-                          aria-pressed={isSelected}
-                          disabled={isPending}
-                          onClick={() => {
-                            setPackageLevel(pkg.id);
-                            if (pkg.suggestedMinutes) {
-                              setBaseDurationMinutes(
-                                String(pkg.suggestedMinutes),
-                              );
-                            }
-                            if (typeof pkg.suggestedPrice === "number") {
-                              applySuggestedPrice(pkg.suggestedPrice);
-                            } else {
-                              const proportionalPrice =
-                                calculateSuggestedCouponPrice(
-                                  Number(baseDurationMinutes) || 30,
+                        return (
+                          <button
+                            key={pkg.id}
+                            type="button"
+                            aria-pressed={isSelected}
+                            disabled={isPending}
+                            onClick={() => {
+                              setPackageLevel(pkg.id);
+                              if (pkg.suggestedMinutes) {
+                                setBaseDurationMinutes(
+                                  String(pkg.suggestedMinutes),
                                 );
-                              applySuggestedPrice(proportionalPrice);
-                            }
-                          }}
-                          className={cn(
-                            "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-label-g font-semibold transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer select-none active:scale-95",
-                            isSelected
-                              ? pkg.selectedClass
-                              : pkg.unselectedClass,
-                            isPending && "opacity-50 cursor-not-allowed",
-                          )}
-                        >
-                          {pkg.dotColor && (
-                            <span
-                              className={cn(
-                                "w-1.5 h-1.5 rounded-full shrink-0",
-                                pkg.dotColor,
-                              )}
-                            />
-                          )}
-                          <span>
-                            {tOptions(
-                              `couponPackages.${toPackageMessageKey(pkg.id)}`,
-                            )}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3 p-3.5 rounded-xl bg-background border border-neutral-700 dark:bg-surface/30 dark:border-white/10">
-                {/* Custo */}
-                <RewardPriceField
-                  label={
-                    isGamified ? t("priceLabel") : t("priceLabelProductivity")
-                  }
-                  value={price}
-                  onChange={handlePriceChange}
-                  placeholder={t("pricePlaceholder")}
-                  disabled={isPending}
-                  hasWarning={hasPriceWarning}
-                  guidanceType={type}
-                  priceAnalysis={priceAnalysis}
-                />
-
-                {/* Atalhos opcionais de horizonte temporal para Uso Único */}
-                <div className="flex flex-col gap-1.5 pt-0.5">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <span className="text-body-s text-neutral-100 font-medium">
-                      {t("singleUseTiersLabel")}
-                    </span>
-                    <span className="text-label-m text-neutral-400">
-                      {t("singleUseTiersHint")}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {SINGLE_USE_TIER_OPTIONS.map((tier) => {
-                      const isSelected =
-                        Number.parseFloat(price.replace(",", ".")) ===
-                        tier.suggestedPrice;
-
-                      return (
-                        <button
-                          key={tier.id}
-                          type="button"
-                          aria-pressed={isSelected}
-                          disabled={isPending}
-                          onClick={() =>
-                            applySuggestedPrice(tier.suggestedPrice)
-                          }
-                          className={cn(
-                            "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-label-g font-semibold transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer select-none active:scale-95",
-                            isSelected
-                              ? tier.selectedClass
-                              : tier.unselectedClass,
-                            isPending && "opacity-50 cursor-not-allowed",
-                          )}
-                        >
-                          <span
+                              }
+                              if (typeof pkg.suggestedPrice === "number") {
+                                applySuggestedPrice(pkg.suggestedPrice);
+                              }
+                            }}
                             className={cn(
-                              "w-1.5 h-1.5 rounded-full shrink-0",
-                              tier.dotColor,
+                              "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-label-g font-semibold transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer select-none active:scale-95",
+                              isSelected
+                                ? pkg.selectedClass
+                                : pkg.unselectedClass,
+                              isPending && "opacity-50 cursor-not-allowed",
                             )}
-                          />
-                          <span>{tOptions(`singleUseTiers.${tier.id}`)}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {type === "TimeBased" && categoryField}
-
-            {type === "SingleUse" && (
-              <>
-                <div
-                  className={cn(
-                    "flex items-center justify-between gap-3 p-3.5 rounded-xl border transition-colors",
-                    isDebtCategory
-                      ? "bg-rose-500/10 border-rose-500/35 dark:bg-rose-500/10 dark:border-rose-400/40"
-                      : "bg-background border-neutral-700 dark:bg-surface/30 dark:border-white/10",
-                  )}
-                >
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <label
-                        htmlFor="rewardDebtToggle"
-                        className="text-body-s font-semibold text-neutral-100 cursor-pointer select-none"
-                      >
-                        {t("debtToggleLabel")}
-                      </label>
-                      <InfoTooltip
-                        title={t("debtTooltipTitle")}
-                        icon={
-                          <Info
-                            size={14}
-                            className="text-rose-600 dark:text-rose-300 shrink-0"
-                          />
-                        }
-                        size={14}
-                        align="left"
-                        side="top"
-                        ariaLabel={t("debtTooltipAria")}
-                      >
-                        <p className="text-neutral-300 leading-relaxed text-label-g">
-                          {t("debtTooltipBody")}
-                        </p>
-                        <ul className="flex flex-col gap-1 py-0.5 text-label-g text-neutral-200">
-                          <li>
-                            •{" "}
-                            {isGamified
-                              ? t("debtTooltipPointDirect")
-                              : t("debtTooltipPointDirectProductivity")}
-                          </li>
-                          <li>
-                            •{" "}
-                            {isGamified
-                              ? t("debtTooltipPointExample")
-                              : t("debtTooltipPointExampleProductivity")}
-                          </li>
-                        </ul>
-                      </InfoTooltip>
+                          >
+                            {pkg.dotColor && (
+                              <span
+                                className={cn(
+                                  "w-1.5 h-1.5 rounded-full shrink-0",
+                                  pkg.dotColor,
+                                )}
+                              />
+                            )}
+                            <span>
+                              {tOptions(
+                                `couponPackages.${toPackageMessageKey(pkg.id)}`,
+                              )}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
-                    <span className="text-tiny text-neutral-400">
-                      {isGamified
-                        ? t("debtToggleSubtitle")
-                        : t("debtToggleSubtitleProductivity")}
-                    </span>
                   </div>
 
-                  <Switch
-                    id="rewardDebtToggle"
-                    checked={isDebtCategory}
-                    onCheckedChange={handleDebtToggleChange}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-start pt-2 border-t border-neutral-700/40 dark:border-white/5">
+                    {/* Duração ao lado do Custo */}
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between gap-2 min-h-5">
+                        <label
+                          htmlFor="rewardDuration"
+                          className="text-body-s text-neutral-100 font-medium"
+                        >
+                          {t("durationLabel")}{" "}
+                          <span className="text-gold">*</span>
+                        </label>
+                      </div>
+                      <NumberStepperInput
+                        id="rewardDuration"
+                        min={5}
+                        max={1440}
+                        step={5}
+                        value={baseDurationMinutes}
+                        onChange={(e) =>
+                          handleBaseDurationChange(e.target.value)
+                        }
+                        onBlur={() => {
+                          if (
+                            !baseDurationMinutes ||
+                            Number(baseDurationMinutes) < 5
+                          ) {
+                            handleBaseDurationChange("5");
+                          }
+                        }}
+                        onStep={(delta) => {
+                          const base = Number.isFinite(numericDuration)
+                            ? numericDuration
+                            : 0;
+                          const next = Math.min(
+                            1440,
+                            Math.max(5, base + delta),
+                          );
+                          handleBaseDurationChange(String(next));
+                        }}
+                        decrementDisabled={numericDuration <= 5}
+                        incrementDisabled={numericDuration >= 1440}
+                        placeholder={t("durationPlaceholder")}
+                        compact
+                        icon={<Clock size={16} />}
+                        aria-describedby={
+                          numericDuration >= 60
+                            ? durationHoursHintId
+                            : undefined
+                        }
+                        className="font-semibold h-[42px]"
+                        disabled={isPending}
+                      />
+                      <DurationHoursBadge
+                        id={durationHoursHintId}
+                        minutes={numericDuration}
+                      />
+                    </div>
+
+                    {/* Custo */}
+                    <RewardPriceField
+                      label={
+                        isGamified
+                          ? t("priceLabel")
+                          : t("priceLabelProductivity")
+                      }
+                      value={price}
+                      onChange={handlePriceChange}
+                      placeholder={t("pricePlaceholder")}
+                      disabled={isPending}
+                      hasWarning={hasPriceWarning}
+                    />
+                  </div>
+
+                  <RewardPriceGuidance
+                    type={type}
+                    price={price}
+                    durationMinutes={baseDurationMinutes}
+                    packageLevel={packageLevel}
+                    analysis={priceAnalysis}
+                    onApplySuggestedPrice={applySuggestedPrice}
                     disabled={isPending}
-                    aria-label={t("debtToggleAria")}
                   />
                 </div>
+              ) : (
+                <>
+                  <div className="flex flex-col gap-2.5 p-3 rounded-xl bg-background border border-neutral-700 dark:bg-surface/30 dark:border-white/10">
+                    {/* Atalhos opcionais de horizonte/raridade ACIMA do preço */}
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-baseline justify-between gap-2 flex-wrap">
+                        <span className="text-body-s text-neutral-100 font-medium">
+                          {t("singleUseTiersLabel")}
+                        </span>
+                        <span className="text-label-m text-neutral-400">
+                          {t("singleUseTiersHint")}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {SINGLE_USE_TIER_OPTIONS.map((tier) => {
+                          const isSelected =
+                            toPackageMessageKey(packageLevel) ===
+                              toPackageMessageKey(tier.packageLevel) ||
+                            (toPackageMessageKey(packageLevel) === "NONE" &&
+                              Number.parseFloat(price.replace(",", ".")) ===
+                                tier.suggestedPrice);
 
-                {!isDebtCategory && categoryField}
-              </>
-            )}
-          </>
+                          return (
+                            <button
+                              key={tier.id}
+                              type="button"
+                              aria-pressed={isSelected}
+                              disabled={isPending}
+                              onClick={() =>
+                                handleSingleUseTierSelect(
+                                  tier.packageLevel,
+                                  tier.suggestedPrice,
+                                )
+                              }
+                              className={cn(
+                                "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-label-g font-semibold transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer select-none active:scale-95",
+                                isSelected
+                                  ? tier.selectedClass
+                                  : tier.unselectedClass,
+                                isPending && "opacity-50 cursor-not-allowed",
+                              )}
+                            >
+                              <span
+                                className={cn(
+                                  "w-1.5 h-1.5 rounded-full shrink-0",
+                                  tier.dotColor,
+                                )}
+                              />
+                              <span>
+                                {tOptions(`singleUseTiers.${tier.id}`)}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Custo */}
+                    <div className="pt-2 border-t border-neutral-700/40 dark:border-white/5">
+                      <RewardPriceField
+                        label={
+                          isGamified
+                            ? t("priceLabel")
+                            : t("priceLabelProductivity")
+                        }
+                        value={price}
+                        onChange={handlePriceChange}
+                        placeholder={t("pricePlaceholder")}
+                        disabled={isPending}
+                        hasWarning={hasPriceWarning}
+                        guidanceType={type}
+                        priceAnalysis={priceAnalysis}
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    className={cn(
+                      "flex items-center justify-between gap-3 p-3 rounded-xl border transition-colors",
+                      isDebtCategory
+                        ? "bg-rose-500/10 border-rose-500/35 dark:bg-rose-500/10 dark:border-rose-400/40"
+                        : "bg-background border-neutral-700 dark:bg-surface/30 dark:border-white/10",
+                    )}
+                  >
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <label
+                          htmlFor="rewardDebtToggle"
+                          className="text-body-s font-semibold text-neutral-100 cursor-pointer select-none"
+                        >
+                          {t("debtToggleLabel")}
+                        </label>
+                        <InfoTooltip
+                          title={t("debtTooltipTitle")}
+                          icon={
+                            <Info
+                              size={14}
+                              className="text-rose-600 dark:text-rose-300 shrink-0"
+                            />
+                          }
+                          size={14}
+                          align="left"
+                          side="top"
+                          ariaLabel={t("debtTooltipAria")}
+                        >
+                          <p className="text-neutral-300 leading-relaxed text-label-g">
+                            {t("debtTooltipBody")}
+                          </p>
+                          <ul className="flex flex-col gap-1 py-0.5 text-label-g text-neutral-200">
+                            <li>
+                              •{" "}
+                              {isGamified
+                                ? t("debtTooltipPointDirect")
+                                : t("debtTooltipPointDirectProductivity")}
+                            </li>
+                            <li>
+                              •{" "}
+                              {isGamified
+                                ? t("debtTooltipPointExample")
+                                : t("debtTooltipPointExampleProductivity")}
+                            </li>
+                          </ul>
+                        </InfoTooltip>
+                      </div>
+                      <span className="text-tiny text-neutral-400 leading-snug">
+                        {isGamified
+                          ? t("debtToggleSubtitle")
+                          : t("debtToggleSubtitleProductivity")}
+                      </span>
+                      {isDebtCategory && (
+                        <span className="text-[10px] font-semibold text-rose-700 dark:text-rose-300 mt-0.5">
+                          {t("debtCategoryAutoHint")}
+                        </span>
+                      )}
+                    </div>
+
+                    <Switch
+                      id="rewardDebtToggle"
+                      checked={isDebtCategory}
+                      onCheckedChange={handleDebtToggleChange}
+                      disabled={isPending}
+                      aria-label={t("debtToggleAria")}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         )}
 
         {/* Botões de Ação */}
-        <div
-          className={cn(
-            "flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 border-t border-neutral-700 dark:border-white/10",
-            isMysteryBox ? "pt-3" : "pt-3.5 mt-1",
-          )}
-        >
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 border-t border-neutral-700 dark:border-white/10 pt-3">
           <button
             type="button"
             onClick={onClose}

@@ -100,7 +100,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "O HabitParty divide sua rotina em três modalidades complementares e permite organizá-las com Tags Hierárquicas (ex: 'Estudos > Inglês' usando '>') para filtrar do macro ao detalhe:",
     bullets: [
       "Hábitos: Ações contínuas que podem ser positivas (+), negativas (-) ou mistas. Não possuem data fixa, usam Importância (Baixa, Normal, Alta) e contam com botão de Foco Rápido na própria linha.",
-      "Diárias (Dailies): Rotinas recorrentes programadas para dias específicos da semana (ex: segundas e quartas). Renovam automaticamente na virada do dia no seu fuso horário.",
+      "Diárias (Dailies): Rotinas recorrentes programadas para dias específicos da semana (ex: segundas e quartas). Renovam automaticamente na virada do dia no seu fuso horário, mantêm 100% do valor base sem decaimento e desbloqueiam +10% de bônus de consistência após 14 execuções seguidas nos dias agendados.",
       "Afazeres (To-Dos): Tarefas pontuais com prazo de entrega (data e horário limite gratuitos), lembretes programados, checklists de subtarefas e descrições em Rich-Text (listas, negrito e links) de até 2.000 caracteres. Assinantes Premium também podem agendar Afazeres como Eventos (com horário de início e término ou dia inteiro) e acompanhar o selo pulsante 'Em andamento' no quadro.",
     ],
     tags: [

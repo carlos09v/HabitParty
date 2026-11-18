@@ -41,6 +41,14 @@ const ConfirmationModal = dynamic(
   { ssr: false },
 );
 
+const DeleteFocusActivityModal = dynamic(
+  () =>
+    import("./modals/DeleteFocusActivityModal").then(
+      (mod) => mod.DeleteFocusActivityModal,
+    ),
+  { ssr: false },
+);
+
 const UpgradePremiumModal = dynamic(
   () =>
     import("@/components/subscription/UpgradePremiumModal").then(
@@ -77,6 +85,7 @@ interface FocusMainProps {
   initialLinkActivity?: boolean;
   isCompact?: boolean;
   onChangeMode?: (mode: FocusRecordType) => void;
+  onActivityDeleted?: (activityId: string, deleteHistory: boolean) => void;
 }
 
 export function FocusMain({
@@ -97,6 +106,7 @@ export function FocusMain({
   initialLinkActivity = false,
   isCompact = false,
   onChangeMode,
+  onActivityDeleted,
 }: FocusMainProps) {
   const t = useTranslations("focus.main");
   const { isGamified } = useExperienceMode();
@@ -164,6 +174,7 @@ export function FocusMain({
     onSelectActivity,
     onResetTarget: controls.resetTarget,
     onSelectActivityTarget: controls.selectActivityTarget,
+    onActivityDeleted,
   });
 
   // Hook desacoplado de menu de contexto
@@ -433,28 +444,13 @@ export function FocusMain({
 
       {/* 8. Modal de Excluir Atividade (Carregado sob demanda) */}
       {deleteModalActivity && (
-        <ConfirmationModal
-          isOpen={Boolean(deleteModalActivity)}
+        <DeleteFocusActivityModal
+          activity={deleteModalActivity}
+          isDeleting={isDeletingActivity}
+          deleteHistory={deleteActivityHistory}
+          onDeleteHistoryChange={setDeleteActivityHistory}
           onClose={() => setDeleteModalActivity(null)}
           onConfirm={handleConfirmDeleteActivity}
-          isLoading={isDeletingActivity}
-          title={t("deleteModal.title")}
-          description={
-            <p>
-              {t.rich("deleteModal.question", {
-                name: deleteModalActivity.name,
-                strong: (chunks) => (
-                  <strong className="text-neutral-100">{chunks}</strong>
-                ),
-              })}
-            </p>
-          }
-          confirmText={t("deleteModal.confirm")}
-          variant="danger"
-          checkboxLabel={t("deleteModal.deleteHistoryLabel")}
-          checkboxHint={t("deleteModal.deleteHistoryHint")}
-          checkboxChecked={deleteActivityHistory}
-          onCheckboxChange={setDeleteActivityHistory}
         />
       )}
 

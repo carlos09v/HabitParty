@@ -10,12 +10,6 @@
     "labelGamified": "Loading backpack...",
     "labelProductivity": "Loading inventory..."
   },
-  "helpers": {
-    "openInFocus": "Open in Focus",
-    "openBox": "Open Box",
-    "sendToFocus": "Send to Focus",
-    "use": "Use"
-  },
   "card": {
     "openInFocus": "Open in Focus",
     "openBox": "Open Box",
@@ -29,10 +23,11 @@
       "statusAll": "All Statuses",
       "statusAvailable": "Available",
       "statusInFocus": "In Focus",
+      "categoryLabel": "Categories",
       "typeLabel": "Type",
       "typeAll": "All Types",
       "typeSingleUse": "Single-Use",
-      "typeTimeBased": "Voucher",
+      "typeTimeBased": "Time Voucher",
       "typeMysteryBox": "Mystery Box",
       "sortLabel": "Sort",
       "sortDefault": "Default Order",
@@ -58,7 +53,7 @@
       "returnToBackpackProductivity": "Return to inventory",
       "openMysteryBox": "Open Mystery Box",
       "sendToFocus": "Send to Focus",
-      "useImmediately": "Use Immediately",
+      "useImmediately": "Use now (no timer)",
       "useItem": "Use Item",
       "discardItem": "Discard Item"
     },
@@ -108,7 +103,7 @@
       "e2": "Full Free Night",
       "e3": "Unplugged Afternoon",
       "l1": "Elite Partial Day-Off",
-      "l2": "Full Day-Off",
+      "l2": "Extended Day-Off",
       "l3": "Ultimate Celebration"
     }
   },

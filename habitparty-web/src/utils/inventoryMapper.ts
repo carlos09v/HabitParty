@@ -73,17 +73,25 @@ export function mapAndGroupInventory(
       const storeReward = dto.rewardId
         ? rewardById.get(dto.rewardId)
         : undefined;
+      const isFromOpenedMysteryBox = Boolean(
+        storeReward &&
+          storeReward.type === "MysteryBox" &&
+          mappedType !== "MysteryBox",
+      );
 
       const iconName =
         dto.rewardIcon ||
-        storeReward?.iconName ||
+        (!isFromOpenedMysteryBox ? storeReward?.iconName : undefined) ||
         (rawType === "MISTERY_BOX" ? "mystery_box" : "gamepad");
 
-      const resolvedDescription = storeReward?.description || "";
+      const resolvedDescription = isFromOpenedMysteryBox
+        ? ""
+        : storeReward?.description || "";
       const fallbackCategory: RewardCategory =
         rawType === "MISTERY_BOX" ? "Sorte" : "Nenhum";
-      const resolvedCategory: RewardCategory =
-        storeReward?.category || fallbackCategory;
+      const resolvedCategory: RewardCategory = isFromOpenedMysteryBox
+        ? "Nenhum"
+        : storeReward?.category || fallbackCategory;
       const primaryItemId = dto.inventoryItemId || rewardId;
 
       grouped.set(groupKey, {
@@ -107,7 +115,9 @@ export function mapAndGroupInventory(
           baseDurationMinutes:
             dto.remainingSeconds !== undefined && dto.remainingSeconds !== null
               ? Math.max(1, Math.ceil(dto.remainingSeconds / 60))
-              : storeReward?.baseDurationMinutes,
+              : isFromOpenedMysteryBox
+                ? undefined
+                : storeReward?.baseDurationMinutes,
           iconName,
           icon: iconName,
           packageLevel,

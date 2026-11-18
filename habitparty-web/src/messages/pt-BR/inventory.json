@@ -10,12 +10,6 @@
     "labelGamified": "Carregando mochila...",
     "labelProductivity": "Carregando inventário..."
   },
-  "helpers": {
-    "openInFocus": "Abrir no Foco",
-    "openBox": "Abrir Caixa",
-    "sendToFocus": "Enviar ao Foco",
-    "use": "Usar"
-  },
   "card": {
     "openInFocus": "Abrir no Foco",
     "openBox": "Abrir Caixa",
@@ -29,10 +23,11 @@
       "statusAll": "Todos os Status",
       "statusAvailable": "Disponíveis",
       "statusInFocus": "No Foco",
+      "categoryLabel": "Categorias",
       "typeLabel": "Tipo",
       "typeAll": "Todos os Tipos",
       "typeSingleUse": "Uso Único",
-      "typeTimeBased": "Cupom",
+      "typeTimeBased": "Cupom de Tempo",
       "typeMysteryBox": "Caixa Misteriosa",
       "sortLabel": "Ordenar",
       "sortDefault": "Ordem Padrão",
@@ -58,7 +53,7 @@
       "returnToBackpackProductivity": "Devolver ao inventário",
       "openMysteryBox": "Abrir Caixa Misteriosa",
       "sendToFocus": "Enviar ao Foco",
-      "useImmediately": "Usar Imediatamente",
+      "useImmediately": "Usar agora (sem timer)",
       "useItem": "Usar Item",
       "discardItem": "Descartar Item"
     },
@@ -108,7 +103,7 @@
       "e2": "Noite Livre Completa",
       "e3": "Tarde de Desconexão",
       "l1": "Day-Off Parcial de Elite",
-      "l2": "Day-Off Integral",
+      "l2": "Day-Off Estendido",
       "l3": "Celebração Absoluta"
     }
   },

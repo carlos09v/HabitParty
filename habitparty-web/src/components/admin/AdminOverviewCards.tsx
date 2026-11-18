@@ -1,5 +1,6 @@
 import { CheckCircle2, Crown, HardDrive, Mail, Users } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import type { AppLocale } from "@/i18n/config";
 import type { AdminOverviewDTO } from "@/types/admin";
 import type { DateFormat } from "@/types/ui";
@@ -67,21 +68,21 @@ export async function AdminOverviewCards({
             </div>
 
             {/* Barra de Progresso */}
-            <div className="mt-3 w-full h-2 rounded-full bg-neutral-700 dark:bg-neutral-800 overflow-hidden relative">
-              <div
-                className={cn(
-                  "h-full w-full origin-left rounded-full transition-transform duration-500",
-                  isHighQuota
-                    ? "bg-red-500"
-                    : isMediumQuota
-                      ? "bg-amber-400"
-                      : "bg-gold",
-                )}
-                style={{
-                  transform: `scaleX(${Math.min(overview.resendQuotaPercentage, 100) / 100})`,
-                }}
-              />
-            </div>
+            <ProgressBar
+              percent={overview.resendQuotaPercentage}
+              className="mt-3 h-2 bg-neutral-700 dark:bg-neutral-800 relative"
+              fillClassName={cn(
+                "rounded-full transition-transform duration-500",
+                isHighQuota
+                  ? "bg-red-500"
+                  : isMediumQuota
+                    ? "bg-amber-400"
+                    : "bg-gold",
+              )}
+              ariaLabel={t("resendQuota.consumed", {
+                percentage: overview.resendQuotaPercentage,
+              })}
+            />
 
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mt-2 text-label-g text-neutral-400 font-normal">
               <span>
@@ -201,24 +202,16 @@ export async function AdminOverviewCards({
               </span>
             </div>
 
-            <div className="mt-3 w-full h-2 rounded-full bg-neutral-700 dark:bg-neutral-800 overflow-hidden relative">
-              <div
-                className="h-full w-full origin-left rounded-full bg-success-500 transition-transform duration-500"
-                style={{
-                  transform: `scaleX(${
-                    Math.max(
-                      Math.min(
-                        (overview.estimatedDatabaseSizeBytes /
-                          (1024 * 1024 * 1024)) *
-                          100,
-                        100,
-                      ),
-                      1,
-                    ) / 100
-                  })`,
-                }}
-              />
-            </div>
+            <ProgressBar
+              percent={
+                (overview.estimatedDatabaseSizeBytes / (1024 * 1024 * 1024)) *
+                100
+              }
+              minVisualPercent={1}
+              className="mt-3 h-2 bg-neutral-700 dark:bg-neutral-800 relative"
+              fillClassName="rounded-full bg-success-500 transition-transform duration-500"
+              ariaLabel={t("storage.title")}
+            />
 
             <p className="mt-2 text-label-g text-neutral-400 leading-tight font-normal">
               {t("storage.description")}

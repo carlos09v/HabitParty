@@ -12,6 +12,7 @@ import { formatFocusMinutes } from "@/utils/focusFormatters";
 
 interface FocusMetricsGridProps {
   metrics: FocusMetrics;
+  totalRecordsCount?: number;
   period?: FocusPeriodTab;
   onPeriodChange?: (p: FocusPeriodTab) => void;
   isCompact?: boolean;
@@ -19,6 +20,7 @@ interface FocusMetricsGridProps {
 
 export function FocusMetricsGrid({
   metrics,
+  totalRecordsCount,
   period: controlledPeriod,
   onPeriodChange,
   isCompact = false,
@@ -36,7 +38,7 @@ export function FocusMetricsGrid({
 
   const recordsCount = isToday
     ? metrics.todayRecordsCount
-    : metrics.totalRecordsCount;
+    : Math.max(metrics.totalRecordsCount, totalRecordsCount ?? 0);
   const streakDays = isToday
     ? metrics.activeStreakDays
     : metrics.totalActiveDays;

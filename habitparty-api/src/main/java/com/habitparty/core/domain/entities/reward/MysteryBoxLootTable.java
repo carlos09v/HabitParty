@@ -15,25 +15,25 @@ public class MysteryBoxLootTable {
     RewardPackageLevel safeLevel = level != null ? level : RewardPackageLevel.BASIC;
     return switch (safeLevel) {
       case BASIC -> List.of(
-          new MysteryBoxLootItem("Pausa Revigorante", "coffee", 15),
-          new MysteryBoxLootItem("Cupom de Lazer Médio", "music", 30),
-          new MysteryBoxLootItem("Sessão Focada de Hobby", "book", 45));
+          new MysteryBoxLootItem("Pausa Revigorante", "coffee", 10),
+          new MysteryBoxLootItem("Cupom de Lazer Médio", "music", 20),
+          new MysteryBoxLootItem("Sessão Focada de Hobby", "book", 40));
       case PREMIUM -> List.of(
-          new MysteryBoxLootItem("Sessão de Videogame", "gamepad", 60),
-          new MysteryBoxLootItem("Vale-Lazer Estendido", "pizza", 90),
-          new MysteryBoxLootItem("Noite Gamer / Cinema", "clapperboard", 120));
+          new MysteryBoxLootItem("Sessão de Videogame", "gamepad", 35),
+          new MysteryBoxLootItem("Vale-Lazer Estendido", "pizza", 60),
+          new MysteryBoxLootItem("Noite Gamer / Cinema", "clapperboard", 100));
       case EPIC -> List.of(
-          new MysteryBoxLootItem("Bloco Estendido de Lazer", "gamepad", 120),
-          new MysteryBoxLootItem("Noite Livre Completa", "ticket", 180),
+          new MysteryBoxLootItem("Bloco Estendido de Lazer", "gamepad", 90),
+          new MysteryBoxLootItem("Noite Livre Completa", "ticket", 150),
           new MysteryBoxLootItem("Tarde de Desconexão", "sparkles", 240));
       case LEGENDARY -> List.of(
-          new MysteryBoxLootItem("Day-Off Parcial de Elite", "party", 240),
-          new MysteryBoxLootItem("Day-Off Integral", "sparkles", 480),
+          new MysteryBoxLootItem("Day-Off Parcial de Elite", "party", 180),
+          new MysteryBoxLootItem("Day-Off Integral", "sparkles", 360),
           new MysteryBoxLootItem("Celebração Absoluta", "gift", null));
       default -> List.of(
-          new MysteryBoxLootItem("Pausa Curta", "coffee", 15),
-          new MysteryBoxLootItem("Lazer Livre", "gamepad", 30),
-          new MysteryBoxLootItem("Prêmio Especial", "gift", 45));
+          new MysteryBoxLootItem("Pausa Curta", "coffee", 10),
+          new MysteryBoxLootItem("Lazer Livre", "gamepad", 20),
+          new MysteryBoxLootItem("Prêmio Especial", "gift", 40));
     };
   }
 
@@ -41,26 +41,26 @@ public class MysteryBoxLootTable {
     RewardPackageLevel safeLevel = level != null ? level : RewardPackageLevel.BASIC;
     return switch (safeLevel) {
       case BASIC -> switch (slotIndex) {
-        case 0 -> 20;
-        case 1 -> 35;
-        default -> 60;
+        case 0 -> 15;
+        case 1 -> 25;
+        default -> 45;
       };
       case PREMIUM -> switch (slotIndex) {
-        case 0 -> 60;
-        case 1 -> 90;
+        case 0 -> 45;
+        case 1 -> 75;
         default -> 120;
       };
       case EPIC -> switch (slotIndex) {
-        case 0 -> 120;
-        case 1 -> 180;
+        case 0 -> 105;
+        case 1 -> 165;
         default -> 240;
       };
       case LEGENDARY -> switch (slotIndex) {
-        case 0 -> 240;
-        case 1 -> 480;
+        case 0 -> 210;
+        case 1 -> 360;
         default -> 480;
       };
-      default -> 60;
+      default -> 45;
     };
   }
 

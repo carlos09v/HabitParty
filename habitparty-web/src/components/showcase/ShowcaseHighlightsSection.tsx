@@ -4,8 +4,8 @@ import { Plus, SlidersHorizontal, Sparkles } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { AchievementIcon } from "@/components/showcase/AchievementIcon";
 import {
+  getRarityTheme,
   MAX_SHOWCASE_HIGHLIGHTS,
-  RARITY_THEMES,
 } from "@/constants/achievements";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
@@ -140,7 +140,7 @@ export function ShowcaseHighlightsSection({
               );
             }
 
-            const theme = RARITY_THEMES[resolved.rarity] || RARITY_THEMES.RARE;
+            const theme = getRarityTheme(resolved.rarity);
 
             const cardContent = (
               <>

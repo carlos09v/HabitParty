@@ -1,5 +1,7 @@
 package com.habitparty.application.ports;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
@@ -49,11 +51,20 @@ public interface FocusRecordRepository {
 
   Page<FocusRecord> findAllByUserId(UUID userId, int page, int size);
 
+  record ActivityDeletionSummary(
+      long totalRecordsCount,
+      int totalXpEarned,
+      BigDecimal totalCoinsEarned) {}
+
   // Soma de minutos produtivos de foco no dia de hoje (excluindo itens de inventário)
   int sumFocusMinutesToday(UUID userId);
 
   default int sumFocusMinutesToday(UUID userId, ZoneId userZone) {
     return sumFocusMinutesToday(userId);
+  }
+
+  default int sumFocusMinutesOnDate(UUID userId, LocalDate targetDate, ZoneId userZone) {
+    return sumFocusMinutesToday(userId, userZone);
   }
 
   void deleteAllByUserId(UUID userId);
@@ -71,6 +82,29 @@ public interface FocusRecordRepository {
   }
 
   default int findMaxProductiveDurationMinutesExcludingRecord(UUID userId, UUID excludedRecordId) {
+    return 0;
+  }
+
+  default int findMaxProductiveDurationMinutesExcludingRecords(UUID userId, List<UUID> excludedRecordIds) {
+    if (excludedRecordIds != null && excludedRecordIds.size() == 1) {
+      return findMaxProductiveDurationMinutesExcludingRecord(userId, excludedRecordIds.get(0));
+    }
+    return 0;
+  }
+
+  default ActivityDeletionSummary summarizeImpactByFocusActivityId(UUID focusActivityId) {
+    List<FocusRecord> records = findAllByFocusActivityId(focusActivityId);
+    if (records == null || records.isEmpty()) {
+      return new ActivityDeletionSummary(0L, 0, BigDecimal.ZERO);
+    }
+    int totalXp = records.stream().mapToInt(r -> r.getXpEarned().orElse(0)).sum();
+    BigDecimal totalCoins = records.stream()
+        .map(r -> r.getCoinsEarned().orElse(BigDecimal.ZERO))
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    return new ActivityDeletionSummary(records.size(), totalXp, totalCoins);
+  }
+
+  default int updateFocusRewards(UUID recordId, int xpEarned, BigDecimal coinsEarned) {
     return 0;
   }
 }

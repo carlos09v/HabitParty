@@ -1,4 +1,5 @@
 import { useTranslations } from "next-intl";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import type { ListCardProps } from "@/types/ui";
 import { cn } from "@/utils";
 
@@ -109,17 +110,18 @@ export function ListCard({
         </span>
 
         {!isAdd && progressPercent !== null ? (
-          <div className="w-full h-1 rounded-full bg-neutral-700/40 dark:bg-white/10 overflow-hidden">
-            <div
-              className={cn(
-                "h-full w-full origin-left transition-[transform,background-color] duration-300",
-                isAllDone
-                  ? "bg-emerald-500 dark:bg-emerald-400"
-                  : "bg-primary dark:bg-gold",
-              )}
-              style={{ transform: `scaleX(${progressPercent / 100})` }}
-            />
-          </div>
+          <ProgressBar
+            as="span"
+            decorative
+            percent={progressPercent}
+            className="h-1 bg-neutral-700/40 dark:bg-white/10"
+            fillClassName={cn(
+              "transition-[transform,background-color] duration-300",
+              isAllDone
+                ? "bg-emerald-500 dark:bg-emerald-400"
+                : "bg-primary dark:bg-gold",
+            )}
+          />
         ) : subtitle ? (
           <span
             className={cn(

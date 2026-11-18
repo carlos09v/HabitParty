@@ -10,7 +10,7 @@
     "types": {
       "all": "Todos os Tipos",
       "SingleUse": "Uso Único",
-      "TimeBased": "Cupom",
+      "TimeBased": "Cupom de Tempo",
       "MysteryBox": "Caixa Misteriosa"
     },
     "categories": {
@@ -40,10 +40,10 @@
       "LEGENDARY": "Lendário (480m)"
     },
     "singleUseTiers": {
-      "BASIC": "Mimo Rápido (8)",
-      "PREMIUM": "Diário (16)",
-      "EPIC": "Semanal (60)",
-      "LEGENDARY": "Épico (180)"
+      "BASIC": "Mimo Rápido (4)",
+      "PREMIUM": "Diário (15)",
+      "EPIC": "Semanal (50)",
+      "LEGENDARY": "Épico (150)"
     },
     "sort": {
       "default": "Ordem Padrão",
@@ -102,14 +102,6 @@
       "deleteError": "Erro ao excluir recompensa."
     }
   },
-  "card": {
-    "buy": "Comprar",
-    "buyProductivity": "Resgatar",
-    "payDebt": "Pagar Dívida",
-    "addRewardAria": "Adicionar nova recompensa",
-    "addProduct": "Adicionar Produto",
-    "addProductProductivity": "Nova Recompensa"
-  },
   "formModal": {
     "editTitle": "Editar Recompensa",
     "createTitle": "Nova Recompensa",
@@ -119,16 +111,36 @@
     "createDescriptionProductivity": "Cadastre uma recompensa de uso único ou cupom de tempo livre.",
     "titleLabel": "Nome da Recompensa",
     "iconPickerTitle": "Ícone da Recompensa",
-    "titlePlaceholder": "Ex: 1h de videogame, Café especial, Assistir filme...",
+    "titlePlaceholder": "Ex: Café especial, 1h de videogame, Assistir filme...",
+    "titlePlaceholderSingleUse": "Ex: Café especial, Pedir delivery, Comprar livro...",
+    "titlePlaceholderTimeBased": "Ex: 1h de videogame, Episódio de série, Pausa livre...",
+    "titlePlaceholderMysteryBox": "Ex: Baú Gamer de Sexta, Caixa de Autocuidado...",
     "iconHelperText": "Clique no ícone para personalizar ou digite o nome para sugestão automática.",
     "descriptionLabel": "Descrição (opcional)",
     "descriptionPlaceholder": "Detalhes ou regras para desfrutar da sua recompensa...",
     "typeLabel": "Tipo de Recompensa",
+    "typeGuides": {
+      "SingleUse": {
+        "title": "Uso Único — Resgate sem cronômetro",
+        "descriptionGamified": "Ideal para mimos pontuais (ex: café, delivery, compra). Ao usar na Mochila, é concluído na hora.",
+        "descriptionProductivity": "Ideal para mimos pontuais (ex: café, delivery, compra). Ao usar no Inventário, é concluído na hora."
+      },
+      "TimeBased": {
+        "title": "Cupom de Tempo — Lazer cronometrado no Foco",
+        "descriptionGamified": "Ideal para pausas com duração (ex: 1h de jogo, série). Vai para a Mochila e desconta os minutos no timer de Foco.",
+        "descriptionProductivity": "Ideal para pausas com duração (ex: 1h de jogo, série). Vai para o Inventário e desconta os minutos no timer de Foco."
+      },
+      "MysteryBox": {
+        "title": "Caixa Misteriosa — Sorteio na roleta",
+        "description": "Lootbox com 3 prêmios de chances diferentes (Comum, Raro e Jackpot) sorteados ao abrir na Mochila."
+      }
+    },
     "categoryLabel": "Categoria",
     "debtToggleLabel": "Registrar como Dívida",
     "debtToggleAria": "Ativar modo de dívida imediata",
     "debtToggleSubtitle": "Quitação direta: desconta moedas na hora, sem ir para a Mochila.",
     "debtToggleSubtitleProductivity": "Quitação direta: desconta créditos na hora, sem ir para o Inventário.",
+    "debtCategoryAutoHint": "Categoria definida automaticamente como Dívida.",
     "debtTooltipTitle": "Para que serve a Dívida?",
     "debtTooltipAria": "Saiba para que serve o modo Dívida",
     "debtTooltipBody": "Use quando você ultrapassar o tempo permitido de um lazer ou assistir/consumir algo urgente sem ter saldo suficiente no momento.",
@@ -136,18 +148,20 @@
     "debtTooltipPointDirectProductivity": "Ao clicar em Pagar Dívida, os créditos são descontados e a dívida é quitada na hora (sem item no Inventário).",
     "debtTooltipPointExample": "Não conta como resgate de recompensa nas conquistas e fica visível para filtrar quando precisar quitar.",
     "debtTooltipPointExampleProductivity": "Fica registrada como compromisso pendente para quitar assim que tiver créditos.",
-    "durationLabel": "Duração da Atividade (minutos)",
+    "durationLabel": "Duração (minutos)",
     "durationHint": "(tempo que será consumido no Foco)",
     "durationPlaceholder": "Ex: 30, 60, 120",
-    "packageLevelLabel": "Nível do Pacote",
-    "packageLevelHint": "(opcional • clique para aplicar tempo sugerido)",
+    "packageLevelLabel": "Atalhos rápidos de tempo e pacote",
+    "packageLevelHint": "(opcional • preenche duração e custo)",
     "priceLabel": "Custo em Moedas",
     "priceLabelProductivity": "Custo em Créditos",
     "suggestedPriceByRarity": "(Preço sugerido por raridade)",
-    "pricePlaceholder": "Ex: 5, 15, 35 ou 80",
+    "pricePlaceholder": "Ex: 4, 15, 35 ou 80",
     "mysteryBoxPriceHelper": "Você pode manter o preço calibrado para o pacote ou personalizá-lo livremente.",
-    "singleUseTiersLabel": "Horizonte sugerido",
-    "singleUseTiersHint": "(opcional • guia de esforço)",
+    "mysteryLootPreviewLabel": "Prêmios configurados nesta caixa",
+    "mysteryCustomizeLootCta": "Personalizar na aba 2",
+    "singleUseTiersLabel": "Nível e preço sugerido",
+    "singleUseTiersHint": "(opcional • define preço e raridade)",
     "mysteryTabsAria": "Etapas da Caixa Misteriosa",
     "mysteryTabIdentity": "Dados & Raridade",
     "mysteryTabPrizes": "Personalizar Prêmios",
@@ -163,7 +177,7 @@
       "tooHighBadge": "Muito alto",
       "warningTooltipAria": "Ver detalhes do alerta de preço",
       "effort": {
-        "free": "Gratuito (sem custo)",
+        "invalidZero": "Defina um valor acima de 0",
         "easyTasks": "~{count, plural, one {# tarefa Fácil} other {# tarefas Fáceis}}",
         "hardSingleTask": "~1 Tarefa Difícil",
         "mediumTasks": "~{count, plural, one {# tarefa Média} other {# tarefas Médias}}",
@@ -202,7 +216,8 @@
       "pullFromStoreHint": "Preenche os 3 slots usando recompensas que você já cadastrou na Loja",
       "presetAppliedToast": "Preset \"{preset}\" aplicado aos prêmios da caixa!",
       "pulledFromStoreToast": "Prêmios preenchidos com itens da sua Loja!",
-      "storeEmptyToast": "Cadastre recompensas de Uso Único ou Cupom na Loja para usar este atalho.",
+      "storeEmptyToast": "Cadastre recompensas de Uso Único ou Cupom de Tempo na Loja para usar este atalho.",
+      "storeNoCompatibleToast": "Nenhuma recompensa da sua Loja cabe na faixa de até {max} moedas deste nível.",
       "slotRarity": {
         "0": "Prêmio Comum",
         "1": "Prêmio Raro",
@@ -227,16 +242,16 @@
         "colorName": "Verde Esmeralda",
         "drops": {
           "0": {
-            "label": "Pausa Revigorante (10-15m)",
-            "description": "Café especial, snack favorito, 1 vídeo ou pausa curta."
+            "label": "Pausa Revigorante (10m)",
+            "description": "Café especial, snack favorito ou pausa curta sem culpa."
           },
           "1": {
-            "label": "Cupom de Lazer Médio (30m)",
-            "description": "Leitura de lazer, música relaxante ou podcast."
+            "label": "Cupom de Lazer Médio (20m)",
+            "description": "Leitura de lazer, 1 vídeo curto, música ou podcast."
           },
           "2": {
-            "label": "Sessão Focada de Hobby (45m)",
-            "description": "45 minutos de lazer + 1 moeda de cashback bônus."
+            "label": "Sessão Focada de Hobby (40m)",
+            "description": "40 minutos dedicados ao seu hobby favorito."
           }
         }
       },
@@ -247,16 +262,16 @@
         "colorName": "Azul Ciano",
         "drops": {
           "0": {
-            "label": "Lazer Padrão (45-60m)",
-            "description": "Sessão de videogame ou 1 episódio de série."
+            "label": "Lazer Padrão (35m)",
+            "description": "Partida rápida ou 1 episódio de série/anime."
           },
           "1": {
-            "label": "Vale-Lazer Estendido (75-90m)",
-            "description": "Tempo estendido ou lanche especial de comemoração."
+            "label": "Vale-Lazer Estendido (60m)",
+            "description": "1 hora cheia de entretenimento ou lanche comemorativo."
           },
           "2": {
-            "label": "Noite Gamer / Cinema (120m)",
-            "description": "2 horas de entretenimento ininterrupto e sem culpa."
+            "label": "Noite Gamer / Cinema (100m)",
+            "description": "1h 40m de lazer ininterrupto e sem culpa."
           }
         }
       },
@@ -267,12 +282,12 @@
         "colorName": "Magenta Radiante",
         "drops": {
           "0": {
-            "label": "Bloco Estendido de Lazer (120m)",
-            "description": "2 horas de jogos favoritos, maratona ou passeio externo."
+            "label": "Bloco Estendido de Lazer (90m)",
+            "description": "1h 30m de jogos favoritos, maratona ou passeio externo."
           },
           "1": {
-            "label": "Noite Livre Completa (180m)",
-            "description": "3 horas livres ou livro/jogo na promoção da Steam."
+            "label": "Noite Livre Completa (150m)",
+            "description": "2h 30m livres ou livro/jogo na promoção."
           },
           "2": {
             "label": "Tarde Inteira de Desconexão (240m)",
@@ -287,12 +302,12 @@
         "colorName": "Dourado Nobre",
         "drops": {
           "0": {
-            "label": "Day-Off Parcial de Elite (240m)",
-            "description": "4 horas dedicadas aos seus hobbies com dever cumprido."
+            "label": "Day-Off Parcial de Elite (180m)",
+            "description": "3 horas dedicadas aos seus hobbies com dever cumprido."
           },
           "1": {
-            "label": "Day-Off Integral (Dia Inteiro)",
-            "description": "Folga total de afazeres com proteção total de streak."
+            "label": "Day-Off Estendido (360m)",
+            "description": "6 horas de folga para descanso, lazer ou projeto pessoal."
           },
           "2": {
             "label": "Celebração Absoluta (Jackpot Supremo)",

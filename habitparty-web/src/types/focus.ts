@@ -5,6 +5,8 @@ export type FocusIconOption = IconOption;
 
 export type FocusActivityResponseDTO =
   components["schemas"]["FocusActivityResponseDTO"];
+export type FocusActivityDeletionSummaryResponseDTO =
+  components["schemas"]["FocusActivityDeletionSummaryResponseDTO"];
 export type CreateFocusActivityDTO =
   components["schemas"]["CreateFocusActivityDTO"];
 export type UpdateFocusActivityDTO =
@@ -39,6 +41,7 @@ export interface FocusRecord {
   activityIcon?: string;
   inventoryItemId?: string;
   itemName?: string;
+  itemIcon?: string;
   taskId?: string;
   taskNameSnapshot?: string;
   notes?: string;

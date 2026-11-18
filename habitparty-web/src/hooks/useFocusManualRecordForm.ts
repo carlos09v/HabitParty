@@ -25,7 +25,10 @@ import {
   parseTimeToMinutes,
   toLocalISOString,
 } from "@/utils/date";
-import { getItemRemainingMinutes } from "@/utils/focusFormatters";
+import {
+  getItemRemainingMinutes,
+  isBackpackItemTimeDepleted,
+} from "@/utils/focusFormatters";
 import { toLocalDateKey } from "@/utils/focusMetrics";
 import {
   calculateFocusRewardEstimate,
@@ -73,6 +76,12 @@ export function useFocusManualRecordForm({
       : activities.slice(0, MAX_FOCUS_ACTIVITIES_FREE);
   }, [activities, isPremium]);
 
+  const availableBackpackItems = useMemo(() => {
+    return backpackItems.filter(
+      (item) => !isBackpackItemTimeDepleted(item.remainingSeconds),
+    );
+  }, [backpackItems]);
+
   // Inicialização de estado síncrona sem necessidade de useEffect
   const [targetType, setTargetType] = useState<"ACTIVITY" | "ITEM">(() =>
     initialItemId ? "ITEM" : "ACTIVITY",
@@ -89,19 +98,32 @@ export function useFocusManualRecordForm({
   });
 
   const [selectedItemId, setSelectedItemId] = useState<string>(() => {
-    if (initialItemId) return initialItemId;
-    return backpackItems[0]?.inventoryItemId ?? "";
+    if (
+      initialItemId &&
+      availableBackpackItems.some((b) => b.inventoryItemId === initialItemId)
+    ) {
+      return initialItemId;
+    }
+    return availableBackpackItems[0]?.inventoryItemId ?? "";
   });
 
   const [selectedTaskId, setSelectedTaskId] = useState<string>(
     () => initialTaskId ?? "",
   );
 
-  const [recordType, setRecordType] = useState<FocusRecordType>("POMO");
+  const [recordType, setRecordType] = useState<FocusRecordType>(() => {
+    const validInitId =
+      initialActivityId &&
+      selectableActivities.some((a) => a.id === initialActivityId)
+        ? initialActivityId
+        : selectableActivities[0]?.id;
+    const initAct = selectableActivities.find((a) => a.id === validInitId);
+    return initAct?.recordType || "POMO";
+  });
 
   const [durationMinutes, setDurationMinutes] = useState<number>(() => {
     if (initialItemId) {
-      const item = backpackItems.find(
+      const item = availableBackpackItems.find(
         (b) => b.inventoryItemId === initialItemId,
       );
       const mins = getItemRemainingMinutes(item?.remainingSeconds);
@@ -236,8 +258,10 @@ export function useFocusManualRecordForm({
   };
 
   const selectedItem = useMemo(() => {
-    return backpackItems.find((b) => b.inventoryItemId === selectedItemId);
-  }, [backpackItems, selectedItemId]);
+    return availableBackpackItems.find(
+      (b) => b.inventoryItemId === selectedItemId,
+    );
+  }, [availableBackpackItems, selectedItemId]);
 
   const selectedItemMinutes = useMemo(() => {
     return getItemRemainingMinutes(selectedItem?.remainingSeconds);
@@ -252,7 +276,8 @@ export function useFocusManualRecordForm({
     if (!sessionDate || records.length === 0) return 0;
     return records.reduce((sum, rec) => {
       if (rec.inventoryItemId) return sum;
-      if (toLocalDateKey(rec.endTime, userTimeZone) !== sessionDate) return sum;
+      if (toLocalDateKey(rec.startTime, userTimeZone) !== sessionDate)
+        return sum;
       return sum + (rec.durationMinutes || 0);
     }, 0);
   }, [records, sessionDate, userTimeZone]);
@@ -265,6 +290,7 @@ export function useFocusManualRecordForm({
       completedPomos,
       priorFocusMinutesForDate,
       locale,
+      recordType === "POMO" ? selectedActivity?.targetTimeMinutes : undefined,
     );
   }, [
     targetType,
@@ -273,6 +299,7 @@ export function useFocusManualRecordForm({
     completedPomos,
     priorFocusMinutesForDate,
     locale,
+    selectedActivity?.targetTimeMinutes,
   ]);
 
   const rewardEstimate = useMemo(() => {
@@ -292,8 +319,9 @@ export function useFocusManualRecordForm({
     setTargetType(type);
     if (type === "ITEM") {
       const item =
-        backpackItems.find((b) => b.inventoryItemId === selectedItemId) ??
-        backpackItems[0];
+        availableBackpackItems.find(
+          (b) => b.inventoryItemId === selectedItemId,
+        ) ?? availableBackpackItems[0];
       if (item) {
         setSelectedItemId(item.inventoryItemId || "");
         const mins = getItemRemainingMinutes(item.remainingSeconds);
@@ -305,6 +333,9 @@ export function useFocusManualRecordForm({
   const handleSelectActivity = (actId: string) => {
     setSelectedActivityId(actId);
     const act = selectableActivities.find((a) => a.id === actId);
+    if (act?.recordType) {
+      setRecordType(act.recordType);
+    }
     if (act?.targetTimeMinutes) {
       syncDurationWithWindow(act.targetTimeMinutes);
       syncPomosFromMinutes(act.targetTimeMinutes);
@@ -313,7 +344,9 @@ export function useFocusManualRecordForm({
 
   const handleSelectBackpackItem = (itemId: string) => {
     setSelectedItemId(itemId);
-    const item = backpackItems.find((b) => b.inventoryItemId === itemId);
+    const item = availableBackpackItems.find(
+      (b) => b.inventoryItemId === itemId,
+    );
     const itemMins = getItemRemainingMinutes(item?.remainingSeconds);
     if (itemMins > 0) {
       syncDurationWithWindow(itemMins);
@@ -460,6 +493,13 @@ export function useFocusManualRecordForm({
           }
         }
 
+        const resolvedCompletedPomos =
+          targetType !== "ITEM" && recordType === "POMO" ? completedPomos : 0;
+        const resolvedPomoTargetMinutes =
+          targetType !== "ITEM" && recordType === "POMO"
+            ? selectedActivity?.targetTimeMinutes
+            : undefined;
+
         const res = await createFocusRecord({
           focusActivityId:
             targetType === "ACTIVITY" && selectedActivityId
@@ -471,8 +511,8 @@ export function useFocusManualRecordForm({
               : undefined,
           inventoryItemId: targetType === "ITEM" ? selectedItemId : undefined,
           recordType: targetType === "ITEM" ? "STOPWATCH" : recordType,
-          completedPomos:
-            targetType !== "ITEM" && recordType === "POMO" ? completedPomos : 0,
+          completedPomos: resolvedCompletedPomos,
+          pomoTargetMinutes: resolvedPomoTargetMinutes,
           startTime,
           endTime,
           notes: notes.trim() || undefined,
@@ -481,6 +521,25 @@ export function useFocusManualRecordForm({
         if (res.success) {
           const xp = Number(res.data?.xpEarned ?? 0);
           const coins = Number(res.data?.coinsEarned ?? 0);
+
+          if (
+            targetType === "ACTIVITY" &&
+            selectedTaskId &&
+            typeof window !== "undefined"
+          ) {
+            window.dispatchEvent(
+              new CustomEvent("habitparty:task-focus-recorded", {
+                detail: {
+                  taskId: selectedTaskId,
+                  durationMinutes: Math.max(
+                    1,
+                    Number(res.data?.durationMinutes ?? durationMinutes),
+                  ),
+                  completedPomos: resolvedCompletedPomos,
+                },
+              }),
+            );
+          }
 
           if (targetType === "ACTIVITY") {
             const rewardResult = awardUserRewards(xp, coins);
@@ -525,6 +584,7 @@ export function useFocusManualRecordForm({
   return {
     isPremium,
     selectableActivities,
+    availableBackpackItems,
     targetType,
     handleTargetTypeChange,
     selectedActivityId,

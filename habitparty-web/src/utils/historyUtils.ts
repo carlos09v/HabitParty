@@ -5,7 +5,7 @@ import {
   NEGATIVE_TRANSACTION_TYPES,
   TRANSACTION_TYPE_CONFIG,
 } from "@/constants/history";
-import { PACKAGE_BADGE_COLORS, REWARD_ICONS } from "@/constants/reward";
+import { PACKAGE_LEVEL_COLOR, REWARD_ICONS } from "@/constants/reward";
 import { COLUMN_ICONS } from "@/constants/routine";
 import { DIFFICULTY_BORDER, TASK_DIFFICULTY_META } from "@/constants/task";
 import type { AppLocale } from "@/i18n/config";
@@ -16,6 +16,7 @@ import type {
   TransactionMetadata,
 } from "@/types/history";
 import type { DateFormat, TimeFormat } from "@/types/ui";
+import { toPackageMessageKey } from "@/utils/rewardMapper";
 import {
   formatDateTime,
   formatShortDate,
@@ -138,7 +139,8 @@ export function resolveTransactionMetadata(
 
   const secondaryBadgeClass =
     (normalizedDiff && TASK_DIFFICULTY_META[normalizedDiff]?.badgeColor) ||
-    (normalizedPkg && PACKAGE_BADGE_COLORS[normalizedPkg]) ||
+    (normalizedPkg &&
+      PACKAGE_LEVEL_COLOR[toPackageMessageKey(normalizedPkg)]) ||
     "bg-white/10 border-white/15 text-neutral-200";
 
   const label = labels

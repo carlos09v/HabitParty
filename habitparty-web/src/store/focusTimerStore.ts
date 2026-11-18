@@ -1113,12 +1113,16 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
 
         try {
           const stateBeforeComplete = get();
-          const isDirectTaskTarget =
-            stateBeforeComplete.target?.type === "task" &&
-            (stateBeforeComplete.target.taskId ||
-              stateBeforeComplete.target.id) === taskId;
+          const currentTargetTaskId =
+            stateBeforeComplete.target?.type === "task"
+              ? stateBeforeComplete.target.taskId ||
+                stateBeforeComplete.target.id
+              : stateBeforeComplete.target?.type === "activity"
+                ? stateBeforeComplete.target.taskId
+                : undefined;
+          const isLinkedToTarget = currentTargetTaskId === taskId;
           if (
-            isDirectTaskTarget &&
+            isLinkedToTarget &&
             stateBeforeComplete.phase === "WORK" &&
             stateBeforeComplete.elapsedSeconds >= 60
           ) {

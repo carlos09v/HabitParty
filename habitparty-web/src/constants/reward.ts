@@ -63,8 +63,8 @@ export {
 export { REWARD_ICON_KEYWORD_MAP } from "@/constants/rewardIconKeywords";
 export { calculateSuggestedCouponPrice } from "@/utils/rewardEconomy";
 
-/** Limite máximo de caracteres da descrição de uma recompensa. */
-export const REWARD_DESCRIPTION_MAX_LENGTH = 120;
+/** Limite máximo de caracteres da descrição de uma recompensa (sincronizado com o backend). */
+export const REWARD_DESCRIPTION_MAX_LENGTH = 140;
 
 export type {
   CategoryMessageKey,
@@ -138,62 +138,81 @@ export const REWARD_TYPE_META: Record<string, RewardTypeMeta> = {
   },
 };
 
-export const PACKAGE_LEVEL_COLOR: Partial<Record<string, string>> = {
-  Nenhum: "text-neutral-400 bg-white/5 border-white/10",
+export const PACKAGE_LEVEL_COLOR: Record<PackageMessageKey, string> = {
   NONE: "text-neutral-400 bg-white/5 border-white/10",
-  Básico:
-    "text-emerald-700 bg-emerald-500/10 border-emerald-500/25 dark:text-success-500 dark:bg-success-500/15 dark:border-success-500/30",
   BASIC:
     "text-emerald-700 bg-emerald-500/10 border-emerald-500/25 dark:text-success-500 dark:bg-success-500/15 dark:border-success-500/30",
-  Premium:
-    "text-sky-700 bg-sky-500/10 border-sky-500/25 dark:text-info dark:bg-info/15 dark:border-info/30",
   PREMIUM:
     "text-sky-700 bg-sky-500/10 border-sky-500/25 dark:text-info dark:bg-info/15 dark:border-info/30",
-  Épico:
-    "text-magenta bg-magenta/10 border-magenta/25 dark:bg-magenta/15 dark:border-magenta/30",
   EPIC: "text-magenta bg-magenta/10 border-magenta/25 dark:bg-magenta/15 dark:border-magenta/30",
-  Lendário:
-    "text-amber-700 bg-amber-500/10 border-amber-500/30 dark:text-gold dark:bg-gold/15 dark:border-gold/30",
   LEGENDARY:
     "text-amber-700 bg-amber-500/10 border-amber-500/30 dark:text-gold dark:bg-gold/15 dark:border-gold/30",
 };
 
-export const PACKAGE_BADGE_COLORS = PACKAGE_LEVEL_COLOR;
-
-export const PACKAGE_LEVEL_GLOW: Partial<Record<string, string>> = {
-  Básico:
-    "border-neutral-700 group-hover:border-emerald-500/45 dark:border-success-500/30 dark:group-hover:border-success-500/50",
+export const PACKAGE_LEVEL_GLOW: Partial<Record<PackageMessageKey, string>> = {
   BASIC:
     "border-neutral-700 group-hover:border-emerald-500/45 dark:border-success-500/30 dark:group-hover:border-success-500/50",
-  Premium:
-    "border-neutral-700 group-hover:border-sky-500/45 dark:border-info/30 dark:group-hover:border-info/50",
   PREMIUM:
     "border-neutral-700 group-hover:border-sky-500/45 dark:border-info/30 dark:group-hover:border-info/50",
-  Épico:
-    "border-neutral-700 group-hover:border-magenta/45 dark:border-magenta/30 dark:group-hover:border-magenta/50",
   EPIC: "border-neutral-700 group-hover:border-magenta/45 dark:border-magenta/30 dark:group-hover:border-magenta/50",
-  Lendário:
-    "border-neutral-700 group-hover:border-amber-500/55 dark:border-gold/40 dark:group-hover:border-gold/70 dark:shadow-glow-gold-xs",
   LEGENDARY:
     "border-neutral-700 group-hover:border-amber-500/55 dark:border-gold/40 dark:group-hover:border-gold/70 dark:shadow-glow-gold-xs",
 };
 
-export const PACKAGE_LEVEL_ICON_THEME: Partial<Record<string, string>> = {
-  Básico:
-    "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 group-hover:border-emerald-500/40 dark:bg-success-500/15 dark:border-success-500/30 dark:text-success-400 dark:group-hover:border-success-500/50",
+export const PACKAGE_LEVEL_ICON_THEME: Partial<
+  Record<PackageMessageKey, string>
+> = {
   BASIC:
     "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 group-hover:border-emerald-500/40 dark:bg-success-500/15 dark:border-success-500/30 dark:text-success-400 dark:group-hover:border-success-500/50",
-  Premium:
-    "bg-sky-500/10 text-sky-700 border-sky-500/20 group-hover:border-sky-500/40 dark:bg-info/15 dark:border-info/30 dark:text-info dark:group-hover:border-info/50",
   PREMIUM:
     "bg-sky-500/10 text-sky-700 border-sky-500/20 group-hover:border-sky-500/40 dark:bg-info/15 dark:border-info/30 dark:text-info dark:group-hover:border-info/50",
-  Épico:
-    "bg-magenta/10 text-magenta border-magenta/20 group-hover:border-magenta/40 dark:bg-magenta/15 dark:border-magenta/30 dark:group-hover:border-magenta/50",
   EPIC: "bg-magenta/10 text-magenta border-magenta/20 group-hover:border-magenta/40 dark:bg-magenta/15 dark:border-magenta/30 dark:group-hover:border-magenta/50",
-  Lendário:
-    "bg-amber-500/10 text-amber-700 border-amber-500/25 group-hover:border-amber-500/50 dark:bg-gold/15 dark:border-gold/40 dark:text-gold dark:group-hover:border-gold/60 dark:shadow-glow-gold-xs",
   LEGENDARY:
     "bg-amber-500/10 text-amber-700 border-amber-500/25 group-hover:border-amber-500/50 dark:bg-gold/15 dark:border-gold/40 dark:text-gold dark:group-hover:border-gold/60 dark:shadow-glow-gold-xs",
+};
+
+const TIER_CHIP_STYLES: Record<
+  PackageMessageKey,
+  {
+    dotColor?: string;
+    unselectedClass: string;
+    selectedClass: string;
+  }
+> = {
+  NONE: {
+    unselectedClass:
+      "bg-surface/70 border-neutral-600 text-neutral-300 hover:text-neutral-100 hover:bg-surface hover:border-neutral-500 dark:bg-white/5 dark:border-white/10 dark:text-neutral-400 dark:hover:text-neutral-200 dark:hover:bg-white/10 dark:hover:border-white/20",
+    selectedClass:
+      "bg-neutral-700/60 border-neutral-500 text-neutral-50 ring-2 ring-neutral-500/20 shadow-2xs dark:bg-white/15 dark:border-white/40 dark:text-neutral-100 dark:ring-white/20",
+  },
+  BASIC: {
+    dotColor: "bg-emerald-500 dark:bg-success-500",
+    unselectedClass:
+      "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/15 hover:border-emerald-500/50 dark:bg-success-500/5 dark:border-success-500/30 dark:text-success-400 dark:hover:bg-success-500/10 dark:hover:border-success-500/60",
+    selectedClass:
+      "bg-emerald-500/15 border-emerald-600 text-emerald-800 ring-2 ring-emerald-500/20 dark:bg-success-500/20 dark:border-success-500 dark:text-success-300 dark:ring-success-500/40 dark:shadow-[0_0_10px_rgba(0,201,80,0.25)]",
+  },
+  PREMIUM: {
+    dotColor: "bg-sky-500 dark:bg-info",
+    unselectedClass:
+      "bg-sky-500/10 border-sky-500/30 text-sky-700 hover:bg-sky-500/15 hover:border-sky-500/50 dark:bg-info/5 dark:border-info/30 dark:text-info dark:hover:bg-info/10 dark:hover:border-info/60",
+    selectedClass:
+      "bg-sky-500/15 border-sky-600 text-sky-800 ring-2 ring-sky-500/20 dark:bg-info/20 dark:border-info dark:text-info dark:ring-info/40 dark:shadow-[0_0_10px_rgba(0,194,255,0.25)]",
+  },
+  EPIC: {
+    dotColor: "bg-magenta",
+    unselectedClass:
+      "bg-magenta/10 border-magenta/30 text-magenta hover:bg-magenta/15 hover:border-magenta/50 dark:bg-magenta/5 dark:border-magenta/30 dark:hover:bg-magenta/10 dark:hover:border-magenta/60",
+    selectedClass:
+      "bg-magenta/15 border-magenta text-magenta ring-2 ring-magenta/20 dark:bg-magenta/20 dark:border-magenta dark:text-magenta dark:ring-magenta/40 dark:shadow-[0_0_12px_rgba(237,43,229,0.3)]",
+  },
+  LEGENDARY: {
+    dotColor: "bg-amber-500 dark:bg-gold",
+    unselectedClass:
+      "text-amber-700 border-amber-500/35 bg-amber-500/10 hover:bg-amber-500/15 hover:border-amber-500/60 dark:bg-gold/5 dark:border-gold/30 dark:text-gold dark:hover:bg-gold/10 dark:hover:border-gold/60",
+    selectedClass:
+      "bg-amber-500/15 border-amber-600 text-amber-800 ring-2 ring-amber-500/20 dark:bg-gold/20 dark:border-gold dark:text-gold dark:ring-gold/40 dark:shadow-glow-gold-xs",
+  },
 };
 
 export const REWARD_TYPE_OPTIONS: SelectOption[] = [
@@ -227,97 +246,74 @@ export const COUPON_PACKAGE_OPTIONS: readonly CouponPackageOption[] = [
   {
     id: "Nenhum",
     label: "Nenhum",
-    unselectedClass:
-      "bg-surface/70 border-neutral-600 text-neutral-300 hover:text-neutral-100 hover:bg-surface hover:border-neutral-500 dark:bg-white/5 dark:border-white/10 dark:text-neutral-400 dark:hover:text-neutral-200 dark:hover:bg-white/10 dark:hover:border-white/20",
-    selectedClass:
-      "bg-neutral-700/60 border-neutral-500 text-neutral-50 ring-2 ring-neutral-500/20 shadow-2xs dark:bg-white/15 dark:border-white/40 dark:text-neutral-100 dark:ring-white/20",
+    ...TIER_CHIP_STYLES.NONE,
   },
   {
     id: "Básico",
     label: "Básico (30m)",
     suggestedMinutes: 30,
     suggestedPrice: 8,
-    dotColor: "bg-emerald-500 dark:bg-success-500",
-    unselectedClass:
-      "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/15 hover:border-emerald-500/50 dark:bg-success-500/5 dark:border-success-500/30 dark:text-success-400 dark:hover:bg-success-500/10 dark:hover:border-success-500/60",
-    selectedClass:
-      "bg-emerald-500/15 border-emerald-600 text-emerald-800 ring-2 ring-emerald-500/20 dark:bg-success-500/20 dark:border-success-500 dark:text-success-300 dark:ring-success-500/40 dark:shadow-[0_0_10px_rgba(0,201,80,0.25)]",
+    ...TIER_CHIP_STYLES.BASIC,
   },
   {
     id: "Premium",
     label: "Premium (60m)",
     suggestedMinutes: 60,
     suggestedPrice: 15,
-    dotColor: "bg-sky-500 dark:bg-info",
-    unselectedClass:
-      "bg-sky-500/10 border-sky-500/30 text-sky-700 hover:bg-sky-500/15 hover:border-sky-500/50 dark:bg-info/5 dark:border-info/30 dark:text-info dark:hover:bg-info/10 dark:hover:border-info/60",
-    selectedClass:
-      "bg-sky-500/15 border-sky-600 text-sky-800 ring-2 ring-sky-500/20 dark:bg-info/20 dark:border-info dark:text-info dark:ring-info/40 dark:shadow-[0_0_10px_rgba(0,194,255,0.25)]",
+    ...TIER_CHIP_STYLES.PREMIUM,
   },
   {
     id: "Épico",
     label: "Épico (180m)",
     suggestedMinutes: 180,
     suggestedPrice: 40,
-    dotColor: "bg-magenta",
-    unselectedClass:
-      "bg-magenta/10 border-magenta/30 text-magenta hover:bg-magenta/15 hover:border-magenta/50 dark:bg-magenta/5 dark:border-magenta/30 dark:hover:bg-magenta/10 dark:hover:border-magenta/60",
-    selectedClass:
-      "bg-magenta/15 border-magenta text-magenta ring-2 ring-magenta/20 dark:bg-magenta/20 dark:border-magenta dark:text-magenta dark:ring-magenta/40 dark:shadow-[0_0_12px_rgba(237,43,229,0.3)]",
+    ...TIER_CHIP_STYLES.EPIC,
   },
   {
     id: "Lendário",
     label: "Lendário (480m)",
     suggestedMinutes: 480,
     suggestedPrice: 95,
-    dotColor: "bg-amber-500 dark:bg-gold",
-    unselectedClass:
-      "text-amber-700 border-amber-500/35 bg-amber-500/10 hover:bg-amber-500/15 hover:border-amber-500/60 dark:bg-gold/5 dark:border-gold/30 dark:text-gold dark:hover:bg-gold/10 dark:hover:border-gold/60",
-    selectedClass:
-      "bg-amber-500/15 border-amber-600 text-amber-800 ring-2 ring-amber-500/20 dark:bg-gold/20 dark:border-gold dark:text-gold dark:ring-gold/40 dark:shadow-glow-gold-xs",
+    ...TIER_CHIP_STYLES.LEGENDARY,
   },
 ] as const;
 
 /**
- * Presets exponenciais de horizonte temporal para recompensas de Uso Único (SingleUse):
- * 8 (Mimo Rápido) -> 16 (Diária) -> 60 (Semanal) -> 180 (Marco Épico).
+ * Presets calibrados de esforço para recompensas de Uso Único (SingleUse):
+ * 4 (Mimo Rápido) -> 15 (Diário) -> 50 (Semanal) -> 150 (Marco Épico).
  */
 export const SINGLE_USE_TIER_OPTIONS: readonly SingleUseTierOption[] = [
   {
     id: "BASIC",
-    suggestedPrice: 8,
-    dotColor: "bg-emerald-500 dark:bg-success-500",
-    unselectedClass:
-      "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/15 hover:border-emerald-500/50 dark:bg-success-500/5 dark:border-success-500/30 dark:text-success-400 dark:hover:bg-success-500/10 dark:hover:border-success-500/60",
-    selectedClass:
-      "bg-emerald-500/15 border-emerald-600 text-emerald-800 ring-2 ring-emerald-500/20 dark:bg-success-500/20 dark:border-success-500 dark:text-success-300 dark:ring-success-500/40 dark:shadow-[0_0_10px_rgba(0,201,80,0.25)]",
+    packageLevel: "Básico",
+    suggestedPrice: 4,
+    dotColor: TIER_CHIP_STYLES.BASIC.dotColor as string,
+    unselectedClass: TIER_CHIP_STYLES.BASIC.unselectedClass,
+    selectedClass: TIER_CHIP_STYLES.BASIC.selectedClass,
   },
   {
     id: "PREMIUM",
-    suggestedPrice: 16,
-    dotColor: "bg-sky-500 dark:bg-info",
-    unselectedClass:
-      "bg-sky-500/10 border-sky-500/30 text-sky-700 hover:bg-sky-500/15 hover:border-sky-500/50 dark:bg-info/5 dark:border-info/30 dark:text-info dark:hover:bg-info/10 dark:hover:border-info/60",
-    selectedClass:
-      "bg-sky-500/15 border-sky-600 text-sky-800 ring-2 ring-sky-500/20 dark:bg-info/20 dark:border-info dark:text-info dark:ring-info/40 dark:shadow-[0_0_10px_rgba(0,194,255,0.25)]",
+    packageLevel: "Premium",
+    suggestedPrice: 15,
+    dotColor: TIER_CHIP_STYLES.PREMIUM.dotColor as string,
+    unselectedClass: TIER_CHIP_STYLES.PREMIUM.unselectedClass,
+    selectedClass: TIER_CHIP_STYLES.PREMIUM.selectedClass,
   },
   {
     id: "EPIC",
-    suggestedPrice: 60,
-    dotColor: "bg-magenta",
-    unselectedClass:
-      "bg-magenta/10 border-magenta/30 text-magenta hover:bg-magenta/15 hover:border-magenta/50 dark:bg-magenta/5 dark:border-magenta/30 dark:hover:bg-magenta/10 dark:hover:border-magenta/60",
-    selectedClass:
-      "bg-magenta/15 border-magenta text-magenta ring-2 ring-magenta/20 dark:bg-magenta/20 dark:border-magenta dark:text-magenta dark:ring-magenta/40 dark:shadow-[0_0_12px_rgba(237,43,229,0.3)]",
+    packageLevel: "Épico",
+    suggestedPrice: 50,
+    dotColor: TIER_CHIP_STYLES.EPIC.dotColor as string,
+    unselectedClass: TIER_CHIP_STYLES.EPIC.unselectedClass,
+    selectedClass: TIER_CHIP_STYLES.EPIC.selectedClass,
   },
   {
     id: "LEGENDARY",
-    suggestedPrice: 180,
-    dotColor: "bg-amber-500 dark:bg-gold",
-    unselectedClass:
-      "text-amber-700 border-amber-500/35 bg-amber-500/10 hover:bg-amber-500/15 hover:border-amber-500/60 dark:bg-gold/5 dark:border-gold/30 dark:text-gold dark:hover:bg-gold/10 dark:hover:border-gold/60",
-    selectedClass:
-      "bg-amber-500/15 border-amber-600 text-amber-800 ring-2 ring-amber-500/20 dark:bg-gold/20 dark:border-gold dark:text-gold dark:ring-gold/40 dark:shadow-glow-gold-xs",
+    packageLevel: "Lendário",
+    suggestedPrice: 150,
+    dotColor: TIER_CHIP_STYLES.LEGENDARY.dotColor as string,
+    unselectedClass: TIER_CHIP_STYLES.LEGENDARY.unselectedClass,
+    selectedClass: TIER_CHIP_STYLES.LEGENDARY.selectedClass,
   },
 ] as const;
 

@@ -7,6 +7,7 @@ import type {
   CreateFocusActivityDTO,
   CreateFocusRecordDTO,
   FocusActivity,
+  FocusActivityDeletionSummaryResponseDTO,
   FocusActivityResponseDTO,
   FocusRecordResponseDTO,
   UpdateFocusActivityDTO,
@@ -79,6 +80,46 @@ export async function updateFocusActivity(
     return { success: true, data: data as FocusActivityResponseDTO };
   } catch (err) {
     console.error("[FocusAction:UpdateActivity]", err);
+    return {
+      success: false,
+      error: t("communicationError"),
+    };
+  }
+}
+
+/**
+ * Busca o resumo de impacto econômico (registros, XP e moedas) antes de excluir uma atividade.
+ */
+export async function getFocusActivityDeletionSummary(
+  activityId: string,
+): Promise<ActionState<FocusActivityDeletionSummaryResponseDTO>> {
+  const t = await getTranslations("focus.actions");
+  try {
+    const { data, error } = await serverApi.GET(
+      "/focus-activities/{activityId}/deletion-summary",
+      {
+        params: { path: { activityId } },
+        cache: "no-store",
+      },
+    );
+
+    if (error || !data) {
+      return {
+        success: false,
+        error: getErrorMessage(error, t("communicationError")),
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        totalRecordsCount: Number(data.totalRecordsCount ?? 0),
+        totalXpEarned: Number(data.totalXpEarned ?? 0),
+        totalCoinsEarned: Number(data.totalCoinsEarned ?? 0),
+      },
+    };
+  } catch (err) {
+    console.error("[FocusAction:GetActivityDeletionSummary]", err);
     return {
       success: false,
       error: t("communicationError"),

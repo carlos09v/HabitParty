@@ -32,15 +32,21 @@ public class ReorderInventoryItemUseCase {
         Map<UUID, Integer> newOrderByItemId = orderCommands.stream()
             .collect(Collectors.toMap(InventoryItemOrderCommand::itemId, InventoryItemOrderCommand::newIndex, (a, b) -> b));
 
-        // 2. Atualiza o orderIndex de cada item em O(N) cruzando com o mapa recebido
-        for (InventoryItem item : items) {
-            Integer newIndex = newOrderByItemId.get(item.getId());
-            if (newIndex != null) {
-                item.setOrderIndex(newIndex);
-            }
-        }
+        // 2. Atualiza o orderIndex apenas dos itens cuja posição realmente mudou
+        List<InventoryItem> changedItems = items.stream()
+            .filter(item -> {
+                Integer newIndex = newOrderByItemId.get(item.getId());
+                if (newIndex != null && item.getOrderIndex() != newIndex) {
+                    item.setOrderIndex(newIndex);
+                    return true;
+                }
+                return false;
+            })
+            .toList();
 
-        // 3. Salva a lista atualizada no banco em lote
-        port.saveAll(items);
+        // 3. Salva apenas os itens alterados no banco em lote
+        if (!changedItems.isEmpty()) {
+            port.saveAll(changedItems);
+        }
     }
 }

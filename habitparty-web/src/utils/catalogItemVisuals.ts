@@ -8,7 +8,6 @@ import {
 import type {
   CategoryMessageKey,
   MysteryBoxTier,
-  PackageLevel,
   PackageMessageKey,
   RewardType,
   RewardTypeMessageKey,
@@ -23,25 +22,17 @@ import {
   toRewardTypeMessageKey,
 } from "./rewardMapper";
 
-const RARITY_TOP_BAR: Partial<Record<PackageLevel, string>> = {
-  Lendário: "via-amber-500 dark:via-gold opacity-90",
+const RARITY_TOP_BAR: Partial<Record<PackageMessageKey, string>> = {
   LEGENDARY: "via-amber-500 dark:via-gold opacity-90",
-  Épico: "via-magenta opacity-90",
   EPIC: "via-magenta opacity-90",
-  Premium: "via-sky-500 dark:via-info opacity-90",
   PREMIUM: "via-sky-500 dark:via-info opacity-90",
-  Básico: "via-emerald-500 dark:via-success-500 opacity-85",
   BASIC: "via-emerald-500 dark:via-success-500 opacity-85",
 };
 
-const RARITY_LEFT_ACCENT: Record<string, string> = {
-  Lendário: "border-l-4 border-l-gold",
+const RARITY_LEFT_ACCENT: Partial<Record<PackageMessageKey, string>> = {
   LEGENDARY: "border-l-4 border-l-gold",
-  Épico: "border-l-4 border-l-magenta",
   EPIC: "border-l-4 border-l-magenta",
-  Premium: "border-l-4 border-l-info",
   PREMIUM: "border-l-4 border-l-info",
-  Básico: "border-l-4 border-l-success-500",
   BASIC: "border-l-4 border-l-success-500",
 };
 
@@ -91,14 +82,11 @@ export function resolveCatalogItemVisuals({
   const mysteryTier =
     includeMysteryTier && isMystery ? getMysteryBoxTier(packageLevel) : null;
 
-  const hasValidPackage = Boolean(
-    packageLevel && packageLevel !== "Nenhum" && packageLevel !== "NONE",
-  );
-  const hasValidCategory = Boolean(
-    category && category !== "Nenhum" && category !== "NONE",
-  );
+  const packageMessageKey = toPackageMessageKey(packageLevel);
+  const categoryMessageKey = toCategoryMessageKey(category);
 
-  const pkg = packageLevel as PackageLevel | undefined;
+  const hasValidPackage = packageMessageKey !== "NONE";
+  const hasValidCategory = categoryMessageKey !== "NONE";
 
   return {
     typeKey,
@@ -108,16 +96,16 @@ export function resolveCatalogItemVisuals({
     mysteryTier,
     hasValidPackage,
     hasValidCategory,
-    packageMessageKey: toPackageMessageKey(packageLevel),
-    categoryMessageKey: toCategoryMessageKey(category),
+    packageMessageKey,
+    categoryMessageKey,
     packageBadgeColor:
-      (pkg && PACKAGE_LEVEL_COLOR[pkg]) ||
+      PACKAGE_LEVEL_COLOR[packageMessageKey] ||
       "text-neutral-300 bg-white/10 border-white/15",
-    packageGlow: pkg ? PACKAGE_LEVEL_GLOW[pkg] : undefined,
-    packageIconTheme: pkg ? PACKAGE_LEVEL_ICON_THEME[pkg] : undefined,
-    topBarClass: pkg ? RARITY_TOP_BAR[pkg] : undefined,
+    packageGlow: PACKAGE_LEVEL_GLOW[packageMessageKey],
+    packageIconTheme: PACKAGE_LEVEL_ICON_THEME[packageMessageKey],
+    topBarClass: RARITY_TOP_BAR[packageMessageKey],
     leftAccentClass:
-      (packageLevel && RARITY_LEFT_ACCENT[packageLevel]) ||
+      RARITY_LEFT_ACCENT[packageMessageKey] ||
       "border-l-4 border-l-transparent",
     isFocusNavigate: Boolean(isActiveFocusSession),
   };

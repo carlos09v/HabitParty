@@ -1,5 +1,6 @@
 import { Bell, CheckSquare, Flag, Mail, MessageSquare } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import { TASK_PRIORITY_META, toPriorityMessageKey } from "@/constants/task";
 import type { Task } from "@/types/task";
 import { cn } from "@/utils";
@@ -42,21 +43,19 @@ export function TaskChecklistBadge({
       <span>
         {checklistCompleted}/{checklistTotal}
       </span>
-      <span
-        aria-hidden="true"
+      <ProgressBar
+        as="span"
+        decorative
+        percent={progressPercent}
         className={cn(
-          "rounded-full bg-neutral-700/40 dark:bg-white/10 overflow-hidden shrink-0",
+          "bg-neutral-700/40 dark:bg-white/10 shrink-0",
           isCompact ? "w-5 h-1" : "w-7 h-1",
         )}
-      >
-        <span
-          className={cn(
-            "block h-full w-full origin-left rounded-full transition-transform duration-300",
-            isChecklistAllDone ? "bg-success-500" : "bg-gold",
-          )}
-          style={{ transform: `scaleX(${progressPercent / 100})` }}
-        />
-      </span>
+        fillClassName={cn(
+          "rounded-full transition-transform duration-300",
+          isChecklistAllDone ? "bg-success-500" : "bg-gold",
+        )}
+      />
     </span>
   );
 }

@@ -50,7 +50,8 @@ public class CreateRewardUseCase {
     // 2. Define o índice da nova coluna como o maior + 1
     int newIndex = maxIndex + 1;
 
-    // 1. Regra da Categoria (Se vier null do comando, já vira NONE na variável)
+    // 1. Regra de Preço e Categoria (Se vier null do comando, já vira NONE na variável)
+    Reward.validatePrice(command.price());
     RewardCategory categoriaFinal = command.category() != null ? command.category() : RewardCategory.NONE;
     Reward.validateCategoryAndType(categoriaFinal, command.type());
 
@@ -59,10 +60,12 @@ public class CreateRewardUseCase {
     RewardPackageLevel packageFinal = command.packageLevel();
     List<MysteryBoxLootItem> lootItemsFinal = null;
 
-    // 3. Aplica a Regra do Tipo (SINGLE_USE vs TIME_BASED)
+    // 3. Aplica a Regra do Tipo (SINGLE_USE vs TIME_BASED vs MISTERY_BOX)
     if (command.type() == RewardType.SINGLE_USE) {
         durationFinal = null;
-        packageFinal = null;
+        if (packageFinal == null) {
+            packageFinal = RewardPackageLevel.NONE;
+        }
         
     } else if (command.type() == RewardType.TIME_BASED) {
         if (durationFinal == null || durationFinal <= 0) {

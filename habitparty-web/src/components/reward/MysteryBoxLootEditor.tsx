@@ -61,6 +61,12 @@ export function MysteryBoxLootEditor({
   >([false, false, false]);
 
   const storeCandidates = existingRewards.filter(
+    (r) =>
+      (r.type === "SingleUse" || r.type === "TimeBased") &&
+      r.price > 0 &&
+      r.price <= tier.recommendedPrice * 2,
+  );
+  const hasAnyStoreRewards = existingRewards.some(
     (r) => r.type === "SingleUse" || r.type === "TimeBased",
   );
 
@@ -81,7 +87,11 @@ export function MysteryBoxLootEditor({
 
   const handlePullFromStore = () => {
     if (storeCandidates.length === 0) {
-      toast.info(t("storeEmptyToast"));
+      toast.info(
+        hasAnyStoreRewards
+          ? t("storeNoCompatibleToast", { max: tier.recommendedPrice * 2 })
+          : t("storeEmptyToast"),
+      );
       return;
     }
 
@@ -132,7 +142,7 @@ export function MysteryBoxLootEditor({
             </span>
           </div>
 
-          {storeCandidates.length > 0 && (
+          {hasAnyStoreRewards && (
             <button
               type="button"
               disabled={disabled}

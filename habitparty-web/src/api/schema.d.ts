@@ -309,6 +309,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/focus-activities/{activityId}/deletion-summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Resumo de Exclusão de Atividade
+     * @description Retorna total de sessões, XP e moedas vinculadas à atividade.
+     */
+    get: operations["getDeletionSummary"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/focus-activities/reorder": {
     parameters: {
       query?: never;
@@ -1647,6 +1667,13 @@ export interface components {
       /** Format: date-time */
       createdAt?: string;
     };
+    FocusActivityDeletionSummaryResponseDTO: {
+      /** Format: int64 */
+      totalRecordsCount: number;
+      /** Format: int32 */
+      totalXpEarned: number;
+      totalCoinsEarned: number;
+    };
     UpdateFocusActivityOrderDTO: {
       /** Format: uuid */
       id: string;
@@ -2434,6 +2461,28 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  getDeletionSummary: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        activityId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "*/*": components["schemas"]["FocusActivityDeletionSummaryResponseDTO"];
+        };
       };
     };
   };

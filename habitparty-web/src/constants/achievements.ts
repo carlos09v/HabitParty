@@ -149,3 +149,16 @@ export const HIGHLIGHT_MODAL_ITEMS_PER_PAGE = 6;
 export const ACCOUNT_BADGES_BY_ID = Object.fromEntries(
   ACCOUNT_BADGE_DEFINITIONS.map((b) => [b.id, b]),
 ) as Record<AccountBadgeId, (typeof ACCOUNT_BADGE_DEFINITIONS)[number]>;
+
+/**
+ * Retorna os tokens de tema para uma raridade de conquista com fallback consistente.
+ */
+export function getRarityTheme(
+  rarity?: AchievementRarity | string | null,
+  fallback: AchievementRarity = "COMMON",
+): RarityThemeTokens {
+  if (rarity && rarity in RARITY_THEMES) {
+    return RARITY_THEMES[rarity as AchievementRarity];
+  }
+  return RARITY_THEMES[fallback];
+}

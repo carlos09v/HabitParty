@@ -108,10 +108,21 @@ public class InventoryItem {
     if (minutesToRefund < 0) {
       throw new DomainValidationException("Os minutos de reembolso não podem ser negativos.");
     }
+    refundSeconds(minutesToRefund * 60);
+  }
+
+  /**
+   * Reembolsa tempo exato em segundos ao saldo do item no inventário, reativando cupons
+   * previamente marcados como CONSUMED quando voltarem a ter saldo positivo.
+   */
+  public void refundSeconds(int secondsToRefund) {
+    if (secondsToRefund < 0) {
+      throw new DomainValidationException("Os segundos de reembolso não podem ser negativos.");
+    }
 
     // Verifica se é um item baseado em tempo (null pointer safe)
     if (this.remainingSeconds != null) {
-      this.remainingSeconds += minutesToRefund * 60;
+      this.remainingSeconds += secondsToRefund;
 
       // Se o item estava esgotado, ele "ressuscita" e volta para a mochila
       if (this.status == InventoryItemStatus.CONSUMED && this.remainingSeconds > 0) {
@@ -232,16 +243,8 @@ public class InventoryItem {
     return Optional.ofNullable(iconSnapshot);
   }
 
-  public void setIcon_snapshot(String iconSnapshot) {
-    this.iconSnapshot = iconSnapshot;
-  }
-
   public RewardType getRewardTypeSnapshot() {
     return rewardTypeSnapshot;
-  }
-
-  public void setRewardType_snapshot(RewardType rewardTypeSnapshot) {
-    this.rewardTypeSnapshot = rewardTypeSnapshot;
   }
 
   public void setRewardTypeSnapshot(RewardType rewardTypeSnapshot) {

@@ -1,4 +1,4 @@
-import { RARITY_THEMES } from "@/constants/achievements";
+import { getRarityTheme } from "@/constants/achievements";
 import { FOCUS_REWARD_RULES } from "@/constants/focus";
 import {
   COUPON_PACKAGE_OPTIONS,
@@ -6,7 +6,7 @@ import {
   SINGLE_USE_TIER_OPTIONS,
 } from "@/constants/reward";
 import { DIFFICULTY_REWARDS, HABIT_IMPORTANCE_REWARDS } from "@/constants/task";
-import type { AppLocale } from "@/i18n/config";
+import { type AppLocale, toIntlLocale } from "@/i18n/config";
 import rewardsEn from "@/messages/en/rewards.json";
 import type { HelpTableEntry } from "@/types/help";
 import type { AchievementRarity } from "@/types/showcase";
@@ -426,15 +426,15 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
       },
       singleUseBasicPremium: {
         modelLabel: "🎁 Uso Único: Mimo Rápido / Diário",
-        effortEquivalent: "Meia jornada a 1 dia produtivo",
+        effortEquivalent: "1–2 tarefas médias a 1 dia produtivo",
         balanceRule:
-          "Ex: café especial, episódio avulso ou doce sem comprometer o saldo semanal.",
+          "Ex: café especial (4 🪙), episódio avulso ou doce (15 🪙) sem comprometer o saldo semanal.",
       },
       singleUseEpicLegendary: {
         modelLabel: "👑 Uso Único: Marco Semanal / Épico",
-        effortEquivalent: "4 dias (Épico) a 12+ dias (Lendário) de foco",
+        effortEquivalent: "~3–4 dias (Semanal) a ~10 dias (Épico) de foco",
         balanceRule:
-          "Ex: delivery especial, passeio, livro novo ou grande recompensa pessoal.",
+          "Ex: delivery especial, passeio, livro novo (50 🪙) ou grande recompensa pessoal (150 🪙).",
       },
     },
     mysteryBoxes: {
@@ -477,12 +477,12 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
       ],
       standardPomo: [
         "🍅 Pomodoro Padrão",
-        "25 a 40 min",
+        "25 a 49 min",
         "O padrão de ouro do foco. Equivale a ~30%–40% de uma entrega de tarefa.",
       ],
       deepWorkPomo: [
         "🍅 Pomodoro Deep Work",
-        "Mais de 40 min",
+        "50 min ou mais",
         "Imersão profunda prolongada. Equivale a 40% da moeda e 100% do XP de 1 Tarefa Média.",
       ],
       stopwatch: [
@@ -737,15 +737,15 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
       },
       singleUseBasicPremium: {
         modelLabel: "🎁 Single-Use: Quick / Daily Treat",
-        effortEquivalent: "Half-day to 1 full productive day",
+        effortEquivalent: "1–2 medium tasks to 1 full productive day",
         balanceRule:
-          "E.g., specialty coffee, one episode, or snack without unbalancing your week.",
+          "E.g., specialty coffee (4 🪙), one episode, or snack (15 🪙) without unbalancing your week.",
       },
       singleUseEpicLegendary: {
         modelLabel: "👑 Single-Use: Weekly / Epic Milestone",
-        effortEquivalent: "4 days (Epic) to 12+ days (Legendary) of focus",
+        effortEquivalent: "~3–4 days (Weekly) to ~10 days (Epic) of focus",
         balanceRule:
-          "E.g., dinner treat, outing, new book, or major personal reward.",
+          "E.g., dinner treat, outing, new book (50 🪙), or major personal reward (150 🪙).",
       },
     },
     mysteryBoxes: {
@@ -788,12 +788,12 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
       ],
       standardPomo: [
         "🍅 Standard Pomodoro",
-        "25 to 40 min",
+        "25 to 49 min",
         "The gold standard of focus. Worth ~30%–40% of a task deliverable.",
       ],
       deepWorkPomo: [
         "🍅 Deep Work Pomodoro",
-        "Over 40 min",
+        "50 min or more",
         "Prolonged deep immersion. Worth 40% of the coins and 100% of the XP of 1 Medium Task.",
       ],
       stopwatch: [
@@ -867,7 +867,7 @@ export function buildHelpTables(
   locale: AppLocale,
 ): Record<string, HelpTableEntry> {
   const copy = HELP_TABLES_COPY[locale];
-  const numberLocale = locale === "en" ? "en-US" : "pt-BR";
+  const numberLocale = toIntlLocale(locale);
   const formatCoinValue = (value: number) => formatCoins(value, { locale });
   const levelProgressionMeta = LEVEL_PROGRESSION_META[locale];
   const mysteryBoxLabels = MYSTERY_BOX_PACKAGE_LABELS[locale];
@@ -1073,7 +1073,7 @@ export function buildHelpTables(
       columns: copy.achievementRarities.columns,
       rows: copy.achievementRarities.items.map((item) => [
         item.label,
-        `+${RARITY_THEMES[item.rarity].points} pts`,
+        `+${getRarityTheme(item.rarity).points} pts`,
         item.countLabel,
         item.examples,
       ]),

@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
-import type { AppLocale } from "@/i18n/config";
+import { type AppLocale, toIntlLocale } from "@/i18n/config";
 import type { PackageLevel, RewardType } from "@/types/reward";
 import { cn, formatCoins } from "@/utils";
 import {
@@ -16,7 +16,7 @@ import {
 } from "@/utils/rewardEconomy";
 
 function formatDays(days: number, locale: AppLocale): string {
-  const intlLocale = locale === "en" ? "en-US" : "pt-BR";
+  const intlLocale = toIntlLocale(locale);
   return new Intl.NumberFormat(intlLocale, {
     minimumFractionDigits: 0,
     maximumFractionDigits: days >= 5 ? 0 : 1,
@@ -29,8 +29,8 @@ function formatEffortSummary(
   locale: AppLocale,
 ): string {
   switch (effort.key) {
-    case "free":
-      return t("effort.free");
+    case "invalidZero":
+      return t("effort.invalidZero");
     case "easyTasks":
       return t("effort.easyTasks", { count: effort.count });
     case "hardSingleTask":

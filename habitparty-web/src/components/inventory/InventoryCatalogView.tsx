@@ -8,7 +8,7 @@ import type {
 import { Backpack, Package, SearchX, Store } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import type { MouseEvent } from "react";
+import { type MouseEvent, useMemo } from "react";
 import {
   InventoryCard,
   InventoryItemRow,
@@ -53,6 +53,11 @@ export function InventoryCatalogView({
 }: InventoryCatalogViewProps) {
   const t = useTranslations("inventory.container");
   const { isGamified } = useExperienceMode();
+
+  const itemIds = useMemo(
+    () => filteredItems.map((i) => i.id),
+    [filteredItems],
+  );
 
   if (filteredItems.length === 0) {
     const isInventoryEmpty = totalItemsCount === 0;
@@ -105,7 +110,7 @@ export function InventoryCatalogView({
   return (
     <CatalogGridListShell
       dndContextId="inventory-dnd-context"
-      itemIds={filteredItems.map((i) => i.id)}
+      itemIds={itemIds}
       viewMode={viewMode}
       isCompact={isCompact}
       headerMode="inventory"

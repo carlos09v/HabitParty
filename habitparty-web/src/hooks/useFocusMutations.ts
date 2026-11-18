@@ -17,6 +17,7 @@ import { useUserStore } from "@/store/userStore";
 import type {
   FocusActiveTarget,
   FocusActivity,
+  FocusActivityDeletionSummaryResponseDTO,
   FocusRecord,
 } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
@@ -33,6 +34,7 @@ interface UseFocusMutationsParams {
   onSelectActivity?: (activityId: string | null) => void;
   onResetTarget: () => void;
   onSelectActivityTarget: (activity: FocusActivity | null) => void;
+  onActivityDeleted?: (activityId: string, deleteHistory: boolean) => void;
   onRefreshData?: () => void;
 }
 
@@ -47,6 +49,7 @@ export function useFocusMutations({
   onSelectActivity,
   onResetTarget,
   onSelectActivityTarget,
+  onActivityDeleted,
   onRefreshData,
 }: UseFocusMutationsParams) {
   const t = useTranslations("focus.main.toasts");
@@ -74,53 +77,67 @@ export function useFocusMutations({
     [],
   );
 
-  const handleConfirmDeleteActivity = useCallback(async () => {
-    if (!deleteModalActivity) return;
-    setIsDeletingActivity(true);
-    try {
-      const res = await deleteFocusActivity(
-        deleteModalActivity.id,
-        deleteActivityHistory,
-      );
-      if (res.success) {
-        if (selectedActivityId === deleteModalActivity.id) {
-          onSelectActivity?.(null);
-        }
-        if (activeTarget?.id === deleteModalActivity.id) {
-          onResetTarget();
-          const remainingActivities = activities.filter(
-            (a) => a.id !== deleteModalActivity.id,
-          );
-          if (remainingActivities.length > 0) {
-            onSelectActivityTarget(remainingActivities[0]);
-            onSelectActivity?.(remainingActivities[0].id);
-          } else {
+  const handleConfirmDeleteActivity = useCallback(
+    async (summary?: FocusActivityDeletionSummaryResponseDTO | null) => {
+      if (!deleteModalActivity) return;
+      const deletingActivity = deleteModalActivity;
+      const shouldDeleteHistory = deleteActivityHistory;
+      setIsDeletingActivity(true);
+      try {
+        const res = await deleteFocusActivity(
+          deletingActivity.id,
+          shouldDeleteHistory,
+        );
+        if (res.success) {
+          if (
+            shouldDeleteHistory &&
+            summary &&
+            (summary.totalXpEarned > 0 || summary.totalCoinsEarned > 0)
+          ) {
+            deductUserPenalty(summary.totalXpEarned, summary.totalCoinsEarned);
+          }
+          if (selectedActivityId === deletingActivity.id) {
             onSelectActivity?.(null);
           }
+          if (activeTarget?.id === deletingActivity.id) {
+            onResetTarget();
+            const remainingActivities = activities.filter(
+              (a) => a.id !== deletingActivity.id,
+            );
+            if (remainingActivities.length > 0) {
+              onSelectActivityTarget(remainingActivities[0]);
+              onSelectActivity?.(remainingActivities[0].id);
+            } else {
+              onSelectActivity?.(null);
+            }
+          }
+          onActivityDeleted?.(deletingActivity.id, shouldDeleteHistory);
+          toast.success(t("deleteActivitySuccess"));
+          setDeleteModalActivity(null);
+          onRefreshData?.();
+        } else {
+          toast.error(res.error || t("deleteActivityError"));
         }
-        toast.success(t("deleteActivitySuccess"));
-        setDeleteModalActivity(null);
-        onRefreshData?.();
-      } else {
-        toast.error(res.error || t("deleteActivityError"));
+      } catch {
+        toast.error(t("deleteActivityError"));
+      } finally {
+        setIsDeletingActivity(false);
       }
-    } catch {
-      toast.error(t("deleteActivityError"));
-    } finally {
-      setIsDeletingActivity(false);
-    }
-  }, [
-    deleteModalActivity,
-    deleteActivityHistory,
-    selectedActivityId,
-    activeTarget?.id,
-    activities,
-    onSelectActivity,
-    onResetTarget,
-    onSelectActivityTarget,
-    onRefreshData,
-    t,
-  ]);
+    },
+    [
+      deleteModalActivity,
+      deleteActivityHistory,
+      selectedActivityId,
+      activeTarget?.id,
+      activities,
+      onSelectActivity,
+      onResetTarget,
+      onSelectActivityTarget,
+      onActivityDeleted,
+      onRefreshData,
+      t,
+    ],
+  );
 
   const handleConfirmReturnToBackpack = useCallback(async () => {
     if (!returnModalItem?.inventoryItemId) return;

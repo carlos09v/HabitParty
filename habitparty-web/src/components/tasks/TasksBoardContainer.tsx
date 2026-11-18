@@ -216,6 +216,7 @@ export function TasksBoardContainer({
     currentFocusTarget,
     clearPendingFocusTask,
     handleStartFocusTask,
+    handleTransferFocusTask,
     handleSaveAndStartFocusTask,
     handleDiscardAndStartFocusTask,
   } = useQuickFocusTask();
@@ -763,7 +764,7 @@ export function TasksBoardContainer({
           isCurrentInventory={currentFocusTarget?.type === "inventory"}
           isCurrentTask={currentFocusTarget?.type === "task"}
           isNewTask={true}
-          onTransfer={() => {}}
+          onTransfer={handleTransferFocusTask}
           onSaveAndStartNew={handleSaveAndStartFocusTask}
           onDiscardAndStartNew={handleDiscardAndStartFocusTask}
         />

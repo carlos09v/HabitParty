@@ -198,8 +198,8 @@ public class CreateFocusRecordUseCase {
       loadedUser = userPort.findById(userIdLogado).orElse(null);
     }
     ZoneId userZone = loadedUser != null ? loadedUser.resolveZoneId(ZoneId.systemDefault()) : ZoneId.systemDefault();
-    int priorMinutesToday = port.sumFocusMinutesToday(userIdLogado, userZone);
-    FocusReward reward = FocusRewardCalculator.calculate(record, priorMinutesToday);
+    int priorMinutesOnTargetDate = port.sumFocusMinutesOnDate(userIdLogado, record.getStartTime().toLocalDate(), userZone);
+    FocusReward reward = FocusRewardCalculator.calculate(record, priorMinutesOnTargetDate);
 
     LocalDateTime userStartTime = record.getStartTime();
     LocalDateTime userEndTime = record.getEndTime();
@@ -336,7 +336,7 @@ public class CreateFocusRecordUseCase {
         null,
         null,
         java.util.List.of(durationLabel),
-        null);
+        savedRecord.getEndTime());
 
     transactionHistoryPort.save(transaction);
 

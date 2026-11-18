@@ -4,13 +4,11 @@ import {
   Check,
   Coffee,
   Link2,
-  ListTodo,
   Loader2,
   Pause,
   PictureInPicture2,
   Play,
   RotateCcw,
-  Timer,
   Volume2,
   VolumeX,
 } from "lucide-react";
@@ -19,6 +17,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   type MouseEvent,
+  memo,
   useCallback,
   useEffect,
   useRef,
@@ -27,7 +26,6 @@ import {
 import { toast } from "sonner";
 import { listFocusActivities } from "@/actions/focusActions";
 import type { ActionState } from "@/actions/types";
-import { getFocusIcon } from "@/constants/focus";
 import { AMBIENT_ICONS } from "@/constants/settings";
 import { useFocusPipAction } from "@/hooks/useFocusPipAction";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
@@ -36,10 +34,51 @@ import type { FocusActivity } from "@/types/focus";
 import { cn } from "@/utils";
 import {
   formatFocusDisplayTime,
-  getFocusTimerDerivedState,
+  isFocusOvertime,
 } from "@/utils/focusFormatters";
-import { getRewardIcon } from "@/utils/rewardMapper";
+import { resolveFocusTargetIcon } from "@/utils/focusIcons";
 import { soundEffects } from "@/utils/soundEffects";
+
+const SidebarFocusTimerClock = memo(function SidebarFocusTimerClock({
+  isOvertime,
+  isRunning,
+}: {
+  isOvertime: boolean;
+  isRunning: boolean;
+}) {
+  const mode = useFocusTimerStore((s) => s.mode);
+  const phase = useFocusTimerStore((s) => s.phase);
+  const secondsRemaining = useFocusTimerStore((s) => s.secondsRemaining);
+  const elapsedSeconds = useFocusTimerStore((s) => s.elapsedSeconds);
+  const totalDurationSeconds = useFocusTimerStore(
+    (s) => s.totalDurationSeconds,
+  );
+  const target = useFocusTimerStore((s) => s.target);
+
+  const displayTime = formatFocusDisplayTime({
+    mode,
+    phase,
+    secondsRemaining,
+    elapsedSeconds,
+    totalDurationSeconds,
+    target,
+  });
+
+  return (
+    <span
+      className={cn(
+        "font-mono font-black text-xs tracking-tight transition-colors",
+        isOvertime
+          ? "text-cyan-600 dark:text-cyan-300"
+          : isRunning
+            ? "text-amber-700 dark:text-gold"
+            : "text-neutral-200",
+      )}
+    >
+      {displayTime}
+    </span>
+  );
+});
 
 const FocusStageTargetSelectorModal = dynamic(
   () =>
@@ -64,16 +103,25 @@ export function SidebarFocusWidget() {
   const { isPipOpen, isPipSupported, togglePip } = useFocusPipAction();
   const [mounted, setMounted] = useState(false);
 
-  // Estados do Timer
+  // Estados do Timer (apenas booleanos derivados e metadados, evitando re-render de 1Hz no widget inteiro)
   const isActive = useFocusTimerStore((s) => s.isActive);
   const isPaused = useFocusTimerStore((s) => s.isPaused);
   const mode = useFocusTimerStore((s) => s.mode);
   const phase = useFocusTimerStore((s) => s.phase);
-  const secondsRemaining = useFocusTimerStore((s) => s.secondsRemaining);
-  const totalDurationSeconds = useFocusTimerStore(
-    (s) => s.totalDurationSeconds,
+  const hasElapsedSeconds = useFocusTimerStore((s) => s.elapsedSeconds > 0);
+  const canCompleteSession = useFocusTimerStore(
+    (s) =>
+      s.elapsedSeconds >= 60 &&
+      s.phase !== "SHORT_BREAK" &&
+      s.phase !== "LONG_BREAK",
   );
-  const elapsedSeconds = useFocusTimerStore((s) => s.elapsedSeconds);
+  const isPartialPomo = useFocusTimerStore(
+    (s) =>
+      s.mode === "POMO" &&
+      s.secondsRemaining > 0 &&
+      s.target?.type !== "inventory",
+  );
+  const isOvertime = useFocusTimerStore((s) => isFocusOvertime(s));
   const target = useFocusTimerStore((s) => s.target);
   const isSavingSession = useFocusTimerStore((s) => s.isSavingSession);
 
@@ -105,7 +153,7 @@ export function SidebarFocusWidget() {
   const isMountedRef = useRef(true);
   const hasLoadedActivitiesRef = useRef(false);
 
-  const hasActiveTimer = (isActive || elapsedSeconds > 0) && Boolean(target);
+  const hasActiveTimer = (isActive || hasElapsedSeconds) && Boolean(target);
   const hasActiveAmbient = isAmbientPlaying && ambientSoundType !== "none";
   const hasTaskTarget = hasActiveTimer && target?.type === "task";
 
@@ -297,34 +345,10 @@ export function SidebarFocusWidget() {
   }
 
   // CASO 2: Timer Ativo (com ou sem Som Ambiente)
-  const { isRunning, isBreak, isInventory, isOvertime } =
-    getFocusTimerDerivedState({
-      isActive,
-      isPaused,
-      mode,
-      phase,
-      secondsRemaining,
-      elapsedSeconds,
-      totalDurationSeconds,
-      target,
-    });
-  const TargetIcon =
-    target?.type === "task"
-      ? ListTodo
-      : isInventory
-        ? getRewardIcon(target?.icon, "TimeBased")
-        : target?.icon
-          ? getFocusIcon(target.icon)
-          : Timer;
-
-  const displayTime = formatFocusDisplayTime({
-    mode,
-    phase,
-    secondsRemaining,
-    elapsedSeconds,
-    totalDurationSeconds,
-    target,
-  });
+  const isRunning = isActive && !isPaused;
+  const isBreak = phase === "SHORT_BREAK" || phase === "LONG_BREAK";
+  const isInventory = target?.type === "inventory";
+  const TargetIcon = resolveFocusTargetIcon(target);
 
   return (
     <>
@@ -414,18 +438,10 @@ export function SidebarFocusWidget() {
         {/* Linha Central: Mostrador do Tempo e Status */}
         <div className="flex items-center justify-between gap-1.5 pt-0.5">
           <div className="flex items-baseline gap-1">
-            <span
-              className={cn(
-                "font-mono font-black text-xs tracking-tight transition-colors",
-                isOvertime
-                  ? "text-cyan-600 dark:text-cyan-300"
-                  : isRunning
-                    ? "text-amber-700 dark:text-gold"
-                    : "text-neutral-200",
-              )}
-            >
-              {displayTime}
-            </span>
+            <SidebarFocusTimerClock
+              isOvertime={isOvertime}
+              isRunning={isRunning}
+            />
             {isRunning && (
               <span className="w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-gold inline-block shrink-0" />
             )}
@@ -488,7 +504,7 @@ export function SidebarFocusWidget() {
             )}
 
             {/* Concluir / Salvar */}
-            {elapsedSeconds >= 60 && !isBreak && (
+            {canCompleteSession && (
               <button
                 type="button"
                 disabled={isSavingSession}
@@ -500,14 +516,14 @@ export function SidebarFocusWidget() {
                 title={
                   isSavingSession
                     ? t("savingSessionTitle")
-                    : mode === "POMO" && secondsRemaining > 0 && !isInventory
+                    : isPartialPomo
                       ? t("savePartialTitle")
                       : t("completeSaveTitle")
                 }
                 aria-label={
                   isSavingSession
                     ? t("savingSessionTitle")
-                    : mode === "POMO" && secondsRemaining > 0 && !isInventory
+                    : isPartialPomo
                       ? t("savePartialAria")
                       : t("completeSaveAria")
                 }

@@ -45,10 +45,11 @@ export function useRewardForm({
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [price, setPrice] = useState("10");
+  const [price, setPrice] = useState("4");
   const [type, setType] = useState<RewardType>("SingleUse");
   const [category, setCategory] = useState<RewardCategory>("Nenhum");
   const lastRegularCategoryRef = useRef<RewardCategory>("Nenhum");
+  const wasSingleUseDebtRef = useRef<boolean>(false);
   const [packageLevel, setPackageLevel] = useState<PackageLevel>("Nenhum");
   const [baseDurationMinutes, setBaseDurationMinutes] = useState("30");
   const [selectedIcon, setSelectedIcon] = useState("gamepad");
@@ -71,14 +72,18 @@ export function useRewardForm({
         setTitle(rewardToEdit.title || "");
         setDescription(rewardToEdit.description || "");
         setPrice(
-          rewardToEdit.price !== undefined ? String(rewardToEdit.price) : "10",
+          rewardToEdit.price !== undefined ? String(rewardToEdit.price) : "4",
         );
-        setType((rewardToEdit.type as RewardType) || "SingleUse");
+        const resolvedInitialType =
+          (rewardToEdit.type as RewardType) || "SingleUse";
+        setType(resolvedInitialType);
         const initialCat =
           (rewardToEdit.category as RewardCategory) || "Nenhum";
+        const initialIsDebt = toCategoryMessageKey(initialCat) === "DEBT";
         setCategory(initialCat);
-        lastRegularCategoryRef.current =
-          toCategoryMessageKey(initialCat) === "DEBT" ? "Nenhum" : initialCat;
+        lastRegularCategoryRef.current = initialIsDebt ? "Nenhum" : initialCat;
+        wasSingleUseDebtRef.current =
+          resolvedInitialType === "SingleUse" && initialIsDebt;
         const initialPkg =
           (rewardToEdit.packageLevel as PackageLevel) || "Nenhum";
         setPackageLevel(initialPkg);
@@ -114,10 +119,11 @@ export function useRewardForm({
       } else {
         setTitle("");
         setDescription("");
-        setPrice("10");
+        setPrice("4");
         setType("SingleUse");
         setCategory("Nenhum");
         lastRegularCategoryRef.current = "Nenhum";
+        wasSingleUseDebtRef.current = false;
         setPackageLevel("Nenhum");
         setBaseDurationMinutes("30");
         setSelectedIcon("gamepad");
@@ -185,7 +191,7 @@ export function useRewardForm({
         price: numericPrice,
         type,
         category,
-        packageLevel: type === "SingleUse" ? undefined : packageLevel,
+        packageLevel,
         baseDurationMinutes: parsedDuration,
         icon: selectedIcon,
         lootItems: normalizedLootItems,
@@ -264,16 +270,24 @@ export function useRewardForm({
   };
 
   const handleTypeChange = (newType: RewardType) => {
+    if (newType !== "SingleUse" && type === "SingleUse") {
+      wasSingleUseDebtRef.current = toCategoryMessageKey(category) === "DEBT";
+    }
     setType(newType);
     if (newType !== "SingleUse" && toCategoryMessageKey(category) === "DEBT") {
       setCategory(lastRegularCategoryRef.current || "Nenhum");
     }
     setHasManuallyEditedPrice(false);
     if (newType === "MysteryBox") {
-      if (packageLevel === "Nenhum" || packageLevel === "NONE") {
-        setPackageLevel("Básico");
-      }
-      if (price === "10" || price === "" || price === "0") {
+      const targetLevel =
+        packageLevel === "Nenhum" || packageLevel === "NONE"
+          ? "Básico"
+          : packageLevel;
+      setPackageLevel(targetLevel);
+      if (!isEditing) {
+        const tierObj = getMysteryBoxTier(targetLevel);
+        setPrice(String(tierObj.recommendedPrice));
+      } else if (price === "" || price === "0") {
         setPrice("5");
       }
       setSelectedIcon("mystery_box");
@@ -281,7 +295,13 @@ export function useRewardForm({
         setTitle(t("defaultMysteryBoxTitle"));
       }
     } else if (newType === "SingleUse") {
-      setPackageLevel("Nenhum");
+      if (wasSingleUseDebtRef.current) {
+        setCategory("Dívida");
+      }
+      if (!isEditing) {
+        setPackageLevel("Nenhum");
+        setPrice("4");
+      }
       if (selectedIcon === "mystery_box") {
         setSelectedIcon("gamepad");
       }
@@ -302,6 +322,25 @@ export function useRewardForm({
         }
       }
     }
+  };
+
+  const handleSingleUseTierSelect = (
+    tierPackageLevel: PackageLevel,
+    suggestedPrice: number,
+  ) => {
+    const isAlreadySelected =
+      toPackageMessageKey(packageLevel) ===
+        toPackageMessageKey(tierPackageLevel) &&
+      Number.parseFloat(price.replace(",", ".")) === suggestedPrice;
+
+    if (isAlreadySelected) {
+      setPackageLevel("Nenhum");
+      return;
+    }
+
+    setPackageLevel(tierPackageLevel);
+    setPrice(String(suggestedPrice));
+    setHasManuallyEditedPrice(false);
   };
 
   const handleMysteryBoxTierSelect = (
@@ -415,12 +454,15 @@ export function useRewardForm({
 
   const handleCategoryChange = (nextCategory: RewardCategory) => {
     setCategory(nextCategory);
-    if (toCategoryMessageKey(nextCategory) !== "DEBT") {
+    const isDebt = toCategoryMessageKey(nextCategory) === "DEBT";
+    wasSingleUseDebtRef.current = isDebt;
+    if (!isDebt) {
       lastRegularCategoryRef.current = nextCategory;
     }
   };
 
   const handleDebtToggleChange = (isDebt: boolean) => {
+    wasSingleUseDebtRef.current = isDebt;
     if (isDebt) {
       if (toCategoryMessageKey(category) !== "DEBT") {
         lastRegularCategoryRef.current = category;
@@ -457,6 +499,7 @@ export function useRewardForm({
     handleDebtToggleChange,
     packageLevel,
     setPackageLevel,
+    handleSingleUseTierSelect,
     handleMysteryBoxTierSelect,
     baseDurationMinutes,
     setBaseDurationMinutes,

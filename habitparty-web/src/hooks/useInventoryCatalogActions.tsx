@@ -9,6 +9,7 @@ import {
   type SetStateAction,
   useCallback,
   useMemo,
+  useRef,
   useState,
   useTransition,
 } from "react";
@@ -22,8 +23,16 @@ import {
 import type { ContextMenuItem } from "@/components/ui/ContextMenu";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useInFlightSet } from "@/hooks/useInFlightSet";
-import type { InventoryItem } from "@/types/inventory";
+import type {
+  InventoryItem,
+  InventoryItemType,
+  MysteryBoxOpenResult,
+} from "@/types/inventory";
 import { getInventoryItemActionMeta } from "@/utils/inventoryHelpers";
+import {
+  BACKEND_TO_UI_PACKAGE,
+  BACKEND_TO_UI_REWARD_TYPE,
+} from "@/utils/rewardMapper";
 import { soundEffects } from "@/utils/soundEffects";
 
 interface UseInventoryCatalogActionsParams {
@@ -31,20 +40,27 @@ interface UseInventoryCatalogActionsParams {
   setItems: Dispatch<SetStateAction<InventoryItem[]>>;
 }
 
-function decrementInventoryStack(
+function removePhysicalItemFromStack(
   items: InventoryItem[],
   groupId: string,
+  physicalItemId?: string,
 ): InventoryItem[] {
   return items
     .map((item) => {
-      if (item.id !== groupId) return item;
+      const matchesGroup =
+        item.id === groupId ||
+        (physicalItemId ? item.itemIds?.includes(physicalItemId) : false);
+      if (!matchesGroup) return item;
+
       const nextQty = item.quantity - 1;
       if (nextQty <= 0) {
         return { ...item, quantity: 0 };
       }
       const nextIds =
         item.itemIds && item.itemIds.length > 1
-          ? item.itemIds.slice(1)
+          ? physicalItemId
+            ? item.itemIds.filter((id) => id !== physicalItemId)
+            : item.itemIds.slice(1)
           : item.itemIds;
       const nextPrimaryId = nextIds?.[0] || item.id;
       return {
@@ -66,6 +82,9 @@ export function useInventoryCatalogActions({
   const t = useTranslations("inventory.container");
   const { isGamified } = useExperienceMode();
 
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+
   const {
     activeIds: usingItemIds,
     has: isItemUsing,
@@ -82,6 +101,9 @@ export function useInventoryCatalogActions({
   const [openingBoxItem, setOpeningBoxItem] = useState<InventoryItem | null>(
     null,
   );
+  const openingBoxItemRef = useRef<InventoryItem | null>(null);
+  openingBoxItemRef.current = openingBoxItem;
+
   const [itemToDiscard, setItemToDiscard] = useState<InventoryItem | null>(
     null,
   );
@@ -105,6 +127,106 @@ export function useInventoryCatalogActions({
     setOpeningBoxItem(null);
   }, []);
 
+  const handleMysteryBoxOpened = useCallback(
+    (result: MysteryBoxOpenResult) => {
+      const openedId = result.inventoryItemId;
+      const sourceBox = openingBoxItemRef.current;
+      if (!openedId && !sourceBox) return;
+
+      setItems((prev) => {
+        const targetGroupId = sourceBox?.id || openedId || "";
+        const withoutOpenedBox = removePhysicalItemFromStack(
+          prev,
+          targetGroupId,
+          openedId,
+        );
+
+        const rawType: InventoryItemType =
+          result.rewardType === "TIME_BASED" ||
+          result.rewardType === "SINGLE_USE" ||
+          result.rewardType === "MISTERY_BOX"
+            ? result.rewardType
+            : typeof result.remainingMinutes === "number" &&
+                result.remainingMinutes > 0
+              ? "TIME_BASED"
+              : "SINGLE_USE";
+        const mappedType = BACKEND_TO_UI_REWARD_TYPE[rawType] || "SingleUse";
+        const mappedPkg = result.rewardPackageLevel
+          ? BACKEND_TO_UI_PACKAGE[result.rewardPackageLevel]
+          : sourceBox?.reward.packageLevel;
+        const resolvedRemainingSeconds =
+          typeof result.remainingSeconds === "number"
+            ? result.remainingSeconds
+            : typeof result.remainingMinutes === "number" &&
+                result.remainingMinutes > 0
+              ? result.remainingMinutes * 60
+              : undefined;
+        const prizeTitle = result.rewardName || sourceBox?.reward.title || "";
+        const prizeIcon = result.rewardIcon || "gift";
+        const prizeRewardId =
+          result.rewardId || sourceBox?.reward.id || openedId || "";
+        const physicalPrizeId = openedId || `won-${Date.now()}`;
+
+        const normalizedPrizeName = prizeTitle.trim().toLowerCase();
+        const existingStackIdx = withoutOpenedBox.findIndex(
+          (i) =>
+            i.status === "AVAILABLE" &&
+            i.reward.id === prizeRewardId &&
+            i.reward.type === mappedType &&
+            i.reward.packageLevel === mappedPkg &&
+            i.reward.title.trim().toLowerCase() === normalizedPrizeName &&
+            (i.remainingSeconds ?? null) === (resolvedRemainingSeconds ?? null),
+        );
+
+        if (existingStackIdx >= 0) {
+          return withoutOpenedBox.map((i, idx) =>
+            idx === existingStackIdx
+              ? {
+                  ...i,
+                  quantity: i.quantity + 1,
+                  itemIds: [...(i.itemIds ?? [i.id]), physicalPrizeId],
+                }
+              : i,
+          );
+        }
+
+        const newPrizeItem: InventoryItem = {
+          id: physicalPrizeId,
+          itemIds: [physicalPrizeId],
+          inventoryItemId: physicalPrizeId,
+          orderIndex: sourceBox?.orderIndex ?? 0,
+          name: prizeTitle,
+          description: "",
+          itemType: rawType,
+          status: "AVAILABLE",
+          quantity: 1,
+          remainingSeconds: resolvedRemainingSeconds,
+          reward: {
+            id: prizeRewardId,
+            title: prizeTitle,
+            description: "",
+            type: mappedType,
+            category: "Nenhum",
+            price: result.rewardPrice ?? sourceBox?.reward.price ?? 0,
+            baseDurationMinutes:
+              typeof result.remainingMinutes === "number" &&
+              result.remainingMinutes > 0
+                ? result.remainingMinutes
+                : resolvedRemainingSeconds !== undefined
+                  ? Math.max(1, Math.ceil(resolvedRemainingSeconds / 60))
+                  : undefined,
+            iconName: prizeIcon,
+            icon: prizeIcon,
+            packageLevel: mappedPkg,
+          },
+        };
+
+        return [...withoutOpenedBox, newPrizeItem];
+      });
+    },
+    [setItems],
+  );
+
   const handleUseItem = useCallback(
     async (item: InventoryItem) => {
       if (isItemUsing(item.id) || isItemSending(item.id)) return;
@@ -116,7 +238,9 @@ export function useInventoryCatalogActions({
           toast.error(res.error || t("toasts.useError"));
           return;
         }
-        setItems((prev) => decrementInventoryStack(prev, item.id));
+        setItems((prev) =>
+          removePhysicalItemFromStack(prev, item.id, targetItemId),
+        );
         soundEffects.playTaskCompleteSound();
         toast.success(t("toasts.useSuccess", { title: item.reward.title }));
       } catch (_error) {
@@ -145,7 +269,11 @@ export function useInventoryCatalogActions({
               i.id === item.id ? { ...i, status: "IN_FOCUS" } : i,
             );
           }
-          const decremented = decrementInventoryStack(prev, item.id);
+          const decremented = removePhysicalItemFromStack(
+            prev,
+            item.id,
+            targetItemId,
+          );
           const existingFocusIdx = decremented.findIndex(
             (i) =>
               i.status === "IN_FOCUS" &&
@@ -241,7 +369,11 @@ export function useInventoryCatalogActions({
               i.remainingSeconds === item.remainingSeconds,
           );
           if (existingAvailableIdx >= 0) {
-            const decremented = decrementInventoryStack(prev, item.id);
+            const decremented = removePhysicalItemFromStack(
+              prev,
+              item.id,
+              targetItemId,
+            );
             return decremented.map((i) =>
               i.status === "AVAILABLE" &&
               i.reward.id === item.reward.id &&
@@ -255,7 +387,11 @@ export function useInventoryCatalogActions({
             );
           }
           if (item.quantity > 1) {
-            const decremented = decrementInventoryStack(prev, item.id);
+            const decremented = removePhysicalItemFromStack(
+              prev,
+              item.id,
+              targetItemId,
+            );
             return [
               ...decremented,
               {
@@ -286,9 +422,11 @@ export function useInventoryCatalogActions({
     const target = itemToDiscard;
     const targetItemId =
       target.itemIds?.[0] || target.inventoryItemId || target.id;
-    const previousItems = [...items];
+    const previousItems = [...itemsRef.current];
 
-    setItems((prev) => decrementInventoryStack(prev, target.id));
+    setItems((prev) =>
+      removePhysicalItemFromStack(prev, target.id, targetItemId),
+    );
     setItemToDiscard(null);
 
     startDiscardTransition(async () => {
@@ -302,7 +440,7 @@ export function useInventoryCatalogActions({
         toast.error(res.error || t("toasts.discardError"));
       }
     });
-  }, [itemToDiscard, items, setItems, t]);
+  }, [itemToDiscard, setItems, t]);
 
   const contextMenuItems: ContextMenuItem[] = useMemo(() => {
     const target = contextMenu.item;
@@ -394,6 +532,7 @@ export function useInventoryCatalogActions({
     openingBoxItem,
     handleOpenMysteryBox,
     handleCloseMysteryBox,
+    handleMysteryBoxOpened,
     itemToDiscard,
     setItemToDiscard,
     isDiscarding,

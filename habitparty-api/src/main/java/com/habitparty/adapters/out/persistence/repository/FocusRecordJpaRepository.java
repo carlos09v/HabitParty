@@ -1,6 +1,8 @@
 package com.habitparty.adapters.out.persistence.repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -80,6 +82,33 @@ public interface FocusRecordJpaRepository extends JpaRepository<FocusRecordJpaEn
   @Query("SELECT MIN(f.startTime) FROM FocusRecordJpaEntity f WHERE f.userId = :userId AND f.inventoryItemId IS NULL")
   LocalDateTime findEarliestProductiveStartTimeByUserId(@Param("userId") UUID userId);
 
+  interface FocusActivityImpactProjection {
+    long getTotalRecordsCount();
+
+    Long getTotalXpEarned();
+
+    BigDecimal getTotalCoinsEarned();
+  }
+
+  @Query("""
+      SELECT COUNT(f) AS totalRecordsCount,
+             COALESCE(SUM(f.xpEarned), 0) AS totalXpEarned,
+             COALESCE(SUM(f.coinsEarned), 0) AS totalCoinsEarned
+      FROM FocusRecordJpaEntity f
+      WHERE f.focusActivityId = :focusActivityId
+  """)
+  FocusActivityImpactProjection summarizeImpactByFocusActivityId(
+      @Param("focusActivityId") UUID focusActivityId);
+
+  @Query("""
+      SELECT COALESCE(MAX(f.durationMinutes), 0)
+      FROM FocusRecordJpaEntity f
+      WHERE f.userId = :userId
+        AND f.inventoryItemId IS NULL
+        AND f.durationMinutes >= 10
+  """)
+  int findMaxProductiveDurationMinutesByUserId(@Param("userId") UUID userId);
+
   @Query("""
       SELECT COALESCE(MAX(f.durationMinutes), 0)
       FROM FocusRecordJpaEntity f
@@ -91,4 +120,28 @@ public interface FocusRecordJpaRepository extends JpaRepository<FocusRecordJpaEn
   int findMaxProductiveDurationMinutesExcludingRecord(
       @Param("userId") UUID userId,
       @Param("excludedRecordId") UUID excludedRecordId);
+
+  @Query("""
+      SELECT COALESCE(MAX(f.durationMinutes), 0)
+      FROM FocusRecordJpaEntity f
+      WHERE f.userId = :userId
+        AND f.inventoryItemId IS NULL
+        AND f.id NOT IN :excludedRecordIds
+        AND f.durationMinutes >= 10
+  """)
+  int findMaxProductiveDurationMinutesExcludingRecords(
+      @Param("userId") UUID userId,
+      @Param("excludedRecordIds") Collection<UUID> excludedRecordIds);
+
+  @Modifying
+  @Query("""
+      UPDATE FocusRecordJpaEntity f
+      SET f.xpEarned = :xpEarned,
+          f.coinsEarned = :coinsEarned
+      WHERE f.id = :recordId
+  """)
+  int updateRewardsById(
+      @Param("recordId") UUID recordId,
+      @Param("xpEarned") int xpEarned,
+      @Param("coinsEarned") BigDecimal coinsEarned);
 }

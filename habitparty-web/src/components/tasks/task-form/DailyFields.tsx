@@ -1,7 +1,9 @@
 import { Calendar } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { type ChangeEvent, useEffect, useState } from "react";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
+import { NumberStepperInput } from "@/components/ui/NumberStepperInput";
 import { Select } from "@/components/ui/Select";
 import {
   DAILY_MONTHLY_OPTIONS,
@@ -37,6 +39,43 @@ export function DailyFields({ form }: DailyFieldsProps) {
   } = form;
 
   const intervalUnitLabel = t(`units.${repeatType}`);
+  const [intervalInput, setIntervalInput] = useState(String(repeatEvery));
+
+  useEffect(() => {
+    setIntervalInput(String(repeatEvery));
+  }, [repeatEvery]);
+
+  const clampInterval = (value: number) =>
+    Math.min(365, Math.max(1, Math.round(value)));
+
+  const handleIntervalStep = (delta: number) => {
+    const next = clampInterval(repeatEvery + delta);
+    setRepeatEvery(next);
+    setIntervalInput(String(next));
+  };
+
+  const handleIntervalChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    if (raw === "") {
+      setIntervalInput("");
+      return;
+    }
+    const digitsOnly = raw.replace(/\D/g, "");
+    setIntervalInput(digitsOnly);
+    if (digitsOnly !== "") {
+      const parsed = Number.parseInt(digitsOnly, 10);
+      if (!Number.isNaN(parsed) && parsed >= 1 && parsed <= 365) {
+        setRepeatEvery(parsed);
+      }
+    }
+  };
+
+  const handleIntervalBlur = () => {
+    const parsed = Number.parseInt(intervalInput, 10);
+    const clamped = Number.isNaN(parsed) ? 1 : clampInterval(parsed);
+    setRepeatEvery(clamped);
+    setIntervalInput(String(clamped));
+  };
 
   return (
     <div className="flex flex-col gap-3.5 animate-in fade-in duration-150">
@@ -72,17 +111,27 @@ export function DailyFields({ form }: DailyFieldsProps) {
           >
             {t("everyLabel", { unit: intervalUnitLabel })}
           </label>
-          <input
+          <NumberStepperInput
             id="dailyInterval"
-            type="number"
+            inputMode="numeric"
             min={1}
             max={365}
-            value={repeatEvery}
+            value={intervalInput}
             disabled={isPending}
-            onChange={(e) =>
-              setRepeatEvery(Math.max(1, Number(e.target.value)))
-            }
-            className="w-full bg-card border border-neutral-600 hover:border-neutral-500 rounded-lg px-3 py-2 text-neutral-50 shadow-xs focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:bg-primary-dark/20 dark:border-primary/30 dark:hover:border-primary/50 dark:shadow-none dark:focus:border-gold dark:focus:ring-1 dark:focus:ring-gold transition-colors text-body-s font-bold"
+            onChange={handleIntervalChange}
+            onBlur={handleIntervalBlur}
+            stepAmount={1}
+            onStep={handleIntervalStep}
+            decrementDisabled={isPending || repeatEvery <= 1}
+            incrementDisabled={isPending || repeatEvery >= 365}
+            decrementAriaLabel={t("decreaseIntervalAria", {
+              unit: intervalUnitLabel,
+            })}
+            incrementAriaLabel={t("increaseIntervalAria", {
+              unit: intervalUnitLabel,
+            })}
+            iconSize={15}
+            className="h-9.5 text-center font-bold"
           />
         </div>
       </div>

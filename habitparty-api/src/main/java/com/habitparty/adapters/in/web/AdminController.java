@@ -14,9 +14,11 @@ import com.habitparty.adapters.in.web.dtos.response.UserResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.admin.AdminOverviewDTO;
 import com.habitparty.adapters.in.web.dtos.response.admin.AdminUserDetailDTO;
 import com.habitparty.adapters.in.web.dtos.response.admin.AdminUserSummaryDTO;
+import com.habitparty.adapters.in.web.dtos.response.admin.FocusRewardRecalculationResponseDTO;
 import com.habitparty.application.usecases.admin.GetAdminOverviewUseCase;
 import com.habitparty.application.usecases.admin.GetAdminUserDetailUseCase;
 import com.habitparty.application.usecases.admin.ListAdminUsersUseCase;
+import com.habitparty.application.usecases.admin.RecalculateFocusRewardsUseCase;
 import com.habitparty.application.usecases.admin.UpdateUserRoleUseCase;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
@@ -32,6 +34,7 @@ public class AdminController implements AdminApi {
   private final ListAdminUsersUseCase listAdminUsersUseCase;
   private final GetAdminUserDetailUseCase getAdminUserDetailUseCase;
   private final UpdateUserRoleUseCase updateUserRoleUseCase;
+  private final RecalculateFocusRewardsUseCase recalculateFocusRewardsUseCase;
 
   @Override
   public ResponseEntity<AdminOverviewDTO> getOverview() {
@@ -69,5 +72,11 @@ public class AdminController implements AdminApi {
       AuthenticatedUser usuarioLogado) {
     User updatedUser = updateUserRoleUseCase.execute(userId, usuarioLogado.id(), request.role());
     return ResponseEntity.ok(UserResponseDTO.fromDomain(updatedUser));
+  }
+
+  @Override
+  public ResponseEntity<FocusRewardRecalculationResponseDTO> recalculateFocusRewards(boolean dryRun) {
+    var result = recalculateFocusRewardsUseCase.execute(dryRun);
+    return ResponseEntity.ok(FocusRewardRecalculationResponseDTO.fromResult(result));
   }
 }

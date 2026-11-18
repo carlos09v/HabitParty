@@ -72,8 +72,18 @@
       "title": "Excluir Atividade",
       "question": "Deseja realmente excluir a atividade <strong>\"{name}\"</strong>? Por padrão, as sessões anteriores e o Histórico continuam preservados.",
       "confirm": "Sim, excluir",
+      "cancel": "Cancelar",
       "deleteHistoryLabel": "Excluir também as sessões e o Histórico",
-      "deleteHistoryHint": "Remove todas as sessões desta atividade e seus registros no extrato. Moedas e XP já recebidos não são alterados."
+      "deleteHistoryHint": "Remove todas as sessões desta atividade, seus registros no extrato e estorna o XP, moedas e minutos em tarefas vinculadas.",
+      "summaryLoading": "Calculando impacto da exclusão...",
+      "summarySessions": "{count, plural, one {# sessão registrada} other {# sessões registradas}}",
+      "summaryPreserveNote": "Mantido no perfil e histórico se você confirmar sem marcar a opção abaixo:",
+      "summaryRevertWarning": "Valor total a perder ao excluir todo o histórico:",
+      "xpLabel": "XP",
+      "xpProductivityLabel": "pts",
+      "goldLabel": "Ouro",
+      "goldProductivityLabel": "Créditos",
+      "nonNegativeFloorNote": "O saldo nunca fica negativo: se o seu saldo atual for menor que o estorno, ele será limitado a 0 (e seu XP nunca cai abaixo do piso do nível atual)."
     },
     "toasts": {
       "deleteActivitySuccess": "Atividade excluída com sucesso.",

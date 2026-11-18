@@ -68,7 +68,7 @@ class FocusRewardCalculatorTest {
   }
 
   @Test
-  @DisplayName("Pomodoro padrão (25 a 40 min) concluído deve pagar 8 XP e 0.50 moedas por pomo")
+  @DisplayName("Pomodoro padrão (25 a 49 min) concluído deve pagar 8 XP e 0.50 moedas por pomo")
   void shouldCalculateStandardPomodoro() {
     LocalDateTime start = LocalDateTime.of(2026, 10, 16, 10, 0);
     LocalDateTime end = LocalDateTime.of(2026, 10, 16, 10, 30); // 30 min
@@ -79,6 +79,26 @@ class FocusRewardCalculatorTest {
     FocusReward reward = FocusRewardCalculator.calculate(record, 0);
     assertEquals(8, reward.xp());
     assertEquals(new BigDecimal("0.50"), reward.coins());
+  }
+
+  @Test
+  @DisplayName("Pomodoro de 45 min e 49 min ainda contam como Padrão (8 XP e 0.50 moedas)")
+  void shouldKeepFortyFiveAndFortyNineMinutesAsStandardPomodoro() {
+    LocalDateTime start = LocalDateTime.of(2026, 10, 16, 10, 0);
+
+    FocusRecord record45 = new FocusRecord(
+        null, userId, activityId, null, null,
+        start, start.plusMinutes(45), FocusRecordType.POMO, 1);
+    FocusReward reward45 = FocusRewardCalculator.calculate(record45, 0);
+    assertEquals(8, reward45.xp());
+    assertEquals(new BigDecimal("0.50"), reward45.coins());
+
+    FocusRecord record49 = new FocusRecord(
+        null, userId, activityId, null, null,
+        start, start.plusMinutes(49), FocusRecordType.POMO, 1);
+    FocusReward reward49 = FocusRewardCalculator.calculate(record49, 0);
+    assertEquals(8, reward49.xp());
+    assertEquals(new BigDecimal("0.50"), reward49.coins());
   }
 
   @Test
@@ -96,7 +116,7 @@ class FocusRewardCalculatorTest {
   }
 
   @Test
-  @DisplayName("Pomodoro longo / Deep Work (> 40 min) deve pagar 15 XP e 1.00 moeda")
+  @DisplayName("Pomodoro longo / Deep Work (>= 50 min) deve pagar 15 XP e 1.00 moeda")
   void shouldCalculateDeepWorkPomodoro() {
     LocalDateTime start = LocalDateTime.of(2026, 10, 16, 10, 0);
     LocalDateTime end = LocalDateTime.of(2026, 10, 16, 10, 50); // 50 min
@@ -110,7 +130,7 @@ class FocusRewardCalculatorTest {
   }
 
   @Test
-  @DisplayName("Cronômetro livre (Stopwatch) de 30 min deve pagar 7 XP e 0.40 moedas")
+  @DisplayName("Cronômetro livre (Stopwatch) de 30 min deve pagar 7 XP e 0.45 moedas")
   void shouldCalculateStopwatchSession() {
     LocalDateTime start = LocalDateTime.of(2026, 10, 16, 10, 0);
     LocalDateTime end = LocalDateTime.of(2026, 10, 16, 10, 30); // 30 min
@@ -120,11 +140,11 @@ class FocusRewardCalculatorTest {
 
     FocusReward reward = FocusRewardCalculator.calculate(record, 0);
     assertEquals(7, reward.xp());
-    assertEquals(new BigDecimal("0.40"), reward.coins());
+    assertEquals(new BigDecimal("0.45"), reward.coins());
   }
 
   @Test
-  @DisplayName("Cronômetro livre de 60 min deve pagar 14 XP e 0.80 moedas")
+  @DisplayName("Cronômetro livre de 60 min deve pagar 14 XP e 0.90 moedas")
   void shouldCalculateStopwatchSixtyMinutes() {
     LocalDateTime start = LocalDateTime.of(2026, 10, 16, 10, 0);
     LocalDateTime end = LocalDateTime.of(2026, 10, 16, 11, 0); // 60 min
@@ -134,7 +154,7 @@ class FocusRewardCalculatorTest {
 
     FocusReward reward = FocusRewardCalculator.calculate(record, 0);
     assertEquals(14, reward.xp());
-    assertEquals(new BigDecimal("0.80"), reward.coins());
+    assertEquals(new BigDecimal("0.90"), reward.coins());
   }
 
   @Test
@@ -146,10 +166,10 @@ class FocusRewardCalculatorTest {
         null, userId, activityId, null, null,
         start, end, FocusRecordType.STOPWATCH, null);
 
-    // 90 min = (90/30) * 7 = 21 XP; (90/30) * 0.40 = 1.20 moedas
+    // 90 min = (90/30) * 7 = 21 XP; (90/30) * 0.45 = 1.35 moedas
     FocusReward reward = FocusRewardCalculator.calculate(record, 0);
     assertEquals(21, reward.xp());
-    assertEquals(new BigDecimal("1.20"), reward.coins());
+    assertEquals(new BigDecimal("1.35"), reward.coins());
   }
 
   @Test
@@ -205,10 +225,10 @@ class FocusRewardCalculatorTest {
         null, userId, activityId, null, null, null, null,
         start, end, FocusRecordType.POMO, 1, 25, 0, BigDecimal.ZERO);
 
-    // 25m pomo (8 XP, 0.50) + 30m stopwatch (7 XP, 0.40) = 15 XP e 0.90 moedas
+    // 25m pomo (8 XP, 0.50) + 30m stopwatch (7 XP, 0.45) = 15 XP e 0.95 moedas
     FocusReward reward = FocusRewardCalculator.calculate(record, 0);
     assertEquals(15, reward.xp());
-    assertEquals(new BigDecimal("0.90"), reward.coins());
+    assertEquals(new BigDecimal("0.95"), reward.coins());
   }
 
   @Test
@@ -220,9 +240,9 @@ class FocusRewardCalculatorTest {
         null, userId, activityId, null, null, null, null,
         start, end, FocusRecordType.POMO, 1, 25, 0, BigDecimal.ZERO);
 
-    // 25m pomo = 8 XP, 0.50 | 65m stopwatch = 15.1667 XP, 0.8667 | total = 23 XP, 1.37
+    // 25m pomo = 8 XP, 0.50 | 65m stopwatch = 15.1667 XP, 0.975 | total = 23 XP, 1.48
     FocusReward reward = FocusRewardCalculator.calculate(record, 0);
     assertEquals(23, reward.xp());
-    assertEquals(new BigDecimal("1.37"), reward.coins());
+    assertEquals(new BigDecimal("1.48"), reward.coins());
   }
 }

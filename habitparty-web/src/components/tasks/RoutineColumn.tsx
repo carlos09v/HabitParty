@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import { getColumnIcon } from "@/constants/routine";
 import { normalizeTaskType } from "@/constants/task";
 import type { RoutineColumnProps } from "@/types/task-ui";
@@ -310,23 +311,20 @@ export const RoutineColumn = memo(function RoutineColumn({
 
         {/* Barra de Progresso Fina da Coluna */}
         {totalTasks > 0 && (
-          <div
-            aria-hidden="true"
+          <ProgressBar
+            decorative
+            percent={progressPercent}
             className={cn(
-              "w-full h-1 rounded-full bg-neutral-700/30 dark:bg-white/8 overflow-hidden",
+              "h-1 bg-neutral-700/30 dark:bg-white/8",
               isCompact ? "mt-1.5" : "mt-2",
             )}
-          >
-            <div
-              className={cn(
-                "h-full w-full origin-left transition-[transform,background-color] duration-300",
-                isAllDone
-                  ? "bg-success-500"
-                  : "bg-linear-to-r from-primary-light via-gold to-gold",
-              )}
-              style={{ transform: `scaleX(${progressPercent / 100})` }}
-            />
-          </div>
+            fillClassName={cn(
+              "transition-[transform,background-color] duration-300",
+              isAllDone
+                ? "bg-success-500"
+                : "bg-linear-to-r from-primary-light via-gold to-gold",
+            )}
+          />
         )}
       </div>
 

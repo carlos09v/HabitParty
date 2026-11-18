@@ -1,5 +1,6 @@
 package com.habitparty.adapters.out.persistence.repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -87,4 +88,52 @@ public interface TransactionHistoryJpaRepository extends JpaRepository<Transacti
         @Param("transactionType") TransactionType transactionType,
         @Param("startInclusive") LocalDateTime startInclusive,
         @Param("endExclusive") LocalDateTime endExclusive);
+
+    @Query("""
+        SELECT COUNT(th)
+        FROM TransactionHistoryJpaEntity th
+        WHERE th.transactionType = com.habitparty.core.domain.enums.TransactionType.FOCUS_COMPLETED
+          AND EXISTS (
+            SELECT 1
+            FROM FocusRecordJpaEntity fr
+            WHERE fr.id = th.referenceId
+              AND fr.endTime IS NOT NULL
+              AND th.createdAt <> fr.endTime
+          )
+    """)
+    long countMismatchedFocusCompletedTimestamps();
+
+    @Modifying
+    @Query("""
+        UPDATE TransactionHistoryJpaEntity th
+        SET th.createdAt = (
+          SELECT fr.endTime
+          FROM FocusRecordJpaEntity fr
+          WHERE fr.id = th.referenceId
+        )
+        WHERE th.transactionType = com.habitparty.core.domain.enums.TransactionType.FOCUS_COMPLETED
+          AND EXISTS (
+            SELECT 1
+            FROM FocusRecordJpaEntity fr
+            WHERE fr.id = th.referenceId
+              AND fr.endTime IS NOT NULL
+              AND th.createdAt <> fr.endTime
+          )
+    """)
+    int syncFocusCompletedTimestampsWithFocusRecords();
+
+    @Modifying
+    @Query("""
+        UPDATE TransactionHistoryJpaEntity th
+        SET th.xpAmount = :xpAmount,
+            th.goldAmount = :goldAmount
+        WHERE th.referenceId = :referenceId
+          AND th.user.id = :userId
+          AND th.transactionType = com.habitparty.core.domain.enums.TransactionType.FOCUS_COMPLETED
+    """)
+    int updateFocusRewardSnapshot(
+        @Param("referenceId") UUID referenceId,
+        @Param("userId") UUID userId,
+        @Param("xpAmount") int xpAmount,
+        @Param("goldAmount") BigDecimal goldAmount);
 }

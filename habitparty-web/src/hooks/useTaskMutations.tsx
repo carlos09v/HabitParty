@@ -277,6 +277,14 @@ export function useTaskMutations({
                     +{formatCoins(gold, { locale })} {goldLabel}
                   </strong>
                   )
+                  {breakdown.hasBonus && (
+                    <span className="block text-label-g text-emerald-400 mt-0.5 font-normal">
+                      {t("bonusRoutine", {
+                        stage: breakdown.stageLabel,
+                        percent: breakdown.bonusPercentage,
+                      })}
+                    </span>
+                  )}
                   {breakdown.hasDecay && (
                     <span className="block text-label-g text-neutral-400 mt-0.5 font-normal">
                       {targetTask.type?.toLowerCase() === "todo"

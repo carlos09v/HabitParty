@@ -154,6 +154,15 @@ export function getFocusProgressPercent(timerState: {
 }
 
 /**
+ * Calcula a duração (em minutos) da próxima pausa considerando o ciclo atual (a cada 4 ciclos, pausa longa).
+ */
+export function getNextFocusBreakMinutes(completedCycles = 0): number {
+  return (completedCycles + 1) % 4 === 0
+    ? DEFAULT_LONG_BREAK_MINUTES
+    : DEFAULT_SHORT_BREAK_MINUTES;
+}
+
+/**
  * Deriva estados visuais e de controle do timer de foco em uma única função pura,
  * evitando duplicação entre Display, Widget lateral, PiP e Host.
  */
@@ -183,10 +192,7 @@ export function getFocusTimerDerivedState(timerState: {
     !isBreak &&
     !isInventory &&
     timerState.elapsedSeconds >= FOCUS_REWARD_RULES.MAX_EFFECTIVE_MINUTES * 60;
-  const nextBreakMinutes =
-    ((timerState.completedCycles ?? 0) + 1) % 4 === 0
-      ? DEFAULT_LONG_BREAK_MINUTES
-      : DEFAULT_SHORT_BREAK_MINUTES;
+  const nextBreakMinutes = getNextFocusBreakMinutes(timerState.completedCycles);
 
   return {
     isRunning,

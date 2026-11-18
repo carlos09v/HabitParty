@@ -10,7 +10,7 @@
     "types": {
       "all": "All Types",
       "SingleUse": "Single-Use",
-      "TimeBased": "Voucher",
+      "TimeBased": "Time Voucher",
       "MysteryBox": "Mystery Box"
     },
     "categories": {
@@ -40,10 +40,10 @@
       "LEGENDARY": "Legendary (480m)"
     },
     "singleUseTiers": {
-      "BASIC": "Quick Treat (8)",
-      "PREMIUM": "Daily (16)",
-      "EPIC": "Weekly (60)",
-      "LEGENDARY": "Epic (180)"
+      "BASIC": "Quick Treat (4)",
+      "PREMIUM": "Daily (15)",
+      "EPIC": "Weekly (50)",
+      "LEGENDARY": "Epic (150)"
     },
     "sort": {
       "default": "Default Order",
@@ -102,14 +102,6 @@
       "deleteError": "Error deleting reward."
     }
   },
-  "card": {
-    "buy": "Buy",
-    "buyProductivity": "Redeem",
-    "payDebt": "Pay Debt",
-    "addRewardAria": "Add new reward",
-    "addProduct": "Add Product",
-    "addProductProductivity": "New Reward"
-  },
   "formModal": {
     "editTitle": "Edit Reward",
     "createTitle": "New Reward",
@@ -119,16 +111,36 @@
     "createDescriptionProductivity": "Register a single-use reward or free-time voucher.",
     "titleLabel": "Reward Name",
     "iconPickerTitle": "Reward Icon",
-    "titlePlaceholder": "E.g., 1h of video games, Specialty coffee, Watch a movie...",
+    "titlePlaceholder": "E.g., Specialty coffee, 1h of video games, Watch a movie...",
+    "titlePlaceholderSingleUse": "E.g., Specialty coffee, Order takeout, Buy a book...",
+    "titlePlaceholderTimeBased": "E.g., 1h of video games, Series episode, Free break...",
+    "titlePlaceholderMysteryBox": "E.g., Friday Gaming Chest, Self-Care Box...",
     "iconHelperText": "Click the icon to customize or type the name for an automatic suggestion.",
     "descriptionLabel": "Description (optional)",
     "descriptionPlaceholder": "Details or rules for enjoying your reward...",
     "typeLabel": "Reward Type",
+    "typeGuides": {
+      "SingleUse": {
+        "title": "Single-Use — No timer required",
+        "descriptionGamified": "Best for one-off treats (e.g., coffee, takeout, a purchase). Consumed in 1 click from your Backpack.",
+        "descriptionProductivity": "Best for one-off treats (e.g., coffee, takeout, a purchase). Consumed in 1 click from your Inventory."
+      },
+      "TimeBased": {
+        "title": "Time Voucher — Tracked in Focus timer",
+        "descriptionGamified": "Best for timed leisure (e.g., 1h of gaming, TV episode). Stored in your Backpack and counts down in Focus.",
+        "descriptionProductivity": "Best for timed leisure (e.g., 1h of gaming, TV episode). Stored in your Inventory and counts down in Focus."
+      },
+      "MysteryBox": {
+        "title": "Mystery Box — Roulette draw",
+        "description": "Lootbox with 3 prizes of varying odds (Common, Rare, and Jackpot) drawn on a roulette wheel in your Backpack."
+      }
+    },
     "categoryLabel": "Category",
     "debtToggleLabel": "Log as Debt",
     "debtToggleAria": "Enable immediate debt settlement mode",
     "debtToggleSubtitle": "Direct settlement: deducts coins right away without sending to Backpack.",
     "debtToggleSubtitleProductivity": "Direct settlement: deducts credits right away without sending to Inventory.",
+    "debtCategoryAutoHint": "Category automatically set to Debt.",
     "debtTooltipTitle": "What is Debt for?",
     "debtTooltipAria": "Learn what Debt mode is for",
     "debtTooltipBody": "Use this when you go over a leisure time limit or indulge in an urgent distraction before earning enough coins.",
@@ -136,18 +148,20 @@
     "debtTooltipPointDirectProductivity": "Clicking Pay Debt deducts credits and settles it immediately without creating an Inventory item.",
     "debtTooltipPointExample": "Does not count as a reward redemption for achievements and can be filtered later until settled.",
     "debtTooltipPointExampleProductivity": "Remains easy to filter so you can settle it as soon as you earn enough credits.",
-    "durationLabel": "Activity Duration (minutes)",
+    "durationLabel": "Duration (minutes)",
     "durationHint": "(time that will be consumed in Focus)",
     "durationPlaceholder": "E.g., 30, 60, 120",
-    "packageLevelLabel": "Package Level",
-    "packageLevelHint": "(optional • click to apply suggested time)",
+    "packageLevelLabel": "Quick time & package presets",
+    "packageLevelHint": "(optional • fills duration & cost)",
     "priceLabel": "Cost in Coins",
     "priceLabelProductivity": "Cost in Credits",
     "suggestedPriceByRarity": "(Suggested price by rarity)",
-    "pricePlaceholder": "E.g., 5, 15, 35, or 80",
+    "pricePlaceholder": "E.g., 4, 15, 35, or 80",
     "mysteryBoxPriceHelper": "You can keep the calibrated price for the package or customize it freely.",
-    "singleUseTiersLabel": "Suggested horizon",
-    "singleUseTiersHint": "(optional • effort guide)",
+    "mysteryLootPreviewLabel": "Prizes configured in this box",
+    "mysteryCustomizeLootCta": "Customize in tab 2",
+    "singleUseTiersLabel": "Tier & suggested price",
+    "singleUseTiersHint": "(optional • sets price & catalog tier)",
     "mysteryTabsAria": "Mystery Box sections",
     "mysteryTabIdentity": "Details & Rarity",
     "mysteryTabPrizes": "Customize Prizes",
@@ -163,7 +177,7 @@
       "tooHighBadge": "Too high",
       "warningTooltipAria": "View price warning details",
       "effort": {
-        "free": "Free (no effort required)",
+        "invalidZero": "Set a value above 0",
         "easyTasks": "~{count, plural, one {# Easy task} other {# Easy tasks}}",
         "hardSingleTask": "~1 Hard task",
         "mediumTasks": "~{count, plural, one {# Medium task} other {# Medium tasks}}",
@@ -202,7 +216,8 @@
       "pullFromStoreHint": "Auto-fills the 3 slots using rewards you already created in your Store",
       "presetAppliedToast": "Applied \"{preset}\" preset to box prizes!",
       "pulledFromStoreToast": "Prizes populated from your Store rewards!",
-      "storeEmptyToast": "Create Single-Use or Voucher rewards in your Store first to use this shortcut.",
+      "storeEmptyToast": "Create Single-Use or Time Voucher rewards in your Store first to use this shortcut.",
+      "storeNoCompatibleToast": "No Store rewards fit within the {max}-coin range for this tier.",
       "slotRarity": {
         "0": "Common Prize",
         "1": "Rare Prize",
@@ -227,16 +242,16 @@
         "colorName": "Emerald Green",
         "drops": {
           "0": {
-            "label": "Refreshing Break (10-15m)",
-            "description": "Specialty coffee, favorite snack, 1 video, or a short break."
+            "label": "Refreshing Break (10m)",
+            "description": "Specialty coffee, favorite snack, or a short guilt-free break."
           },
           "1": {
-            "label": "Medium Leisure Voucher (30m)",
-            "description": "Leisure reading, relaxing music, or a podcast."
+            "label": "Medium Leisure Voucher (20m)",
+            "description": "Leisure reading, 1 short video, relaxing music, or a podcast."
           },
           "2": {
-            "label": "Focused Hobby Session (45m)",
-            "description": "45 minutes of leisure + 1 bonus cashback coin."
+            "label": "Focused Hobby Session (40m)",
+            "description": "40 minutes dedicated to your favorite hobby."
           }
         }
       },
@@ -247,16 +262,16 @@
         "colorName": "Cyan Blue",
         "drops": {
           "0": {
-            "label": "Standard Leisure (45-60m)",
-            "description": "Video game session or 1 series episode."
+            "label": "Standard Leisure (35m)",
+            "description": "Quick gaming session or 1 series/anime episode."
           },
           "1": {
-            "label": "Extended Leisure Voucher (75-90m)",
-            "description": "Extended time or a celebratory special snack."
+            "label": "Extended Leisure Voucher (60m)",
+            "description": "1 full hour of entertainment or a celebratory special snack."
           },
           "2": {
-            "label": "Gaming / Movie Night (120m)",
-            "description": "2 hours of uninterrupted, guilt-free entertainment."
+            "label": "Gaming / Movie Night (100m)",
+            "description": "1h 40m of uninterrupted, guilt-free entertainment."
           }
         }
       },
@@ -267,12 +282,12 @@
         "colorName": "Radiant Magenta",
         "drops": {
           "0": {
-            "label": "Extended Leisure Block (120m)",
-            "description": "2 hours of favorite games, binge-watching, or an outdoor outing."
+            "label": "Extended Leisure Block (90m)",
+            "description": "1h 30m of favorite games, binge-watching, or an outdoor outing."
           },
           "1": {
-            "label": "Full Free Evening (180m)",
-            "description": "3 free hours or a book/game on Steam sale."
+            "label": "Full Free Evening (150m)",
+            "description": "2h 30m free or a book/game on sale."
           },
           "2": {
             "label": "Full Afternoon Unplugged (240m)",
@@ -287,12 +302,12 @@
         "colorName": "Noble Gold",
         "drops": {
           "0": {
-            "label": "Elite Half Day-Off (240m)",
-            "description": "4 hours dedicated to your hobbies with duty fulfilled."
+            "label": "Elite Partial Day-Off (180m)",
+            "description": "3 hours dedicated to your hobbies with duty fulfilled."
           },
           "1": {
-            "label": "Full Day-Off (Entire Day)",
-            "description": "A full day off from chores with complete streak protection."
+            "label": "Extended Day-Off (360m)",
+            "description": "6 hours off for rest, leisure, or a personal project."
           },
           "2": {
             "label": "Ultimate Celebration (Supreme Jackpot)",

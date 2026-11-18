@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import com.habitparty.application.ports.FocusRecordRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
+import com.habitparty.application.ports.UserRepository;
+import com.habitparty.application.usecases.focus.FocusRecordReversalSupport;
 import com.habitparty.application.usecases.workspace.WorkspaceWriteGuard;
 import com.habitparty.core.domain.entities.focus.FocusRecord;
 import com.habitparty.core.domain.entities.task.Task;
@@ -22,6 +24,7 @@ public class DeleteTaskUseCase {
   private final TransactionHistoryRepository transactionPort;
   private FocusRecordRepository focusRecordPort;
   private WorkspaceWriteGuard workspaceWriteGuard;
+  private UserRepository userPort;
 
   public DeleteTaskUseCase(TaskRepository taskPort, TransactionHistoryRepository transactionPort) {
     this.taskPort = taskPort;
@@ -36,6 +39,11 @@ public class DeleteTaskUseCase {
   @Autowired(required = false)
   public void setWorkspaceWriteGuard(WorkspaceWriteGuard workspaceWriteGuard) {
     this.workspaceWriteGuard = workspaceWriteGuard;
+  }
+
+  @Autowired(required = false)
+  public void setUserPort(UserRepository userPort) {
+    this.userPort = userPort;
   }
 
   public void execute(UUID taskId, UUID userIdLogado) {
@@ -60,11 +68,20 @@ public class DeleteTaskUseCase {
     if (focusRecordPort != null) {
       if (deleteHistory) {
         List<FocusRecord> linkedRecords = focusRecordPort.findAllByTaskId(taskId);
-        List<UUID> standaloneTaskRecordIds = linkedRecords.stream()
+        List<FocusRecord> standaloneTaskRecords = linkedRecords.stream()
             .filter(r -> r.getFocusActivityId().isEmpty())
-            .map(FocusRecord::getId)
             .toList();
-        if (!standaloneTaskRecordIds.isEmpty()) {
+        if (!standaloneTaskRecords.isEmpty()) {
+          FocusRecordReversalSupport.revertDeletedRecords(
+              userIdLogado,
+              standaloneTaskRecords,
+              focusRecordPort,
+              userPort,
+              null,
+              null);
+          List<UUID> standaloneTaskRecordIds = standaloneTaskRecords.stream()
+              .map(FocusRecord::getId)
+              .toList();
           transactionPort.deleteAllByReferenceIdsAndUserId(standaloneTaskRecordIds, userIdLogado);
           focusRecordPort.deleteAllByIds(standaloneTaskRecordIds);
         }

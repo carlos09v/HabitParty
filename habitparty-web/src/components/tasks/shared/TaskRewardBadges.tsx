@@ -44,6 +44,15 @@ export function TaskRewardBadges({
   const hasRewards =
     effectiveShowRewards &&
     (task.rewardXp !== undefined || task.rewardGold !== undefined);
+  const isCycleBasedStreak =
+    taskType === "daily"
+      ? (task.repeatType != null &&
+          task.repeatType.toUpperCase() !== "DAILY") ||
+        (task.repeatEvery ?? 1) > 1
+      : isHabit &&
+        task.resetCounter != null &&
+        task.resetCounter.toUpperCase() !== "DAILY";
+
   const showDifficultyIndicator = true;
 
   if (!hasStreak && !hasRewards && !showDifficultyIndicator) {
@@ -120,13 +129,21 @@ export function TaskRewardBadges({
       {hasStreak && (
         <span
           className="flex items-center gap-0.5 text-warning-500 font-bold"
-          title={t("badges.streakTitle", { count: task.streak ?? 0 })}
+          title={t(
+            isCycleBasedStreak
+              ? "badges.streakCyclesTitle"
+              : "badges.streakTitle",
+            { count: task.streak ?? 0 },
+          )}
         >
           <Flame
             size={isCompact ? 9 : 11}
             className="fill-warning-500 text-warning-500 shrink-0"
           />
-          <span>{task.streak}d</span>
+          <span>
+            {task.streak}
+            {isCycleBasedStreak ? "x" : "d"}
+          </span>
         </span>
       )}
 

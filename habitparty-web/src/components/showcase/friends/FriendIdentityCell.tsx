@@ -4,46 +4,75 @@ import { Flame } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { UserAvatar } from "@/components/ui/UserAvatar";
-import { getAvatarFrame } from "@/constants/avatarFrames";
+import { resolveAvatarFrameId } from "@/constants/avatarFrames";
 import type { SocialUserSummary } from "@/types/social";
+import { cn } from "@/utils";
 
 interface FriendIdentityCellProps {
   user: SocialUserSummary;
+  variant?: "default" | "compact";
+  metaText?: string;
+  onNavigate?: () => void;
 }
 
-export function FriendIdentityCell({ user }: FriendIdentityCellProps) {
+export function FriendIdentityCell({
+  user,
+  variant = "default",
+  metaText,
+  onNavigate,
+}: FriendIdentityCellProps) {
   const t = useTranslations("showcase.friends");
   const displayName = user.fullName || user.username;
+  const isCompact = variant === "compact";
 
   return (
     <Link
       href={`/profile/${encodeURIComponent(user.username)}`}
-      className="flex items-center gap-3 min-w-0 flex-1 group"
+      onClick={onNavigate}
+      className={cn(
+        "flex items-center min-w-0 flex-1 group",
+        isCompact
+          ? "gap-2.5 p-1.5 rounded-xl hover:bg-surface-hover dark:hover:bg-white/5 transition-colors"
+          : "gap-3",
+      )}
     >
       <UserAvatar
         src={user.profilePhotoUrl}
         name={displayName}
-        size="md"
+        size={isCompact ? "sm" : "md"}
         hasRing={user.isPremium}
-        frameId={getAvatarFrame(user.avatarFrame ?? undefined).id}
+        frameId={resolveAvatarFrameId(user.avatarFrame)}
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm font-extrabold text-neutral-100 group-hover:text-amber-800 dark:group-hover:text-gold transition-colors truncate">
+          <span
+            className={cn(
+              "truncate transition-colors",
+              isCompact
+                ? "text-xs font-bold text-neutral-100 group-hover:text-amber-700 dark:group-hover:text-gold"
+                : "text-sm font-extrabold text-neutral-100 group-hover:text-amber-800 dark:group-hover:text-gold",
+            )}
+          >
             {displayName}
           </span>
-          {user.currentStreak > 0 && (
+          {!isCompact && user.currentStreak > 0 && (
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-[10px] font-bold text-orange-700 dark:text-orange-300 shrink-0 tabular-nums">
               <Flame size={10} aria-hidden="true" />
               <span>{t("streakChip", { count: user.currentStreak })}</span>
             </span>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-1.5 text-xs text-neutral-400">
-          <span className="truncate">@{user.username}</span>
-          <span>•</span>
-          <span className="truncate">{user.levelTitle}</span>
-        </div>
+        {isCompact ? (
+          <p className="text-[11px] text-neutral-400 truncate tabular-nums">
+            @{user.username} • {metaText ?? user.levelTitle}
+          </p>
+        ) : (
+          <div className="flex flex-wrap items-center gap-1.5 text-xs text-neutral-400">
+            <span className="truncate">@{user.username}</span>
+            <span>•</span>
+            <span className="truncate">{metaText ?? user.levelTitle}</span>
+          </div>
+        )}
       </div>
     </Link>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -9,14 +10,21 @@ import {
   MAX_FOCUS_ACTIVITIES_FREE,
   MAX_FOCUS_ACTIVITIES_PREMIUM,
 } from "@/constants/focus";
+import { useFocusTimerStore } from "@/store/focusTimerStore";
 import { useUserStore } from "@/store/userStore";
-import type { FocusActivity, FocusRecord } from "@/types/focus";
+import type {
+  FocusActivity,
+  FocusActivityDeletionSummaryResponseDTO,
+  FocusRecord,
+} from "@/types/focus";
 import { calculateActivityDurationMap } from "@/utils/focusMetrics";
+import { deductUserPenalty } from "@/utils/gamification";
 
 export function useActivitiesWidget(
   activities: FocusActivity[],
   records: FocusRecord[],
 ) {
+  const router = useRouter();
   const t = useTranslations("dashboard.sidebarRight.activitiesWidget");
   const [period, setPeriod] = useState<ActivityPeriodOption>("today");
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
@@ -46,7 +54,13 @@ export function useActivitiesWidget(
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
   const [activityToDelete, setActivityToDelete] =
     useState<FocusActivity | null>(null);
+  const [deleteHistory, setDeleteHistory] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const openDeleteActivityModal = (activity: FocusActivity | null) => {
+    setDeleteHistory(false);
+    setActivityToDelete(activity);
+  };
 
   const maxActivities = isPremium
     ? MAX_FOCUS_ACTIVITIES_PREMIUM
@@ -104,20 +118,40 @@ export function useActivitiesWidget(
     });
   };
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = async (
+    summary?: FocusActivityDeletionSummaryResponseDTO | null,
+  ) => {
     if (!activityToDelete) return;
+    const targetActivity = activityToDelete;
+    const shouldDeleteHistory = deleteHistory;
     setIsDeleting(true);
     try {
-      const res = await deleteFocusActivity(activityToDelete.id, false);
+      const res = await deleteFocusActivity(
+        targetActivity.id,
+        shouldDeleteHistory,
+      );
       if (!res.success) {
         toast.error(res.error || t("deleteError"));
         return;
       }
-      toast.success(t("deleteSuccess", { name: activityToDelete.name }));
+      if (
+        shouldDeleteHistory &&
+        summary &&
+        (summary.totalXpEarned > 0 || summary.totalCoinsEarned > 0)
+      ) {
+        deductUserPenalty(summary.totalXpEarned, summary.totalCoinsEarned);
+      }
+      const timerStore = useFocusTimerStore.getState();
+      if (timerStore.target?.id === targetActivity.id) {
+        timerStore.resetTarget();
+      }
+      toast.success(t("deleteSuccess", { name: targetActivity.name }));
       setActivitiesList((prev) =>
-        prev.filter((a) => a.id !== activityToDelete.id),
+        prev.filter((a) => a.id !== targetActivity.id),
       );
       setActivityToDelete(null);
+      setDeleteHistory(false);
+      router.refresh();
     } catch {
       toast.error(t("deleteUnexpectedError"));
     } finally {
@@ -158,7 +192,9 @@ export function useActivitiesWidget(
     isActivityModalOpen,
     setIsActivityModalOpen,
     activityToDelete,
-    setActivityToDelete,
+    setActivityToDelete: openDeleteActivityModal,
+    deleteHistory,
+    setDeleteHistory,
     isDeleting,
     isUpgradeModalOpen,
     setIsUpgradeModalOpen,

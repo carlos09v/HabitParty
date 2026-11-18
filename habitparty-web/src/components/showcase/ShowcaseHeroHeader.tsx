@@ -20,7 +20,7 @@ import { ShowcaseLevelProgressPanel } from "@/components/showcase/ShowcaseLevelP
 import { FounderBadge } from "@/components/ui/FounderBadge";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { UserPlanBadge } from "@/components/ui/UserStatusBadges";
-import { getAvatarFrame } from "@/constants/avatarFrames";
+import { resolveAvatarFrameId } from "@/constants/avatarFrames";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useIdlePreload } from "@/hooks/useIdlePreload";
 import { useProfilePhotoUpload } from "@/hooks/useProfilePhotoUpload";
@@ -48,6 +48,7 @@ interface ShowcaseHeroHeaderProps {
   isCompact?: boolean;
   isOtherUser?: boolean;
   onOpenPreviewCard?: () => void;
+  onOpenProgression?: () => void;
   extraHeaderActions?: ReactNode;
 }
 
@@ -59,6 +60,7 @@ export function ShowcaseHeroHeader({
   isCompact = false,
   isOtherUser = false,
   onOpenPreviewCard,
+  onOpenProgression,
   extraHeaderActions,
 }: ShowcaseHeroHeaderProps) {
   const locale = useLocale() as AppLocale;
@@ -69,7 +71,7 @@ export function ShowcaseHeroHeader({
   const storeFrameId = useActiveAvatarFrame();
   const user = isOtherUser ? initialUser : storeUser || initialUser;
   const activeFrameId = isOtherUser
-    ? getAvatarFrame(initialUser.avatarFrame ?? undefined).id
+    ? resolveAvatarFrameId(initialUser.avatarFrame)
     : storeFrameId;
   const [isFramePickerOpen, setIsFramePickerOpen] = useState(false);
 
@@ -94,7 +96,10 @@ export function ShowcaseHeroHeader({
 
   useIdlePreload(preloadAvatarFramePickerModal);
 
-  const displayName = user?.fullName || user?.username || "Aventureiro";
+  const fallbackDisplayName = t(
+    isGamified ? "defaultDisplayNameGamified" : "defaultDisplayNameEssential",
+  );
+  const displayName = user?.fullName || user?.username || fallbackDisplayName;
   const username = user?.username ? `@${user.username}` : "";
   const isPremium = Boolean(user?.isPremium);
 
@@ -348,6 +353,7 @@ export function ShowcaseHeroHeader({
             levelTitle={levelTitle}
             nextLevelTitle={nextLevelTitle}
             progress={progress}
+            onOpenProgression={onOpenProgression}
           />
         </div>
       </section>

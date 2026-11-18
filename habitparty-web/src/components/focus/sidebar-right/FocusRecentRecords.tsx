@@ -15,7 +15,6 @@ import { memo, useCallback, useState } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { ContextMenu } from "@/components/ui/ContextMenu";
-import { getFocusIcon } from "@/constants/focus";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
@@ -24,6 +23,7 @@ import { useUserStore } from "@/store/userStore";
 import type { FocusRecord } from "@/types/focus";
 import { cn, formatCoins, formatDateTime } from "@/utils";
 import { formatFocusRecordDuration } from "@/utils/focusFormatters";
+import { resolveFocusRecordDisplay } from "@/utils/focusIcons";
 import { FocusRecordDetailsPopover } from "./FocusRecordDetailsPopover";
 
 interface FocusRecentRecordItemProps {
@@ -47,7 +47,14 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
   const { dateFormat } = useDateFormat();
   const { timeFormat } = useTimeFormat();
   const userTimeZone = useUserStore((s) => s.user?.timezone);
-  const IconComp = rec.activityIcon ? getFocusIcon(rec.activityIcon) : Timer;
+  const {
+    title: displayTitle,
+    subtitle: displaySubtitle,
+    IconComp,
+  } = resolveFocusRecordDisplay(rec, t("freeSession"));
+  const fullTitle = displaySubtitle
+    ? `${displayTitle} • ${displaySubtitle}`
+    : displayTitle;
   const durationLabel = formatFocusRecordDuration(
     rec.startTime,
     rec.endTime,
@@ -78,12 +85,7 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="text-body-s font-semibold text-neutral-100 group-hover/row:text-primary dark:group-hover/row:text-gold transition-colors truncate">
-              {rec.activityName && rec.taskNameSnapshot
-                ? `${rec.activityName} • ${rec.taskNameSnapshot}`
-                : rec.activityName ||
-                  rec.taskNameSnapshot ||
-                  rec.itemName ||
-                  t("freeSession")}
+              {fullTitle}
             </span>
             {rec.notes && rec.notes.trim() !== "" && (
               <span
@@ -167,6 +169,7 @@ interface FocusRecentRecordsProps {
     recordId: string,
     deleteHistory: boolean,
   ) => void | Promise<void>;
+  onRecordUpdated?: (updatedRecord: FocusRecord) => void;
   isCompact?: boolean;
 }
 
@@ -179,6 +182,7 @@ export function FocusRecentRecords({
   onAddRecord,
   onOptionsClick,
   onDeleteRecord,
+  onRecordUpdated,
   isCompact = false,
 }: FocusRecentRecordsProps) {
   const t = useTranslations("focus.records");
@@ -354,6 +358,7 @@ export function FocusRecentRecords({
         record={selectedRecordForEdit}
         anchorRect={editAnchorRect}
         onRequestDelete={onDeleteRecord ? handleRequestDelete : undefined}
+        onRecordUpdated={onRecordUpdated}
       />
 
       {/* Confirmação de exclusão com opção de limpar o Histórico */}
@@ -366,11 +371,12 @@ export function FocusRecentRecords({
         description={
           <p>
             {t.rich("deleteConfirmDescription", {
-              name:
-                pendingDeleteRecord?.activityName ||
-                pendingDeleteRecord?.taskNameSnapshot ||
-                pendingDeleteRecord?.itemName ||
-                t("freeSession"),
+              name: pendingDeleteRecord
+                ? resolveFocusRecordDisplay(
+                    pendingDeleteRecord,
+                    t("freeSession"),
+                  ).title
+                : t("freeSession"),
               strong: (chunks) => (
                 <strong className="text-neutral-100">{chunks}</strong>
               ),

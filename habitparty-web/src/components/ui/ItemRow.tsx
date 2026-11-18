@@ -2,23 +2,19 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Clock, GripVertical, Loader2, MoreVertical } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { GripVertical, Loader2, MoreVertical } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { memo, type default as React } from "react";
-import { CoinIcon } from "@/components/ui/CoinIcon";
-import { useExperienceMode } from "@/hooks/useExperienceMode";
-import type { AppLocale } from "@/i18n/config";
+import {
+  CatalogItemDurationBadge,
+  CatalogItemPricePill,
+} from "@/components/ui/CatalogItemBadges";
 import {
   cn,
-  formatCoins,
   openContextMenuFromButton,
   STOP_DRAG_PROPAGATION_PROPS,
 } from "@/utils";
 import { resolveCatalogItemVisuals } from "@/utils/catalogItemVisuals";
-import {
-  formatBackpackItemRemainingTime,
-  formatFocusMinutes,
-} from "@/utils/focusFormatters";
 
 export interface ItemRowProps {
   id: string;
@@ -37,8 +33,6 @@ export interface ItemRowProps {
   disabledTitle?: string;
   actionLabel: string;
   onAction: () => void;
-  secondaryActionLabel?: string;
-  onSecondaryAction?: () => void;
   onDoubleClick?: (e: React.MouseEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
   dragData?: Record<string, unknown>;
@@ -46,7 +40,6 @@ export interface ItemRowProps {
   isActiveFocusSession?: boolean;
   isDeleteChecking?: boolean;
   isActionLoading?: boolean;
-  isSecondaryActionLoading?: boolean;
 }
 
 /**
@@ -70,8 +63,6 @@ export const ItemRow = memo(function ItemRow({
   disabledTitle,
   actionLabel,
   onAction,
-  secondaryActionLabel,
-  onSecondaryAction,
   onDoubleClick,
   onContextMenu,
   dragData,
@@ -79,11 +70,8 @@ export const ItemRow = memo(function ItemRow({
   isActiveFocusSession,
   isDeleteChecking = false,
   isActionLoading = false,
-  isSecondaryActionLoading = false,
 }: ItemRowProps) {
   const t = useTranslations("ui.itemCatalog");
-  const locale = useLocale() as AppLocale;
-  const { isGamified } = useExperienceMode();
   const {
     typeKey,
     typeMeta,
@@ -122,8 +110,8 @@ export const ItemRow = memo(function ItemRow({
     transition: isDragging ? undefined : transition,
   };
 
-  const isBusy = isActionLoading || isSecondaryActionLoading;
-  const isPrimaryDisabled = disabled || (inUse && !isFocusNavigate) || isBusy;
+  const isPrimaryDisabled =
+    disabled || (inUse && !isFocusNavigate) || isActionLoading;
 
   return (
     <li
@@ -192,7 +180,7 @@ export const ItemRow = memo(function ItemRow({
           {typeof quantity === "number" && (
             <span
               className={cn(
-                "font-bold bg-surface border border-neutral-700 dark:bg-white/10 dark:border-white/20 text-neutral-100 shrink-0",
+                "font-bold bg-surface border border-neutral-700 dark:bg-white/10 dark:border-white/20 text-neutral-100 shrink-0 tabular-nums",
                 isCompact
                   ? "text-tiny px-1.5 py-0.5 rounded"
                   : "text-xs px-2 py-0.5 rounded-md",
@@ -211,7 +199,7 @@ export const ItemRow = memo(function ItemRow({
             >
               {title}
             </h4>
-            {description && (
+            {description && description.trim() !== "" && (
               <p
                 className={cn(
                   "text-neutral-400 truncate mt-0.5 leading-tight",
@@ -226,18 +214,12 @@ export const ItemRow = memo(function ItemRow({
 
         {/* Preço visível no topo direito apenas no Mobile (< md) */}
         {typeof price === "number" && (
-          <div
-            className={cn(
-              "flex md:hidden items-center gap-1.5 shrink-0 px-2 py-0.5 rounded-lg border",
-              isGamified
-                ? "bg-amber-500/10 border-amber-500/25 text-neutral-50 dark:bg-gold/10 dark:border-gold/25 dark:text-neutral-100"
-                : "bg-sky-500/10 border-sky-500/25 text-sky-900 dark:bg-sky-500/15 dark:border-sky-400/30 dark:text-sky-100",
-            )}
-          >
-            <CoinIcon size={14} withGlow />
-            <span className="font-bold text-xs">
-              {formatCoins(price, { locale })}
-            </span>
+          <div className="flex md:hidden shrink-0">
+            <CatalogItemPricePill
+              price={price}
+              size="sm"
+              canAfford={!disabled}
+            />
           </div>
         )}
       </div>
@@ -307,38 +289,17 @@ export const ItemRow = memo(function ItemRow({
         <div className="flex items-center gap-1.5 text-neutral-300 min-w-0">
           {typeKey === "TimeBased" || remainingSeconds !== undefined ? (
             remainingSeconds !== undefined && remainingSeconds !== null ? (
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1 truncate font-medium",
-                  remainingSeconds <= 1 ? "text-emerald-400" : "text-gold",
-                  isCompact ? "text-label-m" : "text-label-g",
-                )}
-              >
-                <Clock
-                  size={isCompact ? 11 : 13}
-                  className="shrink-0"
-                  aria-hidden="true"
-                />
-                <span className="truncate">
-                  {formatBackpackItemRemainingTime(remainingSeconds, locale)}
-                </span>
-              </span>
+              <CatalogItemDurationBadge
+                remainingSeconds={remainingSeconds}
+                isCompact={isCompact}
+                variant="inline"
+              />
             ) : baseDurationMinutes ? (
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg border font-extrabold bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-300",
-                  isCompact ? "text-label-g" : "text-xs",
-                )}
-              >
-                <Clock
-                  size={isCompact ? 11 : 13}
-                  className="text-emerald-700 dark:text-emerald-400 shrink-0"
-                  aria-hidden="true"
-                />
-                <span className="truncate">
-                  {formatFocusMinutes(baseDurationMinutes)}
-                </span>
-              </span>
+              <CatalogItemDurationBadge
+                baseDurationMinutes={baseDurationMinutes}
+                isCompact={isCompact}
+                variant="pill"
+              />
             ) : (
               <span
                 className={cn(
@@ -356,59 +317,22 @@ export const ItemRow = memo(function ItemRow({
                 isCompact ? "text-label-m" : "text-label-g",
               )}
             >
-              {t("instantUseDuration")}
+              {isMystery ? t("mysteryDrawDuration") : t("instantUseDuration")}
             </span>
           )}
         </div>
       </div>
 
-      {/* Coluna 5: Preço (Desktop) & Botões de Ação */}
+      {/* Coluna 5: Preço (Desktop) & Botão de Ação */}
       <div className="flex flex-wrap sm:flex-nowrap items-center justify-end gap-1.5 sm:gap-2 md:gap-2.5 lg:gap-3.5 pt-1 md:pt-0 border-t border-neutral-700 dark:border-white/5 md:border-t-0 shrink-0">
         {typeof price === "number" && (
-          <div
-            className={cn(
-              "hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border",
-              isGamified
-                ? "bg-amber-500/10 border-amber-500/25 text-neutral-50 dark:bg-gold/10 dark:border-gold/25 dark:text-neutral-100"
-                : "bg-sky-500/10 border-sky-500/25 text-sky-900 dark:bg-sky-500/15 dark:border-sky-400/30 dark:text-sky-100",
-            )}
-          >
-            <CoinIcon size={isCompact ? 15 : 16} withGlow />
-            <span className="font-bold text-xs">
-              {formatCoins(price, { locale })}
-            </span>
+          <div className="hidden md:flex">
+            <CatalogItemPricePill
+              price={price}
+              size={isCompact ? "sm" : "md"}
+              canAfford={!disabled}
+            />
           </div>
-        )}
-
-        {secondaryActionLabel && onSecondaryAction && (
-          <button
-            type="button"
-            onClick={onSecondaryAction}
-            onDoubleClick={(e) => e.stopPropagation()}
-            disabled={disabled || inUse || isBusy}
-            aria-busy={isSecondaryActionLoading}
-            aria-label={`${secondaryActionLabel} ${title}`}
-            title={
-              inUse
-                ? t("tooltips.inUse")
-                : t("tooltips.actionTarget", {
-                    action: secondaryActionLabel,
-                    title,
-                  })
-            }
-            className={cn(
-              "inline-flex items-center justify-center gap-1 rounded-md font-semibold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs border text-neutral-200 pointer-coarse:min-h-9",
-              disabled || inUse || isBusy
-                ? "bg-white/5 border-white/10 text-neutral-400 cursor-not-allowed opacity-60"
-                : "border-neutral-600 dark:border-primary/40 bg-surface/80 hover:bg-primary/10 hover:border-primary/40 hover:text-primary dark:hover:bg-gold/15 dark:hover:border-gold/60 dark:hover:text-gold active:scale-95 cursor-pointer",
-              isCompact ? "px-2 py-0.5 text-label-g" : "px-2.5 py-1 text-xs",
-            )}
-          >
-            {isSecondaryActionLoading && (
-              <Loader2 size={12} className="animate-spin shrink-0" />
-            )}
-            <span>{secondaryActionLabel}</span>
-          </button>
         )}
 
         <button
@@ -432,7 +356,7 @@ export const ItemRow = memo(function ItemRow({
           }
           className={cn(
             "inline-flex items-center justify-center gap-1.5 rounded-md font-semibold dark:font-bold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs pointer-coarse:min-h-9",
-            !isBusy && (isFocusNavigate || (!disabled && !inUse))
+            !isActionLoading && (isFocusNavigate || (!disabled && !inUse))
               ? "bg-gold hover:bg-gold-hover active:bg-gold-pressed text-on-gold border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1 focus-visible:ring-offset-card"
               : "bg-neutral-700/70 dark:bg-white/10 text-neutral-400 border border-neutral-600 dark:border-white/10 cursor-not-allowed opacity-75 dark:opacity-60",
             isCompact

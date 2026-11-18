@@ -303,7 +303,7 @@
       "tierDetailsAria": "View mystery box odds",
       "types": {
         "SingleUse": "Single-Use",
-        "TimeBased": "Voucher",
+        "TimeBased": "Time Voucher",
         "MysteryBox": "Mystery Box"
       },
       "packages": {
@@ -331,6 +331,10 @@
       "durationTitle": "Voucher duration: {minutes} minutes",
       "couponDurationFallback": "Voucher",
       "instantUseDuration": "Instant Use",
+      "mysteryDrawDuration": "Random Draw",
+      "missingCoinsHint": "Need {missing} more",
+      "missingCreditsHint": "Need {missing} more",
+      "readyToRedeemHint": "Balance ready",
       "statuses": {
         "activeSession": "Active session",
         "sealedBox": "Sealed box",

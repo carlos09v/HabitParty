@@ -8,7 +8,7 @@ import com.habitparty.core.domain.enums.RewardCategory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
 
-import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 public record UpdateRewardDTO(
@@ -21,7 +21,7 @@ public record UpdateRewardDTO(
   @Size(max = 140, message = "A descrição deve ter até 140 caracteres")
   String description,
 
-  @PositiveOrZero(message = "O preço não pode ser negativo")
+  @Positive(message = "O preço deve ser maior que zero")
   BigDecimal price,
 
   RewardCategory category,

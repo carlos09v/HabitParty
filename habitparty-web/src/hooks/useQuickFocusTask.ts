@@ -60,11 +60,21 @@ export function useQuickFocusTask() {
     setPendingFocusTask(null);
   }, [pendingFocusTask]);
 
+  const handleTransferFocusTask = useCallback(() => {
+    if (!pendingFocusTask) return;
+    useFocusTimerStore.getState().selectTaskTarget({
+      id: pendingFocusTask.id,
+      title: pendingFocusTask.title,
+    });
+    setPendingFocusTask(null);
+  }, [pendingFocusTask]);
+
   return {
     pendingFocusTask,
     currentFocusTarget,
     clearPendingFocusTask,
     handleStartFocusTask,
+    handleTransferFocusTask,
     handleSaveAndStartFocusTask,
     handleDiscardAndStartFocusTask,
   };

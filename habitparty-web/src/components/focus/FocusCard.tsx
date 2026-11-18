@@ -31,7 +31,11 @@ import {
   formatBackpackItemRemainingTime,
   isBackpackItemTimeDepleted,
 } from "@/utils/focusFormatters";
-import { BACKEND_TO_UI_PACKAGE, getRewardIcon } from "@/utils/rewardMapper";
+import {
+  BACKEND_TO_UI_PACKAGE,
+  getRewardIcon,
+  toPackageMessageKey,
+} from "@/utils/rewardMapper";
 
 export interface FocusCardBaseProps {
   isActiveTarget?: boolean;
@@ -110,7 +114,7 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
     ? BACKEND_TO_UI_PACKAGE[item.rewardPackageLevel]
     : undefined;
   const packageBadgeColor = uiPackageLevel
-    ? PACKAGE_LEVEL_COLOR[uiPackageLevel]
+    ? PACKAGE_LEVEL_COLOR[toPackageMessageKey(uiPackageLevel)]
     : null;
   const isTimeDepleted = isBackpackItemTimeDepleted(item?.remainingSeconds);
 

@@ -89,6 +89,7 @@ export interface CouponPackageOption {
 
 export interface SingleUseTierOption {
   id: "BASIC" | "PREMIUM" | "EPIC" | "LEGENDARY";
+  packageLevel: PackageLevel;
   suggestedPrice: number;
   dotColor: string;
   unselectedClass: string;
@@ -153,14 +154,9 @@ export interface RewardCardProps {
   onContextMenu?: (e: React.MouseEvent, reward: Reward) => void;
   isCompact?: boolean;
   canAfford?: boolean;
+  currentCoins?: number;
   isDeleteChecking?: boolean;
   isRedeeming?: boolean;
-}
-
-export interface AddRewardCardProps {
-  onClick?: () => void;
-  viewMode?: "card" | "list";
-  isCompact?: boolean;
 }
 
 export interface RouletteItem {
@@ -189,7 +185,7 @@ export type { SelectOption } from "@/types/ui";
 
 // 4. Contrato unificado de Estimativa de Recompensas (Foco + Tarefas)
 export interface RewardEstimateNotice {
-  tone: "info" | "warning";
+  tone: "info" | "warning" | "success";
   title: string;
   message: string;
 }
@@ -202,7 +198,7 @@ export interface RewardEstimateBreakdownItem {
 export interface RewardEstimate {
   gold: number;
   xp: number;
-  status?: "full" | "reduced" | "none";
+  status?: "full" | "reduced" | "boosted" | "none";
   zeroReason?: string;
   notices?: RewardEstimateNotice[];
   breakdown?: RewardEstimateBreakdownItem[];

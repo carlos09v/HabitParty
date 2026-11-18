@@ -27,11 +27,13 @@ const FocusActivityModal = dynamic(
   { ssr: false },
 );
 
-const ConfirmationModal = dynamic(
+const DeleteFocusActivityModal = dynamic(
   () =>
-    import("@/components/ui/ConfirmationModal").then((mod) => ({
-      default: mod.ConfirmationModal,
-    })),
+    import("@/components/focus/modals/DeleteFocusActivityModal").then(
+      (mod) => ({
+        default: mod.DeleteFocusActivityModal,
+      }),
+    ),
   { ssr: false },
 );
 
@@ -61,6 +63,8 @@ export function ActivitiesWidget({
     setIsActivityModalOpen,
     activityToDelete,
     setActivityToDelete,
+    deleteHistory,
+    setDeleteHistory,
     isDeleting,
     isUpgradeModalOpen,
     setIsUpgradeModalOpen,
@@ -272,22 +276,11 @@ export function ActivitiesWidget({
       )}
 
       {Boolean(activityToDelete) && (
-        <ConfirmationModal
-          isOpen={Boolean(activityToDelete)}
-          title={t("deleteModal.title")}
-          description={
-            <>
-              {t("deleteModal.questionPrefix")}{" "}
-              <span className="font-bold text-neutral-100">
-                &quot;{activityToDelete?.name}&quot;
-              </span>
-              {t("deleteModal.questionSuffix")}
-            </>
-          }
-          confirmText={t("deleteModal.confirm")}
-          cancelText={t("deleteModal.cancel")}
-          variant="danger"
-          isLoading={isDeleting}
+        <DeleteFocusActivityModal
+          activity={activityToDelete}
+          isDeleting={isDeleting}
+          deleteHistory={deleteHistory}
+          onDeleteHistoryChange={setDeleteHistory}
           onClose={() => {
             if (!isDeleting) setActivityToDelete(null);
           }}

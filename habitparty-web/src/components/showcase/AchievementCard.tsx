@@ -3,7 +3,8 @@
 import { CheckCircle2, Lock, Pin, Trophy } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { AchievementIcon } from "@/components/showcase/AchievementIcon";
-import { RARITY_THEMES } from "@/constants/achievements";
+import { ProgressBar } from "@/components/ui/ProgressBar";
+import { getRarityTheme } from "@/constants/achievements";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
@@ -35,7 +36,7 @@ export function AchievementCard({
   const { isGamified } = useExperienceMode();
 
   const isSecretLocked = achievement.isSecret && !achievement.unlocked;
-  const theme = RARITY_THEMES[achievement.rarity] || RARITY_THEMES.COMMON;
+  const theme = getRarityTheme(achievement.rarity);
 
   const resolvedCopy = resolveAchievementCopy(
     achievement,
@@ -165,17 +166,18 @@ export function AchievementCard({
               </span>
             </div>
 
-            <div className="h-2 w-full rounded-full bg-neutral-700 dark:bg-neutral-900 overflow-hidden border border-neutral-600/40 dark:border-primary/15">
-              <div
-                className={cn(
-                  "h-full w-full origin-left transition-transform duration-500",
-                  achievement.unlocked ? theme.progressFill : "bg-primary",
-                )}
-                style={{
-                  transform: `scaleX(${Math.min(100, Math.max(0, achievement.progressPercent)) / 100})`,
-                }}
-              />
-            </div>
+            <ProgressBar
+              percent={achievement.progressPercent}
+              className="h-2 bg-neutral-700 dark:bg-neutral-900 border border-neutral-600/40 dark:border-primary/15"
+              fillClassName={cn(
+                "transition-transform duration-500",
+                achievement.unlocked ? theme.progressFill : "bg-primary",
+              )}
+              ariaLabel={t("progressLabel", {
+                current: achievement.currentValue,
+                target: achievement.targetValue,
+              })}
+            />
           </div>
         )}
 

@@ -30,6 +30,7 @@ import {
   formatDurationMinutes,
   formatFocusRecordDuration,
 } from "@/utils/focusFormatters";
+import { resolveFocusRecordDisplay } from "@/utils/focusIcons";
 import { mapFocusRecords } from "@/utils/focusMapper";
 
 export interface TaskFocusHistoryModalProps {
@@ -269,7 +270,10 @@ export function TaskFocusHistoryModal({
                     <div className="flex flex-col min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-bold text-neutral-100 truncate">
-                          {rec.activityName || t("directTaskFocus")}
+                          {
+                            resolveFocusRecordDisplay(rec, t("directTaskFocus"))
+                              .title
+                          }
                         </span>
                         <span className="px-1.5 py-0.5 rounded text-tiny font-bold bg-amber-500/15 border border-amber-500/35 text-gold-ink dark:bg-gold/15 dark:border-gold/30 dark:text-gold shrink-0">
                           {durationFormatted}

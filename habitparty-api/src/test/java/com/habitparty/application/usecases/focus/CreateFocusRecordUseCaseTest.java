@@ -43,6 +43,7 @@ import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.focus.FocusActivity;
 import com.habitparty.core.domain.entities.focus.FocusRecord;
+import com.habitparty.core.domain.entities.focus.FocusRewardCalculator;
 import com.habitparty.core.domain.entities.task.Habit;
 import com.habitparty.core.domain.entities.task.Todo;
 import com.habitparty.core.domain.enums.FocusRecordType;
@@ -141,7 +142,7 @@ class CreateFocusRecordUseCaseTest {
         30,
         LocalDateTime.now());
 
-    when(port.sumFocusMinutesToday(eq(userId), any())).thenReturn(0);
+    when(port.sumFocusMinutesOnDate(eq(userId), eq(LocalDate.of(2026, 10, 16)), any())).thenReturn(0);
     when(port.save(any(FocusRecord.class))).thenAnswer(invocation -> invocation.getArgument(0));
     when(userPort.findById(userId)).thenReturn(Optional.of(user));
     when(focusActivityPort.findById(activityId)).thenReturn(Optional.of(activity));
@@ -166,6 +167,7 @@ class CreateFocusRecordUseCaseTest {
     assertEquals(8, tx.getXpAmount());
     assertEquals(Optional.of(new BigDecimal("0.50")), tx.getGoldAmount());
     assertEquals("Estudos", tx.getNameSnapshot());
+    assertEquals(result.getEndTime(), tx.getCreatedAt());
   }
 
   @Test
@@ -294,7 +296,7 @@ class CreateFocusRecordUseCaseTest {
         1);
 
     when(taskPort.findById(taskId)).thenReturn(Optional.of(todo));
-    when(port.sumFocusMinutesToday(eq(userId), any())).thenReturn(0);
+    when(port.sumFocusMinutesOnDate(eq(userId), eq(LocalDate.of(2026, 10, 16)), any())).thenReturn(0);
     when(port.save(any(FocusRecord.class))).thenAnswer(invocation -> invocation.getArgument(0));
     when(userPort.findById(userId)).thenReturn(Optional.of(user));
 
@@ -381,7 +383,7 @@ class CreateFocusRecordUseCaseTest {
     when(focusActivityPort.findById(activityId)).thenReturn(Optional.of(activity));
     when(focusActivityPort.findAllByUserIdOrderByOrderIndex(userId)).thenReturn(List.of(activity));
     when(userPort.findById(userId)).thenReturn(Optional.of(user));
-    when(port.sumFocusMinutesToday(userId, tokyoZone)).thenReturn(0);
+    when(port.sumFocusMinutesOnDate(userId, LocalDate.of(2026, 10, 16), tokyoZone)).thenReturn(0);
     when(port.save(any(FocusRecord.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
     FocusRecord saved = useCase.execute(userId, command);
@@ -403,6 +405,10 @@ class CreateFocusRecordUseCaseTest {
     FocusRecordResponseDTO dto = FocusRecordResponseDTO.fromDomain(saved, tokyoZone);
     assertEquals(OffsetDateTime.of(tokyoStart, ZoneOffset.ofHours(9)), dto.startTime());
     assertEquals(OffsetDateTime.of(tokyoEnd, ZoneOffset.ofHours(9)), dto.endTime());
+
+    ArgumentCaptor<TransactionHistory> txCaptor = ArgumentCaptor.forClass(TransactionHistory.class);
+    verify(transactionHistoryPort).save(txCaptor.capture());
+    assertEquals(expectedServerEnd, txCaptor.getValue().getCreatedAt());
   }
 
   @Test
@@ -420,5 +426,46 @@ class CreateFocusRecordUseCaseTest {
         300);
 
     assertThrows(DomainValidationException.class, () -> useCase.execute(userId, command));
+  }
+
+  @Test
+  @DisplayName("Registro retroativo deve consultar minutos acumulados na data da sessão para cálculo de diminishing returns")
+  void shouldEvaluateDailyCapAgainstSessionTargetDateRatherThanToday() {
+    LocalDate retroDate = LocalDate.of(2026, 9, 10);
+    LocalDateTime start = retroDate.atTime(10, 0);
+    LocalDateTime end = retroDate.atTime(10, 30);
+
+    CreateFocusRecordCommand command = new CreateFocusRecordCommand(
+        activityId,
+        null,
+        null,
+        "Sessão retroativa",
+        start,
+        end,
+        FocusRecordType.POMO,
+        1);
+
+    FocusActivity activity = new FocusActivity(
+        activityId,
+        userId,
+        "Estudos",
+        "book",
+        0,
+        FocusRecordType.POMO,
+        30,
+        LocalDateTime.now());
+
+    when(focusActivityPort.findById(activityId)).thenReturn(Optional.of(activity));
+    when(focusActivityPort.findAllByUserIdOrderByOrderIndex(userId)).thenReturn(List.of(activity));
+    when(userPort.findById(userId)).thenReturn(Optional.of(user));
+    // Data retroativa já havia atingido soft cap (480 min) — não deve receber moedas/XP mesmo se hoje estiver zerado
+    when(port.sumFocusMinutesOnDate(eq(userId), eq(retroDate), any())).thenReturn(FocusRewardCalculator.DAILY_TIER3_MINUTES);
+    when(port.save(any(FocusRecord.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    FocusRecord result = useCase.execute(userId, command);
+
+    assertEquals(0, result.getXpEarned().orElse(0));
+    assertEquals(0, BigDecimal.ZERO.compareTo(result.getCoinsEarned().orElse(BigDecimal.ZERO)));
+    verify(port).sumFocusMinutesOnDate(eq(userId), eq(retroDate), any());
   }
 }

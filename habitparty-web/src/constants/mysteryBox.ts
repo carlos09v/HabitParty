@@ -64,24 +64,24 @@ export const MYSTERY_BOX_TIERS: readonly MysteryBoxTier[] = [
     glowClass: "shadow-[0_0_12px_rgba(0,201,80,0.2)]",
     ringClass: "ring-success-500",
     accentGlow: "rgba(0, 201, 80, 0.4)",
-    slotMaxMinutes: [20, 35, 60],
+    slotMaxMinutes: [15, 25, 45],
     dropRates: [
       {
         percentage: 60,
-        label: "Pausa Revigorante (10-15m)",
-        description: "Café especial, snack favorito, 1 vídeo ou pausa curta.",
+        label: "Pausa Revigorante (10m)",
+        description: "Café especial, snack favorito ou pausa curta sem culpa.",
         badgeVariant: "emerald",
       },
       {
         percentage: 30,
-        label: "Cupom de Lazer Médio (30m)",
-        description: "Leitura de lazer, música relaxante ou podcast.",
+        label: "Cupom de Lazer Médio (20m)",
+        description: "Leitura de lazer, 1 vídeo curto, música ou podcast.",
         badgeVariant: "amber",
       },
       {
         percentage: 10,
-        label: "Sessão Focada de Hobby (45m)",
-        description: "45 minutos de lazer + 1 moeda de cashback bônus.",
+        label: "Sessão Focada de Hobby (40m)",
+        description: "40 minutos dedicados ao seu hobby favorito.",
         badgeVariant: "purple",
       },
     ],
@@ -107,24 +107,24 @@ export const MYSTERY_BOX_TIERS: readonly MysteryBoxTier[] = [
     glowClass: "shadow-[0_0_12px_rgba(0,194,255,0.2)]",
     ringClass: "ring-info",
     accentGlow: "rgba(0, 194, 255, 0.4)",
-    slotMaxMinutes: [60, 90, 120],
+    slotMaxMinutes: [45, 75, 120],
     dropRates: [
       {
         percentage: 50,
-        label: "Lazer Padrão (45-60m)",
-        description: "Sessão de videogame ou 1 episódio de série.",
+        label: "Lazer Padrão (35m)",
+        description: "Partida rápida ou 1 episódio de série/anime.",
         badgeVariant: "emerald",
       },
       {
         percentage: 35,
-        label: "Vale-Lazer Estendido (75-90m)",
-        description: "Tempo estendido ou lanche especial de comemoração.",
+        label: "Vale-Lazer Estendido (60m)",
+        description: "1 hora cheia de entretenimento ou lanche comemorativo.",
         badgeVariant: "amber",
       },
       {
         percentage: 15,
-        label: "Noite Gamer / Cinema (120m)",
-        description: "2 horas de entretenimento ininterrupto e sem culpa.",
+        label: "Noite Gamer / Cinema (100m)",
+        description: "1h 40m de lazer ininterrupto e sem culpa.",
         badgeVariant: "purple",
       },
     ],
@@ -150,18 +150,18 @@ export const MYSTERY_BOX_TIERS: readonly MysteryBoxTier[] = [
     glowClass: "shadow-[0_0_15px_rgba(237,43,229,0.25)]",
     ringClass: "ring-magenta",
     accentGlow: "rgba(237, 43, 229, 0.45)",
-    slotMaxMinutes: [120, 180, 240],
+    slotMaxMinutes: [105, 165, 240],
     dropRates: [
       {
         percentage: 50,
-        label: "Bloco Estendido de Lazer (120m)",
-        description: "2 horas de jogos favoritos, maratona ou passeio externo.",
+        label: "Bloco Estendido de Lazer (90m)",
+        description: "1h 30m de jogos favoritos, maratona ou passeio externo.",
         badgeVariant: "emerald",
       },
       {
         percentage: 35,
-        label: "Noite Livre Completa (180m)",
-        description: "3 horas livres ou livro/jogo na promoção da Steam.",
+        label: "Noite Livre Completa (150m)",
+        description: "2h 30m livres ou livro/jogo na promoção.",
         badgeVariant: "amber",
       },
       {
@@ -195,18 +195,19 @@ export const MYSTERY_BOX_TIERS: readonly MysteryBoxTier[] = [
     glowClass: "shadow-glow-gold-xs",
     ringClass: "ring-gold",
     accentGlow: "rgba(237, 229, 57, 0.5)",
-    slotMaxMinutes: [240, 480, 480],
+    slotMaxMinutes: [210, 360, 480],
     dropRates: [
       {
         percentage: 60,
-        label: "Day-Off Parcial de Elite (240m)",
-        description: "4 horas dedicadas aos seus hobbies com dever cumprido.",
+        label: "Day-Off Parcial de Elite (180m)",
+        description: "3 horas dedicadas aos seus hobbies com dever cumprido.",
         badgeVariant: "emerald",
       },
       {
         percentage: 30,
-        label: "Day-Off Integral (Dia Inteiro)",
-        description: "Folga total de afazeres com proteção total de streak.",
+        label: "Day-Off Estendido (360m)",
+        description:
+          "6 horas de folga para descanso, lazer ou projeto pessoal.",
         badgeVariant: "amber",
       },
       {
@@ -232,23 +233,23 @@ export const DEFAULT_MYSTERY_BOX_LOOT: Record<
   readonly [MysteryBoxLootItem, MysteryBoxLootItem, MysteryBoxLootItem]
 > = {
   Básico: [
-    { name: "Pausa Revigorante", icon: "coffee", minutes: 15 },
-    { name: "Cupom de Lazer Médio", icon: "music", minutes: 30 },
-    { name: "Sessão Focada de Hobby", icon: "book", minutes: 45 },
+    { name: "Pausa Revigorante", icon: "coffee", minutes: 10 },
+    { name: "Cupom de Lazer Médio", icon: "music", minutes: 20 },
+    { name: "Sessão Focada de Hobby", icon: "book", minutes: 40 },
   ],
   Premium: [
-    { name: "Sessão de Videogame", icon: "gamepad", minutes: 60 },
-    { name: "Vale-Lazer Estendido", icon: "pizza", minutes: 90 },
-    { name: "Noite Gamer / Cinema", icon: "clapperboard", minutes: 120 },
+    { name: "Sessão de Videogame", icon: "gamepad", minutes: 35 },
+    { name: "Vale-Lazer Estendido", icon: "pizza", minutes: 60 },
+    { name: "Noite Gamer / Cinema", icon: "clapperboard", minutes: 100 },
   ],
   Épico: [
-    { name: "Bloco Estendido de Lazer", icon: "gamepad", minutes: 120 },
-    { name: "Noite Livre Completa", icon: "ticket", minutes: 180 },
+    { name: "Bloco Estendido de Lazer", icon: "gamepad", minutes: 90 },
+    { name: "Noite Livre Completa", icon: "ticket", minutes: 150 },
     { name: "Tarde de Desconexão", icon: "sparkles", minutes: 240 },
   ],
   Lendário: [
-    { name: "Day-Off Parcial de Elite", icon: "party", minutes: 240 },
-    { name: "Day-Off Integral", icon: "sparkles", minutes: 480 },
+    { name: "Day-Off Parcial de Elite", icon: "party", minutes: 180 },
+    { name: "Day-Off Estendido", icon: "sparkles", minutes: 360 },
     { name: "Celebração Absoluta", icon: "gift", minutes: null },
   ],
 };
@@ -283,27 +284,27 @@ export const MYSTERY_BOX_PRESETS: readonly MysteryBoxPreset[] = [
     icon: Gamepad2,
     tiers: {
       Básico: [
-        { name: "Vídeo de Gameplay", icon: "tv", minutes: 15 },
-        { name: "Partida Casual", icon: "gamepad", minutes: 30 },
-        { name: "Sessão Ranqueada", icon: "sparkles", minutes: 60 },
+        { name: "Vídeo de Gameplay", icon: "tv", minutes: 10 },
+        { name: "Partida Casual", icon: "gamepad", minutes: 20 },
+        { name: "Sessão Ranqueada", icon: "sparkles", minutes: 45 },
       ],
       Premium: [
         {
           name: "1 Episódio de Série / Anime",
           icon: "clapperboard",
-          minutes: 50,
+          minutes: 40,
         },
-        { name: "Jogatina com Amigos", icon: "gamepad", minutes: 90 },
-        { name: "Maratona Gamer / Filme", icon: "tv", minutes: 120 },
+        { name: "Jogatina com Amigos", icon: "gamepad", minutes: 70 },
+        { name: "Maratona Gamer / Filme", icon: "tv", minutes: 110 },
       ],
       Épico: [
-        { name: "Sessão Coop Estendida", icon: "gamepad", minutes: 120 },
-        { name: "Maratona de Série", icon: "clapperboard", minutes: 180 },
+        { name: "Sessão Coop Estendida", icon: "gamepad", minutes: 90 },
+        { name: "Maratona de Série", icon: "clapperboard", minutes: 150 },
         { name: "Noite Gamer Livre", icon: "party", minutes: 240 },
       ],
       Lendário: [
-        { name: "Tarde Gamer Completa", icon: "gamepad", minutes: 240 },
-        { name: "Day-Off de Lançamento", icon: "sparkles", minutes: 480 },
+        { name: "Tarde Gamer Completa", icon: "gamepad", minutes: 180 },
+        { name: "Day-Off de Lançamento", icon: "sparkles", minutes: 360 },
         { name: "Jogo Novo na Promoção", icon: "shopping", minutes: null },
       ],
     },
@@ -314,22 +315,22 @@ export const MYSTERY_BOX_PRESETS: readonly MysteryBoxPreset[] = [
     tiers: {
       Básico: [
         { name: "Café ou Chá Especial", icon: "coffee", minutes: null },
-        { name: "Pausa Musical / Meditação", icon: "headphones", minutes: 25 },
-        { name: "Cochilo Revigorante", icon: "sparkles", minutes: 45 },
+        { name: "Pausa Musical / Meditação", icon: "headphones", minutes: 20 },
+        { name: "Cochilo Revigorante", icon: "sparkles", minutes: 40 },
       ],
       Premium: [
         { name: "Banho Relaxante & Skincare", icon: "sparkles", minutes: null },
         { name: "Caminhada ao Ar Livre", icon: "headphones", minutes: 60 },
-        { name: "Sessão de Filme no Sofá", icon: "tv", minutes: 120 },
+        { name: "Sessão de Filme no Sofá", icon: "tv", minutes: 100 },
       ],
       Épico: [
-        { name: "Manhã ou Tarde Sem Pressa", icon: "coffee", minutes: 120 },
-        { name: "Spa Day em Casa", icon: "sparkles", minutes: 180 },
+        { name: "Manhã ou Tarde Sem Pressa", icon: "coffee", minutes: 90 },
+        { name: "Spa Day em Casa", icon: "sparkles", minutes: 150 },
         { name: "Desconexão Digital Total", icon: "book", minutes: 240 },
       ],
       Lendário: [
-        { name: "Meio Período Off", icon: "party", minutes: 240 },
-        { name: "Day-Off de Descanso Total", icon: "sparkles", minutes: 480 },
+        { name: "Meio Período Off", icon: "party", minutes: 180 },
+        { name: "Day-Off de Descanso Total", icon: "sparkles", minutes: 360 },
         { name: "Massagem ou Passeio Especial", icon: "gift", minutes: null },
       ],
     },
@@ -346,11 +347,11 @@ export const MYSTERY_BOX_PRESETS: readonly MysteryBoxPreset[] = [
       Premium: [
         { name: "Açaí ou Sobremesa", icon: "sparkles", minutes: null },
         { name: "Pedir Delivery Favorito", icon: "pizza", minutes: null },
-        { name: "Jantar + Filme Especial", icon: "utensils", minutes: 120 },
+        { name: "Jantar + Filme Especial", icon: "utensils", minutes: 100 },
       ],
       Épico: [
         { name: "Noite da Pizza / Hambúrguer", icon: "pizza", minutes: null },
-        { name: "Saída para Cafeteria / Bar", icon: "beer", minutes: 180 },
+        { name: "Saída para Cafeteria / Bar", icon: "beer", minutes: 150 },
         { name: "Jantar Comemorativo", icon: "utensils", minutes: null },
       ],
       Lendário: [
@@ -365,22 +366,22 @@ export const MYSTERY_BOX_PRESETS: readonly MysteryBoxPreset[] = [
     icon: BookOpen,
     tiers: {
       Básico: [
-        { name: "Ouvir Álbum / Podcast", icon: "music", minutes: 20 },
-        { name: "Capítulo de Livro / Mangá", icon: "book", minutes: 30 },
+        { name: "Ouvir Álbum / Podcast", icon: "music", minutes: 15 },
+        { name: "Capítulo de Livro / Mangá", icon: "book", minutes: 25 },
         {
           name: "Prática de Instrumento / Arte",
           icon: "sparkles",
-          minutes: 60,
+          minutes: 45,
         },
       ],
       Premium: [
-        { name: "Leitura Imersiva", icon: "book", minutes: 60 },
-        { name: "Projeto Pessoal Criativo", icon: "sparkles", minutes: 90 },
-        { name: "Sessão de Música / Pintura", icon: "music", minutes: 120 },
+        { name: "Leitura Imersiva", icon: "book", minutes: 45 },
+        { name: "Projeto Pessoal Criativo", icon: "sparkles", minutes: 75 },
+        { name: "Sessão de Música / Pintura", icon: "music", minutes: 110 },
       ],
       Épico: [
-        { name: "Imersão em Hobby Favorito", icon: "book", minutes: 120 },
-        { name: "Tarde Criativa Livre", icon: "sparkles", minutes: 180 },
+        { name: "Imersão em Hobby Favorito", icon: "book", minutes: 90 },
+        { name: "Tarde Criativa Livre", icon: "sparkles", minutes: 150 },
         {
           name: "Comprar Livro ou Material",
           icon: "shopping",
@@ -388,8 +389,8 @@ export const MYSTERY_BOX_PRESETS: readonly MysteryBoxPreset[] = [
         },
       ],
       Lendário: [
-        { name: "Maratona de Hobby (4h)", icon: "book", minutes: 240 },
-        { name: "Dia Inteiro para Projetos", icon: "sparkles", minutes: 480 },
+        { name: "Maratona de Hobby (3h)", icon: "book", minutes: 180 },
+        { name: "Dia Inteiro para Projetos", icon: "sparkles", minutes: 360 },
         { name: "Item de Colecionador / Curso", icon: "gift", minutes: null },
       ],
     },

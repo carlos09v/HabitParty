@@ -16,7 +16,6 @@ import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { updateFocusRecord } from "@/actions/focusActions";
 import { CoinIcon } from "@/components/ui/CoinIcon";
-import { getFocusIcon } from "@/constants/focus";
 import { useAnchoredPopoverPosition } from "@/hooks/useAnchoredPopoverPosition";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useDateFormat } from "@/hooks/useDateFormat";
@@ -28,6 +27,7 @@ import { useUserStore } from "@/store/userStore";
 import type { FocusRecord } from "@/types/focus";
 import { formatCoins, formatDateTime } from "@/utils";
 import { formatFocusRecordDuration } from "@/utils/focusFormatters";
+import { resolveFocusRecordDisplay } from "@/utils/focusIcons";
 
 interface FocusRecordDetailsPopoverProps {
   isOpen: boolean;
@@ -36,6 +36,8 @@ interface FocusRecordDetailsPopoverProps {
   anchorRect: DOMRect | null;
   /** Solicita a exclusão do registro (confirmação exibida pelo pai). */
   onRequestDelete?: (record: FocusRecord) => void;
+  /** Notifica o pai para atualizar imediatamente registros em cache local/extraRecords. */
+  onRecordUpdated?: (updatedRecord: FocusRecord) => void;
 }
 
 const POPOVER_OPTIONS = {
@@ -51,6 +53,7 @@ export function FocusRecordDetailsPopover({
   record,
   anchorRect,
   onRequestDelete,
+  onRecordUpdated,
 }: FocusRecordDetailsPopoverProps) {
   const t = useTranslations("focus.recordDetails");
   const { isGamified } = useExperienceMode();
@@ -93,9 +96,11 @@ export function FocusRecordDetailsPopover({
 
   if (!isOpen || !mounted || !record) return null;
 
-  const IconComp = record.activityIcon
-    ? getFocusIcon(record.activityIcon)
-    : Timer;
+  const {
+    title: displayTitle,
+    subtitle: displaySubtitle,
+    IconComp,
+  } = resolveFocusRecordDisplay(record, t("freeSession"));
 
   const durationLabel = formatFocusRecordDuration(
     record.startTime,
@@ -106,11 +111,16 @@ export function FocusRecordDetailsPopover({
   const handleSaveNotes = async () => {
     setIsSaving(true);
     try {
+      const trimmedNotes = notes.trim();
       const res = await updateFocusRecord(record.id, {
-        notes: notes.trim(),
+        notes: trimmedNotes,
       });
 
       if (res.success) {
+        onRecordUpdated?.({
+          ...record,
+          notes: res.data?.notes ?? trimmedNotes,
+        });
         toast.success(t("toasts.notesUpdated"));
         onClose();
       } else {
@@ -159,14 +169,11 @@ export function FocusRecordDetailsPopover({
 
             <div className="flex flex-col min-w-0 flex-1">
               <h3 className="text-body-m font-bold text-neutral-100 truncate">
-                {record.activityName ||
-                  record.taskNameSnapshot ||
-                  record.itemName ||
-                  t("freeSession")}
+                {displayTitle}
               </h3>
-              {record.activityName && record.taskNameSnapshot && (
+              {displaySubtitle && (
                 <span className="text-tiny text-gold font-medium truncate">
-                  📌 {record.taskNameSnapshot}
+                  📌 {displaySubtitle}
                 </span>
               )}
               <span className="text-label-g text-neutral-400 flex items-center gap-1">

@@ -41,15 +41,19 @@ class MysteryBoxLootTableTest {
   void shouldFallbackToDefaultTierPoolWhenCustomItemsAreNull() {
     MysteryBoxResult basicCommon = MysteryBoxLootTable.rollWithValue(RewardPackageLevel.BASIC, null, 10);
     assertEquals("Pausa Revigorante", basicCommon.name());
-    assertEquals(15, basicCommon.minutes());
+    assertEquals(10, basicCommon.minutes());
+
+    MysteryBoxResult premiumCommon = MysteryBoxLootTable.rollWithValue(RewardPackageLevel.PREMIUM, null, 25);
+    assertEquals("Sessão de Videogame", premiumCommon.name());
+    assertEquals(35, premiumCommon.minutes());
   }
 
   @Test
   void shouldValidateAndNormalizeCustomLootItemsAndRejectExcessiveDuration() {
     List<MysteryBoxLootItem> valid = List.of(
         new MysteryBoxLootItem("  Chocolatinho  ", "cookie", 0),
-        new MysteryBoxLootItem("Vídeo Curto", "clapperboard", 30),
-        new MysteryBoxLootItem("Sessão Indie", "gamepad", 60)
+        new MysteryBoxLootItem("Vídeo Curto", "clapperboard", 25),
+        new MysteryBoxLootItem("Sessão Indie", "gamepad", 45)
     );
 
     List<MysteryBoxLootItem> normalized =
@@ -57,12 +61,12 @@ class MysteryBoxLootTableTest {
     assertEquals(3, normalized.size());
     assertEquals("Chocolatinho", normalized.get(0).name());
     assertNull(normalized.get(0).minutes());
-    assertEquals(30, normalized.get(1).minutes());
-    assertEquals(60, normalized.get(2).minutes());
+    assertEquals(25, normalized.get(1).minutes());
+    assertEquals(45, normalized.get(2).minutes());
 
     List<MysteryBoxLootItem> exceedingCap = List.of(
-        new MysteryBoxLootItem("Maratona", "gamepad", 240),
-        new MysteryBoxLootItem("Vídeo", "clapperboard", 30),
+        new MysteryBoxLootItem("Maratona", "gamepad", 20),
+        new MysteryBoxLootItem("Vídeo", "clapperboard", 25),
         new MysteryBoxLootItem("Jogo", "gamepad", 45)
     );
 

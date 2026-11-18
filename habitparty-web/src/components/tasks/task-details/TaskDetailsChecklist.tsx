@@ -7,6 +7,7 @@ import {
   ChecklistItemRow,
   useChecklistInlineEdit,
 } from "@/components/tasks/shared/ChecklistEditor";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import type { ChecklistItem } from "@/types/task";
 import { cn } from "@/utils";
 
@@ -87,18 +88,15 @@ export function TaskDetailsChecklist({
         </div>
 
         {totalCount > 0 && (
-          <div
-            aria-hidden="true"
-            className="w-full h-1.5 rounded-full bg-neutral-700/40 dark:bg-white/8 overflow-hidden"
-          >
-            <div
-              className={cn(
-                "h-full w-full origin-left rounded-full transition-[transform,background-color] duration-300",
-                isAllDone ? "bg-success-500" : "bg-gold",
-              )}
-              style={{ transform: `scaleX(${progressPercent / 100})` }}
-            />
-          </div>
+          <ProgressBar
+            decorative
+            percent={progressPercent}
+            className="h-1.5 bg-neutral-700/40 dark:bg-white/8"
+            fillClassName={cn(
+              "rounded-full transition-[transform,background-color] duration-300",
+              isAllDone ? "bg-success-500" : "bg-gold",
+            )}
+          />
         )}
       </div>
       <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-0.5">

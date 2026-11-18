@@ -104,6 +104,7 @@ public abstract class Task {
 
   protected static final BigDecimal HALF_RATE = new BigDecimal("0.50");
   protected static final BigDecimal ADAPTATION_RATE = new BigDecimal("0.75");
+  protected static final BigDecimal DAILY_CONSISTENCY_BONUS_RATE = new BigDecimal("1.10");
   protected static final BigDecimal MIN_COINS = new BigDecimal("0.01");
 
   // Calcula a penalidade do modo Hardcore

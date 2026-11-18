@@ -23,7 +23,7 @@ public final class FocusRewardCalculator {
   private static BaseReward calculateStopwatchBase(int minutes) {
     double xp = (minutes / 30.0) * 7.0;
     BigDecimal coins = BigDecimal.valueOf(minutes)
-        .multiply(new BigDecimal("0.40"))
+        .multiply(new BigDecimal("0.45"))
         .divide(BigDecimal.valueOf(30), 4, RoundingMode.HALF_UP);
     return new BaseReward(xp, coins);
   }
@@ -43,13 +43,13 @@ public final class FocusRewardCalculator {
           completedPomos * 4.0,
           new BigDecimal("0.25").multiply(BigDecimal.valueOf(completedPomos)));
     }
-    if (minutesPerPomo <= 40) {
-      // Pomodoro padrão (25 a 40 min)
+    if (minutesPerPomo < 50) {
+      // Pomodoro padrão (25 a 49 min)
       return new BaseReward(
           completedPomos * 8.0,
           new BigDecimal("0.50").multiply(BigDecimal.valueOf(completedPomos)));
     }
-    // Pomodoro longo / Deep work (> 40 min)
+    // Pomodoro longo / Deep work (>= 50 min)
     return new BaseReward(
         completedPomos * 15.0,
         new BigDecimal("1.00").multiply(BigDecimal.valueOf(completedPomos)));
@@ -104,7 +104,7 @@ public final class FocusRewardCalculator {
           .multiply(new BigDecimal("0.30"))
           .divide(BigDecimal.valueOf(30), 4, RoundingMode.HALF_UP);
     } else {
-      // STOPWATCH (Cronômetro Livre): ~7 XP e 0,40 moedas a cada bloco de 30 minutos
+      // STOPWATCH (Cronômetro Livre): ~7 XP e 0,45 moedas a cada bloco de 30 minutos
       BaseReward stopwatchBase = calculateStopwatchBase(effectiveMinutes);
       baseXp = stopwatchBase.xp();
       baseCoins = stopwatchBase.coins();

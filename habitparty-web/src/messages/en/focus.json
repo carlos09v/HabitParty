@@ -72,8 +72,18 @@
       "title": "Delete Activity",
       "question": "Do you really want to delete the activity <strong>\"{name}\"</strong>? By default, previous sessions and History are preserved.",
       "confirm": "Yes, delete",
+      "cancel": "Cancel",
       "deleteHistoryLabel": "Also delete sessions and History",
-      "deleteHistoryHint": "Removes all sessions of this activity and their history entries. Coins and XP already earned are not changed."
+      "deleteHistoryHint": "Removes all sessions of this activity, their history entries, and reverts earned XP, coins, and linked task minutes.",
+      "summaryLoading": "Calculating deletion impact...",
+      "summarySessions": "{count, plural, one {# recorded session} other {# recorded sessions}}",
+      "summaryPreserveNote": "Preserved on your profile and history if you confirm without checking below:",
+      "summaryRevertWarning": "Total value to lose when deleting full history:",
+      "xpLabel": "XP",
+      "xpProductivityLabel": "pts",
+      "goldLabel": "Gold",
+      "goldProductivityLabel": "Credits",
+      "nonNegativeFloorNote": "Your balance never goes negative: if your current balance is lower, it is clamped at 0 (and your XP never drops below your current rank floor)."
     },
     "toasts": {
       "deleteActivitySuccess": "Activity deleted successfully.",

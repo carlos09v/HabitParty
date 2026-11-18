@@ -25,9 +25,12 @@ import com.habitparty.application.ports.InventoryItemRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.core.domain.entities.InventoryItem;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.focus.FocusRecord;
 import com.habitparty.core.domain.enums.FocusRecordType;
+import com.habitparty.core.domain.enums.InventoryItemStatus;
+import com.habitparty.core.domain.enums.RewardType;
 import com.habitparty.core.domain.enums.UserGender;
 import com.habitparty.core.domain.enums.UserLevel;
 import com.habitparty.core.domain.enums.UserRole;
@@ -197,5 +200,47 @@ class DeleteFocusRecordUseCaseTest {
 
     assertEquals(30, user.getStats().getLongestFocusSessionMinutes());
     assertEquals(0, user.getStats().getTotalNightFocusSessions());
+  }
+
+  @Test
+  @DisplayName("Deve reembolsar segundos exatos (não truncados para minutos) e reativar cupom esgotado")
+  void shouldRefundExactSecondsForInventoryCouponRecord() {
+    UUID itemId = UUID.randomUUID();
+    InventoryItem coupon = new InventoryItem(
+        itemId,
+        userId,
+        UUID.randomUUID(),
+        "Cupom Série",
+        new BigDecimal("5.00"),
+        RewardType.TIME_BASED,
+        InventoryItemStatus.CONSUMED,
+        0,
+        "tv",
+        null,
+        0,
+        LocalDateTime.of(2026, 10, 15, 10, 0));
+
+    LocalDateTime start = LocalDateTime.of(2026, 10, 16, 10, 0, 0);
+    LocalDateTime end = LocalDateTime.of(2026, 10, 16, 10, 25, 45);
+    FocusRecord record = new FocusRecord(
+        recordId,
+        userId,
+        null,
+        itemId,
+        "Episódio",
+        start,
+        end,
+        FocusRecordType.STOPWATCH,
+        null);
+
+    when(port.findById(recordId)).thenReturn(Optional.of(record));
+    when(inventoryItemPort.findById(itemId)).thenReturn(Optional.of(coupon));
+
+    useCase.execute(userId, recordId, false);
+
+    assertEquals(Optional.of(1545), coupon.getRemainingSeconds());
+    assertEquals(InventoryItemStatus.AVAILABLE, coupon.getStatus());
+    verify(inventoryItemPort).save(coupon);
+    verify(userPort, never()).findById(any());
   }
 }

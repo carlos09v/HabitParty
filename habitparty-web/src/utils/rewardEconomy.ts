@@ -34,7 +34,7 @@ export function calculateSuggestedCouponPrice(minutes: number): number {
 }
 
 export type RewardEffortDescriptor =
-  | { key: "free" }
+  | { key: "invalidZero" }
   | { key: "easyTasks"; count: number }
   | { key: "hardSingleTask" }
   | { key: "mediumTasks"; count: number }
@@ -70,7 +70,7 @@ export function describeEffortEquivalence(
   price: number,
 ): RewardEffortDescriptor {
   if (!Number.isFinite(price) || price <= 0) {
-    return { key: "free" };
+    return { key: "invalidZero" };
   }
 
   const easyGold = DIFFICULTY_REWARDS.EASY.gold; // 0.75
@@ -172,7 +172,7 @@ export function analyzeRewardPrice({
   }
 
   // SingleUse: guia sem engessar itens reais maiores
-  if (safePrice < 2) {
+  if (safePrice < 1) {
     return {
       suggestedPrice: null,
       effort,

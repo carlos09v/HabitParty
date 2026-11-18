@@ -1,4 +1,5 @@
 import { useTranslations } from "next-intl";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 
 interface DemoPlayerHeaderProps {
   level: number;
@@ -44,12 +45,12 @@ export function DemoPlayerHeader({ level, xp, maxXp }: DemoPlayerHeaderProps) {
             {xpPercent}%
           </span>
         </div>
-        <div className="w-full h-3 rounded-full bg-neutral-700/60 dark:bg-neutral-900/80 border border-neutral-700 dark:border-white/10 overflow-hidden relative">
-          <div
-            className="h-full w-full origin-left rounded-full bg-gradient-to-r from-primary via-primary-light to-gold transition-transform duration-500 dark:shadow-glow-gold-sm"
-            style={{ transform: `scaleX(${xpPercent / 100})` }}
-          />
-        </div>
+        <ProgressBar
+          percent={xpPercent}
+          className="h-3 bg-neutral-700/60 dark:bg-neutral-900/80 border border-neutral-700 dark:border-white/10 relative"
+          fillClassName="rounded-full bg-gradient-to-r from-primary via-primary-light to-gold transition-transform duration-500 dark:shadow-glow-gold-sm"
+          ariaLabel={t("xpProgressLabel")}
+        />
       </div>
     </div>
   );

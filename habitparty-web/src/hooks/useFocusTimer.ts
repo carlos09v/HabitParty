@@ -2,11 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect } from "react";
-import {
-  DEFAULT_LONG_BREAK_MINUTES,
-  DEFAULT_SHORT_BREAK_MINUTES,
-  FOCUS_REWARD_RULES,
-} from "@/constants/focus";
+import { FOCUS_REWARD_RULES } from "@/constants/focus";
 import {
   setFocusTimerTranslators,
   useFocusTimerStore,
@@ -18,9 +14,13 @@ import {
   getFocusOvertimeSeconds,
   getFocusProgressPercent,
   getFocusTimerDerivedState,
+  getNextFocusBreakMinutes,
   isFocusOvertime,
 } from "@/utils/focusFormatters";
 import { setFocusBrowserTranslations } from "@/utils/focusTimerBrowser";
+
+let lastRegisteredStoreTranslator: unknown = null;
+let lastRegisteredNotificationsTranslator: unknown = null;
 
 interface UseFocusTimerOptions {
   onSessionSaved?: () => void;
@@ -79,9 +79,7 @@ export function useFocusTimerControls({
       s.elapsedSeconds >= FOCUS_REWARD_RULES.MAX_EFFECTIVE_MINUTES * 60,
   );
   const nextBreakMinutes = useFocusTimerStore((s) =>
-    (s.completedCycles + 1) % 4 === 0
-      ? DEFAULT_LONG_BREAK_MINUTES
-      : DEFAULT_SHORT_BREAK_MINUTES,
+    getNextFocusBreakMinutes(s.completedCycles),
   );
 
   const toggleTimer = useFocusTimerStore((s) => s.toggleTimer);
@@ -119,6 +117,14 @@ export function useFocusTimerControls({
   );
 
   useEffect(() => {
+    if (
+      lastRegisteredStoreTranslator === tStore &&
+      lastRegisteredNotificationsTranslator === tNotifications
+    ) {
+      return;
+    }
+    lastRegisteredStoreTranslator = tStore;
+    lastRegisteredNotificationsTranslator = tNotifications;
     setFocusTimerTranslators({
       store: (key, values) => tStore(key as never, values as never),
       notifications: (key, values) =>

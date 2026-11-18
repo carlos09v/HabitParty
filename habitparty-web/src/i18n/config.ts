@@ -11,6 +11,15 @@ export function isValidLocale(value?: string | null): value is AppLocale {
 }
 
 /**
+ * Converte o locale da aplicação para a tag BCP 47 usada pelas APIs `Intl`.
+ */
+export function toIntlLocale(
+  locale?: AppLocale | string | null,
+): "en-US" | "pt-BR" {
+  return locale === "en" ? "en-US" : "pt-BR";
+}
+
+/**
  * Resolve o idioma a partir do cabeçalho Accept-Language do navegador.
  * Regra: se o idioma preferido começar com "pt", usa "pt-BR";
  * caso contrário (ou se não for identificado nada), o padrão é sempre "en".

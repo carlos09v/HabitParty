@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { getLocale, getTranslations } from "next-intl/server";
 import { REMINDER_OFFSET_DAYS } from "@/constants/task";
-import { DEFAULT_LOCALE, isValidLocale } from "@/i18n/config";
+import { DEFAULT_LOCALE, isValidLocale, toIntlLocale } from "@/i18n/config";
 import { getDashboardTransactions } from "@/services/dashboardService";
 import { getRawInventoryItems } from "@/services/inventoryService";
 import { getSocialNotifications } from "@/services/socialService";
@@ -51,7 +51,7 @@ function formatRelativeSocialTimestamp(
 
   const diffSeconds = Math.round((parsed.getTime() - Date.now()) / 1000);
   const absSeconds = Math.abs(diffSeconds);
-  const rtf = getRelativeTimeFormatter(locale === "en" ? "en-US" : "pt-BR");
+  const rtf = getRelativeTimeFormatter(toIntlLocale(locale));
 
   if (absSeconds < 60) {
     return rtf.format(0, "second");

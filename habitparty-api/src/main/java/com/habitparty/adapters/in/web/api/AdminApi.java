@@ -8,6 +8,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,6 +18,7 @@ import com.habitparty.adapters.in.web.dtos.response.UserResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.admin.AdminOverviewDTO;
 import com.habitparty.adapters.in.web.dtos.response.admin.AdminUserDetailDTO;
 import com.habitparty.adapters.in.web.dtos.response.admin.AdminUserSummaryDTO;
+import com.habitparty.adapters.in.web.dtos.response.admin.FocusRewardRecalculationResponseDTO;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -51,5 +53,13 @@ public interface AdminApi {
       @PathVariable UUID userId,
       @Valid @RequestBody UpdateUserRoleRequestDTO request,
       @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
+  );
+
+  @Operation(
+      summary = "Recalcular Recompensas e Datas do Histórico de Foco",
+      description = "Alinha datas retroativas FOCUS_COMPLETED no histórico com endTime da sessão e aplica acréscimos positivos de XP/moedas conforme a economia atual.")
+  @PostMapping("/focus/recalculate-rewards")
+  ResponseEntity<FocusRewardRecalculationResponseDTO> recalculateFocusRewards(
+      @RequestParam(defaultValue = "true") boolean dryRun
   );
 }

@@ -135,7 +135,7 @@ export function FocusManualRecordModal({
                       value: "ITEM",
                       label: t("backpackOption"),
                       icon: Backpack,
-                      badge: backpackItems.length,
+                      badge: form.availableBackpackItems.length,
                     },
                   ]}
                 />
@@ -225,14 +225,14 @@ export function FocusManualRecordModal({
                       </span>
                     }
                     placeholder={
-                      backpackItems.length === 0
+                      form.availableBackpackItems.length === 0
                         ? t("noItemsAvailable")
                         : t("selectItemPlaceholder")
                     }
                     emptyMessage={t("noItemsAvailable")}
                     value={form.selectedItemId}
                     onChange={form.handleSelectBackpackItem}
-                    options={backpackItems.map((item) => {
+                    options={form.availableBackpackItems.map((item) => {
                       const mins = getItemRemainingMinutes(
                         item.remainingSeconds,
                       );

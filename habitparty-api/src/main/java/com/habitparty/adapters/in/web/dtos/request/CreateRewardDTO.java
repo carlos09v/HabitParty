@@ -12,7 +12,7 @@ import com.habitparty.core.domain.enums.RewardType;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 public record CreateRewardDTO(
@@ -27,7 +27,7 @@ public record CreateRewardDTO(
   String description,
 
   @NotNull(message = "O preço é obrigatório")
-  @PositiveOrZero(message = "O preço não pode ser negativo")
+  @Positive(message = "O preço deve ser maior que zero")
   BigDecimal price,
 
   @JsonSetter(nulls = Nulls.SKIP) // Isso diz: se vier nulo ou vazio de forma estranha, ignore

@@ -33,6 +33,7 @@ interface FocusSidebarRightProps {
     recordId: string,
     deleteHistory: boolean,
   ) => void | Promise<void>;
+  onRecordUpdated?: (updatedRecord: FocusRecord) => void;
   selectedActivityName?: string | null;
   onClearSelectedActivity?: () => void;
   isCompact?: boolean;
@@ -57,6 +58,7 @@ export function FocusSidebarRight({
   onAddRecord,
   onOptionsClick,
   onDeleteRecord,
+  onRecordUpdated,
   selectedActivityName,
   onClearSelectedActivity,
   isCompact = false,
@@ -101,7 +103,11 @@ export function FocusSidebarRight({
       )}
 
       {/* 1. Visão Geral e Grid de Métricas */}
-      <FocusMetricsGrid metrics={metrics} isCompact={isCompact} />
+      <FocusMetricsGrid
+        metrics={metrics}
+        totalRecordsCount={totalRecordsCount}
+        isCompact={isCompact}
+      />
 
       <div className="h-px w-full bg-neutral-700 dark:bg-white/10 shrink-0" />
 
@@ -130,6 +136,7 @@ export function FocusSidebarRight({
         onAddRecord={onAddRecord}
         onOptionsClick={onOptionsClick}
         onDeleteRecord={onDeleteRecord}
+        onRecordUpdated={onRecordUpdated}
         isCompact={isCompact}
       />
     </aside>

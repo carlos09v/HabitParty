@@ -159,19 +159,35 @@ export function RewardsContainer({
   const resolvedCoins = currentCoins ?? 0;
 
   const filteredRewards = useMemo(() => {
+    const searchLower = filters.search.trim().toLowerCase();
+
     let result = visibleRewardsForMode.filter((r) => {
       if (
-        filters.search &&
-        !r.title.toLowerCase().includes(filters.search.toLowerCase()) &&
-        !r.description.toLowerCase().includes(filters.search.toLowerCase())
+        searchLower &&
+        !r.title.toLowerCase().includes(searchLower) &&
+        !(r.description || "").toLowerCase().includes(searchLower)
       ) {
         return false;
       }
-      if (filters.type && r.type !== filters.type) return false;
-      if (filters.category && r.category !== filters.category) return false;
-      if (filters.packageLevel) {
-        const normalizedPkg = r.packageLevel || "Nenhum";
-        if (normalizedPkg !== filters.packageLevel) return false;
+      if (
+        filters.type &&
+        toRewardTypeMessageKey(r.type) !== toRewardTypeMessageKey(filters.type)
+      ) {
+        return false;
+      }
+      if (
+        filters.category &&
+        toCategoryMessageKey(r.category) !==
+          toCategoryMessageKey(filters.category)
+      ) {
+        return false;
+      }
+      if (
+        filters.packageLevel &&
+        toPackageMessageKey(r.packageLevel) !==
+          toPackageMessageKey(filters.packageLevel)
+      ) {
+        return false;
       }
       if (onlyAffordable && r.price > resolvedCoins) {
         return false;
@@ -184,11 +200,13 @@ export function RewardsContainer({
     } else if (filters.sortBy === "price-desc") {
       result = [...result].sort((a, b) => b.price - a.price);
     } else if (filters.sortBy === "name") {
-      result = [...result].sort((a, b) => a.title.localeCompare(b.title));
+      result = [...result].sort((a, b) =>
+        a.title.localeCompare(b.title, locale),
+      );
     }
 
     return result;
-  }, [visibleRewardsForMode, filters, onlyAffordable, resolvedCoins]);
+  }, [visibleRewardsForMode, filters, onlyAffordable, resolvedCoins, locale]);
 
   const welcomeStats = useMemo(() => {
     const { stats } = calculateRewardWelcomeStats(
@@ -296,7 +314,7 @@ export function RewardsContainer({
           totalVisibleRewardsCount={visibleRewardsForMode.length}
           viewMode={viewMode}
           isCompact={isCompact}
-          currentCoins={currentCoins}
+          currentCoins={resolvedCoins}
           deletingRewardIds={checkingDeleteRewardIds}
           redeemingRewardIds={redeemingRewardIds}
           sensors={sensors}

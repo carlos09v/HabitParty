@@ -1,5 +1,7 @@
 package com.habitparty.application.usecases.task;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -7,6 +9,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,9 +26,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.habitparty.application.ports.FocusRecordRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
+import com.habitparty.application.ports.UserRepository;
+import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.focus.FocusRecord;
 import com.habitparty.core.domain.entities.task.Todo;
 import com.habitparty.core.domain.enums.FocusRecordType;
+import com.habitparty.core.domain.enums.UserGender;
+import com.habitparty.core.domain.enums.UserLevel;
+import com.habitparty.core.domain.enums.UserRole;
 import com.habitparty.core.domain.enums.task.TaskDifficulty;
 import com.habitparty.core.domain.enums.task.TaskPriority;
 import com.habitparty.core.domain.enums.task.TaskStatus;
@@ -44,6 +52,9 @@ class DeleteTaskUseCaseTest {
   @Mock
   private FocusRecordRepository focusRecordPort;
 
+  @Mock
+  private UserRepository userPort;
+
   private DeleteTaskUseCase useCase;
 
   private UUID userId;
@@ -56,6 +67,7 @@ class DeleteTaskUseCaseTest {
     taskId = UUID.randomUUID();
     useCase = new DeleteTaskUseCase(taskPort, transactionPort);
     useCase.setFocusRecordPort(focusRecordPort);
+    useCase.setUserPort(userPort);
 
     todoTask = new Todo(
         taskId,
@@ -150,6 +162,64 @@ class DeleteTaskUseCaseTest {
     verify(focusRecordPort, never()).findAllByTaskId(taskId);
     verify(focusRecordPort, never()).deleteAllByIds(anyList());
     verify(transactionPort, never()).deleteAllByReferenceIdAndUserId(taskId, userId);
+    verify(taskPort).deleteById(taskId);
+  }
+
+  @Test
+  @DisplayName("Ao excluir tarefa com deleteHistory=true e registros avulsos premiados, estorna XP/moedas sem negativar")
+  void shouldRevertStandaloneFocusRewardsAndStatsWhenDeleteHistoryIsTrue() {
+    User user = new User(
+        userId,
+        UserRole.USER,
+        false,
+        "Hero",
+        "hero",
+        "hero@habitparty.com",
+        "pwd",
+        new BigDecimal("0.40"),
+        new BigDecimal("1.50"),
+        LocalDate.of(1995, 1, 1),
+        null,
+        UserGender.MALE,
+        105,
+        0,
+        0,
+        LocalDateTime.now());
+    user.getStats().recordFocusCompleted(25, 1);
+
+    UUID standaloneId = UUID.randomUUID();
+    LocalDateTime start = LocalDateTime.of(2026, 10, 16, 10, 0);
+    LocalDateTime end = LocalDateTime.of(2026, 10, 16, 10, 25);
+    FocusRecord standalone = new FocusRecord(
+        standaloneId,
+        userId,
+        null,
+        null,
+        taskId,
+        "Estudar Testes",
+        null,
+        start,
+        end,
+        FocusRecordType.POMO,
+        1,
+        12,
+        new BigDecimal("1.00"));
+
+    when(taskPort.findById(taskId)).thenReturn(Optional.of(todoTask));
+    when(focusRecordPort.findAllByTaskId(taskId)).thenReturn(List.of(standalone));
+    when(userPort.findById(userId)).thenReturn(Optional.of(user));
+    when(focusRecordPort.findMaxProductiveDurationMinutesExcludingRecord(userId, standaloneId)).thenReturn(0);
+
+    useCase.execute(taskId, userId, true);
+
+    assertEquals(UserLevel.APPRENTICE, user.getCurrentLevel());
+    assertEquals(100, user.getTotalXp());
+    assertEquals(0, BigDecimal.ZERO.compareTo(user.getCurrentCoins()));
+    assertEquals(0, new BigDecimal("0.50").compareTo(user.getTotalGoldEarned()));
+    assertEquals(0, user.getStats().getTotalFocusMinutes());
+    assertEquals(0, user.getStats().getTotalFocusSessions());
+    verify(userPort).save(user);
+    verify(focusRecordPort).deleteAllByIds(List.of(standaloneId));
     verify(taskPort).deleteById(taskId);
   }
 }

@@ -10,7 +10,7 @@ import {
   markAchievementsSeenAction,
 } from "@/actions/showcaseActions";
 import { AchievementIcon } from "@/components/showcase/AchievementIcon";
-import { RARITY_THEMES } from "@/constants/achievements";
+import { getRarityTheme } from "@/constants/achievements";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useUserStore } from "@/store/userStore";
 import type { AchievementRarity } from "@/types/showcase";
@@ -129,8 +129,7 @@ export function AchievementUnlockListener() {
 
         // Exibe toast celebratório para até 3 conquistas simultâneas
         freshUnseen.slice(0, 3).forEach((achievement) => {
-          const theme =
-            RARITY_THEMES[achievement.rarity] || RARITY_THEMES.COMMON;
+          const theme = getRarityTheme(achievement.rarity);
           const { title, description } = resolveAchievementCopy(
             achievement,
             isGamified,

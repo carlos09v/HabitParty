@@ -351,6 +351,8 @@
       "startDatePlaceholder": "Definir data inicial...",
       "repeatLabel": "Repetição",
       "everyLabel": "A cada ({unit})",
+      "decreaseIntervalAria": "Diminuir intervalo em 1 ({unit})",
+      "increaseIntervalAria": "Aumentar intervalo em 1 ({unit})",
       "units": {
         "DAILY": "dias",
         "WEEKLY": "semanas",
@@ -487,6 +489,7 @@
       "markCompletedAria": "Marcar como concluída",
       "dailyBadge": "Diária",
       "streakTitle": "Ofensiva de {streak} dia(s)",
+      "streakCyclesTitle": "Ofensiva de {streak} ciclo(s) agendado(s)",
       "editFullAria": "Editar detalhes completos da tarefa",
       "editFullTitle": "Editar tarefa completa",
       "closeAria": "Fechar",

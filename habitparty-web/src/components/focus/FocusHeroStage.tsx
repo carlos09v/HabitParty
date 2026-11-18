@@ -4,19 +4,17 @@ import {
   CheckCircle2,
   Coffee,
   FastForward,
-  ListTodo,
   Loader2,
   Lock,
   Pause,
   Play,
   RotateCcw,
   Sparkles,
-  Timer,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { memo, useCallback, useEffect, useState } from "react";
-import { getFocusIcon, MAX_FOCUS_ACTIVITIES_FREE } from "@/constants/focus";
+import { MAX_FOCUS_ACTIVITIES_FREE } from "@/constants/focus";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import {
   useFocusSessionNotes,
@@ -31,7 +29,7 @@ import type {
 } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn } from "@/utils";
-import { getRewardIcon } from "@/utils/rewardMapper";
+import { resolveFocusTargetIcon } from "@/utils/focusIcons";
 import { FocusDurationPresets } from "./stage/FocusDurationPresets";
 import { FocusStageHeaderBar } from "./stage/FocusStageHeaderBar";
 import { FocusStageTaskSlot } from "./stage/FocusStageTaskSlot";
@@ -151,13 +149,7 @@ export function FocusHeroStage({
   const handleChangeMode = propOnChangeMode ?? controls.changeMode;
   const isBreak = phase === "SHORT_BREAK" || phase === "LONG_BREAK";
   const isInventoryItem = target?.type === "inventory";
-  const TargetIcon = isInventoryItem
-    ? getRewardIcon(target?.icon, "TimeBased")
-    : target?.type === "task"
-      ? ListTodo
-      : target?.icon
-        ? getFocusIcon(target.icon)
-        : Timer;
+  const TargetIcon = resolveFocusTargetIcon(target);
 
   const targetActivityIndex =
     target?.type === "activity"
@@ -303,6 +295,10 @@ export function FocusHeroStage({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+
+      if (document.querySelector("[role='dialog'][aria-modal='true']")) {
+        return;
+      }
 
       const activeEl = document.activeElement as HTMLElement | null;
       if (

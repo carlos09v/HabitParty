@@ -1,4 +1,5 @@
 import { HardDrive } from "lucide-react";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import { cn } from "@/utils";
 import {
   calculateStoragePercentage,
@@ -53,21 +54,19 @@ export function StorageUsageBar({
         <span className="text-tiny text-neutral-400">/ {limitFormatted}</span>
       </div>
 
-      <div className="w-full h-1.5 rounded-full bg-neutral-700 dark:bg-neutral-800 overflow-hidden">
-        <div
-          className={cn(
-            "h-full w-full origin-left rounded-full transition-transform duration-300",
-            percentage >= 80
-              ? "bg-danger-500"
-              : percentage >= 50
-                ? "bg-warning-500"
-                : "bg-success-500",
-          )}
-          style={{
-            transform: `scaleX(${Math.max(percentage, 2) / 100})`,
-          }}
-        />
-      </div>
+      <ProgressBar
+        percent={percentage}
+        minVisualPercent={2}
+        className="h-1.5 bg-neutral-700 dark:bg-neutral-800"
+        fillClassName={cn(
+          "rounded-full transition-transform duration-300",
+          percentage >= 80
+            ? "bg-danger-500"
+            : percentage >= 50
+              ? "bg-warning-500"
+              : "bg-success-500",
+        )}
+      />
 
       {quotaLabel && (
         <span className="text-tiny text-neutral-400 font-normal">

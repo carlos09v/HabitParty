@@ -351,6 +351,8 @@
       "startDatePlaceholder": "Set start date...",
       "repeatLabel": "Repeat",
       "everyLabel": "Every ({unit})",
+      "decreaseIntervalAria": "Decrease interval by 1 ({unit})",
+      "increaseIntervalAria": "Increase interval by 1 ({unit})",
       "units": {
         "DAILY": "days",
         "WEEKLY": "weeks",
@@ -487,6 +489,7 @@
       "markCompletedAria": "Mark as completed",
       "dailyBadge": "Daily",
       "streakTitle": "{streak}-day streak",
+      "streakCyclesTitle": "{streak} scheduled completion(s) streak",
       "editFullAria": "Edit full task details",
       "editFullTitle": "Edit full task",
       "closeAria": "Close",

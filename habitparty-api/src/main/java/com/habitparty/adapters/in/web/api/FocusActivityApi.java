@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import com.habitparty.adapters.in.web.dtos.request.CreateFocusActivityDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateFocusActivityDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateFocusActivityOrderDTO;
+import com.habitparty.adapters.in.web.dtos.response.FocusActivityDeletionSummaryResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.FocusActivityResponseDTO;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
@@ -42,6 +43,13 @@ public interface FocusActivityApi {
     ResponseEntity<FocusActivityResponseDTO> update(
         @PathVariable UUID activityId,
         @RequestBody @Valid UpdateFocusActivityDTO dto,
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
+    );
+
+    @Operation(summary = "Resumo de Exclusão de Atividade", description = "Retorna total de sessões, XP e moedas vinculadas à atividade.")
+    @GetMapping("/{activityId}/deletion-summary")
+    ResponseEntity<FocusActivityDeletionSummaryResponseDTO> getDeletionSummary(
+        @PathVariable UUID activityId,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 

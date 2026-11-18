@@ -65,3 +65,10 @@ export function getAvatarFrame(id?: string): AvatarFrameOption {
   const found = AVATAR_FRAMES.find((f) => f.id === id);
   return found || AVATAR_FRAMES[0];
 }
+
+/**
+ * Normaliza uma string opcional de moldura para um `AvatarFrameId` válido.
+ */
+export function resolveAvatarFrameId(frame?: string | null): AvatarFrameId {
+  return getAvatarFrame(frame ?? undefined).id;
+}

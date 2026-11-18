@@ -56,6 +56,8 @@
     }
   },
   "header": {
+    "defaultDisplayNameGamified": "Adventurer",
+    "defaultDisplayNameEssential": "Member",
     "badgeGamified": "Adventurer Showcase",
     "badgeEssential": "Performance Showcase",
     "visitorModeActive": "Visitor View",
@@ -82,6 +84,7 @@
     "unlockedCountLabel": "{unlocked} of {total} medals",
     "xpProgressLabel": "{xp} total XP • {remaining} XP to {nextTitle}",
     "maxLevelReached": "Max Level Reached ({xp} XP)",
+    "openProgressionHint": "View rank pyramid",
     "shareCardButton": "Card & Share",
     "viewRetrospectiveCta": "{year} Retrospective",
     "retrospectiveBannerTitle": "Your {year} Retrospective is ready!",
@@ -625,6 +628,7 @@
   "tabs": {
     "navAria": "Profile Sections",
     "overview": "Showcase & Medals",
+    "progression": "Progression",
     "friends": "Friends ({count})",
     "friendsPending": "{count} new",
     "retrospective": "Retrospective"
@@ -796,5 +800,92 @@
     "ownProfileNotice": "This is your public profile.",
     "openOwnEditor": "Edit My Showcase",
     "downloadCardBtn": "Download Card"
+  },
+  "progression": {
+    "titleGamified": "Rank Pyramid & Ascent",
+    "titleEssential": "Progression Ladder & Tiers",
+    "subtitleGamified": "From Novice to Legend: see where you stand in the hierarchy, how much XP remains to the apex, and track friends along the climb.",
+    "subtitleEssential": "Track all 10 cumulative XP milestones, consistency eras, and the estimated effort to reach the next rank.",
+    "summaryCards": {
+      "currentRankLabel": "Current Rank",
+      "totalXpLabel": "Lifetime XP",
+      "nextMilestoneLabel": "Next Milestone",
+      "nextMilestoneMax": "Apex Reached",
+      "unlockedTiersLabel": "{unlocked} of {total} ranks",
+      "remainingXpHint": "{xp} XP left"
+    },
+    "pyramid": {
+      "navAria": "Progression pyramid tiers",
+      "rankNumberLabel": "Tier {rank}/10",
+      "youBadge": "You are here",
+      "playerBadge": "Current rank",
+      "unlockedBadge": "Reached",
+      "lockedBadge": "Locked",
+      "friendsHereAria": "View {count} {count, plural, one {friend} other {friends}} at this rank",
+      "friendsHereTitle": "Friends at this rank ({count})",
+      "friendXpMeta": "{xp} XP",
+      "viewFriendProfile": "Visit showcase",
+      "xpThresholdLabel": "{minXp} XP"
+    },
+    "eras": {
+      "foundation": "Era I • Foundation",
+      "consistency": "Era II • Consistency",
+      "mastery": "Era III • Mastery",
+      "apex": "Era IV • Elite & Apex"
+    },
+    "inspector": {
+      "headerTitle": "Selected Rank Breakdown",
+      "selectHint": "Select any tier in the pyramid to simulate the effort needed to reach it.",
+      "thresholdRange": "{minXp} XP to {maxXp} XP",
+      "topRankRange": "Starting at {minXp} XP (Max Tier)",
+      "statusUnlocked": "Tier Unlocked",
+      "statusCurrent": "Your Current Rank",
+      "statusLocked": "Upcoming Goal",
+      "modeSubtitle": "Equivalent in {mode}: {title}",
+      "adventureModeName": "Adventure Mode",
+      "essentialModeName": "Essential Mode",
+      "tierProgressLabel": "Progress in this rank",
+      "alreadyReachedDesc": "You have already cleared this tier's threshold! Keep climbing toward higher ranks.",
+      "topReachedDesc": "You reached the highest rank in HabitParty! Every tier in the pyramid is unlocked.",
+      "remainingToUnlock": "{xp} XP needed to unlock {title}"
+    },
+    "simulator": {
+      "title": "Effort Simulator for This Rank",
+      "infoTitle": "How is this calculated?",
+      "infoDesc": "Estimates use real in-app reward math (+15 XP per Medium task, +30 XP per Hard task, +10 XP per Normal habit, +8 XP per Standard Pomodoro, and +15 XP per 50m+ Deep Work).",
+      "paceLabel": "Your daily pace:",
+      "paceUnit": "XP/day",
+      "estimatedTimeLabel": "Estimated time at selected pace:",
+      "daysEstimate": "~{days} {days, plural, one {day} other {days}}",
+      "readyNow": "Already unlocked!",
+      "mediumTasks": "Medium Tasks",
+      "hardTasks": "Hard Tasks",
+      "normalHabits": "Normal Habits",
+      "standardPomos": "Standard Pomodoros",
+      "deepWorkPomos": "Deep Work (50m+)",
+      "xpPerAction": "+{xp} XP each"
+    },
+    "achievement": {
+      "title": "Linked Milestone Achievement",
+      "unlockedStatus": "Medal unlocked",
+      "lockedStatus": "Still locked",
+      "pointsValue": "+{points} pts",
+      "noAchievementRank": "This tier is a pure progression milestone with no separate achievement medal."
+    },
+    "sourcesGuide": {
+      "title": "XP Sources (never spent in the Store)",
+      "tooltipTitle": "How do you climb the pyramid?",
+      "tooltipAria": "Learn how to earn XP and advance your rank",
+      "tooltipIntro": "Unlike coins (🪙), XP is lifetime-cumulative and is never deducted when redeeming rewards in the Store:",
+      "tasksLabel": "• To-Dos:",
+      "tasksDesc": "From +2 XP (Trivial) up to +30 XP (Hard) at 100% base value when completed on time.",
+      "dailiesLabel": "• Dailies:",
+      "dailiesDesc": "100% difficulty XP on scheduled days + a +10% consistency bonus after 14 consecutive completions.",
+      "habitsLabel": "• Habits (+):",
+      "habitsDesc": "From +5 XP (Low) up to +25 XP (High) to reinforce daily momentum.",
+      "focusLabel": "• Focus Sessions:",
+      "focusDesc": "Standard Pomodoro (+8 XP/cycle), Deep Work 50m+ (+15 XP/cycle), and Free Stopwatch (+7 XP per 30m).",
+      "noSpendNote": "💡 Only Hardcore penalties (or negative habits within a tier) affect XP, and a floor lock prevents demoting below your current rank."
+    }
   }
 }

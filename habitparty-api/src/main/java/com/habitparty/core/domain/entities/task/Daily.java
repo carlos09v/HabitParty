@@ -19,6 +19,8 @@ import com.habitparty.core.domain.enums.task.TaskType;
 import com.habitparty.core.exceptions.DomainValidationException;
 
 public class Daily extends Task {
+  public static final int CONSISTENCY_BONUS_THRESHOLD = 14;
+
   private int currentStreak;
   private LocalDate startDate;
   private DailyRepeatType repeatType;
@@ -208,6 +210,7 @@ public class Daily extends Task {
 
     // Qual é a data base para calcular o novo vencimento?
     LocalDate today = todayReference != null ? todayReference : LocalDate.now();
+    this.refreshStreakForDate(today);
 
     // Se a tarefa começou no passado, calculamos do dia de hoje pra frente.
     // Se ela vai começar no futuro, usamos a data de início dela.
@@ -264,10 +267,8 @@ public class Daily extends Task {
       return false;
     }
     LocalDate effectiveDate = referenceDate != null ? referenceDate : LocalDate.now();
-    if (this.getStatus() == TaskStatus.PENDING
-        && this.dueDate != null
-        && this.dueDate.isBefore(effectiveDate)) {
-      return false;
+    if (this.getStatus() == TaskStatus.PENDING && this.dueDate != null) {
+      return !this.dueDate.isBefore(effectiveDate);
     }
     if (this.lastCompletedAt != null) {
       LocalDate lastDate = this.lastCompletedAt.toLocalDate();
@@ -313,33 +314,25 @@ public class Daily extends Task {
       case HARD -> new BigDecimal("5.00");
     };
 
-    // 2. Threshold baseado na frequência (Semelhante ao Hábito, mas usa o repeatType)
-    int daysToForm = switch (this.repeatType) {
-      case DAILY -> 21; // 21 repetições para tornar rotina
-      case WEEKLY -> 8; // 8 semanas
-      case MONTHLY -> 6; // 6 meses
-      case YEARLY -> 3; // 3 anos
-    };
-
-    int adaptationThreshold = Math.max(1, daysToForm / 3);
+    // 2. Bônus de consistência de +10% após 14 execuções seguidas nos dias agendados (sem decaimento)
     int effectiveStreak = getEffectiveStreak(referenceDate);
+    BigDecimal multiplier = effectiveStreak >= CONSISTENCY_BONUS_THRESHOLD
+        ? DAILY_CONSISTENCY_BONUS_RATE
+        : BigDecimal.ONE;
 
-    // 3. Aplica o decaimento baseado no Streak efetivo
-    BigDecimal multiplier = BigDecimal.ONE;
-    if (effectiveStreak >= daysToForm) {
-      multiplier = HALF_RATE; // Rotina cravada: paga 50%
-    } else if (effectiveStreak >= adaptationThreshold) {
-      multiplier = ADAPTATION_RATE; // Adaptação: paga 75%
-    }
-
-    int finalXp = Math.max(1, BigDecimal.valueOf(baseXp).multiply(multiplier).intValue());
-    
-    BigDecimal finalCoins = baseCoins
+    int finalXp = Math.max(
+        1,
+        BigDecimal.valueOf(baseXp)
             .multiply(multiplier)
-            .setScale(2, java.math.RoundingMode.HALF_DOWN);
+            .setScale(0, java.math.RoundingMode.HALF_UP)
+            .intValue());
+
+    BigDecimal finalCoins = baseCoins
+        .multiply(multiplier)
+        .setScale(2, java.math.RoundingMode.HALF_UP);
 
     if (finalCoins.compareTo(MIN_COINS) < 0) {
-        finalCoins = MIN_COINS;
+      finalCoins = MIN_COINS;
     }
 
     return new TaskReward(finalXp, finalCoins);

@@ -13,9 +13,9 @@ import { Pagination } from "@/components/ui/Pagination";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import {
   ACCOUNT_BADGE_DEFINITIONS,
+  getRarityTheme,
   HIGHLIGHT_MODAL_ITEMS_PER_PAGE,
   MAX_SHOWCASE_HIGHLIGHTS,
-  RARITY_THEMES,
 } from "@/constants/achievements";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
@@ -343,7 +343,7 @@ export function ShowcaseHighlightPickerModal({
               <div className="flex flex-col gap-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {paginatedUnlockedAchievements.map((ach) => {
-                    const theme = RARITY_THEMES[ach.rarity];
+                    const theme = getRarityTheme(ach.rarity);
                     const equippedSlot = findEquippedSlotIndex(
                       "ACHIEVEMENT",
                       ach.id,
@@ -431,7 +431,7 @@ export function ShowcaseHighlightPickerModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {ACCOUNT_BADGE_DEFINITIONS.map((badge) => {
                 const unlocked = isAccountBadgeUnlocked(badge.id, user);
-                const theme = RARITY_THEMES[badge.rarity];
+                const theme = getRarityTheme(badge.rarity);
                 const equippedSlot = findEquippedSlotIndex(
                   "ACCOUNT_BADGE",
                   null,
