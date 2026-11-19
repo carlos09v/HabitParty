@@ -16,7 +16,8 @@ public record PublicUserShowcaseResponseDTO(
     boolean canViewAchievements,
     ShowcaseStatsResponseDTO stats,
     List<ProfileHighlightResponseDTO> highlights,
-    List<AchievementItemResponseDTO> achievements) {
+    List<AchievementItemResponseDTO> achievements,
+    List<ArtifactItemResponseDTO> artifacts) {
 
   public static PublicUserShowcaseResponseDTO fromDomain(
       GetPublicUserShowcaseUseCase.PublicUserShowcaseResult result) {
@@ -28,7 +29,9 @@ public record PublicUserShowcaseResponseDTO(
             result.canViewAchievements() ? full.unlockedCount() : 0,
             result.canViewAchievements() ? full.totalAchievements() : 0,
             result.canViewAchievements() ? full.totalAchievementPoints() : 0,
-            result.canViewAchievements() ? full.maxPossiblePoints() : 0)
+            result.canViewAchievements() ? full.maxPossiblePoints() : 0,
+            result.canViewAchievements() ? full.unlockedArtifactsCount() : 0,
+            result.canViewAchievements() ? full.totalArtifactsCount() : 0)
         : null;
     return new PublicUserShowcaseResponseDTO(
         SocialUserSummaryDTO.fromDomain(result.user()),
@@ -39,6 +42,7 @@ public record PublicUserShowcaseResponseDTO(
         result.canViewAchievements(),
         statsDto,
         result.highlights().stream().map(ProfileHighlightResponseDTO::fromDomain).toList(),
-        result.achievements().stream().map(AchievementItemResponseDTO::fromDomain).toList());
+        result.achievements().stream().map(AchievementItemResponseDTO::fromDomain).toList(),
+        result.artifacts().stream().map(ArtifactItemResponseDTO::fromDomain).toList());
   }
 }

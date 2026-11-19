@@ -22,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.habitparty.application.ports.StoragePort;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.domain.entities.achievement.CosmeticCatalog.CosmeticUnlockContext;
 import com.habitparty.core.domain.enums.UserGender;
 import com.habitparty.core.domain.enums.UserRole;
 import com.habitparty.core.exceptions.DomainValidationException;
@@ -112,5 +113,24 @@ class UpdateProfilePhotoUseCaseTest {
     assertEquals(Optional.of("/uploads/old-photo.png"), user.getProfilePhotoUrl());
     verify(userRepository, never()).save(any());
     verify(storagePort, never()).deleteFile(any());
+  }
+
+  @Test
+  @DisplayName("Deve limpar avatarPreset simbólico ao fazer upload de nova foto de perfil")
+  void shouldClearAvatarPresetWhenUploadingNewPhoto() {
+    UUID userId = UUID.randomUUID();
+    User user = createUserWithPhoto(userId, null);
+    user.updateShowcaseProfile(null, null, null, "level_novice", CosmeticUnlockContext.empty());
+    assertEquals(Optional.of("level_novice"), user.getAvatarPreset());
+
+    InputStream stream = new ByteArrayInputStream(new byte[]{1, 2, 3});
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(storagePort.uploadFile(stream, "custom.png", 3L)).thenReturn("/uploads/custom.png");
+
+    updateProfilePhotoUseCase.execute(userId, stream, "custom.png", 3L);
+
+    assertEquals(Optional.of("/uploads/custom.png"), user.getProfilePhotoUrl());
+    assertTrue(user.getAvatarPreset().isEmpty());
+    verify(userRepository).save(user);
   }
 }

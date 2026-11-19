@@ -3,14 +3,19 @@ import {
   DEFAULT_MAX_ACHIEVEMENT_POINTS,
   DEFAULT_TOTAL_ACHIEVEMENTS_COUNT,
 } from "@/constants/achievements";
+import { DEFAULT_TOTAL_ARTIFACTS_COUNT } from "@/constants/artifacts";
 import type {
   AccountBadgeId,
   AchievementItemResponseDTO,
   AchievementRarity,
+  ArtifactItemResponseDTO,
+  ArtifactSummaryDTO,
   HighlightSlotInputDTO,
   ProfileHighlightResponseDTO,
+  ShowcaseStatsResponseDTO,
   UserShowcaseResponseDTO,
 } from "@/types/showcase";
+import type { UserRetrospectiveData } from "@/types/social";
 import type { UserResponseDTO } from "@/types/user";
 
 export type ShowcaseTabId =
@@ -182,7 +187,76 @@ export function isAccountBadgeUnlocked(
 }
 
 /**
- * Resolve os metadados completos de exibição de um slot de destaque (Conquista ou Insígnia).
+ * Resolve o nome, lore e dica de obtenção de um artefato respeitando o modo Gamificado vs Produtividade.
+ */
+export function resolveArtifactCopy(
+  artifact: Pick<ArtifactSummaryDTO, "code">,
+  isGamified: boolean,
+  tArtifacts: CatalogTranslator,
+): { name: string; lore: string; sourceHint: string } {
+  const nameKey = isGamified
+    ? `items.${artifact.code}.name`
+    : `items.${artifact.code}.essentialName`;
+  const loreKey = isGamified
+    ? `items.${artifact.code}.lore`
+    : `items.${artifact.code}.essentialLore`;
+  const hintKey = `items.${artifact.code}.sourceHint`;
+
+  const name = tArtifacts.has(nameKey as never)
+    ? tArtifacts(nameKey as never)
+    : artifact.code;
+  const lore = tArtifacts.has(loreKey as never)
+    ? tArtifacts(loreKey as never)
+    : "";
+  const sourceHint = tArtifacts.has(hintKey as never)
+    ? tArtifacts(hintKey as never)
+    : "";
+
+  return { name, lore, sourceHint };
+}
+
+const STAT_METRIC_META: Record<
+  string,
+  {
+    rarity: AchievementRarity;
+    iconKey: string;
+    extractValue: (stats?: ShowcaseStatsResponseDTO | null) => number;
+  }
+> = {
+  HIGHEST_STREAK: {
+    rarity: "EPIC",
+    iconKey: "flamegold",
+    extractValue: (stats) => stats?.highestStreak ?? 0,
+  },
+  CURRENT_STREAK: {
+    rarity: "RARE",
+    iconKey: "flame",
+    extractValue: (stats) => stats?.currentStreak ?? 0,
+  },
+  TOTAL_TASKS: {
+    rarity: "RARE",
+    iconKey: "checkcircle2",
+    extractValue: (stats) => stats?.totalTasksCompleted ?? 0,
+  },
+  FOCUS_HOURS: {
+    rarity: "EPIC",
+    iconKey: "hourglassgold",
+    extractValue: (stats) => Math.floor((stats?.totalFocusMinutes ?? 0) / 60),
+  },
+  TOTAL_XP: {
+    rarity: "LEGENDARY",
+    iconKey: "sparklesgold",
+    extractValue: (stats) => stats?.totalXp ?? 0,
+  },
+  ACHIEVEMENT_POINTS: {
+    rarity: "LEGENDARY",
+    iconKey: "trophygold",
+    extractValue: (stats) => stats?.achievementPoints ?? 0,
+  },
+};
+
+/**
+ * Resolve os metadados completos de exibição de um slot de destaque (Conquista, Insígnia, Métrica ou Artefato).
  */
 export function resolveHighlightSlotCard(
   item:
@@ -195,11 +269,15 @@ export function resolveHighlightSlotCard(
     | undefined,
   context: {
     achievements: AchievementItemResponseDTO[];
+    artifacts?: ArtifactItemResponseDTO[];
+    stats?: ShowcaseStatsResponseDTO | null;
     isGamified: boolean;
     levelTitle: string;
     currentXp: number;
     tCatalog: CatalogTranslator;
     tBadges: ParametricTranslator;
+    tArtifacts?: CatalogTranslator;
+    tHighlights?: ParametricTranslator;
   },
 ): ResolvedHighlightCard | null {
   if (!item) return null;
@@ -241,6 +319,50 @@ export function resolveHighlightSlotCard(
     };
   }
 
+  if (
+    item.highlightType === "ARTIFACT" &&
+    (item.referenceId || item.highlightKey)
+  ) {
+    const art = context.artifacts?.find(
+      (a) =>
+        (Boolean(item.referenceId) && a.id === item.referenceId) ||
+        (Boolean(item.highlightKey) && a.code === item.highlightKey),
+    );
+    if (!art) return null;
+    const copy = context.tArtifacts
+      ? resolveArtifactCopy(art, context.isGamified, context.tArtifacts)
+      : { name: art.code, lore: "", sourceHint: "" };
+    return {
+      rarity: art.rarity,
+      iconKey: art.iconName,
+      title: copy.name,
+      subtitle: copy.lore || copy.sourceHint,
+    };
+  }
+
+  if (item.highlightType === "STAT_METRIC" && item.highlightKey) {
+    const normalizedKey = item.highlightKey.trim().toUpperCase();
+    const meta = STAT_METRIC_META[normalizedKey];
+    if (!meta) return null;
+    const value = meta.extractValue(context.stats);
+    const title = context.tHighlights
+      ? context.tHighlights(`statMetrics.${normalizedKey}.title` as never)
+      : normalizedKey;
+    const subtitle = context.tHighlights
+      ? context.tHighlights(
+          `statMetrics.${normalizedKey}.subtitle` as never,
+          { value } as never,
+        )
+      : String(value);
+
+    return {
+      rarity: meta.rarity,
+      iconKey: meta.iconKey,
+      title,
+      subtitle,
+    };
+  }
+
   return null;
 }
 
@@ -270,8 +392,73 @@ export function createEmptyShowcaseData(
       maxAchievementPoints: DEFAULT_MAX_ACHIEVEMENT_POINTS,
       unlockedAchievementsCount: 0,
       totalAchievementsCount: DEFAULT_TOTAL_ACHIEVEMENTS_COUNT,
+      unlockedArtifactsCount: 0,
+      totalArtifactsCount: DEFAULT_TOTAL_ARTIFACTS_COUNT,
     },
     highlights: [],
     achievements: [],
+    artifacts: [],
+  };
+}
+
+export interface ResolvedRetrospectiveViewMeta {
+  focusHours: number;
+  bestMonthName: string | null;
+  archetypeTitle: string;
+  archetypeDesc: string;
+  rarestTitle: string | null;
+  rarestRarityLabel: string | null;
+}
+
+/**
+ * Resolve rótulos e métricas derivadas de uma retrospectiva para o painel e o cartão de compartilhamento.
+ */
+export function resolveRetrospectiveViewMeta(
+  retro: UserRetrospectiveData | null | undefined,
+  locale: string,
+  isGamified: boolean,
+  translators: {
+    tRetro: CatalogTranslator;
+    tCatalog: CatalogTranslator;
+    tRarities: CatalogTranslator;
+  },
+): ResolvedRetrospectiveViewMeta {
+  const focusHours = retro
+    ? Math.round((retro.focusMinutes / 60) * 10) / 10
+    : 0;
+  const bestMonthName =
+    retro?.bestMonth && retro.bestMonth >= 1 && retro.bestMonth <= 12
+      ? new Intl.DateTimeFormat(locale, {
+          month: "long",
+          timeZone: "UTC",
+        }).format(new Date(Date.UTC(2024, retro.bestMonth - 1, 1)))
+      : null;
+
+  const archetypeKey = retro?.archetype ?? "RISING_SPARK";
+  const archetypeTitle = isGamified
+    ? translators.tRetro(`archetypes.${archetypeKey}.title` as never)
+    : translators.tRetro(`archetypes.${archetypeKey}.essentialTitle` as never);
+  const archetypeDesc = translators.tRetro(
+    `archetypes.${archetypeKey}.desc` as never,
+  );
+
+  const rarestTitle = resolveRetrospectiveAchievementTitle(
+    retro,
+    isGamified,
+    translators.tCatalog,
+  );
+  const rawRarity = retro?.rarestAchievementRarity;
+  const rarestRarityLabel =
+    rawRarity && translators.tRarities.has(rawRarity as never)
+      ? translators.tRarities(rawRarity as never)
+      : (rawRarity ?? null);
+
+  return {
+    focusHours,
+    bestMonthName,
+    archetypeTitle,
+    archetypeDesc,
+    rarestTitle,
+    rarestRarityLabel,
   };
 }

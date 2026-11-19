@@ -28,14 +28,10 @@ function resolveInitialBirthDate(
     gender?: string | null;
   } | null,
 ): string {
-  if (!user?.birthDate) return "";
-  if (user.birthDate === "2000-01-01" && user.gender === "PREFER_NOT_TO_SAY") {
-    return "";
-  }
-  return user.birthDate;
+  return user?.birthDate || "";
 }
 
-export function ProfileForm({ initialUser, isCompact }: ProfileFormProps) {
+export function ProfileForm({ initialUser }: ProfileFormProps) {
   const t = useTranslations("settings.profileForm");
   const tGender = useTranslations("settings.profileForm.genderOptions");
   const tValidation = useTranslations("auth.validation");
@@ -94,7 +90,7 @@ export function ProfileForm({ initialUser, isCompact }: ProfileFormProps) {
   }, [fullName, birthDate, gender, user]);
 
   const canSubmit =
-    hasChanges && fullName.trim().length > 0 && fullName.trim().length <= 30;
+    hasChanges && fullName.trim().length > 0 && fullName.trim().length <= 150;
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -109,7 +105,7 @@ export function ProfileForm({ initialUser, isCompact }: ProfileFormProps) {
       return;
     }
 
-    if (fullName.length > 30) {
+    if (fullName.trim().length > 150) {
       toast.error(t("nameMaxToast"));
       return;
     }
@@ -167,13 +163,12 @@ export function ProfileForm({ initialUser, isCompact }: ProfileFormProps) {
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             placeholder={t("fullNamePlaceholder")}
-            maxLength={30}
-            compact={isCompact}
+            maxLength={150}
             icon={<UserIcon size={18} />}
             required
           />
           <span className="text-tiny text-neutral-400 mt-1 block text-right">
-            {t("charCounter", { current: fullName.length, max: 30 })}
+            {t("charCounter", { current: fullName.length, max: 150 })}
           </span>
         </div>
 
@@ -184,9 +179,9 @@ export function ProfileForm({ initialUser, isCompact }: ProfileFormProps) {
             label={t("birthdayLabel")}
             value={birthDate}
             onChange={setBirthDate}
-            compact={isCompact}
             placeholder={t("birthdayPlaceholder")}
             maxDate={maxBirthDate}
+            allowClear={!user?.birthDate}
           />
         </div>
 
@@ -197,7 +192,6 @@ export function ProfileForm({ initialUser, isCompact }: ProfileFormProps) {
             label={t("genderLabel")}
             placeholder={t("genderPlaceholder")}
             value={gender || ""}
-            compact={isCompact}
             options={localizedGenderOptions}
             onChange={(val) => setGender((val || undefined) as GenderType)}
           />
@@ -209,10 +203,9 @@ export function ProfileForm({ initialUser, isCompact }: ProfileFormProps) {
           type="submit"
           disabled={isPending || !canSubmit}
           className={cn(
-            "w-full sm:w-auto rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-md",
+            "w-full sm:w-auto rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-md px-6 py-2.5 text-sm",
             "bg-gold text-on-gold hover:bg-gold-hover active:bg-gold-pressed",
             "disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-40 disabled:cursor-not-allowed",
-            isCompact ? "px-4 py-2 text-xs" : "px-6 py-2.5 text-sm",
           )}
           title={!hasChanges ? t("noChangesTitle") : t("save")}
         >

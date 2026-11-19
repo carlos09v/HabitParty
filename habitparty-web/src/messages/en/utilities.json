@@ -1,0 +1,252 @@
+{
+  "dashboard": {
+    "defaultEconomyBars": {
+      "minus3WeeksLabel": "-3 wks",
+      "minus3WeeksPeriod": "3 weeks ago",
+      "minus2WeeksLabel": "-2 wks",
+      "minus2WeeksPeriod": "2 weeks ago",
+      "lastWeekLabel": "Last",
+      "lastWeekPeriod": "Last week",
+      "currentWeekLabel": "Current",
+      "currentWeekPeriod": "This week"
+    },
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "weeklyCalendar": {
+      "dayHeader": "{weekDay}, {month} {day}{todaySuffix}",
+      "todaySuffix": " (Today)",
+      "activeStreak": "🔥 Active streak on this day",
+      "dueTodosCount": "{count} {count, plural, one {to-do due} other {to-dos due}}",
+      "scheduledCount": "{count} {count, plural, one {scheduled routine} other {scheduled routines}}"
+    }
+  },
+  "validators": {
+    "hardcoreTodo": {
+      "disableOverdueGamified": "Cannot disable Hardcore Mode on an overdue task.",
+      "disableOverdueProductivity": "Cannot disable Strict Deadline on an overdue task.",
+      "missingDueDateGamified": "In Hardcore Mode, To-Dos require a due date.",
+      "missingDueDateProductivity": "With Strict Deadline enabled, To-Dos require a due date.",
+      "pastDueDateGamified": "A Hardcore To-Do due date cannot be in the past.",
+      "pastDueDateProductivity": "A Strict Deadline To-Do due date cannot be in the past.",
+      "changeOverdueDateGamified": "Cannot change the due date of an overdue hardcore task.",
+      "changeOverdueDateProductivity": "Cannot change the due date of an overdue Strict Deadline task."
+    }
+  },
+  "taskSchedule": {
+    "allDay": "All day",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "noDueDate": "No due date",
+    "popoverOverdue": "{shortDayMonth}{timeSuffix} ({count, plural, one {# day overdue} other {# days overdue}})",
+    "popoverToday": "Today, {shortDayMonth}{timeSuffix}",
+    "popoverTomorrow": "Tomorrow, {shortDayMonth}{timeSuffix}",
+    "popoverInDays": "{shortDayMonth}{timeSuffix} (in {count} days)"
+  },
+  "economy": {
+    "periodSameMonth": "{startMonth}/{startDay} to {endDay}",
+    "periodDifferentMonths": "{startMonth}/{startDay} to {endMonth}/{endDay}",
+    "weekShort": "Wk {week}",
+    "relativeWeeks": {
+      "minus3": "-3 wks",
+      "minus2": "-2 wks",
+      "last": "Last",
+      "current": "Current"
+    },
+    "creditsUnit": "credits",
+    "habitStages": {
+      "initialLabel": "Initial Stage",
+      "adaptationLabel": "In Adaptation",
+      "formedLabel": "Formed Habit",
+      "initialExplanation": "Initial stage: 100% of base reward ({baseCoinsFormatted}). At {adaptationThreshold} repetitions, it will enter the adaptation stage (-25%).",
+      "adaptationExplanation": "Adaptation stage ({currentCount}/{adaptationThreshold} repetitions). Pays 75% of base ({baseCoinsFormatted}). At {habitFormedThreshold}, it will adjust to 50%.",
+      "formedExplanation": "Formed habit ({currentCount}/{habitFormedThreshold} repetitions). Pays 50% of base ({baseCoinsFormatted}) to prevent inflation and encourage new habits!"
+    },
+    "dailyStages": {
+      "bonusLabel": "Consistency Bonus",
+      "baseLabel": "Base Routine",
+      "bonusExplanation": "Consistency bonus active ({currentCount}/{threshold} scheduled completions)! You earn +10% on base ({baseCoinsFormatted} -> {finalCoinsFormatted}) with no decay.",
+      "baseExplanation": "Routine at full yield: 100% of base reward ({baseCoinsFormatted}), with no decay. Reaching {threshold} consecutive scheduled completions ({currentCount}/{threshold}) unlocks a +10% bonus."
+    },
+    "todoStages": {
+      "lateHardcoreLabel": "Late Delivery (Hardcore)",
+      "lateStrictLabel": "Late Delivery (Strict Deadline)",
+      "lateHardcoreExplanation": "To-Do completed past due in Hardcore Mode. Reward reduced by 50% ({baseCoinsFormatted} -> {finalCoinsFormatted}).",
+      "lateStrictExplanation": "To-Do completed past its Strict Deadline. Reward reduced by 50% ({baseCoinsFormatted} -> {finalCoinsFormatted}).",
+      "standardLabel": "Standard",
+      "standardExplanation": "To-Do tasks always award 100% of their difficulty reward upon completion."
+    },
+    "units": {
+      "repetitions": "repetitions",
+      "scheduledCycles": "scheduled cycles"
+    },
+    "notices": {
+      "habitProgressExplanation": "Full reward at the start. As you consolidate the habit ({adaptation} and {formed} reps), gains gradually adjust to 75% and 50%.",
+      "hardcoreTitle": "Hardcore Mode Active",
+      "strictDeadlineTitle": "Strict Deadline Active",
+      "dailyCommitmentTitle": "Daily Commitment Active",
+      "hardcorePenaltyMessage": "Failures or delays apply a -50% penalty on rewards."
+    },
+    "breakdown": {
+      "baseReward": "Base Reward",
+      "baseValueProductivity": "+{formattedGold} credits / +{xp} pts",
+      "routineBonus": "Routine Bonus",
+      "hardcorePenalty": "Hardcore Penalty",
+      "deadlinePenalty": "Deadline Penalty",
+      "habitAdjustment": "Habit Adjustment"
+    }
+  },
+  "focus": {
+    "defaultActivityName": "Activity",
+    "atTime": "{day} at {time}",
+    "remainingTime": {
+      "completed": "Time completed!",
+      "remainingValue": "{duration} left",
+      "activeCoupon": "Active Coupon"
+    },
+    "metrics": {
+      "thisWeek": "This week",
+      "lastWeek": "Last wk.",
+      "offsetWeekNegative": "Wk. {offset}",
+      "offsetWeekPositive": "Wk. +{offset}",
+      "dateRange": "{startMonth}/{startDay} to {endMonth}/{endDay}"
+    },
+    "rewards": {
+      "loggedTimeLabel": "Logged Time",
+      "loggedTimeValue": "{count} {count, plural, one {minute} other {minutes}}",
+      "pomodoroCyclesLabel": "Pomodoro Cycles",
+      "pomodoroCyclesValue": "{cycles} cycle(s) (avg. {avgMins}m/cycle)",
+      "creditsUnit": "credits",
+      "itemZeroGamified": "Backpack leisure items do not grant XP or Coins.",
+      "itemZeroProductivity": "Inventory leisure items do not grant Points or Credits.",
+      "minTimeZeroReason": "Sessions shorter than {minMinutes} min do not qualify for rewards.",
+      "minTimeTitle": "Minimum Time",
+      "minTimeGamified": "Sessions under {minMinutes} min do not earn XP or Coins.",
+      "minTimeProductivity": "Sessions under {minMinutes} min do not earn Points or Credits.",
+      "maxCapTitleGamified": "{maxMinutes} min Cap",
+      "maxCapTitleProductivity": "{maxMinutes}m Ultradian Cap",
+      "maxCapGamified": "Time beyond {maxMinutes} min per session does not grant extra coins (anti-AFK).",
+      "maxCapProductivity": "Time beyond {maxMinutes} min per session does not grant extra credits. Pause briefly before the next cycle.",
+      "antiExploitMessage": "Average below {threshold}m/cycle reduces rewards proportionally.",
+      "shortCycleTitle": "Short Cycle ({min}m-{max}m)",
+      "shortCycleMessage": "Average of {avg}m/cycle (+{shortCoins}/cycle). Standard range ({stdMin}m-{stdMax}m) yields +{stdCoins}.",
+      "deepWorkMessage": "Extended uninterrupted session qualifies for the maximum bonus (+{coins}/cycle)!",
+      "dailyHardCapZeroReason": "Daily reward cap ({hours}h) reached for this day.",
+      "dailyHardCapTitleGamified": "Daily Cap Reached (8h)",
+      "dailyHardCapTitleProductivity": "Daily Sustainability Cap (8h)",
+      "dailyHardCapMessageGamified": "You have already accumulated 8h of rewarded focus on this day. Time will be logged, but without extra XP/Coins.",
+      "dailyHardCapMessageProductivity": "You have already accumulated 8h of rewarded focus today. Time is still tracked in analytics, preserving rest against burnout.",
+      "dailyDiminishingTitleGamifiedTier3": "Daily Diminishing Returns (6h+)",
+      "dailyDiminishingTitleGamifiedTier2": "Daily Diminishing Returns (4h+)",
+      "dailyDiminishingTitleProductivityTier3": "Anti-Burnout Pacing (6h+)",
+      "dailyDiminishingTitleProductivityTier2": "Anti-Burnout Pacing (4h+)",
+      "dailyDiminishingMessage": "Daily focus stair-step: 4h–6h yields 50%, 6h–8h yields 25%, and above 8h yields 0%."
+    }
+  },
+  "catalog": {
+    "rewards": {
+      "voucherCount": "{count} {count, plural, one {voucher} other {vouchers}}",
+      "singleUseCount": "{count} single-use",
+      "boxCount": "{count} {count, plural, one {box} other {boxes}}",
+      "breakDrawCount": "{count} {count, plural, one {break draw} other {break draws}}",
+      "noOptions": "no options registered",
+      "coinsCurrency": "Coins",
+      "creditsCurrency": "Credits",
+      "balanceLabel": "Current Balance",
+      "earnedLeisure": "{equivalence} earned leisure",
+      "availableToRedeem": "available to redeem",
+      "redeemableLabel": "Redeemable",
+      "itemCount": "{count} {count, plural, one {item} other {items}}",
+      "withinReach": "within reach today",
+      "earnMoreCoins": "earn more coins",
+      "earnMoreCredits": "earn more credits",
+      "showcaseLabel": "In Showcase",
+      "optionsCount": "{count} {count, plural, one {option} other {options}}"
+    },
+    "inventory": {
+      "voucherCount": "{count} {count, plural, one {voucher} other {vouchers}}",
+      "boxCount": "{count} {count, plural, one {box} other {boxes}}",
+      "breakDrawCount": "{count} {count, plural, one {break draw} other {break draws}}",
+      "totalBackpack": "Total in Backpack",
+      "totalInventory": "Total in Inventory",
+      "itemCount": "{count} {count, plural, one {item} other {items}}",
+      "storedTypes": "{count} {count, plural, one {stored type} other {stored types}}",
+      "activeInFocus": "Active in Focus",
+      "onFocusStage": "on the focus stage",
+      "noItemsInFocus": "no items in focus",
+      "itemTypes": "Item Types",
+      "singleUseCount": "{count} Single-Use"
+    },
+    "tasks": {
+      "boardLabel": "Tasks on Board",
+      "taskCount": "{count} {count, plural, one {task} other {tasks}}",
+      "columnCount": "{count} {count, plural, one {column} other {columns}}",
+      "completedLabel": "Completed",
+      "doneCount": "{count} done",
+      "percentCompleted": "{percent}% completed",
+      "noTasks": "no tasks",
+      "activeHabitsLabel": "Active Habits",
+      "habitCount": "{count} {count, plural, one {habit} other {habits}}",
+      "dailyConsistency": "daily consistency"
+    },
+    "focus": {
+      "activitiesLabel": "Focus Activities",
+      "activityCount": "{count} {count, plural, one {activity} other {activities}}",
+      "readyToStart": "ready to start a session",
+      "createFirstActivity": "create your first activity",
+      "stageItemsLabel": "Items on Stage",
+      "couponsBreaksLabel": "Coupons & Active Breaks",
+      "itemCount": "{count} {count, plural, one {item} other {items}}",
+      "focusCouponsHint": "focus coupons/rewards",
+      "sendFromBackpack": "send items from your Backpack",
+      "linkViaInventory": "link items via Inventory",
+      "focusTodayLabel": "Focus Today",
+      "sessionsToday": "{count} {count, plural, one {session logged today} other {sessions logged today}}",
+      "gamifiedModeHint": "Pomodoro & Free • earn XP/coins",
+      "productivityModeHint": "Pomodoro & Stopwatch • build focus"
+    }
+  },
+  "history": {
+    "unknownDate": "Unknown date",
+    "today": "Today",
+    "yesterday": "Yesterday"
+  },
+  "levels": {
+    "defaultBeginner": "Beginner",
+    "defaultNovice": "Novice",
+    "premiumMember": "Premium Member",
+    "gamified": {
+      "NOVICE": "Novice",
+      "APPRENTICE": "Apprentice",
+      "ADVENTURER": "Adventurer",
+      "CHALLENGER": "Challenger",
+      "AMATEUR": "Amateur",
+      "PROFESSIONAL": "Professional",
+      "EXPERT": "Expert",
+      "VETERAN": "Veteran",
+      "MASTER": "Master",
+      "LEGEND": "Legend"
+    },
+    "productivity": {
+      "NOVICE": "Beginner",
+      "APPRENTICE": "Practitioner",
+      "ADVENTURER": "Consistent",
+      "CHALLENGER": "Focused",
+      "AMATEUR": "Organized",
+      "PROFESSIONAL": "Productive",
+      "EXPERT": "Specialist",
+      "VETERAN": "Senior",
+      "MASTER": "Executive",
+      "LEGEND": "High Performance"
+    }
+  },
+  "subscription": {
+    "expired": "Plan expired",
+    "expiresLessThan1h": "Expires in less than 1h!",
+    "expiresInHours": "Expires in {hours}h",
+    "daysLeft": "{days} {days, plural, one {day} other {days}} left",
+    "daysRemaining": "{days} {days, plural, one {day} other {days}} remaining"
+  }
+}

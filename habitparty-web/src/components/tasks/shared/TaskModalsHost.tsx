@@ -88,8 +88,8 @@ export interface TaskModalsHostProps {
   onDuplicateTask: (task: Task, columnId?: string) => void;
   duplicatingTaskIds?: Set<string>;
   onRequestDeleteTask: (task: Task, columnId?: string) => void;
-  onToggleComplete: (taskId: string, completed: boolean) => void;
-  onHabitChange?: (taskId: string, delta: number) => void;
+  onToggleComplete: (taskId: string, completed: boolean) => boolean | undefined;
+  onHabitChange?: (taskId: string, delta: number) => boolean | undefined;
   onStartFocus?: (task: Task) => void;
   taskToDelete: { task: Task; columnId?: string } | null;
   deleteHistory: boolean;

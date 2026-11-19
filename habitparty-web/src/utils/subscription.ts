@@ -1,4 +1,5 @@
 import type { components } from "@/api/schema";
+import { getUtilityTranslator } from "@/i18n/utilityTranslator";
 import type { AppLocale } from "@/types/ui";
 import { parseServerDate } from "./date";
 
@@ -30,7 +31,7 @@ export function getSubscriptionExpirationInfo(
   user?: Partial<User> | null,
   locale: AppLocale = "pt-BR",
 ): SubscriptionExpirationInfo {
-  const isEn = locale === "en";
+  const t = getUtilityTranslator(locale, "subscription");
   const isPremium = Boolean(user?.isPremium);
   const status =
     (user?.subscriptionStatus as
@@ -76,33 +77,22 @@ export function getSubscriptionExpirationInfo(
   let warningLevel: ExpirationWarningLevel = "none";
 
   if (hasExpired) {
-    formattedRemaining = isEn ? "Plan expired" : "Plano expirado";
+    formattedRemaining = t("expired");
     warningLevel = "danger";
   } else if (daysRemaining <= 1) {
-    if (totalHours <= 1) {
-      formattedRemaining = isEn
-        ? "Expires in less than 1h!"
-        : "Expira em menos de 1h!";
-    } else {
-      formattedRemaining = isEn
-        ? `Expires in ${totalHours}h`
-        : `Expira em ${totalHours}h`;
-    }
+    formattedRemaining =
+      totalHours <= 1
+        ? t("expiresLessThan1h")
+        : t("expiresInHours", { hours: totalHours });
     warningLevel = "danger";
   } else if (daysRemaining <= 3) {
-    formattedRemaining = isEn
-      ? `${daysRemaining} ${daysRemaining === 1 ? "day" : "days"} left`
-      : `Faltam ${daysRemaining} dias`;
+    formattedRemaining = t("daysLeft", { days: daysRemaining });
     warningLevel = "warning";
   } else if (daysRemaining <= 7) {
-    formattedRemaining = isEn
-      ? `${daysRemaining} ${daysRemaining === 1 ? "day" : "days"} left`
-      : `Faltam ${daysRemaining} dias`;
+    formattedRemaining = t("daysLeft", { days: daysRemaining });
     warningLevel = "info";
   } else {
-    formattedRemaining = isEn
-      ? `${daysRemaining} ${daysRemaining === 1 ? "day" : "days"} remaining`
-      : `${daysRemaining} dias restantes`;
+    formattedRemaining = t("daysRemaining", { days: daysRemaining });
     warningLevel = "none";
   }
 

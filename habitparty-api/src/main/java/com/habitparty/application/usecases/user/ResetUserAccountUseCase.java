@@ -17,6 +17,7 @@ import com.habitparty.application.ports.SocialNotificationRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserAchievementRepository;
+import com.habitparty.application.ports.UserArtifactRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.ports.WorkspaceRepository;
 import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsUseCase;
@@ -41,6 +42,7 @@ public class ResetUserAccountUseCase {
   private final ProfileHighlightRepository profileHighlightPort;
   private final SocialNotificationRepository socialNotificationPort;
   private final EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
+  private final UserArtifactRepository userArtifactPort;
 
   public ResetUserAccountUseCase(
       UserRepository userPort,
@@ -68,6 +70,38 @@ public class ResetUserAccountUseCase {
         userAchievementPort,
         profileHighlightPort,
         socialNotificationPort,
+        null,
+        null);
+  }
+
+  public ResetUserAccountUseCase(
+      UserRepository userPort,
+      TaskRepository taskPort,
+      BoardColumnRepository boardColumnPort,
+      WorkspaceRepository workspacePort,
+      RewardRepository rewardPort,
+      InventoryItemRepository inventoryItemPort,
+      FocusRecordRepository focusRecordPort,
+      FocusActivityRepository focusActivityPort,
+      TransactionHistoryRepository transactionHistoryPort,
+      @Nullable UserAchievementRepository userAchievementPort,
+      @Nullable ProfileHighlightRepository profileHighlightPort,
+      @Nullable SocialNotificationRepository socialNotificationPort,
+      @Nullable EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
+    this(
+        userPort,
+        taskPort,
+        boardColumnPort,
+        workspacePort,
+        rewardPort,
+        inventoryItemPort,
+        focusRecordPort,
+        focusActivityPort,
+        transactionHistoryPort,
+        userAchievementPort,
+        profileHighlightPort,
+        socialNotificationPort,
+        evaluateUserAchievementsUseCase,
         null);
   }
 
@@ -85,7 +119,8 @@ public class ResetUserAccountUseCase {
       @Nullable UserAchievementRepository userAchievementPort,
       @Nullable ProfileHighlightRepository profileHighlightPort,
       @Nullable SocialNotificationRepository socialNotificationPort,
-      @Nullable EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
+      @Nullable EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase,
+      @Nullable UserArtifactRepository userArtifactPort) {
     this.userPort = userPort;
     this.taskPort = taskPort;
     this.boardColumnPort = boardColumnPort;
@@ -99,6 +134,7 @@ public class ResetUserAccountUseCase {
     this.profileHighlightPort = profileHighlightPort;
     this.socialNotificationPort = socialNotificationPort;
     this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
+    this.userArtifactPort = userArtifactPort;
   }
 
   /**
@@ -136,9 +172,15 @@ public class ResetUserAccountUseCase {
 
     if (scope == AccountResetScope.METRICS) {
       // Zera apenas contadores/streaks em tarefas existentes, preservando estrutura do usuário
+      if (userArtifactPort != null) {
+        userArtifactPort.deleteAchievementArtifactsByUserId(userId);
+      }
       taskPort.resetMetricsByUserId(userId);
     } else if (scope == AccountResetScope.COMPLETE) {
       // Limpa todo conteúdo criado pelo usuário em ordem bottom-up, mantendo conta, assinatura e amizades
+      if (userArtifactPort != null) {
+        userArtifactPort.deleteAllByUserId(userId);
+      }
       taskPort.deleteAllByUserId(userId);
       boardColumnPort.deleteAllByUserId(userId);
       workspacePort.deleteAllByUserId(userId);
@@ -152,10 +194,13 @@ public class ResetUserAccountUseCase {
     }
 
     user.resetStats();
-    if (scope == AccountResetScope.METRICS && user.getStats() != null) {
-      // Workspaces existentes são preservados no reset de métricas; sincroniza o contador para não bloquear a conquista WORKSPACE_ARCHITECT
-      int existingWorkspaces = Math.max(0, workspacePort.countByUserId(userId));
-      user.getStats().setTotalWorkspacesCreated(existingWorkspaces);
+    if (scope == AccountResetScope.METRICS) {
+      user.revalidateShowcaseCosmeticsAfterMetricsReset(shouldDeleteHistory);
+      if (user.getStats() != null) {
+        // Workspaces existentes são preservados no reset de métricas; sincroniza o contador para não bloquear a conquista WORKSPACE_ARCHITECT
+        int existingWorkspaces = Math.max(0, workspacePort.countByUserId(userId));
+        user.getStats().setTotalWorkspacesCreated(existingWorkspaces);
+      }
     }
 
     User savedUser = userPort.save(user);

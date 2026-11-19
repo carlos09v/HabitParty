@@ -446,6 +446,7 @@ export function useCreateTaskForm({
         taskToEdit,
         locale,
         timeZone: useUserStore.getState().user?.timezone,
+        isGamified,
       });
       if (hardcoreError) {
         toast.error(hardcoreError);
@@ -464,6 +465,9 @@ export function useCreateTaskForm({
         isHardcoreModeEnabled: isHardcore,
         dueDate: dueDate || undefined,
         isPenaltyApplied: taskToEdit?.isPenaltyApplied,
+        locale,
+        timeZone: useUserStore.getState().user?.timezone,
+        isGamified,
       });
 
       const latestDescription = descriptionFlushRef.current?.() ?? description;
@@ -605,14 +609,15 @@ export function useCreateTaskForm({
       const typeLabel = t(`typeLabels.${taskType}`);
       soundEffects.playCreateSound();
       toast.success(t("createTaskSuccess", { typeLabel, title: trimmedName }), {
-        ...(isGamified
-          ? {
-              description: t("createTaskRewardDesc", {
-                xp: calculatedRewards.xp,
-                gold: formatCoins(calculatedRewards.gold, { locale }),
-              }),
-            }
-          : {}),
+        description: t(
+          isGamified
+            ? "createTaskRewardDesc"
+            : "createTaskRewardDescProductivity",
+          {
+            xp: calculatedRewards.xp,
+            gold: formatCoins(calculatedRewards.gold, { locale }),
+          },
+        ),
       });
       onSuccess?.(mappedTask, columnId);
       onClose();

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { signUpAction } from "@/actions/auth";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { PasswordStrengthIndicator } from "@/components/auth/PasswordStrengthIndicator";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Input } from "@/components/ui/Input";
@@ -214,10 +215,12 @@ export function SignUpForm() {
         </div>
       </div>
 
-      <div className="mt-2">
+      <div className="flex flex-col gap-3 mt-2">
         <SubmitButton isPending={isPending} loadingText={t("submitting")}>
           {t("submit")}
         </SubmitButton>
+
+        <GoogleSignInButton disabled={isPending} />
       </div>
     </form>
   );

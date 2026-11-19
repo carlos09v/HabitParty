@@ -13,7 +13,6 @@ interface DashboardColumnCardProps {
   activeWorkspaceId?: string;
   dynamicCounts: { completed: number; total: number } | null;
   hasTaskCountsMap: boolean;
-  isCompact: boolean;
   isContextMenuOpen: boolean;
   onContextMenu: (e: React.MouseEvent, column: DashboardColumnOption) => void;
   onMenuButtonClick: (
@@ -27,7 +26,6 @@ export function DashboardColumnCard({
   activeWorkspaceId,
   dynamicCounts,
   hasTaskCountsMap,
-  isCompact,
   isContextMenuOpen,
   onContextMenu,
   onMenuButtonClick,
@@ -61,10 +59,9 @@ export function DashboardColumnCard({
         <ListCard
           as="div"
           reserveMenuSpace={true}
-          compact={isCompact}
           title={column.name || t("untitled")}
           count={`${completedCount}/${totalCount}`}
-          icon={<ColumnIcon size={isCompact ? 14 : 15} aria-hidden="true" />}
+          icon={<ColumnIcon size={15} aria-hidden="true" />}
         />
       </Link>
       <button

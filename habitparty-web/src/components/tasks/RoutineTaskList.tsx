@@ -26,7 +26,6 @@ import { cn } from "@/utils";
 
 const RoutineTaskListSection = memo(function RoutineTaskListSection({
   column,
-  isCompact,
   selectedColumnId,
   selectedTaskId,
   deletingTaskIds,
@@ -138,23 +137,13 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
         >
           {/* Grip de Reordenação da Coluna na Lista */}
           <div className="flex items-center justify-center p-0.5 text-neutral-500 group-hover/col-header:text-primary dark:group-hover/col-header:text-gold transition-colors shrink-0">
-            <GripVertical size={isCompact ? 13 : 15} />
+            <GripVertical size={15} />
           </div>
 
-          <div
-            className={cn(
-              "rounded-lg bg-primary/10 dark:bg-primary-dark/40 border border-primary/25 dark:border-white/10 text-primary dark:text-gold flex items-center justify-center shrink-0",
-              isCompact ? "w-6 h-6" : "w-7 h-7",
-            )}
-          >
-            <ColumnIcon size={isCompact ? 13 : 15} />
+          <div className="rounded-lg bg-primary/10 dark:bg-primary-dark/40 border border-primary/25 dark:border-white/10 text-primary dark:text-gold flex items-center justify-center shrink-0 w-7 h-7">
+            <ColumnIcon size={15} />
           </div>
-          <h3
-            className={cn(
-              "font-bold text-neutral-100 group-hover/col-header:text-primary dark:group-hover/col-header:text-gold transition-colors truncate min-w-0",
-              isCompact ? "text-xs" : "text-sm",
-            )}
-          >
+          <h3 className="font-bold text-neutral-100 group-hover/col-header:text-primary dark:group-hover/col-header:text-gold transition-colors truncate min-w-0 text-sm">
             {column.title}
           </h3>
           <span className="text-tiny font-bold px-1.5 py-0.5 rounded-full bg-surface dark:bg-white/10 border border-neutral-700 dark:border-white/15 text-neutral-300 shrink-0">
@@ -169,12 +158,9 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
           onTouchStart={(e) => e.stopPropagation()}
           onClick={() => onAddTaskToColumn(column.id)}
           title={t("addTaskInColumnTitle", { title: column.title })}
-          className={cn(
-            "flex items-center gap-1 text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-white/5 rounded-md transition-colors cursor-pointer shrink-0",
-            isCompact ? "px-2 py-1 text-label-g" : "px-2.5 py-1 text-xs",
-          )}
+          className="flex items-center gap-1 text-neutral-400 hover:text-primary dark:hover:text-gold hover:bg-white/5 rounded-md transition-colors cursor-pointer shrink-0 px-2.5 py-1 text-xs"
         >
-          <Plus size={isCompact ? 12 : 14} />
+          <Plus size={14} />
           <span className="hidden sm:inline">{t("addTaskButton")}</span>
         </button>
       </div>
@@ -200,7 +186,6 @@ const RoutineTaskListSection = memo(function RoutineTaskListSection({
                     isDeleteChecking={Boolean(deletingTaskIds?.has(task.id))}
                     columnId={column.id}
                     columnTitle={column.title}
-                    isCompact={isCompact}
                     isSortable={true}
                     onOpenDetails={handleOpenRowDetails}
                     onEditTask={onEditTask ? handleEditRowTask : undefined}
@@ -255,7 +240,6 @@ export function RoutineTaskList({
   selectedColumnId,
   selectedTaskId,
   deletingTaskIds,
-  isCompact: propIsCompact,
   onAddTaskToColumn,
   onOpenDetails,
   onEditTask,
@@ -267,7 +251,6 @@ export function RoutineTaskList({
   dndState,
 }: RoutineTaskListProps) {
   const t = useTranslations("tasks.taskList");
-  const isCompact = propIsCompact ?? false;
 
   const visibleColumns = useMemo(
     () => columns.filter((col) => visibleColumnIds.includes(col.id)),
@@ -288,20 +271,12 @@ export function RoutineTaskList({
       {/* Cabeçalho tabular global */}
       <div
         className={cn(
-          "hidden @lg:grid items-center text-xs font-semibold text-neutral-400 border-b border-b-neutral-700 dark:border-b-white/10 border-l-4 border-l-transparent border-r border-r-transparent select-none",
+          "hidden @lg:grid items-center text-xs font-semibold text-neutral-400 border-b border-b-neutral-700 dark:border-b-white/10 border-l-4 border-l-transparent border-r border-r-transparent select-none gap-2.5 @lg:gap-3 px-3 @lg:px-4 py-2",
           TASK_TABLE_GRID_COLS,
-          isCompact
-            ? "gap-2.5 px-3 py-1.5"
-            : "gap-2.5 @lg:gap-3 px-3 @lg:px-4 py-2",
         )}
         aria-hidden="true"
       >
-        <span
-          className={cn(
-            "min-w-0 truncate",
-            isCompact ? "pl-14" : "pl-16 sm:pl-15",
-          )}
-        >
+        <span className="min-w-0 truncate pl-16 sm:pl-15">
           {t("headerTaskName")}
         </span>
         <span className="min-w-0">{t("headerList")}</span>
@@ -342,7 +317,6 @@ export function RoutineTaskList({
             <RoutineTaskListSection
               key={col.id}
               column={col}
-              isCompact={isCompact}
               selectedColumnId={selectedColumnId}
               selectedTaskId={selectedTaskId}
               deletingTaskIds={deletingTaskIds}
@@ -398,7 +372,6 @@ export function RoutineTaskList({
                 columns.find((c) => c.id === dndState.activeTask?.columnId)
                   ?.title
               }
-              isCompact={isCompact}
               onStartFocus={onStartFocus}
               isSortable
               isOverlay

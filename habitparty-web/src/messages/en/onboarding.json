@@ -1,120 +1,292 @@
 {
   "metadata": {
-    "title": "Initial Setup — HabitParty",
-    "description": "Customize your usage mode, create your first workspace, and set your initial interface style."
+    "title": "First Steps",
+    "description": "Tailor HabitParty to your routine, focus rhythm, and goals in under a minute."
   },
   "layout": {
     "headerBadge": "Initial Setup",
-    "stepIndicator": "Step {current} of {total}",
-    "copyright": "© {year} HabitParty. All rights reserved."
+    "quickSetupHint": "~45 sec • Editable anytime",
+    "copyright": "HabitParty © {year}"
   },
   "wizard": {
-    "badge": "Personalization",
-    "title": "Customize Your Experience",
-    "subtitle": "Let's calibrate your HabitParty journey. Choose your main goal so we can prepare your first space.",
-    "submit": "Create Workspace & Start My Journey",
-    "submitting": "Preparing your workspace and dashboard...",
-    "redirectHint": "You will be redirected directly to the main dashboard upon completion.",
-    "validation": {
-      "nameRequired": "Please enter a name for your first workspace.",
-      "nameMaxLength": "The workspace name must be up to 25 characters.",
-      "createFailed": "Could not create the workspace. Please try again in a moment.",
-      "invalidId": "The workspace was created without a valid identifier."
+    "badge": "Personalized Setup",
+    "title": "Build your system in 3 quick steps",
+    "subtitle": "Answer a few quick preferences so your dashboard starts calibrated for your routine — not an empty screen.",
+    "stepsNavLabel": "Onboarding progress",
+    "steps": {
+      "1": {
+        "shortLabel": "Context & Goals",
+        "heading": "What brings you here today?"
+      },
+      "2": {
+        "shortLabel": "Style & Rhythm",
+        "heading": "How do you focus and stay motivated?"
+      },
+      "3": {
+        "shortLabel": "Workspace & Starter Pack",
+        "heading": "Launch your ready-to-use board"
+      }
     },
-    "successToast": "Workspace \"{name}\" created successfully! Welcome to HabitParty!"
+    "stepCounter": "Step {current} of {total}",
+    "validation": {
+      "workspaceRequired": "Please name your first workspace before launching.",
+      "selectAtLeastOneGoal": "Choose at least 1 main goal (up to 2) so we can tailor your workspace."
+    },
+    "actions": {
+      "back": "Back",
+      "next": "Continue",
+      "submitGamified": "Start Journey",
+      "submitProductivity": "Launch Workspace",
+      "submitting": "Preparing your board..."
+    },
+    "footerNote": "You can adjust experience mode, themes, or habits anytime in Settings.",
+    "successToast": "Workspace \"{name}\" is ready! Let's get started.",
+    "partialWarningToast": "Workspace created, though some Starter Pack items could not be added.",
+    "errorToast": "Could not complete initial setup. Please try again."
   },
   "usageModes": {
-    "sectionTitle": "What will be your primary usage mode?",
-    "modes": {
+    "sectionTitle": "Primary usage profile",
+    "options": {
       "personal": {
-        "title": "Personal & Routine",
-        "description": "Healthy habits, self-care, and daily goals.",
-        "defaultWorkspace": "Personal Life & Routine",
-        "chips": [
-          "Personal Life & Routine",
-          "Health & Wellness",
-          "Habits & Self-Care",
-          "Personal Finance",
-          "Daily Goals",
-          "Home & Family"
-        ]
+        "label": "Personal",
+        "description": "Wellbeing, health, finances & home habits",
+        "defaultWorkspace": "Personal"
       },
       "studies": {
-        "title": "Studies & Learning",
-        "description": "Subjects, reviews, readings, and academic courses.",
-        "defaultWorkspace": "Studies & Learning",
-        "chips": [
-          "Studies & Learning",
-          "College & Courses",
-          "Exams & Certifications",
-          "Languages & Reading",
-          "Tech Development",
-          "Research & Papers"
-        ]
+        "label": "Studies",
+        "description": "Classes, exams, languages & projects",
+        "defaultWorkspace": "Studies"
       },
       "work": {
-        "title": "Work & Projects",
-        "description": "Professional tasks, goals, and career deliverables.",
-        "defaultWorkspace": "Work & Career",
-        "chips": [
-          "Work & Career",
-          "Projects & Tasks",
-          "Freelance & Clients",
-          "Business & Strategy",
-          "Company Goals",
-          "Creative Studio"
-        ]
+        "label": "Work",
+        "description": "Career, sprints, clients & deadlines",
+        "defaultWorkspace": "Work"
       },
       "all": {
-        "title": "General & Balance",
-        "description": "Everything in a single integrated space for your day.",
-        "defaultWorkspace": "My General Space",
-        "chips": [
-          "My General Space",
-          "Daily Focus & Goals",
-          "Balance & Routine",
-          "Personal Projects",
-          "Peak Productivity",
-          "Day-to-Day Habits"
-        ]
+        "label": "Complete",
+        "description": "Everything organized in one central space",
+        "defaultWorkspace": "HabitParty"
       }
     }
   },
-  "workspaceSetup": {
-    "title": "Your First Workspace",
-    "badge": "⭐ Essential",
-    "description": "Workspaces organize your tasks, routines, and habits by context. You can create more workspaces later in the dashboard.",
-    "label": "Workspace Name",
-    "placeholder": "E.g. Personal, Studies...",
-    "hint": "Maximum of 25 characters.",
-    "suggestionsLabel": "Quick suggestions for your focus:"
+  "profileContext": {
+    "goalsLegend": "Pick up to 2 main goals ({count}/{max})",
+    "goalsHint": "Helps balance habits, Kanban milestones, and break rewards.",
+    "goals": {
+      "focus": {
+        "label": "Deep focus",
+        "description": "Pomodoro & sustained sessions"
+      },
+      "habits": {
+        "label": "Build habits",
+        "description": "Daily streak without burnout"
+      },
+      "projects": {
+        "label": "Track projects",
+        "description": "Clear Kanban flow & deadlines"
+      },
+      "routine": {
+        "label": "Consistent routine",
+        "description": "Morning & evening check-ins"
+      },
+      "balance": {
+        "label": "Guilt-free leisure",
+        "description": "Earn real rest through effort"
+      }
+    },
+    "obstacleLegend": "What trips you up most often?",
+    "obstacles": {
+      "procrastination": {
+        "label": "Procrastination"
+      },
+      "distractions": {
+        "label": "Distractions"
+      },
+      "consistency": {
+        "label": "Inconsistency"
+      },
+      "burnout": {
+        "label": "Overload"
+      }
+    }
   },
   "experienceMode": {
-    "title": "Experience & Interface Style",
-    "settingsHint": "Change anytime in settings",
-    "densityLabel": "Density:",
-    "densityStandard": "Standard",
-    "densityCompact": "Compact",
-    "soundsLabel": "UI Sounds:",
-    "soundsActive": "On",
-    "soundsMuted": "Muted",
-    "modes": {
+    "sectionTitle": "Experience Style",
+    "switchHint": "Instant 1-click switch anytime",
+    "options": {
       "PRODUCTIVITY": {
-        "title": "Essential Mode",
-        "badge": "Focus & Productivity",
-        "description": "Clean executive interface with credits, consistency points, and direct focus on deliverables."
+        "label": "Essential",
+        "subtitle": "Clean & objective focus",
+        "highlights": [
+          "Focus Points & Effort Credits",
+          "Strict deadlines with full calendar clarity",
+          "Clean metrics & distraction-free UI"
+        ]
       },
       "GAMIFIED": {
-        "title": "Adventure Mode (RPG)",
-        "badge": "Gamification & Dopamine",
-        "description": "Earn gold coins, XP, open mystery boxes, and take on Hardcore Mode to defeat inertia."
+        "label": "Adventure",
+        "subtitle": "Classic habit RPG",
+        "highlights": [
+          "XP, Gold Coins & Level Tiers",
+          "Hardcore Mode with high stakes",
+          "Mystery Boxes, Relics & Party progression"
+        ]
+      }
+    },
+    "preview": {
+      "label": "Live sample in this style",
+      "sampleTask": "25m Focus Session",
+      "gamifiedReward": "+25 XP • +2.5 Coins",
+      "productivityReward": "+25 pts • +2.5 Credits",
+      "gamifiedBadge": "Hardcore Active",
+      "productivityBadge": "Strict Deadline"
+    }
+  },
+  "rhythmAndTheme": {
+    "dailyFocusLegend": "Realistic daily focus target",
+    "focusOptions": {
+      "30": {
+        "label": "30 min",
+        "hint": "1 quick sprint/day (25m cycles)"
+      },
+      "90": {
+        "label": "1h – 2h",
+        "hint": "Steady progress (35m cycles)"
+      },
+      "180": {
+        "label": "3h+",
+        "hint": "Deep Work blocks (50m cycles)"
+      }
+    },
+    "peakLegend": "When does your energy peak?",
+    "peakOptions": {
+      "morning": {
+        "label": "Morning"
+      },
+      "afternoon": {
+        "label": "Afternoon"
+      },
+      "night": {
+        "label": "Night"
+      }
+    },
+    "disciplineLegend": "Accountability style",
+    "disciplineOptions": {
+      "flexible": {
+        "label": "Flexible pacing",
+        "description": "Gentle ramp-up without deadline penalties"
+      },
+      "strict": {
+        "label": "High commitment",
+        "descriptionGamified": "Priority To-Dos start in Hardcore Mode",
+        "descriptionProductivity": "Priority To-Dos start with Strict Deadline"
+      }
+    },
+    "themeLegend": "Pick your starting theme (free live preview)",
+    "themes": {
+      "dark": "Cosmic Dark",
+      "light": "Cosmic Daylight",
+      "dark-knight": "Dark Knight",
+      "solar-parchment": "Solar Parchment"
+    },
+    "soundEffectsLabel": "Subtle UI completion sounds",
+    "soundEffectsHint": "Audio feedback when ticking habits and Pomodoro sessions",
+    "soundOn": "On",
+    "soundOff": "Muted"
+  },
+  "workspaceSetup": {
+    "fieldLabel": "Workspace Name",
+    "inputPlaceholder": "E.g., Personal, Studies, Work...",
+    "quickPresetsLabel": "Quick ideas:",
+    "charCounter": "{current}/{max}",
+    "presetsByMode": {
+      "personal": ["Personal", "Routine", "Health & Life", "Home", "Goals"],
+      "studies": ["Studies", "College", "Exams", "Languages", "Projects"],
+      "work": ["Work", "Projects", "Career", "Freelance", "Sprints"],
+      "all": ["HabitParty", "Life & Focus", "Central", "General", "Daily Hub"]
+    }
+  },
+  "starterPack": {
+    "legend": "Starter Pack — avoid an empty screen",
+    "calibratedPrefix": "Tailored for:",
+    "modeRecommended": "Recommended Starter Pack",
+    "modeBlank": "Start with a blank board",
+    "ratioHint": "Calibrated 4:1 ratio (1 coin/credit ≈ 4 min of earned leisure)",
+    "currencyGamified": "Coins",
+    "currencyProductivity": "Credits",
+    "badgeDailyFocus": "{minutes}m cycles",
+    "badgeHardcore": "Hardcore",
+    "badgeStrict": "Strict Deadline",
+    "badgeLowFriction": "Low friction",
+    "badgePriority": "Priority",
+    "toggles": {
+      "columnsTitle": "3 Initial Kanban Columns",
+      "tasksTitle": "{count} Tasks tailored to your profile",
+      "focusTitle": "1 Calibrated Focus Activity",
+      "rewardsTitle": "{count} Balanced Rewards (guilt-free leisure)"
+    },
+    "presets": {
+      "columns": {
+        "personalRoutine": "Daily Routine",
+        "personalHealth": "Health & Habits",
+        "personalGoals": "Personal Goals",
+        "studiesClasses": "Classes & Reading",
+        "studiesPractice": "Practice & Exercises",
+        "studiesReview": "Review & Exams",
+        "workPriorities": "Today's Priorities",
+        "workDeepWork": "Deep Work",
+        "workFollowUp": "Follow-up & Inbox",
+        "allRoutine": "Core Routine",
+        "allFocus": "Key Projects",
+        "allWellbeing": "Habits & Energy"
+      },
+      "tasks": {
+        "personalHydrateHabit": "Drink water & stretch break",
+        "personalTopDaily": "Review top 3 priorities",
+        "personalWeeklyTodo": "Organize this week's next milestone",
+        "studiesRecallHabit": "Active recall / 15-min flashcards",
+        "studiesReviewDaily": "Review class notes",
+        "studiesModuleTodo": "Finish next study module",
+        "workInboxHabit": "Clear inbox & quick replies",
+        "workPlanDaily": "Plan 3 daily deliverables",
+        "workDeliverableTodo": "Ship main priority deliverable",
+        "allResetHabit": "5-min desk & focus reset",
+        "allTop3Daily": "Check daily top 3 priorities",
+        "allPriorityTodo": "Complete today's core action",
+        "obstacleProcrastinationHabit": "2-minute rule: take the first step",
+        "obstacleDistractionsHabit": "Distraction-free block & phone muted",
+        "obstacleBurnoutHabit": "Mindful rest, water & breathing (3m)"
+      },
+      "taskDescriptions": {
+        "goalFocus": "Tip: link this task to a Focus Mode session to track your deep work.",
+        "goalHabits": "Anchor habit calibrated to strengthen your daily consistency.",
+        "goalProjects": "Priority deliverable aligned with your project tracking goal.",
+        "obstacleProcrastination": "Designed to beat procrastination with minimal starting friction.",
+        "obstacleDistractions": "Anchor habit to shield your focus block from interruptions.",
+        "obstacleConsistency": "Protect your daily streak with this quick consistency check-in.",
+        "obstacleBurnout": "Anti-overload pacing: sustainable progress before intensity.",
+        "peakMorning": "Suggested for morning — right during your peak energy window.",
+        "peakAfternoon": "Suggested for afternoon — aligned with your peak energy window.",
+        "peakNight": "Suggested for evening — wrap up your day with clarity.",
+        "disciplineStrict": "Set with high accountability matching your initial preference."
+      },
+      "focus": {
+        "personalProject": "Personal Sprint",
+        "studiesSession": "Study Session",
+        "workDeepFocus": "Deep Work Block",
+        "allMainFocus": "Core Focus Session"
+      },
+      "rewards": {
+        "microReset": "Quick Breather (8m)",
+        "quickBreak": "Coffee & Stretch Break (15m)",
+        "guiltFreeLeisure": "Guilt-Free Leisure (45m)"
       }
     }
   },
   "workspaceActions": {
-    "createError": "Failed to create workspace. Please try again.",
-    "updateError": "Failed to update workspace.",
-    "deleteError": "Failed to delete workspace.",
-    "serverError": "Internal server communication error."
+    "createError": "Error creating workspace.",
+    "updateError": "Error updating workspace.",
+    "deleteError": "Error deleting workspace.",
+    "serverError": "Internal server error."
   }
 }

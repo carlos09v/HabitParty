@@ -1,27 +1,23 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DashboardDailyBriefing } from "@/components/dashboard/DashboardDailyBriefing";
 import { DashboardListSummary } from "@/components/dashboard/DashboardListSummary";
 import { DashboardTasksPanel } from "@/components/dashboard/DashboardTasksPanel";
 import { RouteLoading } from "@/components/layout/RouteLoading";
 import { MAX_COLUMNS_PREMIUM, MAX_VISIBLE_COLUMNS } from "@/constants/routine";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import {
-  applyFocusCompletionToTask,
-  applyFocusRecordedToTask,
-  useFocusTaskSync,
-} from "@/hooks/useFocusTaskSync";
 import { useMidnightRollover } from "@/hooks/useMidnightRollover";
 import { useSyncWorkspaceSwitchReset } from "@/hooks/useSyncWorkspaceSwitchReset";
+import { useOptimisticDashboardStore } from "@/store/optimisticDashboardStore";
 import { useUserStore } from "@/store/userStore";
 import type {
   DashboardColumnOption,
   DashboardMainProps,
 } from "@/types/dashboard";
 import type { Task } from "@/types/task";
-import { cn, getTodayDateString } from "@/utils";
+import { getTodayDateString } from "@/utils";
 import {
   getFirstName,
   hasCompletedTaskInTransactionsToday,
@@ -38,7 +34,6 @@ import {
  * os cartões de resumo de listas e a tabela interativa de tarefas.
  */
 export function DashboardMain({
-  isCompact = false,
   initialTasks = [],
   workspaces = [],
   activeWorkspaceId,
@@ -73,38 +68,38 @@ export function DashboardMain({
     setColumns(initialColumns);
   }, [initialColumns]);
 
+  const optimisticTransactions = useOptimisticDashboardStore(
+    (s) => s.transactions,
+  );
+  const clearOptimisticDashboard = useOptimisticDashboardStore((s) => s.clear);
+  const prevTransactionsRef = useRef(transactions);
+
+  useEffect(() => {
+    if (prevTransactionsRef.current !== transactions) {
+      prevTransactionsRef.current = transactions;
+      clearOptimisticDashboard();
+    }
+  }, [transactions, clearOptimisticDashboard]);
+
+  const mergedTransactions = useMemo(
+    () =>
+      optimisticTransactions.length > 0
+        ? [...transactions, ...optimisticTransactions]
+        : transactions,
+    [transactions, optimisticTransactions],
+  );
+
   useEffect(() => {
     if (
       hasCompletedTaskInTransactionsToday(
-        transactions,
+        mergedTransactions,
         new Date(),
         userTimezone,
       )
     ) {
       setLastStreakSecuredDate(getTodayDateString(new Date(), userTimezone));
     }
-  }, [transactions, setLastStreakSecuredDate, userTimezone]);
-
-  useFocusTaskSync({
-    onFocusRecorded: (taskId, durationMinutes, cycles) => {
-      setTasks((prev) =>
-        prev.map((task) =>
-          task.id === taskId
-            ? applyFocusRecordedToTask(task, durationMinutes, cycles)
-            : task,
-        ),
-      );
-    },
-    onTaskCompleted: (taskId) => {
-      setTasks((prev) =>
-        prev.map((task) =>
-          task.id === taskId
-            ? applyFocusCompletionToTask(task, userTimezone)
-            : task,
-        ),
-      );
-    },
-  });
+  }, [mergedTransactions, setLastStreakSecuredDate, userTimezone]);
 
   const handleColumnDeleted = (deletedColumnId: string) => {
     setTasks((prev) =>
@@ -221,20 +216,13 @@ export function DashboardMain({
   }
 
   return (
-    <div
-      className={cn(
-        "@container flex-1 min-w-0 flex flex-col overflow-y-auto custom-scrollbar transition-[padding,gap] duration-200",
-        isCompact
-          ? "p-3 sm:p-4 pb-24 xl:pb-4 gap-3.5 sm:gap-4"
-          : "p-3.5 sm:p-4 md:p-5 pb-24 xl:pb-5 gap-4 sm:gap-5",
-      )}
-    >
+    <div className="@container flex-1 min-w-0 flex flex-col overflow-y-auto custom-scrollbar transition-[padding,gap] duration-200 p-3.5 sm:p-4 md:p-5 pb-24 xl:pb-5 gap-4 sm:gap-5">
       {/* Resumo Diário do Jogador (HUD com Metas e Indicadores Chave) */}
       <DashboardDailyBriefing
         firstName={firstName}
         streak={streak}
         tasks={briefingTasks}
-        transactions={transactions}
+        transactions={mergedTransactions}
         timezone={userTimezone}
       />
 
@@ -254,7 +242,6 @@ export function DashboardMain({
           workspaces.length > 1 ? activeWorkspaceName : undefined
         }
         isReadOnly={isActiveWorkspaceReadOnly}
-        isCompact={isCompact}
         isPremium={isPremium}
         tasks={tasks}
       />
@@ -270,7 +257,6 @@ export function DashboardMain({
         onCreateFirstColumn={() => setCreateColumnTrigger((n) => n + 1)}
         defaultColumnId={defaultWritableColumnId}
         isReadOnly={isActiveWorkspaceReadOnly}
-        isCompact={isCompact}
       />
     </div>
   );

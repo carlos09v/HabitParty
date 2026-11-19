@@ -1,211 +1,60 @@
 import { toast } from "sonner";
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
-import { createFocusRecord } from "@/actions/focusActions";
-import { changeTaskStatus } from "@/actions/taskActions";
+import { persist } from "zustand/middleware";
 import {
   DEFAULT_LONG_BREAK_MINUTES,
   DEFAULT_POMO_MINUTES,
   DEFAULT_SHORT_BREAK_MINUTES,
 } from "@/constants/focus";
+import { executeCompleteLinkedTask } from "@/store/focus/focusLinkedTaskAction";
 import {
-  type TimerSoundType,
-  useSoundPreferencesStore,
-} from "@/store/soundPreferencesStore";
+  executeCompleteSession,
+  isFocusSessionCompleting,
+} from "@/store/focus/focusSessionCompletion";
+import {
+  buildIdleTimerPatch,
+  type FocusTimerStoreState,
+} from "@/store/focus/focusTimerState";
+import { executeFocusTick } from "@/store/focus/focusTimerTickAction";
+import {
+  startGlobalTicker,
+  stopGlobalTicker,
+} from "@/store/focus/focusTimerTicker";
+import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
 import { useUIStore } from "@/store/uiStore";
-import { useUserStore } from "@/store/userStore";
-import type {
-  FocusActivity,
-  FocusPhase,
-  FocusRecordType,
-  FocusTimerState,
-} from "@/types/focus";
+import type { FocusActivity, FocusPhase, FocusRecordType } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
-import { getTodayDateString, toLocalISOString } from "@/utils/date";
-import { formatCoins, getTaskRewardBreakdown } from "@/utils/economy";
-import { formatDurationMinSec } from "@/utils/focusFormatters";
 import {
-  getBrowserDocumentLocale,
-  optimizedFocusStorage,
+  createOptimizedFocusPersistStorage,
   registerFocusTimerWindowListeners,
-  sendBrowserNotification,
   updateDocumentTitle,
 } from "@/utils/focusTimerBrowser";
 import {
   setFocusTimerTranslators,
-  tNotifMsg,
   tStoreMsg,
 } from "@/utils/focusTimerMessages";
-import { awardUserRewards } from "@/utils/gamification";
 import { soundEffects } from "@/utils/soundEffects";
 
+export type { FocusTimerStoreState };
 export { setFocusTimerTranslators };
 
-let globalTimerInterval: ReturnType<typeof setInterval> | null = null;
-let globalTimerWorker: Worker | null = null;
-let activeGlobalTickFn: (() => void) | null = null;
-let isCompletingSession = false;
-let isCompletingLinkedTaskGuard = false;
-
-function startFallbackInterval() {
-  if (typeof window === "undefined" || globalTimerInterval) return;
-  globalTimerInterval = setInterval(() => {
-    activeGlobalTickFn?.();
-  }, 1000);
-}
-
-function ensureTimerWorker(): Worker | null {
-  if (typeof window === "undefined" || typeof Worker === "undefined") {
-    return null;
+function playStartSounds(withAmbient = false) {
+  const soundPrefs = useSoundPreferencesStore.getState();
+  if (soundPrefs.timerSoundsEnabled) {
+    const vol = soundPrefs.timerVolume ?? 0.8;
+    soundEffects.playTimerStartSound(soundPrefs.timerSoundType, vol);
   }
-  if (globalTimerWorker) return globalTimerWorker;
-  try {
-    const worker = new Worker("/focus-timer-worker.js");
-    worker.onmessage = (event: MessageEvent) => {
-      if (event.data === "tick") {
-        // Worker ativo: dispensa o interval de fallback sujeito a throttling em segundo plano
-        if (globalTimerInterval) {
-          clearInterval(globalTimerInterval);
-          globalTimerInterval = null;
-        }
-        activeGlobalTickFn?.();
-      }
-    };
-    worker.onerror = () => {
-      try {
-        worker.terminate();
-      } catch {
-        // Ignore terminate error
-      }
-      if (globalTimerWorker === worker) {
-        globalTimerWorker = null;
-      }
-      if (activeGlobalTickFn) {
-        startFallbackInterval();
-      }
-    };
-    globalTimerWorker = worker;
-    return worker;
-  } catch {
-    return null;
+  if (
+    withAmbient &&
+    soundPrefs.isAmbientPlaying &&
+    soundPrefs.ambientSoundType !== "none"
+  ) {
+    soundEffects.startAmbientSound(
+      soundPrefs.ambientSoundType,
+      soundPrefs.ambientVolume,
+    );
   }
-}
-
-function startGlobalTicker(tickFn: () => void) {
-  if (typeof window === "undefined") return;
-  activeGlobalTickFn = tickFn;
-
-  if (globalTimerInterval) {
-    clearInterval(globalTimerInterval);
-    globalTimerInterval = null;
-  }
-  // Mantém fallback ativo até o Worker confirmar o primeiro tick
-  startFallbackInterval();
-
-  const worker = ensureTimerWorker();
-  if (worker) {
-    try {
-      worker.postMessage("start");
-    } catch {
-      // Fallback já está ativo
-    }
-  }
-}
-
-function stopGlobalTicker() {
-  activeGlobalTickFn = null;
-  if (globalTimerInterval) {
-    clearInterval(globalTimerInterval);
-    globalTimerInterval = null;
-  }
-  if (globalTimerWorker) {
-    try {
-      globalTimerWorker.postMessage("stop");
-    } catch {
-      // Ignore postMessage error
-    }
-  }
-}
-
-/**
- * Helper unificado para gerar o estado base de timer parado/resetado,
- * evitando repetição dos mesmos 8 campos em múltiplos métodos da store.
- */
-function buildIdleTimerPatch(
-  durationSeconds = DEFAULT_POMO_MINUTES * 60,
-  overrides?: Partial<FocusTimerStoreState>,
-): Partial<FocusTimerStoreState> {
-  return {
-    isActive: false,
-    isPaused: false,
-    phase: "WORK",
-    secondsRemaining: durationSeconds,
-    totalDurationSeconds: durationSeconds,
-    elapsedSeconds: 0,
-    startedAt: null,
-    lastTickTimestamp: null,
-    hasTriggeredOvertimeAlert: false,
-    ...overrides,
-  };
-}
-
-export interface FocusTimerStoreState extends FocusTimerState {
-  phase: FocusPhase;
-  lastTickTimestamp: number | null;
-  hasTriggeredOvertimeAlert: boolean;
-  isSavingSession: boolean;
-  isCompletingLinkedTask: boolean;
-  onSessionSavedCallback: (() => void) | null;
-
-  // Preferências de som delegadas ao soundPreferencesStore (fonte única da verdade)
-  toggleSound: () => void;
-  setTimerSoundType: (type: TimerSoundType) => void;
-
-  // Anotações da sessão
-  sessionNotes: string;
-  setSessionNotes: (notes: string) => void;
-
-  // Ações de controle
-  setOnSessionSavedCallback: (cb: (() => void) | null) => void;
-  toggleTimer: () => void;
-  pauseTimer: () => void;
-  resumeTimer: () => void;
-  resetTimer: () => void;
-  stopFromWidget: () => void;
-  skipBreak: () => void;
-  startBreak: () => Promise<boolean>;
-  completeSession: (
-    notes?: string,
-    options?: {
-      suppressCompleteSound?: boolean;
-      suppressLinkedTaskAction?: boolean;
-    },
-  ) => Promise<boolean>;
-  changeMode: (newMode: FocusRecordType) => void;
-  changeDuration: (minutes: number) => void;
-  startFocusActivity: (activity: FocusActivity) => void;
-  startFocusItem: (item: InventoryItemResponseDTO) => void;
-  startFocusTask: (task: { id: string; title: string }) => void;
-  selectActivityTarget: (activity: FocusActivity | null) => void;
-  selectItemTarget: (item: InventoryItemResponseDTO | null) => void;
-  selectTaskTarget: (task: { id: string; title: string } | null) => void;
-  unlinkTaskFromTarget: () => void;
-  completeLinkedTask: (taskId: string, taskName?: string) => Promise<boolean>;
-  syncTargetMetadata: (metadata: {
-    id?: string;
-    name?: string;
-    icon?: string;
-    targetMinutes?: number;
-    recordType?: FocusRecordType;
-    taskId?: string;
-    taskName?: string;
-  }) => void;
-  resetTarget: () => void;
-  transferTarget: (activity: FocusActivity) => void;
-  /** Promove uma sessão de foco direto na tarefa para Atividade (Macro) + Tarefa (Micro), preservando o tempo. */
-  linkActivityToTask: (activity: FocusActivity) => void;
-  tick: () => void;
 }
 
 export const useFocusTimerStore = create<FocusTimerStoreState>()(
@@ -240,139 +89,25 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         set({ onSessionSavedCallback: cb });
       },
 
-      tick: () => {
-        const state = get();
-        if (!state.isActive || state.isPaused) {
-          stopGlobalTicker();
-          return;
-        }
-
-        const now = Date.now();
-        const elapsedMs = state.lastTickTimestamp
-          ? now - state.lastTickTimestamp
-          : 1000;
-
-        // Se o relógio do sistema recuou (> 1.5s), reancora para evitar congelamento
-        if (elapsedMs < -1500) {
-          set({ lastTickTimestamp: now });
-          return;
-        }
-
-        // Evita avanço duplicado caso visibilitychange, Worker e PiP disparem no mesmo segundo
-        if (elapsedMs < 900) {
-          return;
-        }
-
-        const delta = state.lastTickTimestamp
-          ? elapsedMs < 1000
-            ? 1
-            : Math.floor(elapsedMs / 1000)
-          : 1;
-        const nextTickTimestamp = state.lastTickTimestamp
-          ? state.lastTickTimestamp + delta * 1000
-          : now;
-
-        const isBreak =
-          state.phase === "SHORT_BREAK" || state.phase === "LONG_BREAK";
-        const isWorkPomo =
-          !isBreak &&
-          state.mode === "POMO" &&
-          state.target?.type !== "inventory";
-        const isCountdown =
-          state.mode === "POMO" ||
-          state.target?.type === "inventory" ||
-          isBreak;
-
-        if (isWorkPomo) {
-          const nextElapsed = state.elapsedSeconds + delta;
-          const nextRemaining = Math.max(0, state.secondsRemaining - delta);
-          const justCompletedCycle =
-            !state.hasTriggeredOvertimeAlert && nextRemaining === 0;
-
-          set({
-            secondsRemaining: nextRemaining,
-            elapsedSeconds: nextElapsed,
-            lastTickTimestamp: nextTickTimestamp,
-            hasTriggeredOvertimeAlert:
-              state.hasTriggeredOvertimeAlert || justCompletedCycle,
-          });
-          updateDocumentTitle(get());
-
-          if (justCompletedCycle) {
-            if (useSoundPreferencesStore.getState().timerSoundsEnabled) {
-              soundEffects.playFocusSessionCompleteSound();
-            }
-            triggerCelebrationConfetti();
-            toast.success(tStoreMsg("overtimeStartedToast"));
-            sendBrowserNotification(
-              tNotifMsg("overtimeStartedTitle"),
-              tNotifMsg("overtimeStartedBody"),
-            );
-          }
-          return;
-        }
-
-        if (isCountdown) {
-          if (state.secondsRemaining <= delta) {
-            // Ciclo concluído (Pausa ou Cupom de Mochila): soma exatamente os segundos restantes
-            stopGlobalTicker();
-            const finalElapsed = state.elapsedSeconds + state.secondsRemaining;
-            set({
-              secondsRemaining: 0,
-              elapsedSeconds: finalElapsed,
-              lastTickTimestamp: null,
-            });
-
-            const soundPrefs = useSoundPreferencesStore.getState();
-
-            // 1. Pausa concluída (SHORT_BREAK ou LONG_BREAK)
-            if (isBreak) {
-              if (soundPrefs.timerSoundsEnabled) {
-                soundEffects.playBreakEndSound();
-              }
-              const workDuration =
-                (state.target?.targetMinutes || DEFAULT_POMO_MINUTES) * 60;
-              set(buildIdleTimerPatch(workDuration));
-              updateDocumentTitle(get());
-              toast.info(tStoreMsg("breakCompletedToast"));
-              sendBrowserNotification(
-                tNotifMsg("breakEndedTitle"),
-                tNotifMsg("breakEndedBody"),
-              );
-              return;
-            }
-
-            // 2. Caso cupom de inventário ou outro countdown
-            get().completeSession();
-            return;
-          }
-
-          set((prev) => ({
-            secondsRemaining: Math.max(0, prev.secondsRemaining - delta),
-            elapsedSeconds: prev.elapsedSeconds + delta,
-            lastTickTimestamp: nextTickTimestamp,
-          }));
-          updateDocumentTitle(get());
-        } else {
-          // Cronômetro livre (enquanto a aba estiver aberta)
-          set((prev) => ({
-            elapsedSeconds: prev.elapsedSeconds + delta,
-            lastTickTimestamp: nextTickTimestamp,
-          }));
-          updateDocumentTitle(get());
-        }
-      },
+      tick: () => executeFocusTick(set, get),
 
       toggleTimer: () => {
-        if (isCompletingSession || get().isSavingSession) {
+        const state = get();
+        if (isFocusSessionCompleting(state)) {
           return;
         }
-        const state = get();
-        const soundPrefs = useSoundPreferencesStore.getState();
 
         if (!state.isActive) {
           if (!state.target) {
-            toast.info(tStoreMsg("selectTargetToStartToast"));
+            const isGamified =
+              useUIStore.getState().experienceMode === "GAMIFIED";
+            toast.info(
+              tStoreMsg(
+                isGamified
+                  ? "selectTargetToStartToast"
+                  : "selectTargetToStartToastProductivity",
+              ),
+            );
             return;
           }
           if (
@@ -383,19 +118,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             return;
           }
           const nowStr = state.startedAt || new Date().toISOString();
-          if (soundPrefs.timerSoundsEnabled) {
-            const vol = soundPrefs.timerVolume ?? 0.8;
-            soundEffects.playTimerStartSound(soundPrefs.timerSoundType, vol);
-          }
-          if (
-            soundPrefs.isAmbientPlaying &&
-            soundPrefs.ambientSoundType !== "none"
-          ) {
-            soundEffects.startAmbientSound(
-              soundPrefs.ambientSoundType,
-              soundPrefs.ambientVolume,
-            );
-          }
+          playStartSounds(true);
           set({
             isActive: true,
             isPaused: false,
@@ -415,19 +138,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             toast.info(tStoreMsg("itemAlreadyCompletedToast"));
             return;
           }
-          if (soundPrefs.timerSoundsEnabled) {
-            const vol = soundPrefs.timerVolume ?? 0.8;
-            soundEffects.playTimerStartSound(soundPrefs.timerSoundType, vol);
-          }
-          if (
-            soundPrefs.isAmbientPlaying &&
-            soundPrefs.ambientSoundType !== "none"
-          ) {
-            soundEffects.startAmbientSound(
-              soundPrefs.ambientSoundType,
-              soundPrefs.ambientVolume,
-            );
-          }
+          playStartSounds(true);
           set({
             isPaused: false,
             lastTickTimestamp: Date.now(),
@@ -451,13 +162,13 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       },
 
       resumeTimer: () => {
-        set({ isPaused: false, lastTickTimestamp: Date.now() });
+        set({ isActive: true, isPaused: false, lastTickTimestamp: Date.now() });
         updateDocumentTitle(get());
         startGlobalTicker(get().tick);
       },
 
       resetTimer: () => {
-        if (isCompletingSession || get().isSavingSession) {
+        if (isFocusSessionCompleting(get())) {
           return;
         }
         stopGlobalTicker();
@@ -473,7 +184,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       },
 
       stopFromWidget: () => {
-        if (isCompletingSession || get().isSavingSession) {
+        if (isFocusSessionCompleting(get())) {
           return;
         }
         stopGlobalTicker();
@@ -503,7 +214,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       },
 
       skipBreak: () => {
-        if (isCompletingSession || get().isSavingSession) {
+        if (isFocusSessionCompleting(get())) {
           return;
         }
         stopGlobalTicker();
@@ -516,10 +227,10 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       },
 
       startBreak: async () => {
-        if (isCompletingSession || get().isSavingSession) {
+        const state = get();
+        if (isFocusSessionCompleting(state)) {
           return false;
         }
-        const state = get();
         if (state.phase === "SHORT_BREAK" || state.phase === "LONG_BREAK") {
           return true;
         }
@@ -570,223 +281,11 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         return true;
       },
 
-      completeSession: async (
-        notes?: string,
-        options?: {
-          suppressCompleteSound?: boolean;
-          suppressLinkedTaskAction?: boolean;
-        },
-      ) => {
-        if (isCompletingSession || get().isSavingSession) {
-          return false;
-        }
-        const state = get();
-        if (state.phase === "SHORT_BREAK" || state.phase === "LONG_BREAK") {
-          get().skipBreak();
-          return true;
-        }
-
-        if (!state.target) {
-          toast.warning(tStoreMsg("linkTargetBeforeSaveToast"));
-          return false;
-        }
-        const elapsed = state.elapsedSeconds;
-        if (elapsed < 60) {
-          toast.warning(tStoreMsg("minDurationWarningToast"));
-          return false;
-        }
-
-        const wasRunning = state.isActive && !state.isPaused;
-        isCompletingSession = true;
-        set({ isSavingSession: true });
-        stopGlobalTicker();
-
-        const isInventory = state.target?.type === "inventory";
-        const now = new Date();
-        const exactSeconds = Math.max(1, elapsed);
-        const userTimeZone = useUserStore.getState().user?.timezone;
-        const endTime = toLocalISOString(now, userTimeZone);
-        const startTime = toLocalISOString(
-          new Date(now.getTime() - exactSeconds * 1000),
-          userTimeZone,
-        );
-
-        const recordType: FocusRecordType = isInventory
-          ? "STOPWATCH"
-          : state.mode;
-        const pomoTargetMinutes =
-          recordType === "POMO"
-            ? Math.max(1, Math.round(state.totalDurationSeconds / 60))
-            : undefined;
-        const isCompletedPomo =
-          !isInventory &&
-          state.mode === "POMO" &&
-          exactSeconds >= state.totalDurationSeconds;
-
-        const resolvedActivityId =
-          !isInventory && state.target?.type === "activity"
-            ? state.target.id
-            : undefined;
-        const resolvedTaskId = !isInventory
-          ? state.target?.taskId ||
-            (state.target?.type === "task" ? state.target.id : undefined)
-          : undefined;
-        const resolvedTaskName = !isInventory
-          ? state.target?.taskName ||
-            (state.target?.type === "task" ? state.target.name : undefined)
-          : undefined;
-
-        try {
-          const res = await createFocusRecord({
-            focusActivityId: resolvedActivityId,
-            inventoryItemId: isInventory ? state.target?.id : undefined,
-            taskId: resolvedTaskId,
-            recordType,
-            completedPomos: isCompletedPomo ? 1 : 0,
-            pomoTargetMinutes,
-            startTime,
-            endTime,
-            notes:
-              (notes !== undefined ? notes : state.sessionNotes)?.trim() ||
-              undefined,
-          });
-
-          if (res.success) {
-            if (resolvedTaskId && typeof window !== "undefined") {
-              window.dispatchEvent(
-                new CustomEvent("habitparty:task-focus-recorded", {
-                  detail: {
-                    taskId: resolvedTaskId,
-                    durationMinutes: Math.max(1, Math.floor(exactSeconds / 60)),
-                    cycles: isCompletedPomo ? 1 : 0,
-                  },
-                }),
-              );
-            }
-
-            if (isInventory) {
-              soundEffects.playFocusSessionCompleteSound();
-              const isFinished =
-                state.secondsRemaining <= 1 ||
-                exactSeconds >= state.totalDurationSeconds;
-              if (isFinished) {
-                triggerCelebrationConfetti();
-                toast.success(tStoreMsg("couponTimeDepletedToast"));
-                useUserStore.getState().triggerAchievementCheck();
-              } else {
-                const timeStr = formatDurationMinSec(exactSeconds);
-                toast.success(
-                  tStoreMsg("couponTimeDeductedToast", { time: timeStr }),
-                );
-              }
-            } else {
-              const timeStr = formatDurationMinSec(exactSeconds);
-              const recordData = res.data as
-                | { xpEarned?: number; coinsEarned?: number }
-                | undefined;
-              const xp = recordData?.xpEarned ?? 0;
-              const coins = recordData?.coinsEarned ?? 0;
-
-              const rewardResult = awardUserRewards(xp, coins);
-              if (xp <= 0 && coins <= 0) {
-                useUserStore.getState().triggerAchievementCheck();
-              }
-
-              const taskAction =
-                resolvedTaskId && !options?.suppressLinkedTaskAction
-                  ? {
-                      label: tStoreMsg("completeLinkedTaskAction"),
-                      onClick: () => {
-                        void get().completeLinkedTask(
-                          resolvedTaskId,
-                          resolvedTaskName,
-                        );
-                      },
-                    }
-                  : undefined;
-
-              if (!rewardResult.didLevelUp) {
-                if (!options?.suppressCompleteSound) {
-                  soundEffects.playFocusSessionCompleteSound();
-                }
-                if (xp > 0 || coins > 0) {
-                  const isGamified =
-                    useUIStore.getState().experienceMode === "GAMIFIED";
-                  toast.success(
-                    tStoreMsg(
-                      isGamified
-                        ? "sessionCompletedRewardsToast"
-                        : "sessionCompletedRewardsToastProductivity",
-                      {
-                        time: timeStr,
-                        xp,
-                        coins: formatCoins(Number(coins), {
-                          locale: getBrowserDocumentLocale(),
-                        }),
-                      },
-                    ),
-                    taskAction
-                      ? { action: taskAction, duration: 8000 }
-                      : undefined,
-                  );
-                } else {
-                  toast.success(
-                    tStoreMsg("sessionCompletedLoggedToast", {
-                      time: timeStr,
-                    }),
-                    taskAction
-                      ? { action: taskAction, duration: 8000 }
-                      : undefined,
-                  );
-                }
-              } else if (taskAction) {
-                toast.info(resolvedTaskName || "", {
-                  action: taskAction,
-                  duration: 8000,
-                });
-              }
-            }
-
-            stopGlobalTicker();
-            set((prev) =>
-              buildIdleTimerPatch(
-                prev.totalDurationSeconds || DEFAULT_POMO_MINUTES * 60,
-                {
-                  sessionNotes: "",
-                  target: isInventory ? null : prev.target,
-                  completedCycles: isCompletedPomo
-                    ? prev.completedCycles + 1
-                    : prev.completedCycles,
-                },
-              ),
-            );
-            updateDocumentTitle(get());
-
-            // Notifica componentes inscritos (ex: router.refresh())
-            state.onSessionSavedCallback?.();
-
-            return true;
-          }
-
-          if (wasRunning) {
-            startGlobalTicker(() => get().tick());
-          }
-          toast.error(res.error || tStoreMsg("saveSessionFailedToast"));
-          return false;
-        } catch {
-          if (wasRunning) {
-            startGlobalTicker(() => get().tick());
-          }
-          toast.error(tStoreMsg("saveSessionServerErrorToast"));
-          return false;
-        } finally {
-          isCompletingSession = false;
-          set({ isSavingSession: false });
-        }
-      },
+      completeSession: (notes, options) =>
+        executeCompleteSession(set, get, notes, options),
 
       changeMode: (newMode: FocusRecordType) => {
-        if (isCompletingSession || get().isSavingSession) {
+        if (isFocusSessionCompleting(get())) {
           return;
         }
         stopGlobalTicker();
@@ -808,7 +307,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
       },
 
       changeDuration: (minutes: number) => {
-        if (isCompletingSession || get().isSavingSession) {
+        if (isFocusSessionCompleting(get())) {
           return;
         }
         set((prev) => {
@@ -827,12 +326,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         stopGlobalTicker();
         const minutes = activity.targetTimeMinutes || DEFAULT_POMO_MINUTES;
         const mode = activity.recordType || "POMO";
-        const soundPrefs = useSoundPreferencesStore.getState();
-
-        if (soundPrefs.timerSoundsEnabled) {
-          const vol = soundPrefs.timerVolume ?? 0.8;
-          soundEffects.playTimerStartSound(soundPrefs.timerSoundType, vol);
-        }
+        playStartSounds();
 
         set((prev) => ({
           ...buildIdleTimerPatch(minutes * 60, {
@@ -871,12 +365,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         const minutes = DEFAULT_POMO_MINUTES;
         const mode: FocusRecordType =
           prev.target?.type === "inventory" ? "POMO" : prev.mode || "POMO";
-        const soundPrefs = useSoundPreferencesStore.getState();
-
-        if (soundPrefs.timerSoundsEnabled) {
-          const vol = soundPrefs.timerVolume ?? 0.8;
-          soundEffects.playTimerStartSound(soundPrefs.timerSoundType, vol);
-        }
+        playStartSounds();
 
         const nextTarget = {
           type: "task" as const,
@@ -915,11 +404,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           return;
         }
 
-        const soundPrefs = useSoundPreferencesStore.getState();
-        if (soundPrefs.timerSoundsEnabled) {
-          const vol = soundPrefs.timerVolume ?? 0.8;
-          soundEffects.playTimerStartSound(soundPrefs.timerSoundType, vol);
-        }
+        playStartSounds();
 
         set({
           ...buildIdleTimerPatch(totalSecs, {
@@ -1104,167 +589,8 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         updateDocumentTitle(get());
       },
 
-      completeLinkedTask: async (taskId: string, taskName?: string) => {
-        if (isCompletingLinkedTaskGuard || get().isCompletingLinkedTask) {
-          return false;
-        }
-        isCompletingLinkedTaskGuard = true;
-        set({ isCompletingLinkedTask: true });
-
-        try {
-          const stateBeforeComplete = get();
-          const currentTargetTaskId =
-            stateBeforeComplete.target?.type === "task"
-              ? stateBeforeComplete.target.taskId ||
-                stateBeforeComplete.target.id
-              : stateBeforeComplete.target?.type === "activity"
-                ? stateBeforeComplete.target.taskId
-                : undefined;
-          const isLinkedToTarget = currentTargetTaskId === taskId;
-          if (
-            isLinkedToTarget &&
-            stateBeforeComplete.phase === "WORK" &&
-            stateBeforeComplete.elapsedSeconds >= 60
-          ) {
-            const sessionSaved = await get().completeSession(undefined, {
-              suppressCompleteSound: true,
-              suppressLinkedTaskAction: true,
-            });
-            if (!sessionSaved) {
-              return false;
-            }
-          }
-
-          const res = await changeTaskStatus(taskId, "COMPLETED");
-          if (res.success) {
-            const taskData = res.data;
-            const locale = getBrowserDocumentLocale();
-            const userTimeZone = useUserStore.getState().user?.timezone;
-            const resolvedName = taskName || taskData?.name || "Tarefa";
-            const rewardGranted = taskData?.rewardGranted !== false;
-
-            if (!rewardGranted) {
-              useUserStore
-                .getState()
-                .markStreakSecuredToday(
-                  getTodayDateString(new Date(), userTimeZone),
-                );
-              soundEffects.playTaskCompleteSound();
-              triggerCelebrationConfetti();
-              toast.success(
-                tStoreMsg("linkedTaskCompletedNoRewardToast", {
-                  name: resolvedName,
-                }),
-              );
-            } else {
-              const rewardStreak =
-                taskData?.taskType === "DAILY" &&
-                typeof taskData.currentStreak === "number"
-                  ? Math.max(0, taskData.currentStreak - 1)
-                  : taskData?.currentStreak;
-              const breakdown = getTaskRewardBreakdown({
-                taskType: taskData?.taskType,
-                difficulty: taskData?.difficulty,
-                importanceType: taskData?.importanceType,
-                repeatType: taskData?.repeatType,
-                resetCounter: taskData?.resetCounter,
-                currentStreak: rewardStreak,
-                isHardcoreModeEnabled: taskData?.isHardcoreModeEnabled,
-                dueDate: taskData?.dueDate,
-                isPenaltyApplied: taskData?.isPenaltyApplied,
-                locale,
-                timeZone: userTimeZone,
-              });
-              const xp = breakdown.finalReward.xp;
-              const gold = breakdown.finalReward.gold;
-              const rewardResult = awardUserRewards(xp, gold, {
-                locale,
-                isTaskCompletion: true,
-              });
-
-              if (!rewardResult.didLevelUp) {
-                soundEffects.playTaskCompleteSound();
-                triggerCelebrationConfetti();
-                if (xp > 0 || gold > 0) {
-                  const isGamified =
-                    useUIStore.getState().experienceMode === "GAMIFIED";
-                  toast.success(
-                    tStoreMsg(
-                      isGamified
-                        ? "linkedTaskCompletedRewardsToast"
-                        : "linkedTaskCompletedRewardsToastProductivity",
-                      {
-                        name: resolvedName,
-                        xp,
-                        coins: formatCoins(gold, { locale }),
-                      },
-                    ),
-                  );
-                } else {
-                  toast.success(
-                    tStoreMsg("linkedTaskCompletedToast", {
-                      name: resolvedName,
-                    }),
-                  );
-                }
-              }
-            }
-
-            if (typeof window !== "undefined") {
-              window.dispatchEvent(
-                new CustomEvent("habitparty:task-completed-from-focus", {
-                  detail: { taskId, updatedTask: res.data },
-                }),
-              );
-              window.dispatchEvent(
-                new CustomEvent("habitparty:tasks-changed", {
-                  detail: { completedToday: true },
-                }),
-              );
-            }
-            let shouldFinalizeDirectTaskSession = false;
-            set((prev) => {
-              if (!prev.target) return prev;
-              const currentTaskId =
-                prev.target.taskId ||
-                (prev.target.type === "task" ? prev.target.id : undefined);
-              if (currentTaskId !== taskId) return prev;
-              if (prev.target.type === "activity") {
-                return {
-                  ...prev,
-                  target: {
-                    ...prev.target,
-                    taskId: undefined,
-                    taskName: undefined,
-                  },
-                };
-              }
-              shouldFinalizeDirectTaskSession = true;
-              return {
-                ...prev,
-                ...buildIdleTimerPatch(DEFAULT_POMO_MINUTES * 60, {
-                  mode: "POMO",
-                  target: null,
-                }),
-              };
-            });
-            if (shouldFinalizeDirectTaskSession) {
-              stopGlobalTicker();
-              updateDocumentTitle(get());
-              get().onSessionSavedCallback?.();
-            }
-            return true;
-          }
-          toast.error(res.error || tStoreMsg("linkedTaskCompleteFailedToast"));
-          return false;
-        } catch {
-          toast.error(tStoreMsg("linkedTaskCompleteFailedToast"));
-          return false;
-        } finally {
-          isCompletingLinkedTaskGuard = false;
-          set({ isCompletingLinkedTask: false });
-        }
-      },
+      completeLinkedTask: (taskId: string, taskName?: string) =>
+        executeCompleteLinkedTask(set, get, taskId, taskName),
 
       selectItemTarget: (item: InventoryItemResponseDTO | null) => {
         set((prev) => {
@@ -1460,7 +786,7 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
     }),
     {
       name: "habitparty-focus-timer",
-      storage: createJSONStorage(() => optimizedFocusStorage),
+      storage: createOptimizedFocusPersistStorage(),
       partialize: (state) => ({
         isActive: state.isActive,
         isPaused: state.isPaused,

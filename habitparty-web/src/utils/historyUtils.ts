@@ -9,6 +9,7 @@ import { PACKAGE_LEVEL_COLOR, REWARD_ICONS } from "@/constants/reward";
 import { COLUMN_ICONS } from "@/constants/routine";
 import { DIFFICULTY_BORDER, TASK_DIFFICULTY_META } from "@/constants/task";
 import type { AppLocale } from "@/i18n/config";
+import { getUtilityTranslator } from "@/i18n/utilityTranslator";
 import type {
   HistoryPageSummary,
   TransactionDayGroup,
@@ -83,10 +84,10 @@ function formatTransactionTime(
 }
 
 const PACKAGE_BORDER_MAP: Record<string, string> = {
-  BASIC: "border-l-emerald-500",
-  PREMIUM: "border-l-sky-500",
-  EPIC: "border-l-purple-500",
-  LEGENDARY: "border-l-amber-500",
+  BASIC: "border-l-success-500",
+  PREMIUM: "border-l-info",
+  EPIC: "border-l-magenta",
+  LEGENDARY: "border-l-gold",
 };
 
 export interface TransactionMetadataLabels {
@@ -191,18 +192,17 @@ export function formatTransactionDayLabel(
   timeZone?: string | null,
   dayLabels?: TransactionDayLabels,
 ): string {
-  const isEn = locale === "en";
-
   if (!dateKey || dateKey === "unknown") {
     return (
-      dayLabels?.unknownDate ?? (isEn ? "Unknown date" : "Data desconhecida")
+      dayLabels?.unknownDate ??
+      getUtilityTranslator(locale, "history")("unknownDate")
     );
   }
 
   const todayParts = getDatePartsInTimeZone(referenceDate, timeZone);
   const todayKey = getDateKeyInTimeZone(referenceDate, timeZone);
   if (dateKey === todayKey) {
-    return dayLabels?.today ?? (isEn ? "Today" : "Hoje");
+    return dayLabels?.today ?? getUtilityTranslator(locale, "history")("today");
   }
 
   const yesterdayUtc = new Date(
@@ -210,7 +210,10 @@ export function formatTransactionDayLabel(
   );
   const yesterdayKey = `${yesterdayUtc.getUTCFullYear()}-${String(yesterdayUtc.getUTCMonth() + 1).padStart(2, "0")}-${String(yesterdayUtc.getUTCDate()).padStart(2, "0")}`;
   if (dateKey === yesterdayKey) {
-    return dayLabels?.yesterday ?? (isEn ? "Yesterday" : "Ontem");
+    return (
+      dayLabels?.yesterday ??
+      getUtilityTranslator(locale, "history")("yesterday")
+    );
   }
 
   const [y, m, d] = dateKey.split("-").map(Number);

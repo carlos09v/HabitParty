@@ -4,10 +4,25 @@ import { Download, Mountain, Sparkles, Trophy, Users } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { type ReactNode, useEffect, useId, useState } from "react";
-import { markAchievementsSeenAction } from "@/actions/showcaseActions";
+import {
+  type ReactNode,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  markAchievementsSeenAction,
+  markArtifactsSeenAction,
+} from "@/actions/showcaseActions";
 import { AchievementsGallery } from "@/components/showcase/AchievementsGallery";
+import { ArtifactsGallery } from "@/components/showcase/ArtifactsGallery";
 import { ShowcaseHeroHeader } from "@/components/showcase/ShowcaseHeroHeader";
+import type {
+  PickerPendingItem,
+  PickerTab,
+} from "@/components/showcase/ShowcaseHighlightPickerModal";
 import { ShowcaseHighlightsSection } from "@/components/showcase/ShowcaseHighlightsSection";
 import {
   getShowcaseTabIds,
@@ -18,11 +33,11 @@ import {
 import { ContextualBackButton } from "@/components/ui/ContextualBackButton";
 import { MAX_SHOWCASE_HIGHLIGHTS } from "@/constants/achievements";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import { useIdlePreload } from "@/hooks/useIdlePreload";
 import { useActiveAvatarFrame } from "@/store/avatarFrameStore";
 import { useUserStore } from "@/store/userStore";
 import type {
   AchievementItemResponseDTO,
+  ArtifactItemResponseDTO,
   ProfileHighlightResponseDTO,
   UserShowcaseResponseDTO,
 } from "@/types/showcase";
@@ -34,9 +49,10 @@ import type {
 import { resolveShowcaseTab, type ShowcaseTabId } from "@/utils";
 
 const EMPTY_FRIENDS: FriendConnectionItem[] = [];
+const EMPTY_ARTIFACTS: ArtifactItemResponseDTO[] = [];
 
 const preloadProgressionPanel = () =>
-  import("@/components/showcase/ProgressionPyramidPanel").then(
+  import("@/components/showcase/progression/ProgressionPyramidPanel").then(
     (mod) => mod.ProgressionPyramidPanel,
   );
 
@@ -106,13 +122,30 @@ export function ShowcaseContainer({
   const [highlights, setHighlights] = useState<ProfileHighlightResponseDTO[]>(
     initialShowcase.highlights || [],
   );
+  const [friendsOverview, setFriendsOverview] =
+    useState<FriendsOverviewData | null>(initialFriendsOverview);
+
+  useEffect(() => {
+    setFriendsOverview(initialFriendsOverview);
+  }, [initialFriendsOverview]);
+  const [activeRetrospective, setActiveRetrospective] =
+    useState<UserRetrospectiveData | null>(initialRetrospective);
+
+  useEffect(() => {
+    setActiveRetrospective(initialRetrospective);
+  }, [initialRetrospective]);
+
   const [isVisitorMode, setIsVisitorMode] = useState(false);
   const [pickerState, setPickerState] = useState<{
     isOpen: boolean;
     slotIndex: number;
+    initialTab: PickerTab;
+    pendingItem: PickerPendingItem | null;
   }>({
     isOpen: false,
     slotIndex: 0,
+    initialTab: "achievements",
+    pendingItem: null,
   });
   const [previewModalState, setPreviewModalState] = useState<{
     isOpen: boolean;
@@ -123,12 +156,6 @@ export function ShowcaseContainer({
     mode: "profile",
     retro: initialRetrospective,
   });
-
-  useIdlePreload(preloadHighlightPickerModal);
-  useIdlePreload(preloadPreviewCardModal);
-  useIdlePreload(preloadProgressionPanel);
-  useIdlePreload(preloadFriendsPanel);
-  useIdlePreload(preloadRetrospectivePanel);
 
   useEffect(() => {
     setActiveTab(resolveShowcaseTab(urlTabParam));
@@ -145,7 +172,10 @@ export function ShowcaseContainer({
     }));
   }, [initialRetrospective]);
 
-  // Sincroniza achievementPoints no store global (apenas quando divergir) e marca conquistas não vistas como vistas ao abrir a vitrine
+  const markedAchievementsRef = useRef(false);
+  const markedArtifactsRef = useRef(false);
+
+  // Sincroniza achievementPoints no store global (apenas quando divergir) e marca conquistas/artefatos não vistos somente na aba de vitrine
   useEffect(() => {
     const nextPoints = initialShowcase.stats?.achievementPoints;
     if (nextPoints !== undefined) {
@@ -156,14 +186,32 @@ export function ShowcaseContainer({
         });
       }
     }
+  }, [initialShowcase.stats?.achievementPoints]);
 
-    const hasUnseen = initialShowcase.achievements?.some(
-      (a) => a.unlocked && !a.seen,
-    );
-    if (hasUnseen) {
+  useEffect(() => {
+    if (isVisitorMode || activeTab !== "overview") return;
+
+    if (
+      !markedAchievementsRef.current &&
+      initialShowcase.achievements?.some((a) => a.unlocked && !a.seen)
+    ) {
+      markedAchievementsRef.current = true;
       void markAchievementsSeenAction();
     }
-  }, [initialShowcase.stats?.achievementPoints, initialShowcase.achievements]);
+
+    if (
+      !markedArtifactsRef.current &&
+      initialShowcase.artifacts?.some((a) => a.unlocked && !a.seen)
+    ) {
+      markedArtifactsRef.current = true;
+      void markArtifactsSeenAction();
+    }
+  }, [
+    isVisitorMode,
+    activeTab,
+    initialShowcase.achievements,
+    initialShowcase.artifacts,
+  ]);
 
   const handleSelectTab = (tab: ShowcaseTabId) => {
     setActiveTab(tab);
@@ -183,7 +231,22 @@ export function ShowcaseContainer({
   };
 
   const handleOpenPicker = (slotIndex: number) => {
-    setPickerState({ isOpen: true, slotIndex });
+    setPickerState({
+      isOpen: true,
+      slotIndex,
+      initialTab: "achievements",
+      pendingItem: null,
+    });
+  };
+
+  const resolveFirstAvailableSlot = (): number => {
+    const usedSlots = new Set(highlights.map((h) => h.displayOrder));
+    for (let i = 0; i < MAX_SHOWCASE_HIGHLIGHTS; i++) {
+      if (!usedSlots.has(i)) {
+        return i;
+      }
+    }
+    return 0;
   };
 
   const handlePinAchievementFromGallery = (
@@ -195,24 +258,38 @@ export function ShowcaseContainer({
         (h.referenceId === achievement.id ||
           h.highlightKey === achievement.code),
     );
-    if (existingSlot) {
-      setPickerState({
-        isOpen: true,
-        slotIndex: existingSlot.displayOrder,
-      });
-      return;
-    }
+    setPickerState({
+      isOpen: true,
+      slotIndex: existingSlot
+        ? existingSlot.displayOrder
+        : resolveFirstAvailableSlot(),
+      initialTab: "achievements",
+      pendingItem: {
+        highlightType: "ACHIEVEMENT",
+        referenceId: achievement.id,
+        highlightKey: achievement.code,
+      },
+    });
+  };
 
-    const usedSlots = new Set(highlights.map((h) => h.displayOrder));
-    let targetSlot = 0;
-    for (let i = 0; i < MAX_SHOWCASE_HIGHLIGHTS; i++) {
-      if (!usedSlots.has(i)) {
-        targetSlot = i;
-        break;
-      }
-    }
-
-    setPickerState({ isOpen: true, slotIndex: targetSlot });
+  const handlePinArtifactFromGallery = (artifact: ArtifactItemResponseDTO) => {
+    const existingSlot = highlights.find(
+      (h) =>
+        h.highlightType === "ARTIFACT" &&
+        (h.referenceId === artifact.id || h.highlightKey === artifact.code),
+    );
+    setPickerState({
+      isOpen: true,
+      slotIndex: existingSlot
+        ? existingSlot.displayOrder
+        : resolveFirstAvailableSlot(),
+      initialTab: "artifacts",
+      pendingItem: {
+        highlightType: "ARTIFACT",
+        referenceId: artifact.id,
+        highlightKey: artifact.code,
+      },
+    });
   };
 
   const storeUser = useUserStore((s) => s.user);
@@ -220,25 +297,29 @@ export function ShowcaseContainer({
     storeUser && storeUser.id === initialShowcase.user.id
       ? storeUser
       : initialShowcase.user;
-  const friendsCount = initialFriendsOverview?.friendsCount ?? 0;
-  const pendingRequestsCount =
-    initialFriendsOverview?.incomingRequests.length ?? 0;
+  const friendsCount = friendsOverview?.friendsCount ?? 0;
+  const pendingRequestsCount = friendsOverview?.incomingRequests.length ?? 0;
 
   const showSeasonalRetroBanner = Boolean(
-    initialRetrospective?.eligible && initialRetrospective.inSeasonalWindow,
+    activeRetrospective?.eligible && activeRetrospective.inSeasonalWindow,
   );
 
-  const seasonalArchetypeTitle = initialRetrospective
+  const seasonalArchetypeTitle = activeRetrospective
     ? isGamified
-      ? t(`retrospective.archetypes.${initialRetrospective.archetype}.title`)
+      ? t(`retrospective.archetypes.${activeRetrospective.archetype}.title`)
       : t(
-          `retrospective.archetypes.${initialRetrospective.archetype}.essentialTitle`,
+          `retrospective.archetypes.${activeRetrospective.archetype}.essentialTitle`,
         )
     : "";
 
   const tabs: ShowcaseTabItem<ShowcaseTabId>[] = [
     { id: "overview", label: t("tabs.overview"), icon: Trophy },
-    { id: "progression", label: t("tabs.progression"), icon: Mountain },
+    {
+      id: "progression",
+      label: t("tabs.progression"),
+      icon: Mountain,
+      onPreload: preloadProgressionPanel,
+    },
     {
       id: "friends",
       label: t("tabs.friends", { count: friendsCount }),
@@ -247,14 +328,26 @@ export function ShowcaseContainer({
         pendingRequestsCount > 0
           ? t("tabs.friendsPending", { count: pendingRequestsCount })
           : undefined,
+      onPreload: preloadFriendsPanel,
     },
-    { id: "retrospective", label: t("tabs.retrospective"), icon: Sparkles },
+    {
+      id: "retrospective",
+      label: t("tabs.retrospective"),
+      icon: Sparkles,
+      onPreload: preloadRetrospectivePanel,
+    },
   ];
 
   const overviewIds = getShowcaseTabIds(tabsBaseId, "overview");
   const progressionIds = getShowcaseTabIds(tabsBaseId, "progression");
   const friendsIds = getShowcaseTabIds(tabsBaseId, "friends");
   const retrospectiveIds = getShowcaseTabIds(tabsBaseId, "retrospective");
+
+  const artifactsList = initialShowcase.artifacts ?? EMPTY_ARTIFACTS;
+  const unlockedArtifactsCount = useMemo(
+    () => artifactsList.filter((a) => a.unlocked).length,
+    [artifactsList],
+  );
 
   return (
     <div className="flex flex-col w-full max-w-6xl mx-auto pb-16 gap-6">
@@ -267,18 +360,22 @@ export function ShowcaseContainer({
         </div>
       )}
 
-      {/* HERO HEADER: AVATAR + MOLDURA + BIO + NÍVEL + BOTÃO CARD */}
+      {/* HERO HEADER: AVATAR + MOLDURA + TÍTULO + BIO + NÍVEL + BOTÃO CARD */}
       <ShowcaseHeroHeader
         user={resolvedUser}
         stats={initialShowcase.stats}
+        achievements={initialShowcase.achievements}
+        unlockedArtifactsCount={unlockedArtifactsCount}
+        retrospective={activeRetrospective}
         isVisitorMode={isVisitorMode}
         onToggleVisitorMode={() => setIsVisitorMode((prev) => !prev)}
         onOpenProgression={() => handleSelectTab("progression")}
+        onPreloadPreviewCard={preloadPreviewCardModal}
         onOpenPreviewCard={() =>
           setPreviewModalState({
             isOpen: true,
             mode: "profile",
-            retro: initialRetrospective,
+            retro: activeRetrospective,
           })
         }
       />
@@ -300,7 +397,7 @@ export function ShowcaseContainer({
           aria-labelledby={overviewIds.tabId}
           className="flex flex-col gap-7"
         >
-          {showSeasonalRetroBanner && initialRetrospective && (
+          {showSeasonalRetroBanner && activeRetrospective && (
             <section className="rounded-2xl border border-amber-500/45 dark:border-gold/45 bg-gradient-to-r from-amber-500/15 via-primary/15 to-surface/60 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gold/20 border border-gold/45 flex items-center justify-center text-amber-700 dark:text-gold shrink-0">
@@ -309,13 +406,13 @@ export function ShowcaseContainer({
                 <div>
                   <h2 className="text-body-m font-extrabold text-neutral-50">
                     {t("header.retrospectiveBannerTitle", {
-                      year: initialRetrospective.year,
+                      year: activeRetrospective.year,
                     })}
                   </h2>
                   <p className="text-xs text-neutral-300 mt-0.5">
                     {t("header.retrospectiveBannerDesc", {
-                      days: initialRetrospective.activeDays,
-                      tasks: initialRetrospective.tasksCompleted,
+                      days: activeRetrospective.activeDays,
+                      tasks: activeRetrospective.tasksCompleted,
                       archetype: seasonalArchetypeTitle,
                     })}
                   </p>
@@ -325,11 +422,13 @@ export function ShowcaseContainer({
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <button
                   type="button"
+                  onMouseEnter={preloadPreviewCardModal}
+                  onFocus={preloadPreviewCardModal}
                   onClick={() =>
                     setPreviewModalState({
                       isOpen: true,
                       mode: "retrospective",
-                      retro: initialRetrospective,
+                      retro: activeRetrospective,
                     })
                   }
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold bg-gold text-on-gold hover:bg-amber-300 shadow-glow-gold-xs transition-colors cursor-pointer"
@@ -347,12 +446,22 @@ export function ShowcaseContainer({
             stats={initialShowcase.stats}
             highlights={highlights}
             achievements={initialShowcase.achievements}
+            artifacts={artifactsList}
             isVisitorMode={isVisitorMode}
             onOpenPicker={handleOpenPicker}
+            onPreloadPicker={preloadHighlightPickerModal}
           />
 
           {/* INDICADORES VITALÍCIOS DE CONSISTÊNCIA & FEITOS (Server Component Slot) */}
           {statsSlot}
+
+          {/* VITRINE & GRIMÓRIO DE ARTEFATOS (RELÍQUIAS SIMBÓLICAS) */}
+          <ArtifactsGallery
+            artifacts={artifactsList}
+            highlights={highlights}
+            isVisitorMode={isVisitorMode}
+            onPinArtifact={handlePinArtifactFromGallery}
+          />
 
           {/* GALERIA DE CONQUISTAS & MEDALHAS */}
           <AchievementsGallery
@@ -375,7 +484,7 @@ export function ShowcaseContainer({
             user={resolvedUser}
             stats={initialShowcase.stats}
             achievements={initialShowcase.achievements}
-            friends={initialFriendsOverview?.friends ?? EMPTY_FRIENDS}
+            friends={friendsOverview?.friends ?? EMPTY_FRIENDS}
             activeFrameId={activeFrameId}
             isVisitorMode={isVisitorMode}
           />
@@ -389,7 +498,10 @@ export function ShowcaseContainer({
           role="tabpanel"
           aria-labelledby={friendsIds.tabId}
         >
-          <FriendsNetworkPanel initialOverview={initialFriendsOverview} />
+          <FriendsNetworkPanel
+            initialOverview={friendsOverview}
+            onOverviewUpdated={setFriendsOverview}
+          />
         </div>
       )}
 
@@ -401,9 +513,10 @@ export function ShowcaseContainer({
           aria-labelledby={retrospectiveIds.tabId}
         >
           <RetrospectivePanel
-            initialRetrospective={initialRetrospective}
+            initialRetrospective={activeRetrospective}
             isGamified={isGamified}
             isOwnProfile
+            onRetrospectiveChange={setActiveRetrospective}
             onOpenExportModal={(retroData) =>
               setPreviewModalState({
                 isOpen: true,
@@ -418,13 +531,16 @@ export function ShowcaseContainer({
       {/* MODAL DE SELEÇÃO DOS 4 SLOTS */}
       {pickerState.isOpen && (
         <ShowcaseHighlightPickerModal
-          key={pickerState.slotIndex}
+          key={`${pickerState.slotIndex}-${pickerState.initialTab}-${pickerState.pendingItem?.highlightType ?? ""}-${pickerState.pendingItem?.referenceId ?? pickerState.pendingItem?.highlightKey ?? ""}`}
           isOpen={pickerState.isOpen}
           initialSlotIndex={pickerState.slotIndex}
+          initialTab={pickerState.initialTab}
+          initialPendingItem={pickerState.pendingItem}
           user={resolvedUser}
           stats={initialShowcase.stats}
           highlights={highlights}
           achievements={initialShowcase.achievements}
+          artifacts={artifactsList}
           onClose={() => setPickerState((prev) => ({ ...prev, isOpen: false }))}
           onSaved={(updated) => setHighlights(updated)}
         />
@@ -444,7 +560,8 @@ export function ShowcaseContainer({
           stats={initialShowcase.stats}
           highlights={highlights}
           achievements={initialShowcase.achievements}
-          retrospective={previewModalState.retro ?? initialRetrospective}
+          artifacts={artifactsList}
+          retrospective={previewModalState.retro ?? activeRetrospective}
         />
       )}
     </div>

@@ -6,6 +6,54 @@ import { getMysteryBoxTier } from "@/utils/rewardMapper";
 export const DAILY_PRODUCTIVE_COINS_BENCHMARK = 15;
 
 /**
+ * Minutos equivalentes de lazer por 1 Crédito/Moeda no benchmark 3:1–4:1
+ * (60 min de lazer padrão = 15 Créditos -> 4 min/Crédito).
+ */
+export const LEISURE_MINUTES_PER_CREDIT = 4;
+
+/**
+ * Converte um valor de Créditos/Moedas na estimativa direta de minutos de lazer livre
+ * segundo o benchmark oficial de 15 Créditos = 60 minutos.
+ */
+export function creditsToLeisureMinutes(credits: number): number {
+  if (!Number.isFinite(credits) || credits <= 0) {
+    return 0;
+  }
+  return Math.round(credits * LEISURE_MINUTES_PER_CREDIT);
+}
+
+/**
+ * Formata uma duração estimada de lazer em texto compacto ("45 min", "1h", "2h 20m").
+ */
+export function formatLeisureDuration(totalMinutes: number): string {
+  if (!Number.isFinite(totalMinutes) || totalMinutes <= 0) {
+    return "0 min";
+  }
+  const rounded = Math.round(totalMinutes);
+  if (rounded < 60) {
+    return `${rounded} min`;
+  }
+  const hours = Math.floor(rounded / 60);
+  const mins = rounded % 60;
+  return mins === 0 ? `${hours}h` : `${hours}h ${mins}m`;
+}
+
+/**
+ * Formata a equivalência de tempo de lazer de um saldo ou ganho em Créditos
+ * (ex: "~1h", "~32 min", "< 1 min").
+ */
+export function formatCreditsLeisureEquivalence(credits: number): string {
+  if (!Number.isFinite(credits) || credits <= 0) {
+    return "0 min";
+  }
+  const minutes = creditsToLeisureMinutes(credits);
+  if (minutes <= 0) {
+    return "< 1 min";
+  }
+  return `~${formatLeisureDuration(minutes)}`;
+}
+
+/**
  * Calcula o preço sugerido calibrado para um cupom de tempo (TimeBased)
  * mantendo custo por minuto consistente e desconto progressivo leve para pacotes maiores.
  */

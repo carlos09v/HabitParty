@@ -1,5 +1,10 @@
 import type { LucideIcon } from "lucide-react";
-import type { HTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
+import type {
+  HTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  Ref,
+} from "react";
 
 export type ThemeId =
   | "dark"
@@ -20,6 +25,7 @@ export type TimeFormat = "24h" | "12h";
 export type ViewMode = "card" | "list" | "grid";
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+  ref?: Ref<HTMLInputElement>;
   compact?: boolean;
   label?: ReactNode;
   icon?: ReactNode;
@@ -94,7 +100,6 @@ export interface TimePickerProps {
 }
 
 export interface ListCardProps {
-  compact?: boolean;
   title: string;
   count?: string;
   subtitle?: string;
@@ -110,6 +115,11 @@ export interface ListCardProps {
 
 export type SelectItem = string | SelectOption;
 
+export interface SelectFilterTab {
+  value: string;
+  label: string;
+}
+
 export interface SelectProps {
   compact?: boolean;
   variant?: "default" | "inline" | "filter";
@@ -119,6 +129,10 @@ export interface SelectProps {
   options: readonly SelectItem[] | SelectItem[];
   placeholder?: string;
   emptyMessage?: string;
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  noResultsMessage?: string;
+  filterTabs?: readonly SelectFilterTab[];
   value?: string;
   defaultValue?: string;
   onChange?: (value: string) => void;
@@ -157,7 +171,6 @@ export interface WelcomeCardProps {
   isExpanded?: boolean;
   defaultExpanded?: boolean;
   onToggle?: (expanded: boolean) => void;
-  compact?: boolean;
   className?: string;
   imageWidth?: number;
   imageHeight?: number;
@@ -185,6 +198,10 @@ export interface SelectOption {
   label: string;
   value: string;
   icon?: ReactNode;
+  badge?: string;
+  meta?: string;
+  keywords?: string;
+  group?: string;
 }
 
 export interface DropdownFilter {
@@ -237,7 +254,6 @@ export interface IconPickerProps {
   disabled?: boolean;
   columns?: number;
   className?: string;
-  isCompact?: boolean;
 }
 
 export interface ContextMenuItem {

@@ -241,17 +241,17 @@ export function useTaskDetailsPopover({
     const currentTask = getCurrentTask();
     if (!currentTask) return;
     const next = !completed;
+    if (onToggleComplete?.(currentTask.id, next) === false) return;
     setCompleted(next);
     const updatedTask = { ...currentTask, completed: next };
     setLatestTaskDraft(updatedTask);
-    onToggleComplete?.(currentTask.id, next);
     onTaskUpdate?.(updatedTask);
   };
 
   const handleHabitDelta = (delta: number) => {
     const currentTask = getCurrentTask();
     if (!currentTask) return;
-    onHabitChange?.(currentTask.id, delta);
+    if (onHabitChange?.(currentTask.id, delta) === false) return;
     const nextFields = computeOptimisticHabitDelta(
       currentTask,
       delta,

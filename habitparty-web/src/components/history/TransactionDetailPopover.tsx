@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { type CSSProperties, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { CoinAmount } from "@/components/ui/reward/CoinAmount";
@@ -87,6 +87,15 @@ export function TransactionDetailPopover({
   const mounted = useIsClient();
   const [copiedId, setCopiedId] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) {
+        clearTimeout(copyTimerRef.current);
+      }
+    };
+  }, []);
 
   const position = useAnchoredPopoverPosition(
     isOpen,
@@ -124,7 +133,10 @@ export function TransactionDetailPopover({
     if (!transaction.id) return;
     navigator.clipboard.writeText(transaction.id);
     setCopiedId(true);
-    setTimeout(() => setCopiedId(false), 2000);
+    if (copyTimerRef.current) {
+      clearTimeout(copyTimerRef.current);
+    }
+    copyTimerRef.current = setTimeout(() => setCopiedId(false), 2000);
   };
 
   // Atalho contextual para o módulo de origem (apenas se houver referência)

@@ -1,12 +1,14 @@
 "use client";
 
 import { Calendar, X } from "lucide-react";
-import { useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { SlideOverDrawer } from "@/components/ui/SlideOverDrawer";
+import type { AppLocale } from "@/i18n/config";
+import { useDashboardFilterStore } from "@/store/dashboardFilterStore";
+import { useUserStore } from "@/store/userStore";
 import type { DashboardMobileDrawerProps } from "@/types/dashboard";
-import { cn } from "@/utils";
+import { formatCoins } from "@/utils";
 
 /**
  * Botão flutuante (FAB) e gaveta deslizante (Slide-over Drawer) para telas < xl.
@@ -14,20 +16,24 @@ import { cn } from "@/utils";
  * e isola apenas o estado de abertura/fechamento.
  */
 export function DashboardMobileDrawer({
-  isCompact = false,
   balance = 0,
   children,
 }: DashboardMobileDrawerProps) {
   const t = useTranslations("dashboard.sidebarRight.mobileDrawer");
+  const locale = useLocale() as AppLocale;
+  const storeUser = useUserStore((s) => s.user);
+  const currentBalance = storeUser?.currentCoins ?? balance;
   const [isOpen, setIsOpen] = useState(false);
-  const searchParams = useSearchParams();
-  const urlDate = searchParams.get("date");
+  const mobileDrawerCloseSeq = useDashboardFilterStore(
+    (s) => s.mobileDrawerCloseSeq,
+  );
 
   // Fecha a gaveta automaticamente ao selecionar uma data no calendário mobile
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Fecha drawer quando parametro date muda
   useEffect(() => {
-    setIsOpen(false);
-  }, [urlDate]);
+    if (mobileDrawerCloseSeq > 0) {
+      setIsOpen(false);
+    }
+  }, [mobileDrawerCloseSeq]);
 
   return (
     <>
@@ -36,21 +42,18 @@ export function DashboardMobileDrawer({
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className={cn(
-            "flex items-center gap-2 rounded-full border border-neutral-700 bg-card hover:bg-surface dark:border-gold/40 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-amber-700 dark:text-gold shadow-sm dark:shadow-glow-gold-xs hover:shadow-md dark:hover:shadow-glow-gold hover:scale-105 active:scale-95 transition-[transform,scale,box-shadow,background-color,border-color] cursor-pointer group",
-            isCompact ? "px-3.5 py-2 text-xs" : "px-4 py-2.5 text-sm",
-          )}
+          className="flex items-center gap-2 rounded-full border border-neutral-700 bg-card hover:bg-surface dark:border-gold/40 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-amber-700 dark:text-gold shadow-sm dark:shadow-glow-gold-xs hover:shadow-md dark:hover:shadow-glow-gold hover:scale-105 active:scale-95 transition-[transform,scale,box-shadow,background-color,border-color] cursor-pointer group px-4 py-2.5 text-sm"
           title={t("fabTitle")}
           aria-label={t("fabTitle")}
         >
           <Calendar
-            size={isCompact ? 16 : 18}
+            size={18}
             className="text-amber-600 dark:text-gold group-hover:rotate-12 transition-transform"
           />
           <span className="font-bold text-neutral-100">{t("fabLabel")}</span>
-          {balance > 0 && (
-            <span className="text-label-g font-semibold text-amber-800 bg-amber-500/15 border border-amber-500/30 dark:text-gold dark:bg-gold/15 dark:border-gold/30 px-1.5 py-0.5 rounded-full">
-              {balance} H
+          {currentBalance > 0 && (
+            <span className="text-label-g font-semibold text-amber-800 bg-amber-500/15 border border-amber-500/30 dark:text-gold dark:bg-gold/15 dark:border-gold/30 px-1.5 py-0.5 rounded-full tabular-nums">
+              {formatCoins(currentBalance, { locale })} H
             </span>
           )}
         </button>

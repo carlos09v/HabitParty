@@ -43,10 +43,18 @@ public class UserMapper {
     entity.setStatsVisibility(domain.getStatsVisibility());
     entity.setAchievementsVisibility(domain.getAchievementsVisibility());
     entity.setFriendRequestPolicy(domain.getFriendRequestPolicy());
+    entity.setUsageMode(domain.getUsageMode());
+    entity.setPrimaryGoals(domain.getPrimaryGoals());
+    entity.setMainObstacle(domain.getMainObstacle());
+    entity.setDailyFocusGoalMinutes(domain.getDailyFocusGoalMinutes());
+    entity.setPeakPeriod(domain.getPeakPeriod());
+    entity.setDisciplineStyle(domain.getDisciplineStyle());
     entity.setBirthDate(domain.getBirthDate());
     entity.setProfilePhotoUrl(domain.getProfilePhotoUrl().orElse(null));
     entity.setBio(domain.getBio().orElse(null));
     entity.setAvatarFrame(domain.getAvatarFrame());
+    entity.setEquippedTitle(domain.getEquippedTitle().orElse(null));
+    entity.setAvatarPreset(domain.getAvatarPreset().orElse(null));
     entity.setTheme(domain.getTheme());
     if (entity.getCreatedAt() == null) {
       entity.setCreatedAt(domain.getCreatedAt() != null ? domain.getCreatedAt() : LocalDateTime.now());
@@ -175,6 +183,8 @@ public class UserMapper {
     );
     user.setBio(entity.getBio());
     user.setAvatarFrame(entity.getAvatarFrame());
+    user.setEquippedTitle(entity.getEquippedTitle());
+    user.setAvatarPreset(entity.getAvatarPreset());
     user.setTheme(entity.getTheme());
     user.setTimezone(entity.getTimezone());
     user.setTimezoneUpdatedAt(entity.getTimezoneUpdatedAt());
@@ -185,6 +195,12 @@ public class UserMapper {
     user.setStatsVisibility(entity.getStatsVisibility());
     user.setAchievementsVisibility(entity.getAchievementsVisibility());
     user.setFriendRequestPolicy(entity.getFriendRequestPolicy());
+    user.setUsageMode(entity.getUsageMode());
+    user.setPrimaryGoals(entity.getPrimaryGoals());
+    user.setMainObstacle(entity.getMainObstacle());
+    user.setDailyFocusGoalMinutes(entity.getDailyFocusGoalMinutes());
+    user.setPeakPeriod(entity.getPeakPeriod());
+    user.setDisciplineStyle(entity.getDisciplineStyle());
     return user;
   }
 }

@@ -174,9 +174,9 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
             "font-mono font-black tracking-tight timer-display-shadow transition-colors duration-500",
             fontClasses,
             isBreak
-              ? "text-emerald-400 dark:text-emerald-300"
+              ? "text-emerald-700 dark:text-emerald-300"
               : isOvertime
-                ? "text-cyan-300 dark:text-cyan-200"
+                ? "text-cyan-700 dark:text-cyan-200"
                 : "text-neutral-50",
           )}
         >
@@ -191,10 +191,10 @@ export function FocusStageTimerCircle(props: FocusStageTimerCircleProps = {}) {
               ? "text-[10px] px-2.5 py-0.5 tracking-wider"
               : "text-xs px-3 py-0.5 tracking-wider",
             isBreak
-              ? "bg-emerald-500/15 dark:bg-emerald-950/70 border-emerald-500/40 text-emerald-400 dark:text-emerald-300 shadow-2xs dark:shadow-[0_0_12px_rgba(16,185,129,0.25)]"
+              ? "bg-emerald-500/15 dark:bg-emerald-950/70 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 shadow-2xs dark:shadow-[0_0_12px_rgba(16,185,129,0.25)]"
               : isOvertime
                 ? "bg-cyan-500/15 dark:bg-cyan-500/20 border-cyan-600/45 dark:border-cyan-400/45 text-cyan-800 dark:text-cyan-200 shadow-2xs dark:shadow-[0_0_12px_rgba(34,211,238,0.25)]"
-                : "bg-white/10 border-white/15 text-neutral-300",
+                : "bg-surface border-neutral-700 dark:bg-white/10 dark:border-white/15 text-neutral-300",
           )}
         >
           {isBreak

@@ -55,7 +55,8 @@ public class AdminMetricsAdapter implements AdminMetricsRepository {
           COALESCE(i.inventory_count, 0),
           COALESCE(f.focus_bytes, 0),
           COALESCE(f.focus_count, 0),
-          COALESCE(OCTET_LENGTH(u.full_name) + OCTET_LENGTH(u.email) + OCTET_LENGTH(u.username) + 410, 0)
+          COALESCE(OCTET_LENGTH(u.full_name) + OCTET_LENGTH(u.email) + OCTET_LENGTH(u.username) + 410, 0),
+          COALESCE(ua.artifacts_bytes, 0)
         FROM users u
         LEFT JOIN (
           SELECT user_id,
@@ -94,6 +95,11 @@ public class AdminMetricsAdapter implements AdminMetricsRepository {
                  COUNT(*) AS focus_count
           FROM focus_records WHERE user_id IN (:userIds) GROUP BY user_id
         ) f ON f.user_id = u.user_id
+        LEFT JOIN (
+          SELECT user_id,
+                 COUNT(*) * 80 AS artifacts_bytes
+          FROM user_artifacts WHERE user_id IN (:userIds) GROUP BY user_id
+        ) ua ON ua.user_id = u.user_id
         WHERE u.user_id IN (:userIds)
     """;
 
@@ -119,9 +125,10 @@ public class AdminMetricsAdapter implements AdminMetricsRepository {
       long focusBytes = toLong(row[12]);
       long focusCount = toLong(row[13]);
       long userRowBytes = toLong(row[14]);
+      long artifactsBytes = toLong(row[15]);
 
       long totalBytes = tasksBytes + checklistsBytes + workspacesBytes + historyBytes
-          + inventoryBytes + focusBytes + userRowBytes;
+          + inventoryBytes + focusBytes + userRowBytes + artifactsBytes;
 
       result.put(uid, new UserStorageBreakdownProjection(
           tasksBytes,
@@ -160,7 +167,8 @@ public class AdminMetricsAdapter implements AdminMetricsRepository {
           (SELECT COALESCE(SUM(OCTET_LENGTH(w.name) + 120), 0) FROM workspaces w) +
           (SELECT COALESCE(SUM(OCTET_LENGTH(h.name_snapshot) + 150), 0) FROM transaction_history h) +
           (SELECT COALESCE(COUNT(*) * 120, 0) FROM focus_records f) +
-          (SELECT COALESCE(COUNT(*) * 100, 0) FROM inventory_items i)
+          (SELECT COALESCE(COUNT(*) * 100, 0) FROM inventory_items i) +
+          (SELECT COALESCE(COUNT(*) * 80, 0) FROM user_artifacts ua)
     """;
     Query query = em.createNativeQuery(sql);
     Number result = (Number) query.getSingleResult();

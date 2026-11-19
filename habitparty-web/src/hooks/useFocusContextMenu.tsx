@@ -3,6 +3,7 @@
 import { Pencil, Play, PlusCircle, Trash2, Undo2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { FocusActivity } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 
@@ -32,6 +33,7 @@ export function useFocusContextMenu({
   onRequestDeleteActivity,
 }: UseFocusContextMenuParams) {
   const t = useTranslations("focus.contextMenu");
+  const { isGamified } = useExperienceMode();
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
     isOpen: false,
     position: { x: 0, y: 0 },
@@ -135,7 +137,7 @@ export function useFocusContextMenu({
           },
         },
         {
-          label: t("returnToBackpack"),
+          label: isGamified ? t("returnToBackpack") : t("returnToInventory"),
           icon: <Undo2 size={15} />,
           variant: "warning" as const,
           onClick: () => {

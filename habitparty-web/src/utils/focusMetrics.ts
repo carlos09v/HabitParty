@@ -1,5 +1,6 @@
 import type { ActivityPeriodOption } from "@/constants/dashboard";
 import type { AppLocale } from "@/i18n/config";
+import { getUtilityTranslator } from "@/i18n/utilityTranslator";
 import type {
   FocusMetrics,
   FocusRecord,
@@ -175,7 +176,7 @@ export function calculateFocusMetrics(
   locale: AppLocale = "pt-BR",
   timeZone?: string | null,
 ): FocusMetricsCalculationResult {
-  const isEn = locale === "en";
+  const t = getUtilityTranslator(locale, "focus.metrics");
   const shortWeekDays = getShortWeekDays(locale);
   const todayStr = getDateKeyInTimeZone(referenceDate, timeZone);
   const yesterdayStr = getOffsetDateString(-1, referenceDate, timeZone);
@@ -278,13 +279,13 @@ export function calculateFocusMetrics(
   }));
 
   // Rótulo conciso da semana para caber perfeitamente na sidebar sem quebrar o título
-  let weekLabel = isEn ? "This week" : "Esta semana";
+  let weekLabel = t("thisWeek");
   if (weekOffset === -1) {
-    weekLabel = isEn ? "Last wk." : "Sem. passada";
+    weekLabel = t("lastWeek");
   } else if (weekOffset < -1) {
-    weekLabel = isEn ? `Wk. ${weekOffset}` : `Sem. ${weekOffset}`;
+    weekLabel = t("offsetWeekNegative", { offset: weekOffset });
   } else if (weekOffset > 0) {
-    weekLabel = isEn ? `Wk. +${weekOffset}` : `Sem. +${weekOffset}`;
+    weekLabel = t("offsetWeekPositive", { offset: weekOffset });
   }
 
   // Range de data (ex: "12/10 a 18/10" ou "10/12 to 10/18")
@@ -299,9 +300,12 @@ export function calculateFocusMetrics(
   const startMonth = String(startOfWeekUtc.getUTCMonth() + 1).padStart(2, "0");
   const endDay = String(endOfWeekUtc.getUTCDate()).padStart(2, "0");
   const endMonth = String(endOfWeekUtc.getUTCMonth() + 1).padStart(2, "0");
-  const weekDateRange = isEn
-    ? `${startMonth}/${startDay} to ${endMonth}/${endDay}`
-    : `${startDay}/${startMonth} a ${endDay}/${endMonth}`;
+  const weekDateRange = t("dateRange", {
+    startDay,
+    startMonth,
+    endDay,
+    endMonth,
+  });
 
   const todayAverageMinutes =
     todayCount > 0 ? Math.round(todayMinutes / todayCount) : 0;

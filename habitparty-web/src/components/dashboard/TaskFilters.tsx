@@ -40,14 +40,12 @@ export function TaskFilters({
   canCreateTask = true,
   createTaskDisabledReason,
   overdueCount = 0,
-  isCompact: propIsCompact,
 }: TaskFiltersProps) {
   const t = useTranslations("dashboard.taskFilters");
   const locale = useLocale() as AppLocale;
   const { dateFormat } = useDateFormat();
   const { isGamified } = useExperienceMode();
   const userTimeZone = useUserStore((s) => s.user?.timezone);
-  const isCompact = propIsCompact ?? false;
   const hasMultipleWorkspaces = workspaces.length > 1;
   const {
     containerRef,
@@ -223,18 +221,15 @@ export function TaskFilters({
               aria-selected={true}
               aria-controls="panel-date"
               onClick={onClearDate}
-              className={cn(
-                "flex items-center gap-1.5 rounded-lg font-bold transition-colors whitespace-nowrap cursor-pointer shadow-xs bg-gold text-on-gold group shrink-0",
-                isCompact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-xs",
-              )}
+              className="flex items-center gap-1.5 rounded-lg font-bold transition-colors whitespace-nowrap cursor-pointer shadow-xs bg-gold text-on-gold group shrink-0 px-3 py-1.5 text-xs"
               title={t("clearDateTitle")}
             >
-              <Calendar size={isCompact ? 12 : 14} className="shrink-0" />
+              <Calendar size={14} className="shrink-0" />
               <span>
                 {t("datePillLabel", { date: formattedDateLabel || "" })}
               </span>
               <X
-                size={isCompact ? 12 : 14}
+                size={14}
                 className="shrink-0 group-hover:scale-125 transition-transform ml-0.5"
               />
             </button>
@@ -258,8 +253,7 @@ export function TaskFilters({
                 }
                 onClick={() => handleSelectStandardFilter(f.id)}
                 className={cn(
-                  "inline-flex items-center rounded-lg font-medium transition-colors whitespace-nowrap cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold focus:ring-offset-1 focus:ring-offset-background shrink-0",
-                  isCompact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-xs",
+                  "inline-flex items-center rounded-lg font-medium transition-colors whitespace-nowrap cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold focus:ring-offset-1 focus:ring-offset-background shrink-0 px-3 py-1.5 text-xs",
                   isSelected
                     ? "bg-gold text-on-gold font-bold border border-transparent shadow-xs"
                     : cn(
@@ -307,8 +301,7 @@ export function TaskFilters({
               className="max-w-[175px]"
               dropdownClassName="w-56"
               triggerClassName={cn(
-                "font-medium transition-colors",
-                isCompact ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-xs",
+                "font-medium transition-colors px-2.5 py-1.5 text-xs",
                 advancedFilters.workspaceId !== "all"
                   ? "bg-amber-500/15! border-amber-500/50! text-amber-800! dark:bg-gold/15! dark:border-gold/60! dark:text-gold! font-bold!"
                   : "bg-surface! dark:bg-primary-dark/20! hover:bg-surface-hover! dark:hover:bg-primary-dark/40! border-neutral-700! dark:border-primary/30! text-neutral-300! hover:text-neutral-100!",
@@ -323,18 +316,13 @@ export function TaskFilters({
             aria-label={t("quickHideCompletedAria")}
             title={t("quickHideCompleted")}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-lg border font-medium transition-colors whitespace-nowrap cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold",
-              isCompact ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-xs",
+              "inline-flex items-center gap-1.5 rounded-lg border font-medium transition-colors whitespace-nowrap cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold px-2.5 py-1.5 text-xs",
               advancedFilters.hideCompleted
                 ? "bg-emerald-500/15 border-emerald-600/45 text-emerald-800 dark:bg-emerald-500/15 dark:border-emerald-400/50 dark:text-emerald-300 font-semibold"
                 : "bg-surface dark:bg-primary-dark/20 hover:bg-surface-hover dark:hover:bg-primary-dark/40 border-neutral-700 dark:border-primary/30 text-neutral-300 hover:text-neutral-100",
             )}
           >
-            <CheckCircle2
-              size={isCompact ? 13 : 14}
-              className="shrink-0"
-              aria-hidden="true"
-            />
+            <CheckCircle2 size={14} className="shrink-0" aria-hidden="true" />
             <span className="hidden @3xl:inline">
               {t("quickHideCompleted")}
             </span>
@@ -349,15 +337,14 @@ export function TaskFilters({
               aria-expanded={showPopover}
               aria-label={t("openAdvancedAria")}
               className={cn(
-                "flex items-center gap-1.5 rounded-lg border transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-gold cursor-pointer",
-                isCompact ? "p-1.5 text-xs" : "p-1.5 sm:p-2 text-xs",
+                "flex items-center gap-1.5 rounded-lg border transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-gold cursor-pointer p-1.5 sm:p-2 text-xs",
                 activeFiltersCount > 0
                   ? "bg-amber-500/15 border-amber-500/50 text-amber-700 dark:bg-gold/15 dark:border-gold/60 dark:text-gold shadow-glow-gold-xs font-semibold"
                   : "bg-surface dark:bg-primary-dark/20 hover:bg-surface-hover dark:hover:bg-primary-dark/40 border-neutral-700 dark:border-primary/30 text-neutral-300 hover:text-primary dark:hover:text-gold shadow-none",
               )}
             >
               <SlidersHorizontal
-                size={isCompact ? 14 : 16}
+                size={16}
                 className={
                   activeFiltersCount > 0 ? "text-amber-700 dark:text-gold" : ""
                 }
@@ -407,15 +394,14 @@ export function TaskFilters({
                   !canCreateTask ? createTaskDisabledReason : t("newTaskAria")
                 }
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-lg font-bold border transition-[color,background-color,border-color,box-shadow,transform] whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-gold",
-                  isCompact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-xs",
+                  "inline-flex items-center gap-1.5 rounded-lg font-bold border transition-[color,background-color,border-color,box-shadow,transform] whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-gold px-3 py-1.5 text-xs",
                   canCreateTask
                     ? "bg-gold hover:bg-gold-light text-on-gold border-gold cursor-pointer shadow-xs hover:shadow-glow-gold-xs active:scale-95"
                     : "bg-surface/60 border-neutral-700 text-neutral-400 cursor-not-allowed opacity-70",
                 )}
               >
                 <Plus
-                  size={isCompact ? 13 : 15}
+                  size={15}
                   strokeWidth={2.5}
                   className="shrink-0"
                   aria-hidden="true"

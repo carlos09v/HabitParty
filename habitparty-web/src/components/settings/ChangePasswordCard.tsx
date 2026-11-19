@@ -10,13 +10,20 @@ import { PasswordStrengthIndicator } from "@/components/auth/PasswordStrengthInd
 import { GoogleLogoIcon } from "@/components/ui/GoogleLogoIcon";
 import { Input } from "@/components/ui/Input";
 import { useUserStore } from "@/store/userStore";
-import type { ProfileCardBaseProps } from "@/types/settings";
+import type { UserResponseDTO } from "@/types/user";
 import { cn } from "@/utils";
 import { analyzePassword } from "@/utils/validators";
 
-export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
+interface ChangePasswordCardProps {
+  initialUser?: UserResponseDTO | null;
+}
+
+export function ChangePasswordCard({
+  initialUser = null,
+}: ChangePasswordCardProps = {}) {
   const t = useTranslations("settings.changePassword");
-  const user = useUserStore((s) => s.user);
+  const storeUser = useUserStore((s) => s.user);
+  const user = storeUser ?? initialUser;
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -119,7 +126,7 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
       {/* Aviso informativo para contas criadas/vinculadas via Google */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 p-3.5 sm:p-4 rounded-xl bg-surface/60 border border-neutral-700 dark:border-primary/25">
         <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-white dark:bg-white/10 border border-neutral-700 dark:border-white/15 shadow-2xs dark:shadow-none flex items-center justify-center shrink-0 mt-0.5">
+          <div className="w-8 h-8 rounded-lg bg-card dark:bg-white/10 border border-neutral-700 dark:border-white/15 shadow-2xs dark:shadow-none flex items-center justify-center shrink-0 mt-0.5">
             <GoogleLogoIcon />
           </div>
           <div className="flex flex-col gap-0.5">
@@ -141,8 +148,7 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
             resetEmailSent
               ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 cursor-default"
               : "border-gold/45 bg-gold/10 text-amber-700 dark:text-gold hover:bg-gold hover:text-on-gold dark:hover:text-neutral-950",
-            "disabled:opacity-50 disabled:cursor-not-allowed",
-            isCompact ? "px-3 py-2 sm:py-1.5 text-xs" : "px-3.5 py-2 text-xs",
+            "disabled:opacity-50 disabled:cursor-not-allowed px-3.5 py-2 text-xs",
           )}
         >
           {resetEmailSent ? (
@@ -170,7 +176,6 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
             placeholder={t("currentPasswordPlaceholder")}
-            compact={isCompact}
             icon={<Lock size={18} />}
             required
           />
@@ -182,7 +187,6 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             placeholder={t("newPasswordPlaceholder")}
-            compact={isCompact}
             icon={<Lock size={18} />}
             error={isSameAsCurrent ? t("samePasswordError") : undefined}
             required
@@ -197,7 +201,6 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder={t("confirmPasswordPlaceholder")}
-            compact={isCompact}
             icon={<Lock size={18} />}
             error={
               confirmPassword.length > 0 && !passwordsMatch
@@ -213,10 +216,9 @@ export function ChangePasswordCard({ isCompact }: ProfileCardBaseProps) {
             type="submit"
             disabled={isPending || !canSubmit}
             className={cn(
-              "w-full sm:w-auto rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-xs dark:shadow-md",
+              "w-full sm:w-auto rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-xs dark:shadow-md px-6 py-2.5 text-sm",
               "bg-gold text-on-gold hover:bg-gold-hover active:bg-gold-pressed",
               "disabled:bg-neutral-700 disabled:text-neutral-400 disabled:border disabled:border-neutral-600 disabled:shadow-none disabled:opacity-100 dark:disabled:bg-gold dark:disabled:text-on-gold dark:disabled:border-transparent dark:disabled:opacity-40 disabled:cursor-not-allowed",
-              isCompact ? "px-4 py-2 text-xs" : "px-6 py-2.5 text-sm",
             )}
           >
             {isPending ? t("submittingBtn") : t("submitBtn")}

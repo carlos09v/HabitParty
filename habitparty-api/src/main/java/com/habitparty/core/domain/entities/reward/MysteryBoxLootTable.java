@@ -114,7 +114,28 @@ public class MysteryBoxLootTable {
         normalizedMinutes = slot.minutes();
       }
 
-      normalized.add(new MysteryBoxLootItem(trimmedName, normalizedIcon, normalizedMinutes));
+      String normalizedCategory =
+          (slot.category() != null && !slot.category().trim().isEmpty())
+              ? slot.category().trim()
+              : null;
+      if (normalizedCategory != null && normalizedCategory.length() > 40) {
+        normalizedCategory = normalizedCategory.substring(0, 40);
+      }
+
+      String normalizedDescription =
+          (slot.description() != null && !slot.description().trim().isEmpty())
+              ? slot.description().trim()
+              : null;
+      if (normalizedDescription != null && normalizedDescription.length() > 500) {
+        normalizedDescription = normalizedDescription.substring(0, 500);
+      }
+
+      normalized.add(new MysteryBoxLootItem(
+          trimmedName,
+          normalizedIcon,
+          normalizedMinutes,
+          normalizedCategory,
+          normalizedDescription));
     }
 
     return List.copyOf(normalized);

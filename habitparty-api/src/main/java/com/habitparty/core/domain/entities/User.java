@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -17,6 +18,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.habitparty.core.domain.entities.achievement.CosmeticCatalog;
+import com.habitparty.core.domain.entities.achievement.CosmeticCatalog.CosmeticUnlockContext;
 import com.habitparty.core.domain.enums.FriendRequestPolicy;
 import com.habitparty.core.domain.enums.PrivacyLevel;
 import com.habitparty.core.domain.enums.SubscriptionStatus;
@@ -51,14 +54,7 @@ public class User {
       FREE_THEMES.stream(),
       PREMIUM_THEMES.stream()
   ).collect(Collectors.toUnmodifiableSet());
-  public static final Set<String> VALID_AVATAR_FRAMES = Set.of(
-      "none",
-      "cosmic_gold",
-      "cyber_neon",
-      "fire_phoenix",
-      "emerald_mystic",
-      "amethyst_void"
-  );
+  public static final Set<String> VALID_AVATAR_FRAMES = CosmeticCatalog.VALID_AVATAR_FRAMES;
 
   private UUID id;
   private UserRole role;
@@ -72,6 +68,8 @@ public class User {
   private String profilePhotoUrl;
   private String bio;
   private String avatarFrame = "none";
+  private String equippedTitle;
+  private String avatarPreset;
   private String theme = DEFAULT_THEME;
   private UserGender gender;
   private UserExperienceMode experienceMode = UserExperienceMode.PRODUCTIVITY;
@@ -87,6 +85,18 @@ public class User {
   private PrivacyLevel statsVisibility = PrivacyLevel.PUBLIC;
   private PrivacyLevel achievementsVisibility = PrivacyLevel.PUBLIC;
   private FriendRequestPolicy friendRequestPolicy = FriendRequestPolicy.EVERYONE;
+
+  // Preferências coletadas no FirstStep (v1.6)
+  private String usageMode;
+  private List<String> primaryGoals;
+  private String mainObstacle;
+  private Integer dailyFocusGoalMinutes;
+  private String peakPeriod;
+  private String disciplineStyle;
+
+  private static final Set<String> VALID_USAGE_MODES = Set.of("personal", "studies", "work", "all");
+  private static final Set<String> VALID_PEAK_PERIODS = Set.of("morning", "afternoon", "night");
+  private static final Set<String> VALID_DISCIPLINE_STYLES = Set.of("flexible", "strict");
 
   private static final String FRIEND_CODE_PREFIX = "HP-";
   private static final String FRIEND_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -273,6 +283,24 @@ public class User {
   public void resetShowcaseCosmetics() {
     this.bio = null;
     this.avatarFrame = "none";
+    this.equippedTitle = null;
+    this.avatarPreset = null;
+  }
+
+  /**
+   * Revalida cosméticos equipados após reset de métricas, removendo apenas itens
+   * vinculados a conquistas, nível/XP, coleção de artefatos ou histórico excluído.
+   */
+  public void revalidateShowcaseCosmeticsAfterMetricsReset(boolean historyDeleted) {
+    if (CosmeticCatalog.shouldResetFrameOnMetricsReset(this.avatarFrame)) {
+      this.avatarFrame = "none";
+    }
+    if (CosmeticCatalog.shouldResetTitleOnMetricsReset(this.equippedTitle, historyDeleted)) {
+      this.equippedTitle = null;
+    }
+    if (CosmeticCatalog.shouldResetAvatarPresetOnMetricsReset(this, this.avatarPreset)) {
+      this.avatarPreset = null;
+    }
   }
 
   public UserLevel getCurrentLevel() {
@@ -484,6 +512,67 @@ public class User {
 
   public void updateProfilePhoto(String photoUrl) {
     this.profilePhotoUrl = photoUrl;
+    if (photoUrl != null && !photoUrl.isBlank()) {
+      this.avatarPreset = null;
+    }
+  }
+
+  public void updateOnboardingPreferences(
+      String usageMode,
+      List<String> primaryGoals,
+      String mainObstacle,
+      Integer dailyFocusGoalMinutes,
+      String peakPeriod,
+      String disciplineStyle) {
+    if (usageMode != null && !usageMode.isBlank()) {
+      String normalized = usageMode.trim().toLowerCase(Locale.ROOT);
+      if (!VALID_USAGE_MODES.contains(normalized)) {
+        throw new DomainValidationException("Modo de uso inválido: " + usageMode);
+      }
+      this.usageMode = normalized;
+    }
+
+    if (primaryGoals != null) {
+      List<String> sanitized = primaryGoals.stream()
+          .filter(goal -> goal != null && !goal.isBlank())
+          .map(goal -> goal.trim().toLowerCase(Locale.ROOT))
+          .map(goal -> goal.length() > 40 ? goal.substring(0, 40) : goal)
+          .distinct()
+          .limit(3)
+          .toList();
+      this.primaryGoals = List.copyOf(sanitized);
+    }
+
+    if (mainObstacle != null && !mainObstacle.isBlank()) {
+      String cleaned = mainObstacle.trim().toLowerCase(Locale.ROOT);
+      if (cleaned.length() > 30) {
+        throw new DomainValidationException("Obstáculo principal deve ter até 30 caracteres.");
+      }
+      this.mainObstacle = cleaned;
+    }
+
+    if (dailyFocusGoalMinutes != null) {
+      if (dailyFocusGoalMinutes < 15 || dailyFocusGoalMinutes > 720) {
+        throw new DomainValidationException("Meta diária de foco deve ficar entre 15 e 720 minutos.");
+      }
+      this.dailyFocusGoalMinutes = dailyFocusGoalMinutes;
+    }
+
+    if (peakPeriod != null && !peakPeriod.isBlank()) {
+      String normalized = peakPeriod.trim().toLowerCase(Locale.ROOT);
+      if (!VALID_PEAK_PERIODS.contains(normalized)) {
+        throw new DomainValidationException("Período de pico inválido: " + peakPeriod);
+      }
+      this.peakPeriod = normalized;
+    }
+
+    if (disciplineStyle != null && !disciplineStyle.isBlank()) {
+      String normalized = disciplineStyle.trim().toLowerCase(Locale.ROOT);
+      if (!VALID_DISCIPLINE_STYLES.contains(normalized)) {
+        throw new DomainValidationException("Estilo de disciplina inválido: " + disciplineStyle);
+      }
+      this.disciplineStyle = normalized;
+    }
   }
 
   public void updatePassword(String newHashedPassword) {
@@ -604,6 +693,26 @@ public class User {
     this.avatarFrame = (avatarFrame != null && !avatarFrame.isBlank()) ? avatarFrame.trim() : "none";
   }
 
+  public Optional<String> getEquippedTitle() {
+    return Optional.ofNullable(equippedTitle).filter(t -> !t.isBlank());
+  }
+
+  public void setEquippedTitle(String equippedTitle) {
+    this.equippedTitle = (equippedTitle != null && !equippedTitle.isBlank())
+        ? equippedTitle.trim().toUpperCase()
+        : null;
+  }
+
+  public Optional<String> getAvatarPreset() {
+    return Optional.ofNullable(avatarPreset).filter(p -> !p.isBlank());
+  }
+
+  public void setAvatarPreset(String avatarPreset) {
+    this.avatarPreset = (avatarPreset != null && !avatarPreset.isBlank())
+        ? avatarPreset.trim().toLowerCase()
+        : null;
+  }
+
   public static boolean isPremiumTheme(String themeId) {
     return themeId != null && PREMIUM_THEMES.contains(themeId.trim().toLowerCase());
   }
@@ -650,18 +759,30 @@ public class User {
   }
 
   public void updateShowcaseProfile(String bio, String avatarFrame) {
+    updateShowcaseProfile(bio, avatarFrame, null, null, CosmeticUnlockContext.empty());
+  }
+
+  public void updateShowcaseProfile(
+      String bio,
+      String avatarFrame,
+      String equippedTitle,
+      String avatarPreset,
+      CosmeticUnlockContext unlockContext) {
     if (bio != null) {
       setBio(bio);
     }
     if (avatarFrame != null && !avatarFrame.isBlank()) {
-      String cleanFrame = avatarFrame.trim().toLowerCase();
-      if (!VALID_AVATAR_FRAMES.contains(cleanFrame)) {
-        throw new DomainValidationException("Moldura de avatar inválida: " + avatarFrame);
-      }
-      if (!"none".equalsIgnoreCase(cleanFrame) && !this.isPremium()) {
-        throw new DomainValidationException("Molduras animadas exclusivas requerem o plano Guardião Cósmico (Premium).");
-      }
-      this.avatarFrame = cleanFrame;
+      this.avatarFrame = CosmeticCatalog.normalizeAndValidateFrame(this, avatarFrame, unlockContext);
+    }
+    if (equippedTitle != null) {
+      this.equippedTitle = equippedTitle.isBlank()
+          ? null
+          : CosmeticCatalog.normalizeAndValidateTitle(this, equippedTitle, unlockContext);
+    }
+    if (avatarPreset != null) {
+      this.avatarPreset = avatarPreset.isBlank()
+          ? null
+          : CosmeticCatalog.normalizeAndValidateAvatarPreset(this, avatarPreset);
     }
   }
 
@@ -960,5 +1081,53 @@ public class User {
 
   public void setFriendRequestPolicy(FriendRequestPolicy friendRequestPolicy) {
     this.friendRequestPolicy = friendRequestPolicy != null ? friendRequestPolicy : FriendRequestPolicy.EVERYONE;
+  }
+
+  public String getUsageMode() {
+    return usageMode;
+  }
+
+  public void setUsageMode(String usageMode) {
+    this.usageMode = usageMode;
+  }
+
+  public List<String> getPrimaryGoals() {
+    return primaryGoals;
+  }
+
+  public void setPrimaryGoals(List<String> primaryGoals) {
+    this.primaryGoals = primaryGoals != null ? List.copyOf(primaryGoals) : null;
+  }
+
+  public String getMainObstacle() {
+    return mainObstacle;
+  }
+
+  public void setMainObstacle(String mainObstacle) {
+    this.mainObstacle = mainObstacle;
+  }
+
+  public Integer getDailyFocusGoalMinutes() {
+    return dailyFocusGoalMinutes;
+  }
+
+  public void setDailyFocusGoalMinutes(Integer dailyFocusGoalMinutes) {
+    this.dailyFocusGoalMinutes = dailyFocusGoalMinutes;
+  }
+
+  public String getPeakPeriod() {
+    return peakPeriod;
+  }
+
+  public void setPeakPeriod(String peakPeriod) {
+    this.peakPeriod = peakPeriod;
+  }
+
+  public String getDisciplineStyle() {
+    return disciplineStyle;
+  }
+
+  public void setDisciplineStyle(String disciplineStyle) {
+    this.disciplineStyle = disciplineStyle;
   }
 }

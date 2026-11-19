@@ -47,7 +47,8 @@ public class GetPublicUserShowcaseUseCase {
       GetUserShowcaseUseCase.UserShowcaseResult fullShowcase,
       int effectiveStreak,
       List<ProfileHighlight> highlights,
-      List<GetUserShowcaseUseCase.AchievementProgressItem> achievements) {
+      List<GetUserShowcaseUseCase.AchievementProgressItem> achievements,
+      List<GetUserShowcaseUseCase.ArtifactProgressItem> artifacts) {
   }
 
   @Transactional(readOnly = true)
@@ -95,6 +96,7 @@ public class GetPublicUserShowcaseUseCase {
           null,
           0,
           List.of(),
+          List.of(),
           List.of());
     }
 
@@ -106,7 +108,7 @@ public class GetPublicUserShowcaseUseCase {
 
     List<ProfileHighlight> filteredHighlights = fullShowcase.highlights().stream()
         .filter(h -> switch (h.getHighlightType()) {
-          case ACHIEVEMENT -> canViewAchievements;
+          case ACHIEVEMENT, ARTIFACT -> canViewAchievements;
           case STAT_METRIC -> canViewStats;
           case ACCOUNT_BADGE -> canViewProfile;
         })
@@ -114,6 +116,10 @@ public class GetPublicUserShowcaseUseCase {
 
     List<GetUserShowcaseUseCase.AchievementProgressItem> filteredAchievements = canViewAchievements
         ? fullShowcase.achievements()
+        : List.of();
+
+    List<GetUserShowcaseUseCase.ArtifactProgressItem> filteredArtifacts = canViewAchievements
+        ? fullShowcase.artifacts()
         : List.of();
 
     return new PublicUserShowcaseResult(
@@ -126,6 +132,7 @@ public class GetPublicUserShowcaseUseCase {
         canViewStats ? fullShowcase : null,
         canViewStats ? streak : 0,
         filteredHighlights,
-        filteredAchievements);
+        filteredAchievements,
+        filteredArtifacts);
   }
 }

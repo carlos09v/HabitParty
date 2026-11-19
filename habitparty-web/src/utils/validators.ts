@@ -1,3 +1,4 @@
+import { getUtilityTranslator } from "@/i18n/utilityTranslator";
 import type { Task } from "@/types/task";
 import { getTodayDateString } from "./date";
 
@@ -26,7 +27,8 @@ export function analyzePassword(password: string): PasswordAnalysis {
   const hasMinLength = password.length >= PASSWORD_MIN_LENGTH;
   const hasUpperCase = /[A-Z]/.test(password);
   const hasLowerCase = /[a-z]/.test(password);
-  const hasNumberOrSpecial = /[0-9!@#$%^&*(),.?":{}|<>]/.test(password);
+  // Alinhado com a regex de CreateUserDTO / ResetPasswordRequestDTO / UpdateUserPasswordDTO no backend
+  const hasNumberOrSpecial = /[@$!%*?&#]/.test(password);
 
   if (!password) {
     return {
@@ -129,8 +131,7 @@ export function validateAuthPassword(password: string): {
   if (!strength.hasNumberOrSpecial) {
     return {
       isValid: false,
-      error:
-        "A senha deve conter pelo menos um caractere especial (@$!%*?&#) ou número.",
+      error: "A senha deve conter pelo menos um caractere especial (@$!%*?&#).",
       errorKey: "passwordNumberOrSpecial",
     };
   }
@@ -259,6 +260,7 @@ export function validateHardcoreTodo(options: {
   taskToEdit?: { isHardcoreModeEnabled?: boolean; dueDate?: string } | null;
   locale?: "pt-BR" | "en";
   timeZone?: string | null;
+  isGamified?: boolean;
 }): string | null {
   const {
     isHardcore,
@@ -267,38 +269,45 @@ export function validateHardcoreTodo(options: {
     taskToEdit,
     locale = "pt-BR",
     timeZone,
+    isGamified = true,
   } = options;
-  const isEn = locale === "en";
-  if (!isHardcore) return null;
-
-  if (!dueDate) {
-    return isEn
-      ? "In Hardcore Mode, To-Dos require a due date."
-      : "No Modo Hardcore, afazeres exigem uma data de vencimento.";
-  }
-
+  const t = getUtilityTranslator(locale, "validators.hardcoreTodo");
   const todayStr = getTodayDateString(new Date(), timeZone);
 
-  if (!isEditing && dueDate < todayStr) {
-    return isEn
-      ? "A Hardcore To-Do due date cannot be in the past."
-      : "A data de vencimento de um afazer Hardcore não pode ser no passado.";
+  const isEditingOverdueHardcore = Boolean(
+    isEditing &&
+      taskToEdit?.isHardcoreModeEnabled &&
+      taskToEdit?.dueDate &&
+      taskToEdit.dueDate < todayStr,
+  );
+
+  if (!isHardcore) {
+    if (isEditingOverdueHardcore) {
+      return isGamified
+        ? t("disableOverdueGamified")
+        : t("disableOverdueProductivity");
+    }
+    return null;
   }
 
-  if (isEditing && taskToEdit?.isHardcoreModeEnabled && taskToEdit?.dueDate) {
-    const isOverdue = taskToEdit.dueDate < todayStr;
-    if (isOverdue) {
-      if (!isHardcore) {
-        return isEn
-          ? "Cannot disable Hardcore Mode on an overdue task."
-          : "Não é permitido desativar o Modo Hardcore de uma tarefa com prazo vencido.";
-      }
-      if (dueDate !== taskToEdit.dueDate) {
-        return isEn
-          ? "Cannot change the due date of an overdue hardcore task."
-          : "Não é permitido alterar a data de uma tarefa hardcore vencida.";
-      }
-    }
+  if (!dueDate) {
+    return isGamified
+      ? t("missingDueDateGamified")
+      : t("missingDueDateProductivity");
+  }
+
+  if (!isEditing && dueDate < todayStr) {
+    return isGamified ? t("pastDueDateGamified") : t("pastDueDateProductivity");
+  }
+
+  if (
+    isEditingOverdueHardcore &&
+    taskToEdit?.dueDate &&
+    dueDate !== taskToEdit.dueDate
+  ) {
+    return isGamified
+      ? t("changeOverdueDateGamified")
+      : t("changeOverdueDateProductivity");
   }
 
   return null;

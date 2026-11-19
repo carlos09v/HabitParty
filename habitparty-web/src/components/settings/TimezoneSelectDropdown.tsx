@@ -17,6 +17,37 @@ interface TimezoneOptionItem {
   searchText: string;
 }
 
+const timezoneItemCache = new Map<string, TimezoneOptionItem>();
+let cachedAllZoneItems: TimezoneOptionItem[] | null = null;
+let cachedSortedZones: string[] | null = null;
+
+function getTimezoneOptionItem(tz: string): TimezoneOptionItem {
+  const cached = timezoneItemCache.get(tz);
+  if (cached) return cached;
+  const offset = formatTimeZoneOffsetLabel(tz);
+  const item: TimezoneOptionItem = {
+    value: tz,
+    offset,
+    searchText: `${tz} ${tz.replaceAll("_", " ")} ${offset}`.toLowerCase(),
+  };
+  timezoneItemCache.set(tz, item);
+  return item;
+}
+
+function getSortedSupportedZones(): string[] {
+  if (!cachedSortedZones) {
+    cachedSortedZones = Array.from(new Set(getSupportedTimeZones())).sort();
+  }
+  return cachedSortedZones;
+}
+
+function getAllTimezoneOptionItems(): TimezoneOptionItem[] {
+  if (!cachedAllZoneItems) {
+    cachedAllZoneItems = getSortedSupportedZones().map(getTimezoneOptionItem);
+  }
+  return cachedAllZoneItems;
+}
+
 interface TimezoneSelectDropdownProps {
   selectedTimezone: string;
   persistedTimezone: string;
@@ -35,53 +66,57 @@ export function TimezoneSelectDropdown({
   const t = useTranslations("settings.timezoneCard");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const allZoneItems = useMemo<TimezoneOptionItem[]>(() => {
-    const baseZones = getSupportedTimeZones();
-    const zoneSet = new Set(baseZones);
-    if (isValidIanaTimeZone(persistedTimezone)) {
-      zoneSet.add(persistedTimezone);
-    }
-    if (isValidIanaTimeZone(browserTimezone)) {
-      zoneSet.add(browserTimezone);
-    }
+  const isSearchActive = searchQuery.trim().length > 0;
 
-    return Array.from(zoneSet)
-      .sort()
-      .map((tz) => {
-        const offset = formatTimeZoneOffsetLabel(tz);
-        return {
-          value: tz,
-          offset,
-          searchText:
-            `${tz} ${tz.replaceAll("_", " ")} ${offset}`.toLowerCase(),
-        };
-      });
+  const extraZones = useMemo(() => {
+    const baseSet = new Set(getSortedSupportedZones());
+    const extras: string[] = [];
+    if (
+      isValidIanaTimeZone(persistedTimezone) &&
+      !baseSet.has(persistedTimezone)
+    ) {
+      extras.push(persistedTimezone);
+    }
+    if (
+      browserTimezone &&
+      isValidIanaTimeZone(browserTimezone) &&
+      !baseSet.has(browserTimezone) &&
+      browserTimezone !== persistedTimezone
+    ) {
+      extras.push(browserTimezone);
+    }
+    return extras;
   }, [persistedTimezone, browserTimezone]);
+
+  const totalZoneCount = getSortedSupportedZones().length + extraZones.length;
 
   const filteredZones = useMemo<TimezoneOptionItem[]>(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) {
-      const pinnedOrder = [selectedTimezone, browserTimezone].filter(
-        (tz): tz is string => Boolean(tz && isValidIanaTimeZone(tz)),
-      );
-      const pinnedUnique = Array.from(new Set(pinnedOrder));
-      const pinnedItems = pinnedUnique
-        .map((tz) => allZoneItems.find((item) => item.value === tz))
-        .filter((item): item is TimezoneOptionItem => Boolean(item));
-      const pinnedSet = new Set(pinnedUnique);
-      const primarySet = new Set(PRIMARY_IANA_TIMEZONES);
-      return [
-        ...pinnedItems,
-        ...allZoneItems.filter(
-          (item) => primarySet.has(item.value) && !pinnedSet.has(item.value),
+      const pinnedUnique = Array.from(
+        new Set(
+          [selectedTimezone, browserTimezone].filter((tz): tz is string =>
+            Boolean(tz && isValidIanaTimeZone(tz)),
+          ),
         ),
-      ];
+      );
+      const pinnedSet = new Set(pinnedUnique);
+      const remainingPrimary = PRIMARY_IANA_TIMEZONES.filter(
+        (tz) => !pinnedSet.has(tz),
+      ).sort();
+      return [...pinnedUnique, ...remainingPrimary].map(getTimezoneOptionItem);
     }
 
-    return allZoneItems.filter((item) => item.searchText.includes(query));
-  }, [allZoneItems, browserTimezone, searchQuery, selectedTimezone]);
+    const baseItems = getAllTimezoneOptionItems();
+    const allItems =
+      extraZones.length === 0
+        ? baseItems
+        : [...baseItems, ...extraZones.map(getTimezoneOptionItem)].sort(
+            (a, b) => a.value.localeCompare(b.value),
+          );
 
-  const isSearchActive = searchQuery.trim().length > 0;
+    return allItems.filter((item) => item.searchText.includes(query));
+  }, [browserTimezone, extraZones, searchQuery, selectedTimezone]);
 
   const handleUseBrowserTimezone = () => {
     if (!browserTimezone) return;
@@ -144,7 +179,7 @@ export function TimezoneSelectDropdown({
         <p className="text-xs text-neutral-400">
           {t("primaryListHint", {
             shown: filteredZones.length,
-            total: allZoneItems.length,
+            total: totalZoneCount,
           })}
         </p>
       )}

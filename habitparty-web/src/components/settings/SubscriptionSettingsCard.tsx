@@ -7,54 +7,38 @@ import {
   ExternalLink,
   Sparkles,
 } from "lucide-react";
-import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
-import { toast } from "sonner";
-import { createCustomerPortalSessionAction } from "@/actions/paymentActions";
+import { useState } from "react";
+import { LazyUpgradePremiumModal } from "@/components/subscription/LazyUpgradePremiumModal";
 import { FounderBadge } from "@/components/ui/FounderBadge";
+import { useCustomerPortal } from "@/hooks/useCustomerPortal";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
+import type { UserResponseDTO } from "@/types/user";
 import { cn, formatShortDate } from "@/utils";
 
-const UpgradePremiumModal = dynamic(
-  () =>
-    import("@/components/subscription/UpgradePremiumModal").then(
-      (mod) => mod.UpgradePremiumModal,
-    ),
-  { ssr: false },
-);
+interface SubscriptionSettingsCardProps {
+  initialUser?: UserResponseDTO | null;
+}
 
-export function SubscriptionSettingsCard() {
+export function SubscriptionSettingsCard({
+  initialUser = null,
+}: SubscriptionSettingsCardProps = {}) {
   const t = useTranslations("settings.subscriptionCard");
   const locale = useLocale() as AppLocale;
   const { dateFormat } = useDateFormat();
 
-  const user = useUserStore((s) => s.user);
+  const storeUser = useUserStore((s) => s.user);
+  const user = storeUser ?? initialUser;
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-  const [isPendingPortal, startTransition] = useTransition();
-
-  const handleOpenPortal = () => {
-    startTransition(async () => {
-      try {
-        const res = await createCustomerPortalSessionAction();
-        if (res.success) {
-          if (res.data?.portalUrl) {
-            toast.success(t("redirectingPortal"));
-            window.location.href = res.data.portalUrl;
-          } else {
-            toast.error(t("missingPortalUrl"));
-          }
-        } else {
-          toast.error(res.error || t("portalError"));
-        }
-      } catch (err) {
-        console.error(err);
-        toast.error(t("unexpectedStripeError"));
-      }
+  const { isPendingPortal, openCustomerPortal: handleOpenPortal } =
+    useCustomerPortal({
+      redirecting: t("redirectingPortal"),
+      missingUrl: t("missingPortalUrl"),
+      error: t("portalError"),
+      unexpectedError: t("unexpectedStripeError"),
     });
-  };
 
   const isPremium = Boolean(user?.isPremium);
   const isFounder = Boolean(user?.isFounder);
@@ -78,7 +62,7 @@ export function SubscriptionSettingsCard() {
           className={cn(
             "rounded-xl border p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors",
             isPremium
-              ? "bg-linear-to-r from-gold/10 via-white dark:via-surface/60 to-gold/10 border-gold/40 shadow-glow-gold-xs"
+              ? "bg-linear-to-r from-gold/10 via-card dark:via-surface/60 to-gold/10 border-gold/40 shadow-glow-gold-xs"
               : "bg-surface/40 border-neutral-700 dark:border-neutral-700/60",
           )}
         >
@@ -191,7 +175,7 @@ export function SubscriptionSettingsCard() {
       </div>
 
       {isUpgradeModalOpen && (
-        <UpgradePremiumModal
+        <LazyUpgradePremiumModal
           isOpen={isUpgradeModalOpen}
           onClose={() => setIsUpgradeModalOpen(false)}
         />

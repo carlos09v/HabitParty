@@ -2,11 +2,14 @@
 
 import { Flame } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { resolveAvatarFrameId } from "@/constants/avatarFrames";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
+import type { AppLocale } from "@/i18n/config";
 import type { SocialUserSummary } from "@/types/social";
 import { cn } from "@/utils";
+import { localizeLevelTitle } from "@/utils/levels";
 
 interface FriendIdentityCellProps {
   user: SocialUserSummary;
@@ -22,8 +25,12 @@ export function FriendIdentityCell({
   onNavigate,
 }: FriendIdentityCellProps) {
   const t = useTranslations("showcase.friends");
+  const locale = useLocale() as AppLocale;
+  const { isGamified } = useExperienceMode();
   const displayName = user.fullName || user.username;
   const isCompact = variant === "compact";
+  const resolvedLevelTitle =
+    metaText ?? localizeLevelTitle(user.levelTitle, locale, isGamified);
 
   return (
     <Link
@@ -42,6 +49,7 @@ export function FriendIdentityCell({
         size={isCompact ? "sm" : "md"}
         hasRing={user.isPremium}
         frameId={resolveAvatarFrameId(user.avatarFrame)}
+        presetId={user.avatarPreset}
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 min-w-0">
@@ -64,13 +72,13 @@ export function FriendIdentityCell({
         </div>
         {isCompact ? (
           <p className="text-[11px] text-neutral-400 truncate tabular-nums">
-            @{user.username} • {metaText ?? user.levelTitle}
+            @{user.username} • {resolvedLevelTitle}
           </p>
         ) : (
           <div className="flex flex-wrap items-center gap-1.5 text-xs text-neutral-400">
             <span className="truncate">@{user.username}</span>
             <span>•</span>
-            <span className="truncate">{metaText ?? user.levelTitle}</span>
+            <span className="truncate">{resolvedLevelTitle}</span>
           </div>
         )}
       </div>

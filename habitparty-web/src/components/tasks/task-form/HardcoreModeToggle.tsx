@@ -114,7 +114,9 @@ export function HardcoreModeToggle({
             <InfoTooltip
               title={tooltipTitle}
               icon={<Zap size={14} className="fill-gold text-gold" />}
-              ariaLabel={t("tooltipAria")}
+              ariaLabel={
+                isGamified ? t("tooltipAria") : t("tooltipAriaProductivity")
+              }
             >
               {isTodo ? (
                 <>
@@ -227,7 +229,9 @@ export function HardcoreModeToggle({
           checked={isHardcore}
           onCheckedChange={onChange}
           disabled={disabled}
-          aria-label={t("switchAria")}
+          aria-label={
+            isGamified ? t("switchAria") : t("switchAriaProductivity")
+          }
           className={cn(
             isHardcore &&
               "bg-danger-500 border-danger-500 shadow-[0_0_10px_rgba(251,44,54,0.5)]",
@@ -239,7 +243,13 @@ export function HardcoreModeToggle({
       {isHardcore && (
         <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-danger-500/10 border border-danger-500/30 text-danger-400 text-tiny font-medium animate-in fade-in duration-200">
           <AlertTriangle size={13} className="shrink-0 text-danger-400" />
-          <span>{isTodo ? todoActiveAlertText : t("routineActiveAlert")}</span>
+          <span>
+            {isTodo
+              ? todoActiveAlertText
+              : isGamified
+                ? t("routineActiveAlert")
+                : t("routineActiveAlertProductivity")}
+          </span>
         </div>
       )}
     </div>

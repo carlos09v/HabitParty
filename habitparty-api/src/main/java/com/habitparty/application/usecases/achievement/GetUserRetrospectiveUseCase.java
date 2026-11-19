@@ -94,6 +94,61 @@ public class GetUserRetrospectiveUseCase {
     return buildRetrospective(user, requestedYear, true);
   }
 
+  /**
+   * Retorna os arquétipos de retrospectiva elegíveis já conquistados pelo usuário em anos concluídos
+   * ou na janela sazonal atual (usado para validar títulos equipáveis de retrospectiva).
+   */
+  @Transactional(readOnly = true)
+  public Set<RetrospectiveArchetype> findEligibleArchetypesForUser(User target) {
+    if (target == null || target.getId() == null) {
+      return Set.of();
+    }
+    ZoneId userZone = timeResolver.resolveZone(target);
+    LocalDate userToday = timeResolver.resolveDate(target);
+    int currentYear = userToday.getYear();
+    int earliestYear = resolveEarliestActivityYear(target, userZone, currentYear);
+
+    int maxEligibleYear = -1;
+    for (int year = earliestYear; year <= currentYear; year++) {
+      if (year < currentYear || UserRetrospective.isInSeasonalWindow(userToday, year)) {
+        maxEligibleYear = year;
+      }
+    }
+    if (maxEligibleYear < earliestYear) {
+      return Set.of();
+    }
+
+    ZonedDateTime startUser = LocalDate.of(earliestYear, 1, 1).atStartOfDay(userZone);
+    ZonedDateTime endUser = LocalDate.of(maxEligibleYear, 12, 31).atTime(23, 59, 59, 999_999_999).atZone(userZone);
+    LocalDateTime startStorage = startUser.withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
+    LocalDateTime endStorage = endUser.withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
+
+    Map<Integer, List<TransactionHistory>> txByYear = partitionTransactionsByYear(
+        transactionHistoryRepository.findAllByUserIdAndPeriod(target.getId(), startStorage, endStorage),
+        userZone);
+    Map<Integer, List<FocusRecord>> focusByYear = partitionFocusByYear(
+        focusRecordRepository.findAllByUserIdAndPeriod(target.getId(), startStorage, endStorage),
+        userZone);
+
+    Set<RetrospectiveArchetype> archetypes = EnumSet.noneOf(RetrospectiveArchetype.class);
+    for (int year = earliestYear; year <= maxEligibleYear; year++) {
+      YearSnapshot snapshot = computeYearSnapshot(
+          userZone,
+          txByYear.getOrDefault(year, List.of()),
+          focusByYear.getOrDefault(year, List.of()),
+          List.of(),
+          Map.of());
+      if (snapshot.eligible()) {
+        archetypes.add(RetrospectiveArchetype.resolve(
+            snapshot.activeDays(),
+            snapshot.tasksCompleted(),
+            snapshot.hardTasksCompleted(),
+            snapshot.focusMinutes()));
+      }
+    }
+    return archetypes;
+  }
+
   @Transactional(readOnly = true)
   public UserRetrospective executeForUsername(UUID viewerId, String rawUsername, Integer requestedYear) {
     String cleanUsername = SocialAccessSupport.normalizeUsernameQuery(rawUsername);

@@ -3,6 +3,8 @@ import type { FriendRequestPolicy, PrivacyLevel } from "@/types/social";
 
 export type UserResponseDTO = components["schemas"]["UserResponseDTO"] & {
   theme?: string | null;
+  equippedTitle?: string | null;
+  avatarPreset?: string | null;
   friendCode?: string;
   profileVisibility?: PrivacyLevel;
   statsVisibility?: PrivacyLevel;

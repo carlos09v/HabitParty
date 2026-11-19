@@ -1,86 +1,110 @@
-import { Check } from "lucide-react";
+"use client";
+
 import { useTranslations } from "next-intl";
-import { OnboardingStepHeader } from "@/components/onboarding/OnboardingStepHeader";
-import { Input } from "@/components/ui/Input";
+import { useId } from "react";
+import { MAX_WORKSPACE_NAME_LENGTH } from "@/constants/onboarding";
+import type { UsageMode } from "@/types/onboarding";
 import { cn } from "@/utils";
 
 interface WorkspaceSetupCardProps {
   workspaceName: string;
-  onChangeName: (name: string) => void;
-  chips: string[];
-  onSelectChip: (chip: string) => void;
-  disabled?: boolean;
+  onChangeName: (value: string) => void;
+  onBlurName: () => void;
+  usageMode: UsageMode;
+  errorMessage?: string | null;
 }
 
 export function WorkspaceSetupCard({
   workspaceName,
   onChangeName,
-  chips,
-  onSelectChip,
-  disabled = false,
+  onBlurName,
+  usageMode,
+  errorMessage,
 }: WorkspaceSetupCardProps) {
   const t = useTranslations("onboarding.workspaceSetup");
+  const inputId = useId();
+  const errorId = useId();
+  const presets = t.raw(`presetsByMode.${usageMode}`) as string[];
+  const hasError = Boolean(errorMessage);
 
   return (
-    <div className="flex flex-col gap-2.5 p-3.5 rounded-xl border border-neutral-700 bg-card shadow-xs dark:border-primary/30 dark:bg-surface/50 dark:shadow-card-deep">
-      <OnboardingStepHeader
-        step={2}
-        title={t("title")}
-        rightSlot={
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 dark:bg-gold/15 border border-amber-500/35 dark:border-gold/40 text-amber-800 dark:text-gold text-label-m font-bold uppercase tracking-wider">
-            {t("badge")}
-          </span>
-        }
-      />
-
-      <p className="text-tiny sm:text-xs text-neutral-300">
-        {t("description")}
-      </p>
-
-      <div className="flex flex-col gap-2">
-        <Input
-          label={t("label")}
-          id="workspaceName"
-          value={workspaceName}
-          maxLength={25}
-          onChange={(e) => onChangeName(e.target.value.slice(0, 25))}
-          placeholder={t("placeholder")}
-          hint={t("hint")}
-          required
-          compact
-          disabled={disabled}
-        />
-
-        {/* Sugestões Rápidas (Chips clicáveis) */}
-        <div className="flex flex-col gap-1.5 mt-1">
-          <span className="text-[11px] text-neutral-400 font-medium">
-            {t("suggestionsLabel")}
-          </span>
-          <div className="flex flex-wrap gap-1.5">
-            {chips.map((chip) => {
-              const isChipActive = workspaceName === chip;
-              return (
-                <button
-                  key={chip}
-                  type="button"
-                  onClick={() => onSelectChip(chip)}
-                  disabled={disabled}
-                  className={cn(
-                    "px-2.5 py-1.5 sm:py-1 rounded-full text-[11px] font-medium transition-colors cursor-pointer border",
-                    isChipActive
-                      ? "bg-amber-500/15 border-amber-500/50 text-amber-800 dark:bg-gold/20 dark:border-gold/60 dark:text-gold font-bold shadow-2xs dark:shadow-sm"
-                      : "bg-surface hover:bg-surface-hover border-neutral-700 text-neutral-200 hover:text-neutral-50 dark:bg-primary-dark/20 dark:border-primary/30 dark:text-neutral-300 dark:hover:text-neutral-100 dark:hover:bg-primary-dark/40",
-                  )}
-                >
-                  {isChipActive && (
-                    <Check size={11} className="inline mr-1 -mt-0.5" />
-                  )}
-                  {chip}
-                </button>
-              );
+    <div className="flex flex-col gap-3 rounded-xl border border-neutral-700/80 dark:border-primary/25 bg-card/80 dark:bg-surface/45 p-4">
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <label
+            htmlFor={inputId}
+            className="text-body-s font-bold text-neutral-100"
+          >
+            {t("fieldLabel")}
+          </label>
+          <span
+            className={cn(
+              "text-tiny tabular-nums transition-colors",
+              workspaceName.length >= MAX_WORKSPACE_NAME_LENGTH
+                ? "text-amber-700 dark:text-gold font-semibold"
+                : "text-neutral-400",
+            )}
+          >
+            {t("charCounter", {
+              current: workspaceName.length,
+              max: MAX_WORKSPACE_NAME_LENGTH,
             })}
-          </div>
+          </span>
         </div>
+        <input
+          id={inputId}
+          type="text"
+          value={workspaceName}
+          onChange={(e) =>
+            onChangeName(e.target.value.slice(0, MAX_WORKSPACE_NAME_LENGTH))
+          }
+          onBlur={onBlurName}
+          maxLength={MAX_WORKSPACE_NAME_LENGTH}
+          placeholder={t("inputPlaceholder")}
+          aria-invalid={hasError}
+          aria-describedby={hasError ? errorId : undefined}
+          className={cn(
+            "w-full min-h-[48px] px-3.5 py-2.5 rounded-xl bg-surface dark:bg-surface/80 border text-body-s text-neutral-100 placeholder:text-neutral-400 outline-none transition-colors focus:ring-2",
+            hasError
+              ? "border-rose-500 focus:ring-rose-500/40"
+              : "border-neutral-700 dark:border-primary/30 focus:border-gold focus:ring-gold/30",
+          )}
+        />
+        {hasError && (
+          <p
+            id={errorId}
+            role="alert"
+            className="text-xs font-medium text-rose-500 dark:text-rose-400 mt-0.5"
+          >
+            {errorMessage}
+          </p>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium text-neutral-300">
+          {t("quickPresetsLabel")}
+        </span>
+        {presets.map((preset) => {
+          const isActive =
+            workspaceName.trim().toLowerCase() === preset.toLowerCase();
+          return (
+            <button
+              key={preset}
+              type="button"
+              onClick={() => onChangeName(preset)}
+              aria-pressed={isActive}
+              className={cn(
+                "px-3.5 py-2 min-h-[48px] rounded-xl text-xs font-semibold border transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-gold",
+                isActive
+                  ? "bg-amber-500/15 border-amber-500/70 text-amber-800 dark:bg-gold/15 dark:border-gold dark:text-gold"
+                  : "bg-surface/80 border-neutral-700 text-neutral-200 hover:border-primary/50 hover:text-neutral-100 dark:border-primary/25",
+              )}
+            >
+              {preset}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

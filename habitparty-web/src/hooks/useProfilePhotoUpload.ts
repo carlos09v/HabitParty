@@ -71,27 +71,25 @@ export function useProfilePhotoUpload({
       const res = await updateUserProfilePhotoAction(formData);
       if (res.success) {
         toast.success(messages.photoSuccessToast);
+        if (
+          committedBlobUrlRef.current &&
+          committedBlobUrlRef.current !== objectUrl
+        ) {
+          URL.revokeObjectURL(committedBlobUrlRef.current);
+        }
+
         const serverPhotoUrl = res.data?.profilePhotoUrl;
+        const resolvedPhotoUrl = serverPhotoUrl ?? objectUrl;
+        committedBlobUrlRef.current = serverPhotoUrl ? null : objectUrl;
+        setPreviewUrl(resolvedPhotoUrl);
+
+        const hadPreset = Boolean(useUserStore.getState().user?.avatarPreset);
+        updateUserPartial({
+          profilePhotoUrl: resolvedPhotoUrl,
+          ...(hadPreset ? { avatarPreset: null } : {}),
+        });
         if (serverPhotoUrl) {
-          if (
-            committedBlobUrlRef.current &&
-            committedBlobUrlRef.current !== objectUrl
-          ) {
-            URL.revokeObjectURL(committedBlobUrlRef.current);
-          }
-          committedBlobUrlRef.current = null;
-          setPreviewUrl(serverPhotoUrl);
-          updateUserPartial({ profilePhotoUrl: serverPhotoUrl });
           URL.revokeObjectURL(objectUrl);
-        } else {
-          if (
-            committedBlobUrlRef.current &&
-            committedBlobUrlRef.current !== objectUrl
-          ) {
-            URL.revokeObjectURL(committedBlobUrlRef.current);
-          }
-          committedBlobUrlRef.current = objectUrl;
-          updateUserPartial({ profilePhotoUrl: objectUrl });
         }
       } else {
         toast.error(res.error || messages.photoErrorToast);
@@ -135,11 +133,28 @@ export function useProfilePhotoUpload({
     }
   };
 
+  const fileInputProps = {
+    ref: fileInputRef,
+    type: "file" as const,
+    accept: "image/*" as const,
+    className: "hidden",
+    tabIndex: -1,
+    onChange: handleFileChange,
+  };
+
+  const dropzoneHandlers = {
+    onDragOver: handleDragOver,
+    onDragLeave: handleDragLeave,
+    onDrop: handleDrop,
+  };
+
   return {
     fileInputRef,
     isPending,
     previewUrl,
     isDraggingOver,
+    fileInputProps,
+    dropzoneHandlers,
     handleFileChange,
     handleDragOver,
     handleDragLeave,

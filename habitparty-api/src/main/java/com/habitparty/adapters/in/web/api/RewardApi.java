@@ -19,6 +19,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
 @RequestMapping("/rewards")
 @Validated
@@ -29,6 +31,7 @@ public interface RewardApi {
     @PostMapping("/{rewardId}/redeem")
     ResponseEntity<Void> redeemReward(
         @PathVariable UUID rewardId,
+        @RequestParam(defaultValue = "1") @Min(1) @Max(50) int quantity,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 

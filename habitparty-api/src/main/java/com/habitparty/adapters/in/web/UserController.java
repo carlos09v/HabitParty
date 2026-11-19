@@ -16,6 +16,7 @@ import com.habitparty.adapters.in.web.dtos.request.UpdateUserPasswordDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserThemeDTO;
 import com.habitparty.adapters.in.web.dtos.request.user.ResetAccountDTO;
 import com.habitparty.adapters.in.web.dtos.request.user.UpdatePrivacySettingsDTO;
+import com.habitparty.adapters.in.web.dtos.response.UserLayoutSummaryResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.UserResponseDTO;
 import com.habitparty.application.usecases.social.RegenerateFriendCodeUseCase;
 import com.habitparty.application.usecases.social.UpdatePrivacySettingsCommand;
@@ -23,8 +24,10 @@ import com.habitparty.application.usecases.social.UpdatePrivacySettingsUseCase;
 import com.habitparty.application.usecases.user.CreateUserCommand;
 import com.habitparty.application.usecases.user.CreateUserUseCase;
 import com.habitparty.application.usecases.user.DeleteUserUseCase;
+import com.habitparty.application.usecases.user.EffectiveStreakResolver;
 import com.habitparty.application.usecases.user.FindAllUsersUseCase;
 import com.habitparty.application.usecases.user.FindUserByIdUseCase;
+import com.habitparty.application.usecases.user.GetUserLayoutSummaryUseCase;
 import com.habitparty.application.usecases.user.ResetUserAccountUseCase;
 import com.habitparty.application.usecases.user.UpdateProfilePhotoUseCase;
 import com.habitparty.application.usecases.user.UpdateUserPasswordUseCase;
@@ -48,6 +51,8 @@ public class UserController implements UserApi {
   private final RegenerateFriendCodeUseCase regenerateFriendCodeUseCase;
   private final UpdatePrivacySettingsUseCase updatePrivacySettingsUseCase;
   private final ResetUserAccountUseCase resetUserAccountUseCase;
+  private final EffectiveStreakResolver effectiveStreakResolver;
+  private final GetUserLayoutSummaryUseCase getUserLayoutSummaryUseCase;
 
   @Override
   public ResponseEntity<UserResponseDTO> createUser(CreateUserDTO requestDto) {
@@ -69,6 +74,11 @@ public class UserController implements UserApi {
   public ResponseEntity<UserResponseDTO> getUserById(AuthenticatedUser usuarioLogado) {
     var result = findUserByIdUseCase.executeWithEffectiveStreak(usuarioLogado.id());
     return ResponseEntity.ok(UserResponseDTO.fromDomain(result.user(), result.effectiveStreak()));
+  }
+
+  @Override
+  public ResponseEntity<UserLayoutSummaryResponseDTO> getLayoutSummary(AuthenticatedUser usuarioLogado) {
+    return ResponseEntity.ok(getUserLayoutSummaryUseCase.execute(usuarioLogado.id()));
   }
 
   @Override
@@ -117,7 +127,13 @@ public class UserController implements UserApi {
         dto.gender(),
         dto.experienceMode(),
         dto.timezone(),
-        dto.theme());
+        dto.theme(),
+        dto.usageMode(),
+        dto.primaryGoals(),
+        dto.mainObstacle(),
+        dto.dailyFocusGoalMinutes(),
+        dto.peakPeriod(),
+        dto.disciplineStyle());
     var updated = updateUserProfileUseCase.executeWithEffectiveStreak(userId, command);
     return ResponseEntity.ok(UserResponseDTO.fromDomain(updated.user(), updated.effectiveStreak()));
   }
@@ -132,16 +148,18 @@ public class UserController implements UserApi {
   }
 
   @Override
-  public ResponseEntity<Void> updateProfilePhoto(
+  public ResponseEntity<UserResponseDTO> updateProfilePhoto(
       AuthenticatedUser usuarioLogado,
       MultipartFile photoFile) {
     UUID userId = usuarioLogado.id();
     try {
-      updateProfilePhotoUseCase.execute(userId, photoFile.getInputStream(), photoFile.getOriginalFilename(), photoFile.getSize());
+      User updatedUser = updateProfilePhotoUseCase.execute(
+          userId, photoFile.getInputStream(), photoFile.getOriginalFilename(), photoFile.getSize());
+      var wrapped = effectiveStreakResolver.wrap(updatedUser);
+      return ResponseEntity.ok(UserResponseDTO.fromDomain(wrapped.user(), wrapped.effectiveStreak()));
     } catch (IOException e) {
       throw new RuntimeException("Falha ao processar arquivo para upload.", e);
     }
-    return ResponseEntity.noContent().build();
   }
 
   @Override

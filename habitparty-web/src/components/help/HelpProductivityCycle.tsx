@@ -1,15 +1,8 @@
 import { Sparkles } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { HELP_PRODUCTIVITY_STEPS } from "@/constants/help";
-import { cn } from "@/utils";
 
-interface HelpProductivityCycleProps {
-  isCompact?: boolean;
-}
-
-export async function HelpProductivityCycle({
-  isCompact = false,
-}: HelpProductivityCycleProps) {
+export async function HelpProductivityCycle() {
   const t = await getTranslations("help.cycle");
 
   return (
@@ -21,26 +14,14 @@ export async function HelpProductivityCycle({
         </h2>
       </div>
 
-      <div
-        className={cn(
-          "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
-          isCompact ? "gap-2.5" : "gap-3.5",
-        )}
-      >
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         {HELP_PRODUCTIVITY_STEPS.map((stepItem) => (
           <div
             key={stepItem.step}
-            className={cn(
-              "rounded-xl bg-card dark:bg-surface/40 border border-neutral-700 dark:border-primary/25 shadow-xs dark:shadow-none flex flex-col",
-              isCompact ? "p-3 gap-1.5" : "p-4 gap-2",
-            )}
+            className="rounded-xl bg-card dark:bg-surface/40 border border-neutral-700 dark:border-primary/25 shadow-xs dark:shadow-none p-4 flex flex-col gap-2"
           >
             <div
-              className={cn(
-                "rounded-lg border flex items-center justify-center font-bold",
-                isCompact ? "w-7 h-7 text-xs" : "w-8 h-8 text-sm",
-                stepItem.badgeClassName,
-              )}
+              className={`w-8 h-8 text-sm rounded-lg border flex items-center justify-center font-bold ${stepItem.badgeClassName}`}
             >
               {stepItem.step}
             </div>

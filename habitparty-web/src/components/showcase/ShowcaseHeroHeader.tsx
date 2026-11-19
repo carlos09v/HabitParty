@@ -21,13 +21,17 @@ import { FounderBadge } from "@/components/ui/FounderBadge";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { UserPlanBadge } from "@/components/ui/UserStatusBadges";
 import { resolveAvatarFrameId } from "@/constants/avatarFrames";
+import { resolveProfileTitleLabel } from "@/constants/cosmetics";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import { useIdlePreload } from "@/hooks/useIdlePreload";
 import { useProfilePhotoUpload } from "@/hooks/useProfilePhotoUpload";
 import type { AppLocale } from "@/i18n/config";
 import { useActiveAvatarFrame } from "@/store/avatarFrameStore";
 import { useUserStore } from "@/store/userStore";
-import type { ShowcaseStatsResponseDTO } from "@/types/showcase";
+import type {
+  AchievementItemResponseDTO,
+  ShowcaseStatsResponseDTO,
+} from "@/types/showcase";
+import type { UserRetrospectiveData } from "@/types/social";
 import type { UserResponseDTO } from "@/types/user";
 import { cn, formatMonthYear, resolveUserLevelState } from "@/utils";
 
@@ -43,11 +47,14 @@ const AvatarFramePickerModal = dynamic(preloadAvatarFramePickerModal, {
 interface ShowcaseHeroHeaderProps {
   user: UserResponseDTO;
   stats: ShowcaseStatsResponseDTO;
+  achievements?: AchievementItemResponseDTO[];
+  unlockedArtifactsCount?: number;
+  retrospective?: UserRetrospectiveData | null;
   isVisitorMode: boolean;
   onToggleVisitorMode: () => void;
-  isCompact?: boolean;
   isOtherUser?: boolean;
   onOpenPreviewCard?: () => void;
+  onPreloadPreviewCard?: () => void;
   onOpenProgression?: () => void;
   extraHeaderActions?: ReactNode;
 }
@@ -55,16 +62,20 @@ interface ShowcaseHeroHeaderProps {
 export function ShowcaseHeroHeader({
   user: initialUser,
   stats,
+  achievements = [],
+  unlockedArtifactsCount,
+  retrospective = null,
   isVisitorMode,
   onToggleVisitorMode,
-  isCompact = false,
   isOtherUser = false,
   onOpenPreviewCard,
+  onPreloadPreviewCard,
   onOpenProgression,
   extraHeaderActions,
 }: ShowcaseHeroHeaderProps) {
   const locale = useLocale() as AppLocale;
   const t = useTranslations("showcase.header");
+  const tTitles = useTranslations("showcase.titles");
   const { isGamified } = useExperienceMode();
 
   const storeUser = useUserStore((s) => s.user);
@@ -80,10 +91,8 @@ export function ShowcaseHeroHeader({
     isPending: isPhotoPending,
     previewUrl,
     isDraggingOver,
-    handleFileChange,
-    handleDragOver,
-    handleDragLeave,
-    handleDrop,
+    fileInputProps,
+    dropzoneHandlers,
   } = useProfilePhotoUpload({
     disabled: isVisitorMode || isOtherUser,
     messages: {
@@ -93,8 +102,6 @@ export function ShowcaseHeroHeader({
       photoErrorToast: t("photoErrorToast"),
     },
   });
-
-  useIdlePreload(preloadAvatarFramePickerModal);
 
   const fallbackDisplayName = t(
     isGamified ? "defaultDisplayNameGamified" : "defaultDisplayNameEssential",
@@ -112,15 +119,16 @@ export function ShowcaseHeroHeader({
     locale,
     isOtherUser ? user?.timezone : (storeTimezone ?? user?.timezone),
   );
+  const equippedTitleLabel = resolveProfileTitleLabel(
+    user?.equippedTitle,
+    isGamified,
+    tTitles,
+  );
+  const activePresetId = previewUrl ? null : user?.avatarPreset;
 
   return (
     <>
-      <section
-        className={cn(
-          "@container relative overflow-hidden rounded-2xl border border-neutral-700 dark:border-primary/30 bg-card dark:bg-surface/65 shadow-card-deep dark:shadow-xl",
-          isCompact ? "p-4 sm:p-6" : "p-5 sm:p-7",
-        )}
-      >
+      <section className="@container relative overflow-hidden rounded-2xl border border-neutral-700 dark:border-primary/30 bg-card dark:bg-surface/65 shadow-card-deep dark:shadow-xl p-5 sm:p-7">
         {/* Luz ambiente periférica pré-composta (Zero Blur Filter GPU) */}
         <div
           aria-hidden="true"
@@ -151,6 +159,8 @@ export function ShowcaseHeroHeader({
               <button
                 type="button"
                 onClick={onOpenPreviewCard}
+                onMouseEnter={onPreloadPreviewCard}
+                onFocus={onPreloadPreviewCard}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold border bg-gold/15 hover:bg-gold/25 border-gold/40 text-amber-800 dark:text-gold transition-colors cursor-pointer"
               >
                 <Share2 size={13} aria-hidden="true" />
@@ -162,6 +172,8 @@ export function ShowcaseHeroHeader({
               <button
                 type="button"
                 onClick={() => setIsFramePickerOpen(true)}
+                onMouseEnter={preloadAvatarFramePickerModal}
+                onFocus={preloadAvatarFramePickerModal}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border bg-surface/70 hover:bg-surface border-neutral-700 text-neutral-200 hover:border-gold/40 hover:text-neutral-50 dark:border-primary/25 transition-colors cursor-pointer"
               >
                 <Sparkles size={13} className="text-amber-700 dark:text-gold" />
@@ -222,9 +234,7 @@ export function ShowcaseHeroHeader({
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
+                    {...dropzoneHandlers}
                     disabled={isPhotoPending}
                     className="relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-gold cursor-pointer transition-transform group-hover:scale-[1.02] block disabled:cursor-not-allowed"
                     title={t("changePhoto")}
@@ -236,6 +246,7 @@ export function ShowcaseHeroHeader({
                       size="xl"
                       hasRing={isPremium}
                       frameId={activeFrameId}
+                      presetId={activePresetId}
                     />
 
                     {/* Overlay sutil de câmera no hover */}
@@ -278,14 +289,7 @@ export function ShowcaseHeroHeader({
                     </span>
                   </button>
 
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    tabIndex={-1}
-                    onChange={handleFileChange}
-                  />
+                  <input {...fileInputProps} />
                 </div>
               ) : (
                 <UserAvatar
@@ -294,6 +298,7 @@ export function ShowcaseHeroHeader({
                   size="xl"
                   hasRing={isPremium}
                   frameId={activeFrameId}
+                  presetId={activePresetId}
                 />
               )}
             </div>
@@ -322,11 +327,28 @@ export function ShowcaseHeroHeader({
                 )}
 
                 {user?.emailVerified && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-tiny font-semibold bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30">
-                    <ShieldCheck size={11} />
+                  <span
+                    role="img"
+                    aria-label={t("verifiedEmailBadge")}
+                    title={t("verifiedEmailBadge")}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-tiny font-semibold bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30"
+                  >
+                    <ShieldCheck size={11} aria-hidden="true" />
                   </span>
                 )}
               </div>
+
+              {equippedTitleLabel && (
+                <p
+                  title={t("equippedTitleAria", {
+                    title: equippedTitleLabel,
+                  })}
+                  className="inline-flex items-center gap-1.5 w-fit px-2.5 py-0.5 rounded-full bg-gold/15 border border-gold/40 text-xs font-extrabold text-amber-800 dark:text-gold"
+                >
+                  <Sparkles size={12} aria-hidden="true" />
+                  <span className="break-words">{equippedTitleLabel}</span>
+                </p>
+              )}
 
               {formattedMemberSince && (
                 <div className="flex items-center gap-1.5 text-tiny text-neutral-400">
@@ -353,6 +375,7 @@ export function ShowcaseHeroHeader({
             levelTitle={levelTitle}
             nextLevelTitle={nextLevelTitle}
             progress={progress}
+            isGamified={isGamified}
             onOpenProgression={onOpenProgression}
           />
         </div>
@@ -362,7 +385,10 @@ export function ShowcaseHeroHeader({
         <AvatarFramePickerModal
           isOpen={isFramePickerOpen}
           onClose={() => setIsFramePickerOpen(false)}
-          title={t("changeFrameButton")}
+          achievements={achievements}
+          stats={stats}
+          unlockedArtifactsCount={unlockedArtifactsCount}
+          retrospective={retrospective}
         />
       )}
     </>

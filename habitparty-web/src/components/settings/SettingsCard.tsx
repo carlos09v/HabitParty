@@ -6,7 +6,6 @@ interface SettingsCardProps {
   description?: ReactNode;
   icon?: ReactNode;
   headerAction?: ReactNode;
-  isCompact?: boolean;
   variant?: "default" | "danger";
   className?: string;
   children?: ReactNode;
@@ -21,7 +20,6 @@ export function SettingsCard({
   description,
   icon,
   headerAction,
-  isCompact = false,
   variant = "default",
   className,
   children,
@@ -31,11 +29,10 @@ export function SettingsCard({
   return (
     <section
       className={cn(
-        "rounded-2xl flex flex-col",
+        "rounded-2xl flex flex-col p-4 sm:p-6 gap-4 sm:gap-5",
         isDanger
           ? "border border-red-500/25 dark:border-red-500/30 bg-red-500/[0.04] dark:bg-red-950/15"
           : "border border-neutral-700 dark:border-primary/20 bg-card dark:bg-surface/45 shadow-xs dark:shadow-none",
-        isCompact ? "p-4 sm:p-5 gap-4" : "p-4 sm:p-6 gap-4 sm:gap-5",
         className,
       )}
     >

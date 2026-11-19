@@ -130,7 +130,8 @@
     "progressTitle": "Progresso: {currentXp}/{targetXp} XP ({percent}%). Faltam {remainingXp} XP para {nextTitle}.",
     "progressPtsTitle": "Progresso: {currentXp}/{targetXp} pts ({percent}%). Faltam {remainingXp} pts para {nextTitle}.",
     "progressMaxTitle": "Progresso: {currentXp} XP (Nível Máximo - {levelTitle})",
-    "progressPtsMaxTitle": "Progresso: {currentXp} pts (Nível Máximo - {levelTitle})"
+    "progressPtsMaxTitle": "Progresso: {currentXp} pts (Nível Máximo - {levelTitle})",
+    "creditsTitleWithLeisure": "{coins} créditos ({duration} de lazer)"
   },
   "focusWidget": {
     "ambientSounds": {
@@ -189,8 +190,10 @@
       "returnToApp": "Voltar ao HabitParty",
       "selectActivityPrompt": "Selecionar atividade no HabitParty",
       "close": "Fechar",
-      "unsupported": "Janela flutuante (Picture-in-Picture) indisponível neste navegador."
-    }
+      "unsupported": "Janela flutuante (Picture-in-Picture) indisponível neste navegador.",
+      "sessionCapBadgeProductivity": "⏱️ Teto 1h30"
+    },
+    "modeInventory": "Inventário"
   },
   "subscriptionAlert": {
     "ariaLabel": "Aviso de expiração da assinatura",

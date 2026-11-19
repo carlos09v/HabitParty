@@ -1,15 +1,17 @@
 "use client";
 
-import { AlertTriangle, Check, Sparkles } from "lucide-react";
+import { AlertTriangle, Check, Clock, Sparkles } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { type AppLocale, toIntlLocale } from "@/i18n/config";
 import type { PackageLevel, RewardType } from "@/types/reward";
 import { cn, formatCoins } from "@/utils";
 import {
   analyzeRewardPrice,
+  formatCreditsLeisureEquivalence,
   type RewardEffortDescriptor,
   type RewardPriceAnalysis,
   type RewardPriceWarningDescriptor,
@@ -52,17 +54,28 @@ function formatWarningMessage(
   warning: RewardPriceWarningDescriptor | undefined,
   t: ReturnType<typeof useTranslations<"rewards.formModal.priceGuidance">>,
   locale: AppLocale,
+  isGamified: boolean,
 ): string | null {
   if (!warning) return null;
   switch (warning.key) {
     case "belowCalibrated":
-      return t("warnings.belowCalibrated", {
-        price: formatCoins(warning.suggestedPrice, { locale }),
-      });
+      return t(
+        isGamified
+          ? "warnings.belowCalibrated"
+          : "warnings.belowCalibratedProductivity",
+        {
+          price: formatCoins(warning.suggestedPrice, { locale }),
+        },
+      );
     case "aboveCalibrated":
-      return t("warnings.aboveCalibrated", {
-        price: formatCoins(warning.suggestedPrice, { locale }),
-      });
+      return t(
+        isGamified
+          ? "warnings.aboveCalibrated"
+          : "warnings.aboveCalibratedProductivity",
+        {
+          price: formatCoins(warning.suggestedPrice, { locale }),
+        },
+      );
     case "singleUseTooLow":
       return t("warnings.singleUseTooLow");
     case "singleUseTooHigh":
@@ -96,6 +109,7 @@ export function RewardPriceGuidance({
 }: RewardPriceGuidanceProps) {
   const t = useTranslations("rewards.formModal.priceGuidance");
   const locale = useLocale() as AppLocale;
+  const { isGamified } = useExperienceMode();
 
   const numericPrice = Number.parseFloat(price.replace(",", ".")) || 0;
   const numericDuration = Number.parseInt(durationMinutes || "30", 10) || 30;
@@ -113,11 +127,20 @@ export function RewardPriceGuidance({
   );
 
   const effortSummary = formatEffortSummary(analysis.effort, t, locale);
-  const warningMessage = formatWarningMessage(analysis.warning, t, locale);
+  const warningMessage = formatWarningMessage(
+    analysis.warning,
+    t,
+    locale,
+    isGamified,
+  );
 
   const hasSuggestedDiff =
     analysis.suggestedPrice !== null &&
     Math.abs(numericPrice - analysis.suggestedPrice) >= 0.01;
+  const leisureEquivalence =
+    !isGamified && type !== "TimeBased" && numericPrice > 0
+      ? formatCreditsLeisureEquivalence(numericPrice)
+      : null;
 
   const isWarning = analysis.status !== "ok";
   const warningTitle =
@@ -160,12 +183,26 @@ export function RewardPriceGuidance({
     return (
       <div className="flex items-center justify-between gap-2 min-h-[24px] text-label-m">
         <span className="inline-flex items-center gap-1.5 text-neutral-300 min-w-0">
-          <Sparkles size={12} className="text-gold shrink-0" />
+          {isGamified ? (
+            <Sparkles size={12} className="text-gold shrink-0" />
+          ) : (
+            <Clock
+              size={12}
+              className="text-sky-600 dark:text-sky-400 shrink-0"
+            />
+          )}
           <span className="truncate">
             <span className="text-neutral-400">{t("effortPrefix")}</span>{" "}
             <strong className="font-semibold text-neutral-100">
               {effortSummary}
             </strong>
+            {leisureEquivalence && (
+              <span className="text-sky-700 dark:text-sky-300 font-medium">
+                {" "}
+                •{" "}
+                {t("leisureEquivalenceHint", { duration: leisureEquivalence })}
+              </span>
+            )}
           </span>
         </span>
         {isWarning && warningMessage && (
@@ -177,14 +214,27 @@ export function RewardPriceGuidance({
 
   return (
     <div className="flex flex-col gap-1">
-      {/* Linha 1: Equivalência em esforço */}
+      {/* Linha 1: Equivalência em esforço (e equivalência em lazer no Modo Essencial) */}
       <div className="flex items-center gap-1.5 min-h-[20px] text-label-m text-neutral-300">
-        <Sparkles size={12} className="text-gold shrink-0" />
+        {isGamified ? (
+          <Sparkles size={12} className="text-gold shrink-0" />
+        ) : (
+          <Clock
+            size={12}
+            className="text-sky-600 dark:text-sky-400 shrink-0"
+          />
+        )}
         <span className="truncate">
           <span className="text-neutral-400">{t("effortPrefix")}</span>{" "}
           <strong className="font-semibold text-neutral-100">
             {effortSummary}
           </strong>
+          {leisureEquivalence && (
+            <span className="text-sky-700 dark:text-sky-300 font-medium">
+              {" "}
+              • {t("leisureEquivalenceHint", { duration: leisureEquivalence })}
+            </span>
+          )}
         </span>
       </div>
 

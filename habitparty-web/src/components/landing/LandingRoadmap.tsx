@@ -10,14 +10,21 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { LANDING_ROADMAP_CONFIGS, SUPPORT_LINKS } from "@/constants/landing";
+import {
+  LANDING_ANCHORS,
+  LANDING_ROADMAP_CONFIGS,
+  SUPPORT_LINKS,
+} from "@/constants/landing";
 import { cn } from "@/utils";
 
 export function LandingRoadmap() {
   const t = useTranslations("landing.roadmap");
 
   return (
-    <section id="roadmap" className="py-20 md:py-28 relative overflow-hidden">
+    <section
+      id={LANDING_ANCHORS.roadmap}
+      className="py-20 md:py-28 relative overflow-hidden"
+    >
       {/* Orbe cósmico de fundo */}
       <div className="cosmic-orb absolute top-1/3 left-1/2 -translate-x-1/2 w-[780px] h-[780px] rounded-full bg-[radial-gradient(circle,rgba(73,22,166,0.18)_0%,transparent_70%)] pointer-events-none -z-10" />
 
@@ -54,7 +61,7 @@ export function LandingRoadmap() {
               </div>
             </div>
             <a
-              href="#planos"
+              href={`#${LANDING_ANCHORS.pricing}`}
               className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gold hover:bg-gold-hover text-neutral-950 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-[transform,background-color] active:scale-95 shrink-0 shadow-sm"
             >
               <span>{t("founderBanner.cta")}</span>
@@ -114,7 +121,7 @@ export function LandingRoadmap() {
                         {isCompleted && (
                           <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-3" />
                         )}
-                        <span>{item.release}</span>
+                        <span>{t(`items.${item.id}.releaseLabel`)}</span>
                       </span>
                       <span className="text-xs text-neutral-400 font-mono">
                         {t("phaseLabel", { index: index + 1 })}
@@ -252,7 +259,9 @@ export function LandingRoadmap() {
                         : "text-neutral-400",
                     )}
                   >
-                    {isCompleted ? item.release : t("cardFooterPlannedTag")}
+                    {isCompleted
+                      ? t(`items.${item.id}.releaseLabel`)
+                      : t("cardFooterPlannedTag")}
                   </span>
                 </div>
               </div>

@@ -15,18 +15,45 @@
   },
   "avatarFrames": {
     "title": "Avatar Frame",
-    "subtitle": "Choose an animated frame with cosmic light to highlight your profile in Party, leaderboard, and dashboard.",
+    "subtitle": "Choose an animated cosmic frame or free mastery frame to highlight your profile across Party, leaderboards, and dashboard.",
     "upgradeToast": "Animated frames are exclusive to Premium members! Upgrade to unlock.",
+    "masteryLockedToast": "Complete the listed mastery requirement to unlock this free frame.",
     "vipBadge": "Cosmic VIP",
+    "masteryBadge": "Mastery",
     "freeBadge": "Free",
-    "unlockAll": "Unlock All",
+    "unlockAll": "Unlock VIP",
     "lockedTitle": "VIP Exclusive",
+    "lockedMasteryTitle": "Mastery Locked",
     "successToast": "Frame \"{name}\" equipped successfully!",
     "frames": {
       "none": {
         "name": "No Frame",
         "badge": "Default",
         "description": "Classic clean look with no additional border effects."
+      },
+      "forged_silver": {
+        "name": "Forged Silver",
+        "badge": "Mastery",
+        "description": "Brushed steel and noble silver forged through advanced consistency.",
+        "unlockHint": "Requires Specialist/Expert rank (6,000 XP)"
+      },
+      "obsidian_crest": {
+        "name": "Obsidian Crest",
+        "badge": "Mastery",
+        "description": "Sculpted volcanic glass with indigo glint for dedicated trophy collectors.",
+        "unlockHint": "Requires Glory Collector achievement (1,000 pts)"
+      },
+      "chronos_bronze": {
+        "name": "Chronos Bronze",
+        "badge": "Mastery",
+        "description": "Antique horology bronze and brass reserved for masters of deep focus.",
+        "unlockHint": "Requires 100% of Focus achievements unlocked"
+      },
+      "legend_laurel": {
+        "name": "Legend's Laurel",
+        "badge": "Mastery",
+        "description": "Sovereign champagne gold and emerald laurel wreath from the summit of the pyramid.",
+        "unlockHint": "Requires max Legend rank (60,000 XP)"
       },
       "cosmic_gold": {
         "name": "Cosmic Guardian",
@@ -55,6 +82,215 @@
       }
     }
   },
+  "identityModal": {
+    "title": "Profile Visual Identity",
+    "subtitle": "Customize your prestige frame, equippable title under your name, and symbolic avatar emblem.",
+    "tabsNavAria": "Profile visual customization categories",
+    "tabs": {
+      "frames": "Frames ({unlocked}/{total})",
+      "titles": "Titles ({unlocked}/{total})",
+      "avatars": "Avatars ({unlocked}/{total})"
+    }
+  },
+  "titles": {
+    "noneName": "No Title Equipped",
+    "noneDescription": "Display your profile with your name, handle, and default rank only.",
+    "equippedToast": "Title \"{name}\" equipped on your profile!",
+    "clearedToast": "Title removed from profile.",
+    "lockedToast": "Unlock the requirement shown below to equip this title.",
+    "categoryBadges": {
+      "ACHIEVEMENT": "Achievement",
+      "ACCOUNT": "Account",
+      "RETROSPECTIVE": "Retrospective"
+    },
+    "items": {
+      "NIGHT_OWL": {
+        "gamified": "Midnight Owl",
+        "essential": "Night Focus",
+        "unlockHint": "Achievement: Midnight Owl"
+      },
+      "EARLY_BIRD": {
+        "gamified": "Early Bird",
+        "essential": "Morning Peak",
+        "unlockHint": "Achievement: Early Bird"
+      },
+      "HARDCORE_SURVIVOR": {
+        "gamified": "Cold Blood",
+        "essential": "Relentless Deadline",
+        "unlockHint": "Achievement: Cold Blood (10 Hardcore)"
+      },
+      "FOCUS_MARATHON_90": {
+        "gamified": "Master of Flow",
+        "essential": "Deep Worker",
+        "unlockHint": "Achievement: Flow Session (90m)"
+      },
+      "TASK_HARD_25": {
+        "gamified": "Boss Slayer",
+        "essential": "Critical Solver",
+        "unlockHint": "Achievement: Boss Slayer (25 Hard)"
+      },
+      "STREAK_90": {
+        "gamified": "Iron Will",
+        "essential": "Iron Consistency",
+        "unlockHint": "Achievement: Iron Will (90-day streak)"
+      },
+      "FOCUS_HOURS_200": {
+        "gamified": "Time Lord",
+        "essential": "Immersion Master",
+        "unlockHint": "Achievement: Time Lord (200h focus)"
+      },
+      "GOLD_15000": {
+        "gamified": "Golden Magnate",
+        "essential": "Elite Manager",
+        "unlockHint": "Achievement: Golden Emperor (15,000 coins/credits)"
+      },
+      "STREAK_365": {
+        "gamified": "Eternal Flame",
+        "essential": "Annual Discipline",
+        "unlockHint": "Achievement: Eternal Flame (365-day streak)"
+      },
+      "TASK_1000": {
+        "gamified": "The Unstoppable",
+        "essential": "Supreme Execution",
+        "unlockHint": "Achievement: Unstoppable (1,000 tasks)"
+      },
+      "TROPHY_HUNTER_1000": {
+        "gamified": "Glory Collector",
+        "essential": "Multi-Specialist",
+        "unlockHint": "Achievement: 1,000 Achievement Points"
+      },
+      "FOUNDER": {
+        "gamified": "Founding Member",
+        "essential": "Founding Member",
+        "unlockHint": "Exclusive to Founding members"
+      },
+      "VIP_GUARDIAN": {
+        "gamified": "Royal Guardian",
+        "essential": "VIP Member",
+        "unlockHint": "Requires active Premium subscription"
+      },
+      "ARTIFACT_COLLECTOR": {
+        "gamified": "Relic Curator",
+        "essential": "Collector",
+        "unlockHint": "Collect 10 or more Artifacts"
+      },
+      "JOURNEY_VETERAN": {
+        "gamified": "Journey Veteran",
+        "essential": "Verified Veteran",
+        "unlockHint": "Verified email and 30+ day account age"
+      },
+      "RETRO_DEEP_FOCUS_SAGE": {
+        "gamified": "Deep Focus Sage",
+        "essential": "Deep Focus Specialist",
+        "unlockHint": "Annual Retrospective Archetype"
+      },
+      "RETRO_STREAK_GUARDIAN": {
+        "gamified": "Streak Guardian",
+        "essential": "Consistency Master",
+        "unlockHint": "Annual Retrospective Archetype"
+      },
+      "RETRO_CHALLENGE_SEEKER": {
+        "gamified": "Fearless Challenger",
+        "essential": "High-Complexity Executor",
+        "unlockHint": "Annual Retrospective Archetype"
+      },
+      "RETRO_ARCHITECT": {
+        "gamified": "Discipline Architect",
+        "essential": "Balanced Strategist",
+        "unlockHint": "Annual Retrospective Archetype"
+      },
+      "RETRO_RISING_SPARK": {
+        "gamified": "Rising Spark",
+        "essential": "Continuous Evolution",
+        "unlockHint": "Annual Retrospective Archetype"
+      }
+    }
+  },
+  "avatarPresets": {
+    "customName": "My Photo / Default Initials",
+    "customDescription": "Go back to showing your uploaded photo or default monogram initials.",
+    "customBadge": "Custom Photo",
+    "rankBadge": "Rank",
+    "vipBadge": "VIP",
+    "founderBadge": "Founder",
+    "equippedToast": "Symbolic avatar \"{name}\" equipped!",
+    "resetToast": "Avatar restored to custom photo or default initials.",
+    "lockedToast": "Reach the required rank XP or plan to unlock this avatar.",
+    "items": {
+      "level_novice": {
+        "gamified": "Novice Crest",
+        "essential": "Beginner Emblem",
+        "description": "Emerald sprout marking the very first step of your journey.",
+        "unlockHint": "Available from 0 XP"
+      },
+      "level_apprentice": {
+        "gamified": "Apprentice Crest",
+        "essential": "Practitioner Emblem",
+        "description": "Steady footprints forged across your first 100 XP.",
+        "unlockHint": "Requires 100 XP"
+      },
+      "level_adventurer": {
+        "gamified": "Adventurer Crest",
+        "essential": "Consistent Emblem",
+        "description": "Stellar compass for travelers who charted their path.",
+        "unlockHint": "Requires 300 XP"
+      },
+      "level_challenger": {
+        "gamified": "Challenger Crest",
+        "essential": "Focused Emblem",
+        "description": "Precision crosshair earned at 750 XP.",
+        "unlockHint": "Requires 750 XP"
+      },
+      "level_amateur": {
+        "gamified": "Amateur Crest",
+        "essential": "Organized Emblem",
+        "description": "Structured emblem reflecting 1,500 XP of steady discipline.",
+        "unlockHint": "Requires 1,500 XP"
+      },
+      "level_professional": {
+        "gamified": "Professional Crest",
+        "essential": "Productive Emblem",
+        "description": "High-energy violet spark earned at 3,000 XP.",
+        "unlockHint": "Requires 3,000 XP"
+      },
+      "level_expert": {
+        "gamified": "Expert Crest",
+        "essential": "Specialist Emblem",
+        "description": "Mastery target herald unlocked at 6,000 XP.",
+        "unlockHint": "Requires 6,000 XP"
+      },
+      "level_veteran": {
+        "gamified": "Veteran Crest",
+        "essential": "Senior Emblem",
+        "description": "Crimson shield forged with 12,000 lifetime XP.",
+        "unlockHint": "Requires 12,000 XP"
+      },
+      "level_master": {
+        "gamified": "Master Crest",
+        "essential": "Executive Emblem",
+        "description": "Golden command tome granted upon reaching 25,000 XP.",
+        "unlockHint": "Requires 25,000 XP"
+      },
+      "level_legend": {
+        "gamified": "Legend Crest",
+        "essential": "High Performance Emblem",
+        "description": "Sovereign solar crown reserved for the 60,000 XP summit.",
+        "unlockHint": "Requires 60,000 XP"
+      },
+      "vip_cosmic": {
+        "gamified": "Cosmic VIP Astrolabe",
+        "essential": "VIP Emblem",
+        "description": "Exclusive crest crafted for Cosmic Guardian Premium members.",
+        "unlockHint": "Requires active Premium subscription"
+      },
+      "founder_crest": {
+        "gamified": "Founder's Seal",
+        "essential": "Founder Emblem",
+        "description": "Inaugural shield reserved exclusively for founding pioneers.",
+        "unlockHint": "Exclusive to Founding members"
+      }
+    }
+  },
   "header": {
     "defaultDisplayNameGamified": "Adventurer",
     "defaultDisplayNameEssential": "Member",
@@ -73,7 +309,9 @@
     "bioSaved": "Showcase bio updated!",
     "memberSince": "On the journey since {date}",
     "settingsButton": "Settings",
-    "changeFrameButton": "Avatar Frame",
+    "changeFrameButton": "Identity & Frame",
+    "equippedTitleAria": "Equipped title: {title}",
+    "verifiedEmailBadge": "Verified email",
     "changePhoto": "Change Photo",
     "uploadingPhoto": "Uploading...",
     "photoSuccessToast": "Profile picture updated!",
@@ -89,7 +327,9 @@
     "viewRetrospectiveCta": "{year} Retrospective",
     "retrospectiveBannerTitle": "Your {year} Retrospective is ready!",
     "retrospectiveBannerDesc": "{days} active days, {tasks} tasks completed, and {archetype} archetype.",
-    "retrospectiveBannerBtn": "Open & Download Banner"
+    "retrospectiveBannerBtn": "Open & Download Banner",
+    "xpProgressLabelEssential": "{xp} total pts • {remaining} pts to {nextTitle}",
+    "maxLevelReachedEssential": "Max Rank Reached ({xp} pts)"
   },
   "highlights": {
     "titleGamified": "Featured Trophy Shelf",
@@ -103,7 +343,35 @@
     "emptyVisitorText": "No highlight selected yet.",
     "typeBadge": {
       "ACHIEVEMENT": "Achievement",
-      "ACCOUNT_BADGE": "Badge"
+      "ACCOUNT_BADGE": "Badge",
+      "STAT_METRIC": "Metric",
+      "ARTIFACT": "Relic"
+    },
+    "statMetrics": {
+      "HIGHEST_STREAK": {
+        "title": "Highest Streak",
+        "subtitle": "{value}-day personal best"
+      },
+      "CURRENT_STREAK": {
+        "title": "Current Streak",
+        "subtitle": "{value} consecutive days"
+      },
+      "TOTAL_TASKS": {
+        "title": "Tasks Completed",
+        "subtitle": "{value} total tasks"
+      },
+      "FOCUS_HOURS": {
+        "title": "Focus Hours",
+        "subtitle": "{value}h in focus sessions"
+      },
+      "TOTAL_XP": {
+        "title": "Total XP",
+        "subtitle": "{value} XP earned"
+      },
+      "ACHIEVEMENT_POINTS": {
+        "title": "Achievement Points",
+        "subtitle": "{value} points unlocked"
+      }
     }
   },
   "pickerModal": {
@@ -118,9 +386,13 @@
     "alreadyEquipped": "Equipped in Slot #{slot}",
     "tabs": {
       "achievements": "Achievements ({count})",
+      "artifacts": "Relics ({count})",
       "badges": "Account Badges"
     },
     "noUnlockedAchievements": "You haven't unlocked any achievements yet. Complete tasks or focus sessions to earn your first medal!",
+    "noUnlockedArtifacts": "You haven't obtained any relics yet. Unlock milestone achievements or open Mystery Boxes!",
+    "searchPlaceholderArtifacts": "Search relic by name or source...",
+    "searchClearLabel": "Clear search",
     "lockedBadgeHint": "Currently locked for your account"
   },
   "accountBadges": {
@@ -164,7 +436,8 @@
     "tasksCompleted": {
       "label": "Quests Completed",
       "essentialLabel": "Tasks Completed",
-      "sub": "{hardcore} Hardcore • {hard} hard tasks"
+      "sub": "{hardcore} Hardcore • {hard} hard tasks",
+      "essentialSub": "{hardcore} strict deadline • {hard} hard tasks"
     },
     "focusTime": {
       "label": "Focus Immersion",
@@ -243,7 +516,188 @@
     "headerGamified": "New Achievement Unlocked!",
     "headerEssential": "New Milestone Reached!",
     "pointsEarned": "+{points} Achievement Points",
-    "viewShowcase": "View in Showcase"
+    "viewShowcase": "View in Showcase",
+    "artifactGrantedLabel": "Relic Unlocked:",
+    "artifactAddedHint": "Added to your collection",
+    "dismiss": "Dismiss notification"
+  },
+  "artifacts": {
+    "gallery": {
+      "titleGamified": "Artifacts Showcase & Grimoire",
+      "titleEssential": "Artifacts & Milestones Collection",
+      "subtitleGamified": "Collect symbolic relics from major achievements or uncover rare treasures inside Mystery Boxes.",
+      "subtitleEssential": "Symbolic collectibles earned through deterministic milestones or exploration.",
+      "collectionCountBadge": "{unlocked} / {total} relics",
+      "searchPlaceholder": "Search relic by name, lore, or source...",
+      "filter": {
+        "ALL": "All ({count})",
+        "UNLOCKED": "Obtained ({count})",
+        "MERIT": "Merit ({count})",
+        "EXPLORATION": "Mystery Box ({count})",
+        "EXPLORATION_ESSENTIAL": "Break Draw ({count})"
+      },
+      "rarityFilterAll": "All Rarities",
+      "unlockedBadge": "Obtained",
+      "lockedBadge": "Silhouette",
+      "newBadge": "New",
+      "unlockedOn": "Obtained on {date}",
+      "pinToShowcase": "Pin to Showcase",
+      "pinnedInShowcase": "In Showcase",
+      "emptySearch": "No relics match the selected filters.",
+      "emptyVisitor": "This user has not unlocked any relics for the selected filters yet."
+    },
+    "sourceLabels": {
+      "ACHIEVEMENT": "Merit Relic",
+      "MYSTERY_BOX": "Mystery Box",
+      "MYSTERY_BOX_NONE": "Mystery Box",
+      "MYSTERY_BOX_BASIC": "Basic Box",
+      "MYSTERY_BOX_PREMIUM": "Premium Box",
+      "MYSTERY_BOX_EPIC": "Epic Box",
+      "MYSTERY_BOX_LEGENDARY": "Legendary Box",
+      "SPECIAL": "Special Edition"
+    },
+    "items": {
+      "ASTRO_COMPASS": {
+        "name": "Compass of the North",
+        "essentialName": "Consistency Compass",
+        "lore": "Keeps your bearings steady across thirty consecutive sunrises.",
+        "essentialLore": "Symbolic milestone for 30 consecutive days of consistency.",
+        "sourceHint": "Achievement: Month Guardian (30-day streak)"
+      },
+      "QUARTZ_HOURGLASS": {
+        "name": "Quartz Hourglass",
+        "essentialName": "Immersion Hourglass",
+        "lore": "Crystalline sand marking your first ten hours of deep focus.",
+        "essentialLore": "Executive trophy for your first 10 hours of deep concentration.",
+        "sourceHint": "Achievement: Temple Apprentice (10h focus)"
+      },
+      "CENTURION_SCROLL": {
+        "name": "Centurion Scroll",
+        "essentialName": "Centurion Ledger",
+        "lore": "A sealed chronicle commemorating two hundred and fifty completed quests.",
+        "essentialLore": "Distinction for completing 250 deliverables successfully.",
+        "sourceHint": "Achievement: Battle Veteran (250 tasks)"
+      },
+      "GUILD_SAPPHIRE": {
+        "name": "Guild Sapphire",
+        "essentialName": "Balance Sapphire",
+        "lore": "A gemstone cut from your first thousand honestly earned coins.",
+        "essentialLore": "Recognition for your first 1,000 accumulated credits.",
+        "sourceHint": "Achievement: Guild Treasure (1,000 coins/credits)"
+      },
+      "CITADEL_SEAL": {
+        "name": "Citadel Seal",
+        "essentialName": "High-Execution Seal",
+        "lore": "Bronze and gold crest reserved for those who completed five hundred quests.",
+        "essentialLore": "Executive crest for reaching 500 completed tasks.",
+        "sourceHint": "Achievement: Realm Conqueror (500 tasks)"
+      },
+      "SOLSTICE_LANTERN": {
+        "name": "Solstice Lantern",
+        "essentialName": "Half-Year Lantern",
+        "lore": "A steady flame carried across half a year without ever fading.",
+        "essentialLore": "Emblem of 180 unbroken days of discipline and presence.",
+        "sourceHint": "Achievement: Solstice Guardian (180-day streak)"
+      },
+      "IMMERSION_ASTROLABE": {
+        "name": "Immersion Astrolabe",
+        "essentialName": "Deep Focus Astrolabe",
+        "lore": "Celestial instrument calibrated through one hundred hours of focused silence.",
+        "essentialLore": "Cabinet piece awarded for surpassing 100 productive focus hours.",
+        "sourceHint": "Achievement: Immersion Sage (100h focus)"
+      },
+      "ALCHEMIST_SCALE": {
+        "name": "Alchemist's Scale",
+        "essentialName": "Sustainability Scale",
+        "lore": "Symbolizes the harmony between dedicated effort and guilt-free rest.",
+        "essentialLore": "Badge for maintaining sustainable balance across 100 redeemed rewards.",
+        "sourceHint": "Achievement: Master of Balance (100 redemptions)"
+      },
+      "GRANDMASTER_CODEX": {
+        "name": "Grandmaster Codex",
+        "essentialName": "Executive Compendium",
+        "lore": "Ebony-bound tome reserved for those who ascend to the rank of Master.",
+        "essentialLore": "Symbolic volume granted upon reaching the Executive tier (25,000 pts).",
+        "sourceHint": "Achievement: Grandmaster (25,000 XP/pts)"
+      },
+      "OBSIDIAN_AEGIS": {
+        "name": "Obsidian Aegis",
+        "essentialName": "Strict-Deadline Shield",
+        "lore": "Forged under pressure without yielding across fifty hardcore deadlines.",
+        "essentialLore": "Awarded for delivering 50 tasks with Strict Deadline enabled.",
+        "sourceHint": "Achievement: Immune to Chaos (50 Hardcore tasks)"
+      },
+      "UNSTOPPABLE_CROWN": {
+        "name": "Crown of the Unstoppable",
+        "essentialName": "Thousand-Delivery Crown",
+        "lore": "Legendary crown raised after a thousand quests fulfilled with honor.",
+        "essentialLore": "Ultimate execution milestone for completing 1,000 tasks.",
+        "sourceHint": "Achievement: Unstoppable (1,000 tasks)"
+      },
+      "TITAN_CORE": {
+        "name": "Titan's Core",
+        "essentialName": "High-Complexity Core",
+        "lore": "Condensed energy from one hundred maximum-difficulty challenges conquered.",
+        "essentialLore": "Legendary trophy for completing 100 Hard tasks.",
+        "sourceHint": "Achievement: Titan Tamer (100 Hard tasks)"
+      },
+      "ETERNAL_SUNFLAME": {
+        "name": "Eternal Sunflame",
+        "essentialName": "Annual Discipline Emblem",
+        "lore": "A blazing sun sustained by an entire year of daily discipline.",
+        "essentialLore": "Supreme honor for 365 consecutive days of consistency.",
+        "sourceHint": "Achievement: Immortal Flame (365-day streak)"
+      },
+      "INFINITY_CHRONOMETER": {
+        "name": "Infinity Chronometer",
+        "essentialName": "200h Mastery Chronometer",
+        "lore": "Perpetual timepiece earned after two hundred hours of pure immersion.",
+        "essentialLore": "Legendary cabinet artifact for reaching 200 hours of focus.",
+        "sourceHint": "Achievement: Lord of Time (200h focus)"
+      },
+      "EMPEROR_CHALICE": {
+        "name": "Emperor's Chalice",
+        "essentialName": "Prosperity Chalice",
+        "lore": "Golden chalice forged from fifteen thousand coins of true effort.",
+        "essentialLore": "Top prize for accumulating 15,000 effort credits.",
+        "sourceHint": "Achievement: Golden Emperor (15,000 coins/credits)"
+      },
+      "LEGEND_PHILOSOPHER_STONE": {
+        "name": "Legend's Philosopher Stone",
+        "essentialName": "High-Performance Prism",
+        "lore": "The supreme artifact of those who reached the apex of the journey.",
+        "essentialLore": "Definitive symbol of the High Performance tier (60,000 pts).",
+        "sourceHint": "Achievement: Living Legend (60,000 XP/pts)"
+      },
+      "FATE_DICE": {
+        "name": "Dice of Fate",
+        "essentialName": "Dice of Fate",
+        "lore": "An enchanted polyhedron discovered at the bottom of exploration chests.",
+        "essentialLore": "Collectible exclusive to Adventure Mode Mystery Boxes.",
+        "sourceHint": "Mystery Box (Basic or Premium)"
+      },
+      "HORIZON_KEY": {
+        "name": "Horizon Key",
+        "essentialName": "Horizon Key",
+        "lore": "Unlocks symbolic doors to new cycles of rest and reward.",
+        "essentialLore": "Rare collectible exclusive to Adventure Mode Mystery Boxes.",
+        "sourceHint": "Mystery Box (Premium, Epic, or Legendary)"
+      },
+      "AETHER_PRISM": {
+        "name": "Aether Prism",
+        "essentialName": "Aether Prism",
+        "lore": "Refracts starlight captured inside rare Epic and Legendary Mystery Boxes.",
+        "essentialLore": "Epic collectible exclusive to Adventure Mode Mystery Boxes.",
+        "sourceHint": "Mystery Box (Epic or Legendary)"
+      },
+      "ASTRAL_RELIQUARY": {
+        "name": "Astral Reliquary",
+        "essentialName": "Astral Reliquary",
+        "lore": "Adventure Mode's most coveted jewel, hidden only in the rarest chests.",
+        "essentialLore": "Legendary collectible exclusive to Adventure Mode Mystery Boxes.",
+        "sourceHint": "Mystery Box (Epic or Legendary)"
+      }
+    }
   },
   "catalog": {
     "TASK_FIRST": {
@@ -812,7 +1266,9 @@
       "nextMilestoneLabel": "Next Milestone",
       "nextMilestoneMax": "Apex Reached",
       "unlockedTiersLabel": "{unlocked} of {total} ranks",
-      "remainingXpHint": "{xp} XP left"
+      "remainingXpHint": "{xp} XP left",
+      "totalXpLabelEssential": "Lifetime Points",
+      "remainingXpHintEssential": "{xp} pts left"
     },
     "pyramid": {
       "navAria": "Progression pyramid tiers",
@@ -825,7 +1281,9 @@
       "friendsHereTitle": "Friends at this rank ({count})",
       "friendXpMeta": "{xp} XP",
       "viewFriendProfile": "Visit showcase",
-      "xpThresholdLabel": "{minXp} XP"
+      "xpThresholdLabel": "{minXp} XP",
+      "xpThresholdLabelEssential": "{minXp} pts",
+      "friendPtsMeta": "{xp} pts"
     },
     "eras": {
       "foundation": "Era I • Foundation",
@@ -847,7 +1305,10 @@
       "tierProgressLabel": "Progress in this rank",
       "alreadyReachedDesc": "You have already cleared this tier's threshold! Keep climbing toward higher ranks.",
       "topReachedDesc": "You reached the highest rank in HabitParty! Every tier in the pyramid is unlocked.",
-      "remainingToUnlock": "{xp} XP needed to unlock {title}"
+      "remainingToUnlock": "{xp} XP needed to unlock {title}",
+      "thresholdRangeEssential": "{minXp} pts to {maxXp} pts",
+      "topRankRangeEssential": "Starting at {minXp} pts (Max Tier)",
+      "remainingToUnlockEssential": "{xp} pts needed to reach {title}"
     },
     "simulator": {
       "title": "Effort Simulator for This Rank",
@@ -863,7 +1324,9 @@
       "normalHabits": "Normal Habits",
       "standardPomos": "Standard Pomodoros",
       "deepWorkPomos": "Deep Work (50m+)",
-      "xpPerAction": "+{xp} XP each"
+      "xpPerAction": "+{xp} XP each",
+      "infoDescEssential": "Estimates use real in-app scoring math (+15 pts per Medium task, +30 pts per Hard task, +10 pts per Normal habit, +8 pts per Standard Pomodoro, and +15 pts per 50m+ Deep Work).",
+      "ptsPerAction": "+{xp} pts each"
     },
     "achievement": {
       "title": "Linked Milestone Achievement",
@@ -885,7 +1348,15 @@
       "habitsDesc": "From +5 XP (Low) up to +25 XP (High) to reinforce daily momentum.",
       "focusLabel": "• Focus Sessions:",
       "focusDesc": "Standard Pomodoro (+8 XP/cycle), Deep Work 50m+ (+15 XP/cycle), and Free Stopwatch (+7 XP per 30m).",
-      "noSpendNote": "💡 Only Hardcore penalties (or negative habits within a tier) affect XP, and a floor lock prevents demoting below your current rank."
+      "noSpendNote": "💡 Only Hardcore penalties (or negative habits within a tier) affect XP, and a floor lock prevents demoting below your current rank.",
+      "titleEssential": "Point Sources (never spent in the Showcase)",
+      "tooltipAriaEssential": "Learn how to earn points and advance your executive rank",
+      "tooltipIntroEssential": "Unlike Credits, Points are lifetime-cumulative and are never deducted when redeeming rewards in the Showcase:",
+      "tasksDescEssential": "From +2 pts (Trivial) up to +30 pts (Hard) at 100% base value when completed on time.",
+      "dailiesDescEssential": "100% base effort points on scheduled days + a +10% consistency bonus after 14 consecutive completions.",
+      "habitsDescEssential": "From +5 pts (Low) up to +25 pts (High) to reinforce daily momentum.",
+      "focusDescEssential": "Standard Pomodoro (+8 pts/cycle), Deep Work 50m+ (+15 pts/cycle), and Free Stopwatch (+7 pts per 30m).",
+      "noSpendNoteEssential": "💡 Only Strict Deadline penalties (or negative habits within a tier) affect points, and a floor lock prevents demoting below your current rank."
     }
   }
 }

@@ -5,14 +5,12 @@ interface PageWrapperProps {
   children: ReactNode;
   className?: string;
   noScroll?: boolean | "lg";
-  isCompact?: boolean;
 }
 
 export function PageWrapper({
   children,
   className,
   noScroll,
-  isCompact = false,
 }: PageWrapperProps) {
   const scrollClass =
     noScroll === "lg"
@@ -26,9 +24,7 @@ export function PageWrapper({
       className={cn(
         "flex-1 min-w-0 h-full flex flex-col custom-scrollbar",
         scrollClass,
-        isCompact
-          ? "p-3 sm:p-4 md:p-5 gap-3 sm:gap-4"
-          : "p-3.5 sm:p-5 md:p-6 gap-4 sm:gap-6",
+        "p-3.5 sm:p-5 md:p-6 gap-4 sm:gap-6",
         className,
       )}
     >

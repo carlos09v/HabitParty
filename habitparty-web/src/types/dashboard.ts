@@ -58,7 +58,6 @@ export interface EconomyWidgetProps {
   weeklyEarnings?: number;
   weeklySpent?: number;
   bars?: EconomyBarData[];
-  isCompact?: boolean;
 }
 
 export interface DashboardAdvancedFilters {
@@ -71,7 +70,6 @@ export interface DashboardAdvancedFilters {
 }
 
 export interface DashboardMainProps {
-  isCompact?: boolean;
   initialTasks?: Task[];
   workspaces?: DashboardWorkspaceOption[];
   activeWorkspaceId?: string;
@@ -109,7 +107,6 @@ export interface DashboardListSummaryProps {
   activeWorkspaceId?: string;
   activeWorkspaceName?: string;
   isReadOnly?: boolean;
-  isCompact?: boolean;
   isPremium?: boolean;
   tasks?: Task[];
 }
@@ -119,7 +116,6 @@ export interface DashboardTasksPanelProps {
   columns: DashboardColumnOption[];
   workspaces?: DashboardWorkspaceOption[];
   defaultColumnId?: string;
-  isCompact?: boolean;
   isReadOnly?: boolean;
   tasks?: Task[];
   onTasksChange?: React.Dispatch<React.SetStateAction<Task[]>>;
@@ -128,7 +124,6 @@ export interface DashboardTasksPanelProps {
 }
 
 export interface DashboardWidgetsDataProps {
-  isCompact?: boolean;
   experienceMode?: ExperienceMode;
   balance?: number;
   weeklyEarnings?: number;
@@ -147,13 +142,11 @@ export interface DashboardWidgetsListProps extends DashboardWidgetsDataProps {
 }
 
 export interface DashboardMobileDrawerProps {
-  isCompact?: boolean;
   balance?: number;
   children: ReactNode;
 }
 
 export interface WeeklyCalendarProps {
-  isCompact?: boolean;
   transactions?: TransactionHistoryDTO[];
   tasks?: WeeklyCalendarTaskSummary[];
   onSelectDay?: (isoString: string) => void;
@@ -162,11 +155,9 @@ export interface WeeklyCalendarProps {
 export interface ActivitiesWidgetProps {
   activities?: FocusActivity[];
   records?: FocusRecord[];
-  isCompact?: boolean;
 }
 
 export interface PartyWidgetProps {
-  isCompact?: boolean;
   experienceMode?: ExperienceMode;
 }
 
@@ -180,9 +171,8 @@ export interface TaskTableProps {
   itemsPerPage?: number;
   currentPage?: number;
   activeFilter?: TaskFilterType;
-  isCompact?: boolean;
-  onToggle?: (id: string, completed: boolean) => void;
-  onHabitChange?: (id: string, delta: number) => void;
+  onToggle?: (id: string, completed: boolean) => boolean | undefined;
+  onHabitChange?: (id: string, delta: number) => boolean | undefined;
   onContextMenu?: (e: React.MouseEvent, task: Task) => void;
   onOpenDetails?: (task: Task, anchorRect?: DOMRect) => void;
   onEditTask?: (task: Task) => void;
@@ -205,5 +195,4 @@ export interface TaskFiltersProps {
   canCreateTask?: boolean;
   createTaskDisabledReason?: string;
   overdueCount?: number;
-  isCompact?: boolean;
 }

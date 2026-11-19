@@ -7,6 +7,7 @@ import { Select } from "@/components/ui/Select";
 import { Switch } from "@/components/ui/Switch";
 import { TODO_REMINDER_OPTIONS } from "@/constants/task";
 import type { CreateTaskFormReturn } from "@/hooks/useCreateTaskForm";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useUserStore } from "@/store/userStore";
 import type { ReminderTypeOption } from "@/types/task";
 import { isTaskHardcoreLocked } from "@/utils/date";
@@ -17,6 +18,7 @@ interface TodoFieldsProps {
 
 export function TodoFields({ form }: TodoFieldsProps) {
   const t = useTranslations("tasks.taskModal.todoFields");
+  const { isGamified } = useExperienceMode();
   const user = useUserStore((s) => s.user);
   const isPremium = useUserStore((s) =>
     Boolean(s.user?.isPremium ?? s.is_Premium),
@@ -49,17 +51,33 @@ export function TodoFields({ form }: TodoFieldsProps) {
       {/* Prazo de Entrega e Horário Integrado */}
       <DatePicker
         id="todoDue"
-        label={isHardcore ? t("dueDateHardcoreLabel") : t("dueDateLabel")}
+        label={
+          isHardcore
+            ? isGamified
+              ? t("dueDateHardcoreLabel")
+              : t("dueDateStrictLabel")
+            : t("dueDateLabel")
+        }
         value={dueDate}
         disabled={isPending || isOverdueHardcoreLocked}
         onChange={setDueDate}
         placeholder={
-          isHardcore ? t("dueDateHardcorePlaceholder") : t("dueDatePlaceholder")
+          isHardcore
+            ? isGamified
+              ? t("dueDateHardcorePlaceholder")
+              : t("dueDateStrictPlaceholder")
+            : t("dueDatePlaceholder")
         }
         compact
         required={isHardcore}
         allowClear={!isOverdueHardcoreLocked && !isHardcore}
-        hint={isOverdueHardcoreLocked ? t("dueDateFrozenHint") : undefined}
+        hint={
+          isOverdueHardcoreLocked
+            ? isGamified
+              ? t("dueDateFrozenHint")
+              : t("dueDateStrictFrozenHint")
+            : undefined
+        }
         enableTime
         timeValue={dueTime}
         startTimeValue={startTime}

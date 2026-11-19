@@ -2,21 +2,30 @@ package com.habitparty.application.usecases.achievement;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.habitparty.application.ports.ArtifactRepository;
 import com.habitparty.application.ports.ProfileHighlightRepository;
 import com.habitparty.application.ports.UserAchievementRepository;
+import com.habitparty.application.ports.UserArtifactRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.domain.entities.achievement.Artifact;
 import com.habitparty.core.domain.entities.achievement.ProfileHighlight;
 import com.habitparty.core.domain.entities.achievement.UserAchievement;
+import com.habitparty.core.domain.entities.achievement.UserArtifact;
 import com.habitparty.core.domain.enums.HighlightType;
 import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
@@ -36,16 +45,31 @@ public class UpdateProfileHighlightsUseCase {
   private final UserAchievementRepository userAchievementPort;
   private final ProfileHighlightRepository profileHighlightPort;
   private final EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
+  private final ArtifactRepository artifactPort;
+  private final UserArtifactRepository userArtifactPort;
+
+  @Autowired
+  public UpdateProfileHighlightsUseCase(
+      UserRepository userPort,
+      UserAchievementRepository userAchievementPort,
+      ProfileHighlightRepository profileHighlightPort,
+      EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase,
+      @Nullable ArtifactRepository artifactPort,
+      @Nullable UserArtifactRepository userArtifactPort) {
+    this.userPort = userPort;
+    this.userAchievementPort = userAchievementPort;
+    this.profileHighlightPort = profileHighlightPort;
+    this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
+    this.artifactPort = artifactPort;
+    this.userArtifactPort = userArtifactPort;
+  }
 
   public UpdateProfileHighlightsUseCase(
       UserRepository userPort,
       UserAchievementRepository userAchievementPort,
       ProfileHighlightRepository profileHighlightPort,
       EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
-    this.userPort = userPort;
-    this.userAchievementPort = userAchievementPort;
-    this.profileHighlightPort = profileHighlightPort;
-    this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
+    this(userPort, userAchievementPort, profileHighlightPort, evaluateUserAchievementsUseCase, null, null);
   }
 
   public record HighlightSlotCommand(
@@ -64,9 +88,27 @@ public class UpdateProfileHighlightsUseCase {
           "A vitrine permite no máximo " + ProfileHighlight.MAX_SHOWCASE_SLOTS + " destaques.");
     }
 
-    Set<UUID> unlockedAchievementIds = userAchievementPort.findAllByUserId(userId).stream()
-        .map(UserAchievement::getAchievementId)
-        .collect(Collectors.toSet());
+    boolean hasAchievementCommand = commands != null
+        && commands.stream().anyMatch(cmd -> cmd.highlightType() == HighlightType.ACHIEVEMENT);
+    boolean hasArtifactCommand = commands != null
+        && commands.stream().anyMatch(cmd -> cmd.highlightType() == HighlightType.ARTIFACT);
+
+    Set<UUID> unlockedAchievementIds = hasAchievementCommand
+        ? userAchievementPort.findAllByUserId(userId).stream()
+            .map(UserAchievement::getAchievementId)
+            .collect(Collectors.toSet())
+        : Set.of();
+
+    Map<String, Artifact> artifactCatalogByCode = new HashMap<>();
+    if (hasArtifactCommand && artifactPort != null) {
+      for (Artifact art : artifactPort.findAllOrdered()) {
+        if (art.getCode() != null) {
+          artifactCatalogByCode.put(art.getCode().trim().toUpperCase(), art);
+        }
+      }
+    }
+    Map<String, Optional<Artifact>> artifactFallbackCache = new HashMap<>();
+    Set<UUID> ownedArtifactIds = null;
 
     Set<Integer> usedOrders = new HashSet<>();
     Set<String> usedReferences = new HashSet<>();
@@ -78,6 +120,9 @@ public class UpdateProfileHighlightsUseCase {
           throw new DomainValidationException("Slot duplicado na vitrine: posição " + cmd.displayOrder());
         }
 
+        UUID resolvedReferenceId = cmd.referenceId();
+        String resolvedHighlightKey = cmd.highlightKey();
+
         if (cmd.highlightType() == HighlightType.ACHIEVEMENT) {
           if (cmd.referenceId() == null || !unlockedAchievementIds.contains(cmd.referenceId())) {
             throw new DomainValidationException("Você só pode destacar na vitrine conquistas já desbloqueadas.");
@@ -88,15 +133,47 @@ public class UpdateProfileHighlightsUseCase {
           }
         } else if (cmd.highlightType() == HighlightType.ACCOUNT_BADGE) {
           validateAccountBadgeOwnership(user, cmd.highlightKey());
-          String refKey = "BADGE:" + cmd.highlightKey();
+          resolvedReferenceId = null;
+          resolvedHighlightKey = cmd.highlightKey().trim().toUpperCase();
+          String refKey = "BADGE:" + resolvedHighlightKey;
           if (!usedReferences.add(refKey)) {
             throw new DomainValidationException("Não é permitido repetir a mesma insígnia em mais de um slot.");
           }
         } else if (cmd.highlightType() == HighlightType.STAT_METRIC) {
           validateStatMetricKey(cmd.highlightKey());
-          String refKey = "STAT:" + cmd.highlightKey();
+          resolvedReferenceId = null;
+          resolvedHighlightKey = cmd.highlightKey().trim().toUpperCase();
+          String refKey = "STAT:" + resolvedHighlightKey;
           if (!usedReferences.add(refKey)) {
             throw new DomainValidationException("Não é permitido repetir a mesma métrica em mais de um slot.");
+          }
+        } else if (cmd.highlightType() == HighlightType.ARTIFACT) {
+          if (cmd.highlightKey() == null || cmd.highlightKey().isBlank()) {
+            throw new DomainValidationException("Chave do artefato não informada.");
+          }
+          if (artifactPort == null || userArtifactPort == null) {
+            throw new DomainValidationException("Serviço de coleção de artefatos indisponível.");
+          }
+          String normalizedArtifactKey = cmd.highlightKey().trim().toUpperCase();
+          Artifact artifact = artifactCatalogByCode.get(normalizedArtifactKey);
+          if (artifact == null) {
+            artifact = artifactFallbackCache
+                .computeIfAbsent(normalizedArtifactKey, artifactPort::findByCode)
+                .orElseThrow(() -> new DomainValidationException("Artefato inválido: " + cmd.highlightKey()));
+          }
+          if (ownedArtifactIds == null) {
+            ownedArtifactIds = userArtifactPort.findAllByUserId(userId).stream()
+                .map(UserArtifact::getArtifactId)
+                .collect(Collectors.toSet());
+          }
+          if (!ownedArtifactIds.contains(artifact.getId())) {
+            throw new DomainValidationException("Você só pode destacar na vitrine artefatos já conquistados.");
+          }
+          resolvedReferenceId = null;
+          resolvedHighlightKey = artifact.getCode();
+          String refKey = "ART:" + resolvedHighlightKey;
+          if (!usedReferences.add(refKey)) {
+            throw new DomainValidationException("Não é permitido repetir o mesmo artefato em mais de um slot.");
           }
         }
 
@@ -105,8 +182,8 @@ public class UpdateProfileHighlightsUseCase {
             userId,
             cmd.displayOrder(),
             cmd.highlightType(),
-            cmd.referenceId(),
-            cmd.highlightKey(),
+            resolvedReferenceId,
+            resolvedHighlightKey,
             LocalDateTime.now()));
       }
     }

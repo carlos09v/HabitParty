@@ -217,4 +217,19 @@ public interface TaskJpaRepository extends JpaRepository<TaskJpaEntity, UUID> {
         ORDER BY w.createdAt ASC
         """)
     List<Object[]> countMatchingTasksByWorkspace(@Param("userId") UUID userId, @Param("pattern") String pattern);
+
+    @Query("""
+        SELECT t.id, t.name, t.taskType, c.name, w.name, t.totalFocusMinutes, t.focusCyclesCount
+        FROM TaskJpaEntity t, BoardColumnJpaEntity c
+        JOIN c.workspace w
+        WHERE t.boardColumnId = c.id
+          AND t.userId = :userId
+          AND w.id IN :workspaceIds
+          AND t.taskType IN ('DAILY', 'TODO')
+          AND t.status <> 'COMPLETED'
+        ORDER BY w.createdAt ASC, c.orderIndex ASC, t.orderIndex ASC
+        """)
+    List<Object[]> findFocusableTaskProjections(
+        @Param("userId") UUID userId,
+        @Param("workspaceIds") Collection<UUID> workspaceIds);
 }

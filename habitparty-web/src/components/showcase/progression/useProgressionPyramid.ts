@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   getRarityTheme,
   type RarityThemeTokens,
@@ -100,24 +100,26 @@ export function useProgressionPyramid({
     setSelectedTierOverride(tier === currentTier ? null : tier);
   };
 
-  const pyramidTiers = buildProgressionPyramidTiers(locale, isGamified);
-
-  const groupedByEra = new Map<ProgressionEraId, ProgressionTierView[]>();
-  for (const tierView of pyramidTiers) {
-    const bucket = groupedByEra.get(tierView.meta.era);
-    if (bucket) {
-      bucket.push(tierView);
-    } else {
-      groupedByEra.set(tierView.meta.era, [tierView]);
+  const { pyramidTiers, eraGroups } = useMemo(() => {
+    const tiers = buildProgressionPyramidTiers(locale, isGamified);
+    const groupedByEra = new Map<ProgressionEraId, ProgressionTierView[]>();
+    for (const tierView of tiers) {
+      const bucket = groupedByEra.get(tierView.meta.era);
+      if (bucket) {
+        bucket.push(tierView);
+      } else {
+        groupedByEra.set(tierView.meta.era, [tierView]);
+      }
     }
-  }
-  const eraGroups: EraTierGroup[] = [];
-  for (const eraId of RANK_ERA_ORDER) {
-    const tiers = groupedByEra.get(eraId);
-    if (tiers && tiers.length > 0) {
-      eraGroups.push({ eraId, tiers });
+    const groups: EraTierGroup[] = [];
+    for (const eraId of RANK_ERA_ORDER) {
+      const groupTiers = groupedByEra.get(eraId);
+      if (groupTiers && groupTiers.length > 0) {
+        groups.push({ eraId, tiers: groupTiers });
+      }
     }
-  }
+    return { pyramidTiers: tiers, eraGroups: groups };
+  }, [locale, isGamified]);
 
   const currentTierView =
     pyramidTiers.find((item) => item.entry.tier === currentTier) ??
@@ -140,14 +142,21 @@ export function useProgressionPyramid({
 
   const remainingXpToSelected = Math.max(0, selectedTierView.minXp - currentXp);
 
-  const friendsByTier = isVisitorMode
-    ? new Map<UserLevelTier, FriendConnectionItem[]>()
-    : groupFriendsByLevelTier(friends);
+  const friendsByTier = useMemo(
+    () =>
+      isVisitorMode
+        ? new Map<UserLevelTier, FriendConnectionItem[]>()
+        : groupFriendsByLevelTier(friends),
+    [friends, isVisitorMode],
+  );
 
-  const achievementsByCode = new Map<string, AchievementItemResponseDTO>();
-  for (const ach of achievements) {
-    achievementsByCode.set(ach.code, ach);
-  }
+  const achievementsByCode = useMemo(() => {
+    const map = new Map<string, AchievementItemResponseDTO>();
+    for (const ach of achievements) {
+      map.set(ach.code, ach);
+    }
+    return map;
+  }, [achievements]);
 
   const linkedAchievement = selectedTierView.meta.achievementCode
     ? achievementsByCode.get(selectedTierView.meta.achievementCode)

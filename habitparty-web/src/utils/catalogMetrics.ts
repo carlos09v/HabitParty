@@ -11,6 +11,7 @@ import {
   Timer,
 } from "lucide-react";
 import type { AppLocale } from "@/i18n/config";
+import { getUtilityTranslator } from "@/i18n/utilityTranslator";
 import type { FocusActivity } from "@/types/focus";
 import type {
   InventoryItem,
@@ -20,6 +21,8 @@ import type { Reward } from "@/types/reward";
 import type { BoardColumn, Task } from "@/types/task";
 import type { WelcomeCardStat } from "@/types/ui";
 import { formatCoins } from "@/utils";
+import { formatFocusMinutes } from "@/utils/focusFormatters";
+import { formatCreditsLeisureEquivalence } from "@/utils/rewardEconomy";
 
 /**
  * Calcula as estatísticas do WelcomeCard para a tela de Recompensas (Loja).
@@ -28,87 +31,75 @@ export function calculateRewardWelcomeStats(
   rewards: Reward[],
   currentCoins: number,
   locale: AppLocale = "pt-BR",
-  isGamified = true,
+  isGamified = false,
 ): {
   stats: WelcomeCardStat[];
   redeemableCount: number;
 } {
-  const isEn = locale === "en";
-  const redeemableCount = rewards.filter((r) => r.price <= currentCoins).length;
+  const t = getUtilityTranslator(locale, "catalog.rewards");
+  let redeemableCount = 0;
+  let timeBasedCount = 0;
+  let singleUseCount = 0;
+  let mysteryCount = 0;
 
-  const timeBasedCount = rewards.filter(
-    (r) => r.type === "TIME_BASED" || r.type === "TimeBased",
-  ).length;
-  const singleUseCount = rewards.filter(
-    (r) => r.type === "SINGLE_USE" || r.type === "SingleUse",
-  ).length;
-  const mysteryCount = rewards.filter(
-    (r) => r.type === "MISTERY_BOX" || r.type === "MysteryBox",
-  ).length;
+  for (const r of rewards) {
+    if (r.price <= currentCoins) redeemableCount++;
+    if (r.type === "TIME_BASED" || r.type === "TimeBased") {
+      timeBasedCount++;
+    } else if (r.type === "SINGLE_USE" || r.type === "SingleUse") {
+      singleUseCount++;
+    } else if (r.type === "MISTERY_BOX" || r.type === "MysteryBox") {
+      mysteryCount++;
+    }
+  }
 
   const breakdownParts: string[] = [];
-  if (timeBasedCount > 0)
+  if (timeBasedCount > 0) {
+    breakdownParts.push(t("voucherCount", { count: timeBasedCount }));
+  }
+  if (singleUseCount > 0) {
+    breakdownParts.push(t("singleUseCount", { count: singleUseCount }));
+  }
+  if (mysteryCount > 0) {
     breakdownParts.push(
-      isEn
-        ? `${timeBasedCount} ${timeBasedCount === 1 ? "voucher" : "vouchers"}`
-        : `${timeBasedCount} ${timeBasedCount === 1 ? "cupom" : "cupons"}`,
+      isGamified
+        ? t("boxCount", { count: mysteryCount })
+        : t("breakDrawCount", { count: mysteryCount }),
     );
-  if (singleUseCount > 0)
-    breakdownParts.push(
-      isEn
-        ? `${singleUseCount} single-use`
-        : `${singleUseCount} ${singleUseCount === 1 ? "único" : "únicos"}`,
-    );
-  if (isGamified && mysteryCount > 0)
-    breakdownParts.push(
-      isEn
-        ? `${mysteryCount} ${mysteryCount === 1 ? "box" : "boxes"}`
-        : `${mysteryCount} ${mysteryCount === 1 ? "caixa" : "caixas"}`,
-    );
+  }
   const hint =
-    breakdownParts.length > 0
-      ? breakdownParts.join(" • ")
-      : isEn
-        ? "no options registered"
-        : "nenhuma opção cadastrada";
+    breakdownParts.length > 0 ? breakdownParts.join(" • ") : t("noOptions");
 
-  const currencyLabel = isGamified
-    ? isEn
-      ? "Coins"
-      : "Moedas"
-    : isEn
-      ? "Credits"
-      : "Créditos";
+  const currencyLabel = isGamified ? t("coinsCurrency") : t("creditsCurrency");
 
   const stats: WelcomeCardStat[] = [
     {
-      label: isEn ? "Current Balance" : "Saldo Atual",
+      label: t("balanceLabel"),
       value: `${formatCoins(currentCoins, { locale })} ${currencyLabel}`,
       icon: Coins,
       variant: isGamified ? "gold" : "info",
-      hint: isEn ? "available to redeem" : "disponíveis para troca",
+      hint:
+        !isGamified && currentCoins > 0
+          ? t("earnedLeisure", {
+              equivalence: formatCreditsLeisureEquivalence(currentCoins),
+            })
+          : t("availableToRedeem"),
     },
     {
-      label: isEn ? "Redeemable" : "Pode Resgatar",
-      value: `${redeemableCount} ${redeemableCount === 1 ? "item" : isEn ? "items" : "itens"}`,
+      label: t("redeemableLabel"),
+      value: t("itemCount", { count: redeemableCount }),
       icon: Gift,
       variant: redeemableCount > 0 ? "success" : "default",
       hint:
         redeemableCount > 0
-          ? isEn
-            ? "within reach today"
-            : "ao seu alcance hoje"
+          ? t("withinReach")
           : isGamified
-            ? isEn
-              ? "earn more coins"
-              : "junte mais moedas"
-            : isEn
-              ? "earn more credits"
-              : "acumule mais créditos",
+            ? t("earnMoreCoins")
+            : t("earnMoreCredits"),
     },
     {
-      label: isEn ? "In Showcase" : "Na Vitrine",
-      value: `${rewards.length} ${rewards.length === 1 ? (isEn ? "option" : "opção") : isEn ? "options" : "opções"}`,
+      label: t("showcaseLabel"),
+      value: t("optionsCount", { count: rewards.length }),
       icon: Store,
       variant: "primary",
       hint,
@@ -124,85 +115,62 @@ export function calculateRewardWelcomeStats(
 export function calculateInventoryWelcomeStats(
   items: InventoryItem[],
   locale: AppLocale = "pt-BR",
-  isGamified = true,
+  isGamified = false,
 ): {
   stats: WelcomeCardStat[];
   totalQuantity: number;
   inFocusCount: number;
 } {
-  const isEn = locale === "en";
-  const totalQuantity = items.reduce(
-    (acc, item) => acc + (item.quantity || 1),
-    0,
-  );
-  const inFocusCount = items
-    .filter((item) => item.status === "IN_FOCUS")
-    .reduce((acc, item) => acc + (item.quantity || 1), 0);
+  const t = getUtilityTranslator(locale, "catalog.inventory");
+  let totalQuantity = 0;
+  let inFocusCount = 0;
+  let singleUseCount = 0;
+  let couponCount = 0;
+  let mysteryCount = 0;
 
-  const singleUseCount = items
-    .filter(
-      (item) =>
-        item.reward?.type === "SINGLE_USE" || item.reward?.type === "SingleUse",
-    )
-    .reduce((acc, item) => acc + (item.quantity || 1), 0);
+  for (const item of items) {
+    const qty = item.quantity || 1;
+    totalQuantity += qty;
+    if (item.status === "IN_FOCUS") {
+      inFocusCount += qty;
+    }
+    const rewardType = item.reward?.type;
+    if (rewardType === "SINGLE_USE" || rewardType === "SingleUse") {
+      singleUseCount += qty;
+    } else if (rewardType === "TIME_BASED" || rewardType === "TimeBased") {
+      couponCount += qty;
+    } else if (rewardType === "MISTERY_BOX" || rewardType === "MysteryBox") {
+      mysteryCount += qty;
+    }
+  }
 
-  const couponCount = items
-    .filter(
-      (item) =>
-        item.reward?.type === "TIME_BASED" || item.reward?.type === "TimeBased",
-    )
-    .reduce((acc, item) => acc + (item.quantity || 1), 0);
-
-  const mysteryCount = items
-    .filter(
-      (item) =>
-        item.reward?.type === "MISTERY_BOX" ||
-        item.reward?.type === "MysteryBox",
-    )
-    .reduce((acc, item) => acc + (item.quantity || 1), 0);
-
-  const typeHintParts = [
-    `${couponCount} ${couponCount === 1 ? (isEn ? "voucher" : "cupom") : isEn ? "vouchers" : "cupons"}`,
-  ];
-  if (isGamified && mysteryCount > 0) {
+  const typeHintParts = [t("voucherCount", { count: couponCount })];
+  if (mysteryCount > 0) {
     typeHintParts.push(
-      `${mysteryCount} ${mysteryCount === 1 ? (isEn ? "box" : "caixa") : isEn ? "boxes" : "caixas"}`,
+      isGamified
+        ? t("boxCount", { count: mysteryCount })
+        : t("breakDrawCount", { count: mysteryCount }),
     );
   }
 
   const stats: WelcomeCardStat[] = [
     {
-      label: isGamified
-        ? isEn
-          ? "Total in Backpack"
-          : "Total na Mochila"
-        : isEn
-          ? "Total in Inventory"
-          : "Total no Inventário",
-      value: `${totalQuantity} ${totalQuantity === 1 ? "item" : isEn ? "items" : "itens"}`,
+      label: isGamified ? t("totalBackpack") : t("totalInventory"),
+      value: t("itemCount", { count: totalQuantity }),
       icon: Backpack,
       variant: "primary",
-      hint: `${items.length} ${items.length === 1 ? (isEn ? "stored type" : "tipo guardado") : isEn ? "stored types" : "tipos guardados"}`,
+      hint: t("storedTypes", { count: items.length }),
     },
     {
-      label: isEn ? "Active in Focus" : "Ativos no Foco",
-      value: `${inFocusCount} ${inFocusCount === 1 ? "item" : isEn ? "items" : "itens"}`,
+      label: t("activeInFocus"),
+      value: t("itemCount", { count: inFocusCount }),
       icon: Flame,
       variant: inFocusCount > 0 ? "gold" : "default",
-      hint:
-        inFocusCount > 0
-          ? isEn
-            ? "on the focus stage"
-            : "no palco de foco"
-          : isEn
-            ? "no items in focus"
-            : "nenhum item no foco",
+      hint: inFocusCount > 0 ? t("onFocusStage") : t("noItemsInFocus"),
     },
     {
-      label: isEn ? "Item Types" : "Tipos de Itens",
-      value: isEn
-        ? `${singleUseCount} Single-Use`
-        : `${singleUseCount} Uso Único`,
+      label: t("itemTypes"),
+      value: t("singleUseCount", { count: singleUseCount }),
       icon: Sparkles,
       variant: "success",
       hint: typeHintParts.join(" • "),
@@ -226,7 +194,7 @@ export function calculateTasksWelcomeStats(
   habitsCount: number;
   percent: number;
 } {
-  const isEn = locale === "en";
+  const t = getUtilityTranslator(locale, "catalog.tasks");
   let totalTasks = 0;
   let completedCount = 0;
   let habitsCount = 0;
@@ -236,10 +204,10 @@ export function calculateTasksWelcomeStats(
     const cols = columnsOrTasks as BoardColumn[];
     resolvedColumnsCount = cols.length;
     for (const col of cols) {
-      for (const t of col.tasks) {
+      for (const tTask of col.tasks) {
         totalTasks++;
-        if (t.completed) completedCount++;
-        if ((t.type || "").toLowerCase() === "habit") habitsCount++;
+        if (tTask.completed) completedCount++;
+        if ((tTask.type || "").toLowerCase() === "habit") habitsCount++;
       }
       totalTasks += col.archivedTotalCount ?? 0;
       completedCount += col.archivedCompletedCount ?? 0;
@@ -247,9 +215,9 @@ export function calculateTasksWelcomeStats(
   } else {
     const tasks = columnsOrTasks as Task[];
     totalTasks = tasks.length;
-    for (const t of tasks) {
-      if (t.completed) completedCount++;
-      if ((t.type || "").toLowerCase() === "habit") habitsCount++;
+    for (const tTask of tasks) {
+      if (tTask.completed) completedCount++;
+      if ((tTask.type || "").toLowerCase() === "habit") habitsCount++;
     }
   }
 
@@ -258,32 +226,25 @@ export function calculateTasksWelcomeStats(
 
   const stats: WelcomeCardStat[] = [
     {
-      label: isEn ? "Tasks on Board" : "Tarefas no Quadro",
-      value: `${totalTasks} ${totalTasks === 1 ? (isEn ? "task" : "tarefa") : isEn ? "tasks" : "tarefas"}`,
+      label: t("boardLabel"),
+      value: t("taskCount", { count: totalTasks }),
       icon: CheckSquare,
       variant: "info",
-      hint: `${resolvedColumnsCount} ${resolvedColumnsCount === 1 ? (isEn ? "column" : "coluna") : isEn ? "columns" : "colunas"}`,
+      hint: t("columnCount", { count: resolvedColumnsCount }),
     },
     {
-      label: isEn ? "Completed" : "Concluídas",
-      value: `${completedCount} ${isEn ? "done" : completedCount === 1 ? "feita" : "feitas"}`,
+      label: t("completedLabel"),
+      value: t("doneCount", { count: completedCount }),
       icon: CheckCircle2,
       variant: completedCount > 0 ? "success" : "default",
-      hint:
-        totalTasks > 0
-          ? isEn
-            ? `${percent}% completed`
-            : `${percent}% de conclusão`
-          : isEn
-            ? "no tasks"
-            : "nenhuma tarefa",
+      hint: totalTasks > 0 ? t("percentCompleted", { percent }) : t("noTasks"),
     },
     {
-      label: isEn ? "Active Habits" : "Hábitos Ativos",
-      value: `${habitsCount} ${habitsCount === 1 ? (isEn ? "habit" : "hábito") : isEn ? "habits" : "hábitos"}`,
+      label: t("activeHabitsLabel"),
+      value: t("habitCount", { count: habitsCount }),
       icon: Flame,
       variant: "gold",
-      hint: isEn ? "daily consistency" : "constância diária",
+      hint: t("dailyConsistency"),
     },
   ];
 
@@ -297,79 +258,51 @@ export function calculateFocusWelcomeStats(
   activities: FocusActivity[] = [],
   backpackItems: InventoryItemResponseDTO[] = [],
   locale: AppLocale = "pt-BR",
-  isGamified = true,
+  isGamified = false,
   todaySummary?: {
     minutes: number;
     sessionsCount: number;
   },
 ): WelcomeCardStat[] {
-  const isEn = locale === "en";
+  const t = getUtilityTranslator(locale, "catalog.focus");
   const activitiesCount = activities.length;
   const backpackCount = backpackItems.length;
   const todayMinutes = Math.max(0, Math.round(todaySummary?.minutes ?? 0));
   const todaySessions = Math.max(0, todaySummary?.sessionsCount ?? 0);
 
-  const formattedTodayDuration =
-    todayMinutes >= 60
-      ? `${Math.floor(todayMinutes / 60)}h ${todayMinutes % 60 > 0 ? `${todayMinutes % 60}m` : ""}`.trim()
-      : `${todayMinutes} min`;
+  const formattedTodayDuration = formatFocusMinutes(todayMinutes);
 
   return [
     {
-      label: isEn ? "Focus Activities" : "Atividades de Foco",
-      value: `${activitiesCount} ${activitiesCount === 1 ? (isEn ? "activity" : "atividade") : isEn ? "activities" : "atividades"}`,
+      label: t("activitiesLabel"),
+      value: t("activityCount", { count: activitiesCount }),
       icon: Target,
       variant: "info",
-      hint:
-        activitiesCount > 0
-          ? isEn
-            ? "ready to start a session"
-            : "prontas para iniciar sessão"
-          : isEn
-            ? "create your first activity"
-            : "crie sua primeira atividade",
+      hint: activitiesCount > 0 ? t("readyToStart") : t("createFirstActivity"),
     },
     {
-      label: isGamified
-        ? isEn
-          ? "Items on Stage"
-          : "Itens no Palco"
-        : isEn
-          ? "Coupons & Active Breaks"
-          : "Cupons & Pausas Ativas",
-      value: `${backpackCount} ${backpackCount === 1 ? "item" : isEn ? "items" : "itens"}`,
+      label: isGamified ? t("stageItemsLabel") : t("couponsBreaksLabel"),
+      value: t("itemCount", { count: backpackCount }),
       icon: Backpack,
       variant: backpackCount > 0 ? "gold" : "default",
       hint:
         backpackCount > 0
-          ? isEn
-            ? "focus coupons/rewards"
-            : "cupons/recompensas de foco"
+          ? t("focusCouponsHint")
           : isGamified
-            ? isEn
-              ? "send items from your Backpack"
-              : "envie itens pela Mochila"
-            : isEn
-              ? "link items via Inventory"
-              : "vincule itens pelo Inventário",
+            ? t("sendFromBackpack")
+            : t("linkViaInventory"),
     },
     {
-      label: isEn ? "Focus Today" : "Foco Hoje",
+      label: t("focusTodayLabel"),
       value: formattedTodayDuration,
       icon: Timer,
       variant: todayMinutes > 0 ? "success" : "primary",
       hint:
         todaySessions > 0
-          ? isEn
-            ? `${todaySessions} ${todaySessions === 1 ? "session logged today" : "sessions logged today"}`
-            : `${todaySessions} ${todaySessions === 1 ? "sessão concluída hoje" : "sessões concluídas hoje"}`
+          ? t("sessionsToday", { count: todaySessions })
           : isGamified
-            ? isEn
-              ? "Pomodoro & Free • earn XP/coins"
-              : "Pomodoro & Livre • ganhe XP/moedas"
-            : isEn
-              ? "Pomodoro & Stopwatch • build focus"
-              : "Pomodoro & Cronômetro • gere ritmo",
+            ? t("gamifiedModeHint")
+            : t("productivityModeHint"),
     },
   ];
 }

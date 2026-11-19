@@ -28,8 +28,9 @@ import type {
   FocusRecordType,
 } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
-import { cn } from "@/utils";
+import { cn, removeBrowserQueryParam } from "@/utils";
 import { resolveFocusTargetIcon } from "@/utils/focusIcons";
+import { FocusDailyYieldBadge } from "./stage/FocusDailyYieldBadge";
 import { FocusDurationPresets } from "./stage/FocusDurationPresets";
 import { FocusStageHeaderBar } from "./stage/FocusStageHeaderBar";
 import { FocusStageTaskSlot } from "./stage/FocusStageTaskSlot";
@@ -62,7 +63,7 @@ const FocusSessionNotesInput = memo(function FocusSessionNotesInput() {
   const { sessionNotes, setSessionNotes } = useFocusSessionNotes();
 
   return (
-    <div className="rounded-lg border border-primary/25 bg-surface/40 px-2.5 py-1.5 flex items-center gap-2 focus-within:border-gold/50 transition-colors mt-0.5">
+    <div className="min-h-[38px] rounded-lg border border-primary/25 bg-surface/40 px-2.5 py-1.5 flex items-center gap-2 focus-within:border-gold/50 transition-colors">
       <Sparkles size={13} className="text-gold shrink-0" />
       <input
         type="text"
@@ -80,6 +81,7 @@ interface FocusHeroStageProps {
   activities: FocusActivity[];
   backpackItems: InventoryItemResponseDTO[];
   focusableTasks?: FocusableTaskItem[];
+  todayProductiveMinutes?: number;
   onSelectActivity?: (activityId: string | null) => void;
   onStartFocusActivity?: (act: FocusActivity) => void;
   onStartFocusItem?: (item: InventoryItemResponseDTO) => void;
@@ -88,13 +90,13 @@ interface FocusHeroStageProps {
   onOpenUpgradeModal?: () => void;
   onCreateActivity?: () => void;
   initialLinkActivity?: boolean;
-  isCompact?: boolean;
 }
 
 export function FocusHeroStage({
   activities,
   backpackItems,
   focusableTasks = [],
+  todayProductiveMinutes,
   onSelectActivity,
   onStartFocusActivity,
   onStartFocusItem,
@@ -103,7 +105,6 @@ export function FocusHeroStage({
   onOpenUpgradeModal,
   onCreateActivity,
   initialLinkActivity = false,
-  isCompact = false,
 }: FocusHeroStageProps) {
   const t = useTranslations("focus.hero");
   const { isGamified } = useExperienceMode();
@@ -215,17 +216,7 @@ export function FocusHeroStage({
     if (target?.type === "task") {
       handleOpenLinkActivityModal();
     }
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      if (url.searchParams.has("linkActivity")) {
-        url.searchParams.delete("linkActivity");
-        window.history.replaceState(
-          null,
-          "",
-          url.pathname + (url.search ? url.search : ""),
-        );
-      }
-    }
+    removeBrowserQueryParam("linkActivity");
   }, [initialLinkActivity, target?.type, handleOpenLinkActivityModal]);
 
   const handleSelectBackpackItem = useCallback(
@@ -337,13 +328,12 @@ export function FocusHeroStage({
       <section
         aria-label={t("sectionAria")}
         className={cn(
-          "group/hero relative w-full shrink-0 min-h-fit rounded-2xl border transition-colors duration-200 select-none z-20",
-          isCompact ? "p-3 sm:p-3.5" : "p-3.5 sm:p-4",
+          "group/hero relative w-full shrink-0 min-h-fit rounded-2xl border transition-colors duration-200 select-none z-20 p-3.5 sm:p-4",
           isBreak
             ? "border-emerald-500/40 bg-linear-to-b from-emerald-500/10 dark:from-emerald-950/30 via-card/90 dark:via-card/85 to-card/80 dark:to-card/65 shadow-sm dark:shadow-[0_4px_24px_rgba(16,185,129,0.12)] hover:border-emerald-500/60 dark:hover:shadow-[0_8px_32px_rgba(16,185,129,0.2)]"
             : isRunning
               ? "border-gold/60 bg-linear-to-b from-gold/10 via-card/85 to-card/65 shadow-glow-gold-xs hover:border-gold/80 hover:shadow-glow-gold-md"
-              : "border-neutral-700 dark:border-primary/30 bg-linear-to-br from-purple-500/[0.06] via-card to-amber-500/[0.03] dark:bg-none dark:bg-card/85 shadow-xs dark:shadow-none hover:border-gold/50 hover:shadow-[0_8px_32px_rgba(234,179,8,0.12)]",
+              : "border-neutral-700 dark:border-primary/30 bg-linear-to-br from-primary/[0.06] via-card to-amber-500/[0.03] dark:bg-none dark:bg-card/85 shadow-xs dark:shadow-none hover:border-gold/50 hover:shadow-[0_8px_32px_rgba(234,179,8,0.12)]",
         )}
       >
         {/* Glow de Fundo Sutil Cósmico pré-composto que expande suavemente no hover */}
@@ -358,7 +348,7 @@ export function FocusHeroStage({
                 ? "bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.28)_0%,transparent_70%)]"
                 : isRunning
                   ? "bg-[radial-gradient(ellipse_at_center,rgba(237,229,57,0.26)_0%,transparent_70%)]"
-                  : "bg-[radial-gradient(ellipse_at_center,rgba(124,58,237,0.32)_0%,transparent_70%)]",
+                  : "bg-[radial-gradient(ellipse_at_center,color-mix(in_srgb,var(--color-primary)_32%,transparent)_0%,transparent_70%)]",
             )}
           />
         </div>
@@ -386,172 +376,201 @@ export function FocusHeroStage({
         />
 
         {/* =========================================================================
-            2. CORPO DO PALCO: LAYOUT HERÓICO LADO A LADO (COMPACTO)
+            2. CORPO DO PALCO: LAYOUT HORIZONTAL COMPACTO
             ========================================================================= */}
-        <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 my-1 sm:my-2">
+        <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-7 my-1 sm:my-1.5">
           {/* Esquerda: Círculo do Timer (Tamanho SM compacto, limpo e direto) */}
-          <div className="shrink-0 flex flex-col items-center justify-center gap-2">
+          <div className="shrink-0 flex flex-col items-center justify-center gap-1.5">
             <FocusStageTimerCircle size="sm" onToggle={handleToggleTimer} />
-            {isGamified && isSessionRewardCapped && (
+            {isSessionRewardCapped && (
               <div
-                title={t("sessionCapReachedTitle")}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-amber-500/40 bg-amber-500/12 text-amber-800 dark:text-amber-300 text-[11px] font-semibold max-w-[240px] text-center leading-tight"
+                title={
+                  isGamified
+                    ? t("sessionCapReachedTitle")
+                    : t("sessionCapReachedTitleProductivity")
+                }
+                className={cn(
+                  "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-semibold max-w-[240px] text-center leading-tight",
+                  isGamified
+                    ? "border-amber-500/40 bg-amber-500/12 text-amber-800 dark:text-amber-300"
+                    : "border-sky-500/40 bg-sky-500/12 text-sky-800 dark:text-sky-300",
+                )}
               >
-                <span>{t("sessionCapReachedBadge")}</span>
+                <span>
+                  {isGamified
+                    ? t("sessionCapReachedBadge")
+                    : t("sessionCapReachedBadgeProductivity")}
+                </span>
               </div>
+            )}
+            {typeof todayProductiveMinutes === "number" && !isInventoryItem && (
+              <FocusDailyYieldBadge
+                todayProductiveMinutes={todayProductiveMinutes}
+              />
             )}
           </div>
 
-          {/* Direita: Coluna Completa de Ações (Flex Column) */}
-          <div className="flex flex-col items-stretch justify-center gap-2.5 w-full max-w-xs sm:max-w-sm">
-            {/* 1. Botão Principal: Começar / Continuar / Pausar */}
-            {isTargetLocked && !isRunning ? (
-              <button
-                type="button"
-                onClick={onOpenUpgradeModal}
-                title={t("lockedActivityTitle")}
-                className="w-full py-3 px-5 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-[transform,background-color,color] duration-150 cursor-pointer shadow-md bg-gold hover:bg-gold-hover text-on-gold shadow-glow-gold-md hover:scale-[1.01]"
-              >
-                <Lock size={18} />
-                <span>{t("lockedActivityButton")}</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                disabled={isSavingSession}
-                onClick={handleToggleTimer}
-                title={t("spaceShortcutTitle")}
-                className={cn(
-                  "w-full py-3 px-5 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-[transform,background-color,color] duration-150 cursor-pointer shadow-md disabled:opacity-60 disabled:cursor-not-allowed",
-                  isBreak
-                    ? "bg-emerald-500 hover:bg-emerald-400 text-neutral-950 shadow-sm dark:shadow-[0_0_16px_rgba(16,185,129,0.4)]"
-                    : isRunning
-                      ? "bg-amber-500 hover:bg-amber-600 text-neutral-950 shadow-amber-500/20"
-                      : "bg-gold hover:bg-gold-hover text-on-gold shadow-glow-gold-md hover:scale-[1.01]",
-                )}
-              >
-                {isRunning ? (
-                  <>
-                    <Pause size={18} className="fill-current" />
-                    <span>{t("pauseFocus")}</span>
-                  </>
-                ) : (
-                  <>
-                    <Play size={18} className="fill-current ml-0.5" />
-                    <span>{isPaused ? t("resumeFocus") : t("startFocus")}</span>
-                  </>
-                )}
-              </button>
-            )}
+          {/* Direita: Controles Horizontais Compactos */}
+          <div className="flex flex-col items-stretch justify-center gap-2 flex-1 min-w-0 w-full max-w-md lg:max-w-xl">
+            {/* Linha 1: Barra horizontal de ações principais (Começar/Pausar + Concluir + Pausa + Reiniciar) */}
+            <div
+              role="toolbar"
+              aria-label={t("controlsToolbarAria")}
+              className="flex flex-wrap items-center gap-2 w-full"
+            >
+              {isTargetLocked && !isRunning ? (
+                <button
+                  type="button"
+                  onClick={onOpenUpgradeModal}
+                  title={t("lockedActivityTitle")}
+                  className="flex-1 min-w-[160px] py-2.5 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-[transform,background-color,color] duration-150 cursor-pointer shadow-md bg-gold hover:bg-gold-hover text-on-gold shadow-glow-gold-md hover:scale-[1.01]"
+                >
+                  <Lock size={16} />
+                  <span>{t("lockedActivityButton")}</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={isSavingSession}
+                  onClick={handleToggleTimer}
+                  title={t("spaceShortcutTitle")}
+                  className={cn(
+                    "flex-1 min-w-[150px] py-2.5 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-[transform,background-color,color] duration-150 cursor-pointer shadow-md disabled:opacity-60 disabled:cursor-not-allowed",
+                    isBreak
+                      ? "bg-emerald-500 hover:bg-emerald-400 text-neutral-950 shadow-sm dark:shadow-[0_0_16px_rgba(16,185,129,0.4)]"
+                      : isRunning
+                        ? "bg-amber-500 hover:bg-amber-600 text-neutral-950 shadow-amber-500/20"
+                        : "bg-gold hover:bg-gold-hover text-on-gold shadow-glow-gold-md hover:scale-[1.01]",
+                  )}
+                >
+                  {isRunning ? (
+                    <>
+                      <Pause size={16} className="fill-current shrink-0" />
+                      <span className="truncate">{t("pauseFocus")}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play
+                        size={16}
+                        className="fill-current ml-0.5 shrink-0"
+                      />
+                      <span className="truncate">
+                        {isPaused ? t("resumeFocus") : t("startFocus")}
+                      </span>
+                    </>
+                  )}
+                </button>
+              )}
 
-            {/* 2a. Botão Iniciar Pausa (quando ciclo Pomodoro atingiu 00:00 e está em excedente) */}
-            {isOvertime && !isBreak && (
-              <button
-                type="button"
-                disabled={isSavingSession}
-                aria-busy={isSavingSession}
-                onClick={handleStartBreak}
-                title={t("startBreakTitle", { minutes: nextBreakMinutes })}
-                className="w-full py-2.5 px-5 rounded-xl border border-cyan-500/45 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-800 dark:text-cyan-200 font-bold text-sm flex items-center justify-center gap-2 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shadow-sm hover:scale-[1.01] disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {isSavingSession ? (
-                  <Loader2 size={17} className="animate-spin" />
-                ) : (
-                  <Coffee size={17} />
-                )}
-                <span>
-                  {isSavingSession
-                    ? t("savingSessionButton")
-                    : t("startBreakButton", { minutes: nextBreakMinutes })}
-                </span>
-              </button>
-            )}
+              {isOvertime && !isBreak && (
+                <button
+                  type="button"
+                  disabled={isSavingSession}
+                  aria-busy={isSavingSession}
+                  onClick={handleStartBreak}
+                  title={t("startBreakTitle", { minutes: nextBreakMinutes })}
+                  className="shrink-0 py-2.5 px-3.5 rounded-xl border border-cyan-500/45 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-800 dark:text-cyan-200 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shadow-sm hover:scale-[1.01] disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isSavingSession ? (
+                    <Loader2 size={15} className="animate-spin shrink-0" />
+                  ) : (
+                    <Coffee size={15} className="shrink-0" />
+                  )}
+                  <span>
+                    {isSavingSession
+                      ? t("savingSessionButton")
+                      : t("startBreakButton", { minutes: nextBreakMinutes })}
+                  </span>
+                </button>
+              )}
 
-            {/* 2. Botão Concluir Sessão (quando canComplete e não em pausa) */}
-            {canComplete && !isBreak && (
-              <button
-                type="button"
-                disabled={isSavingSession}
-                aria-busy={isSavingSession}
-                onClick={handleComplete}
-                title={
-                  isPartialPomo
-                    ? t("savePartialTitle")
-                    : t("completeSessionTitle")
+              {canComplete && !isBreak && (
+                <button
+                  type="button"
+                  disabled={isSavingSession}
+                  aria-busy={isSavingSession}
+                  onClick={handleComplete}
+                  title={
+                    isPartialPomo
+                      ? t("savePartialTitle")
+                      : t("completeSessionTitle")
+                  }
+                  className="shrink-0 py-2.5 px-3.5 rounded-xl border border-emerald-500/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-800 dark:text-emerald-300 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shadow-sm hover:scale-[1.01] disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isSavingSession ? (
+                    <Loader2 size={15} className="animate-spin shrink-0" />
+                  ) : (
+                    <CheckCircle2 size={15} className="shrink-0" />
+                  )}
+                  <span>
+                    {isSavingSession
+                      ? t("savingSessionButton")
+                      : isPartialPomo
+                        ? t("savePartialButton")
+                        : t("completeSessionButton")}
+                  </span>
+                </button>
+              )}
+
+              {isBreak && (
+                <button
+                  type="button"
+                  disabled={isSavingSession}
+                  onClick={skipBreak}
+                  title={t("skipBreakTitle")}
+                  className="shrink-0 py-2.5 px-3 rounded-xl border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FastForward size={14} className="shrink-0" />
+                  <span>{t("skipBreakButton")}</span>
+                </button>
+              )}
+
+              {isActive && (
+                <button
+                  type="button"
+                  disabled={isSavingSession}
+                  onClick={resetTimer}
+                  title={t("resetTitle")}
+                  aria-label={t("resetButton")}
+                  className="shrink-0 w-10 h-10 rounded-xl border border-primary/30 bg-surface/80 text-neutral-300 hover:text-gold hover:border-gold/50 flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RotateCcw size={15} aria-hidden="true" />
+                </button>
+              )}
+            </div>
+
+            {/* Linha 2: Tarefa Vinculada + Notas lado a lado no desktop */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 items-center w-full">
+              {Boolean(target) && !isInventoryItem && (
+                <FocusStageTaskSlot
+                  target={target}
+                  isSessionIdle={!isActive && !controls.hasElapsedSeconds}
+                  isCompletingLinkedTask={isCompletingLinkedTask}
+                  onOpenLinkTask={handleOpenLinkTaskModal}
+                  onOpenLinkActivity={handleOpenLinkActivityModal}
+                  onCompleteLinkedTask={controls.completeLinkedTask}
+                  onUnlinkTask={controls.unlinkTaskFromTarget}
+                />
+              )}
+
+              <div
+                className={
+                  !target || isInventoryItem ? "lg:col-span-2" : undefined
                 }
-                className="w-full py-2.5 px-5 rounded-xl border border-emerald-500/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-800 dark:text-emerald-300 font-bold text-sm flex items-center justify-center gap-2 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer shadow-sm hover:scale-[1.01] disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {isSavingSession ? (
-                  <Loader2 size={17} className="animate-spin" />
-                ) : (
-                  <CheckCircle2 size={17} />
-                )}
-                <span>
-                  {isSavingSession
-                    ? t("savingSessionButton")
-                    : isPartialPomo
-                      ? t("savePartialButton")
-                      : t("completeSessionButton")}
-                </span>
-              </button>
-            )}
+                <FocusSessionNotesInput />
+              </div>
+            </div>
 
-            {/* 2.5. Painel de Tarefa Vinculada (logo abaixo de Começar / Salvar Tempo Parcial) */}
-            <FocusStageTaskSlot
-              target={target}
-              isInventoryItem={isInventoryItem}
-              isSessionIdle={!isActive && !controls.hasElapsedSeconds}
-              isCompletingLinkedTask={isCompletingLinkedTask}
-              onOpenLinkTask={handleOpenLinkTaskModal}
-              onOpenLinkActivity={handleOpenLinkActivityModal}
-              onCompleteLinkedTask={controls.completeLinkedTask}
-              onUnlinkTask={controls.unlinkTaskFromTarget}
-            />
-
-            {/* 3. Controles Auxiliares: Presets ou Botões de Reiniciar / Pular Pausa */}
-            {mode === "POMO" && !isInventoryItem && !isActive ? (
-              <div className="w-full flex justify-center py-0.5">
+            {/* Linha 3: Presets de Duração Pomodoro (quando ocioso) */}
+            {mode === "POMO" && !isInventoryItem && !isActive && (
+              <div className="w-full flex items-center justify-center sm:justify-start pt-0.5">
                 <FocusDurationPresets
                   totalDurationSeconds={totalDurationSeconds}
                   onChangeDuration={changeDuration}
                 />
               </div>
-            ) : (
-              <div className="flex items-center gap-2 w-full justify-between">
-                {/* Botão Reiniciar */}
-                {isActive ? (
-                  <button
-                    type="button"
-                    disabled={isSavingSession}
-                    onClick={resetTimer}
-                    title={t("resetTitle")}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/30 bg-surface/80 text-neutral-300 hover:text-gold hover:border-gold/50 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <RotateCcw size={14} />
-                    <span>{t("resetButton")}</span>
-                  </button>
-                ) : (
-                  <div />
-                )}
-
-                {/* Botão Pular Pausa */}
-                {isBreak && (
-                  <button
-                    type="button"
-                    disabled={isSavingSession}
-                    onClick={skipBreak}
-                    title={t("skipBreakTitle")}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 text-emerald-400 dark:text-emerald-300 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <FastForward size={14} />
-                    <span>{t("skipBreakButton")}</span>
-                  </button>
-                )}
-              </div>
             )}
-
-            {/* 4. Campo de Anotações Compacto Isolado */}
-            <FocusSessionNotesInput />
           </div>
         </div>
       </section>
@@ -570,6 +589,9 @@ export function FocusHeroStage({
           isActive={isActive}
           isSavingSession={isSavingSession}
           isSessionRewardCapped={isSessionRewardCapped}
+          todayProductiveMinutes={
+            isInventoryItem ? undefined : todayProductiveMinutes
+          }
           mode={mode}
           phase={phase}
           target={target}
@@ -584,6 +606,7 @@ export function FocusHeroStage({
           onComplete={handleComplete}
           onToggleSound={toggleSound}
           onChangeSoundType={setTimerSoundType}
+          onOpenUpgradeModal={onOpenUpgradeModal}
         />
       )}
 

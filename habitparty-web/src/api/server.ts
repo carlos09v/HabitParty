@@ -3,6 +3,11 @@ import createClient, { type Middleware } from "openapi-fetch";
 import { cache } from "react";
 import type { PaymentConfirmResponse } from "@/actions/paymentActions";
 import type {
+  AdminOverviewDTO,
+  AdminUserDetailDTO,
+  AdminUsersPageResponse,
+} from "@/types/admin";
+import type {
   CheckoutRequestDTO,
   CheckoutResponseDTO,
   FoundersQuotaDTO,
@@ -102,6 +107,18 @@ export type ExtendedApiPaths = paths & {
     };
   };
   "/showcase/achievements/seen": {
+    post: {
+      responses: {
+        200: {
+          content?: never;
+        };
+        204: {
+          content?: never;
+        };
+      };
+    };
+  };
+  "/showcase/artifacts/seen": {
     post: {
       responses: {
         200: {
@@ -375,6 +392,75 @@ export type ExtendedApiPaths = paths & {
         200: {
           content: {
             "application/json": PaymentConfirmResponse;
+          };
+        };
+      };
+    };
+  };
+  "/api/v1/admin/overview": {
+    get: {
+      responses: {
+        200: {
+          content: {
+            "application/json": AdminOverviewDTO;
+          };
+        };
+      };
+    };
+  };
+  "/api/v1/admin/users": {
+    get: {
+      parameters: {
+        query?: {
+          search?: string;
+          filter?: string;
+          page?: number;
+          size?: number;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            "application/json": AdminUsersPageResponse;
+          };
+        };
+      };
+    };
+  };
+  "/api/v1/admin/users/{userId}": {
+    get: {
+      parameters: {
+        path: {
+          userId: string;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            "application/json": AdminUserDetailDTO;
+          };
+        };
+      };
+    };
+  };
+  "/api/v1/admin/users/{userId}/role": {
+    patch: {
+      parameters: {
+        path: {
+          userId: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": {
+            role: "USER" | "ADMIN";
+          };
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            "application/json": UserResponseDTO;
           };
         };
       };

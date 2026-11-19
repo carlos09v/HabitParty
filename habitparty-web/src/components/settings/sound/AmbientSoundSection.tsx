@@ -3,7 +3,8 @@
 import { Crown, Sliders } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { SettingToggleRow } from "@/components/settings/SettingToggleRow";
-import { AMBIENT_ICONS, AMBIENT_SOUND_OPTIONS } from "@/constants/settings";
+import { VolumeRangeSlider } from "@/components/settings/sound/VolumeRangeSlider";
+import { AMBIENT_SOUND_OPTIONS } from "@/constants/settings";
 import type { AmbientSoundType } from "@/types/settings";
 import { cn } from "@/utils";
 
@@ -62,7 +63,7 @@ export function AmbientSoundSection({
           {AMBIENT_SOUND_OPTIONS.map((sound) => {
             const isSelected = ambientSoundType === sound.id;
             const isPlaying = isAmbientPlaying && isSelected;
-            const Icon = AMBIENT_ICONS[sound.id];
+            const Icon = sound.icon;
             const isLocked = sound.id !== "none" && !isPremium;
 
             return (
@@ -121,24 +122,12 @@ export function AmbientSoundSection({
                 {ambientVolumePercent}%
               </span>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-neutral-400 font-semibold">0%</span>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                value={ambientVolume}
-                onChange={(e) =>
-                  onChangeAmbientVolume(parseFloat(e.target.value))
-                }
-                aria-label={t("ambientVolumeAria")}
-                className="w-full h-2 bg-neutral-700 dark:bg-primary/40 rounded-lg appearance-none cursor-pointer accent-gold"
-              />
-              <span className="text-xs text-neutral-400 font-semibold">
-                100%
-              </span>
-            </div>
+            <VolumeRangeSlider
+              value={ambientVolume}
+              onChange={onChangeAmbientVolume}
+              ariaLabel={t("ambientVolumeAria")}
+              trackClassName="bg-neutral-700 dark:bg-primary/40"
+            />
           </div>
         )}
       </div>

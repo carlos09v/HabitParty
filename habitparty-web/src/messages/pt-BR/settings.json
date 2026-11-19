@@ -107,7 +107,7 @@
     "cardDesc": "Atualize seus dados públicos e identificação no HabitParty.",
     "noChangesToast": "Nenhuma alteração foi realizada.",
     "noChangesTitle": "Nenhuma alteração para salvar",
-    "nameMaxToast": "O nome deve ter no máximo 30 caracteres.",
+    "nameMaxToast": "O nome deve ter no máximo 150 caracteres.",
     "charCounter": "{current}/{max} caracteres",
     "birthdayPlaceholder": "Selecione sua data de nascimento",
     "genderPlaceholder": "Selecione o gênero (opcional)",

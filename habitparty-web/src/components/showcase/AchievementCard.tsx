@@ -17,7 +17,6 @@ interface AchievementCardProps {
   isPinnedInShowcase: boolean;
   isVisitorMode: boolean;
   onPinToShowcase: (achievement: AchievementItemResponseDTO) => void;
-  isCompact?: boolean;
 }
 
 export function AchievementCard({
@@ -25,7 +24,6 @@ export function AchievementCard({
   isPinnedInShowcase,
   isVisitorMode,
   onPinToShowcase,
-  isCompact = false,
 }: AchievementCardProps) {
   const locale = useLocale() as AppLocale;
   const { dateFormat } = useDateFormat();
@@ -61,8 +59,7 @@ export function AchievementCard({
   return (
     <article
       className={cn(
-        "relative overflow-hidden rounded-2xl border flex flex-col justify-between gap-3.5 transition-colors",
-        isCompact ? "p-4" : "p-5",
+        "relative overflow-hidden rounded-2xl border p-5 flex flex-col justify-between gap-3.5 transition-colors",
         achievement.unlocked
           ? cn("bg-card dark:bg-surface/60", theme.cardBorder, theme.cardGlow)
           : "border-neutral-700 bg-surface/55 dark:border-primary/15 dark:bg-surface/15 opacity-80 hover:opacity-100 dark:opacity-75 dark:hover:opacity-95",

@@ -32,17 +32,23 @@ const FALLBACK_STORE_MESSAGES: Record<
       "☕ Cycle {cycles} saved! Starting {breakLabel} break. Relax a little!",
     selectTargetToStartToast:
       "Select an activity or backpack item to start focusing.",
+    selectTargetToStartToastProductivity:
+      "Select an activity, task, or inventory item to start focusing.",
     itemAlreadyCompletedToast:
       "🎉 This item has already completed its time. Click the Complete (Check) button to redeem it.",
     breakSkippedToast: "Break skipped. Ready to focus!",
     linkTargetBeforeSaveToast:
       "Link your focus to an activity or backpack item before saving.",
+    linkTargetBeforeSaveToastProductivity:
+      "Link your focus to an activity, task, or inventory item before saving.",
     minDurationWarningToast: "Sessions under 1 minute are not recorded.",
     couponTimeDepletedToast:
       "🎉 Coupon time depleted! Click the Complete (Check) button to redeem it.",
     couponTimeDeductedToast: "Coupon time deducted! (-{time})",
     sessionCompletedRewardsToast:
       "Focus session completed! (+{time} • +{xp} XP • +{coins} 🪙)",
+    sessionCompletedRewardsToastProductivity:
+      "Focus session completed! (+{time} • +{xp} pts • +{coins} Credits)",
     sessionCompletedLoggedToast: "Focus session completed! (+{time} logged)",
     saveSessionFailedToast: "Failed to save focus session.",
     saveSessionServerErrorToast: "Error saving focus session on the server.",
@@ -74,11 +80,15 @@ const FALLBACK_STORE_MESSAGES: Record<
       "☕ Ciclo {cycles} salvo! Iniciando pausa {breakLabel}. Relaxe um pouco!",
     selectTargetToStartToast:
       "Selecione uma atividade, tarefa ou item da mochila para iniciar o foco.",
+    selectTargetToStartToastProductivity:
+      "Selecione uma atividade, tarefa ou item do inventário para iniciar o foco.",
     itemAlreadyCompletedToast:
       "🎉 Este item já concluiu seu tempo. Clique no botão de Concluir (Check) para resgatá-lo.",
     breakSkippedToast: "Pausa pulada. Pronto para focar!",
     linkTargetBeforeSaveToast:
       "Vincule o foco a uma atividade, tarefa ou item da mochila antes de salvar.",
+    linkTargetBeforeSaveToastProductivity:
+      "Vincule o foco a uma atividade, tarefa ou item do inventário antes de salvar.",
     minDurationWarningToast:
       "Sessões com menos de 1 minuto não são registradas.",
     couponTimeDepletedToast:
@@ -86,6 +96,8 @@ const FALLBACK_STORE_MESSAGES: Record<
     couponTimeDeductedToast: "Tempo do cupom deduzido! (-{time})",
     sessionCompletedRewardsToast:
       "Sessão de foco concluída! (+{time} • +{xp} XP • +{coins} 🪙)",
+    sessionCompletedRewardsToastProductivity:
+      "Sessão de foco concluída! (+{time} • +{xp} pts • +{coins} Créditos)",
     sessionCompletedLoggedToast:
       "Sessão de foco concluída! (+{time} registrados)",
     saveSessionFailedToast: "Falha ao salvar sessão de foco.",

@@ -21,7 +21,9 @@ public record ShowcaseStatsResponseDTO(
     int achievementPoints,
     int maxAchievementPoints,
     int unlockedAchievementsCount,
-    int totalAchievementsCount) {
+    int totalAchievementsCount,
+    int unlockedArtifactsCount,
+    int totalArtifactsCount) {
 
   public static ShowcaseStatsResponseDTO fromDomain(
       UserStats stats,
@@ -35,7 +37,9 @@ public record ShowcaseStatsResponseDTO(
         unlockedCount,
         totalAchievements,
         achievementPoints,
-        maxPoints);
+        maxPoints,
+        0,
+        0);
   }
 
   public static ShowcaseStatsResponseDTO fromDomain(
@@ -45,6 +49,26 @@ public record ShowcaseStatsResponseDTO(
       int totalAchievements,
       int achievementPoints,
       int maxPoints) {
+    return fromDomain(
+        stats,
+        effectiveStreak,
+        unlockedCount,
+        totalAchievements,
+        achievementPoints,
+        maxPoints,
+        0,
+        0);
+  }
+
+  public static ShowcaseStatsResponseDTO fromDomain(
+      UserStats stats,
+      int effectiveStreak,
+      int unlockedCount,
+      int totalAchievements,
+      int achievementPoints,
+      int maxPoints,
+      int unlockedArtifactsCount,
+      int totalArtifactsCount) {
     return new ShowcaseStatsResponseDTO(
         effectiveStreak,
         stats != null ? stats.getHighestStreak() : 0,
@@ -62,6 +86,8 @@ public record ShowcaseStatsResponseDTO(
         achievementPoints,
         maxPoints,
         unlockedCount,
-        totalAchievements);
+        totalAchievements,
+        unlockedArtifactsCount,
+        totalArtifactsCount);
   }
 }

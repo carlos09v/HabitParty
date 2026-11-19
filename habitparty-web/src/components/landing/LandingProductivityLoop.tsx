@@ -1,6 +1,9 @@
 import { Sparkles, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { LANDING_PRODUCTIVITY_STEP_CONFIGS } from "@/constants/landing";
+import {
+  LANDING_ANCHORS,
+  LANDING_PRODUCTIVITY_STEP_CONFIGS,
+} from "@/constants/landing";
 import { cn } from "@/utils";
 
 export function LandingProductivityLoop() {
@@ -8,7 +11,7 @@ export function LandingProductivityLoop() {
 
   return (
     <section
-      id="como-funciona"
+      id={LANDING_ANCHORS.howItWorks}
       className="py-20 md:py-28 relative overflow-hidden"
     >
       {/* Glow de fundo */}

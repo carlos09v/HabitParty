@@ -17,6 +17,7 @@ interface ResetPasswordFormProps {
 
 export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   const t = useTranslations("auth.resetPassword");
+  const tValidation = useTranslations("auth.validation");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -33,7 +34,11 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
 
     const validation = validateAuthPassword(password);
     if (!validation.isValid) {
-      toast.error(validation.error);
+      toast.error(
+        validation.errorKey
+          ? tValidation(validation.errorKey)
+          : validation.error,
+      );
       return;
     }
 

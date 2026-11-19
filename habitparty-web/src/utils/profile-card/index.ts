@@ -1,3 +1,4 @@
+import { resolveAvatarPreset } from "@/constants/cosmetics";
 import {
   drawCardBackdrop,
   drawCardFooter,
@@ -36,7 +37,10 @@ export async function renderProfileOrRetrospectiveCanvas(
 ): Promise<void> {
   const { width, height } = CARD_DIMENSIONS[input.mode];
   const palette = input.theme === "dark" ? DARK_PALETTE : LIGHT_PALETTE;
-  const avatarImg = await loadCorsSafeImage(input.user.profilePhotoUrl);
+  const resolvedPreset = resolveAvatarPreset(input.user.avatarPreset);
+  const avatarImg = resolvedPreset
+    ? null
+    : await loadCorsSafeImage(input.user.profilePhotoUrl);
 
   if (options?.signal?.aborted) {
     return;

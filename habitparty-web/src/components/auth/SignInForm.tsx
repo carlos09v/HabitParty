@@ -12,9 +12,24 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 
 interface SignInFormProps {
   initialError?: string;
+  returnTo?: string;
 }
 
-export function SignInForm({ initialError }: SignInFormProps = {}) {
+function resolveSafeReturnTo(returnTo?: string): string {
+  if (
+    !returnTo ||
+    !returnTo.startsWith("/") ||
+    returnTo.startsWith("//") ||
+    returnTo.startsWith("/\\") ||
+    returnTo.startsWith("/signIn") ||
+    returnTo.startsWith("/signUp")
+  ) {
+    return "/dashboard";
+  }
+  return returnTo;
+}
+
+export function SignInForm({ initialError, returnTo }: SignInFormProps = {}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const t = useTranslations("auth.signIn");
@@ -36,7 +51,7 @@ export function SignInForm({ initialError }: SignInFormProps = {}) {
         toast.error(result.error);
       } else {
         toast.success(t("successToast"));
-        router.push("/dashboard");
+        router.push(resolveSafeReturnTo(returnTo));
       }
     });
   };

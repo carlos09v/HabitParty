@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import type { AvatarFrameId } from "@/constants/avatarFrames";
+import { type AvatarFrameId, getAvatarFrame } from "@/constants/avatarFrames";
 import { useUserStore } from "./userStore";
 
 export interface AvatarFrameState {
@@ -25,10 +25,11 @@ export const useAvatarFrameStore = create<AvatarFrameState>()(
 );
 
 /**
- * Retorna a moldura ativa segura considerando o status de assinatura do usuário
+ * Retorna a moldura ativa segura considerando o status de assinatura e molduras de maestria.
  */
 export function useActiveAvatarFrame(): AvatarFrameId {
   const storeFrameId = useAvatarFrameStore((s) => s.frameId);
+  const userAvatarFrame = useUserStore((s) => s.user?.avatarFrame);
   const isPremium = useUserStore((s) => s.is_Premium);
   const [mounted, setMounted] = useState(false);
 
@@ -36,7 +37,12 @@ export function useActiveAvatarFrame(): AvatarFrameId {
     setMounted(true);
   }, []);
 
-  if (!mounted) return isPremium ? "cosmic_gold" : "none";
-  if (!isPremium) return "none";
-  return storeFrameId || "cosmic_gold";
+  const candidateId = mounted
+    ? storeFrameId
+    : (userAvatarFrame ?? (isPremium ? "cosmic_gold" : "none"));
+  const resolved = getAvatarFrame(candidateId);
+  if (resolved.isPremium && !isPremium) {
+    return "none";
+  }
+  return resolved.id;
 }

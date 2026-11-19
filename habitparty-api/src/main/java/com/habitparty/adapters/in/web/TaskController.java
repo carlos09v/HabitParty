@@ -17,6 +17,7 @@ import com.habitparty.adapters.in.web.dtos.request.CreateTaskDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateTaskDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateTaskOrderDTO;
 import com.habitparty.application.ports.projections.DashboardTaskDTO;
+import com.habitparty.application.ports.projections.FocusableTaskDTO;
 import com.habitparty.application.ports.projections.TaskSearchWorkspaceCountDTO;
 import com.habitparty.adapters.in.web.dtos.response.TaskHistoryStatusResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.TaskResponseDTO;
@@ -27,6 +28,7 @@ import com.habitparty.application.usecases.task.CreateTaskCommand;
 import com.habitparty.application.usecases.task.CreateTaskUseCase;
 import com.habitparty.application.usecases.task.DeleteTaskUseCase;
 import com.habitparty.application.usecases.task.ListDashboardTasksUseCase;
+import com.habitparty.application.usecases.task.ListFocusableTasksUseCase;
 import com.habitparty.application.usecases.task.ListTasksByColumnUseCase;
 import com.habitparty.application.usecases.task.MoveTaskCommand;
 import com.habitparty.application.usecases.task.MoveTaskUseCase;
@@ -53,6 +55,7 @@ public class TaskController implements TaskApi {
   private final ListTasksByColumnUseCase listTasksByColumnUseCase;
   private final ListDashboardTasksUseCase listDashboardTasksUseCase;
   private final SearchTasksAcrossWorkspacesUseCase searchTasksAcrossWorkspacesUseCase;
+  private final ListFocusableTasksUseCase listFocusableTasksUseCase;
   private final UserTimeResolver userTimeResolver;
   private com.habitparty.application.usecases.task.DailyResetUseCase dailyResetUseCase;
 
@@ -76,6 +79,15 @@ public class TaskController implements TaskApi {
       String query,
       AuthenticatedUser usuarioLogado) {
     return ResponseEntity.ok(searchTasksAcrossWorkspacesUseCase.execute(usuarioLogado.id(), query));
+  }
+
+  @Override
+  public ResponseEntity<List<FocusableTaskDTO>> getFocusableTasks(AuthenticatedUser usuarioLogado) {
+    UUID userId = usuarioLogado.id();
+    if (dailyResetUseCase != null) {
+      dailyResetUseCase.resetUserIfDue(userId);
+    }
+    return ResponseEntity.ok(listFocusableTasksUseCase.execute(userId));
   }
 
   @Override

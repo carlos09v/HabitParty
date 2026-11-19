@@ -1,9 +1,10 @@
 "use client";
 
-import { Pencil, Trash2, X } from "lucide-react";
+import { arrayMove } from "@dnd-kit/sortable";
+import { Pencil, Plus, Trash2, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { reorderRewards } from "@/actions/rewardActions";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { ContextMenu } from "@/components/ui/ContextMenu";
@@ -21,10 +22,10 @@ import { useItemCatalogFilters } from "@/hooks/useItemCatalogFilters";
 import { useReorderableList } from "@/hooks/useReorderableList";
 import { useRewardCatalogActions } from "@/hooks/useRewardCatalogActions";
 import type { AppLocale } from "@/i18n/config";
-import type { Reward } from "@/types/reward";
+import type { Reward, RewardDisplayEntry } from "@/types/reward";
 import { calculateRewardWelcomeStats } from "@/utils/catalogMetrics";
+import { groupRewardsForShowcase } from "@/utils/rewardGrouping";
 import {
-  isMysteryBoxReward,
   toCategoryMessageKey,
   toPackageMessageKey,
   toRewardTypeMessageKey,
@@ -40,10 +41,8 @@ const RewardFormModal = dynamic(
 );
 
 export function RewardsContainer({
-  isCompact = false,
   initialRewards,
 }: {
-  isCompact?: boolean;
   initialRewards: Reward[];
 }) {
   const t = useTranslations("rewards.container");
@@ -52,6 +51,13 @@ export function RewardsContainer({
   const locale = useLocale() as AppLocale;
 
   const [onlyAffordable, setOnlyAffordable] = useState(false);
+  const [selectedVariantByGroup, setSelectedVariantByGroup] = useState<
+    Record<string, string>
+  >({});
+  const [debtQuantities, setDebtQuantities] = useState<Record<string, number>>(
+    {},
+  );
+  const displayedEntriesRef = useRef<RewardDisplayEntry[]>([]);
 
   const {
     viewMode,
@@ -67,6 +73,23 @@ export function RewardsContainer({
     setOnlyAffordable(false);
   }, [handleClearFilters]);
 
+  const resolveGroupedRewardOrder = useCallback(
+    (activeId: string, overId: string) => {
+      const currentEntries = displayedEntriesRef.current;
+      const oldIdx = currentEntries.findIndex(
+        (entry) => entry.primaryReward.id === activeId,
+      );
+      const newIdx = currentEntries.findIndex(
+        (entry) => entry.primaryReward.id === overId,
+      );
+      if (oldIdx === -1 || newIdx === -1) return null;
+      return arrayMove(currentEntries, oldIdx, newIdx).flatMap(
+        (entry) => entry.variants,
+      );
+    },
+    [],
+  );
+
   const {
     items: rewards,
     setItems: setRewards,
@@ -76,6 +99,7 @@ export function RewardsContainer({
     initialItems: initialRewards,
     onReorderServerAction: reorderRewards,
     isFiltering: isFiltering || onlyAffordable,
+    resolveDragReorder: resolveGroupedRewardOrder,
   });
 
   const {
@@ -85,6 +109,7 @@ export function RewardsContainer({
     handleContextMenu,
     handleEditReward,
     handleEditFromContextMenu,
+    handleAddPackageFromContextMenu,
     handleDeleteFromContextMenu,
     checkingDeleteRewardIds,
     rewardToDelete,
@@ -95,12 +120,48 @@ export function RewardsContainer({
     isDeleting,
     isFormModalOpen,
     editingReward,
+    prefillDraft,
     handleAddProduct,
     handleCloseFormModal,
     handleRewardSuccess,
     redeemingRewardIds,
     handleBuy,
   } = useRewardCatalogActions({ rewards, setRewards });
+
+  const handleSelectVariant = useCallback(
+    (groupId: string, variantId: string) => {
+      setSelectedVariantByGroup((prev) => ({
+        ...prev,
+        [groupId]: variantId,
+      }));
+    },
+    [],
+  );
+
+  const handleDebtQuantityChange = useCallback(
+    (rewardId: string, nextQuantity: number) => {
+      setDebtQuantities((prev) => ({
+        ...prev,
+        [rewardId]: nextQuantity,
+      }));
+    },
+    [],
+  );
+
+  const handleBuyWithReset = useCallback(
+    async (reward: Reward, quantity = 1) => {
+      const ok = await handleBuy(reward, quantity);
+      if (ok && toCategoryMessageKey(reward.category) === "DEBT") {
+        setDebtQuantities((prev) => {
+          if ((prev[reward.id] ?? 1) === 1) return prev;
+          const next = { ...prev };
+          delete next[reward.id];
+          return next;
+        });
+      }
+    },
+    [handleBuy],
+  );
 
   const categoryOptions = useMemo(
     () =>
@@ -115,12 +176,14 @@ export function RewardsContainer({
 
   const typeOptions = useMemo(
     () =>
-      REWARD_TYPE_OPTIONS.filter(
-        (opt) => isGamified || opt.value !== "MysteryBox",
-      ).map((opt) => ({
+      REWARD_TYPE_OPTIONS.map((opt) => ({
         value: opt.value,
         label: opt.value
-          ? tOptions(`types.${toRewardTypeMessageKey(opt.value)}`)
+          ? opt.value === "MysteryBox"
+            ? isGamified
+              ? tOptions("types.MysteryBox")
+              : tOptions("types.MysteryBoxProductivity")
+            : tOptions(`types.${toRewardTypeMessageKey(opt.value)}`)
           : tOptions("types.all"),
       })),
     [isGamified, tOptions],
@@ -148,20 +211,21 @@ export function RewardsContainer({
     [tOptions],
   );
 
-  const visibleRewardsForMode = useMemo(
-    () =>
-      isGamified
-        ? rewards
-        : rewards.filter((r) => !isMysteryBoxReward(r.type, r.iconName)),
-    [isGamified, rewards],
-  );
-
   const resolvedCoins = currentCoins ?? 0;
 
   const filteredRewards = useMemo(() => {
     const searchLower = filters.search.trim().toLowerCase();
+    const filterTypeKey = filters.type
+      ? toRewardTypeMessageKey(filters.type)
+      : null;
+    const filterCategoryKey = filters.category
+      ? toCategoryMessageKey(filters.category)
+      : null;
+    const filterPackageKey = filters.packageLevel
+      ? toPackageMessageKey(filters.packageLevel)
+      : null;
 
-    let result = visibleRewardsForMode.filter((r) => {
+    let result = rewards.filter((r) => {
       if (
         searchLower &&
         !r.title.toLowerCase().includes(searchLower) &&
@@ -169,23 +233,18 @@ export function RewardsContainer({
       ) {
         return false;
       }
+      if (filterTypeKey && toRewardTypeMessageKey(r.type) !== filterTypeKey) {
+        return false;
+      }
       if (
-        filters.type &&
-        toRewardTypeMessageKey(r.type) !== toRewardTypeMessageKey(filters.type)
+        filterCategoryKey &&
+        toCategoryMessageKey(r.category) !== filterCategoryKey
       ) {
         return false;
       }
       if (
-        filters.category &&
-        toCategoryMessageKey(r.category) !==
-          toCategoryMessageKey(filters.category)
-      ) {
-        return false;
-      }
-      if (
-        filters.packageLevel &&
-        toPackageMessageKey(r.packageLevel) !==
-          toPackageMessageKey(filters.packageLevel)
+        filterPackageKey &&
+        toPackageMessageKey(r.packageLevel) !== filterPackageKey
       ) {
         return false;
       }
@@ -206,11 +265,17 @@ export function RewardsContainer({
     }
 
     return result;
-  }, [visibleRewardsForMode, filters, onlyAffordable, resolvedCoins, locale]);
+  }, [rewards, filters, onlyAffordable, resolvedCoins, locale]);
+
+  const displayedEntries = useMemo(
+    () => groupRewardsForShowcase(filteredRewards, selectedVariantByGroup),
+    [filteredRewards, selectedVariantByGroup],
+  );
+  displayedEntriesRef.current = displayedEntries;
 
   const welcomeStats = useMemo(() => {
     const { stats } = calculateRewardWelcomeStats(
-      visibleRewardsForMode,
+      rewards,
       resolvedCoins,
       locale,
       isGamified,
@@ -233,7 +298,7 @@ export function RewardsContainer({
       return stat;
     });
   }, [
-    visibleRewardsForMode,
+    rewards,
     resolvedCoins,
     locale,
     isGamified,
@@ -244,11 +309,7 @@ export function RewardsContainer({
 
   return (
     <>
-      <WelcomeCard
-        storageKey="rewards"
-        stats={welcomeStats}
-        compact={isCompact}
-      />
+      <WelcomeCard storageKey="rewards" stats={welcomeStats} />
 
       <section className="flex-1 min-h-0 flex flex-col gap-6 w-full pb-10">
         <FilterBar
@@ -304,22 +365,23 @@ export function RewardsContainer({
             <PrimaryActionButton
               label={isGamified ? t("addProduct") : t("addProductProductivity")}
               onClick={handleAddProduct}
-              isCompact={isCompact}
             />
           }
         />
 
         <RewardsCatalogView
-          filteredRewards={filteredRewards}
-          totalVisibleRewardsCount={visibleRewardsForMode.length}
+          entries={displayedEntries}
+          totalVisibleRewardsCount={rewards.length}
           viewMode={viewMode}
-          isCompact={isCompact}
           currentCoins={resolvedCoins}
           deletingRewardIds={checkingDeleteRewardIds}
           redeemingRewardIds={redeemingRewardIds}
+          debtQuantities={debtQuantities}
+          onDebtQuantityChange={handleDebtQuantityChange}
+          onSelectVariant={handleSelectVariant}
           sensors={sensors}
           onDragEnd={handleDragEnd}
-          onBuy={handleBuy}
+          onBuy={handleBuyWithReset}
           onEdit={handleEditReward}
           onContextMenu={handleContextMenu}
           onAddProduct={handleAddProduct}
@@ -333,6 +395,16 @@ export function RewardsContainer({
         position={contextMenu.position}
         onClose={closeContextMenu}
         items={[
+          ...(contextMenu.reward &&
+          toRewardTypeMessageKey(contextMenu.reward.type) === "TimeBased"
+            ? [
+                {
+                  label: t("contextMenu.addPackage"),
+                  icon: <Plus size={14} />,
+                  onClick: handleAddPackageFromContextMenu,
+                },
+              ]
+            : []),
           {
             label: t("contextMenu.edit"),
             icon: <Pencil size={14} />,
@@ -352,6 +424,7 @@ export function RewardsContainer({
         <RewardFormModal
           isOpen={isFormModalOpen}
           rewardToEdit={editingReward}
+          prefillDraft={prefillDraft}
           existingRewards={rewards}
           onSuccess={handleRewardSuccess}
           onClose={handleCloseFormModal}

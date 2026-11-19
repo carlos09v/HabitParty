@@ -73,13 +73,23 @@ export function TierInspectorCard({
         </span>
         <span className="font-bold text-neutral-100 tabular-nums">
           {tierView.nextMinXp !== null
-            ? t("inspector.thresholdRange", {
-                minXp: format.number(tierView.minXp),
-                maxXp: format.number(tierView.nextMinXp - 1),
-              })
-            : t("inspector.topRankRange", {
-                minXp: format.number(tierView.minXp),
-              })}
+            ? t(
+                isGamified
+                  ? "inspector.thresholdRange"
+                  : "inspector.thresholdRangeEssential",
+                {
+                  minXp: format.number(tierView.minXp),
+                  maxXp: format.number(tierView.nextMinXp - 1),
+                },
+              )
+            : t(
+                isGamified
+                  ? "inspector.topRankRange"
+                  : "inspector.topRankRangeEssential",
+                {
+                  minXp: format.number(tierView.minXp),
+                },
+              )}
         </span>
       </div>
 
@@ -111,10 +121,15 @@ export function TierInspectorCard({
               ariaLabelledBy={progressLabelId}
             />
             <p className="text-xs text-neutral-400">
-              {t("inspector.remainingToUnlock", {
-                xp: format.number(progress.remainingXp),
-                title: nextRankTitle,
-              })}
+              {t(
+                isGamified
+                  ? "inspector.remainingToUnlock"
+                  : "inspector.remainingToUnlockEssential",
+                {
+                  xp: format.number(progress.remainingXp),
+                  title: nextRankTitle,
+                },
+              )}
             </p>
           </div>
         )
@@ -125,16 +140,22 @@ export function TierInspectorCard({
       ) : (
         <div className="flex items-center justify-between gap-2 rounded-xl border border-amber-500/35 dark:border-gold/35 bg-amber-500/[0.08] px-3 py-2.5">
           <span className="text-xs font-semibold text-neutral-200">
-            {t("inspector.remainingToUnlock", {
-              xp: format.number(remainingXpToSelected),
-              title: tierView.localizedTitle,
-            })}
+            {t(
+              isGamified
+                ? "inspector.remainingToUnlock"
+                : "inspector.remainingToUnlockEssential",
+              {
+                xp: format.number(remainingXpToSelected),
+                title: tierView.localizedTitle,
+              },
+            )}
           </span>
           <XpAmount
             amount={remainingXpToSelected}
             size="sm"
             showSign={false}
             withIcon
+            isGamified={isGamified}
           />
         </div>
       )}

@@ -27,7 +27,6 @@ import { getOffsetDateString, getTodayDateString } from "@/utils/date";
 
 export function RoutineQuickAddForm({
   columnId,
-  isCompact = false,
   isColumnCompact = false,
   onClose,
   onQuickCreateTask,
@@ -36,8 +35,6 @@ export function RoutineQuickAddForm({
   const t = useTranslations("tasks.quickAdd");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
-
-  const isCompactMode = isColumnCompact || isCompact;
 
   const [title, setTitle] = useState("");
   const [taskType, setTaskType] = useState<TaskTypeOption>("TODO");
@@ -129,7 +126,7 @@ export function RoutineQuickAddForm({
       ref={containerRef}
       className={cn(
         "flex flex-col gap-2 p-2.5 rounded-xl border border-primary/45 bg-card shadow-md dark:border-gold/70 dark:bg-primary-dark/40 dark:shadow-glow-gold-xs animate-in fade-in zoom-in-95 duration-150 shrink-0",
-        isCompactMode && "p-2 gap-1.5",
+        isColumnCompact && "p-2 gap-1.5",
       )}
     >
       {/* Seletor Compacto dos 3 Tipos: A Fazer (padrão), Hábito, Diária */}

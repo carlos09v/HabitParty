@@ -8,7 +8,6 @@ interface HelpReferenceTableProps {
   highlightColumnIndex?: number;
   highlightColorClass?: string;
   secondaryBoldColumnIndex?: number;
-  isCompact?: boolean;
 }
 
 function resolveCellTextClass(
@@ -38,19 +37,13 @@ export function HelpReferenceTable({
   highlightColumnIndex = 2,
   highlightColorClass = "text-gold",
   secondaryBoldColumnIndex,
-  isCompact = false,
 }: HelpReferenceTableProps) {
   const headingId = useId();
   const minTableWidthClass =
     entry.columns.length >= 5 ? "min-w-[640px]" : "min-w-[540px]";
 
   return (
-    <div
-      className={cn(
-        "@container flex flex-col rounded-2xl border border-neutral-700 dark:border-primary/25 bg-card dark:bg-surface/30 shadow-xs dark:shadow-none",
-        isCompact ? "gap-2.5 p-4" : "gap-3 p-4 sm:p-6",
-      )}
-    >
+    <div className="@container flex flex-col gap-3 p-4 sm:p-6 rounded-2xl border border-neutral-700 dark:border-primary/25 bg-card dark:bg-surface/30 shadow-xs dark:shadow-none">
       <div className="flex items-center gap-2 min-w-0">
         <span className="shrink-0 flex items-center justify-center">
           {icon}
@@ -66,10 +59,7 @@ export function HelpReferenceTable({
         {entry.rows.map((row, rowIndex) => (
           <article
             key={`card-${row[0]}-${rowIndex}`}
-            className={cn(
-              "rounded-xl border border-neutral-700 dark:border-white/10 bg-surface/60 dark:bg-white/[0.03] flex flex-col gap-2",
-              isCompact ? "p-3" : "p-3.5",
-            )}
+            className="rounded-xl border border-neutral-700 dark:border-white/10 bg-surface/60 dark:bg-white/[0.03] p-3.5 flex flex-col gap-2"
           >
             <div className="flex items-baseline justify-between gap-2 border-b border-neutral-700/70 dark:border-white/10 pb-2">
               {entry.columns[0] && (
@@ -144,11 +134,7 @@ export function HelpReferenceTable({
           <thead>
             <tr className="bg-surface/80 dark:bg-primary-dark/40 border-b border-neutral-700 dark:border-white/10 text-neutral-300 font-semibold text-xs">
               {entry.columns.map((col) => (
-                <th
-                  key={col}
-                  scope="col"
-                  className={cn(isCompact ? "p-2.5" : "p-3")}
-                >
+                <th key={col} scope="col" className="p-3">
                   {col}
                 </th>
               ))}
@@ -164,7 +150,7 @@ export function HelpReferenceTable({
                   <td
                     key={`${colIndex}-${cell}`}
                     className={cn(
-                      isCompact ? "p-2.5" : "p-3",
+                      "p-3",
                       resolveCellTextClass(
                         colIndex,
                         highlightColumnIndex,

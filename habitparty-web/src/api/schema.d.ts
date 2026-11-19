@@ -96,6 +96,41 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/tasks/focusable": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description OK */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "*/*": components["schemas"]["FocusableTaskDTO"][];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/tasks/search": {
     parameters: {
       query?: never;
@@ -969,6 +1004,41 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/users/me/layout-summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description OK */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "*/*": components["schemas"]["UserLayoutSummaryResponseDTO"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/users/me": {
     parameters: {
       query?: never;
@@ -1420,6 +1490,14 @@ export interface components {
       /** @enum {string} */
       experienceMode?: "GAMIFIED" | "PRODUCTIVITY";
       timezone?: string;
+      theme?: string;
+      usageMode?: string;
+      primaryGoals?: string[];
+      mainObstacle?: string;
+      /** Format: int32 */
+      dailyFocusGoalMinutes?: number;
+      peakPeriod?: string;
+      disciplineStyle?: string;
     };
     UserResponseDTO: {
       /** Format: uuid */
@@ -1467,6 +1545,13 @@ export interface components {
       highestStreak?: number;
       /** Format: int32 */
       achievementPoints?: number;
+      usageMode?: string | null;
+      primaryGoals?: string[] | null;
+      mainObstacle?: string | null;
+      /** Format: int32 */
+      dailyFocusGoalMinutes?: number | null;
+      peakPeriod?: string | null;
+      disciplineStyle?: string | null;
     };
     /**
      * @example {
@@ -1546,6 +1631,8 @@ export interface components {
       icon?: string;
       /** Format: int32 */
       minutes?: number | null;
+      category?: string | null;
+      description?: string | null;
     };
     UpdateRewardDTO: {
       name?: string;
@@ -1778,6 +1865,23 @@ export interface components {
       workspaceName: string;
       /** Format: int64 */
       count: number;
+    };
+    FocusableTaskDTO: {
+      /** Format: uuid */
+      id: string;
+      title: string;
+      type: "daily" | "todo";
+      columnTitle: string;
+      workspaceName: string;
+      /** Format: int32 */
+      totalFocusMinutes: number;
+      /** Format: int32 */
+      focusCyclesCount: number;
+      completed: boolean;
+    };
+    UserLayoutSummaryResponseDTO: {
+      /** Format: date-time */
+      lastTaskCompletionAt?: string | null;
     };
     CreateRewardDTO: {
       name: string;
@@ -2794,7 +2898,9 @@ export interface operations {
   };
   redeemReward: {
     parameters: {
-      query?: never;
+      query?: {
+        quantity?: number;
+      };
       header?: never;
       path: {
         rewardId: string;
@@ -3147,7 +3253,10 @@ export interface operations {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          "*/*": components["schemas"]["UserResponseDTO"];
+          "application/json": components["schemas"]["UserResponseDTO"];
+        };
       };
     };
   };

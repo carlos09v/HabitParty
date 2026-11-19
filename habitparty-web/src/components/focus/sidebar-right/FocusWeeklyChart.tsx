@@ -16,7 +16,6 @@ interface FocusWeeklyChartProps {
   onPrevWeek?: () => void;
   onNextWeek?: () => void;
   onResetWeek?: () => void;
-  isCompact?: boolean;
 }
 
 export function FocusWeeklyChart({
@@ -28,7 +27,6 @@ export function FocusWeeklyChart({
   onPrevWeek,
   onNextWeek,
   onResetWeek,
-  isCompact = false,
 }: FocusWeeklyChartProps) {
   const t = useTranslations("focus.weeklyChart");
   const resolvedWeekLabel = weekLabel ?? t("thisWeek");
@@ -36,12 +34,7 @@ export function FocusWeeklyChart({
   const activeHovered = hoveredIndex !== null ? days[hoveredIndex] : null;
 
   return (
-    <div
-      className={cn(
-        "rounded-2xl border border-neutral-700 dark:border-primary/25 bg-white dark:bg-surface/50 shadow-2xs dark:shadow-none flex flex-col w-full transition-colors",
-        isCompact ? "p-3 gap-2.5" : "p-4 gap-3",
-      )}
-    >
+    <div className="rounded-2xl border border-neutral-700 dark:border-primary/25 bg-card dark:bg-surface/50 shadow-2xs dark:shadow-none flex flex-col w-full transition-colors p-4 gap-3">
       {/* Header com Título e Navegador de Semanas */}
       <div className="flex items-center justify-between gap-2 w-full min-w-0">
         <div className="flex items-center gap-1.5 text-neutral-300 shrink-0">
@@ -123,10 +116,7 @@ export function FocusWeeklyChart({
 
       {/* Gráfico de Barras dos 7 Dias da Semana */}
       <div
-        className={cn(
-          "w-full flex items-end justify-between gap-2 pt-4 px-1 border-b border-neutral-700 dark:border-white/10 relative",
-          isCompact ? "h-24" : "h-28",
-        )}
+        className="w-full flex items-end justify-between gap-2 pt-4 px-1 border-b border-neutral-700 dark:border-white/10 relative h-28"
         role="img"
         aria-label={t("chartAriaLabel")}
       >

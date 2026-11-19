@@ -14,6 +14,7 @@ import { XpAmount } from "@/components/ui/reward/XpAmount";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { RewardEstimate } from "@/types/reward";
 import { cn } from "@/utils";
+import { formatCreditsLeisureEquivalence } from "@/utils/rewardEconomy";
 
 export interface RewardPreviewProps {
   estimate: RewardEstimate;
@@ -25,14 +26,11 @@ export interface RewardPreviewProps {
   /** Estado controlado opcional */
   isOpen?: boolean;
   onToggle?: (isOpen: boolean) => void;
-  /** Se verdadeiro, oculta completamente no modo Produtividade (padrão: true). */
-  respectExperienceMode?: boolean;
 }
 
 /**
  * Componente unificado e reutilizável de prévia e cálculo de recompensas (Foco + Tarefas).
- * Inicia fechado (collapsed) por padrão para manter o layout limpo e sob demanda.
- * No perfil Produtividade, fica oculto para manter o layout focado na execução.
+ * Inicia fechado (collapsed) por padrão para manter o layout limpo e sob demanda em ambos os modos.
  */
 export function RewardPreview({
   estimate,
@@ -41,22 +39,23 @@ export function RewardPreview({
   className,
   isOpen: controlledIsOpen,
   onToggle,
-  respectExperienceMode = true,
 }: RewardPreviewProps) {
   const t = useTranslations("ui.rewardPreview");
+  const { isGamified, isProductivity } = useExperienceMode();
   const resolvedLabel =
     label ??
-    (variant === "inline" ? t("defaultInlineTitle") : t("defaultTitle"));
-  const { isProductivity } = useExperienceMode();
+    (variant === "inline"
+      ? isGamified
+        ? t("defaultInlineTitle")
+        : t("defaultInlineTitleProductivity")
+      : isGamified
+        ? t("defaultTitle")
+        : t("defaultTitleProductivity"));
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const isControlled = controlledIsOpen !== undefined;
   const isExpanded = isControlled ? controlledIsOpen : internalIsOpen;
 
   const contentId = useId();
-
-  if (respectExperienceMode && isProductivity) {
-    return null;
-  }
 
   const handleToggle = () => {
     const next = !isExpanded;
@@ -68,6 +67,23 @@ export function RewardPreview({
 
   const hasWarning = estimate.notices?.some((n) => n.tone === "warning");
   const isZero = estimate.gold === 0 && estimate.xp === 0;
+  const TriggerIcon = isGamified ? Sparkles : TrendingUp;
+  const expandedButtonClass = isGamified
+    ? "bg-amber-500/15 border-amber-500/50 text-amber-800 dark:bg-gold/15 dark:border-gold/50 dark:text-gold shadow-glow-gold-xs font-bold"
+    : "bg-sky-500/12 border-sky-500/45 text-sky-700 dark:bg-sky-500/15 dark:border-sky-400/45 dark:text-sky-300 font-bold";
+  const idleButtonHoverClass = isGamified
+    ? "hover:text-amber-700 dark:hover:text-gold hover:border-amber-500/40 dark:hover:border-gold/40"
+    : "hover:text-sky-700 dark:hover:text-sky-300 hover:border-sky-500/40 dark:hover:border-sky-400/40";
+  const expandedAccentText = isGamified
+    ? "text-amber-700 dark:text-gold"
+    : "text-sky-700 dark:text-sky-300";
+  const triggerFocusRing = isGamified
+    ? "focus-visible:ring-gold"
+    : "focus-visible:ring-sky-500";
+  const leisureEquivalence =
+    isProductivity && estimate.gold > 0
+      ? formatCreditsLeisureEquivalence(estimate.gold)
+      : null;
 
   if (variant === "inline") {
     return (
@@ -78,22 +94,25 @@ export function RewardPreview({
           aria-expanded={isExpanded}
           aria-controls={contentId}
           className={cn(
-            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold transition-colors cursor-pointer select-none active:scale-95 shrink-0 outline-none",
+            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold transition-colors cursor-pointer select-none active:scale-95 shrink-0 outline-none focus-visible:ring-2",
+            triggerFocusRing,
             isExpanded
-              ? "bg-amber-500/15 border-amber-500/50 text-amber-800 dark:bg-gold/15 dark:border-gold/50 dark:text-gold shadow-glow-gold-xs font-bold"
-              : "bg-card dark:bg-surface border-neutral-700 dark:border-white/15 text-neutral-300 hover:text-amber-700 dark:hover:text-gold hover:border-amber-500/40 dark:hover:border-gold/40 hover:bg-surface-hover",
+              ? expandedButtonClass
+              : cn(
+                  "bg-card dark:bg-surface border-neutral-700 dark:border-white/15 text-neutral-300 hover:bg-surface-hover",
+                  idleButtonHoverClass,
+                ),
             hasWarning &&
               !isExpanded &&
               "border-amber-500/50 text-amber-700 dark:border-amber-400/50 dark:text-amber-300",
-            "focus-visible:ring-2 focus-visible:ring-gold",
           )}
         >
-          <Sparkles
+          <TriggerIcon
             size={13}
             className={cn(
               "shrink-0",
               isExpanded
-                ? "text-amber-600 dark:text-gold"
+                ? expandedAccentText
                 : hasWarning
                   ? "text-amber-600 dark:text-amber-400"
                   : "text-neutral-400",
@@ -105,7 +124,7 @@ export function RewardPreview({
             className={cn(
               "transition-transform duration-200",
               isExpanded
-                ? "rotate-180 text-amber-700 dark:text-gold"
+                ? cn("rotate-180", expandedAccentText)
                 : "text-neutral-400",
             )}
           />
@@ -116,12 +135,28 @@ export function RewardPreview({
             id={contentId}
             className="flex items-center gap-2 animate-in fade-in zoom-in-95 duration-150 flex-wrap"
           >
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-500/15 dark:bg-gold/15 border border-amber-500/35 dark:border-gold/40 shadow-glow-gold-xs">
-              <CoinAmount amount={estimate.gold} size="xs" />
+            <div
+              className={cn(
+                "flex items-center gap-1.5 px-2 py-0.5 rounded-md border",
+                isGamified
+                  ? "bg-amber-500/15 dark:bg-gold/15 border-amber-500/35 dark:border-gold/40 shadow-glow-gold-xs"
+                  : "bg-sky-500/10 dark:bg-sky-500/15 border-sky-500/35 dark:border-sky-400/35",
+              )}
+            >
+              <CoinAmount
+                amount={estimate.gold}
+                size="xs"
+                withGlow={isGamified}
+              />
             </div>
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-magenta/15 border border-magenta/40">
               <XpAmount amount={estimate.xp} size="xs" />
             </div>
+            {leisureEquivalence && (
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300 tabular-nums">
+                {t("leisureEquivalentChip", { duration: leisureEquivalence })}
+              </span>
+            )}
 
             {estimate.stageLabel && (
               <span
@@ -129,7 +164,7 @@ export function RewardPreview({
                   "text-[10px] font-bold px-1.5 py-0.5 rounded border",
                   estimate.status === "boosted"
                     ? "text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500/30"
-                    : "text-primary dark:text-purple-300 bg-primary/10 dark:bg-purple-500/15 border-primary/25 dark:border-purple-500/30",
+                    : "text-primary dark:text-primary-light bg-primary/10 dark:bg-primary/15 border-primary/25 dark:border-primary/35",
                 )}
               >
                 {estimate.stageLabel}
@@ -151,20 +186,23 @@ export function RewardPreview({
           aria-expanded={isExpanded}
           aria-controls={contentId}
           className={cn(
-            "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer select-none active:scale-98 outline-none",
+            "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer select-none active:scale-98 outline-none focus-visible:ring-2",
+            triggerFocusRing,
             isExpanded
-              ? "bg-amber-500/15 border-amber-500/50 text-amber-800 dark:bg-gold/15 dark:border-gold/50 dark:text-gold shadow-glow-gold-xs font-bold"
-              : "bg-card dark:bg-surface/70 border-neutral-700 dark:border-white/15 text-neutral-300 hover:text-amber-700 dark:hover:text-gold hover:border-amber-500/40 dark:hover:border-gold/40 hover:bg-surface",
+              ? expandedButtonClass
+              : cn(
+                  "bg-card dark:bg-surface/70 border-neutral-700 dark:border-white/15 text-neutral-300 hover:bg-surface",
+                  idleButtonHoverClass,
+                ),
             isZero && !isExpanded && "opacity-80 text-neutral-400",
-            "focus-visible:ring-2 focus-visible:ring-gold",
           )}
         >
-          <Sparkles
+          <TriggerIcon
             size={14}
             className={cn(
               "shrink-0",
               isExpanded
-                ? "text-amber-600 dark:text-gold"
+                ? expandedAccentText
                 : hasWarning
                   ? "text-amber-600 dark:text-amber-400"
                   : "text-neutral-400",
@@ -182,7 +220,7 @@ export function RewardPreview({
             className={cn(
               "transition-transform duration-200",
               isExpanded
-                ? "rotate-180 text-amber-700 dark:text-gold"
+                ? cn("rotate-180", expandedAccentText)
                 : "text-neutral-400",
             )}
           />
@@ -199,22 +237,42 @@ export function RewardPreview({
           )}
         >
           {/* Cabeçalho com Total Estimado */}
-          <div className="flex items-center justify-between pb-2 border-b border-neutral-700 dark:border-white/8 gap-2">
+          <div className="flex items-center justify-between pb-2 border-b border-neutral-700 dark:border-white/8 gap-2 flex-wrap">
             <span className="text-[11px] uppercase tracking-wider font-bold text-neutral-400">
-              {t("expectedYieldHeader")}
+              {isGamified
+                ? t("expectedYieldHeader")
+                : t("expectedYieldHeaderProductivity")}
             </span>
 
             {isZero ? (
               <span className="text-xs text-neutral-400 italic">
-                {estimate.zeroReason || t("zeroGainDefault")}
+                {estimate.zeroReason ||
+                  (isGamified
+                    ? t("zeroGainDefault")
+                    : t("zeroGainDefaultProductivity"))}
               </span>
             ) : (
-              <div className="flex items-center gap-3">
-                <CoinAmount amount={estimate.gold} size="sm" withGlow />
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <CoinAmount
+                  amount={estimate.gold}
+                  size="sm"
+                  withGlow={isGamified}
+                />
                 <span className="text-neutral-400 dark:text-neutral-600">
                   •
                 </span>
-                <XpAmount amount={estimate.xp} size="sm" withIcon />
+                <XpAmount
+                  amount={estimate.xp}
+                  size="sm"
+                  withIcon={isGamified}
+                />
+                {leisureEquivalence && (
+                  <span className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/30 text-sky-700 dark:text-sky-300 tabular-nums">
+                    {t("leisureEquivalentChip", {
+                      duration: leisureEquivalence,
+                    })}
+                  </span>
+                )}
               </div>
             )}
           </div>

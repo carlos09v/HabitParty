@@ -27,13 +27,21 @@
       "label": "Fundador",
       "title": "Membro Fundador — Insígnia Vitalícia Exclusiva dos Primeiros 30 Apoiadores"
     },
+    "avatar": {
+      "defaultUser": "Usuário",
+      "avatarLabel": "Avatar: {name}",
+      "avatarAlt": "Avatar de {name}"
+    },
     "input": {
       "showPassword": "Exibir senha",
       "hidePassword": "Ocultar senha"
     },
     "select": {
       "placeholder": "Selecione uma opção",
-      "emptyMessage": "Sem itens disponíveis."
+      "emptyMessage": "Sem itens disponíveis.",
+      "searchPlaceholder": "Buscar pelo título...",
+      "noResultsMessage": "Nenhum resultado encontrado.",
+      "clearSearchAria": "Limpar busca"
     },
     "datePicker": {
       "placeholder": "Selecione uma data...",
@@ -128,12 +136,14 @@
           "description": "Instruções sobre itens adquiridos na loja e consumo no inventário.",
           "subtitle": "Consuma recompensas resgatadas, abra caixas misteriosas ou envie itens para o Palco de Foco.",
           "subtitleGamified": "Consuma itens resgatados, abra caixas misteriosas ou envie recompensas para o Palco de Foco.",
-          "subtitleProductivity": "Gerencie e utilize os cupons e recompensas resgatados na vitrine.",
+          "subtitleProductivity": "Gerencie cupons, abra sorteios de pausa ou utilize recompensas resgatadas.",
           "bullet0": "Guarde e organize todos os itens e cupons resgatados na Vitrine.",
           "bullet1": "Use itens consumíveis diretamente ou envie poções para o Palco de Foco.",
           "bullet2": "Itens de uso único desaparecem da mochila após o consumo total.",
           "bullet2Gamified": "Itens de uso único desaparecem da mochila após o consumo total.",
-          "bullet2Productivity": "Itens de uso único desaparecem do inventário após o consumo total."
+          "bullet2Productivity": "Itens de uso único desaparecem do inventário após o consumo total.",
+          "bullet1Gamified": "Use itens consumíveis diretamente ou envie poções para o Palco de Foco.",
+          "bullet1Productivity": "Use recompensas diretas ou envie cupons de descanso para o Palco de Foco."
         },
         "rewards": {
           "title": "Loja de Recompensas",
@@ -145,12 +155,16 @@
           "description": "Dicas sobre troca de moedas por cupons e recompensas personalizadas.",
           "subtitle": "Troque suas moedas por mimos reais, cupons de pausa e recompensas personalizadas.",
           "subtitleGamified": "Troque suas moedas por mimos reais, cupons de pausa e caixas misteriosas.",
-          "subtitleProductivity": "Troque seus créditos por mimos reais e cupons de descanso programados.",
+          "subtitleProductivity": "Troque seus créditos por pausas programadas, mimos reais e sorteios de pausa.",
           "bullet0": "Troque suas moedas de ouro por recompensas reais e personalizadas.",
           "bullet1": "Cadastre novos prêmios na Vitrine: Cupons, Uso Único ou Caixas Misteriosas.",
           "bullet2": "Todo produto resgatado é transferido diretamente para a sua Mochila.",
           "bullet2Gamified": "Todo produto resgatado é transferido diretamente para a sua Mochila.",
-          "bullet2Productivity": "Todo produto resgatado é transferido diretamente para o seu Inventário."
+          "bullet2Productivity": "Todo produto resgatado é transferido diretamente para o seu Inventário.",
+          "bullet0Gamified": "Troque suas moedas de ouro por recompensas reais e personalizadas.",
+          "bullet0Productivity": "Troque seus créditos acumulados por pausas e recompensas reais.",
+          "bullet1Gamified": "Cadastre novos prêmios na Vitrine: Cupons, Uso Único ou Caixas Misteriosas.",
+          "bullet1Productivity": "Cadastre recompensas na Vitrine: Cupons de Tempo, Uso Único ou Sorteios de Pausa."
         },
         "focus": {
           "title": "Ambiente de Foco",
@@ -176,7 +190,9 @@
           "bullet1": "Penalidades de hábitos negativos e falhas computam deduções no saldo.",
           "bullet2": "Resgates na loja e consumo de itens da mochila ficam arquivados neste extrato.",
           "bullet2Gamified": "Resgates na loja e consumo de itens da mochila ficam arquivados neste diário.",
-          "bullet2Productivity": "Resgates na vitrine e consumo de itens do inventário ficam arquivados neste extrato."
+          "bullet2Productivity": "Resgates na vitrine e consumo de itens do inventário ficam arquivados neste extrato.",
+          "bullet0Gamified": "Conclusões de tarefas, diárias e hábitos registram ganhos de moedas e XP.",
+          "bullet0Productivity": "Conclusões de tarefas, diárias e hábitos registram ganhos de créditos e pontos (pts)."
         }
       }
     },
@@ -292,7 +308,12 @@
       "tooltipAria": "Detalhes de {title}",
       "yieldWarningTitle": "Aviso sobre regras de rendimento",
       "expectedYieldHeader": "Rendimento Previsto",
-      "zeroGainDefault": "Sem ganho de XP ou Moedas"
+      "zeroGainDefault": "Sem ganho de XP ou Moedas",
+      "defaultTitleProductivity": "Rendimento estimado",
+      "defaultInlineTitleProductivity": "Rendimento",
+      "expectedYieldHeaderProductivity": "Projeção de Rendimento",
+      "zeroGainDefaultProductivity": "Sem ganho de Pontos ou Créditos",
+      "leisureEquivalentChip": "{duration} lazer"
     },
     "itemCatalog": {
       "inFocus": "Em Foco",
@@ -301,10 +322,16 @@
       "moreActionsAria": "Mais ações",
       "checkingDeleteAria": "Verificando histórico...",
       "tierDetailsAria": "Ver probabilidades da caixa misteriosa",
+      "packageVariantsAria": "Pacotes disponíveis desta recompensa",
+      "unitPriceHint": "Unitário: {unit} (sem desconto)",
+      "unitMultiplierLabel": "Multiplicador unitário",
+      "decreaseQuantityAria": "Diminuir quantidade",
+      "increaseQuantityAria": "Aumentar quantidade",
       "types": {
         "SingleUse": "Uso Único",
         "TimeBased": "Cupom de Tempo",
-        "MysteryBox": "Caixa Misteriosa"
+        "MysteryBox": "Caixa Misteriosa",
+        "MysteryBoxProductivity": "Sorteio de Pausa"
       },
       "packages": {
         "NONE": "Nenhum",
@@ -338,14 +365,17 @@
       "statuses": {
         "activeSession": "Sessão ativa",
         "sealedBox": "Caixa lacrada",
-        "available": "Disponível"
+        "available": "Disponível",
+        "sealedBoxProductivity": "Sorteio lacrado"
       },
       "tooltips": {
         "inUse": "Item em uso no Focus",
         "openFocusSession": "Abrir a tela de Foco com esta sessão ativa",
         "insufficientCoins": "Moedas insuficientes",
         "actionForPrice": "{action} por {price} moedas",
-        "actionTarget": "{action} {title}"
+        "actionTarget": "{action} {title}",
+        "insufficientCredits": "Créditos insuficientes",
+        "actionForPriceCredits": "{action} por {price} créditos"
       },
       "header": {
         "item": "Item",
@@ -355,7 +385,8 @@
         "duration": "Duração",
         "action": "Ação",
         "priceAndAction": "Preço / Ação"
-      }
+      },
+      "tierDetailsAriaProductivity": "Ver probabilidades do sorteio de pausa"
     },
     "reorder": {
       "clearFiltersToReorder": "Limpe os filtros para reordenar os itens.",

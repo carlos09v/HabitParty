@@ -39,6 +39,7 @@ import com.habitparty.application.ports.WorkspaceRepository;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.UserStats;
 import com.habitparty.core.domain.entities.UserSubscription;
+import com.habitparty.core.domain.entities.achievement.CosmeticCatalog.CosmeticUnlockContext;
 import com.habitparty.core.domain.enums.AccountResetScope;
 import com.habitparty.core.domain.enums.SubscriptionStatus;
 import com.habitparty.core.domain.enums.UserExperienceMode;
@@ -277,5 +278,56 @@ class ResetUserAccountUseCaseTest {
     order.verify(userPort).save(user);
 
     verify(taskPort, never()).resetMetricsByUserId(any());
+  }
+
+  @Test
+  @DisplayName("METRICS deve revalidar e limpar cosméticos vinculados a conquistas/XP preservando VIP e Fundador")
+  void shouldClearEarnedCosmeticsOnMetricsResetWhilePreservingAccountAndVipCosmetics() {
+    UUID userId = UUID.randomUUID();
+    User user = createPopulatedUser(userId);
+    user.updateShowcaseProfile(
+        null,
+        "obsidian_crest",
+        "ARTIFACT_COLLECTOR",
+        "level_amateur",
+        new CosmeticUnlockContext(
+            java.util.Set.of("TROPHY_HUNTER_1000"),
+            java.util.Set.of(),
+            10L,
+            java.util.Set.of(),
+            LocalDateTime.now()));
+    when(userPort.findByIdForUpdate(userId)).thenReturn(Optional.of(user));
+    when(userPort.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    User result = useCase.execute(userId, AccountResetScope.METRICS, false);
+
+    assertEquals("none", result.getAvatarFrame());
+    assertFalse(result.getEquippedTitle().isPresent());
+    assertFalse(result.getAvatarPreset().isPresent());
+  }
+
+  @Test
+  @DisplayName("METRICS sem apagar histórico preserva título RETRO_* enquanto METRICS com deleteHistory limpa")
+  void shouldHandleRetrospectiveTitleAccordingToHistoryDeletionOnMetricsReset() {
+    UUID userId = UUID.randomUUID();
+    User userPreserve = createPopulatedUser(userId);
+    CosmeticUnlockContext retroCtx = new CosmeticUnlockContext(
+        java.util.Set.of(),
+        java.util.Set.of(),
+        0L,
+        java.util.Set.of(com.habitparty.core.domain.enums.RetrospectiveArchetype.DEEP_FOCUS_SAGE),
+        LocalDateTime.now());
+    userPreserve.updateShowcaseProfile(null, "none", "RETRO_DEEP_FOCUS_SAGE", "vip_cosmic", retroCtx);
+
+    when(userPort.findByIdForUpdate(userId)).thenReturn(Optional.of(userPreserve));
+    when(userPort.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    User preservedResult = useCase.execute(userId, AccountResetScope.METRICS, false);
+    assertEquals("RETRO_DEEP_FOCUS_SAGE", preservedResult.getEquippedTitle().orElse(null));
+    assertEquals("vip_cosmic", preservedResult.getAvatarPreset().orElse(null));
+
+    User wipeHistoryResult = useCase.execute(userId, AccountResetScope.METRICS, true);
+    assertFalse(wipeHistoryResult.getEquippedTitle().isPresent());
+    assertEquals("vip_cosmic", wipeHistoryResult.getAvatarPreset().orElse(null));
   }
 }

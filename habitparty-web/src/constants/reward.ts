@@ -49,7 +49,9 @@ import type { IconOption, SelectOption } from "@/types/ui";
 
 export {
   DEFAULT_MYSTERY_BOX_LOOT,
+  getMysteryBadgeTextClass,
   getMysteryBadgeVariantClass,
+  MYSTERY_BADGE_TEXT_CLASSES,
   MYSTERY_BADGE_VARIANT_CLASSES,
   MYSTERY_BOX_PRESETS,
   MYSTERY_BOX_ROULETTE_POOLS,
@@ -123,17 +125,20 @@ export const REWARD_ICON_MAP = new Map(
 export const REWARD_TYPE_META: Record<string, RewardTypeMeta> = {
   SingleUse: {
     label: "Uso Único",
-    color: "text-purple-300 bg-purple-500/15 border-purple-500/25",
+    color:
+      "text-purple-700 dark:text-purple-300 bg-purple-500/12 dark:bg-purple-500/15 border-purple-500/30 dark:border-purple-500/25",
     icon: Zap,
   },
   TimeBased: {
     label: "Cupom",
-    color: "text-emerald-300 bg-emerald-500/15 border-emerald-500/25",
+    color:
+      "text-emerald-700 dark:text-emerald-300 bg-emerald-500/12 dark:bg-emerald-500/15 border-emerald-500/30 dark:border-emerald-500/25",
     icon: Ticket,
   },
   MysteryBox: {
     label: "Caixa Misteriosa",
-    color: "text-amber-300 bg-amber-500/15 border-amber-500/25",
+    color:
+      "text-amber-700 dark:text-amber-300 bg-amber-500/12 dark:bg-amber-500/15 border-amber-500/30 dark:border-amber-500/25",
     icon: Sparkles,
   },
 };
@@ -171,7 +176,7 @@ export const PACKAGE_LEVEL_ICON_THEME: Partial<
     "bg-amber-500/10 text-amber-700 border-amber-500/25 group-hover:border-amber-500/50 dark:bg-gold/15 dark:border-gold/40 dark:text-gold dark:group-hover:border-gold/60 dark:shadow-glow-gold-xs",
 };
 
-const TIER_CHIP_STYLES: Record<
+export const TIER_CHIP_STYLES: Record<
   PackageMessageKey,
   {
     dotColor?: string;
@@ -278,9 +283,35 @@ export const COUPON_PACKAGE_OPTIONS: readonly CouponPackageOption[] = [
   },
 ] as const;
 
+export interface DebtUnitPricePreset {
+  id: "15m" | "30m" | "45m" | "60m";
+  minutes: number;
+  price: number;
+}
+
+/**
+ * Tabela linear sem desconto para Dívidas (taxa base: 8 moedas / 30 min = 0.2667/min).
+ * Regra explícita: Dívida sempre cobra valor unitário cheio (multiplicador aplicado no resgate).
+ */
+export const DEBT_UNIT_PRICE_PRESETS: readonly DebtUnitPricePreset[] = [
+  { id: "15m", minutes: 15, price: 4 },
+  { id: "30m", minutes: 30, price: 8 },
+  { id: "45m", minutes: 45, price: 12 },
+  { id: "60m", minutes: 60, price: 16 },
+] as const;
+
+export const DEBT_DEFAULT_UNIT_PRICE = 8;
+export const DEBT_MAX_REDEEM_QUANTITY = 50;
+
+export const SINGLE_USE_NONE_OPTION = {
+  id: "NONE" as const,
+  packageLevel: "Nenhum" as const,
+  ...TIER_CHIP_STYLES.NONE,
+};
+
 /**
  * Presets calibrados de esforço para recompensas de Uso Único (SingleUse):
- * 4 (Mimo Rápido) -> 15 (Diário) -> 50 (Semanal) -> 150 (Marco Épico).
+ * 4 (Básico/Mimo) -> 15 (Premium/Diário) -> 50 (Épico/Semanal) -> 150 (Lendário/Marco).
  */
 export const SINGLE_USE_TIER_OPTIONS: readonly SingleUseTierOption[] = [
   {

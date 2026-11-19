@@ -21,14 +21,13 @@ import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import type { FocusRecord } from "@/types/focus";
-import { cn, formatCoins, formatDateTime } from "@/utils";
+import { formatCoins, formatDateTime } from "@/utils";
 import { formatFocusRecordDuration } from "@/utils/focusFormatters";
 import { resolveFocusRecordDisplay } from "@/utils/focusIcons";
 import { FocusRecordDetailsPopover } from "./FocusRecordDetailsPopover";
 
 interface FocusRecentRecordItemProps {
   record: FocusRecord;
-  isCompact: boolean;
   onRowClick: (e: React.MouseEvent, record: FocusRecord) => void;
   onContextMenu: (e: React.MouseEvent, record: FocusRecord) => void;
   onRequestDelete?: (record: FocusRecord) => void;
@@ -36,7 +35,6 @@ interface FocusRecentRecordItemProps {
 
 const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
   record: rec,
-  isCompact,
   onRowClick,
   onContextMenu,
   onRequestDelete,
@@ -73,10 +71,7 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
         }
       }}
       title={t("rowTooltip")}
-      className={cn(
-        "group/row rounded-xl border border-neutral-700 dark:border-primary/20 bg-white dark:bg-surface/40 shadow-2xs dark:shadow-none flex items-center justify-between gap-2.5 hover:border-gold/40 hover:bg-card-hover dark:hover:bg-surface/70 transition-colors cursor-pointer select-none",
-        isCompact ? "p-2" : "p-2.5",
-      )}
+      className="group/row rounded-xl border border-neutral-700 dark:border-primary/20 bg-card dark:bg-surface/40 shadow-2xs dark:shadow-none flex items-center justify-between gap-2.5 hover:border-gold/40 hover:bg-card-hover dark:hover:bg-surface/70 transition-colors cursor-pointer select-none p-2.5"
     >
       <div className="flex items-center gap-2.5 min-w-0 flex-1">
         <div className="w-8 h-8 rounded-lg bg-primary-dark/40 border border-primary/30 flex items-center justify-center shrink-0 text-primary-light group-hover/row:border-gold/40 transition-colors">
@@ -92,7 +87,7 @@ const FocusRecentRecordItem = memo(function FocusRecentRecordItem({
                 title={rec.notes}
                 className="text-neutral-400 group-hover/row:text-primary dark:group-hover/row:text-gold transition-colors shrink-0 p-0.5"
               >
-                <MessageSquare size={isCompact ? 10 : 12} />
+                <MessageSquare size={12} />
               </span>
             )}
           </div>
@@ -170,7 +165,6 @@ interface FocusRecentRecordsProps {
     deleteHistory: boolean,
   ) => void | Promise<void>;
   onRecordUpdated?: (updatedRecord: FocusRecord) => void;
-  isCompact?: boolean;
 }
 
 export function FocusRecentRecords({
@@ -183,9 +177,9 @@ export function FocusRecentRecords({
   onOptionsClick,
   onDeleteRecord,
   onRecordUpdated,
-  isCompact = false,
 }: FocusRecentRecordsProps) {
   const t = useTranslations("focus.records");
+  const { isGamified } = useExperienceMode();
   // Popover de edição ancorado
   const [selectedRecordForEdit, setSelectedRecordForEdit] =
     useState<FocusRecord | null>(null);
@@ -316,7 +310,6 @@ export function FocusRecentRecords({
               <FocusRecentRecordItem
                 key={rec.id}
                 record={rec}
-                isCompact={isCompact}
                 onRowClick={handleRowClick}
                 onContextMenu={handleContextMenu}
                 onRequestDelete={
@@ -370,17 +363,22 @@ export function FocusRecentRecords({
         title={t("deleteConfirmTitle")}
         description={
           <p>
-            {t.rich("deleteConfirmDescription", {
-              name: pendingDeleteRecord
-                ? resolveFocusRecordDisplay(
-                    pendingDeleteRecord,
-                    t("freeSession"),
-                  ).title
-                : t("freeSession"),
-              strong: (chunks) => (
-                <strong className="text-neutral-100">{chunks}</strong>
-              ),
-            })}
+            {t.rich(
+              isGamified
+                ? "deleteConfirmDescription"
+                : "deleteConfirmDescriptionProductivity",
+              {
+                name: pendingDeleteRecord
+                  ? resolveFocusRecordDisplay(
+                      pendingDeleteRecord,
+                      t("freeSession"),
+                    ).title
+                  : t("freeSession"),
+                strong: (chunks) => (
+                  <strong className="text-neutral-100">{chunks}</strong>
+                ),
+              },
+            )}
           </p>
         }
         confirmText={t("deleteConfirmButton")}
@@ -390,7 +388,11 @@ export function FocusRecentRecords({
             ? t("deleteHistoryLabel")
             : undefined
         }
-        checkboxHint={t("deleteHistoryHint")}
+        checkboxHint={
+          isGamified
+            ? t("deleteHistoryHint")
+            : t("deleteHistoryHintProductivity")
+        }
         checkboxChecked={deleteHistory}
         onCheckboxChange={setDeleteHistory}
       />

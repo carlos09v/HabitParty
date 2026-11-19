@@ -2,7 +2,6 @@
 
 import { Timer } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ContextMenu } from "@/components/ui/ContextMenu";
@@ -20,7 +19,7 @@ import type {
   FocusRecordType,
 } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
-import { cn } from "@/utils";
+import { removeBrowserQueryParam } from "@/utils";
 import { calculateFocusWelcomeStats } from "@/utils/catalogMetrics";
 import { formatBackpackItemRemainingTime } from "@/utils/focusFormatters";
 import { FocusActivitiesSection } from "./FocusActivitiesSection";
@@ -69,6 +68,7 @@ interface FocusMainProps {
     minutes: number;
     sessionsCount: number;
   };
+  todayProductiveMinutes?: number;
   isPremium?: boolean;
   selectedActivityId?: string | null;
   selectedBackpackItemId?: string | null;
@@ -83,7 +83,7 @@ interface FocusMainProps {
   }) => void;
   initialCreateActivity?: boolean;
   initialLinkActivity?: boolean;
-  isCompact?: boolean;
+  initialFromSource?: string | null;
   onChangeMode?: (mode: FocusRecordType) => void;
   onActivityDeleted?: (activityId: string, deleteHistory: boolean) => void;
 }
@@ -93,6 +93,7 @@ export function FocusMain({
   backpackItems,
   focusableTasks = [],
   todaySummary,
+  todayProductiveMinutes,
   isPremium = false,
   selectedActivityId,
   selectedBackpackItemId,
@@ -104,15 +105,14 @@ export function FocusMain({
   onOpenManualRecord,
   initialCreateActivity = false,
   initialLinkActivity = false,
-  isCompact = false,
+  initialFromSource = null,
   onChangeMode,
   onActivityDeleted,
 }: FocusMainProps) {
   const t = useTranslations("focus.main");
   const { isGamified } = useExperienceMode();
   const controls = useFocusTimerControls();
-  const searchParams = useSearchParams();
-  const fromSource = searchParams.get("from");
+  const fromSource = initialFromSource;
   useIdlePreload(preloadFocusMainModalChunks);
 
   const { isActive, isPaused, target } = controls;
@@ -140,17 +140,7 @@ export function FocusMain({
     if (!initialCreateActivity) return;
     setEditingActivity(null);
     setActivityModalOpen(true);
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      if (url.searchParams.has("createActivity")) {
-        url.searchParams.delete("createActivity");
-        window.history.replaceState(
-          null,
-          "",
-          url.pathname + (url.search ? url.search : ""),
-        );
-      }
-    }
+    removeBrowserQueryParam("createActivity");
   }, [initialCreateActivity]);
 
   // Hook dedicado às mutações de atividades e itens da mochila
@@ -287,14 +277,7 @@ export function FocusMain({
   return (
     <div className="relative flex-1 min-w-0 h-full flex flex-col overflow-hidden">
       {/* Área Rolável de Conteúdo */}
-      <div
-        className={cn(
-          "flex-1 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] custom-scrollbar flex flex-col",
-          isCompact
-            ? "p-3 sm:p-4 gap-3 sm:gap-4 pb-6"
-            : "p-3.5 sm:p-6 gap-4 sm:gap-6 pb-8",
-        )}
-      >
+      <div className="flex-1 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] custom-scrollbar flex flex-col p-3.5 sm:p-6 gap-4 sm:gap-6 pb-8">
         {backTarget && (
           <div className="flex items-center">
             <ContextualBackButton
@@ -304,17 +287,14 @@ export function FocusMain({
           </div>
         )}
 
-        <WelcomeCard
-          storageKey="focus"
-          stats={focusWelcomeStats}
-          compact={isCompact}
-        />
+        <WelcomeCard storageKey="focus" stats={focusWelcomeStats} />
 
         {/* 2. Palco de Foco Heróico */}
         <FocusHeroStage
           activities={activities}
           backpackItems={backpackItems}
           focusableTasks={focusableTasks}
+          todayProductiveMinutes={todayProductiveMinutes}
           onSelectActivity={onSelectActivity}
           onStartFocusActivity={onStartFocusActivity}
           onStartFocusItem={onStartFocusItem}
@@ -323,7 +303,6 @@ export function FocusMain({
           onOpenUpgradeModal={handleOpenUpgradeModal}
           onCreateActivity={handleOpenCreateModal}
           initialLinkActivity={initialLinkActivity}
-          isCompact={isCompact}
         />
 
         {/* 3. Seção de Atividades */}
@@ -340,7 +319,6 @@ export function FocusMain({
           onOpenCreateModal={handleOpenCreateModal}
           onOpenUpgradeModal={handleOpenUpgradeModal}
           onContextMenu={openActivityMenu}
-          isCompact={isCompact}
         />
 
         {/* 4. Seção da Mochila */}
@@ -356,7 +334,6 @@ export function FocusMain({
           onContextMenu={openItemMenu}
           onConsume={handleConsumeItem}
           consumingItemIds={consumingItemIds}
-          isCompact={isCompact}
         />
       </div>
 

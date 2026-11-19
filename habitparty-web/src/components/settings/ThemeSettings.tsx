@@ -11,10 +11,10 @@ import {
   Sun,
   Zap,
 } from "lucide-react";
-import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
+import { LazyUpgradePremiumModal } from "@/components/subscription/LazyUpgradePremiumModal";
 import {
   getThemeDefinition,
   STANDARD_THEMES,
@@ -25,14 +25,6 @@ import { useThemeMode } from "@/hooks/useThemeMode";
 import { useUserStore } from "@/store/userStore";
 import type { ThemeId } from "@/types/ui";
 import { cn } from "@/utils";
-
-const UpgradePremiumModal = dynamic(
-  () =>
-    import("@/components/subscription/UpgradePremiumModal").then(
-      (mod) => mod.UpgradePremiumModal,
-    ),
-  { ssr: false },
-);
 
 const THEME_ICONS: Record<ThemeId, ReactNode> = {
   dark: <Moon size={16} aria-hidden="true" />,
@@ -349,7 +341,7 @@ export function ThemeSettings() {
       </div>
 
       {isUpgradeModalOpen && (
-        <UpgradePremiumModal
+        <LazyUpgradePremiumModal
           isOpen={isUpgradeModalOpen}
           onClose={() => setIsUpgradeModalOpen(false)}
         />

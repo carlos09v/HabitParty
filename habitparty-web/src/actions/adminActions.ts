@@ -3,15 +3,8 @@
 import { getTranslations } from "next-intl/server";
 import { invalidateAdminDomainTags } from "@/actions/cacheInvalidation";
 import { type ActionState, getErrorMessage } from "@/actions/types";
-import { getServerAuthToken } from "@/api/server";
+import { serverApi } from "@/api/server";
 import type { AdminUserDetailDTO } from "@/types/admin";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-
-async function getAuthHeader(): Promise<HeadersInit> {
-  const token = await getServerAuthToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
 
 /**
  * Força a revalidação imediata dos dados do painel administrativo (overview + listagem de usuários).
@@ -29,25 +22,23 @@ export async function getAdminUserDetailAction(
 ): Promise<ActionState<AdminUserDetailDTO>> {
   const t = await getTranslations("admin.actions");
   try {
-    const authHeaders = await getAuthHeader();
-    const res = await fetch(`${API_BASE_URL}/api/v1/admin/users/${userId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        ...authHeaders,
+    const { data, error } = await serverApi.GET(
+      "/api/v1/admin/users/{userId}",
+      {
+        params: {
+          path: { userId },
+        },
+        cache: "no-store",
       },
-      cache: "no-store",
-    });
+    );
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => null);
+    if (error || !data) {
       return {
         success: false,
-        error: getErrorMessage(err, t("userDetailFailed")),
+        error: getErrorMessage(error, t("userDetailFailed")),
       };
     }
 
-    const data = (await res.json()) as AdminUserDetailDTO;
     return { success: true, data };
   } catch (err) {
     console.error("[AdminAction:getUserDetail]", err);
@@ -67,24 +58,20 @@ export async function updateUserRoleAction(
 ): Promise<ActionState<void>> {
   const t = await getTranslations("admin.actions");
   try {
-    const authHeaders = await getAuthHeader();
-    const res = await fetch(
-      `${API_BASE_URL}/api/v1/admin/users/${userId}/role`,
+    const { error } = await serverApi.PATCH(
+      "/api/v1/admin/users/{userId}/role",
       {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          ...authHeaders,
+        params: {
+          path: { userId },
         },
-        body: JSON.stringify({ role }),
+        body: { role },
       },
     );
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => null);
+    if (error) {
       return {
         success: false,
-        error: getErrorMessage(err, t("updateRoleFailed")),
+        error: getErrorMessage(error, t("updateRoleFailed")),
       };
     }
 

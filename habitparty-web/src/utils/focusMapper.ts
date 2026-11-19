@@ -1,4 +1,5 @@
 import type { AppLocale } from "@/i18n/config";
+import { getUtilityTranslator } from "@/i18n/utilityTranslator";
 import type {
   FocusActivity,
   FocusActivityResponseDTO,
@@ -15,9 +16,10 @@ export function mapFocusActivityDtoToActivity(
   dto: FocusActivityResponseDTO,
   locale: AppLocale = "pt-BR",
 ): FocusActivity {
+  const t = getUtilityTranslator(locale, "focus");
   return {
     id: dto.id || "",
-    name: dto.name || (locale === "en" ? "Activity" : "Atividade"),
+    name: dto.name || t("defaultActivityName"),
     icon: dto.icon || "book",
     orderIndex: dto.orderIndex ?? 0,
     recordType: dto.recordType || "POMO",

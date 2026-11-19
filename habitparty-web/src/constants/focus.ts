@@ -55,6 +55,9 @@ export const FOCUS_POMO_PRESETS = [15, 25, 35, 45, 50] as const;
 /** Presets de duração para inserção manual de foco (em minutos) */
 export const FOCUS_MANUAL_PRESETS = [15, 25, 35, 45, 60] as const;
 
+/** Limite máximo de duração (em minutos) para registro manual de atividade */
+export const MAX_MANUAL_FOCUS_MINUTES = 600;
+
 /** Regras de cálculo e tetos de bonificação de foco */
 export const FOCUS_REWARD_RULES = {
   MIN_QUALIFYING_MINUTES: 10,

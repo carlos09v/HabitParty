@@ -14,7 +14,8 @@
     "openInFocus": "Open in Focus",
     "openBox": "Open Box",
     "sendToFocus": "Send to Focus",
-    "use": "Use"
+    "use": "Use",
+    "openBoxProductivity": "Run Break Draw"
   },
   "container": {
     "listAriaLabel": "Inventory items",
@@ -32,7 +33,8 @@
       "sortLabel": "Sort",
       "sortDefault": "Default Order",
       "sortQuantityDesc": "Highest Quantity",
-      "sortName": "Name (A-Z)"
+      "sortName": "Name (A-Z)",
+      "typeMysteryBoxProductivity": "Break Draw"
     },
     "emptyState": {
       "emptyTitle": "Your backpack is empty! 🎒",
@@ -55,7 +57,8 @@
       "sendToFocus": "Send to Focus",
       "useImmediately": "Use now (no timer)",
       "useItem": "Use Item",
-      "discardItem": "Discard Item"
+      "discardItem": "Discard Item",
+      "openMysteryBoxProductivity": "Start Break Draw"
     },
     "discardModal": {
       "title": "Discard item from backpack?",
@@ -63,7 +66,8 @@
       "titleProductivity": "Discard item from inventory?",
       "description": "Are you sure you want to discard 1x <strong>\"{title}\"</strong>? This action does not refund spent coins.",
       "confirmText": "Yes, discard",
-      "cancelText": "Cancel"
+      "cancelText": "Cancel",
+      "descriptionProductivity": "Are you sure you want to discard 1x <strong>\"{title}\"</strong>? This action does not refund spent credits."
     },
     "toasts": {
       "useError": "Error using item.",
@@ -105,6 +109,17 @@
       "l1": "Elite Partial Day-Off",
       "l2": "Extended Day-Off",
       "l3": "Ultimate Celebration"
+    },
+    "wonBadgeLabelProductivity": "SELECTED!",
+    "chanceBadge": "{percent}% Odds",
+    "openErrorGamified": "Could not open the Mystery Box.",
+    "openErrorProductivity": "Could not run the Break Draw.",
+    "tiersProductivity": {
+      "NONE": "Essential Tier",
+      "BASIC": "Essential Tier",
+      "PREMIUM": "Moderate Tier",
+      "EPIC": "Advanced Tier",
+      "LEGENDARY": "Executive Tier"
     }
   },
   "rouletteModal": {
@@ -120,13 +135,37 @@
     "spinButton": "Spin Roulette!",
     "spinningStatus": "Spinning your luck...",
     "storeInBackpackButton": "Store in Backpack",
+    "artifactDrop": {
+      "headline": "Relic Found at the Bottom of the Chest!",
+      "subtext": "Exclusive bonus drop! This artifact has been permanently added to your collection.",
+      "collectionTag": "Collection • Mystery Box",
+      "viewShowcaseButton": "View in Showcase",
+      "badgeByRarity": {
+        "COMMON": "Common Bonus Drop",
+        "UNCOMMON": "Uncommon Bonus Drop",
+        "RARE": "Rare Relic!",
+        "EPIC": "Epic Relic!",
+        "LEGENDARY": "Legendary Relic!"
+      },
+      "headlineProductivity": "Collectible Milestone Unlocked!",
+      "subtextProductivity": "Exploration bonus! This collectible has been permanently added to your collection.",
+      "collectionTagProductivity": "Collection • Break Draw"
+    },
     "tiers": {
       "NONE": "Basic",
       "BASIC": "Basic",
       "PREMIUM": "Premium",
       "EPIC": "Epic",
       "LEGENDARY": "Legendary"
-    }
+    },
+    "subtitleWonProductivity": "Here is the break or reward selected for this session:",
+    "subtitleIdleProductivity": "Spin the weighted roulette to draw one reward from your configured tier!",
+    "possiblePrizesTitleProductivity": "Configured options in this draw:",
+    "prizeUnlockedTitleProductivity": "Reward Unlocked!",
+    "wonSingleUseItemProductivity": "Single-Use Reward stored in Inventory",
+    "spinButtonProductivity": "Run Draw",
+    "spinningStatusProductivity": "Selecting option...",
+    "storeInBackpackButtonProductivity": "Save to Inventory"
   },
   "actions": {
     "communicationError": "Internal server communication error.",

@@ -1,120 +1,292 @@
 {
   "metadata": {
-    "title": "Configuração Inicial — HabitParty",
-    "description": "Personalize seu modo de uso, crie seu primeiro ambiente e defina a aparência inicial."
+    "title": "Primeiros Passos",
+    "description": "Configure o HabitParty para a sua rotina, ritmo de foco e objetivos em menos de um minuto."
   },
   "layout": {
     "headerBadge": "Configuração Inicial",
-    "stepIndicator": "Passo {current} de {total}",
-    "copyright": "© {year} HabitParty. Todos os direitos reservados."
+    "quickSetupHint": "~45 seg • Editável depois",
+    "copyright": "HabitParty © {year}"
   },
   "wizard": {
-    "badge": "Personalização",
-    "title": "Personalize sua Experiência",
-    "subtitle": "Vamos calibrar sua jornada no HabitParty. Escolha seu objetivo principal para prepararmos seu primeiro espaço.",
-    "submit": "Criar Ambiente e Começar Minha Jornada",
-    "submitting": "Preparando seu ambiente e dashboard...",
-    "redirectHint": "Você será direcionado diretamente ao painel principal ao concluir.",
-    "validation": {
-      "nameRequired": "Por favor, digite um nome para o seu primeiro ambiente.",
-      "nameMaxLength": "O nome do ambiente deve ter até 25 caracteres.",
-      "createFailed": "Não foi possível criar o ambiente. Tente novamente em instantes.",
-      "invalidId": "O ambiente foi criado sem um identificador válido."
+    "badge": "Setup Personalizado",
+    "title": "Configure seu sistema em 3 etapas rápidas",
+    "subtitle": "Responda algumas escolhas rápidas para que seu painel já comece calibrado para sua rotina — sem tela vazia.",
+    "stepsNavLabel": "Progresso da configuração inicial",
+    "steps": {
+      "1": {
+        "shortLabel": "Contexto & Metas",
+        "heading": "Qual é o seu momento atual?"
+      },
+      "2": {
+        "shortLabel": "Estilo & Ritmo",
+        "heading": "Como você foca e se mantém firme?"
+      },
+      "3": {
+        "shortLabel": "Workspace & Starter Pack",
+        "heading": "Seu quadro pronto para começar"
+      }
     },
-    "successToast": "Ambiente \"{name}\" criado com sucesso! Bem-vindo(a) ao HabitParty!"
+    "stepCounter": "Etapa {current} de {total}",
+    "validation": {
+      "workspaceRequired": "Informe um nome para seu primeiro workspace antes de concluir.",
+      "selectAtLeastOneGoal": "Escolha pelo menos 1 objetivo principal (até 2) para adaptarmos seu espaço."
+    },
+    "actions": {
+      "back": "Voltar",
+      "next": "Continuar",
+      "submitGamified": "Começar Jornada",
+      "submitProductivity": "Iniciar Workspace",
+      "submitting": "Preparando seu quadro..."
+    },
+    "footerNote": "Você pode ajustar o estilo, o tema ou seus hábitos quando quiser nas Configurações.",
+    "successToast": "Workspace \"{name}\" pronto! Bom começo!",
+    "partialWarningToast": "Workspace criado, mas parte do Starter Pack não pôde ser gerada agora.",
+    "errorToast": "Erro ao finalizar configuração inicial. Tente novamente."
   },
   "usageModes": {
-    "sectionTitle": "Qual será o seu principal modo de uso?",
-    "modes": {
+    "sectionTitle": "Objetivo principal de uso",
+    "options": {
       "personal": {
-        "title": "Pessoal & Rotina",
-        "description": "Hábitos saudáveis, autocuidado e metas diárias.",
-        "defaultWorkspace": "Vida Pessoal & Rotina",
-        "chips": [
-          "Vida Pessoal & Rotina",
-          "Saúde & Bem-Estar",
-          "Hábitos & Autocuidado",
-          "Finanças & Orçamento",
-          "Metas & Projetos",
-          "Família & Casa"
-        ]
+        "label": "Pessoal",
+        "description": "Bem-estar, saúde, finanças e rotina",
+        "defaultWorkspace": "Pessoal"
       },
       "studies": {
-        "title": "Estudos & Formação",
-        "description": "Disciplinas, revisões, leituras e cursos acadêmicos.",
-        "defaultWorkspace": "Estudos & Formação",
-        "chips": [
-          "Estudos & Formação",
-          "Faculdade & Cursos",
-          "Concursos & Provas",
-          "Idiomas & Leitura",
-          "Desenvolvimento Tech",
-          "Pesquisa & Artigos"
-        ]
+        "label": "Estudos",
+        "description": "Provas, cursos, idiomas e projetos",
+        "defaultWorkspace": "Estudos"
       },
       "work": {
-        "title": "Trabalho & Projetos",
-        "description": "Demandas profissionais, metas e entregas de carreira.",
-        "defaultWorkspace": "Trabalho & Carreira",
-        "chips": [
-          "Trabalho & Carreira",
-          "Projetos & Demandas",
-          "Freelance & Clientes",
-          "Gestão & Negócios",
-          "Metas Profissionais",
-          "Estúdio Criativo"
-        ]
+        "label": "Trabalho",
+        "description": "Carreira, entregas, clientes e prazos",
+        "defaultWorkspace": "Trabalho"
       },
       "all": {
-        "title": "Geral & Equilíbrio",
-        "description": "Tudo em um só espaço integrado para seu dia a dia.",
-        "defaultWorkspace": "Meu Espaço Geral",
-        "chips": [
-          "Meu Espaço Geral",
-          "Foco Diário & Metas",
-          "Equilíbrio & Rotina",
-          "Projetos Pessoais",
-          "Produtividade Total",
-          "Dia a Dia & Hábitos"
-        ]
+        "label": "Completo",
+        "description": "Tudo organizado em um só lugar",
+        "defaultWorkspace": "HabitParty"
       }
     }
   },
-  "workspaceSetup": {
-    "title": "Seu Primeiro Ambiente de Trabalho",
-    "badge": "⭐ Essencial",
-    "description": "Ambientes organizam suas tarefas, rotinas e hábitos por contexto. Você poderá criar mais ambientes depois no painel.",
-    "label": "Nome do Ambiente",
-    "placeholder": "Ex: Vida Pessoal, Estudos...",
-    "hint": "Máximo de 25 caracteres.",
-    "suggestionsLabel": "Sugestões rápidas para o seu foco:"
+  "profileContext": {
+    "goalsLegend": "Escolha até 2 objetivos principais ({count}/{max})",
+    "goalsHint": "Ajuda a equilibrar seus hábitos, tarefas no Kanban e pausas.",
+    "goals": {
+      "focus": {
+        "label": "Foco profundo",
+        "description": "Pomodoro e blocos contínuos"
+      },
+      "habits": {
+        "label": "Criar hábitos",
+        "description": "Constância sem esgotamento"
+      },
+      "projects": {
+        "label": "Organizar projetos",
+        "description": "Quadro Kanban e entregas claras"
+      },
+      "routine": {
+        "label": "Ajustar rotina",
+        "description": "Check-ins de manhã e noite"
+      },
+      "balance": {
+        "label": "Lazer sem culpa",
+        "description": "Trocar esforço por descanso real"
+      }
+    },
+    "obstacleLegend": "O que mais costuma atrapalhar seu ritmo?",
+    "obstacles": {
+      "procrastination": {
+        "label": "Procrastinação"
+      },
+      "distractions": {
+        "label": "Distrações"
+      },
+      "consistency": {
+        "label": "Falta de constância"
+      },
+      "burnout": {
+        "label": "Sobrecarga"
+      }
+    }
   },
   "experienceMode": {
-    "title": "Estilo de Experiência & Interface",
-    "settingsHint": "Altere quando quiser nas configurações",
-    "densityLabel": "Densidade:",
-    "densityStandard": "Padrão",
-    "densityCompact": "Compacto",
-    "soundsLabel": "Sons de UI:",
-    "soundsActive": "Ativos",
-    "soundsMuted": "Mudo",
-    "modes": {
+    "sectionTitle": "Estilo de Experiência",
+    "switchHint": "Troca em 1 clique quando quiser",
+    "options": {
       "PRODUCTIVITY": {
-        "title": "Modo Essencial",
-        "badge": "Foco & Produtividade",
-        "description": "Interface limpa e executiva com créditos, pontos de consistência e foco direto nas entregas."
+        "label": "Essencial",
+        "subtitle": "Foco limpo e objetivo",
+        "highlights": [
+          "Pontos de Foco & Créditos de Esforço",
+          "Prazo Rígido com clareza no calendário",
+          "Métricas limpas e visual sem distrações"
+        ]
       },
       "GAMIFIED": {
-        "title": "Modo Aventura (RPG)",
-        "badge": "Gamificação & Dopamina",
-        "description": "Ganhe moedas de ouro, XP, abra caixas misteriosas e enfrente o Modo Hardcore para derrotar a inércia."
+        "label": "Aventura",
+        "subtitle": "RPG clássico de hábitos",
+        "highlights": [
+          "XP, Moedas de Ouro e Níveis de Evolução",
+          "Modo Hardcore com desafio elevado",
+          "Caixas Misteriosas, Relíquias e Party"
+        ]
+      }
+    },
+    "preview": {
+      "label": "Prévia ao vivo neste estilo",
+      "sampleTask": "Sessão de Foco 25m",
+      "gamifiedReward": "+25 XP • +2,5 Moedas",
+      "productivityReward": "+25 pts • +2,5 Créditos",
+      "gamifiedBadge": "Modo Hardcore Ativo",
+      "productivityBadge": "Prazo Rígido Ativo"
+    }
+  },
+  "rhythmAndTheme": {
+    "dailyFocusLegend": "Meta diária realista de foco",
+    "focusOptions": {
+      "30": {
+        "label": "30 min",
+        "hint": "1 sprint rápido/dia (ciclos de 25m)"
+      },
+      "90": {
+        "label": "1h – 2h",
+        "hint": "Progresso sólido (ciclos de 35m)"
+      },
+      "180": {
+        "label": "3h+",
+        "hint": "Blocos Deep Work (ciclos de 50m)"
+      }
+    },
+    "peakLegend": "Em qual período sua energia rende mais?",
+    "peakOptions": {
+      "morning": {
+        "label": "Manhã"
+      },
+      "afternoon": {
+        "label": "Tarde"
+      },
+      "night": {
+        "label": "Noite"
+      }
+    },
+    "disciplineLegend": "Nível de cobrança inicial",
+    "disciplineOptions": {
+      "flexible": {
+        "label": "Ritmo flexível",
+        "description": "Adaptação gradual sem penalidades iniciais"
+      },
+      "strict": {
+        "label": "Alta cobrança",
+        "descriptionGamified": "Afazer prioritário inicia no Modo Hardcore",
+        "descriptionProductivity": "Afazer prioritário inicia com Prazo Rígido"
+      }
+    },
+    "themeLegend": "Escolha seu visual inicial (prévia imediata)",
+    "themes": {
+      "dark": "Cósmico Escuro",
+      "light": "Cósmico Claro",
+      "dark-knight": "Cavaleiro Noturno",
+      "solar-parchment": "Pergaminho Solar"
+    },
+    "soundEffectsLabel": "Efeitos sonoros sutis na interface",
+    "soundEffectsHint": "Feedback sonoro ao concluir hábitos e ciclos Pomodoro",
+    "soundOn": "Ativo",
+    "soundOff": "Silencioso"
+  },
+  "workspaceSetup": {
+    "fieldLabel": "Nome do Workspace",
+    "inputPlaceholder": "Ex: Pessoal, Estudos, Trabalho...",
+    "quickPresetsLabel": "Sugestões rápidas:",
+    "charCounter": "{current}/{max}",
+    "presetsByMode": {
+      "personal": ["Pessoal", "Rotina", "Saúde & Vida", "Casa", "Metas"],
+      "studies": ["Estudos", "Faculdade", "Concursos", "Idiomas", "Projetos"],
+      "work": ["Trabalho", "Projetos", "Carreira", "Freelance", "Entregas"],
+      "all": ["HabitParty", "Vida & Foco", "Central", "Geral", "Dia a Dia"]
+    }
+  },
+  "starterPack": {
+    "legend": "Starter Pack — comece com tudo estruturado",
+    "calibratedPrefix": "Calibrado para:",
+    "modeRecommended": "Usar Starter Pack Recomendado",
+    "modeBlank": "Começar do zero (quadro vazio)",
+    "ratioHint": "Proporção calibrada 4:1 (1 moeda/crédito ≈ 4 min de lazer merecido)",
+    "currencyGamified": "Moedas",
+    "currencyProductivity": "Créditos",
+    "badgeDailyFocus": "Ciclos de {minutes}m",
+    "badgeHardcore": "Hardcore",
+    "badgeStrict": "Prazo Rígido",
+    "badgeLowFriction": "Fácil de iniciar",
+    "badgePriority": "Prioritário",
+    "toggles": {
+      "columnsTitle": "3 Colunas iniciais no Kanban",
+      "tasksTitle": "{count} Tarefas adaptadas ao seu perfil",
+      "focusTitle": "1 Atividade de Foco calibrada",
+      "rewardsTitle": "{count} Recompensas na vitrine (lazer sem culpa)"
+    },
+    "presets": {
+      "columns": {
+        "personalRoutine": "Rotina Diária",
+        "personalHealth": "Saúde & Hábitos",
+        "personalGoals": "Metas Pessoais",
+        "studiesClasses": "Aulas & Leituras",
+        "studiesPractice": "Prática & Exercícios",
+        "studiesReview": "Revisão & Provas",
+        "workPriorities": "Prioridades de Hoje",
+        "workDeepWork": "Foco Profundo",
+        "workFollowUp": "Acompanhamento",
+        "allRoutine": "Rotina Base",
+        "allFocus": "Projetos Chave",
+        "allWellbeing": "Hábitos & Energia"
+      },
+      "tasks": {
+        "personalHydrateHabit": "Beber água e alongar 2 min",
+        "personalTopDaily": "Revisar top 3 prioridades do dia",
+        "personalWeeklyTodo": "Organizar próximo passo da semana",
+        "studiesRecallHabit": "Revisão ativa / 15m de flashcards",
+        "studiesReviewDaily": "Revisar anotações da aula",
+        "studiesModuleTodo": "Concluir próximo módulo de estudo",
+        "workInboxHabit": "Limpar inbox e respostas rápidas",
+        "workPlanDaily": "Definir 3 entregas do dia",
+        "workDeliverableTodo": "Concluir entrega principal hoje",
+        "allResetHabit": "Reset rápido de foco (5 min)",
+        "allTop3Daily": "Checar top 3 prioridades do dia",
+        "allPriorityTodo": "Concluir ação principal de hoje",
+        "obstacleProcrastinationHabit": "Regra dos 2 min: dar o primeiro passo",
+        "obstacleDistractionsHabit": "Bloco sem distrações e celular longe",
+        "obstacleBurnoutHabit": "Pausa consciente, água e respiro (3m)"
+      },
+      "taskDescriptions": {
+        "goalFocus": "Dica: vincule esta tarefa a uma sessão no Modo Foco para somar tempo produtivo.",
+        "goalHabits": "Hábito principal calibrado para fortalecer sua constância diária.",
+        "goalProjects": "Entrega prioritária alinhada ao seu objetivo de organizar projetos.",
+        "obstacleProcrastination": "Pensado para vencer a procrastinação com atrito mínimo para começar.",
+        "obstacleDistractions": "Hábito âncora para blindar seu ambiente contra distrações.",
+        "obstacleConsistency": "Proteja sua sequência diária com este check-in rápido de constância.",
+        "obstacleBurnout": "Ritmo leve anti-sobrecarga: progresso sustentável antes de intensidade.",
+        "peakMorning": "Sugestão: conclua logo pela manhã, no seu horário de maior energia.",
+        "peakAfternoon": "Sugestão: reserve a tarde para este check-in no seu pico de rendimento.",
+        "peakNight": "Sugestão: execute à noite para fechar o dia com clareza e sem pendências.",
+        "disciplineStrict": "Configurado com cobrança elevada conforme sua preferência inicial."
+      },
+      "focus": {
+        "personalProject": "Sprint Pessoal",
+        "studiesSession": "Sessão de Estudos",
+        "workDeepFocus": "Bloco Deep Work",
+        "allMainFocus": "Foco Principal"
+      },
+      "rewards": {
+        "microReset": "Respiro Rápido (8m)",
+        "quickBreak": "Pausa Café & Alongar (15m)",
+        "guiltFreeLeisure": "Lazer Livre sem Culpa (45m)"
       }
     }
   },
   "workspaceActions": {
-    "createError": "Falha ao criar o workspace. Tente novamente.",
-    "updateError": "Falha ao atualizar o workspace.",
-    "deleteError": "Falha ao excluir o workspace.",
-    "serverError": "Erro interno de comunicação com o servidor."
+    "createError": "Erro ao criar workspace.",
+    "updateError": "Erro ao atualizar workspace.",
+    "deleteError": "Erro ao excluir workspace.",
+    "serverError": "Erro interno no servidor."
   }
 }

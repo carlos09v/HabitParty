@@ -1,5 +1,6 @@
 import { ALL_WEEK_DAYS, normalizeTaskType } from "@/constants/task";
 import type { AppLocale } from "@/i18n/config";
+import { getUtilityTranslator } from "@/i18n/utilityTranslator";
 import type { WeeklyCalendarTaskSummary } from "@/types/dashboard";
 import type { TransactionHistoryResponseDTO } from "@/types/history";
 import type { Task } from "@/types/task";
@@ -55,15 +56,11 @@ export function getGreeting(
   locale: AppLocale = "pt-BR",
   timeZone?: string | null,
 ): string {
+  const t = getUtilityTranslator(locale, "dashboard.greeting");
   const hour = getCurrentHourInTimeZone(now, timeZone);
-  if (locale === "en") {
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
-  }
-  if (hour < 12) return "Bom dia";
-  if (hour < 18) return "Boa tarde";
-  return "Boa noite";
+  if (hour < 12) return t("morning");
+  if (hour < 18) return t("afternoon");
+  return t("evening");
 }
 
 export function getFirstName(
@@ -391,31 +388,23 @@ export function buildWeeklyCalendarData(
         isTaskScheduledForDate(t, isoString, { includeHabits: false }),
       ).length;
 
+      const tCal = getUtilityTranslator(locale, "dashboard.weeklyCalendar");
       const parts: string[] = [
-        locale === "en"
-          ? `${shortName}, ${shortMonths[monthIndex]} ${dayNumber}${isToday ? " (Today)" : ""}`
-          : `${shortName}, ${dayNumber} de ${shortMonths[monthIndex]}${isToday ? " (Hoje)" : ""}`,
+        tCal("dayHeader", {
+          weekDay: shortName,
+          month: shortMonths[monthIndex],
+          day: dayNumber,
+          todaySuffix: isToday ? tCal("todaySuffix") : "",
+        }),
       ];
 
       if (hasStreak) {
-        parts.push(
-          locale === "en"
-            ? "🔥 Active streak on this day"
-            : "🔥 Ofensiva ativa no dia",
-        );
+        parts.push(tCal("activeStreak"));
       }
       if (dueTodosCount > 0) {
-        parts.push(
-          locale === "en"
-            ? `${dueTodosCount} ${dueTodosCount === 1 ? "to-do due" : "to-dos due"}`
-            : `${dueTodosCount} ${dueTodosCount === 1 ? "prazo de afazer" : "prazos de afazeres"}`,
-        );
+        parts.push(tCal("dueTodosCount", { count: dueTodosCount }));
       } else if (scheduledCount > 0) {
-        parts.push(
-          locale === "en"
-            ? `${scheduledCount} ${scheduledCount === 1 ? "scheduled routine" : "scheduled routines"}`
-            : `${scheduledCount} ${scheduledCount === 1 ? "rotina programada" : "rotinas programadas"}`,
-        );
+        parts.push(tCal("scheduledCount", { count: scheduledCount }));
       }
 
       return {

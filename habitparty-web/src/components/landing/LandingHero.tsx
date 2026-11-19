@@ -2,7 +2,10 @@ import { ArrowRight, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { CosmicGalaxyIllustration } from "@/components/ui/CosmicGalaxyIllustration";
-import { LANDING_HERO_HIGHLIGHT_CONFIGS } from "@/constants/landing";
+import {
+  LANDING_ANCHORS,
+  LANDING_HERO_HIGHLIGHT_CONFIGS,
+} from "@/constants/landing";
 import { LandingHeroPreview } from "./LandingHeroPreview";
 
 export function LandingHero() {
@@ -25,7 +28,7 @@ export function LandingHero() {
           {/* Coluna Esquerda: Copy & CTAs (Tamanho equilibrado e escaneável) */}
           <div className="lg:col-span-7 text-center lg:text-left">
             {/* Pill Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-2xl sm:rounded-full bg-card dark:bg-surface/80 border border-neutral-700 dark:border-primary-light/30 shadow-xs dark:shadow-[0_0_15px_rgba(124,58,237,0.3)] mb-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
+            <div className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-2xl sm:rounded-full bg-card dark:bg-surface/80 border border-neutral-700 dark:border-primary-light/30 shadow-xs dark:shadow-[0_0_15px_color-mix(in_srgb,var(--color-primary)_30%,transparent)] mb-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
               <Sparkles className="w-4 h-4 text-amber-600 dark:text-gold shrink-0" />
               <span className="text-xs sm:text-sm font-semibold text-neutral-200">
                 {t("badge")}
@@ -46,7 +49,7 @@ export function LandingHero() {
             </p>
 
             {/* Botões de Ação */}
-            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 sm:gap-4 mb-10">
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 sm:gap-4 mb-3">
               <Link
                 href="/signUp"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-7 py-3.5 rounded-xl bg-gold hover:bg-gold-hover text-on-gold font-bold text-base shadow-sm dark:shadow-glow-gold hover:shadow-md dark:hover:shadow-[0_0_25px_rgba(237,229,57,0.6)] transition-[transform,background-color,box-shadow] duration-300 hover:scale-105 active:scale-95"
@@ -55,13 +58,16 @@ export function LandingHero() {
                 <ArrowRight className="w-5 h-5 text-on-gold" />
               </Link>
               <a
-                href="#gamificacao"
+                href={`#${LANDING_ANCHORS.gamification}`}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-card hover:bg-surface text-neutral-100 hover:text-neutral-50 border border-neutral-700 shadow-sm dark:bg-surface/90 dark:hover:bg-surface-hover dark:text-neutral-200 dark:hover:text-white dark:border-white/10 dark:hover:border-primary-light/40 font-semibold text-base transition-colors duration-200 dark:shadow-card-deep"
               >
                 <Trophy className="w-5 h-5 text-amber-600 dark:text-gold" />
                 <span>{t("secondaryCta")}</span>
               </a>
             </div>
+            <p className="text-xs text-neutral-400 text-center lg:text-left mb-8">
+              {t("ctaHint")}
+            </p>
 
             {/* Prova de Valor / Destaques informativos (planos, sem estilo de botão) */}
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-2.5 pt-6 border-t border-neutral-700 dark:border-white/10">

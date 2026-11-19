@@ -12,9 +12,13 @@ import type { FriendConnectionItem } from "@/types/social";
 
 interface TierFriendsPopoverProps {
   friends: FriendConnectionItem[];
+  isGamified?: boolean;
 }
 
-export function TierFriendsPopover({ friends }: TierFriendsPopoverProps) {
+export function TierFriendsPopover({
+  friends,
+  isGamified = false,
+}: TierFriendsPopoverProps) {
   const t = useTranslations("showcase.progression.pyramid");
   const format = useFormatter();
   const popoverId = useId();
@@ -56,6 +60,7 @@ export function TierFriendsPopover({ friends }: TierFriendsPopoverProps) {
                 size="sm"
                 hasRing={conn.user.isPremium}
                 frameId={resolveAvatarFrameId(conn.user.avatarFrame)}
+                presetId={conn.user.avatarPreset}
                 className="w-6 h-6 text-[10px]"
               />
             </span>
@@ -101,7 +106,7 @@ export function TierFriendsPopover({ friends }: TierFriendsPopoverProps) {
                   <FriendIdentityCell
                     user={conn.user}
                     variant="compact"
-                    metaText={t("friendXpMeta", {
+                    metaText={t(isGamified ? "friendXpMeta" : "friendPtsMeta", {
                       xp: format.number(conn.user.totalXp ?? 0),
                     })}
                     onNavigate={popover.close}

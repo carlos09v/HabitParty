@@ -16,10 +16,10 @@ import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   createCheckoutSessionAction,
-  createCustomerPortalSessionAction,
   getFoundersQuotaAction,
 } from "@/actions/paymentActions";
 import { BaseModal } from "@/components/ui/BaseModal";
+import { useCustomerPortal } from "@/hooks/useCustomerPortal";
 import { useUserStore } from "@/store/userStore";
 import type {
   FoundersQuotaDTO,
@@ -71,6 +71,11 @@ export function UpgradePremiumModal({
   const [selectedMethod, setSelectedMethod] =
     useState<PaymentMethodType>("CREDIT_CARD");
   const [isPending, startTransition] = useTransition();
+  const { isPendingPortal, openCustomerPortal } = useCustomerPortal({
+    redirecting: t("portalRedirect"),
+    error: t("portalError"),
+  });
+  const isActionPending = isPending || isPendingPortal;
 
   // Pix é exclusivo do Brasil: no idioma inglês, apenas cartão é oferecido.
   const prices = PLAN_PRICES[isEnglish ? "en" : "pt-BR"];
@@ -90,23 +95,6 @@ export function UpgradePremiumModal({
       });
     }
   }, [isOpen, isFounder]);
-
-  const handleOpenPortal = () => {
-    startTransition(async () => {
-      try {
-        const res = await createCustomerPortalSessionAction();
-        if (res.success) {
-          toast.success(t("portalRedirect"));
-          window.location.href = res.data.portalUrl;
-        } else {
-          toast.error(res.error || t("portalError"));
-        }
-      } catch (err) {
-        console.error(err);
-        toast.error(t("portalError"));
-      }
-    });
-  };
 
   const handleCheckout = () => {
     startTransition(async () => {
@@ -140,7 +128,7 @@ export function UpgradePremiumModal({
       containerClassName="z-[200]"
       maxWidth="max-w-xl"
       borderColor="border-gold/50"
-      preventClose={isPending}
+      preventClose={isActionPending}
       headerExtra={<Crown className="w-6 h-6 text-gold fill-gold" />}
       title={t("modalTitle")}
       description={t("modalSubtitle")}
@@ -369,8 +357,8 @@ export function UpgradePremiumModal({
 
               <button
                 type="button"
-                disabled={isPending}
-                onClick={handleOpenPortal}
+                disabled={isActionPending}
+                onClick={openCustomerPortal}
                 className={cn(
                   "w-full py-3.5 px-6 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-[transform,background-color,color,opacity] cursor-pointer",
                   "bg-gold hover:bg-gold-hover text-neutral-950 shadow-glow-gold",
@@ -379,7 +367,9 @@ export function UpgradePremiumModal({
               >
                 <ExternalLink size={16} />
                 <span>
-                  {isPending ? t("openingStripeBtn") : t("manageStripeBtn")}
+                  {isPendingPortal
+                    ? t("openingStripeBtn")
+                    : t("manageStripeBtn")}
                 </span>
               </button>
             </div>

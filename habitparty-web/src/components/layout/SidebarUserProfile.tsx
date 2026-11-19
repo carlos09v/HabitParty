@@ -5,7 +5,6 @@ import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { type ReactNode, useEffect } from "react";
-import type { components } from "@/api/schema";
 import { SubscriptionExpirationAlert } from "@/components/subscription/SubscriptionExpirationAlert";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { FounderBadge } from "@/components/ui/FounderBadge";
@@ -13,11 +12,14 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
+import { useActiveAvatarFrame } from "@/store/avatarFrameStore";
 import { useProgressStore } from "@/store/progressStore";
 import { useUserStore } from "@/store/userStore";
+import type { UserResponseDTO } from "@/types/user";
 import { cn, formatCoins, resolveUserLevelState } from "@/utils";
+import { formatCreditsLeisureEquivalence } from "@/utils/rewardEconomy";
 
-type User = components["schemas"]["UserResponseDTO"];
+type User = UserResponseDTO;
 
 interface SidebarUserProfileProps {
   initialUser?: User | null;
@@ -77,6 +79,7 @@ export function SidebarUserProfile({
   const { isGamified } = useExperienceMode();
   const storeUser = useUserStore((s) => s.user);
   const user = storeUser || initialUser;
+  const activeFrameId = useActiveAvatarFrame();
   const achievementPoints = user?.achievementPoints ?? 0;
 
   const { currentXp, progress, levelTitle, nextLevelTitle, remainingXp } =
@@ -106,6 +109,8 @@ export function SidebarUserProfile({
             name={displayName}
             size="sm"
             hasRing={Boolean(user?.isPremium)}
+            frameId={activeFrameId}
+            presetId={user?.avatarPreset}
             className="group-hover:scale-105 transition-transform"
           />
           <div className="flex flex-col min-w-0 flex-1">
@@ -197,7 +202,12 @@ export function SidebarUserProfile({
             title={
               isGamified
                 ? t("coinsTitle", { coins: formattedCoins })
-                : t("creditsTitle", { coins: formattedCoins })
+                : coins > 0
+                  ? t("creditsTitleWithLeisure", {
+                      coins: formattedCoins,
+                      duration: formatCreditsLeisureEquivalence(coins),
+                    })
+                  : t("creditsTitle", { coins: formattedCoins })
             }
           >
             <CoinIcon size={13} withGlow className="shrink-0" />

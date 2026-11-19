@@ -11,22 +11,25 @@ import { type MouseEvent, useMemo } from "react";
 import { CatalogEmptyState } from "@/components/ui/CatalogEmptyState";
 import { CatalogGridListShell } from "@/components/ui/CatalogGridListShell";
 import { ItemRowHeader } from "@/components/ui/ItemRow";
+import { DEBT_MAX_REDEEM_QUANTITY } from "@/constants/reward";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import type { Reward } from "@/types/reward";
+import type { Reward, RewardDisplayEntry } from "@/types/reward";
 import type { ViewMode } from "@/types/ui";
 import { RewardCard, RewardItemRow } from "./RewardCard";
 
 interface RewardsCatalogViewProps {
-  filteredRewards: Reward[];
+  entries: RewardDisplayEntry[];
   totalVisibleRewardsCount: number;
   viewMode: ViewMode;
-  isCompact: boolean;
   currentCoins?: number;
   deletingRewardIds?: Set<string>;
   redeemingRewardIds?: Set<string>;
+  debtQuantities?: Record<string, number>;
+  onDebtQuantityChange?: (rewardId: string, nextQuantity: number) => void;
+  onSelectVariant?: (groupId: string, variantId: string) => void;
   sensors: SensorDescriptor<SensorOptions>[];
   onDragEnd: (event: DragEndEvent) => void;
-  onBuy: (reward: Reward) => void;
+  onBuy: (reward: Reward, quantity?: number) => void;
   onEdit: (reward: Reward) => void;
   onContextMenu: (e: MouseEvent, reward: Reward) => void;
   onAddProduct: () => void;
@@ -34,13 +37,15 @@ interface RewardsCatalogViewProps {
 }
 
 export function RewardsCatalogView({
-  filteredRewards,
+  entries,
   totalVisibleRewardsCount,
   viewMode,
-  isCompact,
   currentCoins,
   deletingRewardIds,
   redeemingRewardIds,
+  debtQuantities,
+  onDebtQuantityChange,
+  onSelectVariant,
   sensors,
   onDragEnd,
   onBuy,
@@ -53,19 +58,16 @@ export function RewardsCatalogView({
   const { isGamified } = useExperienceMode();
 
   const itemIds = useMemo(
-    () => filteredRewards.map((r) => r.id),
-    [filteredRewards],
+    () => entries.map((entry) => entry.primaryReward.id),
+    [entries],
   );
 
-  if (filteredRewards.length === 0) {
+  if (entries.length === 0) {
     const isStoreEmpty = totalVisibleRewardsCount === 0;
     return (
       <div className="flex flex-col gap-2.5 w-full pb-8">
-        {viewMode === "list" && (
-          <ItemRowHeader isCompact={isCompact} mode="reward" />
-        )}
+        {viewMode === "list" && <ItemRowHeader mode="reward" />}
         <CatalogEmptyState
-          isCompact={isCompact}
           icon={isStoreEmpty ? Store : SearchX}
           title={
             isStoreEmpty
@@ -109,28 +111,37 @@ export function RewardsCatalogView({
       dndContextId="rewards-dnd-context"
       itemIds={itemIds}
       viewMode={viewMode}
-      isCompact={isCompact}
       headerMode="reward"
       sensors={sensors}
       onDragEnd={onDragEnd}
     >
-      {filteredRewards.map((reward) => {
+      {entries.map((entry) => {
+        const reward = entry.primaryReward;
+        const unitQty = debtQuantities?.[reward.id] ?? 1;
         const canAfford =
           typeof currentCoins === "number"
-            ? currentCoins >= reward.price
+            ? currentCoins >= reward.price * unitQty
             : true;
 
         const isDeleteChecking = Boolean(deletingRewardIds?.has(reward.id));
         const isRedeeming = Boolean(redeemingRewardIds?.has(reward.id));
+        const hasVariants = entry.variants.length > 1;
 
         return viewMode === "card" ? (
           <RewardCard
-            key={reward.id}
+            key={entry.groupId}
+            groupId={entry.groupId}
             reward={reward}
+            displayTitle={entry.displayTitle}
+            variants={hasVariants ? entry.variants : undefined}
+            activeVariantId={reward.id}
+            onSelectVariant={hasVariants ? onSelectVariant : undefined}
+            unitQuantity={unitQty}
+            onUnitQuantityChange={onDebtQuantityChange}
+            maxUnitQuantity={DEBT_MAX_REDEEM_QUANTITY}
             onBuy={onBuy}
             onEdit={onEdit}
             onContextMenu={onContextMenu}
-            isCompact={isCompact}
             canAfford={canAfford}
             currentCoins={currentCoins}
             isDeleteChecking={isDeleteChecking}
@@ -138,13 +149,21 @@ export function RewardsCatalogView({
           />
         ) : (
           <RewardItemRow
-            key={reward.id}
+            key={entry.groupId}
+            groupId={entry.groupId}
             reward={reward}
+            displayTitle={entry.displayTitle}
+            variants={hasVariants ? entry.variants : undefined}
+            activeVariantId={reward.id}
+            onSelectVariant={hasVariants ? onSelectVariant : undefined}
+            unitQuantity={unitQty}
+            onUnitQuantityChange={onDebtQuantityChange}
+            maxUnitQuantity={DEBT_MAX_REDEEM_QUANTITY}
             onBuy={onBuy}
             onEdit={onEdit}
             onContextMenu={onContextMenu}
-            isCompact={isCompact}
             canAfford={canAfford}
+            currentCoins={currentCoins}
             isDeleteChecking={isDeleteChecking}
             isRedeeming={isRedeeming}
           />

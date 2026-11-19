@@ -1,11 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { serverApi } from "@/api/server";
-import { FREE_ACTIVE_WORKSPACE_LIMIT } from "@/constants/routine";
 import { getRequestLocale } from "@/i18n/request";
 import { getRawInventoryItems } from "@/services/inventoryService";
-import { fetchWorkspaceBoardColumns } from "@/services/taskService";
-import { getCurrentUser } from "@/services/userService";
-import { getWorkspaces } from "@/services/workspaceService";
 import type {
   FocusActivity,
   FocusActivityResponseDTO,
@@ -114,45 +110,13 @@ export async function fetchUserFocusRecordsPage(
 
 /**
  * Busca os DTOs brutos de registros recentes de foco do usuário (atividades e tarefas)
- * em uma única chamada cacheada (`private30`).
+ * delegando para a consulta cacheada de registros.
  */
-export async function fetchRawUserFocusRecords(
-  activityIds: string[] = [],
-): Promise<FocusRecordResponseDTO[]> {
-  "use cache: private";
-  cacheLife("private30");
-  cacheTag("focus-records");
-
-  const firstPage = await fetchFocusRecordsPageUncached(0, 100);
-  if (firstPage) {
-    return firstPage.records;
-  }
-
-  if (activityIds.length === 0) {
-    return [];
-  }
-
-  const recordsResponses = await Promise.all(
-    activityIds.map((activityId) =>
-      serverApi
-        .GET("/focus-records/activity/{activityId}", {
-          params: {
-            path: { activityId },
-            query: { page: 0 },
-          },
-        })
-        .catch(() => ({ data: null })),
-    ),
-  );
-
-  const rawRecords: FocusRecordResponseDTO[] = [];
-  for (const res of recordsResponses) {
-    if (res.data?.content) {
-      rawRecords.push(...res.data.content);
-    }
-  }
-
-  return rawRecords;
+export async function fetchRawUserFocusRecords(): Promise<
+  FocusRecordResponseDTO[]
+> {
+  const firstPage = await fetchUserFocusRecordsPage(0, 100);
+  return firstPage ? firstPage.records : [];
 }
 
 /**
@@ -163,15 +127,10 @@ export async function getFocusInitialRecords(
   prefetchedRawRecords?: FocusRecordResponseDTO[],
   inventoryItems: InventoryItemResponseDTO[] = [],
 ): Promise<FocusRecord[]> {
-  const sortedActivityIds = (activities || [])
-    .map((act) => act.id)
-    .filter(Boolean)
-    .sort();
-
   const rawRecords =
     prefetchedRawRecords !== undefined
       ? prefetchedRawRecords
-      : await fetchRawUserFocusRecords(sortedActivityIds);
+      : await fetchRawUserFocusRecords();
   const initialRecords = mapFocusRecords(
     rawRecords,
     activities,
@@ -197,51 +156,9 @@ export async function getFocusableTasks(): Promise<FocusableTaskItem[]> {
   cacheTag("tasks", "kanban", "workspaces", "user");
 
   try {
-    const [workspaces, user] = await Promise.all([
-      getWorkspaces(),
-      getCurrentUser(),
-    ]);
-    if (!workspaces || workspaces.length === 0) return [];
-
-    const isPremium = user?.isPremium ?? false;
-    const allowedWorkspaces = isPremium
-      ? workspaces
-      : workspaces.slice(0, FREE_ACTIVE_WORKSPACE_LIMIT);
-
-    const boards = await Promise.all(
-      allowedWorkspaces
-        .filter((ws) => Boolean(ws.id))
-        .map(async (ws) => {
-          const { columns } = await fetchWorkspaceBoardColumns(ws.id as string);
-          return { workspaceName: ws.name || "", columns };
-        }),
-    );
-
-    const items: FocusableTaskItem[] = [];
-    for (const board of boards) {
-      for (const col of board.columns) {
-        for (const task of col.tasks) {
-          const normalizedType = task.type?.toLowerCase();
-          if (
-            (normalizedType === "daily" || normalizedType === "todo") &&
-            !task.completed
-          ) {
-            items.push({
-              id: task.id,
-              title: task.title,
-              type: normalizedType,
-              columnTitle: col.title,
-              workspaceName: board.workspaceName,
-              totalFocusMinutes: task.totalFocusMinutes ?? 0,
-              focusCyclesCount: task.focusCyclesCount ?? 0,
-              completed: Boolean(task.completed),
-            });
-          }
-        }
-      }
-    }
-
-    return items;
+    const { data, error } = await serverApi.GET("/tasks/focusable");
+    if (error || !Array.isArray(data)) return [];
+    return data;
   } catch {
     return [];
   }

@@ -21,6 +21,7 @@ import com.habitparty.adapters.in.web.dtos.request.UpdateUserPasswordDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateUserThemeDTO;
 import com.habitparty.adapters.in.web.dtos.request.user.ResetAccountDTO;
 import com.habitparty.adapters.in.web.dtos.request.user.UpdatePrivacySettingsDTO;
+import com.habitparty.adapters.in.web.dtos.response.UserLayoutSummaryResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.UserResponseDTO;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
@@ -40,6 +41,12 @@ public interface UserApi {
     @Operation(summary = "Obter Perfil do Usuário Logado", description = "Retorna os dados do perfil do usuário autenticado.")
     @GetMapping("/me")
     ResponseEntity<UserResponseDTO> getUserById(
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
+    );
+
+    @Operation(summary = "Resumo Leve do Layout Autenticado", description = "Retorna apenas a última conclusão de tarefa para o AppLayout sem carregar o extrato completo.")
+    @GetMapping("/me/layout-summary")
+    ResponseEntity<UserLayoutSummaryResponseDTO> getLayoutSummary(
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 
@@ -83,7 +90,7 @@ public interface UserApi {
 
     @Operation(summary = "Atualizar Foto de Perfil", description = "Faz upload de uma nova foto de perfil para o usuário.")
     @PatchMapping(value = "/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    ResponseEntity<Void> updateProfilePhoto(
+    ResponseEntity<UserResponseDTO> updateProfilePhoto(
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado,
         @RequestParam("file") MultipartFile photoFile
     );

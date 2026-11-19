@@ -10,18 +10,27 @@ import { MysteryBoxTierPopover } from "@/components/reward/MysteryBoxTierPopover
 import {
   CatalogItemDurationBadge,
   CatalogItemPricePill,
+  CatalogItemQuantityStepper,
+  CatalogItemVariantChips,
 } from "@/components/ui/CatalogItemBadges";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useFloatingPopover } from "@/hooks/useFloatingPopover";
 import type { AppLocale } from "@/i18n/config";
-import type { MysteryBoxLootItem } from "@/types/reward";
+import type {
+  CatalogItemVariant,
+  MysteryBoxLootItem,
+  MysteryBoxTier,
+} from "@/types/reward";
 import {
   cn,
   formatCoins,
   openContextMenuFromButton,
   STOP_DRAG_PROPAGATION_PROPS,
 } from "@/utils";
-import { resolveCatalogItemVisuals } from "@/utils/catalogItemVisuals";
+import {
+  resolveCatalogItemVisuals,
+  resolveCatalogTypePresentation,
+} from "@/utils/catalogItemVisuals";
 import { formatFocusMinutes } from "@/utils/focusFormatters";
 
 export interface GamifiedItemCardProps {
@@ -34,9 +43,15 @@ export interface GamifiedItemCardProps {
   category?: string | null;
   baseDurationMinutes?: number | null;
   remainingSeconds?: number | null;
-  isCompact?: boolean;
   quantity?: number;
   price?: number;
+  unitPrice?: number;
+  unitQuantity?: number;
+  onUnitQuantityChange?: (nextQuantity: number) => void;
+  maxUnitQuantity?: number;
+  variants?: CatalogItemVariant[];
+  activeVariantId?: string;
+  onSelectVariant?: (variantId: string) => void;
   currentCoins?: number;
   canAfford?: boolean;
   actionLabel: string;
@@ -51,35 +66,52 @@ export interface GamifiedItemCardProps {
   lootItems?: MysteryBoxLootItem[];
 }
 
-/**
- * Card unificado e memoizado para itens da Vitrine (Rewards) e da Mochila (Inventory).
- */
-export const GamifiedItemCard = memo(function GamifiedItemCard({
+interface MysteryPopoverBridge {
+  tierContainerRef: React.RefObject<HTMLElement | null>;
+  isOpen: boolean;
+  open: () => void;
+  close: () => void;
+  toggle: () => void;
+  portalNode: React.ReactNode;
+}
+
+type CardVisuals = ReturnType<typeof resolveCatalogItemVisuals>;
+type CardSortableState = ReturnType<typeof useSortable>;
+
+interface GamifiedItemCardContentProps extends GamifiedItemCardProps {
+  visuals: CardVisuals;
+  sortable: CardSortableState;
+  mysteryPopover?: MysteryPopoverBridge;
+}
+
+function GamifiedItemCardContent({
   id,
   title,
   description,
-  iconName,
-  type,
-  packageLevel,
-  category,
   baseDurationMinutes,
   remainingSeconds,
-  isCompact = false,
   quantity,
   price,
+  unitPrice,
+  unitQuantity = 1,
+  onUnitQuantityChange,
+  maxUnitQuantity = 50,
+  variants,
+  activeVariantId,
+  onSelectVariant,
   currentCoins,
   canAfford = true,
   actionLabel,
   onAction,
   onDoubleClick,
   onContextMenu,
-  dragData,
   inUse = false,
-  isActiveFocusSession,
   isDeleteChecking = false,
   isActionLoading = false,
-  lootItems,
-}: GamifiedItemCardProps) {
+  visuals,
+  sortable,
+  mysteryPopover,
+}: GamifiedItemCardContentProps) {
   const t = useTranslations("ui.itemCatalog");
   const locale = useLocale() as AppLocale;
   const { isGamified } = useExperienceMode();
@@ -88,7 +120,6 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
     typeMeta,
     RewardIcon,
     isMystery,
-    mysteryTier,
     hasValidPackage,
     hasValidCategory,
     packageMessageKey,
@@ -98,14 +129,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
     packageIconTheme,
     topBarClass,
     isFocusNavigate,
-  } = resolveCatalogItemVisuals({
-    type,
-    iconName,
-    packageLevel,
-    category,
-    isActiveFocusSession,
-    includeMysteryTier: true,
-  });
+  } = visuals;
 
   const {
     attributes,
@@ -114,35 +138,15 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
     transform,
     transition,
     isDragging,
-  } = useSortable({
-    id,
-    data: dragData || { id },
-  });
+  } = sortable;
 
-  const {
-    containerRef: tierContainerRef,
-    popoverRef: tierPopoverRef,
-    isOpen: isTierPopoverOpen,
-    open: openTierPopover,
-    close: closeTierPopover,
-    toggle: toggleTierPopover,
-    coords: tierPopoverCoords,
-    shouldRenderPortal: shouldRenderTierPortal,
-    floatingStyle: tierFloatingStyle,
-  } = useFloatingPopover<HTMLElement, HTMLElement, HTMLElement>({
-    align: "right",
-    estimatedWidth: 288,
-    estimatedHeight: 340,
-    margin: 12,
-    offset: 8,
-    zIndex: 80,
-    disabled: !isMystery || !mysteryTier || isDragging,
-  });
-
+  const tierContainerRef = mysteryPopover?.tierContainerRef;
   const setCardRefs = useCallback(
     (node: HTMLElement | null) => {
       setNodeRef(node);
-      tierContainerRef.current = node;
+      if (tierContainerRef) {
+        tierContainerRef.current = node;
+      }
     },
     [setNodeRef, tierContainerRef],
   );
@@ -199,51 +203,50 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
       }}
       onContextMenu={onContextMenu}
       onPointerEnter={
-        isMystery
+        mysteryPopover
           ? (e) => {
               if (e.pointerType === "mouse") {
-                openTierPopover();
+                mysteryPopover.open();
               }
             }
           : undefined
       }
       onPointerLeave={
-        isMystery
+        mysteryPopover
           ? (e) => {
               if (e.pointerType === "mouse") {
-                closeTierPopover();
+                mysteryPopover.close();
               }
             }
           : undefined
       }
       onFocus={
-        isMystery
+        mysteryPopover
           ? (e) => {
               if (
                 e.target === e.currentTarget &&
                 e.currentTarget.matches(":focus-visible")
               ) {
-                openTierPopover();
+                mysteryPopover.open();
               }
             }
           : undefined
       }
       onBlur={
-        isMystery
+        mysteryPopover
           ? (e) => {
               if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
-                closeTierPopover();
+                mysteryPopover.close();
               }
             }
           : undefined
       }
       className={cn(
-        "relative flex flex-col rounded-xl bg-card dark:bg-linear-to-b dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,transform] duration-150 group select-none shadow-xs dark:shadow-sm hover:shadow-card-deep hover:-translate-y-0.5 overflow-hidden",
+        "relative flex flex-col rounded-xl bg-card dark:bg-linear-to-b dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,transform] duration-150 group select-none shadow-xs dark:shadow-sm hover:shadow-card-deep hover:-translate-y-0.5 overflow-hidden p-3 gap-2.5",
         inUse
           ? "border-amber-500/45 bg-card dark:border-amber-500/40 dark:bg-amber-500/5"
           : packageGlow ||
               "border-neutral-700 hover:border-amber-500/50 dark:border-white/15 dark:hover:border-gold/50",
-        isCompact ? "p-3 gap-2.5" : "p-3.5 gap-3",
         onDoubleClick && "cursor-pointer",
         isDeleteChecking && "opacity-75 pointer-events-none cursor-wait",
         isDragging && "transition-none! opacity-50 ring-2 ring-gold z-50",
@@ -262,20 +265,19 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
       )}
 
       {/* ZONA 1: Cabeçalho limpo (Ícone + Título + Ações secundárias + Metadados enxutos) */}
-      <header className="flex items-start gap-3 w-full min-w-0">
+      <header className="flex items-start gap-2.5 w-full min-w-0">
         <div className="relative shrink-0">
           <div
             className={cn(
-              "rounded-xl border flex items-center justify-center transition-[transform,border-color,color,background-color] duration-200 group-hover:scale-105",
+              "rounded-xl border flex items-center justify-center transition-[transform,border-color,color,background-color] duration-200 group-hover:scale-105 w-9 h-9",
               packageIconTheme ||
                 (typeKey === "TimeBased"
                   ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 group-hover:border-emerald-500/40 dark:bg-white/10 dark:border-white/15 dark:text-primary-light dark:group-hover:text-gold dark:group-hover:border-gold/40"
                   : "bg-primary/10 text-primary border-primary/20 group-hover:border-primary/40 dark:bg-white/10 dark:border-white/15 dark:text-primary-light dark:group-hover:text-gold dark:group-hover:border-gold/40"),
-              isCompact ? "w-9 h-9" : "w-10 h-10",
             )}
           >
             <RewardIcon
-              size={isCompact ? 17 : 20}
+              size={18}
               className={
                 isMystery ? "text-amber-700 dark:text-amber-400" : undefined
               }
@@ -293,34 +295,37 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
         <div className="flex flex-col flex-1 min-w-0 gap-1">
           <div className="flex items-start justify-between gap-1.5 w-full min-w-0">
             <h4
-              className={cn(
-                "font-bold text-neutral-100 truncate min-w-0 flex-1 group-hover:text-primary dark:group-hover:text-gold transition-colors leading-snug pt-0.5",
-                isCompact ? "text-xs" : "text-body-s",
-              )}
+              className="font-bold text-neutral-100 truncate min-w-0 flex-1 group-hover:text-primary dark:group-hover:text-gold transition-colors leading-snug pt-0.5 text-body-s"
               title={title}
             >
               {title}
             </h4>
 
-            {((isMystery && mysteryTier) ||
-              onContextMenu ||
-              isDeleteChecking) && (
+            {(mysteryPopover || onContextMenu || isDeleteChecking) && (
               <div className="flex items-center gap-0.5 shrink-0 -mr-1 -mt-0.5">
-                {isMystery && mysteryTier && (
+                {mysteryPopover && (
                   <button
                     type="button"
                     {...STOP_DRAG_PROPAGATION_PROPS}
                     onClick={(e) => {
                       e.stopPropagation();
-                      toggleTierPopover();
+                      mysteryPopover.toggle();
                     }}
                     onDoubleClick={(e) => e.stopPropagation()}
-                    aria-expanded={isTierPopoverOpen}
-                    aria-label={t("tierDetailsAria")}
-                    title={t("tierDetailsAria")}
+                    aria-expanded={mysteryPopover.isOpen}
+                    aria-label={
+                      isGamified
+                        ? t("tierDetailsAria")
+                        : t("tierDetailsAriaProductivity")
+                    }
+                    title={
+                      isGamified
+                        ? t("tierDetailsAria")
+                        : t("tierDetailsAriaProductivity")
+                    }
                     className="inline-flex items-center justify-center rounded-md text-neutral-400 hover:text-gold hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer min-w-7 min-h-7 pointer-coarse:min-w-8 pointer-coarse:min-h-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                   >
-                    <HelpCircle size={isCompact ? 13 : 14} aria-hidden="true" />
+                    <HelpCircle size={14} aria-hidden="true" />
                   </button>
                 )}
 
@@ -331,7 +336,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                     aria-label={t("checkingDeleteAria")}
                   >
                     <Loader2
-                      size={isCompact ? 14 : 15}
+                      size={15}
                       className="animate-spin"
                       aria-hidden="true"
                     />
@@ -349,10 +354,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                       title={t("moreActionsAria")}
                       className="inline-flex items-center justify-center rounded-md text-neutral-400 hover:text-neutral-100 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer min-w-7 min-h-7 pointer-coarse:min-w-8 pointer-coarse:min-h-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                     >
-                      <MoreVertical
-                        size={isCompact ? 14 : 15}
-                        aria-hidden="true"
-                      />
+                      <MoreVertical size={15} aria-hidden="true" />
                     </button>
                   )
                 )}
@@ -376,19 +378,30 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                   "text-neutral-200 bg-white/10 border-white/20",
               )}
             >
-              {typeMeta?.icon && (
-                <typeMeta.icon
-                  size={isCompact ? 9 : 10}
-                  className="shrink-0"
-                  aria-hidden="true"
-                />
-              )}
-              <span>
-                {t(`types.${typeKey}`)}
-                {showInlineDurationInType && baseDurationMinutes
-                  ? ` · ${formatFocusMinutes(baseDurationMinutes)}`
-                  : ""}
-              </span>
+              {(() => {
+                const { TypeIcon, typeLabel } = resolveCatalogTypePresentation(
+                  { isMystery, typeKey, typeMeta },
+                  isGamified,
+                  t,
+                );
+                return (
+                  <>
+                    {TypeIcon && (
+                      <TypeIcon
+                        size={10}
+                        className="shrink-0"
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span>
+                      {typeLabel}
+                      {showInlineDurationInType && baseDurationMinutes
+                        ? ` · ${formatFocusMinutes(baseDurationMinutes)}`
+                        : ""}
+                    </span>
+                  </>
+                );
+              })()}
             </span>
 
             {hasValidPackage && (
@@ -417,20 +430,42 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
         </div>
       </header>
 
-      {/* ZONA 2: Descrição real do usuário (sem placeholder genérico falso) */}
+      {/* ZONA 2: Descrição real do usuário + Seletor embutido de Pacotes agrupados */}
       {trimmedDescription !== "" && (
-        <p
-          className={cn(
-            "text-neutral-300 leading-relaxed line-clamp-2",
-            isCompact ? "text-label-g" : "text-xs",
-          )}
-        >
+        <p className="text-neutral-300 leading-snug line-clamp-2 text-xs">
           {trimmedDescription}
         </p>
       )}
 
-      {/* ZONA 3: Rodapé (Progresso quando falta saldo + Preço/Status + Ação única) */}
-      <footer className="mt-auto flex flex-col gap-2 pt-2.5 border-t border-neutral-700/80 dark:border-white/10 w-full">
+      {variants && variants.length > 1 && onSelectVariant && (
+        <CatalogItemVariantChips
+          variants={variants}
+          activeVariantId={activeVariantId ?? id}
+          onSelectVariant={onSelectVariant}
+          disabled={isActionLoading}
+        />
+      )}
+
+      {/* ZONA 3: Rodapé (Progresso quando falta saldo + Preço/Multiplicador Dívida + Ação única) */}
+      <footer className="mt-auto flex flex-col gap-1.5 pt-2 border-t border-neutral-700/80 dark:border-white/10 w-full">
+        {isDebtCategory && onUnitQuantityChange && (
+          <div className="flex items-center justify-between gap-2 text-[11px] text-neutral-300">
+            <span className="text-neutral-400 truncate">
+              {typeof unitPrice === "number"
+                ? t("unitPriceHint", {
+                    unit: formatCoins(unitPrice, { locale }),
+                  })
+                : t("unitMultiplierLabel")}
+            </span>
+
+            <CatalogItemQuantityStepper
+              quantity={unitQuantity}
+              onChange={onUnitQuantityChange}
+              maxQuantity={maxUnitQuantity}
+              disabled={isActionLoading}
+            />
+          </div>
+        )}
         {showStoreProgress && (
           <div className="flex flex-col gap-1 w-full">
             <div
@@ -483,13 +518,11 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
             ) : remainingSeconds !== undefined && remainingSeconds !== null ? (
               <CatalogItemDurationBadge
                 remainingSeconds={remainingSeconds}
-                isCompact={isCompact}
                 variant="pill"
               />
             ) : baseDurationMinutes ? (
               <CatalogItemDurationBadge
                 baseDurationMinutes={baseDurationMinutes}
-                isCompact={isCompact}
                 variant="pill"
               />
             ) : (
@@ -497,7 +530,9 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                 {inUse
                   ? t("statuses.activeSession")
                   : isMystery
-                    ? t("statuses.sealedBox")
+                    ? isGamified
+                      ? t("statuses.sealedBox")
+                      : t("statuses.sealedBoxProductivity")
                     : t("statuses.available")}
               </span>
             )}
@@ -516,23 +551,29 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
                 : inUse
                   ? t("tooltips.inUse")
                   : !canAfford
-                    ? t("tooltips.insufficientCoins")
+                    ? isGamified
+                      ? t("tooltips.insufficientCoins")
+                      : t("tooltips.insufficientCredits")
                     : price
-                      ? t("tooltips.actionForPrice", {
-                          action: actionLabel,
-                          price: formatCoins(price, { locale }),
-                        })
+                      ? t(
+                          isGamified
+                            ? "tooltips.actionForPrice"
+                            : "tooltips.actionForPriceCredits",
+                          {
+                            action: actionLabel,
+                            price: formatCoins(price, { locale }),
+                          },
+                        )
                       : t("tooltips.actionTarget", {
                           action: actionLabel,
                           title,
                         })
             }
             className={cn(
-              "inline-flex items-center justify-center gap-1.5 rounded-lg font-semibold dark:font-bold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs shrink-0 pointer-coarse:min-h-9",
+              "inline-flex items-center justify-center gap-1.5 rounded-lg font-semibold dark:font-bold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs shrink-0 pointer-coarse:min-h-9 px-3 py-1 text-xs",
               !isActionLoading && (isFocusNavigate || (canAfford && !inUse))
                 ? "bg-gold hover:bg-gold-hover active:bg-gold-pressed text-on-gold border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1 focus-visible:ring-offset-card"
                 : "bg-neutral-700/70 dark:bg-white/10 text-neutral-400 border border-neutral-600 dark:border-white/10 cursor-not-allowed opacity-75 dark:opacity-60",
-              isCompact ? "px-2.5 py-1 text-label-g" : "px-3.5 py-1.5 text-xs",
             )}
           >
             {isActionLoading && (
@@ -543,23 +584,101 @@ export const GamifiedItemCard = memo(function GamifiedItemCard({
         </div>
       </footer>
 
-      {/* Popover Informativo com Chances e Drops da Caixa Misteriosa (Portal para evitar clip em PageWrapper) */}
-      {shouldRenderTierPortal &&
-        isTierPopoverOpen &&
-        isMystery &&
-        mysteryTier &&
-        !isDragging &&
-        tierPopoverCoords &&
-        createPortal(
+      {mysteryPopover?.portalNode}
+    </article>
+  );
+}
+
+function MysteryBoxGamifiedCard({
+  mysteryTier,
+  ...props
+}: GamifiedItemCardContentProps & { mysteryTier: MysteryBoxTier }) {
+  const { isDragging } = props.sortable;
+  const {
+    containerRef: tierContainerRef,
+    popoverRef: tierPopoverRef,
+    isOpen: isTierPopoverOpen,
+    open: openTierPopover,
+    close: closeTierPopover,
+    toggle: toggleTierPopover,
+    coords: tierPopoverCoords,
+    shouldRenderPortal: shouldRenderTierPortal,
+    floatingStyle: tierFloatingStyle,
+  } = useFloatingPopover<HTMLElement, HTMLElement, HTMLElement>({
+    align: "right",
+    estimatedWidth: 288,
+    estimatedHeight: 340,
+    margin: 12,
+    offset: 8,
+    zIndex: 80,
+    disabled: isDragging,
+  });
+
+  const portalNode =
+    shouldRenderTierPortal &&
+    isTierPopoverOpen &&
+    !isDragging &&
+    tierPopoverCoords
+      ? createPortal(
           <MysteryBoxTierPopover
             tier={mysteryTier}
-            customPrice={price}
-            customLootItems={lootItems}
+            customPrice={props.price}
+            customLootItems={props.lootItems}
             popoverRef={tierPopoverRef}
             style={tierFloatingStyle}
           />,
           document.body,
-        )}
-    </article>
+        )
+      : null;
+
+  return (
+    <GamifiedItemCardContent
+      {...props}
+      mysteryPopover={{
+        tierContainerRef,
+        isOpen: isTierPopoverOpen,
+        open: openTierPopover,
+        close: closeTierPopover,
+        toggle: toggleTierPopover,
+        portalNode,
+      }}
+    />
+  );
+}
+
+/**
+ * Card unificado e memoizado para itens da Vitrine (Rewards) e da Mochila (Inventory).
+ * Isola hooks de popover flutuante exclusivamente para Caixas Misteriosas.
+ */
+export const GamifiedItemCard = memo(function GamifiedItemCard(
+  props: GamifiedItemCardProps,
+) {
+  const visuals = resolveCatalogItemVisuals({
+    type: props.type,
+    iconName: props.iconName,
+    packageLevel: props.packageLevel,
+    category: props.category,
+    isActiveFocusSession: props.isActiveFocusSession,
+    includeMysteryTier: true,
+  });
+
+  const sortable = useSortable({
+    id: props.id,
+    data: props.dragData || { id: props.id },
+  });
+
+  if (visuals.isMystery && visuals.mysteryTier) {
+    return (
+      <MysteryBoxGamifiedCard
+        {...props}
+        visuals={visuals}
+        sortable={sortable}
+        mysteryTier={visuals.mysteryTier}
+      />
+    );
+  }
+
+  return (
+    <GamifiedItemCardContent {...props} visuals={visuals} sortable={sortable} />
   );
 });

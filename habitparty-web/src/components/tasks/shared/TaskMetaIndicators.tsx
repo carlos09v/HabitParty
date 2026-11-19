@@ -90,7 +90,7 @@ export function TaskFocusTimeBadge({
           "shrink-0",
           focusState !== "none"
             ? "text-gold-ink dark:text-gold"
-            : "text-primary dark:text-purple-200",
+            : "text-primary dark:text-primary-light",
         )}
       />
       <span>{formattedTime || t("focusActiveShort")}</span>

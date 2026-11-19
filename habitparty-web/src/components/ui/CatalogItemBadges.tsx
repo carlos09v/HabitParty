@@ -1,20 +1,22 @@
 "use client";
 
-import { Clock } from "lucide-react";
+import { Clock, Minus, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { CoinIcon } from "@/components/ui/CoinIcon";
+import { TIER_CHIP_STYLES } from "@/constants/reward";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
-import { cn, formatCoins } from "@/utils";
+import type { CatalogItemVariant } from "@/types/reward";
+import { cn, formatCoins, STOP_DRAG_PROPAGATION_PROPS } from "@/utils";
 import {
   formatBackpackItemRemainingTime,
   formatFocusMinutes,
 } from "@/utils/focusFormatters";
+import { toPackageMessageKey } from "@/utils/rewardMapper";
 
 interface CatalogItemDurationBadgeProps {
   remainingSeconds?: number | null;
   baseDurationMinutes?: number | null;
-  isCompact?: boolean;
   variant?: "pill" | "inline";
   className?: string;
 }
@@ -26,7 +28,6 @@ interface CatalogItemDurationBadgeProps {
 export function CatalogItemDurationBadge({
   remainingSeconds,
   baseDurationMinutes,
-  isCompact = false,
   variant = "pill",
   className,
 }: CatalogItemDurationBadgeProps) {
@@ -39,19 +40,14 @@ export function CatalogItemDurationBadge({
       return (
         <span
           className={cn(
-            "inline-flex items-center gap-1 truncate font-semibold",
+            "inline-flex items-center gap-1 truncate font-semibold text-label-g",
             isDepleted
               ? "text-emerald-700 dark:text-emerald-400"
               : "text-amber-700 dark:text-gold",
-            isCompact ? "text-label-m" : "text-label-g",
             className,
           )}
         >
-          <Clock
-            size={isCompact ? 11 : 12}
-            className="shrink-0"
-            aria-hidden="true"
-          />
+          <Clock size={12} className="shrink-0" aria-hidden="true" />
           <span className="truncate">
             {formatBackpackItemRemainingTime(remainingSeconds, locale)}
           </span>
@@ -62,19 +58,14 @@ export function CatalogItemDurationBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border font-bold tracking-tight leading-none",
-          isCompact ? "text-tiny" : "text-label-g",
+          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border font-bold tracking-tight leading-none text-label-g",
           isDepleted
             ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-300"
             : "bg-amber-500/15 border-amber-500/40 text-amber-800 dark:bg-gold/15 dark:border-gold/40 dark:text-gold dark:shadow-glow-gold-xs",
           className,
         )}
       >
-        <Clock
-          size={isCompact ? 10 : 12}
-          className="shrink-0"
-          aria-hidden="true"
-        />
+        <Clock size={12} className="shrink-0" aria-hidden="true" />
         <span className="truncate">
           {formatBackpackItemRemainingTime(remainingSeconds, locale)}
         </span>
@@ -86,14 +77,13 @@ export function CatalogItemDurationBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 px-2 py-0.5 rounded-md border font-extrabold tracking-tight leading-none bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-300",
-          isCompact ? "text-tiny" : "text-label-g",
+          "inline-flex items-center gap-1 px-2 py-0.5 rounded-md border font-extrabold tracking-tight leading-none bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-300 text-label-g",
           className,
         )}
         title={t("durationTitle", { minutes: baseDurationMinutes })}
       >
         <Clock
-          size={isCompact ? 10 : 12}
+          size={12}
           className="text-emerald-700 dark:text-emerald-400 shrink-0"
           aria-hidden="true"
         />
@@ -143,6 +133,141 @@ export function CatalogItemPricePill({
       <span className="text-xs font-extrabold tabular-nums">
         {formatCoins(price, { locale })}
       </span>
+    </div>
+  );
+}
+
+interface CatalogItemVariantChipsProps {
+  variants: CatalogItemVariant[];
+  activeVariantId: string;
+  onSelectVariant: (variantId: string) => void;
+  disabled?: boolean;
+  className?: string;
+}
+
+/**
+ * Chips compactos de seleção de pacote/duração embutidos em cards e linhas agrupadas.
+ */
+export function CatalogItemVariantChips({
+  variants,
+  activeVariantId,
+  onSelectVariant,
+  disabled = false,
+  className,
+}: CatalogItemVariantChipsProps) {
+  const t = useTranslations("ui.itemCatalog");
+  const locale = useLocale() as AppLocale;
+
+  if (variants.length <= 1) return null;
+
+  return (
+    <fieldset
+      className={cn(
+        "flex items-center gap-1 flex-wrap border-0 p-0 m-0 min-w-0",
+        className,
+      )}
+      aria-label={t("packageVariantsAria")}
+      {...STOP_DRAG_PROPAGATION_PROPS}
+    >
+      {variants.map((variant) => {
+        const pkgKey = toPackageMessageKey(variant.packageLevel);
+        const chipStyle = TIER_CHIP_STYLES[pkgKey] ?? TIER_CHIP_STYLES.NONE;
+        const isSelected = activeVariantId === variant.id;
+        const shortLabel = variant.baseDurationMinutes
+          ? formatFocusMinutes(variant.baseDurationMinutes)
+          : t(`packages.${pkgKey}`);
+
+        return (
+          <button
+            key={variant.id}
+            type="button"
+            aria-pressed={isSelected}
+            disabled={disabled}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectVariant(variant.id);
+            }}
+            onDoubleClick={(e) => e.stopPropagation()}
+            className={cn(
+              "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[11px] font-semibold leading-tight transition-[color,background-color,border-color,box-shadow] cursor-pointer select-none tabular-nums",
+              isSelected ? chipStyle.selectedClass : chipStyle.unselectedClass,
+              disabled && "opacity-60 cursor-not-allowed",
+            )}
+          >
+            {chipStyle.dotColor && (
+              <span
+                className={cn(
+                  "w-1.5 h-1.5 rounded-full shrink-0",
+                  chipStyle.dotColor,
+                )}
+                aria-hidden="true"
+              />
+            )}
+            <span>{shortLabel}</span>
+            <span className="opacity-70">·</span>
+            <span>{formatCoins(variant.price, { locale })}</span>
+          </button>
+        );
+      })}
+    </fieldset>
+  );
+}
+
+interface CatalogItemQuantityStepperProps {
+  quantity: number;
+  onChange: (nextQuantity: number) => void;
+  maxQuantity?: number;
+  disabled?: boolean;
+}
+
+/**
+ * Controle unitário (− 1x +) sem descontos para quitação múltipla de Dívidas.
+ */
+export function CatalogItemQuantityStepper({
+  quantity,
+  onChange,
+  maxQuantity = 50,
+  disabled = false,
+}: CatalogItemQuantityStepperProps) {
+  const t = useTranslations("ui.itemCatalog");
+
+  return (
+    <div
+      className="inline-flex items-center rounded-md border border-neutral-600/80 dark:border-white/15 bg-surface/80 dark:bg-white/5 overflow-hidden shrink-0"
+      {...STOP_DRAG_PROPAGATION_PROPS}
+    >
+      <button
+        type="button"
+        disabled={disabled || quantity <= 1}
+        onClick={(e) => {
+          e.stopPropagation();
+          onChange(Math.max(1, quantity - 1));
+        }}
+        onDoubleClick={(e) => e.stopPropagation()}
+        aria-label={t("decreaseQuantityAria")}
+        className="inline-flex items-center justify-center w-6 h-6 text-neutral-300 hover:text-neutral-50 hover:bg-white/10 disabled:opacity-35 disabled:cursor-not-allowed transition-colors cursor-pointer"
+      >
+        <Minus size={11} aria-hidden="true" />
+      </button>
+      <output
+        className="px-1.5 min-w-[2.1rem] text-center font-bold tabular-nums text-neutral-100 text-[11px]"
+        aria-live="polite"
+      >
+        {quantity}x
+      </output>
+      <button
+        type="button"
+        disabled={disabled || quantity >= maxQuantity}
+        onClick={(e) => {
+          e.stopPropagation();
+          onChange(Math.min(maxQuantity, quantity + 1));
+        }}
+        onDoubleClick={(e) => e.stopPropagation()}
+        aria-label={t("increaseQuantityAria")}
+        className="inline-flex items-center justify-center w-6 h-6 text-neutral-300 hover:text-neutral-50 hover:bg-white/10 disabled:opacity-35 disabled:cursor-not-allowed transition-colors cursor-pointer"
+      >
+        <Plus size={11} aria-hidden="true" />
+      </button>
     </div>
   );
 }

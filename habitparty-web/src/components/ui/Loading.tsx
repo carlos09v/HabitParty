@@ -93,7 +93,7 @@ export function Loading({
         "rounded-full border-solid border-t-transparent animate-spin",
         SPINNER_SIZE_MAP[size],
         isPrimary
-          ? "border-primary/25 border-t-primary shadow-[0_0_12px_rgba(124,58,237,0.35)]"
+          ? "border-primary/25 border-t-primary shadow-[0_0_12px_color-mix(in_srgb,var(--color-primary)_35%,transparent)]"
           : "border-gold/25 border-t-gold shadow-[0_0_12px_rgba(237,229,57,0.35)]",
       )}
       aria-hidden="true"
@@ -113,7 +113,7 @@ export function Loading({
           "rounded-full animate-bounce [animation-delay:-0.3s]",
           DOT_SIZE_MAP[size],
           isPrimary
-            ? "bg-primary shadow-[0_0_8px_rgba(124,58,237,0.45)]"
+            ? "bg-primary shadow-[0_0_8px_color-mix(in_srgb,var(--color-primary)_45%,transparent)]"
             : "bg-gold shadow-[0_0_8px_rgba(237,229,57,0.45)]",
         )}
       />
@@ -122,7 +122,7 @@ export function Loading({
           "rounded-full animate-bounce [animation-delay:-0.15s]",
           DOT_SIZE_MAP[size],
           isPrimary
-            ? "bg-primary shadow-[0_0_8px_rgba(124,58,237,0.45)]"
+            ? "bg-primary shadow-[0_0_8px_color-mix(in_srgb,var(--color-primary)_45%,transparent)]"
             : "bg-gold shadow-[0_0_8px_rgba(237,229,57,0.45)]",
         )}
       />
@@ -131,7 +131,7 @@ export function Loading({
           "rounded-full animate-bounce",
           DOT_SIZE_MAP[size],
           isPrimary
-            ? "bg-primary shadow-[0_0_8px_rgba(124,58,237,0.45)]"
+            ? "bg-primary shadow-[0_0_8px_color-mix(in_srgb,var(--color-primary)_45%,transparent)]"
             : "bg-gold shadow-[0_0_8px_rgba(237,229,57,0.45)]",
         )}
       />

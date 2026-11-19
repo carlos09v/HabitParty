@@ -1,0 +1,252 @@
+{
+  "dashboard": {
+    "defaultEconomyBars": {
+      "minus3WeeksLabel": "-3 sem",
+      "minus3WeeksPeriod": "3 semanas atrás",
+      "minus2WeeksLabel": "-2 sem",
+      "minus2WeeksPeriod": "2 semanas atrás",
+      "lastWeekLabel": "Passada",
+      "lastWeekPeriod": "Semana passada",
+      "currentWeekLabel": "Atual",
+      "currentWeekPeriod": "Esta semana"
+    },
+    "greeting": {
+      "morning": "Bom dia",
+      "afternoon": "Boa tarde",
+      "evening": "Boa noite"
+    },
+    "weeklyCalendar": {
+      "dayHeader": "{weekDay}, {day} de {month}{todaySuffix}",
+      "todaySuffix": " (Hoje)",
+      "activeStreak": "🔥 Ofensiva ativa no dia",
+      "dueTodosCount": "{count} {count, plural, one {prazo de afazer} other {prazos de afazeres}}",
+      "scheduledCount": "{count} {count, plural, one {rotina programada} other {rotinas programadas}}"
+    }
+  },
+  "validators": {
+    "hardcoreTodo": {
+      "disableOverdueGamified": "Não é permitido desativar o Modo Hardcore de uma tarefa com prazo vencido.",
+      "disableOverdueProductivity": "Não é permitido desativar o Prazo Rígido de uma tarefa com prazo vencido.",
+      "missingDueDateGamified": "No Modo Hardcore, afazeres exigem uma data de vencimento.",
+      "missingDueDateProductivity": "Com Prazo Rígido ativo, afazeres exigem uma data de vencimento.",
+      "pastDueDateGamified": "A data de vencimento de um afazer Hardcore não pode ser no passado.",
+      "pastDueDateProductivity": "A data de vencimento de um afazer com Prazo Rígido não pode ser no passado.",
+      "changeOverdueDateGamified": "Não é permitido alterar a data de uma tarefa hardcore vencida.",
+      "changeOverdueDateProductivity": "Não é permitido alterar a data de uma tarefa com Prazo Rígido vencida."
+    }
+  },
+  "taskSchedule": {
+    "allDay": "Dia inteiro",
+    "today": "Hoje",
+    "tomorrow": "Amanhã",
+    "noDueDate": "Sem prazo",
+    "popoverOverdue": "{shortDayMonth}{timeSuffix} (atrasada há {count, plural, one {# dia} other {# dias}})",
+    "popoverToday": "Hoje, {shortDayMonth}{timeSuffix}",
+    "popoverTomorrow": "Amanhã, {shortDayMonth}{timeSuffix}",
+    "popoverInDays": "{shortDayMonth}{timeSuffix} (faltam {count} dias)"
+  },
+  "economy": {
+    "periodSameMonth": "{startDay} a {endDay}/{startMonth}",
+    "periodDifferentMonths": "{startDay}/{startMonth} a {endDay}/{endMonth}",
+    "weekShort": "Sem {week}",
+    "relativeWeeks": {
+      "minus3": "-3 sem",
+      "minus2": "-2 sem",
+      "last": "Passada",
+      "current": "Atual"
+    },
+    "creditsUnit": "créditos",
+    "habitStages": {
+      "initialLabel": "Fase Inicial",
+      "adaptationLabel": "Em Adaptação",
+      "formedLabel": "Hábito Formado",
+      "initialExplanation": "Fase inicial: 100% da recompensa base ({baseCoinsFormatted}). Ao atingir {adaptationThreshold} repetições, entrará na fase de adaptação (-25%).",
+      "adaptationExplanation": "Fase de adaptação ({currentCount}/{adaptationThreshold} repetições). Paga 75% da base ({baseCoinsFormatted}). Ao atingir {habitFormedThreshold}, passará para 50%.",
+      "formedExplanation": "Hábito consolidado ({currentCount}/{habitFormedThreshold} repetições). Paga 50% da base ({baseCoinsFormatted}) para evitar inflação e incentivar novos hábitos!"
+    },
+    "dailyStages": {
+      "bonusLabel": "Bônus de Consistência",
+      "baseLabel": "Rotina Base",
+      "bonusExplanation": "Bônus de consistência ativo ({currentCount}/{threshold} ciclos agendados)! Você ganha +10% sobre a base ({baseCoinsFormatted} -> {finalCoinsFormatted}) sem decaimento.",
+      "baseExplanation": "Rotina com rendimento integral: 100% da recompensa base ({baseCoinsFormatted}), sem decaimento. Ao atingir {threshold} execuções seguidas nos dias agendados ({currentCount}/{threshold}), você desbloqueia +10% de bônus."
+    },
+    "todoStages": {
+      "lateHardcoreLabel": "Entrega Tardia (Hardcore)",
+      "lateStrictLabel": "Entrega Tardia (Prazo Rígido)",
+      "lateHardcoreExplanation": "Afazer concluído após o prazo no Modo Hardcore. Rendimento reduzido em 50% ({baseCoinsFormatted} -> {finalCoinsFormatted}).",
+      "lateStrictExplanation": "Afazer concluído após o Prazo Rígido. Rendimento reduzido em 50% ({baseCoinsFormatted} -> {finalCoinsFormatted}).",
+      "standardLabel": "Padrão",
+      "standardExplanation": "Tarefas do tipo Afazer (To-Do) concedem sempre 100% da recompensa da dificuldade ao serem concluídas."
+    },
+    "units": {
+      "repetitions": "repetições",
+      "scheduledCycles": "ciclos agendados"
+    },
+    "notices": {
+      "habitProgressExplanation": "Recompensa integral no início. Ao consolidar o hábito ({adaptation} e {formed} reps), o ganho ajusta gradualmente para 75% e 50%.",
+      "hardcoreTitle": "Modo Hardcore Ativo",
+      "strictDeadlineTitle": "Prazo Rígido Ativo",
+      "dailyCommitmentTitle": "Compromisso Diário Ativo",
+      "hardcorePenaltyMessage": "Falhas ou atrasos aplicam penalidade de -50% sobre os ganhos."
+    },
+    "breakdown": {
+      "baseReward": "Recompensa Base",
+      "baseValueProductivity": "+{formattedGold} créditos / +{xp} pts",
+      "routineBonus": "Bônus de Rotina",
+      "hardcorePenalty": "Penalidade Hardcore",
+      "deadlinePenalty": "Penalidade de Prazo",
+      "habitAdjustment": "Ajuste de Hábito"
+    }
+  },
+  "focus": {
+    "defaultActivityName": "Atividade",
+    "atTime": "{day} às {time}",
+    "remainingTime": {
+      "completed": "Tempo concluído!",
+      "remainingValue": "{duration} restantes",
+      "activeCoupon": "Cupom Ativo"
+    },
+    "metrics": {
+      "thisWeek": "Esta semana",
+      "lastWeek": "Sem. passada",
+      "offsetWeekNegative": "Sem. {offset}",
+      "offsetWeekPositive": "Sem. +{offset}",
+      "dateRange": "{startDay}/{startMonth} a {endDay}/{endMonth}"
+    },
+    "rewards": {
+      "loggedTimeLabel": "Tempo Registrado",
+      "loggedTimeValue": "{count} {count, plural, one {minuto} other {minutos}}",
+      "pomodoroCyclesLabel": "Ciclos Pomodoro",
+      "pomodoroCyclesValue": "{cycles} ciclo(s) (méd. {avgMins}m/ciclo)",
+      "creditsUnit": "créditos",
+      "itemZeroGamified": "Itens de lazer da mochila não concedem XP ou Moedas.",
+      "itemZeroProductivity": "Itens de lazer do inventário não concedem Pontos ou Créditos.",
+      "minTimeZeroReason": "Sessões menores que {minMinutes} min não qualificam para recompensas.",
+      "minTimeTitle": "Tempo Mínimo",
+      "minTimeGamified": "Sessões com menos de {minMinutes} min não acumulam XP ou Moedas.",
+      "minTimeProductivity": "Sessões com menos de {minMinutes} min não acumulam Pontos ou Créditos.",
+      "maxCapTitleGamified": "Teto de {maxMinutes} min",
+      "maxCapTitleProductivity": "Ciclo Ultradiano ({maxMinutes}m)",
+      "maxCapGamified": "Excedente acima de {maxMinutes} min por sessão não gera moedas adicionais (anti-AFK).",
+      "maxCapProductivity": "Excedente acima de {maxMinutes} min por sessão não gera créditos adicionais. Faça uma pausa entre ciclos.",
+      "antiExploitMessage": "Média menor que {threshold}m/ciclo reduz os ganhos proporcionalmente.",
+      "shortCycleTitle": "Ciclo Curto ({min}m-{max}m)",
+      "shortCycleMessage": "Média de {avg}m/ciclo (+{shortCoins}/ciclo). Faixa padrão ({stdMin}m-{stdMax}m) rende +{stdCoins}.",
+      "deepWorkMessage": "Sessão estendida ininterrupta qualifica para a bonificação máxima (+{coins}/ciclo)!",
+      "dailyHardCapZeroReason": "Limite diário de recompensas ({hours}h) atingido neste dia.",
+      "dailyHardCapTitleGamified": "Teto Diário Atingido (8h)",
+      "dailyHardCapTitleProductivity": "Limite Sustentável Diário (8h)",
+      "dailyHardCapMessageGamified": "Você já acumulou 8h de foco recompensado neste dia. O tempo será registrado, mas sem XP/Moedas adicionais.",
+      "dailyHardCapMessageProductivity": "Você já acumulou 8h de foco remunerado neste dia. O tempo segue registrado nas métricas, preservando o equilíbrio contra burnout.",
+      "dailyDiminishingTitleGamifiedTier3": "Rendimento Decrescente Diário (6h+)",
+      "dailyDiminishingTitleGamifiedTier2": "Rendimento Decrescente Diário (4h+)",
+      "dailyDiminishingTitleProductivityTier3": "Sustentabilidade Diária (6h+)",
+      "dailyDiminishingTitleProductivityTier2": "Sustentabilidade Diária (4h+)",
+      "dailyDiminishingMessage": "Escada diária de foco: 4h–6h rendem 50%, 6h–8h rendem 25% e acima de 8h o rendimento é 0%."
+    }
+  },
+  "catalog": {
+    "rewards": {
+      "voucherCount": "{count} {count, plural, one {cupom} other {cupons}}",
+      "singleUseCount": "{count} {count, plural, one {único} other {únicos}}",
+      "boxCount": "{count} {count, plural, one {caixa} other {caixas}}",
+      "breakDrawCount": "{count} {count, plural, one {sorteio} other {sorteios}}",
+      "noOptions": "nenhuma opção cadastrada",
+      "coinsCurrency": "Moedas",
+      "creditsCurrency": "Créditos",
+      "balanceLabel": "Saldo Atual",
+      "earnedLeisure": "{equivalence} de lazer livre",
+      "availableToRedeem": "disponíveis para troca",
+      "redeemableLabel": "Pode Resgatar",
+      "itemCount": "{count} {count, plural, one {item} other {itens}}",
+      "withinReach": "ao seu alcance hoje",
+      "earnMoreCoins": "junte mais moedas",
+      "earnMoreCredits": "acumule mais créditos",
+      "showcaseLabel": "Na Vitrine",
+      "optionsCount": "{count} {count, plural, one {opção} other {opções}}"
+    },
+    "inventory": {
+      "voucherCount": "{count} {count, plural, one {cupom} other {cupons}}",
+      "boxCount": "{count} {count, plural, one {caixa} other {caixas}}",
+      "breakDrawCount": "{count} {count, plural, one {sorteio} other {sorteios}}",
+      "totalBackpack": "Total na Mochila",
+      "totalInventory": "Total no Inventário",
+      "itemCount": "{count} {count, plural, one {item} other {itens}}",
+      "storedTypes": "{count} {count, plural, one {tipo guardado} other {tipos guardados}}",
+      "activeInFocus": "Ativos no Foco",
+      "onFocusStage": "no palco de foco",
+      "noItemsInFocus": "nenhum item no foco",
+      "itemTypes": "Tipos de Itens",
+      "singleUseCount": "{count} Uso Único"
+    },
+    "tasks": {
+      "boardLabel": "Tarefas no Quadro",
+      "taskCount": "{count} {count, plural, one {tarefa} other {tarefas}}",
+      "columnCount": "{count} {count, plural, one {coluna} other {colunas}}",
+      "completedLabel": "Concluídas",
+      "doneCount": "{count} {count, plural, one {feita} other {feitas}}",
+      "percentCompleted": "{percent}% de conclusão",
+      "noTasks": "nenhuma tarefa",
+      "activeHabitsLabel": "Hábitos Ativos",
+      "habitCount": "{count} {count, plural, one {hábito} other {hábitos}}",
+      "dailyConsistency": "constância diária"
+    },
+    "focus": {
+      "activitiesLabel": "Atividades de Foco",
+      "activityCount": "{count} {count, plural, one {atividade} other {atividades}}",
+      "readyToStart": "prontas para iniciar sessão",
+      "createFirstActivity": "crie sua primeira atividade",
+      "stageItemsLabel": "Itens no Palco",
+      "couponsBreaksLabel": "Cupons & Pausas Ativas",
+      "itemCount": "{count} {count, plural, one {item} other {itens}}",
+      "focusCouponsHint": "cupons/recompensas de foco",
+      "sendFromBackpack": "envie itens pela Mochila",
+      "linkViaInventory": "vincule itens pelo Inventário",
+      "focusTodayLabel": "Foco Hoje",
+      "sessionsToday": "{count} {count, plural, one {sessão concluída hoje} other {sessões concluídas hoje}}",
+      "gamifiedModeHint": "Pomodoro & Livre • ganhe XP/moedas",
+      "productivityModeHint": "Pomodoro & Cronômetro • gere ritmo"
+    }
+  },
+  "history": {
+    "unknownDate": "Data desconhecida",
+    "today": "Hoje",
+    "yesterday": "Ontem"
+  },
+  "levels": {
+    "defaultBeginner": "Iniciante",
+    "defaultNovice": "Novato",
+    "premiumMember": "Membro Premium",
+    "gamified": {
+      "NOVICE": "Novato",
+      "APPRENTICE": "Aprendiz",
+      "ADVENTURER": "Aventureiro",
+      "CHALLENGER": "Desafiante",
+      "AMATEUR": "Amador",
+      "PROFESSIONAL": "Profissional",
+      "EXPERT": "Especialista",
+      "VETERAN": "Veterano",
+      "MASTER": "Mestre",
+      "LEGEND": "Lenda"
+    },
+    "productivity": {
+      "NOVICE": "Iniciante",
+      "APPRENTICE": "Praticante",
+      "ADVENTURER": "Consistente",
+      "CHALLENGER": "Focado",
+      "AMATEUR": "Organizado",
+      "PROFESSIONAL": "Produtivo",
+      "EXPERT": "Especialista",
+      "VETERAN": "Sênior",
+      "MASTER": "Executivo",
+      "LEGEND": "Alta Performance"
+    }
+  },
+  "subscription": {
+    "expired": "Plano expirado",
+    "expiresLessThan1h": "Expira em menos de 1h!",
+    "expiresInHours": "Expira em {hours}h",
+    "daysLeft": "Faltam {days} {days, plural, one {dia} other {dias}}",
+    "daysRemaining": "{days} {days, plural, one {dia restante} other {dias restantes}}"
+  }
+}

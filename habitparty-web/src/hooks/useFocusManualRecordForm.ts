@@ -4,9 +4,14 @@ import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { createFocusRecord } from "@/actions/focusActions";
-import { MAX_FOCUS_ACTIVITIES_FREE } from "@/constants/focus";
+import {
+  MAX_FOCUS_ACTIVITIES_FREE,
+  MAX_MANUAL_FOCUS_MINUTES,
+} from "@/constants/focus";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { dispatchTaskFocusRecorded } from "@/hooks/useFocusTaskSync";
 import type { AppLocale } from "@/i18n/config";
+import { useOptimisticDashboardStore } from "@/store/optimisticDashboardStore";
 import { useUserStore } from "@/store/userStore";
 import type {
   FocusActivity,
@@ -25,11 +30,11 @@ import {
   parseTimeToMinutes,
   toLocalISOString,
 } from "@/utils/date";
+import { calculateProductiveMinutesForDate } from "@/utils/focusDailyYield";
 import {
   getItemRemainingMinutes,
   isBackpackItemTimeDepleted,
 } from "@/utils/focusFormatters";
-import { toLocalDateKey } from "@/utils/focusMetrics";
 import {
   calculateFocusRewardEstimate,
   toFocusRewardEstimate,
@@ -173,14 +178,54 @@ export function useFocusManualRecordForm({
   });
   const [notes, setNotes] = useState("");
 
-  const syncDurationWithWindow = (nextDuration: number) => {
-    const clamped = Math.max(0, Math.min(1439, nextDuration));
+  const syncPomosFromMinutes = (
+    mins: number,
+    overrideRecordType?: FocusRecordType,
+  ) => {
+    const activeRecordType = overrideRecordType ?? recordType;
+    if (activeRecordType === "POMO") {
+      if (mins <= 45) {
+        setCompletedPomos(1);
+      } else if (mins <= 60) {
+        setCompletedPomos(2);
+      } else {
+        setCompletedPomos(Math.max(1, Math.round(mins / 30)));
+      }
+    }
+  };
+
+  const resolveMaxDurationLimit = (
+    overrideMaxDuration?: number,
+    overrideTargetType?: "ACTIVITY" | "ITEM",
+  ) => {
+    if (overrideMaxDuration && overrideMaxDuration > 0) {
+      return overrideMaxDuration;
+    }
+    const activeTargetType = overrideTargetType ?? targetType;
+    if (activeTargetType === "ITEM" && selectedItemMinutes > 0) {
+      return selectedItemMinutes;
+    }
+    return MAX_MANUAL_FOCUS_MINUTES;
+  };
+
+  const syncDurationWithWindow = (
+    nextDuration: number,
+    overrideRecordType?: FocusRecordType,
+    overrideMaxDuration?: number,
+    overrideTargetType?: "ACTIVITY" | "ITEM",
+  ) => {
+    const maxLimit = resolveMaxDurationLimit(
+      overrideMaxDuration,
+      overrideTargetType,
+    );
+    const clamped = Math.max(0, Math.min(maxLimit, nextDuration));
     setDurationMinutes(clamped);
     setDurationInput(String(clamped));
     if (clamped >= 1) {
       const window = computeTimeWindowFromDuration(endTimeStr, clamped);
       setStartTimeStr(window.startTimeStr);
       setEndTimeStr(window.endTimeStr);
+      syncPomosFromMinutes(clamped, overrideRecordType);
     }
   };
 
@@ -194,27 +239,7 @@ export function useFocusManualRecordForm({
     if (Number.isNaN(parsed)) {
       return;
     }
-    const clamped = Math.max(0, Math.min(1439, parsed));
-    setDurationInput(String(clamped));
-    setDurationMinutes(clamped);
-    if (clamped >= 1) {
-      const window = computeTimeWindowFromDuration(endTimeStr, clamped);
-      setStartTimeStr(window.startTimeStr);
-      setEndTimeStr(window.endTimeStr);
-      syncPomosFromMinutes(clamped);
-    }
-  };
-
-  const syncPomosFromMinutes = (mins: number) => {
-    if (recordType === "POMO") {
-      if (mins <= 45) {
-        setCompletedPomos(1);
-      } else if (mins <= 60) {
-        setCompletedPomos(2);
-      } else {
-        setCompletedPomos(Math.max(1, Math.round(mins / 30)));
-      }
-    }
+    syncDurationWithWindow(parsed);
   };
 
   const handleStartTimeChange = (nextStart: string) => {
@@ -271,15 +296,18 @@ export function useFocusManualRecordForm({
     return selectableActivities.find((a) => a.id === selectedActivityId);
   }, [selectableActivities, selectedActivityId]);
 
+  const maxDate = useMemo(() => {
+    return getTodayDateString(new Date(), userTimeZone);
+  }, [userTimeZone]);
+
   // Minutos já focados na data selecionada (para avisar sobre soft/hard cap diário no preview)
   const priorFocusMinutesForDate = useMemo(() => {
-    if (!sessionDate || records.length === 0) return 0;
-    return records.reduce((sum, rec) => {
-      if (rec.inventoryItemId) return sum;
-      if (toLocalDateKey(rec.startTime, userTimeZone) !== sessionDate)
-        return sum;
-      return sum + (rec.durationMinutes || 0);
-    }, 0);
+    return calculateProductiveMinutesForDate(
+      records,
+      sessionDate,
+      userTimeZone,
+      "endTime",
+    );
   }, [records, sessionDate, userTimeZone]);
 
   const estimatedRewards = useMemo(() => {
@@ -291,6 +319,7 @@ export function useFocusManualRecordForm({
       priorFocusMinutesForDate,
       locale,
       recordType === "POMO" ? selectedActivity?.targetTimeMinutes : undefined,
+      isGamified,
     );
   }, [
     targetType,
@@ -300,6 +329,7 @@ export function useFocusManualRecordForm({
     priorFocusMinutesForDate,
     locale,
     selectedActivity?.targetTimeMinutes,
+    isGamified,
   ]);
 
   const rewardEstimate = useMemo(() => {
@@ -325,8 +355,15 @@ export function useFocusManualRecordForm({
       if (item) {
         setSelectedItemId(item.inventoryItemId || "");
         const mins = getItemRemainingMinutes(item.remainingSeconds);
-        if (mins > 0) syncDurationWithWindow(mins);
+        if (mins > 0) syncDurationWithWindow(mins, recordType, mins, "ITEM");
       }
+    } else if (durationMinutes > MAX_MANUAL_FOCUS_MINUTES) {
+      syncDurationWithWindow(
+        MAX_MANUAL_FOCUS_MINUTES,
+        recordType,
+        MAX_MANUAL_FOCUS_MINUTES,
+        "ACTIVITY",
+      );
     }
   };
 
@@ -337,8 +374,12 @@ export function useFocusManualRecordForm({
       setRecordType(act.recordType);
     }
     if (act?.targetTimeMinutes) {
-      syncDurationWithWindow(act.targetTimeMinutes);
-      syncPomosFromMinutes(act.targetTimeMinutes);
+      syncDurationWithWindow(
+        act.targetTimeMinutes,
+        act.recordType ?? recordType,
+        MAX_MANUAL_FOCUS_MINUTES,
+        "ACTIVITY",
+      );
     }
   };
 
@@ -349,13 +390,12 @@ export function useFocusManualRecordForm({
     );
     const itemMins = getItemRemainingMinutes(item?.remainingSeconds);
     if (itemMins > 0) {
-      syncDurationWithWindow(itemMins);
+      syncDurationWithWindow(itemMins, recordType, itemMins, "ITEM");
     }
   };
 
   const handlePresetSelect = (minutes: number) => {
     syncDurationWithWindow(minutes);
-    syncPomosFromMinutes(minutes);
   };
 
   const handleDurationChange = (minutes: number) => {
@@ -375,7 +415,9 @@ export function useFocusManualRecordForm({
     }
 
     if (targetType === "ITEM" && !selectedItemId) {
-      toast.error(t("toasts.noBackpackItems"));
+      toast.error(
+        t(isGamified ? "toasts.noBackpackItems" : "toasts.noInventoryItems"),
+      );
       return;
     }
 
@@ -401,11 +443,7 @@ export function useFocusManualRecordForm({
       const todayStr = getTodayDateString(now, activeTz);
       const baseDateStr = sessionDate || todayStr;
       if (baseDateStr > todayStr) {
-        toast.error(
-          locale === "en"
-            ? "Cannot log focus sessions in the future."
-            : "Não é possível registrar sessões de foco no futuro.",
-        );
+        toast.error(t("toasts.futureDateNotAllowed"));
         return;
       }
       if (baseDateStr === todayStr) {
@@ -413,11 +451,7 @@ export function useFocusManualRecordForm({
         const nowParts = getDatePartsInTimeZone(now, activeTz);
         const nowMins = nowParts.hour * 60 + nowParts.minute;
         if (endMins !== null && endMins > nowMins) {
-          toast.error(
-            locale === "en"
-              ? "End time cannot be in the future."
-              : "O horário de término não pode estar no futuro.",
-          );
+          toast.error(t("toasts.futureEndTimeNotAllowed"));
           return;
         }
       }
@@ -522,27 +556,26 @@ export function useFocusManualRecordForm({
           const xp = Number(res.data?.xpEarned ?? 0);
           const coins = Number(res.data?.coinsEarned ?? 0);
 
-          if (
-            targetType === "ACTIVITY" &&
-            selectedTaskId &&
-            typeof window !== "undefined"
-          ) {
-            window.dispatchEvent(
-              new CustomEvent("habitparty:task-focus-recorded", {
-                detail: {
-                  taskId: selectedTaskId,
-                  durationMinutes: Math.max(
-                    1,
-                    Number(res.data?.durationMinutes ?? durationMinutes),
-                  ),
-                  completedPomos: resolvedCompletedPomos,
-                },
-              }),
-            );
+          if (targetType === "ACTIVITY" && selectedTaskId) {
+            dispatchTaskFocusRecorded({
+              taskId: selectedTaskId,
+              durationMinutes: Math.max(
+                1,
+                Number(res.data?.durationMinutes ?? durationMinutes),
+              ),
+              cycles: resolvedCompletedPomos,
+            });
           }
 
           if (targetType === "ACTIVITY") {
             const rewardResult = awardUserRewards(xp, coins);
+            if (xp > 0 || coins > 0) {
+              useOptimisticDashboardStore.getState().addTransaction({
+                xpAmount: xp,
+                goldAmount: coins,
+                transactionType: "FOCUS_COMPLETED",
+              });
+            }
             if (!rewardResult.didLevelUp) {
               soundEffects.playCreateSound();
               if (xp > 0 || coins > 0) {
@@ -605,6 +638,7 @@ export function useFocusManualRecordForm({
     handleEndTimeChange,
     completedPomos,
     setCompletedPomos,
+    maxDate,
     sessionDate,
     setSessionDate,
     notes,

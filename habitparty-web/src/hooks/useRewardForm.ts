@@ -5,9 +5,13 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { createReward, updateReward } from "@/actions/rewardActions";
 import {
+  COUPON_PACKAGE_OPTIONS,
   calculateSuggestedCouponPrice,
+  DEBT_DEFAULT_UNIT_PRICE,
   DEFAULT_MYSTERY_BOX_LOOT,
 } from "@/constants/reward";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
+import type { RewardPrefillDraft } from "@/hooks/useRewardCatalogActions";
 import type {
   MysteryBoxLootItem,
   PackageLevel,
@@ -15,6 +19,7 @@ import type {
   RewardCategory,
   RewardType,
 } from "@/types/reward";
+import { formatFocusMinutes } from "@/utils/focusFormatters";
 import {
   getMysteryBoxTier,
   mapRewardFormToCreatePayload,
@@ -25,21 +30,30 @@ import {
 } from "@/utils/rewardMapper";
 import { soundEffects } from "@/utils/soundEffects";
 
+const DEFAULT_BATCH_PACKAGES: readonly PackageLevel[] = [
+  "Básico",
+  "Premium",
+  "Épico",
+];
+
 interface UseRewardFormProps {
   isOpen: boolean;
   rewardToEdit?: Reward | null;
-  onSuccess?: (reward: Reward) => void;
+  prefillDraft?: RewardPrefillDraft | null;
+  onSuccess?: (reward: Reward | Reward[]) => void;
   onClose: () => void;
 }
 
 export function useRewardForm({
   isOpen,
   rewardToEdit,
+  prefillDraft,
   onSuccess,
   onClose,
 }: UseRewardFormProps) {
   const t = useTranslations("rewards.hook");
   const tMystery = useTranslations("rewards.mysteryBox");
+  const { isGamified } = useExperienceMode();
   const isEditing = Boolean(rewardToEdit);
   const [isPending, startTransition] = useTransition();
 
@@ -63,11 +77,17 @@ export function useRewardForm({
     { ...DEFAULT_MYSTERY_BOX_LOOT.Básico[2] },
   ]);
   const [hasCustomizedLoot, setHasCustomizedLoot] = useState(false);
+  const [createMultiplePackages, setCreateMultiplePackages] = useState(false);
+  const [selectedBatchPackages, setSelectedBatchPackages] = useState<
+    PackageLevel[]
+  >([...DEFAULT_BATCH_PACKAGES]);
 
   useEffect(() => {
     if (isOpen) {
       setHasManuallyChangedIcon(false);
       setHasManuallyEditedPrice(false);
+      setCreateMultiplePackages(false);
+      setSelectedBatchPackages([...DEFAULT_BATCH_PACKAGES]);
       if (rewardToEdit) {
         setTitle(rewardToEdit.title || "");
         setDescription(rewardToEdit.description || "");
@@ -84,8 +104,9 @@ export function useRewardForm({
         lastRegularCategoryRef.current = initialIsDebt ? "Nenhum" : initialCat;
         wasSingleUseDebtRef.current =
           resolvedInitialType === "SingleUse" && initialIsDebt;
-        const initialPkg =
-          (rewardToEdit.packageLevel as PackageLevel) || "Nenhum";
+        const initialPkg = initialIsDebt
+          ? "Nenhum"
+          : (rewardToEdit.packageLevel as PackageLevel) || "Nenhum";
         setPackageLevel(initialPkg);
         setBaseDurationMinutes(
           rewardToEdit.baseDurationMinutes !== undefined
@@ -116,6 +137,30 @@ export function useRewardForm({
           ]);
           setHasCustomizedLoot(false);
         }
+      } else if (prefillDraft) {
+        const draftPkg =
+          COUPON_PACKAGE_OPTIONS.find(
+            (opt) =>
+              opt.id === (prefillDraft.suggestedPackageLevel || "Premium"),
+          ) ?? COUPON_PACKAGE_OPTIONS[2];
+        const draftCat = prefillDraft.category || "Nenhum";
+        const draftIsDebt = toCategoryMessageKey(draftCat) === "DEBT";
+        setTitle(prefillDraft.title || "");
+        setDescription(prefillDraft.description || "");
+        setType(prefillDraft.type || "TimeBased");
+        setCategory(draftIsDebt ? "Nenhum" : draftCat);
+        lastRegularCategoryRef.current = draftIsDebt ? "Nenhum" : draftCat;
+        wasSingleUseDebtRef.current = false;
+        setPackageLevel(draftPkg.id);
+        setBaseDurationMinutes(String(draftPkg.suggestedMinutes ?? 60));
+        setPrice(String(draftPkg.suggestedPrice ?? 15));
+        setSelectedIcon(prefillDraft.iconName || "gamepad");
+        setLootItems([
+          { ...DEFAULT_MYSTERY_BOX_LOOT.Básico[0] },
+          { ...DEFAULT_MYSTERY_BOX_LOOT.Básico[1] },
+          { ...DEFAULT_MYSTERY_BOX_LOOT.Básico[2] },
+        ]);
+        setHasCustomizedLoot(false);
       } else {
         setTitle("");
         setDescription("");
@@ -135,13 +180,101 @@ export function useRewardForm({
         setHasCustomizedLoot(false);
       }
     }
-  }, [isOpen, rewardToEdit]);
+  }, [isOpen, rewardToEdit, prefillDraft]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!title.trim()) {
       toast.error(t("titleRequired"));
+      return;
+    }
+
+    const isBatchCouponCreation =
+      !isEditing && type === "TimeBased" && createMultiplePackages;
+
+    if (isBatchCouponCreation) {
+      const selectedOptions = COUPON_PACKAGE_OPTIONS.filter(
+        (opt) =>
+          opt.id !== "Nenhum" &&
+          selectedBatchPackages.some(
+            (selected) =>
+              toPackageMessageKey(selected) === toPackageMessageKey(opt.id),
+          ),
+      );
+      if (selectedOptions.length === 0) {
+        toast.error(t("batchPackagesRequired"));
+        return;
+      }
+
+      startTransition(async () => {
+        const createdRewards: Reward[] = [];
+        const baseName = title.trim();
+        const optionVariants = selectedOptions.map((opt) => ({
+          opt,
+          suffix: opt.suggestedMinutes
+            ? ` (${formatFocusMinutes(opt.suggestedMinutes)})`
+            : ` - ${opt.id}`,
+        }));
+        // Truncar a base pelo maior sufixo selecionado garante que todo o lote compartilhe o mesmo prefixo ao agrupar na vitrine
+        const maxSuffixLength = optionVariants.reduce(
+          (max, item) => Math.max(max, item.suffix.length),
+          0,
+        );
+        const safeBase = baseName
+          .slice(0, Math.max(1, 30 - maxSuffixLength))
+          .trim();
+
+        // Criação sequencial garante orderIndex previsível no backend (getMaxOrderIndex + 1)
+        for (const { opt, suffix } of optionVariants) {
+          const variantTitle = `${safeBase}${suffix}`;
+          const variantInput = {
+            title: variantTitle,
+            description: description.trim(),
+            price: opt.suggestedPrice ?? 8,
+            type: "TimeBased" as RewardType,
+            category,
+            packageLevel: opt.id,
+            baseDurationMinutes: opt.suggestedMinutes ?? 30,
+            icon: selectedIcon,
+            lootItems: undefined,
+          };
+
+          const payload = mapRewardFormToCreatePayload(variantInput);
+          const result = await createReward(payload);
+          if (!result.success) {
+            if (createdRewards.length > 0) {
+              onSuccess?.(createdRewards);
+            }
+            toast.error(result.error || t("createError"));
+            return;
+          }
+
+          const createdId =
+            result.data &&
+            typeof result.data === "object" &&
+            "id" in result.data
+              ? String((result.data as { id: string }).id)
+              : `rew-${Date.now()}-${opt.id}`;
+
+          createdRewards.push({
+            id: createdId,
+            ...variantInput,
+            iconName: selectedIcon,
+            orderIndex: 0,
+          });
+        }
+
+        soundEffects.playCreateSound();
+        toast.success(
+          t("batchCreateSuccess", {
+            count: createdRewards.length,
+            title: baseName,
+          }),
+        );
+        onSuccess?.(createdRewards);
+        onClose();
+      });
       return;
     }
 
@@ -155,32 +288,46 @@ export function useRewardForm({
       type === "MysteryBox" &&
       (packageLevel === "Nenhum" || packageLevel === "NONE")
     ) {
-      toast.error(t("mysteryBoxPackageRequired"));
+      toast.error(
+        t(
+          isGamified
+            ? "mysteryBoxPackageRequired"
+            : "mysteryBoxPackageRequiredProductivity",
+        ),
+      );
       return;
     }
 
     startTransition(async () => {
+      const isDebtSubmission = toCategoryMessageKey(category) === "DEBT";
       const parsedDuration =
         type === "TimeBased"
           ? Math.max(5, parseInt(baseDurationMinutes, 10) || 30)
           : undefined;
 
+      const tier = getMysteryBoxTier(packageLevel);
+      const tierDefaultLoot =
+        DEFAULT_MYSTERY_BOX_LOOT[tier.id] ?? DEFAULT_MYSTERY_BOX_LOOT.Básico;
+
       const normalizedLootItems =
         type === "MysteryBox"
           ? lootItems.map((slot, idx) => {
-              const tierCap =
-                getMysteryBoxTier(packageLevel).slotMaxMinutes[
-                  idx as 0 | 1 | 2
-                ];
+              const slotIdx = idx as 0 | 1 | 2;
+              const tierCap = tier.slotMaxMinutes[slotIdx];
+              const normalizedCategory = slot.category?.trim() || undefined;
+              const normalizedDescription =
+                slot.description?.trim() || undefined;
               return {
-                name:
-                  slot.name.trim() ||
-                  DEFAULT_MYSTERY_BOX_LOOT.Básico[idx as 0 | 1 | 2].name,
+                name: slot.name.trim() || tierDefaultLoot[slotIdx].name,
                 icon: slot.icon || "gift",
                 minutes:
                   slot.minutes && slot.minutes > 0
                     ? Math.min(Math.max(5, slot.minutes), tierCap)
                     : null,
+                ...(normalizedCategory ? { category: normalizedCategory } : {}),
+                ...(normalizedDescription
+                  ? { description: normalizedDescription }
+                  : {}),
               };
             })
           : undefined;
@@ -191,7 +338,9 @@ export function useRewardForm({
         price: numericPrice,
         type,
         category,
-        packageLevel,
+        packageLevel: isDebtSubmission
+          ? ("Nenhum" as PackageLevel)
+          : packageLevel,
         baseDurationMinutes: parsedDuration,
         icon: selectedIcon,
         lootItems: normalizedLootItems,
@@ -251,12 +400,19 @@ export function useRewardForm({
     if (!trimmed) return true;
     const defaultTitles = new Set([
       t("defaultMysteryBoxTitle"),
+      t("defaultMysteryBoxTitleProductivity"),
       tMystery("tiers.BASIC.name"),
       tMystery("tiers.PREMIUM.name"),
       tMystery("tiers.EPIC.name"),
       tMystery("tiers.LEGENDARY.name"),
+      tMystery("tiersProductivity.BASIC.name"),
+      tMystery("tiersProductivity.PREMIUM.name"),
+      tMystery("tiersProductivity.EPIC.name"),
+      tMystery("tiersProductivity.LEGENDARY.name"),
       "Caixa Misteriosa",
       "Mystery Box",
+      "Sorteio de Pausa",
+      "Break Draw",
       "Caixa Básica",
       "Caixa Premium",
       "Caixa Épica",
@@ -277,6 +433,9 @@ export function useRewardForm({
     if (newType !== "SingleUse" && toCategoryMessageKey(category) === "DEBT") {
       setCategory(lastRegularCategoryRef.current || "Nenhum");
     }
+    if (newType !== "TimeBased") {
+      setCreateMultiplePackages(false);
+    }
     setHasManuallyEditedPrice(false);
     if (newType === "MysteryBox") {
       const targetLevel =
@@ -292,13 +451,22 @@ export function useRewardForm({
       }
       setSelectedIcon("mystery_box");
       if (isDefaultBoxTitle(title)) {
-        setTitle(t("defaultMysteryBoxTitle"));
+        setTitle(
+          t(
+            isGamified
+              ? "defaultMysteryBoxTitle"
+              : "defaultMysteryBoxTitleProductivity",
+          ),
+        );
       }
     } else if (newType === "SingleUse") {
       if (wasSingleUseDebtRef.current) {
         setCategory("Dívida");
-      }
-      if (!isEditing) {
+        setPackageLevel("Nenhum");
+        if (!isEditing) {
+          setPrice(String(DEBT_DEFAULT_UNIT_PRICE));
+        }
+      } else if (!isEditing) {
         setPackageLevel("Nenhum");
         setPrice("4");
       }
@@ -326,12 +494,18 @@ export function useRewardForm({
 
   const handleSingleUseTierSelect = (
     tierPackageLevel: PackageLevel,
-    suggestedPrice: number,
+    suggestedPrice?: number,
   ) => {
+    if (toPackageMessageKey(tierPackageLevel) === "NONE") {
+      setPackageLevel("Nenhum");
+      return;
+    }
+
     const isAlreadySelected =
       toPackageMessageKey(packageLevel) ===
         toPackageMessageKey(tierPackageLevel) &&
-      Number.parseFloat(price.replace(",", ".")) === suggestedPrice;
+      (typeof suggestedPrice !== "number" ||
+        Number.parseFloat(price.replace(",", ".")) === suggestedPrice);
 
     if (isAlreadySelected) {
       setPackageLevel("Nenhum");
@@ -339,8 +513,22 @@ export function useRewardForm({
     }
 
     setPackageLevel(tierPackageLevel);
-    setPrice(String(suggestedPrice));
-    setHasManuallyEditedPrice(false);
+    if (typeof suggestedPrice === "number") {
+      setPrice(String(suggestedPrice));
+      setHasManuallyEditedPrice(false);
+    }
+  };
+
+  const toggleBatchPackage = (pkgLevel: PackageLevel) => {
+    const key = toPackageMessageKey(pkgLevel);
+    setSelectedBatchPackages((prev) => {
+      const exists = prev.some((item) => toPackageMessageKey(item) === key);
+      if (exists) {
+        if (prev.length <= 1) return prev;
+        return prev.filter((item) => toPackageMessageKey(item) !== key);
+      }
+      return [...prev, pkgLevel];
+    });
   };
 
   const handleMysteryBoxTierSelect = (
@@ -468,8 +656,15 @@ export function useRewardForm({
         lastRegularCategoryRef.current = category;
       }
       setCategory("Dívida");
+      setPackageLevel("Nenhum");
+      if (!isEditing && !hasManuallyEditedPrice) {
+        setPrice(String(DEBT_DEFAULT_UNIT_PRICE));
+      }
     } else {
       setCategory(lastRegularCategoryRef.current || "Nenhum");
+      if (!isEditing && !hasManuallyEditedPrice && type === "SingleUse") {
+        setPrice("4");
+      }
     }
   };
 
@@ -504,6 +699,10 @@ export function useRewardForm({
     baseDurationMinutes,
     setBaseDurationMinutes,
     handleBaseDurationChange,
+    createMultiplePackages,
+    setCreateMultiplePackages,
+    selectedBatchPackages,
+    toggleBatchPackage,
     selectedIcon,
     setSelectedIcon,
     handleIconSelect,

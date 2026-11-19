@@ -28,7 +28,6 @@ interface AchievementsGalleryProps {
   highlights: ProfileHighlightResponseDTO[];
   isVisitorMode: boolean;
   onPinAchievement: (achievement: AchievementItemResponseDTO) => void;
-  isCompact?: boolean;
 }
 
 type StatusFilter = "ALL" | "UNLOCKED" | "LOCKED";
@@ -40,7 +39,6 @@ export function AchievementsGallery({
   highlights,
   isVisitorMode,
   onPinAchievement,
-  isCompact = false,
 }: AchievementsGalleryProps) {
   const t = useTranslations("showcase.gallery");
   const tCategories = useTranslations("showcase.categories");
@@ -84,13 +82,28 @@ export function AchievementsGallery({
   const totalCategoryCount = baseCategoryAchievements.length;
   const lockedCount = totalCategoryCount - unlockedCount;
 
+  const searchHaystackById = useMemo(() => {
+    const secretHaystack = t("secretTitle").toLowerCase();
+    const map = new Map<string, string>();
+    for (const ach of achievements) {
+      if (ach.isSecret && !ach.unlocked) {
+        map.set(ach.id, secretHaystack);
+      } else {
+        const { title, description } = resolveAchievementCopy(
+          ach,
+          isGamified,
+          tCatalog,
+        );
+        map.set(ach.id, `${title}\n${description}`.toLowerCase());
+      }
+    }
+    return map;
+  }, [achievements, isGamified, t, tCatalog]);
+
   const filteredAchievements = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
-    return achievements.filter((ach) => {
-      if (categoryFilter !== "ALL" && ach.category !== categoryFilter) {
-        return false;
-      }
+    return baseCategoryAchievements.filter((ach) => {
       if (isVisitorMode && !ach.unlocked) {
         return false;
       }
@@ -102,36 +115,17 @@ export function AchievementsGallery({
           return false;
         }
       }
-      if (rarityFilter !== "ALL" && ach.rarity !== rarityFilter) {
-        return false;
-      }
       if (query) {
-        const isSecretLocked = ach.isSecret && !ach.unlocked;
-        if (isSecretLocked) {
-          return t("secretTitle").toLowerCase().includes(query);
-        }
-        const { title, description } = resolveAchievementCopy(
-          ach,
-          isGamified,
-          tCatalog,
-        );
-        return (
-          title.toLowerCase().includes(query) ||
-          description.toLowerCase().includes(query)
-        );
+        return searchHaystackById.get(ach.id)?.includes(query) ?? false;
       }
       return true;
     });
   }, [
-    achievements,
-    categoryFilter,
+    baseCategoryAchievements,
     statusFilter,
-    rarityFilter,
     searchQuery,
     isVisitorMode,
-    isGamified,
-    t,
-    tCatalog,
+    searchHaystackById,
   ]);
 
   const totalPages = Math.max(
@@ -288,12 +282,7 @@ export function AchievementsGallery({
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          <div
-            className={cn(
-              "grid grid-cols-1 @xl:grid-cols-2 @4xl:grid-cols-3",
-              isCompact ? "gap-3" : "gap-4",
-            )}
-          >
+          <div className="grid grid-cols-1 @xl:grid-cols-2 @4xl:grid-cols-3 gap-4">
             {paginatedAchievements.map((ach) => (
               <AchievementCard
                 key={ach.code}
@@ -304,7 +293,6 @@ export function AchievementsGallery({
                 }
                 isVisitorMode={isVisitorMode}
                 onPinToShowcase={onPinAchievement}
-                isCompact={isCompact}
               />
             ))}
           </div>
@@ -315,7 +303,6 @@ export function AchievementsGallery({
               totalPages={totalPages}
               totalItems={filteredAchievements.length}
               itemsPerPage={ACHIEVEMENTS_PER_PAGE}
-              isCompact={isCompact}
               onPageChange={setCurrentPage}
             />
           )}

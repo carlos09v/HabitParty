@@ -143,6 +143,9 @@ public class Reward {
     }
 
     validateCategoryAndType(this.category, this.type);
+    if (this.category == RewardCategory.DEBT) {
+      this.packageLevel = RewardPackageLevel.NONE;
+    }
   }
 
   public void updateOrderIndex(int newOrderIndex) {

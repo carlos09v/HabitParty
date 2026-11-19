@@ -330,7 +330,7 @@ export async function getSidebarNotificationsAction(
       });
     }
 
-    const isGamified = user?.experienceMode !== "PRODUCTIVITY";
+    const isGamified = user?.experienceMode === "GAMIFIED";
 
     // 5. Notificações Sociais não lidas (pedidos, aceites, marcos de amigos)
     for (const item of socialFeed.notifications) {

@@ -127,10 +127,6 @@ export const AMBIENT_SOUND_OPTIONS: readonly AmbientSoundOption[] = [
   { id: "fire", icon: Flame },
 ] as const;
 
-export const AMBIENT_ICONS: Record<AmbientSoundType, LucideIcon> = {
-  none: VolumeX,
-  rain: CloudRain,
-  cafe: Coffee,
-  lofi: Music,
-  fire: Flame,
-};
+export const AMBIENT_ICONS = Object.fromEntries(
+  AMBIENT_SOUND_OPTIONS.map((option) => [option.id, option.icon]),
+) as Record<AmbientSoundType, LucideIcon>;

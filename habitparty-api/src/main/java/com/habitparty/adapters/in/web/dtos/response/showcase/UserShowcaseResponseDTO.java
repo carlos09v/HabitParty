@@ -9,7 +9,8 @@ public record UserShowcaseResponseDTO(
     UserResponseDTO user,
     ShowcaseStatsResponseDTO stats,
     List<ProfileHighlightResponseDTO> highlights,
-    List<AchievementItemResponseDTO> achievements) {
+    List<AchievementItemResponseDTO> achievements,
+    List<ArtifactItemResponseDTO> artifacts) {
 
   public static UserShowcaseResponseDTO fromDomain(UserShowcaseResult result) {
     return new UserShowcaseResponseDTO(
@@ -20,8 +21,11 @@ public record UserShowcaseResponseDTO(
             result.unlockedCount(),
             result.totalAchievements(),
             result.totalAchievementPoints(),
-            result.maxPossiblePoints()),
+            result.maxPossiblePoints(),
+            result.unlockedArtifactsCount(),
+            result.totalArtifactsCount()),
         result.highlights().stream().map(ProfileHighlightResponseDTO::fromDomain).toList(),
-        result.achievements().stream().map(AchievementItemResponseDTO::fromDomain).toList());
+        result.achievements().stream().map(AchievementItemResponseDTO::fromDomain).toList(),
+        result.artifacts().stream().map(ArtifactItemResponseDTO::fromDomain).toList());
   }
 }

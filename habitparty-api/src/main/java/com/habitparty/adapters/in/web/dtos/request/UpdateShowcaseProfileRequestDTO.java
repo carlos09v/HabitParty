@@ -7,4 +7,10 @@ public record UpdateShowcaseProfileRequestDTO(
     String bio,
 
     @Size(max = 40, message = "O identificador da moldura deve ter no máximo 40 caracteres.")
-    String avatarFrame) {}
+    String avatarFrame,
+
+    @Size(max = 60, message = "O identificador do título deve ter no máximo 60 caracteres.")
+    String equippedTitle,
+
+    @Size(max = 40, message = "O identificador do avatar deve ter no máximo 40 caracteres.")
+    String avatarPreset) {}

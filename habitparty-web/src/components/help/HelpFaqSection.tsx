@@ -11,18 +11,13 @@ import type { HelpCategory, HelpFaqItem, HelpTableEntry } from "@/types/help";
 import { cn } from "@/utils";
 
 interface HelpFaqSectionProps {
-  isCompact?: boolean;
   /** Perguntas frequentes já resolvidas no idioma ativo (via servidor). */
   faqs: HelpFaqItem[];
   /** Tabelas de referência já resolvidas no idioma ativo (via servidor). */
   tables: Record<string, HelpTableEntry>;
 }
 
-export function HelpFaqSection({
-  isCompact = false,
-  faqs,
-  tables,
-}: HelpFaqSectionProps) {
+export function HelpFaqSection({ faqs, tables }: HelpFaqSectionProps) {
   const t = useTranslations("help.faq");
   const [activeCategory, setActiveCategory] = useState<HelpCategory>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -94,8 +89,7 @@ export function HelpFaqSection({
                     type="button"
                     onClick={() => setActiveCategory(tabId)}
                     className={cn(
-                      "px-3 rounded-lg font-semibold transition-colors cursor-pointer select-none whitespace-nowrap",
-                      isCompact ? "py-1 text-xs" : "py-1.5 text-xs",
+                      "px-3 py-1.5 text-xs rounded-lg font-semibold transition-colors cursor-pointer select-none whitespace-nowrap",
                       isActive
                         ? "bg-gold text-on-gold shadow-sm font-bold"
                         : "text-neutral-300 hover:text-neutral-50 hover:bg-card dark:hover:bg-white/5",
@@ -112,10 +106,7 @@ export function HelpFaqSection({
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className={cn(
-                  "w-full sm:w-auto flex items-center justify-center gap-1 px-3 rounded-xl border border-neutral-700 dark:border-white/10 bg-card dark:bg-white/5 text-neutral-300 hover:text-neutral-100 hover:bg-surface-hover dark:hover:bg-white/10 transition-colors text-xs font-semibold cursor-pointer",
-                  isCompact ? "py-1.5 sm:py-1" : "py-2 sm:py-1.5",
-                )}
+                className="w-full sm:w-auto flex items-center justify-center gap-1 px-3 py-2 sm:py-1.5 rounded-xl border border-neutral-700 dark:border-white/10 bg-card dark:bg-white/5 text-neutral-300 hover:text-neutral-100 hover:bg-surface-hover dark:hover:bg-white/10 transition-colors text-xs font-semibold cursor-pointer"
               >
                 <X size={14} />
                 {t("clearSearch")}
@@ -189,7 +180,6 @@ export function HelpFaqSection({
                 key={faq.id}
                 faq={faq}
                 isExpanded={expandedFaqIds.has(faq.id)}
-                isCompact={isCompact}
                 showCategoryBadge={activeCategory === "ALL"}
                 categoryLabel={t(`categories.${faq.category}`)}
                 tagsLabel={t("tagsLabel")}
@@ -205,7 +195,6 @@ export function HelpFaqSection({
           TABELAS DE ECONOMIA MATEMÁTICA (Integradas à Busca e Categoria)
           ========================================== */}
       <HelpReferenceTables
-        isCompact={isCompact}
         searchQuery={searchQuery}
         activeCategory={activeCategory}
         tables={tables}

@@ -5,14 +5,13 @@ import { UserAvatar } from "@/components/ui/UserAvatar";
 import { resolveAvatarFrameId } from "@/constants/avatarFrames";
 import { getFriendsOverview } from "@/services/socialService";
 import type { PartyWidgetProps } from "@/types/dashboard";
-import { cn } from "@/utils";
+import { PartyWidgetModeLabel } from "./PartyWidgetModeLabel";
 
 /**
  * Widget de Rede Social / Party no painel direito do Dashboard.
  * Server Component conectado ao backend de amizades com atalho direto para `/profile?tab=friends`.
  */
 export async function PartyWidget({
-  isCompact = false,
   experienceMode = "PRODUCTIVITY",
 }: PartyWidgetProps) {
   const [t, overview] = await Promise.all([
@@ -27,11 +26,8 @@ export async function PartyWidget({
 
   return (
     <section
-      aria-label={isGamified ? t("titleGamified") : t("titleProductivity")}
-      className={cn(
-        "w-full flex flex-col gap-2.5 rounded-xl border border-neutral-700 dark:border-primary/25 bg-card/85 dark:bg-surface/40 shadow-2xs dark:shadow-none transition-colors",
-        isCompact ? "p-2.5" : "p-3",
-      )}
+      aria-labelledby="party-widget-heading"
+      className="w-full flex flex-col gap-2.5 rounded-xl border border-neutral-700 dark:border-primary/25 bg-card/85 dark:bg-surface/40 shadow-2xs dark:shadow-none transition-colors p-3"
     >
       <div className="flex items-center justify-between gap-2 min-w-0">
         <Link
@@ -40,13 +36,20 @@ export async function PartyWidget({
           className="flex items-center gap-2 min-w-0 group"
         >
           <Users
-            size={isCompact ? 14 : 16}
+            size={16}
             className="text-amber-700 dark:text-gold shrink-0"
             aria-hidden="true"
           />
-          <span className="text-xs font-extrabold text-neutral-100 group-hover:text-amber-700 dark:group-hover:text-gold transition-colors truncate">
-            {isGamified ? t("titleGamified") : t("titleProductivity")}
-          </span>
+          <h3
+            id="party-widget-heading"
+            className="text-xs font-extrabold text-neutral-100 group-hover:text-amber-700 dark:group-hover:text-gold transition-colors truncate"
+          >
+            <PartyWidgetModeLabel
+              initialIsGamified={isGamified}
+              gamifiedText={t("titleGamified")}
+              productivityText={t("titleProductivity")}
+            />
+          </h3>
         </Link>
 
         <div className="flex items-center gap-1.5 shrink-0">
@@ -74,7 +77,11 @@ export async function PartyWidget({
           className="flex items-center justify-between gap-2 rounded-lg border border-dashed border-neutral-700 dark:border-primary/25 bg-surface/50 hover:border-amber-500/45 dark:hover:border-gold/45 px-2.5 py-2 transition-colors group"
         >
           <span className="text-[11px] text-neutral-400 group-hover:text-neutral-200 truncate">
-            {isGamified ? t("emptyTitleGamified") : t("emptyTitleProductivity")}
+            <PartyWidgetModeLabel
+              initialIsGamified={isGamified}
+              gamifiedText={t("emptyTitleGamified")}
+              productivityText={t("emptyTitleProductivity")}
+            />
           </span>
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold/15 border border-gold/35 text-[10px] font-bold text-amber-800 dark:text-gold shrink-0">
             <UserPlus size={11} aria-hidden="true" />
@@ -108,6 +115,7 @@ export async function PartyWidget({
                         size="sm"
                         hasRing={friend.isPremium}
                         frameId={resolveAvatarFrameId(friend.avatarFrame)}
+                        presetId={friend.avatarPreset}
                       />
                       <div className="flex flex-col min-w-0">
                         <span className="text-xs font-semibold text-neutral-100 group-hover:text-amber-700 dark:group-hover:text-gold transition-colors truncate">

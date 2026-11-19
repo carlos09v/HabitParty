@@ -26,6 +26,15 @@ interface UseReorderableListOptions<T extends { id: string }> {
    * itens nos índices >= 4 permanecem travados no final.
    */
   maxUnlockedCount?: number;
+  /**
+   * Resolutor customizado opcional de reordenação (ex.: catálogos com variantes agrupadas),
+   * permitindo reutilizar sensor, validações, estado otimista e rollback do hook.
+   */
+  resolveDragReorder?: (
+    activeId: string,
+    overId: string,
+    currentItems: T[],
+  ) => T[] | null;
 }
 
 /**
@@ -38,11 +47,14 @@ export function useReorderableList<T extends { id: string }>({
   onReorderServerAction,
   isFiltering = false,
   maxUnlockedCount,
+  resolveDragReorder,
 }: UseReorderableListOptions<T>) {
   const t = useTranslations("ui.reorder");
   const [items, setItems] = useState<T[]>(initialItems);
   const itemsRef = useRef<T[]>(initialItems);
   itemsRef.current = items;
+  const resolveDragReorderRef = useRef(resolveDragReorder);
+  resolveDragReorderRef.current = resolveDragReorder;
 
   useEffect(() => {
     setItems(initialItems);
@@ -70,20 +82,33 @@ export function useReorderableList<T extends { id: string }>({
       }
 
       const currentItems = itemsRef.current;
-      const oldIndex = currentItems.findIndex((i) => i.id === active.id);
-      const newIndex = currentItems.findIndex((i) => i.id === over.id);
+      let newItems: T[];
 
-      if (oldIndex === -1 || newIndex === -1) return;
+      if (resolveDragReorderRef.current) {
+        const resolved = resolveDragReorderRef.current(
+          String(active.id),
+          String(over.id),
+          currentItems,
+        );
+        if (!resolved) return;
+        newItems = resolved;
+      } else {
+        const oldIndex = currentItems.findIndex((i) => i.id === active.id);
+        const newIndex = currentItems.findIndex((i) => i.id === over.id);
 
-      if (
-        maxUnlockedCount !== undefined &&
-        (oldIndex >= maxUnlockedCount || newIndex >= maxUnlockedCount)
-      ) {
-        return;
+        if (oldIndex === -1 || newIndex === -1) return;
+
+        if (
+          maxUnlockedCount !== undefined &&
+          (oldIndex >= maxUnlockedCount || newIndex >= maxUnlockedCount)
+        ) {
+          return;
+        }
+
+        newItems = arrayMove(currentItems, oldIndex, newIndex);
       }
 
       const previousItems = [...currentItems];
-      const newItems = arrayMove(currentItems, oldIndex, newIndex);
       setItems(newItems);
 
       const updates = newItems.map((item, index) => ({

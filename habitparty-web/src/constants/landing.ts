@@ -28,13 +28,22 @@ import type {
 
 export { SUPPORT_LINKS } from "@/constants/links";
 
+export const LANDING_ANCHORS = {
+  howItWorks: "how-it-works",
+  gamification: "demo",
+  features: "features",
+  roadmap: "roadmap",
+  pricing: "pricing",
+  faq: "faq",
+} as const;
+
 export const LANDING_NAV_LINK_CONFIGS: readonly LandingNavLinkConfig[] = [
-  { id: "howItWorks", href: "#como-funciona" },
-  { id: "gamification", href: "#gamificacao" },
-  { id: "features", href: "#recursos" },
-  { id: "roadmap", href: "#roadmap" },
-  { id: "pricing", href: "#planos" },
-  { id: "faq", href: "#faq" },
+  { id: "howItWorks", href: `#${LANDING_ANCHORS.howItWorks}` },
+  { id: "gamification", href: `#${LANDING_ANCHORS.gamification}` },
+  { id: "features", href: `#${LANDING_ANCHORS.features}` },
+  { id: "roadmap", href: `#${LANDING_ANCHORS.roadmap}` },
+  { id: "pricing", href: `#${LANDING_ANCHORS.pricing}` },
+  { id: "faq", href: `#${LANDING_ANCHORS.faq}` },
 ] as const;
 
 export const LANDING_HERO_HIGHLIGHT_CONFIGS: readonly LandingHeroHighlightConfig[] =
@@ -142,6 +151,14 @@ export const LANDING_FEATURE_CONFIGS: readonly LandingFeatureConfig[] = [
     badgeColor: "bg-amber-500/12 text-amber-800 dark:bg-gold/12 dark:text-gold",
     iconBoxColor:
       "bg-amber-500/10 text-amber-700 border-amber-500/20 dark:bg-card dark:text-gold dark:border-white/10",
+  },
+  {
+    id: "partyGuild",
+    icon: Users2,
+    badgeColor:
+      "bg-indigo-500/12 text-indigo-700 dark:bg-primary/25 dark:text-primary-light",
+    iconBoxColor:
+      "bg-indigo-500/10 text-indigo-700 border-indigo-500/20 dark:bg-card dark:text-primary-light dark:border-white/10",
   },
 ] as const;
 

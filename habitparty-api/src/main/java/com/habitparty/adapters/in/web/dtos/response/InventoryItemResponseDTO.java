@@ -5,7 +5,10 @@ import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.habitparty.adapters.in.web.dtos.response.showcase.ArtifactItemResponseDTO;
 import com.habitparty.core.domain.entities.InventoryItem;
+import com.habitparty.core.domain.entities.achievement.Artifact;
+import com.habitparty.core.domain.entities.achievement.UserArtifact;
 import com.habitparty.core.domain.entities.reward.MysteryBoxLootItem;
 import com.habitparty.core.domain.enums.InventoryItemStatus;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
@@ -24,9 +27,17 @@ public record InventoryItemResponseDTO(
     int orderIndex,
     Integer remainingMinutes,
     Integer remainingSeconds,
-    List<MysteryBoxLootItem> lootItems
+    List<MysteryBoxLootItem> lootItems,
+    ArtifactItemResponseDTO droppedArtifact
 ) {
-    public static InventoryItemResponseDTO fromDomain(InventoryItem domain) {
+  public static InventoryItemResponseDTO fromDomain(InventoryItem domain) {
+    return fromDomain(domain, null, null);
+  }
+
+  public static InventoryItemResponseDTO fromDomain(
+      InventoryItem domain,
+      Artifact droppedArtifact,
+      UserArtifact droppedUserArtifact) {
     return new InventoryItemResponseDTO(
         domain.getId(),
         domain.getRewardId(),
@@ -39,8 +50,8 @@ public record InventoryItemResponseDTO(
         domain.getOrderIndex(),
         domain.getRemainingMinutes().orElse(null),
         domain.getRemainingSeconds().orElse(null),
-        domain.getLootItemsSnapshot()
+        domain.getLootItemsSnapshot(),
+        ArtifactItemResponseDTO.fromDrop(droppedArtifact, droppedUserArtifact)
     );
-}
-
+  }
 }

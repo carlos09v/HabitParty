@@ -11,9 +11,173 @@ import {
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { BaseModal } from "@/components/ui/BaseModal";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
 import { cn } from "@/utils";
 import { formatDurationMinSec } from "@/utils/focusFormatters";
+
+/**
+ * Folha isolada para o tempo decorrido na comparação de sessão (evita 1Hz no modal inteiro).
+ */
+function SwitchTargetElapsedBadge() {
+  const t = useTranslations("focus.switchTargetModal");
+  const elapsedSeconds = useFocusTimerStore((s) => s.elapsedSeconds);
+  return (
+    <span className="flex items-center gap-1 text-label-g font-semibold text-amber-700 dark:text-gold mt-0.5">
+      <Timer size={12} />
+      {t("elapsed", { time: formatDurationMinSec(elapsedSeconds) })}
+    </span>
+  );
+}
+
+/**
+ * Folha isolada para o texto com tempo na opção de transferência direta.
+ */
+function SwitchTargetTransferDescription({
+  newTargetName,
+}: {
+  newTargetName: string;
+}) {
+  const t = useTranslations("focus.switchTargetModal");
+  const elapsedSeconds = useFocusTimerStore((s) => s.elapsedSeconds);
+  return (
+    <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
+      {t.rich("transferDescription", {
+        time: formatDurationMinSec(elapsedSeconds),
+        target: newTargetName,
+        gold: (chunks) => (
+          <strong className="text-amber-700 dark:text-gold font-semibold">
+            {chunks}
+          </strong>
+        ),
+        strong: (chunks) => (
+          <strong className="text-neutral-200 font-semibold">{chunks}</strong>
+        ),
+      })}
+    </p>
+  );
+}
+
+/**
+ * Botão isolado de "Salvar e Iniciar Nova" — o estado `canSaveCurrent` só muda uma vez ao atingir 60s.
+ */
+function SwitchTargetSaveOption({
+  currentName,
+  newTargetName,
+  canTransfer,
+  isSaving,
+  onSave,
+}: {
+  currentName: string;
+  newTargetName: string;
+  canTransfer: boolean;
+  isSaving: boolean;
+  onSave: () => void;
+}) {
+  const t = useTranslations("focus.switchTargetModal");
+  const canSaveCurrent = useFocusTimerStore((s) => s.elapsedSeconds >= 60);
+
+  return (
+    <button
+      type="button"
+      onClick={onSave}
+      disabled={!canSaveCurrent || isSaving}
+      className={cn(
+        "w-full text-left p-3.5 rounded-xl border transition-colors flex items-start gap-3 group",
+        canSaveCurrent
+          ? "border-emerald-500/35 bg-emerald-500/10 hover:bg-emerald-500/15 hover:border-emerald-500/60 dark:border-emerald-500/30 dark:hover:bg-emerald-500/20 cursor-pointer disabled:opacity-50"
+          : "border-neutral-700 bg-surface/60 dark:border-primary/20 dark:bg-surface/40 opacity-60 cursor-not-allowed",
+      )}
+    >
+      <div
+        className={cn(
+          "w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-transform",
+          canSaveCurrent
+            ? "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 group-hover:scale-105"
+            : "bg-surface-hover dark:bg-neutral-800 text-neutral-400",
+        )}
+      >
+        {isSaving ? (
+          <Loader2 size={18} className="animate-spin" />
+        ) : (
+          <CheckCircle2 size={18} />
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span
+            className={cn(
+              "text-body-s font-bold",
+              canSaveCurrent ? "text-neutral-100" : "text-neutral-300",
+            )}
+          >
+            {t("saveAndStartTitle")}
+          </span>
+          {!canSaveCurrent && <SwitchTargetMinOneMinBadge />}
+        </div>
+        {canSaveCurrent ? (
+          <SaveCurrentDurationDescription
+            currentName={currentName}
+            newTargetName={newTargetName}
+          />
+        ) : (
+          <p className="text-label-g text-neutral-400 mt-0.5 leading-relaxed">
+            {t.rich("cannotSaveUnderOneMinDescription", {
+              fallbackAction: canTransfer
+                ? t("fallbackTransfer")
+                : t("fallbackKeepSession"),
+              strong: (chunks) => (
+                <strong className="text-neutral-300">{chunks}</strong>
+              ),
+            })}
+          </p>
+        )}
+      </div>
+    </button>
+  );
+}
+
+function SwitchTargetMinOneMinBadge() {
+  const t = useTranslations("focus.switchTargetModal");
+  const elapsedSeconds = useFocusTimerStore((s) => s.elapsedSeconds);
+  const secondsUntilCanSave = Math.max(0, 60 - elapsedSeconds);
+  return (
+    <span className="px-1.5 py-0.5 rounded text-tiny font-semibold bg-surface dark:bg-neutral-800 text-neutral-400 border border-neutral-700 tabular-nums">
+      {t("minOneMinBadge", { seconds: secondsUntilCanSave })}
+    </span>
+  );
+}
+
+function SaveCurrentDurationDescription({
+  currentName,
+  newTargetName,
+}: {
+  currentName: string;
+  newTargetName: string;
+}) {
+  const t = useTranslations("focus.switchTargetModal");
+  const elapsedSeconds = useFocusTimerStore((s) => s.elapsedSeconds);
+  return (
+    <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
+      {t.rich("saveAndStartDescription", {
+        time: formatDurationMinSec(elapsedSeconds),
+        current: currentName,
+        target: newTargetName,
+        emerald: (chunks) => (
+          <strong className="text-emerald-700 dark:text-emerald-400 font-semibold">
+            {chunks}
+          </strong>
+        ),
+        currentSpan: (chunks) => (
+          <span className="text-neutral-300">{chunks}</span>
+        ),
+        strong: (chunks) => (
+          <strong className="text-neutral-200 font-semibold">{chunks}</strong>
+        ),
+      })}
+    </p>
+  );
+}
 
 interface SwitchFocusTargetModalProps {
   isOpen: boolean;
@@ -43,22 +207,17 @@ export function SwitchFocusTargetModal({
   onDiscardAndStartNew,
 }: SwitchFocusTargetModalProps) {
   const t = useTranslations("focus.switchTargetModal");
+  const { isGamified } = useExperienceMode();
   const [isSaving, setIsSaving] = useState(false);
-  const elapsedSeconds = useFocusTimerStore((s) => s.elapsedSeconds);
 
   if (!isOpen) return null;
-
-  const timeDisplay = formatDurationMinSec(elapsedSeconds);
 
   // Transferência direta é permitida entre quaisquer alvos produtivos (atividades e tarefas)
   const canTransfer = !isCurrentInventory && !isNewInventory;
 
-  // Sessões só podem ser salvas a partir de 1 minuto (60 segundos)
-  const canSaveCurrent = elapsedSeconds >= 60;
-  const secondsUntilCanSave = Math.max(0, 60 - elapsedSeconds);
-
   const handleSave = async () => {
-    if (!canSaveCurrent || isSaving) return;
+    const canSave = useFocusTimerStore.getState().elapsedSeconds >= 60;
+    if (!canSave || isSaving) return;
     setIsSaving(true);
     try {
       const saved = await onSaveAndStartNew();
@@ -102,13 +261,12 @@ export function SwitchFocusTargetModal({
             >
               {currentName}
             </span>
-            <span className="flex items-center gap-1 text-label-g font-semibold text-amber-700 dark:text-gold mt-0.5">
-              <Timer size={12} />
-              {t("elapsed", { time: timeDisplay })}
-            </span>
+            <SwitchTargetElapsedBadge />
             <span className="text-label-g text-neutral-400 mt-0.5">
               {isCurrentInventory
-                ? t("targetTypeInventory")
+                ? isGamified
+                  ? t("targetTypeInventory")
+                  : t("targetTypeInventoryProductivity")
                 : isCurrentTask
                   ? t("targetTypeTask")
                   : t("targetTypeActivity")}
@@ -131,7 +289,9 @@ export function SwitchFocusTargetModal({
             </span>
             <span className="text-label-g text-neutral-400 mt-0.5">
               {isNewInventory
-                ? t("targetTypeInventory")
+                ? isGamified
+                  ? t("targetTypeInventory")
+                  : t("targetTypeInventoryProductivity")
                 : isNewTask
                   ? t("targetTypeTask")
                   : t("targetTypeActivity")}
@@ -161,22 +321,9 @@ export function SwitchFocusTargetModal({
                     {t("recommendedBadge")}
                   </span>
                 </div>
-                <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
-                  {t.rich("transferDescription", {
-                    time: timeDisplay,
-                    target: newTargetName,
-                    gold: (chunks) => (
-                      <strong className="text-amber-700 dark:text-gold font-semibold">
-                        {chunks}
-                      </strong>
-                    ),
-                    strong: (chunks) => (
-                      <strong className="text-neutral-200 font-semibold">
-                        {chunks}
-                      </strong>
-                    ),
-                  })}
-                </p>
+                <SwitchTargetTransferDescription
+                  newTargetName={newTargetName}
+                />
               </div>
             </button>
           ) : (
@@ -196,82 +343,13 @@ export function SwitchFocusTargetModal({
           )}
 
           {/* Opção 2: Salvar Atual e Iniciar Nova */}
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={!canSaveCurrent || isSaving}
-            className={cn(
-              "w-full text-left p-3.5 rounded-xl border transition-colors flex items-start gap-3 group",
-              canSaveCurrent
-                ? "border-emerald-500/35 bg-emerald-500/10 hover:bg-emerald-500/15 hover:border-emerald-500/60 dark:border-emerald-500/30 dark:hover:bg-emerald-500/20 cursor-pointer disabled:opacity-50"
-                : "border-neutral-700 bg-surface/60 dark:border-primary/20 dark:bg-surface/40 opacity-60 cursor-not-allowed",
-            )}
-          >
-            <div
-              className={cn(
-                "w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-transform",
-                canSaveCurrent
-                  ? "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 group-hover:scale-105"
-                  : "bg-surface-hover dark:bg-neutral-800 text-neutral-400",
-              )}
-            >
-              {isSaving ? (
-                <Loader2 size={18} className="animate-spin" />
-              ) : (
-                <CheckCircle2 size={18} />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span
-                  className={cn(
-                    "text-body-s font-bold",
-                    canSaveCurrent ? "text-neutral-100" : "text-neutral-300",
-                  )}
-                >
-                  {t("saveAndStartTitle")}
-                </span>
-                {!canSaveCurrent && (
-                  <span className="px-1.5 py-0.5 rounded text-tiny font-semibold bg-surface dark:bg-neutral-800 text-neutral-400 border border-neutral-700">
-                    {t("minOneMinBadge", { seconds: secondsUntilCanSave })}
-                  </span>
-                )}
-              </div>
-              {canSaveCurrent ? (
-                <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
-                  {t.rich("saveAndStartDescription", {
-                    time: timeDisplay,
-                    current: currentName,
-                    target: newTargetName,
-                    emerald: (chunks) => (
-                      <strong className="text-emerald-700 dark:text-emerald-400 font-semibold">
-                        {chunks}
-                      </strong>
-                    ),
-                    currentSpan: (chunks) => (
-                      <span className="text-neutral-300">{chunks}</span>
-                    ),
-                    strong: (chunks) => (
-                      <strong className="text-neutral-200 font-semibold">
-                        {chunks}
-                      </strong>
-                    ),
-                  })}
-                </p>
-              ) : (
-                <p className="text-label-g text-neutral-400 mt-0.5 leading-relaxed">
-                  {t.rich("cannotSaveUnderOneMinDescription", {
-                    fallbackAction: canTransfer
-                      ? t("fallbackTransfer")
-                      : t("fallbackKeepSession"),
-                    strong: (chunks) => (
-                      <strong className="text-neutral-300">{chunks}</strong>
-                    ),
-                  })}
-                </p>
-              )}
-            </div>
-          </button>
+          <SwitchTargetSaveOption
+            currentName={currentName}
+            newTargetName={newTargetName}
+            canTransfer={canTransfer}
+            isSaving={isSaving}
+            onSave={handleSave}
+          />
 
           {/* Opção 3: Descartar Atual e Começar Nova */}
           <button

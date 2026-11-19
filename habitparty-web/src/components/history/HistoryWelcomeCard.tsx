@@ -11,13 +11,9 @@ import { formatCoins } from "@/utils/economy";
 
 interface HistoryWelcomeCardProps {
   summary: HistoryPageSummary;
-  isCompact?: boolean;
 }
 
-export function HistoryWelcomeCard({
-  summary,
-  isCompact = false,
-}: HistoryWelcomeCardProps) {
+export function HistoryWelcomeCard({ summary }: HistoryWelcomeCardProps) {
   const t = useTranslations("history.welcomeCard.stats");
   const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
@@ -62,5 +58,5 @@ export function HistoryWelcomeCard({
     },
   ];
 
-  return <WelcomeCard compact={isCompact} stats={stats} storageKey="history" />;
+  return <WelcomeCard stats={stats} storageKey="history" />;
 }

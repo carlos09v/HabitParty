@@ -37,19 +37,17 @@ export function FocusPipHost() {
   const drawCurrentVideoFrame = useCallback(
     (force = false) => {
       const st = useFocusTimerStore.getState();
-      const frame = buildVideoPipFrameData(
-        st,
-        {
-          windowTitle: t("windowTitle"),
-          noTarget: t("noTarget"),
-          phaseFocus: t("phaseFocus"),
-          phasePaused: t("phasePaused"),
-          phaseOvertime: t("phaseOvertime"),
-          phaseBreak: t("phaseBreak"),
-          sessionCapBadge: t("sessionCapBadge"),
-        },
-        isGamified,
-      );
+      const frame = buildVideoPipFrameData(st, {
+        windowTitle: t("windowTitle"),
+        noTarget: t("noTarget"),
+        phaseFocus: t("phaseFocus"),
+        phasePaused: t("phasePaused"),
+        phaseOvertime: t("phaseOvertime"),
+        phaseBreak: t("phaseBreak"),
+        sessionCapBadge: isGamified
+          ? t("sessionCapBadge")
+          : t("sessionCapBadgeProductivity"),
+      });
       const frameKey = [
         frame.timeText,
         frame.targetName,

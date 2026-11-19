@@ -307,6 +307,15 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
   }
 
   @Override
+  public Optional<LocalDateTime> findLatestTaskCompletionCreatedAtByUserId(UUID userId) {
+    if (userId == null) {
+      return Optional.empty();
+    }
+    return Optional.ofNullable(
+        repository.findLatestCreatedAtByUserIdAndTypes(userId, COMPLETED_TASK_TYPES));
+  }
+
+  @Override
   public int updateFocusRewardSnapshot(
       UUID referenceId, UUID userId, int xpAmount, BigDecimal goldAmount) {
     if (referenceId == null || userId == null) {

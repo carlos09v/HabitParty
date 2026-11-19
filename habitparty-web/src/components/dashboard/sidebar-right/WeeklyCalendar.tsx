@@ -15,6 +15,7 @@ import {
   syncDashboardFilterUrl,
   useDashboardFilterStore,
 } from "@/store/dashboardFilterStore";
+import { useOptimisticDashboardStore } from "@/store/optimisticDashboardStore";
 import { useUserStore } from "@/store/userStore";
 import type { WeeklyCalendarProps } from "@/types/dashboard";
 import { cn } from "@/utils";
@@ -28,7 +29,6 @@ import { buildWeeklyCalendarData } from "@/utils/dashboardMetrics";
  * - Indicador de prazos reais (To-Dos com dueDate) sem poluir todos os dias com Diárias repetitivas
  */
 export function WeeklyCalendar({
-  isCompact = false,
   transactions = [],
   tasks = [],
   onSelectDay,
@@ -43,6 +43,14 @@ export function WeeklyCalendar({
   const setStoreSelectedDate = useDashboardFilterStore(
     (s) => s.setSelectedDate,
   );
+  const requestMobileDrawerClose = useDashboardFilterStore(
+    (s) => s.requestMobileDrawerClose,
+  );
+  const optimisticTransactions = useOptimisticDashboardStore(
+    (s) => s.transactions,
+  );
+  const upsertedTasks = useOptimisticDashboardStore((s) => s.upsertedTasks);
+  const deletedTaskIds = useOptimisticDashboardStore((s) => s.deletedTaskIds);
 
   const [weekOffset, setWeekOffset] = useState(0);
 
@@ -50,18 +58,58 @@ export function WeeklyCalendar({
   // biome-ignore lint/correctness/useExhaustiveDependencies: atualiza a data-base do calendário ao virar o dia
   const baseDate = useMemo(() => new Date(), [todayIso]);
 
+  const mergedTransactions = useMemo(
+    () =>
+      optimisticTransactions.length > 0
+        ? [...transactions, ...optimisticTransactions]
+        : transactions,
+    [transactions, optimisticTransactions],
+  );
+
+  const mergedTasks = useMemo(() => {
+    const hasTaskDeltas =
+      deletedTaskIds.length > 0 || Object.keys(upsertedTasks).length > 0;
+    if (!hasTaskDeltas) return tasks;
+
+    const deletedSet = new Set(deletedTaskIds);
+    const seenIds = new Set<string>();
+    const nextTasks = [];
+
+    for (const task of tasks) {
+      if (deletedSet.has(task.id)) continue;
+      seenIds.add(task.id);
+      nextTasks.push(upsertedTasks[task.id] ?? task);
+    }
+
+    for (const [id, taskSummary] of Object.entries(upsertedTasks)) {
+      if (!seenIds.has(id) && !deletedSet.has(id)) {
+        nextTasks.push(taskSummary);
+      }
+    }
+
+    return nextTasks;
+  }, [tasks, upsertedTasks, deletedTaskIds]);
+
   const { weekRangeLabel, weekDays } = useMemo(
     () =>
       buildWeeklyCalendarData(
-        tasks,
-        transactions,
+        mergedTasks,
+        mergedTransactions,
         weekOffset,
         todayIso,
         baseDate,
         locale,
         userTimeZone,
       ),
-    [tasks, transactions, weekOffset, todayIso, baseDate, locale, userTimeZone],
+    [
+      mergedTasks,
+      mergedTransactions,
+      weekOffset,
+      todayIso,
+      baseDate,
+      locale,
+      userTimeZone,
+    ],
   );
 
   const handleDayClick = (isoString: string) => {
@@ -69,6 +117,7 @@ export function WeeklyCalendar({
     if (isoString === todayIso) {
       setStoreFilter("today");
       syncDashboardFilterUrl("today", null);
+      requestMobileDrawerClose();
       onSelectDay?.(isoString);
       return;
     }
@@ -80,6 +129,7 @@ export function WeeklyCalendar({
       setStoreSelectedDate(isoString);
       syncDashboardFilterUrl(activeFilter, isoString);
     }
+    requestMobileDrawerClose();
     onSelectDay?.(isoString);
   };
 
@@ -87,6 +137,7 @@ export function WeeklyCalendar({
     setWeekOffset(0);
     setStoreFilter("today");
     syncDashboardFilterUrl("today", null);
+    requestMobileDrawerClose();
   };
 
   const showResetToday = weekOffset !== 0 || Boolean(urlDate);
@@ -99,7 +150,7 @@ export function WeeklyCalendar({
           <h4 className="text-subtitle-s font-bold text-neutral-100 truncate">
             {t("title")}
           </h4>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-white/5 border border-neutral-700 dark:border-white/10 shadow-2xs dark:shadow-none text-tiny font-semibold text-neutral-300 shrink-0">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-card dark:bg-white/5 border border-neutral-700 dark:border-white/10 shadow-2xs dark:shadow-none text-tiny font-semibold text-neutral-300 shrink-0">
             <CalendarIcon
               size={11}
               className="text-primary dark:text-gold shrink-0"
@@ -144,8 +195,7 @@ export function WeeklyCalendar({
                 aria-pressed={isSelected}
                 title={day.tooltipText}
                 className={cn(
-                  "flex flex-col items-center justify-between rounded-lg transition-colors flex-1 min-w-0 cursor-pointer relative group/day",
-                  isCompact ? "h-12 py-1 px-0.5" : "h-14 py-1.5 px-1",
+                  "flex flex-col items-center justify-between rounded-lg transition-colors flex-1 min-w-0 cursor-pointer relative group/day h-14 py-1.5 px-1",
                   isSelected
                     ? "bg-gold text-on-gold font-bold shadow-glow-gold-xs"
                     : day.isToday
@@ -170,8 +220,7 @@ export function WeeklyCalendar({
 
                 <span
                   className={cn(
-                    "font-bold leading-none my-auto",
-                    isCompact ? "text-xs" : "text-body-s",
+                    "font-bold leading-none my-auto text-body-s",
                     isSelected
                       ? "text-on-gold"
                       : day.isToday

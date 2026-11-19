@@ -10,6 +10,7 @@
     "lockedActivityToast": "This activity is stored in your backpack. Subscribe to Premium to track time on it!",
     "deleteRecordSuccess": "Focus record removed successfully!",
     "deleteRecordError": "Error deleting focus record.",
+    "loadMoreRecordsError": "Error loading more focus records.",
     "tabs": {
       "timer": "Timer & Session",
       "metrics": "Metrics & History"
@@ -18,7 +19,8 @@
       "currentSession": "Current Session",
       "newActivity": "New Activity",
       "focusItem": "Focus Item"
-    }
+    },
+    "lockedActivityToastProductivity": "This activity is stored in your inventory. Subscribe to Premium to track time on it!"
   },
   "main": {
     "back": {
@@ -83,7 +85,9 @@
       "xpProductivityLabel": "pts",
       "goldLabel": "Gold",
       "goldProductivityLabel": "Credits",
-      "nonNegativeFloorNote": "Your balance never goes negative: if your current balance is lower, it is clamped at 0 (and your XP never drops below your current rank floor)."
+      "nonNegativeFloorNote": "Your balance never goes negative: if your current balance is lower, it is clamped at 0 (and your XP never drops below your current rank floor).",
+      "deleteHistoryHintProductivity": "Removes all sessions of this activity, their history entries, and reverts earned points, credits, and linked task minutes.",
+      "nonNegativeFloorNoteProductivity": "Your balance never goes negative: if your current balance is lower, it is clamped at 0 (and your points never drop below your current rank floor)."
     },
     "toasts": {
       "deleteActivitySuccess": "Activity deleted successfully.",
@@ -126,7 +130,12 @@
     "unlinkTask": "Unlink task",
     "taskSessionBadge": "Direct task focus",
     "linkActivityButton": "Link to an activity",
+    "linkActivityShort": "Activity",
     "linkActivityTooltip": "Also count this focus towards an activity (current time is kept)",
+    "controlsToolbarAria": "Focus session controls",
+    "dailyYieldHeroBadgeTitle": "Current Adventure Mode daily reward yield: {percent}%",
+    "dailyYieldZeroBadge": "🛑 8h cap reached (0% gain)",
+    "dailyYieldReducedBadge": "⚡ Daily yield at {percent}%",
     "zenModeTitle": "Enter Zen Mode (Shortcut: Z)",
     "zenModeButton": "Zen Mode",
     "pipOpenTitle": "Open floating window (Picture-in-Picture)",
@@ -151,7 +160,12 @@
     "skipBreakTitle": "Skip break and return to focus now",
     "skipBreakButton": "Skip Break",
     "startBreakTitle": "Save elapsed time (including overtime) and start break ({minutes}m)",
-    "startBreakButton": "Start Break ({minutes}m)"
+    "startBreakButton": "Start Break ({minutes}m)",
+    "sessionCapReachedTitleProductivity": "Maximum Points and Credits per single session are reached at 90 minutes (ultradian cycle). You can keep timing normally for your stats and daily goals.",
+    "sessionCapReachedBadgeProductivity": "⏱️ 1h30m cap reached — extra time counts in history",
+    "dailyYieldHeroBadgeTitleProductivity": "Current daily sustainability yield rate: {percent}%",
+    "dailyYieldZeroBadgeProductivity": "🛑 8h daily limit reached (0% extra yield)",
+    "dailyYieldReducedBadgeProductivity": "⚡ Daily yield at {percent}%"
   },
   "zenMode": {
     "dialogAria": "Focus Zen Mode",
@@ -180,7 +194,9 @@
     "sessionCapReachedBadge": "🪙 1h30m cap reached (maximum rewards secured)",
     "sessionCapReachedTitle": "Single-session XP and Coins reach their cap at 90 minutes. The timer keeps tracking your history.",
     "startBreakTitle": "Save time and start break ({minutes}m)",
-    "startBreakButton": "Start Break ({minutes}m)"
+    "startBreakButton": "Start Break ({minutes}m)",
+    "sessionCapReachedTitleProductivity": "Single-session Points and Credits reach their limit at 90 minutes. The timer keeps tracking your history.",
+    "sessionCapReachedBadgeProductivity": "⏱️ 1h30m cap reached (maximum yield secured)"
   },
   "stage": {
     "durationLabel": "Duration:"
@@ -237,7 +253,11 @@
     "emptyActivities": "No activities registered right now.",
     "createActivityButton": "Create first activity",
     "emptyTasks": "No pending tasks (Daily or To-Do) found.",
-    "searchTasksPlaceholder": "Search task by title...",
+    "searchTasksPlaceholder": "Search task or list...",
+    "clearSearchAria": "Clear search",
+    "taskFilterAll": "All",
+    "taskFilterDaily": "Dailies",
+    "taskFilterTodo": "To-Dos",
     "macroMicroHint": "Linking a task here will log focus time to both \"{activityName}\" and the task simultaneously.",
     "taskTypeDaily": "Daily",
     "taskTypeTodo": "To-Do",
@@ -259,7 +279,10 @@
     "linkTaskModalDescription": "Choose which task will be tracked alongside \"{activityName}\".",
     "backpackCouponTaskHint": "Backpack pause/leisure coupons do not track focus on tasks. To focus on a task, switch sessions by saving or discarding the current time.",
     "switchAction": "Switch",
-    "linkActivityToTaskHint": "Choosing an activity links the task \"{taskName}\" to it. The current time is kept and the focus counts for both."
+    "linkActivityToTaskHint": "Choosing an activity links the task \"{taskName}\" to it. The current time is kept and the focus counts for both.",
+    "inventoryTab": "Inventory ({count})",
+    "inventoryCouponTaskHint": "Inventory pause/leisure coupons do not track focus on tasks. To focus on a task, switch sessions by saving or discarding the current time.",
+    "emptyInventory": "No items or coupons in focus. Go to your inventory to send items to focus."
   },
   "timer": {
     "progressAria": "Focus timer progress indicator",
@@ -335,7 +358,14 @@
     "manageLinkLabel": "Manage Backpack",
     "emptyTitle": "No backpack items or coupons added to Focus.",
     "emptyDescription": "Redeem coupons and time-based rewards in the Store and add them here from your Backpack!",
-    "emptyAction": "Go to Backpack"
+    "emptyAction": "Go to Backpack",
+    "sectionAriaProductivity": "Inventory in Focus",
+    "titleProductivity": "Inventory",
+    "counterTitleProductivity": "Items and vouchers brought from your inventory to Focus",
+    "manageLinkLabelProductivity": "Manage Inventory",
+    "emptyTitleProductivity": "No inventory items or vouchers added to Focus.",
+    "emptyDescriptionProductivity": "Redeem vouchers and time-based rewards in the Showcase and add them here from your Inventory!",
+    "emptyActionProductivity": "Go to Inventory"
   },
   "contextMenu": {
     "startFocus": "Start Focus",
@@ -343,7 +373,8 @@
     "addRecord": "Add Record",
     "editActivity": "Edit Activity",
     "deleteActivity": "Delete Activity",
-    "returnToBackpack": "Return to Backpack"
+    "returnToBackpack": "Return to Backpack",
+    "returnToInventory": "Return to Inventory"
   },
   "store": {
     "breakCompletedToast": "Break completed! Ready for the next focus cycle?",
@@ -376,7 +407,9 @@
     "linkedTaskCompletedRewardsToast": "Task \"{name}\" completed! (+{xp} XP • +{coins} 🪙)",
     "linkedTaskCompletedRewardsToastProductivity": "Task \"{name}\" completed! (+{xp} Points • +{coins} Credits)",
     "linkedTaskCompletedNoRewardToast": "Task \"{name}\" marked as completed! (Reward already granted earlier)",
-    "linkedTaskCompleteFailedToast": "Could not complete the linked task."
+    "linkedTaskCompleteFailedToast": "Could not complete the linked task.",
+    "selectTargetToStartToastProductivity": "Select an activity, task, or inventory item to start focusing.",
+    "linkTargetBeforeSaveToastProductivity": "Link your focus to an activity, task, or inventory item before saving."
   },
   "notifications": {
     "defaultDocumentTitle": "Focus & Pomodoro | HabitParty",
@@ -428,7 +461,34 @@
     "goldEarnedLabel": "Gold Earned",
     "creditsEarnedLabel": "Credits Earned",
     "totalGoldLabel": "Total Gold",
-    "totalCreditsLabel": "Total Credits"
+    "totalCreditsLabel": "Total Credits",
+    "dailyYieldRateLabel": "{percent}% yield",
+    "dailyYieldCappedLabel": "0% • 8h cap",
+    "dailyYieldTooltipTitle": "Daily Yield (Adventure Mode)",
+    "dailyYieldTooltipAria": "Learn how daily diminishing focus returns work",
+    "dailyYieldTooltipIntro": "To keep healthy pacing, daily Adventure focus gains step down over the day:",
+    "dailyYieldTier100": "0h to 4h: 100% gain (full XP & Coins)",
+    "dailyYieldTier50": "4h to 6h: 50% gain",
+    "dailyYieldTier25": "6h to 8h: 25% gain",
+    "dailyYieldTier0": "Over 8h: 0% (history still logged)",
+    "dailyYieldZeroReachedHint": "You reached the 8h daily cap. Focus sessions still count in your history.",
+    "dailyYieldRemainingHint": "{remaining} left at this rate ({untilCap} until 0%).",
+    "activeYieldRateSub": "Current rate: {percent}%",
+    "dailyYieldCappedLabelProductivity": "0% • 8h cap",
+    "dailyYieldRateLabelProductivity": "{percent}% yield",
+    "dailyYieldTooltipTitleProductivity": "Daily Sustainability (Anti-Burnout)",
+    "dailyYieldTooltipAriaProductivity": "Learn how daily focus sustainability pacing works",
+    "dailyYieldTooltipIntroProductivity": "To preserve sustainable pacing over the day, yield steps down as hours accumulate:",
+    "dailyYieldTier100Productivity": "0h to 4h: 100% yield (full Points & Credits)",
+    "dailyYieldTier50Productivity": "4h to 6h: 50% yield",
+    "dailyYieldTier25Productivity": "6h to 8h: 25% yield",
+    "dailyYieldTier0Productivity": "Over 8h: 0% (history still logged)",
+    "dailyYieldZeroReachedHintProductivity": "You reached the 8h daily limit. Focus sessions continue logging in your history.",
+    "dailyYieldRemainingHintProductivity": "{remaining} left in this tier ({untilCap} until 0% extra yield).",
+    "activeYieldRateSubProductivity": "Current pace: {percent}%",
+    "dailyGoalLabel": "Daily goal",
+    "dailyGoalReachedLabel": "Daily goal reached!",
+    "dailyGoalProgressAria": "Daily focus goal progress: {percent}%"
   },
   "weeklyChart": {
     "title": "Focus Analytics",
@@ -461,7 +521,9 @@
     "deleteHistoryLabel": "Also delete from History",
     "deleteHistoryHint": "Also removes this session entry from History. Coins and XP are already reverted safely (never dropping below your level floor or negative balance).",
     "showMore": "Show more",
-    "loadingMore": "Loading..."
+    "loadingMore": "Loading...",
+    "deleteConfirmDescriptionProductivity": "Are you sure you want to permanently delete the session record <strong>\"{name}\"</strong>? Points and credits earned from this session will also be safely reverted. This action cannot be undone.",
+    "deleteHistoryHintProductivity": "Also removes this session entry from History. Credits and points are already reverted safely (never dropping below your rank floor or negative balance)."
   },
   "recordDetails": {
     "dialogAriaLabel": "Edit Focus Record",
@@ -507,6 +569,13 @@
     "selectActivityPlaceholder": "Select an activity",
     "taskSelectLabel": "Linked Task (optional)",
     "noTaskLinkedOption": "No linked task",
+    "searchTasksPlaceholder": "Search task by name or list...",
+    "noTasksMatchingSearch": "No tasks match your filter.",
+    "taskFilterAll": "All",
+    "taskFilterDaily": "Dailies",
+    "taskFilterTodo": "To-Dos",
+    "taskTypeDailyLabel": "Daily",
+    "taskTypeTodoLabel": "To-Do",
     "pausedFreePlanNotice": "{count, plural, one {# activity paused on the Free plan.} other {# activities paused on the Free plan.}}",
     "backpackItemSelectLabel": "Backpack Item",
     "balanceBadge": "Balance: {minutes}m",
@@ -547,8 +616,14 @@
       "recordSaved": "Focus record added successfully!",
       "itemTimeLogged": "Item time logged successfully!",
       "saveFailed": "Failed to log focus session.",
-      "unexpectedError": "An error occurred while saving the manual record."
-    }
+      "unexpectedError": "An error occurred while saving the manual record.",
+      "noInventoryItems": "No inventory items available to link.",
+      "futureDateNotAllowed": "Cannot log focus sessions in the future.",
+      "futureEndTimeNotAllowed": "End time cannot be in the future."
+    },
+    "inventoryOption": "Inventory",
+    "inventoryItemSelectLabel": "Inventory Item",
+    "selectItemPlaceholderProductivity": "Select an inventory item"
   },
   "formatters": {
     "dateAtTime": "{day} at {time}",
@@ -615,7 +690,8 @@
     "fallbackKeepSession": "Keep Session",
     "discardAndStartTitle": "Discard current and start new",
     "discardAndStartDescription": "Discards unsaved time from this session and starts the timer for <strong>{target}</strong> from scratch.",
-    "keepCurrentSession": "Keep Current Session"
+    "keepCurrentSession": "Keep Current Session",
+    "targetTypeInventoryProductivity": "Inventory Item"
   },
   "switchTimerModal": {
     "title": "Switch Focus Mode",

@@ -41,4 +41,8 @@ export const FRAME_GRADIENTS: Record<string, [string, string]> = {
   fire_phoenix: ["#EF4444", "#F59E0B"],
   emerald_mystic: ["#10B981", "#2DD4BF"],
   amethyst_void: ["#8B5CF6", "#E879F9"],
+  forged_silver: ["#F8FAFC", "#64748B"],
+  obsidian_crest: ["#818CF8", "#1E1B4B"],
+  chronos_bronze: ["#FBBF24", "#78350F"],
+  legend_laurel: ["#FEF08A", "#10B981"],
 };

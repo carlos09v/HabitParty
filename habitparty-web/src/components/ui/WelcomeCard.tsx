@@ -82,7 +82,6 @@ export function WelcomeCard({
   icon,
   stats,
   headingLevel = "h1",
-  compact = false,
   className,
   imageWidth,
   imageHeight,
@@ -132,14 +131,8 @@ export function WelcomeCard({
   const fallbackSubtitle = subtitle ?? defaultDetail?.subtitle;
   const fallbackBullets = bullets ?? defaultDetail?.bullets ?? [];
   const resolvedImageSrc = imageSrc ?? defaultDetail?.imageSrc;
-  const resolvedImageWidth =
-    imageWidth ??
-    (compact ? defaultDetail?.compactWidth : defaultDetail?.normalWidth) ??
-    120;
-  const resolvedImageHeight =
-    imageHeight ??
-    (compact ? defaultDetail?.compactHeight : defaultDetail?.normalHeight) ??
-    72;
+  const resolvedImageWidth = imageWidth ?? defaultDetail?.normalWidth ?? 120;
+  const resolvedImageHeight = imageHeight ?? defaultDetail?.normalHeight ?? 72;
 
   const resolvedTitle = getCardText("title", fallbackTitle) || fallbackTitle;
   const resolvedSubtitle =
@@ -199,10 +192,7 @@ export function WelcomeCard({
     <>
       <section
         className={cn(
-          "w-full shrink-0 bg-linear-to-r from-purple-500/[0.04] via-card to-amber-500/[0.03] dark:from-primary-dark/45 dark:via-surface/85 dark:to-primary-dark/30 border border-neutral-700 dark:border-primary/35 shadow-xs dark:shadow-[0_0_16px_rgba(124,58,237,0.08)] relative rounded-2xl",
-          compact
-            ? "px-3.5 py-2.5 sm:px-4 sm:py-3"
-            : "px-4 py-3 sm:px-5 sm:py-3.5",
+          "w-full shrink-0 bg-linear-to-r from-primary/[0.05] via-card to-amber-500/[0.03] dark:from-primary-dark/45 dark:via-surface/85 dark:to-primary-dark/30 border border-neutral-700 dark:border-primary/35 shadow-xs dark:shadow-[0_0_16px_color-mix(in_srgb,var(--color-primary)_10%,transparent)] relative rounded-2xl px-4 py-3 sm:px-5 sm:py-3.5",
           className,
         )}
         aria-label={t("sectionAria", { title: resolvedTitle })}
@@ -212,22 +202,14 @@ export function WelcomeCard({
           <div className="flex items-start sm:items-center justify-between gap-3 min-w-0 flex-1">
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <div
-                className={cn(
-                  "rounded-xl bg-primary/10 dark:bg-gold/15 border border-primary/25 dark:border-gold/30 flex items-center justify-center text-primary dark:text-gold shrink-0",
-                  compact ? "w-9 h-9" : "w-10 h-10",
-                )}
+                className="rounded-xl bg-primary/10 dark:bg-gold/15 border border-primary/25 dark:border-gold/30 flex items-center justify-center text-primary dark:text-gold shrink-0 w-10 h-10"
                 aria-hidden="true"
               >
-                <HeaderIcon size={compact ? 17 : 19} />
+                <HeaderIcon size={19} />
               </div>
 
               <div className="min-w-0 flex-1">
-                <HeadingTag
-                  className={cn(
-                    "font-extrabold text-neutral-50 tracking-tight truncate",
-                    compact ? "text-base sm:text-lg" : "text-lg sm:text-xl",
-                  )}
-                >
+                <HeadingTag className="font-extrabold text-neutral-50 tracking-tight truncate text-lg sm:text-xl">
                   {resolvedTitle}
                 </HeadingTag>
                 {resolvedSubtitle && (
@@ -284,8 +266,7 @@ export function WelcomeCard({
                   const isInteractive = typeof stat.onClick === "function";
                   const isActive = Boolean(stat.active);
                   const pillClasses = cn(
-                    "flex items-center gap-2.5 rounded-xl border transition-[border-color,background-color,box-shadow,transform] duration-150 min-w-0 text-left",
-                    compact ? "px-2.5 py-1.5" : "px-3 py-1.5 sm:px-3.5 sm:py-2",
+                    "flex items-center gap-2.5 rounded-xl border transition-[border-color,background-color,box-shadow,transform] duration-150 min-w-0 text-left px-3 py-1.5 sm:px-3.5 sm:py-2",
                     getStatCardVariantClasses(
                       stat.variant,
                       isInteractive,
@@ -298,13 +279,12 @@ export function WelcomeCard({
                       {Icon && (
                         <div
                           className={cn(
-                            "rounded-lg shrink-0 flex items-center justify-center border",
-                            compact ? "w-7 h-7" : "w-8 h-8",
+                            "rounded-lg shrink-0 flex items-center justify-center border w-8 h-8",
                             getStatIconClasses(stat.variant),
                           )}
                           aria-hidden="true"
                         >
-                          <Icon size={compact ? 14 : 16} />
+                          <Icon size={16} />
                         </div>
                       )}
                       <div className="flex flex-col min-w-0">
@@ -313,8 +293,7 @@ export function WelcomeCard({
                         </span>
                         <span
                           className={cn(
-                            "font-extrabold truncate leading-tight",
-                            compact ? "text-xs sm:text-sm" : "text-sm",
+                            "font-extrabold truncate leading-tight text-sm",
                             getStatValueClasses(stat.variant),
                           )}
                         >
@@ -447,7 +426,7 @@ export function WelcomeCard({
             </div>
 
             {resolvedImageSrc && (
-              <div className="mb-3 rounded-xl bg-white dark:bg-white/[0.03] border border-neutral-700 dark:border-white/10 p-2.5 flex items-center justify-center h-24 overflow-hidden">
+              <div className="mb-3 rounded-xl bg-card dark:bg-white/[0.03] border border-neutral-700 dark:border-white/10 p-2.5 flex items-center justify-center h-24 overflow-hidden">
                 <Image
                   src={resolvedImageSrc}
                   alt={t("illustrationAlt", { title: resolvedTitle })}

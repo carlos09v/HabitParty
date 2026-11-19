@@ -7,7 +7,6 @@ export interface CatalogEmptyStateProps {
   title: string;
   description: string;
   action?: ReactNode;
-  isCompact?: boolean;
   className?: string;
 }
 
@@ -20,14 +19,12 @@ export function CatalogEmptyState({
   title,
   description,
   action,
-  isCompact = false,
   className,
 }: CatalogEmptyStateProps) {
   return (
     <div
       className={cn(
-        "w-full flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-primary/30 bg-primary-dark/20",
-        isCompact ? "py-8 px-4 gap-2.5" : "py-12 px-6 gap-3.5",
+        "w-full flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-primary/30 bg-primary-dark/20 py-12 px-6 gap-3.5",
         className,
       )}
     >

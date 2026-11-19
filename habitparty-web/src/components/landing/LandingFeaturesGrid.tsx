@@ -1,13 +1,13 @@
 import { Award } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { LANDING_FEATURE_CONFIGS } from "@/constants/landing";
+import { LANDING_ANCHORS, LANDING_FEATURE_CONFIGS } from "@/constants/landing";
 import { cn } from "@/utils";
 
 export function LandingFeaturesGrid() {
   const t = useTranslations("landing.features");
 
   return (
-    <section id="recursos" className="py-20 md:py-28 relative">
+    <section id={LANDING_ANCHORS.features} className="py-20 md:py-28 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-card dark:bg-surface border border-neutral-700 dark:border-white/10 text-neutral-200 text-xs font-semibold uppercase tracking-wider mb-3">
@@ -25,12 +25,23 @@ export function LandingFeaturesGrid() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {LANDING_FEATURE_CONFIGS.map((item) => {
             const Icon = item.icon;
+            const isFullWidth = item.id === "partyGuild";
             return (
               <div
                 key={item.id}
-                className="p-6 sm:p-7 rounded-2xl bg-card/85 dark:bg-surface/65 border border-neutral-700/80 dark:border-white/10 shadow-none"
+                className={cn(
+                  "p-6 sm:p-7 rounded-2xl bg-card/85 dark:bg-surface/65 border border-neutral-700/80 dark:border-white/10 shadow-none",
+                  isFullWidth &&
+                    "md:col-span-2 lg:col-span-3 lg:flex lg:items-center lg:justify-between lg:gap-8",
+                )}
               >
-                <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
+                <div
+                  className={cn(
+                    "flex items-center justify-between flex-wrap gap-2 mb-4",
+                    isFullWidth &&
+                      "lg:mb-0 lg:shrink-0 lg:flex-col lg:items-start",
+                  )}
+                >
                   <div
                     className={cn(
                       "w-12 h-12 rounded-xl border flex items-center justify-center",
@@ -48,12 +59,14 @@ export function LandingFeaturesGrid() {
                     {t(`items.${item.id}.badge`)}
                   </span>
                 </div>
-                <h3 className="text-lg font-bold text-neutral-50 mb-2">
-                  {t(`items.${item.id}.title`)}
-                </h3>
-                <p className="text-sm text-neutral-300 leading-relaxed">
-                  {t(`items.${item.id}.description`)}
-                </p>
+                <div className={cn(isFullWidth && "lg:flex-1")}>
+                  <h3 className="text-lg font-bold text-neutral-50 mb-2">
+                    {t(`items.${item.id}.title`)}
+                  </h3>
+                  <p className="text-sm text-neutral-300 leading-relaxed">
+                    {t(`items.${item.id}.description`)}
+                  </p>
+                </div>
               </div>
             );
           })}

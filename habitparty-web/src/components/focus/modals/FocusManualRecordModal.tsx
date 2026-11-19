@@ -10,6 +10,7 @@ import {
   Hourglass,
   ListTodo,
   Minus,
+  Package,
   Plus,
   Sparkles,
   Target,
@@ -17,7 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useId } from "react";
+import { useId, useMemo } from "react";
 import { BaseModal } from "@/components/ui/BaseModal";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { DurationHoursBadge } from "@/components/ui/DurationHoursBadge";
@@ -31,9 +32,10 @@ import {
   FOCUS_MANUAL_PRESETS,
   getFocusIcon,
   MAX_FOCUS_ACTIVITIES_FREE,
+  MAX_MANUAL_FOCUS_MINUTES,
 } from "@/constants/focus";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useFocusManualRecordForm } from "@/hooks/useFocusManualRecordForm";
-import { useUserStore } from "@/store/userStore";
 import type {
   FocusActivity,
   FocusableTaskItem,
@@ -41,8 +43,10 @@ import type {
 } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn } from "@/utils";
-import { getTodayDateString } from "@/utils/date";
-import { getItemRemainingMinutes } from "@/utils/focusFormatters";
+import {
+  formatFocusMinutes,
+  getItemRemainingMinutes,
+} from "@/utils/focusFormatters";
 
 interface FocusManualRecordModalProps {
   isOpen: boolean;
@@ -70,6 +74,7 @@ export function FocusManualRecordModal({
   onSuccess,
 }: FocusManualRecordModalProps) {
   const t = useTranslations("focus.manualRecord");
+  const { isGamified } = useExperienceMode();
   const durationHoursHintId = useId();
   const form = useFocusManualRecordForm({
     isOpen,
@@ -92,6 +97,49 @@ export function FocusManualRecordModal({
     form.completedPomos > 0
       ? Math.floor(form.durationMinutes / form.completedPomos)
       : form.durationMinutes;
+
+  const taskSelectOptions = useMemo(() => {
+    const sortedTasks = [...focusableTasks].sort((a, b) => {
+      const completedDiff =
+        Number(Boolean(a.completed)) - Number(Boolean(b.completed));
+      if (completedDiff !== 0) return completedDiff;
+      const focusDiff = (b.totalFocusMinutes ?? 0) - (a.totalFocusMinutes ?? 0);
+      if (focusDiff !== 0) return focusDiff;
+      return a.title.localeCompare(b.title);
+    });
+
+    return [
+      { value: "", label: t("noTaskLinkedOption") },
+      ...sortedTasks.map((task) => {
+        const typeLabel =
+          task.type === "daily"
+            ? t("taskTypeDailyLabel")
+            : t("taskTypeTodoLabel");
+        return {
+          value: task.id,
+          label: task.title,
+          group: task.type,
+          badge: task.columnTitle || typeLabel,
+          meta:
+            (task.totalFocusMinutes ?? 0) > 0
+              ? formatFocusMinutes(task.totalFocusMinutes ?? 0)
+              : undefined,
+          keywords: [typeLabel, task.columnTitle, task.workspaceName]
+            .filter(Boolean)
+            .join(" "),
+        };
+      }),
+    ];
+  }, [focusableTasks, t]);
+
+  const taskFilterTabs = useMemo(
+    () => [
+      { value: "", label: t("taskFilterAll") },
+      { value: "daily", label: t("taskFilterDaily") },
+      { value: "todo", label: t("taskFilterTodo") },
+    ],
+    [t],
+  );
 
   return (
     <BaseModal
@@ -133,8 +181,10 @@ export function FocusManualRecordModal({
                     },
                     {
                       value: "ITEM",
-                      label: t("backpackOption"),
-                      icon: Backpack,
+                      label: isGamified
+                        ? t("backpackOption")
+                        : t("inventoryOption"),
+                      icon: isGamified ? Backpack : Package,
                       badge: form.availableBackpackItems.length,
                     },
                   ]}
@@ -191,18 +241,16 @@ export function FocusManualRecordModal({
                     <Select
                       id="select-task"
                       compact
+                      searchable
+                      searchPlaceholder={t("searchTasksPlaceholder")}
+                      noResultsMessage={t("noTasksMatchingSearch")}
+                      filterTabs={taskFilterTabs}
                       icon={<ListTodo size={16} />}
                       label={t("taskSelectLabel")}
                       placeholder={t("noTaskLinkedOption")}
                       value={form.selectedTaskId}
                       onChange={form.setSelectedTaskId}
-                      options={[
-                        { value: "", label: t("noTaskLinkedOption") },
-                        ...focusableTasks.map((task) => ({
-                          value: task.id,
-                          label: task.title,
-                        })),
-                      ]}
+                      options={taskSelectOptions}
                     />
                   )}
                 </div>
@@ -211,10 +259,20 @@ export function FocusManualRecordModal({
                   <Select
                     id="select-item"
                     compact
-                    icon={<Backpack size={16} />}
+                    icon={
+                      isGamified ? (
+                        <Backpack size={16} />
+                      ) : (
+                        <Package size={16} />
+                      )
+                    }
                     label={
                       <span className="flex items-center justify-between w-full">
-                        <span>{t("backpackItemSelectLabel")}</span>
+                        <span>
+                          {isGamified
+                            ? t("backpackItemSelectLabel")
+                            : t("inventoryItemSelectLabel")}
+                        </span>
                         {form.selectedItem && (
                           <span className="text-tiny font-semibold text-amber-800 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30 dark:text-gold dark:bg-gold/10 dark:border-gold/25">
                             {t("balanceBadge", {
@@ -227,7 +285,9 @@ export function FocusManualRecordModal({
                     placeholder={
                       form.availableBackpackItems.length === 0
                         ? t("noItemsAvailable")
-                        : t("selectItemPlaceholder")
+                        : isGamified
+                          ? t("selectItemPlaceholder")
+                          : t("selectItemPlaceholderProductivity")
                     }
                     emptyMessage={t("noItemsAvailable")}
                     value={form.selectedItemId}
@@ -424,7 +484,7 @@ export function FocusManualRecordModal({
                         label={t("totalMinutesLabel")}
                         compact
                         min={0}
-                        max={600}
+                        max={MAX_MANUAL_FOCUS_MINUTES}
                         value={form.durationInput}
                         onChange={(e) =>
                           form.handleDurationInputChange(e.target.value)
@@ -432,13 +492,15 @@ export function FocusManualRecordModal({
                         onStep={(delta) =>
                           form.setDurationMinutes(
                             Math.min(
-                              600,
+                              MAX_MANUAL_FOCUS_MINUTES,
                               Math.max(1, form.durationMinutes + delta),
                             ),
                           )
                         }
                         decrementDisabled={form.durationMinutes <= 1}
-                        incrementDisabled={form.durationMinutes >= 600}
+                        incrementDisabled={
+                          form.durationMinutes >= MAX_MANUAL_FOCUS_MINUTES
+                        }
                         icon={<Clock size={16} />}
                         iconSize={13}
                         aria-describedby={
@@ -516,10 +578,7 @@ export function FocusManualRecordModal({
                     label={t("sessionDateLabel")}
                     value={form.sessionDate}
                     onChange={form.setSessionDate}
-                    maxDate={getTodayDateString(
-                      new Date(),
-                      useUserStore.getState().user?.timezone,
-                    )}
+                    maxDate={form.maxDate}
                     placeholder={t("todayPlaceholder")}
                     compact
                     allowClear={false}

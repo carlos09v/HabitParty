@@ -15,7 +15,34 @@ export type AchievementRarity =
   | "EPIC"
   | "LEGENDARY";
 
-export type HighlightType = "ACHIEVEMENT" | "ACCOUNT_BADGE";
+export type HighlightType =
+  | "ACHIEVEMENT"
+  | "ACCOUNT_BADGE"
+  | "STAT_METRIC"
+  | "ARTIFACT";
+
+export type ArtifactSourceType = "ACHIEVEMENT" | "MYSTERY_BOX" | "SPECIAL";
+
+export interface ArtifactSummaryDTO {
+  id: string;
+  code: string;
+  iconName: string;
+  rarity: AchievementRarity;
+}
+
+export interface ArtifactItemResponseDTO {
+  id: string;
+  code: string;
+  iconName: string;
+  rarity: AchievementRarity;
+  sourceType: ArtifactSourceType;
+  requiredAchievementCode: string | null;
+  displayOrder: number;
+  unlocked: boolean;
+  unlockedAt: string | null;
+  obtainedSource: string | null;
+  seen: boolean;
+}
 
 export type AccountBadgeId =
   | "FOUNDER"
@@ -40,6 +67,7 @@ export interface AchievementItemResponseDTO {
   seen: boolean;
   currentValue: number;
   progressPercent: number;
+  grantedArtifact?: ArtifactSummaryDTO | null;
 }
 
 export interface ProfileHighlightResponseDTO {
@@ -68,6 +96,8 @@ export interface ShowcaseStatsResponseDTO {
   maxAchievementPoints: number;
   unlockedAchievementsCount: number;
   totalAchievementsCount: number;
+  unlockedArtifactsCount?: number;
+  totalArtifactsCount?: number;
 }
 
 export interface UserShowcaseResponseDTO {
@@ -75,6 +105,7 @@ export interface UserShowcaseResponseDTO {
   stats: ShowcaseStatsResponseDTO;
   highlights: ProfileHighlightResponseDTO[];
   achievements: AchievementItemResponseDTO[];
+  artifacts?: ArtifactItemResponseDTO[];
 }
 
 export interface HighlightSlotInputDTO {
@@ -91,4 +122,6 @@ export interface UpdateProfileHighlightsRequestDTO {
 export interface UpdateShowcaseProfileRequestDTO {
   bio?: string | null;
   avatarFrame?: string | null;
+  equippedTitle?: string | null;
+  avatarPreset?: string | null;
 }

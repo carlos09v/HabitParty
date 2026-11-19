@@ -42,9 +42,10 @@ public class RewardController implements RewardApi {
   @Override
   public ResponseEntity<Void> redeemReward(
       UUID rewardId,
+      int quantity,
       AuthenticatedUser usuarioLogado) {
     UUID userId = usuarioLogado.id();
-    redeemRewardUseCase.execute(rewardId, userId);
+    redeemRewardUseCase.execute(rewardId, userId, quantity);
 
     return ResponseEntity.noContent().build();
   }

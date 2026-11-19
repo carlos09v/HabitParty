@@ -50,7 +50,7 @@ export default function MainError({
           <button
             type="button"
             onClick={() => reset()}
-            className="w-full py-3.5 rounded-lg bg-primary hover:bg-primary-dark text-white font-bold transition-colors shadow-sm dark:shadow-[0_0_15px_rgba(124,58,237,0.2)] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background cursor-pointer"
+            className="w-full py-3.5 rounded-lg bg-primary hover:bg-primary-dark text-white font-bold transition-colors shadow-sm dark:shadow-[0_0_15px_color-mix(in_srgb,var(--color-primary)_20%,transparent)] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background cursor-pointer"
           >
             {t("retryButton")}
           </button>

@@ -1,8 +1,10 @@
 "use client";
 
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { type AvatarFrameId, getAvatarFrame } from "@/constants/avatarFrames";
+import { resolveAvatarPreset } from "@/constants/cosmetics";
 import { useActiveAvatarFrame } from "@/store/avatarFrameStore";
 import { cn } from "@/utils";
 
@@ -37,6 +39,7 @@ export interface UserAvatarProps {
   className?: string;
   hasRing?: boolean;
   frameId?: AvatarFrameId;
+  presetId?: string | null;
 }
 
 const SIZE_CLASSES = {
@@ -45,6 +48,13 @@ const SIZE_CLASSES = {
   lg: "w-16 h-16 text-lg",
   xl: "w-20 h-20 sm:w-24 sm:h-24 text-2xl font-bold",
 };
+
+const PRESET_ICON_SIZES = {
+  sm: 15,
+  md: 20,
+  lg: 28,
+  xl: 38,
+} as const;
 
 const FRAME_OFFSET_CLASSES = {
   sm: "-inset-[2px]",
@@ -72,12 +82,16 @@ export function UserAvatar({
   className,
   hasRing = false,
   frameId,
+  presetId,
 }: UserAvatarProps) {
+  const tAvatar = useTranslations("ui.avatar");
   const [imageError, setImageError] = useState(false);
   const activeFrameIdFromStore = useActiveAvatarFrame();
   const initials = getInitials(name);
   const sizeClass = SIZE_CLASSES[size];
   const resolvedSrc = resolveAvatarSrc(src);
+  const resolvedPreset = resolveAvatarPreset(presetId);
+  const resolvedAriaName = name?.trim() || tAvatar("defaultUser");
 
   // Reseta erro caso a URL da foto mude
   // biome-ignore lint/correctness/useExhaustiveDependencies: Reseta flag de erro sempre que a URL resolvida mudar
@@ -86,7 +100,7 @@ export function UserAvatar({
   }, [resolvedSrc]);
 
   // Se frameId foi explicitamente fornecido, usa ele.
-  // Caso contrário, se hasRing for true (usuário Premium), usa a moldura ativa do store.
+  // Caso contrário, se hasRing for true, usa a moldura ativa do store.
   const resolvedFrameId =
     frameId !== undefined ? frameId : hasRing ? activeFrameIdFromStore : "none";
 
@@ -99,6 +113,39 @@ export function UserAvatar({
       : "";
 
   const renderContent = () => {
+    if (resolvedPreset) {
+      const PresetIcon = resolvedPreset.icon;
+      const isLegendPreset = resolvedPreset.id === "level_legend";
+      return (
+        <div
+          className={cn(
+            "relative rounded-full shrink-0 flex items-center justify-center select-none overflow-hidden",
+            "bg-gradient-to-br shadow-inner border border-white/25",
+            resolvedPreset.cssGradient,
+            sizeClass,
+            ringClass,
+            hasActiveFrame && "ring-2 ring-background shadow-xs",
+            className,
+          )}
+          role="img"
+          aria-label={tAvatar("avatarLabel", { name: resolvedAriaName })}
+        >
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-[3px] rounded-full border border-white/20"
+          />
+          <PresetIcon
+            size={PRESET_ICON_SIZES[size]}
+            className={cn(
+              "relative z-10 drop-shadow-xs",
+              isLegendPreset ? "text-neutral-950" : "text-white",
+            )}
+            aria-hidden="true"
+          />
+        </div>
+      );
+    }
+
     if (resolvedSrc && !imageError) {
       return (
         <div
@@ -112,7 +159,7 @@ export function UserAvatar({
         >
           <Image
             src={resolvedSrc}
-            alt={`Avatar de ${name || "usuário"}`}
+            alt={tAvatar("avatarAlt", { name: resolvedAriaName })}
             fill
             sizes="(max-width: 768px) 100vw, 96px"
             className="object-cover"
@@ -138,7 +185,7 @@ export function UserAvatar({
           className,
         )}
         role="img"
-        aria-label={`Avatar: ${name || "Usuário"}`}
+        aria-label={tAvatar("avatarLabel", { name: resolvedAriaName })}
       >
         <span className="text-white drop-shadow-xs">{initials}</span>
       </div>
@@ -150,14 +197,16 @@ export function UserAvatar({
       <div className="relative inline-flex items-center justify-center shrink-0">
         {/* Moldura circular animada com rotação de luz contínua */}
         <div
+          aria-hidden="true"
           className={cn(
             "absolute rounded-full animate-frame-spin pointer-events-none",
             frame.ringClass,
             FRAME_OFFSET_CLASSES[size],
           )}
         />
-        {/* Pulso de aura e brilho cósmico (100% compositor via opacity + scale) */}
+        {/* Pulso de aura e brilho */}
         <div
+          aria-hidden="true"
           className={cn(
             "absolute rounded-full animate-frame-pulse pointer-events-none",
             frame.ringClass,

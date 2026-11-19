@@ -1,11 +1,16 @@
 "use client";
 
-import { Check, Dices, Sparkles } from "lucide-react";
+import { ArrowRight, Check, Dices, Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { AchievementIcon } from "@/components/showcase/AchievementIcon";
 import { BaseModal } from "@/components/ui/BaseModal";
+import { getRarityTheme } from "@/constants/achievements";
+import { getMysteryBadgeVariantClass } from "@/constants/reward";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useMysteryBoxRoulette } from "@/hooks/useMysteryBoxRoulette";
 import type { InventoryItem, MysteryBoxOpenResult } from "@/types/inventory";
-import { cn } from "@/utils";
+import { cn, resolveArtifactCopy } from "@/utils";
 import { getRewardIcon } from "@/utils/rewardMapper";
 
 interface MysteryBoxRouletteModalProps {
@@ -21,7 +26,10 @@ export function MysteryBoxRouletteModal({
   item,
   onSuccess,
 }: MysteryBoxRouletteModalProps) {
+  const router = useRouter();
   const t = useTranslations("inventory.rouletteModal");
+  const tArtifacts = useTranslations("showcase.artifacts");
+  const { isGamified } = useExperienceMode();
   const {
     phase,
     wonResult,
@@ -78,7 +86,13 @@ export function MysteryBoxRouletteModal({
           </h2>
         </div>
         <p className="text-label-g text-neutral-300">
-          {phase === "won" ? t("subtitleWon") : t("subtitleIdle")}
+          {phase === "won"
+            ? isGamified
+              ? t("subtitleWon")
+              : t("subtitleWonProductivity")
+            : isGamified
+              ? t("subtitleIdle")
+              : t("subtitleIdleProductivity")}
         </p>
       </div>
 
@@ -132,13 +146,7 @@ export function MysteryBoxRouletteModal({
                   <span
                     className={cn(
                       "text-label-m font-bold px-1.5 py-0.5 rounded border leading-none self-end",
-                      trackItem.badgeVariant === "emerald"
-                        ? "text-emerald-700 bg-emerald-500/15 border-emerald-500/35 dark:text-success-400 dark:bg-success-500/15 dark:border-success-500/30"
-                        : trackItem.badgeVariant === "amber"
-                          ? "text-amber-700 bg-amber-500/15 border-amber-500/35 dark:text-amber-400 dark:bg-amber-500/15 dark:border-amber-500/30"
-                          : trackItem.badgeVariant === "purple"
-                            ? "text-magenta bg-magenta/10 border-magenta/30 dark:bg-magenta/15 dark:border-magenta/30"
-                            : "text-amber-800 bg-amber-500/15 border-amber-500/35 dark:text-gold dark:bg-gold/15 dark:border-gold/30",
+                      getMysteryBadgeVariantClass(trackItem.badgeVariant),
                     )}
                   >
                     {trackItem.badgeLabel}
@@ -187,7 +195,9 @@ export function MysteryBoxRouletteModal({
       {phase === "idle" && poolItems.length > 0 && (
         <div className="w-full flex flex-col gap-2">
           <span className="text-label-m text-neutral-400 font-medium">
-            {t("possiblePrizesTitle")}
+            {isGamified
+              ? t("possiblePrizesTitle")
+              : t("possiblePrizesTitleProductivity")}
           </span>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
             {poolItems.map((poolItem) => {
@@ -208,13 +218,7 @@ export function MysteryBoxRouletteModal({
                       <span
                         className={cn(
                           "text-[10px] font-bold px-1 py-0.5 rounded border leading-none shrink-0",
-                          poolItem.badgeVariant === "emerald"
-                            ? "text-emerald-700 bg-emerald-500/15 border-emerald-500/35 dark:text-success-400 dark:bg-success-500/15 dark:border-success-500/30"
-                            : poolItem.badgeVariant === "amber"
-                              ? "text-amber-700 bg-amber-500/15 border-amber-500/35 dark:text-amber-400 dark:bg-amber-500/15 dark:border-amber-500/30"
-                              : poolItem.badgeVariant === "purple"
-                                ? "text-magenta bg-magenta/10 border-magenta/30 dark:bg-magenta/15 dark:border-magenta/30"
-                                : "text-amber-800 bg-amber-500/15 border-amber-500/35 dark:text-gold dark:bg-gold/15 dark:border-gold/30",
+                          getMysteryBadgeVariantClass(poolItem.badgeVariant),
                         )}
                       >
                         {poolItem.badgeLabel}
@@ -235,36 +239,133 @@ export function MysteryBoxRouletteModal({
 
       {/* Revelação do Prêmio Conquistado */}
       {phase === "won" && wonResult && (
-        <div className="w-full flex flex-col items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/35 dark:bg-gold/10 dark:border-gold/40 shadow-glow-gold-xs animate-in zoom-in-95 duration-200">
+        <div className="w-full flex flex-col items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/35 dark:bg-gold/10 dark:border-gold/40 shadow-glow-gold-xs animate-in zoom-in-95 duration-200 motion-reduce:animate-none">
           <div className="flex flex-wrap items-center justify-center gap-2 text-amber-700 dark:text-gold font-bold text-body-m text-center">
             <Sparkles
               size={18}
-              className="animate-spin text-amber-600 dark:text-gold shrink-0"
+              className="animate-spin motion-reduce:animate-none text-amber-600 dark:text-gold shrink-0"
+              aria-hidden="true"
             />
-            <span>{t("prizeUnlockedTitle")}</span>
+            <span>
+              {isGamified
+                ? t("prizeUnlockedTitle")
+                : t("prizeUnlockedTitleProductivity")}
+            </span>
           </div>
           <div className="flex items-center gap-3 w-full justify-center min-w-0">
             <div className="w-12 h-12 shrink-0 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-700 dark:bg-gold/20 dark:border-gold/40 flex items-center justify-center dark:text-gold shadow-sm dark:shadow-md">
               {(() => {
                 const WinIcon = getRewardIcon(wonResult.rewardIcon);
-                return <WinIcon size={24} />;
+                return <WinIcon size={24} aria-hidden="true" />;
               })()}
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-body-m font-black text-neutral-50 break-words">
                 {wonResult.rewardName}
               </span>
-              <span className="text-label-g text-neutral-300">
+              <span className="text-label-g text-neutral-300 break-words">
                 {wonResult.remainingMinutes
                   ? t("wonFocusItemMinutes", {
                       minutes: wonResult.remainingMinutes,
                     })
-                  : t("wonSingleUseItem")}
+                  : isGamified
+                    ? t("wonSingleUseItem")
+                    : t("wonSingleUseItemProductivity")}
               </span>
             </div>
           </div>
         </div>
       )}
+
+      {/* Relíquia Bônus de Artefato obtida na Caixa Misteriosa */}
+      {phase === "won" &&
+        wonResult?.droppedArtifact &&
+        (() => {
+          const artifact = wonResult.droppedArtifact;
+          const theme = getRarityTheme(artifact.rarity);
+          const { name, lore } = resolveArtifactCopy(
+            artifact,
+            isGamified,
+            tArtifacts,
+          );
+          const rarityBadge = t(
+            `artifactDrop.badgeByRarity.${artifact.rarity}`,
+          );
+
+          return (
+            <article
+              aria-label={t("artifactDrop.headline")}
+              className={cn(
+                "w-full flex flex-col gap-3 p-4 rounded-xl border transition-colors animate-in zoom-in-95 duration-300 motion-reduce:animate-none",
+                "bg-card dark:bg-neutral-900/90",
+                theme.cardBorder,
+                theme.cardGlow,
+              )}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1.5 text-label-g font-black uppercase tracking-wider text-amber-700 dark:text-gold">
+                  <Sparkles
+                    size={15}
+                    className="animate-pulse motion-reduce:animate-none shrink-0"
+                    aria-hidden="true"
+                  />
+                  <span>
+                    {isGamified
+                      ? t("artifactDrop.headline")
+                      : t("artifactDrop.headlineProductivity")}
+                  </span>
+                </span>
+                <span
+                  className={cn(
+                    "px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase border",
+                    theme.badgeBg,
+                    theme.badgeText,
+                    theme.badgeBorder,
+                  )}
+                >
+                  {rarityBadge}
+                </span>
+              </div>
+
+              <p className="text-tiny text-neutral-300 break-words">
+                {isGamified
+                  ? t("artifactDrop.subtext")
+                  : t("artifactDrop.subtextProductivity")}
+              </p>
+
+              <div className="flex items-start gap-3 w-full min-w-0">
+                <div
+                  className={cn(
+                    "w-12 h-12 shrink-0 rounded-xl border flex items-center justify-center shadow-sm",
+                    theme.iconBg,
+                    theme.iconText,
+                  )}
+                >
+                  <AchievementIcon
+                    iconKey={artifact.iconName}
+                    size={24}
+                    fallback="sparkles"
+                  />
+                </div>
+                <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                  <span className="text-body-s font-black text-neutral-50 break-words">
+                    {name}
+                  </span>
+                  {lore && (
+                    <span className="text-tiny text-neutral-300 break-words">
+                      {lore}
+                    </span>
+                  )}
+                  <span className="text-[11px] font-semibold text-neutral-400 mt-0.5 break-words">
+                    {isGamified
+                      ? t("artifactDrop.collectionTag")
+                      : t("artifactDrop.collectionTagProductivity")}
+                  </span>
+                </div>
+              </div>
+            </article>
+          );
+        })()}
 
       {/* Botões de Ação */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 w-full pt-2">
@@ -277,27 +378,58 @@ export function MysteryBoxRouletteModal({
           >
             <Dices size={20} className="text-on-gold shrink-0" />
             <span>
-              {isOpeningServer ? t("drawingButton") : t("spinButton")}
+              {isOpeningServer
+                ? t("drawingButton")
+                : isGamified
+                  ? t("spinButton")
+                  : t("spinButtonProductivity")}
             </span>
           </button>
         )}
 
         {isSpinning && (
-          <div className="flex items-center justify-center gap-2 text-amber-700 dark:text-gold font-bold py-2 animate-pulse">
-            <Sparkles size={18} />
-            <span>{t("spinningStatus")}</span>
+          <div className="flex items-center justify-center gap-2 text-amber-700 dark:text-gold font-bold py-2 animate-pulse motion-reduce:animate-none">
+            <Sparkles size={18} aria-hidden="true" />
+            <span>
+              {isGamified
+                ? t("spinningStatus")
+                : t("spinningStatusProductivity")}
+            </span>
           </div>
         )}
 
         {phase === "won" && (
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-gold hover:bg-gold-hover active:bg-gold-pressed border border-gold rounded-xl text-on-gold font-bold text-body-s active:scale-95 transition-[transform,background-color,border-color,box-shadow] shadow-glow-gold-xs cursor-pointer"
-          >
-            <Check size={18} className="text-on-gold shrink-0" />
-            <span>{t("storeInBackpackButton")}</span>
-          </button>
+          <>
+            {wonResult?.droppedArtifact && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  router.push("/profile");
+                }}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-600 dark:border-primary/25 rounded-xl text-neutral-50 font-bold text-body-s active:scale-95 transition-[transform,background-color,border-color] cursor-pointer"
+              >
+                <span>{t("artifactDrop.viewShowcaseButton")}</span>
+                <ArrowRight size={16} className="shrink-0" aria-hidden="true" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-gold hover:bg-gold-hover active:bg-gold-pressed border border-gold rounded-xl text-on-gold font-bold text-body-s active:scale-95 transition-[transform,background-color,border-color,box-shadow] shadow-glow-gold-xs cursor-pointer"
+            >
+              <Check
+                size={18}
+                className="text-on-gold shrink-0"
+                aria-hidden="true"
+              />
+              <span>
+                {isGamified
+                  ? t("storeInBackpackButton")
+                  : t("storeInBackpackButtonProductivity")}
+              </span>
+            </button>
+          </>
         )}
       </div>
     </BaseModal>

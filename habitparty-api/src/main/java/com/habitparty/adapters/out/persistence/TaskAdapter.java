@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import com.habitparty.application.ports.projections.DashboardTaskDTO;
+import com.habitparty.application.ports.projections.FocusableTaskDTO;
 import com.habitparty.application.ports.projections.TaskSearchWorkspaceCountDTO;
 import com.habitparty.adapters.out.persistence.entities.ChecklistItemJpaEntity;
 import com.habitparty.adapters.out.persistence.entities.TaskJpaEntity;
@@ -178,6 +180,24 @@ public class TaskAdapter implements TaskRepository {
             (UUID) row[0],
             (String) row[1],
             ((Number) row[2]).longValue()))
+        .toList();
+  }
+
+  @Override
+  public List<FocusableTaskDTO> findFocusableTasksByWorkspaceIds(UUID userId, Collection<UUID> workspaceIds) {
+    if (userId == null || workspaceIds == null || workspaceIds.isEmpty()) {
+      return List.of();
+    }
+    return port.findFocusableTaskProjections(userId, workspaceIds).stream()
+        .map(row -> new FocusableTaskDTO(
+            (UUID) row[0],
+            row[1] != null ? row[1].toString() : "",
+            row[2] != null ? row[2].toString().toLowerCase(Locale.ROOT) : "daily",
+            row[3] != null ? row[3].toString() : "",
+            row[4] != null ? row[4].toString() : "",
+            row[5] instanceof Number n ? n.intValue() : 0,
+            row[6] instanceof Number n ? n.intValue() : 0,
+            false))
         .toList();
   }
 

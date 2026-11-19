@@ -10,10 +10,9 @@ import { TimezoneMismatchBanner } from "@/components/layout/TimezoneMismatchBann
 import { AchievementUnlockListener } from "@/components/showcase/AchievementUnlockListener";
 import { PaymentFeedbackListener } from "@/components/subscription/PaymentFeedbackListener";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
-import { getDashboardTransactions } from "@/services/dashboardService";
 import { getRawInventoryItems } from "@/services/inventoryService";
 import { fetchPendingTasksCount } from "@/services/taskService";
-import { getCurrentUser } from "@/services/userService";
+import { getCurrentUser, getUserLayoutSummary } from "@/services/userService";
 import {
   getWorkspaces,
   resolveActiveWorkspace,
@@ -23,7 +22,6 @@ import {
   getOptionalThemeCookie,
   getTimeFormat,
 } from "@/utils/cookies";
-import { getLatestTaskCompletionCreatedAt } from "@/utils/dashboardMetrics";
 
 export const instant = false;
 
@@ -38,7 +36,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     workspaces,
     user,
     inventoryData,
-    transactions,
+    layoutSummary,
     speculativeTasksCount,
   ] = await Promise.all([
     getOptionalThemeCookie(),
@@ -47,13 +45,13 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     getWorkspaces(),
     getCurrentUser(),
     getRawInventoryItems(),
-    getDashboardTransactions(),
+    getUserLayoutSummary(),
     cookieWorkspaceId
       ? fetchPendingTasksCount(cookieWorkspaceId)
       : Promise.resolve(0),
   ]);
 
-  const lastTaskCompletionAt = getLatestTaskCompletionCreatedAt(transactions);
+  const lastTaskCompletionAt = layoutSummary?.lastTaskCompletionAt ?? null;
   const { activeWorkspaceId } = resolveActiveWorkspace(
     workspaces,
     cookieWorkspaceId,

@@ -20,12 +20,13 @@
     "closeMenu": "Close menu"
   },
   "hero": {
-    "badge": "Choose between Essential Mode (Clean) or Adventure Mode (RPG)",
-    "titleLine1": "Your routine doesn't have to be a burden. ",
-    "titleHighlight": "Make it rewarding and consistent.",
-    "subtitle": "Manage habits, daily routines, and projects on agile Kanban boards with Pomodoro focus. Balance duty and leisure on a calibrated 3:1 to 4:1 ratio — in executive Essential Mode or gamified Adventure Mode.",
-    "primaryCta": "Start for Free",
-    "secondaryCta": "Explore Live Interactive Demo",
+    "badge": "Productivity that adapts to your brain: Executive Mode or Gamified RPG",
+    "titleLine1": "Beat procrastination. ",
+    "titleHighlight": "Turn daily discipline into real-life rewards.",
+    "subtitle": "Unite habits, Kanban boards, and Pomodoro focus in a system where every hour of effort unlocks guilt-free leisure on a 3:1 to 4:1 ratio. Use Essential Mode (clean & executive) or Adventure Mode (with XP, gold coins, and Mystery Boxes).",
+    "primaryCta": "Start Free Now",
+    "secondaryCta": "Try Live Interactive Demo",
+    "ctaHint": "Free to start • No credit card required • Takes 30 seconds",
     "highlights": {
       "levels": "Focus Levels & XP",
       "streaks": "Streaks & Dailies",
@@ -59,8 +60,8 @@
   },
   "demo": {
     "badge": "Interactive Demo",
-    "title": "Feel the satisfaction of leveling up in practice.",
-    "subtitle": "Click the buttons and tasks below. In HabitParty, real effort generates calibrated rewards with sound, XP, and gold coins.",
+    "title": "Experience the dopamine of discipline right now.",
+    "subtitle": "Click the tasks below and feel how every completed action triggers sound, instant progress, XP, and real rewards.",
     "windowTitle": "HabitParty • Live Demo",
     "goldStatus": "{gold} Gold",
     "levelStatus": "Level {level}",
@@ -126,7 +127,7 @@
       "step2": {
         "tag": "Pomodoro & Focus",
         "title": "Activate Zen Hyperfocus",
-        "description": "Enter flow state with Focus Hero Stage. Intelligent stopwatch, refreshing breaks, and ambient sounds to silence mental noise.",
+        "description": "Enter flow state with Focus Hero Stage. Smart Pomodoro & focus timer, refreshing breaks, and relaxing ambient soundscapes to silence mental noise.",
         "footer": "Ambient Sounds & Zen Mode"
       },
       "step3": {
@@ -155,14 +156,14 @@
     "subtitle": "Every feature was designed to eliminate friction and reward your dedication with elegance and consistency.",
     "items": {
       "experienceMode": {
-        "badge": "Total Flexibility",
+        "badge": "Dual Styles",
         "title": "Two Styles: Essential Mode or Adventure Mode",
         "description": "All the power of gamified productivity at your pace: adopt Essential Mode for a clean executive interface with Credits, Points, and direct focus on deliverables; or activate Adventure Mode with gold coins, XP, and Mystery Boxes. Switch anytime with 1 click."
       },
       "rewardShop": {
-        "badge": "3:1 to 4:1 Economy",
+        "badge": "3:1–4:1 Economy",
         "title": "Reward Shop & Mystery Boxes",
-        "description": "Register your real-life treats (with 3:1–4:1 automatic effort-based price guidance) or test your luck opening Mystery Boxes in Adventure Mode."
+        "description": "Register your real-life treats (e.g., 30m or 1h of leisure with automatic 3:1–4:1 pricing guidance) or test your luck opening Mystery Boxes in Adventure Mode."
       },
       "partyGuild": {
         "badge": "Social & Co-op",
@@ -212,6 +213,7 @@
     "contactCreatorCta": "Talk to the Creator ({email})",
     "items": {
       "r11": {
+        "releaseLabel": "Release 1.1",
         "statusLabel": "Completed",
         "title": "Bilingual Support & Experience Modes",
         "tagline": "Full English and Portuguese support, two adaptive productivity profiles, and stronger account protection.",
@@ -228,6 +230,7 @@
         ]
       },
       "r12": {
+        "releaseLabel": "Release 1.2",
         "statusLabel": "Completed",
         "title": "Light Theme, Achievements & Public Profiles",
         "tagline": "Crisp high-contrast daytime mode, discipline trophies, public profiles, and a customizable highlight showcase.",
@@ -241,6 +244,7 @@
         ]
       },
       "r13": {
+        "releaseLabel": "Release 1.3",
         "statusLabel": "Completed",
         "title": "Kanban Events, Bulk History & Task-Linked Focus",
         "tagline": "Schedule To-Dos as timed events, manage transaction ledgers in bulk, and link Pomodoro timers directly to tasks.",
@@ -258,6 +262,7 @@
         ]
       },
       "r14": {
+        "releaseLabel": "Release 1.4",
         "statusLabel": "Completed",
         "title": "7 Themes, Friend Network & Granular Privacy",
         "tagline": "Customize your atmosphere across 7 themes, connect via friend codes, control privacy, and share collectible cards.",
@@ -278,6 +283,7 @@
         ]
       },
       "r15": {
+        "releaseLabel": "Release 1.5",
         "statusLabel": "Next Milestone",
         "title": "Parties & Cooperative Daily Quests",
         "tagline": "Strength in numbers: build focused study and work squads, tackle collective goals, and unlock shared bonuses.",
@@ -290,6 +296,7 @@
         ]
       },
       "r16": {
+        "releaseLabel": "Release 1.6",
         "statusLabel": "Planned Milestone",
         "title": "Real-Time Chat, Live Presence & Instant Alerts",
         "tagline": "Instant communication and live focus presence: chat with your squad, send encouragement reactions, and stay motivated together.",
@@ -302,6 +309,7 @@
         ]
       },
       "r20": {
+        "releaseLabel": "Release 2.0+",
         "statusLabel": "Major Mobile & Social Milestone",
         "title": "Mobile App, Guilds & Community Challenges",
         "tagline": "The pinnacle of HabitParty: native app in your pocket, large thematic guilds, co-op boss events, and global consistency rankings.",
@@ -413,7 +421,7 @@
     },
     "securityStrip": {
       "stripe": "100% secure payment via Stripe",
-      "methods": "We accept major <card>Credit & Debit Cards</card>",
+      "methods": "We accept major <card>Credit & Debit Cards</card> (and <pix>Pix</pix> in BRL)",
       "cancel": "Cancel your recurring subscription anytime with 1 click"
     }
   },
@@ -458,10 +466,11 @@
   },
   "ctaBanner": {
     "badge": "Your Journey Starts Now",
-    "title": "Ready to turn your routine into results?",
-    "subtitle": "Join HabitParty for free. Choose between Essential Mode or Adventure Mode, and feel the genuine satisfaction of daily progress.",
-    "primaryCta": "Create Free Account",
-    "secondaryCta": "I already have an account"
+    "title": "Stop negotiating with procrastination. Start today.",
+    "subtitle": "Create your free account in 30 seconds — no credit card required. Pick your style (Essential or Adventure) and conquer your first perfect day.",
+    "primaryCta": "Start Free Now",
+    "secondaryCta": "I already have an account",
+    "ctaHint": "Free base plan forever • No credit card required • Your data stays 100% yours"
   },
   "footer": {
     "brandDescription": "The ultimate gamified productivity system. Turn your daily goals and routines into a cosmic journey with XP, Gold, and real-life rewards.",

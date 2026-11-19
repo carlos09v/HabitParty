@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { MYSTERY_BOX_TIERS } from "@/constants/reward";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useFloatingPopover } from "@/hooks/useFloatingPopover";
 import type { AppLocale } from "@/i18n/config";
 import type { MysteryBoxTier, PackageLevel } from "@/types/reward";
@@ -42,6 +43,7 @@ function MysteryBoxTierCard({
   const tOptions = useTranslations("rewards.options");
   const tTierPopover = useTranslations("rewards.tierPopover");
   const locale = useLocale() as AppLocale;
+  const { isGamified } = useExperienceMode();
 
   const {
     containerRef,
@@ -65,7 +67,8 @@ function MysteryBoxTierCard({
   });
 
   const TierIcon = tier.icon;
-  const tierName = t(`tiers.${tier.backendPackageLevel}.name`);
+  const tierNamespace = isGamified ? "tiers" : "tiersProductivity";
+  const tierName = t(`${tierNamespace}.${tier.backendPackageLevel}.name`);
   const tierRarityLabel = tOptions(`packages.${tier.backendPackageLevel}`);
 
   return (
@@ -231,6 +234,7 @@ export function MysteryBoxSelector({
   layout = "4-col",
 }: MysteryBoxSelectorProps) {
   const t = useTranslations("rewards.mysteryBox");
+  const { isGamified } = useExperienceMode();
 
   // Normaliza o nível selecionado para bater tanto com nomes em PT quanto EN
   const isTierSelected = (tier: MysteryBoxTier) => {
@@ -249,7 +253,9 @@ export function MysteryBoxSelector({
           id="mystery-box-grid-label"
           className="text-body-s text-neutral-300 font-medium flex flex-wrap items-center gap-x-1.5 gap-y-0.5"
         >
-          <span>{t("levelLabel")}</span>
+          <span>
+            {isGamified ? t("levelLabel") : t("levelLabelProductivity")}
+          </span>
           <span className="text-gold">*</span>
           <span className="text-label-m text-neutral-400 font-normal">
             {t("hoverHint")}
@@ -257,7 +263,9 @@ export function MysteryBoxSelector({
         </span>
         <span className="text-label-m text-primary dark:text-primary-light flex items-center gap-1 shrink-0">
           <HelpCircle size={12} />
-          <span>{t("raritiesCount")}</span>
+          <span>
+            {isGamified ? t("raritiesCount") : t("raritiesCountProductivity")}
+          </span>
         </span>
       </div>
 

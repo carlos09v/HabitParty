@@ -12,6 +12,16 @@ export interface FocusRecordedEventDetail {
   cycles?: number;
 }
 
+export function dispatchTaskFocusRecorded(detail: FocusRecordedEventDetail) {
+  if (typeof window === "undefined" || !detail.taskId) return;
+  window.dispatchEvent(
+    new CustomEvent<FocusRecordedEventDetail>(
+      "habitparty:task-focus-recorded",
+      { detail },
+    ),
+  );
+}
+
 export interface FocusTaskCompletedEventDetail {
   taskId?: string;
 }

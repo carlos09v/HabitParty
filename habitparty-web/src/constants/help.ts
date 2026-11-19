@@ -69,11 +69,11 @@ export const HELP_FAQS: HelpFaqItem[] = [
     question:
       "Qual a diferença entre o Modo Essencial (Foco & Produtividade) e o Modo Aventura (Imersão RPG)?",
     answer:
-      "O HabitParty oferece dois modos visuais e conceituais que rodam sobre exatamente o mesmo motor matemático, regra 3:1–4:1, quadros Kanban e Pomodoro — mudando apenas a estética, a nomenclatura e a presença de sorteios na Loja:",
+      "O HabitParty oferece dois modos com 100% de paridade funcional — ambos rodam sobre exatamente o mesmo motor matemático, projeções de rendimento, regra 3:1–4:1, quadros Kanban, Pomodoro/Foco (com teto ultradiano de 90m e sustentabilidade diária de 8h) e sorteios na Loja — adaptando apenas a estética, a nomenclatura e a calibração sonora:",
     bullets: [
-      "Modo Essencial (Foco & Produtividade Limpa): Estética executiva, sóbria e direta ao ponto. Usa Créditos (em vez de moedas) e Pontos (pts), exibe patentes profissionais (Iniciante a Alta Performance), indicadores discretos de Esforço (sem espadas), Loja exclusivamente com recompensas diretas (sem Caixas Misteriosas/sorteios) e termos como 'Prazo Rígido' e 'Inventário'.",
-      "Modo Aventura (Imersão RPG): Experiência temática de jogo com feedback visual de recompensa e fantasia. Converte suas entregas em Moedas de Ouro (🪙) e XP, exibe patentes de aventureiro (Novato a Lenda), ícones de espadas para dificuldade, Modo Hardcore, Caixas Misteriosas (sorteios RNG por raridade) na Loja, Mochila e efeitos sonoros comemorativos.",
-      "Conversão 1:1 e Alternância Livre: 1 Moeda de Ouro = 1 Crédito e 1 XP = 1 Ponto (pts). Você escolhe seu modo no onboarding e pode alternar quando quiser em Configurações > Aparência > Estilo de Experiência em 1 clique, sem perder histórico, nível nem saldo.",
+      "Modo Essencial (Foco & Produtividade Limpa): Estética executiva, sóbria e direta ao ponto. Usa Créditos com equivalência prática em tempo livre (4 min/Crédito • 15 Créditos = 1h de lazer) e Pontos (pts), exibe patentes profissionais (Iniciante a Alta Performance), indicadores discretos de Esforço (sem espadas), 'Prazo Rígido' / 'Compromisso Diário', Inventário, Sorteio de Pausa (roleta de intervalos/pausas na Loja) e alarme sonoro Zen suave.",
+      "Modo Aventura (Imersão RPG): Experiência temática de jogo com feedback visual de recompensa e fantasia. Converte suas entregas em Moedas de Ouro (🪙) e XP, exibe patentes de aventureiro (Novato a Lenda), ícones de espadas para dificuldade, Modo Hardcore, Caixas Misteriosas (sorteios RNG por raridade) na Loja, Mochila e efeitos sonoros Arcade comemorativos.",
+      "Conversão 1:1 e Alternância Livre: 1 Moeda de Ouro = 1 Crédito (≈ 4 min de lazer) e 1 XP = 1 Ponto (pts). Você escolhe seu modo no onboarding e pode alternar quando quiser em Configurações > Aparência > Estilo de Experiência em 1 clique, sem perder histórico, nível nem saldo.",
     ],
     tags: [
       "experiência",
@@ -87,6 +87,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "moedas",
       "xp",
       "rpg",
+      "sorteio de pausa",
       "configurações",
     ],
     highlightBadge: "Experiência",
@@ -202,43 +203,51 @@ export const HELP_FAQS: HelpFaqItem[] = [
     category: "REWARDS",
     question: "Como funciona a Loja de Recompensas?",
     answer:
-      "Você cria seus próprios produtos e pacotes de lazer da vida real. O HabitParty disponibiliza três modelos de recompensa:",
+      "Você cria seus próprios produtos, pausas e pacotes de lazer da vida real. O HabitParty disponibiliza três modelos de recompensa:",
     bullets: [
       "Uso Único: Itens diretos para consumir uma vez (ex: pedir uma pizza, comprar um livro, tomar um café especial).",
-      "Baseado em Tempo: Pacotes com tempo pré-definido (ex: 30 minutos de videogame, 1 hora de redes sociais).",
-      "Caixa Misteriosa: Recompensas que realizam um sorteio de itens por raridade (Comum até Lendário).",
+      "Baseado em Tempo: Pacotes com tempo pré-definido (ex: 30 minutos de videogame, 1 hora de pausa livre).",
+      "Caixa Misteriosa (Aventura) / Sorteio de Pausa (Essencial): Recompensas com roleta aleatória ponderada para sortear um item ou pausa dentre suas opções cadastradas.",
     ],
-    tags: ["loja", "recompensas", "produtos", "tempo", "compras"],
+    tags: ["loja", "recompensas", "produtos", "tempo", "compras", "sorteio"],
     actionLink: { label: "Explorar a Loja", href: "/rewards" },
   },
   {
     id: "mystery-box-system",
     category: "REWARDS",
-    question: "Como funcionam as Caixas Misteriosas (RNG)?",
+    question:
+      "Como funcionam as Caixas Misteriosas (Modo Aventura) e os Sorteios de Pausa (Modo Essencial)?",
     answer:
-      "Ao cadastrar ou comprar uma Caixa Misteriosa na Loja, você escolhe entre 4 níveis gamificados com custos e probabilidades equilibrados: Básica (5 🪙), Premium (15 🪙), Épica (35 🪙) e Lendária (80 🪙). O sorteio segue a Loot Table do pacote correspondente e o prêmio sorteado vai direto para a sua Mochila, permitindo ganhar recompensas incríveis de acordo com a sua sorte!",
-    tags: ["caixa misteriosa", "sorteio", "rng", "loot table", "prêmios"],
-    actionLink: { label: "Ver Caixas na Loja", href: "/rewards" },
+      "Ao cadastrar ou comprar um pacote de sorteio na Loja (Caixa Misteriosa no Modo Aventura ou Sorteio de Pausa no Modo Essencial), você escolhe entre 4 faixas de custo e probabilidade equilibradas: Básica/Essencial (5), Premium/Moderado (15), Épica/Avançado (35) e Lendária/Executivo (80). A roleta segue a tabela de probabilidades daquele nível e o item sorteado vai direto para a sua Mochila (ou Inventário)!",
+    tags: [
+      "caixa misteriosa",
+      "sorteio de pausa",
+      "sorteio",
+      "rng",
+      "loot table",
+      "prêmios",
+    ],
+    actionLink: { label: "Ver na Loja", href: "/rewards" },
   },
   {
     id: "inventory-usage",
     category: "INVENTORY",
     question: "Para onde vão os itens após serem comprados na Loja?",
     answer:
-      "Todos os produtos comprados vão imediatamente para a sua Mochila (Inventário). Lá você pode visualizar o estoque disponível, consumir quando for usufruir da recompensa no mundo real, ou iniciar uma sessão de foco atrelada àquele item.",
+      "Todos os produtos comprados vão imediatamente para a sua Mochila (Modo Aventura) ou Inventário (Modo Essencial). Lá você pode visualizar o estoque disponível, consumir quando for usufruir da recompensa no mundo real, ou iniciar uma sessão de foco atrelada àquele item.",
     tags: ["mochila", "inventário", "consumo", "itens"],
-    actionLink: { label: "Abrir Minha Mochila", href: "/inventory" },
+    actionLink: { label: "Abrir Mochila / Inventário", href: "/inventory" },
   },
   {
     id: "focus-sessions",
     category: "FOCUS",
     question: "Como funcionam as ferramentas de Foco (Pomodoro & Cronômetro)?",
     answer:
-      "O HabitParty traz um cronômetro e pomodoro nativos integrados. Você pode iniciar sessões de foco dedicadas a atividades de estudo ou trabalho, registrando os minutos concluídos diretamente no seu histórico e recebendo recompensas calibradas em XP e moedas (🪙).",
+      "O HabitParty traz um cronômetro e pomodoro nativos integrados. Você pode iniciar sessões de foco dedicadas a atividades de estudo ou trabalho, registrando os minutos concluídos diretamente no seu histórico e recebendo recompensas calibradas em XP/Pontos (pts) e Moedas/Créditos.",
     bullets: [
       "Pomodoro: Ciclos pré-definidos de foco (15 a 50 min) intercalados por pausas. Ao concluir o ciclo, você ganha a bonificação completa do bloco.",
-      "Cronômetro Livre (Stopwatch): Para quem trabalha em fluxo contínuo. Bonifica proporcionalmente ao tempo focado até o teto de 90 minutos por sessão.",
-      "Mochila / Lazer no Foco: Você pode ativar itens de tempo comprados na Loja (ex: videogame). O timer deduz seu saldo de lazer, mas não gera novos ganhos financeiros.",
+      "Cronômetro Livre (Stopwatch): Para quem trabalha em fluxo contínuo. Bonifica proporcionalmente ao tempo focado até o teto ultradiano de 90 minutos por sessão.",
+      "Mochila / Inventário no Foco: Você pode ativar cupons de tempo comprados na Loja (ex: descanso ou lazer). O timer deduz seu saldo de pausa, mas não gera novos rendimentos.",
     ],
     tags: ["foco", "pomodoro", "cronômetro", "estudo", "timer"],
     highlightBadge: "Foco",
@@ -249,14 +258,21 @@ export const HELP_FAQS: HelpFaqItem[] = [
     category: "FOCUS",
     question: "Como funciona a economia do Foco e as travas anti-abuso?",
     answer:
-      "Para manter a gamificação justa, gratificante e protegida contra esquecimento do timer ligado ou mineração ociosa:",
+      "Para manter a produtividade justa, sustentável e protegida contra esquecimento do timer ligado ou mineração ociosa (em ambos os modos):",
     bullets: [
-      "Tempo Mínimo: Sessões com menos de 10 minutos são consideradas descartadas e geram 0 XP e 0 moedas.",
-      "Teto Anti-AFK: Se o timer for esquecido ligado por horas, a remuneração é limitada a no máximo 90 minutos contínuos.",
-      "Teto Diário & Rendimento Decrescente em Escada (Soft Cap): As primeiras 4 horas diárias de foco pagam 100%. Entre 4h e 6h pagam 50%, e entre 6h e 8h pagam 25% (fadiga natural). Acima de 8h de foco diário, novas sessões não geram XP nem moedas para evitar burnout e hiperinflação (o tempo continua registrado nas estatísticas).",
-      "Lazer Não Gera Renda: Sessões de itens de inventário da mochila têm rendimento fixo de 0 XP e 0 moedas.",
+      "Tempo Mínimo: Sessões com menos de 10 minutos são descartadas e geram 0 pontos e 0 moedas/créditos.",
+      "Teto Anti-AFK / Ciclo Ultradiano (90m): Se o timer ficar rodando por horas, a remuneração é limitada ao máximo de 90 minutos contínuos (um ciclo ultradiano saudável).",
+      "Teto Diário & Sustentabilidade Anti-Burnout (Soft Cap de 8h): As primeiras 4 horas diárias de foco pagam 100%. Entre 4h e 6h pagam 50%, e entre 6h e 8h pagam 25% (fadiga natural). Acima de 8h de foco diário, novas sessões não geram moedas/créditos nem XP/pts para evitar burnout e hiperinflação (o tempo continua registrado nas métricas).",
+      "Lazer Não Gera Renda: Sessões de itens da Mochila / Inventário têm rendimento fixo de 0.",
     ],
-    tags: ["foco", "economia", "anti-afk", "teto diário", "recompensas"],
+    tags: [
+      "foco",
+      "economia",
+      "anti-afk",
+      "teto diário",
+      "ciclo ultradiano",
+      "recompensas",
+    ],
   },
   {
     id: "workspaces-concept",

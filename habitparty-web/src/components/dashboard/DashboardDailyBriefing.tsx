@@ -143,7 +143,7 @@ export function DashboardDailyBriefing({
   return (
     <section
       aria-label={t("ariaLabel")}
-      className="w-full shrink-0 min-h-fit rounded-2xl border border-neutral-700 dark:border-primary/35 bg-linear-to-br from-purple-500/[0.04] via-white to-amber-500/[0.03] dark:from-primary-dark/50 dark:via-surface/80 dark:to-primary-dark/35 shadow-xs dark:shadow-[0_0_20px_rgba(124,58,237,0.1)] relative overflow-hidden flex flex-col p-3.5 @lg:p-4 gap-3 @lg:gap-3.5"
+      className="w-full shrink-0 min-h-fit rounded-2xl border border-neutral-700 dark:border-primary/35 bg-linear-to-br from-primary/[0.05] via-card to-amber-500/[0.03] dark:from-primary-dark/50 dark:via-surface/80 dark:to-primary-dark/35 shadow-xs dark:shadow-[0_0_20px_color-mix(in_srgb,var(--color-primary)_14%,transparent)] relative overflow-hidden flex flex-col p-3.5 @lg:p-4 gap-3 @lg:gap-3.5"
     >
       {/* Bloco Superior: Saudação e Mensagem Contextual */}
       <div className="flex flex-col gap-1 min-w-0">
@@ -184,7 +184,7 @@ export function DashboardDailyBriefing({
       {/* Bloco Inferior: 3 Cards de Indicadores Chave em Largura Total (w-full) */}
       <div className="grid grid-cols-1 @md:grid-cols-2 @2xl:grid-cols-3 gap-2.5 w-full">
         {/* Card 1: Ofensiva */}
-        <div className="flex items-center gap-3 p-2.5 sm:p-3 rounded-xl bg-white dark:bg-white/5 border border-neutral-700 dark:border-white/10 shadow-xs dark:shadow-none hover:border-orange-500/30 transition-colors min-w-0">
+        <div className="flex items-center gap-3 p-2.5 sm:p-3 rounded-xl bg-card dark:bg-white/5 border border-neutral-700 dark:border-white/10 shadow-xs dark:shadow-none hover:border-orange-500/30 transition-colors min-w-0">
           <div className="w-10 h-10 rounded-lg bg-orange-500/10 dark:bg-orange-500/15 border border-orange-500/20 dark:border-orange-500/30 flex items-center justify-center text-orange-700 dark:text-orange-400 shrink-0">
             <Flame size={20} aria-hidden="true" />
           </div>
@@ -212,7 +212,7 @@ export function DashboardDailyBriefing({
 
         {/* Card 2: Meta Diária */}
         <div
-          className="flex items-center gap-3 p-2.5 sm:p-3 rounded-xl bg-white dark:bg-white/5 border border-neutral-700 dark:border-white/10 shadow-xs dark:shadow-none hover:border-indigo-500/30 dark:hover:border-emerald-500/30 transition-colors min-w-0"
+          className="flex items-center gap-3 p-2.5 sm:p-3 rounded-xl bg-card dark:bg-white/5 border border-neutral-700 dark:border-white/10 shadow-xs dark:shadow-none hover:border-indigo-500/30 dark:hover:border-emerald-500/30 transition-colors min-w-0"
           title={
             totalTodayTasks === 0
               ? t("noTasksTodayTitle")
@@ -291,7 +291,7 @@ export function DashboardDailyBriefing({
         </div>
 
         {/* Card 3: XP / Pontos Acumulados Hoje */}
-        <div className="flex items-center gap-3 p-2.5 sm:p-3 rounded-xl bg-white dark:bg-white/5 border border-neutral-700 dark:border-white/10 shadow-xs dark:shadow-none hover:border-amber-500/30 dark:hover:border-gold/30 transition-colors min-w-0 @md:col-span-2 @2xl:col-span-1">
+        <div className="flex items-center gap-3 p-2.5 sm:p-3 rounded-xl bg-card dark:bg-white/5 border border-neutral-700 dark:border-white/10 shadow-xs dark:shadow-none hover:border-amber-500/30 dark:hover:border-gold/30 transition-colors min-w-0 @md:col-span-2 @2xl:col-span-1">
           <div className="w-10 h-10 rounded-lg bg-amber-500/10 dark:bg-gold/15 border border-amber-500/20 dark:border-gold/30 flex items-center justify-center text-amber-700 dark:text-gold shrink-0">
             <Sparkles size={20} aria-hidden="true" />
           </div>

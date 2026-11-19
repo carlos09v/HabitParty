@@ -100,15 +100,12 @@ export function TaskDifficultySelector({
                         {tOptions(`difficulties.${opt.id}`)}:
                       </span>
                       <span className="text-neutral-300">
-                        {isGamified && (
-                          <>
-                            <strong className="text-neutral-100">
-                              +{reward.xp} XP • +{coinsFormatted} 🪙
-                            </strong>{" "}
-                            —{" "}
-                          </>
-                        )}
-                        {t(`difficultyDescriptions.${opt.id}`)}
+                        <strong className="text-neutral-100">
+                          +{reward.xp} {isGamified ? "XP" : "pts"} • +
+                          {coinsFormatted}{" "}
+                          {isGamified ? "🪙" : t("creditsUnit")}
+                        </strong>{" "}
+                        — {t(`difficultyDescriptions.${opt.id}`)}
                       </span>
                     </li>
                   );

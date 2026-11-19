@@ -24,6 +24,7 @@ interface PyramidTierRowProps {
   tierView: ProgressionTierView;
   status: TierStatus;
   isSelected: boolean;
+  isGamified?: boolean;
   isVisitorMode: boolean;
   onSelect: (tier: UserLevelTier) => void;
   friends: FriendConnectionItem[];
@@ -33,6 +34,7 @@ interface PyramidTierRowProps {
     name: string;
     hasRing: boolean;
     frameId: AvatarFrameId;
+    presetId?: string | null;
   };
 }
 
@@ -40,6 +42,7 @@ export function PyramidTierRow({
   tierView,
   status,
   isSelected,
+  isGamified = false,
   isVisitorMode,
   onSelect,
   friends,
@@ -80,6 +83,7 @@ export function PyramidTierRow({
               size="sm"
               hasRing={userAvatar.hasRing}
               frameId={userAvatar.frameId}
+              presetId={userAvatar.presetId}
               className="shrink-0"
             />
           ) : (
@@ -141,7 +145,7 @@ export function PyramidTierRow({
 
         <div className="flex flex-col items-end shrink-0">
           <span className="text-[11px] font-bold text-neutral-300 tabular-nums">
-            {t("xpThresholdLabel", {
+            {t(isGamified ? "xpThresholdLabel" : "xpThresholdLabelEssential", {
               minXp: format.number(tierView.minXp),
             })}
           </span>
@@ -153,7 +157,9 @@ export function PyramidTierRow({
         </div>
       </button>
 
-      {friends.length > 0 && <TierFriendsPopover friends={friends} />}
+      {friends.length > 0 && (
+        <TierFriendsPopover friends={friends} isGamified={isGamified} />
+      )}
     </div>
   );
 }

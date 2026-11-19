@@ -69,11 +69,14 @@ function buildHydratedStoreUser(user: User): User {
   };
 }
 
-function resolveValidAvatarFrame(frame?: string | null): AvatarFrameId {
+function resolveValidAvatarFrame(
+  frame?: string | null,
+  isPremium?: boolean,
+): AvatarFrameId {
   if (frame && AVATAR_FRAMES.some((f) => f.id === frame)) {
     return frame as AvatarFrameId;
   }
-  return "cosmic_gold";
+  return isPremium ? "cosmic_gold" : "none";
 }
 
 export function StoreInitializer({
@@ -169,7 +172,14 @@ export function StoreInitializer({
 
     const shouldSyncUser =
       isDifferentUser ||
+      currentStoreUser?.profilePhotoUrl !== user.profilePhotoUrl ||
+      currentStoreUser?.fullName !== user.fullName ||
+      currentStoreUser?.bio !== user.bio ||
+      currentStoreUser?.birthDate !== user.birthDate ||
+      currentStoreUser?.gender !== user.gender ||
       currentStoreUser?.avatarFrame !== user.avatarFrame ||
+      currentStoreUser?.equippedTitle !== user.equippedTitle ||
+      currentStoreUser?.avatarPreset !== user.avatarPreset ||
       currentStoreUser?.theme !== user.theme ||
       currentStoreUser?.emailVerified !== user.emailVerified ||
       currentStoreUser?.experienceMode !== user.experienceMode ||
@@ -179,7 +189,14 @@ export function StoreInitializer({
       currentStoreUser?.currentStreak !== user.currentStreak ||
       currentStoreUser?.achievementPoints !== user.achievementPoints ||
       currentStoreUser?.timezone !== user.timezone ||
-      currentStoreUser?.timezoneUpdatedAt !== user.timezoneUpdatedAt;
+      currentStoreUser?.timezoneUpdatedAt !== user.timezoneUpdatedAt ||
+      currentStoreUser?.usageMode !== user.usageMode ||
+      currentStoreUser?.mainObstacle !== user.mainObstacle ||
+      currentStoreUser?.dailyFocusGoalMinutes !== user.dailyFocusGoalMinutes ||
+      currentStoreUser?.peakPeriod !== user.peakPeriod ||
+      currentStoreUser?.disciplineStyle !== user.disciplineStyle ||
+      JSON.stringify(currentStoreUser?.primaryGoals ?? null) !==
+        JSON.stringify(user.primaryGoals ?? null);
 
     const isPremium = Boolean(user.isPremium);
     const {
@@ -254,7 +271,7 @@ export function StoreInitializer({
 
     if (shouldSyncUser) {
       useAvatarFrameStore.setState({
-        frameId: resolveValidAvatarFrame(user.avatarFrame),
+        frameId: resolveValidAvatarFrame(user.avatarFrame, isPremium),
       });
       if (
         user.experienceMode === "GAMIFIED" ||

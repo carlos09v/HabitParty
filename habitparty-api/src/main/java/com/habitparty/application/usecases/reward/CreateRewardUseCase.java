@@ -63,7 +63,7 @@ public class CreateRewardUseCase {
     // 3. Aplica a Regra do Tipo (SINGLE_USE vs TIME_BASED vs MISTERY_BOX)
     if (command.type() == RewardType.SINGLE_USE) {
         durationFinal = null;
-        if (packageFinal == null) {
+        if (categoriaFinal == RewardCategory.DEBT || packageFinal == null) {
             packageFinal = RewardPackageLevel.NONE;
         }
         

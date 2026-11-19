@@ -13,6 +13,7 @@ interface PyramidLadderProps {
   currentTier: UserLevelTier;
   currentRankOrder: number;
   selectedTier: UserLevelTier;
+  isGamified?: boolean;
   isVisitorMode: boolean;
   onSelectTier: (tier: UserLevelTier) => void;
   friendsByTier: Map<UserLevelTier, FriendConnectionItem[]>;
@@ -22,6 +23,7 @@ interface PyramidLadderProps {
     name: string;
     hasRing: boolean;
     frameId: AvatarFrameId;
+    presetId?: string | null;
   };
 }
 
@@ -30,6 +32,7 @@ export function PyramidLadder({
   currentTier,
   currentRankOrder,
   selectedTier,
+  isGamified = false,
   isVisitorMode,
   onSelectTier,
   friendsByTier,
@@ -69,6 +72,7 @@ export function PyramidLadder({
                 tierView={tierView}
                 status={status}
                 isSelected={tierView.entry.tier === selectedTier}
+                isGamified={isGamified}
                 isVisitorMode={isVisitorMode}
                 onSelect={onSelectTier}
                 friends={tierFriends}

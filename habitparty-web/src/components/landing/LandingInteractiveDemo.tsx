@@ -4,12 +4,21 @@ import { Sparkles, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
-import { triggerCelebrationConfetti } from "@/utils/confetti";
-import { soundEffects } from "@/utils/soundEffects";
+import { LANDING_ANCHORS } from "@/constants/landing";
 import { DemoDailyCard } from "./demo/DemoDailyCard";
 import { DemoFocusCard } from "./demo/DemoFocusCard";
 import { DemoHabitCard } from "./demo/DemoHabitCard";
 import { DemoPlayerHeader } from "./demo/DemoPlayerHeader";
+
+async function fireDemoConfetti(x?: number, y?: number) {
+  const { triggerCelebrationConfetti } = await import("@/utils/confetti");
+  triggerCelebrationConfetti(x, y);
+}
+
+async function getDemoSoundEffects() {
+  const { soundEffects } = await import("@/utils/soundEffects");
+  return soundEffects;
+}
 
 export function LandingInteractiveDemo() {
   const t = useTranslations("landing.demo");
@@ -23,17 +32,7 @@ export function LandingInteractiveDemo() {
   const [isStudyDone, setIsStudyDone] = useState(false);
   const [studyStreak, setStudyStreak] = useState(5);
 
-  // Estado do mini timer de foco com contagem regressiva ativa
   const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [timerSeconds, setTimerSeconds] = useState(25 * 60);
-
-  useEffect(() => {
-    if (!isTimerRunning) return;
-    const interval = setInterval(() => {
-      setTimerSeconds((prev) => (prev > 0 ? prev - 1 : 25 * 60));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isTimerRunning]);
 
   // Efeito de feedback flutuante com limpeza segura de timeout
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -61,6 +60,8 @@ export function LandingInteractiveDemo() {
   const handleWaterPlus = (e: React.MouseEvent) => {
     setWaterCount((prev) => prev + 1);
     setGold((prev) => prev + 2);
+    const clientX = e.clientX;
+    const clientY = e.clientY;
 
     const newXp = xp + 10;
     if (newXp >= maxXp) {
@@ -68,12 +69,12 @@ export function LandingInteractiveDemo() {
       setLevel(nextLevel);
       setXp(newXp - maxXp);
       showToast(t("toasts.habitLevelUp", { level: nextLevel }));
-      triggerCelebrationConfetti(e.clientX, e.clientY);
-      soundEffects.playTaskCompleteSound();
+      void fireDemoConfetti(clientX, clientY);
+      void getDemoSoundEffects().then((sfx) => sfx.playTaskCompleteSound());
     } else {
       setXp(newXp);
       showToast(t("toasts.habitScored"));
-      soundEffects.playHabitSound();
+      void getDemoSoundEffects().then((sfx) => sfx.playHabitSound());
     }
   };
 
@@ -89,6 +90,8 @@ export function LandingInteractiveDemo() {
       setIsStudyDone(true);
       setStudyStreak((s) => s + 1);
       setGold((g) => g + 5);
+      const clientX = e.clientX;
+      const clientY = e.clientY;
       const newXp = xp + 30;
 
       if (newXp >= maxXp) {
@@ -101,8 +104,8 @@ export function LandingInteractiveDemo() {
         showToast(t("toasts.dailyCompleted"));
       }
 
-      triggerCelebrationConfetti(e.clientX, e.clientY);
-      soundEffects.playTaskCompleteSound();
+      void fireDemoConfetti(clientX, clientY);
+      void getDemoSoundEffects().then((sfx) => sfx.playTaskCompleteSound());
     } else {
       setIsStudyDone(false);
       setStudyStreak((s) => Math.max(1, s - 1));
@@ -115,7 +118,7 @@ export function LandingInteractiveDemo() {
   const handleToggleTimer = () => {
     if (!isTimerRunning) {
       setIsTimerRunning(true);
-      soundEffects.playTimerStartSound("zen");
+      void getDemoSoundEffects().then((sfx) => sfx.playTimerStartSound("zen"));
       showToast(t("toasts.timerStarted"));
     } else {
       setIsTimerRunning(false);
@@ -124,7 +127,10 @@ export function LandingInteractiveDemo() {
   };
 
   return (
-    <section id="gamificacao" className="py-16 md:py-24 relative scroll-mt-20">
+    <section
+      id={LANDING_ANCHORS.gamification}
+      className="py-16 md:py-24 relative scroll-mt-20"
+    >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Cabeçalho da Seção */}
         <div className="text-center max-w-2xl mx-auto mb-12">
@@ -180,7 +186,6 @@ export function LandingInteractiveDemo() {
             />
 
             <DemoFocusCard
-              timerSeconds={timerSeconds}
               isRunning={isTimerRunning}
               onToggleTimer={handleToggleTimer}
             />

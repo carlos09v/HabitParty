@@ -233,7 +233,7 @@ export function FocusRecordDetailsPopover({
               {t("rewardsLabel")}
             </span>
             <div className="flex items-center gap-2.5 font-bold">
-              <span className="text-primary dark:text-purple-400 flex items-center gap-1">
+              <span className="text-magenta flex items-center gap-1">
                 <Award size={13} />+{record.xpEarned ?? 0}{" "}
                 {isGamified ? "XP" : "pts"}
               </span>

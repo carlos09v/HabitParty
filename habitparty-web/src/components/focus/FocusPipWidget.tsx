@@ -128,9 +128,11 @@ export function FocusPipWidget() {
             >
               {phaseLabel}
             </span>
-            {isGamified && isSessionRewardCapped && (
+            {isSessionRewardCapped && (
               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-800 dark:text-amber-300 leading-none">
-                {t("sessionCapBadge")}
+                {isGamified
+                  ? t("sessionCapBadge")
+                  : t("sessionCapBadgeProductivity")}
               </span>
             )}
           </div>

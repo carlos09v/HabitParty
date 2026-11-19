@@ -48,8 +48,8 @@ public interface ShowcaseApi {
       @Valid @RequestBody UpdateProfileHighlightsRequestDTO requestDto);
 
   @Operation(
-      summary = "Atualizar Bio e Moldura da Vitrine",
-      description = "Atualiza a bio curta de aventureiro e a moldura de avatar equipada.")
+      summary = "Atualizar Bio, Moldura, Título e Avatar da Vitrine",
+      description = "Atualiza a bio curta de aventureiro e os cosméticos equipáveis (moldura, título e avatar simbólico).")
   @PatchMapping("/profile")
   ResponseEntity<UserResponseDTO> updateMyShowcaseProfile(
       @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado,
@@ -67,6 +67,13 @@ public interface ShowcaseApi {
       description = "Marca todas as conquistas recém-desbloqueadas do usuário como vistas.")
   @PostMapping("/achievements/seen")
   ResponseEntity<Void> markAchievementsSeen(
+      @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado);
+
+  @Operation(
+      summary = "Marcar Artefatos como Vistos",
+      description = "Marca todos os artefatos recém-desbloqueados da coleção do usuário como vistos.")
+  @PostMapping("/artifacts/seen")
+  ResponseEntity<Void> markArtifactsSeen(
       @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado);
 
   @Operation(

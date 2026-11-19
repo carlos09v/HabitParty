@@ -279,13 +279,15 @@ export const TASK_DIFFICULTY_META: Record<
   },
   HARD: {
     label: "Difícil",
-    color: "text-purple-400",
-    badgeColor: "text-purple-300 bg-purple-500/20 border-purple-500/40",
+    color: "text-purple-700 dark:text-purple-400",
+    badgeColor:
+      "text-purple-700 dark:text-purple-300 bg-purple-500/15 dark:bg-purple-500/20 border-purple-500/35 dark:border-purple-500/40",
   },
   hard: {
     label: "Difícil",
-    color: "text-purple-400",
-    badgeColor: "text-purple-300 bg-purple-500/20 border-purple-500/40",
+    color: "text-purple-700 dark:text-purple-400",
+    badgeColor:
+      "text-purple-700 dark:text-purple-300 bg-purple-500/15 dark:bg-purple-500/20 border-purple-500/35 dark:border-purple-500/40",
   },
 };
 
@@ -294,7 +296,7 @@ export const DIFFICULTY_DOT_COLORS: Record<TaskDifficultyOption, string> = {
   TRIVIAL: "bg-info shadow-[0_0_6px_rgba(56,189,248,0.5)]",
   EASY: "bg-success-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]",
   MEDIUM: "bg-warning-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]",
-  HARD: "bg-purple-400 shadow-[0_0_6px_rgba(192,132,252,0.5)]",
+  HARD: "bg-purple-600 dark:bg-purple-400 shadow-[0_0_6px_rgba(147,51,234,0.4)] dark:shadow-[0_0_6px_rgba(192,132,252,0.5)]",
 };
 
 /** Cores de ícone de espada por dificuldade (Modo Gamificado). */
@@ -302,7 +304,7 @@ export const DIFFICULTY_SWORD_COLORS: Record<TaskDifficultyOption, string> = {
   TRIVIAL: "text-info",
   EASY: "text-success-500",
   MEDIUM: "text-warning-500",
-  HARD: "text-purple-400",
+  HARD: "text-purple-700 dark:text-purple-400",
 };
 
 /** Metadados e cores de prioridade de tarefas. */
@@ -473,8 +475,8 @@ export const HABIT_IMPORTANCE_META: Record<
       "bg-emerald-500/10 border-emerald-500/40 text-emerald-700 dark:bg-success-500/15 dark:border-success-500/50 dark:text-success-500 font-bold",
   },
   HIGH: {
-    color: "text-purple-400",
-    dotColor: "bg-purple-400",
+    color: "text-purple-700 dark:text-purple-400",
+    dotColor: "bg-purple-600 dark:bg-purple-400",
     activeClass:
       "bg-purple-500/10 border-purple-500/40 text-purple-700 dark:bg-purple-500/15 dark:border-purple-400/50 dark:text-purple-300 font-bold",
   },

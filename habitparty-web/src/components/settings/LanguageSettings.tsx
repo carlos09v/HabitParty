@@ -7,13 +7,7 @@ import type { SettingsOptionItem } from "@/types/settings";
 import type { AppLocale } from "@/types/ui";
 import { SettingsOptionGrid } from "./SettingsOptionGrid";
 
-interface LanguageSettingsProps {
-  isCompact?: boolean;
-}
-
-export function LanguageSettings({
-  isCompact = false,
-}: LanguageSettingsProps = {}) {
+export function LanguageSettings() {
   const t = useTranslations("settings.languageCard");
   const { locale, setLocale, isEnglish, isSwitching, pendingLocale } =
     useLocaleSwitcher();
@@ -40,7 +34,6 @@ export function LanguageSettings({
       options={options}
       selectedValue={pendingLocale ?? locale}
       onSelect={(val) => setLocale(val)}
-      isCompact={isCompact}
       disabled={isSwitching}
       pendingValue={pendingLocale}
     />

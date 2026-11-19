@@ -4,7 +4,11 @@ import { useLocale, useTranslations } from "next-intl";
 import { LanguageToggleBtn } from "@/components/layout/LanguageToggleBtn";
 import { ThemeToggleBtn } from "@/components/layout/ThemeToggleBtn";
 import { BrandLogo } from "@/components/ui/BrandLogo";
-import { LANDING_NAV_LINK_CONFIGS, SUPPORT_LINKS } from "@/constants/landing";
+import {
+  LANDING_ANCHORS,
+  LANDING_NAV_LINK_CONFIGS,
+  SUPPORT_LINKS,
+} from "@/constants/landing";
 
 export function LandingFooter() {
   const currentYear = new Date().getFullYear();
@@ -92,12 +96,12 @@ export function LandingFooter() {
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/help"
+                <a
+                  href={`#${LANDING_ANCHORS.faq}`}
                   className="hover:text-gold transition-colors"
                 >
                   {t("helpCenterLink")}
-                </Link>
+                </a>
               </li>
             </ul>
           </div>

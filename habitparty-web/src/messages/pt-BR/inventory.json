@@ -14,7 +14,8 @@
     "openInFocus": "Abrir no Foco",
     "openBox": "Abrir Caixa",
     "sendToFocus": "Enviar ao Foco",
-    "use": "Usar"
+    "use": "Usar",
+    "openBoxProductivity": "Sortear Pausa"
   },
   "container": {
     "listAriaLabel": "Itens do inventário",
@@ -32,7 +33,8 @@
       "sortLabel": "Ordenar",
       "sortDefault": "Ordem Padrão",
       "sortQuantityDesc": "Maior Quantidade",
-      "sortName": "Nome (A-Z)"
+      "sortName": "Nome (A-Z)",
+      "typeMysteryBoxProductivity": "Sorteio de Pausa"
     },
     "emptyState": {
       "emptyTitle": "Sua mochila está vazia! 🎒",
@@ -55,7 +57,8 @@
       "sendToFocus": "Enviar ao Foco",
       "useImmediately": "Usar agora (sem timer)",
       "useItem": "Usar Item",
-      "discardItem": "Descartar Item"
+      "discardItem": "Descartar Item",
+      "openMysteryBoxProductivity": "Iniciar Sorteio de Pausa"
     },
     "discardModal": {
       "title": "Descartar item da mochila?",
@@ -63,7 +66,8 @@
       "titleProductivity": "Descartar item do inventário?",
       "description": "Tem certeza que deseja descartar 1x <strong>\"{title}\"</strong>? Esta ação não reembolsa as moedas gastas.",
       "confirmText": "Sim, descartar",
-      "cancelText": "Cancelar"
+      "cancelText": "Cancelar",
+      "descriptionProductivity": "Tem certeza que deseja descartar 1x <strong>\"{title}\"</strong>? Esta ação não reembolsa os créditos gastos."
     },
     "toasts": {
       "useError": "Erro ao usar item.",
@@ -105,6 +109,17 @@
       "l1": "Day-Off Parcial de Elite",
       "l2": "Day-Off Estendido",
       "l3": "Celebração Absoluta"
+    },
+    "wonBadgeLabelProductivity": "SELECIONADO!",
+    "chanceBadge": "{percent}% Chance",
+    "openErrorGamified": "Não foi possível abrir a Caixa Misteriosa.",
+    "openErrorProductivity": "Não foi possível realizar o Sorteio de Pausa.",
+    "tiersProductivity": {
+      "NONE": "Pacote Essencial",
+      "BASIC": "Pacote Essencial",
+      "PREMIUM": "Pacote Moderado",
+      "EPIC": "Pacote Avançado",
+      "LEGENDARY": "Pacote Executivo"
     }
   },
   "rouletteModal": {
@@ -120,13 +135,37 @@
     "spinButton": "Girar Roleta!",
     "spinningStatus": "Girando a sorte...",
     "storeInBackpackButton": "Guardar na Mochila",
+    "artifactDrop": {
+      "headline": "Relíquia Encontrada no Fundo do Baú!",
+      "subtext": "Drop bônus exclusivo! Este artefato foi adicionado permanentemente à sua coleção.",
+      "collectionTag": "Coleção • Caixa Misteriosa",
+      "viewShowcaseButton": "Ver na Vitrine",
+      "badgeByRarity": {
+        "COMMON": "Drop Bônus Comum",
+        "UNCOMMON": "Drop Bônus Incomum",
+        "RARE": "Relíquia Rara!",
+        "EPIC": "Relíquia Épica!",
+        "LEGENDARY": "Relíquia Lendária!"
+      },
+      "headlineProductivity": "Marco Colecionável Desbloqueado!",
+      "subtextProductivity": "Bônus de exploração! Este item foi registrado permanentemente na sua coleção.",
+      "collectionTagProductivity": "Coleção • Sorteio de Pausa"
+    },
     "tiers": {
       "NONE": "Básico",
       "BASIC": "Básico",
       "PREMIUM": "Premium",
       "EPIC": "Épico",
       "LEGENDARY": "Lendário"
-    }
+    },
+    "subtitleWonProductivity": "Confira a pausa ou recompensa sorteada para esta sessão:",
+    "subtitleIdleProductivity": "Gire a roleta ponderada para sortear qual recompensa será liberada do seu pacote!",
+    "possiblePrizesTitleProductivity": "Opções configuradas neste pacote:",
+    "prizeUnlockedTitleProductivity": "Recompensa Liberada!",
+    "wonSingleUseItemProductivity": "Recompensa de Uso Único salva no Inventário",
+    "spinButtonProductivity": "Executar Sorteio",
+    "spinningStatusProductivity": "Sorteando opção...",
+    "storeInBackpackButtonProductivity": "Salvar no Inventário"
   },
   "actions": {
     "communicationError": "Erro interno de comunicação com o servidor.",

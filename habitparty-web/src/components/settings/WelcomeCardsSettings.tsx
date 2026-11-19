@@ -10,13 +10,7 @@ import { useWelcomeCards } from "@/store/welcomeCardsStore";
 import type { WelcomeCardStorageKey } from "@/types/settings";
 import { cn } from "@/utils";
 
-interface WelcomeCardsSettingsProps {
-  isCompact?: boolean;
-}
-
-export function WelcomeCardsSettings({
-  isCompact = false,
-}: WelcomeCardsSettingsProps) {
+export function WelcomeCardsSettings() {
   const t = useTranslations("settings.welcomeCards");
   const { isGamified } = useExperienceMode();
   const {
@@ -74,8 +68,7 @@ export function WelcomeCardsSettings({
       {/* Barra de Status e Ação Rápida */}
       <div
         className={cn(
-          "rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors",
-          isCompact ? "p-3" : "p-4",
+          "rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors p-4",
           hiddenCount > 0
             ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300"
             : "bg-gold/10 border-gold/30 text-gold",
@@ -120,8 +113,7 @@ export function WelcomeCardsSettings({
             <div
               key={card.key}
               className={cn(
-                "rounded-xl border transition-colors flex flex-col justify-between gap-3.5",
-                isCompact ? "p-3.5" : "p-4",
+                "rounded-xl border transition-colors flex flex-col justify-between gap-3.5 p-4",
                 isHidden
                   ? "bg-card dark:bg-surface/30 border-amber-500/40 dark:border-amber-500/30 shadow-xs dark:shadow-[0_0_12px_rgba(245,158,11,0.06)]"
                   : "bg-card dark:bg-surface/50 border-neutral-700 dark:border-white/10 hover:border-primary/40 dark:hover:border-white/20 shadow-2xs dark:shadow-none",

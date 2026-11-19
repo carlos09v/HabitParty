@@ -15,18 +15,45 @@
   },
   "avatarFrames": {
     "title": "Moldura do Avatar",
-    "subtitle": "Escolha uma moldura animada com luz cósmica para destacar seu perfil na Party, no ranking e no painel.",
+    "subtitle": "Escolha uma moldura animada com luz cósmica ou de maestria para destacar seu perfil na Party, no ranking e no painel.",
     "upgradeToast": "Molduras animadas são exclusivas para membros Premium! Faça o upgrade para desbloquear.",
+    "masteryLockedToast": "Conclua o requisito de maestria indicado para liberar esta moldura gratuita.",
     "vipBadge": "VIP Cósmico",
+    "masteryBadge": "Maestria",
     "freeBadge": "Grátis",
-    "unlockAll": "Desbloquear Todas",
+    "unlockAll": "Desbloquear VIP",
     "lockedTitle": "Exclusivo Premium",
+    "lockedMasteryTitle": "Bloqueada por Maestria",
     "successToast": "Moldura \"{name}\" equipada com sucesso!",
     "frames": {
       "none": {
         "name": "Sem Moldura",
         "badge": "Padrão",
         "description": "Visual clássico limpo sem efeitos de borda adicionais."
+      },
+      "forged_silver": {
+        "name": "Prata Forjada",
+        "badge": "Maestria",
+        "description": "Aço escovado e prata nobre forjada pela consistência avançada.",
+        "unlockHint": "Requer nível Especialista (6.000 XP)"
+      },
+      "obsidian_crest": {
+        "name": "Brasão de Obsidiana",
+        "badge": "Maestria",
+        "description": "Obsidiana vulcânica lapidada com reflexo índigo para colecionadores de glórias.",
+        "unlockHint": "Requer conquista: Colecionador de Glórias (1.000 pts)"
+      },
+      "chronos_bronze": {
+        "name": "Engrenagem do Tempo",
+        "badge": "Maestria",
+        "description": "Bronze antigo de alta relojoaria reservado aos mestres do foco absoluto.",
+        "unlockHint": "Requer 100% das conquistas de Foco"
+      },
+      "legend_laurel": {
+        "name": "Louros da Lenda",
+        "badge": "Maestria",
+        "description": "Coroa soberana em ouro champanhe e louros esmeralda do topo da pirâmide.",
+        "unlockHint": "Requer nível máximo Lenda (60.000 XP)"
       },
       "cosmic_gold": {
         "name": "Guardião Cósmico",
@@ -55,6 +82,215 @@
       }
     }
   },
+  "identityModal": {
+    "title": "Identidade Visual do Perfil",
+    "subtitle": "Personalize sua moldura de prestígio, título equipável abaixo do nome e avatar simbólico.",
+    "tabsNavAria": "Categorias de personalização do perfil",
+    "tabs": {
+      "frames": "Molduras ({unlocked}/{total})",
+      "titles": "Títulos ({unlocked}/{total})",
+      "avatars": "Avatares ({unlocked}/{total})"
+    }
+  },
+  "titles": {
+    "noneName": "Sem Título Equipado",
+    "noneDescription": "Exibir seu perfil apenas com nome, arroba e patente padrão.",
+    "equippedToast": "Título \"{name}\" equipado no perfil!",
+    "clearedToast": "Título removido do perfil.",
+    "lockedToast": "Desbloqueie o requisito indicado para equipar este título.",
+    "categoryBadges": {
+      "ACHIEVEMENT": "Conquista",
+      "ACCOUNT": "Conta",
+      "RETROSPECTIVE": "Retrospectiva"
+    },
+    "items": {
+      "NIGHT_OWL": {
+        "gamified": "Coruja da Meia-Noite",
+        "essential": "Foco Noturno",
+        "unlockHint": "Conquista: Coruja da Meia-Noite"
+      },
+      "EARLY_BIRD": {
+        "gamified": "Madrugador",
+        "essential": "Alta Manhã",
+        "unlockHint": "Conquista: Madrugador"
+      },
+      "HARDCORE_SURVIVOR": {
+        "gamified": "Sangue Frio",
+        "essential": "Prazo Implacável",
+        "unlockHint": "Conquista: Sangue Frio (10 Hardcore)"
+      },
+      "FOCUS_MARATHON_90": {
+        "gamified": "Mestre do Fluxo",
+        "essential": "Deep Worker",
+        "unlockHint": "Conquista: Sessão de Fluxo (90m)"
+      },
+      "TASK_HARD_25": {
+        "gamified": "Caçador de Chefões",
+        "essential": "Solucionador Crítico",
+        "unlockHint": "Conquista: Caçador de Chefões (25 Difíceis)"
+      },
+      "STREAK_90": {
+        "gamified": "Vontade de Ferro",
+        "essential": "Consistência de Ferro",
+        "unlockHint": "Conquista: Vontade de Ferro (90 dias)"
+      },
+      "FOCUS_HOURS_200": {
+        "gamified": "Senhor do Tempo",
+        "essential": "Mestre da Imersão",
+        "unlockHint": "Conquista: Senhor do Tempo (200h foco)"
+      },
+      "GOLD_15000": {
+        "gamified": "Magnata Dourado",
+        "essential": "Gestor de Elite",
+        "unlockHint": "Conquista: Imperador Dourado (15.000 moedas/créditos)"
+      },
+      "STREAK_365": {
+        "gamified": "Chama Imortal",
+        "essential": "Disciplina Anual",
+        "unlockHint": "Conquista: Chama Imortal (365 dias)"
+      },
+      "TASK_1000": {
+        "gamified": "O Imparável",
+        "essential": "Execução Suprema",
+        "unlockHint": "Conquista: Imparável (1.000 tarefas)"
+      },
+      "TROPHY_HUNTER_1000": {
+        "gamified": "Colecionador de Glórias",
+        "essential": "Multi-Especialista",
+        "unlockHint": "Conquista: 1.000 Pontos de Conquista"
+      },
+      "FOUNDER": {
+        "gamified": "Membro Fundador",
+        "essential": "Membro Fundador",
+        "unlockHint": "Exclusivo para contas Fundadoras"
+      },
+      "VIP_GUARDIAN": {
+        "gamified": "Guardião Real",
+        "essential": "Membro VIP",
+        "unlockHint": "Requer assinatura Premium ativa"
+      },
+      "ARTIFACT_COLLECTOR": {
+        "gamified": "Curador de Relíquias",
+        "essential": "Colecionador",
+        "unlockHint": "Colete 10 ou mais Artefatos na vitrine"
+      },
+      "JOURNEY_VETERAN": {
+        "gamified": "Veterano da Jornada",
+        "essential": "Veterano Verificado",
+        "unlockHint": "E-mail verificado e 30+ dias de conta"
+      },
+      "RETRO_DEEP_FOCUS_SAGE": {
+        "gamified": "Sábio do Foco Profundo",
+        "essential": "Especialista em Foco Profundo",
+        "unlockHint": "Arquétipo na Retrospectiva Anual"
+      },
+      "RETRO_STREAK_GUARDIAN": {
+        "gamified": "Guardião da Ofensiva",
+        "essential": "Mestre da Consistência",
+        "unlockHint": "Arquétipo na Retrospectiva Anual"
+      },
+      "RETRO_CHALLENGE_SEEKER": {
+        "gamified": "Desafiante Intrépido",
+        "essential": "Executor de Alta Complexidade",
+        "unlockHint": "Arquétipo na Retrospectiva Anual"
+      },
+      "RETRO_ARCHITECT": {
+        "gamified": "Arquiteto da Disciplina",
+        "essential": "Estrategista Equilibrado",
+        "unlockHint": "Arquétipo na Retrospectiva Anual"
+      },
+      "RETRO_RISING_SPARK": {
+        "gamified": "Centelha Ascendente",
+        "essential": "Evolução Contínua",
+        "unlockHint": "Arquétipo na Retrospectiva Anual"
+      }
+    }
+  },
+  "avatarPresets": {
+    "customName": "Minha Foto / Iniciais Padrão",
+    "customDescription": "Voltar a exibir sua foto enviada ou suas iniciais padrão no avatar.",
+    "customBadge": "Foto Própria",
+    "rankBadge": "Patente",
+    "vipBadge": "VIP",
+    "founderBadge": "Fundador",
+    "equippedToast": "Avatar simbólico \"{name}\" equipado!",
+    "resetToast": "Avatar restaurado para sua foto ou iniciais padrão.",
+    "lockedToast": "Alcance a patente ou assinatura necessária para liberar este avatar.",
+    "items": {
+      "level_novice": {
+        "gamified": "Emblema Novato",
+        "essential": "Símbolo Iniciante",
+        "description": "Broto esmeralda marcando o primeiro passo na jornada.",
+        "unlockHint": "Disponível desde 0 XP"
+      },
+      "level_apprentice": {
+        "gamified": "Emblema Aprendiz",
+        "essential": "Símbolo Praticante",
+        "description": "Pegadas firmes dos primeiros 100 XP acumulados.",
+        "unlockHint": "Requer 100 XP"
+      },
+      "level_adventurer": {
+        "gamified": "Emblema Aventureiro",
+        "essential": "Símbolo Consistente",
+        "description": "Bússola estelar de quem já traçou sua rota.",
+        "unlockHint": "Requer 300 XP"
+      },
+      "level_challenger": {
+        "gamified": "Emblema Desafiante",
+        "essential": "Símbolo Focado",
+        "description": "Mira de precisão forjada em 750 XP de entregas.",
+        "unlockHint": "Requer 750 XP"
+      },
+      "level_amateur": {
+        "gamified": "Emblema Amador",
+        "essential": "Símbolo Organizado",
+        "description": "Brasão estruturado dos 1.500 XP de disciplina.",
+        "unlockHint": "Requer 1.500 XP"
+      },
+      "level_professional": {
+        "gamified": "Emblema Profissional",
+        "essential": "Símbolo Produtivo",
+        "description": "Centelha violeta de alta energia aos 3.000 XP.",
+        "unlockHint": "Requer 3.000 XP"
+      },
+      "level_expert": {
+        "gamified": "Emblema Especialista",
+        "essential": "Símbolo Especialista",
+        "description": "Alvo mestre da fase de excelência aos 6.000 XP.",
+        "unlockHint": "Requer 6.000 XP"
+      },
+      "level_veteran": {
+        "gamified": "Emblema Veterano",
+        "essential": "Símbolo Sênior",
+        "description": "Escudo carmesim forjado com 12.000 XP vitais.",
+        "unlockHint": "Requer 12.000 XP"
+      },
+      "level_master": {
+        "gamified": "Emblema Mestre",
+        "essential": "Símbolo Executivo",
+        "description": "Tomo dourado de comando concedido aos 25.000 XP.",
+        "unlockHint": "Requer 25.000 XP"
+      },
+      "level_legend": {
+        "gamified": "Emblema Lenda",
+        "essential": "Símbolo Alta Performance",
+        "description": "Coroa solar soberana reservada ao topo de 60.000 XP.",
+        "unlockHint": "Requer 60.000 XP"
+      },
+      "vip_cosmic": {
+        "gamified": "Astrolábio Cósmico VIP",
+        "essential": "Insígnia VIP",
+        "description": "Emblema exclusivo para membros Guardiões Cósmicos.",
+        "unlockHint": "Requer assinatura Premium ativa"
+      },
+      "founder_crest": {
+        "gamified": "Brasão do Fundador",
+        "essential": "Selo Fundador",
+        "description": "Escudo inaugural reservado aos apoiadores pioneiros.",
+        "unlockHint": "Exclusivo para Membros Fundadores"
+      }
+    }
+  },
   "header": {
     "defaultDisplayNameGamified": "Aventureiro",
     "defaultDisplayNameEssential": "Membro",
@@ -73,7 +309,9 @@
     "bioSaved": "Bio atualizada na vitrine!",
     "memberSince": "Na jornada desde {date}",
     "settingsButton": "Configurações",
-    "changeFrameButton": "Moldura",
+    "changeFrameButton": "Identidade & Moldura",
+    "equippedTitleAria": "Título equipado: {title}",
+    "verifiedEmailBadge": "E-mail verificado",
     "changePhoto": "Trocar Foto",
     "uploadingPhoto": "Enviando...",
     "photoSuccessToast": "Foto de perfil atualizada!",
@@ -89,7 +327,9 @@
     "viewRetrospectiveCta": "Retrospectiva {year}",
     "retrospectiveBannerTitle": "Sua Retrospectiva {year} está disponível!",
     "retrospectiveBannerDesc": "{days} dias ativos, {tasks} tarefas concluídas e arquétipo {archetype}.",
-    "retrospectiveBannerBtn": "Abrir & Baixar Banner"
+    "retrospectiveBannerBtn": "Abrir & Baixar Banner",
+    "xpProgressLabelEssential": "{xp} pts acumulados • Faltam {remaining} pts para {nextTitle}",
+    "maxLevelReachedEssential": "Patente Máxima Alcançada ({xp} pts)"
   },
   "highlights": {
     "titleGamified": "Estante de Troféus em Destaque",
@@ -103,7 +343,35 @@
     "emptyVisitorText": "Nenhum destaque selecionado ainda.",
     "typeBadge": {
       "ACHIEVEMENT": "Conquista",
-      "ACCOUNT_BADGE": "Insígnia"
+      "ACCOUNT_BADGE": "Insígnia",
+      "STAT_METRIC": "Métrica",
+      "ARTIFACT": "Relíquia"
+    },
+    "statMetrics": {
+      "HIGHEST_STREAK": {
+        "title": "Maior Ofensiva",
+        "subtitle": "{value} dias de recorde"
+      },
+      "CURRENT_STREAK": {
+        "title": "Ofensiva Atual",
+        "subtitle": "{value} dias seguidos"
+      },
+      "TOTAL_TASKS": {
+        "title": "Tarefas Concluídas",
+        "subtitle": "{value} tarefas no total"
+      },
+      "FOCUS_HOURS": {
+        "title": "Horas de Foco",
+        "subtitle": "{value}h em sessões de foco"
+      },
+      "TOTAL_XP": {
+        "title": "XP Total",
+        "subtitle": "{value} XP acumulados"
+      },
+      "ACHIEVEMENT_POINTS": {
+        "title": "Pontos de Conquista",
+        "subtitle": "{value} pontos conquistados"
+      }
     }
   },
   "pickerModal": {
@@ -118,9 +386,13 @@
     "alreadyEquipped": "Em uso no Espaço #{slot}",
     "tabs": {
       "achievements": "Conquistas ({count})",
+      "artifacts": "Relíquias ({count})",
       "badges": "Insígnias da Conta"
     },
     "noUnlockedAchievements": "Você ainda não desbloqueou conquistas. Complete tarefas ou sessões de foco para ganhar sua primeira medalha!",
+    "noUnlockedArtifacts": "Você ainda não possui relíquias na coleção. Conquiste marcos raros/épicos/lendários ou abra Caixas Misteriosas!",
+    "searchPlaceholderArtifacts": "Buscar relíquia por nome ou origem...",
+    "searchClearLabel": "Limpar busca",
     "lockedBadgeHint": "Bloqueado para sua conta no momento"
   },
   "accountBadges": {
@@ -164,7 +436,8 @@
     "tasksCompleted": {
       "label": "Missões Cumpridas",
       "essentialLabel": "Tarefas Concluídas",
-      "sub": "{hardcore} no modo Hardcore • {hard} difíceis"
+      "sub": "{hardcore} no modo Hardcore • {hard} difíceis",
+      "essentialSub": "{hardcore} com prazo rígido • {hard} difíceis"
     },
     "focusTime": {
       "label": "Imersão em Foco",
@@ -243,7 +516,188 @@
     "headerGamified": "Nova Conquista Desbloqueada!",
     "headerEssential": "Novo Marco Alcançado!",
     "pointsEarned": "+{points} Pontos de Conquista",
-    "viewShowcase": "Ver na Vitrine"
+    "viewShowcase": "Ver na Vitrine",
+    "artifactGrantedLabel": "Relíquia Desbloqueada:",
+    "artifactAddedHint": "Adicionada à sua coleção",
+    "dismiss": "Fechar notificação"
+  },
+  "artifacts": {
+    "gallery": {
+      "titleGamified": "Vitrine & Grimório de Artefatos",
+      "titleEssential": "Coleção de Artefatos & Marcos",
+      "subtitleGamified": "Colecione relíquias simbólicas ao bater grandes marcos ou encontre tesouros raros dentro das Caixas Misteriosas.",
+      "subtitleEssential": "Itens colecionáveis simbólicos entregues por conquistas determinísticas ou exploração.",
+      "collectionCountBadge": "{unlocked} / {total} relíquias",
+      "searchPlaceholder": "Buscar relíquia por nome, lore ou origem...",
+      "filter": {
+        "ALL": "Todas ({count})",
+        "UNLOCKED": "Obtidas ({count})",
+        "MERIT": "Mérito ({count})",
+        "EXPLORATION": "Caixa Misteriosa ({count})",
+        "EXPLORATION_ESSENTIAL": "Sorteio de Pausa ({count})"
+      },
+      "rarityFilterAll": "Todas as Raridades",
+      "unlockedBadge": "Obtida",
+      "lockedBadge": "Silhueta",
+      "newBadge": "Nova",
+      "unlockedOn": "Obtida em {date}",
+      "pinToShowcase": "Fixar na Vitrine",
+      "pinnedInShowcase": "Na Vitrine",
+      "emptySearch": "Nenhuma relíquia encontrada para os filtros selecionados.",
+      "emptyVisitor": "Este usuário ainda não desbloqueou relíquias para os filtros selecionados."
+    },
+    "sourceLabels": {
+      "ACHIEVEMENT": "Relíquia de Mérito",
+      "MYSTERY_BOX": "Caixa Misteriosa",
+      "MYSTERY_BOX_NONE": "Caixa Misteriosa",
+      "MYSTERY_BOX_BASIC": "Caixa Básica",
+      "MYSTERY_BOX_PREMIUM": "Caixa Premium",
+      "MYSTERY_BOX_EPIC": "Caixa Épica",
+      "MYSTERY_BOX_LEGENDARY": "Caixa Lendária",
+      "SPECIAL": "Edição Especial"
+    },
+    "items": {
+      "ASTRO_COMPASS": {
+        "name": "Bússola do Norte",
+        "essentialName": "Bússola de Consistência",
+        "lore": "Mantém seu norte firme através de trinta alvoradas consecutivas.",
+        "essentialLore": "Marco simbólico de 30 dias seguidos de constância.",
+        "sourceHint": "Conquista: Guardião do Mês (30 dias de ofensiva)"
+      },
+      "QUARTZ_HOURGLASS": {
+        "name": "Ampulheta de Quartzo",
+        "essentialName": "Ampulheta de Imersão",
+        "lore": "Areia cristalina que marca suas primeiras dez horas de foco profundo.",
+        "essentialLore": "Troféu executivo pelas primeiras 10 horas de concentração.",
+        "sourceHint": "Conquista: Aprendiz do Templo (10h de foco)"
+      },
+      "CENTURION_SCROLL": {
+        "name": "Pergaminho do Centurião",
+        "essentialName": "Registro do Centurião",
+        "lore": "Crônica selada com duzentas e cinquenta missões executadas.",
+        "essentialLore": "Distintivo por 250 entregas concluídas com sucesso.",
+        "sourceHint": "Conquista: Veterano de Batalha (250 tarefas)"
+      },
+      "GUILD_SAPPHIRE": {
+        "name": "Safira da Guilda",
+        "essentialName": "Safira de Equilíbrio",
+        "lore": "Gema lapidada pelas primeiras mil moedas conquistadas com esforço real.",
+        "essentialLore": "Reconhecimento pelos primeiros 1.000 créditos acumulados.",
+        "sourceHint": "Conquista: Tesouro da Guilda (1.000 moedas/créditos)"
+      },
+      "CITADEL_SEAL": {
+        "name": "Selo da Cidadela",
+        "essentialName": "Selo de Alta Execução",
+        "lore": "Insígnia de bronze e ouro reservada a quem ergueu quinhentas entregas.",
+        "essentialLore": "Insígnia corporativa por atingir 500 tarefas concluídas.",
+        "sourceHint": "Conquista: Conquistador de Reinos (500 tarefas)"
+      },
+      "SOLSTICE_LANTERN": {
+        "name": "Lanterna do Solstício",
+        "essentialName": "Lanterna Semestral",
+        "lore": "Uma chama serena que atravessou meio ano sem jamais se apagar.",
+        "essentialLore": "Emblema de 180 dias contínuos de presença e disciplina.",
+        "sourceHint": "Conquista: Guardião do Solstício (180 dias de ofensiva)"
+      },
+      "IMMERSION_ASTROLABE": {
+        "name": "Astrolábio da Imersão",
+        "essentialName": "Astrolábio de Foco Profundo",
+        "lore": "Instrumento estelar calibrado ao longo de cem horas de silêncio produtivo.",
+        "essentialLore": "Peça de gabinete por ultrapassar 100 horas de foco produtivo.",
+        "sourceHint": "Conquista: Sábio da Imersão (100h de foco)"
+      },
+      "ALCHEMIST_SCALE": {
+        "name": "Balança do Alquimista",
+        "essentialName": "Balança de Sustentabilidade",
+        "lore": "Simboliza o equilíbrio perfeito entre trabalho árduo e descanso sem culpa.",
+        "essentialLore": "Distintivo por manter o equilíbrio em 100 recompensas resgatadas.",
+        "sourceHint": "Conquista: Mestre do Equilíbrio (100 resgates)"
+      },
+      "GRANDMASTER_CODEX": {
+        "name": "Grimório do Grão-Mestre",
+        "essentialName": "Compêndio Executivo",
+        "lore": "Tomo encadernado em ébano reservado a quem alcançou o título de Mestre.",
+        "essentialLore": "Volume simbólico concedido ao atingir o nível Executivo (25.000 pts).",
+        "sourceHint": "Conquista: Grão-Mestre (25.000 XP/pts)"
+      },
+      "OBSIDIAN_AEGIS": {
+        "name": "Égide de Obsidiana",
+        "essentialName": "Escudo de Pontualidade Crítica",
+        "lore": "Forjada sob pressão extrema sem recuar diante de cinquenta prazos rígidos.",
+        "essentialLore": "Concedida por cumprir 50 entregas com Prazo Rígido ativo.",
+        "sourceHint": "Conquista: Imune ao Caos (50 tarefas Hardcore)"
+      },
+      "UNSTOPPABLE_CROWN": {
+        "name": "Coroa do Imparável",
+        "essentialName": "Coroa de Mil Entregas",
+        "lore": "Relíquia lendária erguida após mil missões cumpridas com honra.",
+        "essentialLore": "Marco máximo de execução ao completar 1.000 tarefas.",
+        "sourceHint": "Conquista: Imparável (1.000 tarefas)"
+      },
+      "TITAN_CORE": {
+        "name": "Núcleo do Titã",
+        "essentialName": "Núcleo de Alta Complexidade",
+        "lore": "Energia condensada de cem desafios de dificuldade máxima vencidos.",
+        "essentialLore": "Troféu lendário por concluir 100 tarefas Difíceis.",
+        "sourceHint": "Conquista: Domador de Titãs (100 tarefas Difíceis)"
+      },
+      "ETERNAL_SUNFLAME": {
+        "name": "Chama Solar Eterna",
+        "essentialName": "Emblema da Disciplina Anual",
+        "lore": "Um sol incandescente sustentado por um ano inteiro de disciplina diária.",
+        "essentialLore": "Honraria suprema por 365 dias consecutivos de constância.",
+        "sourceHint": "Conquista: Chama Imortal (365 dias de ofensiva)"
+      },
+      "INFINITY_CHRONOMETER": {
+        "name": "Cronômetro do Infinito",
+        "essentialName": "Cronômetro de Maestria (200h)",
+        "lore": "Mecanismo perpétuo conquistado após duzentas horas de imersão absoluta.",
+        "essentialLore": "Peça lendária de acervo por alcançar 200 horas de foco.",
+        "sourceHint": "Conquista: Senhor do Tempo (200h de foco)"
+      },
+      "EMPEROR_CHALICE": {
+        "name": "Cálice do Imperador",
+        "essentialName": "Troféu de Prosperidade",
+        "lore": "Cálice dourado forjado com quinze mil moedas de mérito legítimo.",
+        "essentialLore": "Prêmio máximo por acumular 15.000 créditos de esforço.",
+        "sourceHint": "Conquista: Imperador Dourado (15.000 moedas/créditos)"
+      },
+      "LEGEND_PHILOSOPHER_STONE": {
+        "name": "Pedra Filosofal da Lenda",
+        "essentialName": "Prisma da Alta Performance",
+        "lore": "O artefato supremo daqueles que atingiram o ápice da jornada.",
+        "essentialLore": "Símbolo definitivo do nível Alta Performance (60.000 pts).",
+        "sourceHint": "Conquista: Lenda Viva (60.000 XP/pts)"
+      },
+      "FATE_DICE": {
+        "name": "Dado do Destino",
+        "essentialName": "Dado do Destino",
+        "lore": "Um poliedro encantado encontrado no fundo de baús de exploração.",
+        "essentialLore": "Item colecionável exclusivo das Caixas Misteriosas do Modo Aventura.",
+        "sourceHint": "Caixa Misteriosa (Básica ou Premium)"
+      },
+      "HORIZON_KEY": {
+        "name": "Chave do Horizonte",
+        "essentialName": "Chave do Horizonte",
+        "lore": "Abre portas simbólicas para novos ciclos de descanso e recompensa.",
+        "essentialLore": "Item colecionável raro das Caixas Misteriosas do Modo Aventura.",
+        "sourceHint": "Caixa Misteriosa (Premium, Épica ou Lendária)"
+      },
+      "AETHER_PRISM": {
+        "name": "Prisma do Éter",
+        "essentialName": "Prisma do Éter",
+        "lore": "Refrata luz estelar capturada nas raras fendas de uma Caixa Épica ou Lendária.",
+        "essentialLore": "Item colecionável épico das Caixas Misteriosas do Modo Aventura.",
+        "sourceHint": "Caixa Misteriosa (Épica ou Lendária)"
+      },
+      "ASTRAL_RELIQUARY": {
+        "name": "Relicário Astral",
+        "essentialName": "Relicário Astral",
+        "lore": "A joia mais cobiçada do Modo Aventura, guardada apenas nos baús mais raros.",
+        "essentialLore": "Item colecionável lendário das Caixas Misteriosas do Modo Aventura.",
+        "sourceHint": "Caixa Misteriosa (Épica ou Lendária)"
+      }
+    }
   },
   "catalog": {
     "TASK_FIRST": {
@@ -812,7 +1266,9 @@
       "nextMilestoneLabel": "Próximo Degrau",
       "nextMilestoneMax": "Topo Alcançado",
       "unlockedTiersLabel": "{unlocked} de {total} patentes",
-      "remainingXpHint": "Faltam {xp} XP"
+      "remainingXpHint": "Faltam {xp} XP",
+      "totalXpLabelEssential": "Pontuação Total",
+      "remainingXpHintEssential": "Faltam {xp} pts"
     },
     "pyramid": {
       "navAria": "Degraus da pirâmide de patentes",
@@ -825,7 +1281,9 @@
       "friendsHereTitle": "Amigos nesta patente ({count})",
       "friendXpMeta": "{xp} XP",
       "viewFriendProfile": "Visitar vitrine",
-      "xpThresholdLabel": "{minXp} XP"
+      "xpThresholdLabel": "{minXp} XP",
+      "xpThresholdLabelEssential": "{minXp} pts",
+      "friendPtsMeta": "{xp} pts"
     },
     "eras": {
       "foundation": "Era I • Fundação",
@@ -847,7 +1305,10 @@
       "tierProgressLabel": "Progresso nesta patente",
       "alreadyReachedDesc": "Você já ultrapassou a meta mínima deste degrau! Sua jornada segue firme rumo aos patamares superiores.",
       "topReachedDesc": "Você conquistou a patente máxima do HabitParty! Todas as patentes da pirâmide estão desbloqueadas.",
-      "remainingToUnlock": "Faltam {xp} XP para desbloquear {title}"
+      "remainingToUnlock": "Faltam {xp} XP para desbloquear {title}",
+      "thresholdRangeEssential": "{minXp} pts até {maxXp} pts",
+      "topRankRangeEssential": "A partir de {minXp} pts (Topo Máximo)",
+      "remainingToUnlockEssential": "Faltam {xp} pts para alcançar {title}"
     },
     "simulator": {
       "title": "Simulador de Esforço até Este Degrau",
@@ -863,7 +1324,9 @@
       "normalHabits": "Hábitos Normais",
       "standardPomos": "Pomodoros Padrão",
       "deepWorkPomos": "Deep Work (50m+)",
-      "xpPerAction": "+{xp} XP cada"
+      "xpPerAction": "+{xp} XP cada",
+      "infoDescEssential": "Os cálculos usam a pontuação matemática real do sistema (+15 pts por tarefa Média, +30 pts por Difícil, +10 pts por Hábito Normal, +8 pts por Pomodoro padrão e +15 pts por Deep Work 50m+).",
+      "ptsPerAction": "+{xp} pts cada"
     },
     "achievement": {
       "title": "Conquista Vinculada a este Degrau",
@@ -885,7 +1348,15 @@
       "habitsDesc": "De +5 XP (Baixo) até +25 XP (Alto) para impulsionar consistência contínua.",
       "focusLabel": "• Sessões de Foco:",
       "focusDesc": "Pomodoro Padrão (+8 XP/ciclo), Deep Work 50m+ (+15 XP/ciclo) e Cronômetro Livre (+7 XP a cada 30m).",
-      "noSpendNote": "💡 Somente penalidades do Modo Hardcore (ou perda de XP em Hábitos negativos no limite) podem reduzir XP dentro da mesma patente, com trava anti-rebaixamento."
+      "noSpendNote": "💡 Somente penalidades do Modo Hardcore (ou perda de XP em Hábitos negativos no limite) podem reduzir XP dentro da mesma patente, com trava anti-rebaixamento.",
+      "titleEssential": "Fontes de Pontos (nunca são gastos na Vitrine)",
+      "tooltipAriaEssential": "Entenda como acumular pontos e evoluir sua patente executiva",
+      "tooltipIntroEssential": "Ao contrário dos Créditos, seus Pontos são vitalícios e nunca diminuem ao resgatar recompensas na Vitrine:",
+      "tasksDescEssential": "De +2 pts (Trivial) até +30 pts (Difícil) mantendo 100% no prazo.",
+      "dailiesDescEssential": "100% do esforço base nos dias agendados + bônus de +10% após 14 execuções seguidas.",
+      "habitsDescEssential": "De +5 pts (Baixo) até +25 pts (Alto) para impulsionar consistência contínua.",
+      "focusDescEssential": "Pomodoro Padrão (+8 pts/ciclo), Deep Work 50m+ (+15 pts/ciclo) e Cronômetro Livre (+7 pts a cada 30m).",
+      "noSpendNoteEssential": "💡 Somente penalidades de Prazo Rígido (ou deduções em Hábitos negativos no limite) reduzem pontos dentro da mesma patente, com trava anti-rebaixamento."
     }
   }
 }

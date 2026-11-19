@@ -46,6 +46,15 @@ public interface TransactionHistoryJpaRepository extends JpaRepository<Transacti
             @Param("types") Collection<TransactionType> types,
             @Param("since") LocalDateTime since);
 
+    @Query("""
+        SELECT MAX(t.createdAt) FROM TransactionHistoryJpaEntity t
+        WHERE t.user.id = :userId
+          AND t.transactionType IN :types
+    """)
+    LocalDateTime findLatestCreatedAtByUserIdAndTypes(
+        @Param("userId") UUID userId,
+        @Param("types") Collection<TransactionType> types);
+
     // Busca geral paginada
     Page<TransactionHistoryJpaEntity> findAllByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
 

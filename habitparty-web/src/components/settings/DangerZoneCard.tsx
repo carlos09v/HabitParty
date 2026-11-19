@@ -6,12 +6,10 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { deleteUserAccountAction } from "@/actions/userActions";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
-import type { ProfileCardBaseProps } from "@/types/settings";
-import { cn } from "@/utils";
 
 import { SettingsCard } from "./SettingsCard";
 
-export function DangerZoneCard({ isCompact }: ProfileCardBaseProps) {
+export function DangerZoneCard() {
   const t = useTranslations("settings.dangerZone");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -33,15 +31,11 @@ export function DangerZoneCard({ isCompact }: ProfileCardBaseProps) {
         description={t("cardDesc")}
         icon={<AlertTriangle size={18} className="text-red-400" />}
         variant="danger"
-        isCompact={isCompact}
         headerAction={
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className={cn(
-              "w-full sm:w-auto justify-center rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 hover:bg-red-600 hover:text-white dark:border-red-500/50 dark:bg-red-600/20 dark:text-red-300 transition-colors font-bold cursor-pointer shrink-0 flex items-center gap-2 shadow-xs",
-              isCompact ? "px-3.5 py-2 text-xs" : "px-4 py-2.5 text-sm",
-            )}
+            className="w-full sm:w-auto justify-center rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 hover:bg-red-600 hover:text-white dark:border-red-500/50 dark:bg-red-600/20 dark:text-red-300 transition-colors font-bold cursor-pointer shrink-0 flex items-center gap-2 shadow-xs px-4 py-2.5 text-sm"
           >
             <Trash2 size={16} />
             {t("deleteButton")}

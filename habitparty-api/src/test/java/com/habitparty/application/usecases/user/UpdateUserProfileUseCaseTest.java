@@ -177,4 +177,62 @@ class UpdateUserProfileUseCaseTest {
     assertEquals("dark-knight", restored.getTheme());
     assertEquals("dark-knight", restored.getEffectiveTheme());
   }
+
+  @Test
+  @DisplayName("Deve persistir preferências de onboarding via execute e realizar roundtrip no UserMapper")
+  void shouldUpdateAndRoundtripOnboardingPreferences() {
+    UUID userId = UUID.randomUUID();
+    User user = createUser(userId, false);
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    UpdateUserProfileCommand command = new UpdateUserProfileCommand(
+        null,
+        null,
+        null,
+        com.habitparty.core.domain.enums.UserExperienceMode.GAMIFIED,
+        null,
+        "dark-knight",
+        "STUDIES",
+        java.util.List.of("focus", "habits", "focus"),
+        "procrastination",
+        90,
+        "MORNING",
+        "STRICT"
+    );
+
+    User updated = useCase.execute(userId, command);
+
+    assertEquals("studies", updated.getUsageMode());
+    assertEquals(java.util.List.of("focus", "habits"), updated.getPrimaryGoals());
+    assertEquals("procrastination", updated.getMainObstacle());
+    assertEquals(90, updated.getDailyFocusGoalMinutes());
+    assertEquals("morning", updated.getPeakPeriod());
+    assertEquals("strict", updated.getDisciplineStyle());
+
+    UserMapper mapper = new UserMapper();
+    UserJpaEntity entity = mapper.toEntity(updated);
+    User restored = mapper.toDomain(entity);
+    assertEquals("studies", restored.getUsageMode());
+    assertEquals(java.util.List.of("focus", "habits"), restored.getPrimaryGoals());
+    assertEquals(90, restored.getDailyFocusGoalMinutes());
+
+    UserResponseDTO response = UserResponseDTO.fromDomain(restored);
+    assertEquals("studies", response.usageMode());
+    assertEquals("strict", response.disciplineStyle());
+  }
+
+  @Test
+  @DisplayName("Deve validar valores inválidos nas preferências de onboarding")
+  void shouldValidateInvalidOnboardingPreferences() {
+    UUID userId = UUID.randomUUID();
+    User user = createUser(userId, false);
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+    UpdateUserProfileCommand invalidGoal = new UpdateUserProfileCommand(
+        null, null, null, null, null, null, "studies", null, null, 5, null, null);
+
+    assertThrows(DomainValidationException.class, () -> useCase.execute(userId, invalidGoal));
+    verify(userRepository, never()).save(any());
+  }
 }

@@ -1,9 +1,14 @@
+"use client";
+
 import { useLocale, useTranslations } from "next-intl";
 import type { CSSProperties, Ref } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
+import { getMysteryBadgeTextClass } from "@/constants/reward";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import type { MysteryBoxLootItem, MysteryBoxTier } from "@/types/reward";
 import { cn, formatCoins } from "@/utils";
+import { formatCreditsLeisureEquivalence } from "@/utils/rewardEconomy";
 import { getRewardIcon } from "@/utils/rewardMapper";
 
 interface MysteryBoxTierPopoverProps {
@@ -27,13 +32,15 @@ export function MysteryBoxTierPopover({
   const tMystery = useTranslations("rewards.mysteryBox");
   const tOptions = useTranslations("rewards.options");
   const locale = useLocale() as AppLocale;
+  const { isGamified } = useExperienceMode();
 
   const TierIcon = tier.icon;
   const displayPrice =
     customPrice !== undefined ? customPrice : tier.recommendedPrice;
   const tierKey = tier.backendPackageLevel;
-  const tierName = tMystery(`tiers.${tierKey}.name`);
-  const tierConcept = tMystery(`tiers.${tierKey}.concept`);
+  const tierNamespace = isGamified ? "tiers" : "tiersProductivity";
+  const tierName = tMystery(`${tierNamespace}.${tierKey}.name`);
+  const tierConcept = tMystery(`${tierNamespace}.${tierKey}.concept`);
   const tierBadge = tOptions(`packages.${tierKey}`);
   const hasCustomLoot = Boolean(
     customLootItems && customLootItems.length === 3,
@@ -82,11 +89,17 @@ export function MysteryBoxTierPopover({
           {tierConcept}
         </p>
 
-        {/* Tabela de Chances / Drop Rates */}
+        {/* Tabela de Chances / Probabilidades */}
         <div className="flex flex-col gap-1.5 pt-1">
           <div className="flex items-center justify-between text-label-m text-neutral-400 font-semibold uppercase tracking-wider">
-            <span>{t("rngHeader")}</span>
-            <span>{t("dropPercentHeader")}</span>
+            <span>
+              {isGamified ? t("rngHeader") : t("rngHeaderProductivity")}
+            </span>
+            <span>
+              {isGamified
+                ? t("dropPercentHeader")
+                : t("dropPercentHeaderProductivity")}
+            </span>
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -100,12 +113,16 @@ export function MysteryBoxTierPopover({
                 : null;
               const dropLabel = customSlot?.name
                 ? customSlot.name
-                : tMystery(`tiers.${tierKey}.drops.${dropIndex}.label`);
+                : tMystery(
+                    `${tierNamespace}.${tierKey}.drops.${dropIndex}.label`,
+                  );
               const dropDescription = customSlot
                 ? customSlot.minutes && customSlot.minutes > 0
                   ? t("customTimePrize", { minutes: customSlot.minutes })
                   : t("customSingleUsePrize")
-                : tMystery(`tiers.${tierKey}.drops.${dropIndex}.description`);
+                : tMystery(
+                    `${tierNamespace}.${tierKey}.drops.${dropIndex}.description`,
+                  );
 
               return (
                 <div
@@ -126,13 +143,7 @@ export function MysteryBoxTierPopover({
                     <span
                       className={cn(
                         "font-black shrink-0",
-                        drop.badgeVariant === "emerald"
-                          ? "text-emerald-700 dark:text-success-400"
-                          : drop.badgeVariant === "amber"
-                            ? "text-amber-700 dark:text-amber-400"
-                            : drop.badgeVariant === "purple"
-                              ? "text-magenta"
-                              : "text-amber-700 dark:text-gold",
+                        getMysteryBadgeTextClass(drop.badgeVariant),
                       )}
                     >
                       {drop.percentage}%
@@ -148,13 +159,25 @@ export function MysteryBoxTierPopover({
         </div>
 
         {/* Rodapé do Popover: Custo Econômico Recomendado ou Preço Atual */}
-        <div className="flex items-center justify-between pt-1.5 border-t border-neutral-700 dark:border-white/10 text-tiny">
+        <div className="flex items-center justify-between pt-1.5 border-t border-neutral-700 dark:border-white/10 text-tiny gap-2">
           <span className="text-neutral-400">
-            {customPrice !== undefined ? t("priceInCoins") : t("balancedPrice")}
+            {customPrice !== undefined
+              ? isGamified
+                ? t("priceInCoins")
+                : t("priceInCredits")
+              : t("balancedPrice")}
           </span>
-          <span className="font-bold text-amber-700 dark:text-gold flex items-center gap-1">
-            <CoinIcon size={12} withGlow />
-            {formatCoins(displayPrice, { locale })} {t("coinsUnit")}
+          <span className="font-bold text-amber-700 dark:text-gold flex items-center gap-1 tabular-nums">
+            <CoinIcon size={12} withGlow={isGamified} />
+            <span>
+              {formatCoins(displayPrice, { locale })}{" "}
+              {isGamified ? t("coinsUnit") : t("creditsUnit")}
+            </span>
+            {!isGamified && displayPrice > 0 && (
+              <span className="text-[10px] font-medium text-neutral-400">
+                ({formatCreditsLeisureEquivalence(displayPrice)})
+              </span>
+            )}
           </span>
         </div>
       </div>

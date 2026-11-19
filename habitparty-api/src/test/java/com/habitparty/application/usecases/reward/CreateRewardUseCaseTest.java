@@ -118,4 +118,28 @@ class CreateRewardUseCaseTest {
     assertEquals(Optional.empty(), captor.getValue().getBaseDurationMinutes());
     assertNull(captor.getValue().getLootItems());
   }
+
+  @Test
+  void shouldForcePackageLevelNoneWhenCategoryIsDebt() {
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(rewardRepository.countByUserId(userId)).thenReturn(1);
+    when(rewardRepository.getMaxOrderIndex(userId)).thenReturn(0);
+    when(rewardRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    CreateRewardCommand cmd = new CreateRewardCommand(
+        "Hora extra no YouTube",
+        "tv",
+        "30m unitário",
+        new BigDecimal("8"),
+        RewardCategory.DEBT,
+        List.of(),
+        RewardType.SINGLE_USE,
+        RewardPackageLevel.EPIC,
+        null);
+
+    Reward saved = useCase.execute(cmd, userId);
+
+    assertEquals(Optional.of(RewardPackageLevel.NONE), saved.getPackageLevel());
+    assertEquals(Optional.of(RewardCategory.DEBT), saved.getCategory());
+  }
 }

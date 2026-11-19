@@ -78,6 +78,15 @@ public class UpdateUserProfileUseCase {
       user.updateTheme(command.theme());
     }
 
+    user.updateOnboardingPreferences(
+        command.usageMode(),
+        command.primaryGoals(),
+        command.mainObstacle(),
+        command.dailyFocusGoalMinutes(),
+        command.peakPeriod(),
+        command.disciplineStyle()
+    );
+
     return port.save(user);
   }
 

@@ -6,9 +6,11 @@ import type { TaskFilterType } from "@/types/task";
 interface DashboardFilterStoreState {
   activeFilter: TaskFilterType;
   selectedDate: string | null;
+  mobileDrawerCloseSeq: number;
   advancedFilters: DashboardAdvancedFilters;
   setFilter: (filter: TaskFilterType) => void;
   setSelectedDate: (date: string | null) => void;
+  requestMobileDrawerClose: () => void;
   setAdvancedFilters: (
     updater:
       | DashboardAdvancedFilters
@@ -21,9 +23,14 @@ export const useDashboardFilterStore = create<DashboardFilterStoreState>(
   (set) => ({
     activeFilter: "today",
     selectedDate: null,
+    mobileDrawerCloseSeq: 0,
     advancedFilters: DEFAULT_DASHBOARD_ADVANCED_FILTERS,
     setFilter: (activeFilter) => set({ activeFilter, selectedDate: null }),
     setSelectedDate: (selectedDate) => set({ selectedDate }),
+    requestMobileDrawerClose: () =>
+      set((state) => ({
+        mobileDrawerCloseSeq: state.mobileDrawerCloseSeq + 1,
+      })),
     setAdvancedFilters: (updater) =>
       set((state) => ({
         advancedFilters:

@@ -77,6 +77,7 @@ export function ProgressionPyramidPanel({
           currentTier={currentTier}
           currentRankOrder={currentRankOrder}
           selectedTier={selectedTierView.entry.tier}
+          isGamified={isGamified}
           isVisitorMode={isVisitorMode}
           onSelectTier={selectTier}
           friendsByTier={friendsByTier}
@@ -86,6 +87,7 @@ export function ProgressionPyramidPanel({
             name: displayName,
             hasRing: Boolean(user.isPremium),
             frameId: activeAvatarFrame,
+            presetId: user.avatarPreset,
           }}
         />
 
@@ -99,7 +101,10 @@ export function ProgressionPyramidPanel({
             remainingXpToSelected={remainingXpToSelected}
           />
 
-          <EffortSimulatorCard remainingXp={remainingXpToSelected} />
+          <EffortSimulatorCard
+            remainingXp={remainingXpToSelected}
+            isGamified={isGamified}
+          />
 
           <LinkedAchievementCard
             achievement={linkedAchievement}

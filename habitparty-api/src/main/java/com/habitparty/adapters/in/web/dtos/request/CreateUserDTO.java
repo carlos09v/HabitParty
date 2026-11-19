@@ -15,6 +15,7 @@ import jakarta.validation.constraints.Pattern;
 // O Record já cria os getters automaticamente por baixo dos panos!
 public record CreateUserDTO(
     @NotBlank(message = "O nome não pode estar em branco")
+    @Size(max = 150, message = "O nome deve ter no máximo 150 caracteres")
     String fullName,
 
     @NotBlank

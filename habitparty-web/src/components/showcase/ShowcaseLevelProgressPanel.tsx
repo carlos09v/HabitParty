@@ -13,6 +13,7 @@ interface ShowcaseLevelProgressPanelProps {
     remainingXp: number;
     isMaxLevel: boolean;
   };
+  isGamified?: boolean;
   onOpenProgression?: () => void;
 }
 
@@ -22,6 +23,7 @@ export function ShowcaseLevelProgressPanel({
   levelTitle,
   nextLevelTitle,
   progress,
+  isGamified = false,
   onOpenProgression,
 }: ShowcaseLevelProgressPanelProps) {
   const t = useTranslations("showcase.header");
@@ -53,12 +55,14 @@ export function ShowcaseLevelProgressPanel({
 
       <span className="text-tiny text-neutral-400 truncate w-full text-left">
         {!progress.isMaxLevel
-          ? t("xpProgressLabel", {
+          ? t(isGamified ? "xpProgressLabel" : "xpProgressLabelEssential", {
               xp: formattedCurrentXp,
               remaining: formattedRemainingXp,
               nextTitle: nextLevelTitle,
             })
-          : t("maxLevelReached", { xp: formattedCurrentXp })}
+          : t(isGamified ? "maxLevelReached" : "maxLevelReachedEssential", {
+              xp: formattedCurrentXp,
+            })}
       </span>
 
       {onOpenProgression && (

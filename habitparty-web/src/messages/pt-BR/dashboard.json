@@ -319,7 +319,9 @@
       "workspaceReadOnlyTitle": "Ambiente: {workspace} (somente leitura no plano gratuito)",
       "focusRunningTitle": "Foco em andamento nesta tarefa",
       "focusTimeTitle": "Tempo focado: {time} ({cycles, plural, one {# ciclo} other {# ciclos}})",
-      "focusActiveShort": "Foco"
+      "focusActiveShort": "Foco",
+      "rewardPointsTitle": "Rendimento: +{xp} Pontos",
+      "rewardCreditsTitle": "Rendimento: +{gold} Créditos"
     },
     "actions": {
       "positiveHabitTitle": "Registrar hábito positivo (+)",
@@ -454,7 +456,9 @@
       "outflows": "Gastos:",
       "netBalance": "Saldo:",
       "legendEarnings": "Ganhos",
-      "legendSpent": "Gastos"
+      "legendSpent": "Gastos",
+      "leisureEquivalenceLabel": "Equivale em lazer",
+      "walletTitleProductivityWithLeisure": "Ver extrato completo de transações • Equivalente a {duration} de lazer"
     },
     "partyWidget": {
       "title": "Party & Amigos",

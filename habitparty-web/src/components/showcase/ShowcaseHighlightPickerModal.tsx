@@ -1,8 +1,14 @@
 "use client";
 
-import { Check, Lock, Search, Sparkles, Trophy, X } from "lucide-react";
+import { Check, Gem, Lock, Search, Sparkles, Trophy, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useMemo, useState, useTransition } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
 import { toast } from "sonner";
 import { updateMyHighlightsAction } from "@/actions/showcaseActions";
 import { AchievementIcon } from "@/components/showcase/AchievementIcon";
@@ -22,6 +28,7 @@ import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import type {
   AchievementItemResponseDTO,
+  ArtifactItemResponseDTO,
   HighlightSlotInputDTO,
   HighlightType,
   ProfileHighlightResponseDTO,
@@ -33,26 +40,38 @@ import {
   isAccountBadgeUnlocked,
   resolveAccountBadgeCopy,
   resolveAchievementCopy,
+  resolveArtifactCopy,
   resolveHighlightSlotCard,
   resolveUserLevelState,
 } from "@/utils";
 import { soundEffects } from "@/utils/soundEffects";
 
+export type PickerTab = "achievements" | "artifacts" | "badges";
+
+export interface PickerPendingItem {
+  highlightType: "ACHIEVEMENT" | "ARTIFACT";
+  referenceId: string | null;
+  highlightKey: string;
+}
+
 interface ShowcaseHighlightPickerModalProps {
   isOpen: boolean;
   initialSlotIndex: number;
+  initialTab?: PickerTab;
+  initialPendingItem?: PickerPendingItem | null;
   user: UserResponseDTO;
   stats: ShowcaseStatsResponseDTO;
   highlights: ProfileHighlightResponseDTO[];
   achievements: AchievementItemResponseDTO[];
+  artifacts?: ArtifactItemResponseDTO[];
   onClose: () => void;
   onSaved: (updated: ProfileHighlightResponseDTO[]) => void;
 }
 
-type PickerTab = "achievements" | "badges";
-
 function buildInitialDraftSlots(
   highlights: ProfileHighlightResponseDTO[],
+  initialSlotIndex: number,
+  initialPendingItem?: PickerPendingItem | null,
 ): (HighlightSlotInputDTO | null)[] {
   const nextSlots: (HighlightSlotInputDTO | null)[] = [null, null, null, null];
   for (const h of highlights) {
@@ -65,16 +84,186 @@ function buildInitialDraftSlots(
       };
     }
   }
+
+  if (
+    initialPendingItem &&
+    initialSlotIndex >= 0 &&
+    initialSlotIndex < MAX_SHOWCASE_HIGHLIGHTS
+  ) {
+    const alreadyPinned = nextSlots.some(
+      (s) =>
+        s &&
+        s.highlightType === initialPendingItem.highlightType &&
+        ((Boolean(initialPendingItem.referenceId) &&
+          s.referenceId === initialPendingItem.referenceId) ||
+          (Boolean(initialPendingItem.highlightKey) &&
+            s.highlightKey === initialPendingItem.highlightKey)),
+    );
+    if (!alreadyPinned) {
+      nextSlots[initialSlotIndex] = {
+        displayOrder: initialSlotIndex,
+        highlightType: initialPendingItem.highlightType,
+        referenceId: initialPendingItem.referenceId,
+        highlightKey: initialPendingItem.highlightKey,
+      };
+    }
+  }
+
   return nextSlots;
+}
+
+interface PickerCatalogCardEntry {
+  key: string;
+  itemType: "ACHIEVEMENT" | "ARTIFACT";
+  referenceId: string | null;
+  highlightKey: string;
+  iconKey: string;
+  iconFallback: "trophy" | "sparkles";
+  title: string;
+  titleWraps?: boolean;
+  subtitle: string;
+  rarity: AchievementItemResponseDTO["rarity"];
+  rarityLabel: string;
+  equippedSlot: number;
+}
+
+function HighlightCatalogGrid({
+  totalUnlockedCount,
+  filteredCount,
+  entries,
+  emptyUnlockedMessage,
+  emptySearchMessage,
+  emptyIcon,
+  safePage,
+  totalPages,
+  alreadyEquippedLabel,
+  onSelectEntry,
+  onPageChange,
+}: {
+  totalUnlockedCount: number;
+  filteredCount: number;
+  entries: PickerCatalogCardEntry[];
+  emptyUnlockedMessage: string;
+  emptySearchMessage: string;
+  emptyIcon: ReactNode;
+  safePage: number;
+  totalPages: number;
+  alreadyEquippedLabel: (slot: number) => string;
+  onSelectEntry: (entry: PickerCatalogCardEntry) => void;
+  onPageChange: (page: number) => void;
+}) {
+  if (totalUnlockedCount === 0 || filteredCount === 0) {
+    return (
+      <div className="rounded-xl border border-neutral-700 bg-surface/50 dark:border-primary/20 dark:bg-surface/40 p-8 text-center">
+        {emptyIcon}
+        <p className="text-body-s text-neutral-300 max-w-md mx-auto">
+          {totalUnlockedCount === 0 ? emptyUnlockedMessage : emptySearchMessage}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {entries.map((entry) => {
+          const theme = getRarityTheme(entry.rarity);
+          const isEquipped = entry.equippedSlot !== -1;
+
+          return (
+            <button
+              key={entry.key}
+              type="button"
+              aria-pressed={isEquipped}
+              onClick={() => onSelectEntry(entry)}
+              className={cn(
+                "flex items-center gap-3 p-3 rounded-xl border text-left transition-colors cursor-pointer",
+                isEquipped
+                  ? "border-gold bg-gold/15"
+                  : "border-neutral-700 bg-card hover:border-primary/45 dark:border-primary/20 dark:bg-surface/50",
+              )}
+            >
+              <div
+                className={cn(
+                  "w-10 h-10 rounded-xl border flex items-center justify-center shrink-0",
+                  theme.iconBg,
+                  theme.iconText,
+                )}
+              >
+                <AchievementIcon
+                  iconKey={entry.iconKey}
+                  size={20}
+                  fallback={entry.iconFallback}
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div
+                  className={cn(
+                    "flex items-center gap-1.5",
+                    entry.titleWraps && "flex-wrap",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "text-xs font-bold text-neutral-100",
+                      entry.titleWraps ? "break-words" : "truncate",
+                    )}
+                  >
+                    {entry.title}
+                  </span>
+                  <span
+                    className={cn(
+                      "px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase border shrink-0",
+                      theme.badgeBg,
+                      theme.badgeText,
+                      theme.badgeBorder,
+                    )}
+                  >
+                    {entry.rarityLabel}
+                  </span>
+                </div>
+                <p className="text-[11px] text-neutral-400 truncate mt-0.5">
+                  {isEquipped
+                    ? alreadyEquippedLabel(entry.equippedSlot + 1)
+                    : entry.subtitle}
+                </p>
+              </div>
+              {isEquipped && (
+                <Check
+                  size={16}
+                  className="text-amber-600 dark:text-gold shrink-0"
+                  aria-hidden="true"
+                />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={safePage}
+          totalPages={totalPages}
+          totalItems={filteredCount}
+          itemsPerPage={HIGHLIGHT_MODAL_ITEMS_PER_PAGE}
+          isCompact
+          onPageChange={onPageChange}
+        />
+      )}
+    </div>
+  );
 }
 
 export function ShowcaseHighlightPickerModal({
   isOpen,
   initialSlotIndex,
+  initialTab = "achievements",
+  initialPendingItem = null,
   user,
   stats,
   highlights,
   achievements,
+  artifacts = [],
   onClose,
   onSaved,
 }: ShowcaseHighlightPickerModalProps) {
@@ -85,15 +274,19 @@ export function ShowcaseHighlightPickerModal({
   const tRarities = useTranslations("showcase.rarities");
   const tCatalog = useTranslations("showcase.catalog");
   const tBadges = useTranslations("showcase.accountBadges");
+  const tArtifacts = useTranslations("showcase.artifacts");
+  const tArtifactSource = useTranslations("showcase.artifacts.sourceLabels");
   const { isGamified } = useExperienceMode();
 
   const [activeSlot, setActiveSlot] = useState(initialSlotIndex);
-  const [activeTab, setActiveTab] = useState<PickerTab>("achievements");
+  const [activeTab, setActiveTab] = useState<PickerTab>(initialTab);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [draftSlots, setDraftSlots] = useState<
     (HighlightSlotInputDTO | null)[]
-  >(() => buildInitialDraftSlots(highlights));
+  >(() =>
+    buildInitialDraftSlots(highlights, initialSlotIndex, initialPendingItem),
+  );
   const [isPending, startTransition] = useTransition();
 
   const { currentXp, levelTitle } = resolveUserLevelState(
@@ -106,6 +299,11 @@ export function ShowcaseHighlightPickerModal({
   const unlockedAchievements = useMemo(
     () => achievements.filter((a) => a.unlocked),
     [achievements],
+  );
+
+  const unlockedArtifacts = useMemo(
+    () => artifacts.filter((a) => a.unlocked),
+    [artifacts],
   );
 
   const filteredUnlockedAchievements = useMemo(() => {
@@ -124,11 +322,31 @@ export function ShowcaseHighlightPickerModal({
     });
   }, [unlockedAchievements, searchQuery, isGamified, tCatalog]);
 
+  const filteredUnlockedArtifacts = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return unlockedArtifacts;
+    return unlockedArtifacts.filter((art) => {
+      const { name, lore, sourceHint } = resolveArtifactCopy(
+        art,
+        isGamified,
+        tArtifacts,
+      );
+      return (
+        name.toLowerCase().includes(query) ||
+        lore.toLowerCase().includes(query) ||
+        sourceHint.toLowerCase().includes(query)
+      );
+    });
+  }, [unlockedArtifacts, searchQuery, isGamified, tArtifacts]);
+
+  const activeListLength =
+    activeTab === "artifacts"
+      ? filteredUnlockedArtifacts.length
+      : filteredUnlockedAchievements.length;
+
   const totalPages = Math.max(
     1,
-    Math.ceil(
-      filteredUnlockedAchievements.length / HIGHLIGHT_MODAL_ITEMS_PER_PAGE,
-    ),
+    Math.ceil(activeListLength / HIGHLIGHT_MODAL_ITEMS_PER_PAGE),
   );
   const safePage = Math.min(currentPage, totalPages);
   const paginatedUnlockedAchievements = useMemo(
@@ -139,32 +357,93 @@ export function ShowcaseHighlightPickerModal({
       ),
     [filteredUnlockedAchievements, safePage],
   );
+  const paginatedUnlockedArtifacts = useMemo(
+    () =>
+      filteredUnlockedArtifacts.slice(
+        (safePage - 1) * HIGHLIGHT_MODAL_ITEMS_PER_PAGE,
+        safePage * HIGHLIGHT_MODAL_ITEMS_PER_PAGE,
+      ),
+    [filteredUnlockedArtifacts, safePage],
+  );
 
-  const getSlotTitle = (slotItem: HighlightSlotInputDTO | null): string => {
-    const resolved = resolveHighlightSlotCard(slotItem, {
+  const slotTitlesByIndex = useMemo(
+    () =>
+      draftSlots.map((slotItem) => {
+        const resolved = resolveHighlightSlotCard(slotItem, {
+          achievements,
+          artifacts,
+          stats,
+          isGamified,
+          levelTitle,
+          currentXp,
+          tCatalog,
+          tBadges,
+          tArtifacts,
+          tHighlights,
+        });
+        return resolved?.title ?? tHighlights("emptySlotTitle");
+      }),
+    [
+      draftSlots,
       achievements,
+      artifacts,
+      stats,
       isGamified,
       levelTitle,
       currentXp,
       tCatalog,
       tBadges,
-    });
-    return resolved?.title ?? tHighlights("emptySlotTitle");
-  };
+      tArtifacts,
+      tHighlights,
+    ],
+  );
 
-  const findEquippedSlotIndex = (
-    type: HighlightType,
-    referenceId?: string | null,
-    highlightKey?: string | null,
-  ): number => {
-    return draftSlots.findIndex((s) => {
-      if (!s || s.highlightType !== type) return false;
-      if (type === "ACHIEVEMENT") {
-        return s.referenceId === referenceId;
+  const getSlotTitle = useCallback(
+    (slotItem: HighlightSlotInputDTO | null): string => {
+      if (!slotItem) return tHighlights("emptySlotTitle");
+      return (
+        slotTitlesByIndex[slotItem.displayOrder] ??
+        tHighlights("emptySlotTitle")
+      );
+    },
+    [slotTitlesByIndex, tHighlights],
+  );
+
+  const equippedSlotLookup = useMemo(() => {
+    const map = new Map<string, number>();
+    draftSlots.forEach((s, idx) => {
+      if (!s) return;
+      if (s.highlightType === "ACHIEVEMENT" || s.highlightType === "ARTIFACT") {
+        if (s.referenceId)
+          map.set(`${s.highlightType}:ID:${s.referenceId}`, idx);
+        if (s.highlightKey) {
+          map.set(`${s.highlightType}:KEY:${s.highlightKey}`, idx);
+        }
+      } else if (s.highlightKey) {
+        map.set(`${s.highlightType}:KEY:${s.highlightKey}`, idx);
       }
-      return s.highlightKey === highlightKey;
     });
-  };
+    return map;
+  }, [draftSlots]);
+
+  const findEquippedSlotIndex = useCallback(
+    (
+      type: HighlightType,
+      referenceId?: string | null,
+      highlightKey?: string | null,
+    ): number => {
+      if (referenceId) {
+        const byId = equippedSlotLookup.get(`${type}:ID:${referenceId}`);
+        if (byId !== undefined) return byId;
+      }
+      if (highlightKey) {
+        const byKey = equippedSlotLookup.get(`${type}:KEY:${highlightKey}`);
+        if (byKey !== undefined) return byKey;
+      }
+      return -1;
+    },
+    [equippedSlotLookup],
+  );
 
   const handleAssignItem = (
     type: HighlightType,
@@ -176,8 +455,11 @@ export function ShowcaseHighlightPickerModal({
       const updated = [...prev];
       const existingIdx = updated.findIndex((s) => {
         if (!s || s.highlightType !== type) return false;
-        if (type === "ACHIEVEMENT") {
-          return s.referenceId === referenceId;
+        if (type === "ACHIEVEMENT" || type === "ARTIFACT") {
+          return (
+            (Boolean(referenceId) && s.referenceId === referenceId) ||
+            (Boolean(highlightKey) && s.highlightKey === highlightKey)
+          );
         }
         return s.highlightKey === highlightKey;
       });
@@ -248,12 +530,20 @@ export function ShowcaseHighlightPickerModal({
         label: t("tabs.achievements", { count: unlockedAchievements.length }),
       },
       {
+        value: "artifacts" as const,
+        label: t("tabs.artifacts", { count: unlockedArtifacts.length }),
+      },
+      {
         value: "badges" as const,
         label: t("tabs.badges"),
       },
     ],
-    [t, unlockedAchievements.length],
+    [t, unlockedAchievements.length, unlockedArtifacts.length],
   );
+
+  const showSearch =
+    (activeTab === "achievements" && unlockedAchievements.length > 0) ||
+    (activeTab === "artifacts" && unlockedArtifacts.length > 0);
 
   return (
     <BaseModal
@@ -281,151 +571,160 @@ export function ShowcaseHighlightPickerModal({
           <SegmentedControl
             options={tabOptions}
             value={activeTab}
-            onChange={(val) => setActiveTab(val)}
+            onChange={(val) => {
+              setActiveTab(val);
+              setCurrentPage(1);
+            }}
             size="sm"
             className="w-full sm:w-auto"
           />
 
-          {activeTab === "achievements" && unlockedAchievements.length > 0 && (
-            <div className="relative w-full sm:w-64">
+          {showSearch && (
+            <div className="w-full sm:w-64">
               <Input
                 type="search"
                 compact
-                icon={<Search size={14} />}
+                icon={<Search size={14} aria-hidden="true" />}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                placeholder={tGallery("searchPlaceholder")}
+                placeholder={
+                  activeTab === "artifacts"
+                    ? t("searchPlaceholderArtifacts")
+                    : tGallery("searchPlaceholder")
+                }
                 className="pr-8"
+                endAdornment={
+                  searchQuery ? (
+                    <button
+                      type="button"
+                      aria-label={t("searchClearLabel")}
+                      onClick={() => {
+                        setSearchQuery("");
+                        setCurrentPage(1);
+                      }}
+                      className="p-1 text-neutral-400 hover:text-neutral-100 cursor-pointer rounded-md"
+                    >
+                      <X size={13} aria-hidden="true" />
+                    </button>
+                  ) : undefined
+                }
               />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchQuery("");
-                    setCurrentPage(1);
-                  }}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-100 cursor-pointer"
-                >
-                  <X size={13} />
-                </button>
-              )}
             </div>
           )}
         </div>
 
         {/* LISTA DE OPÇÕES */}
         <div className="min-h-[260px]">
-          {activeTab === "achievements" &&
-            (unlockedAchievements.length === 0 ? (
-              <div className="rounded-xl border border-neutral-700 bg-surface/50 dark:border-primary/20 dark:bg-surface/40 p-8 text-center">
+          {activeTab === "achievements" && (
+            <HighlightCatalogGrid
+              totalUnlockedCount={unlockedAchievements.length}
+              filteredCount={filteredUnlockedAchievements.length}
+              entries={paginatedUnlockedAchievements.map((ach) => {
+                const { title, description } = resolveAchievementCopy(
+                  ach,
+                  isGamified,
+                  tCatalog,
+                );
+                return {
+                  key: ach.code,
+                  itemType: "ACHIEVEMENT",
+                  referenceId: ach.id,
+                  highlightKey: ach.code,
+                  iconKey: ach.iconName,
+                  iconFallback: "trophy",
+                  title,
+                  subtitle: description,
+                  rarity: ach.rarity,
+                  rarityLabel: tRarities(ach.rarity),
+                  equippedSlot: findEquippedSlotIndex(
+                    "ACHIEVEMENT",
+                    ach.id,
+                    ach.code,
+                  ),
+                };
+              })}
+              emptyUnlockedMessage={t("noUnlockedAchievements")}
+              emptySearchMessage={tGallery("emptySearch")}
+              emptyIcon={
                 <Trophy
                   size={28}
                   className="mx-auto text-neutral-400 mb-2 opacity-60"
+                  aria-hidden="true"
                 />
-                <p className="text-body-s text-neutral-300 max-w-md mx-auto">
-                  {t("noUnlockedAchievements")}
-                </p>
-              </div>
-            ) : filteredUnlockedAchievements.length === 0 ? (
-              <div className="rounded-xl border border-neutral-700 bg-surface/50 dark:border-primary/20 dark:bg-surface/40 p-8 text-center">
-                <Trophy
+              }
+              safePage={safePage}
+              totalPages={totalPages}
+              alreadyEquippedLabel={(slot) => t("alreadyEquipped", { slot })}
+              onSelectEntry={(entry) =>
+                handleAssignItem(
+                  entry.itemType,
+                  entry.referenceId,
+                  entry.highlightKey,
+                )
+              }
+              onPageChange={setCurrentPage}
+            />
+          )}
+
+          {activeTab === "artifacts" && (
+            <HighlightCatalogGrid
+              totalUnlockedCount={unlockedArtifacts.length}
+              filteredCount={filteredUnlockedArtifacts.length}
+              entries={paginatedUnlockedArtifacts.map((artifact) => {
+                const { name, lore } = resolveArtifactCopy(
+                  artifact,
+                  isGamified,
+                  tArtifacts,
+                );
+                const originKey = (artifact.obtainedSource ||
+                  artifact.sourceType) as never;
+                const originLabel = tArtifactSource.has(originKey)
+                  ? tArtifactSource(originKey)
+                  : "";
+                return {
+                  key: artifact.code,
+                  itemType: "ARTIFACT",
+                  referenceId: artifact.id,
+                  highlightKey: artifact.code,
+                  iconKey: artifact.iconName,
+                  iconFallback: "sparkles",
+                  title: name,
+                  titleWraps: true,
+                  subtitle: originLabel || lore,
+                  rarity: artifact.rarity,
+                  rarityLabel: tRarities(artifact.rarity),
+                  equippedSlot: findEquippedSlotIndex(
+                    "ARTIFACT",
+                    artifact.id,
+                    artifact.code,
+                  ),
+                };
+              })}
+              emptyUnlockedMessage={t("noUnlockedArtifacts")}
+              emptySearchMessage={tGallery("emptySearch")}
+              emptyIcon={
+                <Gem
                   size={28}
                   className="mx-auto text-neutral-400 mb-2 opacity-60"
+                  aria-hidden="true"
                 />
-                <p className="text-body-s text-neutral-300 max-w-md mx-auto">
-                  {tGallery("emptySearch")}
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {paginatedUnlockedAchievements.map((ach) => {
-                    const theme = getRarityTheme(ach.rarity);
-                    const equippedSlot = findEquippedSlotIndex(
-                      "ACHIEVEMENT",
-                      ach.id,
-                      ach.code,
-                    );
-                    const isEquipped = equippedSlot !== -1;
-                    const { title, description } = resolveAchievementCopy(
-                      ach,
-                      isGamified,
-                      tCatalog,
-                    );
-
-                    return (
-                      <button
-                        key={ach.code}
-                        type="button"
-                        onClick={() =>
-                          handleAssignItem("ACHIEVEMENT", ach.id, ach.code)
-                        }
-                        className={cn(
-                          "flex items-center gap-3 p-3 rounded-xl border text-left transition-colors cursor-pointer",
-                          isEquipped
-                            ? "border-gold bg-gold/15"
-                            : "border-neutral-700 bg-card hover:border-primary/45 dark:border-primary/20 dark:bg-surface/50",
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "w-10 h-10 rounded-xl border flex items-center justify-center shrink-0",
-                            theme.iconBg,
-                            theme.iconText,
-                          )}
-                        >
-                          <AchievementIcon iconKey={ach.iconName} size={20} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-bold text-neutral-100 truncate">
-                              {title}
-                            </span>
-                            <span
-                              className={cn(
-                                "px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase border shrink-0",
-                                theme.badgeBg,
-                                theme.badgeText,
-                                theme.badgeBorder,
-                              )}
-                            >
-                              {tRarities(ach.rarity)}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-neutral-400 truncate mt-0.5">
-                            {isEquipped
-                              ? t("alreadyEquipped", {
-                                  slot: equippedSlot + 1,
-                                })
-                              : description}
-                          </p>
-                        </div>
-                        {isEquipped && (
-                          <Check
-                            size={16}
-                            className="text-amber-600 dark:text-gold shrink-0"
-                          />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {totalPages > 1 && (
-                  <Pagination
-                    currentPage={safePage}
-                    totalPages={totalPages}
-                    totalItems={filteredUnlockedAchievements.length}
-                    itemsPerPage={HIGHLIGHT_MODAL_ITEMS_PER_PAGE}
-                    isCompact
-                    onPageChange={setCurrentPage}
-                  />
-                )}
-              </div>
-            ))}
+              }
+              safePage={safePage}
+              totalPages={totalPages}
+              alreadyEquippedLabel={(slot) => t("alreadyEquipped", { slot })}
+              onSelectEntry={(entry) =>
+                handleAssignItem(
+                  entry.itemType,
+                  entry.referenceId,
+                  entry.highlightKey,
+                )
+              }
+              onPageChange={setCurrentPage}
+            />
+          )}
 
           {activeTab === "badges" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -451,6 +750,7 @@ export function ShowcaseHighlightPickerModal({
                     key={badge.id}
                     type="button"
                     disabled={!unlocked}
+                    aria-pressed={isEquipped}
                     onClick={() =>
                       unlocked &&
                       handleAssignItem("ACCOUNT_BADGE", null, badge.id)

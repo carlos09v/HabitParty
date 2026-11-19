@@ -20,6 +20,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { executeDeleteFocusRecord } from "@/hooks/useFocusMutations";
+import { dispatchTaskFocusRecorded } from "@/hooks/useFocusTaskSync";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
@@ -131,17 +132,11 @@ export function TaskFocusHistoryModal({
           setLocalMinutes(nextMins);
           setLocalCycles(nextCycles);
 
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(
-              new CustomEvent("habitparty:task-focus-recorded", {
-                detail: {
-                  taskId: task.id,
-                  durationMinutes: -removedMins,
-                  cycles: -removedPomos,
-                },
-              }),
-            );
-          }
+          dispatchTaskFocusRecorded({
+            taskId: task.id,
+            durationMinutes: -removedMins,
+            cycles: -removedPomos,
+          });
 
           onTaskUpdate?.({
             ...task,

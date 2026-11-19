@@ -122,3 +122,20 @@ export async function markAchievementsSeenAction(): Promise<ActionState<void>> {
     return { success: false, error: "Failed to mark achievements seen" };
   }
 }
+
+/**
+ * Marca todos os artefatos recém-desbloqueados como vistos no servidor.
+ */
+export async function markArtifactsSeenAction(): Promise<ActionState<void>> {
+  try {
+    const token = await getServerAuthToken();
+    if (!token) {
+      return { success: true, data: undefined };
+    }
+
+    await serverApi.POST("/showcase/artifacts/seen");
+    return { success: true, data: undefined };
+  } catch {
+    return { success: false, error: "Failed to mark artifacts seen" };
+  }
+}

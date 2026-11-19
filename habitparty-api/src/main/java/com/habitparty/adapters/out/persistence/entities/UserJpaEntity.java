@@ -3,9 +3,12 @@ package com.habitparty.adapters.out.persistence.entities;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import com.habitparty.core.domain.enums.FriendRequestPolicy;
 import com.habitparty.core.domain.enums.PrivacyLevel;
@@ -69,6 +72,12 @@ public class UserJpaEntity {
   @Column(name = "avatar_frame", nullable = false, length = 40, columnDefinition = "varchar(40) default 'none'")
   private String avatarFrame = "none";
 
+  @Column(name = "equipped_title", length = 60)
+  private String equippedTitle;
+
+  @Column(name = "avatar_preset", length = 40)
+  private String avatarPreset;
+
   @Column(name = "theme", nullable = false, length = 40, columnDefinition = "varchar(40) default 'dark'")
   private String theme = "dark";
 
@@ -117,6 +126,25 @@ public class UserJpaEntity {
   @Enumerated(EnumType.STRING)
   @Column(name = "friend_request_policy", nullable = false, length = 25)
   private FriendRequestPolicy friendRequestPolicy = FriendRequestPolicy.EVERYONE;
+
+  @Column(name = "usage_mode", length = 20)
+  private String usageMode;
+
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "primary_goals")
+  private List<String> primaryGoals;
+
+  @Column(name = "main_obstacle", length = 30)
+  private String mainObstacle;
+
+  @Column(name = "daily_focus_goal_minutes")
+  private Integer dailyFocusGoalMinutes;
+
+  @Column(name = "peak_period", length = 20)
+  private String peakPeriod;
+
+  @Column(name = "discipline_style", length = 20)
+  private String disciplineStyle;
 
   @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
   private UserStatsJpaEntity stats;

@@ -221,4 +221,60 @@ class RedeemRewardUseCaseTest {
     assertThrows(LimitExceededException.class, () -> useCase.execute(rewardId, userId));
     verify(inventoryItemRepository, never()).save(any());
   }
+
+  @Test
+  @DisplayName("Quitação de Dívida com multiplicador deve cobrar preço unitário cheio sem desconto de pacote")
+  void shouldChargeFullUnitPriceMultipliedByQuantityForDebtWithoutDiscount() {
+    Reward debtReward = new Reward(
+        rewardId,
+        userId,
+        "Videogame (30m)",
+        new BigDecimal("8.00"),
+        List.of(),
+        RewardType.SINGLE_USE,
+        0,
+        "gamepad",
+        null,
+        RewardCategory.DEBT,
+        null,
+        RewardPackageLevel.NONE);
+
+    when(rewardRepository.findById(rewardId)).thenReturn(Optional.of(debtReward));
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+    useCase.execute(rewardId, userId, 6);
+
+    assertEquals(new BigDecimal("52.00"), user.getCurrentCoins());
+    verify(inventoryItemRepository, never()).save(any());
+
+    ArgumentCaptor<TransactionHistory> txCaptor = ArgumentCaptor.forClass(TransactionHistory.class);
+    verify(transactionHistoryRepository).save(txCaptor.capture());
+    assertEquals(Optional.of(new BigDecimal("-48.00")), txCaptor.getValue().getGoldAmount());
+    assertEquals("Videogame (30m) (6x)", txCaptor.getValue().getNameSnapshot());
+  }
+
+  @Test
+  @DisplayName("Multiplicador maior que 1x deve ser rejeitado para recompensas que não são Dívida")
+  void shouldRejectMultiplierGreaterThanOneForNonDebtReward() {
+    Reward regularReward = new Reward(
+        rewardId,
+        userId,
+        "Chocolate",
+        new BigDecimal("15.00"),
+        List.of(),
+        RewardType.SINGLE_USE,
+        0,
+        "pizza",
+        null,
+        RewardCategory.ENTERTAINMENT,
+        null,
+        RewardPackageLevel.BASIC);
+
+    when(rewardRepository.findById(rewardId)).thenReturn(Optional.of(regularReward));
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+    assertThrows(DomainValidationException.class, () -> useCase.execute(rewardId, userId, 2));
+    verify(userRepository, never()).save(any());
+    verify(transactionHistoryRepository, never()).save(any());
+  }
 }

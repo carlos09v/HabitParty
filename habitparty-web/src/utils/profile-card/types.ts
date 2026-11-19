@@ -48,8 +48,11 @@ export interface ProfileCardRenderInput {
     isPremium?: boolean;
     isFounder?: boolean;
     avatarFrame?: string | null;
+    avatarPreset?: string | null;
+    equippedTitle?: string | null;
     friendCode?: string | null;
   };
+  equippedTitleLabel?: string | null;
   levelTitle: string;
   levelProgressPercent: number;
   includeFriendCode: boolean;

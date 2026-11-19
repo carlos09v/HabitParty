@@ -1,9 +1,10 @@
 "use client";
 
-import { Coins, Loader2, ShieldCheck, Sparkles, Timer } from "lucide-react";
+import { Loader2, ShieldCheck, Sparkles, Timer } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { getFocusActivityDeletionSummary } from "@/actions/focusActions";
+import { CoinIcon } from "@/components/ui/CoinIcon";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
@@ -186,7 +187,7 @@ export function DeleteFocusActivityModal({
                       : "bg-amber-500/15 border-amber-500/35 text-amber-800 dark:text-gold",
                   )}
                 >
-                  <Coins size={12} />
+                  <CoinIcon size={12} />
                   {deleteHistory ? "-" : "+"}
                   {formatCoins(totalCoins, { locale })} {goldUnit}
                   {deleteHistory && actualCoinsLoss < totalCoins
@@ -201,7 +202,11 @@ export function DeleteFocusActivityModal({
                     size={13}
                     className="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5"
                   />
-                  <span>{t("nonNegativeFloorNote")}</span>
+                  <span>
+                    {isGamified
+                      ? t("nonNegativeFloorNote")
+                      : t("nonNegativeFloorNoteProductivity")}
+                  </span>
                 </p>
               )}
             </div>
@@ -212,7 +217,9 @@ export function DeleteFocusActivityModal({
       cancelText={t("cancel")}
       variant="danger"
       checkboxLabel={t("deleteHistoryLabel")}
-      checkboxHint={t("deleteHistoryHint")}
+      checkboxHint={
+        isGamified ? t("deleteHistoryHint") : t("deleteHistoryHintProductivity")
+      }
       checkboxChecked={deleteHistory}
       onCheckboxChange={onDeleteHistoryChange}
     />

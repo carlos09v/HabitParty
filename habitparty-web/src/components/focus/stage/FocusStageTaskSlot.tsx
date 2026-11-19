@@ -10,12 +10,11 @@ import {
   X,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import type { FocusActiveTarget } from "@/types/focus";
 
 interface FocusStageTaskSlotProps {
   target: FocusActiveTarget | null;
-  isInventoryItem: boolean;
   isSessionIdle?: boolean;
   isCompletingLinkedTask?: boolean;
   onOpenLinkTask: () => void;
@@ -24,13 +23,94 @@ interface FocusStageTaskSlotProps {
   onUnlinkTask: () => void;
 }
 
+const ICON_ACTION_SIZE_CLASSES =
+  "min-w-8 min-h-8 pointer-coarse:min-w-11 pointer-coarse:min-h-11 rounded-md inline-flex items-center justify-center transition-colors";
+
+interface LinkedTaskBarProps {
+  taskTitle: string;
+  taskId?: string;
+  borderClassName: string;
+  isCompletingLinkedTask: boolean;
+  completeLabel: string;
+  unlinkLabel: string;
+  canUnlink: boolean;
+  onCompleteLinkedTask: (taskId: string, taskName?: string) => void;
+  onUnlinkTask: () => void;
+  extraAction?: ReactNode;
+}
+
+function LinkedTaskBar({
+  taskTitle,
+  taskId,
+  borderClassName,
+  isCompletingLinkedTask,
+  completeLabel,
+  unlinkLabel,
+  canUnlink,
+  onCompleteLinkedTask,
+  onUnlinkTask,
+  extraAction,
+}: LinkedTaskBarProps) {
+  return (
+    <div
+      className={`w-full min-h-[38px] rounded-lg border ${borderClassName} bg-surface/65 dark:bg-surface/60 px-2.5 py-1 flex items-center justify-between gap-2`}
+    >
+      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+        <ListTodo
+          size={13}
+          className="text-primary dark:text-gold shrink-0"
+          aria-hidden="true"
+        />
+        <span
+          className="text-xs font-semibold text-neutral-100 truncate"
+          title={taskTitle}
+        >
+          {taskTitle}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-1.5 shrink-0">
+        {taskId && (
+          <button
+            type="button"
+            disabled={isCompletingLinkedTask}
+            onClick={() => onCompleteLinkedTask(taskId, taskTitle)}
+            title={completeLabel}
+            aria-label={completeLabel}
+            className={`${ICON_ACTION_SIZE_CLASSES} bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed`}
+          >
+            {isCompletingLinkedTask ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : (
+              <CheckCircle2 size={13} />
+            )}
+          </button>
+        )}
+
+        {extraAction}
+
+        {canUnlink && (
+          <button
+            type="button"
+            onClick={onUnlinkTask}
+            title={unlinkLabel}
+            aria-label={unlinkLabel}
+            className={`${ICON_ACTION_SIZE_CLASSES} bg-card/80 dark:bg-surface hover:bg-red-500/20 border border-neutral-700 dark:border-primary/30 hover:border-red-500/40 text-neutral-400 hover:text-red-400 cursor-pointer`}
+          >
+            <X size={12} aria-hidden="true" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /**
  * Painel de tarefa vinculada posicionado na coluna principal de ações do Hero de Foco
  * (logo abaixo de Começar / Salvar Tempo Parcial) para alta visibilidade e acesso rápido.
  */
 export const FocusStageTaskSlot = memo(function FocusStageTaskSlot({
   target,
-  isInventoryItem,
   isSessionIdle = true,
   isCompletingLinkedTask = false,
   onOpenLinkTask,
@@ -40,164 +120,83 @@ export const FocusStageTaskSlot = memo(function FocusStageTaskSlot({
 }: FocusStageTaskSlotProps) {
   const t = useTranslations("focus.hero");
 
-  if (!target || isInventoryItem) {
+  if (!target || target.type === "inventory") {
     return null;
   }
 
-  // 1. Foco direto em uma Tarefa (com atalho para vincular a uma Atividade Macro)
+  // 1. Foco direto em uma Tarefa (barra horizontal compacta)
   if (target.type === "task") {
     return (
-      <div className="w-full rounded-xl border border-primary/30 dark:border-primary/40 bg-surface/70 dark:bg-surface/60 px-3 py-2 flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-2 min-w-0">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <ListTodo
-              size={13}
-              className="text-primary dark:text-gold shrink-0"
-            />
-            <span className="text-[11px] font-bold text-neutral-200 truncate">
-              {t("taskSessionBadge")}
-            </span>
-          </div>
-
-          {isSessionIdle && (
-            <button
-              type="button"
-              onClick={onUnlinkTask}
-              title={t("unlinkTask")}
-              aria-label={t("unlinkTask")}
-              className="min-w-8 min-h-8 sm:min-w-7 sm:min-h-7 pointer-coarse:min-w-9 pointer-coarse:min-h-9 rounded-lg flex items-center justify-center bg-card/80 dark:bg-surface hover:bg-red-500/20 border border-neutral-700 dark:border-primary/30 hover:border-red-500/40 text-neutral-400 hover:text-red-400 transition-colors cursor-pointer shrink-0"
-            >
-              <X size={13} />
-            </button>
-          )}
-        </div>
-
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {target.taskId && (
-            <button
-              type="button"
-              disabled={isCompletingLinkedTask}
-              onClick={() =>
-                onCompleteLinkedTask(
-                  target.taskId as string,
-                  target.taskName || target.name,
-                )
-              }
-              title={t("completeLinkedTask")}
-              className="flex-1 min-w-[120px] inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {isCompletingLinkedTask ? (
-                <Loader2 size={13} className="animate-spin" />
-              ) : (
-                <CheckCircle2 size={13} />
-              )}
-              <span>
-                {isCompletingLinkedTask
-                  ? t("completingLinkedTaskShort")
-                  : t("completeLinkedTaskShort")}
-              </span>
-            </button>
-          )}
-
+      <LinkedTaskBar
+        taskTitle={target.taskName || target.name}
+        taskId={target.taskId}
+        borderClassName="border-primary/30 dark:border-primary/40"
+        isCompletingLinkedTask={isCompletingLinkedTask}
+        completeLabel={t("completeLinkedTask")}
+        unlinkLabel={t("unlinkTask")}
+        canUnlink={isSessionIdle}
+        onCompleteLinkedTask={onCompleteLinkedTask}
+        onUnlinkTask={onUnlinkTask}
+        extraAction={
           <button
             type="button"
             onClick={onOpenLinkActivity}
             title={t("linkActivityTooltip")}
-            className="flex-1 min-w-[120px] inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 dark:bg-gold/15 hover:bg-amber-500/20 dark:hover:bg-gold/25 border border-amber-500/40 dark:border-gold/45 text-amber-800 dark:text-gold text-xs font-bold transition-colors cursor-pointer"
+            aria-label={t("linkActivityButton")}
+            className="min-h-8 pointer-coarse:min-h-11 px-2.5 rounded-md inline-flex items-center gap-1 bg-amber-500/10 dark:bg-gold/15 hover:bg-amber-500/20 dark:hover:bg-gold/25 border border-amber-500/40 dark:border-gold/45 text-amber-800 dark:text-gold text-[11px] font-bold transition-colors cursor-pointer"
           >
-            <Layers size={13} />
-            <span className="truncate">{t("linkActivityButton")}</span>
+            <Layers size={12} aria-hidden="true" />
+            <span className="truncate max-w-[92px]">
+              {t("linkActivityShort")}
+            </span>
           </button>
-        </div>
-      </div>
+        }
+      />
     );
   }
 
-  // 2. Atividade com Tarefa Vinculada
+  // 2. Atividade com Tarefa Vinculada (barra horizontal compacta)
   if (target.type === "activity" && target.taskId && target.taskName) {
     return (
-      <div className="w-full rounded-xl border border-primary/35 dark:border-primary-light/40 bg-surface/75 dark:bg-surface/65 px-3 py-2 flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-2 min-w-0">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <ListTodo
-              size={14}
-              className="text-primary dark:text-gold shrink-0"
-            />
-            <div className="flex flex-col min-w-0">
-              <span className="text-[10px] uppercase tracking-wider font-semibold text-neutral-400 leading-none">
-                {t("linkedTaskLabel")}
-              </span>
-              <span
-                className="text-xs font-bold text-neutral-100 truncate mt-0.5"
-                title={target.taskName}
-              >
-                {target.taskName}
-              </span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onUnlinkTask}
-            title={t("unlinkTask")}
-            aria-label={t("unlinkTask")}
-            className="min-w-8 min-h-8 sm:min-w-7 sm:min-h-7 pointer-coarse:min-w-9 pointer-coarse:min-h-9 rounded-lg flex items-center justify-center bg-card/80 dark:bg-surface hover:bg-red-500/20 border border-neutral-700 dark:border-primary/30 hover:border-red-500/40 text-neutral-400 hover:text-red-400 transition-colors cursor-pointer shrink-0"
-          >
-            <X size={13} />
-          </button>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
-          <button
-            type="button"
-            disabled={isCompletingLinkedTask}
-            onClick={() =>
-              onCompleteLinkedTask(target.taskId as string, target.taskName)
-            }
-            title={t("completeLinkedTask")}
-            className="flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {isCompletingLinkedTask ? (
-              <Loader2 size={13} className="animate-spin" />
-            ) : (
-              <CheckCircle2 size={13} />
-            )}
-            <span>
-              {isCompletingLinkedTask
-                ? t("completingLinkedTaskShort")
-                : t("completeLinkedTaskShort")}
-            </span>
-          </button>
-
+      <LinkedTaskBar
+        taskTitle={target.taskName}
+        taskId={target.taskId}
+        borderClassName="border-primary/35 dark:border-primary-light/40"
+        isCompletingLinkedTask={isCompletingLinkedTask}
+        completeLabel={t("completeLinkedTask")}
+        unlinkLabel={t("unlinkTask")}
+        canUnlink={true}
+        onCompleteLinkedTask={onCompleteLinkedTask}
+        onUnlinkTask={onUnlinkTask}
+        extraAction={
           <button
             type="button"
             onClick={onOpenLinkTask}
             title={t("switchLinkedTask")}
             aria-label={t("switchLinkedTask")}
-            className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-card/80 dark:bg-surface hover:bg-amber-500/15 dark:hover:bg-gold/15 border border-neutral-700 dark:border-primary/30 hover:border-amber-500/45 dark:hover:border-gold/45 text-neutral-300 hover:text-amber-700 dark:hover:text-gold text-xs font-semibold transition-colors cursor-pointer shrink-0"
+            className={`${ICON_ACTION_SIZE_CLASSES} bg-card/80 dark:bg-surface hover:bg-amber-500/15 dark:hover:bg-gold/15 border border-neutral-700 dark:border-primary/30 hover:border-amber-500/45 dark:hover:border-gold/45 text-neutral-300 hover:text-amber-700 dark:hover:text-gold cursor-pointer`}
           >
-            <ArrowRightLeft size={12} />
-            <span>{t("switchTarget")}</span>
+            <ArrowRightLeft size={12} aria-hidden="true" />
           </button>
-        </div>
-      </div>
+        }
+      />
     );
   }
 
-  // 3. Atividade sem Tarefa Vinculada
+  // 3. Atividade sem Tarefa Vinculada (barra horizontal compacta)
   if (target.type === "activity") {
     return (
       <button
         type="button"
         onClick={onOpenLinkTask}
         title={t("linkTaskTooltip")}
-        className="w-full py-2 px-3.5 rounded-xl border border-dashed border-amber-500/45 dark:border-gold/40 bg-amber-500/5 dark:bg-gold/5 hover:bg-amber-500/15 dark:hover:bg-gold/15 hover:border-amber-500/75 dark:hover:border-gold/70 text-amber-800 dark:text-gold text-xs font-bold flex items-center justify-between gap-2 transition-colors cursor-pointer"
+        className="w-full min-h-[38px] py-1.5 px-2.5 rounded-lg border border-dashed border-amber-500/45 dark:border-gold/40 bg-amber-500/5 dark:bg-gold/5 hover:bg-amber-500/15 dark:hover:bg-gold/15 hover:border-amber-500/75 dark:hover:border-gold/70 text-amber-800 dark:text-gold text-xs font-bold flex items-center justify-between gap-2 transition-colors cursor-pointer"
       >
-        <span className="flex items-center gap-2 min-w-0">
-          <ListTodo size={15} className="shrink-0" />
+        <span className="flex items-center gap-1.5 min-w-0">
+          <ListTodo size={14} className="shrink-0" aria-hidden="true" />
           <span className="truncate">{t("linkTaskButton")}</span>
         </span>
-        <Plus size={14} className="shrink-0 opacity-80" />
+        <Plus size={13} className="shrink-0 opacity-80" aria-hidden="true" />
       </button>
     );
   }

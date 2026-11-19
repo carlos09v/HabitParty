@@ -14,6 +14,7 @@ import {
   ROULETTE_TRACK_LENGTH,
   ROULETTE_WINNING_INDEX,
 } from "@/constants/reward";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useUserStore } from "@/store/userStore";
 import type { InventoryItem, MysteryBoxOpenResult } from "@/types/inventory";
 import type { PackageLevel, RouletteItem } from "@/types/reward";
@@ -48,6 +49,7 @@ export function useMysteryBoxRoulette({
   onSuccess,
 }: UseMysteryBoxRouletteProps) {
   const t = useTranslations("inventory.rouletteHook");
+  const { isGamified } = useExperienceMode();
   const [phase, setPhase] = useState<"idle" | "spinning" | "won">("idle");
   const [wonResult, setWonResult] = useState<MysteryBoxOpenResult | null>(null);
   const [translateX, setTranslateX] = useState(0);
@@ -60,6 +62,7 @@ export function useMysteryBoxRoulette({
   const winTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const initializedItemKeyRef = useRef<string | null>(null);
   const pendingRevalidationRef = useRef(false);
+  const pendingAchievementCheckRef = useRef(false);
 
   const tierId: PackageLevel =
     (item?.reward.packageLevel as PackageLevel) || "Básico";
@@ -88,6 +91,7 @@ export function useMysteryBoxRoulette({
     const customLoot = item.reward.lootItems;
     const hasCustomLoot = Boolean(customLoot && customLoot.length === 3);
 
+    const chanceKey = isGamified ? "dropBadge" : "chanceBadge";
     const effectivePool: RouletteItem[] = hasCustomLoot
       ? (customLoot ?? []).map((slot, idx) => {
           const dropRate = tierConfig.dropRates[idx] || tierConfig.dropRates[0];
@@ -102,7 +106,7 @@ export function useMysteryBoxRoulette({
                 ? slot.minutes
                 : null,
             badgeVariant: dropRate.badgeVariant,
-            badgeLabel: t("dropBadge", {
+            badgeLabel: t(chanceKey, {
               percent: String(dropRate.percentage),
             }),
           };
@@ -112,7 +116,7 @@ export function useMysteryBoxRoulette({
           const localizedName = t.has(poolKey) ? t(poolKey) : poolItem.name;
           const percentMatch = poolItem.badgeLabel.match(/^(\d+)%/);
           const localizedBadge = percentMatch
-            ? t("dropBadge", { percent: percentMatch[1] })
+            ? t(chanceKey, { percent: percentMatch[1] })
             : poolItem.badgeLabel;
           return {
             ...poolItem,
@@ -132,7 +136,7 @@ export function useMysteryBoxRoulette({
     }
     setPoolItems(effectivePool);
     setTrackItems(generated);
-  }, [isOpen, item, pool, tierConfig.id, tierConfig.dropRates, t]);
+  }, [isOpen, item, pool, tierConfig.id, tierConfig.dropRates, isGamified, t]);
 
   // Limpeza de intervalos sonoros e timers ao desmontar ou fechar;
   // garante que a revalidação ocorra mesmo se a modal for fechada antes do fim da animação
@@ -147,10 +151,22 @@ export function useMysteryBoxRoulette({
       if (pendingRevalidationRef.current) {
         pendingRevalidationRef.current = false;
         void revalidateInventoryAfterRoulette();
+      }
+      if (pendingAchievementCheckRef.current) {
+        pendingAchievementCheckRef.current = false;
         useUserStore.getState().triggerAchievementCheck();
       }
     };
   }, []);
+
+  // Dispara checagem de conquistas somente após fechar a modal da roleta
+  // para evitar toasts em segundo plano competindo com a modal aberta
+  useEffect(() => {
+    if (!isOpen && pendingAchievementCheckRef.current) {
+      pendingAchievementCheckRef.current = false;
+      useUserStore.getState().triggerAchievementCheck();
+    }
+  }, [isOpen]);
 
   const handleSpin = async () => {
     if (phase !== "idle" || !item || isOpeningServer) return;
@@ -164,12 +180,15 @@ export function useMysteryBoxRoulette({
         setIsOpeningServer(false);
         const errorMsg = !res.success
           ? res.error
-          : "Não foi possível abrir a caixa misteriosa.";
+          : isGamified
+            ? t("openErrorGamified")
+            : t("openErrorProductivity");
         toast.error(errorMsg);
         return;
       }
 
       pendingRevalidationRef.current = true;
+      pendingAchievementCheckRef.current = true;
       const winData = res.data;
       setWonResult(winData);
 
@@ -187,7 +206,9 @@ export function useMysteryBoxRoulette({
               : tierConfig.id === "Premium"
                 ? "amber"
                 : "emerald",
-        badgeLabel: t("wonBadgeLabel"),
+        badgeLabel: isGamified
+          ? t("wonBadgeLabel")
+          : t("wonBadgeLabelProductivity"),
       };
 
       setTrackItems((prev) => {
@@ -251,11 +272,12 @@ export function useMysteryBoxRoulette({
           pendingRevalidationRef.current = false;
           void revalidateInventoryAfterRoulette();
         }
-        useUserStore.getState().triggerAchievementCheck();
       }, 4600);
     } catch (_err) {
       setIsOpeningServer(false);
-      toast.error("Não foi possível abrir a caixa misteriosa.");
+      toast.error(
+        t(isGamified ? "openErrorGamified" : "openErrorProductivity"),
+      );
     }
   };
 
@@ -269,7 +291,9 @@ export function useMysteryBoxRoulette({
     handleSpin,
     poolItems,
     tierId: tierConfig.id,
-    tierName: t(`tiers.${toPackageMessageKey(tierConfig.id)}`),
+    tierName: t(
+      `${isGamified ? "tiers" : "tiersProductivity"}.${toPackageMessageKey(tierConfig.id)}`,
+    ),
     tierConfig,
     winningIndex: ROULETTE_WINNING_INDEX,
   };

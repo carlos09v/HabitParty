@@ -1,7 +1,8 @@
 "use client";
 
-import { Coins, Flame, Sparkles, Sword, Swords } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { Flame, Sparkles, Sword, Swords } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { CoinIcon } from "@/components/ui/CoinIcon";
 import {
   DIFFICULTY_DOT_COLORS,
   DIFFICULTY_SWORD_COLORS,
@@ -10,8 +11,9 @@ import {
   TASK_DIFFICULTY_META,
 } from "@/constants/task";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import type { AppLocale } from "@/i18n/config";
 import type { Task } from "@/types/task";
-import { cn } from "@/utils";
+import { cn, formatCoins } from "@/utils";
 
 interface TaskRewardBadgesProps {
   task: Task;
@@ -22,9 +24,9 @@ interface TaskRewardBadgesProps {
 }
 
 /**
- * Exibe as recompensas (XP, Ouro), indicador de dificuldade (Espada no modo RPG ou Ponto no modo Produtividade) e Streak.
+ * Exibe as recompensas (XP/pts, Ouro/Créditos), indicador de esforço/dificuldade e Streak.
  * Regra: Ícone de streak (chama 🔥) é exibido em Tarefas Diárias (Daily) e Hábitos (Habit) com streak ativo (> 0).
- * No perfil Gamificado (RPG), exibe o ícone de Espada da dificuldade; no perfil Produtividade, exibe o indicador discreto em ponto.
+ * No Modo Aventura (RPG), exibe o ícone de Espada da dificuldade; no Modo Essencial, exibe o indicador discreto em ponto.
  */
 export function TaskRewardBadges({
   task,
@@ -34,13 +36,14 @@ export function TaskRewardBadges({
   className,
 }: TaskRewardBadgesProps) {
   const t = useTranslations("dashboard.taskShared");
+  const locale = useLocale() as AppLocale;
   const { isGamified } = useExperienceMode();
   const taskType = normalizeTaskType(task);
   const isTodo = taskType === "todo";
   const isHabit = taskType === "habit";
   const hasStreak =
     showStreak && !isTodo && typeof task.streak === "number" && task.streak > 0;
-  const effectiveShowRewards = isGamified ? showRewards : false;
+  const effectiveShowRewards = showRewards;
   const hasRewards =
     effectiveShowRewards &&
     (task.rewardXp !== undefined || task.rewardGold !== undefined);
@@ -147,26 +150,40 @@ export function TaskRewardBadges({
         </span>
       )}
 
-      {/* XP (apenas se showRewards estiver habilitado e no modo Gamificado) */}
+      {/* XP / Pontos */}
       {effectiveShowRewards && task.rewardXp !== undefined && (
         <span
           className="flex items-center gap-0.5 text-magenta font-medium"
-          title={t("badges.rewardXpTitle", { xp: task.rewardXp })}
+          title={
+            isGamified
+              ? t("badges.rewardXpTitle", { xp: task.rewardXp })
+              : t("badges.rewardPointsTitle", { xp: task.rewardXp })
+          }
         >
-          <Sparkles size={isCompact ? 8 : 10} className="shrink-0" />+
-          {task.rewardXp}
-          {!isCompact && " XP"}
+          {isGamified && (
+            <Sparkles size={isCompact ? 8 : 10} className="shrink-0" />
+          )}
+          +{task.rewardXp}
+          {!isCompact && (isGamified ? " XP" : " pts")}
         </span>
       )}
 
-      {/* Ouro (apenas se showRewards estiver habilitado e no modo Gamificado) */}
+      {/* Ouro / Créditos */}
       {effectiveShowRewards && task.rewardGold !== undefined && (
         <span
-          className="flex items-center gap-0.5 text-gold font-medium"
-          title={t("badges.rewardGoldTitle", { gold: task.rewardGold })}
+          className="flex items-center gap-0.5 text-gold-ink dark:text-gold font-medium"
+          title={
+            isGamified
+              ? t("badges.rewardGoldTitle", {
+                  gold: formatCoins(task.rewardGold, { locale }),
+                })
+              : t("badges.rewardCreditsTitle", {
+                  gold: formatCoins(task.rewardGold, { locale }),
+                })
+          }
         >
-          <Coins size={isCompact ? 8 : 10} className="shrink-0" />+
-          {task.rewardGold}
+          <CoinIcon size={isCompact ? 9 : 11} />+
+          {formatCoins(task.rewardGold, { locale })}
         </span>
       )}
     </div>

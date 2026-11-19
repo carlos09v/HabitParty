@@ -24,8 +24,11 @@ export interface UseTaskCardItemOptions {
   isOverlay?: boolean;
   isSortable?: boolean;
   isCompact?: boolean;
-  onToggleCompleted?: (taskId: string, completed: boolean) => void;
-  onHabitChange?: (taskId: string, delta: number) => void;
+  onToggleCompleted?: (
+    taskId: string,
+    completed: boolean,
+  ) => boolean | undefined;
+  onHabitChange?: (taskId: string, delta: number) => boolean | undefined;
   useTranslateTransform?: boolean;
   activeFilter?: string;
   selectedDate?: string | null;

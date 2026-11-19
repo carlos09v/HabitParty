@@ -10,6 +10,7 @@
     "lockedActivityToast": "Esta atividade está guardada na mochila. Assine o plano Premium para cronometrar nela!",
     "deleteRecordSuccess": "Registro de foco removido com sucesso!",
     "deleteRecordError": "Erro ao excluir registro de foco.",
+    "loadMoreRecordsError": "Erro ao carregar mais registros de foco.",
     "tabs": {
       "timer": "Timer & Sessão",
       "metrics": "Métricas & Histórico"
@@ -18,7 +19,8 @@
       "currentSession": "Sessão Atual",
       "newActivity": "Nova Atividade",
       "focusItem": "Item de Foco"
-    }
+    },
+    "lockedActivityToastProductivity": "Esta atividade está arquivada no inventário. Assine o plano Premium para cronometrar nela!"
   },
   "main": {
     "back": {
@@ -83,7 +85,9 @@
       "xpProductivityLabel": "pts",
       "goldLabel": "Ouro",
       "goldProductivityLabel": "Créditos",
-      "nonNegativeFloorNote": "O saldo nunca fica negativo: se o seu saldo atual for menor que o estorno, ele será limitado a 0 (e seu XP nunca cai abaixo do piso do nível atual)."
+      "nonNegativeFloorNote": "O saldo nunca fica negativo: se o seu saldo atual for menor que o estorno, ele será limitado a 0 (e seu XP nunca cai abaixo do piso do nível atual).",
+      "deleteHistoryHintProductivity": "Remove todas as sessões desta atividade, seus registros no extrato e estorna os pontos, créditos e minutos em tarefas vinculadas.",
+      "nonNegativeFloorNoteProductivity": "O saldo nunca fica negativo: se o seu saldo atual for menor que o estorno, ele será limitado a 0 (e sua pontuação nunca cai abaixo do piso da patente atual)."
     },
     "toasts": {
       "deleteActivitySuccess": "Atividade excluída com sucesso.",
@@ -126,7 +130,12 @@
     "unlinkTask": "Desvincular tarefa",
     "taskSessionBadge": "Foco direto na tarefa",
     "linkActivityButton": "Vincular a uma atividade",
+    "linkActivityShort": "Atividade",
     "linkActivityTooltip": "Contabilizar este foco também em uma atividade (o tempo atual é mantido)",
+    "controlsToolbarAria": "Controles da sessão de foco",
+    "dailyYieldHeroBadgeTitle": "Taxa atual de rendimento diário do Modo Aventura: {percent}%",
+    "dailyYieldZeroBadge": "🛑 Teto 8h atingido (0% de ganho)",
+    "dailyYieldReducedBadge": "⚡ Ganho diário em {percent}%",
     "zenModeTitle": "Entrar em Modo Zen (Atalho: Z)",
     "zenModeButton": "Modo Zen",
     "pipOpenTitle": "Abrir janela flutuante (Picture-in-Picture)",
@@ -151,7 +160,12 @@
     "skipBreakTitle": "Pular pausa e voltar ao foco agora",
     "skipBreakButton": "Pular Pausa",
     "startBreakTitle": "Salvar tempo (incluindo excedente) e iniciar pausa ({minutes}m)",
-    "startBreakButton": "Iniciar Pausa ({minutes}m)"
+    "startBreakButton": "Iniciar Pausa ({minutes}m)",
+    "sessionCapReachedTitleProductivity": "O rendimento máximo de Pontos e Créditos por sessão única é aos 90 minutos (ciclo ultradiano). Você pode continuar cronometrando normalmente para suas estatísticas e metas diárias.",
+    "sessionCapReachedBadgeProductivity": "⏱️ Teto de 1h30 atingido — tempo extra conta no histórico",
+    "dailyYieldHeroBadgeTitleProductivity": "Taxa atual de sustentabilidade diária (ritmo anti-burnout): {percent}%",
+    "dailyYieldZeroBadgeProductivity": "🛑 Limite diário de 8h atingido (0% de rendimento extra)",
+    "dailyYieldReducedBadgeProductivity": "⚡ Rendimento diário em {percent}%"
   },
   "zenMode": {
     "dialogAria": "Modo Zen de Foco",
@@ -180,7 +194,9 @@
     "sessionCapReachedBadge": "🪙 Teto de 1h30 atingido (recompensas máximas garantidas)",
     "sessionCapReachedTitle": "O ganho de XP e Moedas por sessão única atinge o limite em 90 minutos. O cronômetro segue contabilizando no histórico.",
     "startBreakTitle": "Salvar tempo e iniciar pausa ({minutes}m)",
-    "startBreakButton": "Iniciar Pausa ({minutes}m)"
+    "startBreakButton": "Iniciar Pausa ({minutes}m)",
+    "sessionCapReachedTitleProductivity": "O rendimento de Pontos e Créditos por sessão única atinge o limite aos 90 minutos. O cronômetro segue contabilizando no histórico.",
+    "sessionCapReachedBadgeProductivity": "⏱️ Teto de 1h30 atingido (rendimento máximo atingido)"
   },
   "stage": {
     "durationLabel": "Duração:"
@@ -237,7 +253,11 @@
     "emptyActivities": "Nenhuma atividade cadastrada no momento.",
     "createActivityButton": "Criar primeira atividade",
     "emptyTasks": "Nenhuma tarefa pendente (Diária ou Afazer) encontrada.",
-    "searchTasksPlaceholder": "Buscar tarefa pelo título...",
+    "searchTasksPlaceholder": "Buscar tarefa ou lista...",
+    "clearSearchAria": "Limpar busca",
+    "taskFilterAll": "Todas",
+    "taskFilterDaily": "Diárias",
+    "taskFilterTodo": "Afazeres",
     "macroMicroHint": "Vincular uma tarefa aqui contabilizará o foco simultaneamente em \"{activityName}\" e na tarefa.",
     "taskTypeDaily": "Diária",
     "taskTypeTodo": "Afazer",
@@ -259,7 +279,10 @@
     "linkTaskModalDescription": "Escolha qual tarefa será contabilizada junto com \"{activityName}\".",
     "backpackCouponTaskHint": "Cupons de pausa/lazer da mochila não acumulam foco em tarefas. Para focar em uma tarefa, troque de sessão salvando ou descartando o tempo atual.",
     "switchAction": "Trocar",
-    "linkActivityToTaskHint": "Escolher uma atividade vincula a tarefa \"{taskName}\" a ela. O tempo atual é mantido e o foco passa a contar para as duas."
+    "linkActivityToTaskHint": "Escolher uma atividade vincula a tarefa \"{taskName}\" a ela. O tempo atual é mantido e o foco passa a contar para as duas.",
+    "inventoryTab": "Inventário ({count})",
+    "inventoryCouponTaskHint": "Cupons de pausa/lazer do inventário não acumulam foco em tarefas. Para focar em uma tarefa, troque de sessão salvando ou descartando o tempo atual.",
+    "emptyInventory": "Nenhum item ou cupom em foco. Acesse o inventário para enviar itens ao foco."
   },
   "timer": {
     "progressAria": "Indicador de progresso do timer de foco",
@@ -335,7 +358,14 @@
     "manageLinkLabel": "Gerenciar Mochila",
     "emptyTitle": "Nenhum item ou cupom da mochila adicionado ao Foco.",
     "emptyDescription": "Resgate cupons e recompensas baseadas em tempo na Loja e adicione-os aqui pela sua Mochila!",
-    "emptyAction": "Acessar Mochila"
+    "emptyAction": "Acessar Mochila",
+    "sectionAriaProductivity": "Inventário em Foco",
+    "titleProductivity": "Inventário",
+    "counterTitleProductivity": "Itens e cupons trazidos do inventário para o Foco",
+    "manageLinkLabelProductivity": "Gerenciar Inventário",
+    "emptyTitleProductivity": "Nenhum item ou cupom do inventário adicionado ao Foco.",
+    "emptyDescriptionProductivity": "Resgate cupons e recompensas baseadas em tempo na Vitrine e adicione-os aqui pelo seu Inventário!",
+    "emptyActionProductivity": "Acessar Inventário"
   },
   "contextMenu": {
     "startFocus": "Iniciar Foco",
@@ -343,7 +373,8 @@
     "addRecord": "Adicionar Registro",
     "editActivity": "Editar Atividade",
     "deleteActivity": "Excluir Atividade",
-    "returnToBackpack": "Devolver para Mochila"
+    "returnToBackpack": "Devolver para Mochila",
+    "returnToInventory": "Devolver para Inventário"
   },
   "store": {
     "breakCompletedToast": "Pausa concluída! Pronto para o próximo ciclo de foco?",
@@ -376,7 +407,9 @@
     "linkedTaskCompletedRewardsToast": "Tarefa \"{name}\" concluída! (+{xp} XP • +{coins} 🪙)",
     "linkedTaskCompletedRewardsToastProductivity": "Tarefa \"{name}\" concluída! (+{xp} Pontos • +{coins} Créditos)",
     "linkedTaskCompletedNoRewardToast": "Tarefa \"{name}\" marcada como concluída! (Recompensa já concedida anteriormente)",
-    "linkedTaskCompleteFailedToast": "Não foi possível concluir a tarefa vinculada."
+    "linkedTaskCompleteFailedToast": "Não foi possível concluir a tarefa vinculada.",
+    "selectTargetToStartToastProductivity": "Selecione uma atividade, tarefa ou item do inventário para iniciar o foco.",
+    "linkTargetBeforeSaveToastProductivity": "Vincule o foco a uma atividade, tarefa ou item do inventário antes de salvar."
   },
   "notifications": {
     "defaultDocumentTitle": "Foco & Pomodoro | HabitParty",
@@ -428,7 +461,34 @@
     "goldEarnedLabel": "Ouro Ganho",
     "creditsEarnedLabel": "Créditos Ganhos",
     "totalGoldLabel": "Ouro Total",
-    "totalCreditsLabel": "Créditos Totais"
+    "totalCreditsLabel": "Créditos Totais",
+    "dailyYieldRateLabel": "{percent}% de ganho",
+    "dailyYieldCappedLabel": "0% • Teto 8h",
+    "dailyYieldTooltipTitle": "Rendimento Diário (Modo Aventura)",
+    "dailyYieldTooltipAria": "Entender a redução progressiva de ganho por tempo focado no dia",
+    "dailyYieldTooltipIntro": "Para evitar exaustão, o ganho em foco reduz em degraus ao longo do dia:",
+    "dailyYieldTier100": "0h a 4h: 100% de ganho (XP e Moedas cheios)",
+    "dailyYieldTier50": "4h a 6h: 50% de ganho",
+    "dailyYieldTier25": "6h a 8h: 25% de ganho",
+    "dailyYieldTier0": "Acima de 8h: 0% (apenas histórico)",
+    "dailyYieldZeroReachedHint": "Você atingiu o teto diário de 8h. O cronômetro continua registrando seu tempo normalmente.",
+    "dailyYieldRemainingHint": "Restam {remaining} neste nível ({untilCap} até zerar ganhos).",
+    "activeYieldRateSub": "Taxa atual: {percent}%",
+    "dailyYieldCappedLabelProductivity": "0% • Teto 8h",
+    "dailyYieldRateLabelProductivity": "{percent}% de rendimento",
+    "dailyYieldTooltipTitleProductivity": "Sustentabilidade Diária (Anti-Burnout)",
+    "dailyYieldTooltipAriaProductivity": "Entender a escala diária de sustentabilidade por tempo focado",
+    "dailyYieldTooltipIntroProductivity": "Para preservar ritmo sustentável ao longo do dia, o rendimento acompanha degraus:",
+    "dailyYieldTier100Productivity": "0h a 4h: 100% de rendimento (Pontos e Créditos cheios)",
+    "dailyYieldTier50Productivity": "4h a 6h: 50% de rendimento",
+    "dailyYieldTier25Productivity": "6h a 8h: 25% de rendimento",
+    "dailyYieldTier0Productivity": "Acima de 8h: 0% (apenas histórico)",
+    "dailyYieldZeroReachedHintProductivity": "Você atingiu o teto diário de 8h. Suas sessões seguem registradas normalmente.",
+    "dailyYieldRemainingHintProductivity": "Restam {remaining} nesta faixa ({untilCap} até encerrar créditos extras).",
+    "activeYieldRateSubProductivity": "Ritmo atual: {percent}%",
+    "dailyGoalLabel": "Meta diária",
+    "dailyGoalReachedLabel": "Meta diária atingida!",
+    "dailyGoalProgressAria": "Progresso da meta diária de foco: {percent}%"
   },
   "weeklyChart": {
     "title": "Análise de Foco",
@@ -461,7 +521,9 @@
     "deleteHistoryLabel": "Excluir também do Histórico",
     "deleteHistoryHint": "Remove também o registro desta sessão do extrato do Histórico. Moedas e XP já são estornados automaticamente (sem baixar seu nível ou zerar saldo abaixo de 0).",
     "showMore": "Ver mais",
-    "loadingMore": "Carregando..."
+    "loadingMore": "Carregando...",
+    "deleteConfirmDescriptionProductivity": "Tem certeza que deseja excluir permanentemente o registro da sessão <strong>\"{name}\"</strong>? Os pontos e créditos ganhos nesta sessão também serão estornados com segurança. Esta ação é irreversível.",
+    "deleteHistoryHintProductivity": "Remove também o registro desta sessão do extrato do Histórico. Créditos e pontos já são estornados automaticamente (sem baixar sua patente ou zerar saldo abaixo de 0)."
   },
   "recordDetails": {
     "dialogAriaLabel": "Editar Registro de Foco",
@@ -507,6 +569,13 @@
     "selectActivityPlaceholder": "Selecione uma atividade",
     "taskSelectLabel": "Tarefa Vinculada (opcional)",
     "noTaskLinkedOption": "Nenhuma tarefa vinculada",
+    "searchTasksPlaceholder": "Buscar tarefa pelo nome ou lista...",
+    "noTasksMatchingSearch": "Nenhuma tarefa encontrada com esse filtro.",
+    "taskFilterAll": "Todas",
+    "taskFilterDaily": "Diárias",
+    "taskFilterTodo": "Afazeres",
+    "taskTypeDailyLabel": "Diária",
+    "taskTypeTodoLabel": "Afazer",
     "pausedFreePlanNotice": "{count, plural, one {# atividade pausada no plano Free.} other {# atividades pausadas no plano Free.}}",
     "backpackItemSelectLabel": "Item da Mochila",
     "balanceBadge": "Saldo: {minutes}m",
@@ -547,8 +616,14 @@
       "recordSaved": "Registro de foco adicionado com sucesso!",
       "itemTimeLogged": "Tempo do item registrado com sucesso!",
       "saveFailed": "Falha ao registrar sessão de foco.",
-      "unexpectedError": "Ocorreu um erro ao salvar o registro manual."
-    }
+      "unexpectedError": "Ocorreu um erro ao salvar o registro manual.",
+      "noInventoryItems": "Sem itens disponíveis no inventário para vincular.",
+      "futureDateNotAllowed": "Não é possível registrar sessões de foco no futuro.",
+      "futureEndTimeNotAllowed": "O horário de término não pode estar no futuro."
+    },
+    "inventoryOption": "Inventário",
+    "inventoryItemSelectLabel": "Item do Inventário",
+    "selectItemPlaceholderProductivity": "Selecione um item do inventário"
   },
   "formatters": {
     "dateAtTime": "{day} às {time}",
@@ -615,7 +690,8 @@
     "fallbackKeepSession": "Manter Sessão",
     "discardAndStartTitle": "Descartar atual e começar nova",
     "discardAndStartDescription": "Descarta o tempo não salvo desta sessão e inicia o cronômetro para <strong>{target}</strong> do zero.",
-    "keepCurrentSession": "Manter Sessão Atual"
+    "keepCurrentSession": "Manter Sessão Atual",
+    "targetTypeInventoryProductivity": "Item do Inventário"
   },
   "switchTimerModal": {
     "title": "Trocar Modo de Foco",

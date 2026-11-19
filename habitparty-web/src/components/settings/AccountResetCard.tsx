@@ -11,13 +11,11 @@ import { useAvatarFrameStore } from "@/store/avatarFrameStore";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
 import { useUserStore } from "@/store/userStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
-import type { ProfileCardBaseProps } from "@/types/settings";
 import type { AccountResetScope } from "@/types/user";
-import { cn } from "@/utils";
 
 const STREAK_TRACKER_STORAGE_PREFIX = "habitparty_streak_tracker_";
 
-export function AccountResetCard({ isCompact }: ProfileCardBaseProps) {
+export function AccountResetCard() {
   const t = useTranslations("settings.accountReset");
   const router = useRouter();
   const [pendingScope, setPendingScope] = useState<AccountResetScope | null>(
@@ -85,12 +83,7 @@ export function AccountResetCard({ isCompact }: ProfileCardBaseProps) {
     <>
       <div className="flex flex-col gap-3">
         {/* Opção 1: Reset de Métricas e Gamificação */}
-        <div
-          className={cn(
-            "flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-amber-500/25 bg-amber-500/[0.04] dark:border-amber-500/25 dark:bg-amber-950/15",
-            isCompact ? "p-3.5" : "p-4",
-          )}
-        >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-amber-500/25 bg-amber-500/[0.04] dark:border-amber-500/25 dark:bg-amber-950/15 p-4">
           <div className="flex flex-col gap-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h4 className="text-body font-bold text-neutral-50">
@@ -112,10 +105,7 @@ export function AccountResetCard({ isCompact }: ProfileCardBaseProps) {
               setDeleteHistory(false);
               setPendingScope("METRICS");
             }}
-            className={cn(
-              "w-full sm:w-auto justify-center rounded-xl border border-amber-500/35 bg-amber-500/10 text-amber-700 hover:bg-amber-600 hover:text-white dark:border-amber-500/45 dark:bg-amber-500/15 dark:text-amber-300 transition-colors font-bold cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 shrink-0 flex items-center gap-2 shadow-xs",
-              isCompact ? "px-3.5 py-2 text-xs" : "px-4 py-2.5 text-sm",
-            )}
+            className="w-full sm:w-auto justify-center rounded-xl border border-amber-500/35 bg-amber-500/10 text-amber-700 hover:bg-amber-600 hover:text-white dark:border-amber-500/45 dark:bg-amber-500/15 dark:text-amber-300 transition-colors font-bold cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 shrink-0 flex items-center gap-2 shadow-xs px-4 py-2.5 text-sm"
           >
             <RotateCcw size={16} />
             {t("metricsButton")}
@@ -123,12 +113,7 @@ export function AccountResetCard({ isCompact }: ProfileCardBaseProps) {
         </div>
 
         {/* Opção 2: Reset Completo sem excluir a conta */}
-        <div
-          className={cn(
-            "flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-red-500/25 bg-red-500/[0.04] dark:border-red-500/30 dark:bg-red-950/15",
-            isCompact ? "p-3.5" : "p-4",
-          )}
-        >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-red-500/25 bg-red-500/[0.04] dark:border-red-500/30 dark:bg-red-950/15 p-4">
           <div className="flex flex-col gap-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h4 className="text-body font-bold text-neutral-50">
@@ -147,10 +132,7 @@ export function AccountResetCard({ isCompact }: ProfileCardBaseProps) {
             type="button"
             disabled={isPending}
             onClick={() => setPendingScope("COMPLETE")}
-            className={cn(
-              "w-full sm:w-auto justify-center rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 hover:bg-red-600 hover:text-white dark:border-red-500/50 dark:bg-red-600/20 dark:text-red-300 transition-colors font-bold cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 shrink-0 flex items-center gap-2 shadow-xs",
-              isCompact ? "px-3.5 py-2 text-xs" : "px-4 py-2.5 text-sm",
-            )}
+            className="w-full sm:w-auto justify-center rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 hover:bg-red-600 hover:text-white dark:border-red-500/50 dark:bg-red-600/20 dark:text-red-300 transition-colors font-bold cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 shrink-0 flex items-center gap-2 shadow-xs px-4 py-2.5 text-sm"
           >
             <Eraser size={16} />
             {t("completeButton")}

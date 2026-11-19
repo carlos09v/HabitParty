@@ -13,15 +13,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.AchievementRepository;
+import com.habitparty.application.ports.ArtifactRepository;
 import com.habitparty.application.ports.ProfileHighlightRepository;
 import com.habitparty.application.ports.UserAchievementRepository;
+import com.habitparty.application.ports.UserArtifactRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.usecases.social.NotifyFriendsMilestoneUseCase;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.achievement.Achievement;
+import com.habitparty.core.domain.entities.achievement.Artifact;
 import com.habitparty.core.domain.entities.achievement.ProfileHighlight;
 import com.habitparty.core.domain.entities.achievement.UserAchievement;
+import com.habitparty.core.domain.entities.achievement.UserArtifact;
 import com.habitparty.core.domain.enums.AchievementCode;
+import com.habitparty.core.domain.enums.ArtifactSourceType;
 import com.habitparty.core.domain.enums.UserLevel;
 
 @Service
@@ -31,11 +36,40 @@ public class EvaluateUserAchievementsUseCase {
   private final ProfileHighlightRepository profileHighlightPort;
   private final UserRepository userPort;
   private final NotifyFriendsMilestoneUseCase socialMilestoneNotifier;
+  private final ArtifactRepository artifactPort;
+  private final UserArtifactRepository userArtifactPort;
 
   public record EvaluationSnapshot(
       List<Achievement> catalog,
       List<UserAchievement> allUserUnlocks,
-      List<Achievement> newlyUnlocked) {}
+      List<Achievement> newlyUnlocked,
+      List<Artifact> newlyUnlockedArtifacts,
+      @Nullable List<Artifact> artifactCatalog,
+      @Nullable List<UserArtifact> userArtifacts) {
+    public EvaluationSnapshot(
+        List<Achievement> catalog,
+        List<UserAchievement> allUserUnlocks,
+        List<Achievement> newlyUnlocked) {
+      this(catalog, allUserUnlocks, newlyUnlocked, List.of(), null, null);
+    }
+
+    public EvaluationSnapshot(
+        List<Achievement> catalog,
+        List<UserAchievement> allUserUnlocks,
+        List<Achievement> newlyUnlocked,
+        List<Artifact> newlyUnlockedArtifacts) {
+      this(catalog, allUserUnlocks, newlyUnlocked, newlyUnlockedArtifacts, null, null);
+    }
+  }
+
+  private record ArtifactGrantResult(
+      List<Artifact> newlyGranted,
+      @Nullable List<Artifact> artifactCatalog,
+      @Nullable List<UserArtifact> userArtifacts) {
+    private static ArtifactGrantResult notLoaded(List<Artifact> newlyGranted) {
+      return new ArtifactGrantResult(newlyGranted, null, null);
+    }
+  }
 
   @Autowired
   public EvaluateUserAchievementsUseCase(
@@ -43,12 +77,25 @@ public class EvaluateUserAchievementsUseCase {
       UserAchievementRepository userAchievementPort,
       ProfileHighlightRepository profileHighlightPort,
       UserRepository userPort,
-      @Nullable NotifyFriendsMilestoneUseCase socialMilestoneNotifier) {
+      @Nullable NotifyFriendsMilestoneUseCase socialMilestoneNotifier,
+      @Nullable ArtifactRepository artifactPort,
+      @Nullable UserArtifactRepository userArtifactPort) {
     this.achievementPort = achievementPort;
     this.userAchievementPort = userAchievementPort;
     this.profileHighlightPort = profileHighlightPort;
     this.userPort = userPort;
     this.socialMilestoneNotifier = socialMilestoneNotifier;
+    this.artifactPort = artifactPort;
+    this.userArtifactPort = userArtifactPort;
+  }
+
+  public EvaluateUserAchievementsUseCase(
+      AchievementRepository achievementPort,
+      UserAchievementRepository userAchievementPort,
+      ProfileHighlightRepository profileHighlightPort,
+      UserRepository userPort,
+      @Nullable NotifyFriendsMilestoneUseCase socialMilestoneNotifier) {
+    this(achievementPort, userAchievementPort, profileHighlightPort, userPort, socialMilestoneNotifier, null, null);
   }
 
   public EvaluateUserAchievementsUseCase(
@@ -56,7 +103,7 @@ public class EvaluateUserAchievementsUseCase {
       UserAchievementRepository userAchievementPort,
       ProfileHighlightRepository profileHighlightPort,
       UserRepository userPort) {
-    this(achievementPort, userAchievementPort, profileHighlightPort, userPort, null);
+    this(achievementPort, userAchievementPort, profileHighlightPort, userPort, null, null, null);
   }
 
   @Transactional
@@ -161,6 +208,69 @@ public class EvaluateUserAchievementsUseCase {
       userPort.save(user);
     }
 
-    return new EvaluationSnapshot(catalog, allUnlocks, newlyUnlockedAchievements);
+    ArtifactGrantResult artifactGrant = grantEligibleAchievementArtifacts(user.getId(), catalog, allUnlocks);
+
+    return new EvaluationSnapshot(
+        catalog,
+        allUnlocks,
+        newlyUnlockedAchievements,
+        artifactGrant.newlyGranted(),
+        artifactGrant.artifactCatalog(),
+        artifactGrant.userArtifacts());
+  }
+
+  private ArtifactGrantResult grantEligibleAchievementArtifacts(
+      UUID userId,
+      List<Achievement> catalog,
+      List<UserAchievement> allUnlocks) {
+    if (artifactPort == null || userArtifactPort == null || allUnlocks == null || allUnlocks.isEmpty()) {
+      return ArtifactGrantResult.notLoaded(List.of());
+    }
+
+    List<Artifact> artifactCatalog = artifactPort.findAllOrdered();
+    if (artifactCatalog.isEmpty()) {
+      return new ArtifactGrantResult(List.of(), List.of(), List.of());
+    }
+
+    Set<UUID> unlockedAchievementIds = allUnlocks.stream()
+        .map(UserAchievement::getAchievementId)
+        .collect(Collectors.toSet());
+    Set<String> unlockedCodes = catalog.stream()
+        .filter(a -> unlockedAchievementIds.contains(a.getId()))
+        .map(a -> a.getCode().trim().toUpperCase())
+        .collect(Collectors.toSet());
+
+    if (unlockedCodes.isEmpty()) {
+      return new ArtifactGrantResult(List.of(), artifactCatalog, null);
+    }
+
+    List<UserArtifact> existingArtifacts = userArtifactPort.findAllByUserId(userId);
+    Set<UUID> ownedArtifactIds = existingArtifacts.stream()
+        .map(UserArtifact::getArtifactId)
+        .collect(Collectors.toSet());
+
+    List<UserArtifact> toCreate = new ArrayList<>();
+    List<Artifact> granted = new ArrayList<>();
+    for (Artifact artifact : artifactCatalog) {
+      if (artifact.getSourceType() != ArtifactSourceType.ACHIEVEMENT
+          || artifact.getRequiredAchievementCode() == null) {
+        continue;
+      }
+      if (!ownedArtifactIds.contains(artifact.getId())
+          && unlockedCodes.contains(artifact.getRequiredAchievementCode())) {
+        toCreate.add(UserArtifact.createNewlyUnlocked(userId, artifact.getId(), "ACHIEVEMENT"));
+        granted.add(artifact);
+      }
+    }
+
+    if (!toCreate.isEmpty()) {
+      userArtifactPort.saveAll(toCreate);
+      List<UserArtifact> combinedArtifacts = new ArrayList<>(existingArtifacts.size() + toCreate.size());
+      combinedArtifacts.addAll(existingArtifacts);
+      combinedArtifacts.addAll(toCreate);
+      return new ArtifactGrantResult(granted, artifactCatalog, List.copyOf(combinedArtifacts));
+    }
+
+    return new ArtifactGrantResult(granted, artifactCatalog, existingArtifacts);
   }
 }

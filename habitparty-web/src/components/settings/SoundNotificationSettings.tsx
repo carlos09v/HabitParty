@@ -1,22 +1,14 @@
 "use client";
 
 import { Bell, MousePointerClick } from "lucide-react";
-import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { SettingToggleRow } from "@/components/settings/SettingToggleRow";
 import { AmbientSoundSection } from "@/components/settings/sound/AmbientSoundSection";
 import { PomodoroAlarmSection } from "@/components/settings/sound/PomodoroAlarmSection";
+import { LazyUpgradePremiumModal } from "@/components/subscription/LazyUpgradePremiumModal";
 import { Switch } from "@/components/ui/Switch";
 import { useFocusAudioControls } from "@/hooks/useFocusAudioControls";
-
-const UpgradePremiumModal = dynamic(
-  () =>
-    import("@/components/subscription/UpgradePremiumModal").then(
-      (mod) => mod.UpgradePremiumModal,
-    ),
-  { ssr: false },
-);
 
 export function SoundNotificationSettings() {
   const t = useTranslations("settings.soundNotifications");
@@ -145,7 +137,7 @@ export function SoundNotificationSettings() {
       </div>
 
       {isUpgradeModalOpen && (
-        <UpgradePremiumModal
+        <LazyUpgradePremiumModal
           isOpen={isUpgradeModalOpen}
           onClose={() => setIsUpgradeModalOpen(false)}
         />

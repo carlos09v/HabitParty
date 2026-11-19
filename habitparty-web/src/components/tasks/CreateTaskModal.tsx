@@ -25,6 +25,7 @@ import { BaseModal } from "@/components/ui/BaseModal";
 import { RewardPreview } from "@/components/ui/reward/RewardPreview";
 import { TASK_TYPE_META } from "@/constants/task";
 import { useCreateTaskForm } from "@/hooks/useCreateTaskForm";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import type { CreateTaskModalProps } from "@/types/task-ui";
@@ -47,6 +48,7 @@ export function CreateTaskModal({
   const t = useTranslations("tasks.taskModal");
   const tOptions = useTranslations("tasks.options.types");
   const locale = useLocale() as AppLocale;
+  const { isGamified } = useExperienceMode();
 
   const form = useCreateTaskForm({
     isOpen,
@@ -84,11 +86,13 @@ export function CreateTaskModal({
       isPenaltyApplied: taskToEdit?.isPenaltyApplied,
       locale,
       timeZone: userTimeZone,
+      isGamified,
     });
     return toTaskRewardEstimate(breakdown, {
       isHardcore: form.isHardcore,
       taskType: form.taskType,
       locale,
+      isGamified,
     });
   }, [
     form.taskType,
@@ -101,6 +105,7 @@ export function CreateTaskModal({
     taskToEdit,
     locale,
     userTimeZone,
+    isGamified,
   ]);
 
   const TypeHeaderIcon =
@@ -115,7 +120,7 @@ export function CreateTaskModal({
     form.taskType === "HABIT"
       ? "bg-sky-500/10 border-sky-500/30 text-sky-600 shadow-none dark:bg-info/15 dark:border-info/30 dark:text-info"
       : form.taskType === "DAILY"
-        ? "bg-purple-500/10 border-purple-500/30 text-purple-600 shadow-none dark:bg-magenta/15 dark:border-magenta/30 dark:text-magenta"
+        ? "bg-magenta/10 border-magenta/35 text-magenta shadow-none dark:bg-magenta/15 dark:border-magenta/30 dark:text-magenta"
         : "bg-amber-500/10 border-amber-500/30 text-amber-600 shadow-none dark:bg-gold/15 dark:border-gold/30 dark:text-gold dark:shadow-glow-gold-xs";
 
   return (
@@ -214,7 +219,11 @@ export function CreateTaskModal({
             <div className="pt-0.5">
               <RewardPreview
                 estimate={rewardEstimate}
-                label={t("rewardPreviewLabel")}
+                label={
+                  isGamified
+                    ? t("rewardPreviewLabel")
+                    : t("rewardPreviewLabelProductivity")
+                }
               />
             </div>
           </div>

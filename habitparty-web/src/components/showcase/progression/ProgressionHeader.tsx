@@ -1,5 +1,3 @@
-"use client";
-
 import { Mountain } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ProgressionSummaryCards } from "./ProgressionSummaryCards";
@@ -43,10 +41,11 @@ export function ProgressionHeader({
           </p>
         </div>
 
-        <XpSourcesGuideTooltip />
+        <XpSourcesGuideTooltip isGamified={isGamified} />
       </div>
 
       <ProgressionSummaryCards
+        isGamified={isGamified}
         currentRankTitle={currentRankTitle}
         currentRankOrder={currentRankOrder}
         currentXp={currentXp}

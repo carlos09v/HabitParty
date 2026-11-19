@@ -21,7 +21,6 @@ import type { TransactionMetadataLabels } from "@/utils/historyUtils";
 
 interface HistoryRowProps {
   transaction: TransactionHistoryResponseDTO;
-  isCompact?: boolean;
   /** Quando agrupado por dia, exibe apenas o horário (HH:mm) na coluna de data, mantendo a data completa no tooltip */
   showTimeOnly?: boolean;
   onClick?: (tx: TransactionHistoryResponseDTO, rect: DOMRect) => void;
@@ -121,7 +120,7 @@ function TransactionMetaBadges({
       ))}
 
       {showEmptyDash && !secondaryBadge && tags.length === 0 && (
-        <span className="text-neutral-500 text-xs">−</span>
+        <span className="hidden md:inline text-neutral-500 text-xs">−</span>
       )}
     </>
   );
@@ -129,7 +128,6 @@ function TransactionMetaBadges({
 
 export const HistoryRow = memo(function HistoryRow({
   transaction,
-  isCompact = false,
   showTimeOnly = false,
   onClick,
   onRequestDelete,
@@ -211,147 +209,99 @@ export const HistoryRow = memo(function HistoryRow({
         metadata.borderClass,
         isSelected &&
           "bg-gold/10 dark:bg-gold/8 border-y-gold/50 border-r-gold/50 dark:border-y-gold/45 dark:border-r-gold/45",
-        "flex flex-col gap-1.5 p-2.5",
+        "grid grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-1.5 p-2.5",
         "md:grid md:items-center",
         canSelect ? HISTORY_GRID_COLS_SELECTABLE : HISTORY_GRID_COLS,
-        isCompact
-          ? "md:gap-2.5 md:px-3 md:py-1 md:text-xs"
-          : "md:gap-3 md:px-3.5 md:py-1.5 md:text-xs",
+        "md:gap-3 md:px-3.5 md:py-1.5 md:text-xs",
       )}
       title={t("rowTitle")}
     >
-      {/* 1. VISUALIZAÇÃO MOBILE (< md) */}
-      <div className="flex md:hidden flex-col gap-1.5 w-full">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
+      {/* Checkbox + Identidade (Coluna 1 on mobile, Cols 1-2 on desktop) */}
+      <div className="max-md:col-start-1 max-md:row-start-1 flex items-center gap-2 min-w-0 md:contents">
+        {canSelect && (
+          <div className="shrink-0 md:flex md:items-center md:justify-center">
             {selectCheckbox}
-            <div className="w-7 h-7 rounded-lg bg-surface border border-white/10 flex items-center justify-center shrink-0 text-neutral-300 shadow-xs">
-              <IconComponent size={14} />
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="font-bold text-neutral-100 text-xs leading-tight truncate">
-                {rowName}
-              </span>
-              {subtext}
-            </div>
           </div>
+        )}
 
-          <div className="flex flex-col items-end shrink-0 gap-0.5">
-            {gold !== 0 || xp === 0 ? (
-              <CoinAmount amount={gold} size="sm" showZeroAsDash={xp === 0} />
-            ) : null}
-            {xp !== 0 && <XpAmount amount={xp} size="xs" />}
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-7 h-7 md:w-6 md:h-6 rounded-lg md:rounded-md bg-surface border border-white/10 flex items-center justify-center shrink-0 text-neutral-300 shadow-xs md:group-hover:border-white/20 transition-colors">
+            <IconComponent size={13} />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span
+              className="font-bold text-neutral-100 max-md:text-xs leading-tight truncate md:group-hover:text-primary dark:md:group-hover:text-gold transition-colors"
+              title={transaction.name || t("defaultEventTitle")}
+            >
+              {rowName}
+            </span>
+            {subtext}
           </div>
         </div>
+      </div>
 
-        <div className="flex items-center gap-1 flex-wrap pl-9 text-xs">
+      {/* Tipo & Metadados (Row 2 span-2 on mobile, Cols 3-4 on desktop) */}
+      <div className="max-md:col-span-2 max-md:row-start-2 flex items-center gap-1 flex-wrap pl-9 text-xs md:contents">
+        <div className="min-w-0">
           <span
             className={cn(
-              "inline-flex items-center px-1.5 py-0.5 rounded-md border font-semibold text-label-g truncate",
+              "inline-flex items-center px-1.5 py-0.5 rounded-md border font-semibold text-label-g leading-tight truncate",
               metadata.badgeClass,
             )}
           >
             {metadata.label}
           </span>
-
-          <TransactionMetaBadges metadata={metadata} tags={tags} />
         </div>
 
-        <div className="flex items-center justify-between pt-1 border-t border-white/5 pl-9">
-          <span
-            className="text-neutral-400 text-label-g font-medium"
-            title={metadata.formattedDate}
-          >
-            {displayDateText}
-          </span>
+        <div className="flex items-center gap-1 flex-wrap min-w-0">
+          <TransactionMetaBadges
+            metadata={metadata}
+            tags={tags}
+            showEmptyDash
+          />
+        </div>
+      </div>
 
+      {/* Ouro & XP (Coluna 2 row 1 on mobile, Cols 5-6 on desktop) */}
+      <div className="max-md:col-start-2 max-md:row-start-1 flex flex-col items-end shrink-0 gap-0.5 md:contents">
+        <div
+          className={cn(
+            "md:flex md:items-center",
+            gold === 0 && xp !== 0 && "max-md:hidden",
+          )}
+        >
+          <CoinAmount amount={gold} size="sm" showZeroAsDash />
+        </div>
+
+        <div
+          className={cn("md:flex md:items-center", xp === 0 && "max-md:hidden")}
+        >
+          <XpAmount amount={xp} size="sm" showSign={false} showZeroAsDash />
+        </div>
+      </div>
+
+      {/* Data & Exclusão (Row 3 span-2 on mobile, Cols 7-8 on desktop) */}
+      <div className="max-md:col-span-2 max-md:row-start-3 flex items-center justify-between pt-1 border-t border-white/5 pl-9 md:contents">
+        <span
+          className="text-neutral-400 text-label-g md:text-xs font-medium md:text-right md:whitespace-nowrap"
+          title={metadata.formattedDate}
+        >
+          {displayDateText}
+        </span>
+
+        <div className="md:flex md:items-center md:justify-end">
           {canDelete && (
             <button
               type="button"
               onClick={handleDeleteClick}
               title={t("deleteRecordTitle")}
               aria-label={t("deleteRecordAria")}
-              className="text-neutral-400 hover:text-red-400 p-1 rounded-md hover:bg-red-500/10 transition-colors cursor-pointer"
+              className="text-neutral-400 md:text-neutral-500 hover:text-red-400 p-1 rounded-md hover:bg-red-500/10 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-[opacity,color,background-color] duration-150 cursor-pointer"
             >
               <Trash2 size={13} />
             </button>
           )}
         </div>
-      </div>
-
-      {/* 2. VISUALIZAÇÃO DESKTOP: GRID DE 7 COLUNAS (md+) */}
-      {canSelect && (
-        <div className="hidden md:flex items-center justify-center">
-          {selectCheckbox}
-        </div>
-      )}
-
-      <div className="hidden md:flex items-center gap-2 min-w-0">
-        <div className="w-6 h-6 rounded-md bg-surface border border-white/10 flex items-center justify-center shrink-0 text-neutral-300 shadow-xs group-hover:border-white/20 transition-colors">
-          <IconComponent size={13} />
-        </div>
-        <div className="flex flex-col min-w-0">
-          <span
-            className="font-bold text-neutral-100 leading-tight truncate group-hover:text-primary dark:group-hover:text-gold transition-colors"
-            title={transaction.name || t("defaultEventTitle")}
-          >
-            {rowName}
-          </span>
-          {subtext}
-        </div>
-      </div>
-
-      <div className="hidden md:block min-w-0">
-        <span
-          className={cn(
-            "inline-flex items-center px-1.5 py-0.5 rounded-md border font-semibold text-label-g leading-tight truncate",
-            metadata.badgeClass,
-          )}
-        >
-          {metadata.label}
-        </span>
-      </div>
-
-      <div className="hidden md:flex items-center gap-1 flex-wrap min-w-0">
-        <TransactionMetaBadges metadata={metadata} tags={tags} showEmptyDash />
-      </div>
-
-      <div className="hidden md:flex items-center">
-        <CoinAmount
-          amount={gold}
-          size={isCompact ? "xs" : "sm"}
-          showZeroAsDash
-        />
-      </div>
-
-      <div className="hidden md:flex items-center">
-        <XpAmount
-          amount={xp}
-          size={isCompact ? "xs" : "sm"}
-          showSign={false}
-          showZeroAsDash
-        />
-      </div>
-
-      <span
-        className="hidden md:block text-right text-neutral-400 font-medium whitespace-nowrap text-xs"
-        title={metadata.formattedDate}
-      >
-        {displayDateText}
-      </span>
-
-      <div className="hidden md:flex items-center justify-end">
-        {canDelete && (
-          <button
-            type="button"
-            onClick={handleDeleteClick}
-            title={t("deleteRecordTitle")}
-            aria-label={t("deleteRecordAria")}
-            className="text-neutral-500 hover:text-red-400 p-1 rounded-md hover:bg-red-500/10 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-[opacity,color,background-color] duration-150 cursor-pointer"
-          >
-            <Trash2 size={13} />
-          </button>
-        )}
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { Database, Loader2, Mail } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { StorageUsageBar } from "@/components/admin/StorageUsageBar";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { FounderBadge } from "@/components/ui/FounderBadge";
@@ -21,6 +21,7 @@ import {
   PREMIUM_USER_EMAIL_MONTHLY_LIMIT,
   PREMIUM_USER_MAX_ACTIVE_REMINDERS,
 } from "@/constants/admin";
+import { useDebouncedUrlSearch } from "@/hooks/useDebouncedUrlSearch";
 import type { AdminUserSummaryDTO } from "@/types/admin";
 import { cn } from "@/utils";
 import { calculateStoragePercentage } from "@/utils/adminUtils";
@@ -52,6 +53,7 @@ function UserIdentityCell({
         name={user.fullName}
         size="sm"
         hasRing={user.isPremium}
+        frameId="none"
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -300,22 +302,22 @@ export function AdminUsersTable({
   onToggleRole,
 }: AdminUsersTableProps) {
   const t = useTranslations("admin.usersTable");
-  const [searchInput, setSearchInput] = useState(search);
+  const { searchInput, setSearchInput } = useDebouncedUrlSearch({
+    currentSearch: search,
+    onDebouncedChange: onSearchChange,
+  });
 
-  useEffect(() => {
-    setSearchInput(search);
-  }, [search]);
-
-  useEffect(() => {
-    const trimmed = searchInput.trim();
-    if (trimmed === search.trim()) return;
-
-    const timer = window.setTimeout(() => {
-      onSearchChange(trimmed);
-    }, 350);
-
-    return () => window.clearTimeout(timer);
-  }, [searchInput, search, onSearchChange]);
+  const usersWithStorage = useMemo(
+    () =>
+      users.map((user) => ({
+        user,
+        storagePct: calculateStoragePercentage(
+          user.estimatedStorageBytes,
+          user.isPremium,
+        ),
+      })),
+    [users],
+  );
 
   return (
     <div className="@container flex flex-col gap-4">
@@ -367,12 +369,8 @@ export function AdminUsersTable({
               {t("empty")}
             </div>
           ) : (
-            users.map((user) => {
+            usersWithStorage.map(({ user, storagePct }) => {
               const isLoadingDetail = loadingUserId === user.id;
-              const storagePct = calculateStoragePercentage(
-                user.estimatedStorageBytes,
-                user.isPremium,
-              );
 
               return (
                 <article
@@ -425,6 +423,7 @@ export function AdminUsersTable({
                           bytesUsed={user.estimatedStorageBytes}
                           usedFormatted={user.estimatedStorageFormatted}
                           isPremium={user.isPremium}
+                          percentage={storagePct}
                           quotaLabel={t("storage.quotaPercentage", {
                             percentage: storagePct,
                             tier: user.isPremium
@@ -483,12 +482,8 @@ export function AdminUsersTable({
                   </td>
                 </tr>
               ) : (
-                users.map((user) => {
+                usersWithStorage.map(({ user, storagePct }) => {
                   const isLoadingDetail = loadingUserId === user.id;
-                  const storagePct = calculateStoragePercentage(
-                    user.estimatedStorageBytes,
-                    user.isPremium,
-                  );
 
                   return (
                     <tr
@@ -540,6 +535,7 @@ export function AdminUsersTable({
                           bytesUsed={user.estimatedStorageBytes}
                           usedFormatted={user.estimatedStorageFormatted}
                           isPremium={user.isPremium}
+                          percentage={storagePct}
                           quotaLabel={t("storage.quotaPercentage", {
                             percentage: storagePct,
                             tier: user.isPremium

@@ -210,7 +210,8 @@
     "createButton": "Create",
     "cancelButton": "Cancel",
     "moreOptionsTitle": "Open detailed form with more options",
-    "moreOptionsButton": "More options"
+    "moreOptionsButton": "More options",
+    "difficultyLabel": "Difficulty:"
   },
   "taskList": {
     "sectionAria": "List: {title}",
@@ -318,7 +319,8 @@
       "tagsLabel": "Tags",
       "tagsHint": "Use > to nest",
       "tagsPlaceholder": "E.g., health, Study > Math (max {max})",
-      "priorityLabel": "Priority"
+      "priorityLabel": "Priority",
+      "creditsUnit": "Credits"
     },
     "habitFields": {
       "directionLabel": "Habit Direction",
@@ -344,7 +346,9 @@
       "resetWeeklyDesc": "Resets every Monday (e.g., go to the gym 3x a week).",
       "resetMonthlyLabel": "• Monthly:",
       "resetMonthlyDesc": "Resets on the 1st of each month (e.g., read 2 books a month).",
-      "resetStreakNote": "🛡️ Your Streak and accumulated coins are <bold>NOT</bold> lost when the counter resets!"
+      "resetStreakNote": "🛡️ Your Streak and accumulated coins are <bold>NOT</bold> lost when the counter resets!",
+      "positiveBulletDescProductivity": "Good habit to build (e.g., drink water, study). Each <bold>+</bold> grants Points and Credits.",
+      "resetStreakNoteProductivity": "🛡️ Your Streak and accumulated credits are <bold>NOT</bold> lost when the counter resets!"
     },
     "dailyFields": {
       "startDateLabel": "Start Date",
@@ -413,7 +417,10 @@
       "emailReminderQuotaBadge": "Free: up to 5 active (20/mo) • VIP: up to 30 active (100/mo)",
       "emailUnverifiedDesc": "Verify your account email to enable email alerts.",
       "emailVerifiedDesc": "We'll send an email alert when the reminder time arrives.",
-      "emailSwitchAria": "Receive email reminder"
+      "emailSwitchAria": "Receive email reminder",
+      "dueDateStrictLabel": "Strict Deadline",
+      "dueDateStrictPlaceholder": "Set strict deadline...",
+      "dueDateStrictFrozenHint": "🔒 Date frozen: strict deadline expired."
     },
     "checklistSection": {
       "title": "Checklist / Subtasks",
@@ -468,8 +475,12 @@
       "routineSubtitleProductivity": "For non-negotiable goals: applies a penalty if missed today",
       "todoActiveAlert": "High Risk Active: 50% penalty if not completed by the due date. Date cannot be postponed once overdue.",
       "todoActiveOverdueAlert": "High Risk Active: the deadline has already passed (50% penalty applies and postponing locks after the due date).",
-      "routineActiveAlert": "High Risk Active: 50% penalty in Coins and XP if not completed today."
-    }
+      "routineActiveAlert": "High Risk Active: 50% penalty in Coins and XP if not completed today.",
+      "tooltipAriaProductivity": "Learn how Strict Deadline / Daily Commitment helps overcome procrastination",
+      "switchAriaProductivity": "Toggle Strict Deadline / Daily Commitment",
+      "routineActiveAlertProductivity": "Daily Commitment Active: 50% penalty in Credits and Points if not completed today."
+    },
+    "rewardPreviewLabelProductivity": "Projected Yield"
   },
   "detailsPopover": {
     "dialogAria": "Quick task details",
@@ -581,7 +592,8 @@
       "moreOptionsTitle": "More options",
       "editFull": "Full edit",
       "duplicate": "Duplicate",
-      "deleteTask": "Delete task"
+      "deleteTask": "Delete task",
+      "rewardsLabelProductivity": "Yield"
     }
   },
   "options": {
@@ -662,7 +674,8 @@
       "HABIT": "Habit",
       "DAILY": "Daily",
       "TODO": "Task"
-    }
+    },
+    "createTaskRewardDescProductivity": "Estimated yield: +{xp} pts • +{gold} Credits"
   },
   "actions": {
     "communicationError": "Internal server communication error.",

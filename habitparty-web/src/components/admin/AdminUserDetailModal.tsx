@@ -184,6 +184,7 @@ export function AdminUserDetailModal({
             name={summary.fullName}
             size="md"
             hasRing={summary.isPremium}
+            frameId="none"
           />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">

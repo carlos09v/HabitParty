@@ -7,6 +7,7 @@ import { TaskHardcoreBadge, TaskRewardBadges } from "@/components/tasks/shared";
 import { RewardPreview } from "@/components/ui/reward/RewardPreview";
 import { normalizeTaskType } from "@/constants/task";
 import { useClickOutside } from "@/hooks/useClickOutside";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import { useUserStore } from "@/store/userStore";
 import type { TaskDetailsFooterProps } from "@/types/task-ui";
@@ -22,6 +23,7 @@ export function TaskDetailsFooter({
 }: TaskDetailsFooterProps) {
   const t = useTranslations("tasks.detailsPopover.footer");
   const locale = useLocale() as AppLocale;
+  const { isGamified } = useExperienceMode();
   const userTimeZone = useUserStore((s) => s.user?.timezone);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuContainerRef = useRef<HTMLDivElement>(null);
@@ -45,13 +47,15 @@ export function TaskDetailsFooter({
       isPenaltyApplied: task.isPenaltyApplied,
       locale,
       timeZone: userTimeZone,
+      isGamified,
     });
     return toTaskRewardEstimate(breakdown, {
       isHardcore: task.isHardcoreModeEnabled,
       taskType: task.type,
       locale,
+      isGamified,
     });
-  }, [task, locale, userTimeZone]);
+  }, [task, locale, userTimeZone, isGamified]);
 
   const isHardcoreOverdue = useMemo(() => {
     if (!task) return false;
@@ -73,7 +77,9 @@ export function TaskDetailsFooter({
           <RewardPreview
             estimate={rewardEstimate}
             variant="inline"
-            label={t("rewardsLabel")}
+            label={
+              isGamified ? t("rewardsLabel") : t("rewardsLabelProductivity")
+            }
           />
         )}
 

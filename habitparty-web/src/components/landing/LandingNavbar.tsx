@@ -65,7 +65,7 @@ export async function LandingNavbar() {
         </Link>
         <Link
           href="/signUp"
-          className="relative group inline-flex items-center gap-2 whitespace-nowrap px-4 xl:px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-light text-white font-semibold text-sm shadow-sm dark:shadow-[0_0_20px_rgba(124,58,237,0.4)] dark:hover:shadow-glow-gold hover:border-primary dark:hover:border-gold/50 transition-[transform,border-color,box-shadow] duration-300 hover:scale-[1.02] border border-primary-light/40"
+          className="relative group inline-flex items-center gap-2 whitespace-nowrap px-4 xl:px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-light text-white font-semibold text-sm shadow-sm dark:shadow-[0_0_20px_color-mix(in_srgb,var(--color-primary)_40%,transparent)] dark:hover:shadow-glow-gold hover:border-primary dark:hover:border-gold/50 transition-[transform,border-color,box-shadow] duration-300 hover:scale-[1.02] border border-primary-light/40"
         >
           <Sparkles className="w-4 h-4 text-white dark:text-gold animate-pulse" />
           <span>{t("startFree")}</span>

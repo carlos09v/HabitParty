@@ -36,11 +36,11 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
     question:
       "What is the difference between Essential Mode (Focus & Productivity) and Adventure Mode (RPG Immersion)?",
     answer:
-      "HabitParty offers two visual and conceptual modes powered by the exact same mathematical engine, 3:1–4:1 economy rules, Kanban boards, and Pomodoro timer — only the aesthetic, wording, and optional Store RNG adapt:",
+      "HabitParty offers two modes with 100% functional parity — both run on the exact same mathematical engine, yield projections, 3:1–4:1 economy rules, Kanban boards, Focus timers (including the 90m ultradian cap and 8h daily sustainability ramp), and Store draws — only the visual theme, terminology, and default audio calibrate to your style:",
     bullets: [
-      "Essential Mode (Clean Focus & Productivity): Sober, executive aesthetic without fantasy clutter. Uses Credits (instead of coins) and Points (pts), displays professional ranks (Beginner to High Performance), shows clean Effort indicators (no swords), keeps the Store focused on direct rewards (no Mystery Box RNG), and uses terms like 'Strict Deadline' and 'Inventory'.",
-      "Adventure Mode (RPG Immersion): Full themed RPG experience with playful reward feedback. Turns deliverables into Gold Coins (🪙) and XP, displays adventurer ranks (Novice to Legend), sword icons for difficulty, Hardcore Mode, Mystery Boxes (luck draws by rarity) in the Store, a Backpack, and celebratory audio.",
-      "1:1 Equivalence & Instant Switching: 1 Gold Coin = 1 Credit and 1 XP = 1 Point (pts). Choose your profile during onboarding and switch anytime in Settings > Appearance > Experience Style with 1 click, keeping all balances, history, and levels intact.",
+      "Essential Mode (Clean Focus & Productivity): Sober, executive aesthetic without fantasy clutter. Uses Credits with a built-in leisure-time equivalence (4 min/Credit • 15 Credits = 1h free leisure) and Points (pts), displays professional ranks (Beginner to High Performance), clean Effort indicators (no swords), 'Strict Deadline' / 'Daily Commitment', Inventory, Break Draw (roulette for breaks/treats in the Store), and calm Zen audio cues.",
+      "Adventure Mode (RPG Immersion): Full themed RPG experience with playful reward feedback. Turns deliverables into Gold Coins (🪙) and XP, displays adventurer ranks (Novice to Legend), sword icons for difficulty, Hardcore Mode, Mystery Boxes (luck draws by rarity) in the Store, a Backpack, and celebratory Arcade sound effects.",
+      "1:1 Equivalence & Instant Switching: 1 Gold Coin = 1 Credit (≈ 4 min free leisure) and 1 XP = 1 Point (pts). Choose your profile during onboarding and switch anytime in Settings > Appearance > Experience Style with 1 click, keeping all balances, history, and levels intact.",
     ],
     tags: [
       "experience",
@@ -54,6 +54,7 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
       "coins",
       "xp",
       "rpg",
+      "break draw",
       "settings",
     ],
     highlightBadge: "Experience",
@@ -168,42 +169,43 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
     category: "REWARDS",
     question: "How does the Rewards Store work?",
     answer:
-      "You create your own real-life products and leisure packages. HabitParty offers three reward models:",
+      "You create your own real-life products, breaks, and leisure packages. HabitParty offers three reward models:",
     bullets: [
       "Single-Use: Direct items to consume once (e.g., order a pizza, buy a book, have a specialty coffee).",
-      "Time-Based: Packages with a predefined duration (e.g., 30 minutes of video games, 1 hour of social media).",
-      "Mystery Box: Rewards that draw items by rarity (Common to Legendary).",
+      "Time-Based: Packages with a predefined duration (e.g., 30 minutes of video games, 1 hour of free rest).",
+      "Mystery Box (Adventure) / Break Draw (Essential): Rewards with a weighted roulette draw that picks a break or item from your configured pool.",
     ],
-    tags: ["store", "rewards", "products", "time", "shopping"],
+    tags: ["store", "rewards", "products", "time", "shopping", "draw"],
     actionLink: { label: "Explore the Store", href: "/rewards" },
   },
   {
     id: "mystery-box-system",
     category: "REWARDS",
-    question: "How do Mystery Boxes (RNG) work?",
-    answer: `When creating or buying a Mystery Box in the Store, you choose between 4 gamified tiers with balanced costs and odds: Basic (${coins(5)} 🪙), Premium (${coins(15)} 🪙), Epic (${coins(35)} 🪙), and Legendary (${coins(80)} 🪙). The draw follows the matching package's Loot Table and the prize goes straight to your Backpack, letting you win amazing rewards depending on your luck!`,
-    tags: ["mystery box", "draw", "rng", "loot table", "prizes"],
-    actionLink: { label: "See Boxes in the Store", href: "/rewards" },
+    question:
+      "How do Mystery Boxes (Adventure Mode) and Break Draws (Essential Mode) work?",
+    answer: `When creating or buying a draw package in the Store (Mystery Box in Adventure Mode or Break Draw in Essential Mode), you choose between 4 balanced cost and weight tiers: Basic/Essential (${coins(5)}), Premium/Moderate (${coins(15)}), Epic/Advanced (${coins(35)}), and Legendary/Executive (${coins(80)}). The roulette follows that tier's weighted probability table and sends the drawn reward straight to your Backpack or Inventory!`,
+    tags: ["mystery box", "break draw", "draw", "rng", "loot table", "prizes"],
+    actionLink: { label: "See in the Store", href: "/rewards" },
   },
   {
     id: "inventory-usage",
     category: "INVENTORY",
     question: "Where do items go after being bought in the Store?",
     answer:
-      "All purchased products go straight to your Backpack (Inventory). There you can view your available stock, consume an item when you enjoy the reward in real life, or start a focus session tied to that item.",
+      "All purchased products go straight to your Backpack (Adventure Mode) or Inventory (Essential Mode). There you can view your available stock, consume an item when you enjoy the reward in real life, or start a focus session tied to that item.",
     tags: ["backpack", "inventory", "consumption", "items"],
-    actionLink: { label: "Open My Backpack", href: "/inventory" },
+    actionLink: { label: "Open Backpack / Inventory", href: "/inventory" },
   },
   {
     id: "focus-sessions",
     category: "FOCUS",
     question: "How do the Focus tools (Pomodoro & Stopwatch) work?",
     answer:
-      "HabitParty comes with a built-in stopwatch and pomodoro. You can start focus sessions dedicated to study or work activities, logging completed minutes directly in your history and earning calibrated rewards in XP and coins (🪙).",
+      "HabitParty comes with a built-in stopwatch and pomodoro. You can start focus sessions dedicated to study or work activities, logging completed minutes directly in your history and earning calibrated rewards in XP/Points (pts) and Coins/Credits.",
     bullets: [
       "Pomodoro: Predefined focus cycles (15 to 50 min) interleaved with breaks. When you complete a cycle, you earn the full block bonus.",
-      "Free Stopwatch: For those who work in continuous flow. Rewards proportionally to focused time, up to a cap of 90 minutes per session.",
-      "Backpack / Leisure in Focus: You can activate time items bought in the Store (e.g., video games). The timer deducts your leisure balance but does not generate new earnings.",
+      "Free Stopwatch: For those who work in continuous flow. Rewards proportionally to focused time, up to a 90-minute ultradian cap per session.",
+      "Backpack / Inventory in Focus: You can activate time items bought in the Store (e.g., breaks or gaming). The timer deducts your leisure balance without generating new earnings.",
     ],
     tags: ["focus", "pomodoro", "stopwatch", "study", "timer"],
     highlightBadge: "Focus",
@@ -214,14 +216,14 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
     category: "FOCUS",
     question: "How does the Focus economy and anti-abuse locks work?",
     answer:
-      "To keep gamification fair, rewarding, and protected against a forgotten running timer or idle farming:",
+      "To keep productivity fair, sustainable, and protected against a forgotten running timer or idle farming (in both modes):",
     bullets: [
-      "Minimum Time: Sessions under 10 minutes are discarded and earn 0 XP and 0 coins.",
-      "Anti-AFK Cap: If the timer is left running for hours, payout is limited to a maximum of 90 continuous minutes.",
-      "Daily Cap & Diminishing Returns Stair-Step (Soft Cap): The first 4 daily hours of focus pay 100%. Between 4h and 6h pay 50%, and between 6h and 8h pay 25% (natural fatigue). Above 8h of daily focus, new sessions earn no XP or coins to prevent burnout and hyperinflation (time is still logged in your stats).",
-      "Leisure Earns Nothing: Sessions with backpack inventory items have a fixed yield of 0 XP and 0 coins.",
+      "Minimum Time: Sessions under 10 minutes are discarded and earn 0 points and 0 coins/credits.",
+      "Anti-AFK / Ultradian Cycle Cap (90m): If the timer is left running for hours, payout is limited to a maximum of 90 continuous minutes.",
+      "Daily Cap & Anti-Burnout Sustainability (8h Soft Cap): The first 4 daily hours of focus pay 100%. Between 4h and 6h pay 50%, and between 6h and 8h pay 25% (natural fatigue). Above 8h of daily focus, new sessions earn no coins/credits or XP/pts to prevent burnout and inflation (time is still logged in your metrics).",
+      "Leisure Earns Nothing: Sessions with Backpack / Inventory items have a fixed yield of 0.",
     ],
-    tags: ["focus", "economy", "anti-afk", "daily cap", "rewards"],
+    tags: ["focus", "economy", "anti-afk", "daily cap", "ultradian", "rewards"],
   },
   {
     id: "workspaces-concept",

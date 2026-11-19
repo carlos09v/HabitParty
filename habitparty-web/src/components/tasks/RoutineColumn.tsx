@@ -29,7 +29,6 @@ export const RoutineColumn = memo(function RoutineColumn({
   isSelected = false,
   selectedTaskId,
   deletingTaskIds,
-  isCompact: propIsCompact,
   widthPreset = "normal",
   onAddTaskToColumn,
   onQuickCreateTask,
@@ -45,7 +44,6 @@ export const RoutineColumn = memo(function RoutineColumn({
   isOverlay = false,
 }: RoutineColumnProps) {
   const t = useTranslations("tasks.column");
-  const isCompact = propIsCompact ?? false;
   const ColumnIcon = getColumnIcon(column.icon);
   const columnRef = useRef<HTMLDivElement | null>(null);
 
@@ -205,35 +203,28 @@ export const RoutineColumn = memo(function RoutineColumn({
         {...attributes}
         {...listeners}
         className={cn(
-          "flex flex-col cursor-grab active:cursor-grabbing group/header touch-manipulation shrink-0 border-b border-neutral-700/60 dark:border-white/6",
+          "flex flex-col cursor-grab active:cursor-grabbing group/header touch-manipulation shrink-0 border-b border-neutral-700/60 dark:border-white/6 px-3.5 pt-3.5 pb-2.5",
           isDragging && "touch-none",
-          isCompact ? "px-2.5 pt-2.5 pb-2" : "px-3.5 pt-3.5 pb-2.5",
         )}
       >
         <div className="flex items-center justify-between gap-2 min-w-0">
           <div className="flex items-center gap-1.5 min-w-0">
             <GripVertical
-              size={isCompact ? 13 : 15}
+              size={15}
               className="text-neutral-500/70 group-hover/header:text-primary dark:group-hover/header:text-gold transition-colors shrink-0 -mr-0.5"
             />
             <div
               className={cn(
-                "rounded-lg border transition-colors shrink-0 flex items-center justify-center",
-                isCompact ? "p-1" : "p-1.5",
+                "rounded-lg border transition-colors shrink-0 flex items-center justify-center p-1.5",
                 isAllDone
                   ? "bg-success-500/15 border-success-500/40 text-success-500"
                   : "bg-primary/10 dark:bg-primary/20 border-primary/25 dark:border-primary/35 text-primary dark:text-gold group-hover/header:border-primary/40 dark:group-hover/header:border-gold/50 group-hover/header:bg-primary/15 dark:group-hover/header:bg-gold/15",
               )}
             >
-              <ColumnIcon size={isCompact ? 14 : 16} />
+              <ColumnIcon size={16} />
             </div>
 
-            <h3
-              className={cn(
-                "font-bold text-neutral-50 truncate",
-                isCompact ? "text-xs sm:text-sm" : "text-sm sm:text-base",
-              )}
-            >
+            <h3 className="font-bold text-neutral-50 truncate text-sm sm:text-base">
               {column.title}
             </h3>
 
@@ -247,8 +238,7 @@ export const RoutineColumn = memo(function RoutineColumn({
                   : undefined
               }
               className={cn(
-                "font-bold rounded-full border shrink-0 transition-colors",
-                isCompact ? "text-tiny px-1.5 py-0.5" : "text-xs px-2 py-0.5",
+                "font-bold rounded-full border shrink-0 transition-colors text-xs px-2 py-0.5",
                 isAllDone
                   ? "bg-success-500/15 border-success-500/40 text-success-500"
                   : completedTasks > 0
@@ -282,7 +272,7 @@ export const RoutineColumn = memo(function RoutineColumn({
               }}
               className="text-neutral-400 hover:text-gold p-1.5 sm:p-1 rounded-md hover:bg-white/10 transition-colors cursor-pointer"
             >
-              <Plus size={isCompact ? 14 : 16} />
+              <Plus size={16} />
             </button>
 
             <button
@@ -304,7 +294,7 @@ export const RoutineColumn = memo(function RoutineColumn({
               className="text-neutral-400 hover:text-gold p-1.5 sm:p-1 rounded-md hover:bg-white/10 transition-colors cursor-pointer"
               title={t("optionsTitle")}
             >
-              <MoreVertical size={isCompact ? 14 : 16} />
+              <MoreVertical size={16} />
             </button>
           </div>
         </div>
@@ -314,10 +304,7 @@ export const RoutineColumn = memo(function RoutineColumn({
           <ProgressBar
             decorative
             percent={progressPercent}
-            className={cn(
-              "h-1 bg-neutral-700/30 dark:bg-white/8",
-              isCompact ? "mt-1.5" : "mt-2",
-            )}
+            className="h-1 bg-neutral-700/30 dark:bg-white/8 mt-2"
             fillClassName={cn(
               "transition-[transform,background-color] duration-300",
               isAllDone
@@ -329,37 +316,19 @@ export const RoutineColumn = memo(function RoutineColumn({
       </div>
 
       {/* ÁREA DE TAREFAS (Sortable vertical com dnd-kit) */}
-      <div
-        className={cn(
-          "flex flex-col flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar",
-          isCompact ? "gap-2 p-2 pb-2.5" : "gap-2.5 p-3 pb-3.5",
-        )}
-      >
+      <div className="flex flex-col flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar gap-2.5 p-3 pb-3.5">
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
           {column.tasks.length === 0 && !isQuickAdding ? (
             <button
               type="button"
               onClick={handleTriggerAdd}
-              className={cn(
-                "group/empty w-full flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-primary/35 bg-card/30 hover:bg-card/60 hover:border-primary/45 dark:hover:border-gold/50 transition-colors cursor-pointer",
-                isCompact ? "py-5 px-3 gap-1.5" : "py-7 px-4 gap-2",
-              )}
+              className="group/empty w-full flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-primary/35 bg-card/30 hover:bg-card/60 hover:border-primary/45 dark:hover:border-gold/50 transition-colors cursor-pointer py-7 px-4 gap-2"
             >
-              <div
-                className={cn(
-                  "rounded-xl bg-primary/15 border border-primary/30 text-neutral-300 group-hover/empty:bg-primary/15 dark:group-hover/empty:bg-gold/15 group-hover/empty:border-primary/40 dark:group-hover/empty:border-gold/40 group-hover/empty:text-primary dark:group-hover/empty:text-gold group-hover/empty:scale-105 transition-[transform,background-color,border-color,color] duration-150 flex items-center justify-center",
-                  isCompact ? "w-7 h-7" : "w-8 h-8",
-                )}
-              >
-                <Plus size={isCompact ? 14 : 16} />
+              <div className="rounded-xl bg-primary/15 border border-primary/30 text-neutral-300 group-hover/empty:bg-primary/15 dark:group-hover/empty:bg-gold/15 group-hover/empty:border-primary/40 dark:group-hover/empty:border-gold/40 group-hover/empty:text-primary dark:group-hover/empty:text-gold group-hover/empty:scale-105 transition-[transform,background-color,border-color,color] duration-150 flex items-center justify-center w-8 h-8">
+                <Plus size={16} />
               </div>
               <div className="flex flex-col items-center gap-0.5">
-                <span
-                  className={cn(
-                    "font-semibold text-neutral-300 group-hover/empty:text-neutral-100 transition-colors",
-                    isCompact ? "text-xs" : "text-body-s",
-                  )}
-                >
+                <span className="font-semibold text-neutral-300 group-hover/empty:text-neutral-100 transition-colors text-body-s">
                   {t("emptyState")}
                 </span>
                 <span className="text-tiny text-neutral-400 group-hover/empty:text-primary dark:group-hover/empty:text-gold transition-colors">
@@ -375,7 +344,7 @@ export const RoutineColumn = memo(function RoutineColumn({
                 columnId={column.id}
                 isSelected={selectedTaskId === task.id}
                 isDeleteChecking={Boolean(deletingTaskIds?.has(task.id))}
-                isCompact={isCompact || widthPreset === "compact"}
+                isCompact={widthPreset === "compact"}
                 onOpenDetails={onOpenDetails}
                 onEditTask={onEditTask}
                 onContextMenu={onContextMenu}
@@ -392,13 +361,10 @@ export const RoutineColumn = memo(function RoutineColumn({
                 type="button"
                 onClick={() => setIsCompletedExpanded((prev) => !prev)}
                 aria-expanded={isCompletedExpanded}
-                className={cn(
-                  "flex items-center gap-1.5 w-full rounded-lg text-neutral-400 hover:text-neutral-200 hover:bg-white/5 transition-colors cursor-pointer select-none",
-                  isCompact ? "px-2 py-1 text-tiny" : "px-2.5 py-1.5 text-xs",
-                )}
+                className="flex items-center gap-1.5 w-full rounded-lg text-neutral-400 hover:text-neutral-200 hover:bg-white/5 transition-colors cursor-pointer select-none px-2.5 py-1.5 text-xs"
               >
                 <ChevronDown
-                  size={isCompact ? 13 : 14}
+                  size={14}
                   className={cn(
                     "shrink-0 transition-transform duration-200",
                     !isCompletedExpanded && "-rotate-90",
@@ -413,12 +379,7 @@ export const RoutineColumn = memo(function RoutineColumn({
               </button>
 
               {isCompletedExpanded && (
-                <div
-                  className={cn(
-                    "flex flex-col",
-                    isCompact ? "gap-2" : "gap-2.5",
-                  )}
-                >
+                <div className="flex flex-col gap-2.5">
                   {completedTodoTasks.map((task) => (
                     <RoutineTaskCard
                       key={task.id}
@@ -426,7 +387,7 @@ export const RoutineColumn = memo(function RoutineColumn({
                       columnId={column.id}
                       isSelected={selectedTaskId === task.id}
                       isDeleteChecking={Boolean(deletingTaskIds?.has(task.id))}
-                      isCompact={isCompact || widthPreset === "compact"}
+                      isCompact={widthPreset === "compact"}
                       onOpenDetails={onOpenDetails}
                       onEditTask={onEditTask}
                       onContextMenu={onContextMenu}
@@ -440,12 +401,7 @@ export const RoutineColumn = memo(function RoutineColumn({
                       type="button"
                       disabled={isLoadingArchivedCompleted}
                       onClick={handleLoadArchived}
-                      className={cn(
-                        "w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-neutral-700/70 dark:border-white/10 text-neutral-400 hover:text-gold hover:border-gold/40 hover:bg-gold/5 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait",
-                        isCompact
-                          ? "px-2 py-1.5 text-tiny"
-                          : "px-3 py-2 text-xs",
-                      )}
+                      className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-neutral-700/70 dark:border-white/10 text-neutral-400 hover:text-gold hover:border-gold/40 hover:bg-gold/5 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait px-3 py-2 text-xs"
                     >
                       {isLoadingArchivedCompleted ? (
                         <>
@@ -478,7 +434,7 @@ export const RoutineColumn = memo(function RoutineColumn({
               <RoutineTaskCard
                 task={draggedCompletedTask}
                 columnId={column.id}
-                isCompact={isCompact || widthPreset === "compact"}
+                isCompact={widthPreset === "compact"}
               />
             </div>
           )}
@@ -488,7 +444,6 @@ export const RoutineColumn = memo(function RoutineColumn({
         {isQuickAdding && (
           <RoutineQuickAddForm
             columnId={column.id}
-            isCompact={isCompact}
             isColumnCompact={widthPreset === "compact"}
             onClose={() => setIsQuickAdding(false)}
             onQuickCreateTask={onQuickCreateTask}
@@ -498,12 +453,7 @@ export const RoutineColumn = memo(function RoutineColumn({
       </div>
 
       {/* BOTÃO INFERIOR DE ADICIONAR TAREFA RÁPIDA */}
-      <div
-        className={cn(
-          "shrink-0 border-t border-neutral-700/60 dark:border-white/5 bg-surface/95 dark:bg-transparent",
-          isCompact ? "p-2 pt-1.5" : "p-3 pt-2",
-        )}
-      >
+      <div className="shrink-0 border-t border-neutral-700/60 dark:border-white/5 bg-surface/95 dark:bg-transparent p-3 pt-2">
         {!isQuickAdding && (
           <button
             type="button"
@@ -512,12 +462,10 @@ export const RoutineColumn = memo(function RoutineColumn({
               "w-full flex items-center justify-center border border-dashed transition-[transform,background-color,border-color,color] duration-150 cursor-pointer",
               "border-neutral-600 dark:border-primary/40 bg-card/80 dark:bg-card/50 font-semibold text-neutral-200",
               "hover:border-primary dark:hover:border-gold hover:text-primary dark:hover:text-gold hover:bg-card hover:shadow-glow-gold-sm active:scale-98",
-              isCompact
-                ? "gap-1.5 py-1.5 rounded-lg text-xs"
-                : "gap-2 py-2 rounded-xl text-body-s",
+              "gap-2 py-2 rounded-xl text-body-s",
             )}
           >
-            <Plus size={isCompact ? 14 : 15} />
+            <Plus size={15} />
             <span>{t("addTaskFooterButton")}</span>
           </button>
         )}

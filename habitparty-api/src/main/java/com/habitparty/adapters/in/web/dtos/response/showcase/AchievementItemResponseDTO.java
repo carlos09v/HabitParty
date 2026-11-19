@@ -24,7 +24,8 @@ public record AchievementItemResponseDTO(
     LocalDateTime unlockedAt,
     boolean seen,
     int currentValue,
-    int progressPercent) {
+    int progressPercent,
+    ArtifactSummaryDTO grantedArtifact) {
 
   public static AchievementItemResponseDTO fromDomain(AchievementProgressItem item) {
     Achievement a = item.achievement();
@@ -44,6 +45,7 @@ public record AchievementItemResponseDTO(
         item.unlockedAt(),
         item.seen(),
         item.currentValue(),
-        item.progressPercent());
+        item.progressPercent(),
+        ArtifactSummaryDTO.fromDomain(item.grantedArtifact()));
   }
 }

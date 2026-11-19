@@ -4,7 +4,6 @@ import {
   DashboardWidgetsList,
 } from "@/components/dashboard/sidebar-right";
 import type { DashboardSidebarRightProps } from "@/types/dashboard";
-import { cn } from "@/utils";
 
 /**
  * Painel Lateral Direito do Dashboard com widgets de resumo e histórico.
@@ -14,7 +13,6 @@ import { cn } from "@/utils";
  * leaf client component DashboardMobileDrawer, evitando duplicar props na hidratação.
  */
 export async function DashboardSidebarRight({
-  isCompact = false,
   experienceMode = "PRODUCTIVITY",
   balance = 0,
   weeklyEarnings = 0,
@@ -28,7 +26,6 @@ export async function DashboardSidebarRight({
   const t = await getTranslations("dashboard.sidebarRight");
   const widgets = (
     <DashboardWidgetsList
-      isCompact={isCompact}
       experienceMode={experienceMode}
       balance={balance}
       weeklyEarnings={weeklyEarnings}
@@ -46,19 +43,14 @@ export async function DashboardSidebarRight({
       {/* 1. SIDEBAR ESTÁTICA PARA TELAS DESKTOP (xl+) */}
       <aside
         data-panel="sidebar-right"
-        className={cn(
-          "hidden xl:flex shrink-0 bg-background dark:bg-primary-dark/25 border-l border-neutral-700 dark:border-primary/30 h-full flex-col overflow-y-auto custom-scrollbar z-20",
-          isCompact ? "w-[300px] px-4 py-4 gap-3" : "w-[345px] px-5 py-5 gap-4",
-        )}
+        className="hidden xl:flex shrink-0 bg-background dark:bg-primary-dark/25 border-l border-neutral-700 dark:border-primary/30 h-full flex-col overflow-y-auto custom-scrollbar z-20 w-[345px] px-5 py-5 gap-4"
         aria-label={t("asideAriaLabel")}
       >
         {widgets}
       </aside>
 
       {/* 2. BOTÃO FLUTUANTE (FAB) E GAVETA LATERAL MOBILE (< xl) */}
-      <DashboardMobileDrawer isCompact={isCompact} balance={balance}>
-        {widgets}
-      </DashboardMobileDrawer>
+      <DashboardMobileDrawer balance={balance}>{widgets}</DashboardMobileDrawer>
     </>
   );
 }

@@ -10,6 +10,7 @@ interface StorageUsageBarProps {
   bytesUsed: number;
   usedFormatted: string;
   isPremium: boolean;
+  percentage?: number;
   quotaLabel?: string;
   badgeText?: (params: {
     used: string;
@@ -23,12 +24,14 @@ export function StorageUsageBar({
   bytesUsed,
   usedFormatted,
   isPremium,
+  percentage: providedPercentage,
   quotaLabel,
   badgeText,
   variant = "bar",
 }: StorageUsageBarProps) {
   const limitFormatted = getUserStorageLimitFormatted(isPremium);
-  const percentage = calculateStoragePercentage(bytesUsed, isPremium);
+  const percentage =
+    providedPercentage ?? calculateStoragePercentage(bytesUsed, isPremium);
 
   if (variant === "badge") {
     return (

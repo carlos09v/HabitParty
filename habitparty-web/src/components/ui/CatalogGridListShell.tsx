@@ -24,11 +24,12 @@ import {
 import type { ViewMode } from "@/types/ui";
 import { cn } from "@/utils";
 
+const DND_MODIFIERS = [restrictToParentElement, restrictToWindowEdges];
+
 export interface CatalogGridListShellProps {
   dndContextId: string;
   itemIds: string[];
   viewMode: ViewMode;
-  isCompact: boolean;
   headerMode: ItemRowHeaderProps["mode"];
   listAriaLabel?: string;
   gridClassName?: string;
@@ -45,7 +46,6 @@ export function CatalogGridListShell({
   dndContextId,
   itemIds,
   viewMode,
-  isCompact,
   headerMode,
   listAriaLabel,
   gridClassName,
@@ -59,7 +59,7 @@ export function CatalogGridListShell({
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragEnd={onDragEnd}
-      modifiers={[restrictToParentElement, restrictToWindowEdges]}
+      modifiers={DND_MODIFIERS}
     >
       <SortableContext
         items={itemIds}
@@ -75,9 +75,7 @@ export function CatalogGridListShell({
               className={cn(
                 "grid grid-cols-1 w-full pb-8",
                 gridClassName ??
-                  (isCompact
-                    ? "@min-[500px]:grid-cols-2 @min-[760px]:grid-cols-3 @min-[1040px]:grid-cols-4 gap-3.5"
-                    : "@min-[560px]:grid-cols-2 @min-[860px]:grid-cols-3 @min-[1160px]:grid-cols-4 gap-4"),
+                  "@min-[520px]:grid-cols-2 @min-[800px]:grid-cols-3 @min-[1080px]:grid-cols-4 @min-[1280px]:grid-cols-5 gap-3.5",
               )}
             >
               {children}
@@ -85,7 +83,7 @@ export function CatalogGridListShell({
           </div>
         ) : (
           <div className="@container flex flex-col gap-2.5 w-full pb-8">
-            <ItemRowHeader isCompact={isCompact} mode={headerMode} />
+            <ItemRowHeader mode={headerMode} />
             <ul
               className="flex flex-col gap-2 w-full"
               aria-label={listAriaLabel}

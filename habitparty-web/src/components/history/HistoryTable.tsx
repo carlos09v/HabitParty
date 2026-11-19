@@ -17,8 +17,13 @@ import { useDateFormat } from "@/hooks/useDateFormat";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
 import type { AppLocale } from "@/i18n/config";
+import { useUIStore } from "@/store/uiStore";
 import { useUserStore } from "@/store/userStore";
-import type { TransactionHistoryResponseDTO } from "@/types/history";
+import type {
+  TransactionDayGroup,
+  TransactionHistoryResponseDTO,
+} from "@/types/history";
+import type { DateFormat, TimeFormat } from "@/types/ui";
 import { cn, groupTransactionsByDay } from "@/utils";
 import type {
   TransactionDayLabels,
@@ -30,7 +35,10 @@ import { TransactionDetailPopover } from "./TransactionDetailPopover";
 
 interface HistoryTableProps {
   transactions: TransactionHistoryResponseDTO[];
-  isCompact?: boolean;
+  initialGroups?: TransactionDayGroup[];
+  initialDateFormat?: DateFormat;
+  initialTimeFormat?: TimeFormat;
+  initialTimeZone?: string | null;
   onDelete?: (id: string) => Promise<void> | void;
   /** Habilita seleção múltipla com "Selecionar tudo" e exclusão em lote. */
   selectable?: boolean;
@@ -38,7 +46,10 @@ interface HistoryTableProps {
 
 export function HistoryTable({
   transactions,
-  isCompact = false,
+  initialGroups,
+  initialDateFormat,
+  initialTimeFormat,
+  initialTimeZone,
   onDelete,
   selectable = false,
 }: HistoryTableProps) {
@@ -46,9 +57,22 @@ export function HistoryTable({
   const tUtils = useTranslations("history.utils");
   const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
-  const userTimeZone = useUserStore((s) => s.user?.timezone);
-  const { dateFormat } = useDateFormat();
-  const { timeFormat } = useTimeFormat();
+  const hydrated = useUIStore((s) => s.hydrated);
+  const storeUserTimeZone = useUserStore((s) => s.user?.timezone);
+  const { dateFormat: storeDateFormat } = useDateFormat();
+  const { timeFormat: storeTimeFormat } = useTimeFormat();
+
+  const dateFormat = hydrated
+    ? storeDateFormat
+    : (initialDateFormat ?? storeDateFormat);
+  const timeFormat = hydrated
+    ? storeTimeFormat
+    : (initialTimeFormat ?? storeTimeFormat);
+  const userTimeZone = hydrated
+    ? storeUserTimeZone
+    : initialTimeZone !== undefined
+      ? initialTimeZone
+      : storeUserTimeZone;
 
   const [selectedTransaction, setSelectedTransaction] =
     useState<TransactionHistoryResponseDTO | null>(null);
@@ -166,18 +190,35 @@ export function HistoryTable({
     [tUtils],
   );
 
-  const groupedTransactions = useMemo(
-    () =>
-      groupTransactionsByDay(
-        transactions,
-        new Date(),
-        locale,
-        dateFormat,
-        userTimeZone,
-        dayLabels,
-      ),
-    [transactions, locale, dateFormat, userTimeZone, dayLabels],
-  );
+  const canReuseInitialGroups =
+    Boolean(initialGroups) &&
+    (!hydrated ||
+      ((initialDateFormat === undefined || dateFormat === initialDateFormat) &&
+        (initialTimeFormat === undefined || timeFormat === initialTimeFormat) &&
+        (initialTimeZone === undefined ||
+          (userTimeZone ?? null) === (initialTimeZone ?? null))));
+
+  const groupedTransactions = useMemo(() => {
+    if (canReuseInitialGroups && initialGroups) {
+      return initialGroups;
+    }
+    return groupTransactionsByDay(
+      transactions,
+      new Date(),
+      locale,
+      dateFormat,
+      userTimeZone,
+      dayLabels,
+    );
+  }, [
+    canReuseInitialGroups,
+    initialGroups,
+    transactions,
+    locale,
+    dateFormat,
+    userTimeZone,
+    dayLabels,
+  ]);
 
   const handleRowClick = useCallback(
     (tx: TransactionHistoryResponseDTO, rect: DOMRect) => {
@@ -233,7 +274,6 @@ export function HistoryTable({
           selectedCount={selectedCount}
           isAllSelected={isAllSelected}
           isPartiallySelected={isPartiallySelected}
-          isCompact={isCompact}
           onToggleSelectAll={handleToggleSelectAll}
           onClearSelection={handleClearSelection}
           onOpenBulkDeleteModal={() => setIsBulkModalOpen(true)}
@@ -246,9 +286,8 @@ export function HistoryTable({
           {/* CABEÇALHO DA TABELA (Apenas desktop/tablet) */}
           <div
             className={cn(
-              "hidden md:grid items-center border-l-4 border-r border-transparent text-xs font-semibold text-neutral-400 select-none",
+              "hidden md:grid items-center border-l-4 border-r border-transparent text-xs font-semibold text-neutral-400 select-none gap-3 px-3.5 py-1.5",
               showSelection ? HISTORY_GRID_COLS_SELECTABLE : HISTORY_GRID_COLS,
-              isCompact ? "gap-2.5 px-3 py-1" : "gap-3 px-3.5 py-1.5",
             )}
             aria-hidden="true"
           >
@@ -272,12 +311,7 @@ export function HistoryTable({
 
           {/* LISTA AGRUPADA POR DIA OU ESTADO VAZIO */}
           {transactions.length === 0 ? (
-            <div
-              className={cn(
-                "w-full flex flex-col items-center justify-center text-center rounded-2xl border border-dashed border-primary/30 bg-primary-dark/20",
-                isCompact ? "py-10 px-4 gap-2.5" : "py-16 px-6 gap-3.5",
-              )}
-            >
+            <div className="w-full flex flex-col items-center justify-center text-center rounded-2xl border border-dashed border-primary/30 bg-primary-dark/20 py-16 px-6 gap-3.5">
               <div className="w-12 h-12 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-gold shadow-sm">
                 <HistoryIcon size={24} aria-hidden="true" />
               </div>
@@ -323,7 +357,6 @@ export function HistoryTable({
                       <HistoryRow
                         key={tx.id || `${tx.createdAt}-${tx.name}`}
                         transaction={tx}
-                        isCompact={isCompact}
                         showTimeOnly
                         onClick={handleRowClick}
                         onRequestDelete={handleRequestDelete}

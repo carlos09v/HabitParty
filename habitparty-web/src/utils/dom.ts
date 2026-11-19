@@ -32,6 +32,20 @@ export function getClickAnchorRect(e: React.MouseEvent<HTMLElement>): DOMRect {
 }
 
 /**
+ * Remove um parâmetro específico da URL atual do navegador usando `history.replaceState`
+ * sem acionar recarregamento de rota no Next.js.
+ */
+export function removeBrowserQueryParam(paramName: string): void {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has(paramName)) return;
+  url.searchParams.delete(paramName);
+  const nextSearch = url.searchParams.toString();
+  const nextUrl = `${url.pathname}${nextSearch ? `?${nextSearch}` : ""}${url.hash}`;
+  window.history.replaceState(null, "", nextUrl);
+}
+
+/**
  * Rola exclusivamente o container horizontal (`.overflow-x-auto`) de uma coluna do Kanban
  * para centralizá-la, garantindo que containers ancestrais (`main`, `window`) não sofram scroll lateral.
  */

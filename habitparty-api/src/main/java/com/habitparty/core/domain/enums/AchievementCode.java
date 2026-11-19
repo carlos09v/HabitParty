@@ -141,7 +141,9 @@ public enum AchievementCode {
       case SHOWCASE_CURATOR -> (user.isFounder()
           || hasHighlights
           || user.getBio().isPresent()
-          || !"none".equalsIgnoreCase(user.getAvatarFrame())) ? 1 : 0;
+          || !"none".equalsIgnoreCase(user.getAvatarFrame())
+          || user.getEquippedTitle().isPresent()
+          || user.getAvatarPreset().isPresent()) ? 1 : 0;
       case SHOWCASE_FULL_SLOTS -> highlightsCount;
       case WORKSPACE_ARCHITECT -> stats.getTotalWorkspacesCreated();
       case TROPHY_HUNTER_1000 -> stats.getAchievementPoints();

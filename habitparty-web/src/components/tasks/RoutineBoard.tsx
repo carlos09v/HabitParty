@@ -18,7 +18,6 @@ export function RoutineBoard({
   selectedColumnId,
   selectedTaskId,
   deletingTaskIds,
-  isCompact: propIsCompact,
   alignment = "left",
   columnWidths = {},
   getColumnWidthClass: customGetColumnWidthClass,
@@ -36,7 +35,6 @@ export function RoutineBoard({
   onQuickCreateTask,
 }: RoutineBoardProps) {
   const t = useTranslations("tasks.board");
-  const isCompact = propIsCompact ?? false;
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const resolveColumnWidthClass = useCallback(
@@ -115,16 +113,10 @@ export function RoutineBoard({
       className="w-full h-full min-h-0 flex-1 flex flex-col min-w-0"
     >
       {/* Quadro Kanban: Colunas fluidas com rolagem horizontal suave quando necessário */}
-      <div
-        className={cn(
-          "w-full h-full min-h-0 flex-1 overflow-x-auto custom-scrollbar min-w-0 snap-x snap-proximity sm:snap-none",
-          isCompact ? "pb-2 pt-1 px-1" : "pb-4 pt-2 px-1.5",
-        )}
-      >
+      <div className="w-full h-full min-h-0 flex-1 overflow-x-auto custom-scrollbar min-w-0 snap-x snap-proximity sm:snap-none pb-4 pt-2 px-1.5">
         <div
           className={cn(
-            "min-w-full w-max h-full flex items-stretch",
-            isCompact ? "gap-3" : "gap-4",
+            "min-w-full w-max h-full flex items-stretch gap-4",
             alignment === "center" && "justify-center",
             alignment === "right" && "justify-end",
             alignment === "left" && "justify-start",
@@ -148,7 +140,6 @@ export function RoutineBoard({
                   isSelected={selectedColumnId === column.id}
                   selectedTaskId={selectedTaskId}
                   deletingTaskIds={deletingTaskIds}
-                  isCompact={isCompact}
                   widthPreset={columnWidths[column.id] || "normal"}
                   onAddTaskToColumn={onAddTaskToColumn}
                   onQuickCreateTask={onQuickCreateTask}

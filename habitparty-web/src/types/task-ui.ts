@@ -44,7 +44,6 @@ export interface InitialTaskFormData {
 export interface TaskRowProps {
   task: Task;
   isSelected?: boolean;
-  isCompact?: boolean;
   isReadOnly?: boolean;
   activeFilter?: string;
   selectedDate?: string | null;
@@ -54,9 +53,9 @@ export interface TaskRowProps {
   isSortable?: boolean;
   isOverlay?: boolean;
   isDeleteChecking?: boolean;
-  onToggle?: (id: string, completed: boolean) => void;
-  onToggleCompleted?: (id: string, completed: boolean) => void;
-  onHabitChange?: (id: string, delta: number) => void;
+  onToggle?: (id: string, completed: boolean) => boolean | undefined;
+  onToggleCompleted?: (id: string, completed: boolean) => boolean | undefined;
+  onHabitChange?: (id: string, delta: number) => boolean | undefined;
   onContextMenu?: (e: React.MouseEvent, task: Task, columnId?: string) => void;
   onOpenDetails?: (task: Task, anchorRect?: DOMRect, columnId?: string) => void;
   onEditTask?: (task: Task, columnId?: string) => void;
@@ -73,8 +72,11 @@ export interface TaskDetailsPopoverProps {
   anchorRect?: DOMRect | null;
   onTaskUpdate?: (updatedTask: Task) => void;
   onDelete?: (taskId: string) => void;
-  onToggleComplete?: (taskId: string, completed: boolean) => void;
-  onHabitChange?: (taskId: string, delta: number) => void;
+  onToggleComplete?: (
+    taskId: string,
+    completed: boolean,
+  ) => boolean | undefined;
+  onHabitChange?: (taskId: string, delta: number) => boolean | undefined;
   onEdit?: (task: Task) => void;
   onDuplicate?: (task: Task) => void;
   isDuplicating?: boolean;
@@ -95,13 +97,11 @@ export interface RoutineFilterPopoverProps {
   onFilterChange?: (filters: BoardFilterState) => void;
   availableTags?: string[];
   tagCounts?: Record<string, number>;
-  isCompact?: boolean;
 }
 
 export interface BoardAlignmentSelectorProps {
   value: BoardAlignment;
   onChange: (align: BoardAlignment) => void;
-  isCompact?: boolean;
   className?: string;
 }
 
@@ -112,7 +112,6 @@ export interface TasksBoardContainerProps {
   targetColumnId?: string;
   isPremium?: boolean;
   workspaceId?: string | null;
-  isCompact?: boolean;
 }
 
 export interface TasksBoardModalsProps {
@@ -210,8 +209,11 @@ export interface TasksBoardModalsProps {
   onConfirmDeleteTask: () => void | Promise<void>;
   onCancelDeleteTask: () => void;
   handleTaskDetailsUpdate: (task: Task) => void;
-  handleToggleComplete: (taskId: string, completed: boolean) => void;
-  handleHabitChange?: (taskId: string, delta: number) => void;
+  handleToggleComplete: (
+    taskId: string,
+    completed: boolean,
+  ) => boolean | undefined;
+  handleHabitChange?: (taskId: string, delta: number) => boolean | undefined;
   onStartFocus?: (task: Task) => void;
   isColumnsDrawerOpen: boolean;
   setIsColumnsDrawerOpen: (open: boolean) => void;
@@ -234,7 +236,6 @@ export interface RoutineBoardProps {
   visibleColumnIds: string[];
   selectedTaskId?: string;
   deletingTaskIds?: ReadonlySet<string>;
-  isCompact?: boolean;
   selectedColumnId?: string | null;
   alignment?: BoardAlignment;
   columnWidths?: Record<string, ColumnWidthPreset>;
@@ -250,8 +251,11 @@ export interface RoutineBoardProps {
   onEditTask?: (task: Task, columnId: string) => void;
   onContextMenu?: (e: React.MouseEvent, task: Task, columnId: string) => void;
   onOpenColumnMenu?: (e: React.MouseEvent, column: BoardColumn) => void;
-  onToggleComplete?: (taskId: string, completed: boolean) => void;
-  onHabitChange?: (taskId: string, delta: number) => void;
+  onToggleComplete?: (
+    taskId: string,
+    completed: boolean,
+  ) => boolean | undefined;
+  onHabitChange?: (taskId: string, delta: number) => boolean | undefined;
   onLoadArchivedCompleted?: (columnId: string) => Promise<void>;
   forceExpandCompleted?: boolean;
   activeDraggedTaskId?: string | null;
@@ -269,7 +273,6 @@ export interface RoutineColumnProps {
   isSelected?: boolean;
   selectedTaskId?: string;
   deletingTaskIds?: ReadonlySet<string>;
-  isCompact?: boolean;
   widthPreset?: ColumnWidthPreset;
   onAddTaskToColumn?: (
     columnId: string,
@@ -287,8 +290,11 @@ export interface RoutineColumnProps {
   onEditTask?: (task: Task, columnId: string) => void;
   onContextMenu?: (e: React.MouseEvent, task: Task, columnId: string) => void;
   onOpenColumnMenu?: (e: React.MouseEvent, column: BoardColumn) => void;
-  onToggleComplete?: (taskId: string, completed: boolean) => void;
-  onHabitChange?: (taskId: string, delta: number) => void;
+  onToggleComplete?: (
+    taskId: string,
+    completed: boolean,
+  ) => boolean | undefined;
+  onHabitChange?: (taskId: string, delta: number) => boolean | undefined;
   onLoadArchivedCompleted?: (columnId: string) => Promise<void>;
   forceExpandCompleted?: boolean;
   activeDraggedTaskId?: string | null;
@@ -301,7 +307,6 @@ export interface RoutineTaskListProps {
   selectedColumnId?: string | null;
   selectedTaskId?: string;
   deletingTaskIds?: ReadonlySet<string>;
-  isCompact?: boolean;
   onAddTaskToColumn: (
     columnId: string,
     initialType?: TaskTypeOption,
@@ -311,8 +316,8 @@ export interface RoutineTaskListProps {
   onOpenDetails: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
   onEditTask?: (task: Task, columnId: string) => void;
   onContextMenu: (e: React.MouseEvent, task: Task, columnId: string) => void;
-  onToggleComplete: (taskId: string, completed: boolean) => void;
-  onHabitChange: (taskId: string, delta: number) => void;
+  onToggleComplete: (taskId: string, completed: boolean) => boolean | undefined;
+  onHabitChange: (taskId: string, delta: number) => boolean | undefined;
   onStartFocus?: (task: Task) => void;
   onLoadArchivedCompleted?: (columnId: string) => Promise<void>;
   dndState?: {
@@ -331,7 +336,6 @@ export interface RoutineTaskListProps {
 
 export interface RoutineTaskListSectionProps {
   column: BoardColumn;
-  isCompact: boolean;
   selectedColumnId?: string | null;
   selectedTaskId?: string;
   deletingTaskIds?: ReadonlySet<string>;
@@ -344,15 +348,14 @@ export interface RoutineTaskListSectionProps {
   onOpenDetails: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
   onEditTask?: (task: Task, columnId: string) => void;
   onContextMenu: (e: React.MouseEvent, task: Task, columnId: string) => void;
-  onToggleComplete: (taskId: string, completed: boolean) => void;
-  onHabitChange: (taskId: string, delta: number) => void;
+  onToggleComplete: (taskId: string, completed: boolean) => boolean | undefined;
+  onHabitChange: (taskId: string, delta: number) => boolean | undefined;
   onStartFocus?: (task: Task) => void;
   onLoadArchivedCompleted?: (columnId: string) => Promise<void>;
 }
 
 export interface RoutineQuickAddFormProps {
   columnId: string;
-  isCompact?: boolean;
   isColumnCompact?: boolean;
   onClose: () => void;
   onQuickCreateTask?: (
@@ -443,7 +446,6 @@ export interface RoutineFiltersProps {
   onOpenColumnsDrawer?: () => void;
   isDraggingColumn?: boolean;
   enableDroppable?: boolean;
-  isCompact?: boolean;
 }
 
 export interface RoutineTaskCardProps {
@@ -454,13 +456,16 @@ export interface RoutineTaskCardProps {
   isCompact?: boolean;
   onOpenDetails?: (task: Task, columnId: string, anchorRect?: DOMRect) => void;
   onEditTask?: (task: Task, columnId: string) => void;
-  onToggleCompleted?: (taskId: string, completed: boolean) => void;
-  onHabitChange?: (taskId: string, delta: number) => void;
+  onToggleCompleted?: (
+    taskId: string,
+    completed: boolean,
+  ) => boolean | undefined;
+  onHabitChange?: (taskId: string, delta: number) => boolean | undefined;
   onContextMenu?: (e: React.MouseEvent, task: Task, columnId: string) => void;
   isOverlay?: boolean;
 }
 
 export interface UseTaskProgressOptions {
-  onToggle?: (taskId: string, completed: boolean) => void;
-  onHabitChange?: (taskId: string, delta: number) => void;
+  onToggle?: (taskId: string, completed: boolean) => boolean | undefined;
+  onHabitChange?: (taskId: string, delta: number) => boolean | undefined;
 }

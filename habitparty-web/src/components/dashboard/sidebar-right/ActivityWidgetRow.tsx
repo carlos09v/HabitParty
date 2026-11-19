@@ -11,7 +11,6 @@ import { formatFocusMinutes } from "@/utils/focusFormatters";
 interface ActivityWidgetRowProps {
   activity: FocusActivity;
   minutes: number;
-  isCompact: boolean;
   isContextMenuOpen: boolean;
   onContextMenu: (e: React.MouseEvent, act: FocusActivity) => void;
   onMenuButtonClick: (
@@ -23,7 +22,6 @@ interface ActivityWidgetRowProps {
 export function ActivityWidgetRow({
   activity,
   minutes,
-  isCompact,
   isContextMenuOpen,
   onContextMenu,
   onMenuButtonClick,
@@ -47,26 +45,15 @@ export function ActivityWidgetRow({
           type: typeLabel,
         })}
         className={cn(
-          "group flex items-center justify-between rounded-lg border transition-colors pr-8",
-          isCompact ? "p-1.5 pr-8" : "p-2 pr-8",
-          "bg-white dark:bg-primary-dark/20 border-neutral-700 dark:border-primary/30 shadow-2xs dark:shadow-none hover:bg-card-hover dark:hover:bg-primary-dark/40 hover:border-primary/35 dark:hover:border-primary-light/50",
+          "group flex items-center justify-between rounded-lg border transition-colors p-2 pr-8",
+          "bg-card dark:bg-primary-dark/20 border-neutral-700 dark:border-primary/30 shadow-2xs dark:shadow-none hover:bg-card-hover dark:hover:bg-primary-dark/40 hover:border-primary/35 dark:hover:border-primary-light/50",
         )}
       >
-        <div
-          className={cn(
-            "flex items-center min-w-0 flex-1",
-            isCompact ? "gap-1.5" : "gap-2",
-          )}
-        >
+        <div className="flex items-center min-w-0 flex-1 gap-2">
           <div className="p-1 rounded bg-primary/10 dark:bg-primary-dark/40 text-primary dark:text-neutral-300 group-hover:text-primary-dark dark:group-hover:text-gold transition-colors shrink-0">
-            <Icon size={isCompact ? 13 : 15} />
+            <Icon size={15} />
           </div>
-          <span
-            className={cn(
-              "font-medium text-neutral-100 truncate group-hover:text-primary dark:group-hover:text-gold transition-colors",
-              isCompact ? "text-xs" : "text-body-s",
-            )}
-          >
+          <span className="font-medium text-neutral-100 truncate group-hover:text-primary dark:group-hover:text-gold transition-colors text-body-s">
             {activity.name}
           </span>
         </div>

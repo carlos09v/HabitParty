@@ -122,6 +122,10 @@ public interface TransactionHistoryRepository {
     return 0;
   }
 
+  default Optional<LocalDateTime> findLatestTaskCompletionCreatedAtByUserId(UUID userId) {
+    return Optional.empty();
+  }
+
   default int updateFocusRewardSnapshot(
       UUID referenceId, UUID userId, int xpAmount, BigDecimal goldAmount) {
     return 0;

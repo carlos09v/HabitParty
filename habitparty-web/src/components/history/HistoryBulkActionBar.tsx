@@ -9,7 +9,6 @@ interface HistoryBulkActionBarProps {
   selectedCount: number;
   isAllSelected: boolean;
   isPartiallySelected: boolean;
-  isCompact?: boolean;
   onToggleSelectAll: () => void;
   onClearSelection: () => void;
   onOpenBulkDeleteModal: () => void;
@@ -19,7 +18,6 @@ export function HistoryBulkActionBar({
   selectedCount,
   isAllSelected,
   isPartiallySelected,
-  isCompact = false,
   onToggleSelectAll,
   onClearSelection,
   onOpenBulkDeleteModal,
@@ -36,8 +34,7 @@ export function HistoryBulkActionBar({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-3 flex-wrap rounded-xl border transition-colors",
-        isCompact ? "px-3 py-1" : "px-3.5 py-1.5",
+        "flex items-center justify-between gap-3 flex-wrap rounded-xl border transition-colors px-3.5 py-1.5",
         selectedCount > 0
           ? "border-gold/45 bg-gold/10 dark:border-gold/35 dark:bg-gold/8 shadow-2xs"
           : "border-neutral-700/70 bg-card/60 dark:border-primary/20 dark:bg-primary-dark/15",

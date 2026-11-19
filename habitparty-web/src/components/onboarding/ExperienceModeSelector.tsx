@@ -1,153 +1,103 @@
-import { CheckCircle2, Circle, Volume2, VolumeX } from "lucide-react";
+"use client";
+
+import { CheckCircle2, Coins, ShieldAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { OnboardingStepHeader } from "@/components/onboarding/OnboardingStepHeader";
 import { EXPERIENCE_MODES } from "@/constants/onboarding";
 import type { ExperienceMode } from "@/types/ui";
 import { cn } from "@/utils";
+import { OnboardingSelectableCard } from "./OnboardingSelectableCard";
 
 interface ExperienceModeSelectorProps {
-  experienceMode: ExperienceMode;
-  onSelectExperienceMode: (mode: ExperienceMode) => void;
-  uiSoundsEnabled: boolean;
-  onToggleSounds: (enabled: boolean) => void;
-  disabled?: boolean;
+  selectedMode: ExperienceMode;
+  onSelect: (mode: ExperienceMode) => void;
 }
 
 export function ExperienceModeSelector({
-  experienceMode,
-  onSelectExperienceMode,
-  uiSoundsEnabled,
-  onToggleSounds,
-  disabled = false,
+  selectedMode,
+  onSelect,
 }: ExperienceModeSelectorProps) {
   const t = useTranslations("onboarding.experienceMode");
+  const isGamified = selectedMode === "GAMIFIED";
 
   return (
-    <div className="flex flex-col gap-2.5 p-3 sm:p-3.5 rounded-xl border border-neutral-700 bg-card shadow-xs dark:border-primary/25 dark:bg-surface/40">
-      <OnboardingStepHeader
-        step={3}
-        title={t("title")}
-        rightSlot={
-          <span className="text-tiny text-neutral-400">
-            {t("settingsHint")}
-          </span>
-        }
-      />
+    <fieldset className="flex flex-col gap-3 m-0 p-0 border-0">
+      <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
+        <legend className="text-body-s font-bold text-neutral-100">
+          {t("sectionTitle")}
+        </legend>
+        <span className="text-tiny font-semibold text-amber-700 dark:text-gold">
+          {t("switchHint")}
+        </span>
+      </div>
 
-      {/* Cards de Seleção: Gamificado vs Produtividade (Compactos) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {EXPERIENCE_MODES.map((option) => {
-          const isSelected = experienceMode === option.id;
-          const Icon = option.icon;
+          const isSelected = selectedMode === option.id;
+          const highlights = t.raw(
+            `options.${option.id}.highlights`,
+          ) as string[];
 
           return (
-            <button
+            <OnboardingSelectableCard
               key={option.id}
-              type="button"
-              aria-pressed={isSelected}
-              disabled={disabled}
-              onClick={() => onSelectExperienceMode(option.id)}
-              className={cn(
-                "flex flex-col items-start h-full p-2.5 sm:p-3 rounded-xl border text-left transition-colors cursor-pointer relative",
-                "outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
-                isSelected
-                  ? "border-primary bg-primary/10 shadow-sm text-neutral-50 ring-1 ring-primary/30 dark:border-gold dark:bg-primary-dark/60 dark:shadow-[0_0_14px_rgba(237,229,57,0.18)] dark:ring-1 dark:ring-gold/40 dark:text-neutral-50"
-                  : "border-neutral-700 bg-card hover:bg-surface-hover hover:border-neutral-500 text-neutral-300 dark:border-primary/25 dark:bg-surface/40 dark:hover:bg-surface/70 dark:hover:border-primary/50 dark:text-neutral-300",
-              )}
+              iconName={option.iconName}
+              iconBadgeSize="lg"
+              label={t(`options.${option.id}.label`)}
+              description={t(`options.${option.id}.subtitle`)}
+              selected={isSelected}
+              onSelect={() => onSelect(option.id)}
             >
-              <div className="flex items-center justify-between flex-wrap gap-1.5 w-full mb-1">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <div
-                    className={cn(
-                      "p-1.5 rounded-lg transition-colors",
-                      isSelected
-                        ? "bg-primary/20 text-primary-dark dark:bg-gold/20 dark:text-gold"
-                        : "bg-surface text-neutral-300 dark:bg-primary/20 dark:text-neutral-300",
-                    )}
-                  >
-                    <Icon size={14} />
-                  </div>
-                  <span
-                    className={cn(
-                      "text-[9.5px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border whitespace-nowrap shrink-0",
-                      isSelected
-                        ? "bg-primary/15 text-primary-dark border-primary/30 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
-                        : "bg-surface text-neutral-400 border-neutral-700 dark:bg-white/5 dark:text-neutral-400 dark:border-white/10",
-                    )}
-                  >
-                    {t(`modes.${option.id}.badge`)}
-                  </span>
-                </div>
-                {isSelected ? (
-                  <CheckCircle2
-                    size={14}
-                    className="text-primary-dark dark:text-gold shrink-0"
-                  />
-                ) : (
-                  <Circle
-                    size={14}
-                    className="text-neutral-400 dark:text-neutral-500 shrink-0"
-                  />
-                )}
-              </div>
-
-              <span className="text-xs sm:text-body-s font-bold text-neutral-50">
-                {t(`modes.${option.id}.title`)}
-              </span>
-              <span className="text-tiny text-neutral-400 dark:text-neutral-300/80 mt-0.5 leading-snug">
-                {t(`modes.${option.id}.description`)}
-              </span>
-            </button>
+              <ul className="flex flex-col gap-1.5 mt-0.5 text-label-g text-neutral-200">
+                {highlights.map((item) => (
+                  <li key={item} className="flex items-center gap-2">
+                    <CheckCircle2
+                      size={13}
+                      aria-hidden="true"
+                      className={cn(
+                        "shrink-0",
+                        isSelected
+                          ? "text-amber-700 dark:text-gold"
+                          : "text-emerald-600 dark:text-emerald-400",
+                      )}
+                    />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </OnboardingSelectableCard>
           );
         })}
       </div>
 
-      {/* Calibragem Rápida complementar: Efeitos Sonoros */}
-      <div className="pt-2 border-t border-neutral-700 dark:border-white/10">
-        <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-surface border border-neutral-700 dark:bg-white/5 dark:border-white/10">
-          <div className="flex items-center gap-1.5 min-w-0">
-            {uiSoundsEnabled ? (
-              <Volume2
-                size={13}
-                className="text-amber-600 dark:text-gold shrink-0"
-              />
-            ) : (
-              <VolumeX size={13} className="text-neutral-400 shrink-0" />
-            )}
-            <span className="text-[11px] font-medium text-neutral-200 truncate">
-              {t("soundsLabel")}
-            </span>
-          </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={() => onToggleSounds(true)}
-              className={cn(
-                "px-2.5 py-1.5 sm:px-2 sm:py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer border",
-                uiSoundsEnabled
-                  ? "bg-primary/15 text-primary-dark border-primary/30 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
-                  : "border-transparent text-neutral-400 hover:text-neutral-200",
-              )}
-            >
-              {t("soundsActive")}
-            </button>
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={() => onToggleSounds(false)}
-              className={cn(
-                "px-2.5 py-1.5 sm:px-2 sm:py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer border",
-                !uiSoundsEnabled
-                  ? "bg-primary/15 text-primary-dark border-primary/30 dark:bg-gold/20 dark:text-gold dark:border-gold/40"
-                  : "border-transparent text-neutral-400 hover:text-neutral-200",
-              )}
-            >
-              {t("soundsMuted")}
-            </button>
-          </div>
+      {/* Live Mini-Preview adaptativo */}
+      <div
+        aria-live="polite"
+        className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-surface/80 dark:bg-surface/50 border border-neutral-700/80 dark:border-primary/25 text-xs"
+      >
+        <div className="flex items-center gap-2 text-neutral-300">
+          <span className="text-tiny font-bold uppercase tracking-wider text-neutral-400">
+            {t("preview.label")}:
+          </span>
+          <span className="font-semibold text-neutral-100">
+            {t("preview.sampleTask")}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/12 border border-amber-500/30 text-amber-800 dark:bg-gold/15 dark:border-gold/30 dark:text-gold font-bold">
+            <Coins size={12} aria-hidden="true" />
+            {isGamified
+              ? t("preview.gamifiedReward")
+              : t("preview.productivityReward")}
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/25 text-rose-700 dark:text-rose-300 font-semibold">
+            <ShieldAlert size={12} aria-hidden="true" />
+            {isGamified
+              ? t("preview.gamifiedBadge")
+              : t("preview.productivityBadge")}
+          </span>
         </div>
       </div>
-    </div>
+    </fieldset>
   );
 }

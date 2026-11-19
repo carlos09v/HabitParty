@@ -10,13 +10,13 @@ import {
   Crown,
   X,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { UpgradePremiumModal } from "@/components/subscription/UpgradePremiumModal";
+import { LazyUpgradePremiumModal } from "@/components/subscription/LazyUpgradePremiumModal";
 import { Select } from "@/components/ui/Select";
-import { TimePicker, TimePickerBody } from "@/components/ui/TimePicker";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useFloatingPopover } from "@/hooks/useFloatingPopover";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
@@ -38,6 +38,16 @@ import {
   parseDateParts,
   parseTimeToMinutes,
 } from "@/utils/date";
+
+const TimePicker = dynamic(
+  () => import("@/components/ui/TimePicker").then((mod) => mod.TimePicker),
+  { ssr: false },
+);
+
+const TimePickerBody = dynamic(
+  () => import("@/components/ui/TimePicker").then((mod) => mod.TimePickerBody),
+  { ssr: false },
+);
 
 const CALENDAR_POPOVER_WIDTH = 288;
 const CALENDAR_POPOVER_ESTIMATED_HEIGHT = 315;
@@ -304,14 +314,25 @@ export function DatePicker({
     }
   };
 
+  const isIsoDateOutOfBounds = useCallback(
+    (isoDate: string) =>
+      Boolean((minDate && isoDate < minDate) || (maxDate && isoDate > maxDate)),
+    [minDate, maxDate],
+  );
+
+  const isTodayOutOfBounds = isIsoDateOutOfBounds(today.isoString);
+  const isTomorrowOutOfBounds = isIsoDateOutOfBounds(today.tomorrowIso);
+
   const handleSetQuickDate = (offsetDays: number) => {
-    updateValue(
-      getOffsetDateString(
-        offsetDays,
-        new Date(),
-        useUserStore.getState().user?.timezone,
-      ),
+    const targetDate = getOffsetDateString(
+      offsetDays,
+      new Date(),
+      useUserStore.getState().user?.timezone,
     );
+    if (isIsoDateOutOfBounds(targetDate)) {
+      return;
+    }
+    updateValue(targetDate);
     if (isSubOverlayOpen) {
       return;
     }
@@ -1072,22 +1093,26 @@ export function DatePicker({
 
             {/* Rodapé com Atalhos Rápidos */}
             <div className="flex items-center justify-between pt-2.5 mt-2 border-t border-neutral-700 dark:border-white/10 text-label-g">
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleSetQuickDate(0)}
-                  className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-neutral-300 hover:text-gold hover:border-gold/30 transition-colors cursor-pointer text-tiny"
-                >
-                  {t("today")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSetQuickDate(1)}
-                  className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-neutral-300 hover:text-gold hover:border-gold/30 transition-colors cursor-pointer text-tiny"
-                >
-                  {t("tomorrow")}
-                </button>
-              </div>
+              {(!isTodayOutOfBounds || !isTomorrowOutOfBounds) && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={isTodayOutOfBounds}
+                    onClick={() => handleSetQuickDate(0)}
+                    className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-neutral-300 hover:text-gold hover:border-gold/30 transition-colors cursor-pointer text-tiny disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-neutral-300 disabled:hover:border-white/10"
+                  >
+                    {t("today")}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isTomorrowOutOfBounds}
+                    onClick={() => handleSetQuickDate(1)}
+                    className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-neutral-300 hover:text-gold hover:border-gold/30 transition-colors cursor-pointer text-tiny disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-neutral-300 disabled:hover:border-white/10"
+                  >
+                    {t("tomorrow")}
+                  </button>
+                </div>
+              )}
 
               <div className="flex items-center gap-2">
                 {allowClear && (
@@ -1264,7 +1289,7 @@ export function DatePicker({
       )}
 
       {isUpgradeModalOpen && (
-        <UpgradePremiumModal
+        <LazyUpgradePremiumModal
           isOpen={isUpgradeModalOpen}
           onClose={() => setIsUpgradeModalOpen(false)}
         />

@@ -45,7 +45,7 @@ export function FilterBar({
     >
       <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
         {search && (
-          <div className="flex items-center gap-2 rounded-lg bg-card dark:bg-surface border border-neutral-600 dark:border-white/15 shadow-2xs dark:shadow-none w-full sm:w-auto sm:max-w-xs flex-1 transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 dark:focus-within:ring-0 dark:focus-within:border-primary-light dark:focus-within:shadow-[0_0_8px_rgba(168,99,255,0.25)] px-3 py-2.5 min-w-0 sm:min-w-44">
+          <div className="flex items-center gap-2 rounded-lg bg-card dark:bg-surface border border-neutral-600 dark:border-white/15 shadow-2xs dark:shadow-none w-full sm:w-auto sm:max-w-xs flex-1 transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 dark:focus-within:ring-0 dark:focus-within:border-primary-light dark:focus-within:shadow-[0_0_8px_color-mix(in_srgb,var(--color-primary-light)_25%,transparent)] px-3 py-2.5 min-w-0 sm:min-w-44">
             <Search size={16} className="text-neutral-400 shrink-0" />
             <input
               type="text"

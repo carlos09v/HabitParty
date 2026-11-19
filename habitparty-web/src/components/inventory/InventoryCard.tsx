@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { memo, useCallback, useMemo } from "react";
 import { GamifiedItemCard } from "@/components/ui/GamifiedItemCard";
 import { ItemRow } from "@/components/ui/ItemRow";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { InventoryCardProps } from "@/types/inventory";
 import {
   executeInventoryItemAction,
@@ -32,16 +33,17 @@ function useInventoryItemCardPresentation({
 >) {
   const router = useRouter();
   const t = useTranslations("inventory.card");
+  const { isGamified } = useExperienceMode();
 
   const meta = useMemo(
     () =>
       getInventoryItemActionMeta(item, {
         openInFocus: t("openInFocus"),
-        openBox: t("openBox"),
+        openBox: isGamified ? t("openBox") : t("openBoxProductivity"),
         sendToFocus: t("sendToFocus"),
         use: t("use"),
       }),
-    [item, t],
+    [item, isGamified, t],
   );
 
   const { isPrimaryLoading } = resolveInventoryItemLoadingState(meta, {
@@ -86,7 +88,6 @@ export const InventoryCard = memo(function InventoryCard({
   onSendToFocus,
   onOpenMysteryBox,
   onContextMenu,
-  isCompact = false,
   isUsing = false,
   isSendingToFocus = false,
 }: InventoryCardProps) {
@@ -119,7 +120,6 @@ export const InventoryCard = memo(function InventoryCard({
       category={reward.category}
       baseDurationMinutes={reward.baseDurationMinutes}
       remainingSeconds={item.remainingSeconds}
-      isCompact={isCompact}
       quantity={item.quantity}
       inUse={isInFocus}
       isActiveFocusSession={isInFocus}
@@ -139,7 +139,6 @@ export const InventoryItemRow = memo(function InventoryItemRow({
   onSendToFocus,
   onOpenMysteryBox,
   onContextMenu,
-  isCompact = false,
   isUsing = false,
   isSendingToFocus = false,
 }: InventoryCardProps) {
@@ -179,7 +178,6 @@ export const InventoryItemRow = memo(function InventoryItemRow({
       actionLabel={actionLabel}
       onAction={handleAction}
       onContextMenu={handleContextMenu}
-      isCompact={isCompact}
       dragData={dragData}
     />
   );

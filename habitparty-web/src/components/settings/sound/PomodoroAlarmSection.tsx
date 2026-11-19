@@ -3,6 +3,7 @@
 import { Bell, Check, Sparkles, Volume2, VolumeX } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { SettingToggleRow } from "@/components/settings/SettingToggleRow";
+import { VolumeRangeSlider } from "@/components/settings/sound/VolumeRangeSlider";
 import { Switch } from "@/components/ui/Switch";
 import { ALARM_TONE_IDS, type TimerSoundType } from "@/types/settings";
 import { cn } from "@/utils";
@@ -88,20 +89,12 @@ export function PomodoroAlarmSection({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-neutral-400 font-semibold">0%</span>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="5"
-            value={timerVolumePercent}
-            onChange={(e) => onChangeTimerVolume(Number(e.target.value) / 100)}
-            aria-label={t("volumeAria")}
-            className="w-full h-2 rounded-lg bg-neutral-700 dark:bg-surface/80 appearance-none cursor-pointer accent-gold"
-          />
-          <span className="text-xs text-neutral-400 font-semibold">100%</span>
-        </div>
+        <VolumeRangeSlider
+          value={timerVolume}
+          onChange={onChangeTimerVolume}
+          ariaLabel={t("volumeAria")}
+          trackClassName="bg-neutral-700 dark:bg-surface/80"
+        />
 
         {/* ESTILO DO SOM (TODOS OS 4 TONS: ZEN, ARCADE, DIGITAL, HARP) */}
         <div className="flex flex-col gap-2 pt-2 border-t border-neutral-700 dark:border-white/5">

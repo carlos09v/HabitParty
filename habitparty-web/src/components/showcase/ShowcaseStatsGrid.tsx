@@ -9,13 +9,11 @@ import {
 interface ShowcaseStatsGridProps {
   stats: ShowcaseStatsResponseDTO;
   isGamified?: boolean;
-  isCompact?: boolean;
 }
 
 export async function ShowcaseStatsGrid({
   stats,
-  isGamified = true,
-  isCompact = false,
+  isGamified = false,
 }: ShowcaseStatsGridProps) {
   const [t, format] = await Promise.all([
     getTranslations("showcase.statsGrid"),
@@ -47,12 +45,17 @@ export async function ShowcaseStatsGrid({
     {
       id: "tasksCompleted",
       iconKey: "swords",
+      essentialIconKey: "checkSquare",
       iconClass:
         "bg-sky-500/15 border-sky-500/35 text-sky-700 dark:text-sky-400",
       gamifiedLabel: t("tasksCompleted.label"),
       essentialLabel: t("tasksCompleted.essentialLabel"),
       value: format.number(stats.totalTasksCompleted),
       sub: t("tasksCompleted.sub", {
+        hardcore: format.number(stats.totalHardcoreTasksCompleted),
+        hard: format.number(stats.totalHardTasksCompleted),
+      }),
+      essentialSub: t("tasksCompleted.essentialSub", {
         hardcore: format.number(stats.totalHardcoreTasksCompleted),
         hard: format.number(stats.totalHardTasksCompleted),
       }),
@@ -92,7 +95,6 @@ export async function ShowcaseStatsGrid({
       sectionTitleEssential={t("sectionTitleEssential")}
       cards={cards}
       initialIsGamified={isGamified}
-      isCompact={isCompact}
     />
   );
 }

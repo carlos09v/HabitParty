@@ -11,7 +11,8 @@
       "all": "All Types",
       "SingleUse": "Single-Use",
       "TimeBased": "Time Voucher",
-      "MysteryBox": "Mystery Box"
+      "MysteryBox": "Mystery Box",
+      "MysteryBoxProductivity": "Break Draw"
     },
     "categories": {
       "all": "All Categories",
@@ -40,10 +41,11 @@
       "LEGENDARY": "Legendary (480m)"
     },
     "singleUseTiers": {
-      "BASIC": "Quick Treat (4)",
-      "PREMIUM": "Daily (15)",
-      "EPIC": "Weekly (50)",
-      "LEGENDARY": "Epic (150)"
+      "NONE": "None",
+      "BASIC": "Basic • Treat (4)",
+      "PREMIUM": "Premium • Daily (15)",
+      "EPIC": "Epic • Weekly (50)",
+      "LEGENDARY": "Legendary • Milestone (150)"
     },
     "sort": {
       "default": "Default Order",
@@ -77,6 +79,7 @@
       "clearFilters": "Clear Filters"
     },
     "contextMenu": {
+      "addPackage": "Add package",
       "edit": "Edit",
       "delete": "Delete"
     },
@@ -132,7 +135,9 @@
       },
       "MysteryBox": {
         "title": "Mystery Box — Roulette draw",
-        "description": "Lootbox with 3 prizes of varying odds (Common, Rare, and Jackpot) drawn on a roulette wheel in your Backpack."
+        "description": "Lootbox with 3 prizes of varying odds (Common, Rare, and Jackpot) drawn on a roulette wheel in your Backpack.",
+        "titleProductivity": "Break Draw — Weighted roulette",
+        "descriptionProductivity": "Weighted roulette with 3 break/treat outcomes (Frequent, Mid-Tier, and Top Reward) drawn in your Inventory."
       }
     },
     "categoryLabel": "Category",
@@ -153,6 +158,18 @@
     "durationPlaceholder": "E.g., 30, 60, 120",
     "packageLevelLabel": "Quick time & package presets",
     "packageLevelHint": "(optional • fills duration & cost)",
+    "multiPackageToggleLabel": "Create multiple packages at once",
+    "multiPackageToggleHint": "Grouped into a single showcase card",
+    "multiPackageSelectLabel": "Choose packages to create",
+    "multiPackageSelectHint": "(select 1 or more tiers)",
+    "multiPackagePreviewTitle": "Will create {count} packages on the same card:",
+    "multiPackagePreviewHint": "In the showcase, click any chip (30m, 1h, 3h...) to switch package before buying.",
+    "debtUnitPricingLabel": "Unit price presets (no bundle discount)",
+    "debtUnitPricingHint": "(8 coins / 30 min)",
+    "debtUnitPricingTooltipTitle": "Why does Debt use unit pricing?",
+    "debtUnitPricingTooltipBody": "Debts remain fixed in the showcase without combo discounts (so higher packages never cost less per unit). Use the inline card multiplier (− 1x +) when settling.",
+    "debtUnitPriceFieldLabel": "Debt Unit Price",
+    "debtUnitPriceFieldHint": "(charged per unit on settlement)",
     "priceLabel": "Cost in Coins",
     "priceLabelProductivity": "Cost in Credits",
     "suggestedPriceByRarity": "(Suggested price by rarity)",
@@ -161,7 +178,9 @@
     "mysteryLootPreviewLabel": "Prizes configured in this box",
     "mysteryCustomizeLootCta": "Customize in tab 2",
     "singleUseTiersLabel": "Tier & suggested price",
-    "singleUseTiersHint": "(optional • sets price & catalog tier)",
+    "singleUseTiersHint": "(optional • horizon scale)",
+    "singleUseTiersTooltipTitle": "What does each tier mean?",
+    "singleUseTiersTooltipBody": "Calibrated horizon (~15 coins = 1 productive day): Treat (4) = quick break; Daily (15) = 1 consistent day; Weekly (50) = weekly reward; Milestone (150) = ~10-day goal. Choose None for custom pricing.",
     "mysteryTabsAria": "Mystery Box sections",
     "mysteryTabIdentity": "Details & Rarity",
     "mysteryTabPrizes": "Customize Prizes",
@@ -189,14 +208,25 @@
         "belowCalibrated": "Well below the calibrated {price} coins — too easy to farm and may reduce the sense of achievement.",
         "aboveCalibrated": "Over 2× the calibrated {price} coins — watch out for frustration or burnout.",
         "singleUseTooLow": "Very low cost — trivial rewards can quickly lose motivational impact.",
-        "singleUseTooHigh": "Long-horizon milestone — consider splitting into intermediate rewards to avoid frustration."
-      }
+        "singleUseTooHigh": "Long-horizon milestone — consider splitting into intermediate rewards to avoid frustration.",
+        "belowCalibratedProductivity": "Well below the calibrated price ({price} credits) — may be too easy and reduce break value.",
+        "aboveCalibratedProductivity": "More than double the calibrated price ({price} credits) — avoid overpricing routine recovery."
+      },
+      "leisureEquivalenceHint": "{duration} free leisure"
     },
     "mysteryBoxAdventureHint": "The Mystery Box is available in Adventure Mode. Enable it in Settings > Preferences to unlock it!",
     "cancel": "Cancel",
     "saving": "Saving...",
     "saveChanges": "Save Changes",
-    "saveReward": "Save Reward"
+    "saveReward": "Save Reward",
+    "titlePlaceholderMysteryBoxProductivity": "E.g., Afternoon Break Roulette, Recovery Draw...",
+    "suggestedPriceByRarityProductivity": "(Suggested price by tier)",
+    "mysteryLootPreviewLabelProductivity": "Configured options in this draw",
+    "mysteryCustomizeLootCtaProductivity": "Customize in tab 2",
+    "mysteryTabsAriaProductivity": "Break Draw sections",
+    "mysteryTabIdentityProductivity": "Details & Tier",
+    "mysteryTabPrizesProductivity": "Customize Options",
+    "mysteryTabPrizesBadgeProductivity": "{count} options"
   },
   "mysteryBox": {
     "levelLabel": "Mystery Box Level",
@@ -232,7 +262,15 @@
       "modeTimeBased": "Time (max {max}m)",
       "iconPickerTitle": "Prize Icon",
       "minutesAriaLabel": "Duration in minutes (max {max})",
-      "minutesMaxHint": "Maximum {max} minutes in this slot to preserve economy balance"
+      "minutesMaxHint": "Maximum {max} minutes in this slot to preserve economy balance",
+      "titleProductivity": "Customize Draw Options",
+      "subtitleProductivity": "Tier-locked odds • tailor options to your workflow",
+      "storeNoCompatibleToastProductivity": "No Showcase rewards fit within the {max}-credit range for this tier.",
+      "slotRarityProductivity": {
+        "0": "Frequent Option",
+        "1": "Mid-Tier Option",
+        "2": "Top Reward"
+      }
     },
     "tiers": {
       "BASIC": {
@@ -315,6 +353,90 @@
           }
         }
       }
+    },
+    "levelLabelProductivity": "Break Draw Tier",
+    "raritiesCountProductivity": "4 Tiers",
+    "tiersProductivity": {
+      "BASIC": {
+        "name": "Essential Tier",
+        "subtitle": "Daily Breaks & Quick Treats",
+        "concept": "Micro-rewards to keep your momentum guilt-free without unbalancing your coins.",
+        "colorName": "Emerald Green",
+        "drops": {
+          "0": {
+            "label": "Refreshing Break (10m)",
+            "description": "Specialty coffee, favorite snack, or a short guilt-free break."
+          },
+          "1": {
+            "label": "Medium Leisure Voucher (20m)",
+            "description": "Leisure reading, 1 short video, relaxing music, or a podcast."
+          },
+          "2": {
+            "label": "Focused Hobby Session (40m)",
+            "description": "40 minutes dedicated to your favorite hobby."
+          }
+        }
+      },
+      "PREMIUM": {
+        "name": "Moderate Tier",
+        "subtitle": "Entertainment & Gaming Session",
+        "concept": "A reward for one or two days of goals completed with excellence.",
+        "colorName": "Cyan Blue",
+        "drops": {
+          "0": {
+            "label": "Standard Leisure (35m)",
+            "description": "Quick gaming session or 1 series/anime episode."
+          },
+          "1": {
+            "label": "Extended Leisure Voucher (60m)",
+            "description": "1 full hour of entertainment or a celebratory special snack."
+          },
+          "2": {
+            "label": "Gaming / Movie Night (100m)",
+            "description": "1h 40m of uninterrupted, guilt-free entertainment."
+          }
+        }
+      },
+      "EPIC": {
+        "name": "Advanced Tier",
+        "subtitle": "Big Weekly Achievement",
+        "concept": "A substantial weekend reward to crown consistent days.",
+        "colorName": "Radiant Magenta",
+        "drops": {
+          "0": {
+            "label": "Extended Leisure Block (90m)",
+            "description": "1h 30m of favorite games, binge-watching, or an outdoor outing."
+          },
+          "1": {
+            "label": "Full Free Evening (150m)",
+            "description": "2h 30m free or a book/game on sale."
+          },
+          "2": {
+            "label": "Full Afternoon Unplugged (240m)",
+            "description": "4 hours of well-deserved rest and a full energy recharge."
+          }
+        }
+      },
+      "LEGENDARY": {
+        "name": "Executive Tier",
+        "subtitle": "The Holy Grail of Productivity",
+        "concept": "The pinnacle of weeks of discipline and unbroken streaks. A memorable milestone.",
+        "colorName": "Noble Gold",
+        "drops": {
+          "0": {
+            "label": "Elite Partial Day-Off (180m)",
+            "description": "3 hours dedicated to your hobbies with duty fulfilled."
+          },
+          "1": {
+            "label": "Extended Day-Off (360m)",
+            "description": "6 hours off for rest, leisure, or a personal project."
+          },
+          "2": {
+            "label": "Ultimate Celebration (Supreme Jackpot)",
+            "description": "Free weekend + permission for a major real-life treat."
+          }
+        }
+      }
     }
   },
   "tierPopover": {
@@ -325,7 +447,11 @@
     "balancedPrice": "Balanced Price:",
     "coinsUnit": "coins",
     "customTimePrize": "Custom {minutes} min leisure/focus voucher.",
-    "customSingleUsePrize": "Custom single-use treat."
+    "customSingleUsePrize": "Custom single-use treat.",
+    "rngHeaderProductivity": "Draw Probabilities",
+    "dropPercentHeaderProductivity": "% Odds",
+    "priceInCredits": "Credit Cost:",
+    "creditsUnit": "credits"
   },
   "hook": {
     "titleRequired": "Reward title is required.",
@@ -336,7 +462,11 @@
     "createError": "Error creating reward on the server.",
     "createSuccess": "Reward \"{title}\" created!",
     "createSuccessDescription": "Available to redeem in the Rewards Store.",
-    "defaultMysteryBoxTitle": "Basic Mystery Box"
+    "batchPackagesRequired": "Select at least one package to create.",
+    "batchCreateSuccess": "Created and grouped {count} packages for \"{title}\"!",
+    "defaultMysteryBoxTitle": "Basic Mystery Box",
+    "defaultMysteryBoxTitleProductivity": "Essential Break Draw",
+    "mysteryBoxPackageRequiredProductivity": "Break Draw requires a selected tier level."
   },
   "actions": {
     "communicationError": "Internal server communication error.",

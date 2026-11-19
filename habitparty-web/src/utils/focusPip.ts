@@ -412,7 +412,6 @@ export function buildVideoPipFrameData(
     phaseBreak: string;
     sessionCapBadge: string;
   },
-  isGamified: boolean,
 ): VideoPipFrameData {
   const { isRunning, isBreak, isOvertime, isSessionRewardCapped } =
     getFocusTimerDerivedState(timerState);
@@ -433,8 +432,7 @@ export function buildVideoPipFrameData(
     taskName:
       timerState.target?.taskName ||
       (timerState.target?.type === "task" ? timerState.target.name : undefined),
-    capLabel:
-      isGamified && isSessionRewardCapped ? labels.sessionCapBadge : undefined,
+    capLabel: isSessionRewardCapped ? labels.sessionCapBadge : undefined,
     footerFallbackText: isRunning
       ? labels.windowTitle
       : `${labels.phasePaused} • HabitParty`,

@@ -117,13 +117,11 @@ function TaskRowFocusButton({
   task,
   isHabit,
   isDone,
-  isCompact,
   onStartFocus,
 }: {
   task: Task;
   isHabit: boolean;
   isDone: boolean;
-  isCompact: boolean;
   onStartFocus: (task: Task) => void;
 }) {
   const t = useTranslations("dashboard.taskShared.actions");
@@ -171,20 +169,17 @@ function TaskRowFocusButton({
           : t("startFocusTitle")
       }
       className={cn(
-        "flex items-center justify-center rounded-lg border transition-colors cursor-pointer shrink-0",
-        isCompact
-          ? "w-7 h-7 pointer-coarse:w-8 pointer-coarse:h-8"
-          : "w-8 h-8 pointer-coarse:w-9 pointer-coarse:h-9",
+        "flex items-center justify-center rounded-lg border transition-colors cursor-pointer shrink-0 w-8 h-8 pointer-coarse:w-9 pointer-coarse:h-9",
         isActiveTarget
           ? "bg-gold text-on-gold border-gold font-bold shadow-glow-gold-xs hover:bg-gold-hover"
           : "bg-primary/10 text-primary hover:bg-primary hover:text-white border-primary/20 hover:border-primary dark:bg-surface/80 dark:hover:bg-gold/20 dark:text-neutral-200 dark:hover:text-gold dark:border-primary/30 dark:hover:border-gold/50",
       )}
     >
       {isActiveTarget && isTimerRunning ? (
-        <Pause size={isCompact ? 13 : 14} className="fill-on-gold" />
+        <Pause size={14} className="fill-on-gold" />
       ) : (
         <Play
-          size={isCompact ? 13 : 14}
+          size={14}
           className={
             isActiveTarget ? "fill-on-gold ml-0.5" : "fill-current ml-0.5"
           }
@@ -206,7 +201,6 @@ const TaskRowContent = memo(function TaskRowContent({
   isSortable = false,
   isOverlay = false,
   isDeleteChecking = false,
-  isCompact: propIsCompact,
   onToggle,
   onToggleCompleted,
   onHabitChange,
@@ -225,7 +219,6 @@ const TaskRowContent = memo(function TaskRowContent({
   const { triggerSingleClick, clearPendingClick } = useDeferredSingleClick();
 
   const {
-    isCompact,
     completed,
     habitScore,
     toggleCompleted,
@@ -249,7 +242,6 @@ const TaskRowContent = memo(function TaskRowContent({
     isHardcoreOverdue,
   } = useTaskItemMeta({
     task,
-    isCompact: propIsCompact,
     onToggleCompleted: effectiveToggle,
     onHabitChange,
     activeFilter,
@@ -310,9 +302,7 @@ const TaskRowContent = memo(function TaskRowContent({
               isDragging && "touch-none",
             )
           : "cursor-pointer touch-manipulation",
-        isCompact
-          ? "gap-2.5 px-3 py-1.5 text-xs"
-          : "gap-2.5 @lg:gap-3 px-3 @lg:px-4 py-2 text-body-s",
+        "gap-2.5 @lg:gap-3 px-3 @lg:px-4 py-2 text-body-s",
         isTodo && dueDateInfo.isOverdue && !isDone
           ? "bg-danger-500/[0.03] border-y-danger-500/40 border-r-danger-500/40 hover:border-y-danger-500/60 hover:border-r-danger-500/60 hover:bg-danger-500/[0.06] hover:shadow-card-deep focus:outline-none focus-visible:ring-1 focus-visible:ring-danger-500/60"
           : isSelected
@@ -325,9 +315,9 @@ const TaskRowContent = memo(function TaskRowContent({
         isDone && "dark:opacity-60 bg-card/80 dark:bg-primary-dark/15",
         isDeleteChecking && "opacity-75 pointer-events-none cursor-wait",
         isDragging &&
-          "transition-none! opacity-30 border-dashed border-primary-light scale-95",
+          "transition-none! opacity-30 border-dashed border-y-primary-light border-r-primary-light scale-95",
         isOverlay &&
-          "transition-none! shadow-card-active border-gold/70 bg-surface/90 scale-102 cursor-grabbing z-50",
+          "transition-none! shadow-card-active border-y-gold/70 border-r-gold/70 bg-surface/90 scale-102 cursor-grabbing z-50",
       )}
     >
       {/* Coluna 1: [Grip opcional] + Ação + Título + Metadados (Streak, Recompensas e Saldo) */}
@@ -337,7 +327,7 @@ const TaskRowContent = memo(function TaskRowContent({
             className="w-5 h-5 flex items-center justify-center shrink-0 text-neutral-400 group-hover:text-primary dark:group-hover:text-gold transition-colors p-0.5 pointer-events-none"
             aria-hidden="true"
           >
-            <GripVertical size={isCompact ? 13 : 15} />
+            <GripVertical size={15} />
           </div>
         )}
 
@@ -355,7 +345,6 @@ const TaskRowContent = memo(function TaskRowContent({
             completed={completed}
             onToggle={toggleCompleted}
             onDelta={changeHabit}
-            isCompact={isCompact}
           />
         </div>
 
@@ -363,8 +352,7 @@ const TaskRowContent = memo(function TaskRowContent({
           <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
             <span
               className={cn(
-                "font-medium text-neutral-100 truncate group-hover:text-primary dark:group-hover:text-gold transition-colors",
-                isCompact ? "text-xs" : "text-sm",
+                "font-medium text-neutral-100 truncate group-hover:text-primary dark:group-hover:text-gold transition-colors text-sm",
                 isDone && "line-through text-neutral-400",
               )}
               title={task.title}
@@ -377,7 +365,6 @@ const TaskRowContent = memo(function TaskRowContent({
                 taskId={task.id}
                 totalFocusMinutes={task.totalFocusMinutes}
                 focusCyclesCount={task.focusCyclesCount}
-                isCompact={isCompact}
               />
             )}
 
@@ -386,31 +373,22 @@ const TaskRowContent = memo(function TaskRowContent({
                 checklistCompleted={checklistCompleted}
                 checklistTotal={checklistTotal}
                 isChecklistAllDone={isChecklistAllDone}
-                isCompact={isCompact}
               />
             )}
 
             {task.isHardcoreModeEnabled && (
-              <TaskHardcoreBadge
-                isHardcoreOverdue={isHardcoreOverdue}
-                isCompact={isCompact}
-              />
+              <TaskHardcoreBadge isHardcoreOverdue={isHardcoreOverdue} />
             )}
 
-            {task.description && <TaskDescriptionBadge isCompact={isCompact} />}
+            {task.description && <TaskDescriptionBadge />}
           </div>
 
           <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-label-g text-neutral-400 mt-0.5">
             {isHabit && (
-              <TaskHabitScoreBadge
-                habitScore={habitScore}
-                variant="row"
-                isCompact={isCompact}
-              />
+              <TaskHabitScoreBadge habitScore={habitScore} variant="row" />
             )}
             <TaskRewardBadges
               task={task}
-              isCompact={isCompact}
               showStreak={true}
               showRewards={!isHabit}
             />
@@ -446,7 +424,6 @@ const TaskRowContent = memo(function TaskRowContent({
                 <TaskWorkspaceBadge
                   workspaceName={workspaceName}
                   size="xs"
-                  isCompact={true}
                   isReadOnly={isReadOnly}
                 />
                 {(columnTitle || displayTag) && (
@@ -465,7 +442,6 @@ const TaskRowContent = memo(function TaskRowContent({
         <TaskWorkspaceBadge
           workspaceName={workspaceName}
           size="row"
-          isCompact={isCompact}
           isReadOnly={isReadOnly}
         />
         <TaskTagBadges
@@ -475,17 +451,15 @@ const TaskRowContent = memo(function TaskRowContent({
           hasExtraTags={hasExtraTags}
           extraTagsCount={extraTagsCount}
           extraTagsTitle={task.tags?.slice(1).join(", ")}
-          isCompact={isCompact}
           variant="row"
         />
       </div>
 
       {/* Coluna 3: Badge do Tipo + Badge de Evento */}
       <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap justify-start min-w-0">
-        <TaskTypeBadge task={task} isCompact={isCompact} />
+        <TaskTypeBadge task={task} />
         {isTodoEvent && (
           <TaskEventBadge
-            isCompact={isCompact}
             isInProgress={Boolean(dueDateInfo.isInProgress && !isDone)}
             endTime={dueDateInfo.endTime}
           />
@@ -495,11 +469,7 @@ const TaskRowContent = memo(function TaskRowContent({
       {/* Coluna 4: Prioridade */}
       <div className="hidden @lg:flex items-center justify-center min-w-0">
         {priorityMeta ? (
-          <TaskPriorityBadge
-            priority={task.priority}
-            isCompact={isCompact}
-            sizeVariant="row"
-          />
+          <TaskPriorityBadge priority={task.priority} sizeVariant="row" />
         ) : (
           <span className="text-neutral-400 text-tiny font-normal italic">
             -
@@ -510,10 +480,7 @@ const TaskRowContent = memo(function TaskRowContent({
       {/* Coluna 5: Frequência / Prazo */}
       <div className="hidden @2xl:flex items-center min-w-0">
         {isDaily ? (
-          <WeekDaysIndicator
-            daysOfWeek={task.daysOfWeek}
-            isCompact={isCompact}
-          />
+          <WeekDaysIndicator daysOfWeek={task.daysOfWeek} />
         ) : isTodo ? (
           <TaskRowScheduleLabel
             label={dueDateInfo.label}
@@ -547,11 +514,7 @@ const TaskRowContent = memo(function TaskRowContent({
             title={t("actions.checkingDeleteAria")}
             aria-label={t("actions.checkingDeleteAria")}
           >
-            <Loader2
-              size={isCompact ? 14 : 16}
-              className="animate-spin"
-              aria-hidden="true"
-            />
+            <Loader2 size={16} className="animate-spin" aria-hidden="true" />
           </output>
         ) : (
           <>
@@ -560,7 +523,6 @@ const TaskRowContent = memo(function TaskRowContent({
                 task={task}
                 isHabit={isHabit}
                 isDone={isDone}
-                isCompact={isCompact}
                 onStartFocus={onStartFocus}
               />
             )}
@@ -580,7 +542,7 @@ const TaskRowContent = memo(function TaskRowContent({
               title={t("actions.taskOptionsTitle")}
               className="p-1.5 sm:p-1 rounded text-neutral-400 group-hover:text-neutral-200 hover:text-gold-ink! dark:hover:text-gold! hover:bg-surface-hover! dark:hover:bg-white/10! focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/60 transition-colors cursor-pointer"
             >
-              <MoreHorizontal size={isCompact ? 14 : 16} />
+              <MoreHorizontal size={16} />
             </button>
           </>
         )}

@@ -1,8 +1,10 @@
+import { ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { AdminDashboardView } from "@/components/admin/AdminDashboardView";
 import { AdminOverviewCards } from "@/components/admin/AdminOverviewCards";
+import { AdminRefreshButton } from "@/components/admin/AdminRefreshButton";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import {
   ADMIN_DEFAULT_PAGE_SIZE,
@@ -30,10 +32,11 @@ interface AdminPageProps {
 }
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
-  const [user, resolvedParams, dateFormat] = await Promise.all([
+  const [user, resolvedParams, dateFormat, tDashboard] = await Promise.all([
     getCurrentUser(),
     searchParams,
     getDateFormat(),
+    getTranslations("admin.dashboard"),
   ]);
 
   // Trava de segurança: Se não for ADMIN, redireciona imediatamente
@@ -63,10 +66,37 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const totalPages = usersPage?.totalPages ?? 0;
   const totalElements = usersPage?.totalElements ?? 0;
 
+  if (totalPages > 0 && page0Based >= totalPages) {
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (filter && filter !== "ALL") params.set("filter", filter);
+    if (totalPages > 1) params.set("page", String(totalPages));
+    const qs = params.toString();
+    redirect(qs ? `/admin?${qs}` : "/admin");
+  }
+
   return (
     <ScopedIntlProvider scope="admin">
       <PageWrapper>
-        <div className="max-w-7xl mx-auto w-full">
+        <div className="max-w-7xl mx-auto w-full flex flex-col gap-8 pb-16 animate-in fade-in duration-200">
+          {/* HEADER ESTÁTICO NO SERVIDOR + BOTÃO CLIENT DE REFRESH */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-700 dark:text-purple-300 text-xs font-bold uppercase tracking-wider mb-2">
+                <ShieldCheck size={14} />
+                {tDashboard("badge")}
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black text-neutral-50 tracking-tight">
+                {tDashboard("title")}
+              </h1>
+              <p className="text-sm text-neutral-400 mt-1">
+                {tDashboard("subtitle")}
+              </p>
+            </div>
+
+            <AdminRefreshButton />
+          </div>
+
           <AdminDashboardView
             overviewCards={
               overview ? (

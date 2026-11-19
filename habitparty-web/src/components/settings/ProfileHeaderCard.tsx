@@ -13,11 +13,9 @@ import { useActiveAvatarFrame } from "@/store/avatarFrameStore";
 import { useUserStore } from "@/store/userStore";
 import type { ProfileHeaderCardProps } from "@/types/settings";
 import { cn, formatCoins, resolveUserLevelState } from "@/utils";
+import { formatCreditsLeisureEquivalence } from "@/utils/rewardEconomy";
 
-export function ProfileHeaderCard({
-  initialUser,
-  isCompact,
-}: ProfileHeaderCardProps) {
+export function ProfileHeaderCard({ initialUser }: ProfileHeaderCardProps) {
   const t = useTranslations("settings.profileHeader");
   const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
@@ -31,10 +29,8 @@ export function ProfileHeaderCard({
     isPending,
     previewUrl,
     isDraggingOver,
-    handleFileChange,
-    handleDragOver,
-    handleDragLeave,
-    handleDrop,
+    fileInputProps,
+    dropzoneHandlers,
   } = useProfilePhotoUpload({
     messages: {
       invalidImageToast: t("invalidImageToast"),
@@ -52,12 +48,7 @@ export function ProfileHeaderCard({
   const { levelTitle } = resolveUserLevelState(user, locale, isGamified);
 
   return (
-    <div
-      className={cn(
-        "rounded-2xl border border-neutral-700 dark:border-primary/20 bg-card dark:bg-surface/45 shadow-xs dark:shadow-none flex flex-col md:flex-row items-center md:items-start justify-between gap-6 md:gap-8",
-        isCompact ? "p-4 sm:p-5" : "p-4 sm:p-7",
-      )}
-    >
+    <div className="rounded-2xl border border-neutral-700 dark:border-primary/20 bg-card dark:bg-surface/45 shadow-xs dark:shadow-none flex flex-col md:flex-row items-center md:items-start justify-between gap-6 md:gap-8 p-4 sm:p-7">
       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-6 min-w-0 flex-1 w-full">
         {/* AVATAR COM LINK PARA VITRINE DE PERFIL (/profile) */}
         <div className="relative group shrink-0">
@@ -73,6 +64,7 @@ export function ProfileHeaderCard({
               size="xl"
               hasRing={Boolean(user?.isPremium)}
               frameId={activeFrameId}
+              presetId={previewUrl ? null : user?.avatarPreset}
               className="shadow-md dark:shadow-xl"
             />
 
@@ -93,14 +85,7 @@ export function ProfileHeaderCard({
             </span>
           </Link>
 
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            tabIndex={-1}
-            onChange={handleFileChange}
-          />
+          <input {...fileInputProps} />
         </div>
 
         {/* INFORMAÇÕES DE TEXTO E STATUS */}
@@ -144,6 +129,11 @@ export function ProfileHeaderCard({
                 {formatCoins(user?.currentCoins ?? 0, { locale })}
               </span>
               <span>{isGamified ? t("coinsLabel") : t("creditsLabel")}</span>
+              {!isGamified && (user?.currentCoins ?? 0) > 0 && (
+                <span className="text-tiny font-medium text-sky-700 dark:text-sky-300 tabular-nums">
+                  ({formatCreditsLeisureEquivalence(user?.currentCoins ?? 0)})
+                </span>
+              )}
             </div>
 
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface/60 border border-neutral-700 dark:border-primary/20 text-xs text-neutral-200">
@@ -161,14 +151,11 @@ export function ProfileHeaderCard({
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
+          {...dropzoneHandlers}
           disabled={isPending}
           className={cn(
-            "w-full md:w-56 rounded-xl border-2 border-dashed transition-colors cursor-pointer flex flex-col items-center justify-center text-center group/drop select-none",
+            "w-full md:w-56 rounded-xl border-2 border-dashed transition-colors cursor-pointer flex flex-col items-center justify-center text-center group/drop select-none p-4 gap-1.5",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold",
-            isCompact ? "p-3 gap-1" : "p-4 gap-1.5",
             isDraggingOver
               ? "border-primary bg-primary/10 text-primary dark:border-gold dark:bg-gold/15 dark:text-gold shadow-glow-gold-xs"
               : "border-neutral-600 bg-surface/50 hover:bg-surface hover:border-primary/50 dark:border-primary/35 dark:bg-surface/40 dark:hover:bg-surface/70 dark:hover:border-gold/50 text-neutral-300 hover:text-neutral-100",

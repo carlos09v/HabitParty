@@ -4,9 +4,11 @@ import {
   CheckCircle2,
   Clock,
   Flame,
+  Layers,
   type LucideIcon,
   ShieldCheck,
   Sword,
+  Target,
   Timer,
 } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
@@ -22,12 +24,7 @@ import {
 
 type DailyPaceOption = "30" | "60" | "100" | "150";
 
-const PACE_OPTIONS: ReadonlyArray<{ value: DailyPaceOption; label: string }> = [
-  { value: "30", label: "30 XP/d" },
-  { value: "60", label: "60 XP/d" },
-  { value: "100", label: "100 XP/d" },
-  { value: "150", label: "150 XP/d" },
-] as const;
+const PACE_VALUES: readonly DailyPaceOption[] = ["30", "60", "100", "150"];
 
 const PACE_XP_MAP: Record<DailyPaceOption, number> = {
   "30": 30,
@@ -52,6 +49,7 @@ interface EffortTileConfig {
     | "standardPomos"
     | "deepWorkPomos";
   icon: LucideIcon;
+  essentialIcon?: LucideIcon;
   iconClassName: string;
   xpPerAction: number;
   fullWidth?: boolean;
@@ -62,6 +60,7 @@ const EFFORT_TILES: readonly EffortTileConfig[] = [
     key: "mediumTasks",
     labelKey: "mediumTasks",
     icon: Sword,
+    essentialIcon: Target,
     iconClassName: "text-warning-500 shrink-0",
     xpPerAction: DIFFICULTY_REWARDS.MEDIUM.xp,
   },
@@ -69,6 +68,7 @@ const EFFORT_TILES: readonly EffortTileConfig[] = [
     key: "hardTasks",
     labelKey: "hardTasks",
     icon: Sword,
+    essentialIcon: Layers,
     iconClassName: "text-purple-400 shrink-0",
     xpPerAction: DIFFICULTY_REWARDS.HARD.xp,
   },
@@ -98,12 +98,21 @@ const EFFORT_TILES: readonly EffortTileConfig[] = [
 
 interface EffortSimulatorCardProps {
   remainingXp: number;
+  isGamified?: boolean;
 }
 
-export function EffortSimulatorCard({ remainingXp }: EffortSimulatorCardProps) {
+export function EffortSimulatorCard({
+  remainingXp,
+  isGamified = false,
+}: EffortSimulatorCardProps) {
   const t = useTranslations("showcase.progression.simulator");
   const format = useFormatter();
   const [dailyPace, setDailyPace] = useState<DailyPaceOption>("60");
+
+  const paceOptions = PACE_VALUES.map((value) => ({
+    value,
+    label: `${value} ${isGamified ? "XP" : "pts"}/d`,
+  }));
 
   const effortBreakdown = calculateRankEffortBreakdown(
     remainingXp,
@@ -129,7 +138,7 @@ export function EffortSimulatorCard({ remainingXp }: EffortSimulatorCardProps) {
           size={14}
         >
           <p className="text-xs text-neutral-300 leading-relaxed">
-            {t("infoDesc")}
+            {t(isGamified ? "infoDesc" : "infoDescEssential")}
           </p>
         </InfoTooltip>
       </div>
@@ -154,7 +163,7 @@ export function EffortSimulatorCard({ remainingXp }: EffortSimulatorCardProps) {
             </div>
             <SegmentedControl
               ariaLabel={t("paceLabel")}
-              options={PACE_OPTIONS}
+              options={paceOptions}
               value={dailyPace}
               onChange={setDailyPace}
               size="sm"
@@ -163,9 +172,13 @@ export function EffortSimulatorCard({ remainingXp }: EffortSimulatorCardProps) {
 
           <div className="grid grid-cols-2 gap-2">
             {EFFORT_TILES.map((tile) => {
-              const Icon = tile.icon;
+              const Icon = isGamified
+                ? tile.icon
+                : (tile.essentialIcon ?? tile.icon);
               const formattedCount = format.number(effortBreakdown[tile.key]);
-              const xpHint = t("xpPerAction", { xp: tile.xpPerAction });
+              const xpHint = t(isGamified ? "xpPerAction" : "ptsPerAction", {
+                xp: tile.xpPerAction,
+              });
 
               if (tile.fullWidth) {
                 return (

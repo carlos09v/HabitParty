@@ -20,7 +20,6 @@ import { useTaskDeleteFlow } from "@/hooks/useTaskDeleteFlow";
 import { useTaskInteractionModals } from "@/hooks/useTaskInteractionModals";
 import type { DashboardTasksPanelProps } from "@/types/dashboard";
 import type { Task, TaskFilterType } from "@/types/task";
-import { cn } from "@/utils";
 import { extractAvailableTagOptions } from "@/utils/tags";
 import { buildReadOnlySets, isTaskInReadOnlyScope } from "@/utils/taskMapper";
 
@@ -45,7 +44,6 @@ export function DashboardTasksPanel({
   columns,
   workspaces = [],
   defaultColumnId: explicitDefaultColumnId,
-  isCompact = false,
   isReadOnly = false,
   tasks: externalTasks,
   onTasksChange,
@@ -78,19 +76,17 @@ export function DashboardTasksPanel({
     closeContextMenu,
   } = useTaskInteractionModals();
 
-  // Sincroniza eventos de foco com a lista local (quando não delegada ao DashboardMain) e com o popover aberto
+  // Sincroniza eventos de foco com a lista ativa (DashboardMain ou local) e com o popover aberto
   useFocusTaskSync({
     onFocusRecorded: useCallback(
       (taskId: string, durationMinutes: number, cycles: number) => {
-        if (!onTasksChange) {
-          setInternalTasks((prev) =>
-            prev.map((task) =>
-              task.id === taskId
-                ? applyFocusRecordedToTask(task, durationMinutes, cycles)
-                : task,
-            ),
-          );
-        }
+        setTasksState((prev) =>
+          prev.map((task) =>
+            task.id === taskId
+              ? applyFocusRecordedToTask(task, durationMinutes, cycles)
+              : task,
+          ),
+        );
         setSelectedTaskDetails((prev) =>
           prev && prev.task.id === taskId
             ? {
@@ -104,17 +100,13 @@ export function DashboardTasksPanel({
             : prev,
         );
       },
-      [onTasksChange, setSelectedTaskDetails],
+      [setTasksState, setSelectedTaskDetails],
     ),
     onTaskCompleted: useCallback(
       (taskId: string, transformTask: (task: Task) => Task) => {
-        if (!onTasksChange) {
-          setInternalTasks((prev) =>
-            prev.map((task) =>
-              task.id === taskId ? transformTask(task) : task,
-            ),
-          );
-        }
+        setTasksState((prev) =>
+          prev.map((task) => (task.id === taskId ? transformTask(task) : task)),
+        );
         setSelectedTaskDetails((prev) =>
           prev && prev.task.id === taskId
             ? {
@@ -124,7 +116,7 @@ export function DashboardTasksPanel({
             : prev,
         );
       },
-      [onTasksChange, setSelectedTaskDetails],
+      [setTasksState, setSelectedTaskDetails],
     ),
   });
 
@@ -366,16 +358,16 @@ export function DashboardTasksPanel({
 
   const guardedToggleComplete = useCallback(
     (taskId: string, completed: boolean) => {
-      if (!ensureTaskIdWritable(taskId)) return;
-      handleToggleComplete(taskId, completed);
+      if (!ensureTaskIdWritable(taskId)) return false;
+      return handleToggleComplete(taskId, completed);
     },
     [ensureTaskIdWritable, handleToggleComplete],
   );
 
   const guardedHabitChange = useCallback(
     (taskId: string, delta: number) => {
-      if (!ensureTaskIdWritable(taskId)) return;
-      handleHabitChange(taskId, delta);
+      if (!ensureTaskIdWritable(taskId)) return false;
+      return handleHabitChange(taskId, delta);
     },
     [ensureTaskIdWritable, handleHabitChange],
   );
@@ -433,17 +425,10 @@ export function DashboardTasksPanel({
   );
 
   return (
-    <section className={cn("flex flex-col", isCompact ? "gap-2.5" : "gap-3")}>
+    <section className="flex flex-col gap-3">
       <header className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2.5 min-w-0">
-          <h3
-            className={cn(
-              "font-bold text-neutral-50",
-              isCompact ? "text-base" : "text-lg",
-            )}
-          >
-            {t("title")}
-          </h3>
+          <h3 className="font-bold text-neutral-50 text-lg">{t("title")}</h3>
           <output
             className="px-2 py-0.5 rounded-md bg-surface/80 dark:bg-surface/60 border border-neutral-700/70 dark:border-primary/30 text-xs text-neutral-300 font-bold tabular-nums shrink-0"
             aria-label={t("title")}
@@ -466,7 +451,6 @@ export function DashboardTasksPanel({
         canCreateTask={writableColumns.length > 0}
         createTaskDisabledReason={t("newTaskNoWritableTitle")}
         overdueCount={overdueCount}
-        isCompact={isCompact}
       />
 
       <TaskTable
@@ -498,7 +482,6 @@ export function DashboardTasksPanel({
               : onCreateFirstColumn
             : undefined
         }
-        isCompact={isCompact}
         deletingTaskIds={checkingDeleteTaskIds}
       />
 

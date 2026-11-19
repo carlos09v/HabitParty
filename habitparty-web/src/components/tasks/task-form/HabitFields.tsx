@@ -6,6 +6,7 @@ import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { Select } from "@/components/ui/Select";
 import { HABIT_RESET_OPTIONS } from "@/constants/task";
 import type { CreateTaskFormReturn } from "@/hooks/useCreateTaskForm";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { ResetCounterOption } from "@/types/task";
 import { cn } from "@/utils";
 
@@ -16,6 +17,7 @@ interface HabitFieldsProps {
 export function HabitFields({ form }: HabitFieldsProps) {
   const t = useTranslations("tasks.taskModal.habitFields");
   const tOptions = useTranslations("tasks.options");
+  const { isGamified } = useExperienceMode();
   const { habitType, setHabitType, resetCounter, setResetCounter, isPending } =
     form;
 
@@ -44,9 +46,14 @@ export function HabitFields({ form }: HabitFieldsProps) {
                     {t("positiveBulletLabel")}
                   </span>
                   <span className="text-neutral-300">
-                    {t.rich("positiveBulletDesc", {
-                      bold: (chunks) => <strong>{chunks}</strong>,
-                    })}
+                    {t.rich(
+                      isGamified
+                        ? "positiveBulletDesc"
+                        : "positiveBulletDescProductivity",
+                      {
+                        bold: (chunks) => <strong>{chunks}</strong>,
+                      },
+                    )}
                   </span>
                 </li>
                 <li className="flex items-start gap-1.5">
@@ -159,9 +166,12 @@ export function HabitFields({ form }: HabitFieldsProps) {
             </ul>
 
             <div className="text-tiny text-neutral-400 bg-white/5 rounded-md p-1.5 border border-white/10 italic">
-              {t.rich("resetStreakNote", {
-                bold: (chunks) => <strong>{chunks}</strong>,
-              })}
+              {t.rich(
+                isGamified ? "resetStreakNote" : "resetStreakNoteProductivity",
+                {
+                  bold: (chunks) => <strong>{chunks}</strong>,
+                },
+              )}
             </div>
           </InfoTooltip>
         </div>

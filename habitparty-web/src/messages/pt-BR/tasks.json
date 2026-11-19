@@ -210,7 +210,8 @@
     "createButton": "Criar",
     "cancelButton": "Cancelar",
     "moreOptionsTitle": "Abrir formulário detalhado com mais opções",
-    "moreOptionsButton": "Mais opções"
+    "moreOptionsButton": "Mais opções",
+    "difficultyLabel": "Dificuldade:"
   },
   "taskList": {
     "sectionAria": "Lista: {title}",
@@ -318,7 +319,8 @@
       "tagsLabel": "Tags",
       "tagsHint": "Use > para aninhar",
       "tagsPlaceholder": "Ex: saúde, Concurso > BB (máx. {max})",
-      "priorityLabel": "Prioridade"
+      "priorityLabel": "Prioridade",
+      "creditsUnit": "Créditos"
     },
     "habitFields": {
       "directionLabel": "Direção do Hábito",
@@ -344,7 +346,9 @@
       "resetWeeklyDesc": "Zera toda segunda-feira (ex: ir à academia 3x na semana).",
       "resetMonthlyLabel": "• Mensal:",
       "resetMonthlyDesc": "Zera no dia 1º de cada mês (ex: ler 2 livros no mês).",
-      "resetStreakNote": "🛡️ Sua ofensiva (Streak) e moedas acumuladas <bold>NÃO</bold> são perdidas quando o contador reinicia!"
+      "resetStreakNote": "🛡️ Sua ofensiva (Streak) e moedas acumuladas <bold>NÃO</bold> são perdidas quando o contador reinicia!",
+      "positiveBulletDescProductivity": "Bom hábito a construir (ex: beber água, estudar). Cada <bold>+</bold> credita Pontos e Créditos.",
+      "resetStreakNoteProductivity": "🛡️ Sua ofensiva (Streak) e créditos acumulados <bold>NÃO</bold> são perdidos quando o contador reinicia!"
     },
     "dailyFields": {
       "startDateLabel": "Data Inicial",
@@ -413,7 +417,10 @@
       "emailReminderQuotaBadge": "Free: até 5 ativos (20/mês) • VIP: até 30 ativos (100/mês)",
       "emailUnverifiedDesc": "Confirme seu e-mail da conta para ativar alertas por e-mail.",
       "emailVerifiedDesc": "Enviaremos um alerta por e-mail quando o momento do alarme chegar.",
-      "emailSwitchAria": "Receber lembrete por e-mail"
+      "emailSwitchAria": "Receber lembrete por e-mail",
+      "dueDateStrictLabel": "Prazo Rígido",
+      "dueDateStrictPlaceholder": "Definir prazo rígido...",
+      "dueDateStrictFrozenHint": "🔒 Data congelada: prazo rígido expirado."
     },
     "checklistSection": {
       "title": "Checklist / Subtarefas",
@@ -468,8 +475,12 @@
       "routineSubtitleProductivity": "Para metas inegociáveis: aplica penalidade se falhar no dia",
       "todoActiveAlert": "Alto Risco Ativo: 50% de penalidade se não cumprido até o prazo. A data não poderá ser adiada após o vencimento.",
       "todoActiveOverdueAlert": "Alto Risco Ativo: o prazo já foi ultrapassado (sujeito à penalidade de 50% e bloqueio de adiamento após o vencimento).",
-      "routineActiveAlert": "Alto Risco Ativo: 50% de penalidade em Moedas e XP se não cumprida hoje."
-    }
+      "routineActiveAlert": "Alto Risco Ativo: 50% de penalidade em Moedas e XP se não cumprida hoje.",
+      "tooltipAriaProductivity": "Entenda como o Prazo Rígido / Compromisso Diário ajuda a vencer a procrastinação",
+      "switchAriaProductivity": "Alternar Prazo Rígido / Compromisso Diário",
+      "routineActiveAlertProductivity": "Compromisso Diário Ativo: 50% de penalidade em Créditos e Pontos se não cumprida hoje."
+    },
+    "rewardPreviewLabelProductivity": "Projeção de Rendimento"
   },
   "detailsPopover": {
     "dialogAria": "Detalhes rápidos da tarefa",
@@ -581,7 +592,8 @@
       "moreOptionsTitle": "Mais opções",
       "editFull": "Editar completo",
       "duplicate": "Duplicar",
-      "deleteTask": "Excluir tarefa"
+      "deleteTask": "Excluir tarefa",
+      "rewardsLabelProductivity": "Rendimento"
     }
   },
   "options": {
@@ -662,7 +674,8 @@
       "HABIT": "Hábito",
       "DAILY": "Diária",
       "TODO": "Tarefa"
-    }
+    },
+    "createTaskRewardDescProductivity": "Rendimento estimado: +{xp} pts • +{gold} Créditos"
   },
   "actions": {
     "communicationError": "Erro interno de comunicação com o servidor.",

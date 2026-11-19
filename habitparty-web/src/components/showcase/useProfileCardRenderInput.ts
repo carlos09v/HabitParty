@@ -2,17 +2,19 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo } from "react";
+import { resolveProfileTitleLabel } from "@/constants/cosmetics";
 import type { AppLocale } from "@/i18n/config";
 import type {
   AchievementItemResponseDTO,
   AchievementRarity,
+  ArtifactItemResponseDTO,
   ProfileHighlightResponseDTO,
   ShowcaseStatsResponseDTO,
 } from "@/types/showcase";
 import type { UserRetrospectiveData } from "@/types/social";
 import {
   resolveHighlightSlotCard,
-  resolveRetrospectiveAchievementTitle,
+  resolveRetrospectiveViewMeta,
   resolveUserLevelState,
 } from "@/utils";
 import type { ProfileCardRenderInput } from "@/utils/profileCardRenderer";
@@ -34,6 +36,8 @@ export interface ProfilePreviewCardUser {
   isPremium?: boolean | null;
   isFounder?: boolean | null;
   avatarFrame?: string | null;
+  avatarPreset?: string | null;
+  equippedTitle?: string | null;
   friendCode?: string | null;
   totalXp?: number | null;
   currentLevel?: number | null;
@@ -50,6 +54,7 @@ interface UseProfileCardRenderInputParams {
   stats?: ShowcaseStatsResponseDTO | null;
   highlights?: ProfileHighlightResponseDTO[];
   achievements?: AchievementItemResponseDTO[];
+  artifacts?: ArtifactItemResponseDTO[];
   retrospective?: UserRetrospectiveData | null;
   activeFrameId?: string | null;
   includeFriendCode: boolean;
@@ -63,6 +68,7 @@ export function useProfileCardRenderInput({
   stats,
   highlights = [],
   achievements = [],
+  artifacts = [],
   retrospective = null,
   activeFrameId,
   includeFriendCode,
@@ -74,6 +80,8 @@ export function useProfileCardRenderInput({
   const tCatalog = useTranslations("showcase.catalog");
   const tBadges = useTranslations("showcase.accountBadges");
   const tHighlights = useTranslations("showcase.highlights");
+  const tArtifacts = useTranslations("showcase.artifacts");
+  const tTitles = useTranslations("showcase.titles");
 
   const levelState = useMemo(
     () => resolveUserLevelState(user, locale, isGamified, stats?.totalXp ?? 0),
@@ -88,11 +96,15 @@ export function useProfileCardRenderInput({
       .map((item) => {
         const card = resolveHighlightSlotCard(item, {
           achievements,
+          artifacts,
+          stats,
           isGamified,
           levelTitle: levelState.levelTitle,
           currentXp: levelState.currentXp,
           tCatalog,
           tBadges,
+          tArtifacts,
+          tHighlights,
         });
         if (!card) return null;
         return {
@@ -103,33 +115,23 @@ export function useProfileCardRenderInput({
       })
       .filter((h): h is NonNullable<typeof h> => h !== null);
 
-    const bestMonthLabel =
-      retrospective?.bestMonth &&
-      retrospective.bestMonth >= 1 &&
-      retrospective.bestMonth <= 12
-        ? new Intl.DateTimeFormat(locale, {
-            month: "long",
-            timeZone: "UTC",
-          }).format(new Date(Date.UTC(2024, retrospective.bestMonth - 1, 1)))
-        : null;
-
-    const archetypeKey = retrospective?.archetype ?? "RISING_SPARK";
-    const archetypeTitle = isGamified
-      ? tRetro(`archetypes.${archetypeKey}.title`)
-      : tRetro(`archetypes.${archetypeKey}.essentialTitle`);
-    const archetypeDesc = tRetro(`archetypes.${archetypeKey}.desc`);
-
-    const rarestAchievementTitle = resolveRetrospectiveAchievementTitle(
-      retrospective,
-      isGamified,
+    const {
+      bestMonthName: bestMonthLabel,
+      archetypeTitle,
+      archetypeDesc,
+      rarestTitle: rarestAchievementTitle,
+      rarestRarityLabel: rarestAchievementRarityLabel,
+    } = resolveRetrospectiveViewMeta(retrospective, locale, isGamified, {
+      tRetro,
       tCatalog,
-    );
+      tRarities,
+    });
 
-    const rawRarity = retrospective?.rarestAchievementRarity;
-    const rarestAchievementRarityLabel =
-      rawRarity && tRarities.has(rawRarity as AchievementRarity)
-        ? tRarities(rawRarity as AchievementRarity)
-        : (rawRarity ?? null);
+    const equippedTitleLabel = resolveProfileTitleLabel(
+      user.equippedTitle,
+      isGamified,
+      tTitles,
+    );
 
     return {
       mode,
@@ -144,7 +146,10 @@ export function useProfileCardRenderInput({
         isFounder: Boolean(user.isFounder),
         friendCode: user.friendCode,
         avatarFrame: activeFrameId ?? user.avatarFrame,
+        avatarPreset: user.avatarPreset,
+        equippedTitle: user.equippedTitle,
       },
+      equippedTitleLabel,
       levelTitle: levelState.levelTitle,
       levelProgressPercent: levelState.progress.percent,
       includeFriendCode,
@@ -225,6 +230,7 @@ export function useProfileCardRenderInput({
     stats,
     highlights,
     achievements,
+    artifacts,
     retrospective,
     includeFriendCode,
     locale,
@@ -234,5 +240,7 @@ export function useProfileCardRenderInput({
     tCatalog,
     tBadges,
     tHighlights,
+    tArtifacts,
+    tTitles,
   ]);
 }

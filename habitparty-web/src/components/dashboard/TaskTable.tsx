@@ -36,7 +36,6 @@ export function TaskTable({
   onEditTask,
   selectedDate,
   onPageChange,
-  isCompact = false,
   deletingTaskIds,
   onStartFocus,
   emptyVariant = "default",
@@ -130,20 +129,12 @@ export function TaskTable({
       {/* Cabeçalho da Grade Responsivo */}
       <div
         className={cn(
-          "grid items-center text-xs font-semibold text-neutral-300 border-l-4 border-r border-transparent",
+          "grid items-center text-xs font-semibold text-neutral-300 border-l-4 border-r border-transparent gap-2.5 @lg:gap-3 px-3 @lg:px-4 py-2",
           TASK_TABLE_GRID_COLS,
-          isCompact
-            ? "gap-2.5 px-3 py-1.5"
-            : "gap-2.5 @lg:gap-3 px-3 @lg:px-4 py-2",
         )}
         aria-hidden="true"
       >
-        <span
-          className={cn(
-            "min-w-0 truncate",
-            isCompact ? "pl-6.5" : "pl-8.5 sm:pl-7.5",
-          )}
-        >
+        <span className="min-w-0 truncate pl-8.5 sm:pl-7.5">
           {t("colName")}
         </span>
         <span className="hidden @lg:block min-w-0">
@@ -161,12 +152,7 @@ export function TaskTable({
 
       {/* Linhas de Tarefas ou Estado Vazio */}
       {paginatedTasks.length === 0 ? (
-        <div
-          className={cn(
-            "w-full flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-neutral-700 dark:border-primary/30 bg-primary-dark/20",
-            isCompact ? "py-8 px-4 gap-2.5" : "py-12 px-6 gap-3.5",
-          )}
-        >
+        <div className="w-full flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-neutral-700 dark:border-primary/30 bg-primary-dark/20 py-12 px-6 gap-3.5">
           <div className="w-12 h-12 rounded-full bg-primary/10 dark:bg-primary/25 border border-primary/25 dark:border-primary/40 flex items-center justify-center text-primary dark:text-gold shadow-xs">
             <EmptyStateIcon size={24} aria-hidden="true" />
           </div>
@@ -225,7 +211,6 @@ export function TaskTable({
                 onOpenDetails={onOpenDetails}
                 onEditTask={onEditTask}
                 onStartFocus={onStartFocus}
-                isCompact={isCompact}
               />
             </li>
           ))}
@@ -239,7 +224,6 @@ export function TaskTable({
           totalItems={totalItems}
           itemsPerPage={itemsPerPage}
           itemLabel={t("paginationItemLabel")}
-          isCompact={isCompact}
           onPageChange={(newPage) => {
             if (newPage < 1 || newPage > totalPages) return;
             onPageChange?.(newPage);

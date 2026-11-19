@@ -27,14 +27,17 @@ import { toast } from "sonner";
 import { listFocusActivities } from "@/actions/focusActions";
 import type { ActionState } from "@/actions/types";
 import { AMBIENT_ICONS } from "@/constants/settings";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useFocusPipAction } from "@/hooks/useFocusPipAction";
 import { useFocusTimerStore } from "@/store/focusTimerStore";
 import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
 import type { FocusActivity } from "@/types/focus";
 import { cn } from "@/utils";
 import {
+  canCompleteFocusSession,
   formatFocusDisplayTime,
   isFocusOvertime,
+  isPartialPomoSession,
 } from "@/utils/focusFormatters";
 import { resolveFocusTargetIcon } from "@/utils/focusIcons";
 import { soundEffects } from "@/utils/soundEffects";
@@ -100,6 +103,7 @@ export function SidebarFocusWidget() {
   const router = useRouter();
   const pathname = usePathname();
   const t = useTranslations("focusWidget");
+  const { isGamified } = useExperienceMode();
   const { isPipOpen, isPipSupported, togglePip } = useFocusPipAction();
   const [mounted, setMounted] = useState(false);
 
@@ -109,18 +113,10 @@ export function SidebarFocusWidget() {
   const mode = useFocusTimerStore((s) => s.mode);
   const phase = useFocusTimerStore((s) => s.phase);
   const hasElapsedSeconds = useFocusTimerStore((s) => s.elapsedSeconds > 0);
-  const canCompleteSession = useFocusTimerStore(
-    (s) =>
-      s.elapsedSeconds >= 60 &&
-      s.phase !== "SHORT_BREAK" &&
-      s.phase !== "LONG_BREAK",
+  const canCompleteSession = useFocusTimerStore((s) =>
+    canCompleteFocusSession(s),
   );
-  const isPartialPomo = useFocusTimerStore(
-    (s) =>
-      s.mode === "POMO" &&
-      s.secondsRemaining > 0 &&
-      s.target?.type !== "inventory",
-  );
+  const isPartialPomo = useFocusTimerStore((s) => isPartialPomoSession(s));
   const isOvertime = useFocusTimerStore((s) => isFocusOvertime(s));
   const target = useFocusTimerStore((s) => s.target);
   const isSavingSession = useFocusTimerStore((s) => s.isSavingSession);
@@ -407,7 +403,9 @@ export function SidebarFocusWidget() {
             )}
           >
             {isInventory
-              ? t("modeBackpack")
+              ? isGamified
+                ? t("modeBackpack")
+                : t("modeInventory")
               : mode === "POMO"
                 ? t("modePomodoro")
                 : t("modeStopwatch")}

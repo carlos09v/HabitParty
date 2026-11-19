@@ -101,7 +101,10 @@ public class InventoryItemController implements InventoryItemApi {
             UUID itemId,
             AuthenticatedUser usuarioLogado) {
         UUID userId = usuarioLogado.id();
-        InventoryItem item = openMysteryBoxUseCase.execute(itemId, userId);
-        return ResponseEntity.ok(InventoryItemResponseDTO.fromDomain(item));
+        OpenMysteryBoxUseCase.OpenMysteryBoxResult result = openMysteryBoxUseCase.executeWithDrop(itemId, userId);
+        return ResponseEntity.ok(InventoryItemResponseDTO.fromDomain(
+                result.item(),
+                result.droppedArtifact(),
+                result.droppedUserArtifact()));
     }
 }

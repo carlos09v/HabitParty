@@ -2,12 +2,9 @@
 
 import {
   AlertTriangle,
-  Check,
-  Copy,
   Globe,
   KeyRound,
   Lock,
-  RefreshCw,
   ShieldBan,
   Users,
 } from "lucide-react";
@@ -15,7 +12,8 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { updatePrivacySettingsAction } from "@/actions/socialActions";
-import { useFriendCodeActions } from "@/hooks/useFriendCodeActions";
+import { SettingsOptionGrid } from "@/components/settings/SettingsOptionGrid";
+import { FriendCodeCard } from "@/components/social/FriendCodeCard";
 import { useUserStore } from "@/store/userStore";
 import type { FriendRequestPolicy, PrivacyLevel } from "@/types/social";
 import type { UserResponseDTO } from "@/types/user";
@@ -23,7 +21,6 @@ import { cn } from "@/utils";
 
 interface PrivacySettingsCardProps {
   initialUser: UserResponseDTO | null;
-  isCompact?: boolean;
 }
 
 const PRIVACY_LEVEL_OPTIONS: ReadonlyArray<{
@@ -44,96 +41,7 @@ const FRIEND_REQUEST_POLICY_OPTIONS: ReadonlyArray<{
   { value: "NONE", icon: ShieldBan },
 ];
 
-interface OptionSelectorGroupProps<T extends string> {
-  labelId: string;
-  title: string;
-  description: string;
-  value: T;
-  options: ReadonlyArray<{
-    value: T;
-    title: string;
-    description: string;
-    icon: typeof Globe;
-  }>;
-  onChange: (next: T) => void;
-  disabled?: boolean;
-}
-
-function OptionSelectorGroup<T extends string>({
-  labelId,
-  title,
-  description,
-  value,
-  options,
-  onChange,
-  disabled = false,
-}: OptionSelectorGroupProps<T>) {
-  return (
-    <div className="flex flex-col gap-2.5">
-      <div>
-        <h3 id={labelId} className="text-body-s font-bold text-neutral-100">
-          {title}
-        </h3>
-        <p className="text-tiny text-neutral-400 mt-0.5">{description}</p>
-      </div>
-
-      <fieldset
-        aria-labelledby={labelId}
-        className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 border-0 p-0 m-0"
-      >
-        {options.map((opt) => {
-          const isSelected = opt.value === value;
-          const Icon = opt.icon;
-
-          return (
-            <button
-              key={opt.value}
-              type="button"
-              aria-pressed={isSelected}
-              disabled={disabled}
-              onClick={() => onChange(opt.value)}
-              className={cn(
-                "flex flex-col gap-1.5 rounded-xl border p-3 text-left transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60",
-                isSelected
-                  ? "bg-amber-500/[0.08] dark:bg-primary-dark/60 border-gold shadow-glow-gold-xs ring-1 ring-gold"
-                  : "bg-surface/45 border-neutral-700 hover:border-primary/40 dark:bg-surface/40 dark:border-primary/20",
-              )}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-neutral-100">
-                  <Icon
-                    size={14}
-                    className={cn(
-                      "shrink-0",
-                      isSelected ? "text-gold" : "text-neutral-400",
-                    )}
-                    aria-hidden="true"
-                  />
-                  <span>{opt.title}</span>
-                </span>
-                {isSelected && (
-                  <Check
-                    size={14}
-                    className="text-gold shrink-0"
-                    aria-hidden="true"
-                  />
-                )}
-              </div>
-              <span className="text-[11px] text-neutral-400 leading-snug">
-                {opt.description}
-              </span>
-            </button>
-          );
-        })}
-      </fieldset>
-    </div>
-  );
-}
-
-export function PrivacySettingsCard({
-  initialUser,
-  isCompact = false,
-}: PrivacySettingsCardProps) {
+export function PrivacySettingsCard({ initialUser }: PrivacySettingsCardProps) {
   const t = useTranslations("settings.privacy");
   const storeUser = useUserStore((s) => s.user);
   const updateUserPartial = useUserStore((s) => s.updateUserPartial);
@@ -159,18 +67,6 @@ export function PrivacySettingsCard({
   const [friendCode, setFriendCode] = useState<string>(user?.friendCode ?? "");
 
   const [isSavingPrivacy, startSaveTransition] = useTransition();
-
-  const { copiedCode, isRegenerating, handleCopyCode, handleRegenerateCode } =
-    useFriendCodeActions({
-      friendCode,
-      messages: {
-        copied: t("copiedFriendCode"),
-        copyError: t("copyError"),
-        regenerated: t("friendCodeRegenerated"),
-        regenerateError: t("friendCodeRegenerateError"),
-      },
-      onRegenerated: setFriendCode,
-    });
 
   useEffect(() => {
     setProfileVisibility(savedProfileVisibility);
@@ -226,7 +122,7 @@ export function PrivacySettingsCard({
   };
 
   return (
-    <div className={cn("flex flex-col", isCompact ? "gap-5" : "gap-6")}>
+    <div className="flex flex-col gap-6">
       {!user?.emailVerified && (
         <output className="flex items-center gap-2.5 rounded-xl border border-amber-500/35 bg-amber-500/10 px-3.5 py-2.5 text-xs font-medium text-amber-800 dark:text-amber-300">
           <AlertTriangle size={15} className="shrink-0" aria-hidden="true" />
@@ -234,98 +130,63 @@ export function PrivacySettingsCard({
         </output>
       )}
 
-      {/* Código de Amigo */}
-      <div className="rounded-xl border border-neutral-700 dark:border-primary/25 bg-surface/50 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <h3 className="text-body-s font-bold text-neutral-100">
-            {t("friendCodeSectionTitle")}
-          </h3>
-          <p className="text-tiny text-neutral-400 mt-0.5">
-            {t("friendCodeSectionDesc")}
-          </p>
-        </div>
+      <FriendCodeCard
+        friendCode={friendCode}
+        title={t("friendCodeSectionTitle")}
+        description={t("friendCodeSectionDesc")}
+        copyLabel={t("copyFriendCode")}
+        regenerateLabel={t("regenerateFriendCode")}
+        regeneratingLabel={t("regeneratingFriendCode")}
+        messages={{
+          copied: t("copiedFriendCode"),
+          copyError: t("copyError"),
+          regenerated: t("friendCodeRegenerated"),
+          regenerateError: t("friendCodeRegenerateError"),
+        }}
+        onRegenerated={setFriendCode}
+      />
 
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <code className="px-3 py-1.5 rounded-lg bg-background border border-neutral-700 dark:border-primary/30 text-sm font-mono font-extrabold tracking-widest text-amber-700 dark:text-gold select-all">
-            {friendCode || "HP-......"}
-          </code>
-
-          <button
-            type="button"
-            onClick={handleCopyCode}
-            disabled={!friendCode}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-neutral-700 dark:border-primary/30 bg-card hover:bg-surface-hover text-neutral-100 transition-colors cursor-pointer disabled:opacity-50"
-          >
-            {copiedCode ? (
-              <Check
-                size={14}
-                className="text-emerald-700 dark:text-emerald-400"
-                aria-hidden="true"
-              />
-            ) : (
-              <Copy size={14} aria-hidden="true" />
-            )}
-            <span>{t("copyFriendCode")}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleRegenerateCode}
-            disabled={isRegenerating}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-gold transition-colors cursor-pointer disabled:opacity-50"
-          >
-            <RefreshCw
-              size={14}
-              className={cn(isRegenerating && "animate-spin")}
-              aria-hidden="true"
-            />
-            <span>
-              {isRegenerating
-                ? t("regeneratingFriendCode")
-                : t("regenerateFriendCode")}
-            </span>
-          </button>
-        </div>
-      </div>
-
-      {/* Seletores granulares de privacidade */}
-      <OptionSelectorGroup
+      <SettingsOptionGrid
+        variant="compact"
         labelId="privacy-profile-visibility"
         title={t("profileVisibilityTitle")}
         description={t("profileVisibilityDesc")}
-        value={profileVisibility}
+        selectedValue={profileVisibility}
         options={levelOptions}
-        onChange={setProfileVisibility}
+        onSelect={setProfileVisibility}
         disabled={isSavingPrivacy}
       />
 
-      <OptionSelectorGroup
+      <SettingsOptionGrid
+        variant="compact"
         labelId="privacy-stats-visibility"
         title={t("statsVisibilityTitle")}
         description={t("statsVisibilityDesc")}
-        value={statsVisibility}
+        selectedValue={statsVisibility}
         options={levelOptions}
-        onChange={setStatsVisibility}
+        onSelect={setStatsVisibility}
         disabled={isSavingPrivacy}
       />
 
-      <OptionSelectorGroup
+      <SettingsOptionGrid
+        variant="compact"
         labelId="privacy-achievements-visibility"
         title={t("achievementsVisibilityTitle")}
         description={t("achievementsVisibilityDesc")}
-        value={achievementsVisibility}
+        selectedValue={achievementsVisibility}
         options={levelOptions}
-        onChange={setAchievementsVisibility}
+        onSelect={setAchievementsVisibility}
         disabled={isSavingPrivacy}
       />
 
-      <OptionSelectorGroup
+      <SettingsOptionGrid
+        variant="compact"
         labelId="privacy-friend-request-policy"
         title={t("friendRequestPolicyTitle")}
         description={t("friendRequestPolicyDesc")}
-        value={friendRequestPolicy}
+        selectedValue={friendRequestPolicy}
         options={policyOptions}
-        onChange={setFriendRequestPolicy}
+        onSelect={setFriendRequestPolicy}
         disabled={isSavingPrivacy}
       />
 

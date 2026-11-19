@@ -367,7 +367,7 @@ export const useUIStore = create<UIState>()((set, get) => ({
   },
   experienceMode: "PRODUCTIVITY",
   setExperienceMode: (experienceMode) => {
-    set({ experienceMode });
+    set({ experienceMode, hydrated: true });
     useUserStore.getState().updateUserPartial({ experienceMode });
     updateUserExperienceModeAction(experienceMode);
   },

@@ -7,8 +7,9 @@ import type { ExperienceMode } from "@/types/ui";
 /**
  * Lê e altera o Modo de Experiência ("GAMIFIED" vs "PRODUCTIVITY")
  * sincronizado com o banco de dados via Server Action (PUT /users).
+ * O parâmetro `fallbackMode` é usado no SSR antes da hidratação do store.
  */
-export function useExperienceMode(propMode?: ExperienceMode) {
+export function useExperienceMode(fallbackMode?: ExperienceMode) {
   const hydrated = useUIStore((state) => state.hydrated);
   const uiExperienceMode = useUIStore((state) => state.experienceMode);
   const userExperienceMode = useUserStore(
@@ -16,9 +17,9 @@ export function useExperienceMode(propMode?: ExperienceMode) {
   );
   const setExperienceMode = useUIStore((state) => state.setExperienceMode);
 
-  const effectiveMode: ExperienceMode =
-    propMode ??
-    (hydrated ? uiExperienceMode : (userExperienceMode ?? uiExperienceMode));
+  const effectiveMode: ExperienceMode = hydrated
+    ? uiExperienceMode
+    : (fallbackMode ?? userExperienceMode ?? uiExperienceMode);
   const isGamified = effectiveMode === "GAMIFIED";
   const isProductivity = effectiveMode === "PRODUCTIVITY";
 

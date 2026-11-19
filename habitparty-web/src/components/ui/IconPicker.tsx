@@ -16,7 +16,6 @@ export function IconPicker({
   disabled = false,
   columns = 5,
   className,
-  isCompact = false,
 }: IconPickerProps) {
   const t = useTranslations("ui.iconPicker");
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
@@ -65,8 +64,7 @@ export function IconPicker({
               onClick={() => handleSelect(item)}
               disabled={disabled}
               className={cn(
-                "relative flex flex-col items-center justify-center gap-1 rounded-lg border transition-[color,background-color,border-color,opacity] cursor-pointer select-none focus:outline-none focus:ring-1 focus:ring-gold",
-                isCompact ? "p-1.5 min-h-[50px]" : "p-2 min-h-[56px]",
+                "relative flex flex-col items-center justify-center gap-1 rounded-lg border transition-[color,background-color,border-color,opacity] cursor-pointer select-none focus:outline-none focus:ring-1 focus:ring-gold p-2 min-h-[56px]",
                 isSelected
                   ? "opacity-100 border-gold bg-gold/20 text-gold shadow-glow-gold-xs font-bold"
                   : isLocked
@@ -86,7 +84,7 @@ export function IconPicker({
                   )}
                 />
               )}
-              <Icon size={isCompact ? 16 : 18} />
+              <Icon size={18} />
               <span className="text-[10px] font-medium leading-none truncate max-w-full">
                 {label}
               </span>

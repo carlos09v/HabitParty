@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+import { Dices, type LucideIcon } from "lucide-react";
 import {
   PACKAGE_LEVEL_COLOR,
   PACKAGE_LEVEL_GLOW,
@@ -109,4 +109,26 @@ export function resolveCatalogItemVisuals({
       "border-l-4 border-l-transparent",
     isFocusNavigate: Boolean(isActiveFocusSession),
   };
+}
+
+/**
+ * Resolve o ícone e o rótulo de tipo compartilhados entre cards e linhas do catálogo/inventário.
+ */
+export function resolveCatalogTypePresentation(
+  visuals: Pick<CatalogItemVisuals, "isMystery" | "typeKey" | "typeMeta">,
+  isGamified: boolean,
+  t: (key: never) => string,
+): { TypeIcon: LucideIcon | undefined; typeLabel: string } {
+  const TypeIcon =
+    !isGamified && visuals.isMystery ? Dices : visuals.typeMeta?.icon;
+  const typeLabel =
+    visuals.typeKey === "MysteryBox"
+      ? t(
+          (isGamified
+            ? "types.MysteryBox"
+            : "types.MysteryBoxProductivity") as never,
+        )
+      : t(`types.${visuals.typeKey}` as never);
+
+  return { TypeIcon, typeLabel };
 }

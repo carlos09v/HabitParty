@@ -12,7 +12,6 @@ import { RoutineFilterPopover } from "./filters/RoutineFilterPopover";
 
 interface StoreColumnButtonUIProps {
   onOpenColumnsDrawer?: () => void;
-  isCompact?: boolean;
   visibleCount: number;
   totalCount: number;
   maxColumns: number;
@@ -23,7 +22,6 @@ interface StoreColumnButtonUIProps {
 
 function StoreColumnButtonUI({
   onOpenColumnsDrawer,
-  isCompact,
   visibleCount,
   totalCount,
   maxColumns,
@@ -52,8 +50,7 @@ function StoreColumnButtonUI({
             : t("storeColumnManageTitle")
       }
       className={cn(
-        "flex items-center gap-1.5 rounded-lg border font-semibold shadow-xs transition-[transform,background-color,border-color,color] cursor-pointer select-none active:scale-98 shrink-0",
-        isCompact ? "px-2.5 py-1.5 text-xs" : "px-3 py-2.5 text-body-s",
+        "flex items-center gap-1.5 rounded-lg border font-semibold shadow-xs transition-[transform,background-color,border-color,color] cursor-pointer select-none active:scale-98 shrink-0 px-3 py-2.5 text-body-s",
         isOverValid
           ? "bg-amber-500/20 border-amber-500 text-amber-900 dark:bg-gold/25 dark:border-gold dark:text-white ring-2 ring-amber-500/50 dark:ring-gold/70 dark:shadow-glow-gold scale-105"
           : isDraggingColumn
@@ -63,17 +60,14 @@ function StoreColumnButtonUI({
     >
       {isDraggingColumn ? (
         <ArchiveRestore
-          size={isCompact ? 14 : 15}
+          size={15}
           className={cn(
             "text-amber-700 dark:text-gold transition-transform",
             isOverValid && "scale-110",
           )}
         />
       ) : (
-        <Columns3
-          size={isCompact ? 14 : 15}
-          className="text-primary dark:text-primary-light"
-        />
+        <Columns3 size={15} className="text-primary dark:text-primary-light" />
       )}
       <span>
         {isOverValid
@@ -134,10 +128,8 @@ export function RoutineFilters({
   onOpenColumnsDrawer,
   isDraggingColumn = false,
   enableDroppable = false,
-  isCompact: propIsCompact,
 }: RoutineFiltersProps) {
   const t = useTranslations("tasks.filters");
-  const isCompact = propIsCompact ?? false;
   const resolvedTotalCount = totalColumnsCount ?? visibleColumnIds.length;
   const resolvedVisibleCount = Math.min(
     visibleColumnIds.length,
@@ -150,7 +142,6 @@ export function RoutineFilters({
       onFilterChange={onFilterChange}
       availableTags={availableTags}
       tagCounts={tagCounts}
-      isCompact={isCompact}
     />
   );
 
@@ -160,14 +151,12 @@ export function RoutineFilters({
         <BoardAlignmentSelector
           value={alignment}
           onChange={onAlignmentChange}
-          isCompact={isCompact}
         />
       )}
 
       {enableDroppable ? (
         <DroppableStoreColumnButton
           onOpenColumnsDrawer={onOpenColumnsDrawer}
-          isCompact={isCompact}
           visibleCount={resolvedVisibleCount}
           totalCount={resolvedTotalCount}
           maxColumns={maxColumns}
@@ -176,7 +165,6 @@ export function RoutineFilters({
       ) : (
         <StoreColumnButtonUI
           onOpenColumnsDrawer={onOpenColumnsDrawer}
-          isCompact={isCompact}
           visibleCount={resolvedVisibleCount}
           totalCount={resolvedTotalCount}
           maxColumns={maxColumns}
@@ -196,21 +184,19 @@ export function RoutineFilters({
             : t("newColumnCreateTitle")
         }
         className={cn(
-          "flex items-center gap-1.5 rounded-lg bg-card dark:bg-surface border font-semibold transition-[transform,background-color,border-color,color] shadow-xs shrink-0",
-          isCompact ? "px-2.5 py-1.5 text-xs" : "px-3 py-2.5 text-body-s",
+          "flex items-center gap-1.5 rounded-lg bg-card dark:bg-surface border font-semibold transition-[transform,background-color,border-color,color] shadow-xs shrink-0 px-3 py-2.5 text-body-s",
           canCreateColumn
             ? "border-neutral-700 text-neutral-100 hover:bg-surface hover:border-primary/40 hover:text-primary dark:border-white/15 dark:text-neutral-100 dark:hover:bg-surface-hover dark:hover:border-gold dark:hover:text-gold cursor-pointer active:scale-98"
             : "border-neutral-700/60 text-neutral-400 bg-surface dark:border-white/10 dark:text-neutral-500 dark:bg-surface/50 cursor-not-allowed opacity-60",
         )}
       >
-        <SquarePlus size={isCompact ? 14 : 16} className="shrink-0" />
+        <SquarePlus size={16} className="shrink-0" />
         <span className="hidden sm:inline">{t("newColumnButton")}</span>
       </button>
 
       <PrimaryActionButton
         label={t("newTaskButton")}
         onClick={onOpenCreateTask}
-        isCompact={isCompact}
       />
     </>
   );

@@ -4,7 +4,7 @@ import { Crown } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { cn } from "@/utils";
-import { UpgradePremiumModal } from "./UpgradePremiumModal";
+import { LazyUpgradePremiumModal } from "./LazyUpgradePremiumModal";
 
 interface SubscribeButtonProps {
   className?: string;
@@ -44,7 +44,10 @@ export function SubscribeButton({
       </button>
 
       {isOpen && (
-        <UpgradePremiumModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
+        <LazyUpgradePremiumModal
+          isOpen={isOpen}
+          onClose={() => setIsOpen(false)}
+        />
       )}
     </>
   );

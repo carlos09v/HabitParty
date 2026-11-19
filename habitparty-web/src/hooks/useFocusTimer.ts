@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect } from "react";
-import { FOCUS_REWARD_RULES } from "@/constants/focus";
 import {
   setFocusTimerTranslators,
   useFocusTimerStore,
@@ -10,12 +9,15 @@ import {
 import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
 import type { FocusTimerControlsState, FocusTimerState } from "@/types/focus";
 import {
+  canCompleteFocusSession,
   formatFocusDisplayTime,
   getFocusOvertimeSeconds,
   getFocusProgressPercent,
   getFocusTimerDerivedState,
   getNextFocusBreakMinutes,
   isFocusOvertime,
+  isFocusSessionRewardCapped,
+  isPartialPomoSession,
 } from "@/utils/focusFormatters";
 import { setFocusBrowserTranslations } from "@/utils/focusTimerBrowser";
 
@@ -59,24 +61,15 @@ export function useFocusTimerControls({
   );
   const startedAt = useFocusTimerStore((s) => s.startedAt);
   const hasElapsedSeconds = useFocusTimerStore((s) => s.elapsedSeconds > 0);
-  const canComplete = useFocusTimerStore((s) => s.elapsedSeconds >= 60);
-  const isPartialPomo = useFocusTimerStore(
-    (s) =>
-      s.mode === "POMO" &&
-      s.phase === "WORK" &&
-      s.secondsRemaining > 0 &&
-      s.target?.type !== "inventory",
-  );
+  const canComplete = useFocusTimerStore((s) => canCompleteFocusSession(s));
+  const isPartialPomo = useFocusTimerStore((s) => isPartialPomoSession(s));
   const isOvertime = useFocusTimerStore((s) => isFocusOvertime(s));
   const isSavingSession = useFocusTimerStore((s) => s.isSavingSession);
   const isCompletingLinkedTask = useFocusTimerStore(
     (s) => s.isCompletingLinkedTask,
   );
-  const isSessionRewardCapped = useFocusTimerStore(
-    (s) =>
-      s.phase === "WORK" &&
-      s.target?.type !== "inventory" &&
-      s.elapsedSeconds >= FOCUS_REWARD_RULES.MAX_EFFECTIVE_MINUTES * 60,
+  const isSessionRewardCapped = useFocusTimerStore((s) =>
+    isFocusSessionRewardCapped(s),
   );
   const nextBreakMinutes = useFocusTimerStore((s) =>
     getNextFocusBreakMinutes(s.completedCycles),

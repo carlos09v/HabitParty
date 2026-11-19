@@ -1,5 +1,6 @@
 import type { components } from "@/api/schema";
 import type { Reward } from "@/types/reward";
+import type { ArtifactItemResponseDTO } from "@/types/showcase";
 
 // 1. DTOs Base (Direto do backend)
 export type InventoryItemResponseDTO =
@@ -18,6 +19,7 @@ export interface MysteryBoxOpenResult {
   status?: string;
   remainingMinutes?: number;
   remainingSeconds?: number;
+  droppedArtifact?: ArtifactItemResponseDTO | null;
 }
 
 export type InventoryItemType =
@@ -47,7 +49,6 @@ export interface InventoryCardProps {
   onSendToFocus?: (item: InventoryItem) => void;
   onOpenMysteryBox?: (item: InventoryItem) => void;
   onContextMenu?: (e: React.MouseEvent, item: InventoryItem) => void;
-  isCompact?: boolean;
   isUsing?: boolean;
   isSendingToFocus?: boolean;
 }

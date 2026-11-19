@@ -42,6 +42,26 @@ export function getMysteryBadgeVariantClass(
   );
 }
 
+export const MYSTERY_BADGE_TEXT_CLASSES: Record<
+  MysteryBoxDropRate["badgeVariant"],
+  string
+> = {
+  emerald: "text-emerald-700 dark:text-success-400",
+  amber: "text-amber-700 dark:text-amber-400",
+  gold: "text-amber-700 dark:text-gold",
+  purple: "text-magenta",
+};
+
+/**
+ * Resolve apenas a cor de texto para porcentagens de chance em listagens sem pílula de fundo.
+ */
+export function getMysteryBadgeTextClass(
+  variant?: MysteryBoxDropRate["badgeVariant"],
+): string {
+  if (!variant) return MYSTERY_BADGE_TEXT_CLASSES.gold;
+  return MYSTERY_BADGE_TEXT_CLASSES[variant] ?? MYSTERY_BADGE_TEXT_CLASSES.gold;
+}
+
 export const MYSTERY_BOX_TIERS: readonly MysteryBoxTier[] = [
   {
     id: "Básico",

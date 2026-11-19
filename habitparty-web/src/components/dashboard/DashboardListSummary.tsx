@@ -15,7 +15,6 @@ import { ListCard } from "@/components/ui/ListCard";
 import { useDashboardListSummary } from "@/hooks/useDashboardListSummary";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { DashboardListSummaryProps } from "@/types/dashboard";
-import { cn } from "@/utils";
 
 const CreateBoardColumnModal = dynamic(
   () =>
@@ -54,7 +53,6 @@ export function DashboardListSummary({
   activeWorkspaceId,
   activeWorkspaceName,
   isReadOnly = false,
-  isCompact = false,
   isPremium = false,
   tasks,
 }: DashboardListSummaryProps) {
@@ -148,24 +146,14 @@ export function DashboardListSummary({
   );
 
   return (
-    <section
-      className={cn("flex flex-col shrink-0", isCompact ? "gap-2" : "gap-2.5")}
-    >
+    <section className="flex flex-col shrink-0 gap-2.5">
       <header className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2.5 flex-wrap">
-          <h3
-            className={cn(
-              "font-bold text-neutral-50",
-              isCompact ? "text-base" : "text-lg",
-            )}
-          >
-            {t("title")}
-          </h3>
+          <h3 className="font-bold text-neutral-50 text-lg">{t("title")}</h3>
           {activeWorkspaceName && (
             <TaskWorkspaceBadge
               workspaceName={activeWorkspaceName}
               size="header"
-              isCompact={isCompact}
               isReadOnly={isReadOnly}
             />
           )}
@@ -185,10 +173,7 @@ export function DashboardListSummary({
                 : "/tasks"
             }
             title={t("viewBoardTitle")}
-            className={cn(
-              "inline-flex items-center gap-1 rounded-lg font-semibold text-neutral-300 hover:text-primary dark:hover:text-gold hover:bg-surface-hover dark:hover:bg-white/5 transition-colors",
-              isCompact ? "px-2 py-1 text-xs" : "px-2.5 py-1 text-xs",
-            )}
+            className="inline-flex items-center gap-1 rounded-lg font-semibold text-neutral-300 hover:text-primary dark:hover:text-gold hover:bg-surface-hover dark:hover:bg-white/5 transition-colors px-2.5 py-1 text-xs"
           >
             <span>{t("viewBoard")}</span>
             <ArrowUpRight size={13} aria-hidden="true" />
@@ -221,11 +206,7 @@ export function DashboardListSummary({
               type="button"
               onClick={() => setIsUpgradeModalOpen(true)}
               title={t("readOnlyHint")}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg font-bold transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer border",
-                "bg-amber-500/10 text-amber-800 border-amber-500/40 hover:bg-amber-500/20 hover:border-amber-600 dark:bg-gold/10 dark:text-gold dark:border-gold/40 dark:hover:bg-gold/20 dark:hover:border-gold hover:shadow-glow-gold-xs active:scale-95",
-                isCompact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-xs",
-              )}
+              className="inline-flex items-center gap-1.5 rounded-lg font-bold transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer border bg-amber-500/10 text-amber-800 border-amber-500/40 hover:bg-amber-500/20 hover:border-amber-600 dark:bg-gold/10 dark:text-gold dark:border-gold/40 dark:hover:bg-gold/20 dark:hover:border-gold hover:shadow-glow-gold-xs active:scale-95 px-3 py-1.5 text-xs"
             >
               <Lock size={12} className="shrink-0" aria-hidden="true" />
               <span>{t("readOnlyBadge")}</span>
@@ -234,12 +215,7 @@ export function DashboardListSummary({
             <button
               type="button"
               onClick={handleOpenCreateModal}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg font-bold transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer border",
-                "bg-primary/15 dark:bg-primary/25 text-primary dark:text-neutral-100 border-primary/35 dark:border-primary-light/45",
-                "hover:bg-gold hover:text-on-gold hover:border-gold dark:hover:bg-gold dark:hover:text-on-gold dark:hover:border-gold hover:shadow-glow-gold-xs active:scale-95",
-                isCompact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-xs",
-              )}
+              className="inline-flex items-center gap-1.5 rounded-lg font-bold transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer border bg-primary/15 dark:bg-primary/25 text-primary dark:text-neutral-100 border-primary/35 dark:border-primary-light/45 hover:bg-gold hover:text-on-gold hover:border-gold dark:hover:bg-gold dark:hover:text-on-gold dark:hover:border-gold hover:shadow-glow-gold-xs active:scale-95 px-3 py-1.5 text-xs"
             >
               <Plus size={14} strokeWidth={2.5} aria-hidden="true" />
               <span>{t("addCardSubtitle")}</span>
@@ -249,11 +225,7 @@ export function DashboardListSummary({
               type="button"
               onClick={() => setIsUpgradeModalOpen(true)}
               title={tUpgrade("upgradeSubtitle")}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg font-bold transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer border",
-                "bg-amber-500/10 text-amber-700 border-amber-500/40 hover:bg-amber-500/20 hover:border-amber-600 dark:bg-gold/10 dark:text-gold dark:border-gold/40 dark:hover:bg-gold/20 dark:hover:border-gold hover:shadow-glow-gold-xs active:scale-95",
-                isCompact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-xs",
-              )}
+              className="inline-flex items-center gap-1.5 rounded-lg font-bold transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer border bg-amber-500/10 text-amber-700 border-amber-500/40 hover:bg-amber-500/20 hover:border-amber-600 dark:bg-gold/10 dark:text-gold dark:border-gold/40 dark:hover:bg-gold/20 dark:hover:border-gold hover:shadow-glow-gold-xs active:scale-95 px-3 py-1.5 text-xs"
             >
               <Crown size={13} className="fill-gold/20 shrink-0" />
               <span>{t("addCardSubtitle")}</span>
@@ -264,10 +236,7 @@ export function DashboardListSummary({
                 current: columns.length,
                 max: maxColumns,
               })}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg font-semibold border border-neutral-700 bg-surface/60 dark:border-neutral-700/60 dark:bg-surface/40 text-neutral-400 dark:text-neutral-400 cursor-not-allowed select-none",
-                isCompact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-xs",
-              )}
+              className="inline-flex items-center gap-1.5 rounded-lg font-semibold border border-neutral-700 bg-surface/60 dark:border-neutral-700/60 dark:bg-surface/40 text-neutral-400 dark:text-neutral-400 cursor-not-allowed select-none px-3 py-1.5 text-xs"
             >
               <Lock size={12} aria-hidden="true" />
               <span>{tUpgrade("title")}</span>
@@ -276,12 +245,7 @@ export function DashboardListSummary({
         </div>
       </header>
 
-      <ul
-        className={cn(
-          "grid grid-cols-2 @lg:grid-cols-3 @2xl:grid-cols-4 @4xl:grid-cols-6 m-0 p-0 list-none w-full",
-          isCompact ? "gap-2" : "gap-2.5",
-        )}
-      >
+      <ul className="grid grid-cols-2 @lg:grid-cols-3 @2xl:grid-cols-4 @4xl:grid-cols-6 m-0 p-0 list-none w-full gap-2.5">
         {activeColumns.map((column) => (
           <DashboardColumnCard
             key={column.id}
@@ -293,7 +257,6 @@ export function DashboardListSummary({
                 : null
             }
             hasTaskCountsMap={Boolean(columnCountsMap)}
-            isCompact={isCompact}
             isContextMenuOpen={
               contextMenu.isOpen && contextMenu.column?.id === (column.id || "")
             }
@@ -305,12 +268,11 @@ export function DashboardListSummary({
         {activeColumns.length === 0 && !isLimitReached && !isReadOnly && (
           <li className="list-none min-w-0 col-span-2 sm:col-span-1">
             <ListCard
-              compact={isCompact}
               title={t("addFirstCard")}
               subtitle={t("addFirstCardSubtitle")}
               isAdd={true}
               onClick={handleOpenCreateModal}
-              icon={<Plus size={isCompact ? 15 : 17} aria-hidden="true" />}
+              icon={<Plus size={17} aria-hidden="true" />}
             />
           </li>
         )}

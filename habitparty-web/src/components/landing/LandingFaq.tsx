@@ -1,12 +1,12 @@
 import { ChevronDown, HelpCircle } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import { LANDING_FAQ_KEYS } from "@/constants/landing";
+import { LANDING_ANCHORS, LANDING_FAQ_KEYS } from "@/constants/landing";
 
 export async function LandingFaq() {
   const t = await getTranslations("landing.faq");
 
   return (
-    <section id="faq" className="py-20 md:py-28 relative">
+    <section id={LANDING_ANCHORS.faq} className="py-20 md:py-28 relative">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-14">
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-card dark:bg-surface border border-neutral-700 dark:border-white/10 text-neutral-300 text-xs font-semibold uppercase tracking-wider mb-3">

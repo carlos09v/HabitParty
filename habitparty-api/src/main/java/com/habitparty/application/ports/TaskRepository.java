@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import com.habitparty.application.ports.projections.DashboardTaskDTO;
+import com.habitparty.application.ports.projections.FocusableTaskDTO;
 import com.habitparty.application.ports.projections.TaskSearchWorkspaceCountDTO;
 import com.habitparty.core.domain.entities.task.ChecklistItem;
 import com.habitparty.core.domain.entities.task.Task;
@@ -108,6 +109,11 @@ public interface TaskRepository {
 
   // Busca textual (nome/descrição) agregada por workspace, em todos os workspaces do usuário
   List<TaskSearchWorkspaceCountDTO> countMatchingTasksByWorkspace(UUID userId, String query);
+
+  // Busca enxuta para o seletor de vínculo no Palco de Foco (/focus)
+  default List<FocusableTaskDTO> findFocusableTasksByWorkspaceIds(UUID userId, Collection<UUID> workspaceIds) {
+    return List.of();
+  }
 
   // ChecklistItem
   Optional<ChecklistItem> findChecklistItemByIdAndUserId(UUID itemId, UUID userId);

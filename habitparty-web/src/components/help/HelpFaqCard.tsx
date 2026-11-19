@@ -6,7 +6,6 @@ import { cn } from "@/utils";
 interface HelpFaqCardProps {
   faq: HelpFaqItem;
   isExpanded: boolean;
-  isCompact?: boolean;
   showCategoryBadge: boolean;
   categoryLabel: string;
   tagsLabel: string;
@@ -17,7 +16,6 @@ interface HelpFaqCardProps {
 export function HelpFaqCard({
   faq,
   isExpanded,
-  isCompact = false,
   showCategoryBadge,
   categoryLabel,
   tagsLabel,
@@ -35,10 +33,7 @@ export function HelpFaqCard({
       <button
         type="button"
         onClick={() => onToggle(faq.id)}
-        className={cn(
-          "w-full text-left flex items-start justify-between gap-4 cursor-pointer hover:bg-surface/50 dark:hover:bg-white/5 transition-colors select-none outline-none focus-visible:ring-1 focus-visible:ring-gold",
-          isCompact ? "p-3.5 sm:p-4" : "p-4 sm:p-5",
-        )}
+        className="w-full text-left p-4 sm:p-5 flex items-start justify-between gap-4 cursor-pointer hover:bg-surface/50 dark:hover:bg-white/5 transition-colors select-none outline-none focus-visible:ring-1 focus-visible:ring-gold"
         aria-expanded={isExpanded}
       >
         <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -76,12 +71,7 @@ export function HelpFaqCard({
       </button>
 
       {isExpanded && (
-        <div
-          className={cn(
-            "pt-3 text-neutral-300 text-body-s flex flex-col gap-3 border-t border-neutral-700 dark:border-white/5 animate-in fade-in duration-150",
-            isCompact ? "px-3.5 pb-4 sm:px-4" : "px-4 pb-5 sm:px-5 sm:pb-5",
-          )}
-        >
+        <div className="px-4 pb-5 sm:px-5 sm:pb-5 pt-3 text-neutral-300 text-body-s flex flex-col gap-3 border-t border-neutral-700 dark:border-white/5 animate-in fade-in duration-150">
           <p className="leading-relaxed">{faq.answer}</p>
 
           {faq.bullets && faq.bullets.length > 0 && (

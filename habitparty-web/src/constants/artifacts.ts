@@ -1,0 +1,1 @@
+export const DEFAULT_TOTAL_ARTIFACTS_COUNT = 20;

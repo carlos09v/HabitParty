@@ -319,7 +319,9 @@
       "workspaceReadOnlyTitle": "Workspace: {workspace} (read-only on Free plan)",
       "focusRunningTitle": "Focus timer running on this task",
       "focusTimeTitle": "Focused time: {time} ({cycles, plural, one {# cycle} other {# cycles}})",
-      "focusActiveShort": "Focus"
+      "focusActiveShort": "Focus",
+      "rewardPointsTitle": "Yield: +{xp} Points",
+      "rewardCreditsTitle": "Yield: +{gold} Credits"
     },
     "actions": {
       "positiveHabitTitle": "Log positive habit (+)",
@@ -454,7 +456,9 @@
       "outflows": "Outflows:",
       "netBalance": "Net:",
       "legendEarnings": "Earned",
-      "legendSpent": "Spent"
+      "legendSpent": "Spent",
+      "leisureEquivalenceLabel": "Leisure equivalent",
+      "walletTitleProductivityWithLeisure": "View full transaction history • Equivalent to {duration} free leisure"
     },
     "partyWidget": {
       "title": "Party & Friends",

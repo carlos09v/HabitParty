@@ -63,7 +63,7 @@ export function QuickAddConfigBar({
   const renderDifficultyRow = () => (
     <div className="flex items-center justify-between gap-1 border-t border-neutral-700/50 dark:border-white/5 pt-1 flex-wrap">
       <span className="text-neutral-300 dark:text-neutral-400 font-medium text-tiny shrink-0">
-        {t("effortLabel")}
+        {isGamified ? t("difficultyLabel") : t("effortLabel")}
       </span>
       <div className="flex items-center gap-1 flex-wrap">
         {TASK_DIFFICULTY_OPTIONS.map((opt) => {
@@ -236,6 +236,13 @@ export function QuickAddConfigBar({
           <div className="flex items-center gap-1 flex-wrap">
             {HABIT_IMPORTANCE_OPTIONS.map((imp) => {
               const isSelected = importanceType === imp.id;
+              const swordDiffKey =
+                imp.id === "LOW"
+                  ? "TRIVIAL"
+                  : imp.id === "HIGH"
+                    ? "HARD"
+                    : "EASY";
+              const ImportanceIcon = imp.id === "HIGH" ? Swords : Sword;
               return (
                 <button
                   key={imp.id}
@@ -252,12 +259,22 @@ export function QuickAddConfigBar({
                       : "text-neutral-400 hover:text-neutral-100 dark:hover:text-neutral-200",
                   )}
                 >
-                  <span
-                    className={cn(
-                      "w-1.5 h-1.5 rounded-full shrink-0",
-                      HABIT_IMPORTANCE_META[imp.id].dotColor,
-                    )}
-                  />
+                  {isGamified ? (
+                    <ImportanceIcon
+                      size={10}
+                      className={cn(
+                        "shrink-0",
+                        DIFFICULTY_SWORD_COLORS[swordDiffKey],
+                      )}
+                    />
+                  ) : (
+                    <span
+                      className={cn(
+                        "w-1.5 h-1.5 rounded-full shrink-0",
+                        HABIT_IMPORTANCE_META[imp.id].dotColor,
+                      )}
+                    />
+                  )}
                   <span>{tOptions(`importances.${imp.id}`)}</span>
                 </button>
               );

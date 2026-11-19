@@ -21,7 +21,7 @@ public class UpdateProfilePhotoUseCase {
     this.storagePort = storagePort;
   }
 
-  public void execute(UUID userId, InputStream photoStream, String originalFilename, long size) {
+  public User execute(UUID userId, InputStream photoStream, String originalFilename, long size) {
     User user = port.findById(userId)
         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
 
@@ -32,9 +32,11 @@ public class UpdateProfilePhotoUseCase {
 
     // 2. Atualiza a URL na entidade e salva no banco
     user.updateProfilePhoto(photoUrl);
-    port.save(user);
+    User savedUser = port.save(user);
 
     // 3. Remove a foto antiga do armazenamento local, se existir
     oldPhotoUrl.ifPresent(storagePort::deleteFile);
+
+    return savedUser;
   }
 }

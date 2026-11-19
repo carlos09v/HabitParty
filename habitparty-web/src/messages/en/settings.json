@@ -107,7 +107,7 @@
     "cardDesc": "Update your public profile and platform identity on HabitParty.",
     "noChangesToast": "No changes were made.",
     "noChangesTitle": "No changes to save",
-    "nameMaxToast": "Name must be at most 30 characters.",
+    "nameMaxToast": "Name must be at most 150 characters.",
     "charCounter": "{current}/{max} characters",
     "birthdayPlaceholder": "Select your birth date",
     "genderPlaceholder": "Select gender (optional)",

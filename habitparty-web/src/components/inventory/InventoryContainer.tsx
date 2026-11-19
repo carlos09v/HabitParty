@@ -19,7 +19,6 @@ import type { InventoryItem } from "@/types/inventory";
 import type { SelectOption } from "@/types/ui";
 import { calculateInventoryWelcomeStats } from "@/utils/catalogMetrics";
 import {
-  isMysteryBoxReward,
   toCategoryMessageKey,
   toRewardTypeMessageKey,
 } from "@/utils/rewardMapper";
@@ -34,10 +33,8 @@ const MysteryBoxRouletteModal = dynamic(
 
 export function InventoryContainer({
   initialItems,
-  isCompact = false,
 }: {
   initialItems: InventoryItem[];
-  isCompact?: boolean;
 }) {
   const locale = useLocale() as AppLocale;
   const t = useTranslations("inventory.container");
@@ -87,17 +84,6 @@ export function InventoryContainer({
 
   itemsRef.current = items;
 
-  const hasMysteryItems = useMemo(
-    () =>
-      items.some((item) =>
-        isMysteryBoxReward(
-          item.reward?.type || item.itemType,
-          item.reward?.icon || item.iconName,
-        ),
-      ),
-    [items],
-  );
-
   const statusOptions = useMemo<SelectOption[]>(
     () => [
       { label: t("filters.statusAll"), value: "" },
@@ -107,17 +93,20 @@ export function InventoryContainer({
     [t],
   );
 
-  const typeOptions = useMemo<SelectOption[]>(() => {
-    const base: SelectOption[] = [
+  const typeOptions = useMemo<SelectOption[]>(
+    () => [
       { label: t("filters.typeAll"), value: "" },
       { label: t("filters.typeSingleUse"), value: "SingleUse" },
       { label: t("filters.typeTimeBased"), value: "TimeBased" },
-    ];
-    if (isGamified || hasMysteryItems) {
-      base.push({ label: t("filters.typeMysteryBox"), value: "MysteryBox" });
-    }
-    return base;
-  }, [hasMysteryItems, isGamified, t]);
+      {
+        label: isGamified
+          ? t("filters.typeMysteryBox")
+          : t("filters.typeMysteryBoxProductivity"),
+        value: "MysteryBox",
+      },
+    ],
+    [isGamified, t],
+  );
 
   const categoryOptions = useMemo<SelectOption[]>(
     () =>
@@ -162,6 +151,12 @@ export function InventoryContainer({
 
   const filteredItems = useMemo(() => {
     const searchLower = filters.search.trim().toLowerCase();
+    const filterTypeKey = filters.type
+      ? toRewardTypeMessageKey(filters.type)
+      : null;
+    const filterCategoryKey = filters.category
+      ? toCategoryMessageKey(filters.category)
+      : null;
 
     let result = items.filter((item) => {
       const matchSearch =
@@ -170,13 +165,11 @@ export function InventoryContainer({
         (item.reward.description || "").toLowerCase().includes(searchLower);
 
       const matchType =
-        !filters.type ||
-        toRewardTypeMessageKey(item.reward.type) ===
-          toRewardTypeMessageKey(filters.type);
+        !filterTypeKey ||
+        toRewardTypeMessageKey(item.reward.type) === filterTypeKey;
       const matchCat =
-        !filters.category ||
-        toCategoryMessageKey(item.reward.category) ===
-          toCategoryMessageKey(filters.category);
+        !filterCategoryKey ||
+        toCategoryMessageKey(item.reward.category) === filterCategoryKey;
 
       const matchStatus =
         !filters.status ||
@@ -242,11 +235,7 @@ export function InventoryContainer({
 
   return (
     <>
-      <WelcomeCard
-        storageKey="inventory"
-        stats={welcomeStats}
-        compact={isCompact}
-      />
+      <WelcomeCard storageKey="inventory" stats={welcomeStats} />
 
       <section className="flex-1 min-h-0 flex flex-col gap-4 sm:gap-6 w-full pb-10">
         <FilterBar
@@ -292,7 +281,6 @@ export function InventoryContainer({
           filteredItems={filteredItems}
           totalItemsCount={items.length}
           viewMode={viewMode}
-          isCompact={isCompact}
           sensors={sensors}
           onDragEnd={handleDragEnd}
           onUse={handleUseItem}
@@ -324,12 +312,17 @@ export function InventoryContainer({
         description={
           itemToDiscard ? (
             <span>
-              {t.rich("discardModal.description", {
-                title: itemToDiscard.reward.title,
-                strong: (chunks) => (
-                  <strong className="text-neutral-100">{chunks}</strong>
-                ),
-              })}
+              {t.rich(
+                isGamified
+                  ? "discardModal.description"
+                  : "discardModal.descriptionProductivity",
+                {
+                  title: itemToDiscard.reward.title,
+                  strong: (chunks) => (
+                    <strong className="text-neutral-100">{chunks}</strong>
+                  ),
+                },
+              )}
             </span>
           ) : null
         }

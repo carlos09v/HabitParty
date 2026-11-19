@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useRef, useTransition } from "react";
 import { toast } from "sonner";
@@ -17,6 +18,7 @@ import {
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useInFlightSet } from "@/hooks/useInFlightSet";
 import type { AppLocale } from "@/i18n/config";
+import { useOptimisticDashboardStore } from "@/store/optimisticDashboardStore";
 import { useUserStore } from "@/store/userStore";
 import type { Task } from "@/types/task";
 import {
@@ -147,12 +149,14 @@ export function useTaskMutations({
   const locale = useLocale() as AppLocale;
   const { isGamified } = useExperienceMode();
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
   const {
     activeIds: duplicatingTaskIds,
     has: isTaskDuplicating,
     setPending: setTaskDuplicating,
   } = useInFlightSet();
   const rewardedTaskIdsRef = useRef<Set<string>>(new Set());
+  const inFlightToggleTasksRef = useRef<Set<string>>(new Set());
   const inFlightHabitTasksRef = useRef<Set<string>>(new Set());
   const habitLastActionAtRef = useRef<Map<string, number>>(new Map());
 
@@ -160,9 +164,13 @@ export function useTaskMutations({
   const goldLabel = isGamified ? t("goldLabel") : t("goldLabelProductivity");
 
   const handleToggleComplete = useCallback(
-    (taskId: string, completed: boolean) => {
+    (taskId: string, completed: boolean): boolean => {
+      if (inFlightToggleTasksRef.current.has(taskId)) return false;
+
       const targetTask = findTask(taskId);
-      if (!targetTask) return;
+      if (!targetTask) return false;
+
+      inFlightToggleTasksRef.current.add(taskId);
 
       if (targetTask.completed || targetTask.hasClaimedReward) {
         rewardedTaskIdsRef.current.add(taskId);
@@ -171,13 +179,21 @@ export function useTaskMutations({
       const alreadyRewarded = Boolean(
         targetTask.hasClaimedReward || rewardedTaskIdsRef.current.has(taskId),
       );
+      if (completed) {
+        rewardedTaskIdsRef.current.add(taskId);
+      }
+
       const rollbackState: TaskToggleRollbackState = {
         completed: Boolean(targetTask.completed),
         hasClaimedReward: targetTask.hasClaimedReward,
         lastCompletedAt: targetTask.lastCompletedAt,
       };
+      const optimisticStore = useOptimisticDashboardStore.getState();
 
       onOptimisticToggle(taskId, completed);
+      optimisticStore.upsertTask(
+        applyOptimisticTaskToggle(targetTask, completed),
+      );
       if (completed) {
         soundEffects.playTaskCompleteSound();
       }
@@ -188,126 +204,179 @@ export function useTaskMutations({
       });
 
       startTransition(async () => {
-        const res = completed
-          ? await completeTask(taskId)
-          : await changeTaskStatus(taskId, "PENDING");
+        try {
+          const res = completed
+            ? await completeTask(taskId)
+            : await changeTaskStatus(taskId, "PENDING");
 
-        if (!res.success) {
-          toast.error(res.error || t("statusUpdateError"));
-          onRollbackToggle(taskId, rollbackState);
-          onTaskUpdatedInDetails?.(targetTask);
-          return;
-        }
-
-        const reconciledTask = res.data
-          ? mergeTaskWithResponseDTO(targetTask, res.data)
-          : null;
-        if (reconciledTask) {
-          onReconcileTask?.(reconciledTask);
-          onTaskUpdatedInDetails?.(reconciledTask);
-        }
-        notifyTasksChanged({ completedToday: completed });
-
-        if (completed) {
-          const completionLabel =
-            targetTask.type?.toLowerCase() === "habit"
-              ? t("habitCompleted")
-              : targetTask.type?.toLowerCase() === "daily"
-                ? t("dailyCompleted")
-                : t("todoCompleted");
-
-          // Proteção contra ganho múltiplo de Ouro/XP ao marcar e desmarcar a mesma tarefa/diária
-          const serverAlreadyRewarded =
-            alreadyRewarded || res.data?.rewardGranted === false;
-          if (serverAlreadyRewarded) {
-            toast.success(
-              <span>
-                {completionLabel}{" "}
-                <span className="text-neutral-300 font-normal">
-                  ({t("rewardAlreadyClaimed")})
-                </span>
-              </span>,
-            );
+          if (!res.success) {
+            if (completed && !alreadyRewarded) {
+              rewardedTaskIdsRef.current.delete(taskId);
+            }
+            toast.error(res.error || t("statusUpdateError"));
+            onRollbackToggle(taskId, rollbackState);
+            optimisticStore.upsertTask({
+              ...targetTask,
+              completed: rollbackState.completed,
+              lastCompletedAt: rollbackState.lastCompletedAt,
+            });
+            onTaskUpdatedInDetails?.(targetTask);
             return;
           }
 
-          rewardedTaskIdsRef.current.add(taskId);
+          const reconciledTask = res.data
+            ? mergeTaskWithResponseDTO(targetTask, res.data)
+            : null;
+          if (reconciledTask) {
+            onReconcileTask?.(reconciledTask);
+            optimisticStore.upsertTask(reconciledTask);
+            onTaskUpdatedInDetails?.(reconciledTask);
+          }
+          notifyTasksChanged({ completedToday: completed });
 
-          const rewardStreak = resolveRewardStreakBeforeAction(
-            targetTask,
-            res.data?.currentStreak,
-          );
+          if (completed) {
+            const completionLabel =
+              targetTask.type?.toLowerCase() === "habit"
+                ? t("habitCompleted")
+                : targetTask.type?.toLowerCase() === "daily"
+                  ? t("dailyCompleted")
+                  : t("todoCompleted");
 
-          const breakdown = getTaskRewardBreakdown({
-            taskType: targetTask.type,
-            difficulty: targetTask.difficulty,
-            importanceType: targetTask.importanceType,
-            repeatType: targetTask.repeatType,
-            resetCounter: targetTask.resetCounter,
-            currentStreak: rewardStreak,
-            isHardcoreModeEnabled: targetTask.isHardcoreModeEnabled,
-            dueDate: targetTask.dueDate,
-            isPenaltyApplied: targetTask.isPenaltyApplied,
-            locale,
-            timeZone: useUserStore.getState().user?.timezone,
-          });
-
-          const xp = breakdown.finalReward.xp;
-          const gold = breakdown.finalReward.gold;
-
-          const rewardResult = awardUserRewards(xp, gold, {
-            locale,
-            levelUpTitle: tLevelUp("title"),
-            congratsPrefix: tLevelUp("congratsPrefix"),
-            congratsSuffix: tLevelUp("congratsSuffix"),
-            isTaskCompletion: true,
-          });
-
-          // Se não subiu de nível, exibe o toast padrão contextual ao tipo da atividade
-          if (!rewardResult.didLevelUp) {
-            if (xp > 0 || gold > 0) {
+            // Proteção contra ganho múltiplo de Ouro/XP ao marcar e desmarcar a mesma tarefa/diária
+            const serverAlreadyRewarded =
+              alreadyRewarded || res.data?.rewardGranted === false;
+            if (serverAlreadyRewarded) {
               toast.success(
                 <span>
-                  {completionLabel} (
-                  <strong>
-                    +{xp} {xpLabel}
-                  </strong>{" "}
-                  •{" "}
-                  <strong>
-                    +{formatCoins(gold, { locale })} {goldLabel}
-                  </strong>
-                  )
-                  {breakdown.hasBonus && (
-                    <span className="block text-label-g text-emerald-400 mt-0.5 font-normal">
-                      {t("bonusRoutine", {
-                        stage: breakdown.stageLabel,
-                        percent: breakdown.bonusPercentage,
-                      })}
-                    </span>
-                  )}
-                  {breakdown.hasDecay && (
-                    <span className="block text-label-g text-neutral-400 mt-0.5 font-normal">
-                      {targetTask.type?.toLowerCase() === "todo"
-                        ? t("decayOverdue", {
-                            stage: breakdown.stageLabel,
-                            percent: breakdown.decayPercentage,
-                          })
-                        : t("decayRoutine", {
-                            stage: breakdown.stageLabel,
-                            percent: breakdown.decayPercentage,
-                          })}
-                    </span>
-                  )}
+                  {completionLabel}{" "}
+                  <span className="text-neutral-300 font-normal">
+                    ({t("rewardAlreadyClaimed")})
+                  </span>
                 </span>,
               );
-            } else {
-              toast.success(completionLabel);
+              return;
             }
+
+            rewardedTaskIdsRef.current.add(taskId);
+
+            // Se era um To-Do Hardcore atrasado sem penalidade aplicada antes da conclusão,
+            // o backend deduz a penalidade antes de conceder a recompensa tardia
+            if (
+              targetTask.type?.toLowerCase() === "todo" &&
+              Boolean(targetTask.isHardcoreModeEnabled) &&
+              !targetTask.isPenaltyApplied &&
+              Boolean(res.data?.isPenaltyApplied)
+            ) {
+              const overduePenalty = calculateTaskPenalty({
+                taskType: targetTask.type,
+                difficulty: targetTask.difficulty,
+                importanceType: targetTask.importanceType,
+                repeatType: targetTask.repeatType,
+                resetCounter: targetTask.resetCounter,
+                currentStreak:
+                  targetTask.currentStreak ?? targetTask.streak ?? 0,
+                isHardcoreModeEnabled: targetTask.isHardcoreModeEnabled,
+                dueDate: targetTask.dueDate,
+                timeZone: useUserStore.getState().user?.timezone,
+              });
+              const penaltyResult = deductUserPenalty(
+                overduePenalty.xp,
+                overduePenalty.gold,
+              );
+              optimisticStore.addTransaction({
+                xpAmount: -penaltyResult.xpDeducted,
+                goldAmount: -penaltyResult.coinsDeducted,
+                transactionType: "TASK_FAILED",
+              });
+            }
+
+            const rewardStreak = resolveRewardStreakBeforeAction(
+              targetTask,
+              res.data?.currentStreak,
+            );
+
+            const breakdown = getTaskRewardBreakdown({
+              taskType: targetTask.type,
+              difficulty: targetTask.difficulty,
+              importanceType: targetTask.importanceType,
+              repeatType: targetTask.repeatType,
+              resetCounter: targetTask.resetCounter,
+              currentStreak: rewardStreak,
+              isHardcoreModeEnabled: targetTask.isHardcoreModeEnabled,
+              dueDate: targetTask.dueDate,
+              isPenaltyApplied:
+                targetTask.isPenaltyApplied || res.data?.isPenaltyApplied,
+              locale,
+              timeZone: useUserStore.getState().user?.timezone,
+              isGamified,
+            });
+
+            const xp = breakdown.finalReward.xp;
+            const gold = breakdown.finalReward.gold;
+
+            const rewardResult = awardUserRewards(xp, gold, {
+              locale,
+              levelUpTitle: tLevelUp("title"),
+              congratsPrefix: tLevelUp("congratsPrefix"),
+              congratsSuffix: tLevelUp("congratsSuffix"),
+              isTaskCompletion: true,
+            });
+            optimisticStore.addTransaction({
+              xpAmount: xp,
+              goldAmount: gold,
+              transactionType: "TASK_COMPLETED",
+            });
+
+            // Se não subiu de nível, exibe o toast padrão contextual ao tipo da atividade
+            if (!rewardResult.didLevelUp) {
+              if (xp > 0 || gold > 0) {
+                toast.success(
+                  <span>
+                    {completionLabel} (
+                    <strong>
+                      +{xp} {xpLabel}
+                    </strong>{" "}
+                    •{" "}
+                    <strong>
+                      +{formatCoins(gold, { locale })} {goldLabel}
+                    </strong>
+                    )
+                    {breakdown.hasBonus && (
+                      <span className="block text-label-g text-emerald-400 mt-0.5 font-normal">
+                        {t("bonusRoutine", {
+                          stage: breakdown.stageLabel,
+                          percent: breakdown.bonusPercentage,
+                        })}
+                      </span>
+                    )}
+                    {breakdown.hasDecay && (
+                      <span className="block text-label-g text-neutral-400 mt-0.5 font-normal">
+                        {targetTask.type?.toLowerCase() === "todo"
+                          ? t("decayOverdue", {
+                              stage: breakdown.stageLabel,
+                              percent: breakdown.decayPercentage,
+                            })
+                          : t("decayRoutine", {
+                              stage: breakdown.stageLabel,
+                              percent: breakdown.decayPercentage,
+                            })}
+                      </span>
+                    )}
+                  </span>,
+                );
+              } else {
+                toast.success(completionLabel);
+              }
+            }
+          } else {
+            toast.info(t("markedPending"));
           }
-        } else {
-          toast.info(t("markedPending"));
+        } finally {
+          inFlightToggleTasksRef.current.delete(taskId);
         }
       });
+
+      return true;
     },
     [
       findTask,
@@ -320,19 +389,20 @@ export function useTaskMutations({
       locale,
       xpLabel,
       goldLabel,
+      isGamified,
     ],
   );
 
   const handleHabitChange = useCallback(
-    (taskId: string, delta: number) => {
-      if (inFlightHabitTasksRef.current.has(taskId)) return;
+    (taskId: string, delta: number): boolean => {
+      if (inFlightHabitTasksRef.current.has(taskId)) return false;
 
       const now = Date.now();
       const lastActionAt = habitLastActionAtRef.current.get(taskId) ?? 0;
-      if (now - lastActionAt < HABIT_SCORE_COOLDOWN_MS) return;
+      if (now - lastActionAt < HABIT_SCORE_COOLDOWN_MS) return false;
 
       const targetTask = findTask(taskId);
-      if (!targetTask) return;
+      if (!targetTask) return false;
 
       inFlightHabitTasksRef.current.add(taskId);
       habitLastActionAtRef.current.set(taskId, now);
@@ -356,12 +426,15 @@ export function useTaskMutations({
             return;
           }
 
+          const optimisticStore = useOptimisticDashboardStore.getState();
+
           // Reconcilia os contadores e streak exatos retornados pelo backend
           const reconciledTask = res.data
             ? mergeTaskWithResponseDTO(targetTask, res.data)
             : null;
           if (reconciledTask) {
             onReconcileTask?.(reconciledTask);
+            optimisticStore.upsertTask(reconciledTask);
             onTaskUpdatedInDetails?.(reconciledTask);
           }
           notifyTasksChanged({ completedToday: delta > 0 });
@@ -387,6 +460,7 @@ export function useTaskMutations({
               resetCounter: targetTask.resetCounter,
               currentStreak: rewardStreak,
               locale,
+              isGamified,
             });
 
             const xp = breakdown.finalReward.xp;
@@ -398,6 +472,11 @@ export function useTaskMutations({
               congratsPrefix: tLevelUp("congratsPrefix"),
               congratsSuffix: tLevelUp("congratsSuffix"),
               isTaskCompletion: true,
+            });
+            optimisticStore.addTransaction({
+              xpAmount: xp,
+              goldAmount: gold,
+              transactionType: "TASK_COMPLETED",
             });
 
             // Se não subiu de nível, exibe o toast padrão do hábito
@@ -442,6 +521,11 @@ export function useTaskMutations({
             });
 
             const penaltyResult = deductUserPenalty(penalty.xp, penalty.gold);
+            optimisticStore.addTransaction({
+              xpAmount: -penaltyResult.xpDeducted,
+              goldAmount: -penaltyResult.coinsDeducted,
+              transactionType: "BAD_HABIT_PENALTY",
+            });
 
             toast.error(
               <span>
@@ -462,6 +546,8 @@ export function useTaskMutations({
           inFlightHabitTasksRef.current.delete(taskId);
         }
       });
+
+      return true;
     },
     [
       findTask,
@@ -473,25 +559,34 @@ export function useTaskMutations({
       locale,
       xpLabel,
       goldLabel,
+      isGamified,
     ],
   );
 
   const handleDeleteTask = useCallback(
     async (task: Task, targetColumnId?: string, deleteHistory = false) => {
       const colId = targetColumnId || task.columnId || defaultColumnId;
+      const optimisticStore = useOptimisticDashboardStore.getState();
       onOptimisticDelete?.(task, colId);
+      optimisticStore.markTaskDeleted(task.id);
 
       const res = await deleteTask(task.id, deleteHistory);
       if (!res.success) {
+        optimisticStore.unmarkTaskDeleted(task.id);
         onRollbackDelete?.(task, colId);
         toast.error(res.error || t("deleteError"));
         return;
       }
 
+      if (deleteHistory) {
+        optimisticStore.clear();
+        router.refresh();
+      }
+
       notifyTasksChanged();
       toast.success(t("deleteSuccess", { title: task.title }));
     },
-    [defaultColumnId, onOptimisticDelete, onRollbackDelete, t],
+    [defaultColumnId, onOptimisticDelete, onRollbackDelete, router, t],
   );
 
   const handleDuplicateTask = useCallback(

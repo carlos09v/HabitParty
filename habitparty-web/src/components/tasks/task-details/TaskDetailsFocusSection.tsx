@@ -130,7 +130,7 @@ export function TaskDetailsFocusSection({
               "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border",
               isRunningOnThisTask
                 ? "bg-gold/20 border-gold/50 text-gold-ink dark:text-gold animate-pulse"
-                : "bg-primary/10 dark:bg-primary-dark/40 border-primary/30 text-primary dark:text-purple-200",
+                : "bg-primary/10 dark:bg-primary-dark/40 border-primary/30 text-primary dark:text-primary-light",
             )}
           >
             <Timer size={14} />

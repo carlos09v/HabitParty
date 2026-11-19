@@ -7,15 +7,11 @@ export interface GenderOption {
   value: NonNullable<GenderType>;
 }
 
-export interface ProfileCardBaseProps {
-  isCompact?: boolean;
-}
-
-export interface ProfileHeaderCardProps extends ProfileCardBaseProps {
+export interface ProfileHeaderCardProps {
   initialUser: UserResponseDTO | null;
 }
 
-export interface ProfileFormProps extends ProfileCardBaseProps {
+export interface ProfileFormProps {
   initialUser: UserResponseDTO | null;
 }
 

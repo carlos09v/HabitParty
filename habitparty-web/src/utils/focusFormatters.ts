@@ -10,6 +10,7 @@ import {
   FOCUS_REWARD_RULES,
 } from "@/constants/focus";
 import type { AppLocale } from "@/i18n/config";
+import { getUtilityTranslator } from "@/i18n/utilityTranslator";
 import type { DateFormat, TimeFormat } from "@/types/ui";
 import {
   formatShortDate,
@@ -163,6 +164,54 @@ export function getNextFocusBreakMinutes(completedCycles = 0): number {
 }
 
 /**
+ * Indica se a sessão atual atingiu o mínimo (60s) para poder ser salva manualmente.
+ */
+export function canCompleteFocusSession(timerState: {
+  phase?: "WORK" | "SHORT_BREAK" | "LONG_BREAK";
+  elapsedSeconds: number;
+}): boolean {
+  const isBreak =
+    timerState.phase === "SHORT_BREAK" || timerState.phase === "LONG_BREAK";
+  return !isBreak && timerState.elapsedSeconds >= 60;
+}
+
+/**
+ * Indica se o timer está em um ciclo Pomodoro de trabalho antes do término previsto.
+ */
+export function isPartialPomoSession(timerState: {
+  mode: "POMO" | "STOPWATCH";
+  phase?: "WORK" | "SHORT_BREAK" | "LONG_BREAK";
+  secondsRemaining: number;
+  target?: { type?: "activity" | "inventory" | "task" } | null;
+}): boolean {
+  const isBreak =
+    timerState.phase === "SHORT_BREAK" || timerState.phase === "LONG_BREAK";
+  return (
+    !isBreak &&
+    timerState.target?.type !== "inventory" &&
+    timerState.mode === "POMO" &&
+    timerState.secondsRemaining > 0
+  );
+}
+
+/**
+ * Indica se a sessão de trabalho já atingiu o teto máximo de minutos premiados.
+ */
+export function isFocusSessionRewardCapped(timerState: {
+  phase?: "WORK" | "SHORT_BREAK" | "LONG_BREAK";
+  elapsedSeconds: number;
+  target?: { type?: "activity" | "inventory" | "task" } | null;
+}): boolean {
+  const isBreak =
+    timerState.phase === "SHORT_BREAK" || timerState.phase === "LONG_BREAK";
+  return (
+    !isBreak &&
+    timerState.target?.type !== "inventory" &&
+    timerState.elapsedSeconds >= FOCUS_REWARD_RULES.MAX_EFFECTIVE_MINUTES * 60
+  );
+}
+
+/**
  * Deriva estados visuais e de controle do timer de foco em uma única função pura,
  * evitando duplicação entre Display, Widget lateral, PiP e Host.
  */
@@ -182,16 +231,9 @@ export function getFocusTimerDerivedState(timerState: {
     timerState.phase === "SHORT_BREAK" || timerState.phase === "LONG_BREAK";
   const isInventory = timerState.target?.type === "inventory";
   const isOvertime = isFocusOvertime(timerState);
-  const canComplete = !isBreak && timerState.elapsedSeconds >= 60;
-  const isPartialPomo =
-    !isBreak &&
-    !isInventory &&
-    timerState.mode === "POMO" &&
-    timerState.secondsRemaining > 0;
-  const isSessionRewardCapped =
-    !isBreak &&
-    !isInventory &&
-    timerState.elapsedSeconds >= FOCUS_REWARD_RULES.MAX_EFFECTIVE_MINUTES * 60;
+  const canComplete = canCompleteFocusSession(timerState);
+  const isPartialPomo = isPartialPomoSession(timerState);
+  const isSessionRewardCapped = isFocusSessionRewardCapped(timerState);
   const nextBreakMinutes = getNextFocusBreakMinutes(timerState.completedCycles);
 
   return {
@@ -250,7 +292,8 @@ export function formatFocusDate(
       locale,
       ...(hasExplicitTz ? { timeZone } : {}),
     });
-    return locale === "en" ? `${day} at ${time}` : `${day} às ${time}`;
+    const t = getUtilityTranslator(locale, "focus");
+    return t("atTime", { day, time });
   } catch {
     return dateStr;
   }
@@ -275,15 +318,16 @@ export function formatBackpackItemRemainingTime(
   remainingSeconds?: number | null,
   locale: AppLocale = "pt-BR",
 ): string {
-  const isEn = locale === "en";
+  const t = getUtilityTranslator(locale, "focus.remainingTime");
   if (remainingSeconds !== undefined && remainingSeconds !== null) {
     if (remainingSeconds <= 1) {
-      return isEn ? "Time completed!" : "Tempo concluído!";
+      return t("completed");
     }
-    const suffix = isEn ? "left" : "restantes";
-    return `${formatDurationMinSec(remainingSeconds)} ${suffix}`;
+    return t("remainingValue", {
+      duration: formatDurationMinSec(remainingSeconds),
+    });
   }
-  return isEn ? "Active Coupon" : "Cupom Ativo";
+  return t("activeCoupon");
 }
 
 /**

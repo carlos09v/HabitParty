@@ -40,7 +40,7 @@ export default async function ProfileShowcasePage({
 
   const resolvedShowcase =
     showcaseData || createEmptyShowcaseData(resolvedUser);
-  const isGamified = resolvedUser.experienceMode !== "PRODUCTIVITY";
+  const isGamified = resolvedUser.experienceMode === "GAMIFIED";
   const initialTab = resolveShowcaseTab(resolvedParams.tab);
 
   return (

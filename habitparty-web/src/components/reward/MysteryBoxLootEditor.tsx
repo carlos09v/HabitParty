@@ -1,8 +1,8 @@
 "use client";
 
-import { Clock, Sparkles, Store } from "lucide-react";
+import { Clock, Dices, Sparkles, Store } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { type MutableRefObject, useState } from "react";
 import { toast } from "sonner";
 import { IconPickerPopover } from "@/components/ui/IconPickerPopover";
 import { Input } from "@/components/ui/Input";
@@ -11,6 +11,7 @@ import {
   MYSTERY_BOX_PRESETS,
   REWARD_ICONS,
 } from "@/constants/reward";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type {
   MysteryBoxLootItem,
   MysteryBoxPresetId,
@@ -21,7 +22,15 @@ import { cn } from "@/utils";
 import {
   getMysteryBoxTier,
   suggestRewardIconFromTitle,
+  UI_TO_BACKEND_CATEGORY,
 } from "@/utils/rewardMapper";
+
+const PRESET_BACKEND_CATEGORY: Record<MysteryBoxPresetId, string> = {
+  gamer: "ENTERTAINMENT",
+  relax: "WELLNESS",
+  gastronomy: "SHOPPING",
+  hobbies: "HOBBIES",
+};
 
 interface MysteryBoxLootEditorProps {
   packageLevel: PackageLevel;
@@ -40,6 +49,7 @@ interface MysteryBoxLootEditorProps {
   ) => void;
   existingRewards?: Reward[];
   disabled?: boolean;
+  slotInputRefs?: MutableRefObject<Array<HTMLInputElement | null>>;
 }
 
 const MAX_SLOT_NAME_LENGTH = 30;
@@ -51,8 +61,10 @@ export function MysteryBoxLootEditor({
   onApplyPreset,
   existingRewards = [],
   disabled = false,
+  slotInputRefs,
 }: MysteryBoxLootEditorProps) {
   const t = useTranslations("rewards.mysteryBox.lootEditor");
+  const { isGamified } = useExperienceMode();
   const tier = getMysteryBoxTier(packageLevel);
   const tierId = tier.id;
   const slotMaxMinutes = tier.slotMaxMinutes;
@@ -74,11 +86,12 @@ export function MysteryBoxLootEditor({
     const preset = MYSTERY_BOX_PRESETS.find((p) => p.id === presetId);
     if (!preset) return;
     const tierSlots = preset.tiers[tierId] || preset.tiers.Básico;
+    const presetCategory = PRESET_BACKEND_CATEGORY[presetId];
     setManualIconSlots([false, false, false]);
     onApplyPreset([
-      { ...tierSlots[0] },
-      { ...tierSlots[1] },
-      { ...tierSlots[2] },
+      { ...tierSlots[0], category: tierSlots[0].category ?? presetCategory },
+      { ...tierSlots[1], category: tierSlots[1].category ?? presetCategory },
+      { ...tierSlots[2], category: tierSlots[2].category ?? presetCategory },
     ]);
     toast.success(
       t("presetAppliedToast", { preset: t(`presets.${presetId}`) }),
@@ -89,7 +102,12 @@ export function MysteryBoxLootEditor({
     if (storeCandidates.length === 0) {
       toast.info(
         hasAnyStoreRewards
-          ? t("storeNoCompatibleToast", { max: tier.recommendedPrice * 2 })
+          ? t(
+              isGamified
+                ? "storeNoCompatibleToast"
+                : "storeNoCompatibleToastProductivity",
+              { max: tier.recommendedPrice * 2 },
+            )
           : t("storeEmptyToast"),
       );
       return;
@@ -112,6 +130,8 @@ export function MysteryBoxLootEditor({
           name: candidate.title.slice(0, MAX_SLOT_NAME_LENGTH),
           icon: candidate.icon || candidate.iconName || "gift",
           minutes: clampedMinutes,
+          category: UI_TO_BACKEND_CATEGORY[candidate.category] || undefined,
+          description: candidate.description?.trim() || undefined,
         };
       }) as [MysteryBoxLootItem, MysteryBoxLootItem, MysteryBoxLootItem];
 
@@ -127,18 +147,26 @@ export function MysteryBoxLootEditor({
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2 flex-wrap min-w-0">
             <div className="flex items-center gap-1.5">
-              <Sparkles
-                size={14}
-                className="text-gold shrink-0"
-                aria-hidden="true"
-              />
+              {isGamified ? (
+                <Sparkles
+                  size={14}
+                  className="text-gold shrink-0"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Dices
+                  size={14}
+                  className="text-sky-600 dark:text-sky-400 shrink-0"
+                  aria-hidden="true"
+                />
+              )}
               <span className="text-body-s font-bold text-neutral-100">
-                {t("title")}
+                {isGamified ? t("title") : t("titleProductivity")}
               </span>
             </div>
             <span className="text-tiny text-neutral-400">
               <span aria-hidden="true">• </span>
-              {t("subtitle")}
+              {isGamified ? t("subtitle") : t("subtitleProductivity")}
             </span>
           </div>
 
@@ -211,7 +239,13 @@ export function MysteryBoxLootEditor({
                   >
                     {drop?.percentage ?? 33}%
                   </span>
-                  <span>{t(`slotRarity.${slotIndex}`)}</span>
+                  <span>
+                    {t(
+                      isGamified
+                        ? `slotRarity.${slotIndex}`
+                        : `slotRarityProductivity.${slotIndex}`,
+                    )}
+                  </span>
                 </label>
 
                 <div className="flex items-center gap-1">
@@ -281,6 +315,11 @@ export function MysteryBoxLootEditor({
 
                 <div className="flex-1 min-w-[140px]">
                   <Input
+                    ref={(el) => {
+                      if (slotInputRefs) {
+                        slotInputRefs.current[slotIndex] = el;
+                      }
+                    }}
                     id={slotInputId}
                     type="text"
                     value={slot.name}

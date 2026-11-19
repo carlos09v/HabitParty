@@ -13,6 +13,7 @@ import com.habitparty.adapters.in.web.dtos.request.CreateTaskDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateTaskDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateTaskOrderDTO;
 import com.habitparty.application.ports.projections.DashboardTaskDTO;
+import com.habitparty.application.ports.projections.FocusableTaskDTO;
 import com.habitparty.application.ports.projections.TaskSearchWorkspaceCountDTO;
 import com.habitparty.adapters.in.web.dtos.response.TaskHistoryStatusResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.TaskResponseDTO;
@@ -55,6 +56,11 @@ public interface TaskApi {
     @GetMapping("/search")
     ResponseEntity<List<TaskSearchWorkspaceCountDTO>> searchTasksAcrossWorkspaces(
         @RequestParam("q") String query,
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado);
+
+    @Operation(summary = "Listar tarefas focáveis", description = "Retorna tarefas Diárias e Afazeres pendentes dos workspaces ativos do usuário para vínculo no Palco de Foco.")
+    @GetMapping("/focusable")
+    ResponseEntity<List<FocusableTaskDTO>> getFocusableTasks(
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado);
 
     @Operation(summary = "Criar Tarefa", description = "Cria uma nova tarefa na coluna.")

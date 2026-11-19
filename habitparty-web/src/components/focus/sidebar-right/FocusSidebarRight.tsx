@@ -1,5 +1,3 @@
-"use client";
-
 import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type {
@@ -14,6 +12,8 @@ import { FocusWeeklyChart } from "./FocusWeeklyChart";
 
 interface FocusSidebarRightProps {
   metrics: FocusMetrics;
+  todayProductiveMinutes?: number;
+  dailyFocusGoalMinutes?: number | null;
   weeklyDays: WeeklyFocusDayData[];
   totalWeekMinutes: number;
   recentRecords: FocusRecord[];
@@ -36,12 +36,13 @@ interface FocusSidebarRightProps {
   onRecordUpdated?: (updatedRecord: FocusRecord) => void;
   selectedActivityName?: string | null;
   onClearSelectedActivity?: () => void;
-  isCompact?: boolean;
   className?: string;
 }
 
 export function FocusSidebarRight({
   metrics,
+  todayProductiveMinutes,
+  dailyFocusGoalMinutes,
   weeklyDays,
   totalWeekMinutes,
   recentRecords,
@@ -61,7 +62,6 @@ export function FocusSidebarRight({
   onRecordUpdated,
   selectedActivityName,
   onClearSelectedActivity,
-  isCompact = false,
   className,
 }: FocusSidebarRightProps) {
   const t = useTranslations("focus.sidebar");
@@ -71,10 +71,7 @@ export function FocusSidebarRight({
     <aside
       data-panel="sidebar-right"
       className={cn(
-        "shrink-0 bg-background dark:bg-primary-dark/25 border-t xl:border-t-0 xl:border-l border-neutral-700 dark:border-primary/30 h-full flex flex-col overflow-y-auto overscroll-contain [scrollbar-gutter:stable] custom-scrollbar",
-        isCompact
-          ? "w-full xl:w-[300px] p-3.5 gap-3"
-          : "w-full xl:w-[345px] p-4 gap-4",
+        "shrink-0 bg-background dark:bg-primary-dark/25 border-t xl:border-t-0 xl:border-l border-neutral-700 dark:border-primary/30 h-full flex flex-col overflow-y-auto overscroll-contain [scrollbar-gutter:stable] custom-scrollbar w-full xl:w-[345px] p-4 gap-4",
         className,
       )}
       aria-label={t("ariaLabel")}
@@ -105,8 +102,9 @@ export function FocusSidebarRight({
       {/* 1. Visão Geral e Grid de Métricas */}
       <FocusMetricsGrid
         metrics={metrics}
+        todayProductiveMinutes={todayProductiveMinutes}
+        dailyFocusGoalMinutes={dailyFocusGoalMinutes}
         totalRecordsCount={totalRecordsCount}
-        isCompact={isCompact}
       />
 
       <div className="h-px w-full bg-neutral-700 dark:bg-white/10 shrink-0" />
@@ -121,7 +119,6 @@ export function FocusSidebarRight({
         onPrevWeek={onPrevWeek}
         onNextWeek={onNextWeek}
         onResetWeek={onResetWeek}
-        isCompact={isCompact}
       />
 
       <div className="h-px w-full bg-neutral-700 dark:bg-white/10 shrink-0" />
@@ -137,7 +134,6 @@ export function FocusSidebarRight({
         onOptionsClick={onOptionsClick}
         onDeleteRecord={onDeleteRecord}
         onRecordUpdated={onRecordUpdated}
-        isCompact={isCompact}
       />
     </aside>
   );

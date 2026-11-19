@@ -1,48 +1,55 @@
 import { CalendarCheck, CheckCircle2, Sparkles } from "lucide-react";
+import type { AppLocale } from "@/i18n/config";
+import { getUtilityTranslator } from "@/i18n/utilityTranslator";
 import type {
   DashboardAdvancedFilters,
   EconomyBarData,
 } from "@/types/dashboard";
 
-/** Barras padrão para o gráfico de Economia do Dashboard. */
-export const DEFAULT_ECONOMY_BARS: readonly EconomyBarData[] = [
-  {
-    label: "-3 sem",
-    periodLabel: "3 semanas atrás",
-    gold: 0,
-    spent: 0,
-    heightPercent: 10,
-    spentHeightPercent: 10,
-    isHighlight: false,
-  },
-  {
-    label: "-2 sem",
-    periodLabel: "2 semanas atrás",
-    gold: 0,
-    spent: 0,
-    heightPercent: 10,
-    spentHeightPercent: 10,
-    isHighlight: false,
-  },
-  {
-    label: "Passada",
-    periodLabel: "Semana passada",
-    gold: 0,
-    spent: 0,
-    heightPercent: 10,
-    spentHeightPercent: 10,
-    isHighlight: false,
-  },
-  {
-    label: "Atual",
-    periodLabel: "Esta semana",
-    gold: 0,
-    spent: 0,
-    heightPercent: 10,
-    spentHeightPercent: 10,
-    isHighlight: true,
-  },
-] as const;
+/** Retorna as barras padrão localizadas para o gráfico de Economia do Dashboard. */
+export function getDefaultEconomyBars(
+  locale: AppLocale = "pt-BR",
+): EconomyBarData[] {
+  const t = getUtilityTranslator(locale, "dashboard.defaultEconomyBars");
+  return [
+    {
+      label: t("minus3WeeksLabel"),
+      periodLabel: t("minus3WeeksPeriod"),
+      gold: 0,
+      spent: 0,
+      heightPercent: 10,
+      spentHeightPercent: 10,
+      isHighlight: false,
+    },
+    {
+      label: t("minus2WeeksLabel"),
+      periodLabel: t("minus2WeeksPeriod"),
+      gold: 0,
+      spent: 0,
+      heightPercent: 10,
+      spentHeightPercent: 10,
+      isHighlight: false,
+    },
+    {
+      label: t("lastWeekLabel"),
+      periodLabel: t("lastWeekPeriod"),
+      gold: 0,
+      spent: 0,
+      heightPercent: 10,
+      spentHeightPercent: 10,
+      isHighlight: false,
+    },
+    {
+      label: t("currentWeekLabel"),
+      periodLabel: t("currentWeekPeriod"),
+      gold: 0,
+      spent: 0,
+      heightPercent: 10,
+      spentHeightPercent: 10,
+      isHighlight: true,
+    },
+  ];
+}
 
 export const DEFAULT_DASHBOARD_ADVANCED_FILTERS: DashboardAdvancedFilters = {
   workspaceId: "all",
@@ -62,13 +69,12 @@ export type DashboardStandardFilterId =
 
 export const DASHBOARD_TASK_FILTERS: readonly {
   id: DashboardStandardFilterId;
-  label: string;
 }[] = [
-  { id: "today", label: "Hoje" },
-  { id: "next7days", label: "Próximos 7 dias" },
-  { id: "this_month", label: "Este mês" },
-  { id: "nodate", label: "Sem prazo" },
-  { id: "overdue", label: "Atrasado" },
+  { id: "today" },
+  { id: "next7days" },
+  { id: "this_month" },
+  { id: "nodate" },
+  { id: "overdue" },
 ] as const;
 
 export function isDashboardStandardFilterId(
@@ -85,45 +91,20 @@ export function isDashboardStandardFilterId(
 
 export const DASHBOARD_EMPTY_MESSAGES: Record<
   DashboardStandardFilterId,
-  { title: string; description: string; icon: typeof CalendarCheck }
+  { icon: typeof CalendarCheck }
 > = {
-  today: {
-    title: "Tudo limpo por hoje! 🎉",
-    description: "Você não possui nenhuma tarefa pendente para hoje.",
-    icon: CalendarCheck,
-  },
-  next7days: {
-    title: "Sem tarefas nos próximos 7 dias",
-    description: "Sua semana está tranquila. Que tal planejar novas metas?",
-    icon: Sparkles,
-  },
-  this_month: {
-    title: "Mês tranquilo! 📅",
-    description: "Você não possui nenhuma tarefa pendente para este mês.",
-    icon: Sparkles,
-  },
-  overdue: {
-    title: "Tudo em dia! ✨",
-    description: "Parabéns, você não possui nenhuma tarefa atrasada.",
-    icon: CheckCircle2,
-  },
-  nodate: {
-    title: "Nenhuma tarefa sem prazo",
-    description: "Todas as suas tarefas possuem uma data de entrega definida.",
-    icon: CalendarCheck,
-  },
+  today: { icon: CalendarCheck },
+  next7days: { icon: Sparkles },
+  this_month: { icon: Sparkles },
+  overdue: { icon: CheckCircle2 },
+  nodate: { icon: CalendarCheck },
 };
 
 export type ActivityPeriodOption = "today" | "this_week" | "this_month";
 
 export const ACTIVITY_PERIOD_OPTIONS: readonly {
   id: ActivityPeriodOption;
-  label: string;
-}[] = [
-  { id: "today", label: "Hoje" },
-  { id: "this_week", label: "Semana" },
-  { id: "this_month", label: "Mês" },
-] as const;
+}[] = [{ id: "today" }, { id: "this_week" }, { id: "this_month" }] as const;
 
 /** Quantidade padrão de tarefas exibidas por página na tabela do Dashboard */
 export const DASHBOARD_ITEMS_PER_PAGE = 5;

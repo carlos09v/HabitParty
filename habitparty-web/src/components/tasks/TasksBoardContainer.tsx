@@ -1,7 +1,5 @@
 "use client";
 
-import { DndContext, DragOverlay } from "@dnd-kit/core";
-import { restrictToWindowEdges } from "@dnd-kit/modifiers";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -9,24 +7,13 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { getArchivedCompletedColumnTasks } from "@/actions/taskActions";
 import { RouteLoading } from "@/components/layout/RouteLoading";
-import { RoutineBoard } from "@/components/tasks/RoutineBoard";
-import { RoutineColumn } from "@/components/tasks/RoutineColumn";
-import { RoutineFilters } from "@/components/tasks/RoutineFilters";
-import { RoutineTaskCard } from "@/components/tasks/RoutineTaskCard";
-import { RoutineTaskList } from "@/components/tasks/RoutineTaskList";
+import { TasksBoardViewport } from "@/components/tasks/TasksBoardViewport";
 import { WorkspaceReadOnlyBanner } from "@/components/tasks/WorkspaceReadOnlyBanner";
-import { WorkspaceSearchHintBanner } from "@/components/tasks/WorkspaceSearchHintBanner";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
-import { DEFAULT_BOARD_FILTERS } from "@/constants/task";
 import { WELCOME_CARD_DETAILS } from "@/constants/welcomeCards";
 import { useBoardFilters } from "@/hooks/useBoardFilters";
 import { useBoardModals } from "@/hooks/useBoardModals";
 import { useBoardTaskActions } from "@/hooks/useBoardTaskActions";
-import {
-  applyFocusCompletionToTask,
-  applyFocusRecordedToTask,
-  useFocusTaskSync,
-} from "@/hooks/useFocusTaskSync";
 import { useMidnightRollover } from "@/hooks/useMidnightRollover";
 import { useQuickFocusTask } from "@/hooks/useQuickFocusTask";
 import { useRoutineBoardDnd } from "@/hooks/useRoutineBoardDnd";
@@ -34,6 +21,7 @@ import { useRoutineBoardLayout } from "@/hooks/useRoutineBoardLayout";
 import { useRoutineColumns } from "@/hooks/useRoutineColumns";
 import { useSyncWorkspaceSwitchReset } from "@/hooks/useSyncWorkspaceSwitchReset";
 import { useTaskDeleteFlow } from "@/hooks/useTaskDeleteFlow";
+import { useTasksWelcomeStats } from "@/hooks/useTasksWelcomeStats";
 import { useViewMode } from "@/hooks/useViewMode";
 import { useWorkspaceWriteGuard } from "@/hooks/useWorkspaceWriteGuard";
 import type { AppLocale } from "@/i18n/config";
@@ -44,8 +32,6 @@ import type {
   InitialTaskFormData,
   TasksBoardContainerProps,
 } from "@/types/task-ui";
-import { cn } from "@/utils";
-import { calculateTasksWelcomeStats } from "@/utils/catalogMetrics";
 import {
   mapTaskResponseToTask,
   resetTaskOnMidnightRollover,
@@ -78,7 +64,7 @@ const SwitchFocusTargetModal = dynamic(
 /**
  * Container Orquestrador do Quadro Kanban de Rotinas.
  * Desacoplado: consome hooks especializados para estado de colunas,
- * filtros, modais/menus e ações assíncronas de tarefas.
+ * filtros, modais/menus, estatísticas e ações assíncronas de tarefas.
  */
 export function TasksBoardContainer({
   initialColumns,
@@ -87,7 +73,6 @@ export function TasksBoardContainer({
   targetColumnId: targetColumnIdProp,
   isPremium: isPremiumProp,
   workspaceId: workspaceIdProp,
-  isCompact: isCompactProp,
 }: TasksBoardContainerProps) {
   const t = useTranslations("tasks.container");
   const tColumn = useTranslations("tasks.column");
@@ -104,10 +89,13 @@ export function TasksBoardContainer({
   const workspaces = useWorkspaceStore((state) => state.workspaces);
   const is_Premium = isPremiumProp ?? userStorePremium;
   const activeWorkspaceId = workspaceIdProp ?? activeWorkspaceIdFromStore;
-  const isCompact = isCompactProp ?? false;
 
   const [viewMode, setViewMode] = useViewMode("tasks", "card");
   const [isColumnsDrawerOpen, setIsColumnsDrawerOpen] = useState(false);
+
+  const syncSelectedTaskDetailsRef = useRef<
+    ((taskId: string, updater: (task: Task) => Task) => void) | null
+  >(null);
 
   // 1. Hook de Colunas, Visibilidade e Mutações de Coluna
   const {
@@ -131,6 +119,7 @@ export function TasksBoardContainer({
     activeWorkspaceId,
     initialVisibleColumnIds,
     effectiveTargetColumnId,
+    (taskId, updater) => syncSelectedTaskDetailsRef.current?.(taskId, updater),
   );
 
   const columnsRef = useRef(columns);
@@ -190,10 +179,15 @@ export function TasksBoardContainer({
     filteredColumns,
   } = useBoardFilters(columns, initialSearchFromUrl);
 
-  const localMatchCount = useMemo(
-    () => filteredColumns.reduce((sum, col) => sum + col.tasks.length, 0),
-    [filteredColumns],
-  );
+  const { localMatchCount, tasksStats } = useTasksWelcomeStats({
+    columns,
+    filteredColumns,
+    filters,
+    setFilters,
+    searchQuery,
+    setSearchQuery,
+    locale,
+  });
 
   const handleTaskUpdatedInDetails = useCallback(
     (updated: Task) => {
@@ -221,40 +215,16 @@ export function TasksBoardContainer({
     handleDiscardAndStartFocusTask,
   } = useQuickFocusTask();
 
-  const syncFocusTaskUpdate = useCallback(
-    (taskId: string, updater: (task: Task) => Task) => {
-      setColumns((prev) =>
-        prev.map((col) => {
-          if (!col.tasks.some((task) => task.id === taskId)) return col;
-          return {
-            ...col,
-            tasks: col.tasks.map((task) =>
-              task.id === taskId ? updater(task) : task,
-            ),
-          };
-        }),
-      );
-      setSelectedTaskDetails((prev) =>
-        prev && prev.task.id === taskId
-          ? { ...prev, task: updater(prev.task) }
-          : prev,
-      );
-    },
-    [setColumns, setSelectedTaskDetails],
-  );
-
-  useFocusTaskSync({
-    onFocusRecorded: (taskId, durationMinutes, cycles) => {
-      syncFocusTaskUpdate(taskId, (task) =>
-        applyFocusRecordedToTask(task, durationMinutes, cycles),
-      );
-    },
-    onTaskCompleted: (taskId) => {
-      syncFocusTaskUpdate(taskId, (task) =>
-        applyFocusCompletionToTask(task, userTimezone),
-      );
-    },
-  });
+  syncSelectedTaskDetailsRef.current = (
+    taskId: string,
+    updater: (task: Task) => Task,
+  ) => {
+    setSelectedTaskDetails((prev) =>
+      prev && prev.task.id === taskId
+        ? { ...prev, task: updater(prev.task) }
+        : prev,
+    );
+  };
 
   const handleOpenColumnsDrawer = useCallback(() => {
     setIsColumnsDrawerOpen(true);
@@ -362,62 +332,6 @@ export function TasksBoardContainer({
     onColumnReorder: handleColumnReorder,
     onHideColumn: handleHideColumn,
   });
-
-  const hasActiveBoardFilters =
-    filters.taskType !== "all" ||
-    filters.difficulty !== "all" ||
-    filters.priority !== "all" ||
-    filters.status !== "all" ||
-    filters.tag !== null ||
-    Boolean(searchQuery);
-
-  const tasksStats = useMemo(() => {
-    const { stats } = calculateTasksWelcomeStats(columns, undefined, locale);
-    return stats.map((stat, index) => {
-      if (index === 0) {
-        return {
-          ...stat,
-          onClick: hasActiveBoardFilters
-            ? () => {
-                setFilters(DEFAULT_BOARD_FILTERS);
-                setSearchQuery("");
-              }
-            : undefined,
-        };
-      }
-      if (index === 1) {
-        return {
-          ...stat,
-          active: filters.status === "completed",
-          onClick: () =>
-            setFilters((prev) => ({
-              ...prev,
-              status: prev.status === "completed" ? "all" : "completed",
-            })),
-        };
-      }
-      if (index === 2) {
-        return {
-          ...stat,
-          active: filters.taskType === "HABIT",
-          onClick: () =>
-            setFilters((prev) => ({
-              ...prev,
-              taskType: prev.taskType === "HABIT" ? "all" : "HABIT",
-            })),
-        };
-      }
-      return stat;
-    });
-  }, [
-    columns,
-    locale,
-    hasActiveBoardFilters,
-    filters.status,
-    filters.taskType,
-    setFilters,
-    setSearchQuery,
-  ]);
 
   const columnStructureKey = columns.map((c) => `${c.id}:${c.title}`).join("|");
   // biome-ignore lint/correctness/useExhaustiveDependencies: Atualiza apenas quando colunas sao adicionadas ou renomeadas
@@ -545,7 +459,6 @@ export function TasksBoardContainer({
     onOpenColumnsDrawer: handleOpenColumnsDrawer,
     onOpenCreateColumn: handleOpenCreateColumn,
     onOpenCreateTask: handleOpenCreateTask,
-    isCompact,
   };
 
   const welcomeDetails = WELCOME_CARD_DETAILS.tasks;
@@ -558,18 +471,13 @@ export function TasksBoardContainer({
     <>
       {/* Banner de Boas-vindas */}
       <WelcomeCard
-        compact={isCompact}
         title={welcomeDetails.title}
         subtitle={welcomeDetails.subtitle}
         bullets={welcomeDetails.bullets}
         imageSrc={welcomeDetails.imageSrc}
         stats={tasksStats}
-        imageWidth={
-          isCompact ? welcomeDetails.compactWidth : welcomeDetails.normalWidth
-        }
-        imageHeight={
-          isCompact ? welcomeDetails.compactHeight : welcomeDetails.normalHeight
-        }
+        imageWidth={welcomeDetails.normalWidth}
+        imageHeight={welcomeDetails.normalHeight}
         storageKey="tasks"
       />
 
@@ -581,123 +489,33 @@ export function TasksBoardContainer({
       )}
 
       {/* Quadro Kanban ou Visualização em Lista */}
-      {viewMode === "card" ? (
-        <DndContext
-          id="routine-board-dnd"
-          sensors={boardDnd.sensors}
-          collisionDetection={boardDnd.collisionDetection}
-          modifiers={[restrictToWindowEdges]}
-          {...boardDnd.handlers}
-        >
-          {/* Barra de Filtros com Popover, Busca e Seletor de Visualização (Cards / Lista) */}
-          <div className="shrink-0 flex flex-col gap-2">
-            <RoutineFilters
-              {...sharedFilterProps}
-              isDraggingColumn={Boolean(boardDnd.activeColumn)}
-              enableDroppable={true}
-            />
-            <WorkspaceSearchHintBanner
-              searchQuery={searchQuery}
-              localMatchCount={localMatchCount}
-            />
-          </div>
-
-          <section
-            className="flex-1 min-h-[440px] sm:min-h-[500px] lg:min-h-0 min-w-0 flex flex-col"
-            aria-label={t("boardAria")}
-          >
-            <RoutineBoard
-              columns={filteredColumns}
-              visibleColumnIds={visibleColumnIds}
-              selectedColumnId={selectedColumnId}
-              selectedTaskId={selectedTaskDetails?.task.id}
-              deletingTaskIds={checkingDeleteTaskIds}
-              isCompact={isCompact}
-              alignment={alignment}
-              columnWidths={columnWidths}
-              getColumnWidthClass={getColumnWidthClass}
-              onAddColumn={handleOpenCreateColumn}
-              onAddTaskToColumn={handleAddTaskToColumnSafe}
-              onQuickCreateTask={handleQuickCreateTaskSafe}
-              onOpenDetails={handleOpenDetails}
-              onEditTask={handleEditTask}
-              onContextMenu={handleOpenTaskContextMenu}
-              onOpenColumnMenu={handleOpenColumnContextMenu}
-              onToggleComplete={handleToggleComplete}
-              onHabitChange={handleHabitChange}
-              onLoadArchivedCompleted={handleLoadArchivedCompleted}
-              forceExpandCompleted={filters.status === "completed"}
-              activeDraggedTaskId={boardDnd.activeTask?.id}
-            />
-          </section>
-
-          {/* Overlay suave durante o arrasto */}
-          <DragOverlay>
-            {boardDnd.activeColumn && (
-              <div
-                className={cn(
-                  "h-[500px]",
-                  getColumnWidthClass(boardDnd.activeColumn.id),
-                )}
-              >
-                <RoutineColumn
-                  column={boardDnd.activeColumn}
-                  columnIndex={0}
-                  widthPreset={
-                    columnWidths[boardDnd.activeColumn.id] || "normal"
-                  }
-                  isOverlay
-                />
-              </div>
-            )}
-            {boardDnd.activeTask && (
-              <RoutineTaskCard
-                task={boardDnd.activeTask}
-                columnId={boardDnd.activeTask.columnId || ""}
-                isOverlay
-              />
-            )}
-          </DragOverlay>
-        </DndContext>
-      ) : (
-        <>
-          {/* Barra de Filtros no modo Lista */}
-          <div className="shrink-0 flex flex-col gap-2">
-            <RoutineFilters
-              {...sharedFilterProps}
-              isDraggingColumn={false}
-              enableDroppable={false}
-            />
-            <WorkspaceSearchHintBanner
-              searchQuery={searchQuery}
-              localMatchCount={localMatchCount}
-            />
-          </div>
-
-          <section
-            className="flex-1 min-h-[440px] sm:min-h-[500px] lg:min-h-0 min-w-0 flex flex-col"
-            aria-label={t("boardAria")}
-          >
-            <RoutineTaskList
-              columns={filteredColumns}
-              visibleColumnIds={visibleColumnIds}
-              selectedColumnId={selectedColumnId}
-              selectedTaskId={selectedTaskDetails?.task.id}
-              deletingTaskIds={checkingDeleteTaskIds}
-              isCompact={isCompact}
-              onAddTaskToColumn={handleAddTaskToColumnSafe}
-              onOpenDetails={handleOpenDetails}
-              onEditTask={handleEditTask}
-              onContextMenu={handleOpenTaskContextMenu}
-              onToggleComplete={handleToggleComplete}
-              onHabitChange={handleHabitChange}
-              onStartFocus={handleStartFocusTask}
-              onLoadArchivedCompleted={handleLoadArchivedCompleted}
-              dndState={boardDnd}
-            />
-          </section>
-        </>
-      )}
+      <TasksBoardViewport
+        viewMode={viewMode}
+        sharedFilterProps={sharedFilterProps}
+        searchQuery={searchQuery}
+        localMatchCount={localMatchCount}
+        filteredColumns={filteredColumns}
+        visibleColumnIds={visibleColumnIds}
+        selectedColumnId={selectedColumnId}
+        selectedTaskId={selectedTaskDetails?.task.id}
+        deletingTaskIds={checkingDeleteTaskIds}
+        alignment={alignment}
+        columnWidths={columnWidths}
+        getColumnWidthClass={getColumnWidthClass}
+        forceExpandCompleted={filters.status === "completed"}
+        boardDnd={boardDnd}
+        onOpenCreateColumn={handleOpenCreateColumn}
+        onAddTaskToColumn={handleAddTaskToColumnSafe}
+        onQuickCreateTask={handleQuickCreateTaskSafe}
+        onOpenDetails={handleOpenDetails}
+        onEditTask={handleEditTask}
+        onContextMenu={handleOpenTaskContextMenu}
+        onOpenColumnMenu={handleOpenColumnContextMenu}
+        onToggleComplete={handleToggleComplete}
+        onHabitChange={handleHabitChange}
+        onStartFocusTask={handleStartFocusTask}
+        onLoadArchivedCompleted={handleLoadArchivedCompleted}
+      />
 
       {/* Modais, Popovers e Menus de Contexto desacoplados */}
       <TasksBoardModals

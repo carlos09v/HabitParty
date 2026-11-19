@@ -24,7 +24,6 @@ interface InventoryCatalogViewProps {
   filteredItems: InventoryItem[];
   totalItemsCount: number;
   viewMode: ViewMode;
-  isCompact: boolean;
   usingItemIds?: Set<string>;
   sendingItemIds?: Set<string>;
   sensors: SensorDescriptor<SensorOptions>[];
@@ -40,7 +39,6 @@ export function InventoryCatalogView({
   filteredItems,
   totalItemsCount,
   viewMode,
-  isCompact,
   usingItemIds,
   sendingItemIds,
   sensors,
@@ -63,11 +61,8 @@ export function InventoryCatalogView({
     const isInventoryEmpty = totalItemsCount === 0;
     return (
       <div className="flex flex-col gap-2.5 w-full pb-8">
-        {viewMode === "list" && (
-          <ItemRowHeader isCompact={isCompact} mode="inventory" />
-        )}
+        {viewMode === "list" && <ItemRowHeader mode="inventory" />}
         <CatalogEmptyState
-          isCompact={isCompact}
           icon={isInventoryEmpty ? (isGamified ? Backpack : Package) : SearchX}
           title={
             isInventoryEmpty
@@ -112,7 +107,6 @@ export function InventoryCatalogView({
       dndContextId="inventory-dnd-context"
       itemIds={itemIds}
       viewMode={viewMode}
-      isCompact={isCompact}
       headerMode="inventory"
       listAriaLabel={t("listAriaLabel")}
       sensors={sensors}
@@ -129,7 +123,6 @@ export function InventoryCatalogView({
             onSendToFocus={onSendToFocus}
             onOpenMysteryBox={onOpenMysteryBox}
             onContextMenu={onContextMenu}
-            isCompact={isCompact}
             isUsing={isUsing}
             isSendingToFocus={isSendingToFocus}
           />
@@ -141,7 +134,6 @@ export function InventoryCatalogView({
             onSendToFocus={onSendToFocus}
             onOpenMysteryBox={onOpenMysteryBox}
             onContextMenu={onContextMenu}
-            isCompact={isCompact}
             isUsing={isUsing}
             isSendingToFocus={isSendingToFocus}
           />

@@ -1,5 +1,6 @@
 package com.habitparty.application.usecases.reward;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -23,6 +24,7 @@ import com.habitparty.core.domain.enums.RewardCategory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
 import com.habitparty.core.domain.enums.TransactionType;
+import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.LimitExceededException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
@@ -50,6 +52,15 @@ public class RedeemRewardUseCase {
 
   @Transactional
   public void execute(UUID rewardId, UUID userIdLogado) {
+    execute(rewardId, userIdLogado, 1);
+  }
+
+  @Transactional
+  public void execute(UUID rewardId, UUID userIdLogado, int quantity) {
+    if (quantity < 1 || quantity > 50) {
+      throw new DomainValidationException("A quantidade para resgate deve estar entre 1 e 50.");
+    }
+
     // 1. Busca a Recompensa e valida propriedade (evita IDOR)
     Reward reward = port.findById(rewardId)
         .orElseThrow(() -> new ResourceNotFoundException("Recompensa não encontrada."));
@@ -64,6 +75,12 @@ public class RedeemRewardUseCase {
     boolean isImmediateDebtSettlement =
         reward.getCategory().map(category -> category == RewardCategory.DEBT).orElse(false)
             && reward.getType() == RewardType.SINGLE_USE;
+    if (quantity > 1 && !isImmediateDebtSettlement) {
+      throw new DomainValidationException(
+          "Multiplicador de quantidade só é permitido para quitação de Dívidas.");
+    }
+
+    BigDecimal totalPrice = reward.getPrice().multiply(BigDecimal.valueOf(quantity));
 
     // Limite de itens no inventário (20 Free / 100 Premium) - apenas para itens que vão para a mochila
     if (!isImmediateDebtSettlement) {
@@ -77,7 +94,7 @@ public class RedeemRewardUseCase {
     }
 
     // 3. Regra de Negócio: Desconta o dinheiro usando BigDecimal; pagamento de dívida não conta como resgate de recompensa/conquista
-    user.spendMoney(reward.getPrice());
+    user.spendMoney(totalPrice);
     if (!isImmediateDebtSettlement && user.getStats() != null) {
       user.getStats().recordRewardRedeemed();
     }
@@ -137,15 +154,18 @@ public class RedeemRewardUseCase {
         .orElse(null);
 
     // -> Transaction_History -> Cria o recibo da compra / quitação da dívida
+    String rewardNameSnapshot =
+        quantity > 1 ? reward.getName() + " (" + quantity + "x)" : reward.getName();
+
    TransactionHistory transaction = new TransactionHistory(
         null, // O Domínio gera o UUID
         userIdLogado, 
         reward.getId(), // referenceId = ID da Reward comprada
-        reward.getPrice().negate(), // goldAmount = Preço negativado (saiu do bolso)
+        totalPrice.negate(), // goldAmount = Preço total negativado (saiu do bolso)
         0,
         reward.getPrice(),
         TransactionType.REWARD_BOUGHT, 
-        reward.getName(), 
+        rewardNameSnapshot, 
         reward.getIcon().orElse(null),
         reward.getPackageLevel().orElse(null),
         null, // difficulty (não se aplica)

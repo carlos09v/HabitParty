@@ -14,7 +14,6 @@ import { HelpReferenceTable } from "@/components/help/HelpReferenceTable";
 import type { HelpCategory, HelpTableEntry } from "@/types/help";
 
 interface HelpReferenceTablesProps {
-  isCompact?: boolean;
   searchQuery?: string;
   activeCategory?: HelpCategory;
   /** Tabelas de referência já resolvidas no idioma ativo (via servidor). */
@@ -31,7 +30,6 @@ interface TableConfig {
 }
 
 export function HelpReferenceTables({
-  isCompact = false,
   searchQuery = "",
   activeCategory = "ALL",
   tables: helpTables,
@@ -196,7 +194,6 @@ export function HelpReferenceTables({
           highlightColumnIndex={table.highlightColumnIndex}
           highlightColorClass={table.highlightColorClass}
           secondaryBoldColumnIndex={table.secondaryBoldColumnIndex}
-          isCompact={isCompact}
         />
       ))}
     </section>

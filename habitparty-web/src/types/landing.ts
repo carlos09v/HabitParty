@@ -41,6 +41,7 @@ export interface LandingProductivityStepConfig {
 export type LandingFeatureKey =
   | "experienceMode"
   | "rewardShop"
+  | "partyGuild"
   | "hardcoreMode"
   | "workspaces"
   | "analytics"

@@ -5,6 +5,7 @@ import {
   BadgeCheck,
   Banknote,
   Bomb,
+  BookOpen,
   Brain,
   CalendarCheck,
   CalendarClock,
@@ -29,17 +30,21 @@ import {
   HelpCircle,
   Hourglass,
   Infinity as InfinityIcon,
+  KeyRound,
   Landmark,
   LayoutGrid,
   ListChecks,
   type LucideIcon,
   Medal,
   MoonStar,
+  Orbit,
   Package,
   PackageOpen,
   PiggyBank,
+  Pyramid,
   Repeat,
   Scale,
+  ScrollText,
   Shield,
   ShieldAlert,
   ShieldBan,
@@ -70,6 +75,7 @@ interface AchievementIconProps {
   size?: number;
   className?: string;
   isSecretLocked?: boolean;
+  fallback?: "trophy" | "sparkles";
 }
 
 /**
@@ -83,6 +89,7 @@ const ACHIEVEMENT_ICON_MAP: Record<string, LucideIcon> = {
   badgecheck: BadgeCheck,
   banknote: Banknote,
   bomb: Bomb,
+  bookopen: BookOpen,
   brain: Brain,
   calendarcheck: CalendarCheck,
   calendarclock: CalendarClock,
@@ -106,16 +113,20 @@ const ACHIEVEMENT_ICON_MAP: Record<string, LucideIcon> = {
   hammer: Hammer,
   hourglass: Hourglass,
   infinity: InfinityIcon,
+  keyround: KeyRound,
   landmark: Landmark,
   layoutgrid: LayoutGrid,
   listchecks: ListChecks,
   medal: Medal,
   moonstar: MoonStar,
+  orbit: Orbit,
   package: Package,
   packageopen: PackageOpen,
   piggybank: PiggyBank,
+  pyramid: Pyramid,
   repeat: Repeat,
   scale: Scale,
+  scrolltext: ScrollText,
   shield: Shield,
   shieldalert: ShieldAlert,
   shieldban: ShieldBan,
@@ -158,11 +169,14 @@ export function AchievementIcon({
   size = 22,
   className,
   isSecretLocked = false,
+  fallback = "trophy",
 }: AchievementIconProps) {
   if (isSecretLocked) {
-    return <HelpCircle size={size} className={className} />;
+    return <HelpCircle size={size} className={className} aria-hidden="true" />;
   }
 
-  const Icon = ACHIEVEMENT_ICON_MAP[normalizeIconKey(iconKey || "")] ?? Trophy;
-  return <Icon size={size} className={className} />;
+  const FallbackIcon = fallback === "sparkles" ? Sparkles : Trophy;
+  const Icon =
+    ACHIEVEMENT_ICON_MAP[normalizeIconKey(iconKey || "")] ?? FallbackIcon;
+  return <Icon size={size} className={className} aria-hidden="true" />;
 }

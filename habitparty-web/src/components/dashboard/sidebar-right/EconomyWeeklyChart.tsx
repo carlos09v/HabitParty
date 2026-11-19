@@ -11,14 +11,12 @@ interface EconomyWeeklyChartProps {
   weeklyEarnings: number;
   weeklySpent: number;
   displayBars: EconomyBarData[];
-  isCompact?: boolean;
 }
 
 export function EconomyWeeklyChart({
   weeklyEarnings,
   weeklySpent,
   displayBars,
-  isCompact = false,
 }: EconomyWeeklyChartProps) {
   const t = useTranslations("dashboard.sidebarRight.economyWidget");
   const locale = useLocale() as AppLocale;
@@ -43,12 +41,7 @@ export function EconomyWeeklyChart({
     hoveredIndex !== null ? displayBars[hoveredIndex] : null;
 
   return (
-    <div
-      className={cn(
-        "rounded-lg border border-neutral-700 dark:border-primary/30 bg-white dark:bg-primary-dark/20 shadow-2xs dark:shadow-none flex flex-col",
-        isCompact ? "p-2.5 gap-2" : "p-3 gap-3",
-      )}
-    >
+    <div className="rounded-lg border border-neutral-700 dark:border-primary/30 bg-card dark:bg-primary-dark/20 shadow-2xs dark:shadow-none flex flex-col p-3 gap-3">
       {/* Cabeçalho do Gráfico com Balanço Dinâmico */}
       <div className="flex items-center justify-between text-label-g text-neutral-400">
         <span>{t("earningsAndSpent")}</span>
@@ -80,10 +73,7 @@ export function EconomyWeeklyChart({
       {/* Barras do gráfico com barras duplas (Ganhos vs Gastos) e tooltip flutuante */}
       <div
         ref={chartContainerRef}
-        className={cn(
-          "w-full flex items-end justify-between gap-2 sm:gap-3 px-2 border-b border-neutral-700 dark:border-white/10 relative",
-          isCompact ? "h-14" : "h-16",
-        )}
+        className="w-full flex items-end justify-between gap-2 sm:gap-3 px-2 border-b border-neutral-700 dark:border-white/10 relative h-16"
         role="img"
         aria-label={t("chartAriaLabel")}
       >

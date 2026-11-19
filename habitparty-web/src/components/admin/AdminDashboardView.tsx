@@ -1,13 +1,11 @@
 "use client";
 
-import { RefreshCw, ShieldCheck } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useCallback, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   getAdminUserDetailAction,
-  refreshAdminDataAction,
   updateUserRoleAction,
 } from "@/actions/adminActions";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
@@ -110,14 +108,6 @@ export function AdminDashboardView({
     [buildUrl],
   );
 
-  const handleRefreshAll = useCallback(() => {
-    startNavTransition(async () => {
-      await refreshAdminDataAction();
-      router.refresh();
-      toast.success(t("refreshedMessage"));
-    });
-  }, [router, t]);
-
   const handleSelectUser = async (user: AdminUserSummaryDTO) => {
     setLoadingUserId(user.id);
     try {
@@ -159,34 +149,7 @@ export function AdminDashboardView({
   };
 
   return (
-    <div className="flex flex-col gap-8 pb-16 animate-in fade-in duration-200">
-      {/* HEADER DA PÁGINA */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-bold uppercase tracking-wider mb-2">
-            <ShieldCheck size={14} />
-            {t("badge")}
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-neutral-50 tracking-tight">
-            {t("title")}
-          </h1>
-          <p className="text-sm text-neutral-400 mt-1">{t("subtitle")}</p>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleRefreshAll}
-          disabled={isPendingNav}
-          className="self-start sm:self-auto px-4 py-2 rounded-xl bg-surface border border-white/10 hover:border-gold/40 text-neutral-200 hover:text-gold transition-colors text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-60"
-        >
-          <RefreshCw
-            size={14}
-            className={isPendingNav ? "animate-spin text-gold" : ""}
-          />
-          {t("refreshButton")}
-        </button>
-      </div>
-
+    <div className="flex flex-col gap-8">
       {/* CARDS COM MÉTRICAS PRINCIPAIS (RENDERIZADOS NO SERVIDOR) */}
       {overviewCards}
 

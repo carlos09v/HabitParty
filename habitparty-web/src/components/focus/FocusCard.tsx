@@ -42,7 +42,6 @@ export interface FocusCardBaseProps {
   isTimerRunning?: boolean;
   onToggleTimer?: () => void;
   onLockedClick?: () => void;
-  isCompact?: boolean;
   isDragging?: boolean;
   sortableRef?: (node: HTMLElement | null) => void;
   sortableStyle?: CSSProperties;
@@ -86,7 +85,6 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
     isActiveTarget = false,
     isTimerRunning = false,
     onToggleTimer,
-    isCompact = false,
     isDragging = false,
     sortableRef,
     sortableStyle,
@@ -199,7 +197,7 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
       }}
       onContextMenu={handleContextMenu}
       className={cn(
-        "group relative flex items-center justify-between rounded-xl border bg-card dark:bg-card/85 shadow-2xs dark:shadow-none transition-[border-color,background-color,opacity,transform] duration-150 select-none",
+        "group relative flex items-center justify-between rounded-xl border bg-card dark:bg-card/85 shadow-2xs dark:shadow-none transition-[border-color,background-color,opacity,transform] duration-150 select-none p-3.5 sm:p-4 gap-3",
         isActivity
           ? isLocked
             ? "cursor-pointer"
@@ -207,7 +205,6 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
               ? "cursor-grab active:cursor-grabbing"
               : "cursor-pointer"
           : "cursor-pointer",
-        isCompact ? "p-3 gap-2.5" : "p-3.5 sm:p-4 gap-3",
         isSelected
           ? "ring-2 ring-gold border-gold/80 bg-gold/15 shadow-glow-gold-xs"
           : isActiveTarget
@@ -231,8 +228,7 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
 
         <div
           className={cn(
-            "rounded-lg flex items-center justify-center shrink-0 border transition-colors",
-            isCompact ? "w-9 h-9" : "w-10 h-10",
+            "rounded-lg flex items-center justify-center shrink-0 border transition-colors w-10 h-10",
             isActiveTarget
               ? "bg-amber-500/15 border-amber-500/50 text-amber-700 dark:bg-gold/20 dark:border-gold/60 dark:text-gold"
               : isLocked
@@ -240,17 +236,12 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
                 : "bg-primary/10 border-primary/25 text-primary group-hover:text-primary-dark group-hover:border-primary/40 dark:bg-primary-dark/30 dark:border-primary/40 dark:text-primary-light dark:group-hover:text-gold dark:group-hover:border-gold/40",
           )}
         >
-          <IconComponent size={isCompact ? 18 : 20} />
+          <IconComponent size={20} />
         </div>
 
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
-            <h4
-              className={cn(
-                "font-semibold text-neutral-100 group-hover:text-primary dark:group-hover:text-gold transition-colors truncate max-w-full",
-                isCompact ? "text-body-s" : "text-body-m",
-              )}
-            >
+            <h4 className="font-semibold text-neutral-100 group-hover:text-primary dark:group-hover:text-gold transition-colors truncate max-w-full text-body-m">
               {title}
             </h4>
 
@@ -334,17 +325,14 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
             aria-label={t("completeItemAria", { title })}
             title={t("completeItemTitle")}
             className={cn(
-              "flex items-center justify-center rounded-lg border transition-colors cursor-pointer bg-emerald-500 hover:bg-emerald-400 text-neutral-950 border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] disabled:opacity-65 disabled:cursor-not-allowed",
+              "flex items-center justify-center rounded-lg border transition-colors cursor-pointer bg-emerald-500 hover:bg-emerald-400 text-neutral-950 border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] disabled:opacity-65 disabled:cursor-not-allowed w-9 h-9 pointer-coarse:w-10 pointer-coarse:h-10",
               !isConsuming && "animate-pulse",
-              isCompact
-                ? "w-8 h-8 pointer-coarse:w-9 pointer-coarse:h-9"
-                : "w-9 h-9 pointer-coarse:w-10 pointer-coarse:h-10",
             )}
           >
             {isConsuming ? (
-              <Loader2 size={isCompact ? 16 : 18} className="animate-spin" />
+              <Loader2 size={18} className="animate-spin" />
             ) : (
-              <Check size={isCompact ? 16 : 18} className="stroke-[3]" />
+              <Check size={18} className="stroke-[3]" />
             )}
           </button>
         ) : isLocked ? (
@@ -357,14 +345,9 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
             }}
             aria-label={t("lockedActivityAria", { title })}
             title={t("lockedActivityTitle")}
-            className={cn(
-              "flex items-center justify-center rounded-lg border transition-[transform,background-color,border-color,color] duration-150 cursor-pointer bg-gold/10 hover:bg-gold/20 text-gold border-gold/30 hover:border-gold hover:shadow-glow-gold-xs active:scale-95",
-              isCompact
-                ? "w-8 h-8 pointer-coarse:w-9 pointer-coarse:h-9"
-                : "w-9 h-9 pointer-coarse:w-10 pointer-coarse:h-10",
-            )}
+            className="flex items-center justify-center rounded-lg border transition-[transform,background-color,border-color,color] duration-150 cursor-pointer bg-gold/10 hover:bg-gold/20 text-gold border-gold/30 hover:border-gold hover:shadow-glow-gold-xs active:scale-95 w-9 h-9 pointer-coarse:w-10 pointer-coarse:h-10"
           >
-            <Lock size={isCompact ? 14 : 16} />
+            <Lock size={16} />
           </button>
         ) : (
           <button
@@ -386,20 +369,17 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
                 : t("startFocusTitle")
             }
             className={cn(
-              "flex items-center justify-center rounded-lg border transition-colors cursor-pointer",
-              isCompact
-                ? "w-8 h-8 pointer-coarse:w-9 pointer-coarse:h-9"
-                : "w-9 h-9 pointer-coarse:w-10 pointer-coarse:h-10",
+              "flex items-center justify-center rounded-lg border transition-colors cursor-pointer w-9 h-9 pointer-coarse:w-10 pointer-coarse:h-10",
               isActiveTarget
                 ? "bg-gold text-on-gold border-gold font-bold shadow-glow-gold-xs hover:bg-gold-hover"
                 : "bg-primary/10 text-primary hover:bg-primary hover:text-white border-primary/20 hover:border-primary dark:bg-surface/80 dark:hover:bg-gold/20 dark:text-neutral-200 dark:hover:text-gold dark:border-primary/30 dark:hover:border-gold/50",
             )}
           >
             {isActiveTarget && isTimerRunning ? (
-              <Pause size={isCompact ? 14 : 16} className="fill-on-gold" />
+              <Pause size={16} className="fill-on-gold" />
             ) : (
               <Play
-                size={isCompact ? 14 : 16}
+                size={16}
                 className={
                   isActiveTarget ? "fill-on-gold ml-0.5" : "fill-current ml-0.5"
                 }
@@ -414,14 +394,9 @@ export const FocusCard = memo(function FocusCard(props: FocusCardProps) {
           onClick={(e) => openContextMenuFromButton(e, handleContextMenu)}
           aria-label={t("moreActionsAria", { title })}
           title={t("moreActionsAria", { title })}
-          className={cn(
-            "flex items-center justify-center rounded-lg border border-transparent text-neutral-400 hover:text-neutral-100 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold",
-            isCompact
-              ? "w-8 h-8 pointer-coarse:w-9 pointer-coarse:h-9"
-              : "w-9 h-9 pointer-coarse:w-10 pointer-coarse:h-10",
-          )}
+          className="flex items-center justify-center rounded-lg border border-transparent text-neutral-400 hover:text-neutral-100 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold w-9 h-9 pointer-coarse:w-10 pointer-coarse:h-10"
         >
-          <MoreVertical size={isCompact ? 15 : 16} aria-hidden="true" />
+          <MoreVertical size={16} aria-hidden="true" />
         </button>
       </div>
     </article>

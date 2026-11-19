@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles, Trophy } from "lucide-react";
+import { Sparkles, Trophy, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
@@ -14,7 +14,7 @@ import { getRarityTheme } from "@/constants/achievements";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useUserStore } from "@/store/userStore";
 import type { AchievementRarity } from "@/types/showcase";
-import { cn, resolveAchievementCopy } from "@/utils";
+import { cn, resolveAchievementCopy, resolveArtifactCopy } from "@/utils";
 import { soundEffects } from "@/utils/soundEffects";
 
 const RARITY_PRIORITY: Record<AchievementRarity, number> = {
@@ -31,6 +31,7 @@ export function AchievementUnlockListener() {
   const tToast = useTranslations("showcase.unlockToast");
   const tRarities = useTranslations("showcase.rarities");
   const tCatalog = useTranslations("showcase.catalog");
+  const tArtifacts = useTranslations("showcase.artifacts");
   const { isGamified } = useExperienceMode();
 
   const achievementCheckSeq = useUserStore((s) => s.achievementCheckSeq);
@@ -136,12 +137,19 @@ export function AchievementUnlockListener() {
             tCatalog,
           );
           const rarityLabel = tRarities(achievement.rarity);
+          const grantedArtifact = achievement.grantedArtifact;
+          const artifactTheme = grantedArtifact
+            ? getRarityTheme(grantedArtifact.rarity)
+            : null;
+          const artifactCopy = grantedArtifact
+            ? resolveArtifactCopy(grantedArtifact, isGamified, tArtifacts)
+            : null;
 
           toast.custom(
             (toastId) => (
-              <div
+              <article
                 className={cn(
-                  "w-full max-w-sm rounded-2xl border p-4 shadow-card-active dark:shadow-2xl transition-colors",
+                  "w-full max-w-md rounded-2xl border p-4 shadow-card-active dark:shadow-2xl transition-colors motion-reduce:transition-none",
                   "bg-card dark:bg-neutral-900/95",
                   theme.cardBorder,
                   theme.cardGlow,
@@ -159,35 +167,93 @@ export function AchievementUnlockListener() {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-gold">
-                        <Sparkles size={11} />
-                        {isGamified
-                          ? tToast("headerGamified")
-                          : tToast("headerEssential")}
-                      </span>
-                      <span
-                        className={cn(
-                          "px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase border",
-                          theme.badgeBg,
-                          theme.badgeText,
-                          theme.badgeBorder,
-                        )}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-gold">
+                          <Sparkles size={11} aria-hidden="true" />
+                          {isGamified
+                            ? tToast("headerGamified")
+                            : tToast("headerEssential")}
+                        </span>
+                        <span
+                          className={cn(
+                            "px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase border",
+                            theme.badgeBg,
+                            theme.badgeText,
+                            theme.badgeBorder,
+                          )}
+                        >
+                          {rarityLabel}
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => toast.dismiss(toastId)}
+                        aria-label={tToast("dismiss")}
+                        className="p-1 -mr-1 -mt-1 rounded-lg text-neutral-400 hover:text-neutral-50 hover:bg-neutral-800/60 transition-colors shrink-0 cursor-pointer"
                       >
-                        {rarityLabel}
-                      </span>
+                        <X size={14} aria-hidden="true" />
+                      </button>
                     </div>
 
-                    <p className="text-body-s font-bold text-neutral-50 mt-0.5 truncate">
+                    <p className="text-body-s font-bold text-neutral-50 mt-0.5 break-words">
                       {title}
                     </p>
-                    <p className="text-tiny text-neutral-300 line-clamp-2 mt-0.5">
+                    <p className="text-tiny text-neutral-300 mt-0.5 break-words">
                       {description}
                     </p>
 
-                    <div className="flex items-center justify-between gap-2 mt-2.5 pt-2 border-t border-neutral-700 dark:border-primary/15">
+                    {grantedArtifact && artifactTheme && artifactCopy && (
+                      <div
+                        className={cn(
+                          "mt-2.5 flex items-center gap-2.5 rounded-xl border px-2.5 py-2",
+                          "bg-neutral-800/50 dark:bg-neutral-950/60",
+                          artifactTheme.cardBorder,
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "w-8 h-8 rounded-lg border flex items-center justify-center shrink-0",
+                            artifactTheme.iconBg,
+                            artifactTheme.iconText,
+                          )}
+                        >
+                          <AchievementIcon
+                            iconKey={grantedArtifact.iconName}
+                            size={16}
+                            fallback="sparkles"
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700 dark:text-gold break-words">
+                              {tToast("artifactGrantedLabel")}
+                            </span>
+                            <span
+                              className={cn(
+                                "px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase border",
+                                artifactTheme.badgeBg,
+                                artifactTheme.badgeText,
+                                artifactTheme.badgeBorder,
+                              )}
+                            >
+                              {tRarities(grantedArtifact.rarity)}
+                            </span>
+                          </div>
+                          <p className="text-tiny font-bold text-neutral-50 break-words">
+                            {artifactCopy.name}
+                          </p>
+                          <p className="text-[11px] text-neutral-300 break-words">
+                            {tToast("artifactAddedHint")}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 mt-2.5 pt-2 border-t border-neutral-700 dark:border-primary/15">
                       <span className="inline-flex items-center gap-1 text-tiny font-bold text-amber-700 dark:text-gold">
-                        <Trophy size={12} />
+                        <Trophy size={12} aria-hidden="true" />
                         {tToast("pointsEarned", { points: achievement.points })}
                       </span>
 
@@ -204,7 +270,7 @@ export function AchievementUnlockListener() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </article>
             ),
             { duration: 6500 },
           );
@@ -248,6 +314,7 @@ export function AchievementUnlockListener() {
     isGamified,
     pathname,
     router,
+    tArtifacts,
     tCatalog,
     tRarities,
     tToast,

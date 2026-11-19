@@ -86,4 +86,37 @@ class RewardDomainTest {
     assertEquals(Optional.empty(), reward.getBaseDurationMinutes());
     assertNull(reward.getLootItems());
   }
+
+  @Test
+  void shouldForceNonePackageLevelWhenUpdatingToDebtCategory() {
+    Reward reward = new Reward(
+        UUID.randomUUID(),
+        UUID.randomUUID(),
+        "Videogame",
+        new BigDecimal("15"),
+        List.of(),
+        RewardType.SINGLE_USE,
+        0,
+        "gamepad",
+        null,
+        RewardCategory.ENTERTAINMENT,
+        null,
+        RewardPackageLevel.EPIC
+    );
+
+    reward.updateDetails(
+        "Videogame em Dívida",
+        null,
+        new BigDecimal("8"),
+        "gamepad",
+        RewardCategory.DEBT,
+        List.of(),
+        RewardType.SINGLE_USE,
+        RewardPackageLevel.LEGENDARY,
+        null
+    );
+
+    assertEquals(Optional.of(RewardPackageLevel.NONE), reward.getPackageLevel());
+    assertEquals(Optional.of(RewardCategory.DEBT), reward.getCategory());
+  }
 }

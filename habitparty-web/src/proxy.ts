@@ -190,17 +190,7 @@ export async function proxy(request: NextRequest) {
     );
   }
 
-  // 5. Rota de Onboarding / First Step: acessível para configuração inicial
-  if (pathname.startsWith("/firstStep")) {
-    return createNextWithScope(
-      request,
-      token ? "app" : "default",
-      refreshedHeaders,
-      refreshedAccessToken,
-    );
-  }
-
-  // 6. Proteção das rotas privadas: se não tiver token, redireciona para login
+  // 5. Proteção das rotas privadas (incluindo /firstStep): se não tiver token, redireciona para login
   if (!token) {
     const signInUrl = new URL("/signIn", request.url);
     // Guarda a URL de origem (incluindo query params) para redirecionar após o login se desejado

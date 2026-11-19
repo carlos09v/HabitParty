@@ -1,3 +1,7 @@
+import {
+  type AvatarPresetOption,
+  resolveAvatarPreset,
+} from "@/constants/cosmetics";
 import { FRAME_GRADIENTS } from "./palettes";
 import type { ProfileCardRenderInput, ThemePalette } from "./types";
 
@@ -81,6 +85,25 @@ export function drawRoundedRect(
   ctx.roundRect(x, y, w, h, r);
 }
 
+function truncateTextToWidth(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  minLength = 1,
+): { text: string; truncated: boolean } {
+  if (ctx.measureText(text).width <= maxWidth) {
+    return { text, truncated: false };
+  }
+  let output = text;
+  while (
+    output.length > minLength &&
+    ctx.measureText(`${output}…`).width > maxWidth
+  ) {
+    output = output.slice(0, -1);
+  }
+  return { text: `${output}…`, truncated: true };
+}
+
 export function drawTruncatedText(
   ctx: CanvasRenderingContext2D,
   text: string,
@@ -88,15 +111,8 @@ export function drawTruncatedText(
   y: number,
   maxWidth: number,
 ): void {
-  let output = text;
-  if (ctx.measureText(output).width <= maxWidth) {
-    ctx.fillText(output, x, y);
-    return;
-  }
-  while (output.length > 1 && ctx.measureText(`${output}…`).width > maxWidth) {
-    output = output.slice(0, -1);
-  }
-  ctx.fillText(`${output}…`, x, y);
+  const { text: output } = truncateTextToWidth(ctx, text, maxWidth);
+  ctx.fillText(output, x, y);
 }
 
 export function wrapTextLines(
@@ -128,18 +144,13 @@ export function wrapTextLines(
 
   if (lines.length === maxLines) {
     const last = lines[maxLines - 1];
-    let trimmed = last;
-    while (
-      trimmed.length > 1 &&
-      ctx.measureText(`${trimmed}…`).width > maxWidth
-    ) {
-      trimmed = trimmed.slice(0, -1);
-    }
-    if (
-      trimmed.length < last.length ||
-      words.join(" ").length > lines.join(" ").length
-    ) {
-      lines[maxLines - 1] = `${trimmed}…`;
+    const { text: truncatedLast, truncated } = truncateTextToWidth(
+      ctx,
+      last,
+      maxWidth,
+    );
+    if (truncated || words.join(" ").length > lines.join(" ").length) {
+      lines[maxLines - 1] = truncatedLast;
     }
   }
 
@@ -175,6 +186,172 @@ export function drawBadgePill(
   return width;
 }
 
+function drawPresetVectorEmblem(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  preset: AvatarPresetOption,
+): void {
+  const s = radius * 0.44;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.strokeStyle = preset.iconColorHex;
+  ctx.fillStyle = preset.iconColorHex;
+  ctx.lineWidth = Math.max(2.2, radius * 0.065);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  switch (preset.shapeKind) {
+    case "crown": {
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.85, s * 0.52);
+      ctx.lineTo(-s * 0.95, -s * 0.35);
+      ctx.lineTo(-s * 0.38, s * 0.08);
+      ctx.lineTo(0, -s * 0.62);
+      ctx.lineTo(s * 0.38, s * 0.08);
+      ctx.lineTo(s * 0.95, -s * 0.35);
+      ctx.lineTo(s * 0.85, s * 0.52);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.78, s * 0.76);
+      ctx.lineTo(s * 0.78, s * 0.76);
+      ctx.stroke();
+      break;
+    }
+    case "shield": {
+      ctx.beginPath();
+      ctx.moveTo(0, -s * 0.86);
+      ctx.lineTo(s * 0.76, -s * 0.52);
+      ctx.quadraticCurveTo(s * 0.76, s * 0.32, 0, s * 0.88);
+      ctx.quadraticCurveTo(-s * 0.76, s * 0.32, -s * 0.76, -s * 0.52);
+      ctx.closePath();
+      ctx.stroke();
+      break;
+    }
+    case "compass": {
+      ctx.beginPath();
+      ctx.arc(0, 0, s * 0.86, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(s * 0.45, -s * 0.45);
+      ctx.lineTo(s * 0.14, s * 0.14);
+      ctx.lineTo(-s * 0.45, s * 0.45);
+      ctx.lineTo(-s * 0.14, -s * 0.14);
+      ctx.closePath();
+      ctx.stroke();
+      break;
+    }
+    case "target": {
+      ctx.beginPath();
+      ctx.arc(0, 0, s * 0.85, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 0, s * 0.42, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 0, s * 0.12, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+    case "zap": {
+      ctx.beginPath();
+      ctx.moveTo(s * 0.12, -s * 0.92);
+      ctx.lineTo(-s * 0.64, s * 0.08);
+      ctx.lineTo(s * 0.02, s * 0.08);
+      ctx.lineTo(-s * 0.16, s * 0.92);
+      ctx.lineTo(s * 0.64, -s * 0.1);
+      ctx.lineTo(-s * 0.02, -s * 0.1);
+      ctx.closePath();
+      ctx.stroke();
+      break;
+    }
+    case "book": {
+      ctx.beginPath();
+      ctx.moveTo(0, -s * 0.62);
+      ctx.lineTo(0, s * 0.72);
+      ctx.moveTo(0, -s * 0.62);
+      ctx.quadraticCurveTo(-s * 0.48, -s * 0.78, -s * 0.88, -s * 0.56);
+      ctx.lineTo(-s * 0.88, s * 0.56);
+      ctx.quadraticCurveTo(-s * 0.48, s * 0.38, 0, s * 0.72);
+      ctx.moveTo(0, -s * 0.62);
+      ctx.quadraticCurveTo(s * 0.48, -s * 0.78, s * 0.88, -s * 0.56);
+      ctx.lineTo(s * 0.88, s * 0.56);
+      ctx.quadraticCurveTo(s * 0.48, s * 0.38, 0, s * 0.72);
+      ctx.stroke();
+      break;
+    }
+    case "award": {
+      ctx.beginPath();
+      ctx.arc(0, -s * 0.22, s * 0.56, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.32, s * 0.26);
+      ctx.lineTo(-s * 0.44, s * 0.88);
+      ctx.lineTo(0, s * 0.62);
+      ctx.lineTo(s * 0.44, s * 0.88);
+      ctx.lineTo(s * 0.32, s * 0.26);
+      ctx.stroke();
+      break;
+    }
+    case "sprout": {
+      ctx.beginPath();
+      ctx.moveTo(0, s * 0.78);
+      ctx.lineTo(0, -s * 0.12);
+      ctx.moveTo(0, s * 0.08);
+      ctx.quadraticCurveTo(-s * 0.85, -s * 0.08, -s * 0.75, -s * 0.68);
+      ctx.quadraticCurveTo(-s * 0.15, -s * 0.68, 0, -s * 0.12);
+      ctx.moveTo(0, s * 0.24);
+      ctx.quadraticCurveTo(s * 0.85, s * 0.08, s * 0.75, -s * 0.52);
+      ctx.quadraticCurveTo(s * 0.15, -s * 0.52, 0, s * 0.04);
+      ctx.stroke();
+      break;
+    }
+    case "footprints": {
+      ctx.beginPath();
+      ctx.ellipse(
+        -s * 0.36,
+        -s * 0.22,
+        s * 0.22,
+        s * 0.38,
+        -0.15,
+        0,
+        Math.PI * 2,
+      );
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(s * 0.36, s * 0.22, s * 0.22, s * 0.38, 0.15, 0, Math.PI * 2);
+      ctx.stroke();
+      break;
+    }
+    case "briefcase": {
+      ctx.beginPath();
+      ctx.roundRect(-s * 0.78, -s * 0.34, s * 1.56, s * 1.02, s * 0.18);
+      ctx.moveTo(-s * 0.32, -s * 0.34);
+      ctx.lineTo(-s * 0.32, -s * 0.64);
+      ctx.lineTo(s * 0.32, -s * 0.64);
+      ctx.lineTo(s * 0.32, -s * 0.34);
+      ctx.stroke();
+      break;
+    }
+    case "sparkles": {
+      ctx.beginPath();
+      ctx.moveTo(0, -s * 0.88);
+      ctx.quadraticCurveTo(s * 0.08, -s * 0.08, s * 0.88, 0);
+      ctx.quadraticCurveTo(s * 0.08, s * 0.08, 0, s * 0.88);
+      ctx.quadraticCurveTo(-s * 0.08, s * 0.08, -s * 0.88, 0);
+      ctx.quadraticCurveTo(-s * 0.08, -s * 0.08, 0, -s * 0.88);
+      ctx.closePath();
+      ctx.stroke();
+      break;
+    }
+    default:
+      break;
+  }
+  ctx.restore();
+}
+
 export function drawAvatar(
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -183,35 +360,57 @@ export function drawAvatar(
   avatarImg: HTMLImageElement | null,
   name: string,
   frameId: string | null | undefined,
+  avatarPreset: string | null | undefined,
   isPremium: boolean | undefined,
   palette: ThemePalette,
 ): void {
-  const frameColors =
-    (frameId && FRAME_GRADIENTS[frameId]) ||
-    (isPremium
-      ? ["#FACC15", "#F59E0B"]
-      : [palette.accentPurple, palette.accentCyan]);
-
-  const ringGrad = ctx.createLinearGradient(
-    cx - radius,
-    cy - radius,
-    cx + radius,
-    cy + radius,
-  );
-  ringGrad.addColorStop(0, frameColors[0]);
-  ringGrad.addColorStop(1, frameColors[1]);
+  const activeFrameColors =
+    frameId && frameId !== "none" ? FRAME_GRADIENTS[frameId] : undefined;
+  const ringColors =
+    activeFrameColors ?? (isPremium ? ["#FACC15", "#F59E0B"] : null);
 
   ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx, cy, radius + 5, 0, Math.PI * 2);
-  ctx.fillStyle = ringGrad;
-  ctx.fill();
+  if (ringColors) {
+    const ringGrad = ctx.createLinearGradient(
+      cx - radius,
+      cy - radius,
+      cx + radius,
+      cy + radius,
+    );
+    ringGrad.addColorStop(0, ringColors[0]);
+    ringGrad.addColorStop(1, ringColors[1]);
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius + 5, 0, Math.PI * 2);
+    ctx.fillStyle = ringGrad;
+    ctx.fill();
+  }
 
   ctx.beginPath();
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
   ctx.clip();
 
-  if (avatarImg) {
+  const resolvedPreset = resolveAvatarPreset(avatarPreset);
+  if (resolvedPreset) {
+    const presetGrad = ctx.createLinearGradient(
+      cx - radius,
+      cy - radius,
+      cx + radius,
+      cy + radius,
+    );
+    presetGrad.addColorStop(0, resolvedPreset.canvasColors[0]);
+    presetGrad.addColorStop(1, resolvedPreset.canvasColors[1]);
+    ctx.fillStyle = presetGrad;
+    ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius - 5, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.28)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    drawPresetVectorEmblem(ctx, cx, cy, radius, resolvedPreset);
+  } else if (avatarImg) {
     const imgRatio = avatarImg.width / avatarImg.height;
     const targetSize = radius * 2;
     let drawW = targetSize;
@@ -422,6 +621,7 @@ export function drawCardHeaderAndIdentity(
     avatarImg,
     input.user.fullName || input.user.username,
     input.user.avatarFrame,
+    input.user.avatarPreset,
     input.user.isPremium,
     palette,
   );
@@ -440,9 +640,41 @@ export function drawCardHeaderAndIdentity(
     infoMaxW,
   );
 
+  const handleText = `@${input.user.username}`;
   ctx.fillStyle = palette.textMuted;
   ctx.font = "600 18px system-ui, -apple-system, sans-serif";
-  ctx.fillText(`@${input.user.username}`, infoX, identityY + 46);
+  const handleWidth = ctx.measureText(handleText).width;
+  ctx.fillText(handleText, infoX, identityY + 46);
+
+  if (
+    input.equippedTitleLabel &&
+    input.equippedTitleLabel.trim().length > 0 &&
+    infoMaxW - handleWidth - 16 > 80
+  ) {
+    const pillX = infoX + handleWidth + 12;
+    const maxPillTextW = infoMaxW - handleWidth - 38;
+    const titleFont = "800 12px system-ui, -apple-system, sans-serif";
+    ctx.save();
+    ctx.font = titleFont;
+    const { text: titleOut } = truncateTextToWidth(
+      ctx,
+      `✦ ${input.equippedTitleLabel.trim()}`,
+      maxPillTextW,
+      2,
+    );
+    ctx.restore();
+
+    drawBadgePill(
+      ctx,
+      titleOut,
+      pillX,
+      identityY + 42,
+      palette.goldSoftBg,
+      palette.goldBorder,
+      palette.gold,
+      titleFont,
+    );
+  }
 
   if (input.user.bio && input.user.bio.trim().length > 0) {
     ctx.fillStyle = palette.textSecondary;

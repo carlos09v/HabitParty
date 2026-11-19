@@ -1,19 +1,34 @@
+"use client";
+
 import { Pause, Play, Timer } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
 import { cn, formatFocusTime } from "@/utils";
 
+const DEMO_TIMER_INITIAL_SECONDS = 25 * 60;
+
 interface DemoFocusCardProps {
-  timerSeconds: number;
   isRunning: boolean;
   onToggleTimer: () => void;
 }
 
 export function DemoFocusCard({
-  timerSeconds,
   isRunning,
   onToggleTimer,
 }: DemoFocusCardProps) {
   const t = useTranslations("landing.demo.focusCard");
+  // Estado isolado na folha para evitar re-render de 1Hz em toda a LandingInteractiveDemo
+  const [timerSeconds, setTimerSeconds] = useState(DEMO_TIMER_INITIAL_SECONDS);
+
+  useEffect(() => {
+    if (!isRunning) return;
+    const interval = setInterval(() => {
+      setTimerSeconds((prev) =>
+        prev > 0 ? prev - 1 : DEMO_TIMER_INITIAL_SECONDS,
+      );
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isRunning]);
 
   return (
     <div className="p-4 rounded-xl bg-card dark:bg-card/70 border border-neutral-700 dark:border-white/10 shadow-none flex flex-col justify-between md:col-span-2 lg:col-span-1">
@@ -28,7 +43,7 @@ export function DemoFocusCard({
           </span>
         </div>
         <div className="flex items-center justify-between mt-2">
-          <div className="text-2xl font-black text-neutral-50 tracking-wider font-mono">
+          <div className="text-2xl font-black text-neutral-50 tracking-wider font-mono tabular-nums">
             {formatFocusTime(timerSeconds)}
           </div>
           {isRunning && (
@@ -55,7 +70,7 @@ export function DemoFocusCard({
             "px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-[transform,background-color,border-color,color] active:scale-95 cursor-pointer",
             isRunning
               ? "bg-warning-500/20 text-warning-500 border border-warning-500/40"
-              : "bg-primary hover:bg-primary-light text-white shadow-xs dark:shadow-[0_0_12px_rgba(124,58,237,0.4)]",
+              : "bg-primary hover:bg-primary-light text-white shadow-xs dark:shadow-[0_0_12px_color-mix(in_srgb,var(--color-primary)_40%,transparent)]",
           )}
         >
           {isRunning ? (

@@ -75,15 +75,11 @@ export function HabitImportanceSelector({
                     {tOptions(`importances.${imp.id}`)}:
                   </span>
                   <span className="text-neutral-300">
-                    {isGamified && (
-                      <>
-                        <strong className="text-neutral-100">
-                          +{reward.xp} XP • +{coinsFormatted} 🪙
-                        </strong>{" "}
-                        —{" "}
-                      </>
-                    )}
-                    {t(`importanceDescriptions.${imp.id}`)}
+                    <strong className="text-neutral-100">
+                      +{reward.xp} {isGamified ? "XP" : "pts"} • +
+                      {coinsFormatted} {isGamified ? "🪙" : t("creditsUnit")}
+                    </strong>{" "}
+                    — {t(`importanceDescriptions.${imp.id}`)}
                   </span>
                 </li>
               );

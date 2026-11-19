@@ -1,7 +1,7 @@
 import { Check, Crown, Flame, Shield, Sparkles, Zap } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { LANDING_PLAN_CONFIGS } from "@/constants/landing";
+import { LANDING_ANCHORS, LANDING_PLAN_CONFIGS } from "@/constants/landing";
 import { getFoundersQuota } from "@/services/paymentService";
 import { cn } from "@/utils";
 
@@ -16,7 +16,10 @@ export async function LandingPricing() {
   const isAvailable = quota.isAvailable;
 
   return (
-    <section id="planos" className="py-20 md:py-28 relative overflow-hidden">
+    <section
+      id={LANDING_ANCHORS.pricing}
+      className="py-20 md:py-28 relative overflow-hidden"
+    >
       {/* Orbe de fundo */}
       <div className="cosmic-orb absolute top-1/2 right-1/4 -translate-y-1/2 w-[750px] h-[750px] rounded-full bg-[radial-gradient(circle,rgba(124,58,237,0.18)_0%,transparent_70%)] pointer-events-none -z-10" />
 

@@ -147,12 +147,33 @@ export interface Reward
 }
 
 // 3. Props e Outros Tipos
+export interface CatalogItemVariant {
+  id: string;
+  packageLevel?: string | null;
+  baseDurationMinutes?: number | null;
+  price: number;
+}
+
+export interface RewardDisplayEntry {
+  groupId: string;
+  displayTitle: string;
+  primaryReward: Reward;
+  variants: Reward[];
+}
+
 export interface RewardCardProps {
   reward: Reward;
-  onBuy?: (reward: Reward) => void;
+  groupId?: string;
+  displayTitle?: string;
+  variants?: Reward[];
+  activeVariantId?: string;
+  onSelectVariant?: (groupId: string, variantId: string) => void;
+  unitQuantity?: number;
+  onUnitQuantityChange?: (rewardId: string, nextQuantity: number) => void;
+  maxUnitQuantity?: number;
+  onBuy?: (reward: Reward, quantity?: number) => void;
   onEdit?: (reward: Reward) => void;
   onContextMenu?: (e: React.MouseEvent, reward: Reward) => void;
-  isCompact?: boolean;
   canAfford?: boolean;
   currentCoins?: number;
   isDeleteChecking?: boolean;

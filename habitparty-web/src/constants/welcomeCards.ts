@@ -56,8 +56,6 @@ export interface WelcomeCardDetail {
   subtitle: string;
   bullets: string[];
   imageSrc: string;
-  compactWidth?: number;
-  compactHeight?: number;
   normalWidth?: number;
   normalHeight?: number;
 }
@@ -72,8 +70,6 @@ export const WELCOME_CARD_DETAILS: Record<string, WelcomeCardDetail> = {
       "Itens de uso único desaparecem da mochila após o consumo total.",
     ],
     imageSrc: "/assets/undraw/inventory/undraw_camping_1hz9.svg",
-    compactWidth: 130,
-    compactHeight: 70,
     normalWidth: 162,
     normalHeight: 87,
   },
@@ -86,8 +82,6 @@ export const WELCOME_CARD_DETAILS: Record<string, WelcomeCardDetail> = {
       "Todo produto resgatado é transferido diretamente para a sua Mochila.",
     ],
     imageSrc: "/assets/undraw/reward/undraw_gift-card_sfy8 1.svg",
-    compactWidth: 130,
-    compactHeight: 70,
     normalWidth: 162,
     normalHeight: 87,
   },
@@ -101,8 +95,6 @@ export const WELCOME_CARD_DETAILS: Record<string, WelcomeCardDetail> = {
       "Visualize metadados estratégicos para otimizar sua rotina.",
     ],
     imageSrc: "/assets/undraw/transaction/undraw_time-change_lyxp 1.svg",
-    compactWidth: 130,
-    compactHeight: 70,
     normalWidth: 162,
     normalHeight: 87,
   },
@@ -115,8 +107,6 @@ export const WELCOME_CARD_DETAILS: Record<string, WelcomeCardDetail> = {
       "Clique 1x em um card para ver os detalhes ou dê duplo clique (DoubleClick) para abrir o modal de editar tarefa.",
     ],
     imageSrc: "/assets/undraw/task/undraw_next-task_jtbr 1.svg",
-    compactWidth: 115,
-    compactHeight: 75,
     normalWidth: 136,
     normalHeight: 93,
   },
@@ -129,8 +119,6 @@ export const WELCOME_CARD_DETAILS: Record<string, WelcomeCardDetail> = {
       "Resgates na loja e consumo de itens da mochila ficam arquivados neste extrato.",
     ],
     imageSrc: "/assets/undraw/reward/undraw_treasure_a4j2.svg",
-    compactWidth: 130,
-    compactHeight: 70,
     normalWidth: 162,
     normalHeight: 87,
   },

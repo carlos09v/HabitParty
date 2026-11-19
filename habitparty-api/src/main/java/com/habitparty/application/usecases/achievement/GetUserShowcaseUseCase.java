@@ -2,6 +2,7 @@ package com.habitparty.application.usecases.achievement;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -14,16 +15,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.AchievementRepository;
+import com.habitparty.application.ports.ArtifactRepository;
 import com.habitparty.application.ports.ProfileHighlightRepository;
 import com.habitparty.application.ports.UserAchievementRepository;
+import com.habitparty.application.ports.UserArtifactRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.usecases.task.DailyResetUseCase;
 import com.habitparty.application.usecases.user.EffectiveStreakResolver;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.achievement.Achievement;
+import com.habitparty.core.domain.entities.achievement.Artifact;
 import com.habitparty.core.domain.entities.achievement.ProfileHighlight;
 import com.habitparty.core.domain.entities.achievement.UserAchievement;
+import com.habitparty.core.domain.entities.achievement.UserArtifact;
 import com.habitparty.core.domain.enums.AchievementCode;
+import com.habitparty.core.domain.enums.ArtifactSourceType;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
@@ -35,6 +41,8 @@ public class GetUserShowcaseUseCase {
   private final EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
   private final EffectiveStreakResolver effectiveStreakResolver;
   private final DailyResetUseCase dailyResetUseCase;
+  private final ArtifactRepository artifactPort;
+  private final UserArtifactRepository userArtifactPort;
 
   @Autowired
   public GetUserShowcaseUseCase(
@@ -44,7 +52,9 @@ public class GetUserShowcaseUseCase {
       ProfileHighlightRepository profileHighlightPort,
       EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase,
       @Nullable EffectiveStreakResolver effectiveStreakResolver,
-      @Nullable DailyResetUseCase dailyResetUseCase) {
+      @Nullable DailyResetUseCase dailyResetUseCase,
+      @Nullable ArtifactRepository artifactPort,
+      @Nullable UserArtifactRepository userArtifactPort) {
     this.userPort = userPort;
     this.achievementPort = achievementPort;
     this.userAchievementPort = userAchievementPort;
@@ -54,6 +64,28 @@ public class GetUserShowcaseUseCase {
         ? effectiveStreakResolver
         : new EffectiveStreakResolver(null);
     this.dailyResetUseCase = dailyResetUseCase;
+    this.artifactPort = artifactPort;
+    this.userArtifactPort = userArtifactPort;
+  }
+
+  public GetUserShowcaseUseCase(
+      UserRepository userPort,
+      AchievementRepository achievementPort,
+      UserAchievementRepository userAchievementPort,
+      ProfileHighlightRepository profileHighlightPort,
+      EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase,
+      @Nullable EffectiveStreakResolver effectiveStreakResolver,
+      @Nullable DailyResetUseCase dailyResetUseCase) {
+    this(
+        userPort,
+        achievementPort,
+        userAchievementPort,
+        profileHighlightPort,
+        evaluateUserAchievementsUseCase,
+        effectiveStreakResolver,
+        dailyResetUseCase,
+        null,
+        null);
   }
 
   public GetUserShowcaseUseCase(
@@ -70,6 +102,8 @@ public class GetUserShowcaseUseCase {
         profileHighlightPort,
         evaluateUserAchievementsUseCase,
         effectiveStreakResolver,
+        null,
+        null,
         null);
   }
 
@@ -86,6 +120,8 @@ public class GetUserShowcaseUseCase {
         profileHighlightPort,
         evaluateUserAchievementsUseCase,
         new EffectiveStreakResolver(null),
+        null,
+        null,
         null);
   }
 
@@ -95,7 +131,25 @@ public class GetUserShowcaseUseCase {
       LocalDateTime unlockedAt,
       boolean seen,
       int currentValue,
-      int progressPercent) {}
+      int progressPercent,
+      @Nullable Artifact grantedArtifact) {
+    public AchievementProgressItem(
+        Achievement achievement,
+        boolean unlocked,
+        LocalDateTime unlockedAt,
+        boolean seen,
+        int currentValue,
+        int progressPercent) {
+      this(achievement, unlocked, unlockedAt, seen, currentValue, progressPercent, null);
+    }
+  }
+
+  public record ArtifactProgressItem(
+      Artifact artifact,
+      boolean unlocked,
+      LocalDateTime unlockedAt,
+      String obtainedSource,
+      boolean seen) {}
 
   public record UserShowcaseResult(
       User user,
@@ -105,7 +159,33 @@ public class GetUserShowcaseUseCase {
       int unlockedCount,
       int totalAchievements,
       int totalAchievementPoints,
-      int maxPossiblePoints) {}
+      int maxPossiblePoints,
+      List<ArtifactProgressItem> artifacts,
+      int unlockedArtifactsCount,
+      int totalArtifactsCount) {
+    public UserShowcaseResult(
+        User user,
+        int effectiveStreak,
+        List<ProfileHighlight> highlights,
+        List<AchievementProgressItem> achievements,
+        int unlockedCount,
+        int totalAchievements,
+        int totalAchievementPoints,
+        int maxPossiblePoints) {
+      this(
+          user,
+          effectiveStreak,
+          highlights,
+          achievements,
+          unlockedCount,
+          totalAchievements,
+          totalAchievementPoints,
+          maxPossiblePoints,
+          List.of(),
+          0,
+          0);
+    }
+  }
 
   @Transactional
   public UserShowcaseResult execute(UUID userId) {
@@ -117,7 +197,7 @@ public class GetUserShowcaseUseCase {
 
     List<ProfileHighlight> highlights = profileHighlightPort.findAllByUserIdOrderByDisplayOrder(userId);
 
-    // Avalia conquistas pendentes reutilizando os destaques já carregados e evita reconsultar catálogo/desbloqueios
+    // Avalia conquistas pendentes reutilizando os destaques já carregados e evita reconsultar catálogo/desbloqueios/artefatos
     var snapshot = evaluateUserAchievementsUseCase.executeWithSnapshot(user, highlights);
     List<Achievement> catalog = !snapshot.catalog().isEmpty()
         ? snapshot.catalog()
@@ -126,7 +206,13 @@ public class GetUserShowcaseUseCase {
         ? snapshot.allUserUnlocks()
         : userAchievementPort.findAllByUserId(userId);
 
-    return buildShowcaseResult(user, highlights, catalog, userUnlocks);
+    return buildShowcaseResult(
+        user,
+        highlights,
+        catalog,
+        userUnlocks,
+        snapshot.artifactCatalog(),
+        snapshot.userArtifacts());
   }
 
   /**
@@ -142,17 +228,33 @@ public class GetUserShowcaseUseCase {
     List<ProfileHighlight> highlights = profileHighlightPort.findAllByUserIdOrderByDisplayOrder(userId);
     List<Achievement> catalog = achievementPort.findAllOrdered();
     List<UserAchievement> userUnlocks = userAchievementPort.findAllByUserId(userId);
-    return buildShowcaseResult(preloadedUser, highlights, catalog, userUnlocks);
+    return buildShowcaseResult(preloadedUser, highlights, catalog, userUnlocks, null, null);
   }
 
   private UserShowcaseResult buildShowcaseResult(
       User user,
       List<ProfileHighlight> highlights,
       List<Achievement> catalog,
-      List<UserAchievement> userUnlocks) {
+      List<UserAchievement> userUnlocks,
+      List<Artifact> preloadedArtifactCatalog,
+      List<UserArtifact> preloadedUserArtifacts) {
     int highlightsCount = highlights.size();
     Map<UUID, UserAchievement> unlockMap = userUnlocks.stream()
         .collect(Collectors.toMap(UserAchievement::getAchievementId, Function.identity(), (a, b) -> a));
+
+    List<Artifact> artifactCatalog = preloadedArtifactCatalog != null
+        ? preloadedArtifactCatalog
+        : (artifactPort != null ? artifactPort.findAllOrdered() : List.of());
+    List<UserArtifact> userArtifacts = preloadedUserArtifacts != null
+        ? preloadedUserArtifacts
+        : (userArtifactPort != null ? userArtifactPort.findAllByUserId(user.getId()) : List.of());
+
+    Map<String, Artifact> artifactByAchCode = new HashMap<>();
+    for (Artifact art : artifactCatalog) {
+      if (art.getSourceType() == ArtifactSourceType.ACHIEVEMENT && art.getRequiredAchievementCode() != null) {
+        artifactByAchCode.put(art.getRequiredAchievementCode().trim().toUpperCase(), art);
+      }
+    }
 
     int unlockedCount = 0;
     int totalPoints = 0;
@@ -181,13 +283,35 @@ public class GetUserShowcaseUseCase {
         totalPoints += achievement.getPoints();
       }
 
+      Artifact grantedArtifact = artifactByAchCode.get(achievement.getCode().trim().toUpperCase());
+
       items.add(new AchievementProgressItem(
           achievement,
           isUnlocked,
           isUnlocked ? unlock.getUnlockedAt() : null,
           !isUnlocked || unlock.isSeen(),
           clampedCurrent,
-          isUnlocked ? 100 : percent));
+          isUnlocked ? 100 : percent,
+          grantedArtifact));
+    }
+
+    Map<UUID, UserArtifact> userArtifactMap = userArtifacts.stream()
+        .collect(Collectors.toMap(UserArtifact::getArtifactId, Function.identity(), (a, b) -> a));
+
+    int unlockedArtifactsCount = 0;
+    List<ArtifactProgressItem> artifactItems = new ArrayList<>(artifactCatalog.size());
+    for (Artifact artifact : artifactCatalog) {
+      UserArtifact owned = userArtifactMap.get(artifact.getId());
+      boolean ownedFlag = owned != null;
+      if (ownedFlag) {
+        unlockedArtifactsCount++;
+      }
+      artifactItems.add(new ArtifactProgressItem(
+          artifact,
+          ownedFlag,
+          ownedFlag ? owned.getUnlockedAt() : null,
+          ownedFlag ? owned.getObtainedSource() : null,
+          !ownedFlag || owned.isSeen()));
     }
 
     return new UserShowcaseResult(
@@ -198,6 +322,9 @@ public class GetUserShowcaseUseCase {
         unlockedCount,
         catalog.size(),
         totalPoints,
-        maxPoints);
+        maxPoints,
+        artifactItems,
+        unlockedArtifactsCount,
+        artifactCatalog.size());
   }
 }

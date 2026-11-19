@@ -27,13 +27,21 @@
       "label": "Founder",
       "title": "Founding Member — Exclusive Lifetime Badge of the First 30 Supporters"
     },
+    "avatar": {
+      "defaultUser": "User",
+      "avatarLabel": "Avatar: {name}",
+      "avatarAlt": "{name}'s avatar"
+    },
     "input": {
       "showPassword": "Show password",
       "hidePassword": "Hide password"
     },
     "select": {
       "placeholder": "Select an option",
-      "emptyMessage": "No items available."
+      "emptyMessage": "No items available.",
+      "searchPlaceholder": "Search by title...",
+      "noResultsMessage": "No matching results found.",
+      "clearSearchAria": "Clear search"
     },
     "datePicker": {
       "placeholder": "Select a date...",
@@ -128,12 +136,14 @@
           "description": "Instructions on items purchased in the shop and consumed in your inventory.",
           "subtitle": "Use redeemed items, open mystery boxes, or send rewards to the Focus Stage.",
           "subtitleGamified": "Use redeemed items, open mystery boxes, or send rewards to the Focus Stage.",
-          "subtitleProductivity": "Manage and use your purchased vouchers and custom breaks.",
+          "subtitleProductivity": "Manage vouchers, spin break draws, or apply redeemed rewards.",
           "bullet0": "Store and organize all items and coupons redeemed in the Showcase.",
           "bullet1": "Use consumable items directly or send potions to the Focus Stage.",
           "bullet2": "Single-use items disappear from your backpack once fully consumed.",
           "bullet2Gamified": "Single-use items disappear from your backpack once fully consumed.",
-          "bullet2Productivity": "Single-use items disappear from your inventory once fully consumed."
+          "bullet2Productivity": "Single-use items disappear from your inventory once fully consumed.",
+          "bullet1Gamified": "Use consumable items directly or send potions to the Focus Stage.",
+          "bullet1Productivity": "Use direct rewards or send break vouchers to the Focus Stage."
         },
         "rewards": {
           "title": "Rewards Store",
@@ -145,12 +155,16 @@
           "description": "Tips on trading coins for coupons and custom rewards.",
           "subtitle": "Trade your balance for real-world treats, break vouchers, and custom rewards.",
           "subtitleGamified": "Redeem your gold coins for treats, break vouchers, and mystery boxes.",
-          "subtitleProductivity": "Redeem your credits for custom rewards and scheduled breaks.",
+          "subtitleProductivity": "Redeem your credits for scheduled breaks, custom rewards, and break draws.",
           "bullet0": "Trade your gold coins for real, custom rewards.",
           "bullet1": "Add new prizes to the Showcase: Coupons, Single-Use, or Mystery Boxes.",
           "bullet2": "Every redeemed item is transferred directly to your Backpack.",
           "bullet2Gamified": "Every redeemed item is transferred directly to your Backpack.",
-          "bullet2Productivity": "Every redeemed item is transferred directly to your Inventory."
+          "bullet2Productivity": "Every redeemed item is transferred directly to your Inventory.",
+          "bullet0Gamified": "Trade your gold coins for real, custom rewards.",
+          "bullet0Productivity": "Redeem earned credits for scheduled breaks and real-life rewards.",
+          "bullet1Gamified": "Add new prizes to the Showcase: Coupons, Single-Use, or Mystery Boxes.",
+          "bullet1Productivity": "Add rewards to the Showcase: Time Vouchers, Single-Use, or Break Draws."
         },
         "focus": {
           "title": "Focus Workspace",
@@ -176,7 +190,9 @@
           "bullet1": "Negative habit penalties and failures record balance deductions.",
           "bullet2": "Shop redemptions and backpack item usage are archived in this statement.",
           "bullet2Gamified": "Shop redemptions and backpack item usage are archived in this journal.",
-          "bullet2Productivity": "Showcase redemptions and inventory item usage are archived in this statement."
+          "bullet2Productivity": "Showcase redemptions and inventory item usage are archived in this statement.",
+          "bullet0Gamified": "Completing tasks, dailies, and habits logs coin and XP gains.",
+          "bullet0Productivity": "Completing tasks, dailies, and habits logs credit and point (pts) gains."
         }
       }
     },
@@ -292,7 +308,12 @@
       "tooltipAria": "Details for {title}",
       "yieldWarningTitle": "Notice on yield rules",
       "expectedYieldHeader": "Expected Yield",
-      "zeroGainDefault": "No XP or Coin gain"
+      "zeroGainDefault": "No XP or Coin gain",
+      "defaultTitleProductivity": "Estimated yield",
+      "defaultInlineTitleProductivity": "Yield",
+      "expectedYieldHeaderProductivity": "Projected Yield",
+      "zeroGainDefaultProductivity": "No Points or Credits gain",
+      "leisureEquivalentChip": "{duration} leisure"
     },
     "itemCatalog": {
       "inFocus": "In Focus",
@@ -301,10 +322,16 @@
       "moreActionsAria": "More actions",
       "checkingDeleteAria": "Checking history...",
       "tierDetailsAria": "View mystery box odds",
+      "packageVariantsAria": "Available reward packages",
+      "unitPriceHint": "Unit: {unit} (no discount)",
+      "unitMultiplierLabel": "Unit multiplier",
+      "decreaseQuantityAria": "Decrease quantity",
+      "increaseQuantityAria": "Increase quantity",
       "types": {
         "SingleUse": "Single-Use",
         "TimeBased": "Time Voucher",
-        "MysteryBox": "Mystery Box"
+        "MysteryBox": "Mystery Box",
+        "MysteryBoxProductivity": "Break Draw"
       },
       "packages": {
         "NONE": "None",
@@ -338,14 +365,17 @@
       "statuses": {
         "activeSession": "Active session",
         "sealedBox": "Sealed box",
-        "available": "Available"
+        "available": "Available",
+        "sealedBoxProductivity": "Sealed draw"
       },
       "tooltips": {
         "inUse": "Item in use in Focus",
         "openFocusSession": "Open Focus screen with this active session",
         "insufficientCoins": "Insufficient coins",
         "actionForPrice": "{action} for {price} coins",
-        "actionTarget": "{action} {title}"
+        "actionTarget": "{action} {title}",
+        "insufficientCredits": "Insufficient credits",
+        "actionForPriceCredits": "{action} for {price} credits"
       },
       "header": {
         "item": "Item",
@@ -355,7 +385,8 @@
         "duration": "Duration",
         "action": "Action",
         "priceAndAction": "Price / Action"
-      }
+      },
+      "tierDetailsAriaProductivity": "View break draw odds"
     },
     "reorder": {
       "clearFiltersToReorder": "Clear filters to reorder items.",

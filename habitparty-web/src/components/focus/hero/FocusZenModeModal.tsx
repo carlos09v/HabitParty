@@ -26,6 +26,7 @@ import type {
 } from "@/types/focus";
 import type { TimerSoundType } from "@/types/settings";
 import { cn } from "@/utils";
+import { FocusDailyYieldBadge } from "../stage/FocusDailyYieldBadge";
 import { FocusStageAudioControls } from "../stage/FocusStageAudioControls";
 import { FocusStageTimerCircle } from "../stage/FocusStageTimerCircle";
 
@@ -39,6 +40,7 @@ interface FocusZenModeModalProps {
   isActive: boolean;
   isSavingSession?: boolean;
   isSessionRewardCapped?: boolean;
+  todayProductiveMinutes?: number;
   mode: FocusRecordType;
   phase: FocusPhase;
   target: FocusActiveTarget | null;
@@ -53,6 +55,7 @@ interface FocusZenModeModalProps {
   onComplete: () => void;
   onToggleSound: () => void;
   onChangeSoundType: (type: TimerSoundType) => void;
+  onOpenUpgradeModal?: () => void;
 }
 
 /**
@@ -69,6 +72,7 @@ export function FocusZenModeModal({
   isActive,
   isSavingSession = false,
   isSessionRewardCapped = false,
+  todayProductiveMinutes,
   mode,
   target,
   canComplete,
@@ -82,6 +86,7 @@ export function FocusZenModeModal({
   onComplete,
   onToggleSound,
   onChangeSoundType,
+  onOpenUpgradeModal,
 }: FocusZenModeModalProps) {
   const t = useTranslations("focus.zenMode");
   const { isGamified } = useExperienceMode();
@@ -140,8 +145,8 @@ export function FocusZenModeModal({
             className={cn(
               "w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center border shrink-0",
               isBreak
-                ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400"
-                : "bg-gold/20 border-gold/50 text-gold",
+                ? "bg-emerald-500/15 dark:bg-emerald-500/20 border-emerald-500/45 dark:border-emerald-500/50 text-emerald-700 dark:text-emerald-400"
+                : "bg-amber-500/15 dark:bg-gold/20 border-amber-500/45 dark:border-gold/50 text-gold-ink dark:text-gold",
             )}
           >
             <TargetIcon size={20} />
@@ -228,13 +233,34 @@ export function FocusZenModeModal({
       <div className="relative z-10 flex flex-col items-center justify-center my-auto py-4 w-full">
         <FocusStageTimerCircle size="zen" onToggle={onToggleTimer} />
 
-        {isGamified && isSessionRewardCapped && (
+        {isSessionRewardCapped && (
           <div
-            title={t("sessionCapReachedTitle")}
-            className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-amber-500/40 bg-amber-500/12 text-amber-700 dark:text-amber-300 text-xs font-semibold shadow-2xs"
+            title={
+              isGamified
+                ? t("sessionCapReachedTitle")
+                : t("sessionCapReachedTitleProductivity")
+            }
+            className={cn(
+              "mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold shadow-2xs",
+              isGamified
+                ? "border-amber-500/40 bg-amber-500/12 text-amber-700 dark:text-amber-300"
+                : "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+            )}
           >
-            <span>{t("sessionCapReachedBadge")}</span>
+            <span>
+              {isGamified
+                ? t("sessionCapReachedBadge")
+                : t("sessionCapReachedBadgeProductivity")}
+            </span>
           </div>
+        )}
+
+        {typeof todayProductiveMinutes === "number" && (
+          <FocusDailyYieldBadge
+            todayProductiveMinutes={todayProductiveMinutes}
+            size="md"
+            className="mt-2"
+          />
         )}
 
         {/* Controles de Ação no Modo Zen */}
@@ -284,7 +310,7 @@ export function FocusZenModeModal({
               disabled={isSavingSession}
               onClick={onSkipBreak}
               title={t("skipBreakTitle")}
-              className="px-5 py-4 rounded-2xl border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-400 dark:text-emerald-300 font-bold text-sm flex items-center gap-2 cursor-pointer shadow-lg opacity-60 hover:opacity-100 focus-visible:opacity-100 transition-[opacity,background-color,border-color,color] duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-5 py-4 rounded-2xl border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold text-sm flex items-center gap-2 cursor-pointer shadow-lg opacity-60 hover:opacity-100 focus-visible:opacity-100 transition-[opacity,background-color,border-color,color] duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <FastForward size={18} />
               <span>{t("skipBreak")}</span>
@@ -301,7 +327,7 @@ export function FocusZenModeModal({
                   ? t("savingSessionTitle")
                   : t("startBreakTitle", { minutes: nextBreakMinutes })
               }
-              className="px-5 py-4 rounded-2xl border border-cyan-400/50 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 font-bold text-sm flex items-center gap-2 cursor-pointer shadow-lg transition-[opacity,background-color,border-color,color] duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="px-5 py-4 rounded-2xl border border-cyan-600/45 dark:border-cyan-400/50 bg-cyan-500/15 dark:bg-cyan-500/20 hover:bg-cyan-500/25 dark:hover:bg-cyan-500/30 text-cyan-800 dark:text-cyan-200 font-bold text-sm flex items-center gap-2 cursor-pointer shadow-lg transition-[opacity,background-color,border-color,color] duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isSavingSession ? (
                 <Loader2 size={18} className="animate-spin" />
@@ -326,7 +352,7 @@ export function FocusZenModeModal({
               aria-label={
                 isSavingSession ? t("savingSessionTitle") : t("completeTitle")
               }
-              className="w-14 h-14 rounded-2xl border border-emerald-500/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 dark:text-emerald-300 flex items-center justify-center transition-[opacity,background-color,border-color,color] duration-150 cursor-pointer shadow-lg opacity-60 hover:opacity-100 focus-visible:opacity-100 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-14 h-14 rounded-2xl border border-emerald-500/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-700 dark:text-emerald-300 flex items-center justify-center transition-[opacity,background-color,border-color,color] duration-150 cursor-pointer shadow-lg opacity-60 hover:opacity-100 focus-visible:opacity-100 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isSavingSession ? (
                 <Loader2 size={24} className="animate-spin" />
@@ -345,6 +371,7 @@ export function FocusZenModeModal({
           timerSoundType={timerSoundType}
           onToggleSound={onToggleSound}
           onChangeSoundType={onChangeSoundType}
+          onOpenUpgradeModal={onOpenUpgradeModal}
         />
       </div>
     </div>,

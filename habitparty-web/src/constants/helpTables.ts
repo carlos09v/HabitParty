@@ -235,7 +235,7 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
       title:
         "⚖️ Comparativo: Modo Essencial (Foco & Produtividade) vs. Modo Aventura (Imersão RPG)",
       description:
-        "Os dois modos compartilham exatamente o mesmo motor matemático, regras de economia 3:1–4:1, Kanban e Foco. A diferença está apenas na estética, na linguagem e nas mecânicas opcionais de sorteio.",
+        "Os dois modos têm 100% de paridade funcional e compartilham exatamente o mesmo motor matemático, projeções de rendimento, regra 3:1–4:1, Kanban e Foco — mudando apenas a estética, a terminologia e o timbre sonoro.",
       columns: [
         "Conceito no App",
         "Modo Essencial (Produtividade Limpa)",
@@ -245,9 +245,9 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
       rows: [
         [
           "Moeda de Troca",
-          "Créditos",
+          "Créditos (≈ 4 min de lazer / unid.)",
           "Moedas de Ouro (🪙)",
-          "Conversão exata 1:1 (1 Crédito = 1 🪙)",
+          "1 Crédito = 1 🪙 (15 Créditos = 1h livre)",
         ],
         [
           "Experiência / Nível",
@@ -259,7 +259,7 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
           "Nível de Esforço",
           "Esforço Discreto (Trivial a Difícil)",
           "Espadas de Dificuldade",
-          "Mesma remuneração matemática",
+          "Mesma remuneração matemática + projeção",
         ],
         [
           "Compromisso Alto",
@@ -275,9 +275,9 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
         ],
         [
           "Loja de Recompensas",
-          "Recompensas Diretas (sem sorteios)",
+          "Recompensas Diretas + Sorteio de Pausa (Roleta)",
           "Recompensas Diretas + Caixas Misteriosas (RNG)",
-          "Troca livre em 1 clique nas Configurações",
+          "100% paridade + troca em 1 clique nas Configurações",
         ],
       ],
     },
@@ -552,7 +552,7 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
       title:
         "⚖️ Comparison: Essential Mode (Focus & Productivity) vs. Adventure Mode (RPG Immersion)",
       description:
-        "Both modes run on the exact same mathematical engine, 3:1–4:1 economy rules, Kanban boards, and Focus timers. Only the visuals, terminology, and optional RNG Store mechanics adapt.",
+        "Both modes have 100% functional parity and run on the exact same mathematical engine, yield projections, 3:1–4:1 economy rules, Kanban boards, and Focus timers — only visuals, wording, and audio timbre adapt.",
       columns: [
         "App Concept",
         "Essential Mode (Clean Productivity)",
@@ -562,9 +562,9 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
       rows: [
         [
           "Currency",
-          "Credits",
+          "Credits (≈ 4 min leisure / unit)",
           "Gold Coins (🪙)",
-          "Exact 1:1 ratio (1 Credit = 1 🪙)",
+          "1 Credit = 1 🪙 (15 Credits = 1h free)",
         ],
         [
           "Progression / Level",
@@ -576,7 +576,7 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
           "Effort Rating",
           "Clean Effort Tiers (Trivial to Hard)",
           "Difficulty Swords",
-          "Identical mathematical payouts",
+          "Identical payouts + pre-creation projection",
         ],
         [
           "High Accountability",
@@ -592,9 +592,9 @@ const HELP_TABLES_COPY: Record<AppLocale, HelpTablesLocaleCopy> = {
         ],
         [
           "Rewards Store",
-          "Direct Rewards (no RNG)",
+          "Direct Rewards + Break Draws (Roulette)",
           "Direct Rewards + Mystery Boxes (RNG)",
-          "Switch anytime with 1 click in Settings",
+          "100% parity + 1-click switch in Settings",
         ],
       ],
     },

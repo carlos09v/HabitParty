@@ -16,6 +16,7 @@ import { BaseModal } from "@/components/ui/BaseModal";
 import { useUserStore } from "@/store/userStore";
 import type {
   AchievementItemResponseDTO,
+  ArtifactItemResponseDTO,
   ProfileHighlightResponseDTO,
   ShowcaseStatsResponseDTO,
 } from "@/types/showcase";
@@ -41,6 +42,7 @@ interface ProfilePreviewCardModalProps {
   stats?: ShowcaseStatsResponseDTO | null;
   highlights?: ProfileHighlightResponseDTO[];
   achievements?: AchievementItemResponseDTO[];
+  artifacts?: ArtifactItemResponseDTO[];
   retrospective?: UserRetrospectiveData | null;
   activeFrameId?: string | null;
 }
@@ -54,6 +56,7 @@ export function ProfilePreviewCardModal({
   stats,
   highlights = [],
   achievements = [],
+  artifacts = [],
   retrospective = null,
   activeFrameId,
 }: ProfilePreviewCardModalProps) {
@@ -111,6 +114,7 @@ export function ProfilePreviewCardModal({
     stats,
     highlights,
     achievements,
+    artifacts,
     retrospective,
     activeFrameId,
     includeFriendCode,

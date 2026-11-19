@@ -5,7 +5,9 @@ import { LanguageToggleBtn } from "@/components/layout/LanguageToggleBtn";
 import { ThemeInitializer } from "@/components/layout/ThemeInitializer";
 import { ThemeToggleBtn } from "@/components/layout/ThemeToggleBtn";
 import { BrandLogo } from "@/components/ui/BrandLogo";
+import { getDefaultThemeForPolarity } from "@/constants/themes";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
+import { getOptionalThemeCookie, getSitePolarity } from "@/utils/cookies";
 
 export const instant = false;
 
@@ -14,11 +16,16 @@ export default async function OnboardingLayout({
 }: {
   children: ReactNode;
 }) {
-  const t = await getTranslations("onboarding.layout");
+  const [t, cookieTheme, sitePolarity] = await Promise.all([
+    getTranslations("onboarding.layout"),
+    getOptionalThemeCookie(),
+    getSitePolarity(),
+  ]);
+  const initialTheme = cookieTheme ?? getDefaultThemeForPolarity(sitePolarity);
 
   return (
     <ScopedIntlProvider scope="onboarding">
-      <ThemeInitializer allowCustomThemes={true} />
+      <ThemeInitializer theme={initialTheme} allowCustomThemes={true} />
       <div className="relative min-h-[100dvh] w-full flex flex-col justify-between bg-background overflow-x-clip custom-scrollbar select-none">
         {/* 
         ====================================================
@@ -52,9 +59,7 @@ export default async function OnboardingLayout({
                 {t("headerBadge")}
               </span>
               <span className="hidden sm:inline text-neutral-400">•</span>
-              <span className="text-neutral-400">
-                {t("stepIndicator", { current: 1, total: 1 })}
-              </span>
+              <span className="text-neutral-400">{t("quickSetupHint")}</span>
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">

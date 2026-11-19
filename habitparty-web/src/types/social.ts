@@ -1,5 +1,6 @@
 import type {
   AchievementItemResponseDTO,
+  ArtifactItemResponseDTO,
   ProfileHighlightResponseDTO,
   ShowcaseStatsResponseDTO,
 } from "./showcase";
@@ -37,6 +38,8 @@ export interface SocialUserSummary {
   profilePhotoUrl?: string | null;
   bio?: string | null;
   avatarFrame?: string | null;
+  equippedTitle?: string | null;
+  avatarPreset?: string | null;
   isPremium: boolean;
   isFounder: boolean;
   levelTitle: string;
@@ -119,6 +122,7 @@ export interface PublicUserShowcaseData {
   stats?: ShowcaseStatsResponseDTO | null;
   highlights: ProfileHighlightResponseDTO[];
   achievements: AchievementItemResponseDTO[];
+  artifacts?: ArtifactItemResponseDTO[];
 }
 
 export interface UserRetrospectiveData {

@@ -1,5 +1,3 @@
-"use client";
-
 import { Crown, type LucideIcon, Sparkles, Target } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
@@ -54,6 +52,7 @@ function SummaryStatCard({
 }
 
 interface ProgressionSummaryCardsProps {
+  isGamified?: boolean;
   currentRankTitle: string;
   currentRankOrder: number;
   currentXp: number;
@@ -63,6 +62,7 @@ interface ProgressionSummaryCardsProps {
 }
 
 export function ProgressionSummaryCards({
+  isGamified = false,
   currentRankTitle,
   currentRankOrder,
   currentXp,
@@ -95,13 +95,14 @@ export function ProgressionSummaryCards({
       <SummaryStatCard
         icon={Sparkles}
         iconBoxClassName="bg-magenta/15 border-magenta/35 text-magenta"
-        label={t("totalXpLabel")}
+        label={t(isGamified ? "totalXpLabel" : "totalXpLabelEssential")}
       >
         <XpAmount
           amount={currentXp}
           size="md"
           showSign={false}
           withIcon
+          isGamified={isGamified}
           className="text-neutral-100"
         />
       </SummaryStatCard>
@@ -116,7 +117,7 @@ export function ProgressionSummaryCards({
         </p>
         {!isMaxLevel && (
           <span className="text-[11px] font-semibold text-sky-700 dark:text-sky-300 tabular-nums">
-            {t("remainingXpHint", {
+            {t(isGamified ? "remainingXpHint" : "remainingXpHintEssential", {
               xp: format.number(remainingXp),
             })}
           </span>

@@ -4,19 +4,25 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { EXPERIENCE_MODE_OPTIONS } from "@/constants/settings";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
 import type { ExperienceMode } from "@/types/ui";
 import { SettingsOptionGrid } from "./SettingsOptionGrid";
 
 interface ExperienceModeSettingsProps {
-  isCompact?: boolean;
   initialMode?: ExperienceMode;
 }
 
 export function ExperienceModeSettings({
-  isCompact = false,
-}: ExperienceModeSettingsProps) {
+  initialMode,
+}: ExperienceModeSettingsProps = {}) {
   const t = useTranslations("settings.experienceMode");
-  const { experienceMode, setExperienceMode, isGamified } = useExperienceMode();
+  const { experienceMode, setExperienceMode, isGamified } = useExperienceMode(
+    initialMode ?? undefined,
+  );
+  const timerSoundType = useSoundPreferencesStore((s) => s.timerSoundType);
+  const setTimerSoundType = useSoundPreferencesStore(
+    (s) => s.setTimerSoundType,
+  );
 
   const statusMessage = (
     <>
@@ -37,6 +43,11 @@ export function ExperienceModeSettings({
   const handleSelectMode = (nextMode: ExperienceMode) => {
     if (nextMode === experienceMode) return;
     setExperienceMode(nextMode);
+    if (nextMode === "PRODUCTIVITY" && timerSoundType === "arcade") {
+      setTimerSoundType("zen");
+    } else if (nextMode === "GAMIFIED" && timerSoundType === "zen") {
+      setTimerSoundType("arcade");
+    }
     const modeLabel =
       nextMode === "GAMIFIED" ? t("gamified") : t("productivity");
     toast.success(t("toastSuccess", { mode: modeLabel }));
@@ -48,7 +59,6 @@ export function ExperienceModeSettings({
       options={options}
       selectedValue={experienceMode}
       onSelect={handleSelectMode}
-      isCompact={isCompact}
     />
   );
 }

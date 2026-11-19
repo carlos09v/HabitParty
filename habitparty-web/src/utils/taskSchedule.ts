@@ -1,4 +1,5 @@
 import type { AppLocale } from "@/i18n/config";
+import { getUtilityTranslator } from "@/i18n/utilityTranslator";
 import type {
   DateFormat,
   DatePickerEventSchedulePatch,
@@ -72,7 +73,8 @@ function resolveTaskScheduleStrings(options: {
   const displayEndTime = rawEndTime
     ? formatTimeDisplay(rawEndTime, { timeFormat, locale: options.locale })
     : null;
-  const allDayLabel = options.locale === "en" ? "All day" : "Dia inteiro";
+  const t = getUtilityTranslator(options.locale, "taskSchedule");
+  const allDayLabel = t("allDay");
   const formattedTimeRange = isAllDay
     ? allDayLabel
     : displayStartTime && displayEndTime
@@ -169,10 +171,10 @@ export function getTaskDueDateInfo(
     timeFormat: options?.timeFormat,
   });
   const { displayEndTime, formattedTimeRange } = schedule;
-  const isEn = locale === "en";
-  const todayLabel = isEn ? "Today" : "Hoje";
-  const tomorrowLabel = isEn ? "Tomorrow" : "Amanhã";
-  const noDueDateLabel = isEn ? "No due date" : "Sem prazo";
+  const t = getUtilityTranslator(locale, "taskSchedule");
+  const todayLabel = t("today");
+  const tomorrowLabel = t("tomorrow");
+  const noDueDateLabel = t("noDueDate");
 
   if (!dueDate) {
     if (activeFilter === "today") {
@@ -332,10 +334,10 @@ export function getPopoverDueDateInfo(
   timeFormat?: TimeFormat,
   timeZone?: string | null,
 ): PopoverDueDateInfo {
-  const isEn = locale === "en";
+  const t = getUtilityTranslator(locale, "taskSchedule");
   if (!dueDate) {
     return {
-      label: isEn ? "No due date" : "Sem prazo",
+      label: t("noDueDate"),
       isOverdue: false,
       isToday: false,
       hasDueDate: false,
@@ -397,19 +399,12 @@ export function getPopoverDueDateInfo(
 
     if (diffDays < 0) {
       const overdueDays = Math.abs(diffDays);
-      if (isEn) {
-        const daysText =
-          overdueDays === 1 ? "1 day overdue" : `${overdueDays} days overdue`;
-        return {
-          label: `${shortDayMonth}${timeSuffix} (${daysText})`,
-          isOverdue: true,
-          isToday: false,
-          hasDueDate: true,
-        };
-      }
-      const daysText = overdueDays === 1 ? "1 dia" : `${overdueDays} dias`;
       return {
-        label: `${shortDayMonth}${timeSuffix} (atrasada há ${daysText})`,
+        label: t("popoverOverdue", {
+          shortDayMonth,
+          timeSuffix,
+          count: overdueDays,
+        }),
         isOverdue: true,
         isToday: false,
         hasDueDate: true,
@@ -418,9 +413,7 @@ export function getPopoverDueDateInfo(
 
     if (diffDays === 0) {
       return {
-        label: isEn
-          ? `Today, ${shortDayMonth}${timeSuffix}`
-          : `Hoje, ${shortDayMonth}${timeSuffix}`,
+        label: t("popoverToday", { shortDayMonth, timeSuffix }),
         isOverdue: isTodayTimeOverdue,
         isToday: true,
         hasDueDate: true,
@@ -429,9 +422,7 @@ export function getPopoverDueDateInfo(
 
     if (diffDays === 1) {
       return {
-        label: isEn
-          ? `Tomorrow, ${shortDayMonth}${timeSuffix}`
-          : `Amanhã, ${shortDayMonth}${timeSuffix}`,
+        label: t("popoverTomorrow", { shortDayMonth, timeSuffix }),
         isOverdue: false,
         isToday: false,
         hasDueDate: true,
@@ -448,9 +439,11 @@ export function getPopoverDueDateInfo(
     }
 
     return {
-      label: isEn
-        ? `${shortDayMonth}${timeSuffix} (in ${diffDays} days)`
-        : `${shortDayMonth}${timeSuffix} (faltam ${diffDays} dias)`,
+      label: t("popoverInDays", {
+        shortDayMonth,
+        timeSuffix,
+        count: diffDays,
+      }),
       isOverdue: false,
       isToday: false,
       hasDueDate: true,

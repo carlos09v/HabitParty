@@ -8,6 +8,7 @@ import {
   type TaskToggleRollbackState,
   useTaskMutations,
 } from "@/hooks/useTaskMutations";
+import { useOptimisticDashboardStore } from "@/store/optimisticDashboardStore";
 import { useUserStore } from "@/store/userStore";
 import type { DashboardColumnOption } from "@/types/dashboard";
 import type { Task } from "@/types/task";
@@ -155,6 +156,7 @@ export function useDashboardTaskActions({
   const handleTaskSaved = useCallback(
     (savedTask: Task) => {
       const enriched = enrichTaskWorkspace(savedTask);
+      useOptimisticDashboardStore.getState().upsertTask(enriched);
       setTasks((prev) => {
         const exists = prev.some((t) => t.id === enriched.id);
         if (exists) {

@@ -37,12 +37,15 @@ export function useRoutineColumns(
   workspaceId?: string | null,
   initialVisibleColumnIds?: string[],
   targetColumnId?: string,
+  onFocusTaskSynced?: (taskId: string, updater: (task: Task) => Task) => void,
 ) {
   const t = useTranslations("tasks.hooks");
   const [, startTransition] = useTransition();
   const [columns, setColumns] = useState<BoardColumn[]>(initialColumns);
   const [isDeletingColumn, setIsDeletingColumn] = useState(false);
   const maxAllowed = isPremium ? MAX_COLUMNS_PREMIUM : MAX_VISIBLE_COLUMNS;
+  const onFocusTaskSyncedRef = useRef(onFocusTaskSynced);
+  onFocusTaskSyncedRef.current = onFocusTaskSynced;
 
   // 1. Inicializa o estado com a preferência do Cookie (se vinda do SSR) ou com o padrão das primeiras colunas
   const [visibleColumnIds, setVisibleColumnIds] = useState<string[]>(() =>
@@ -189,16 +192,15 @@ export function useRoutineColumns(
   // Atualiza métricas de foco e conclusão em tempo real quando sessões finalizam no SidebarFocusWidget
   useFocusTaskSync({
     onFocusRecorded: (taskId, durationMinutes, cycles) => {
+      const updater = (t: Task) =>
+        applyFocusRecordedToTask(t, durationMinutes, cycles);
       setColumns((prev) =>
         prev.map((col) => ({
           ...col,
-          tasks: col.tasks.map((t) =>
-            t.id === taskId
-              ? applyFocusRecordedToTask(t, durationMinutes, cycles)
-              : t,
-          ),
+          tasks: col.tasks.map((t) => (t.id === taskId ? updater(t) : t)),
         })),
       );
+      onFocusTaskSyncedRef.current?.(taskId, updater);
     },
     onTaskCompleted: (taskId, transformTask) => {
       setColumns((prev) =>
@@ -207,6 +209,7 @@ export function useRoutineColumns(
           tasks: col.tasks.map((t) => (t.id === taskId ? transformTask(t) : t)),
         })),
       );
+      onFocusTaskSyncedRef.current?.(taskId, transformTask);
     },
   });
 

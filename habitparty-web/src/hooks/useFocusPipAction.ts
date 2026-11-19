@@ -18,19 +18,17 @@ export function useFocusPipAction() {
 
   const handleTogglePip = useCallback(async () => {
     const timerState = useFocusTimerStore.getState();
-    const initialVideoFrame = buildVideoPipFrameData(
-      timerState,
-      {
-        windowTitle: t("windowTitle"),
-        noTarget: t("noTarget"),
-        phaseFocus: t("phaseFocus"),
-        phasePaused: t("phasePaused"),
-        phaseOvertime: t("phaseOvertime"),
-        phaseBreak: t("phaseBreak"),
-        sessionCapBadge: t("sessionCapBadge"),
-      },
-      isGamified,
-    );
+    const initialVideoFrame = buildVideoPipFrameData(timerState, {
+      windowTitle: t("windowTitle"),
+      noTarget: t("noTarget"),
+      phaseFocus: t("phaseFocus"),
+      phasePaused: t("phasePaused"),
+      phaseOvertime: t("phaseOvertime"),
+      phaseBreak: t("phaseBreak"),
+      sessionCapBadge: isGamified
+        ? t("sessionCapBadge")
+        : t("sessionCapBadgeProductivity"),
+    });
 
     return togglePip({
       windowTitle: t("windowTitle"),

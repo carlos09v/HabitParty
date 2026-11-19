@@ -10,16 +10,42 @@ import { toCategoryMessageKey } from "@/utils/rewardMapper";
 
 function useRewardItemPresentation({
   reward,
+  groupId,
+  unitQuantity = 1,
+  canAfford = true,
+  currentCoins,
+  onSelectVariant,
+  onUnitQuantityChange,
   onBuy,
   onEdit,
   onContextMenu,
-}: Pick<RewardCardProps, "reward" | "onBuy" | "onEdit" | "onContextMenu">) {
+}: Pick<
+  RewardCardProps,
+  | "reward"
+  | "groupId"
+  | "unitQuantity"
+  | "canAfford"
+  | "currentCoins"
+  | "onSelectVariant"
+  | "onUnitQuantityChange"
+  | "onBuy"
+  | "onEdit"
+  | "onContextMenu"
+>) {
   const t = useTranslations("rewards.container");
   const { isGamified } = useExperienceMode();
 
+  const isDebt = toCategoryMessageKey(reward.category) === "DEBT";
+  const safeQuantity = isDebt ? Math.max(1, unitQuantity) : 1;
+  const effectivePrice = reward.price * safeQuantity;
+  const effectiveCanAfford =
+    typeof currentCoins === "number"
+      ? currentCoins >= effectivePrice
+      : canAfford;
+
   const handleBuy = useCallback(() => {
-    onBuy?.(reward);
-  }, [onBuy, reward]);
+    onBuy?.(reward, safeQuantity);
+  }, [onBuy, reward, safeQuantity]);
 
   const handleDoubleClick = useCallback(() => {
     onEdit?.(reward);
@@ -32,12 +58,25 @@ function useRewardItemPresentation({
     [onContextMenu, reward],
   );
 
+  const handleSelectVariant = useCallback(
+    (variantId: string) => {
+      onSelectVariant?.(groupId ?? reward.id, variantId);
+    },
+    [onSelectVariant, groupId, reward.id],
+  );
+
+  const handleUnitQuantityChange = useCallback(
+    (nextQuantity: number) => {
+      onUnitQuantityChange?.(reward.id, nextQuantity);
+    },
+    [onUnitQuantityChange, reward.id],
+  );
+
   const dragData = useMemo(
     () => ({ type: "Reward" as const, reward }),
     [reward],
   );
 
-  const isDebt = toCategoryMessageKey(reward.category) === "DEBT";
   const actionLabel = isDebt
     ? t("payDebt")
     : isGamified
@@ -49,9 +88,16 @@ function useRewardItemPresentation({
     : t("insufficientCreditsShort");
 
   return {
+    isDebt,
+    safeQuantity,
+    effectivePrice,
+    effectiveCanAfford,
     handleBuy,
     handleDoubleClick: onEdit ? handleDoubleClick : undefined,
     handleContextMenu,
+    handleSelectVariant: onSelectVariant ? handleSelectVariant : undefined,
+    handleUnitQuantityChange:
+      isDebt && onUnitQuantityChange ? handleUnitQuantityChange : undefined,
     dragData,
     actionLabel,
     insufficientBalanceTitle,
@@ -60,23 +106,42 @@ function useRewardItemPresentation({
 
 export const RewardCard = memo(function RewardCard({
   reward,
+  groupId,
+  displayTitle,
+  variants,
+  activeVariantId,
+  onSelectVariant,
+  unitQuantity = 1,
+  onUnitQuantityChange,
+  maxUnitQuantity = 50,
   onBuy,
   onEdit,
   onContextMenu,
-  isCompact = false,
   canAfford = true,
   currentCoins,
   isDeleteChecking = false,
   isRedeeming = false,
 }: RewardCardProps) {
   const {
+    isDebt,
+    safeQuantity,
+    effectivePrice,
+    effectiveCanAfford,
     handleBuy,
     handleDoubleClick,
     handleContextMenu,
+    handleSelectVariant,
+    handleUnitQuantityChange,
     dragData,
     actionLabel,
   } = useRewardItemPresentation({
     reward,
+    groupId,
+    unitQuantity,
+    canAfford,
+    currentCoins,
+    onSelectVariant,
+    onUnitQuantityChange,
     onBuy,
     onEdit,
     onContextMenu,
@@ -85,17 +150,23 @@ export const RewardCard = memo(function RewardCard({
   return (
     <GamifiedItemCard
       id={reward.id}
-      title={reward.title}
+      title={displayTitle || reward.title}
       description={reward.description}
       iconName={reward.icon || reward.iconName}
       type={reward.type}
       packageLevel={reward.packageLevel}
       category={reward.category}
       baseDurationMinutes={reward.baseDurationMinutes}
-      isCompact={isCompact}
-      price={reward.price}
+      price={effectivePrice}
+      unitPrice={isDebt && safeQuantity > 1 ? reward.price : undefined}
+      unitQuantity={safeQuantity}
+      onUnitQuantityChange={handleUnitQuantityChange}
+      maxUnitQuantity={maxUnitQuantity}
+      variants={variants}
+      activeVariantId={activeVariantId}
+      onSelectVariant={handleSelectVariant}
       currentCoins={currentCoins}
-      canAfford={canAfford}
+      canAfford={effectiveCanAfford}
       isDeleteChecking={isDeleteChecking}
       isActionLoading={isRedeeming}
       actionLabel={actionLabel}
@@ -110,23 +181,42 @@ export const RewardCard = memo(function RewardCard({
 
 export const RewardItemRow = memo(function RewardItemRow({
   reward,
+  groupId,
+  displayTitle,
+  variants,
+  activeVariantId,
+  onSelectVariant,
+  unitQuantity = 1,
+  onUnitQuantityChange,
+  maxUnitQuantity = 50,
   onBuy,
   onEdit,
   onContextMenu,
-  isCompact = false,
   canAfford = true,
+  currentCoins,
   isDeleteChecking = false,
   isRedeeming = false,
 }: RewardCardProps) {
   const {
+    safeQuantity,
+    effectivePrice,
+    effectiveCanAfford,
     handleBuy,
     handleDoubleClick,
     handleContextMenu,
+    handleSelectVariant,
+    handleUnitQuantityChange,
     dragData,
     actionLabel,
     insufficientBalanceTitle,
   } = useRewardItemPresentation({
     reward,
+    groupId,
+    unitQuantity,
+    canAfford,
+    currentCoins,
+    onSelectVariant,
+    onUnitQuantityChange,
     onBuy,
     onEdit,
     onContextMenu,
@@ -135,21 +225,26 @@ export const RewardItemRow = memo(function RewardItemRow({
   return (
     <ItemRow
       id={reward.id}
-      title={reward.title}
+      title={displayTitle || reward.title}
       description={reward.description}
       type={reward.type}
       packageLevel={reward.packageLevel}
       category={reward.category}
       iconName={reward.icon || reward.iconName}
       baseDurationMinutes={reward.baseDurationMinutes}
-      price={reward.price}
-      disabled={!canAfford}
-      disabledTitle={!canAfford ? insufficientBalanceTitle : undefined}
+      price={effectivePrice}
+      unitQuantity={safeQuantity}
+      onUnitQuantityChange={handleUnitQuantityChange}
+      maxUnitQuantity={maxUnitQuantity}
+      variants={variants}
+      activeVariantId={activeVariantId}
+      onSelectVariant={handleSelectVariant}
+      disabled={!effectiveCanAfford}
+      disabledTitle={!effectiveCanAfford ? insufficientBalanceTitle : undefined}
       actionLabel={actionLabel}
       onAction={handleBuy}
       onDoubleClick={handleDoubleClick}
       onContextMenu={handleContextMenu}
-      isCompact={isCompact}
       isDeleteChecking={isDeleteChecking}
       isActionLoading={isRedeeming}
       dragData={dragData}

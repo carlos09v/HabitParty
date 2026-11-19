@@ -20,6 +20,7 @@ import com.habitparty.application.usecases.achievement.GetUserRetrospectiveUseCa
 import com.habitparty.application.usecases.achievement.GetUserShowcaseUseCase;
 import com.habitparty.application.usecases.achievement.GetUserShowcaseUseCase.AchievementProgressItem;
 import com.habitparty.application.usecases.achievement.MarkAchievementsSeenUseCase;
+import com.habitparty.application.usecases.achievement.MarkArtifactsSeenUseCase;
 import com.habitparty.application.usecases.achievement.UpdateProfileHighlightsUseCase;
 import com.habitparty.application.usecases.achievement.UpdateProfileHighlightsUseCase.HighlightSlotCommand;
 import com.habitparty.application.usecases.achievement.UpdateShowcaseProfileUseCase;
@@ -37,6 +38,7 @@ public class ShowcaseController implements ShowcaseApi {
   private final UpdateShowcaseProfileUseCase updateShowcaseProfileUseCase;
   private final GetUnseenAchievementsUseCase getUnseenAchievementsUseCase;
   private final MarkAchievementsSeenUseCase markAchievementsSeenUseCase;
+  private final MarkArtifactsSeenUseCase markArtifactsSeenUseCase;
   private final GetPublicUserShowcaseUseCase getPublicUserShowcaseUseCase;
   private final GetUserRetrospectiveUseCase getUserRetrospectiveUseCase;
 
@@ -70,7 +72,11 @@ public class ShowcaseController implements ShowcaseApi {
       UpdateShowcaseProfileRequestDTO requestDto) {
     var updated = updateShowcaseProfileUseCase.executeWithEffectiveStreak(
         usuarioLogado.id(),
-        new UpdateShowcaseProfileCommand(requestDto.bio(), requestDto.avatarFrame()));
+        new UpdateShowcaseProfileCommand(
+            requestDto.bio(),
+            requestDto.avatarFrame(),
+            requestDto.equippedTitle(),
+            requestDto.avatarPreset()));
     return ResponseEntity.ok(UserResponseDTO.fromDomain(updated.user(), updated.effectiveStreak()));
   }
 
@@ -85,7 +91,8 @@ public class ShowcaseController implements ShowcaseApi {
                 item.unlockedAt(),
                 false,
                 item.achievement().getTargetValue(),
-                100)))
+                100,
+                item.grantedArtifact())))
         .toList();
     return ResponseEntity.ok(dtos);
   }
@@ -93,6 +100,12 @@ public class ShowcaseController implements ShowcaseApi {
   @Override
   public ResponseEntity<Void> markAchievementsSeen(AuthenticatedUser usuarioLogado) {
     markAchievementsSeenUseCase.execute(usuarioLogado.id());
+    return ResponseEntity.noContent().build();
+  }
+
+  @Override
+  public ResponseEntity<Void> markArtifactsSeen(AuthenticatedUser usuarioLogado) {
+    markArtifactsSeenUseCase.execute(usuarioLogado.id());
     return ResponseEntity.noContent().build();
   }
 

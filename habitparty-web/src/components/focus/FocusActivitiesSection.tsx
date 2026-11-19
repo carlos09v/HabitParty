@@ -34,7 +34,6 @@ interface FocusActivitiesSectionProps {
   onOpenCreateModal: () => void;
   onOpenUpgradeModal: () => void;
   onContextMenu: (e: React.MouseEvent, activity: FocusActivity) => void;
-  isCompact?: boolean;
 }
 
 export function FocusActivitiesSection({
@@ -50,7 +49,6 @@ export function FocusActivitiesSection({
   onOpenCreateModal,
   onOpenUpgradeModal,
   onContextMenu,
-  isCompact = false,
 }: FocusActivitiesSectionProps) {
   const t = useTranslations("focus.activities");
   const maxActivities = isPremium
@@ -114,12 +112,7 @@ export function FocusActivitiesSection({
       {/* Header com Título, Chip de Filtro, Contador e Botão de Criar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
-          <h2
-            className={cn(
-              "font-bold text-neutral-100",
-              isCompact ? "text-body-m sm:text-subtitle-s" : "text-subtitle-s",
-            )}
-          >
+          <h2 className="font-bold text-neutral-100 text-subtitle-s">
             {t("title")}
           </h2>
 
@@ -270,7 +263,6 @@ export function FocusActivitiesSection({
                       onSelect={handleSelectCard}
                       onStartFocus={onStartFocus}
                       onContextMenu={onContextMenu}
-                      isCompact={isCompact}
                     />
                   );
                 }
@@ -289,7 +281,6 @@ export function FocusActivitiesSection({
                     onSelect={handleSelectCard}
                     onStartFocus={onStartFocus}
                     onContextMenu={onContextMenu}
-                    isCompact={isCompact}
                   />
                 );
               })}

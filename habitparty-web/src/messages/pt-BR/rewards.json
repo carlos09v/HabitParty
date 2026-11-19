@@ -11,7 +11,8 @@
       "all": "Todos os Tipos",
       "SingleUse": "Uso Único",
       "TimeBased": "Cupom de Tempo",
-      "MysteryBox": "Caixa Misteriosa"
+      "MysteryBox": "Caixa Misteriosa",
+      "MysteryBoxProductivity": "Sorteio de Pausa"
     },
     "categories": {
       "all": "Todas as Categorias",
@@ -40,10 +41,11 @@
       "LEGENDARY": "Lendário (480m)"
     },
     "singleUseTiers": {
-      "BASIC": "Mimo Rápido (4)",
-      "PREMIUM": "Diário (15)",
-      "EPIC": "Semanal (50)",
-      "LEGENDARY": "Épico (150)"
+      "NONE": "Nenhum",
+      "BASIC": "Básico • Mimo (4)",
+      "PREMIUM": "Premium • Diário (15)",
+      "EPIC": "Épico • Semanal (50)",
+      "LEGENDARY": "Lendário • Marco (150)"
     },
     "sort": {
       "default": "Ordem Padrão",
@@ -77,6 +79,7 @@
       "clearFilters": "Limpar Filtros"
     },
     "contextMenu": {
+      "addPackage": "Adicionar pacote",
       "edit": "Editar",
       "delete": "Excluir"
     },
@@ -132,7 +135,9 @@
       },
       "MysteryBox": {
         "title": "Caixa Misteriosa — Sorteio na roleta",
-        "description": "Lootbox com 3 prêmios de chances diferentes (Comum, Raro e Jackpot) sorteados ao abrir na Mochila."
+        "description": "Lootbox com 3 prêmios de chances diferentes (Comum, Raro e Jackpot) sorteados ao abrir na Mochila.",
+        "titleProductivity": "Sorteio de Pausa — Roleta ponderada",
+        "descriptionProductivity": "Roleta com 3 opções de pausa ou mimo (Frequente, Intermediário e Especial) sorteadas ao abrir no Inventário."
       }
     },
     "categoryLabel": "Categoria",
@@ -153,6 +158,18 @@
     "durationPlaceholder": "Ex: 30, 60, 120",
     "packageLevelLabel": "Atalhos rápidos de tempo e pacote",
     "packageLevelHint": "(opcional • preenche duração e custo)",
+    "multiPackageToggleLabel": "Criar vários pacotes de uma vez",
+    "multiPackageToggleHint": "Agrupados em um único card na vitrine",
+    "multiPackageSelectLabel": "Escolha os pacotes para gerar",
+    "multiPackageSelectHint": "(selecione 1 ou mais níveis)",
+    "multiPackagePreviewTitle": "Serão gerados {count} pacotes no mesmo card:",
+    "multiPackagePreviewHint": "Na vitrine, basta clicar nos chips (30m, 1h, 3h...) para alternar o pacote antes de comprar.",
+    "debtUnitPricingLabel": "Tabela unitária (sem desconto de pacote)",
+    "debtUnitPricingHint": "(8 moedas / 30 min)",
+    "debtUnitPricingTooltipTitle": "Por que a Dívida usa preço unitário?",
+    "debtUnitPricingTooltipBody": "Dívidas ficam fixas na vitrine e não aceitam pacotes com desconto (como Épico compensar mais que 6x Básico). Use o multiplicador (− 1x +) direto no card ao quitar.",
+    "debtUnitPriceFieldLabel": "Preço Unitário da Dívida",
+    "debtUnitPriceFieldHint": "(cobrado por unidade no resgate)",
     "priceLabel": "Custo em Moedas",
     "priceLabelProductivity": "Custo em Créditos",
     "suggestedPriceByRarity": "(Preço sugerido por raridade)",
@@ -161,7 +178,9 @@
     "mysteryLootPreviewLabel": "Prêmios configurados nesta caixa",
     "mysteryCustomizeLootCta": "Personalizar na aba 2",
     "singleUseTiersLabel": "Nível e preço sugerido",
-    "singleUseTiersHint": "(opcional • define preço e raridade)",
+    "singleUseTiersHint": "(opcional • escala por horizonte)",
+    "singleUseTiersTooltipTitle": "O que significa cada nível?",
+    "singleUseTiersTooltipBody": "Referência calibrada (~15 moedas = 1 dia produtivo): Mimo (4) = pausa/café curto; Diário (15) = recompensa de 1 dia consistente; Semanal (50) = conquista da semana; Marco (150) = grande objetivo de ~10 dias. Se preferir livre, deixe em Nenhum.",
     "mysteryTabsAria": "Etapas da Caixa Misteriosa",
     "mysteryTabIdentity": "Dados & Raridade",
     "mysteryTabPrizes": "Personalizar Prêmios",
@@ -189,14 +208,25 @@
         "belowCalibrated": "Bem abaixo do calibrado ({price} moedas) — pode ficar fácil demais e tirar o peso da conquista.",
         "aboveCalibrated": "Mais que o dobro do calibrado ({price} moedas) — cuidado para não gerar frustração.",
         "singleUseTooLow": "Valor muito baixo — recompensas triviais costumam perder o brilho motivacional.",
-        "singleUseTooHigh": "Meta bem longa — avalie quebrar em recompensas intermediárias para não desanimar."
-      }
+        "singleUseTooHigh": "Meta bem longa — avalie quebrar em recompensas intermediárias para não desanimar.",
+        "belowCalibratedProductivity": "Bem abaixo do calibrado ({price} créditos) — pode ficar fácil demais e reduzir o valor da pausa.",
+        "aboveCalibratedProductivity": "Mais que o dobro do calibrado ({price} créditos) — cuidado para não gerar fadiga antes da recompensa."
+      },
+      "leisureEquivalenceHint": "{duration} de lazer livre"
     },
     "mysteryBoxAdventureHint": "A Caixa Misteriosa está disponível no Modo Aventura. Ative o modo em Configurações > Preferências para desbloqueá-la!",
     "cancel": "Cancelar",
     "saving": "Salvando...",
     "saveChanges": "Salvar Alterações",
-    "saveReward": "Salvar Recompensa"
+    "saveReward": "Salvar Recompensa",
+    "titlePlaceholderMysteryBoxProductivity": "Ex: Roleta de Pausa da Tarde, Sorteio de Descanso...",
+    "suggestedPriceByRarityProductivity": "(Preço sugerido por faixa)",
+    "mysteryLootPreviewLabelProductivity": "Prêmios configurados neste sorteio",
+    "mysteryCustomizeLootCtaProductivity": "Personalizar na aba 2",
+    "mysteryTabsAriaProductivity": "Etapas do Sorteio de Pausa",
+    "mysteryTabIdentityProductivity": "Dados & Faixa",
+    "mysteryTabPrizesProductivity": "Personalizar Opções",
+    "mysteryTabPrizesBadgeProductivity": "{count} opções"
   },
   "mysteryBox": {
     "levelLabel": "Nível da Caixa Misteriosa",
@@ -232,7 +262,15 @@
       "modeTimeBased": "Tempo (máx {max}m)",
       "iconPickerTitle": "Ícone do Prêmio",
       "minutesAriaLabel": "Duração em minutos (máximo {max})",
-      "minutesMaxHint": "Máximo de {max} minutos neste slot para manter o equilíbrio econômico"
+      "minutesMaxHint": "Máximo de {max} minutos neste slot para manter o equilíbrio econômico",
+      "titleProductivity": "Personalizar Opções do Sorteio",
+      "subtitleProductivity": "Probabilidades calibradas pela faixa • edite como preferir",
+      "storeNoCompatibleToastProductivity": "Nenhuma recompensa da sua Vitrine cabe na faixa de até {max} créditos deste nível.",
+      "slotRarityProductivity": {
+        "0": "Opção Frequente",
+        "1": "Opção Intermediária",
+        "2": "Prêmio Principal"
+      }
     },
     "tiers": {
       "BASIC": {
@@ -315,6 +353,90 @@
           }
         }
       }
+    },
+    "levelLabelProductivity": "Faixa do Sorteio de Pausa",
+    "raritiesCountProductivity": "4 Faixas",
+    "tiersProductivity": {
+      "BASIC": {
+        "name": "Pacote Essencial",
+        "subtitle": "Pausas Diárias & Mimos Rápidos",
+        "concept": "Micro-recompensas para manter o ritmo sem culpa e sem desbalancear o saldo.",
+        "colorName": "Verde Esmeralda",
+        "drops": {
+          "0": {
+            "label": "Pausa Revigorante (10m)",
+            "description": "Café especial, snack favorito ou pausa curta sem culpa."
+          },
+          "1": {
+            "label": "Cupom de Lazer Médio (20m)",
+            "description": "Leitura de lazer, 1 vídeo curto, música ou podcast."
+          },
+          "2": {
+            "label": "Sessão Focada de Hobby (40m)",
+            "description": "40 minutos dedicados ao seu hobby favorito."
+          }
+        }
+      },
+      "PREMIUM": {
+        "name": "Pacote Moderado",
+        "subtitle": "Entretenimento & Sessão de Jogos",
+        "concept": "Recompensa por um ou dois dias de metas cumpridas com excelência.",
+        "colorName": "Azul Ciano",
+        "drops": {
+          "0": {
+            "label": "Lazer Padrão (35m)",
+            "description": "Partida rápida ou 1 episódio de série/anime."
+          },
+          "1": {
+            "label": "Vale-Lazer Estendido (60m)",
+            "description": "1 hora cheia de entretenimento ou lanche comemorativo."
+          },
+          "2": {
+            "label": "Noite Gamer / Cinema (100m)",
+            "description": "1h 40m de lazer ininterrupto e sem culpa."
+          }
+        }
+      },
+      "EPIC": {
+        "name": "Pacote Avançado",
+        "subtitle": "Grande Conquista da Semana",
+        "concept": "Recompensa substancial de final de semana para coroar dias consistentes.",
+        "colorName": "Magenta Radiante",
+        "drops": {
+          "0": {
+            "label": "Bloco Estendido de Lazer (90m)",
+            "description": "1h 30m de jogos favoritos, maratona ou passeio externo."
+          },
+          "1": {
+            "label": "Noite Livre Completa (150m)",
+            "description": "2h 30m livres ou livro/jogo na promoção."
+          },
+          "2": {
+            "label": "Tarde Inteira de Desconexão (240m)",
+            "description": "4 horas de descanso merecido e recarga total de ânimo."
+          }
+        }
+      },
+      "LEGENDARY": {
+        "name": "Pacote Executivo",
+        "subtitle": "O Santo Graal da Produtividade",
+        "concept": "O ápice de semanas de disciplina e ofensivas intactas. Um marco memorável.",
+        "colorName": "Dourado Nobre",
+        "drops": {
+          "0": {
+            "label": "Day-Off Parcial de Elite (180m)",
+            "description": "3 horas dedicadas aos seus hobbies com dever cumprido."
+          },
+          "1": {
+            "label": "Day-Off Estendido (360m)",
+            "description": "6 horas de folga para descanso, lazer ou projeto pessoal."
+          },
+          "2": {
+            "label": "Celebração Absoluta (Jackpot Supremo)",
+            "description": "Final de semana livre + autorização para grande mimo real."
+          }
+        }
+      }
     }
   },
   "tierPopover": {
@@ -325,7 +447,11 @@
     "balancedPrice": "Preço Equilibrado:",
     "coinsUnit": "moedas",
     "customTimePrize": "Cupom de {minutes} min de foco/lazer personalizado.",
-    "customSingleUsePrize": "Recompensa de uso único personalizada."
+    "customSingleUsePrize": "Recompensa de uso único personalizada.",
+    "rngHeaderProductivity": "Probabilidades (Roleta)",
+    "dropPercentHeaderProductivity": "% Chance",
+    "priceInCredits": "Custo em Créditos:",
+    "creditsUnit": "créditos"
   },
   "hook": {
     "titleRequired": "O título da recompensa é obrigatório.",
@@ -336,7 +462,11 @@
     "createError": "Erro ao criar recompensa no servidor.",
     "createSuccess": "Recompensa \"{title}\" criada!",
     "createSuccessDescription": "Disponível para resgate na Loja de Recompensas.",
-    "defaultMysteryBoxTitle": "Caixa Misteriosa Básica"
+    "batchPackagesRequired": "Selecione pelo menos um pacote para criar.",
+    "batchCreateSuccess": "{count} pacotes de \"{title}\" criados e agrupados na Loja!",
+    "defaultMysteryBoxTitle": "Caixa Misteriosa Básica",
+    "defaultMysteryBoxTitleProductivity": "Sorteio de Pausa Essencial",
+    "mysteryBoxPackageRequiredProductivity": "Sorteio de Pausa precisa de uma faixa de pacote selecionada."
   },
   "actions": {
     "communicationError": "Erro interno de comunicação com o servidor.",

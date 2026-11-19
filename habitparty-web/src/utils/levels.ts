@@ -18,6 +18,11 @@ export interface LevelInfo {
   minXpRequired: number;
 }
 
+import {
+  enUtilities,
+  getUtilityTranslator,
+  ptBrUtilities,
+} from "@/i18n/utilityTranslator";
 import type { AppLocale } from "@/types/ui";
 
 export const USER_LEVELS: readonly LevelInfo[] = [
@@ -33,57 +38,17 @@ export const USER_LEVELS: readonly LevelInfo[] = [
   { tier: "LEGEND", title: "Lenda", minXpRequired: 60000 },
 ] as const;
 
-export const LEVEL_TITLES_PT: Record<LevelInfo["tier"], string> = {
-  NOVICE: "Novato",
-  APPRENTICE: "Aprendiz",
-  ADVENTURER: "Aventureiro",
-  CHALLENGER: "Desafiante",
-  AMATEUR: "Amador",
-  PROFESSIONAL: "Profissional",
-  EXPERT: "Especialista",
-  VETERAN: "Veterano",
-  MASTER: "Mestre",
-  LEGEND: "Lenda",
-};
+export const LEVEL_TITLES_PT: Record<LevelInfo["tier"], string> =
+  ptBrUtilities.levels.gamified;
 
-export const LEVEL_TITLES_EN: Record<LevelInfo["tier"], string> = {
-  NOVICE: "Novice",
-  APPRENTICE: "Apprentice",
-  ADVENTURER: "Adventurer",
-  CHALLENGER: "Challenger",
-  AMATEUR: "Amateur",
-  PROFESSIONAL: "Professional",
-  EXPERT: "Expert",
-  VETERAN: "Veteran",
-  MASTER: "Master",
-  LEGEND: "Legend",
-};
+export const LEVEL_TITLES_EN: Record<LevelInfo["tier"], string> =
+  enUtilities.levels.gamified;
 
-export const LEVEL_TITLES_PRODUCTIVITY_PT: Record<LevelInfo["tier"], string> = {
-  NOVICE: "Iniciante",
-  APPRENTICE: "Praticante",
-  ADVENTURER: "Consistente",
-  CHALLENGER: "Focado",
-  AMATEUR: "Organizado",
-  PROFESSIONAL: "Produtivo",
-  EXPERT: "Especialista",
-  VETERAN: "Sênior",
-  MASTER: "Executivo",
-  LEGEND: "Alta Performance",
-};
+export const LEVEL_TITLES_PRODUCTIVITY_PT: Record<LevelInfo["tier"], string> =
+  ptBrUtilities.levels.productivity;
 
-export const LEVEL_TITLES_PRODUCTIVITY_EN: Record<LevelInfo["tier"], string> = {
-  NOVICE: "Beginner",
-  APPRENTICE: "Practitioner",
-  ADVENTURER: "Consistent",
-  CHALLENGER: "Focused",
-  AMATEUR: "Organized",
-  PROFESSIONAL: "Productive",
-  EXPERT: "Specialist",
-  VETERAN: "Senior",
-  MASTER: "Executive",
-  LEGEND: "High Performance",
-};
+export const LEVEL_TITLES_PRODUCTIVITY_EN: Record<LevelInfo["tier"], string> =
+  enUtilities.levels.productivity;
 
 const NORMALIZED_TIER_LOOKUP: Record<string, LevelInfo["tier"]> = {};
 for (const lvl of USER_LEVELS) {
@@ -106,12 +71,11 @@ export function resolveLevelTier(
 export function localizeLevelTitle(
   titleOrTier: string | undefined | null,
   locale: AppLocale,
-  isGamified = true,
+  isGamified = false,
 ): string {
-  const isEn = locale === "en";
+  const t = getUtilityTranslator(locale, "levels");
   if (!titleOrTier) {
-    if (!isGamified) return isEn ? "Beginner" : "Iniciante";
-    return isEn ? "Novice" : "Novato";
+    return isGamified ? t("defaultNovice") : t("defaultBeginner");
   }
 
   const trimmed = titleOrTier.trim();
@@ -121,17 +85,12 @@ export function localizeLevelTitle(
     lower === "premium member" ||
     lower === "premium_member"
   ) {
-    return isEn ? "Premium Member" : "Membro Premium";
+    return t("premiumMember");
   }
 
   const tier = resolveLevelTier(trimmed);
   if (tier) {
-    if (!isGamified) {
-      return isEn
-        ? LEVEL_TITLES_PRODUCTIVITY_EN[tier]
-        : LEVEL_TITLES_PRODUCTIVITY_PT[tier];
-    }
-    return isEn ? LEVEL_TITLES_EN[tier] : LEVEL_TITLES_PT[tier];
+    return isGamified ? t(`gamified.${tier}`) : t(`productivity.${tier}`);
   }
 
   return trimmed;
@@ -298,7 +257,7 @@ export function resolveUserLevelState(
     xpToNextLevel?: number | null;
   } | null,
   locale: AppLocale = "pt-BR",
-  isGamified = true,
+  isGamified = false,
   fallbackXp = 0,
 ): ResolvedUserLevelState {
   const currentXp = user?.totalXp ?? fallbackXp;

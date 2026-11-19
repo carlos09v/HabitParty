@@ -1,13 +1,155 @@
 import type { components } from "@/api/schema";
-import type { InventoryItem } from "@/types/inventory";
-import type { Reward, RewardCategory } from "@/types/reward";
 import {
+  DEFAULT_MYSTERY_BOX_LOOT,
+  MYSTERY_BOX_PRESETS,
+  MYSTERY_BOX_TIERS,
+} from "@/constants/mysteryBox";
+import type { InventoryItem } from "@/types/inventory";
+import type {
+  MysteryBoxPresetId,
+  PackageLevel,
+  Reward,
+  RewardCategory,
+} from "@/types/reward";
+import {
+  BACKEND_TO_UI_CATEGORY,
   BACKEND_TO_UI_PACKAGE,
   BACKEND_TO_UI_REWARD_TYPE,
 } from "./rewardMapper";
 
 type InventoryItemResponseDTO =
   components["schemas"]["InventoryItemResponseDTO"];
+
+const PRESET_UI_CATEGORY: Record<MysteryBoxPresetId, RewardCategory> = {
+  gamer: "Entretenimento",
+  relax: "Bem-estar",
+  gastronomy: "Compras",
+  hobbies: "Hobbies",
+};
+
+const DEFAULT_TIER_SLOT_CATEGORIES: Record<
+  "Básico" | "Premium" | "Épico" | "Lendário",
+  readonly [RewardCategory, RewardCategory, RewardCategory]
+> = {
+  Básico: ["Bem-estar", "Entretenimento", "Hobbies"],
+  Premium: ["Entretenimento", "Entretenimento", "Entretenimento"],
+  Épico: ["Entretenimento", "Entretenimento", "Bem-estar"],
+  Lendário: ["Hobbies", "Bem-estar", "Sorte"],
+};
+
+const DEFAULT_LOOT_META_BY_NAME = new Map<
+  string,
+  { category: RewardCategory; description?: string }
+>();
+
+for (const tier of MYSTERY_BOX_TIERS) {
+  const tierId = tier.id as "Básico" | "Premium" | "Épico" | "Lendário";
+  const slots = DEFAULT_MYSTERY_BOX_LOOT[tierId];
+  const categories = DEFAULT_TIER_SLOT_CATEGORIES[tierId];
+  slots?.forEach((slot, idx) => {
+    const key = slot.name.trim().toLowerCase();
+    if (!DEFAULT_LOOT_META_BY_NAME.has(key)) {
+      DEFAULT_LOOT_META_BY_NAME.set(key, {
+        category: categories[idx] ?? "Sorte",
+        description: tier.dropRates[idx]?.description,
+      });
+    }
+  });
+}
+
+for (const preset of MYSTERY_BOX_PRESETS) {
+  const category = PRESET_UI_CATEGORY[preset.id];
+  for (const tierSlots of Object.values(preset.tiers)) {
+    for (const slot of tierSlots) {
+      const key = slot.name.trim().toLowerCase();
+      if (!DEFAULT_LOOT_META_BY_NAME.has(key)) {
+        DEFAULT_LOOT_META_BY_NAME.set(key, { category });
+      }
+    }
+  }
+}
+
+function normalizeUiCategory(
+  rawCategory: string | null | undefined,
+): RewardCategory | undefined {
+  if (!rawCategory) return undefined;
+  return (
+    BACKEND_TO_UI_CATEGORY[rawCategory] ||
+    (Object.values(BACKEND_TO_UI_CATEGORY).includes(
+      rawCategory as RewardCategory,
+    )
+      ? (rawCategory as RewardCategory)
+      : undefined)
+  );
+}
+
+/**
+ * Resolve categoria e descrição significativas para um prêmio físico obtido de uma Caixa Misteriosa,
+ * consultando slots salvos na caixa, catálogo da loja, presets/padrões e a própria caixa de origem.
+ */
+export function resolveOpenedMysteryBoxMetadata({
+  prizeName,
+  sourceBoxReward,
+  storeRewards = [],
+  packageLevel,
+}: {
+  prizeName?: string;
+  sourceBoxReward?: Reward;
+  storeRewards?: Reward[];
+  packageLevel?: PackageLevel;
+}): { category: RewardCategory; description: string } {
+  const normalizedName = (prizeName || "").trim().toLowerCase();
+
+  const matchingSlot = normalizedName
+    ? sourceBoxReward?.lootItems?.find(
+        (slot) => slot.name.trim().toLowerCase() === normalizedName,
+      )
+    : undefined;
+
+  const matchingStoreReward = normalizedName
+    ? storeRewards.find(
+        (reward) =>
+          reward.type !== "MysteryBox" &&
+          reward.title.trim().toLowerCase() === normalizedName,
+      )
+    : undefined;
+
+  const builtInMeta = normalizedName
+    ? DEFAULT_LOOT_META_BY_NAME.get(normalizedName)
+    : undefined;
+
+  const boxCustomCategory =
+    sourceBoxReward?.category &&
+    sourceBoxReward.category !== "Nenhum" &&
+    sourceBoxReward.category !== "Sorte"
+      ? sourceBoxReward.category
+      : undefined;
+
+  const resolvedCategory: RewardCategory =
+    normalizeUiCategory(matchingSlot?.category) ||
+    (matchingStoreReward?.category && matchingStoreReward.category !== "Nenhum"
+      ? matchingStoreReward.category
+      : undefined) ||
+    builtInMeta?.category ||
+    boxCustomCategory ||
+    (sourceBoxReward?.category && sourceBoxReward.category !== "Nenhum"
+      ? sourceBoxReward.category
+      : packageLevel
+        ? "Sorte"
+        : "Sorte");
+
+  const resolvedDescription =
+    matchingSlot?.description?.trim() ||
+    matchingStoreReward?.description?.trim() ||
+    builtInMeta?.description ||
+    sourceBoxReward?.description?.trim() ||
+    "";
+
+  return {
+    category: resolvedCategory,
+    description: resolvedDescription,
+  };
+}
 
 /**
  * Agrupa itens do inventário disponíveis por rewardId, preservando a ordenação por `orderIndex`,
@@ -84,13 +226,23 @@ export function mapAndGroupInventory(
         (!isFromOpenedMysteryBox ? storeReward?.iconName : undefined) ||
         (rawType === "MISTERY_BOX" ? "mystery_box" : "gamepad");
 
-      const resolvedDescription = isFromOpenedMysteryBox
-        ? ""
-        : storeReward?.description || "";
+      const prizeName = dto.rewardName || storeReward?.title || "";
       const fallbackCategory: RewardCategory =
         rawType === "MISTERY_BOX" ? "Sorte" : "Nenhum";
-      const resolvedCategory: RewardCategory = isFromOpenedMysteryBox
-        ? "Nenhum"
+      const openedMysteryBoxMeta = isFromOpenedMysteryBox
+        ? resolveOpenedMysteryBoxMetadata({
+            prizeName,
+            sourceBoxReward: storeReward,
+            storeRewards: rewards,
+            packageLevel,
+          })
+        : null;
+
+      const resolvedDescription = openedMysteryBoxMeta
+        ? openedMysteryBoxMeta.description
+        : storeReward?.description || "";
+      const resolvedCategory: RewardCategory = openedMysteryBoxMeta
+        ? openedMysteryBoxMeta.category
         : storeReward?.category || fallbackCategory;
       const primaryItemId = dto.inventoryItemId || rewardId;
 

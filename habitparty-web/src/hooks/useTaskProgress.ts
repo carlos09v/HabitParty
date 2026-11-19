@@ -18,11 +18,11 @@ export function useTaskProgress(
 
   const toggleCompleted = () => {
     const next = !completed;
-    onToggle?.(task.id, next);
+    return onToggle?.(task.id, next);
   };
 
   const changeHabit = (delta: number) => {
-    onHabitChange?.(task.id, delta);
+    return onHabitChange?.(task.id, delta);
   };
 
   const isHabit = (task.type || "").toLowerCase() === "habit";

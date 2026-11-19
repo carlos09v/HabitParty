@@ -1,4 +1,4 @@
-import type { StateStorage } from "zustand/middleware";
+import type { PersistStorage, StorageValue } from "zustand/middleware";
 import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
 import type {
   FocusPhase,
@@ -135,16 +135,34 @@ export function updateDocumentTitle(state: {
  * gravando imediatamente em transições de estado (play, pause, reset, troca de modo/alvo)
  * e fazendo checkpoint periódico ou no ocultamento/fechamento da aba.
  */
+export interface FocusStructuralSnapshot {
+  isActive?: boolean;
+  isPaused?: boolean;
+  mode?: FocusRecordType;
+  phase?: FocusPhase;
+  target?: { id?: string } | null;
+  totalDurationSeconds?: number;
+  completedCycles?: number;
+}
+
 let lastWriteTime = 0;
 let lastStructuralKey = "";
-let pendingStorageEntry: { name: string; value: string } | null = null;
+let pendingStorageEntry: {
+  name: string;
+  value: StorageValue<FocusStructuralSnapshot>;
+} | null = null;
+
+function buildStructuralKey(state?: FocusStructuralSnapshot): string {
+  if (!state) return "";
+  return `${state.isActive}|${state.isPaused}|${state.mode}|${state.phase}|${state.target?.id ?? ""}|${state.totalDurationSeconds}|${state.completedCycles}`;
+}
 
 export function flushPendingFocusStorage() {
   if (pendingStorageEntry && typeof window !== "undefined") {
     try {
       window.localStorage.setItem(
         pendingStorageEntry.name,
-        pendingStorageEntry.value,
+        JSON.stringify(pendingStorageEntry.value),
       );
       pendingStorageEntry = null;
       lastWriteTime = Date.now();
@@ -154,40 +172,58 @@ export function flushPendingFocusStorage() {
   }
 }
 
-export const optimizedFocusStorage: StateStorage = {
-  getItem: (name: string): string | null => {
-    if (typeof window === "undefined") return null;
-    return window.localStorage.getItem(name);
-  },
-  setItem: (name: string, value: string): void => {
-    if (typeof window === "undefined") return;
-    pendingStorageEntry = { name, value };
-
-    try {
-      const parsed = JSON.parse(value)?.state;
-      const structuralKey = parsed
-        ? `${parsed.isActive}|${parsed.isPaused}|${parsed.mode}|${parsed.phase}|${parsed.target?.id ?? ""}|${parsed.totalDurationSeconds}|${parsed.completedCycles}`
-        : "";
-
-      const now = Date.now();
-      const isStructuralChange = structuralKey !== lastStructuralKey;
-
-      if (isStructuralChange || now - lastWriteTime >= 15000) {
-        lastStructuralKey = structuralKey;
-        lastWriteTime = now;
-        pendingStorageEntry = null;
-        window.localStorage.setItem(name, value);
+/**
+ * Storage tipado do Zustand (`PersistStorage`) que evita `JSON.stringify` + `JSON.parse` a cada 1s:
+ * inspeciona `value.state` em memória, só serializa em transições estruturais, a cada 15s,
+ * ou ao ocultar/fechar a aba via `flushPendingFocusStorage()`.
+ */
+export function createOptimizedFocusPersistStorage<
+  T extends FocusStructuralSnapshot,
+>(): PersistStorage<T> {
+  return {
+    getItem: (name: string): StorageValue<T> | null => {
+      if (typeof window === "undefined") return null;
+      try {
+        const raw = window.localStorage.getItem(name);
+        return raw ? (JSON.parse(raw) as StorageValue<T>) : null;
+      } catch {
+        return null;
       }
-    } catch {
-      window.localStorage.setItem(name, value);
-    }
-  },
-  removeItem: (name: string): void => {
-    if (typeof window === "undefined") return;
-    pendingStorageEntry = null;
-    window.localStorage.removeItem(name);
-  },
-};
+    },
+    setItem: (name: string, value: StorageValue<T>): void => {
+      if (typeof window === "undefined") return;
+      pendingStorageEntry = { name, value };
+
+      try {
+        const structuralKey = buildStructuralKey(value.state);
+        const now = Date.now();
+        const isStructuralChange = structuralKey !== lastStructuralKey;
+
+        if (isStructuralChange || now - lastWriteTime >= 15000) {
+          lastStructuralKey = structuralKey;
+          lastWriteTime = now;
+          pendingStorageEntry = null;
+          window.localStorage.setItem(name, JSON.stringify(value));
+        }
+      } catch {
+        try {
+          window.localStorage.setItem(name, JSON.stringify(value));
+        } catch {
+          // Ignore quota errors
+        }
+      }
+    },
+    removeItem: (name: string): void => {
+      if (typeof window === "undefined") return;
+      pendingStorageEntry = null;
+      lastStructuralKey = "";
+      window.localStorage.removeItem(name);
+    },
+  };
+}
+
+export const optimizedFocusStorage =
+  createOptimizedFocusPersistStorage<FocusStructuralSnapshot>();
 
 let listenersRegistered = false;
 

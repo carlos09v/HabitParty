@@ -1,15 +1,21 @@
 "use client";
 
-import { Flame, Hourglass, Swords, Trophy } from "lucide-react";
+import { CheckSquare, Flame, Hourglass, Swords, Trophy } from "lucide-react";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useUIStore } from "@/store/uiStore";
 import { cn } from "@/utils";
 
-export type ShowcaseStatIconKey = "flame" | "swords" | "hourglass" | "trophy";
+export type ShowcaseStatIconKey =
+  | "flame"
+  | "swords"
+  | "checkSquare"
+  | "hourglass"
+  | "trophy";
 
 const STAT_ICONS = {
   flame: Flame,
   swords: Swords,
+  checkSquare: CheckSquare,
   hourglass: Hourglass,
   trophy: Trophy,
 } as const;
@@ -17,11 +23,13 @@ const STAT_ICONS = {
 export interface ShowcaseStatCardData {
   id: string;
   iconKey: ShowcaseStatIconKey;
+  essentialIconKey?: ShowcaseStatIconKey;
   iconClass: string;
   gamifiedLabel: string;
   essentialLabel: string;
   value: string;
   sub: string;
+  essentialSub?: string;
 }
 
 interface ShowcaseStatsGridViewProps {
@@ -29,7 +37,6 @@ interface ShowcaseStatsGridViewProps {
   sectionTitleEssential: string;
   cards: ShowcaseStatCardData[];
   initialIsGamified: boolean;
-  isCompact?: boolean;
 }
 
 export function ShowcaseStatsGridView({
@@ -37,7 +44,6 @@ export function ShowcaseStatsGridView({
   sectionTitleEssential,
   cards,
   initialIsGamified,
-  isCompact = false,
 }: ShowcaseStatsGridViewProps) {
   const hydrated = useUIStore((s) => s.hydrated);
   const { isGamified } = useExperienceMode();
@@ -49,21 +55,21 @@ export function ShowcaseStatsGridView({
         {resolvedIsGamified ? sectionTitleGamified : sectionTitleEssential}
       </h2>
 
-      <div
-        className={cn(
-          "grid grid-cols-1 @xl:grid-cols-2 @4xl:grid-cols-4",
-          isCompact ? "gap-3" : "gap-4",
-        )}
-      >
+      <div className="grid grid-cols-1 @xl:grid-cols-2 @4xl:grid-cols-4 gap-4">
         {cards.map((card) => {
-          const Icon = STAT_ICONS[card.iconKey];
+          const Icon =
+            STAT_ICONS[
+              resolvedIsGamified
+                ? card.iconKey
+                : (card.essentialIconKey ?? card.iconKey)
+            ];
+          const subLabel = resolvedIsGamified
+            ? card.sub
+            : (card.essentialSub ?? card.sub);
           return (
             <div
               key={card.id}
-              className={cn(
-                "rounded-2xl border border-neutral-700 dark:border-primary/20 bg-card dark:bg-surface/50 shadow-2xs dark:shadow-none flex items-start gap-3.5 transition-colors hover:border-primary/40",
-                isCompact ? "p-3.5" : "p-4",
-              )}
+              className="rounded-2xl border border-neutral-700 dark:border-primary/20 bg-card dark:bg-surface/50 shadow-2xs dark:shadow-none p-4 flex items-start gap-3.5 transition-colors hover:border-primary/40"
             >
               <div
                 className={cn(
@@ -84,7 +90,7 @@ export function ShowcaseStatsGridView({
                   {card.value}
                 </span>
                 <span className="text-tiny text-neutral-400 block truncate mt-0.5">
-                  {card.sub}
+                  {subLabel}
                 </span>
               </div>
             </div>

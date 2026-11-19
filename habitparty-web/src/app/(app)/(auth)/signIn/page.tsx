@@ -14,15 +14,18 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 interface SignInPageProps {
-  searchParams?: Promise<{ error?: string }>;
+  searchParams?: Promise<{ error?: string; returnTo?: string }>;
 }
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {
   const [resolvedParams, t] = await Promise.all([
-    searchParams ? searchParams : Promise.resolve({} as { error?: string }),
+    searchParams
+      ? searchParams
+      : Promise.resolve({} as { error?: string; returnTo?: string }),
     getTranslations("auth.signIn"),
   ]);
   const error = resolvedParams.error;
+  const returnTo = resolvedParams.returnTo;
 
   return (
     <AuthPageShell
@@ -32,7 +35,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
       footerLinkText={t("createAccount")}
       footerLinkHref="/signUp"
     >
-      <SignInForm initialError={error} />
+      <SignInForm initialError={error} returnTo={returnTo} />
     </AuthPageShell>
   );
 }

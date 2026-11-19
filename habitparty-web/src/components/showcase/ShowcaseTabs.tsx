@@ -17,6 +17,7 @@ export interface ShowcaseTabItem<T extends string = string> {
   label: string;
   icon: LucideIcon;
   badge?: string;
+  onPreload?: () => void;
 }
 
 export function getShowcaseTabIds(baseId: string, tab: string) {
@@ -68,6 +69,8 @@ export function ShowcaseTabs<T extends string = string>({
             tabIndex={isSelected ? 0 : -1}
             onKeyDown={handleTabListKeyDown}
             onClick={() => onSelectTab(tab.id)}
+            onMouseEnter={tab.onPreload}
+            onFocus={tab.onPreload}
             className={cn(
               "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold",
               isSelected

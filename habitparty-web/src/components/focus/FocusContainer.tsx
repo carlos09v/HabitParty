@@ -2,7 +2,7 @@
 
 import { BarChart2, Timer } from "lucide-react";
 import dynamic from "next/dynamic";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -11,8 +11,13 @@ import {
   getFocusRecordsPage,
 } from "@/actions/focusActions";
 import { MAX_FOCUS_ACTIVITIES_FREE } from "@/constants/focus";
+import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useFocusAnalytics } from "@/hooks/useFocusAnalytics";
 import { executeDeleteFocusRecord } from "@/hooks/useFocusMutations";
+import {
+  dispatchTaskFocusRecorded,
+  useFocusTaskSync,
+} from "@/hooks/useFocusTaskSync";
 import { useFocusTimerControls } from "@/hooks/useFocusTimer";
 import { useIdlePreload } from "@/hooks/useIdlePreload";
 import { useUserStore } from "@/store/userStore";
@@ -23,7 +28,9 @@ import type {
   FocusRecordType,
 } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
-import { cn } from "@/utils";
+import { cn, removeBrowserQueryParam } from "@/utils";
+import { getTodayDateString } from "@/utils/date";
+import { calculateProductiveMinutesForDate } from "@/utils/focusDailyYield";
 import { mapFocusRecords } from "@/utils/focusMapper";
 import { FocusMain } from "./FocusMain";
 import { FocusSidebarRight } from "./sidebar-right/FocusSidebarRight";
@@ -69,6 +76,8 @@ interface FocusContainerProps {
   initialSelectedActivityId?: string | null;
   initialCreateActivity?: boolean;
   initialLinkActivity?: boolean;
+  initialFromSource?: string | null;
+  initialDailyFocusGoalMinutes?: number | null;
 }
 
 export function FocusContainer({
@@ -82,11 +91,12 @@ export function FocusContainer({
   initialSelectedActivityId = null,
   initialCreateActivity = false,
   initialLinkActivity = false,
+  initialFromSource = null,
+  initialDailyFocusGoalMinutes = null,
 }: FocusContainerProps) {
   const t = useTranslations("focus.container");
+  const { isGamified } = useExperienceMode();
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const is_Premium = useUserStore((s) => s.is_Premium);
   useIdlePreload(preloadFocusContainerModalChunks);
 
@@ -98,69 +108,41 @@ export function FocusContainer({
     setFocusableTasks(initialFocusableTasks);
   }, [initialFocusableTasks]);
 
-  useEffect(() => {
-    const handleTaskCompleted = (event: Event) => {
-      const detail = (event as CustomEvent<{ taskId?: string }>).detail;
-      if (detail?.taskId) {
-        setFocusableTasks((prev) =>
-          prev.filter((task) => task.id !== detail.taskId),
-        );
-      }
-    };
-    const handleTaskFocusRecorded = (event: Event) => {
-      const detail = (
-        event as CustomEvent<{
-          taskId?: string;
-          durationMinutes?: number;
-          completedPomos?: number;
-        }>
-      ).detail;
-      if (!detail?.taskId) return;
-      const minsDelta = Number(detail.durationMinutes ?? 0);
-      const cyclesDelta = Number(detail.completedPomos ?? 0);
-      if (minsDelta === 0 && cyclesDelta === 0) return;
+  const handleTaskCompletedFromFocus = useCallback((taskId: string) => {
+    setFocusableTasks((prev) => prev.filter((task) => task.id !== taskId));
+  }, []);
+
+  const handleTaskFocusRecordedFromFocus = useCallback(
+    (taskId: string, durationMinutes: number, cycles: number) => {
+      if (durationMinutes === 0 && cycles === 0) return;
       setFocusableTasks((prev) =>
         prev.map((task) =>
-          task.id === detail.taskId
+          task.id === taskId
             ? {
                 ...task,
                 totalFocusMinutes: Math.max(
                   0,
-                  (task.totalFocusMinutes ?? 0) + minsDelta,
+                  (task.totalFocusMinutes ?? 0) + durationMinutes,
                 ),
                 focusCyclesCount: Math.max(
                   0,
-                  (task.focusCyclesCount ?? 0) + cyclesDelta,
+                  (task.focusCyclesCount ?? 0) + cycles,
                 ),
               }
             : task,
         ),
       );
-    };
-    window.addEventListener(
-      "habitparty:task-completed-from-focus",
-      handleTaskCompleted,
-    );
-    window.addEventListener(
-      "habitparty:task-focus-recorded",
-      handleTaskFocusRecorded,
-    );
-    return () => {
-      window.removeEventListener(
-        "habitparty:task-completed-from-focus",
-        handleTaskCompleted,
-      );
-      window.removeEventListener(
-        "habitparty:task-focus-recorded",
-        handleTaskFocusRecorded,
-      );
-    };
-  }, []);
+    },
+    [],
+  );
 
-  const urlActivityId =
-    searchParams.get("activityId") || initialSelectedActivityId || null;
-  const shouldOpenLinkActivityModal =
-    searchParams.get("linkActivity") === "true" || initialLinkActivity;
+  useFocusTaskSync({
+    onTaskCompleted: handleTaskCompletedFromFocus,
+    onFocusRecorded: handleTaskFocusRecordedFromFocus,
+  });
+
+  const urlActivityId = initialSelectedActivityId || null;
+  const shouldOpenLinkActivityModal = initialLinkActivity;
 
   // Atividade selecionada para filtro de métricas (não interfere no timer ativo)
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(
@@ -172,16 +154,8 @@ export function FocusContainer({
   const lastAppliedUrlActivityIdRef = useRef<string | null>(null);
 
   const clearActivityQueryParam = useCallback(() => {
-    if (typeof window === "undefined") return;
-    const url = new URL(window.location.href);
-    if (url.searchParams.has("activityId")) {
-      url.searchParams.delete("activityId");
-      const nextUrl = url.search
-        ? `${pathname}?${url.searchParams.toString()}`
-        : pathname;
-      window.history.replaceState(null, "", nextUrl);
-    }
-  }, [pathname]);
+    removeBrowserQueryParam("activityId");
+  }, []);
 
   // Aba mobile ativa (< xl): "timer" para Timer & Sessão, "metrics" para Métricas & Histórico
   const [mobileTab, setMobileTab] = useState<"timer" | "metrics">("timer");
@@ -243,6 +217,9 @@ export function FocusContainer({
   const [deletedActivityIds, setDeletedActivityIds] = useState<Set<string>>(
     () => new Set(),
   );
+  const [deletedRecordIds, setDeletedRecordIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [preservedActivityIds, setPreservedActivityIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -267,7 +244,9 @@ export function FocusContainer({
   useEffect(() => {
     setEditedRecordsById({});
     setDeletedActivityIds(new Set());
+    setDeletedRecordIds(new Set());
     setPreservedActivityIds(new Set());
+    setActivityPagination({});
     setTotalServerRecords(initialTotalRecordsCount ?? initialRecords.length);
     if (!hasPaginatedBeyondInitialRef.current) {
       setLoadedRecordsPage(initialLoadedRecordsPage);
@@ -282,6 +261,9 @@ export function FocusContainer({
 
   const allRecords = useMemo(() => {
     const transformRecord = (rec: FocusRecord): FocusRecord | null => {
+      if (deletedRecordIds.has(rec.id)) {
+        return null;
+      }
       if (rec.focusActivityId && deletedActivityIds.has(rec.focusActivityId)) {
         return null;
       }
@@ -318,6 +300,7 @@ export function FocusContainer({
     initialRecords,
     extraRecords,
     editedRecordsById,
+    deletedRecordIds,
     deletedActivityIds,
     preservedActivityIds,
   ]);
@@ -343,6 +326,15 @@ export function FocusContainer({
   });
 
   const userTimeZone = useUserStore((s) => s.user?.timezone);
+
+  const todayProductiveMinutes = useMemo(() => {
+    const todayStr = getTodayDateString(new Date(), userTimeZone);
+    return calculateProductiveMinutesForDate(
+      allRecords,
+      todayStr,
+      userTimeZone,
+    );
+  }, [allRecords, userTimeZone]);
 
   const selectedActivityPagination = selectedActivityId
     ? activityPagination[selectedActivityId]
@@ -384,13 +376,13 @@ export function FocusContainer({
       if (selectedActivityId) {
         const nextPage =
           selectedActivityPagination?.nextPage ??
-          Math.floor(Math.max(0, relevantRecordsCount - 1) / 20);
+          Math.floor(relevantRecordsCount / 20);
         const res = await getFocusActivityRecordsPage(
           selectedActivityId,
           nextPage,
         );
         if (!res.success || !res.data) {
-          toast.error(!res.success ? res.error : t("deleteRecordError"));
+          toast.error(!res.success ? res.error : t("loadMoreRecordsError"));
           return;
         }
 
@@ -417,7 +409,7 @@ export function FocusContainer({
 
       const res = await getFocusRecordsPage(loadedRecordsPage + 1, 100);
       if (!res.success || !res.data) {
-        toast.error(!res.success ? res.error : t("deleteRecordError"));
+        toast.error(!res.success ? res.error : t("loadMoreRecordsError"));
         return;
       }
 
@@ -579,121 +571,173 @@ export function FocusContainer({
     syncTargetMetadata,
   ]);
 
-  const handleSelectActivity = (activityId: string | null) => {
-    setSelectedActivityId(activityId);
-    if (activityId) {
-      setSelectedBackpackItemId(null);
-      if (urlActivityId && activityId !== urlActivityId) {
+  const handleSelectActivity = useCallback(
+    (activityId: string | null) => {
+      setSelectedActivityId(activityId);
+      if (activityId) {
+        setSelectedBackpackItemId(null);
+        if (urlActivityId && activityId !== urlActivityId) {
+          clearActivityQueryParam();
+        }
+      } else {
         clearActivityQueryParam();
       }
-    } else {
-      clearActivityQueryParam();
-    }
 
-    if (!isActive && !hasElapsedSeconds && activityId) {
-      const actIndex = initialActivities.findIndex((a) => a.id === activityId);
-      const isActLocked = !is_Premium && actIndex >= MAX_FOCUS_ACTIVITIES_FREE;
-      if (actIndex !== -1 && !isActLocked) {
-        selectActivityTarget(initialActivities[actIndex]);
+      if (!isActive && !hasElapsedSeconds && activityId) {
+        const actIndex = initialActivities.findIndex(
+          (a) => a.id === activityId,
+        );
+        const isActLocked =
+          !is_Premium && actIndex >= MAX_FOCUS_ACTIVITIES_FREE;
+        if (actIndex !== -1 && !isActLocked) {
+          selectActivityTarget(initialActivities[actIndex]);
+        }
       }
-    }
-  };
+    },
+    [
+      urlActivityId,
+      clearActivityQueryParam,
+      isActive,
+      hasElapsedSeconds,
+      initialActivities,
+      is_Premium,
+      selectActivityTarget,
+    ],
+  );
 
-  const handleSelectBackpackItem = (item: InventoryItemResponseDTO | null) => {
-    if (!item) {
-      setSelectedBackpackItemId(null);
-      return;
-    }
-    const itemId = item.inventoryItemId || null;
-    const isDeselecting = itemId !== null && selectedBackpackItemId === itemId;
+  const handleSelectBackpackItem = useCallback(
+    (item: InventoryItemResponseDTO | null) => {
+      if (!item) {
+        setSelectedBackpackItemId(null);
+        return;
+      }
+      const itemId = item.inventoryItemId || null;
+      const isDeselecting =
+        itemId !== null && selectedBackpackItemId === itemId;
 
-    if (isDeselecting) {
-      setSelectedBackpackItemId(null);
-      return;
-    }
+      if (isDeselecting) {
+        setSelectedBackpackItemId(null);
+        return;
+      }
 
-    setSelectedActivityId(null);
-    setSelectedBackpackItemId(itemId);
+      setSelectedActivityId(null);
+      setSelectedBackpackItemId(itemId);
 
-    if (!isActive && !hasElapsedSeconds) {
-      selectItemTarget(item);
-    }
-  };
+      if (!isActive && !hasElapsedSeconds) {
+        selectItemTarget(item);
+      }
+    },
+    [selectedBackpackItemId, isActive, hasElapsedSeconds, selectItemTarget],
+  );
 
-  const handleStartFocusActivity = (act: FocusActivity) => {
-    const actIndex = initialActivities.findIndex((a) => a.id === act.id);
-    if (!is_Premium && actIndex >= MAX_FOCUS_ACTIVITIES_FREE) {
-      toast.error(t("lockedActivityToast"));
-      return;
-    }
+  const handleStartFocusActivity = useCallback(
+    (act: FocusActivity) => {
+      const actIndex = initialActivities.findIndex((a) => a.id === act.id);
+      if (!is_Premium && actIndex >= MAX_FOCUS_ACTIVITIES_FREE) {
+        toast.error(
+          isGamified
+            ? t("lockedActivityToast")
+            : t("lockedActivityToastProductivity"),
+        );
+        return;
+      }
 
-    if (target?.id === act.id && hasUnsavedWorkSession) {
+      if (target?.id === act.id && hasUnsavedWorkSession) {
+        setSelectedActivityId(act.id);
+        setSelectedBackpackItemId(null);
+        syncTargetMetadata({
+          id: act.id,
+          name: act.name,
+          icon: act.icon,
+          targetMinutes: act.targetTimeMinutes,
+        });
+        if (isPaused) {
+          resumeTimer();
+        }
+        return;
+      }
+
+      if (hasUnsavedWorkSession && target?.id !== act.id) {
+        setPendingSwitchTarget({ type: "activity", activity: act });
+        return;
+      }
       setSelectedActivityId(act.id);
       setSelectedBackpackItemId(null);
-      syncTargetMetadata({
-        id: act.id,
-        name: act.name,
-        icon: act.icon,
-        targetMinutes: act.targetTimeMinutes,
-      });
-      if (isPaused) {
-        resumeTimer();
+      startFocusActivity(act);
+    },
+    [
+      initialActivities,
+      is_Premium,
+      isGamified,
+      t,
+      target?.id,
+      hasUnsavedWorkSession,
+      syncTargetMetadata,
+      isPaused,
+      resumeTimer,
+      startFocusActivity,
+    ],
+  );
+
+  const handleStartFocusItem = useCallback(
+    (item: InventoryItemResponseDTO) => {
+      if (target?.id === item.inventoryItemId && hasUnsavedWorkSession) {
+        setSelectedActivityId(null);
+        setSelectedBackpackItemId(item.inventoryItemId || null);
+        syncTargetMetadata({
+          id: item.inventoryItemId,
+          name: item.rewardName,
+          icon: item.rewardIcon,
+        });
+        if (isPaused) {
+          resumeTimer();
+        }
+        return;
       }
-      return;
-    }
 
-    if (hasUnsavedWorkSession && target?.id !== act.id) {
-      setPendingSwitchTarget({ type: "activity", activity: act });
-      return;
-    }
-    setSelectedActivityId(act.id);
-    setSelectedBackpackItemId(null);
-    startFocusActivity(act);
-  };
-
-  const handleStartFocusItem = (item: InventoryItemResponseDTO) => {
-    if (target?.id === item.inventoryItemId && hasUnsavedWorkSession) {
+      if (hasUnsavedWorkSession && target?.id !== item.inventoryItemId) {
+        setPendingSwitchTarget({ type: "item", item });
+        return;
+      }
       setSelectedActivityId(null);
       setSelectedBackpackItemId(item.inventoryItemId || null);
-      syncTargetMetadata({
-        id: item.inventoryItemId,
-        name: item.rewardName,
-        icon: item.rewardIcon,
-      });
-      if (isPaused) {
-        resumeTimer();
+      startFocusItem(item);
+    },
+    [
+      target?.id,
+      hasUnsavedWorkSession,
+      syncTargetMetadata,
+      isPaused,
+      resumeTimer,
+      startFocusItem,
+    ],
+  );
+
+  const handleStartFocusTask = useCallback(
+    (task: { id: string; title: string }) => {
+      // Vincula micro-tarefa em sessão de Atividade apenas se não houver outra tarefa vinculada com tempo não salvo
+      if (
+        target?.type === "activity" &&
+        (!target.taskId || target.taskId === task.id || !hasUnsavedWorkSession)
+      ) {
+        selectTaskTarget(task);
+        return;
       }
-      return;
-    }
 
-    if (hasUnsavedWorkSession && target?.id !== item.inventoryItemId) {
-      setPendingSwitchTarget({ type: "item", item });
-      return;
-    }
-    setSelectedActivityId(null);
-    setSelectedBackpackItemId(item.inventoryItemId || null);
-    startFocusItem(item);
-  };
+      // Se houver uma sessão ativa com tempo decorrido, solicita confirmação de troca
+      if (hasUnsavedWorkSession && target?.id !== task.id) {
+        setPendingSwitchTarget({ type: "task", task });
+        return;
+      }
 
-  const handleStartFocusTask = (task: { id: string; title: string }) => {
-    // Se a sessão atual for uma Atividade, vincula a tarefa como micro-tarefa na atividade
-    if (target?.type === "activity") {
-      selectTaskTarget(task);
-      return;
-    }
+      setSelectedActivityId(null);
+      setSelectedBackpackItemId(null);
+      startFocusTask(task);
+    },
+    [target, hasUnsavedWorkSession, selectTaskTarget, startFocusTask],
+  );
 
-    // Se houver uma sessão ativa com tempo decorrido, solicita confirmação de troca
-    if (hasUnsavedWorkSession && target?.id !== task.id) {
-      setPendingSwitchTarget({ type: "task", task });
-      return;
-    }
-
-    setSelectedActivityId(null);
-    setSelectedBackpackItemId(null);
-    startFocusTask(task);
-  };
-
-  const handleTransferTarget = () => {
+  const handleTransferTarget = useCallback(() => {
     if (!pendingSwitchTarget) return;
     if (
       pendingSwitchTarget.type === "activity" &&
@@ -706,30 +750,41 @@ export function FocusContainer({
       pendingSwitchTarget.task
     ) {
       selectTaskTarget(pendingSwitchTarget.task);
+      if (isPaused || !isActive) {
+        resumeTimer();
+      }
       setSelectedActivityId(null);
       setSelectedBackpackItemId(null);
     }
     setPendingSwitchTarget(null);
-  };
+  }, [
+    pendingSwitchTarget,
+    transferTarget,
+    selectTaskTarget,
+    isPaused,
+    isActive,
+    resumeTimer,
+  ]);
 
-  const applyPendingTargetSwitch = (
-    targetToStart: NonNullable<typeof pendingSwitchTarget>,
-  ) => {
-    if (targetToStart.type === "activity" && targetToStart.activity) {
-      setSelectedActivityId(targetToStart.activity.id);
-      startFocusActivity(targetToStart.activity);
-    } else if (targetToStart.type === "item" && targetToStart.item) {
-      setSelectedActivityId(null);
-      startFocusItem(targetToStart.item);
-    } else if (targetToStart.type === "task" && targetToStart.task) {
-      setSelectedActivityId(null);
-      setSelectedBackpackItemId(null);
-      startFocusTask(targetToStart.task);
-    }
-    setPendingSwitchTarget(null);
-  };
+  const applyPendingTargetSwitch = useCallback(
+    (targetToStart: NonNullable<typeof pendingSwitchTarget>) => {
+      if (targetToStart.type === "activity" && targetToStart.activity) {
+        setSelectedActivityId(targetToStart.activity.id);
+        startFocusActivity(targetToStart.activity);
+      } else if (targetToStart.type === "item" && targetToStart.item) {
+        setSelectedActivityId(null);
+        startFocusItem(targetToStart.item);
+      } else if (targetToStart.type === "task" && targetToStart.task) {
+        setSelectedActivityId(null);
+        setSelectedBackpackItemId(null);
+        startFocusTask(targetToStart.task);
+      }
+      setPendingSwitchTarget(null);
+    },
+    [startFocusActivity, startFocusItem, startFocusTask],
+  );
 
-  const handleSaveAndStartNew = async (): Promise<boolean> => {
+  const handleSaveAndStartNew = useCallback(async (): Promise<boolean> => {
     const targetToStart = pendingSwitchTarget;
     if (!targetToStart) return false;
 
@@ -740,80 +795,80 @@ export function FocusContainer({
 
     applyPendingTargetSwitch(targetToStart);
     return true;
-  };
+  }, [pendingSwitchTarget, completeSession, applyPendingTargetSwitch]);
 
-  const handleDiscardAndStartNew = () => {
+  const handleDiscardAndStartNew = useCallback(() => {
     if (!pendingSwitchTarget) return;
     applyPendingTargetSwitch(pendingSwitchTarget);
-  };
+  }, [pendingSwitchTarget, applyPendingTargetSwitch]);
 
-  const handleChangeMode = (newMode: FocusRecordType) => {
-    if (newMode === mode) return;
+  const handleChangeMode = useCallback(
+    (newMode: FocusRecordType) => {
+      if (newMode === mode) return;
 
-    if (hasUnsavedWorkSession) {
-      setPendingSwitchMode(newMode);
-      return;
-    }
+      if (hasUnsavedWorkSession) {
+        setPendingSwitchMode(newMode);
+        return;
+      }
 
-    changeMode(newMode);
-  };
+      changeMode(newMode);
+    },
+    [mode, hasUnsavedWorkSession, changeMode],
+  );
 
-  const handleConfirmSwitchMode = () => {
+  const handleConfirmSwitchMode = useCallback(() => {
     if (!pendingSwitchMode) return;
     changeMode(pendingSwitchMode);
     setPendingSwitchMode(null);
-  };
+  }, [pendingSwitchMode, changeMode]);
 
-  const handleDeleteRecord = async (
-    recordId: string,
-    deleteHistory: boolean,
-  ) => {
-    const deletedRecord = allRecords.find((r) => r.id === recordId);
-    await executeDeleteFocusRecord(
-      recordId,
-      {
-        success: t("deleteRecordSuccess"),
-        error: t("deleteRecordError"),
-      },
-      () => {
-        setExtraRecords((prev) => prev.filter((r) => r.id !== recordId));
-        setEditedRecordsById((prev) => {
-          if (!(recordId in prev)) return prev;
-          const next = { ...prev };
-          delete next[recordId];
-          return next;
-        });
-        setTotalServerRecords((prev) => Math.max(0, prev - 1));
-        const activityId = deletedRecord?.focusActivityId;
-        if (activityId) {
-          setActivityPagination((prev) => {
-            const current = prev[activityId];
-            if (!current) return prev;
-            return {
-              ...prev,
-              [activityId]: {
-                ...current,
-                totalElements: Math.max(0, current.totalElements - 1),
-              },
-            };
+  const handleDeleteRecord = useCallback(
+    async (recordId: string, deleteHistory: boolean) => {
+      const deletedRecord = allRecords.find((r) => r.id === recordId);
+      await executeDeleteFocusRecord(
+        recordId,
+        {
+          success: t("deleteRecordSuccess"),
+          error: t("deleteRecordError"),
+        },
+        () => {
+          setDeletedRecordIds((prev) => new Set(prev).add(recordId));
+          setExtraRecords((prev) => prev.filter((r) => r.id !== recordId));
+          setEditedRecordsById((prev) => {
+            if (!(recordId in prev)) return prev;
+            const next = { ...prev };
+            delete next[recordId];
+            return next;
           });
-        }
-        if (deletedRecord?.taskId && typeof window !== "undefined") {
-          window.dispatchEvent(
-            new CustomEvent("habitparty:task-focus-recorded", {
-              detail: {
-                taskId: deletedRecord.taskId,
-                durationMinutes: -Math.max(1, deletedRecord.durationMinutes),
-                completedPomos: -(deletedRecord.completedPomos ?? 0),
-              },
-            }),
-          );
-        }
-      },
-      deleteHistory,
-      deletedRecord,
-    );
-  };
+          setTotalServerRecords((prev) => Math.max(0, prev - 1));
+          const activityId = deletedRecord?.focusActivityId;
+          if (activityId) {
+            setActivityPagination((prev) => {
+              const current = prev[activityId];
+              if (!current) return prev;
+              return {
+                ...prev,
+                [activityId]: {
+                  ...current,
+                  totalElements: Math.max(0, current.totalElements - 1),
+                },
+              };
+            });
+          }
+          if (deletedRecord?.taskId) {
+            dispatchTaskFocusRecorded({
+              taskId: deletedRecord.taskId,
+              durationMinutes: -Math.max(1, deletedRecord.durationMinutes),
+              cycles: -(deletedRecord.completedPomos ?? 0),
+            });
+          }
+        },
+        deleteHistory,
+        deletedRecord,
+      );
+    },
+    [allRecords, t],
+  );
 
   const handleRecordUpdated = useCallback((updatedRecord: FocusRecord) => {
     setEditedRecordsById((prev) => ({
@@ -842,15 +897,11 @@ export function FocusContainer({
             });
           }
           taskDeltas.forEach((delta, taskId) => {
-            window.dispatchEvent(
-              new CustomEvent("habitparty:task-focus-recorded", {
-                detail: {
-                  taskId,
-                  durationMinutes: -delta.minutes,
-                  completedPomos: -delta.pomos,
-                },
-              }),
-            );
+            dispatchTaskFocusRecorded({
+              taskId,
+              durationMinutes: -delta.minutes,
+              cycles: -delta.pomos,
+            });
           });
         }
         setDeletedActivityIds((prev) => new Set(prev).add(activityId));
@@ -874,16 +925,36 @@ export function FocusContainer({
     [allRecords, router],
   );
 
-  const handleOpenManualRecordModal = (params?: {
-    activityId?: string;
-    itemId?: string;
-  }) => {
-    setManualInitialActivityId(
-      params?.activityId ?? selectedActivityId ?? undefined,
-    );
-    setManualInitialItemId(params?.itemId);
-    setManualRecordModalOpen(true);
-  };
+  const handleOpenManualRecordModal = useCallback(
+    (params?: { activityId?: string; itemId?: string }) => {
+      setManualInitialActivityId(
+        params?.activityId ?? selectedActivityId ?? undefined,
+      );
+      setManualInitialItemId(params?.itemId);
+      setManualRecordModalOpen(true);
+    },
+    [selectedActivityId],
+  );
+
+  const handleAddRecordSidebar = useCallback(() => {
+    handleOpenManualRecordModal();
+  }, [handleOpenManualRecordModal]);
+
+  const handleOpenHistoryOptions = useCallback(() => {
+    router.push("/history?tab=FOCUS");
+  }, [router]);
+
+  const handleClearSelectedActivity = useCallback(() => {
+    handleSelectActivity(null);
+  }, [handleSelectActivity]);
+
+  const todaySummary = useMemo(
+    () => ({
+      minutes: metrics.todayFocusMinutes,
+      sessionsCount: metrics.todayRecordsCount,
+    }),
+    [metrics.todayFocusMinutes, metrics.todayRecordsCount],
+  );
 
   return (
     <div className="flex flex-col xl:flex-row h-full w-full overflow-hidden bg-background">
@@ -935,10 +1006,8 @@ export function FocusContainer({
           activities={initialActivities}
           backpackItems={initialBackpackItems}
           focusableTasks={focusableTasks}
-          todaySummary={{
-            minutes: metrics.todayFocusMinutes,
-            sessionsCount: metrics.todayRecordsCount,
-          }}
+          todaySummary={todaySummary}
+          todayProductiveMinutes={todayProductiveMinutes}
           isPremium={is_Premium}
           selectedActivityId={selectedActivityId}
           selectedBackpackItemId={selectedBackpackItemId}
@@ -952,12 +1021,15 @@ export function FocusContainer({
           onActivityDeleted={handleActivityDeleted}
           initialCreateActivity={initialCreateActivity}
           initialLinkActivity={shouldOpenLinkActivityModal}
+          initialFromSource={initialFromSource}
         />
       </div>
 
       {/* Sidebar Direita de Visão Geral, Gráfico e Histórico */}
       <FocusSidebarRight
         metrics={metrics}
+        todayProductiveMinutes={todayProductiveMinutes}
+        dailyFocusGoalMinutes={initialDailyFocusGoalMinutes}
         weeklyDays={weeklyDays}
         totalWeekMinutes={totalWeekMinutes}
         recentRecords={recentRecords}
@@ -971,12 +1043,12 @@ export function FocusContainer({
         onPrevWeek={handlePrevWeek}
         onNextWeek={handleNextWeek}
         onResetWeek={handleResetWeek}
-        onAddRecord={() => handleOpenManualRecordModal()}
-        onOptionsClick={() => router.push("/history?tab=FOCUS")}
+        onAddRecord={handleAddRecordSidebar}
+        onOptionsClick={handleOpenHistoryOptions}
         onDeleteRecord={handleDeleteRecord}
         onRecordUpdated={handleRecordUpdated}
         selectedActivityName={selectedActivity?.name}
-        onClearSelectedActivity={() => handleSelectActivity(null)}
+        onClearSelectedActivity={handleClearSelectedActivity}
         className={cn(
           mobileTab === "metrics" ? "flex flex-1 w-full" : "hidden xl:flex",
         )}

@@ -43,7 +43,6 @@ const DeleteFocusActivityModal = dynamic(
 export function ActivitiesWidget({
   activities = [],
   records = [],
-  isCompact = false,
 }: ActivitiesWidgetProps) {
   const t = useTranslations("dashboard.sidebarRight.activitiesWidget");
   const {
@@ -157,7 +156,7 @@ export function ActivitiesWidget({
 
       <div className="flex flex-col gap-1.5 w-full">
         {activeActivities.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-neutral-700 dark:border-white/10 bg-white dark:bg-white/5 shadow-2xs dark:shadow-none p-3 text-center text-xs text-neutral-400">
+          <div className="rounded-lg border border-dashed border-neutral-700 dark:border-white/10 bg-card dark:bg-white/5 shadow-2xs dark:shadow-none p-3 text-center text-xs text-neutral-400">
             {t("empty")}
           </div>
         ) : (
@@ -166,7 +165,6 @@ export function ActivitiesWidget({
               key={act.id}
               activity={act}
               minutes={activityTimeMap[act.id] || 0}
-              isCompact={isCompact}
               isContextMenuOpen={
                 contextMenu.isOpen && contextMenu.activity?.id === act.id
               }
@@ -181,27 +179,13 @@ export function ActivitiesWidget({
             type="button"
             onClick={() => setIsUpgradeModalOpen(true)}
             title={t("lockedPreservedTitle", { count: blockedActivitiesCount })}
-            className={cn(
-              "group flex items-center justify-between rounded-lg border transition-colors text-left w-full cursor-pointer",
-              isCompact ? "p-1.5" : "p-2",
-              "bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/15 hover:border-amber-500/50 dark:bg-gold/5 dark:border-gold/25 dark:hover:bg-gold/15 dark:hover:border-gold/50",
-            )}
+            className="group flex items-center justify-between rounded-lg border transition-colors text-left w-full cursor-pointer p-2 bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/15 hover:border-amber-500/50 dark:bg-gold/5 dark:border-gold/25 dark:hover:bg-gold/15 dark:hover:border-gold/50"
           >
-            <div
-              className={cn(
-                "flex items-center min-w-0",
-                isCompact ? "gap-1.5" : "gap-2",
-              )}
-            >
+            <div className="flex items-center min-w-0 gap-2">
               <div className="p-1 rounded bg-amber-500/15 text-amber-700 dark:bg-gold/15 dark:text-gold shrink-0">
-                <Lock size={isCompact ? 12 : 14} />
+                <Lock size={14} />
               </div>
-              <span
-                className={cn(
-                  "font-medium text-neutral-300 group-hover:text-neutral-100 truncate",
-                  isCompact ? "text-xs" : "text-body-s",
-                )}
-              >
+              <span className="font-medium text-neutral-300 group-hover:text-neutral-100 truncate text-body-s">
                 {t("lockedCount", { count: blockedActivitiesCount })}
               </span>
             </div>
@@ -221,11 +205,7 @@ export function ActivitiesWidget({
               type="button"
               onClick={() => setIsUpgradeModalOpen(true)}
               title={t("upgradeTitle")}
-              className={cn(
-                "flex items-center justify-center gap-1.5 rounded-lg border transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer font-bold w-full",
-                isCompact ? "py-1.5 text-label-g" : "py-2 text-xs",
-                "border-amber-500/40 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 hover:border-amber-600 dark:border-gold/40 dark:bg-gold/10 dark:text-gold dark:hover:bg-gold/20 dark:hover:border-gold hover:shadow-glow-gold-xs active:scale-[0.99]",
-              )}
+              className="flex items-center justify-center gap-1.5 rounded-lg border transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer font-bold w-full py-2 text-xs border-amber-500/40 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 hover:border-amber-600 dark:border-gold/40 dark:bg-gold/10 dark:text-gold dark:hover:bg-gold/20 dark:hover:border-gold hover:shadow-glow-gold-xs active:scale-[0.99]"
             >
               <Crown size={14} className="fill-gold/20 shrink-0" />
               <span>{t("upgradeLabel")}</span>
@@ -235,11 +215,7 @@ export function ActivitiesWidget({
               type="button"
               disabled
               title={t("limitReachedTitle", { max: maxActivities })}
-              className={cn(
-                "flex items-center justify-center gap-1.5 rounded-lg border transition-colors cursor-not-allowed opacity-60 font-semibold w-full",
-                isCompact ? "py-1.5 text-label-g" : "py-2 text-xs",
-                "border-neutral-700 dark:border-neutral-700/60 bg-surface/60 dark:bg-surface/40 text-neutral-400 dark:text-neutral-500",
-              )}
+              className="flex items-center justify-center gap-1.5 rounded-lg border transition-colors cursor-not-allowed opacity-60 font-semibold w-full py-2 text-xs border-neutral-700 dark:border-neutral-700/60 bg-surface/60 dark:bg-surface/40 text-neutral-400 dark:text-neutral-500"
             >
               <Lock size={13} className="shrink-0" />
               <span>{t("limitReachedLabel", { max: maxActivities })}</span>

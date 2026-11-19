@@ -1,21 +1,31 @@
 package com.habitparty.application.usecases.inventory;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.habitparty.application.ports.ArtifactRepository;
 import com.habitparty.application.ports.InventoryItemRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
+import com.habitparty.application.ports.UserArtifactRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsUseCase;
 import com.habitparty.core.domain.entities.InventoryItem;
 import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.domain.entities.achievement.Artifact;
+import com.habitparty.core.domain.entities.achievement.UserArtifact;
+import com.habitparty.core.domain.entities.reward.MysteryBoxArtifactDropTable;
 import com.habitparty.core.domain.entities.reward.MysteryBoxLootTable;
 import com.habitparty.core.domain.entities.reward.MysteryBoxResult;
+import com.habitparty.core.domain.enums.ArtifactSourceType;
 import com.habitparty.core.domain.enums.InventoryItemStatus;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
@@ -29,6 +39,13 @@ public class OpenMysteryBoxUseCase {
   private final TransactionHistoryRepository transactionHistoryRepositoryPort;
   private UserRepository userPort;
   private EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
+  private ArtifactRepository artifactPort;
+  private UserArtifactRepository userArtifactPort;
+
+  public record OpenMysteryBoxResult(
+      InventoryItem item,
+      Artifact droppedArtifact,
+      UserArtifact droppedUserArtifact) {}
 
   public OpenMysteryBoxUseCase(InventoryItemRepository port,
       TransactionHistoryRepository transactionHistoryRepositoryPort) {
@@ -46,8 +63,23 @@ public class OpenMysteryBoxUseCase {
     this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
   }
 
+  @Autowired(required = false)
+  public void setArtifactPort(ArtifactRepository artifactPort) {
+    this.artifactPort = artifactPort;
+  }
+
+  @Autowired(required = false)
+  public void setUserArtifactPort(UserArtifactRepository userArtifactPort) {
+    this.userArtifactPort = userArtifactPort;
+  }
+
   @Transactional
   public InventoryItem execute(UUID itemId, UUID userIdLogado) {
+    return executeWithDrop(itemId, userIdLogado).item();
+  }
+
+  @Transactional
+  public OpenMysteryBoxResult executeWithDrop(UUID itemId, UUID userIdLogado) {
     InventoryItem item = port.findById(itemId)
         .orElseThrow(() -> new ResourceNotFoundException("Item não encontrado"));
     item.validateOwnership(userIdLogado);
@@ -107,6 +139,28 @@ public class OpenMysteryBoxUseCase {
       });
     }
 
-    return item;
+    Artifact droppedArtifact = null;
+    UserArtifact droppedUserArtifact = null;
+
+    if (artifactPort != null && userArtifactPort != null) {
+      List<Artifact> mysteryBoxArtifacts = artifactPort.findBySourceTypeOrdered(ArtifactSourceType.MYSTERY_BOX);
+      if (!mysteryBoxArtifacts.isEmpty()) {
+        Set<UUID> ownedArtifactIds = userArtifactPort.findAllByUserId(userIdLogado).stream()
+            .map(UserArtifact::getArtifactId)
+            .collect(Collectors.toSet());
+        Optional<Artifact> rolled = MysteryBoxArtifactDropTable.rollBonusArtifact(
+            level,
+            mysteryBoxArtifacts,
+            ownedArtifactIds);
+        if (rolled.isPresent()) {
+          droppedArtifact = rolled.get();
+          String obtainedSource = "MYSTERY_BOX_" + level.name();
+          droppedUserArtifact = userArtifactPort.save(
+              UserArtifact.createNewlyUnlocked(userIdLogado, droppedArtifact.getId(), obtainedSource));
+        }
+      }
+    }
+
+    return new OpenMysteryBoxResult(item, droppedArtifact, droppedUserArtifact);
   }
 }

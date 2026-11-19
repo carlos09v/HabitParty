@@ -26,8 +26,8 @@ export const APP_THEMES: readonly ThemeDefinition[] = [
     isPremium: false,
     isDefault: true,
     swatches: {
-      background: "#0F0B1A",
-      card: "#22173B",
+      background: "#210459",
+      card: "#371D6A",
       primary: "#7C3AED",
       gold: "#EDE539",
       accent: "#ED2BE5",
@@ -39,11 +39,11 @@ export const APP_THEMES: readonly ThemeDefinition[] = [
     isPremium: false,
     isDefault: true,
     swatches: {
-      background: "#F4F6FA",
+      background: "#F5F5F8",
       card: "#FFFFFF",
       primary: "#6D28D9",
-      gold: "#EAB308",
-      accent: "#C026D3",
+      gold: "#F5B815",
+      accent: "#A21CAF",
     },
   },
   {

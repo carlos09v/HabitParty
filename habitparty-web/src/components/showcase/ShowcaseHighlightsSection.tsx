@@ -2,6 +2,7 @@
 
 import { Plus, SlidersHorizontal, Sparkles } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useMemo } from "react";
 import { AchievementIcon } from "@/components/showcase/AchievementIcon";
 import {
   getRarityTheme,
@@ -11,6 +12,7 @@ import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import type {
   AchievementItemResponseDTO,
+  ArtifactItemResponseDTO,
   ProfileHighlightResponseDTO,
   ShowcaseStatsResponseDTO,
 } from "@/types/showcase";
@@ -22,9 +24,10 @@ interface ShowcaseHighlightsSectionProps {
   stats: ShowcaseStatsResponseDTO;
   highlights: ProfileHighlightResponseDTO[];
   achievements: AchievementItemResponseDTO[];
+  artifacts?: ArtifactItemResponseDTO[];
   isVisitorMode: boolean;
   onOpenPicker: (slotIndex: number) => void;
-  isCompact?: boolean;
+  onPreloadPicker?: () => void;
 }
 
 export function ShowcaseHighlightsSection({
@@ -32,15 +35,17 @@ export function ShowcaseHighlightsSection({
   stats,
   highlights,
   achievements,
+  artifacts = [],
   isVisitorMode,
   onOpenPicker,
-  isCompact = false,
+  onPreloadPicker,
 }: ShowcaseHighlightsSectionProps) {
   const locale = useLocale() as AppLocale;
   const t = useTranslations("showcase.highlights");
   const tRarities = useTranslations("showcase.rarities");
   const tCatalog = useTranslations("showcase.catalog");
   const tBadges = useTranslations("showcase.accountBadges");
+  const tArtifacts = useTranslations("showcase.artifacts");
   const { isGamified } = useExperienceMode();
 
   const { currentXp, levelTitle } = resolveUserLevelState(
@@ -50,18 +55,39 @@ export function ShowcaseHighlightsSection({
     stats.totalXp,
   );
 
-  const slots = Array.from({ length: MAX_SHOWCASE_HIGHLIGHTS }, (_, index) => {
-    const highlight = highlights.find((h) => h.displayOrder === index) || null;
-    const resolved = resolveHighlightSlotCard(highlight, {
+  const slots = useMemo(
+    () =>
+      Array.from({ length: MAX_SHOWCASE_HIGHLIGHTS }, (_, index) => {
+        const highlight =
+          highlights.find((h) => h.displayOrder === index) || null;
+        const resolved = resolveHighlightSlotCard(highlight, {
+          achievements,
+          artifacts,
+          stats,
+          isGamified,
+          levelTitle,
+          currentXp,
+          tCatalog,
+          tBadges,
+          tArtifacts,
+          tHighlights: t,
+        });
+        return { index, highlight, resolved };
+      }),
+    [
+      highlights,
       achievements,
+      artifacts,
+      stats,
       isGamified,
       levelTitle,
       currentXp,
       tCatalog,
       tBadges,
-    });
-    return { index, highlight, resolved };
-  });
+      tArtifacts,
+      t,
+    ],
+  );
 
   const visibleSlots = isVisitorMode
     ? slots.filter((s) => s.resolved !== null && s.highlight !== null)
@@ -88,6 +114,8 @@ export function ShowcaseHighlightsSection({
           <button
             type="button"
             onClick={() => onOpenPicker(0)}
+            onMouseEnter={onPreloadPicker}
+            onFocus={onPreloadPicker}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-gold/15 text-amber-700 dark:text-gold border border-gold/40 hover:bg-gold/25 transition-colors cursor-pointer shrink-0 self-start sm:self-auto"
           >
             <SlidersHorizontal size={14} />
@@ -103,7 +131,7 @@ export function ShowcaseHighlightsSection({
       ) : (
         <div
           className={cn(
-            "grid grid-cols-1 @xl:grid-cols-2",
+            "grid grid-cols-1 @xl:grid-cols-2 gap-4",
             isVisitorMode
               ? visibleSlots.length === 1
                 ? "max-w-md"
@@ -113,7 +141,6 @@ export function ShowcaseHighlightsSection({
                     ? "@3xl:grid-cols-3"
                     : "@4xl:grid-cols-4"
               : "@4xl:grid-cols-4",
-            isCompact ? "gap-3" : "gap-4",
           )}
         >
           {visibleSlots.map(({ index, highlight, resolved }) => {
@@ -123,6 +150,8 @@ export function ShowcaseHighlightsSection({
                   key={index}
                   type="button"
                   onClick={() => onOpenPicker(index)}
+                  onMouseEnter={onPreloadPicker}
+                  onFocus={onPreloadPicker}
                   className="group relative rounded-2xl border-2 border-dashed border-neutral-600 hover:border-gold/60 bg-card/60 hover:bg-card dark:border-primary/25 dark:bg-surface/25 dark:hover:bg-gold/5 p-4 flex flex-col items-center justify-center text-center gap-2 min-h-[140px] transition-colors cursor-pointer"
                 >
                   <div className="w-10 h-10 rounded-xl bg-primary/15 group-hover:bg-gold/20 border border-primary/25 group-hover:border-gold/40 flex items-center justify-center text-neutral-400 group-hover:text-amber-700 dark:text-neutral-300 dark:group-hover:text-gold transition-colors">
@@ -160,7 +189,15 @@ export function ShowcaseHighlightsSection({
                       theme.iconText,
                     )}
                   >
-                    <AchievementIcon iconKey={resolved.iconKey} size={22} />
+                    <AchievementIcon
+                      iconKey={resolved.iconKey}
+                      size={22}
+                      fallback={
+                        highlight.highlightType === "ARTIFACT"
+                          ? "sparkles"
+                          : "trophy"
+                      }
+                    />
                   </div>
 
                   <div className="flex flex-col items-end gap-1 min-w-0">

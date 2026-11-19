@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import com.habitparty.core.domain.entities.User;
@@ -33,6 +34,8 @@ public record UserResponseDTO(
         String profilePhotoUrl,
         String bio,
         String avatarFrame,
+        String equippedTitle,
+        String avatarPreset,
         String theme,
         LocalDate birthDate,
         LocalDateTime createdAt,
@@ -54,7 +57,13 @@ public record UserResponseDTO(
         PrivacyLevel profileVisibility,
         PrivacyLevel statsVisibility,
         PrivacyLevel achievementsVisibility,
-        FriendRequestPolicy friendRequestPolicy) {
+        FriendRequestPolicy friendRequestPolicy,
+        String usageMode,
+        List<String> primaryGoals,
+        String mainObstacle,
+        Integer dailyFocusGoalMinutes,
+        String peakPeriod,
+        String disciplineStyle) {
     public static UserResponseDTO fromDomain(User user) {
         return fromDomain(user, user.getCurrentStreak());
     }
@@ -79,6 +88,8 @@ public record UserResponseDTO(
                 user.getProfilePhotoUrl().orElse(null),
                 user.getBio().orElse(null),
                 user.getAvatarFrame(),
+                user.getEquippedTitle().orElse(null),
+                user.getAvatarPreset().orElse(null),
                 user.getEffectiveTheme(),
                 user.getBirthDate(),
                 user.getCreatedAt(),
@@ -98,6 +109,12 @@ public record UserResponseDTO(
                 user.getProfileVisibility(),
                 user.getStatsVisibility(),
                 user.getAchievementsVisibility(),
-                user.getFriendRequestPolicy());
+                user.getFriendRequestPolicy(),
+                user.getUsageMode(),
+                user.getPrimaryGoals(),
+                user.getMainObstacle(),
+                user.getDailyFocusGoalMinutes(),
+                user.getPeakPeriod(),
+                user.getDisciplineStyle());
     }
 }

@@ -22,9 +22,8 @@ import {
   getPublicUserRetrospectiveAction,
 } from "@/actions/socialActions";
 import type { AppLocale } from "@/i18n/config";
-import type { AchievementRarity } from "@/types/showcase";
 import type { UserRetrospectiveData } from "@/types/social";
-import { cn, resolveRetrospectiveAchievementTitle } from "@/utils";
+import { cn, resolveRetrospectiveViewMeta } from "@/utils";
 
 interface RetrospectivePanelProps {
   initialRetrospective: UserRetrospectiveData | null;
@@ -32,6 +31,7 @@ interface RetrospectivePanelProps {
   isOwnProfile?: boolean;
   targetUsername?: string;
   onOpenExportModal?: (retro: UserRetrospectiveData) => void;
+  onRetrospectiveChange?: (next: UserRetrospectiveData) => void;
 }
 
 export function RetrospectivePanel({
@@ -40,6 +40,7 @@ export function RetrospectivePanel({
   isOwnProfile = true,
   targetUsername,
   onOpenExportModal,
+  onRetrospectiveChange,
 }: RetrospectivePanelProps) {
   const locale = useLocale() as AppLocale;
   const format = useFormatter();
@@ -70,6 +71,7 @@ export function RetrospectivePanel({
         return;
       }
       setRetro(res.data);
+      onRetrospectiveChange?.(res.data);
     });
   };
 
@@ -89,29 +91,18 @@ export function RetrospectivePanel({
   const availableYears =
     retro.availableYears.length > 0 ? retro.availableYears : [retro.year];
 
-  const focusHours = Math.round((retro.focusMinutes / 60) * 10) / 10;
-  const bestMonthName =
-    retro.bestMonth && retro.bestMonth >= 1 && retro.bestMonth <= 12
-      ? new Intl.DateTimeFormat(locale, {
-          month: "long",
-          timeZone: "UTC",
-        }).format(new Date(Date.UTC(2024, retro.bestMonth - 1, 1)))
-      : null;
-
-  const archetypeTitle = isGamified
-    ? t(`archetypes.${retro.archetype}.title`)
-    : t(`archetypes.${retro.archetype}.essentialTitle`);
-  const archetypeDesc = t(`archetypes.${retro.archetype}.desc`);
-  const rarestTitle = resolveRetrospectiveAchievementTitle(
-    retro,
-    isGamified,
+  const {
+    focusHours,
+    bestMonthName,
+    archetypeTitle,
+    archetypeDesc,
+    rarestTitle,
+    rarestRarityLabel,
+  } = resolveRetrospectiveViewMeta(retro, locale, isGamified, {
+    tRetro: t,
     tCatalog,
-  );
-  const rawRarity = retro.rarestAchievementRarity;
-  const rarestRarityLabel =
-    rawRarity && tRarities.has(rawRarity as AchievementRarity)
-      ? tRarities(rawRarity as AchievementRarity)
-      : rawRarity;
+    tRarities,
+  });
 
   return (
     <section className="flex flex-col gap-5">

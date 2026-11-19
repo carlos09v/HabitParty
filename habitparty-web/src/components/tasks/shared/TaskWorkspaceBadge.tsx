@@ -5,7 +5,6 @@ import { cn } from "@/utils";
 export interface TaskWorkspaceBadgeProps {
   workspaceName?: string;
   size?: "xs" | "row" | "header";
-  isCompact?: boolean;
   isReadOnly?: boolean;
   className?: string;
 }
@@ -17,7 +16,6 @@ export interface TaskWorkspaceBadgeProps {
 export function TaskWorkspaceBadge({
   workspaceName,
   size = "row",
-  isCompact = false,
   isReadOnly = false,
   className,
 }: TaskWorkspaceBadgeProps) {
@@ -26,7 +24,7 @@ export function TaskWorkspaceBadge({
   if (!workspaceName) return null;
 
   const isHeader = size === "header";
-  const isMini = size === "xs" || isCompact;
+  const isMini = size === "xs";
 
   return (
     <span
@@ -34,7 +32,7 @@ export function TaskWorkspaceBadge({
         "inline-flex items-center gap-1 font-medium border truncate",
         isReadOnly
           ? "bg-amber-500/10 border-amber-500/35 text-amber-800 dark:bg-gold/15 dark:border-gold/40 dark:text-gold"
-          : "bg-primary/10 dark:bg-primary/25 border-primary/25 dark:border-purple-300/35 text-primary dark:text-purple-200",
+          : "bg-primary/10 dark:bg-primary/25 border-primary/25 dark:border-primary-light/35 text-primary dark:text-primary-light",
         isHeader
           ? "px-2 py-0.5 rounded-md text-tiny font-semibold max-w-[115px]"
           : isMini

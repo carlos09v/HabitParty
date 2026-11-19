@@ -37,7 +37,8 @@ public class ProfileHighlight {
       throw new DomainValidationException("Destaques de conquista exigem o ID da conquista (referenceId).");
     }
     if (highlightType != HighlightType.ACHIEVEMENT && (highlightKey == null || highlightKey.isBlank())) {
-      throw new DomainValidationException("Destaques de insígnia ou métrica exigem a chave identificadora (highlightKey).");
+      throw new DomainValidationException(
+          "Destaques de insígnia, métrica ou artefato exigem a chave identificadora (highlightKey).");
     }
 
     this.id = id != null ? id : UUID.randomUUID();
