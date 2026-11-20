@@ -10,6 +10,7 @@ import type {
   ArtifactItemResponseDTO,
   ProfileHighlightResponseDTO,
   ShowcaseStatsResponseDTO,
+  TaskStreakHighlightDTO,
 } from "@/types/showcase";
 import type { UserRetrospectiveData } from "@/types/social";
 import {
@@ -55,6 +56,7 @@ interface UseProfileCardRenderInputParams {
   highlights?: ProfileHighlightResponseDTO[];
   achievements?: AchievementItemResponseDTO[];
   artifacts?: ArtifactItemResponseDTO[];
+  taskStreaks?: TaskStreakHighlightDTO[];
   retrospective?: UserRetrospectiveData | null;
   activeFrameId?: string | null;
   includeFriendCode: boolean;
@@ -69,6 +71,7 @@ export function useProfileCardRenderInput({
   highlights = [],
   achievements = [],
   artifacts = [],
+  taskStreaks = [],
   retrospective = null,
   activeFrameId,
   includeFriendCode,
@@ -97,6 +100,7 @@ export function useProfileCardRenderInput({
         const card = resolveHighlightSlotCard(item, {
           achievements,
           artifacts,
+          taskStreaks,
           stats,
           isGamified,
           levelTitle: levelState.levelTitle,
@@ -231,6 +235,7 @@ export function useProfileCardRenderInput({
     highlights,
     achievements,
     artifacts,
+    taskStreaks,
     retrospective,
     includeFriendCode,
     locale,

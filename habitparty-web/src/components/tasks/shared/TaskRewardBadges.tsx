@@ -129,26 +129,34 @@ export function TaskRewardBadges({
         ))}
 
       {/* Streak (Chama - Exibido para Diárias e Hábitos) */}
-      {hasStreak && (
-        <span
-          className="flex items-center gap-0.5 text-warning-500 font-bold"
-          title={t(
-            isCycleBasedStreak
-              ? "badges.streakCyclesTitle"
-              : "badges.streakTitle",
-            { count: task.streak ?? 0 },
-          )}
-        >
-          <Flame
-            size={isCompact ? 9 : 11}
-            className="fill-warning-500 text-warning-500 shrink-0"
-          />
-          <span>
-            {task.streak}
-            {isCycleBasedStreak ? "x" : "d"}
-          </span>
-        </span>
-      )}
+      {hasStreak &&
+        (() => {
+          const current = task.streak ?? 0;
+          const highest = Math.max(task.highestStreak ?? 0, current);
+          const titleKey =
+            highest > current
+              ? isCycleBasedStreak
+                ? "badges.streakCyclesWithRecordTitle"
+                : "badges.streakWithRecordTitle"
+              : isCycleBasedStreak
+                ? "badges.streakCyclesTitle"
+                : "badges.streakTitle";
+          return (
+            <span
+              className="flex items-center gap-0.5 text-warning-500 font-bold"
+              title={t(titleKey, { count: current, highest })}
+            >
+              <Flame
+                size={isCompact ? 9 : 11}
+                className="fill-warning-500 text-warning-500 shrink-0"
+              />
+              <span>
+                {task.streak}
+                {isCycleBasedStreak ? "x" : "d"}
+              </span>
+            </span>
+          );
+        })()}
 
       {/* XP / Pontos */}
       {effectiveShowRewards && task.rewardXp !== undefined && (

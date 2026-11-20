@@ -16,8 +16,7 @@ import {
   markAchievementsSeenAction,
   markArtifactsSeenAction,
 } from "@/actions/showcaseActions";
-import { AchievementsGallery } from "@/components/showcase/AchievementsGallery";
-import { ArtifactsGallery } from "@/components/showcase/ArtifactsGallery";
+import { ShowcaseCollectionSection } from "@/components/showcase/ShowcaseCollectionSection";
 import { ShowcaseHeroHeader } from "@/components/showcase/ShowcaseHeroHeader";
 import type {
   PickerPendingItem,
@@ -39,6 +38,7 @@ import type {
   AchievementItemResponseDTO,
   ArtifactItemResponseDTO,
   ProfileHighlightResponseDTO,
+  TaskStreakHighlightDTO,
   UserShowcaseResponseDTO,
 } from "@/types/showcase";
 import type {
@@ -46,10 +46,16 @@ import type {
   FriendsOverviewData,
   UserRetrospectiveData,
 } from "@/types/social";
-import { resolveShowcaseTab, type ShowcaseTabId } from "@/utils";
+import {
+  resolveShowcaseCollectionTab,
+  resolveShowcaseTab,
+  type ShowcaseCollectionTabId,
+  type ShowcaseTabId,
+} from "@/utils";
 
 const EMPTY_FRIENDS: FriendConnectionItem[] = [];
 const EMPTY_ARTIFACTS: ArtifactItemResponseDTO[] = [];
+const EMPTY_TASK_STREAKS: TaskStreakHighlightDTO[] = [];
 
 const preloadProgressionPanel = () =>
   import("@/components/showcase/progression/ProgressionPyramidPanel").then(
@@ -116,9 +122,15 @@ export function ShowcaseContainer({
   const activeFrameId = useActiveAvatarFrame();
   const searchParams = useSearchParams();
   const urlTabParam = searchParams.get("tab");
+  const urlCollectionParam = searchParams.get("collection");
   const tabsBaseId = useId();
 
   const [activeTab, setActiveTab] = useState<ShowcaseTabId>(initialTab);
+  const [activeCollectionTab, setActiveCollectionTab] =
+    useState<ShowcaseCollectionTabId>(() =>
+      resolveShowcaseCollectionTab(urlCollectionParam, urlTabParam),
+    );
+  const [artifactsSeenDismissed, setArtifactsSeenDismissed] = useState(false);
   const [highlights, setHighlights] = useState<ProfileHighlightResponseDTO[]>(
     initialShowcase.highlights || [],
   );
@@ -159,7 +171,12 @@ export function ShowcaseContainer({
 
   useEffect(() => {
     setActiveTab(resolveShowcaseTab(urlTabParam));
-  }, [urlTabParam]);
+    if (urlCollectionParam || urlTabParam === "artifacts") {
+      setActiveCollectionTab(
+        resolveShowcaseCollectionTab(urlCollectionParam, urlTabParam),
+      );
+    }
+  }, [urlTabParam, urlCollectionParam]);
 
   useEffect(() => {
     setHighlights(initialShowcase.highlights || []);
@@ -192,6 +209,7 @@ export function ShowcaseContainer({
     if (isVisitorMode || activeTab !== "overview") return;
 
     if (
+      activeCollectionTab === "achievements" &&
       !markedAchievementsRef.current &&
       initialShowcase.achievements?.some((a) => a.unlocked && !a.seen)
     ) {
@@ -200,6 +218,7 @@ export function ShowcaseContainer({
     }
 
     if (
+      activeCollectionTab === "artifacts" &&
       !markedArtifactsRef.current &&
       initialShowcase.artifacts?.some((a) => a.unlocked && !a.seen)
     ) {
@@ -209,6 +228,7 @@ export function ShowcaseContainer({
   }, [
     isVisitorMode,
     activeTab,
+    activeCollectionTab,
     initialShowcase.achievements,
     initialShowcase.artifacts,
   ]);
@@ -221,6 +241,28 @@ export function ShowcaseContainer({
         params.delete("tab");
       } else {
         params.set("tab", tab);
+        params.delete("collection");
+      }
+      const query = params.toString();
+      const nextUrl = query
+        ? `${window.location.pathname}?${query}`
+        : window.location.pathname;
+      window.history.replaceState(window.history.state, "", nextUrl);
+    }
+  };
+
+  const handleSelectCollectionTab = (tab: ShowcaseCollectionTabId) => {
+    if (activeCollectionTab === "artifacts" && tab !== "artifacts") {
+      setArtifactsSeenDismissed(true);
+    }
+    setActiveCollectionTab(tab);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.delete("tab");
+      if (tab === "artifacts") {
+        params.set("collection", "artifacts");
+      } else {
+        params.delete("collection");
       }
       const query = params.toString();
       const nextUrl = query
@@ -344,6 +386,7 @@ export function ShowcaseContainer({
   const retrospectiveIds = getShowcaseTabIds(tabsBaseId, "retrospective");
 
   const artifactsList = initialShowcase.artifacts ?? EMPTY_ARTIFACTS;
+  const taskStreaksList = initialShowcase.taskStreaks ?? EMPTY_TASK_STREAKS;
   const unlockedArtifactsCount = useMemo(
     () => artifactsList.filter((a) => a.unlocked).length,
     [artifactsList],
@@ -447,6 +490,7 @@ export function ShowcaseContainer({
             highlights={highlights}
             achievements={initialShowcase.achievements}
             artifacts={artifactsList}
+            taskStreaks={taskStreaksList}
             isVisitorMode={isVisitorMode}
             onOpenPicker={handleOpenPicker}
             onPreloadPicker={preloadHighlightPickerModal}
@@ -455,20 +499,21 @@ export function ShowcaseContainer({
           {/* INDICADORES VITALÍCIOS DE CONSISTÊNCIA & FEITOS (Server Component Slot) */}
           {statsSlot}
 
-          {/* VITRINE & GRIMÓRIO DE ARTEFATOS (RELÍQUIAS SIMBÓLICAS) */}
-          <ArtifactsGallery
+          {/* COLEÇÕES EM 2 SUB-ABAS: CONQUISTAS & ARTEFATOS */}
+          <ShowcaseCollectionSection
+            achievements={initialShowcase.achievements}
             artifacts={artifactsList}
             highlights={highlights}
             isVisitorMode={isVisitorMode}
-            onPinArtifact={handlePinArtifactFromGallery}
-          />
-
-          {/* GALERIA DE CONQUISTAS & MEDALHAS */}
-          <AchievementsGallery
-            achievements={initialShowcase.achievements}
-            highlights={highlights}
-            isVisitorMode={isVisitorMode}
+            activeCollection={activeCollectionTab}
+            onSelectCollection={handleSelectCollectionTab}
             onPinAchievement={handlePinAchievementFromGallery}
+            onPinArtifact={handlePinArtifactFromGallery}
+            totalAchievementsCount={
+              initialShowcase.stats.totalAchievementsCount
+            }
+            totalArtifactsCount={initialShowcase.stats.totalArtifactsCount}
+            artifactsSeenDismissed={artifactsSeenDismissed}
           />
         </div>
       )}
@@ -541,6 +586,7 @@ export function ShowcaseContainer({
           highlights={highlights}
           achievements={initialShowcase.achievements}
           artifacts={artifactsList}
+          taskStreaks={taskStreaksList}
           onClose={() => setPickerState((prev) => ({ ...prev, isOpen: false }))}
           onSaved={(updated) => setHighlights(updated)}
         />
@@ -561,6 +607,7 @@ export function ShowcaseContainer({
           highlights={highlights}
           achievements={initialShowcase.achievements}
           artifacts={artifactsList}
+          taskStreaks={taskStreaksList}
           retrospective={previewModalState.retro ?? activeRetrospective}
         />
       )}

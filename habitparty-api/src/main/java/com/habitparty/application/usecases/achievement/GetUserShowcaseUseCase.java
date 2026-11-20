@@ -1,10 +1,14 @@
 package com.habitparty.application.usecases.achievement;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -17,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.habitparty.application.ports.AchievementRepository;
 import com.habitparty.application.ports.ArtifactRepository;
 import com.habitparty.application.ports.ProfileHighlightRepository;
+import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.UserAchievementRepository;
 import com.habitparty.application.ports.UserArtifactRepository;
 import com.habitparty.application.ports.UserRepository;
@@ -28,8 +33,16 @@ import com.habitparty.core.domain.entities.achievement.Artifact;
 import com.habitparty.core.domain.entities.achievement.ProfileHighlight;
 import com.habitparty.core.domain.entities.achievement.UserAchievement;
 import com.habitparty.core.domain.entities.achievement.UserArtifact;
+import com.habitparty.core.domain.entities.task.Daily;
+import com.habitparty.core.domain.entities.task.Habit;
+import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.domain.enums.AchievementCode;
 import com.habitparty.core.domain.enums.ArtifactSourceType;
+import com.habitparty.core.domain.enums.HighlightType;
+import com.habitparty.core.domain.enums.task.DailyRepeatType;
+import com.habitparty.core.domain.enums.task.HabitResetCounter;
+import com.habitparty.core.domain.enums.task.HabitType;
+import com.habitparty.core.domain.enums.task.TaskType;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
@@ -43,6 +56,8 @@ public class GetUserShowcaseUseCase {
   private final DailyResetUseCase dailyResetUseCase;
   private final ArtifactRepository artifactPort;
   private final UserArtifactRepository userArtifactPort;
+  private final TaskRepository taskPort;
+  private final Clock clock;
 
   @Autowired
   public GetUserShowcaseUseCase(
@@ -54,7 +69,9 @@ public class GetUserShowcaseUseCase {
       @Nullable EffectiveStreakResolver effectiveStreakResolver,
       @Nullable DailyResetUseCase dailyResetUseCase,
       @Nullable ArtifactRepository artifactPort,
-      @Nullable UserArtifactRepository userArtifactPort) {
+      @Nullable UserArtifactRepository userArtifactPort,
+      @Nullable TaskRepository taskPort,
+      @Nullable Clock clock) {
     this.userPort = userPort;
     this.achievementPort = achievementPort;
     this.userAchievementPort = userAchievementPort;
@@ -66,6 +83,32 @@ public class GetUserShowcaseUseCase {
     this.dailyResetUseCase = dailyResetUseCase;
     this.artifactPort = artifactPort;
     this.userArtifactPort = userArtifactPort;
+    this.taskPort = taskPort;
+    this.clock = clock != null ? clock : Clock.systemDefaultZone();
+  }
+
+  public GetUserShowcaseUseCase(
+      UserRepository userPort,
+      AchievementRepository achievementPort,
+      UserAchievementRepository userAchievementPort,
+      ProfileHighlightRepository profileHighlightPort,
+      EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase,
+      @Nullable EffectiveStreakResolver effectiveStreakResolver,
+      @Nullable DailyResetUseCase dailyResetUseCase,
+      @Nullable ArtifactRepository artifactPort,
+      @Nullable UserArtifactRepository userArtifactPort) {
+    this(
+        userPort,
+        achievementPort,
+        userAchievementPort,
+        profileHighlightPort,
+        evaluateUserAchievementsUseCase,
+        effectiveStreakResolver,
+        dailyResetUseCase,
+        artifactPort,
+        userArtifactPort,
+        null,
+        null);
   }
 
   public GetUserShowcaseUseCase(
@@ -151,6 +194,14 @@ public class GetUserShowcaseUseCase {
       String obtainedSource,
       boolean seen) {}
 
+  public record TaskStreakSummary(
+      UUID id,
+      String name,
+      TaskType taskType,
+      int currentStreak,
+      int highestStreak,
+      boolean isCycleBased) {}
+
   public record UserShowcaseResult(
       User user,
       int effectiveStreak,
@@ -162,7 +213,78 @@ public class GetUserShowcaseUseCase {
       int maxPossiblePoints,
       List<ArtifactProgressItem> artifacts,
       int unlockedArtifactsCount,
-      int totalArtifactsCount) {
+      int totalArtifactsCount,
+      List<TaskStreakSummary> taskStreaks,
+      int highestTaskStreak,
+      @Nullable String highestTaskStreakTitle,
+      @Nullable TaskType highestTaskStreakType,
+      List<TaskStreakSummary> highlightTaskStreaks) {
+    public UserShowcaseResult(
+        User user,
+        int effectiveStreak,
+        List<ProfileHighlight> highlights,
+        List<AchievementProgressItem> achievements,
+        int unlockedCount,
+        int totalAchievements,
+        int totalAchievementPoints,
+        int maxPossiblePoints,
+        List<ArtifactProgressItem> artifacts,
+        int unlockedArtifactsCount,
+        int totalArtifactsCount,
+        List<TaskStreakSummary> taskStreaks,
+        int highestTaskStreak,
+        @Nullable String highestTaskStreakTitle,
+        @Nullable TaskType highestTaskStreakType) {
+      this(
+          user,
+          effectiveStreak,
+          highlights,
+          achievements,
+          unlockedCount,
+          totalAchievements,
+          totalAchievementPoints,
+          maxPossiblePoints,
+          artifacts,
+          unlockedArtifactsCount,
+          totalArtifactsCount,
+          taskStreaks,
+          highestTaskStreak,
+          highestTaskStreakTitle,
+          highestTaskStreakType,
+          taskStreaks);
+    }
+
+    public UserShowcaseResult(
+        User user,
+        int effectiveStreak,
+        List<ProfileHighlight> highlights,
+        List<AchievementProgressItem> achievements,
+        int unlockedCount,
+        int totalAchievements,
+        int totalAchievementPoints,
+        int maxPossiblePoints,
+        List<ArtifactProgressItem> artifacts,
+        int unlockedArtifactsCount,
+        int totalArtifactsCount) {
+      this(
+          user,
+          effectiveStreak,
+          highlights,
+          achievements,
+          unlockedCount,
+          totalAchievements,
+          totalAchievementPoints,
+          maxPossiblePoints,
+          artifacts,
+          unlockedArtifactsCount,
+          totalArtifactsCount,
+          List.of(),
+          0,
+          null,
+          null,
+          List.of());
+    }
+
     public UserShowcaseResult(
         User user,
         int effectiveStreak,
@@ -183,7 +305,18 @@ public class GetUserShowcaseUseCase {
           maxPossiblePoints,
           List.of(),
           0,
-          0);
+          0,
+          List.of(),
+          0,
+          null,
+          null,
+          List.of());
+    }
+
+    public List<TaskStreakSummary> resolvedHighlightTaskStreaks() {
+      return highlightTaskStreaks != null && !highlightTaskStreaks.isEmpty()
+          ? highlightTaskStreaks
+          : (taskStreaks != null ? taskStreaks : List.of());
     }
   }
 
@@ -213,6 +346,20 @@ public class GetUserShowcaseUseCase {
         userUnlocks,
         snapshot.artifactCatalog(),
         snapshot.userArtifacts());
+  }
+
+  /**
+   * Lista as ofensivas atuais e recordes das tarefas recorrentes positivas do usuário
+   * (Diárias e Hábitos positivos/neutros) para seleção ou hidratação de destaques na vitrine.
+   */
+  @Transactional(readOnly = true)
+  public List<TaskStreakSummary> listTaskStreaksForUser(UUID userId) {
+    if (userId == null) {
+      return List.of();
+    }
+    return userPort.findById(userId)
+        .map(this::buildTaskStreakSummaries)
+        .orElse(List.of());
   }
 
   /**
@@ -314,10 +461,41 @@ public class GetUserShowcaseUseCase {
           !ownedFlag || owned.isSeen()));
     }
 
+    List<TaskStreakSummary> allTaskStreaks = buildTaskStreakSummaries(user);
+    Set<String> existingTaskIds = allTaskStreaks.stream()
+        .map(s -> s.id().toString())
+        .collect(Collectors.toSet());
+    List<ProfileHighlight> effectiveHighlights = taskPort != null
+        ? highlights.stream()
+            .filter(h -> h.getHighlightType() != HighlightType.TASK_STREAK
+                || h.getHighlightKey().filter(existingTaskIds::contains).isPresent())
+            .toList()
+        : highlights;
+
+    Set<String> pinnedTaskIds = effectiveHighlights.stream()
+        .filter(h -> h.getHighlightType() == HighlightType.TASK_STREAK)
+        .flatMap(h -> h.getHighlightKey().stream())
+        .collect(Collectors.toSet());
+    List<TaskStreakSummary> highlightTaskStreaks = pinnedTaskIds.isEmpty()
+        ? List.of()
+        : allTaskStreaks.stream()
+            .filter(s -> pinnedTaskIds.contains(s.id().toString()))
+            .toList();
+
+    List<TaskStreakSummary> featuredTaskStreaks = selectTopActiveTaskStreaks(allTaskStreaks);
+
+    TaskStreakSummary topTaskRecord = allTaskStreaks.stream()
+        .filter(s -> s.highestStreak() > 0)
+        .max(Comparator
+            .comparingInt(TaskStreakSummary::highestStreak)
+            .thenComparingInt(TaskStreakSummary::currentStreak)
+            .thenComparing(TaskStreakSummary::name, Comparator.reverseOrder()))
+        .orElse(null);
+
     return new UserShowcaseResult(
         user,
         effectiveStreakResolver.resolve(user),
-        highlights,
+        effectiveHighlights,
         items,
         unlockedCount,
         catalog.size(),
@@ -325,6 +503,78 @@ public class GetUserShowcaseUseCase {
         maxPoints,
         artifactItems,
         unlockedArtifactsCount,
-        artifactCatalog.size());
+        artifactCatalog.size(),
+        featuredTaskStreaks,
+        topTaskRecord != null ? topTaskRecord.highestStreak() : 0,
+        topTaskRecord != null ? topTaskRecord.name() : null,
+        topTaskRecord != null ? topTaskRecord.taskType() : null,
+        highlightTaskStreaks);
+  }
+
+  /**
+   * Mantém apenas as tarefas recorrentes com streak ativo (> 0) de maior ofensiva,
+   * no máximo uma Diária e um Hábito, evitando listar tarefas zeradas na vitrine.
+   */
+  private List<TaskStreakSummary> selectTopActiveTaskStreaks(List<TaskStreakSummary> allTaskStreaks) {
+    if (allTaskStreaks == null || allTaskStreaks.isEmpty()) {
+      return List.of();
+    }
+    List<TaskStreakSummary> featured = new ArrayList<>(2);
+    allTaskStreaks.stream()
+        .filter(s -> s.taskType() == TaskType.DAILY && s.currentStreak() > 0)
+        .findFirst()
+        .ifPresent(featured::add);
+    allTaskStreaks.stream()
+        .filter(s -> s.taskType() == TaskType.HABIT && s.currentStreak() > 0)
+        .findFirst()
+        .ifPresent(featured::add);
+    featured.sort(Comparator
+        .comparingInt(TaskStreakSummary::currentStreak).reversed()
+        .thenComparing(Comparator.comparingInt(TaskStreakSummary::highestStreak).reversed())
+        .thenComparing(TaskStreakSummary::name, String.CASE_INSENSITIVE_ORDER));
+    return List.copyOf(featured);
+  }
+
+  private List<TaskStreakSummary> buildTaskStreakSummaries(User user) {
+    if (taskPort == null || user == null || user.getId() == null) {
+      return List.of();
+    }
+    List<Task> recurringTasks = taskPort.findRecurringTasksByUserIds(List.of(user.getId()));
+    if (recurringTasks == null || recurringTasks.isEmpty()) {
+      return List.of();
+    }
+    LocalDate effectiveDate = LocalDate.now(clock.withZone(user.resolveZoneId(clock.getZone())));
+    List<TaskStreakSummary> summaries = new ArrayList<>();
+    for (Task task : recurringTasks) {
+      if (task instanceof Daily d) {
+        int current = d.getEffectiveStreak(effectiveDate);
+        int highest = Math.max(d.getHighestStreak(), current);
+        boolean isCycleBased = (d.getRepeatType() != null && d.getRepeatType() != DailyRepeatType.DAILY)
+            || d.getRepeatEvery() > 1;
+        summaries.add(new TaskStreakSummary(
+            d.getId(),
+            d.getName(),
+            TaskType.DAILY,
+            current,
+            highest,
+            isCycleBased));
+      } else if (task instanceof Habit h && h.getHabitType() != HabitType.NEGATIVE) {
+        int current = h.getEffectiveStreak(effectiveDate);
+        int highest = Math.max(h.getHighestStreak(), current);
+        boolean isCycleBased = h.getResetCounter() != null && h.getResetCounter() != HabitResetCounter.DAILY;
+        summaries.add(new TaskStreakSummary(
+            h.getId(),
+            h.getName(),
+            TaskType.HABIT,
+            current,
+            highest,
+            isCycleBased));
+      }
+    }
+    summaries.sort(Comparator
+        .comparingInt(TaskStreakSummary::currentStreak).reversed()
+        .thenComparing(Comparator.comparingInt(TaskStreakSummary::highestStreak).reversed())
+        .thenComparing(TaskStreakSummary::name, String.CASE_INSENSITIVE_ORDER));
+    return summaries;
   }
 }

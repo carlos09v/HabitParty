@@ -31,6 +31,9 @@ public class DailyJpaEntity extends TaskJpaEntity {
   @Column(name = "current_streak", nullable = false)
   private int currentStreak;
 
+  @Column(name = "highest_streak", nullable = false, columnDefinition = "int default 0")
+  private int highestStreak = 0;
+
   @Column(name = "start_date", nullable = false)
   private LocalDate startDate;
 

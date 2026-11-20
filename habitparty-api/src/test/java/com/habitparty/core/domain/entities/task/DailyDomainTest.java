@@ -314,4 +314,30 @@ class DailyDomainTest {
     assertTrue(earlyCompleted.isStreakStillActive(friday));
     assertFalse(earlyCompleted.isStreakStillActive(friday.plusDays(1)));
   }
+
+  @Test
+  @DisplayName("Daily preserva highestStreak histórico quando streak atual quebra e só atualiza ao superar recorde")
+  void testHighestStreakPreservedAcrossBreak() {
+    LocalDate day1 = LocalDate.of(2026, 5, 1);
+    daily.registerCompletion(day1.atTime(9, 0));
+    daily.registerCompletion(day1.plusDays(1).atTime(9, 0));
+    daily.registerCompletion(day1.plusDays(2).atTime(9, 0));
+
+    assertEquals(3, daily.getCurrentStreak());
+    assertEquals(3, daily.getHighestStreak());
+
+    daily.breakStreak();
+    assertEquals(0, daily.getCurrentStreak());
+    assertEquals(3, daily.getHighestStreak());
+
+    daily.registerCompletion(day1.plusDays(4).atTime(9, 0));
+    assertEquals(1, daily.getCurrentStreak());
+    assertEquals(3, daily.getHighestStreak());
+
+    for (int offset = 5; offset <= 7; offset++) {
+      daily.registerCompletion(day1.plusDays(offset).atTime(9, 0));
+    }
+    assertEquals(4, daily.getCurrentStreak());
+    assertEquals(4, daily.getHighestStreak());
+  }
 }

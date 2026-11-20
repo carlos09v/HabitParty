@@ -5,7 +5,9 @@ export type DashboardTaskDTO = components["schemas"]["DashboardTaskDTO"];
 export type CreateTaskDTO = components["schemas"]["CreateTaskDTO"];
 export type UpdateTaskDTO = components["schemas"]["UpdateTaskDTO"];
 export type UpdateTaskOrderDTO = components["schemas"]["UpdateTaskOrderDTO"];
-export type TaskResponseDTO = components["schemas"]["TaskResponseDTO"];
+export type TaskResponseDTO = components["schemas"]["TaskResponseDTO"] & {
+  highestStreak?: number;
+};
 export type TaskDifficulty =
   | NonNullable<UpdateTaskDTO["difficulty"]>
   | "trivial"
@@ -46,6 +48,7 @@ export interface Task extends Omit<TaskResponseDTO, "id" | "difficulty"> {
   rewardXp?: number;
   rewardGold?: number;
   streak?: number;
+  highestStreak?: number;
   positiveCount?: number;
   negativeCount?: number;
   importance?: HabitImportance;

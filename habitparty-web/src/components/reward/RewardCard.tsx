@@ -108,6 +108,7 @@ export const RewardCard = memo(function RewardCard({
   reward,
   groupId,
   displayTitle,
+  hasGroupDescription,
   variants,
   activeVariantId,
   onSelectVariant,
@@ -152,6 +153,7 @@ export const RewardCard = memo(function RewardCard({
       id={reward.id}
       title={displayTitle || reward.title}
       description={reward.description}
+      hasGroupDescription={hasGroupDescription}
       iconName={reward.icon || reward.iconName}
       type={reward.type}
       packageLevel={reward.packageLevel}

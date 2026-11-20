@@ -312,6 +312,8 @@
       "effortTitle": "Esforço: {label}",
       "streakTitle": "Ofensiva de {count} {count, plural, one {dia} other {dias}}",
       "streakCyclesTitle": "Ofensiva de {count} {count, plural, one {ciclo agendado} other {ciclos agendados}}",
+      "streakWithRecordTitle": "Ofensiva de {count} {count, plural, one {dia} other {dias}} • Recorde: {highest}",
+      "streakCyclesWithRecordTitle": "Ofensiva de {count} {count, plural, one {ciclo agendado} other {ciclos agendados}} • Recorde: {highest}",
       "rewardXpTitle": "Recompensa: +{xp} XP",
       "rewardGoldTitle": "Recompensa: +{gold} Ouro",
       "defaultCategory": "Geral",

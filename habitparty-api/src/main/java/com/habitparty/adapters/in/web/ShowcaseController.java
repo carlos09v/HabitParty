@@ -26,6 +26,7 @@ import com.habitparty.application.usecases.achievement.UpdateProfileHighlightsUs
 import com.habitparty.application.usecases.achievement.UpdateShowcaseProfileUseCase;
 import com.habitparty.application.usecases.achievement.UpdateShowcaseProfileUseCase.UpdateShowcaseProfileCommand;
 import com.habitparty.core.domain.entities.achievement.ProfileHighlight;
+import com.habitparty.core.domain.enums.HighlightType;
 import com.habitparty.infrastructure.security.AuthenticatedUser;
 
 import lombok.RequiredArgsConstructor;
@@ -63,7 +64,13 @@ public class ShowcaseController implements ShowcaseApi {
             .toList();
 
     List<ProfileHighlight> saved = updateProfileHighlightsUseCase.execute(usuarioLogado.id(), commands);
-    return ResponseEntity.ok(saved.stream().map(ProfileHighlightResponseDTO::fromDomain).toList());
+    boolean hasTaskStreakHighlight = saved.stream()
+        .anyMatch(h -> h.getHighlightType() == HighlightType.TASK_STREAK);
+    if (!hasTaskStreakHighlight) {
+      return ResponseEntity.ok(saved.stream().map(ProfileHighlightResponseDTO::fromDomain).toList());
+    }
+    var taskStreaks = getUserShowcaseUseCase.listTaskStreaksForUser(usuarioLogado.id());
+    return ResponseEntity.ok(ProfileHighlightResponseDTO.fromDomainList(saved, taskStreaks));
   }
 
   @Override

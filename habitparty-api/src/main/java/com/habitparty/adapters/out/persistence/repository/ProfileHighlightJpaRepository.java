@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.habitparty.adapters.out.persistence.entities.ProfileHighlightJpaEntity;
+import com.habitparty.core.domain.enums.HighlightType;
 
 public interface ProfileHighlightJpaRepository extends JpaRepository<ProfileHighlightJpaEntity, UUID> {
   List<ProfileHighlightJpaEntity> findAllByUserIdOrderByDisplayOrderAsc(UUID userId);
@@ -18,4 +19,11 @@ public interface ProfileHighlightJpaRepository extends JpaRepository<ProfileHigh
   @Modifying
   @Query("DELETE FROM ProfileHighlightJpaEntity ph WHERE ph.userId = :userId")
   void deleteAllByUserId(@Param("userId") UUID userId);
+
+  @Modifying
+  @Query("DELETE FROM ProfileHighlightJpaEntity ph WHERE ph.userId = :userId AND ph.highlightType = :highlightType AND ph.highlightKey = :highlightKey")
+  void deleteByUserIdAndHighlightTypeAndHighlightKey(
+      @Param("userId") UUID userId,
+      @Param("highlightType") HighlightType highlightType,
+      @Param("highlightKey") String highlightKey);
 }

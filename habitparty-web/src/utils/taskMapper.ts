@@ -127,6 +127,10 @@ export function mapTaskResponseToTask(
       (taskDto.taskType?.toLowerCase() as TaskType) === "todo"
         ? undefined
         : (taskDto.currentStreak ?? 0),
+    highestStreak:
+      (taskDto.taskType?.toLowerCase() as TaskType) === "todo"
+        ? undefined
+        : (taskDto.highestStreak ?? taskDto.currentStreak ?? 0),
     positiveCount:
       (taskDto.taskType?.toLowerCase() as TaskType) === "habit"
         ? (taskDto.positiveCount ?? 0)
@@ -428,7 +432,12 @@ export function computeOptimisticHabitDelta(
   timeZone?: string | null,
 ): Pick<
   Task,
-  "positiveCount" | "negativeCount" | "streak" | "completed" | "lastCompletedAt"
+  | "positiveCount"
+  | "negativeCount"
+  | "streak"
+  | "highestStreak"
+  | "completed"
+  | "lastCompletedAt"
 > {
   const currentPositive = task.positiveCount ?? 0;
   const nextPositive = delta > 0 ? currentPositive + delta : currentPositive;
@@ -459,6 +468,7 @@ export function computeOptimisticHabitDelta(
     positiveCount: nextPositive,
     negativeCount: nextNegative,
     streak: nextStreak,
+    highestStreak: Math.max(task.highestStreak ?? 0, nextStreak),
     completed: delta > 0 ? true : Boolean(task.completed),
     lastCompletedAt: delta > 0 ? now.toISOString() : task.lastCompletedAt,
   };
@@ -481,6 +491,8 @@ export function mergeTaskWithResponseDTO(
     streak: dto.currentStreak !== undefined ? dto.currentStreak : task.streak,
     currentStreak:
       dto.currentStreak !== undefined ? dto.currentStreak : task.currentStreak,
+    highestStreak:
+      dto.highestStreak !== undefined ? dto.highestStreak : task.highestStreak,
     lastCompletedAt: dto.lastCompletedAt ?? task.lastCompletedAt,
     isPenaltyApplied: dto.isPenaltyApplied ?? task.isPenaltyApplied,
   };
@@ -556,6 +568,7 @@ export function buildQuickCreateTaskPayload(
         columnId: targetColumnId,
         completed: false,
         streak: 0,
+        highestStreak: 0,
         positiveCount: 0,
         negativeCount: 0,
         type: "HABIT",
@@ -599,6 +612,7 @@ export function buildQuickCreateTaskPayload(
         columnId: targetColumnId,
         completed: false,
         streak: 0,
+        highestStreak: 0,
         positiveCount: 0,
         negativeCount: 0,
         type: "DAILY",

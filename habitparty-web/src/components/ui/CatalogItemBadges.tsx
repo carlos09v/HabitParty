@@ -141,17 +141,20 @@ interface CatalogItemVariantChipsProps {
   variants: CatalogItemVariant[];
   activeVariantId: string;
   onSelectVariant: (variantId: string) => void;
+  variant?: "card" | "row";
   disabled?: boolean;
   className?: string;
 }
 
 /**
- * Chips compactos de seleção de pacote/duração embutidos em cards e linhas agrupadas.
+ * Seletor segmentado em mini-abas (card) ou pílulas compactas (linha)
+ * para escolha de pacote/duração em recompensas agrupadas.
  */
 export function CatalogItemVariantChips({
   variants,
   activeVariantId,
   onSelectVariant,
+  variant = "card",
   disabled = false,
   className,
 }: CatalogItemVariantChipsProps) {
@@ -160,52 +163,167 @@ export function CatalogItemVariantChips({
 
   if (variants.length <= 1) return null;
 
+  if (variant === "row") {
+    return (
+      <fieldset
+        className={cn(
+          "flex items-center gap-1 flex-wrap border-0 p-0 m-0 min-w-0",
+          className,
+        )}
+        aria-label={t("packageVariantsAria")}
+        {...STOP_DRAG_PROPAGATION_PROPS}
+      >
+        {variants.map((item) => {
+          const pkgKey = toPackageMessageKey(item.packageLevel);
+          const chipStyle = TIER_CHIP_STYLES[pkgKey] ?? TIER_CHIP_STYLES.NONE;
+          const isSelected = activeVariantId === item.id;
+          const tierLabel = pkgKey !== "NONE" ? t(`packages.${pkgKey}`) : null;
+          const durationText = item.baseDurationMinutes
+            ? formatFocusMinutes(item.baseDurationMinutes)
+            : null;
+          const formattedPrice = formatCoins(item.price, { locale });
+          const accessibleLabel = durationText
+            ? t("packageOptionWithDurationAria", {
+                tier: tierLabel ?? t(`packages.${pkgKey}`),
+                duration: durationText,
+                price: formattedPrice,
+              })
+            : t("packageOptionWithPriceAria", {
+                tier: tierLabel ?? t(`packages.${pkgKey}`),
+                price: formattedPrice,
+              });
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              aria-pressed={isSelected}
+              aria-label={accessibleLabel}
+              title={accessibleLabel}
+              disabled={disabled}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectVariant(item.id);
+              }}
+              onDoubleClick={(e) => e.stopPropagation()}
+              className={cn(
+                "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[11px] font-semibold leading-tight transition-[color,background-color,border-color,box-shadow] cursor-pointer select-none tabular-nums",
+                isSelected
+                  ? chipStyle.selectedClass
+                  : chipStyle.unselectedClass,
+                disabled && "opacity-60 cursor-not-allowed",
+              )}
+            >
+              {chipStyle.dotColor && (
+                <span
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full shrink-0",
+                    chipStyle.dotColor,
+                  )}
+                  aria-hidden="true"
+                />
+              )}
+              {tierLabel && <span>{tierLabel}</span>}
+              {tierLabel && durationText && (
+                <span className="opacity-65">·</span>
+              )}
+              {durationText ? (
+                <span>{durationText}</span>
+              ) : (
+                <span className="inline-flex items-center gap-0.5">
+                  {tierLabel && <span className="opacity-65 mr-0.5">·</span>}
+                  <CoinIcon size={10} />
+                  <span>{formattedPrice}</span>
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </fieldset>
+    );
+  }
+
   return (
     <fieldset
       className={cn(
-        "flex items-center gap-1 flex-wrap border-0 p-0 m-0 min-w-0",
+        "grid grid-cols-2 gap-1.5 border-0 p-0 m-0 min-w-0 w-full",
         className,
       )}
       aria-label={t("packageVariantsAria")}
       {...STOP_DRAG_PROPAGATION_PROPS}
     >
-      {variants.map((variant) => {
-        const pkgKey = toPackageMessageKey(variant.packageLevel);
+      {variants.map((item) => {
+        const pkgKey = toPackageMessageKey(item.packageLevel);
         const chipStyle = TIER_CHIP_STYLES[pkgKey] ?? TIER_CHIP_STYLES.NONE;
-        const isSelected = activeVariantId === variant.id;
-        const shortLabel = variant.baseDurationMinutes
-          ? formatFocusMinutes(variant.baseDurationMinutes)
-          : t(`packages.${pkgKey}`);
+        const isSelected = activeVariantId === item.id;
+        const tierLabel = t(`packages.${pkgKey}`);
+        const hasNamedTier = pkgKey !== "NONE";
+        const durationText = item.baseDurationMinutes
+          ? formatFocusMinutes(item.baseDurationMinutes)
+          : null;
+        const formattedPrice = formatCoins(item.price, { locale });
+        const accessibleLabel = durationText
+          ? t("packageOptionWithDurationAria", {
+              tier: tierLabel,
+              duration: durationText,
+              price: formattedPrice,
+            })
+          : t("packageOptionWithPriceAria", {
+              tier: tierLabel,
+              price: formattedPrice,
+            });
 
         return (
           <button
-            key={variant.id}
+            key={item.id}
             type="button"
             aria-pressed={isSelected}
+            aria-label={accessibleLabel}
+            title={accessibleLabel}
             disabled={disabled}
             onClick={(e) => {
               e.stopPropagation();
-              onSelectVariant(variant.id);
+              onSelectVariant(item.id);
             }}
             onDoubleClick={(e) => e.stopPropagation()}
             className={cn(
-              "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[11px] font-semibold leading-tight transition-[color,background-color,border-color,box-shadow] cursor-pointer select-none tabular-nums",
+              "inline-flex items-center justify-between gap-1 px-2 py-1 rounded-lg border text-[11px] font-semibold leading-tight transition-[color,background-color,border-color,box-shadow] cursor-pointer select-none min-w-0 focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-1",
               isSelected ? chipStyle.selectedClass : chipStyle.unselectedClass,
               disabled && "opacity-60 cursor-not-allowed",
             )}
           >
-            {chipStyle.dotColor && (
-              <span
-                className={cn(
-                  "w-1.5 h-1.5 rounded-full shrink-0",
-                  chipStyle.dotColor,
-                )}
-                aria-hidden="true"
-              />
-            )}
-            <span>{shortLabel}</span>
-            <span className="opacity-70">·</span>
-            <span>{formatCoins(variant.price, { locale })}</span>
+            <span className="inline-flex items-center gap-1 min-w-0">
+              {hasNamedTier && chipStyle.dotColor ? (
+                <>
+                  <span
+                    className={cn(
+                      "w-1.5 h-1.5 rounded-full shrink-0",
+                      chipStyle.dotColor,
+                    )}
+                    aria-hidden="true"
+                  />
+                  <span className="truncate">{tierLabel}</span>
+                </>
+              ) : durationText ? (
+                <>
+                  <Clock size={10} className="shrink-0" aria-hidden="true" />
+                  <span className="truncate tabular-nums">{durationText}</span>
+                </>
+              ) : (
+                <span className="truncate">{tierLabel}</span>
+              )}
+            </span>
+
+            <span className="inline-flex items-center gap-0.5 shrink-0 tabular-nums opacity-95">
+              {hasNamedTier && durationText ? (
+                <span>{durationText}</span>
+              ) : (
+                <>
+                  <CoinIcon size={10} />
+                  <span>{formattedPrice}</span>
+                </>
+              )}
+            </span>
           </button>
         );
       })}

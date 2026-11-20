@@ -24,12 +24,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.habitparty.application.ports.FocusRecordRepository;
+import com.habitparty.application.ports.ProfileHighlightRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.focus.FocusRecord;
+import com.habitparty.core.domain.entities.task.Daily;
 import com.habitparty.core.domain.entities.task.Todo;
+import com.habitparty.core.domain.enums.HighlightType;
+import com.habitparty.core.domain.enums.task.DailyRepeatType;
 import com.habitparty.core.domain.enums.FocusRecordType;
 import com.habitparty.core.domain.enums.UserGender;
 import com.habitparty.core.domain.enums.UserLevel;
@@ -55,6 +59,9 @@ class DeleteTaskUseCaseTest {
   @Mock
   private UserRepository userPort;
 
+  @Mock
+  private ProfileHighlightRepository profileHighlightPort;
+
   private DeleteTaskUseCase useCase;
 
   private UUID userId;
@@ -68,6 +75,7 @@ class DeleteTaskUseCaseTest {
     useCase = new DeleteTaskUseCase(taskPort, transactionPort);
     useCase.setFocusRecordPort(focusRecordPort);
     useCase.setUserPort(userPort);
+    useCase.setProfileHighlightPort(profileHighlightPort);
 
     todoTask = new Todo(
         taskId,
@@ -220,6 +228,41 @@ class DeleteTaskUseCaseTest {
     assertEquals(0, user.getStats().getTotalFocusSessions());
     verify(userPort).save(user);
     verify(focusRecordPort).deleteAllByIds(List.of(standaloneId));
+    verify(taskPort).deleteById(taskId);
+  }
+
+  @Test
+  @DisplayName("Ao excluir Daily ou Habit, remove destaques TASK_STREAK vinculados à tarefa")
+  void shouldDeletePinnedTaskStreakHighlightWhenDeletingDaily() {
+    Daily daily = new Daily(
+        taskId,
+        UUID.randomUUID(),
+        userId,
+        "Diária de Leitura",
+        null,
+        0,
+        TaskPriority.MEDIUM,
+        List.of(),
+        TaskDifficulty.MEDIUM,
+        TaskStatus.PENDING,
+        TaskType.DAILY,
+        false,
+        LocalDate.now(),
+        LocalDateTime.now(),
+        List.of(),
+        2,
+        LocalDate.now(),
+        DailyRepeatType.DAILY,
+        1,
+        null,
+        null,
+        null);
+    when(taskPort.findById(taskId)).thenReturn(Optional.of(daily));
+
+    useCase.execute(taskId, userId, false);
+
+    verify(profileHighlightPort)
+        .deleteByUserIdAndHighlightTypeAndHighlightKey(userId, HighlightType.TASK_STREAK, taskId.toString());
     verify(taskPort).deleteById(taskId);
   }
 }

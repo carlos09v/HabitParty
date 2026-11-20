@@ -39,6 +39,7 @@ public class TaskMapper {
                 h.getCurrentStreak(), h.getHabitType(), h.getResetCounter(), h.getImportanceType(), h.getLastCompletedAt(),
                 h.getPositiveCount(), h.getNegativeCount()
             );
+            habit.restoreHighestStreak(h.getHighestStreak());
             habit.restoreFocusMetrics(h.getTotalFocusMinutes(), h.getFocusCyclesCount());
             return habit;
         } 
@@ -50,6 +51,7 @@ public class TaskMapper {
                 d.getCurrentStreak(), d.getStartDate(), d.getRepeatType(), d.getRepeatEvery(),
                 d.getDaysOfWeek(), d.getMonthlyOption(), d.getLastCompletedAt()
             );
+            daily.restoreHighestStreak(d.getHighestStreak());
             daily.restoreFocusMetrics(d.getTotalFocusMinutes(), d.getFocusCyclesCount());
             return daily;
         } 
@@ -75,6 +77,7 @@ public class TaskMapper {
         if (domain instanceof Habit h) {
             HabitJpaEntity habitEntity = new HabitJpaEntity();
             habitEntity.setCurrentStreak(h.getCurrentStreak());
+            habitEntity.setHighestStreak(h.getHighestStreak());
             habitEntity.setHabitType(h.getHabitType());
             habitEntity.setResetCounter(h.getResetCounter());
             habitEntity.setImportanceType(h.getImportanceType());
@@ -86,6 +89,7 @@ public class TaskMapper {
         else if (domain instanceof Daily d) {
             DailyJpaEntity dailyEntity = new DailyJpaEntity();
             dailyEntity.setCurrentStreak(d.getCurrentStreak());
+            dailyEntity.setHighestStreak(d.getHighestStreak());
             dailyEntity.setStartDate(d.getStartDate());
             dailyEntity.setRepeatType(d.getRepeatType());
             dailyEntity.setRepeatEvery(d.getRepeatEvery());

@@ -22,6 +22,7 @@ public record PublicUserShowcaseResponseDTO(
   public static PublicUserShowcaseResponseDTO fromDomain(
       GetPublicUserShowcaseUseCase.PublicUserShowcaseResult result) {
     var full = result.fullShowcase();
+    boolean isSelf = result.relationshipStatus() == SocialRelationshipStatus.SELF;
     ShowcaseStatsResponseDTO statsDto = result.canViewStats() && full != null
         ? ShowcaseStatsResponseDTO.fromDomain(
             full.user().getStats(),
@@ -31,8 +32,14 @@ public record PublicUserShowcaseResponseDTO(
             result.canViewAchievements() ? full.totalAchievementPoints() : 0,
             result.canViewAchievements() ? full.maxPossiblePoints() : 0,
             result.canViewAchievements() ? full.unlockedArtifactsCount() : 0,
-            result.canViewAchievements() ? full.totalArtifactsCount() : 0)
+            result.canViewAchievements() ? full.totalArtifactsCount() : 0,
+            full.highestTaskStreak(),
+            isSelf ? full.highestTaskStreakTitle() : null,
+            isSelf ? full.highestTaskStreakType() : null)
         : null;
+    List<ProfileHighlightResponseDTO> highlightDtos = full != null
+        ? ProfileHighlightResponseDTO.fromDomainList(result.highlights(), full.resolvedHighlightTaskStreaks())
+        : result.highlights().stream().map(ProfileHighlightResponseDTO::fromDomain).toList();
     return new PublicUserShowcaseResponseDTO(
         SocialUserSummaryDTO.fromDomain(result.user()),
         result.relationshipStatus(),
@@ -41,7 +48,7 @@ public record PublicUserShowcaseResponseDTO(
         result.canViewStats(),
         result.canViewAchievements(),
         statsDto,
-        result.highlights().stream().map(ProfileHighlightResponseDTO::fromDomain).toList(),
+        highlightDtos,
         result.achievements().stream().map(AchievementItemResponseDTO::fromDomain).toList(),
         result.artifacts().stream().map(ArtifactItemResponseDTO::fromDomain).toList());
   }

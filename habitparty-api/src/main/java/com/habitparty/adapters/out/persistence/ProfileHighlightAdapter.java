@@ -10,6 +10,7 @@ import com.habitparty.adapters.out.persistence.mappers.ProfileHighlightMapper;
 import com.habitparty.adapters.out.persistence.repository.ProfileHighlightJpaRepository;
 import com.habitparty.application.ports.ProfileHighlightRepository;
 import com.habitparty.core.domain.entities.achievement.ProfileHighlight;
+import com.habitparty.core.domain.enums.HighlightType;
 
 @Component
 public class ProfileHighlightAdapter implements ProfileHighlightRepository {
@@ -51,5 +52,16 @@ public class ProfileHighlightAdapter implements ProfileHighlightRepository {
   @Override
   public void deleteAllByUserId(UUID userId) {
     repository.deleteAllByUserId(userId);
+  }
+
+  @Override
+  public void deleteByUserIdAndHighlightTypeAndHighlightKey(
+      UUID userId,
+      HighlightType highlightType,
+      String highlightKey) {
+    if (userId == null || highlightType == null || highlightKey == null || highlightKey.isBlank()) {
+      return;
+    }
+    repository.deleteByUserIdAndHighlightTypeAndHighlightKey(userId, highlightType, highlightKey.trim());
   }
 }

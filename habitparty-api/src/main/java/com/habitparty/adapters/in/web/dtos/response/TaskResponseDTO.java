@@ -42,6 +42,7 @@ public record TaskResponseDTO(
 
         // --- Campos de Hábito e Daily ---
         Integer currentStreak,
+        Integer highestStreak,
 
         // --- Campos específicos de Hábito ---
         HabitType habitType,
@@ -110,6 +111,12 @@ public record TaskResponseDTO(
                         ? (Integer) d.getEffectiveStreak(effectiveDate)
                         : null;
 
+        Integer effectiveHighestStreak = task instanceof Habit h
+                ? (Integer) Math.max(h.getHighestStreak(), h.getEffectiveStreak(effectiveDate))
+                : task instanceof Daily d
+                        ? (Integer) Math.max(d.getHighestStreak(), d.getEffectiveStreak(effectiveDate))
+                        : null;
+
         LocalDateTime rawLastCompletedAt = task instanceof Habit h
                 ? h.getLastCompletedAt()
                 : task instanceof Daily d
@@ -135,8 +142,9 @@ public record TaskResponseDTO(
 
                 // --- A Mágica do Java para extrair campos das subclasses ---
 
-                // currentStreak efetivo no ciclo atual (Existe no Habit e no Daily)
+                // currentStreak efetivo e recorde no ciclo atual (Existe no Habit e no Daily)
                 effectiveStreak,
+                effectiveHighestStreak,
 
                 // Específicos do Habit
                 task instanceof Habit h ? h.getHabitType() : null,

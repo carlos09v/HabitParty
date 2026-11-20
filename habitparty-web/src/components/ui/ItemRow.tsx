@@ -213,6 +213,7 @@ export const ItemRow = memo(function ItemRow({
                 variants={variants}
                 activeVariantId={activeVariantId ?? id}
                 onSelectVariant={onSelectVariant}
+                variant="row"
                 disabled={isActionLoading}
                 className="mt-1"
               />

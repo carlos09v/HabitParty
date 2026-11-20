@@ -177,4 +177,26 @@ class HabitDomainTest {
     assertEquals(1, habit.getEffectiveStreak(LocalDate.of(2026, 10, 18)));
     assertEquals(0, habit.getEffectiveStreak(LocalDate.of(2026, 10, 19)));
   }
+
+  @Test
+  @DisplayName("Habit preserva highestStreak histórico após breakStreak e ao superar recorde anterior")
+  void testHighestStreakPreservedAcrossBreak() {
+    habit.registerCompletion(LocalDateTime.of(2026, 10, 1, 10, 0));
+    habit.registerCompletion(LocalDateTime.of(2026, 10, 2, 10, 0));
+    assertEquals(2, habit.getCurrentStreak());
+    assertEquals(2, habit.getHighestStreak());
+
+    habit.breakStreak();
+    assertEquals(0, habit.getCurrentStreak());
+    assertEquals(2, habit.getHighestStreak());
+
+    habit.registerCompletion(LocalDateTime.of(2026, 10, 5, 10, 0));
+    assertEquals(1, habit.getCurrentStreak());
+    assertEquals(2, habit.getHighestStreak());
+
+    habit.registerCompletion(LocalDateTime.of(2026, 10, 6, 10, 0));
+    habit.registerCompletion(LocalDateTime.of(2026, 10, 7, 10, 0));
+    assertEquals(3, habit.getCurrentStreak());
+    assertEquals(3, habit.getHighestStreak());
+  }
 }

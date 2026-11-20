@@ -133,6 +133,7 @@ export function RewardsCatalogView({
             groupId={entry.groupId}
             reward={reward}
             displayTitle={entry.displayTitle}
+            hasGroupDescription={entry.hasGroupDescription}
             variants={hasVariants ? entry.variants : undefined}
             activeVariantId={reward.id}
             onSelectVariant={hasVariants ? onSelectVariant : undefined}

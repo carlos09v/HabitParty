@@ -10,7 +10,17 @@ public record UserShowcaseResponseDTO(
     ShowcaseStatsResponseDTO stats,
     List<ProfileHighlightResponseDTO> highlights,
     List<AchievementItemResponseDTO> achievements,
-    List<ArtifactItemResponseDTO> artifacts) {
+    List<ArtifactItemResponseDTO> artifacts,
+    List<TaskStreakHighlightDTO> taskStreaks) {
+
+  public UserShowcaseResponseDTO(
+      UserResponseDTO user,
+      ShowcaseStatsResponseDTO stats,
+      List<ProfileHighlightResponseDTO> highlights,
+      List<AchievementItemResponseDTO> achievements,
+      List<ArtifactItemResponseDTO> artifacts) {
+    this(user, stats, highlights, achievements, artifacts, List.of());
+  }
 
   public static UserShowcaseResponseDTO fromDomain(UserShowcaseResult result) {
     return new UserShowcaseResponseDTO(
@@ -23,9 +33,13 @@ public record UserShowcaseResponseDTO(
             result.totalAchievementPoints(),
             result.maxPossiblePoints(),
             result.unlockedArtifactsCount(),
-            result.totalArtifactsCount()),
-        result.highlights().stream().map(ProfileHighlightResponseDTO::fromDomain).toList(),
+            result.totalArtifactsCount(),
+            result.highestTaskStreak(),
+            result.highestTaskStreakTitle(),
+            result.highestTaskStreakType()),
+        ProfileHighlightResponseDTO.fromDomainList(result.highlights(), result.resolvedHighlightTaskStreaks()),
         result.achievements().stream().map(AchievementItemResponseDTO::fromDomain).toList(),
-        result.artifacts().stream().map(ArtifactItemResponseDTO::fromDomain).toList());
+        result.artifacts().stream().map(ArtifactItemResponseDTO::fromDomain).toList(),
+        result.taskStreaks().stream().map(TaskStreakHighlightDTO::fromSummary).toList());
   }
 }

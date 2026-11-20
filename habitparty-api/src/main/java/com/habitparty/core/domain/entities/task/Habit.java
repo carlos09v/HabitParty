@@ -17,6 +17,7 @@ import com.habitparty.core.exceptions.DomainValidationException;
 
 public class Habit extends Task {
   private int currentStreak;
+  private int highestStreak;
   private HabitType habitType;
   private HabitResetCounter resetCounter;
   private HabitImportanceType importanceType;
@@ -73,6 +74,7 @@ public class Habit extends Task {
       throw new DomainValidationException("A importância do hábito é obrigatória.");
     }
     this.currentStreak = currentStreak;
+    this.highestStreak = Math.max(0, currentStreak);
     this.habitType = habitType;
     this.resetCounter = resetCounter;
     this.importanceType = importanceType;
@@ -234,6 +236,9 @@ public class Habit extends Task {
 
     if (this.lastCompletedAt == null) {
       this.currentStreak = Math.max(1, this.currentStreak + 1);
+      if (this.currentStreak > this.highestStreak) {
+        this.highestStreak = this.currentStreak;
+      }
       this.lastCompletedAt = completionTime;
       return;
     }
@@ -241,6 +246,9 @@ public class Habit extends Task {
     CycleRelation relation = compareCycles(this.lastCompletedAt.toLocalDate(), completionTime.toLocalDate());
     switch (relation) {
       case SAME_CYCLE -> {
+        if (this.currentStreak > this.highestStreak) {
+          this.highestStreak = this.currentStreak;
+        }
         this.lastCompletedAt = completionTime;
         return;
       }
@@ -248,7 +256,14 @@ public class Habit extends Task {
       case BROKEN -> this.currentStreak = 1;
     }
 
+    if (this.currentStreak > this.highestStreak) {
+      this.highestStreak = this.currentStreak;
+    }
     this.lastCompletedAt = completionTime;
+  }
+
+  public void restoreHighestStreak(int highestStreak) {
+    this.highestStreak = Math.max(Math.max(0, this.currentStreak), Math.max(0, highestStreak));
   }
 
   public void resetCycleCounts() {
@@ -268,6 +283,10 @@ public class Habit extends Task {
   // --- Getters ---
   public int getCurrentStreak() {
     return currentStreak;
+  }
+
+  public int getHighestStreak() {
+    return highestStreak;
   }
 
   public HabitType getHabitType() {

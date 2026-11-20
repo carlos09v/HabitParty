@@ -4,10 +4,9 @@ import { Mountain, Sparkles, Trophy } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useId, useState } from "react";
-import { AchievementsGallery } from "@/components/showcase/AchievementsGallery";
-import { ArtifactsGallery } from "@/components/showcase/ArtifactsGallery";
 import { LockedSectionNotice } from "@/components/showcase/LockedSectionNotice";
 import { PublicFriendActionsBar } from "@/components/showcase/PublicFriendActionsBar";
+import { ShowcaseCollectionSection } from "@/components/showcase/ShowcaseCollectionSection";
 import { ShowcaseHeroHeader } from "@/components/showcase/ShowcaseHeroHeader";
 import { ShowcaseHighlightsSection } from "@/components/showcase/ShowcaseHighlightsSection";
 import {
@@ -212,20 +211,14 @@ export function PublicShowcaseView({
           )}
 
           {data.canViewAchievements ? (
-            <>
-              <ArtifactsGallery
-                artifacts={data.artifacts ?? []}
-                highlights={data.highlights}
-                isVisitorMode
-                onPinArtifact={() => {}}
-              />
-              <AchievementsGallery
-                achievements={data.achievements}
-                highlights={data.highlights}
-                isVisitorMode
-                onPinAchievement={() => {}}
-              />
-            </>
+            <ShowcaseCollectionSection
+              achievements={data.achievements}
+              artifacts={data.artifacts ?? []}
+              highlights={data.highlights}
+              totalAchievementsCount={fallbackStats.totalAchievementsCount}
+              totalArtifactsCount={fallbackStats.totalArtifactsCount}
+              isVisitorMode
+            />
           ) : (
             <LockedSectionNotice
               title={t("achievementsLockedTitle")}

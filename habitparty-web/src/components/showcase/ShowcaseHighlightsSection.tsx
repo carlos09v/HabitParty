@@ -15,6 +15,7 @@ import type {
   ArtifactItemResponseDTO,
   ProfileHighlightResponseDTO,
   ShowcaseStatsResponseDTO,
+  TaskStreakHighlightDTO,
 } from "@/types/showcase";
 import type { UserResponseDTO } from "@/types/user";
 import { cn, resolveHighlightSlotCard, resolveUserLevelState } from "@/utils";
@@ -25,6 +26,7 @@ interface ShowcaseHighlightsSectionProps {
   highlights: ProfileHighlightResponseDTO[];
   achievements: AchievementItemResponseDTO[];
   artifacts?: ArtifactItemResponseDTO[];
+  taskStreaks?: TaskStreakHighlightDTO[];
   isVisitorMode: boolean;
   onOpenPicker: (slotIndex: number) => void;
   onPreloadPicker?: () => void;
@@ -36,6 +38,7 @@ export function ShowcaseHighlightsSection({
   highlights,
   achievements,
   artifacts = [],
+  taskStreaks = [],
   isVisitorMode,
   onOpenPicker,
   onPreloadPicker,
@@ -63,6 +66,7 @@ export function ShowcaseHighlightsSection({
         const resolved = resolveHighlightSlotCard(highlight, {
           achievements,
           artifacts,
+          taskStreaks,
           stats,
           isGamified,
           levelTitle,
@@ -78,6 +82,7 @@ export function ShowcaseHighlightsSection({
       highlights,
       achievements,
       artifacts,
+      taskStreaks,
       stats,
       isGamified,
       levelTitle,

@@ -4,5 +4,6 @@ public enum HighlightType {
   ACHIEVEMENT,
   ACCOUNT_BADGE,
   STAT_METRIC,
-  ARTIFACT
+  ARTIFACT,
+  TASK_STREAK
 }

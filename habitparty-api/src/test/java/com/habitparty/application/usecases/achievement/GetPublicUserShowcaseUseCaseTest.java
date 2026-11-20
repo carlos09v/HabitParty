@@ -76,7 +76,8 @@ class GetPublicUserShowcaseUseCaseTest {
 
     List<ProfileHighlight> highlights = List.of(
         new ProfileHighlight(UUID.randomUUID(), targetId, 0, HighlightType.STAT_METRIC, null, "HIGHEST_STREAK", LocalDateTime.now()),
-        new ProfileHighlight(UUID.randomUUID(), targetId, 1, HighlightType.ACHIEVEMENT, UUID.randomUUID(), "FIRST_TASK", LocalDateTime.now()));
+        new ProfileHighlight(UUID.randomUUID(), targetId, 1, HighlightType.TASK_STREAK, null, UUID.randomUUID().toString(), LocalDateTime.now()),
+        new ProfileHighlight(UUID.randomUUID(), targetId, 2, HighlightType.ACHIEVEMENT, UUID.randomUUID(), "FIRST_TASK", LocalDateTime.now()));
     when(showcaseUseCase.executeReadOnly(target)).thenReturn(
         new GetUserShowcaseUseCase.UserShowcaseResult(target, 7, highlights, List.of(), 1, 10, 100, 500));
 
@@ -104,8 +105,9 @@ class GetPublicUserShowcaseUseCaseTest {
     assertFalse(friendResult.canViewAchievements());
     assertEquals("HP-SECRET", friendResult.user().friendCode());
     assertEquals(500, friendResult.user().totalXp());
-    assertEquals(1, friendResult.highlights().size());
+    assertEquals(2, friendResult.highlights().size());
     assertEquals(HighlightType.STAT_METRIC, friendResult.highlights().get(0).getHighlightType());
+    assertEquals(HighlightType.TASK_STREAK, friendResult.highlights().get(1).getHighlightType());
     assertEquals(SocialRelationshipStatus.FRIENDS, friendResult.relationshipStatus());
   }
 

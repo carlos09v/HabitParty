@@ -41,6 +41,17 @@ export async function ShowcaseStatsGrid({
       sub: t("highestStreak.sub", {
         current: format.number(stats.currentStreak),
       }),
+      extraSub:
+        (stats.highestTaskStreak ?? 0) > 0
+          ? stats.highestTaskStreakTitle
+            ? t("highestStreak.taskRecordWithTitle", {
+                streak: format.number(stats.highestTaskStreak ?? 0),
+                title: stats.highestTaskStreakTitle,
+              })
+            : t("highestStreak.taskRecord", {
+                streak: format.number(stats.highestTaskStreak ?? 0),
+              })
+          : undefined,
     },
     {
       id: "tasksCompleted",

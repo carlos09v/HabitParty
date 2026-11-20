@@ -56,10 +56,13 @@ export function TaskDetailsHeader({
   const t = useTranslations("tasks.detailsPopover.header");
   const userTimeZone = useUserStore((s) => s.user?.timezone);
   const streak = task.streak ?? task.currentStreak ?? 0;
-  const isCycleBasedDaily =
-    isDaily &&
-    ((task.repeatType != null && task.repeatType.toUpperCase() !== "DAILY") ||
-      (task.repeatEvery ?? 1) > 1);
+  const highestStreak = Math.max(task.highestStreak ?? 0, streak);
+  const isCycleBasedStreak = isHabit
+    ? task.resetCounter != null && task.resetCounter.toUpperCase() !== "DAILY"
+    : isDaily &&
+      ((task.repeatType != null && task.repeatType.toUpperCase() !== "DAILY") ||
+        (task.repeatEvery ?? 1) > 1);
+  const streakUnit = isCycleBasedStreak ? "x" : "d";
   const habitScore = (task.positiveCount ?? 0) - (task.negativeCount ?? 0);
   const isDateLocked = isTaskHardcoreLocked(task, new Date(), userTimeZone);
 
@@ -113,6 +116,47 @@ export function TaskDetailsHeader({
                 })}
               </span>
             )}
+            {(streak > 0 || highestStreak > 0) && (
+              <span
+                className="flex items-center gap-1 text-tiny text-warning-500 font-bold shrink-0"
+                title={
+                  highestStreak > 0
+                    ? t(
+                        isCycleBasedStreak
+                          ? "streakCyclesWithRecordTitle"
+                          : "streakWithRecordTitle",
+                        { streak, highestStreak },
+                      )
+                    : t(
+                        isCycleBasedStreak
+                          ? "streakCyclesTitle"
+                          : "streakTitle",
+                        {
+                          streak,
+                        },
+                      )
+                }
+              >
+                <Flame
+                  size={12}
+                  className="fill-warning-500 text-warning-500"
+                />
+                <span>
+                  {streak}
+                  {streakUnit}
+                </span>
+                {highestStreak > streak && (
+                  <span className="text-[10px] font-semibold text-amber-600/90 dark:text-gold/85">
+                    (
+                    {t("recordShort", {
+                      count: highestStreak,
+                      unit: streakUnit,
+                    })}
+                    )
+                  </span>
+                )}
+              </span>
+            )}
           </div>
         ) : isTodo ? (
           <TaskDatePicker
@@ -130,20 +174,45 @@ export function TaskDetailsHeader({
             <span className="text-tiny font-medium text-magenta bg-magenta/15 border border-magenta/40 px-2 py-0.5 rounded uppercase tracking-wider">
               {t("dailyBadge")}
             </span>
-            {streak > 0 && (
+            {(streak > 0 || highestStreak > 0) && (
               <span
                 className="flex items-center gap-1 text-tiny text-warning-500 font-bold shrink-0"
-                title={t(
-                  isCycleBasedDaily ? "streakCyclesTitle" : "streakTitle",
-                  { streak },
-                )}
+                title={
+                  highestStreak > 0
+                    ? t(
+                        isCycleBasedStreak
+                          ? "streakCyclesWithRecordTitle"
+                          : "streakWithRecordTitle",
+                        { streak, highestStreak },
+                      )
+                    : t(
+                        isCycleBasedStreak
+                          ? "streakCyclesTitle"
+                          : "streakTitle",
+                        {
+                          streak,
+                        },
+                      )
+                }
               >
                 <Flame
                   size={12}
                   className="fill-warning-500 text-warning-500"
                 />
-                {streak}
-                {isCycleBasedDaily ? "x" : "d"}
+                <span>
+                  {streak}
+                  {streakUnit}
+                </span>
+                {highestStreak > streak && (
+                  <span className="text-[10px] font-semibold text-amber-600/90 dark:text-gold/85">
+                    (
+                    {t("recordShort", {
+                      count: highestStreak,
+                      unit: streakUnit,
+                    })}
+                    )
+                  </span>
+                )}
               </span>
             )}
           </div>

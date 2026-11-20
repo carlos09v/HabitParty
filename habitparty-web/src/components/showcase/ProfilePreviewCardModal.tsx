@@ -19,6 +19,7 @@ import type {
   ArtifactItemResponseDTO,
   ProfileHighlightResponseDTO,
   ShowcaseStatsResponseDTO,
+  TaskStreakHighlightDTO,
 } from "@/types/showcase";
 import type { UserRetrospectiveData } from "@/types/social";
 import { cn } from "@/utils";
@@ -43,6 +44,7 @@ interface ProfilePreviewCardModalProps {
   highlights?: ProfileHighlightResponseDTO[];
   achievements?: AchievementItemResponseDTO[];
   artifacts?: ArtifactItemResponseDTO[];
+  taskStreaks?: TaskStreakHighlightDTO[];
   retrospective?: UserRetrospectiveData | null;
   activeFrameId?: string | null;
 }
@@ -57,6 +59,7 @@ export function ProfilePreviewCardModal({
   highlights = [],
   achievements = [],
   artifacts = [],
+  taskStreaks = [],
   retrospective = null,
   activeFrameId,
 }: ProfilePreviewCardModalProps) {
@@ -115,6 +118,7 @@ export function ProfilePreviewCardModal({
     highlights,
     achievements,
     artifacts,
+    taskStreaks,
     retrospective,
     activeFrameId,
     includeFriendCode,

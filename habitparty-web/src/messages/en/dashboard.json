@@ -312,6 +312,8 @@
       "effortTitle": "Effort: {label}",
       "streakTitle": "{count} {count, plural, one {day} other {days}} streak",
       "streakCyclesTitle": "{count} {count, plural, one {scheduled completion} other {scheduled completions}} streak",
+      "streakWithRecordTitle": "{count} {count, plural, one {day} other {days}} streak • Best: {highest}",
+      "streakCyclesWithRecordTitle": "{count} {count, plural, one {scheduled completion} other {scheduled completions}} streak • Best: {highest}",
       "rewardXpTitle": "Reward: +{xp} XP",
       "rewardGoldTitle": "Reward: +{gold} Gold",
       "defaultCategory": "General",

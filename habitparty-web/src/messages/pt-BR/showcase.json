@@ -345,8 +345,16 @@
       "ACHIEVEMENT": "Conquista",
       "ACCOUNT_BADGE": "Insígnia",
       "STAT_METRIC": "Métrica",
-      "ARTIFACT": "Relíquia"
+      "ARTIFACT": "Relíquia",
+      "TASK_STREAK": "Rotina"
     },
+    "taskTypes": {
+      "DAILY": "Diária",
+      "HABIT": "Hábito"
+    },
+    "taskStreakSubWithRecord": "{typeLabel} • {current}{unit} atual (Recorde: {highest}{unit})",
+    "taskStreakSubActive": "{typeLabel} • {current}{unit} em sequência",
+    "taskStreakSubIdle": "{typeLabel} • Sem sequência ativa",
     "statMetrics": {
       "HIGHEST_STREAK": {
         "title": "Maior Ofensiva",
@@ -355,6 +363,11 @@
       "CURRENT_STREAK": {
         "title": "Ofensiva Atual",
         "subtitle": "{value} dias seguidos"
+      },
+      "HIGHEST_TASK_STREAK": {
+        "title": "Maior Ofensiva em Tarefa",
+        "subtitle": "{value} dias/ciclos de recorde",
+        "subtitleWithTask": "{value} em \"{taskTitle}\""
       },
       "TOTAL_TASKS": {
         "title": "Tarefas Concluídas",
@@ -374,9 +387,15 @@
       }
     }
   },
+  "collectionTabs": {
+    "navAria": "Coleções do perfil",
+    "achievements": "Conquistas",
+    "artifacts": "Artefatos",
+    "newBadge": "+{count}"
+  },
   "pickerModal": {
     "title": "Personalizar Vitrine de Destaques",
-    "subtitle": "Selecione o slot acima e escolha qual conquista desbloqueada ou insígnia especial deseja exibir.",
+    "subtitle": "Selecione o slot acima e escolha qual conquista desbloqueada, métrica ou rotina deseja exibir.",
     "activeSlotLabel": "Editando Espaço #{slot}",
     "clearSlot": "Limpar espaço",
     "saveButton": "Salvar Vitrine",
@@ -387,10 +406,13 @@
     "tabs": {
       "achievements": "Conquistas ({count})",
       "artifacts": "Relíquias ({count})",
-      "badges": "Insígnias da Conta"
+      "badges": "Insígnias da Conta",
+      "metrics": "Métricas & Rotinas"
     },
     "noUnlockedAchievements": "Você ainda não desbloqueou conquistas. Complete tarefas ou sessões de foco para ganhar sua primeira medalha!",
     "noUnlockedArtifacts": "Você ainda não possui relíquias na coleção. Conquiste marcos raros/épicos/lendários ou abra Caixas Misteriosas!",
+    "metricsSectionTitle": "Métricas do Perfil",
+    "tasksSectionTitle": "Maiores Ofensivas Ativas (Diária & Hábito)",
     "searchPlaceholderArtifacts": "Buscar relíquia por nome ou origem...",
     "searchClearLabel": "Limpar busca",
     "lockedBadgeHint": "Bloqueado para sua conta no momento"
@@ -431,7 +453,9 @@
     "highestStreak": {
       "label": "Maior Ofensiva",
       "essentialLabel": "Recorde de Sequência",
-      "sub": "Atual: {current} dias"
+      "sub": "Atual: {current} dias",
+      "taskRecordWithTitle": "Maior em rotina: {streak} ({title})",
+      "taskRecord": "Maior ofensiva em tarefa: {streak}"
     },
     "tasksCompleted": {
       "label": "Missões Cumpridas",

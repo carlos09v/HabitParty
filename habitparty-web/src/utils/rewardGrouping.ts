@@ -105,6 +105,7 @@ export function groupRewardsForShowcase(
           displayTitle: reward.title,
           primaryReward: reward,
           variants: [reward],
+          hasGroupDescription: Boolean(reward.description?.trim()),
         },
       });
       return;
@@ -142,6 +143,7 @@ export function groupRewardsForShowcase(
           displayTitle: solo.title,
           primaryReward: solo,
           variants: [solo],
+          hasGroupDescription: Boolean(solo.description?.trim()),
         },
       });
       continue;
@@ -151,6 +153,9 @@ export function groupRewardsForShowcase(
     const preferredId = selectedVariantByGroup[bucket.groupId];
     const primaryReward =
       sortedVariants.find((v) => v.id === preferredId) ?? sortedVariants[0];
+    const hasGroupDescription = sortedVariants.some((v) =>
+      Boolean(v.description?.trim()),
+    );
 
     entries.push({
       firstIndex: bucket.firstIndex,
@@ -159,6 +164,7 @@ export function groupRewardsForShowcase(
         displayTitle: bucket.displayTitle,
         primaryReward,
         variants: sortedVariants,
+        hasGroupDescription,
       },
     });
   }

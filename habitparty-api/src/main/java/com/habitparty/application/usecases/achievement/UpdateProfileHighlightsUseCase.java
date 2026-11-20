@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.ArtifactRepository;
 import com.habitparty.application.ports.ProfileHighlightRepository;
+import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.UserAchievementRepository;
 import com.habitparty.application.ports.UserArtifactRepository;
 import com.habitparty.application.ports.UserRepository;
@@ -26,7 +27,11 @@ import com.habitparty.core.domain.entities.achievement.Artifact;
 import com.habitparty.core.domain.entities.achievement.ProfileHighlight;
 import com.habitparty.core.domain.entities.achievement.UserAchievement;
 import com.habitparty.core.domain.entities.achievement.UserArtifact;
+import com.habitparty.core.domain.entities.task.Daily;
+import com.habitparty.core.domain.entities.task.Habit;
+import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.domain.enums.HighlightType;
+import com.habitparty.core.domain.enums.task.HabitType;
 import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
@@ -35,6 +40,7 @@ public class UpdateProfileHighlightsUseCase {
   private static final Set<String> VALID_STAT_METRICS = Set.of(
       "HIGHEST_STREAK",
       "CURRENT_STREAK",
+      "HIGHEST_TASK_STREAK",
       "TOTAL_TASKS",
       "FOCUS_HOURS",
       "TOTAL_XP",
@@ -47,6 +53,7 @@ public class UpdateProfileHighlightsUseCase {
   private final EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
   private final ArtifactRepository artifactPort;
   private final UserArtifactRepository userArtifactPort;
+  private final TaskRepository taskPort;
 
   @Autowired
   public UpdateProfileHighlightsUseCase(
@@ -55,13 +62,25 @@ public class UpdateProfileHighlightsUseCase {
       ProfileHighlightRepository profileHighlightPort,
       EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase,
       @Nullable ArtifactRepository artifactPort,
-      @Nullable UserArtifactRepository userArtifactPort) {
+      @Nullable UserArtifactRepository userArtifactPort,
+      @Nullable TaskRepository taskPort) {
     this.userPort = userPort;
     this.userAchievementPort = userAchievementPort;
     this.profileHighlightPort = profileHighlightPort;
     this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
     this.artifactPort = artifactPort;
     this.userArtifactPort = userArtifactPort;
+    this.taskPort = taskPort;
+  }
+
+  public UpdateProfileHighlightsUseCase(
+      UserRepository userPort,
+      UserAchievementRepository userAchievementPort,
+      ProfileHighlightRepository profileHighlightPort,
+      EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase,
+      @Nullable ArtifactRepository artifactPort,
+      @Nullable UserArtifactRepository userArtifactPort) {
+    this(userPort, userAchievementPort, profileHighlightPort, evaluateUserAchievementsUseCase, artifactPort, userArtifactPort, null);
   }
 
   public UpdateProfileHighlightsUseCase(
@@ -69,7 +88,7 @@ public class UpdateProfileHighlightsUseCase {
       UserAchievementRepository userAchievementPort,
       ProfileHighlightRepository profileHighlightPort,
       EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
-    this(userPort, userAchievementPort, profileHighlightPort, evaluateUserAchievementsUseCase, null, null);
+    this(userPort, userAchievementPort, profileHighlightPort, evaluateUserAchievementsUseCase, null, null, null);
   }
 
   public record HighlightSlotCommand(
@@ -174,6 +193,36 @@ public class UpdateProfileHighlightsUseCase {
           String refKey = "ART:" + resolvedHighlightKey;
           if (!usedReferences.add(refKey)) {
             throw new DomainValidationException("Não é permitido repetir o mesmo artefato em mais de um slot.");
+          }
+        } else if (cmd.highlightType() == HighlightType.TASK_STREAK) {
+          if (cmd.highlightKey() == null || cmd.highlightKey().isBlank()) {
+            throw new DomainValidationException("Identificador da tarefa não informado.");
+          }
+          if (taskPort == null) {
+            throw new DomainValidationException("Serviço de tarefas indisponível.");
+          }
+          UUID taskId;
+          try {
+            taskId = UUID.fromString(cmd.highlightKey().trim());
+          } catch (IllegalArgumentException ex) {
+            throw new DomainValidationException("Identificador de tarefa inválido: " + cmd.highlightKey());
+          }
+          Task task = taskPort.findById(taskId)
+              .orElseThrow(() -> new DomainValidationException("Tarefa não encontrada para destaque na vitrine."));
+          if (!userId.equals(task.getUserId())) {
+            throw new DomainValidationException("Você só pode destacar suas próprias tarefas na vitrine.");
+          }
+          if (!(task instanceof Daily) && !(task instanceof Habit)) {
+            throw new DomainValidationException("Apenas Diárias e Hábitos possuem ofensiva para destacar na vitrine.");
+          }
+          if (task instanceof Habit habit && habit.getHabitType() == HabitType.NEGATIVE) {
+            throw new DomainValidationException("Hábitos exclusivamente negativos não possuem ofensiva positiva para destacar.");
+          }
+          resolvedReferenceId = null;
+          resolvedHighlightKey = task.getId().toString();
+          String refKey = "TASK:" + resolvedHighlightKey;
+          if (!usedReferences.add(refKey)) {
+            throw new DomainValidationException("Não é permitido repetir a mesma tarefa em mais de um slot.");
           }
         }
 

@@ -8,13 +8,17 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import com.habitparty.application.ports.FocusRecordRepository;
+import com.habitparty.application.ports.ProfileHighlightRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.usecases.focus.FocusRecordReversalSupport;
 import com.habitparty.application.usecases.workspace.WorkspaceWriteGuard;
 import com.habitparty.core.domain.entities.focus.FocusRecord;
+import com.habitparty.core.domain.entities.task.Daily;
+import com.habitparty.core.domain.entities.task.Habit;
 import com.habitparty.core.domain.entities.task.Task;
+import com.habitparty.core.domain.enums.HighlightType;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
@@ -25,6 +29,7 @@ public class DeleteTaskUseCase {
   private FocusRecordRepository focusRecordPort;
   private WorkspaceWriteGuard workspaceWriteGuard;
   private UserRepository userPort;
+  private ProfileHighlightRepository profileHighlightPort;
 
   public DeleteTaskUseCase(TaskRepository taskPort, TransactionHistoryRepository transactionPort) {
     this.taskPort = taskPort;
@@ -44,6 +49,11 @@ public class DeleteTaskUseCase {
   @Autowired(required = false)
   public void setUserPort(UserRepository userPort) {
     this.userPort = userPort;
+  }
+
+  @Autowired(required = false)
+  public void setProfileHighlightPort(ProfileHighlightRepository profileHighlightPort) {
+    this.profileHighlightPort = profileHighlightPort;
   }
 
   public void execute(UUID taskId, UUID userIdLogado) {
@@ -93,6 +103,13 @@ public class DeleteTaskUseCase {
 
     if (deleteHistory) {
       transactionPort.deleteAllByReferenceIdAndUserId(taskId, userIdLogado);
+    }
+
+    if (profileHighlightPort != null && (task instanceof Daily || task instanceof Habit)) {
+      profileHighlightPort.deleteByUserIdAndHighlightTypeAndHighlightKey(
+          userIdLogado,
+          HighlightType.TASK_STREAK,
+          taskId.toString());
     }
 
     taskPort.deleteById(taskId);

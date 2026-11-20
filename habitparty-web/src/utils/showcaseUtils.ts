@@ -13,6 +13,7 @@ import type {
   HighlightSlotInputDTO,
   ProfileHighlightResponseDTO,
   ShowcaseStatsResponseDTO,
+  TaskStreakHighlightDTO,
   UserShowcaseResponseDTO,
 } from "@/types/showcase";
 import type { UserRetrospectiveData } from "@/types/social";
@@ -24,6 +25,8 @@ export type ShowcaseTabId =
   | "friends"
   | "retrospective";
 
+export type ShowcaseCollectionTabId = "achievements" | "artifacts";
+
 /**
  * Normaliza o parâmetro de query `tab` da vitrine pública/pessoal.
  */
@@ -32,6 +35,19 @@ export function resolveShowcaseTab(val?: string | null): ShowcaseTabId {
     return val;
   }
   return "overview";
+}
+
+/**
+ * Normaliza a sub-aba da coleção (Conquistas vs Artefatos) dentro da aba Visão Geral.
+ */
+export function resolveShowcaseCollectionTab(
+  collectionVal?: string | null,
+  tabVal?: string | null,
+): ShowcaseCollectionTabId {
+  if (collectionVal === "artifacts" || tabVal === "artifacts") {
+    return "artifacts";
+  }
+  return "achievements";
 }
 
 /**
@@ -233,6 +249,11 @@ const STAT_METRIC_META: Record<
     iconKey: "flame",
     extractValue: (stats) => stats?.currentStreak ?? 0,
   },
+  HIGHEST_TASK_STREAK: {
+    rarity: "EPIC",
+    iconKey: "flamegold",
+    extractValue: (stats) => stats?.highestTaskStreak ?? 0,
+  },
   TOTAL_TASKS: {
     rarity: "RARE",
     iconKey: "checkcircle2",
@@ -255,14 +276,24 @@ const STAT_METRIC_META: Record<
   },
 };
 
+export const STAT_METRIC_KEYS = Object.keys(STAT_METRIC_META);
+
+export function resolveTaskStreakRarity(peakStreak: number): AchievementRarity {
+  if (peakStreak >= 30) return "LEGENDARY";
+  if (peakStreak >= 14) return "EPIC";
+  if (peakStreak >= 7) return "RARE";
+  if (peakStreak >= 2) return "UNCOMMON";
+  return "COMMON";
+}
+
 /**
- * Resolve os metadados completos de exibição de um slot de destaque (Conquista, Insígnia, Métrica ou Artefato).
+ * Resolve os metadados completos de exibição de um slot de destaque (Conquista, Insígnia, Métrica, Artefato ou Rotina).
  */
 export function resolveHighlightSlotCard(
   item:
     | Pick<
         ProfileHighlightResponseDTO,
-        "highlightType" | "referenceId" | "highlightKey"
+        "highlightType" | "referenceId" | "highlightKey" | "taskStreak"
       >
     | HighlightSlotInputDTO
     | null
@@ -270,6 +301,7 @@ export function resolveHighlightSlotCard(
   context: {
     achievements: AchievementItemResponseDTO[];
     artifacts?: ArtifactItemResponseDTO[];
+    taskStreaks?: TaskStreakHighlightDTO[];
     stats?: ShowcaseStatsResponseDTO | null;
     isGamified: boolean;
     levelTitle: string;
@@ -277,7 +309,7 @@ export function resolveHighlightSlotCard(
     tCatalog: CatalogTranslator;
     tBadges: ParametricTranslator;
     tArtifacts?: CatalogTranslator;
-    tHighlights?: ParametricTranslator;
+    tHighlights?: ParametricTranslator & { has?: (key: never) => boolean };
   },
 ): ResolvedHighlightCard | null {
   if (!item) return null;
@@ -348,11 +380,25 @@ export function resolveHighlightSlotCard(
     const title = context.tHighlights
       ? context.tHighlights(`statMetrics.${normalizedKey}.title` as never)
       : normalizedKey;
+    const taskTitle = context.stats?.highestTaskStreakTitle;
+    const canShowTaskTitle =
+      normalizedKey === "HIGHEST_TASK_STREAK" &&
+      Boolean(taskTitle) &&
+      Boolean(
+        context.tHighlights?.has?.(
+          "statMetrics.HIGHEST_TASK_STREAK.subtitleWithTask" as never,
+        ),
+      );
     const subtitle = context.tHighlights
-      ? context.tHighlights(
-          `statMetrics.${normalizedKey}.subtitle` as never,
-          { value } as never,
-        )
+      ? canShowTaskTitle
+        ? context.tHighlights(
+            "statMetrics.HIGHEST_TASK_STREAK.subtitleWithTask" as never,
+            { value, taskTitle } as never,
+          )
+        : context.tHighlights(
+            `statMetrics.${normalizedKey}.subtitle` as never,
+            { value } as never,
+          )
       : String(value);
 
     return {
@@ -360,6 +406,60 @@ export function resolveHighlightSlotCard(
       iconKey: meta.iconKey,
       title,
       subtitle,
+    };
+  }
+
+  if (item.highlightType === "TASK_STREAK" && item.highlightKey) {
+    const matchedTask =
+      ("taskStreak" in item ? item.taskStreak : null) ??
+      context.taskStreaks?.find((t) => t.id === item.highlightKey);
+    if (!matchedTask) return null;
+
+    const current = matchedTask.currentStreak ?? 0;
+    const highest = Math.max(matchedTask.highestStreak ?? 0, current);
+    const unit = matchedTask.isCycleBased ? "x" : "d";
+    const typeLabel = context.tHighlights
+      ? context.tHighlights(`taskTypes.${matchedTask.taskType}` as never)
+      : matchedTask.taskType;
+
+    let subtitle = typeLabel;
+    if (context.tHighlights) {
+      if (highest > current) {
+        subtitle = context.tHighlights(
+          "taskStreakSubWithRecord" as never,
+          {
+            typeLabel,
+            current,
+            highest,
+            unit,
+          } as never,
+        );
+      } else if (current > 0) {
+        subtitle = context.tHighlights(
+          "taskStreakSubActive" as never,
+          {
+            typeLabel,
+            current,
+            unit,
+          } as never,
+        );
+      } else {
+        subtitle = context.tHighlights(
+          "taskStreakSubIdle" as never,
+          {
+            typeLabel,
+          } as never,
+        );
+      }
+    }
+
+    const displayCount = current > 0 ? current : highest;
+    return {
+      rarity: resolveTaskStreakRarity(highest),
+      iconKey: highest >= 14 ? "flamegold" : "flame",
+      title: matchedTask.name,
+      subtitle,
+      extraBadge: displayCount > 0 ? `${displayCount}${unit}` : undefined,
     };
   }
 
@@ -377,6 +477,9 @@ export function createEmptyShowcaseData(
     stats: {
       currentStreak: user.currentStreak ?? 0,
       highestStreak: user.highestStreak ?? 0,
+      highestTaskStreak: 0,
+      highestTaskStreakTitle: null,
+      highestTaskStreakType: null,
       totalTasksCompleted: 0,
       totalHardTasksCompleted: 0,
       totalHardcoreTasksCompleted: 0,
@@ -398,6 +501,7 @@ export function createEmptyShowcaseData(
     highlights: [],
     achievements: [],
     artifacts: [],
+    taskStreaks: [],
   };
 }
 

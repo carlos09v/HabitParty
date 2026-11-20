@@ -109,7 +109,7 @@ public class GetPublicUserShowcaseUseCase {
     List<ProfileHighlight> filteredHighlights = fullShowcase.highlights().stream()
         .filter(h -> switch (h.getHighlightType()) {
           case ACHIEVEMENT, ARTIFACT -> canViewAchievements;
-          case STAT_METRIC -> canViewStats;
+          case STAT_METRIC, TASK_STREAK -> canViewStats;
           case ACCOUNT_BADGE -> canViewProfile;
         })
         .toList();

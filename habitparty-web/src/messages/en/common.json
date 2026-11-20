@@ -323,6 +323,8 @@
       "checkingDeleteAria": "Checking history...",
       "tierDetailsAria": "View mystery box odds",
       "packageVariantsAria": "Available reward packages",
+      "packageOptionWithDurationAria": "{tier} package • Duration {duration} • {price}",
+      "packageOptionWithPriceAria": "{tier} package • {price}",
       "unitPriceHint": "Unit: {unit} (no discount)",
       "unitMultiplierLabel": "Unit multiplier",
       "decreaseQuantityAria": "Decrease quantity",
@@ -352,8 +354,11 @@
       },
       "fallbackDescriptions": {
         "timeBased": "Time voucher for a leisure session",
+        "timeBasedActive": "Leisure session currently active",
         "mystery": "Contains a random surprise reward",
-        "singleUse": "Instant redemption reward"
+        "mysteryProductivity": "Break draw with a random reward",
+        "singleUse": "Single-use with instant redemption",
+        "debt": "Flexible payback per selected unit"
       },
       "durationTitle": "Voucher duration: {minutes} minutes",
       "couponDurationFallback": "Voucher",

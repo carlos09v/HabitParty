@@ -345,8 +345,16 @@
       "ACHIEVEMENT": "Achievement",
       "ACCOUNT_BADGE": "Badge",
       "STAT_METRIC": "Metric",
-      "ARTIFACT": "Relic"
+      "ARTIFACT": "Relic",
+      "TASK_STREAK": "Routine"
     },
+    "taskTypes": {
+      "DAILY": "Daily",
+      "HABIT": "Habit"
+    },
+    "taskStreakSubWithRecord": "{typeLabel} • {current}{unit} current (Best: {highest}{unit})",
+    "taskStreakSubActive": "{typeLabel} • {current}{unit} streak",
+    "taskStreakSubIdle": "{typeLabel} • No active streak",
     "statMetrics": {
       "HIGHEST_STREAK": {
         "title": "Highest Streak",
@@ -355,6 +363,11 @@
       "CURRENT_STREAK": {
         "title": "Current Streak",
         "subtitle": "{value} consecutive days"
+      },
+      "HIGHEST_TASK_STREAK": {
+        "title": "Best Task Streak",
+        "subtitle": "{value} streak record",
+        "subtitleWithTask": "{value} on \"{taskTitle}\""
       },
       "TOTAL_TASKS": {
         "title": "Tasks Completed",
@@ -374,9 +387,15 @@
       }
     }
   },
+  "collectionTabs": {
+    "navAria": "Profile collections",
+    "achievements": "Achievements",
+    "artifacts": "Artifacts",
+    "newBadge": "+{count}"
+  },
   "pickerModal": {
     "title": "Customize Featured Highlights",
-    "subtitle": "Select a slot above and choose which unlocked achievement or special badge to feature.",
+    "subtitle": "Select a slot above and choose which unlocked achievement, metric, or routine streak to feature.",
     "activeSlotLabel": "Editing Slot #{slot}",
     "clearSlot": "Clear slot",
     "saveButton": "Save Showcase",
@@ -387,10 +406,13 @@
     "tabs": {
       "achievements": "Achievements ({count})",
       "artifacts": "Relics ({count})",
-      "badges": "Account Badges"
+      "badges": "Account Badges",
+      "metrics": "Metrics & Routines"
     },
     "noUnlockedAchievements": "You haven't unlocked any achievements yet. Complete tasks or focus sessions to earn your first medal!",
     "noUnlockedArtifacts": "You haven't obtained any relics yet. Unlock milestone achievements or open Mystery Boxes!",
+    "metricsSectionTitle": "Profile Metrics",
+    "tasksSectionTitle": "Top Active Streaks (Daily & Habit)",
     "searchPlaceholderArtifacts": "Search relic by name or source...",
     "searchClearLabel": "Clear search",
     "lockedBadgeHint": "Currently locked for your account"
@@ -431,7 +453,9 @@
     "highestStreak": {
       "label": "Highest Streak",
       "essentialLabel": "Streak Record",
-      "sub": "Current: {current} days"
+      "sub": "Current: {current} days",
+      "taskRecordWithTitle": "Best routine: {streak} ({title})",
+      "taskRecord": "Best task streak: {streak}"
     },
     "tasksCompleted": {
       "label": "Quests Completed",

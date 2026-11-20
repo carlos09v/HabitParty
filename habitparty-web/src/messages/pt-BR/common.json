@@ -323,6 +323,8 @@
       "checkingDeleteAria": "Verificando histórico...",
       "tierDetailsAria": "Ver probabilidades da caixa misteriosa",
       "packageVariantsAria": "Pacotes disponíveis desta recompensa",
+      "packageOptionWithDurationAria": "Pacote {tier} • Duração {duration} • {price}",
+      "packageOptionWithPriceAria": "Pacote {tier} • {price}",
       "unitPriceHint": "Unitário: {unit} (sem desconto)",
       "unitMultiplierLabel": "Multiplicador unitário",
       "decreaseQuantityAria": "Diminuir quantidade",
@@ -352,8 +354,11 @@
       },
       "fallbackDescriptions": {
         "timeBased": "Cupom de tempo para sessão de lazer",
+        "timeBasedActive": "Sessão de lazer ativa no momento",
         "mystery": "Contém uma recompensa surpresa aleatória",
-        "singleUse": "Recompensa de resgate imediato"
+        "mysteryProductivity": "Sorteio de pausa com benefício aleatório",
+        "singleUse": "Uso único com resgate imediato",
+        "debt": "Quitação flexível por unidade selecionada"
       },
       "durationTitle": "Duração do cupom: {minutes} minutos",
       "couponDurationFallback": "Cupom",

@@ -30,6 +30,7 @@ export interface ShowcaseStatCardData {
   value: string;
   sub: string;
   essentialSub?: string;
+  extraSub?: string;
 }
 
 interface ShowcaseStatsGridViewProps {
@@ -92,6 +93,14 @@ export function ShowcaseStatsGridView({
                 <span className="text-tiny text-neutral-400 block truncate mt-0.5">
                   {subLabel}
                 </span>
+                {card.extraSub && (
+                  <span
+                    className="text-[11px] font-medium text-amber-700 dark:text-gold/85 block truncate mt-0.5"
+                    title={card.extraSub}
+                  >
+                    {card.extraSub}
+                  </span>
+                )}
               </div>
             </div>
           );

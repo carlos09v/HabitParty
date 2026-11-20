@@ -37,6 +37,7 @@ export interface GamifiedItemCardProps {
   id: string;
   title: string;
   description?: string;
+  hasGroupDescription?: boolean;
   iconName?: string;
   type: string;
   packageLevel?: string | null;
@@ -88,6 +89,7 @@ function GamifiedItemCardContent({
   id,
   title,
   description,
+  hasGroupDescription = false,
   baseDurationMinutes,
   remainingSeconds,
   quantity,
@@ -159,6 +161,9 @@ function GamifiedItemCardContent({
   const isPrimaryDisabled =
     !canAfford || (inUse && !isFocusNavigate) || isActionLoading;
   const trimmedDescription = description?.trim() ?? "";
+  const hasMultipleVariants = Boolean(variants && variants.length > 1);
+  const reserveDescriptionSpace =
+    hasMultipleVariants && Boolean(hasGroupDescription);
 
   const showStoreProgress =
     typeof price === "number" && price > 0 && typeof currentCoins === "number";
@@ -181,10 +186,26 @@ function GamifiedItemCardContent({
   const showInlineDurationInType =
     typeKey === "TimeBased" &&
     Boolean(baseDurationMinutes) &&
-    remainingSeconds === undefined;
+    remainingSeconds === undefined &&
+    !hasMultipleVariants;
 
   const isDebtCategory = categoryMessageKey === "DEBT";
   const showSubtleCategory = hasValidCategory && !isDebtCategory;
+
+  const fallbackDescription =
+    !trimmedDescription && !hasMultipleVariants && !reserveDescriptionSpace
+      ? isDebtCategory
+        ? t("fallbackDescriptions.debt")
+        : isMystery
+          ? isGamified
+            ? t("fallbackDescriptions.mystery")
+            : t("fallbackDescriptions.mysteryProductivity")
+          : typeKey === "TimeBased"
+            ? inUse
+              ? t("fallbackDescriptions.timeBasedActive")
+              : t("fallbackDescriptions.timeBased")
+            : t("fallbackDescriptions.singleUse")
+      : "";
 
   return (
     <article
@@ -242,7 +263,7 @@ function GamifiedItemCardContent({
           : undefined
       }
       className={cn(
-        "relative flex flex-col rounded-xl bg-card dark:bg-linear-to-b dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,transform] duration-150 group select-none shadow-xs dark:shadow-sm hover:shadow-card-deep hover:-translate-y-0.5 overflow-hidden p-3 gap-2.5",
+        "relative flex flex-col h-full rounded-xl bg-card dark:bg-linear-to-b dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,transform] duration-150 group select-none shadow-xs dark:shadow-sm hover:shadow-card-deep hover:-translate-y-0.5 overflow-hidden p-3 gap-2.5",
         inUse
           ? "border-amber-500/45 bg-card dark:border-amber-500/40 dark:bg-amber-500/5"
           : packageGlow ||
@@ -362,8 +383,8 @@ function GamifiedItemCardContent({
             )}
           </div>
 
-          {/* Sub-linha enxuta: Status Em Foco + Tipo (+ Duração inline) + Raridade/Dívida + Categoria discreta */}
-          <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+          {/* Sub-linha fixa (1 linha): Status Em Foco + Tipo + Raridade/Dívida + Categoria truncada */}
+          <div className="flex items-center gap-1.5 flex-nowrap min-w-0 overflow-hidden h-5">
             {inUse && (
               <span className="inline-flex items-center gap-1 font-bold rounded-md border border-amber-500/40 bg-amber-500/15 text-amber-800 dark:text-amber-300 text-tiny px-1.5 py-0.5 leading-none">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
@@ -422,7 +443,7 @@ function GamifiedItemCardContent({
             )}
 
             {showSubtleCategory && (
-              <span className="text-tiny text-neutral-400 font-medium truncate">
+              <span className="text-tiny text-neutral-400 font-medium min-w-0 truncate">
                 · {t(`categories.${categoryMessageKey}`)}
               </span>
             )}
@@ -430,10 +451,23 @@ function GamifiedItemCardContent({
         </div>
       </header>
 
-      {/* ZONA 2: Descrição real do usuário + Seletor embutido de Pacotes agrupados */}
-      {trimmedDescription !== "" && (
-        <p className="text-neutral-300 leading-snug line-clamp-2 text-xs">
-          {trimmedDescription}
+      {/* ZONA 2: Descrição do usuário (ou resumo contextual em cards simples) + Seletor embutido de Pacotes */}
+      {(trimmedDescription !== "" ||
+        fallbackDescription !== "" ||
+        reserveDescriptionSpace) && (
+        <p
+          className={cn(
+            "leading-snug line-clamp-2 text-xs",
+            trimmedDescription !== "" ? "text-neutral-300" : "text-neutral-400",
+            reserveDescriptionSpace && "min-h-[2.125rem]",
+          )}
+          aria-hidden={
+            trimmedDescription === "" && fallbackDescription === ""
+              ? true
+              : undefined
+          }
+        >
+          {trimmedDescription || fallbackDescription || "\u00A0"}
         </p>
       )}
 

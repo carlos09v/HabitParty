@@ -19,7 +19,17 @@ export type HighlightType =
   | "ACHIEVEMENT"
   | "ACCOUNT_BADGE"
   | "STAT_METRIC"
-  | "ARTIFACT";
+  | "ARTIFACT"
+  | "TASK_STREAK";
+
+export interface TaskStreakHighlightDTO {
+  id: string;
+  name: string;
+  taskType: "DAILY" | "HABIT";
+  currentStreak: number;
+  highestStreak: number;
+  isCycleBased: boolean;
+}
 
 export type ArtifactSourceType = "ACHIEVEMENT" | "MYSTERY_BOX" | "SPECIAL";
 
@@ -76,11 +86,15 @@ export interface ProfileHighlightResponseDTO {
   highlightType: HighlightType;
   referenceId: string | null;
   highlightKey: string | null;
+  taskStreak?: TaskStreakHighlightDTO | null;
 }
 
 export interface ShowcaseStatsResponseDTO {
   currentStreak: number;
   highestStreak: number;
+  highestTaskStreak?: number;
+  highestTaskStreakTitle?: string | null;
+  highestTaskStreakType?: "DAILY" | "HABIT" | null;
   totalTasksCompleted: number;
   totalHardTasksCompleted: number;
   totalHardcoreTasksCompleted: number;
@@ -106,6 +120,7 @@ export interface UserShowcaseResponseDTO {
   highlights: ProfileHighlightResponseDTO[];
   achievements: AchievementItemResponseDTO[];
   artifacts?: ArtifactItemResponseDTO[];
+  taskStreaks?: TaskStreakHighlightDTO[];
 }
 
 export interface HighlightSlotInputDTO {

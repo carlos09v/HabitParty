@@ -22,6 +22,7 @@ public class Daily extends Task {
   public static final int CONSISTENCY_BONUS_THRESHOLD = 14;
 
   private int currentStreak;
+  private int highestStreak;
   private LocalDate startDate;
   private DailyRepeatType repeatType;
   private int repeatEvery;
@@ -82,6 +83,7 @@ public class Daily extends Task {
     }
 
     this.currentStreak = currentStreak;
+    this.highestStreak = Math.max(0, currentStreak);
     this.startDate = startDate;
     this.repeatType = repeatType;
     this.repeatEvery = repeatEvery;
@@ -352,7 +354,14 @@ public class Daily extends Task {
     } else {
       this.currentStreak++;
     }
+    if (this.currentStreak > this.highestStreak) {
+      this.highestStreak = this.currentStreak;
+    }
     this.lastCompletedAt = effectiveTime;
+  }
+
+  public void restoreHighestStreak(int highestStreak) {
+    this.highestStreak = Math.max(Math.max(0, this.currentStreak), Math.max(0, highestStreak));
   }
 
   @Override
@@ -373,6 +382,10 @@ public class Daily extends Task {
   // Apenas Getters (Sem Setters!)
   public int getCurrentStreak() {
     return currentStreak;
+  }
+
+  public int getHighestStreak() {
+    return highestStreak;
   }
 
   public LocalDate getStartDate() {

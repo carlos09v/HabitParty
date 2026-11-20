@@ -1,6 +1,16 @@
 "use client";
 
-import { Check, Gem, Lock, Search, Sparkles, Trophy, X } from "lucide-react";
+import {
+  BarChart3,
+  Check,
+  Flame,
+  Gem,
+  Lock,
+  Search,
+  Sparkles,
+  Trophy,
+  X,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   type ReactNode,
@@ -33,6 +43,7 @@ import type {
   HighlightType,
   ProfileHighlightResponseDTO,
   ShowcaseStatsResponseDTO,
+  TaskStreakHighlightDTO,
 } from "@/types/showcase";
 import type { UserResponseDTO } from "@/types/user";
 import {
@@ -43,10 +54,11 @@ import {
   resolveArtifactCopy,
   resolveHighlightSlotCard,
   resolveUserLevelState,
+  STAT_METRIC_KEYS,
 } from "@/utils";
 import { soundEffects } from "@/utils/soundEffects";
 
-export type PickerTab = "achievements" | "artifacts" | "badges";
+export type PickerTab = "achievements" | "artifacts" | "badges" | "metrics";
 
 export interface PickerPendingItem {
   highlightType: "ACHIEVEMENT" | "ARTIFACT";
@@ -64,6 +76,7 @@ interface ShowcaseHighlightPickerModalProps {
   highlights: ProfileHighlightResponseDTO[];
   achievements: AchievementItemResponseDTO[];
   artifacts?: ArtifactItemResponseDTO[];
+  taskStreaks?: TaskStreakHighlightDTO[];
   onClose: () => void;
   onSaved: (updated: ProfileHighlightResponseDTO[]) => void;
 }
@@ -264,6 +277,7 @@ export function ShowcaseHighlightPickerModal({
   highlights,
   achievements,
   artifacts = [],
+  taskStreaks = [],
   onClose,
   onSaved,
 }: ShowcaseHighlightPickerModalProps) {
@@ -339,6 +353,11 @@ export function ShowcaseHighlightPickerModal({
     });
   }, [unlockedArtifacts, searchQuery, isGamified, tArtifacts]);
 
+  const activeTaskStreaks = useMemo(
+    () => taskStreaks.filter((task) => (task.currentStreak ?? 0) > 0),
+    [taskStreaks],
+  );
+
   const activeListLength =
     activeTab === "artifacts"
       ? filteredUnlockedArtifacts.length
@@ -372,6 +391,7 @@ export function ShowcaseHighlightPickerModal({
         const resolved = resolveHighlightSlotCard(slotItem, {
           achievements,
           artifacts,
+          taskStreaks,
           stats,
           isGamified,
           levelTitle,
@@ -387,6 +407,7 @@ export function ShowcaseHighlightPickerModal({
       draftSlots,
       achievements,
       artifacts,
+      taskStreaks,
       stats,
       isGamified,
       levelTitle,
@@ -536,6 +557,10 @@ export function ShowcaseHighlightPickerModal({
       {
         value: "badges" as const,
         label: t("tabs.badges"),
+      },
+      {
+        value: "metrics" as const,
+        label: t("tabs.metrics"),
       },
     ],
     [t, unlockedAchievements.length, unlockedArtifacts.length],
@@ -796,6 +821,244 @@ export function ShowcaseHighlightPickerModal({
                   </button>
                 );
               })}
+            </div>
+          )}
+
+          {activeTab === "metrics" && (
+            <div className="flex flex-col gap-5">
+              {/* SEÇÃO 1: MÉTRICAS DO PERFIL (INCLUINDO MAIOR STREAK DE TAREFA) */}
+              <div className="flex flex-col gap-2.5">
+                <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-neutral-300">
+                  <BarChart3
+                    size={14}
+                    className="text-sky-400"
+                    aria-hidden="true"
+                  />
+                  <span>{t("metricsSectionTitle")}</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {STAT_METRIC_KEYS.filter(
+                    (metricKey) =>
+                      metricKey !== "HIGHEST_TASK_STREAK" ||
+                      (stats?.highestTaskStreak ?? 0) > 0 ||
+                      findEquippedSlotIndex(
+                        "STAT_METRIC",
+                        null,
+                        "HIGHEST_TASK_STREAK",
+                      ) !== -1,
+                  ).map((metricKey) => {
+                    const resolved = resolveHighlightSlotCard(
+                      {
+                        highlightType: "STAT_METRIC",
+                        referenceId: null,
+                        highlightKey: metricKey,
+                      },
+                      {
+                        achievements,
+                        artifacts,
+                        taskStreaks,
+                        stats,
+                        isGamified,
+                        levelTitle,
+                        currentXp,
+                        tCatalog,
+                        tBadges,
+                        tArtifacts,
+                        tHighlights,
+                      },
+                    );
+                    if (!resolved) return null;
+                    const theme = getRarityTheme(resolved.rarity);
+                    const equippedSlot = findEquippedSlotIndex(
+                      "STAT_METRIC",
+                      null,
+                      metricKey,
+                    );
+                    const isEquipped = equippedSlot !== -1;
+
+                    return (
+                      <button
+                        key={metricKey}
+                        type="button"
+                        aria-pressed={isEquipped}
+                        onClick={() =>
+                          handleAssignItem("STAT_METRIC", null, metricKey)
+                        }
+                        className={cn(
+                          "flex items-center gap-3 p-3 rounded-xl border text-left transition-colors cursor-pointer",
+                          isEquipped
+                            ? "border-gold bg-gold/15 ring-1 ring-gold/50"
+                            : "border-neutral-700 bg-card hover:border-primary/45 dark:border-primary/20 dark:bg-surface/50",
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "w-10 h-10 rounded-xl border flex items-center justify-center shrink-0",
+                            theme.iconBg,
+                            theme.iconText,
+                          )}
+                        >
+                          <AchievementIcon
+                            iconKey={resolved.iconKey}
+                            size={20}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-neutral-100 truncate">
+                              {resolved.title}
+                            </span>
+                            <span
+                              className={cn(
+                                "px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase border shrink-0",
+                                theme.badgeBg,
+                                theme.badgeText,
+                                theme.badgeBorder,
+                              )}
+                            >
+                              {tRarities(resolved.rarity)}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-neutral-400 truncate mt-0.5">
+                            {isEquipped
+                              ? t("alreadyEquipped", {
+                                  slot: equippedSlot + 1,
+                                })
+                              : resolved.subtitle}
+                          </p>
+                        </div>
+                        {isEquipped && (
+                          <Check
+                            size={16}
+                            className="text-amber-600 dark:text-gold shrink-0"
+                            aria-hidden="true"
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* SEÇÃO 2: OFENSIVAS ATIVAS DE MAIOR STREAK (ATÉ 1 DIÁRIA E 1 HÁBITO) */}
+              {activeTaskStreaks.length > 0 && (
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-neutral-300">
+                      <Flame
+                        size={14}
+                        className="text-warning-500"
+                        aria-hidden="true"
+                      />
+                      <span>{t("tasksSectionTitle")}</span>
+                    </div>
+                    <span className="text-[11px] font-semibold text-neutral-400 tabular-nums">
+                      {activeTaskStreaks.length}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {activeTaskStreaks.map((taskStreak) => {
+                      const resolved = resolveHighlightSlotCard(
+                        {
+                          highlightType: "TASK_STREAK",
+                          referenceId: null,
+                          highlightKey: taskStreak.id,
+                          taskStreak,
+                        },
+                        {
+                          achievements,
+                          artifacts,
+                          taskStreaks,
+                          stats,
+                          isGamified,
+                          levelTitle,
+                          currentXp,
+                          tCatalog,
+                          tBadges,
+                          tArtifacts,
+                          tHighlights,
+                        },
+                      );
+                      if (!resolved) return null;
+                      const theme = getRarityTheme(resolved.rarity);
+                      const equippedSlot = findEquippedSlotIndex(
+                        "TASK_STREAK",
+                        null,
+                        taskStreak.id,
+                      );
+                      const isEquipped = equippedSlot !== -1;
+
+                      return (
+                        <button
+                          key={taskStreak.id}
+                          type="button"
+                          aria-pressed={isEquipped}
+                          onClick={() =>
+                            handleAssignItem("TASK_STREAK", null, taskStreak.id)
+                          }
+                          className={cn(
+                            "flex items-center gap-3 p-3 rounded-xl border text-left transition-colors cursor-pointer",
+                            isEquipped
+                              ? "border-gold bg-gold/15 ring-1 ring-gold/50"
+                              : "border-neutral-700 bg-card hover:border-primary/45 dark:border-primary/20 dark:bg-surface/50",
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "w-10 h-10 rounded-xl border flex items-center justify-center shrink-0",
+                              theme.iconBg,
+                              theme.iconText,
+                            )}
+                          >
+                            <AchievementIcon
+                              iconKey={resolved.iconKey}
+                              size={20}
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-bold text-neutral-100 truncate">
+                                {resolved.title}
+                              </span>
+                              <span
+                                className={cn(
+                                  "px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase border shrink-0",
+                                  theme.badgeBg,
+                                  theme.badgeText,
+                                  theme.badgeBorder,
+                                )}
+                              >
+                                {tRarities(resolved.rarity)}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-neutral-400 truncate mt-0.5">
+                              {isEquipped
+                                ? t("alreadyEquipped", {
+                                    slot: equippedSlot + 1,
+                                  })
+                                : resolved.subtitle}
+                            </p>
+                          </div>
+                          {resolved.extraBadge && (
+                            <span className="px-2 py-0.5 rounded-md bg-warning-500/15 border border-warning-500/35 text-warning-400 text-[11px] font-extrabold tabular-nums shrink-0">
+                              {resolved.extraBadge}
+                            </span>
+                          )}
+                          {isEquipped && (
+                            <Check
+                              size={16}
+                              className="text-amber-600 dark:text-gold shrink-0"
+                              aria-hidden="true"
+                            />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
