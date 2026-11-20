@@ -163,7 +163,9 @@
       "earnMoreCoins": "earn more coins",
       "earnMoreCredits": "earn more credits",
       "showcaseLabel": "In Showcase",
-      "optionsCount": "{count} {count, plural, one {option} other {options}}"
+      "optionsCount": "{count} {count, plural, one {option} other {options}}",
+      "cardsCount": "{count} {count, plural, one {card} other {cards}}",
+      "packagesCount": "{count} {count, plural, one {package} other {packages}}"
     },
     "inventory": {
       "voucherCount": "{count} {count, plural, one {voucher} other {vouchers}}",

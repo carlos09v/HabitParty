@@ -13,6 +13,7 @@ import { FocusWeeklyChart } from "./FocusWeeklyChart";
 interface FocusSidebarRightProps {
   metrics: FocusMetrics;
   todayProductiveMinutes?: number;
+  todayRewardableMinutes?: number;
   dailyFocusGoalMinutes?: number | null;
   weeklyDays: WeeklyFocusDayData[];
   totalWeekMinutes: number;
@@ -42,6 +43,7 @@ interface FocusSidebarRightProps {
 export function FocusSidebarRight({
   metrics,
   todayProductiveMinutes,
+  todayRewardableMinutes,
   dailyFocusGoalMinutes,
   weeklyDays,
   totalWeekMinutes,
@@ -103,6 +105,7 @@ export function FocusSidebarRight({
       <FocusMetricsGrid
         metrics={metrics}
         todayProductiveMinutes={todayProductiveMinutes}
+        todayRewardableMinutes={todayRewardableMinutes}
         dailyFocusGoalMinutes={dailyFocusGoalMinutes}
         totalRecordsCount={totalRecordsCount}
       />

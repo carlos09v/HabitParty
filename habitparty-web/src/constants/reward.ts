@@ -45,7 +45,7 @@ import type {
   RewardTypeMeta,
   SingleUseTierOption,
 } from "@/types/reward";
-import type { IconOption, SelectOption } from "@/types/ui";
+import type { IconOption } from "@/types/ui";
 
 export {
   DEFAULT_MYSTERY_BOX_LOOT,
@@ -63,10 +63,14 @@ export {
   ROULETTE_WINNING_INDEX,
 } from "@/constants/mysteryBox";
 export { REWARD_ICON_KEYWORD_MAP } from "@/constants/rewardIconKeywords";
-export { calculateSuggestedCouponPrice } from "@/utils/rewardEconomy";
 
 /** Limite máximo de caracteres da descrição de uma recompensa (sincronizado com o backend). */
 export const REWARD_DESCRIPTION_MAX_LENGTH = 140;
+
+/** Limites de cards de recompensa na vitrine por plano e teto de pacotes por card agrupado (sincronizado com o backend). */
+export const FREE_MAX_REWARD_CARDS = 12;
+export const PREMIUM_MAX_REWARD_CARDS = 50;
+export const MAX_REWARD_PACKAGES_PER_CARD = 4;
 
 export type {
   CategoryMessageKey,
@@ -77,7 +81,6 @@ export type {
   RewardIconOption,
   RewardTypeMessageKey,
   RewardTypeMeta,
-  SelectOption,
 };
 
 export const REWARD_ICONS: readonly IconOption[] = [
@@ -124,19 +127,16 @@ export const REWARD_ICON_MAP = new Map(
 
 export const REWARD_TYPE_META: Record<string, RewardTypeMeta> = {
   SingleUse: {
-    label: "Uso Único",
     color:
       "text-purple-700 dark:text-purple-300 bg-purple-500/12 dark:bg-purple-500/15 border-purple-500/30 dark:border-purple-500/25",
     icon: Zap,
   },
   TimeBased: {
-    label: "Cupom",
     color:
       "text-emerald-700 dark:text-emerald-300 bg-emerald-500/12 dark:bg-emerald-500/15 border-emerald-500/30 dark:border-emerald-500/25",
     icon: Ticket,
   },
   MysteryBox: {
-    label: "Caixa Misteriosa",
     color:
       "text-amber-700 dark:text-amber-300 bg-amber-500/12 dark:bg-amber-500/15 border-amber-500/30 dark:border-amber-500/25",
     icon: Sparkles,
@@ -220,32 +220,28 @@ export const TIER_CHIP_STYLES: Record<
   },
 };
 
-export const REWARD_TYPE_OPTIONS: SelectOption[] = [
-  { label: "Todos os Tipos", value: "" },
-  ...Object.entries(REWARD_TYPE_META).map(([value, { label }]) => ({
-    label,
-    value,
-  })),
-];
+export const REWARD_TYPE_FILTER_VALUES = [
+  "",
+  "SingleUse",
+  "TimeBased",
+  "MysteryBox",
+] as const;
 
-export const CATEGORY_LABELS: Partial<Record<string, string>> = {
-  Nenhum: "Nenhum",
-  Entretenimento: "Entretenimento",
-  "Bem-estar": "Bem-estar",
-  Compras: "Compras",
-  Desenvolvimento: "Desenvolvimento",
-  Sorte: "Sorte",
-  Hobbies: "Hobbies",
-  Dívida: "Dívida",
-};
+export const REWARD_CATEGORY_VALUES: readonly RewardCategory[] = [
+  "Nenhum",
+  "Entretenimento",
+  "Bem-estar",
+  "Compras",
+  "Desenvolvimento",
+  "Sorte",
+  "Hobbies",
+  "Dívida",
+] as const;
 
-export const REWARD_CATEGORY_OPTIONS: SelectOption[] = [
-  { label: "Todas as Categorias", value: "" },
-  ...Object.keys(CATEGORY_LABELS).map((cat) => ({
-    label: cat,
-    value: cat,
-  })),
-];
+export const REWARD_CATEGORY_FILTER_VALUES: readonly (RewardCategory | "")[] = [
+  "",
+  ...REWARD_CATEGORY_VALUES,
+] as const;
 
 export const COUPON_PACKAGE_OPTIONS: readonly CouponPackageOption[] = [
   {
@@ -309,6 +305,16 @@ export const SINGLE_USE_NONE_OPTION = {
   ...TIER_CHIP_STYLES.NONE,
 };
 
+/** Preços sugeridos calibrados para níveis de Uso Único (4 -> 15 -> 50 -> 150). */
+export const SINGLE_USE_TIER_SUGGESTED_PRICES: Partial<
+  Record<PackageMessageKey, number>
+> = {
+  BASIC: 4,
+  PREMIUM: 15,
+  EPIC: 50,
+  LEGENDARY: 150,
+};
+
 /**
  * Presets calibrados de esforço para recompensas de Uso Único (SingleUse):
  * 4 (Básico/Mimo) -> 15 (Premium/Diário) -> 50 (Épico/Semanal) -> 150 (Lendário/Marco).
@@ -317,7 +323,7 @@ export const SINGLE_USE_TIER_OPTIONS: readonly SingleUseTierOption[] = [
   {
     id: "BASIC",
     packageLevel: "Básico",
-    suggestedPrice: 4,
+    suggestedPrice: SINGLE_USE_TIER_SUGGESTED_PRICES.BASIC ?? 4,
     dotColor: TIER_CHIP_STYLES.BASIC.dotColor as string,
     unselectedClass: TIER_CHIP_STYLES.BASIC.unselectedClass,
     selectedClass: TIER_CHIP_STYLES.BASIC.selectedClass,
@@ -325,7 +331,7 @@ export const SINGLE_USE_TIER_OPTIONS: readonly SingleUseTierOption[] = [
   {
     id: "PREMIUM",
     packageLevel: "Premium",
-    suggestedPrice: 15,
+    suggestedPrice: SINGLE_USE_TIER_SUGGESTED_PRICES.PREMIUM ?? 15,
     dotColor: TIER_CHIP_STYLES.PREMIUM.dotColor as string,
     unselectedClass: TIER_CHIP_STYLES.PREMIUM.unselectedClass,
     selectedClass: TIER_CHIP_STYLES.PREMIUM.selectedClass,
@@ -333,7 +339,7 @@ export const SINGLE_USE_TIER_OPTIONS: readonly SingleUseTierOption[] = [
   {
     id: "EPIC",
     packageLevel: "Épico",
-    suggestedPrice: 50,
+    suggestedPrice: SINGLE_USE_TIER_SUGGESTED_PRICES.EPIC ?? 50,
     dotColor: TIER_CHIP_STYLES.EPIC.dotColor as string,
     unselectedClass: TIER_CHIP_STYLES.EPIC.unselectedClass,
     selectedClass: TIER_CHIP_STYLES.EPIC.selectedClass,
@@ -341,19 +347,19 @@ export const SINGLE_USE_TIER_OPTIONS: readonly SingleUseTierOption[] = [
   {
     id: "LEGENDARY",
     packageLevel: "Lendário",
-    suggestedPrice: 150,
+    suggestedPrice: SINGLE_USE_TIER_SUGGESTED_PRICES.LEGENDARY ?? 150,
     dotColor: TIER_CHIP_STYLES.LEGENDARY.dotColor as string,
     unselectedClass: TIER_CHIP_STYLES.LEGENDARY.unselectedClass,
     selectedClass: TIER_CHIP_STYLES.LEGENDARY.selectedClass,
   },
 ] as const;
 
-export const REWARD_SORT_OPTIONS: SelectOption[] = [
-  { label: "Ordem Padrão", value: "" },
-  { label: "Menor Preço", value: "price-asc" },
-  { label: "Maior Preço", value: "price-desc" },
-  { label: "Nome (A-Z)", value: "name" },
-];
+export const REWARD_SORT_VALUES = [
+  "",
+  "price-asc",
+  "price-desc",
+  "name",
+] as const;
 
 export const REWARD_PACKAGE_FILTER_LEVELS: readonly PackageLevel[] = [
   "Nenhum",
@@ -363,22 +369,13 @@ export const REWARD_PACKAGE_FILTER_LEVELS: readonly PackageLevel[] = [
   "Lendário",
 ] as const;
 
-export const REWARD_PACKAGE_OPTIONS: SelectOption[] = [
-  { label: "Todos os Pacotes", value: "" },
-  ...REWARD_PACKAGE_FILTER_LEVELS.map((level) => ({
-    label: level,
-    value: level,
-  })),
-];
+export const REWARD_PACKAGE_FILTER_VALUES: readonly (PackageLevel | "")[] = [
+  "",
+  ...REWARD_PACKAGE_FILTER_LEVELS,
+] as const;
 
-export const REWARD_FORM_CATEGORY_OPTIONS: SelectOption[] = (
-  Object.keys(CATEGORY_LABELS) as RewardCategory[]
-)
-  .filter((cat) => cat !== "Dívida")
-  .map((cat) => ({
-    value: cat,
-    label: cat,
-  }));
+export const REWARD_FORM_CATEGORY_VALUES: readonly RewardCategory[] =
+  REWARD_CATEGORY_VALUES.filter((cat) => cat !== "Dívida");
 
 export const REWARD_FORM_TYPE_KEYS = Object.keys(
   REWARD_TYPE_META,

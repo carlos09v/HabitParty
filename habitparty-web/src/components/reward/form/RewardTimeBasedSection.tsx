@@ -1,5 +1,3 @@
-"use client";
-
 import { Clock } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId } from "react";
@@ -8,8 +6,15 @@ import { RewardPriceGuidance } from "@/components/reward/RewardPriceGuidance";
 import { DurationHoursBadge } from "@/components/ui/DurationHoursBadge";
 import { NumberStepperInput } from "@/components/ui/NumberStepperInput";
 import { Switch } from "@/components/ui/Switch";
-import { COUPON_PACKAGE_OPTIONS } from "@/constants/reward";
-import type { PackageLevel, RewardType } from "@/types/reward";
+import {
+  COUPON_PACKAGE_OPTIONS,
+  MAX_REWARD_PACKAGES_PER_CARD,
+} from "@/constants/reward";
+import type {
+  PackageLevel,
+  PackageMessageKey,
+  RewardType,
+} from "@/types/reward";
 import { cn } from "@/utils";
 import { formatFocusMinutes } from "@/utils/focusFormatters";
 import type { RewardPriceAnalysis } from "@/utils/rewardEconomy";
@@ -26,6 +31,8 @@ interface RewardTimeBasedSectionProps {
   onToggleBatchPackage: (pkgId: PackageLevel) => void;
   packageLevel: PackageLevel;
   onSelectPackageLevel: (pkgId: PackageLevel) => void;
+  usedPackageKeys?: Set<PackageMessageKey>;
+  existingGroupCount?: number;
   baseDurationMinutes: string;
   onSetBaseDurationMinutes: (value: string) => void;
   onBaseDurationChange: (value: string) => void;
@@ -47,6 +54,8 @@ export function RewardTimeBasedSection({
   onToggleBatchPackage,
   packageLevel,
   onSelectPackageLevel,
+  usedPackageKeys,
+  existingGroupCount = 0,
   baseDurationMinutes,
   onSetBaseDurationMinutes,
   onBaseDurationChange,
@@ -60,6 +69,10 @@ export function RewardTimeBasedSection({
   const tOptions = useTranslations("rewards.options");
   const durationHoursHintId = useId();
   const numericDuration = Number.parseInt(baseDurationMinutes || "0", 10) || 0;
+  const remainingGroupSlots = Math.max(
+    0,
+    MAX_REWARD_PACKAGES_PER_CARD - existingGroupCount,
+  );
 
   return (
     <div className="flex flex-col gap-2.5 p-3 rounded-xl bg-background border border-neutral-700 dark:bg-surface/30 dark:border-white/10">
@@ -106,19 +119,27 @@ export function RewardTimeBasedSection({
             : COUPON_PACKAGE_OPTIONS
           ).map((pkg) => {
             const pkgKey = toPackageMessageKey(pkg.id);
+            const isTierUsedInCard =
+              pkgKey !== "NONE" && Boolean(usedPackageKeys?.has(pkgKey));
             const isSelected = createMultiplePackages
-              ? selectedBatchPackages.some(
+              ? !isTierUsedInCard &&
+                selectedBatchPackages.some(
                   (item) => toPackageMessageKey(item) === pkgKey,
                 )
               : toPackageMessageKey(packageLevel) === pkgKey;
+            const isButtonDisabled = isPending || isTierUsedInCard;
 
             return (
               <button
                 key={pkg.id}
                 type="button"
                 aria-pressed={isSelected}
-                disabled={isPending}
+                disabled={isButtonDisabled}
+                title={
+                  isTierUsedInCard ? t("tierAlreadyUsedInCard") : undefined
+                }
                 onClick={() => {
+                  if (isTierUsedInCard) return;
                   if (createMultiplePackages) {
                     onToggleBatchPackage(pkg.id);
                     return;
@@ -132,9 +153,13 @@ export function RewardTimeBasedSection({
                   }
                 }}
                 className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-label-g font-semibold transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer select-none active:scale-95",
-                  isSelected ? pkg.selectedClass : pkg.unselectedClass,
-                  isPending && "opacity-50 cursor-not-allowed",
+                  "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-label-g font-semibold transition-[color,background-color,border-color,box-shadow,transform] select-none",
+                  isButtonDisabled
+                    ? "opacity-40 cursor-not-allowed border-neutral-700 bg-surface/40 text-neutral-500 line-through"
+                    : cn(
+                        "cursor-pointer active:scale-95",
+                        isSelected ? pkg.selectedClass : pkg.unselectedClass,
+                      ),
                 )}
               >
                 {pkg.dotColor && (
@@ -159,37 +184,49 @@ export function RewardTimeBasedSection({
       </div>
 
       {createMultiplePackages ? (
-        <div className="p-2.5 rounded-lg bg-card/70 dark:bg-white/5 border border-neutral-700/70 dark:border-white/10 text-label-m text-neutral-300 flex flex-col gap-1.5">
-          <span className="font-semibold text-neutral-100">
-            {t("multiPackagePreviewTitle", {
-              count: selectedBatchPackages.length,
-            })}
-          </span>
-          <div className="flex flex-wrap gap-1.5">
-            {COUPON_PACKAGE_OPTIONS.filter(
-              (pkg) =>
-                pkg.id !== "Nenhum" &&
-                selectedBatchPackages.some(
-                  (item) =>
-                    toPackageMessageKey(item) === toPackageMessageKey(pkg.id),
-                ),
-            ).map((pkg) => (
-              <span
-                key={pkg.id}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface border border-neutral-700 dark:border-white/15 text-tiny text-neutral-200 tabular-nums"
-              >
-                {pkg.suggestedMinutes
-                  ? formatFocusMinutes(pkg.suggestedMinutes)
-                  : pkg.id}
-                {" • "}
-                {pkg.suggestedPrice ?? 8}
+        (() => {
+          const visibleBatchOptions = COUPON_PACKAGE_OPTIONS.filter((pkg) => {
+            const pkgKey = toPackageMessageKey(pkg.id);
+            return (
+              pkg.id !== "Nenhum" &&
+              !usedPackageKeys?.has(pkgKey) &&
+              selectedBatchPackages.some(
+                (item) => toPackageMessageKey(item) === pkgKey,
+              )
+            );
+          });
+          return (
+            <div className="p-2.5 rounded-lg bg-card/70 dark:bg-white/5 border border-neutral-700/70 dark:border-white/10 text-label-m text-neutral-300 flex flex-col gap-1.5">
+              <span className="font-semibold text-neutral-100">
+                {t("multiPackagePreviewTitle", {
+                  count: visibleBatchOptions.length,
+                })}
               </span>
-            ))}
-          </div>
-          <span className="text-tiny text-neutral-400">
-            {t("multiPackagePreviewHint")}
-          </span>
-        </div>
+              <div className="flex flex-wrap gap-1.5">
+                {visibleBatchOptions.map((pkg) => (
+                  <span
+                    key={pkg.id}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface border border-neutral-700 dark:border-white/15 text-tiny text-neutral-200 tabular-nums"
+                  >
+                    {pkg.suggestedMinutes
+                      ? formatFocusMinutes(pkg.suggestedMinutes)
+                      : pkg.id}
+                    {" • "}
+                    {pkg.suggestedPrice ?? 8}
+                  </span>
+                ))}
+              </div>
+              <span className="text-tiny text-neutral-400">
+                {existingGroupCount > 0
+                  ? t("remainingGroupSlotsHint", {
+                      existing: existingGroupCount,
+                      remaining: remainingGroupSlots,
+                    })
+                  : t("multiPackagePreviewHint")}
+              </span>
+            </div>
+          );
+        })()
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-start pt-2 border-t border-neutral-700/40 dark:border-white/5">

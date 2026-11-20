@@ -359,7 +359,7 @@
           "Até 2 Ambientes independentes",
           "Até 4 Listas/Colunas por quadro em cada ambiente",
           "Até 4 Atividades personalizadas no Modo Foco",
-          "Até 25 Recompensas cadastradas na sua loja",
+          "Até 12 Cards de Recompensas na loja (com até 4 pacotes cada)",
           "Mochila com capacidade para até 20 itens guardados",
           "Lembretes por e-mail para afazeres (até 5 ativos e 20 disparos/mês)",
           "Pomodoro & Modo Zen ilimitados",
@@ -390,7 +390,7 @@
           "Até 4 Ambientes independentes — o dobro do plano gratuito!",
           "Até 6 Listas/Colunas por quadro para fluxos completos",
           "Até 6 Atividades personalizadas no Modo Foco",
-          "Até 100 Recompensas cadastradas na sua loja",
+          "Até 50 Cards de Recompensas na loja (com até 4 pacotes cada)",
           "Mochila expandida com capacidade para até 100 itens",
           "Lembretes por e-mail expandidos (até 30 ativos e 100 disparos/mês)"
         ]
@@ -412,7 +412,7 @@
           "Até 4 Ambientes independentes — o dobro do plano gratuito!",
           "Até 6 Listas/Colunas por quadro para fluxos completos",
           "Até 6 Atividades personalizadas no Modo Foco",
-          "Até 100 Recompensas cadastradas na sua loja",
+          "Até 50 Cards de Recompensas na loja (com até 4 pacotes cada)",
           "Mochila expandida com capacidade para até 100 itens",
           "Emblema VIP de Guardião Cósmico no perfil e anel dourado",
           "Acesso antecipado a novos recursos (como a Guilda/Party)"
@@ -436,7 +436,7 @@
       },
       "freeVsPremium": {
         "question": "O HabitParty é gratuito? O que o plano Premium oferece?",
-        "answer": "O HabitParty possui um plano 100% gratuito com tudo o que você precisa: até 2 ambientes independentes, 4 colunas por ambiente, 4 atividades no Modo Foco, até 25 recompensas, mochila para 20 itens, até 5 lembretes por e-mail ativos (20 disparos mensais) e 4 temas visuais (Escuro Cósmico, Cosmic Daylight, Cavaleiro das Trevas e Pergaminho Solar). Para quem gerencia múltiplos projetos e busca foco profundo, o plano Guardião Cósmico traz 3 temas exclusivos VIP (Cyberpunk Neon, Guardião da Floresta e Ouro Real), lembretes expandidos (até 30 ativos e 100 disparos mensais), eventos agendados, molduras animadas, geradores de sons ambiente (Chuva, Café, Lofi, Fogueira), pacote de ícones VIP e expansão para 4 ambientes, 6 colunas, 6 atividades de foco, até 100 recompensas e mochila para 100 itens."
+        "answer": "O HabitParty possui um plano 100% gratuito com tudo o que você precisa: até 2 ambientes independentes, 4 colunas por ambiente, 4 atividades no Modo Foco, até 12 cards de recompensas (com até 4 pacotes por card), mochila para 20 itens, até 5 lembretes por e-mail ativos (20 disparos mensais) e 4 temas visuais (Escuro Cósmico, Cosmic Daylight, Cavaleiro das Trevas e Pergaminho Solar). Para quem gerencia múltiplos projetos e busca foco profundo, o plano Guardião Cósmico traz 3 temas exclusivos VIP (Cyberpunk Neon, Guardião da Floresta e Ouro Real), lembretes expandidos (até 30 ativos e 100 disparos mensais), eventos agendados, molduras animadas, geradores de sons ambiente (Chuva, Café, Lofi, Fogueira), pacote de ícones VIP e expansão para 4 ambientes, 6 colunas, 6 atividades de foco, até 50 cards de recompensas e mochila para 100 itens."
       },
       "honestyShop": {
         "question": "Como funciona a Loja e por que é baseada na minha honestidade?",

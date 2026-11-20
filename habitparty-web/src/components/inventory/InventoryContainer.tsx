@@ -1,22 +1,26 @@
 "use client";
 
+import { arrayMove } from "@dnd-kit/sortable";
 import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo } from "react";
 import { reorderInventory } from "@/actions/inventoryActions";
 import { InventoryCatalogView } from "@/components/inventory/InventoryCatalogView";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
-import { REWARD_CATEGORY_OPTIONS } from "@/constants/reward";
-import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { REWARD_CATEGORY_FILTER_VALUES } from "@/constants/reward";
+import {
+  ExperienceModeFallbackProvider,
+  useExperienceMode,
+} from "@/hooks/useExperienceMode";
 import { useInventoryCatalogActions } from "@/hooks/useInventoryCatalogActions";
 import { useItemCatalogFilters } from "@/hooks/useItemCatalogFilters";
 import { useReorderableList } from "@/hooks/useReorderableList";
 import type { AppLocale } from "@/i18n/config";
 import type { InventoryItem } from "@/types/inventory";
-import type { SelectOption } from "@/types/ui";
+import type { ExperienceMode, SelectOption } from "@/types/ui";
 import { calculateInventoryWelcomeStats } from "@/utils/catalogMetrics";
 import {
   toCategoryMessageKey,
@@ -31,36 +35,89 @@ const MysteryBoxRouletteModal = dynamic(
   { ssr: false },
 );
 
+interface InventoryContainerProps {
+  initialItems: InventoryItem[];
+  initialExperienceMode?: ExperienceMode;
+}
+
 export function InventoryContainer({
   initialItems,
-}: {
-  initialItems: InventoryItem[];
-}) {
+  initialExperienceMode = "PRODUCTIVITY",
+}: InventoryContainerProps) {
+  return (
+    <ExperienceModeFallbackProvider mode={initialExperienceMode}>
+      <InventoryContainerContent
+        initialItems={initialItems}
+        initialExperienceMode={initialExperienceMode}
+      />
+    </ExperienceModeFallbackProvider>
+  );
+}
+
+function InventoryContainerContent({
+  initialItems,
+  initialExperienceMode,
+}: Required<InventoryContainerProps>) {
   const locale = useLocale() as AppLocale;
   const t = useTranslations("inventory.container");
   const tRewardOptions = useTranslations("rewards.options");
-  const { isGamified } = useExperienceMode();
+  const { isGamified } = useExperienceMode(initialExperienceMode);
 
-  const itemsRef = useRef<InventoryItem[]>(initialItems);
+  const resolveInventoryStackOrder = useCallback(
+    (activeId: string, overId: string, currentItems: InventoryItem[]) => {
+      const oldIndex = currentItems.findIndex((i) => i.id === activeId);
+      const newIndex = currentItems.findIndex((i) => i.id === overId);
+      if (oldIndex === -1 || newIndex === -1) return null;
+
+      const moved = arrayMove(currentItems, oldIndex, newIndex);
+      let flatIndex = 0;
+      return moved.map((stack) => {
+        const count = stack.itemIds?.length || 1;
+        const nextOrderIndexes = Array.from(
+          { length: count },
+          () => flatIndex++,
+        );
+        return {
+          ...stack,
+          orderIndex: nextOrderIndexes[0] ?? stack.orderIndex,
+          itemOrderIndexes: nextOrderIndexes,
+        };
+      });
+    },
+    [],
+  );
 
   const handleReorderInventory = useCallback(
-    async (updates: { id: string; newIndex: number }[]) => {
-      const stackById = new Map(
-        itemsRef.current.map((item) => [item.id, item]),
-      );
+    async (
+      _updates: { id: string; newIndex: number }[],
+      context: { previousItems: InventoryItem[]; nextItems: InventoryItem[] },
+    ) => {
+      const prevOrderByPhysicalId = new Map<string, number>();
+      for (const stack of context.previousItems) {
+        const ids = stack.itemIds?.length ? stack.itemIds : [stack.id];
+        ids.forEach((itemId, idx) => {
+          prevOrderByPhysicalId.set(
+            itemId,
+            stack.itemOrderIndexes?.[idx] ?? stack.orderIndex ?? -1,
+          );
+        });
+      }
+
       let flatIndex = 0;
       const expandedUpdates: { itemId: string; newIndex: number }[] = [];
-
-      for (const update of updates) {
-        const stack = stackById.get(update.id);
-        const physicalIds = stack?.itemIds?.length
-          ? stack.itemIds
-          : [update.id];
-        for (const itemId of physicalIds) {
-          expandedUpdates.push({ itemId, newIndex: flatIndex++ });
+      for (const stack of context.nextItems) {
+        const ids = stack.itemIds?.length ? stack.itemIds : [stack.id];
+        for (const itemId of ids) {
+          if (prevOrderByPhysicalId.get(itemId) !== flatIndex) {
+            expandedUpdates.push({ itemId, newIndex: flatIndex });
+          }
+          flatIndex += 1;
         }
       }
 
+      if (expandedUpdates.length === 0) {
+        return { success: true as const };
+      }
       return reorderInventory(expandedUpdates);
     },
     [],
@@ -80,9 +137,8 @@ export function InventoryContainer({
       initialItems,
       onReorderServerAction: handleReorderInventory,
       isFiltering,
+      resolveDragReorder: resolveInventoryStackOrder,
     });
-
-  itemsRef.current = items;
 
   const statusOptions = useMemo<SelectOption[]>(
     () => [
@@ -110,14 +166,14 @@ export function InventoryContainer({
 
   const categoryOptions = useMemo<SelectOption[]>(
     () =>
-      REWARD_CATEGORY_OPTIONS.filter((opt) => opt.value !== "Dívida").map(
-        (opt) => ({
-          value: opt.value,
-          label: opt.value
-            ? tRewardOptions(`categories.${toCategoryMessageKey(opt.value)}`)
-            : tRewardOptions("categories.all"),
-        }),
-      ),
+      REWARD_CATEGORY_FILTER_VALUES.filter(
+        (value) => toCategoryMessageKey(value) !== "DEBT",
+      ).map((value) => ({
+        value,
+        label: value
+          ? tRewardOptions(`categories.${toCategoryMessageKey(value)}`)
+          : tRewardOptions("categories.all"),
+      })),
     [tRewardOptions],
   );
 
@@ -150,6 +206,10 @@ export function InventoryContainer({
   } = useInventoryCatalogActions({ items, setItems });
 
   const filteredItems = useMemo(() => {
+    if (!isFiltering) {
+      return items;
+    }
+
     const searchLower = filters.search.trim().toLowerCase();
     const filterTypeKey = filters.type
       ? toRewardTypeMessageKey(filters.type)
@@ -189,7 +249,7 @@ export function InventoryContainer({
     }
 
     return result;
-  }, [items, filters, locale]);
+  }, [items, isFiltering, filters, locale]);
 
   const welcomeStats = useMemo(() => {
     const { stats } = calculateInventoryWelcomeStats(items, locale, isGamified);
@@ -300,17 +360,17 @@ export function InventoryContainer({
         items={contextMenuItems}
       />
 
-      <ConfirmationModal
-        isOpen={Boolean(itemToDiscard)}
-        onClose={() => !isDiscarding && setItemToDiscard(null)}
-        onConfirm={handleConfirmDiscard}
-        title={
-          isGamified
-            ? t("discardModal.titleGamified")
-            : t("discardModal.titleProductivity")
-        }
-        description={
-          itemToDiscard ? (
+      {itemToDiscard && (
+        <ConfirmationModal
+          isOpen={Boolean(itemToDiscard)}
+          onClose={() => !isDiscarding && setItemToDiscard(null)}
+          onConfirm={handleConfirmDiscard}
+          title={
+            isGamified
+              ? t("discardModal.titleGamified")
+              : t("discardModal.titleProductivity")
+          }
+          description={
             <span>
               {t.rich(
                 isGamified
@@ -324,13 +384,13 @@ export function InventoryContainer({
                 },
               )}
             </span>
-          ) : null
-        }
-        confirmText={t("discardModal.confirmText")}
-        cancelText={t("discardModal.cancelText")}
-        variant="danger"
-        isLoading={isDiscarding}
-      />
+          }
+          confirmText={t("discardModal.confirmText")}
+          cancelText={t("discardModal.cancelText")}
+          variant="danger"
+          isLoading={isDiscarding}
+        />
+      )}
 
       {openingBoxItem && (
         <MysteryBoxRouletteModal

@@ -130,4 +130,9 @@ public interface TransactionHistoryRepository {
       UUID referenceId, UUID userId, int xpAmount, BigDecimal goldAmount) {
     return 0;
   }
+
+  default int updateFocusDescriptionSnapshot(
+      UUID referenceId, UUID userId, String descriptionSnapshot) {
+    return 0;
+  }
 }

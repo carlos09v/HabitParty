@@ -83,7 +83,7 @@ public class TransactionHistoryJpaEntity {
   @Column(name = "column_name_snapshot")
   private String columnNameSnapshot;
 
-  @Column(name = "description_snapshot")
+  @Column(name = "description_snapshot", length = 500)
   private String descriptionSnapshot;
 
   @Column(name = "created_at", nullable = false, updatable = false)

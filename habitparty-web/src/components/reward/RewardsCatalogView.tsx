@@ -13,7 +13,11 @@ import { CatalogGridListShell } from "@/components/ui/CatalogGridListShell";
 import { ItemRowHeader } from "@/components/ui/ItemRow";
 import { DEBT_MAX_REDEEM_QUANTITY } from "@/constants/reward";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import type { Reward, RewardDisplayEntry } from "@/types/reward";
+import type {
+  Reward,
+  RewardDisplayEntry,
+  RewardGroupContext,
+} from "@/types/reward";
 import type { ViewMode } from "@/types/ui";
 import { RewardCard, RewardItemRow } from "./RewardCard";
 
@@ -24,14 +28,19 @@ interface RewardsCatalogViewProps {
   currentCoins?: number;
   deletingRewardIds?: Set<string>;
   redeemingRewardIds?: Set<string>;
+  selectedVariantByGroup?: Record<string, string>;
   debtQuantities?: Record<string, number>;
   onDebtQuantityChange?: (rewardId: string, nextQuantity: number) => void;
   onSelectVariant?: (groupId: string, variantId: string) => void;
   sensors: SensorDescriptor<SensorOptions>[];
   onDragEnd: (event: DragEndEvent) => void;
   onBuy: (reward: Reward, quantity?: number) => void;
-  onEdit: (reward: Reward) => void;
-  onContextMenu: (e: MouseEvent, reward: Reward) => void;
+  onEdit: (reward: Reward, groupContext?: RewardGroupContext) => void;
+  onContextMenu: (
+    e: MouseEvent,
+    reward: Reward,
+    groupContext?: RewardGroupContext,
+  ) => void;
   onAddProduct: () => void;
   onClearFilters: () => void;
 }
@@ -43,6 +52,7 @@ export function RewardsCatalogView({
   currentCoins,
   deletingRewardIds,
   redeemingRewardIds,
+  selectedVariantByGroup,
   debtQuantities,
   onDebtQuantityChange,
   onSelectVariant,
@@ -58,7 +68,7 @@ export function RewardsCatalogView({
   const { isGamified } = useExperienceMode();
 
   const itemIds = useMemo(
-    () => entries.map((entry) => entry.primaryReward.id),
+    () => entries.map((entry) => entry.groupId),
     [entries],
   );
 
@@ -116,39 +126,47 @@ export function RewardsCatalogView({
       onDragEnd={onDragEnd}
     >
       {entries.map((entry) => {
-        const reward = entry.primaryReward;
+        const hasVariants = entry.variants.length > 1;
+        const selectedVariantId = selectedVariantByGroup?.[entry.groupId];
+        const reward =
+          hasVariants && selectedVariantId
+            ? (entry.variants.find((v) => v.id === selectedVariantId) ??
+              entry.primaryReward)
+            : entry.primaryReward;
         const unitQty = debtQuantities?.[reward.id] ?? 1;
+        const isDeleteChecking = Boolean(deletingRewardIds?.has(reward.id));
+        const isRedeeming = Boolean(redeemingRewardIds?.has(reward.id));
+
+        if (viewMode === "card") {
+          return (
+            <RewardCard
+              key={entry.groupId}
+              groupId={entry.groupId}
+              reward={reward}
+              displayTitle={entry.displayTitle}
+              hasGroupDescription={entry.hasGroupDescription}
+              variants={hasVariants ? entry.variants : undefined}
+              activeVariantId={reward.id}
+              onSelectVariant={hasVariants ? onSelectVariant : undefined}
+              unitQuantity={unitQty}
+              onUnitQuantityChange={onDebtQuantityChange}
+              maxUnitQuantity={DEBT_MAX_REDEEM_QUANTITY}
+              onBuy={onBuy}
+              onEdit={onEdit}
+              onContextMenu={onContextMenu}
+              currentCoins={currentCoins}
+              isDeleteChecking={isDeleteChecking}
+              isRedeeming={isRedeeming}
+            />
+          );
+        }
+
         const canAfford =
           typeof currentCoins === "number"
             ? currentCoins >= reward.price * unitQty
             : true;
 
-        const isDeleteChecking = Boolean(deletingRewardIds?.has(reward.id));
-        const isRedeeming = Boolean(redeemingRewardIds?.has(reward.id));
-        const hasVariants = entry.variants.length > 1;
-
-        return viewMode === "card" ? (
-          <RewardCard
-            key={entry.groupId}
-            groupId={entry.groupId}
-            reward={reward}
-            displayTitle={entry.displayTitle}
-            hasGroupDescription={entry.hasGroupDescription}
-            variants={hasVariants ? entry.variants : undefined}
-            activeVariantId={reward.id}
-            onSelectVariant={hasVariants ? onSelectVariant : undefined}
-            unitQuantity={unitQty}
-            onUnitQuantityChange={onDebtQuantityChange}
-            maxUnitQuantity={DEBT_MAX_REDEEM_QUANTITY}
-            onBuy={onBuy}
-            onEdit={onEdit}
-            onContextMenu={onContextMenu}
-            canAfford={canAfford}
-            currentCoins={currentCoins}
-            isDeleteChecking={isDeleteChecking}
-            isRedeeming={isRedeeming}
-          />
-        ) : (
+        return (
           <RewardItemRow
             key={entry.groupId}
             groupId={entry.groupId}
@@ -164,7 +182,6 @@ export function RewardsCatalogView({
             onEdit={onEdit}
             onContextMenu={onContextMenu}
             canAfford={canAfford}
-            currentCoins={currentCoins}
             isDeleteChecking={isDeleteChecking}
             isRedeeming={isRedeeming}
           />

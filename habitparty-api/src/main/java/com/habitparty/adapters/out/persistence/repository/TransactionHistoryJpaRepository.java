@@ -145,4 +145,17 @@ public interface TransactionHistoryJpaRepository extends JpaRepository<Transacti
         @Param("userId") UUID userId,
         @Param("xpAmount") int xpAmount,
         @Param("goldAmount") BigDecimal goldAmount);
+
+    @Modifying
+    @Query("""
+        UPDATE TransactionHistoryJpaEntity th
+        SET th.descriptionSnapshot = :descriptionSnapshot
+        WHERE th.referenceId = :referenceId
+          AND th.user.id = :userId
+          AND th.transactionType = com.habitparty.core.domain.enums.TransactionType.FOCUS_COMPLETED
+    """)
+    int updateFocusDescriptionSnapshot(
+        @Param("referenceId") UUID referenceId,
+        @Param("userId") UUID userId,
+        @Param("descriptionSnapshot") String descriptionSnapshot);
 }

@@ -30,7 +30,10 @@ import type {
 import type { InventoryItemResponseDTO } from "@/types/inventory";
 import { cn, removeBrowserQueryParam } from "@/utils";
 import { getTodayDateString } from "@/utils/date";
-import { calculateProductiveMinutesForDate } from "@/utils/focusDailyYield";
+import {
+  calculateProductiveMinutesForDate,
+  calculateRewardableMinutesForDate,
+} from "@/utils/focusDailyYield";
 import { mapFocusRecords } from "@/utils/focusMapper";
 import { FocusMain } from "./FocusMain";
 import { FocusSidebarRight } from "./sidebar-right/FocusSidebarRight";
@@ -327,13 +330,21 @@ export function FocusContainer({
 
   const userTimeZone = useUserStore((s) => s.user?.timezone);
 
-  const todayProductiveMinutes = useMemo(() => {
+  const { todayProductiveMinutes, todayRewardableMinutes } = useMemo(() => {
     const todayStr = getTodayDateString(new Date(), userTimeZone);
-    return calculateProductiveMinutesForDate(
-      allRecords,
-      todayStr,
-      userTimeZone,
-    );
+    return {
+      todayProductiveMinutes: calculateProductiveMinutesForDate(
+        allRecords,
+        todayStr,
+        userTimeZone,
+      ),
+      todayRewardableMinutes: calculateRewardableMinutesForDate(
+        allRecords,
+        todayStr,
+        userTimeZone,
+        "startTime",
+      ),
+    };
   }, [allRecords, userTimeZone]);
 
   const selectedActivityPagination = selectedActivityId
@@ -1007,7 +1018,7 @@ export function FocusContainer({
           backpackItems={initialBackpackItems}
           focusableTasks={focusableTasks}
           todaySummary={todaySummary}
-          todayProductiveMinutes={todayProductiveMinutes}
+          todayRewardableMinutes={todayRewardableMinutes}
           isPremium={is_Premium}
           selectedActivityId={selectedActivityId}
           selectedBackpackItemId={selectedBackpackItemId}
@@ -1029,6 +1040,7 @@ export function FocusContainer({
       <FocusSidebarRight
         metrics={metrics}
         todayProductiveMinutes={todayProductiveMinutes}
+        todayRewardableMinutes={todayRewardableMinutes}
         dailyFocusGoalMinutes={initialDailyFocusGoalMinutes}
         weeklyDays={weeklyDays}
         totalWeekMinutes={totalWeekMinutes}

@@ -218,6 +218,7 @@ function MysteryBoxTierCard({
         createPortal(
           <MysteryBoxTierPopover
             tier={tier}
+            isGamified={isGamified}
             popoverRef={popoverRef}
             style={floatingStyle}
           />,

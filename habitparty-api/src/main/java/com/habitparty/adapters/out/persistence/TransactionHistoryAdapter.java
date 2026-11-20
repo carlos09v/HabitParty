@@ -327,4 +327,16 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
         Math.max(0, xpAmount),
         goldAmount != null ? goldAmount : BigDecimal.ZERO);
   }
+
+  @Override
+  public int updateFocusDescriptionSnapshot(
+      UUID referenceId, UUID userId, String descriptionSnapshot) {
+    if (referenceId == null || userId == null) {
+      return 0;
+    }
+    String cleanDescription = (descriptionSnapshot != null && !descriptionSnapshot.trim().isEmpty())
+        ? descriptionSnapshot.trim()
+        : null;
+    return repository.updateFocusDescriptionSnapshot(referenceId, userId, cleanDescription);
+  }
 }

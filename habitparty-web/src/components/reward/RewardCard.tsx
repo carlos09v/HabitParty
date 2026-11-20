@@ -5,12 +5,14 @@ import { memo, useCallback, useMemo } from "react";
 import { GamifiedItemCard } from "@/components/ui/GamifiedItemCard";
 import { ItemRow } from "@/components/ui/ItemRow";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import type { RewardCardProps } from "@/types/reward";
+import type { RewardCardProps, RewardGroupContext } from "@/types/reward";
 import { toCategoryMessageKey } from "@/utils/rewardMapper";
 
 function useRewardItemPresentation({
   reward,
   groupId,
+  displayTitle,
+  variants,
   unitQuantity = 1,
   canAfford = true,
   currentCoins,
@@ -23,6 +25,8 @@ function useRewardItemPresentation({
   RewardCardProps,
   | "reward"
   | "groupId"
+  | "displayTitle"
+  | "variants"
   | "unitQuantity"
   | "canAfford"
   | "currentCoins"
@@ -43,19 +47,28 @@ function useRewardItemPresentation({
       ? currentCoins >= effectivePrice
       : canAfford;
 
+  const groupContext = useMemo<RewardGroupContext | undefined>(() => {
+    if (!variants || variants.length <= 1) return undefined;
+    return {
+      groupId: groupId ?? reward.id,
+      displayTitle: displayTitle || reward.title,
+      variants,
+    };
+  }, [variants, groupId, displayTitle, reward.id, reward.title]);
+
   const handleBuy = useCallback(() => {
     onBuy?.(reward, safeQuantity);
   }, [onBuy, reward, safeQuantity]);
 
   const handleDoubleClick = useCallback(() => {
-    onEdit?.(reward);
-  }, [onEdit, reward]);
+    onEdit?.(reward, groupContext);
+  }, [onEdit, reward, groupContext]);
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent) => {
-      onContextMenu?.(e, reward);
+      onContextMenu?.(e, reward, groupContext);
     },
-    [onContextMenu, reward],
+    [onContextMenu, reward, groupContext],
   );
 
   const handleSelectVariant = useCallback(
@@ -138,6 +151,8 @@ export const RewardCard = memo(function RewardCard({
   } = useRewardItemPresentation({
     reward,
     groupId,
+    displayTitle,
+    variants,
     unitQuantity,
     canAfford,
     currentCoins,
@@ -151,10 +166,11 @@ export const RewardCard = memo(function RewardCard({
   return (
     <GamifiedItemCard
       id={reward.id}
+      sortableId={groupId ?? reward.id}
       title={displayTitle || reward.title}
       description={reward.description}
       hasGroupDescription={hasGroupDescription}
-      iconName={reward.icon || reward.iconName}
+      iconName={reward.icon}
       type={reward.type}
       packageLevel={reward.packageLevel}
       category={reward.category}
@@ -214,6 +230,8 @@ export const RewardItemRow = memo(function RewardItemRow({
   } = useRewardItemPresentation({
     reward,
     groupId,
+    displayTitle,
+    variants,
     unitQuantity,
     canAfford,
     currentCoins,
@@ -227,12 +245,13 @@ export const RewardItemRow = memo(function RewardItemRow({
   return (
     <ItemRow
       id={reward.id}
+      sortableId={groupId ?? reward.id}
       title={displayTitle || reward.title}
       description={reward.description}
       type={reward.type}
       packageLevel={reward.packageLevel}
       category={reward.category}
-      iconName={reward.icon || reward.iconName}
+      iconName={reward.icon}
       baseDurationMinutes={reward.baseDurationMinutes}
       price={effectivePrice}
       unitQuantity={safeQuantity}
@@ -250,6 +269,7 @@ export const RewardItemRow = memo(function RewardItemRow({
       isDeleteChecking={isDeleteChecking}
       isActionLoading={isRedeeming}
       dragData={dragData}
+      lootItems={reward.lootItems}
     />
   );
 });

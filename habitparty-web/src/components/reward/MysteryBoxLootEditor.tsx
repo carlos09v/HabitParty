@@ -2,7 +2,7 @@
 
 import { Clock, Dices, Sparkles, Store } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { type MutableRefObject, useState } from "react";
+import { type MutableRefObject, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { IconPickerPopover } from "@/components/ui/IconPickerPopover";
 import { Input } from "@/components/ui/Input";
@@ -24,13 +24,6 @@ import {
   suggestRewardIconFromTitle,
   UI_TO_BACKEND_CATEGORY,
 } from "@/utils/rewardMapper";
-
-const PRESET_BACKEND_CATEGORY: Record<MysteryBoxPresetId, string> = {
-  gamer: "ENTERTAINMENT",
-  relax: "WELLNESS",
-  gastronomy: "SHOPPING",
-  hobbies: "HOBBIES",
-};
 
 interface MysteryBoxLootEditorProps {
   packageLevel: PackageLevel;
@@ -72,21 +65,27 @@ export function MysteryBoxLootEditor({
     [boolean, boolean, boolean]
   >([false, false, false]);
 
-  const storeCandidates = existingRewards.filter(
-    (r) =>
-      (r.type === "SingleUse" || r.type === "TimeBased") &&
-      r.price > 0 &&
-      r.price <= tier.recommendedPrice * 2,
-  );
-  const hasAnyStoreRewards = existingRewards.some(
-    (r) => r.type === "SingleUse" || r.type === "TimeBased",
-  );
+  const { storeCandidates, hasAnyStoreRewards } = useMemo(() => {
+    const anyStoreRewards = existingRewards.some(
+      (r) => r.type === "SingleUse" || r.type === "TimeBased",
+    );
+    const candidates = existingRewards.filter(
+      (r) =>
+        (r.type === "SingleUse" || r.type === "TimeBased") &&
+        r.price > 0 &&
+        r.price <= tier.recommendedPrice * 2,
+    );
+    return {
+      storeCandidates: candidates,
+      hasAnyStoreRewards: anyStoreRewards,
+    };
+  }, [existingRewards, tier.recommendedPrice]);
 
   const handleSelectPreset = (presetId: MysteryBoxPresetId) => {
     const preset = MYSTERY_BOX_PRESETS.find((p) => p.id === presetId);
     if (!preset) return;
     const tierSlots = preset.tiers[tierId] || preset.tiers.Básico;
-    const presetCategory = PRESET_BACKEND_CATEGORY[presetId];
+    const presetCategory = UI_TO_BACKEND_CATEGORY[preset.category];
     setManualIconSlots([false, false, false]);
     onApplyPreset([
       { ...tierSlots[0], category: tierSlots[0].category ?? presetCategory },
@@ -128,7 +127,7 @@ export function MysteryBoxLootEditor({
 
         return {
           name: candidate.title.slice(0, MAX_SLOT_NAME_LENGTH),
-          icon: candidate.icon || candidate.iconName || "gift",
+          icon: candidate.icon || "gift",
           minutes: clampedMinutes,
           category: UI_TO_BACKEND_CATEGORY[candidate.category] || undefined,
           description: candidate.description?.trim() || undefined,

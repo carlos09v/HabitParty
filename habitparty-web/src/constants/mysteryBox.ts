@@ -301,6 +301,7 @@ export const MYSTERY_BOX_ROULETTE_POOLS: Record<string, RouletteItem[]> =
 export const MYSTERY_BOX_PRESETS: readonly MysteryBoxPreset[] = [
   {
     id: "gamer",
+    category: "Entretenimento",
     icon: Gamepad2,
     tiers: {
       Básico: [
@@ -331,6 +332,7 @@ export const MYSTERY_BOX_PRESETS: readonly MysteryBoxPreset[] = [
   },
   {
     id: "relax",
+    category: "Bem-estar",
     icon: Coffee,
     tiers: {
       Básico: [
@@ -357,6 +359,7 @@ export const MYSTERY_BOX_PRESETS: readonly MysteryBoxPreset[] = [
   },
   {
     id: "gastronomy",
+    category: "Compras",
     icon: Pizza,
     tiers: {
       Básico: [
@@ -383,6 +386,7 @@ export const MYSTERY_BOX_PRESETS: readonly MysteryBoxPreset[] = [
   },
   {
     id: "hobbies",
+    category: "Hobbies",
     icon: BookOpen,
     tiers: {
       Básico: [

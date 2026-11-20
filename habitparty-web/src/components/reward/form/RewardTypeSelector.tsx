@@ -1,5 +1,3 @@
-"use client";
-
 import { Dices, Sparkles, Ticket, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId, useMemo } from "react";

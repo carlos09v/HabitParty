@@ -7,7 +7,7 @@ import { cn } from "@/utils";
 import { getDailyFocusYieldInfo } from "@/utils/focusDailyYield";
 
 interface FocusDailyYieldBadgeProps {
-  todayProductiveMinutes?: number;
+  todayRewardableMinutes?: number;
   size?: "sm" | "md";
   className?: string;
 }
@@ -23,7 +23,7 @@ const DAILY_YIELD_TIER_STYLES: Record<0 | 25 | 50 | 100, string> = {
  * Selo reutilizável de aviso do rendimento diário de foco quando a faixa sai de 100%.
  */
 export function FocusDailyYieldBadge({
-  todayProductiveMinutes,
+  todayRewardableMinutes,
   size = "sm",
   className,
 }: FocusDailyYieldBadgeProps) {
@@ -32,10 +32,10 @@ export function FocusDailyYieldBadge({
 
   const dailyYield = useMemo(
     () =>
-      typeof todayProductiveMinutes === "number"
-        ? getDailyFocusYieldInfo(todayProductiveMinutes)
+      typeof todayRewardableMinutes === "number"
+        ? getDailyFocusYieldInfo(todayRewardableMinutes)
         : null,
-    [todayProductiveMinutes],
+    [todayRewardableMinutes],
   );
 
   if (!dailyYield || dailyYield.tierPercent >= 100) {

@@ -26,10 +26,8 @@ export function getInventoryItemActionMeta(
   const reward = item.reward;
   const isInFocus = item.status === "IN_FOCUS";
 
-  const rawType = reward?.type || item.itemType;
-  const isMystery =
-    isMysteryBoxReward(rawType, reward?.icon || reward?.iconName) ||
-    item.iconName === "mystery_box";
+  const rawType = reward?.type;
+  const isMystery = isMysteryBoxReward(rawType, reward?.icon);
 
   const isCoupon =
     !isMystery &&

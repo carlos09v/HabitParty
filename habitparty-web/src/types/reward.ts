@@ -14,6 +14,7 @@ export type MysteryBoxPresetId = "gamer" | "relax" | "gastronomy" | "hobbies";
 
 export interface MysteryBoxPreset {
   id: MysteryBoxPresetId;
+  category: RewardCategory;
   icon: LucideIcon;
   tiers: Record<
     "Básico" | "Premium" | "Épico" | "Lendário",
@@ -41,7 +42,6 @@ export type CategoryMessageKey =
 export type RewardTypeMessageKey = "SingleUse" | "TimeBased" | "MysteryBox";
 
 export interface RewardTypeMeta {
-  label: string;
   color: string;
   icon: LucideIcon;
 }
@@ -134,15 +134,8 @@ export interface Reward
   type: RewardType;
   category: RewardCategory;
   packageLevel?: PackageLevel;
-  duration?: string;
   baseDurationMinutes?: number;
-  iconName?:
-    | "joystick"
-    | "mystery_box"
-    | "coffee"
-    | "book"
-    | "clapperboard"
-    | string;
+  icon?: string;
   lootItems?: MysteryBoxLootItem[];
 }
 
@@ -162,6 +155,31 @@ export interface RewardDisplayEntry {
   hasGroupDescription?: boolean;
 }
 
+export interface RewardGroupContext {
+  groupId: string;
+  displayTitle: string;
+  variants: Reward[];
+}
+
+export interface UpdateRewardGroupVariantDTO {
+  id?: string;
+  name: string;
+  price: number;
+  packageLevel: CreateRewardDTO["packageLevel"];
+  baseDurationMinutes?: number;
+}
+
+export interface UpdateRewardGroupDTO {
+  sourceRewardIds: string[];
+  baseName: string;
+  icon?: string;
+  description?: string;
+  category: CreateRewardDTO["category"];
+  tags?: string[];
+  variants: UpdateRewardGroupVariantDTO[];
+  deleteRemovedHistory: boolean;
+}
+
 export interface RewardCardProps {
   reward: Reward;
   groupId?: string;
@@ -174,8 +192,12 @@ export interface RewardCardProps {
   onUnitQuantityChange?: (rewardId: string, nextQuantity: number) => void;
   maxUnitQuantity?: number;
   onBuy?: (reward: Reward, quantity?: number) => void;
-  onEdit?: (reward: Reward) => void;
-  onContextMenu?: (e: React.MouseEvent, reward: Reward) => void;
+  onEdit?: (reward: Reward, groupContext?: RewardGroupContext) => void;
+  onContextMenu?: (
+    e: React.MouseEvent,
+    reward: Reward,
+    groupContext?: RewardGroupContext,
+  ) => void;
   canAfford?: boolean;
   currentCoins?: number;
   isDeleteChecking?: boolean;
@@ -194,17 +216,8 @@ export interface RouletteItem {
 export type {
   ItemCatalogFilterState as RewardFilterState,
   ItemCatalogFilterState,
+  SelectOption,
 } from "@/types/ui";
-
-export interface RewardFiltersProps {
-  filters: import("@/types/ui").ItemCatalogFilterState;
-  onChange: (
-    newFilters: Partial<import("@/types/ui").ItemCatalogFilterState>,
-  ) => void;
-  onClear: () => void;
-}
-
-export type { SelectOption } from "@/types/ui";
 
 // 4. Contrato unificado de Estimativa de Recompensas (Foco + Tarefas)
 export interface RewardEstimateNotice {

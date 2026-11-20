@@ -29,15 +29,10 @@ export type InventoryItemType =
 // 2. Model UI (Entidade estendida)
 export interface InventoryItem
   extends Omit<InventoryItemResponseDTO, "rewardType"> {
-  id: string; // Add id for UI
+  id: string; // ID principal da pilha (primeiro item físico)
   itemIds?: string[]; // Todos os inventoryItemIds agrupados nesta pilha
-  name: string;
-  description: string;
+  itemOrderIndexes?: number[]; // orderIndex correspondente a cada item físico em itemIds
   quantity: number;
-  itemType: InventoryItemType;
-  imageUrl?: string;
-  iconName?: string;
-  acquiredAt?: string;
   remainingSeconds?: number;
   reward: Reward;
 }

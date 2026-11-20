@@ -57,6 +57,14 @@
   "container": {
     "addProduct": "Adicionar Produto",
     "addProductProductivity": "Nova Recompensa",
+    "planFree": "Gratuito",
+    "planPremium": "Premium",
+    "limitReachedTitle": "Limite de cards atingido: {current}/{max} ({plan})",
+    "limitUsedTitle": "{current} de {max} cards de recompensa na vitrine",
+    "maxLimitReachedTitle": "Limite máximo de {max} cards atingido",
+    "upgradeLimitTitle": "Você atingiu o limite do plano gratuito. Seja Premium para criar até 50 cards!",
+    "upgradeLimitButton": "Limite (Seja Premium)",
+    "limitReachedShort": "Limite atingido",
     "buy": "Comprar",
     "buyProductivity": "Resgatar",
     "payDebt": "Pagar Dívida",
@@ -81,7 +89,10 @@
     "contextMenu": {
       "addPackage": "Adicionar pacote",
       "edit": "Editar",
-      "delete": "Excluir"
+      "editGroup": "Editar card e pacotes",
+      "delete": "Excluir",
+      "deleteSinglePackage": "Excluir pacote ({variant})",
+      "deleteWholeGroup": "Excluir card inteiro ({count} pacotes)"
     },
     "deleteModal": {
       "title": "Excluir recompensa?",
@@ -90,6 +101,12 @@
       "cancelText": "Cancelar",
       "deleteHistoryLabel": "Excluir também os registros de compra no Histórico",
       "deleteHistoryHint": "Remove as transações de compra desta recompensa do extrato. Moedas e XP já movimentados não são alterados."
+    },
+    "deleteGroupModal": {
+      "title": "Excluir card inteiro?",
+      "description": "Tem certeza que deseja excluir <bold>\"{title}\"</bold> e todos os seus <bold>{count} pacotes</bold> da Loja?",
+      "confirmText": "Sim, excluir card",
+      "cancelText": "Cancelar"
     },
     "toasts": {
       "insufficientCoins": "Moedas insuficientes para resgatar este item!",
@@ -102,14 +119,17 @@
       "debtPaidSuccessProductivity": "Dívida \"{title}\" paga! Os créditos foram descontados diretamente.",
       "serverError": "Erro de comunicação com o servidor.",
       "deleteSuccess": "Recompensa \"{title}\" excluída com sucesso!",
+      "deleteGroupSuccess": "Card \"{title}\" ({count} pacotes) excluído com sucesso!",
       "deleteError": "Erro ao excluir recompensa."
     }
   },
   "formModal": {
     "editTitle": "Editar Recompensa",
+    "editGroupTitle": "Editar Card & Pacotes",
     "createTitle": "Nova Recompensa",
     "editDescription": "Atualize o nome, custo e regras desta recompensa na sua Loja.",
     "editDescriptionProductivity": "Atualize o nome, custo em créditos e regras desta recompensa.",
+    "editGroupDescription": "Atualize os dados compartilhados do card e gerencie todos os pacotes em um só lugar.",
     "createDescription": "Cadastre um prêmio, cupom de tempo ou caixa misteriosa na Loja.",
     "createDescriptionProductivity": "Cadastre uma recompensa de uso único ou cupom de tempo livre.",
     "titleLabel": "Nome da Recompensa",
@@ -162,8 +182,27 @@
     "multiPackageToggleHint": "Agrupados em um único card na vitrine",
     "multiPackageSelectLabel": "Escolha os pacotes para gerar",
     "multiPackageSelectHint": "(selecione 1 ou mais níveis)",
-    "multiPackagePreviewTitle": "Serão gerados {count} pacotes no mesmo card:",
+    "multiPackagePreviewTitle": "Serão gerados {count} pacotes em 1 único card na vitrine:",
     "multiPackagePreviewHint": "Na vitrine, basta clicar nos chips (30m, 1h, 3h...) para alternar o pacote antes de comprar.",
+    "tierAlreadyUsedInCard": "Este card já possui um pacote deste nível",
+    "remainingGroupSlotsHint": "Este card já tem {existing} pacote(s); você pode adicionar até mais {remaining}.",
+    "groupEditor": {
+      "title": "Pacotes neste Card ({count}/{max})",
+      "subtitle": "Edite duração, custo ou adicione/remova variações sem separar o card",
+      "addPackage": "Adicionar pacote",
+      "packageIndex": "Pacote {index}",
+      "activeBadge": "Selecionado",
+      "newBadge": "Novo",
+      "removePackageAria": "Remover pacote {index}",
+      "keepOneHint": "Mantenha ao menos 1 pacote ou exclua o card pelo menu",
+      "removePackageTitle": "Remover este pacote do card",
+      "tierLabel": "Nível",
+      "durationLabel": "Duração (min)",
+      "priceCoinsLabel": "Moedas",
+      "priceCreditsLabel": "Créditos",
+      "applySuggestedTitle": "Aplicar preço calibrado sugerido ({price})",
+      "removedNotice": "{count, plural, one {1 pacote será removido ao salvar} other {# pacotes serão removidos ao salvar}} (compras anteriores continuam preservadas no Histórico)."
+    },
     "debtUnitPricingLabel": "Tabela unitária (sem desconto de pacote)",
     "debtUnitPricingHint": "(8 moedas / 30 min)",
     "debtUnitPricingTooltipTitle": "Por que a Dívida usa preço unitário?",
@@ -459,10 +498,13 @@
     "mysteryBoxPackageRequired": "Caixa Misteriosa precisa de um nível de pacote selecionado.",
     "updateError": "Erro ao atualizar recompensa no servidor.",
     "updateSuccess": "Recompensa atualizada com sucesso!",
+    "groupUpdateSuccess": "Card \"{title}\" ({count} pacotes) atualizado com sucesso!",
     "createError": "Erro ao criar recompensa no servidor.",
     "createSuccess": "Recompensa \"{title}\" criada!",
     "createSuccessDescription": "Disponível para resgate na Loja de Recompensas.",
     "batchPackagesRequired": "Selecione pelo menos um pacote para criar.",
+    "duplicatePackageTierError": "Este card já possui um pacote desse mesmo nível. Escolha outro nível.",
+    "groupTooManyPackagesError": "Um card pode ter no máximo {max} pacotes no total.",
     "batchCreateSuccess": "{count} pacotes de \"{title}\" criados e agrupados na Loja!",
     "defaultMysteryBoxTitle": "Caixa Misteriosa Básica",
     "defaultMysteryBoxTitleProductivity": "Sorteio de Pausa Essencial",

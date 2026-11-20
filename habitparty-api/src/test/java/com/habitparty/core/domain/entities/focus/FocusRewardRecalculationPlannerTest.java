@@ -107,8 +107,8 @@ class FocusRewardRecalculationPlannerTest {
         15,
         new BigDecimal("1.00"));
 
-    // 4h de foco antes do próximo registro no dia 16/11 (240 min já gastos no dia)
-    FocusRecord priorMorning = new FocusRecord(
+    // 4h de foco recompensável antes do próximo registro no dia 16/11 (90m + 90m + 60m = 240 min)
+    FocusRecord priorMorning1 = new FocusRecord(
         UUID.randomUUID(),
         userId,
         activityId,
@@ -116,15 +116,47 @@ class FocusRewardRecalculationPlannerTest {
         null,
         null,
         null,
-        LocalDateTime.of(2026, 11, 16, 8, 0),
-        LocalDateTime.of(2026, 11, 16, 12, 0),
+        LocalDateTime.of(2026, 11, 16, 7, 0),
+        LocalDateTime.of(2026, 11, 16, 8, 30),
         FocusRecordType.STOPWATCH,
         null,
         null,
         21,
         new BigDecimal("1.35"));
 
-    // 92m depois de já ter 4h no dia 16/11: deve permanecer na faixa 50% (11 XP, 0.68 coins)
+    FocusRecord priorMorning2 = new FocusRecord(
+        UUID.randomUUID(),
+        userId,
+        activityId,
+        null,
+        null,
+        null,
+        null,
+        LocalDateTime.of(2026, 11, 16, 9, 0),
+        LocalDateTime.of(2026, 11, 16, 10, 30),
+        FocusRecordType.STOPWATCH,
+        null,
+        null,
+        21,
+        new BigDecimal("1.35"));
+
+    FocusRecord priorMorning3 = new FocusRecord(
+        UUID.randomUUID(),
+        userId,
+        activityId,
+        null,
+        null,
+        null,
+        null,
+        LocalDateTime.of(2026, 11, 16, 11, 0),
+        LocalDateTime.of(2026, 11, 16, 12, 0),
+        FocusRecordType.STOPWATCH,
+        null,
+        null,
+        14,
+        new BigDecimal("0.90"));
+
+    // 92m depois de já ter 4h recompensáveis no dia 16/11: deve permanecer na faixa 50% (11 XP, 0.68 coins)
     FocusRecord afterFourHours = new FocusRecord(
         UUID.randomUUID(),
         userId,
@@ -142,10 +174,56 @@ class FocusRewardRecalculationPlannerTest {
         new BigDecimal("0.68"));
 
     var plan = FocusRewardRecalculationPlanner.planForUser(
-        List.of(legacyPomo45, priorMorning, afterFourHours), SAO_PAULO, SAO_PAULO);
+        List.of(legacyPomo45, priorMorning1, priorMorning2, priorMorning3, afterFourHours), SAO_PAULO, SAO_PAULO);
 
     assertFalse(plan.hasChanges());
     assertEquals(0, plan.totalXpDelta());
     assertEquals(new BigDecimal("0.00"), plan.totalCoinsDelta());
+  }
+
+  @Test
+  @DisplayName("Excedente > 90 min e sessões < 10 min não devem queimar a cota diária de 100% nas sessões seguintes")
+  void shouldAccumulateOnlyRewardableMinutesTowardDailyYieldCap() {
+    UUID userId = UUID.randomUUID();
+    UUID activityId = UUID.randomUUID();
+
+    // Sessão 1: 9 min (sem recompensa -> 0 min na cota)
+    FocusRecord short9 = new FocusRecord(
+        UUID.randomUUID(), userId, activityId, null, null, null, null,
+        LocalDateTime.of(2026, 11, 20, 7, 0),
+        LocalDateTime.of(2026, 11, 20, 7, 9),
+        FocusRecordType.STOPWATCH, null, null, 0, BigDecimal.ZERO);
+
+    // Sessão 2: 120 min (paga por 90m -> apenas 90m na cota, não 120m)
+    FocusRecord session120A = new FocusRecord(
+        UUID.randomUUID(), userId, activityId, null, null, null, null,
+        LocalDateTime.of(2026, 11, 20, 8, 0),
+        LocalDateTime.of(2026, 11, 20, 10, 0),
+        FocusRecordType.STOPWATCH, null, null, 21, new BigDecimal("1.35"));
+
+    // Sessão 3: 120 min (acumulado elegível até aqui: 90m, embora bruto fosse 129m -> 90m na cota)
+    FocusRecord session120B = new FocusRecord(
+        UUID.randomUUID(), userId, activityId, null, null, null, null,
+        LocalDateTime.of(2026, 11, 20, 10, 30),
+        LocalDateTime.of(2026, 11, 20, 12, 30),
+        FocusRecordType.STOPWATCH, null, null, 21, new BigDecimal("1.35"));
+
+    // Sessão 4: 60 min (acumulado elegível: 180m < 240m, embora bruto fosse 249m > 240m -> deve pagar 100%: 14 XP, 0.90)
+    // Simula caso em que o bug antigo havia pago apenas 50% (7 XP, 0.45)
+    FocusRecord session60After = new FocusRecord(
+        UUID.randomUUID(), userId, activityId, null, null, null, null,
+        LocalDateTime.of(2026, 11, 20, 14, 0),
+        LocalDateTime.of(2026, 11, 20, 15, 0),
+        FocusRecordType.STOPWATCH, null, null, 7, new BigDecimal("0.45"));
+
+    var plan = FocusRewardRecalculationPlanner.planForUser(
+        List.of(short9, session120A, session120B, session60After), SAO_PAULO, SAO_PAULO);
+
+    assertTrue(plan.hasChanges());
+    assertEquals(1, plan.adjustments().size());
+    var adj = plan.adjustments().get(0);
+    assertEquals(session60After.getId(), adj.recordId());
+    assertEquals(14, adj.newXp());
+    assertEquals(new BigDecimal("0.90"), adj.newCoins());
   }
 }

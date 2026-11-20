@@ -245,4 +245,16 @@ class FocusRewardCalculatorTest {
     assertEquals(23, reward.xp());
     assertEquals(new BigDecimal("1.48"), reward.coins());
   }
+
+  @Test
+  @DisplayName("calculateRewardableMinutes deve ignorar sessões < 10 min e limitar sessões > 90 min a 90 min")
+  void shouldComputeRewardableMinutesWithoutCountingUnrewardedTime() {
+    assertEquals(0, FocusRewardCalculator.calculateRewardableMinutes(0));
+    assertEquals(0, FocusRewardCalculator.calculateRewardableMinutes(9));
+    assertEquals(10, FocusRewardCalculator.calculateRewardableMinutes(10));
+    assertEquals(45, FocusRewardCalculator.calculateRewardableMinutes(45));
+    assertEquals(90, FocusRewardCalculator.calculateRewardableMinutes(90));
+    assertEquals(90, FocusRewardCalculator.calculateRewardableMinutes(99));
+    assertEquals(90, FocusRewardCalculator.calculateRewardableMinutes(300));
+  }
 }

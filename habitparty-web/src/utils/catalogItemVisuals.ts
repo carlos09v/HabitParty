@@ -5,6 +5,7 @@ import {
   PACKAGE_LEVEL_ICON_THEME,
   REWARD_TYPE_META,
 } from "@/constants/reward";
+import type { AppLocale } from "@/i18n/config";
 import type {
   CategoryMessageKey,
   MysteryBoxTier,
@@ -13,6 +14,7 @@ import type {
   RewardTypeMessageKey,
   RewardTypeMeta,
 } from "@/types/reward";
+import { formatCoins } from "@/utils/economy";
 import {
   getMysteryBoxTier,
   getRewardIcon,
@@ -131,4 +133,80 @@ export function resolveCatalogTypePresentation(
       : t(`types.${visuals.typeKey}` as never);
 
   return { TypeIcon, typeLabel };
+}
+
+type CatalogTooltipTranslator = ((
+  key:
+    | "tooltips.openFocusSession"
+    | "tooltips.inUse"
+    | "tooltips.insufficientCoins"
+    | "tooltips.insufficientCredits",
+) => string) &
+  ((
+    key: "tooltips.actionForPrice" | "tooltips.actionForPriceCredits",
+    values: { action: string; price: string },
+  ) => string) &
+  ((
+    key: "tooltips.actionTarget",
+    values: { action: string; title: string },
+  ) => string);
+
+/**
+ * Resolve o tooltip acessível e padronizado do botão de ação principal
+ * compartilhado entre GamifiedItemCard e ItemRow.
+ */
+export function resolveCatalogActionTooltip(params: {
+  isFocusNavigate: boolean;
+  inUse: boolean;
+  canAfford: boolean;
+  isGamified: boolean;
+  actionLabel: string;
+  title: string;
+  price?: number;
+  disabledTitle?: string;
+  locale: AppLocale;
+  t: CatalogTooltipTranslator;
+}): string {
+  const {
+    isFocusNavigate,
+    inUse,
+    canAfford,
+    isGamified,
+    actionLabel,
+    title,
+    price,
+    disabledTitle,
+    locale,
+    t,
+  } = params;
+
+  if (isFocusNavigate) {
+    return t("tooltips.openFocusSession");
+  }
+  if (inUse) {
+    return t("tooltips.inUse");
+  }
+  if (!canAfford) {
+    return (
+      disabledTitle ||
+      t(
+        isGamified
+          ? "tooltips.insufficientCoins"
+          : "tooltips.insufficientCredits",
+      )
+    );
+  }
+  if (typeof price === "number") {
+    return t(
+      isGamified ? "tooltips.actionForPrice" : "tooltips.actionForPriceCredits",
+      {
+        action: actionLabel,
+        price: formatCoins(price, { locale }),
+      },
+    );
+  }
+  return t("tooltips.actionTarget", {
+    action: actionLabel,
+    title,
+  });
 }

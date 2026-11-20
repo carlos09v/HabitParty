@@ -17,18 +17,20 @@ import type {
   InventoryItem,
   InventoryItemResponseDTO,
 } from "@/types/inventory";
-import type { Reward } from "@/types/reward";
+import type { Reward, RewardDisplayEntry } from "@/types/reward";
 import type { BoardColumn, Task } from "@/types/task";
 import type { WelcomeCardStat } from "@/types/ui";
-import { formatCoins } from "@/utils";
+import { formatCoins } from "@/utils/economy";
 import { formatFocusMinutes } from "@/utils/focusFormatters";
 import { formatCreditsLeisureEquivalence } from "@/utils/rewardEconomy";
+import { groupRewardsForShowcase } from "@/utils/rewardGrouping";
 
 /**
  * Calcula as estatísticas do WelcomeCard para a tela de Recompensas (Loja).
+ * Aceita entradas já agrupadas para evitar recomputar `groupRewardsForShowcase`.
  */
 export function calculateRewardWelcomeStats(
-  rewards: Reward[],
+  rewardsOrEntries: Reward[] | RewardDisplayEntry[],
   currentCoins: number,
   locale: AppLocale = "pt-BR",
   isGamified = false,
@@ -37,13 +39,24 @@ export function calculateRewardWelcomeStats(
   redeemableCount: number;
 } {
   const t = getUtilityTranslator(locale, "catalog.rewards");
+  const groupedEntries: RewardDisplayEntry[] =
+    rewardsOrEntries.length > 0 && "variants" in rewardsOrEntries[0]
+      ? (rewardsOrEntries as RewardDisplayEntry[])
+      : groupRewardsForShowcase(rewardsOrEntries as Reward[]);
   let redeemableCount = 0;
   let timeBasedCount = 0;
   let singleUseCount = 0;
   let mysteryCount = 0;
+  let groupedPackagesCount = 0;
 
-  for (const r of rewards) {
-    if (r.price <= currentCoins) redeemableCount++;
+  for (const entry of groupedEntries) {
+    if (entry.variants.some((v) => v.price <= currentCoins)) {
+      redeemableCount++;
+    }
+    if (entry.variants.length > 1) {
+      groupedPackagesCount += entry.variants.length;
+    }
+    const r = entry.primaryReward;
     if (r.type === "TIME_BASED" || r.type === "TimeBased") {
       timeBasedCount++;
     } else if (r.type === "SINGLE_USE" || r.type === "SingleUse") {
@@ -67,6 +80,9 @@ export function calculateRewardWelcomeStats(
         : t("breakDrawCount", { count: mysteryCount }),
     );
   }
+  if (groupedPackagesCount > 0) {
+    breakdownParts.push(t("packagesCount", { count: groupedPackagesCount }));
+  }
   const hint =
     breakdownParts.length > 0 ? breakdownParts.join(" • ") : t("noOptions");
 
@@ -87,7 +103,7 @@ export function calculateRewardWelcomeStats(
     },
     {
       label: t("redeemableLabel"),
-      value: t("itemCount", { count: redeemableCount }),
+      value: t("cardsCount", { count: redeemableCount }),
       icon: Gift,
       variant: redeemableCount > 0 ? "success" : "default",
       hint:
@@ -99,7 +115,7 @@ export function calculateRewardWelcomeStats(
     },
     {
       label: t("showcaseLabel"),
-      value: t("optionsCount", { count: rewards.length }),
+      value: t("cardsCount", { count: groupedEntries.length }),
       icon: Store,
       variant: "primary",
       hint,

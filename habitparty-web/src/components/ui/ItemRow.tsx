@@ -2,9 +2,9 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Loader2, MoreVertical } from "lucide-react";
-import { useTranslations } from "next-intl";
-import { memo, type default as React } from "react";
+import { GripVertical, HelpCircle, Loader2, MoreVertical } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { memo, type default as React, useCallback } from "react";
 import {
   CatalogItemDurationBadge,
   CatalogItemPricePill,
@@ -12,19 +12,30 @@ import {
   CatalogItemVariantChips,
 } from "@/components/ui/CatalogItemBadges";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import type { CatalogItemVariant } from "@/types/reward";
+import {
+  type MysteryPopoverBridge,
+  useMysteryBoxItemPopover,
+} from "@/hooks/useMysteryBoxItemPopover";
+import type { AppLocale } from "@/i18n/config";
+import type {
+  CatalogItemVariant,
+  MysteryBoxLootItem,
+  MysteryBoxTier,
+} from "@/types/reward";
 import {
   cn,
   openContextMenuFromButton,
   STOP_DRAG_PROPAGATION_PROPS,
 } from "@/utils";
 import {
+  resolveCatalogActionTooltip,
   resolveCatalogItemVisuals,
   resolveCatalogTypePresentation,
 } from "@/utils/catalogItemVisuals";
 
 export interface ItemRowProps {
   id: string;
+  sortableId?: string;
   title: string;
   description?: string;
   type: string;
@@ -52,20 +63,22 @@ export interface ItemRowProps {
   isActiveFocusSession?: boolean;
   isDeleteChecking?: boolean;
   isActionLoading?: boolean;
+  lootItems?: MysteryBoxLootItem[];
 }
 
-/**
- * Linha de lista reordenável e memoizada para Vitrine (Rewards) e Mochila (Inventory).
- * Utiliza uma única árvore DOM responsiva (Flex no mobile -> Grid de 5 colunas no desktop md+).
- */
-export const ItemRow = memo(function ItemRow({
+type RowVisuals = ReturnType<typeof resolveCatalogItemVisuals>;
+type RowSortableState = ReturnType<typeof useSortable>;
+
+interface ItemRowContentProps extends ItemRowProps {
+  visuals: RowVisuals;
+  sortable: RowSortableState;
+  mysteryPopover?: MysteryPopoverBridge;
+}
+
+function ItemRowContent({
   id,
   title,
   description,
-  type,
-  packageLevel,
-  category,
-  iconName,
   baseDurationMinutes,
   remainingSeconds,
   quantity,
@@ -82,13 +95,15 @@ export const ItemRow = memo(function ItemRow({
   onAction,
   onDoubleClick,
   onContextMenu,
-  dragData,
   inUse = false,
-  isActiveFocusSession,
   isDeleteChecking = false,
   isActionLoading = false,
-}: ItemRowProps) {
+  visuals,
+  sortable,
+  mysteryPopover,
+}: ItemRowContentProps) {
   const t = useTranslations("ui.itemCatalog");
+  const locale = useLocale() as AppLocale;
   const { isGamified } = useExperienceMode();
   const {
     typeKey,
@@ -103,13 +118,7 @@ export const ItemRow = memo(function ItemRow({
     packageIconTheme,
     leftAccentClass,
     isFocusNavigate,
-  } = resolveCatalogItemVisuals({
-    type,
-    iconName,
-    packageLevel,
-    category,
-    isActiveFocusSession,
-  });
+  } = visuals;
 
   const {
     attributes,
@@ -118,10 +127,18 @@ export const ItemRow = memo(function ItemRow({
     transform,
     transition,
     isDragging,
-  } = useSortable({
-    id,
-    data: dragData || { id },
-  });
+  } = sortable;
+
+  const tierContainerRef = mysteryPopover?.tierContainerRef;
+  const setRowRefs = useCallback(
+    (node: HTMLLIElement | null) => {
+      setNodeRef(node);
+      if (tierContainerRef) {
+        tierContainerRef.current = node;
+      }
+    },
+    [setNodeRef, tierContainerRef],
+  );
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -133,7 +150,7 @@ export const ItemRow = memo(function ItemRow({
 
   return (
     <li
-      ref={setNodeRef}
+      ref={setRowRefs}
       style={style}
       {...attributes}
       {...listeners}
@@ -147,6 +164,45 @@ export const ItemRow = memo(function ItemRow({
         onDoubleClick(e);
       }}
       onContextMenu={onContextMenu}
+      onPointerEnter={
+        mysteryPopover
+          ? (e) => {
+              if (e.pointerType === "mouse") {
+                mysteryPopover.open();
+              }
+            }
+          : undefined
+      }
+      onPointerLeave={
+        mysteryPopover
+          ? (e) => {
+              if (e.pointerType === "mouse") {
+                mysteryPopover.close();
+              }
+            }
+          : undefined
+      }
+      onFocus={
+        mysteryPopover
+          ? (e) => {
+              if (
+                e.target === e.currentTarget &&
+                e.currentTarget.matches(":focus-visible")
+              ) {
+                mysteryPopover.open();
+              }
+            }
+          : undefined
+      }
+      onBlur={
+        mysteryPopover
+          ? (e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                mysteryPopover.close();
+              }
+            }
+          : undefined
+      }
       className={cn(
         "relative rounded-xl bg-card dark:bg-linear-to-r dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,transform] duration-150 select-none group overflow-hidden shadow-2xs dark:shadow-none",
         inUse
@@ -350,21 +406,18 @@ export const ItemRow = memo(function ItemRow({
           disabled={isPrimaryDisabled}
           aria-busy={isActionLoading}
           aria-label={`${actionLabel} ${title}`}
-          title={
-            isFocusNavigate
-              ? t("tooltips.openFocusSession")
-              : inUse
-                ? t("tooltips.inUse")
-                : disabled
-                  ? disabledTitle ||
-                    (isGamified
-                      ? t("tooltips.insufficientCoins")
-                      : t("tooltips.insufficientCredits"))
-                  : t("tooltips.actionTarget", {
-                      action: actionLabel,
-                      title,
-                    })
-          }
+          title={resolveCatalogActionTooltip({
+            isFocusNavigate,
+            inUse,
+            canAfford: !disabled,
+            isGamified,
+            actionLabel,
+            title,
+            price,
+            disabledTitle,
+            locale,
+            t,
+          })}
           className={cn(
             "inline-flex items-center justify-center gap-1.5 rounded-md font-semibold dark:font-bold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs pointer-coarse:min-h-9 px-3 py-1.5 text-xs sm:py-1",
             !isActionLoading && (isFocusNavigate || (!disabled && !inUse))
@@ -377,6 +430,32 @@ export const ItemRow = memo(function ItemRow({
           )}
           <span>{actionLabel}</span>
         </button>
+
+        {mysteryPopover && (
+          <button
+            type="button"
+            {...STOP_DRAG_PROPAGATION_PROPS}
+            onClick={(e) => {
+              e.stopPropagation();
+              mysteryPopover.toggle();
+            }}
+            onDoubleClick={(e) => e.stopPropagation()}
+            aria-expanded={mysteryPopover.isOpen}
+            aria-label={
+              isGamified
+                ? t("tierDetailsAria")
+                : t("tierDetailsAriaProductivity")
+            }
+            title={
+              isGamified
+                ? t("tierDetailsAria")
+                : t("tierDetailsAriaProductivity")
+            }
+            className="inline-flex items-center justify-center rounded-md border border-transparent text-neutral-400 hover:text-gold hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold w-8 h-8 pointer-coarse:w-9 pointer-coarse:h-9"
+          >
+            <HelpCircle size={15} aria-hidden="true" />
+          </button>
+        )}
 
         {isDeleteChecking ? (
           <output
@@ -402,8 +481,58 @@ export const ItemRow = memo(function ItemRow({
           )
         )}
       </div>
+
+      {mysteryPopover?.portalNode}
     </li>
   );
+}
+
+function MysteryBoxItemRow({
+  mysteryTier,
+  ...props
+}: ItemRowContentProps & { mysteryTier: MysteryBoxTier }) {
+  const mysteryPopover = useMysteryBoxItemPopover({
+    mysteryTier,
+    isDragging: props.sortable.isDragging,
+    price: props.price,
+    lootItems: props.lootItems,
+  });
+
+  return <ItemRowContent {...props} mysteryPopover={mysteryPopover} />;
+}
+
+/**
+ * Linha de lista reordenável e memoizada para Vitrine (Rewards) e Mochila (Inventory).
+ * Isola hooks de popover flutuante exclusivamente para Caixas Misteriosas.
+ * Utiliza uma única árvore DOM responsiva (Flex no mobile -> Grid de 5 colunas no desktop md+).
+ */
+export const ItemRow = memo(function ItemRow(props: ItemRowProps) {
+  const visuals = resolveCatalogItemVisuals({
+    type: props.type,
+    iconName: props.iconName,
+    packageLevel: props.packageLevel,
+    category: props.category,
+    isActiveFocusSession: props.isActiveFocusSession,
+    includeMysteryTier: true,
+  });
+
+  const sortable = useSortable({
+    id: props.sortableId ?? props.id,
+    data: props.dragData || { id: props.id },
+  });
+
+  if (visuals.isMystery && visuals.mysteryTier) {
+    return (
+      <MysteryBoxItemRow
+        {...props}
+        visuals={visuals}
+        sortable={sortable}
+        mysteryTier={visuals.mysteryTier}
+      />
+    );
+  }
+
+  return <ItemRowContent {...props} visuals={visuals} sortable={sortable} />;
 });
 
 export {

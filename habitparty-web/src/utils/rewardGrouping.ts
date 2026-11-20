@@ -1,4 +1,11 @@
-import type { Reward, RewardDisplayEntry } from "@/types/reward";
+import type {
+  PackageMessageKey,
+  Reward,
+  RewardCategory,
+  RewardDisplayEntry,
+  RewardType,
+} from "@/types/reward";
+import { formatFocusMinutes } from "@/utils/focusFormatters";
 import {
   toCategoryMessageKey,
   toPackageMessageKey,
@@ -14,16 +21,16 @@ const PACKAGE_SORT_ORDER: Record<string, number> = {
 };
 
 const PAREN_SUFFIX_PATTERN =
-  /\s*[([](?:pacote\s+|package\s+|pack\s+|tier\s+)?(?:n[íi]vel\s+)?(?:b[áa]sico|basic|premium|padr[ãa]o|standard|[ée]pico?|epic|lend[áa]rio|legendary|di[áa]rio|semanal|mimo|marco|\d+\s*(?:min(?:uto)?s?|m|h(?:ora)?s?))[)\]]\s*$/i;
+  /\s*[([](?:pacote\s+|package\s+|pack\s+|tier\s+)?(?:n[íi]vel\s+)?(?:b[áa]sico|basic|premium|padr[ãa]o|standard|[ée]pico?|epic|lend[áa]rio|legendary|di[áa]rio|semanal|mimo|marco|\d+\s*h(?:ora)?s?\s*\d+\s*m(?:in(?:uto)?s?)?|\d+\s*(?:min(?:uto)?s?|m|h(?:ora)?s?))[)\]]\s*$/i;
 
 const TRAILING_TIER_PATTERN =
   /\s*(?:[-–—:|•]\s*|\s+)(?:pacote\s+|package\s+|pack\s+)?(?:b[áa]sico|basic|premium|padr[ãa]o|standard|[ée]pico?|epic|lend[áa]rio|legendary)\s*$/i;
 
 const TRAILING_DURATION_PATTERN =
-  /\s*(?:[-–—:|•]\s*|\s+)\d+\s*(?:min(?:uto)?s?|m|h(?:ora)?s?)\s*$/i;
+  /\s*(?:[-–—:|•]\s*|\s+)(?:\d+\s*h(?:ora)?s?\s*\d+\s*m(?:in(?:uto)?s?)?|\d+\s*(?:min(?:uto)?s?|m|h(?:ora)?s?))\s*$/i;
 
 /**
- * Remove sufixos de tier/duração (ex.: "- Básico (30m)", "1h", "Épico") do título
+ * Remove sufixos de tier/duração (ex.: "- Básico (30m)", "1h 30m", "Épico") do título
  * para agrupar pacotes da mesma recompensa em um card único na vitrine.
  */
 export function extractRewardGroupBaseTitle(title: string): string {
@@ -46,12 +53,111 @@ export function extractRewardGroupBaseTitle(title: string): string {
   return current || trimmed;
 }
 
-function normalizeTitleKey(baseTitle: string): string {
+/**
+ * Extrai apenas o sufixo que diferencia uma variante dentro de um card agrupado.
+ */
+export function extractRewardVariantSuffix(title: string): string {
+  const normalized = title.trim().replace(/\s+/g, " ");
+  const baseTitle = extractRewardGroupBaseTitle(normalized);
+  if (!normalized || !baseTitle || normalized.length <= baseTitle.length) {
+    return "";
+  }
+  if (normalized.toLowerCase().startsWith(baseTitle.toLowerCase())) {
+    return normalized.slice(baseTitle.length);
+  }
+  return "";
+}
+
+/**
+ * Monta o título completo de uma variante preservando o sufixo e respeitando o limite de caracteres.
+ */
+export function buildRewardVariantTitle(
+  baseTitle: string,
+  suffix: string,
+  maxLength = 30,
+): string {
+  const trimmedBase = baseTitle.trim().replace(/\s+/g, " ");
+  if (!trimmedBase) return "";
+  if (!suffix) return trimmedBase.slice(0, maxLength).trim();
+  const availableBase = Math.max(1, maxLength - suffix.length);
+  const safeBase = trimmedBase.slice(0, availableBase).trim();
+  return `${safeBase}${suffix}`.slice(0, maxLength).trim();
+}
+
+/**
+ * Rótulo curto para identificar um pacote específico em menus e confirmações.
+ */
+export function formatRewardVariantBadge(reward: Reward): string {
+  const typeKey = toRewardTypeMessageKey(reward.type);
+  const pkgKey = toPackageMessageKey(reward.packageLevel);
+  if (typeKey === "TimeBased" && reward.baseDurationMinutes) {
+    return formatFocusMinutes(reward.baseDurationMinutes);
+  }
+  if (pkgKey !== "NONE") {
+    return String(reward.packageLevel);
+  }
+  return reward.title;
+}
+
+export function normalizeRewardTitleKey(baseTitle: string): string {
   return baseTitle
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
     .toLowerCase()
     .trim();
+}
+
+/**
+ * Encontra os pacotes existentes do mesmo card na vitrine e quais níveis nomeados
+ * (Básico, Premium, Épico, Lendário) já estão em uso nele.
+ */
+export function findMatchingGroupTierUsage(
+  rewards: Reward[],
+  params: {
+    title: string;
+    type: RewardType;
+    category: RewardCategory;
+    excludeRewardId?: string;
+  },
+): {
+  matchingCount: number;
+  usedPackageKeys: Set<PackageMessageKey>;
+} {
+  const usedPackageKeys = new Set<PackageMessageKey>();
+  const targetTypeKey = toRewardTypeMessageKey(params.type);
+  const targetCatKey = toCategoryMessageKey(params.category);
+  if (
+    targetCatKey === "DEBT" ||
+    (targetTypeKey !== "TimeBased" && targetTypeKey !== "SingleUse")
+  ) {
+    return { matchingCount: 0, usedPackageKeys };
+  }
+
+  const targetTitleKey = normalizeRewardTitleKey(
+    extractRewardGroupBaseTitle(params.title),
+  );
+  if (!targetTitleKey) {
+    return { matchingCount: 0, usedPackageKeys };
+  }
+
+  let matchingCount = 0;
+  for (const r of rewards) {
+    if (params.excludeRewardId && r.id === params.excludeRewardId) continue;
+    if (toRewardTypeMessageKey(r.type) !== targetTypeKey) continue;
+    if (toCategoryMessageKey(r.category) !== targetCatKey) continue;
+    const itemTitleKey = normalizeRewardTitleKey(
+      extractRewardGroupBaseTitle(r.title),
+    );
+    if (itemTitleKey !== targetTitleKey) continue;
+
+    matchingCount += 1;
+    const pkgKey = toPackageMessageKey(r.packageLevel);
+    if (pkgKey !== "NONE") {
+      usedPackageKeys.add(pkgKey);
+    }
+  }
+
+  return { matchingCount, usedPackageKeys };
 }
 
 function compareRewardVariants(a: Reward, b: Reward): number {
@@ -82,7 +188,6 @@ function canGroupReward(reward: Reward): boolean {
 
 export function groupRewardsForShowcase(
   rewards: Reward[],
-  selectedVariantByGroup: Record<string, string> = {},
 ): RewardDisplayEntry[] {
   const bucketMap = new Map<
     string,
@@ -114,7 +219,7 @@ export function groupRewardsForShowcase(
     const typeKey = toRewardTypeMessageKey(reward.type);
     const categoryKey = toCategoryMessageKey(reward.category);
     const displayTitle = extractRewardGroupBaseTitle(reward.title);
-    const titleKey = normalizeTitleKey(displayTitle);
+    const titleKey = normalizeRewardTitleKey(displayTitle);
     const bucketKey = `${typeKey}::${categoryKey}::${titleKey}`;
 
     const existing = bucketMap.get(bucketKey);
@@ -150,9 +255,7 @@ export function groupRewardsForShowcase(
     }
 
     const sortedVariants = [...bucket.items].sort(compareRewardVariants);
-    const preferredId = selectedVariantByGroup[bucket.groupId];
-    const primaryReward =
-      sortedVariants.find((v) => v.id === preferredId) ?? sortedVariants[0];
+    const primaryReward = sortedVariants[0];
     const hasGroupDescription = sortedVariants.some((v) =>
       Boolean(v.description?.trim()),
     );

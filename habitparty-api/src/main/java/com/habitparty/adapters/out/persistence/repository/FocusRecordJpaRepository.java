@@ -50,9 +50,16 @@ public interface FocusRecordJpaRepository extends JpaRepository<FocusRecordJpaEn
 
   Page<FocusRecordJpaEntity> findAllByUserIdOrderByStartTimeDesc(UUID userId, Pageable pageable);
 
-  // Soma de minutos produtivos de hoje (sem itens de inventário)
+  // Soma apenas minutos elegíveis à recompensa no dia (>= 10 min e teto de 90 min por sessão,
+  // alinhado a FocusRewardCalculator.calculateRewardableMinutes), ignorando itens de inventário.
   @Query("""
-      SELECT COALESCE(SUM(f.durationMinutes), 0)
+      SELECT COALESCE(SUM(
+        CASE
+          WHEN f.durationMinutes < 10 THEN 0
+          WHEN f.durationMinutes > 90 THEN 90
+          ELSE f.durationMinutes
+        END
+      ), 0)
       FROM FocusRecordJpaEntity f
       WHERE f.userId = :userId
         AND f.inventoryItemId IS NULL

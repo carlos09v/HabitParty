@@ -81,7 +81,7 @@ interface FocusHeroStageProps {
   activities: FocusActivity[];
   backpackItems: InventoryItemResponseDTO[];
   focusableTasks?: FocusableTaskItem[];
-  todayProductiveMinutes?: number;
+  todayRewardableMinutes?: number;
   onSelectActivity?: (activityId: string | null) => void;
   onStartFocusActivity?: (act: FocusActivity) => void;
   onStartFocusItem?: (item: InventoryItemResponseDTO) => void;
@@ -96,7 +96,7 @@ export function FocusHeroStage({
   activities,
   backpackItems,
   focusableTasks = [],
-  todayProductiveMinutes,
+  todayRewardableMinutes,
   onSelectActivity,
   onStartFocusActivity,
   onStartFocusItem,
@@ -403,9 +403,9 @@ export function FocusHeroStage({
                 </span>
               </div>
             )}
-            {typeof todayProductiveMinutes === "number" && !isInventoryItem && (
+            {typeof todayRewardableMinutes === "number" && !isInventoryItem && (
               <FocusDailyYieldBadge
-                todayProductiveMinutes={todayProductiveMinutes}
+                todayRewardableMinutes={todayRewardableMinutes}
               />
             )}
           </div>
@@ -589,8 +589,8 @@ export function FocusHeroStage({
           isActive={isActive}
           isSavingSession={isSavingSession}
           isSessionRewardCapped={isSessionRewardCapped}
-          todayProductiveMinutes={
-            isInventoryItem ? undefined : todayProductiveMinutes
+          todayRewardableMinutes={
+            isInventoryItem ? undefined : todayRewardableMinutes
           }
           mode={mode}
           phase={phase}

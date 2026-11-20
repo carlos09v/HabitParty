@@ -294,7 +294,7 @@ export const HELP_FAQS: HelpFaqItem[] = [
       "Molduras Cósmicas de Avatar: 5 molduras animadas exclusivas com aura e pulso de luz radiante para seu perfil.",
       "Sons Ambientes de Foco: Sons relaxantes sintetizados nativamente no Pomodoro (Chuva Suave, Cafeteria, Lofi Zen e Fogueira).",
       "Pacote de Ícones VIP: Coleção exclusiva de ícones dourados para colunas, rotinas, foco e itens da loja.",
-      "Capacidade Expandida: Até 4 Ambientes/Workspaces (o dobro do free), até 6 colunas por quadro, até 6 atividades personalizadas no Modo Foco, mochila expandida para 100 itens e até 100 recompensas cadastradas.",
+      "Capacidade Expandida: Até 4 Ambientes/Workspaces (o dobro do free), até 6 colunas por quadro, até 6 atividades personalizadas no Modo Foco, mochila expandida para 100 itens e até 50 cards de recompensas na loja (contra 12 no plano gratuito, com até 4 pacotes por card).",
       "7 Temas Visuais Atmosféricos: A conta gratuita já inclui 4 temas completos (Dark Cósmico, Cosmic Daylight, Cavaleiro das Trevas e Pergaminho Solar). O plano Premium desbloqueia mais 3 temas exclusivos VIP: Cyberpunk Neon, Guardião da Floresta e Ouro Real.",
       "Destaque no Perfil: Emblema VIP de Guardião Cósmico e anel dourado estelar no avatar.",
       "Planos e Pagamento: R$ 9,90/mês ou R$ 99,00/ano (economia de ~17%), com suporte a Cartão de Crédito recorrente ou Pix Avulso de 30/365 dias sem renovação automática.",

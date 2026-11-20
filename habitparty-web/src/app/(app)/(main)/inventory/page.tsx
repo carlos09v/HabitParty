@@ -4,6 +4,7 @@ import { InventoryContainer } from "@/components/inventory/InventoryContainer";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getInventoryData } from "@/services/inventoryService";
+import { getCurrentUser } from "@/services/userService";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("inventory.metadata");
@@ -14,12 +15,18 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function InventoryPage() {
-  const { items: initialItems } = await getInventoryData();
+  const [{ items: initialItems }, user] = await Promise.all([
+    getInventoryData(),
+    getCurrentUser(),
+  ]);
 
   return (
     <ScopedIntlProvider scope="inventory">
       <PageWrapper>
-        <InventoryContainer initialItems={initialItems} />
+        <InventoryContainer
+          initialItems={initialItems}
+          initialExperienceMode={user?.experienceMode ?? "PRODUCTIVITY"}
+        />
       </PageWrapper>
     </ScopedIntlProvider>
   );

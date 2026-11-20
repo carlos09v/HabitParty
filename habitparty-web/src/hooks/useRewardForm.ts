@@ -1,14 +1,20 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { createReward, updateReward } from "@/actions/rewardActions";
+import {
+  createReward,
+  createRewardsBatch,
+  saveRewardGroup,
+  updateReward,
+} from "@/actions/rewardActions";
+import type { EditableGroupVariant } from "@/components/reward/form/RewardGroupPackagesEditor";
 import {
   COUPON_PACKAGE_OPTIONS,
-  calculateSuggestedCouponPrice,
   DEBT_DEFAULT_UNIT_PRICE,
-  DEFAULT_MYSTERY_BOX_LOOT,
+  MAX_REWARD_PACKAGES_PER_CARD,
+  SINGLE_USE_TIER_OPTIONS,
 } from "@/constants/reward";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { RewardPrefillDraft } from "@/hooks/useRewardCatalogActions";
@@ -17,16 +23,32 @@ import type {
   PackageLevel,
   Reward,
   RewardCategory,
+  RewardGroupContext,
   RewardType,
 } from "@/types/reward";
-import { formatFocusMinutes } from "@/utils/focusFormatters";
+import { calculateSuggestedCouponPrice } from "@/utils/rewardEconomy";
+import {
+  buildBatchCouponPayloads,
+  buildGroupUpdateDto,
+  buildPrefillPackageTitle,
+  buildSingleRewardFormInput,
+  createDefaultLootTuple,
+  type LootTuple,
+} from "@/utils/rewardFormHelpers";
+import {
+  extractRewardGroupBaseTitle,
+  extractRewardVariantSuffix,
+  findMatchingGroupTierUsage,
+} from "@/utils/rewardGrouping";
 import {
   getMysteryBoxTier,
+  mapRewardDtoToReward,
   mapRewardFormToCreatePayload,
   mapRewardFormToUpdatePayload,
   suggestRewardIconFromTitle,
   toCategoryMessageKey,
   toPackageMessageKey,
+  toRewardTypeMessageKey,
 } from "@/utils/rewardMapper";
 import { soundEffects } from "@/utils/soundEffects";
 
@@ -39,22 +61,31 @@ const DEFAULT_BATCH_PACKAGES: readonly PackageLevel[] = [
 interface UseRewardFormProps {
   isOpen: boolean;
   rewardToEdit?: Reward | null;
+  groupToEdit?: (RewardGroupContext & { activeVariantId?: string }) | null;
   prefillDraft?: RewardPrefillDraft | null;
+  existingRewards?: Reward[];
   onSuccess?: (reward: Reward | Reward[]) => void;
+  onGroupSuccess?: (sourceIds: string[], savedRewards: Reward[]) => void;
   onClose: () => void;
 }
 
 export function useRewardForm({
   isOpen,
   rewardToEdit,
+  groupToEdit,
   prefillDraft,
+  existingRewards = [],
   onSuccess,
+  onGroupSuccess,
   onClose,
 }: UseRewardFormProps) {
   const t = useTranslations("rewards.hook");
   const tMystery = useTranslations("rewards.mysteryBox");
   const { isGamified } = useExperienceMode();
-  const isEditing = Boolean(rewardToEdit);
+  const isEditingGroup = Boolean(
+    groupToEdit && groupToEdit.variants.length > 1,
+  );
+  const isEditing = Boolean(rewardToEdit) || isEditingGroup;
   const [isPending, startTransition] = useTransition();
 
   const [title, setTitle] = useState("");
@@ -64,123 +95,227 @@ export function useRewardForm({
   const [category, setCategory] = useState<RewardCategory>("Nenhum");
   const lastRegularCategoryRef = useRef<RewardCategory>("Nenhum");
   const wasSingleUseDebtRef = useRef<boolean>(false);
+  const hasManuallyEditedTitleRef = useRef<boolean>(false);
   const [packageLevel, setPackageLevel] = useState<PackageLevel>("Nenhum");
   const [baseDurationMinutes, setBaseDurationMinutes] = useState("30");
   const [selectedIcon, setSelectedIcon] = useState("gamepad");
   const [hasManuallyChangedIcon, setHasManuallyChangedIcon] = useState(false);
   const [hasManuallyEditedPrice, setHasManuallyEditedPrice] = useState(false);
-  const [lootItems, setLootItems] = useState<
-    [MysteryBoxLootItem, MysteryBoxLootItem, MysteryBoxLootItem]
-  >(() => [
-    { ...DEFAULT_MYSTERY_BOX_LOOT.Básico[0] },
-    { ...DEFAULT_MYSTERY_BOX_LOOT.Básico[1] },
-    { ...DEFAULT_MYSTERY_BOX_LOOT.Básico[2] },
-  ]);
+  const [lootItems, setLootItems] = useState<LootTuple>(() =>
+    createDefaultLootTuple(),
+  );
   const [hasCustomizedLoot, setHasCustomizedLoot] = useState(false);
   const [createMultiplePackages, setCreateMultiplePackages] = useState(false);
   const [selectedBatchPackages, setSelectedBatchPackages] = useState<
     PackageLevel[]
   >([...DEFAULT_BATCH_PACKAGES]);
+  const [groupVariants, setGroupVariants] = useState<EditableGroupVariant[]>(
+    [],
+  );
+
+  const groupTierUsage = useMemo(
+    () =>
+      findMatchingGroupTierUsage(existingRewards, {
+        title,
+        type,
+        category,
+        excludeRewardId: rewardToEdit?.id,
+      }),
+    [existingRewards, title, type, category, rewardToEdit?.id],
+  );
 
   useEffect(() => {
-    if (isOpen) {
-      setHasManuallyChangedIcon(false);
-      setHasManuallyEditedPrice(false);
-      setCreateMultiplePackages(false);
-      setSelectedBatchPackages([...DEFAULT_BATCH_PACKAGES]);
-      if (rewardToEdit) {
-        setTitle(rewardToEdit.title || "");
-        setDescription(rewardToEdit.description || "");
-        setPrice(
-          rewardToEdit.price !== undefined ? String(rewardToEdit.price) : "4",
-        );
-        const resolvedInitialType =
-          (rewardToEdit.type as RewardType) || "SingleUse";
-        setType(resolvedInitialType);
-        const initialCat =
-          (rewardToEdit.category as RewardCategory) || "Nenhum";
-        const initialIsDebt = toCategoryMessageKey(initialCat) === "DEBT";
-        setCategory(initialCat);
-        lastRegularCategoryRef.current = initialIsDebt ? "Nenhum" : initialCat;
-        wasSingleUseDebtRef.current =
-          resolvedInitialType === "SingleUse" && initialIsDebt;
-        const initialPkg = initialIsDebt
-          ? "Nenhum"
-          : (rewardToEdit.packageLevel as PackageLevel) || "Nenhum";
-        setPackageLevel(initialPkg);
-        setBaseDurationMinutes(
-          rewardToEdit.baseDurationMinutes !== undefined
-            ? String(rewardToEdit.baseDurationMinutes)
-            : "30",
-        );
-        setSelectedIcon(
-          rewardToEdit.icon ||
-            (rewardToEdit.iconName as string) ||
-            (rewardToEdit.type === "MysteryBox" ? "mystery_box" : "gamepad"),
-        );
-        const tierObj = getMysteryBoxTier(initialPkg);
-        const defaultTierLoot =
-          DEFAULT_MYSTERY_BOX_LOOT[tierObj.id] ||
-          DEFAULT_MYSTERY_BOX_LOOT.Básico;
-        if (rewardToEdit.lootItems && rewardToEdit.lootItems.length === 3) {
-          setLootItems([
-            { ...rewardToEdit.lootItems[0] },
-            { ...rewardToEdit.lootItems[1] },
-            { ...rewardToEdit.lootItems[2] },
-          ]);
-          setHasCustomizedLoot(true);
-        } else {
-          setLootItems([
-            { ...defaultTierLoot[0] },
-            { ...defaultTierLoot[1] },
-            { ...defaultTierLoot[2] },
-          ]);
-          setHasCustomizedLoot(false);
+    if (!isOpen || isEditingGroup || isEditing) return;
+    const currentPkgKey = toPackageMessageKey(packageLevel);
+    if (
+      currentPkgKey === "NONE" ||
+      !groupTierUsage.usedPackageKeys.has(currentPkgKey)
+    ) {
+      return;
+    }
+
+    if (toRewardTypeMessageKey(type) === "TimeBased") {
+      const nextAvailable = COUPON_PACKAGE_OPTIONS.find((opt) => {
+        const k = toPackageMessageKey(opt.id);
+        return k !== "NONE" && !groupTierUsage.usedPackageKeys.has(k);
+      });
+      if (nextAvailable) {
+        setPackageLevel(nextAvailable.id);
+        if (!hasManuallyEditedPrice) {
+          if (nextAvailable.suggestedMinutes) {
+            setBaseDurationMinutes(String(nextAvailable.suggestedMinutes));
+            if (prefillDraft && !hasManuallyEditedTitleRef.current) {
+              setTitle(
+                buildPrefillPackageTitle(
+                  prefillDraft.title,
+                  nextAvailable.suggestedMinutes,
+                ),
+              );
+            }
+          }
+          if (typeof nextAvailable.suggestedPrice === "number") {
+            setPrice(String(nextAvailable.suggestedPrice));
+          }
         }
-      } else if (prefillDraft) {
-        const draftPkg =
-          COUPON_PACKAGE_OPTIONS.find(
-            (opt) =>
-              opt.id === (prefillDraft.suggestedPackageLevel || "Premium"),
-          ) ?? COUPON_PACKAGE_OPTIONS[2];
-        const draftCat = prefillDraft.category || "Nenhum";
-        const draftIsDebt = toCategoryMessageKey(draftCat) === "DEBT";
-        setTitle(prefillDraft.title || "");
-        setDescription(prefillDraft.description || "");
-        setType(prefillDraft.type || "TimeBased");
-        setCategory(draftIsDebt ? "Nenhum" : draftCat);
-        lastRegularCategoryRef.current = draftIsDebt ? "Nenhum" : draftCat;
-        wasSingleUseDebtRef.current = false;
-        setPackageLevel(draftPkg.id);
-        setBaseDurationMinutes(String(draftPkg.suggestedMinutes ?? 60));
-        setPrice(String(draftPkg.suggestedPrice ?? 15));
-        setSelectedIcon(prefillDraft.iconName || "gamepad");
-        setLootItems([
-          { ...DEFAULT_MYSTERY_BOX_LOOT.Básico[0] },
-          { ...DEFAULT_MYSTERY_BOX_LOOT.Básico[1] },
-          { ...DEFAULT_MYSTERY_BOX_LOOT.Básico[2] },
-        ]);
-        setHasCustomizedLoot(false);
       } else {
-        setTitle("");
-        setDescription("");
-        setPrice("4");
-        setType("SingleUse");
-        setCategory("Nenhum");
-        lastRegularCategoryRef.current = "Nenhum";
-        wasSingleUseDebtRef.current = false;
         setPackageLevel("Nenhum");
-        setBaseDurationMinutes("30");
-        setSelectedIcon("gamepad");
+      }
+    } else if (toRewardTypeMessageKey(type) === "SingleUse") {
+      setPackageLevel("Nenhum");
+    }
+  }, [
+    isOpen,
+    isEditingGroup,
+    isEditing,
+    type,
+    packageLevel,
+    hasManuallyEditedPrice,
+    groupTierUsage.usedPackageKeys,
+    prefillDraft,
+  ]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setHasManuallyChangedIcon(false);
+    setHasManuallyEditedPrice(false);
+    setCreateMultiplePackages(false);
+    setSelectedBatchPackages([...DEFAULT_BATCH_PACKAGES]);
+
+    if (groupToEdit && groupToEdit.variants.length > 1) {
+      hasManuallyEditedTitleRef.current = true;
+      const primary =
+        groupToEdit.variants.find(
+          (v) => v.id === groupToEdit.activeVariantId,
+        ) ?? groupToEdit.variants[0];
+      const firstNonEmptyDesc =
+        groupToEdit.variants.find((v) => v.description?.trim())?.description ??
+        "";
+      const resolvedType = (primary.type as RewardType) || "TimeBased";
+      const initialCat = (primary.category as RewardCategory) || "Nenhum";
+      const initialIsDebt = toCategoryMessageKey(initialCat) === "DEBT";
+      setTitle(
+        groupToEdit.displayTitle || extractRewardGroupBaseTitle(primary.title),
+      );
+      setDescription(firstNonEmptyDesc);
+      setType(resolvedType);
+      setCategory(initialIsDebt ? "Nenhum" : initialCat);
+      lastRegularCategoryRef.current = initialIsDebt ? "Nenhum" : initialCat;
+      wasSingleUseDebtRef.current = false;
+      setPackageLevel((primary.packageLevel as PackageLevel) || "Nenhum");
+      setBaseDurationMinutes(
+        primary.baseDurationMinutes !== undefined
+          ? String(primary.baseDurationMinutes)
+          : "30",
+      );
+      setPrice(primary.price !== undefined ? String(primary.price) : "8");
+      setSelectedIcon(primary.icon || "gamepad");
+      setGroupVariants(
+        groupToEdit.variants.map((variant) => {
+          const pkg = (variant.packageLevel as PackageLevel) || "Nenhum";
+          return {
+            localKey: variant.id,
+            id: variant.id,
+            packageLevel: pkg,
+            durationMinutes: String(variant.baseDurationMinutes ?? 30),
+            price: String(variant.price ?? 8),
+            originalSuffix: extractRewardVariantSuffix(variant.title),
+            originalPackageLevel: pkg,
+            isOriginallySelected: variant.id === groupToEdit.activeVariantId,
+          };
+        }),
+      );
+      setLootItems(createDefaultLootTuple());
+      setHasCustomizedLoot(false);
+      return;
+    }
+
+    if (rewardToEdit) {
+      hasManuallyEditedTitleRef.current = true;
+      setGroupVariants([]);
+      setTitle(rewardToEdit.title || "");
+      setDescription(rewardToEdit.description || "");
+      setPrice(
+        rewardToEdit.price !== undefined ? String(rewardToEdit.price) : "4",
+      );
+      const resolvedInitialType =
+        (rewardToEdit.type as RewardType) || "SingleUse";
+      setType(resolvedInitialType);
+      const initialCat = (rewardToEdit.category as RewardCategory) || "Nenhum";
+      const initialIsDebt = toCategoryMessageKey(initialCat) === "DEBT";
+      setCategory(initialCat);
+      lastRegularCategoryRef.current = initialIsDebt ? "Nenhum" : initialCat;
+      wasSingleUseDebtRef.current =
+        resolvedInitialType === "SingleUse" && initialIsDebt;
+      const initialPkg = initialIsDebt
+        ? "Nenhum"
+        : (rewardToEdit.packageLevel as PackageLevel) || "Nenhum";
+      setPackageLevel(initialPkg);
+      setBaseDurationMinutes(
+        rewardToEdit.baseDurationMinutes !== undefined
+          ? String(rewardToEdit.baseDurationMinutes)
+          : "30",
+      );
+      setSelectedIcon(
+        rewardToEdit.icon ||
+          (rewardToEdit.type === "MysteryBox" ? "mystery_box" : "gamepad"),
+      );
+      const tierObj = getMysteryBoxTier(initialPkg);
+      if (rewardToEdit.lootItems && rewardToEdit.lootItems.length === 3) {
         setLootItems([
-          { ...DEFAULT_MYSTERY_BOX_LOOT.Básico[0] },
-          { ...DEFAULT_MYSTERY_BOX_LOOT.Básico[1] },
-          { ...DEFAULT_MYSTERY_BOX_LOOT.Básico[2] },
+          { ...rewardToEdit.lootItems[0] },
+          { ...rewardToEdit.lootItems[1] },
+          { ...rewardToEdit.lootItems[2] },
         ]);
+        setHasCustomizedLoot(true);
+      } else {
+        setLootItems(createDefaultLootTuple(tierObj.id));
         setHasCustomizedLoot(false);
       }
+      return;
     }
-  }, [isOpen, rewardToEdit, prefillDraft]);
+
+    if (prefillDraft) {
+      hasManuallyEditedTitleRef.current = false;
+      setGroupVariants([]);
+      const draftPkg =
+        COUPON_PACKAGE_OPTIONS.find(
+          (opt) => opt.id === (prefillDraft.suggestedPackageLevel || "Premium"),
+        ) ?? COUPON_PACKAGE_OPTIONS[2];
+      const draftCat = prefillDraft.category || "Nenhum";
+      const draftIsDebt = toCategoryMessageKey(draftCat) === "DEBT";
+      setTitle(
+        buildPrefillPackageTitle(prefillDraft.title, draftPkg.suggestedMinutes),
+      );
+      setDescription(prefillDraft.description || "");
+      setType(prefillDraft.type || "TimeBased");
+      setCategory(draftIsDebt ? "Nenhum" : draftCat);
+      lastRegularCategoryRef.current = draftIsDebt ? "Nenhum" : draftCat;
+      wasSingleUseDebtRef.current = false;
+      setPackageLevel(draftPkg.id);
+      setBaseDurationMinutes(String(draftPkg.suggestedMinutes ?? 60));
+      setPrice(String(draftPkg.suggestedPrice ?? 15));
+      setSelectedIcon(prefillDraft.icon || "gamepad");
+      setLootItems(createDefaultLootTuple());
+      setHasCustomizedLoot(false);
+      return;
+    }
+
+    hasManuallyEditedTitleRef.current = false;
+    setGroupVariants([]);
+    setTitle("");
+    setDescription("");
+    setPrice("4");
+    setType("SingleUse");
+    setCategory("Nenhum");
+    lastRegularCategoryRef.current = "Nenhum";
+    wasSingleUseDebtRef.current = false;
+    setPackageLevel("Nenhum");
+    setBaseDurationMinutes("30");
+    setSelectedIcon("gamepad");
+    setLootItems(createDefaultLootTuple());
+    setHasCustomizedLoot(false);
+  }, [isOpen, rewardToEdit, groupToEdit, prefillDraft]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,79 +325,82 @@ export function useRewardForm({
       return;
     }
 
-    const isBatchCouponCreation =
-      !isEditing && type === "TimeBased" && createMultiplePackages;
-
-    if (isBatchCouponCreation) {
-      const selectedOptions = COUPON_PACKAGE_OPTIONS.filter(
-        (opt) =>
-          opt.id !== "Nenhum" &&
-          selectedBatchPackages.some(
-            (selected) =>
-              toPackageMessageKey(selected) === toPackageMessageKey(opt.id),
-          ),
-      );
-      if (selectedOptions.length === 0) {
-        toast.error(t("batchPackagesRequired"));
+    if (isEditingGroup && groupToEdit) {
+      const built = buildGroupUpdateDto({
+        groupToEdit,
+        groupVariants,
+        title,
+        description,
+        selectedIcon,
+        type,
+        category,
+      });
+      if (!built.ok) {
+        toast.error(t(built.errorKey));
         return;
       }
 
       startTransition(async () => {
-        const createdRewards: Reward[] = [];
-        const baseName = title.trim();
-        const optionVariants = selectedOptions.map((opt) => ({
-          opt,
-          suffix: opt.suggestedMinutes
-            ? ` (${formatFocusMinutes(opt.suggestedMinutes)})`
-            : ` - ${opt.id}`,
-        }));
-        // Truncar a base pelo maior sufixo selecionado garante que todo o lote compartilhe o mesmo prefixo ao agrupar na vitrine
-        const maxSuffixLength = optionVariants.reduce(
-          (max, item) => Math.max(max, item.suffix.length),
-          0,
+        const result = await saveRewardGroup(built.dto);
+        if (!result.success || !result.data) {
+          toast.error(!result.success ? result.error : t("updateError"));
+          return;
+        }
+
+        const savedRewards = result.data.map(mapRewardDtoToReward);
+        toast.success(
+          t("groupUpdateSuccess", {
+            title: title.trim(),
+            count: savedRewards.length,
+          }),
         );
-        const safeBase = baseName
-          .slice(0, Math.max(1, 30 - maxSuffixLength))
-          .trim();
+        onGroupSuccess?.(built.dto.sourceRewardIds, savedRewards);
+        onClose();
+      });
+      return;
+    }
 
-        // Criação sequencial garante orderIndex previsível no backend (getMaxOrderIndex + 1)
-        for (const { opt, suffix } of optionVariants) {
-          const variantTitle = `${safeBase}${suffix}`;
-          const variantInput = {
-            title: variantTitle,
-            description: description.trim(),
-            price: opt.suggestedPrice ?? 8,
-            type: "TimeBased" as RewardType,
-            category,
-            packageLevel: opt.id,
-            baseDurationMinutes: opt.suggestedMinutes ?? 30,
-            icon: selectedIcon,
-            lootItems: undefined,
-          };
+    const isBatchCouponCreation =
+      !isEditing && type === "TimeBased" && createMultiplePackages;
 
-          const payload = mapRewardFormToCreatePayload(variantInput);
-          const result = await createReward(payload);
-          if (!result.success) {
-            if (createdRewards.length > 0) {
-              onSuccess?.(createdRewards);
-            }
-            toast.error(result.error || t("createError"));
-            return;
-          }
+    if (isBatchCouponCreation) {
+      const { baseName, payloads } = buildBatchCouponPayloads({
+        title,
+        description,
+        category,
+        selectedIcon,
+        selectedBatchPackages,
+        usedPackageKeys: groupTierUsage.usedPackageKeys,
+      });
 
-          const createdId =
-            result.data &&
-            typeof result.data === "object" &&
-            "id" in result.data
-              ? String((result.data as { id: string }).id)
-              : `rew-${Date.now()}-${opt.id}`;
+      if (payloads.length === 0) {
+        toast.error(t("batchPackagesRequired"));
+        return;
+      }
+      if (
+        groupTierUsage.matchingCount + payloads.length >
+        MAX_REWARD_PACKAGES_PER_CARD
+      ) {
+        toast.error(
+          t("groupTooManyPackagesError", {
+            max: MAX_REWARD_PACKAGES_PER_CARD,
+          }),
+        );
+        return;
+      }
 
-          createdRewards.push({
-            id: createdId,
-            ...variantInput,
-            iconName: selectedIcon,
-            orderIndex: 0,
-          });
+      startTransition(async () => {
+        const result = await createRewardsBatch(payloads);
+        if (!result.success) {
+          toast.error(result.error || t("createError"));
+          return;
+        }
+
+        const createdRewards = result.data.created.map(mapRewardDtoToReward);
+        if (result.data.partialError) {
+          onSuccess?.(createdRewards);
+          toast.error(result.data.partialError);
+          return;
         }
 
         soundEffects.playCreateSound();
@@ -278,9 +416,20 @@ export function useRewardForm({
       return;
     }
 
-    const numericPrice = parseFloat(price.replace(",", "."));
+    const numericPrice = Number.parseFloat(price.replace(",", "."));
     if (Number.isNaN(numericPrice) || numericPrice <= 0) {
       toast.error(t("invalidPrice"));
+      return;
+    }
+
+    const submittedPkgKey = toPackageMessageKey(packageLevel);
+    if (
+      submittedPkgKey !== "NONE" &&
+      (type === "TimeBased" ||
+        (type === "SingleUse" && toCategoryMessageKey(category) !== "DEBT")) &&
+      groupTierUsage.usedPackageKeys.has(submittedPkgKey)
+    ) {
+      toast.error(t("duplicatePackageTierError"));
       return;
     }
 
@@ -299,52 +448,17 @@ export function useRewardForm({
     }
 
     startTransition(async () => {
-      const isDebtSubmission = toCategoryMessageKey(category) === "DEBT";
-      const parsedDuration =
-        type === "TimeBased"
-          ? Math.max(5, parseInt(baseDurationMinutes, 10) || 30)
-          : undefined;
-
-      const tier = getMysteryBoxTier(packageLevel);
-      const tierDefaultLoot =
-        DEFAULT_MYSTERY_BOX_LOOT[tier.id] ?? DEFAULT_MYSTERY_BOX_LOOT.Básico;
-
-      const normalizedLootItems =
-        type === "MysteryBox"
-          ? lootItems.map((slot, idx) => {
-              const slotIdx = idx as 0 | 1 | 2;
-              const tierCap = tier.slotMaxMinutes[slotIdx];
-              const normalizedCategory = slot.category?.trim() || undefined;
-              const normalizedDescription =
-                slot.description?.trim() || undefined;
-              return {
-                name: slot.name.trim() || tierDefaultLoot[slotIdx].name,
-                icon: slot.icon || "gift",
-                minutes:
-                  slot.minutes && slot.minutes > 0
-                    ? Math.min(Math.max(5, slot.minutes), tierCap)
-                    : null,
-                ...(normalizedCategory ? { category: normalizedCategory } : {}),
-                ...(normalizedDescription
-                  ? { description: normalizedDescription }
-                  : {}),
-              };
-            })
-          : undefined;
-
-      const formInput = {
-        title: title.trim(),
-        description: description.trim(),
-        price: numericPrice,
+      const formInput = buildSingleRewardFormInput({
+        title,
+        description,
+        numericPrice,
         type,
         category,
-        packageLevel: isDebtSubmission
-          ? ("Nenhum" as PackageLevel)
-          : packageLevel,
-        baseDurationMinutes: parsedDuration,
-        icon: selectedIcon,
-        lootItems: normalizedLootItems,
-      };
+        packageLevel,
+        baseDurationMinutes,
+        selectedIcon,
+        lootItems,
+      });
 
       if (isEditing && rewardToEdit) {
         const payload = mapRewardFormToUpdatePayload(formInput);
@@ -355,43 +469,39 @@ export function useRewardForm({
           return;
         }
 
-        const updatedReward: Reward = {
-          ...rewardToEdit,
-          ...formInput,
-          iconName: selectedIcon,
-        };
+        const updatedReward: Reward = result.data
+          ? mapRewardDtoToReward(result.data)
+          : { ...rewardToEdit, ...formInput };
 
         toast.success(t("updateSuccess"));
         onSuccess?.(updatedReward);
         onClose();
-      } else {
-        const payload = mapRewardFormToCreatePayload(formInput);
-        const result = await createReward(payload);
-
-        if (!result.success) {
-          toast.error(result.error || t("createError"));
-          return;
-        }
-
-        const createdId =
-          result.data && typeof result.data === "object" && "id" in result.data
-            ? String((result.data as { id: string }).id)
-            : `rew-${Date.now()}`;
-
-        const newReward: Reward = {
-          id: createdId,
-          ...formInput,
-          iconName: selectedIcon,
-          orderIndex: 0,
-        };
-
-        soundEffects.playCreateSound();
-        toast.success(t("createSuccess", { title: formInput.title }), {
-          description: t("createSuccessDescription"),
-        });
-        onSuccess?.(newReward);
-        onClose();
+        return;
       }
+
+      const payload = mapRewardFormToCreatePayload(formInput);
+      const result = await createReward(payload);
+
+      if (!result.success) {
+        toast.error(result.error || t("createError"));
+        return;
+      }
+
+      const newReward: Reward = result.data
+        ? mapRewardDtoToReward(result.data)
+        : {
+            id: `rew-${Date.now()}`,
+            ...formInput,
+            description: formInput.description ?? "",
+            orderIndex: existingRewards.length,
+          };
+
+      soundEffects.playCreateSound();
+      toast.success(t("createSuccess", { title: formInput.title }), {
+        description: t("createSuccessDescription"),
+      });
+      onSuccess?.(newReward);
+      onClose();
     });
   };
 
@@ -541,14 +651,8 @@ export function useRewardForm({
     setHasManuallyEditedPrice(false);
     setSelectedIcon("mystery_box");
     const tierObj = getMysteryBoxTier(tierId);
-    const defaultTierLoot =
-      DEFAULT_MYSTERY_BOX_LOOT[tierObj.id] || DEFAULT_MYSTERY_BOX_LOOT.Básico;
     if (!hasCustomizedLoot) {
-      setLootItems([
-        { ...defaultTierLoot[0] },
-        { ...defaultTierLoot[1] },
-        { ...defaultTierLoot[2] },
-      ]);
+      setLootItems(createDefaultLootTuple(tierObj.id));
     } else {
       setLootItems((prev) => [
         {
@@ -588,19 +692,14 @@ export function useRewardForm({
   ) => {
     setHasCustomizedLoot(true);
     setLootItems((prev) => {
-      const next: [MysteryBoxLootItem, MysteryBoxLootItem, MysteryBoxLootItem] =
-        [{ ...prev[0] }, { ...prev[1] }, { ...prev[2] }];
+      const next: LootTuple = [{ ...prev[0] }, { ...prev[1] }, { ...prev[2] }];
       next[index] = updated;
       return next;
     });
   };
 
   const handleApplyLootPreset = (
-    presetItems: readonly [
-      MysteryBoxLootItem,
-      MysteryBoxLootItem,
-      MysteryBoxLootItem,
-    ],
+    presetItems: readonly MysteryBoxLootItem[],
   ) => {
     setHasCustomizedLoot(true);
     setLootItems([
@@ -611,6 +710,7 @@ export function useRewardForm({
   };
 
   const handleTitleChange = (newTitle: string) => {
+    hasManuallyEditedTitleRef.current = true;
     setTitle(newTitle);
     if (!hasManuallyChangedIcon && type !== "MysteryBox") {
       const suggested = suggestRewardIconFromTitle(newTitle);
@@ -630,8 +730,26 @@ export function useRewardForm({
     setHasManuallyEditedPrice(false);
   };
 
-  const handleBaseDurationChange = (newDuration: string) => {
+  const syncDurationAndPrefillTitle = (newDuration: string) => {
     setBaseDurationMinutes(newDuration);
+    if (
+      !isEditing &&
+      prefillDraft &&
+      !hasManuallyEditedTitleRef.current &&
+      type === "TimeBased"
+    ) {
+      const parsed = Number.parseInt(newDuration, 10);
+      setTitle(
+        buildPrefillPackageTitle(
+          prefillDraft.title,
+          Number.isFinite(parsed) && parsed >= 5 ? parsed : null,
+        ),
+      );
+    }
+  };
+
+  const handleBaseDurationChange = (newDuration: string) => {
+    syncDurationAndPrefillTitle(newDuration);
     if (type === "TimeBased" && !isEditing && !hasManuallyEditedPrice) {
       const parsed = Number.parseInt(newDuration, 10);
       if (Number.isFinite(parsed) && parsed >= 5) {
@@ -673,23 +791,96 @@ export function useRewardForm({
     setHasManuallyChangedIcon(true);
   };
 
+  const handleAddGroupVariant = () => {
+    if (groupVariants.length >= MAX_REWARD_PACKAGES_PER_CARD) return;
+    const isTimeBasedGroup = toRewardTypeMessageKey(type) === "TimeBased";
+    const usedPackages = new Set(
+      groupVariants.map((v) => toPackageMessageKey(v.packageLevel)),
+    );
+
+    if (isTimeBasedGroup) {
+      const candidate =
+        COUPON_PACKAGE_OPTIONS.find(
+          (opt) =>
+            opt.id !== "Nenhum" &&
+            !usedPackages.has(toPackageMessageKey(opt.id)),
+        ) ?? COUPON_PACKAGE_OPTIONS[2];
+      setGroupVariants((prev) => [
+        ...prev,
+        {
+          localKey: `new-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          packageLevel: candidate.id,
+          durationMinutes: String(candidate.suggestedMinutes ?? 60),
+          price: String(candidate.suggestedPrice ?? 15),
+          originalSuffix: "",
+          originalPackageLevel: candidate.id,
+          isOriginallySelected: false,
+        },
+      ]);
+      return;
+    }
+
+    const candidateSingle =
+      SINGLE_USE_TIER_OPTIONS.find((opt) => !usedPackages.has(opt.id)) ??
+      SINGLE_USE_TIER_OPTIONS[0];
+    setGroupVariants((prev) => [
+      ...prev,
+      {
+        localKey: `new-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        packageLevel: candidateSingle.packageLevel,
+        durationMinutes: "30",
+        price: String(candidateSingle.suggestedPrice),
+        originalSuffix: "",
+        originalPackageLevel: candidateSingle.packageLevel,
+        isOriginallySelected: false,
+      },
+    ]);
+  };
+
+  const handleUpdateGroupVariant = (
+    localKey: string,
+    patch: Partial<EditableGroupVariant>,
+  ) => {
+    setGroupVariants((prev) =>
+      prev.map((item) =>
+        item.localKey === localKey ? { ...item, ...patch } : item,
+      ),
+    );
+  };
+
+  const handleRemoveGroupVariant = (localKey: string) => {
+    setGroupVariants((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev.filter((item) => item.localKey !== localKey);
+    });
+  };
+
+  const removedGroupVariantsCount = groupToEdit
+    ? groupToEdit.variants.filter(
+        (orig) => !groupVariants.some((current) => current.id === orig.id),
+      ).length
+    : 0;
+
   return {
     isEditing,
+    isEditingGroup,
     isPending,
+    groupTierUsage,
+    groupVariants,
+    removedGroupVariantsCount,
+    handleAddGroupVariant,
+    handleUpdateGroupVariant,
+    handleRemoveGroupVariant,
     title,
-    setTitle,
     handleTitleChange,
     description,
     setDescription,
     price,
-    setPrice,
     handlePriceChange,
     applySuggestedPrice,
     type,
-    setType,
     handleTypeChange,
     category,
-    setCategory,
     handleCategoryChange,
     handleDebtToggleChange,
     packageLevel,
@@ -697,14 +888,13 @@ export function useRewardForm({
     handleSingleUseTierSelect,
     handleMysteryBoxTierSelect,
     baseDurationMinutes,
-    setBaseDurationMinutes,
+    setBaseDurationMinutes: syncDurationAndPrefillTitle,
     handleBaseDurationChange,
     createMultiplePackages,
     setCreateMultiplePackages,
     selectedBatchPackages,
     toggleBatchPackage,
     selectedIcon,
-    setSelectedIcon,
     handleIconSelect,
     lootItems,
     handleLootSlotChange,

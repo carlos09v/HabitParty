@@ -18,6 +18,18 @@ public final class FocusRewardCalculator {
 
   private FocusRewardCalculator() {}
 
+  /**
+   * Retorna os minutos efetivamente elegíveis a recompensa em uma sessão única:
+   * sessões abaixo de {@link #MIN_SESSION_MINUTES} (10m) não pontuam e o máximo por sessão
+   * é travado em {@link #MAX_SESSION_MINUTES} (90m), evitando dupla penalização na cota diária.
+   */
+  public static int calculateRewardableMinutes(int durationMinutes) {
+    if (durationMinutes < MIN_SESSION_MINUTES) {
+      return 0;
+    }
+    return Math.min(durationMinutes, MAX_SESSION_MINUTES);
+  }
+
   private record BaseReward(double xp, BigDecimal coins) {}
 
   private static BaseReward calculateStopwatchBase(int minutes) {
@@ -67,13 +79,11 @@ public final class FocusRewardCalculator {
 
     int durationMinutes = record.getDurationMinutes();
 
-    // Trava 2: Tempo mínimo de 10 minutos para qualificar para recompensa
-    if (durationMinutes < MIN_SESSION_MINUTES) {
+    // Travas 2 e 3: Tempo mínimo de 10 minutos e teto único de 90 minutos (AFK)
+    int effectiveMinutes = calculateRewardableMinutes(durationMinutes);
+    if (effectiveMinutes <= 0) {
       return FocusReward.ZERO;
     }
-
-    // Trava 3: Teto por sessão única (máximo 90 minutos para conter esquecimento / AFK)
-    int effectiveMinutes = Math.min(durationMinutes, MAX_SESSION_MINUTES);
 
     double baseXp;
     BigDecimal baseCoins;

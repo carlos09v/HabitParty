@@ -323,6 +323,11 @@ public class CreateFocusRecordUseCase {
       }
     }
 
+    String focusDescriptionSnapshot = savedRecord.getNotes()
+        .map(String::trim)
+        .filter(note -> !note.isEmpty())
+        .orElse(null);
+
     TransactionHistory transaction = new TransactionHistory(
         null,
         userIdLogado,
@@ -336,6 +341,8 @@ public class CreateFocusRecordUseCase {
         null,
         null,
         java.util.List.of(durationLabel),
+        null,
+        focusDescriptionSnapshot,
         savedRecord.getEndTime());
 
     transactionHistoryPort.save(transaction);

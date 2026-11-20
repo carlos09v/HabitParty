@@ -1,30 +1,43 @@
 "use client";
 
 import { arrayMove } from "@dnd-kit/sortable";
-import { Pencil, Plus, Trash2, X } from "lucide-react";
+import { Crown, Pencil, Plus, Trash2, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { reorderRewards } from "@/actions/rewardActions";
+import { LazyUpgradePremiumModal } from "@/components/subscription/LazyUpgradePremiumModal";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { ContextMenu } from "@/components/ui/ContextMenu";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { PrimaryActionButton } from "@/components/ui/PrimaryActionButton";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
 import {
-  REWARD_CATEGORY_OPTIONS,
-  REWARD_PACKAGE_OPTIONS,
-  REWARD_SORT_OPTIONS,
-  REWARD_TYPE_OPTIONS,
+  FREE_MAX_REWARD_CARDS,
+  MAX_REWARD_PACKAGES_PER_CARD,
+  PREMIUM_MAX_REWARD_CARDS,
+  REWARD_CATEGORY_FILTER_VALUES,
+  REWARD_PACKAGE_FILTER_VALUES,
+  REWARD_SORT_VALUES,
+  REWARD_TYPE_FILTER_VALUES,
 } from "@/constants/reward";
-import { useExperienceMode } from "@/hooks/useExperienceMode";
+import {
+  ExperienceModeFallbackProvider,
+  useExperienceMode,
+} from "@/hooks/useExperienceMode";
 import { useItemCatalogFilters } from "@/hooks/useItemCatalogFilters";
 import { useReorderableList } from "@/hooks/useReorderableList";
 import { useRewardCatalogActions } from "@/hooks/useRewardCatalogActions";
 import type { AppLocale } from "@/i18n/config";
+import { useUserStore } from "@/store/userStore";
 import type { Reward, RewardDisplayEntry } from "@/types/reward";
+import type { ExperienceMode } from "@/types/ui";
+import { cn } from "@/utils";
 import { calculateRewardWelcomeStats } from "@/utils/catalogMetrics";
-import { groupRewardsForShowcase } from "@/utils/rewardGrouping";
+import {
+  formatRewardVariantBadge,
+  groupRewardsForShowcase,
+} from "@/utils/rewardGrouping";
 import {
   toCategoryMessageKey,
   toPackageMessageKey,
@@ -40,17 +53,47 @@ const RewardFormModal = dynamic(
   { ssr: false },
 );
 
+interface RewardsContainerProps {
+  initialRewards: Reward[];
+  initialCoins?: number;
+  initialIsPremium?: boolean;
+  initialExperienceMode?: ExperienceMode;
+}
+
 export function RewardsContainer({
   initialRewards,
-}: {
-  initialRewards: Reward[];
-}) {
+  initialCoins = 0,
+  initialIsPremium = false,
+  initialExperienceMode = "PRODUCTIVITY",
+}: RewardsContainerProps) {
+  return (
+    <ExperienceModeFallbackProvider mode={initialExperienceMode}>
+      <RewardsContainerContent
+        initialRewards={initialRewards}
+        initialCoins={initialCoins}
+        initialIsPremium={initialIsPremium}
+        initialExperienceMode={initialExperienceMode}
+      />
+    </ExperienceModeFallbackProvider>
+  );
+}
+
+function RewardsContainerContent({
+  initialRewards,
+  initialCoins,
+  initialIsPremium,
+  initialExperienceMode,
+}: Required<RewardsContainerProps>) {
   const t = useTranslations("rewards.container");
   const tOptions = useTranslations("rewards.options");
-  const { isGamified } = useExperienceMode();
+  const { isGamified } = useExperienceMode(initialExperienceMode);
   const locale = useLocale() as AppLocale;
+  const storeHasUser = useUserStore((s) => s.user !== null);
+  const storeIsPremium = useUserStore((s) => Boolean(s.user?.isPremium));
+  const isPremium = storeHasUser ? storeIsPremium : initialIsPremium;
 
   const [onlyAffordable, setOnlyAffordable] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [selectedVariantByGroup, setSelectedVariantByGroup] = useState<
     Record<string, string>
   >({});
@@ -77,10 +120,10 @@ export function RewardsContainer({
     (activeId: string, overId: string) => {
       const currentEntries = displayedEntriesRef.current;
       const oldIdx = currentEntries.findIndex(
-        (entry) => entry.primaryReward.id === activeId,
+        (entry) => entry.groupId === activeId,
       );
       const newIdx = currentEntries.findIndex(
-        (entry) => entry.primaryReward.id === overId,
+        (entry) => entry.groupId === overId,
       );
       if (oldIdx === -1 || newIdx === -1) return null;
       return arrayMove(currentEntries, oldIdx, newIdx).flatMap(
@@ -99,6 +142,7 @@ export function RewardsContainer({
     initialItems: initialRewards,
     onReorderServerAction: reorderRewards,
     isFiltering: isFiltering || onlyAffordable,
+    onlyChangedOrderIndex: true,
     resolveDragReorder: resolveGroupedRewardOrder,
   });
 
@@ -111,19 +155,27 @@ export function RewardsContainer({
     handleEditFromContextMenu,
     handleAddPackageFromContextMenu,
     handleDeleteFromContextMenu,
+    handleDeleteGroupFromContextMenu,
     checkingDeleteRewardIds,
     rewardToDelete,
     setRewardToDelete,
     deleteRewardHistory,
     setDeleteRewardHistory,
     handleConfirmDeleteReward,
-    isDeleting,
+    groupToDelete,
+    setGroupToDelete,
+    deleteGroupHistory,
+    setDeleteGroupHistory,
+    handleConfirmDeleteGroup,
     isFormModalOpen,
     editingReward,
+    editingGroup,
     prefillDraft,
     handleAddProduct,
     handleCloseFormModal,
     handleRewardSuccess,
+    handleRewardGroupSuccess,
+    isDeleting,
     redeemingRewardIds,
     handleBuy,
   } = useRewardCatalogActions({ rewards, setRewards });
@@ -165,10 +217,10 @@ export function RewardsContainer({
 
   const categoryOptions = useMemo(
     () =>
-      REWARD_CATEGORY_OPTIONS.map((opt) => ({
-        value: opt.value,
-        label: opt.value
-          ? tOptions(`categories.${toCategoryMessageKey(opt.value)}`)
+      REWARD_CATEGORY_FILTER_VALUES.map((value) => ({
+        value,
+        label: value
+          ? tOptions(`categories.${toCategoryMessageKey(value)}`)
           : tOptions("categories.all"),
       })),
     [tOptions],
@@ -176,14 +228,14 @@ export function RewardsContainer({
 
   const typeOptions = useMemo(
     () =>
-      REWARD_TYPE_OPTIONS.map((opt) => ({
-        value: opt.value,
-        label: opt.value
-          ? opt.value === "MysteryBox"
+      REWARD_TYPE_FILTER_VALUES.map((value) => ({
+        value,
+        label: value
+          ? value === "MysteryBox"
             ? isGamified
               ? tOptions("types.MysteryBox")
               : tOptions("types.MysteryBoxProductivity")
-            : tOptions(`types.${toRewardTypeMessageKey(opt.value)}`)
+            : tOptions(`types.${toRewardTypeMessageKey(value)}`)
           : tOptions("types.all"),
       })),
     [isGamified, tOptions],
@@ -191,10 +243,10 @@ export function RewardsContainer({
 
   const packageOptions = useMemo(
     () =>
-      REWARD_PACKAGE_OPTIONS.map((opt) => ({
-        value: opt.value,
-        label: opt.value
-          ? tOptions(`packages.${toPackageMessageKey(opt.value)}`)
+      REWARD_PACKAGE_FILTER_VALUES.map((value) => ({
+        value,
+        label: value
+          ? tOptions(`packages.${toPackageMessageKey(value)}`)
           : tOptions("packages.all"),
       })),
     [tOptions],
@@ -202,18 +254,33 @@ export function RewardsContainer({
 
   const sortOptions = useMemo(
     () =>
-      REWARD_SORT_OPTIONS.map((opt) => ({
-        value: opt.value,
-        label: tOptions(
-          `sort.${(opt.value || "default") as "default" | "price-asc" | "price-desc" | "name"}`,
-        ),
+      REWARD_SORT_VALUES.map((value) => ({
+        value,
+        label: tOptions(`sort.${value || "default"}`),
       })),
     [tOptions],
   );
 
-  const resolvedCoins = currentCoins ?? 0;
+  const resolvedCoins = currentCoins ?? initialCoins;
+
+  const allGroupedEntries = useMemo(
+    () => groupRewardsForShowcase(rewards),
+    [rewards],
+  );
+  const totalShowcaseCards = allGroupedEntries.length;
+  const maxRewardCards = isPremium
+    ? PREMIUM_MAX_REWARD_CARDS
+    : FREE_MAX_REWARD_CARDS;
+  const isCardLimitReached = totalShowcaseCards >= maxRewardCards;
+  const planName = isPremium ? t("planPremium") : t("planFree");
+
+  const coinFilterLimit = onlyAffordable ? resolvedCoins : null;
 
   const filteredRewards = useMemo(() => {
+    if (!isFiltering && coinFilterLimit === null) {
+      return rewards;
+    }
+
     const searchLower = filters.search.trim().toLowerCase();
     const filterTypeKey = filters.type
       ? toRewardTypeMessageKey(filters.type)
@@ -248,7 +315,7 @@ export function RewardsContainer({
       ) {
         return false;
       }
-      if (onlyAffordable && r.price > resolvedCoins) {
+      if (coinFilterLimit !== null && r.price > coinFilterLimit) {
         return false;
       }
       return true;
@@ -265,17 +332,20 @@ export function RewardsContainer({
     }
 
     return result;
-  }, [rewards, filters, onlyAffordable, resolvedCoins, locale]);
+  }, [rewards, isFiltering, filters, coinFilterLimit, locale]);
 
   const displayedEntries = useMemo(
-    () => groupRewardsForShowcase(filteredRewards, selectedVariantByGroup),
-    [filteredRewards, selectedVariantByGroup],
+    () =>
+      isFiltering || onlyAffordable
+        ? groupRewardsForShowcase(filteredRewards)
+        : allGroupedEntries,
+    [isFiltering, onlyAffordable, filteredRewards, allGroupedEntries],
   );
   displayedEntriesRef.current = displayedEntries;
 
   const welcomeStats = useMemo(() => {
     const { stats } = calculateRewardWelcomeStats(
-      rewards,
+      allGroupedEntries,
       resolvedCoins,
       locale,
       isGamified,
@@ -298,7 +368,7 @@ export function RewardsContainer({
       return stat;
     });
   }, [
-    rewards,
+    allGroupedEntries,
     resolvedCoins,
     locale,
     isGamified,
@@ -306,6 +376,17 @@ export function RewardsContainer({
     isFiltering,
     handleClearAllFilters,
   ]);
+
+  const contextGroup = contextMenu.groupContext;
+  const isContextGrouped = Boolean(
+    contextGroup && contextGroup.variants.length > 1,
+  );
+  const canAddPackageToContext = Boolean(
+    contextMenu.reward &&
+      toRewardTypeMessageKey(contextMenu.reward.type) === "TimeBased" &&
+      (!contextGroup ||
+        contextGroup.variants.length < MAX_REWARD_PACKAGES_PER_CARD),
+  );
 
   return (
     <>
@@ -362,10 +443,73 @@ export function RewardsContainer({
             ) : undefined
           }
           rightActions={
-            <PrimaryActionButton
-              label={isGamified ? t("addProduct") : t("addProductProductivity")}
-              onClick={handleAddProduct}
-            />
+            <div className="flex items-center gap-2">
+              <div
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium tabular-nums",
+                  isCardLimitReached
+                    ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                    : "border-neutral-700 bg-surface dark:border-white/15 dark:bg-surface/60 text-neutral-300",
+                )}
+                title={
+                  isCardLimitReached
+                    ? t("limitReachedTitle", {
+                        current: totalShowcaseCards,
+                        max: maxRewardCards,
+                        plan: planName,
+                      })
+                    : t("limitUsedTitle", {
+                        current: totalShowcaseCards,
+                        max: maxRewardCards,
+                      })
+                }
+              >
+                {isPremium && (
+                  <Crown size={12} className="text-gold fill-gold/20" />
+                )}
+                <span>
+                  {totalShowcaseCards}/{maxRewardCards}
+                </span>
+              </div>
+
+              {isCardLimitReached ? (
+                <button
+                  type="button"
+                  onClick={
+                    isPremium ? undefined : () => setIsUpgradeModalOpen(true)
+                  }
+                  disabled={isPremium}
+                  title={
+                    isPremium
+                      ? t("maxLimitReachedTitle", { max: maxRewardCards })
+                      : t("upgradeLimitTitle")
+                  }
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-lg border px-3.5 py-2.5 text-body-s font-bold transition-colors shrink-0 select-none",
+                    isPremium
+                      ? "border-neutral-700 bg-surface dark:bg-neutral-800/40 text-neutral-400 dark:text-neutral-500 cursor-not-allowed"
+                      : "border-amber-500/40 bg-amber-500/15 text-amber-800 hover:bg-amber-500/25 hover:border-amber-600 dark:border-gold/40 dark:bg-gold/15 dark:text-gold dark:hover:bg-gold/25 dark:hover:border-gold shadow-glow-gold-xs cursor-pointer",
+                  )}
+                >
+                  <Crown
+                    size={15}
+                    className={isPremium ? undefined : "fill-gold/20"}
+                  />
+                  <span>
+                    {isPremium
+                      ? t("limitReachedShort")
+                      : t("upgradeLimitButton")}
+                  </span>
+                </button>
+              ) : (
+                <PrimaryActionButton
+                  label={
+                    isGamified ? t("addProduct") : t("addProductProductivity")
+                  }
+                  onClick={handleAddProduct}
+                />
+              )}
+            </div>
           }
         />
 
@@ -376,6 +520,7 @@ export function RewardsContainer({
           currentCoins={resolvedCoins}
           deletingRewardIds={checkingDeleteRewardIds}
           redeemingRewardIds={redeemingRewardIds}
+          selectedVariantByGroup={selectedVariantByGroup}
           debtQuantities={debtQuantities}
           onDebtQuantityChange={handleDebtQuantityChange}
           onSelectVariant={handleSelectVariant}
@@ -394,44 +539,80 @@ export function RewardsContainer({
         isOpen={contextMenu.isOpen}
         position={contextMenu.position}
         onClose={closeContextMenu}
-        items={[
-          ...(contextMenu.reward &&
-          toRewardTypeMessageKey(contextMenu.reward.type) === "TimeBased"
+        items={
+          isContextGrouped && contextMenu.reward && contextGroup
             ? [
                 {
-                  label: t("contextMenu.addPackage"),
-                  icon: <Plus size={14} />,
-                  onClick: handleAddPackageFromContextMenu,
+                  label: t("contextMenu.editGroup"),
+                  icon: <Pencil size={14} />,
+                  onClick: handleEditFromContextMenu,
+                },
+                ...(canAddPackageToContext
+                  ? [
+                      {
+                        label: t("contextMenu.addPackage"),
+                        icon: <Plus size={14} />,
+                        onClick: handleAddPackageFromContextMenu,
+                      },
+                    ]
+                  : []),
+                {
+                  label: t("contextMenu.deleteSinglePackage", {
+                    variant: formatRewardVariantBadge(contextMenu.reward),
+                  }),
+                  icon: <Trash2 size={14} />,
+                  variant: "warning",
+                  onClick: handleDeleteFromContextMenu,
+                },
+                {
+                  label: t("contextMenu.deleteWholeGroup", {
+                    count: contextGroup.variants.length,
+                  }),
+                  icon: <Trash2 size={14} />,
+                  variant: "destructive",
+                  onClick: handleDeleteGroupFromContextMenu,
                 },
               ]
-            : []),
-          {
-            label: t("contextMenu.edit"),
-            icon: <Pencil size={14} />,
-            onClick: handleEditFromContextMenu,
-          },
-          {
-            label: t("contextMenu.delete"),
-            icon: <Trash2 size={14} />,
-            variant: "destructive",
-            onClick: handleDeleteFromContextMenu,
-          },
-        ]}
+            : [
+                ...(canAddPackageToContext
+                  ? [
+                      {
+                        label: t("contextMenu.addPackage"),
+                        icon: <Plus size={14} />,
+                        onClick: handleAddPackageFromContextMenu,
+                      },
+                    ]
+                  : []),
+                {
+                  label: t("contextMenu.edit"),
+                  icon: <Pencil size={14} />,
+                  onClick: handleEditFromContextMenu,
+                },
+                {
+                  label: t("contextMenu.delete"),
+                  icon: <Trash2 size={14} />,
+                  variant: "destructive",
+                  onClick: handleDeleteFromContextMenu,
+                },
+              ]
+        }
       />
 
-      {/* Modal de Formulário (Criação / Edição de Recompensa com Lazy Loading) */}
+      {/* Modal de Formulário (Criação / Edição / Edição em Grupo com Lazy Loading) */}
       {isFormModalOpen && (
         <RewardFormModal
           isOpen={isFormModalOpen}
           rewardToEdit={editingReward}
+          groupToEdit={editingGroup}
           prefillDraft={prefillDraft}
           existingRewards={rewards}
           onSuccess={handleRewardSuccess}
+          onGroupSuccess={handleRewardGroupSuccess}
           onClose={handleCloseFormModal}
         />
       )}
 
-      {/* Modal de Confirmação para Excluir Recompensa */}
+      {/* Modal de Confirmação para Excluir Recompensa / Pacote Individual */}
       {rewardToDelete && (
         <ConfirmationModal
           isOpen={Boolean(rewardToDelete)}
@@ -452,6 +633,46 @@ export function RewardsContainer({
           onCheckboxChange={setDeleteRewardHistory}
           onClose={() => !isDeleting && setRewardToDelete(null)}
           onConfirm={handleConfirmDeleteReward}
+        />
+      )}
+
+      {/* Modal de Confirmação para Excluir Card Agrupado Inteiro */}
+      {groupToDelete && (
+        <ConfirmationModal
+          isOpen={Boolean(groupToDelete)}
+          title={t("deleteGroupModal.title")}
+          description={t.rich("deleteGroupModal.description", {
+            title: groupToDelete.displayTitle,
+            count: groupToDelete.variants.length,
+            bold: (chunks) => (
+              <strong className="text-neutral-100">{chunks}</strong>
+            ),
+          })}
+          confirmText={t("deleteGroupModal.confirmText")}
+          cancelText={t("deleteGroupModal.cancelText")}
+          variant="danger"
+          isLoading={isDeleting}
+          checkboxLabel={
+            groupToDelete.hasHistory
+              ? t("deleteModal.deleteHistoryLabel")
+              : undefined
+          }
+          checkboxHint={
+            groupToDelete.hasHistory
+              ? t("deleteModal.deleteHistoryHint")
+              : undefined
+          }
+          checkboxChecked={deleteGroupHistory}
+          onCheckboxChange={setDeleteGroupHistory}
+          onClose={() => !isDeleting && setGroupToDelete(null)}
+          onConfirm={handleConfirmDeleteGroup}
+        />
+      )}
+
+      {isUpgradeModalOpen && (
+        <LazyUpgradePremiumModal
+          isOpen={isUpgradeModalOpen}
+          onClose={() => setIsUpgradeModalOpen(false)}
         />
       )}
     </>

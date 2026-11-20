@@ -242,7 +242,6 @@ export function mapRewardDtoToReward(dto: RewardResponseDTO): Reward {
     price: dto.price || 0,
     baseDurationMinutes: dto.baseDurationMinutes,
     icon,
-    iconName: icon,
     orderIndex: dto.orderIndex,
     lootItems: dto.lootItems,
   };

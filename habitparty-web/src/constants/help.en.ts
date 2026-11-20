@@ -246,7 +246,7 @@ export const HELP_FAQS_EN: HelpFaqItem[] = [
       "Cosmic Avatar Frames: 5 exclusive animated frames with a radiant aura and light pulse for your profile.",
       "Focus Ambient Sounds: Relaxing sounds natively synthesized in the Pomodoro (Gentle Rain, Coffee Shop, Zen Lofi, and Campfire).",
       "VIP Icon Pack: An exclusive collection of golden icons for columns, routines, focus, and store items.",
-      "Expanded Capacity: Up to 4 Workspaces (double the free plan), up to 6 columns per board, up to 6 custom Focus activities, a backpack expanded to 100 items, and up to 100 registered rewards.",
+      "Expanded Capacity: Up to 4 Workspaces (double the free plan), up to 6 columns per board, up to 6 custom Focus activities, a backpack expanded to 100 items, and up to 50 reward cards in your store (vs. 12 on the free plan, with up to 4 packages per card).",
       "7 Atmospheric Visual Themes: The Free plan already includes 4 full themes (Cosmic Dark, Cosmic Daylight, Dark Knight, and Solar Parchment). Premium unlocks 3 exclusive VIP themes: Cyberpunk Neon, Forest Ranger, and Royal Gold.",
       "Profile Highlight: Cosmic Guardian VIP badge and a stellar golden ring on your avatar.",
       "Plans & Payment: $1.99/month or $19.90/year (~17% savings), paid by recurring credit card.",

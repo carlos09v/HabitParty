@@ -3,13 +3,24 @@ import type { FocusRecord } from "@/types/focus";
 import { toLocalDateKey } from "./focusMetrics";
 
 /**
- * Soma os minutos produtivos (excluindo itens da mochila/lazer) registrados na data informada.
+ * Minutos efetivamente elegíveis a recompensa em uma única sessão produtiva:
+ * desconsidera sessões abaixo do mínimo (10m) e aplica o teto único (90m),
+ * evitando que tempo excedente não recompensado consuma a cota diária.
  */
-export function calculateProductiveMinutesForDate(
+export function getRewardableFocusMinutes(durationMinutes: number): number {
+  const safeMinutes = Math.max(0, Math.round(durationMinutes || 0));
+  if (safeMinutes < FOCUS_REWARD_RULES.MIN_QUALIFYING_MINUTES) {
+    return 0;
+  }
+  return Math.min(safeMinutes, FOCUS_REWARD_RULES.MAX_EFFECTIVE_MINUTES);
+}
+
+function sumDateFocusMinutes(
   records: FocusRecord[],
   dateKey: string,
-  timeZone?: string | null,
-  dateField: "endTime" | "startTime" = "endTime",
+  timeZone: string | null | undefined,
+  dateField: "endTime" | "startTime",
+  mapDuration: (durationMinutes: number) => number,
 ): number {
   if (!dateKey || records.length === 0) return 0;
   return records.reduce((sum, rec) => {
@@ -17,8 +28,41 @@ export function calculateProductiveMinutesForDate(
     const rawDate =
       dateField === "startTime" ? rec.startTime : rec.endTime || rec.startTime;
     if (toLocalDateKey(rawDate, timeZone) !== dateKey) return sum;
-    return sum + (rec.durationMinutes || 0);
+    return sum + mapDuration(rec.durationMinutes || 0);
   }, 0);
+}
+
+/**
+ * Soma os minutos produtivos reais (excluindo itens da mochila/lazer) registrados na data informada.
+ */
+export function calculateProductiveMinutesForDate(
+  records: FocusRecord[],
+  dateKey: string,
+  timeZone?: string | null,
+  dateField: "endTime" | "startTime" = "endTime",
+): number {
+  return sumDateFocusMinutes(records, dateKey, timeZone, dateField, (mins) =>
+    Math.max(0, mins),
+  );
+}
+
+/**
+ * Soma estritamente os minutos elegíveis à recompensa (>= 10 min, teto de 90 min por sessão)
+ * agrupados por startTime no fuso do usuário, espelhando a query do backend para o cap diário.
+ */
+export function calculateRewardableMinutesForDate(
+  records: FocusRecord[],
+  dateKey: string,
+  timeZone?: string | null,
+  dateField: "endTime" | "startTime" = "startTime",
+): number {
+  return sumDateFocusMinutes(
+    records,
+    dateKey,
+    timeZone,
+    dateField,
+    getRewardableFocusMinutes,
+  );
 }
 
 export type DailyFocusYieldStatus = "full" | "half" | "quarter" | "capped";

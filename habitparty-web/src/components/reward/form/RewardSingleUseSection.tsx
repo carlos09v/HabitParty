@@ -1,5 +1,3 @@
-"use client";
-
 import { Info } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { RewardPriceField } from "@/components/reward/form/RewardPriceField";
@@ -10,7 +8,11 @@ import {
   SINGLE_USE_NONE_OPTION,
   SINGLE_USE_TIER_OPTIONS,
 } from "@/constants/reward";
-import type { PackageLevel, RewardType } from "@/types/reward";
+import type {
+  PackageLevel,
+  PackageMessageKey,
+  RewardType,
+} from "@/types/reward";
 import { cn } from "@/utils";
 import { formatFocusMinutes } from "@/utils/focusFormatters";
 import type { RewardPriceAnalysis } from "@/utils/rewardEconomy";
@@ -22,6 +24,7 @@ interface RewardSingleUseSectionProps {
   isPending: boolean;
   type: RewardType;
   packageLevel: PackageLevel;
+  usedPackageKeys?: Set<PackageMessageKey>;
   price: string;
   onPriceChange: (value: string) => void;
   hasPriceWarning: boolean;
@@ -40,6 +43,7 @@ export function RewardSingleUseSection({
   isPending,
   type,
   packageLevel,
+  usedPackageKeys,
   price,
   onPriceChange,
   hasPriceWarning,
@@ -156,25 +160,38 @@ export function RewardSingleUseSection({
               </button>
 
               {SINGLE_USE_TIER_OPTIONS.map((tier) => {
+                const isTierUsedInCard = Boolean(usedPackageKeys?.has(tier.id));
                 const isSelected =
+                  !isTierUsedInCard &&
                   toPackageMessageKey(packageLevel) === tier.id;
+                const isTierDisabled = isPending || isTierUsedInCard;
 
                 return (
                   <button
                     key={tier.id}
                     type="button"
                     aria-pressed={isSelected}
-                    disabled={isPending}
-                    onClick={() =>
+                    disabled={isTierDisabled}
+                    title={
+                      isTierUsedInCard ? t("tierAlreadyUsedInCard") : undefined
+                    }
+                    onClick={() => {
+                      if (isTierUsedInCard) return;
                       onSingleUseTierSelect(
                         tier.packageLevel,
                         tier.suggestedPrice,
-                      )
-                    }
+                      );
+                    }}
                     className={cn(
-                      "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-label-g font-semibold transition-[color,background-color,border-color,box-shadow,transform] cursor-pointer select-none active:scale-95",
-                      isSelected ? tier.selectedClass : tier.unselectedClass,
-                      isPending && "opacity-50 cursor-not-allowed",
+                      "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-label-g font-semibold transition-[color,background-color,border-color,box-shadow,transform] select-none",
+                      isTierDisabled
+                        ? "opacity-40 cursor-not-allowed border-neutral-700 bg-surface/40 text-neutral-500 line-through"
+                        : cn(
+                            "cursor-pointer active:scale-95",
+                            isSelected
+                              ? tier.selectedClass
+                              : tier.unselectedClass,
+                          ),
                     )}
                   >
                     <span

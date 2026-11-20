@@ -4,6 +4,7 @@ import { PageWrapper } from "@/components/layout/PageWrapper";
 import { RewardsContainer } from "@/components/reward/RewardsContainer";
 import { ScopedIntlProvider } from "@/i18n/ScopedIntlProvider";
 import { getRewardsData } from "@/services/rewardService";
+import { getCurrentUser } from "@/services/userService";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("rewards.metadata");
@@ -14,12 +15,20 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RewardsPage() {
-  const { rewards: initialRewards } = await getRewardsData();
+  const [{ rewards: initialRewards }, user] = await Promise.all([
+    getRewardsData(),
+    getCurrentUser(),
+  ]);
 
   return (
     <ScopedIntlProvider scope="rewards">
       <PageWrapper>
-        <RewardsContainer initialRewards={initialRewards} />
+        <RewardsContainer
+          initialRewards={initialRewards}
+          initialCoins={user?.currentCoins ?? 0}
+          initialIsPremium={Boolean(user?.isPremium)}
+          initialExperienceMode={user?.experienceMode ?? "PRODUCTIVITY"}
+        />
       </PageWrapper>
     </ScopedIntlProvider>
   );

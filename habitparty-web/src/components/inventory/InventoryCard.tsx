@@ -114,7 +114,7 @@ export const InventoryCard = memo(function InventoryCard({
       id={item.id}
       title={reward.title}
       description={reward.description}
-      iconName={reward.icon || reward.iconName}
+      iconName={reward.icon}
       type={reward.type}
       packageLevel={reward.packageLevel}
       category={reward.category}
@@ -163,13 +163,13 @@ export const InventoryItemRow = memo(function InventoryItemRow({
   return (
     <ItemRow
       id={item.id}
-      title={reward?.title || item.name}
-      description={reward?.description || item.description}
-      type={reward?.type || item.itemType}
-      packageLevel={reward?.packageLevel}
-      category={reward?.category}
-      iconName={reward?.icon || reward?.iconName || item.iconName}
-      baseDurationMinutes={reward?.baseDurationMinutes}
+      title={reward.title}
+      description={reward.description}
+      type={reward.type}
+      packageLevel={reward.packageLevel}
+      category={reward.category}
+      iconName={reward.icon}
+      baseDurationMinutes={reward.baseDurationMinutes}
       remainingSeconds={item.remainingSeconds}
       quantity={item.quantity}
       inUse={isInFocus}
@@ -179,6 +179,7 @@ export const InventoryItemRow = memo(function InventoryItemRow({
       onAction={handleAction}
       onContextMenu={handleContextMenu}
       dragData={dragData}
+      lootItems={reward.lootItems}
     />
   );
 });

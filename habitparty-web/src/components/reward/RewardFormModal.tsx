@@ -3,6 +3,7 @@
 import { Check, Gift, Loader2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { RewardGroupPackagesEditor } from "@/components/reward/form/RewardGroupPackagesEditor";
 import {
   type MysteryBoxFormTab,
   RewardMysteryBoxSection,
@@ -18,15 +19,20 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import {
   REWARD_DESCRIPTION_MAX_LENGTH,
-  REWARD_FORM_CATEGORY_OPTIONS,
+  REWARD_FORM_CATEGORY_VALUES,
   REWARD_ICONS,
 } from "@/constants/reward";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { RewardPrefillDraft } from "@/hooks/useRewardCatalogActions";
 import { useRewardForm } from "@/hooks/useRewardForm";
-import type { Reward, RewardCategory } from "@/types/reward";
+import type {
+  Reward,
+  RewardCategory,
+  RewardGroupContext,
+} from "@/types/reward";
 import { cn } from "@/utils";
 import { analyzeRewardPrice } from "@/utils/rewardEconomy";
+import { MAX_REWARD_TITLE_LENGTH } from "@/utils/rewardFormHelpers";
 import {
   toCategoryMessageKey,
   toRewardTypeMessageKey,
@@ -36,20 +42,22 @@ interface RewardFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   rewardToEdit?: Reward | null;
+  groupToEdit?: (RewardGroupContext & { activeVariantId?: string }) | null;
   prefillDraft?: RewardPrefillDraft | null;
   existingRewards?: Reward[];
   onSuccess?: (reward: Reward | Reward[]) => void;
+  onGroupSuccess?: (sourceIds: string[], savedRewards: Reward[]) => void;
 }
-
-const MAX_REWARD_TITLE_LENGTH = 30;
 
 export function RewardFormModal({
   isOpen,
   onClose,
   rewardToEdit,
+  groupToEdit,
   prefillDraft,
   existingRewards = [],
   onSuccess,
+  onGroupSuccess,
 }: RewardFormModalProps) {
   const t = useTranslations("rewards.formModal");
   const tOptions = useTranslations("rewards.options");
@@ -57,7 +65,14 @@ export function RewardFormModal({
 
   const {
     isEditing,
+    isEditingGroup,
     isPending,
+    groupTierUsage,
+    groupVariants,
+    removedGroupVariantsCount,
+    handleAddGroupVariant,
+    handleUpdateGroupVariant,
+    handleRemoveGroupVariant,
     title,
     handleTitleChange,
     description,
@@ -90,16 +105,19 @@ export function RewardFormModal({
   } = useRewardForm({
     isOpen,
     rewardToEdit,
+    groupToEdit,
     prefillDraft,
+    existingRewards,
     onSuccess,
+    onGroupSuccess,
     onClose,
   });
 
   const categoryOptions = useMemo(
     () =>
-      REWARD_FORM_CATEGORY_OPTIONS.map((opt) => ({
-        value: opt.value,
-        label: tOptions(`categories.${toCategoryMessageKey(opt.value)}`),
+      REWARD_FORM_CATEGORY_VALUES.map((cat) => ({
+        value: cat,
+        label: tOptions(`categories.${toCategoryMessageKey(cat)}`),
       })),
     [tOptions],
   );
@@ -298,15 +316,23 @@ export function RewardFormModal({
       isOpen={isOpen}
       onClose={onClose}
       headerIcon={<Gift size={20} />}
-      title={isEditing ? t("editTitle") : t("createTitle")}
+      title={
+        isEditingGroup
+          ? t("editGroupTitle")
+          : isEditing
+            ? t("editTitle")
+            : t("createTitle")
+      }
       description={
-        isEditing
-          ? isGamified
-            ? t("editDescription")
-            : t("editDescriptionProductivity")
-          : isGamified
-            ? t("createDescription")
-            : t("createDescriptionProductivity")
+        isEditingGroup
+          ? t("editGroupDescription")
+          : isEditing
+            ? isGamified
+              ? t("editDescription")
+              : t("editDescriptionProductivity")
+            : isGamified
+              ? t("createDescription")
+              : t("createDescriptionProductivity")
       }
       maxWidth="max-w-3xl"
       className="sm:p-5"
@@ -321,7 +347,7 @@ export function RewardFormModal({
           value={type}
           resolvedTypeKey={resolvedTypeKey}
           isGamified={isGamified}
-          disabled={isPending}
+          disabled={isPending || isEditingGroup}
           onChange={(val) => {
             handleTypeChange(val);
             setActiveMysteryTab("identity");
@@ -365,7 +391,18 @@ export function RewardFormModal({
 
             {/* COLUNA DIREITA: ECONOMIA & REGRAS */}
             <div className="md:col-span-7 flex flex-col gap-3">
-              {resolvedTypeKey === "TimeBased" ? (
+              {isEditingGroup ? (
+                <RewardGroupPackagesEditor
+                  type={type}
+                  isGamified={isGamified}
+                  isPending={isPending}
+                  variants={groupVariants}
+                  removedCount={removedGroupVariantsCount}
+                  onAddVariant={handleAddGroupVariant}
+                  onUpdateVariant={handleUpdateGroupVariant}
+                  onRemoveVariant={handleRemoveGroupVariant}
+                />
+              ) : resolvedTypeKey === "TimeBased" ? (
                 <RewardTimeBasedSection
                   isEditing={isEditing}
                   isPending={isPending}
@@ -377,6 +414,8 @@ export function RewardFormModal({
                   onToggleBatchPackage={toggleBatchPackage}
                   packageLevel={packageLevel}
                   onSelectPackageLevel={setPackageLevel}
+                  usedPackageKeys={groupTierUsage.usedPackageKeys}
+                  existingGroupCount={groupTierUsage.matchingCount}
                   baseDurationMinutes={baseDurationMinutes}
                   onSetBaseDurationMinutes={setBaseDurationMinutes}
                   onBaseDurationChange={handleBaseDurationChange}
@@ -393,6 +432,7 @@ export function RewardFormModal({
                   isPending={isPending}
                   type={type}
                   packageLevel={packageLevel}
+                  usedPackageKeys={groupTierUsage.usedPackageKeys}
                   price={price}
                   onPriceChange={handlePriceChange}
                   hasPriceWarning={hasPriceWarning}

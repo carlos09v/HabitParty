@@ -67,6 +67,7 @@ function getYieldProgressSegments(yieldInfo: DailyFocusYieldInfo) {
 interface FocusMetricsGridProps {
   metrics: FocusMetrics;
   todayProductiveMinutes?: number;
+  todayRewardableMinutes?: number;
   dailyFocusGoalMinutes?: number | null;
   totalRecordsCount?: number;
   period?: FocusPeriodTab;
@@ -76,6 +77,7 @@ interface FocusMetricsGridProps {
 export function FocusMetricsGrid({
   metrics,
   todayProductiveMinutes,
+  todayRewardableMinutes,
   dailyFocusGoalMinutes,
   totalRecordsCount,
   period: controlledPeriod,
@@ -112,6 +114,7 @@ export function FocusMetricsGrid({
 
   const todayMinutesForGoal =
     todayProductiveMinutes ?? metrics.todayFocusMinutes;
+  const todayYieldMinutes = todayRewardableMinutes ?? todayMinutesForGoal;
   const resolvedDailyGoalMinutes =
     storeDailyGoalMinutes ?? dailyFocusGoalMinutes ?? null;
   const hasDailyGoal =
@@ -126,7 +129,7 @@ export function FocusMetricsGrid({
   const isDailyGoalReached =
     hasDailyGoal && todayMinutesForGoal >= resolvedDailyGoalMinutes;
 
-  const yieldInfo = getDailyFocusYieldInfo(todayMinutesForGoal);
+  const yieldInfo = getDailyFocusYieldInfo(todayYieldMinutes);
   const { seg1Fill, seg2Fill, seg3Fill } = getYieldProgressSegments(yieldInfo);
 
   return (

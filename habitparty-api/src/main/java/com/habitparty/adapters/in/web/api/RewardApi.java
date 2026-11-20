@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.habitparty.adapters.in.web.dtos.request.CreateRewardDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateRewardDTO;
+import com.habitparty.adapters.in.web.dtos.request.UpdateRewardGroupDTO;
 import com.habitparty.adapters.in.web.dtos.request.UpdateRewardOrderDTO;
 import com.habitparty.adapters.in.web.dtos.response.RewardHistoryStatusResponseDTO;
 import com.habitparty.adapters.in.web.dtos.response.RewardResponseDTO;
@@ -21,6 +22,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
 
 @RequestMapping("/rewards")
 @Validated
@@ -49,6 +51,13 @@ public interface RewardApi {
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 
+    @Operation(summary = "Verifica histórico do card agrupado", description = "Retorna se qualquer pacote do card possui registros de compra no Histórico.")
+    @GetMapping("/group/has-history")
+    ResponseEntity<RewardHistoryStatusResponseDTO> checkRewardGroupHasHistory(
+        @RequestParam @NotEmpty List<UUID> ids,
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
+    );
+
     @Operation(summary = "Excluir Recompensa", description = "Remove uma recompensa existente. Use deleteHistory=true para remover também seus registros de compra do Histórico.")
     @DeleteMapping("/{id}")
     ResponseEntity<Void> deleteReward(
@@ -57,10 +66,25 @@ public interface RewardApi {
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 
+    @Operation(summary = "Excluir Card Agrupado", description = "Remove todos os pacotes de um card agrupado de forma atômica.")
+    @DeleteMapping("/group")
+    ResponseEntity<Void> deleteRewardGroup(
+        @RequestParam @NotEmpty List<UUID> ids,
+        @RequestParam(defaultValue = "false") boolean deleteHistory,
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
+    );
+
     @Operation(summary = "Reordenar Recompensas", description = "Atualiza a ordem de exibição das recompensas.")
     @PutMapping("/reorder")
     ResponseEntity<Void> updateOrderIndex(
         @RequestBody List<@Valid UpdateRewardOrderDTO> newOrderList,
+        @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
+    );
+
+    @Operation(summary = "Atualizar Card Agrupado", description = "Atualiza identidade compartilhada e sincroniza pacotes de um card agrupado de forma atômica.")
+    @PutMapping("/group")
+    ResponseEntity<List<RewardResponseDTO>> updateGroup(
+        @RequestBody @Valid UpdateRewardGroupDTO dto,
         @Parameter(hidden = true) @AuthenticationPrincipal AuthenticatedUser usuarioLogado
     );
 

@@ -70,7 +70,9 @@ public final class FocusRewardRecalculationPlanner {
           .withZoneSameInstant(effectiveUserZone)
           .toLocalDate();
       int priorMinutes = priorMinutesByDate.getOrDefault(sessionDate, 0);
-      priorMinutesByDate.put(sessionDate, priorMinutes + Math.max(0, record.getDurationMinutes()));
+      priorMinutesByDate.put(
+          sessionDate,
+          priorMinutes + FocusRewardCalculator.calculateRewardableMinutes(record.getDurationMinutes()));
 
       FocusReward recalculated = FocusRewardCalculator.calculate(record, priorMinutes);
 

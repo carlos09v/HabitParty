@@ -5,8 +5,6 @@ import { CSS } from "@dnd-kit/utilities";
 import { Check, HelpCircle, Loader2, MoreVertical } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { memo, type default as React, useCallback } from "react";
-import { createPortal } from "react-dom";
-import { MysteryBoxTierPopover } from "@/components/reward/MysteryBoxTierPopover";
 import {
   CatalogItemDurationBadge,
   CatalogItemPricePill,
@@ -14,7 +12,10 @@ import {
   CatalogItemVariantChips,
 } from "@/components/ui/CatalogItemBadges";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
-import { useFloatingPopover } from "@/hooks/useFloatingPopover";
+import {
+  type MysteryPopoverBridge,
+  useMysteryBoxItemPopover,
+} from "@/hooks/useMysteryBoxItemPopover";
 import type { AppLocale } from "@/i18n/config";
 import type {
   CatalogItemVariant,
@@ -28,6 +29,7 @@ import {
   STOP_DRAG_PROPAGATION_PROPS,
 } from "@/utils";
 import {
+  resolveCatalogActionTooltip,
   resolveCatalogItemVisuals,
   resolveCatalogTypePresentation,
 } from "@/utils/catalogItemVisuals";
@@ -35,6 +37,7 @@ import { formatFocusMinutes } from "@/utils/focusFormatters";
 
 export interface GamifiedItemCardProps {
   id: string;
+  sortableId?: string;
   title: string;
   description?: string;
   hasGroupDescription?: boolean;
@@ -65,15 +68,6 @@ export interface GamifiedItemCardProps {
   isDeleteChecking?: boolean;
   isActionLoading?: boolean;
   lootItems?: MysteryBoxLootItem[];
-}
-
-interface MysteryPopoverBridge {
-  tierContainerRef: React.RefObject<HTMLElement | null>;
-  isOpen: boolean;
-  open: () => void;
-  close: () => void;
-  toggle: () => void;
-  portalNode: React.ReactNode;
 }
 
 type CardVisuals = ReturnType<typeof resolveCatalogItemVisuals>;
@@ -579,30 +573,17 @@ function GamifiedItemCardContent({
             disabled={isPrimaryDisabled}
             aria-busy={isActionLoading}
             aria-label={`${actionLabel} ${title}`}
-            title={
-              isFocusNavigate
-                ? t("tooltips.openFocusSession")
-                : inUse
-                  ? t("tooltips.inUse")
-                  : !canAfford
-                    ? isGamified
-                      ? t("tooltips.insufficientCoins")
-                      : t("tooltips.insufficientCredits")
-                    : price
-                      ? t(
-                          isGamified
-                            ? "tooltips.actionForPrice"
-                            : "tooltips.actionForPriceCredits",
-                          {
-                            action: actionLabel,
-                            price: formatCoins(price, { locale }),
-                          },
-                        )
-                      : t("tooltips.actionTarget", {
-                          action: actionLabel,
-                          title,
-                        })
-            }
+            title={resolveCatalogActionTooltip({
+              isFocusNavigate,
+              inUse,
+              canAfford,
+              isGamified,
+              actionLabel,
+              title,
+              price,
+              locale,
+              t,
+            })}
             className={cn(
               "inline-flex items-center justify-center gap-1.5 rounded-lg font-semibold dark:font-bold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs shrink-0 pointer-coarse:min-h-9 px-3 py-1 text-xs",
               !isActionLoading && (isFocusNavigate || (canAfford && !inUse))
@@ -627,57 +608,14 @@ function MysteryBoxGamifiedCard({
   mysteryTier,
   ...props
 }: GamifiedItemCardContentProps & { mysteryTier: MysteryBoxTier }) {
-  const { isDragging } = props.sortable;
-  const {
-    containerRef: tierContainerRef,
-    popoverRef: tierPopoverRef,
-    isOpen: isTierPopoverOpen,
-    open: openTierPopover,
-    close: closeTierPopover,
-    toggle: toggleTierPopover,
-    coords: tierPopoverCoords,
-    shouldRenderPortal: shouldRenderTierPortal,
-    floatingStyle: tierFloatingStyle,
-  } = useFloatingPopover<HTMLElement, HTMLElement, HTMLElement>({
-    align: "right",
-    estimatedWidth: 288,
-    estimatedHeight: 340,
-    margin: 12,
-    offset: 8,
-    zIndex: 80,
-    disabled: isDragging,
+  const mysteryPopover = useMysteryBoxItemPopover({
+    mysteryTier,
+    isDragging: props.sortable.isDragging,
+    price: props.price,
+    lootItems: props.lootItems,
   });
 
-  const portalNode =
-    shouldRenderTierPortal &&
-    isTierPopoverOpen &&
-    !isDragging &&
-    tierPopoverCoords
-      ? createPortal(
-          <MysteryBoxTierPopover
-            tier={mysteryTier}
-            customPrice={props.price}
-            customLootItems={props.lootItems}
-            popoverRef={tierPopoverRef}
-            style={tierFloatingStyle}
-          />,
-          document.body,
-        )
-      : null;
-
-  return (
-    <GamifiedItemCardContent
-      {...props}
-      mysteryPopover={{
-        tierContainerRef,
-        isOpen: isTierPopoverOpen,
-        open: openTierPopover,
-        close: closeTierPopover,
-        toggle: toggleTierPopover,
-        portalNode,
-      }}
-    />
-  );
+  return <GamifiedItemCardContent {...props} mysteryPopover={mysteryPopover} />;
 }
 
 /**
@@ -697,7 +635,7 @@ export const GamifiedItemCard = memo(function GamifiedItemCard(
   });
 
   const sortable = useSortable({
-    id: props.id,
+    id: props.sortableId ?? props.id,
     data: props.dragData || { id: props.id },
   });
 

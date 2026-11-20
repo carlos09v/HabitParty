@@ -30,7 +30,7 @@ import {
   parseTimeToMinutes,
   toLocalISOString,
 } from "@/utils/date";
-import { calculateProductiveMinutesForDate } from "@/utils/focusDailyYield";
+import { calculateRewardableMinutesForDate } from "@/utils/focusDailyYield";
 import {
   getItemRemainingMinutes,
   isBackpackItemTimeDepleted,
@@ -300,13 +300,13 @@ export function useFocusManualRecordForm({
     return getTodayDateString(new Date(), userTimeZone);
   }, [userTimeZone]);
 
-  // Minutos já focados na data selecionada (para avisar sobre soft/hard cap diário no preview)
+  // Minutos elegíveis já contabilizados na data selecionada (para espelhar o soft/hard cap diário)
   const priorFocusMinutesForDate = useMemo(() => {
-    return calculateProductiveMinutesForDate(
+    return calculateRewardableMinutesForDate(
       records,
       sessionDate,
       userTimeZone,
-      "endTime",
+      "startTime",
     );
   }, [records, sessionDate, userTimeZone]);
 

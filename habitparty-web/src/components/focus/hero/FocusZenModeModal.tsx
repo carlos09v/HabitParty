@@ -40,7 +40,7 @@ interface FocusZenModeModalProps {
   isActive: boolean;
   isSavingSession?: boolean;
   isSessionRewardCapped?: boolean;
-  todayProductiveMinutes?: number;
+  todayRewardableMinutes?: number;
   mode: FocusRecordType;
   phase: FocusPhase;
   target: FocusActiveTarget | null;
@@ -72,7 +72,7 @@ export function FocusZenModeModal({
   isActive,
   isSavingSession = false,
   isSessionRewardCapped = false,
-  todayProductiveMinutes,
+  todayRewardableMinutes,
   mode,
   target,
   canComplete,
@@ -255,9 +255,9 @@ export function FocusZenModeModal({
           </div>
         )}
 
-        {typeof todayProductiveMinutes === "number" && (
+        {typeof todayRewardableMinutes === "number" && (
           <FocusDailyYieldBadge
-            todayProductiveMinutes={todayProductiveMinutes}
+            todayRewardableMinutes={todayRewardableMinutes}
             size="md"
             className="mt-2"
           />

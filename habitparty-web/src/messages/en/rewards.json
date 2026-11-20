@@ -57,6 +57,14 @@
   "container": {
     "addProduct": "Add Product",
     "addProductProductivity": "New Reward",
+    "planFree": "Free",
+    "planPremium": "Premium",
+    "limitReachedTitle": "Card limit reached: {current}/{max} ({plan})",
+    "limitUsedTitle": "{current} of {max} reward cards in your showcase",
+    "maxLimitReachedTitle": "Maximum limit of {max} cards reached",
+    "upgradeLimitTitle": "You reached the free plan limit. Upgrade to Premium to create up to 50 cards!",
+    "upgradeLimitButton": "Limit (Go Premium)",
+    "limitReachedShort": "Limit reached",
     "buy": "Buy",
     "buyProductivity": "Redeem",
     "payDebt": "Pay Debt",
@@ -81,7 +89,10 @@
     "contextMenu": {
       "addPackage": "Add package",
       "edit": "Edit",
-      "delete": "Delete"
+      "editGroup": "Edit card & packages",
+      "delete": "Delete",
+      "deleteSinglePackage": "Delete package ({variant})",
+      "deleteWholeGroup": "Delete entire card ({count} packages)"
     },
     "deleteModal": {
       "title": "Delete reward?",
@@ -90,6 +101,12 @@
       "cancelText": "Cancel",
       "deleteHistoryLabel": "Also delete purchase records from History",
       "deleteHistoryHint": "Removes purchase transactions of this reward from your history. Coins and XP already spent are not changed."
+    },
+    "deleteGroupModal": {
+      "title": "Delete entire card?",
+      "description": "Are you sure you want to delete <bold>\"{title}\"</bold> and all <bold>{count} packages</bold> from your Store?",
+      "confirmText": "Yes, delete card",
+      "cancelText": "Cancel"
     },
     "toasts": {
       "insufficientCoins": "Insufficient coins to redeem this item!",
@@ -102,14 +119,17 @@
       "debtPaidSuccessProductivity": "Debt \"{title}\" paid! Credits were deducted directly.",
       "serverError": "Server communication error.",
       "deleteSuccess": "Reward \"{title}\" deleted successfully!",
+      "deleteGroupSuccess": "Card \"{title}\" ({count} packages) deleted successfully!",
       "deleteError": "Error deleting reward."
     }
   },
   "formModal": {
     "editTitle": "Edit Reward",
+    "editGroupTitle": "Edit Card & Packages",
     "createTitle": "New Reward",
     "editDescription": "Update the name, cost, and rules of this reward in your Store.",
     "editDescriptionProductivity": "Update the name, credit cost, and rules of this reward.",
+    "editGroupDescription": "Update the shared card details and manage all packages in one place.",
     "createDescription": "Register a prize, time voucher, or mystery box in the Store.",
     "createDescriptionProductivity": "Register a single-use reward or free-time voucher.",
     "titleLabel": "Reward Name",
@@ -162,8 +182,27 @@
     "multiPackageToggleHint": "Grouped into a single showcase card",
     "multiPackageSelectLabel": "Choose packages to create",
     "multiPackageSelectHint": "(select 1 or more tiers)",
-    "multiPackagePreviewTitle": "Will create {count} packages on the same card:",
+    "multiPackagePreviewTitle": "Will create {count} packages in 1 showcase card:",
     "multiPackagePreviewHint": "In the showcase, click any chip (30m, 1h, 3h...) to switch package before buying.",
+    "tierAlreadyUsedInCard": "This card already has a package at this tier",
+    "remainingGroupSlotsHint": "This card already has {existing} package(s); you can add up to {remaining} more.",
+    "groupEditor": {
+      "title": "Packages in this Card ({count}/{max})",
+      "subtitle": "Edit duration, cost, or add/remove variants without splitting the card",
+      "addPackage": "Add package",
+      "packageIndex": "Package {index}",
+      "activeBadge": "Selected",
+      "newBadge": "New",
+      "removePackageAria": "Remove package {index}",
+      "keepOneHint": "Keep at least 1 package or delete the card from the menu",
+      "removePackageTitle": "Remove this package from the card",
+      "tierLabel": "Tier",
+      "durationLabel": "Duration (min)",
+      "priceCoinsLabel": "Coins",
+      "priceCreditsLabel": "Credits",
+      "applySuggestedTitle": "Apply calibrated suggested price ({price})",
+      "removedNotice": "{count, plural, one {1 package will be removed when saving} other {# packages will be removed when saving}} (past purchases remain preserved in History)."
+    },
     "debtUnitPricingLabel": "Unit price presets (no bundle discount)",
     "debtUnitPricingHint": "(8 coins / 30 min)",
     "debtUnitPricingTooltipTitle": "Why does Debt use unit pricing?",
@@ -459,10 +498,13 @@
     "mysteryBoxPackageRequired": "Mystery Box requires a selected package level.",
     "updateError": "Error updating reward on the server.",
     "updateSuccess": "Reward updated successfully!",
+    "groupUpdateSuccess": "Card \"{title}\" ({count} packages) updated successfully!",
     "createError": "Error creating reward on the server.",
     "createSuccess": "Reward \"{title}\" created!",
     "createSuccessDescription": "Available to redeem in the Rewards Store.",
     "batchPackagesRequired": "Select at least one package to create.",
+    "duplicatePackageTierError": "This card already has a package at this tier. Choose another level.",
+    "groupTooManyPackagesError": "A card can have at most {max} packages in total.",
     "batchCreateSuccess": "Created and grouped {count} packages for \"{title}\"!",
     "defaultMysteryBoxTitle": "Basic Mystery Box",
     "defaultMysteryBoxTitleProductivity": "Essential Break Draw",

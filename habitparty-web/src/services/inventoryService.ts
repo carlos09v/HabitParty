@@ -1,5 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { serverApi } from "@/api/server";
+import { getRequestLocale } from "@/i18n/request";
 import { getRewardsData } from "@/services/rewardService";
 import type {
   InventoryItem,
@@ -37,10 +38,11 @@ export async function getRawInventoryItems(): Promise<
  * enriquecendo metadados visuais (categoria e descrição) a partir do catálogo cacheado de recompensas.
  */
 export async function getInventoryData(): Promise<InventoryPageData> {
-  const [inventoryData, { rewards }] = await Promise.all([
+  const [inventoryData, { rewards }, locale] = await Promise.all([
     getRawInventoryItems(),
     getRewardsData(),
+    getRequestLocale(),
   ]);
-  const items = mapAndGroupInventory(inventoryData, rewards);
+  const items = mapAndGroupInventory(inventoryData, rewards, locale);
   return { items };
 }

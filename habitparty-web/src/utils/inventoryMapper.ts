@@ -4,13 +4,11 @@ import {
   MYSTERY_BOX_PRESETS,
   MYSTERY_BOX_TIERS,
 } from "@/constants/mysteryBox";
+import type { AppLocale } from "@/i18n/config";
+import rewardsEn from "@/messages/en/rewards.json";
+import rewardsPtBr from "@/messages/pt-BR/rewards.json";
 import type { InventoryItem } from "@/types/inventory";
-import type {
-  MysteryBoxPresetId,
-  PackageLevel,
-  Reward,
-  RewardCategory,
-} from "@/types/reward";
+import type { PackageLevel, Reward, RewardCategory } from "@/types/reward";
 import {
   BACKEND_TO_UI_CATEGORY,
   BACKEND_TO_UI_PACKAGE,
@@ -19,13 +17,8 @@ import {
 
 type InventoryItemResponseDTO =
   components["schemas"]["InventoryItemResponseDTO"];
-
-const PRESET_UI_CATEGORY: Record<MysteryBoxPresetId, RewardCategory> = {
-  gamer: "Entretenimento",
-  relax: "Bem-estar",
-  gastronomy: "Compras",
-  hobbies: "Hobbies",
-};
+type MysteryTierKey = "BASIC" | "PREMIUM" | "EPIC" | "LEGENDARY";
+type MysterySlotKey = "0" | "1" | "2";
 
 const DEFAULT_TIER_SLOT_CATEGORIES: Record<
   "Básico" | "Premium" | "Épico" | "Lendário",
@@ -37,10 +30,13 @@ const DEFAULT_TIER_SLOT_CATEGORIES: Record<
   Lendário: ["Hobbies", "Bem-estar", "Sorte"],
 };
 
-const DEFAULT_LOOT_META_BY_NAME = new Map<
-  string,
-  { category: RewardCategory; description?: string }
->();
+interface BuiltInLootMeta {
+  category: RewardCategory;
+  tierKey?: MysteryTierKey;
+  slotIndex?: MysterySlotKey;
+}
+
+const DEFAULT_LOOT_META_BY_NAME = new Map<string, BuiltInLootMeta>();
 
 for (const tier of MYSTERY_BOX_TIERS) {
   const tierId = tier.id as "Básico" | "Premium" | "Épico" | "Lendário";
@@ -51,22 +47,40 @@ for (const tier of MYSTERY_BOX_TIERS) {
     if (!DEFAULT_LOOT_META_BY_NAME.has(key)) {
       DEFAULT_LOOT_META_BY_NAME.set(key, {
         category: categories[idx] ?? "Sorte",
-        description: tier.dropRates[idx]?.description,
+        tierKey: tier.backendPackageLevel,
+        slotIndex: String(idx) as MysterySlotKey,
       });
     }
   });
 }
 
+// Nome canônico usado no backend (`MysteryBoxLootTable.java`) para o slot 1 Lendário
+if (!DEFAULT_LOOT_META_BY_NAME.has("day-off integral")) {
+  DEFAULT_LOOT_META_BY_NAME.set("day-off integral", {
+    category: "Bem-estar",
+    tierKey: "LEGENDARY",
+    slotIndex: "1",
+  });
+}
+
 for (const preset of MYSTERY_BOX_PRESETS) {
-  const category = PRESET_UI_CATEGORY[preset.id];
   for (const tierSlots of Object.values(preset.tiers)) {
     for (const slot of tierSlots) {
       const key = slot.name.trim().toLowerCase();
       if (!DEFAULT_LOOT_META_BY_NAME.has(key)) {
-        DEFAULT_LOOT_META_BY_NAME.set(key, { category });
+        DEFAULT_LOOT_META_BY_NAME.set(key, { category: preset.category });
       }
     }
   }
+}
+
+function resolveBuiltInTierDropDescription(
+  tierKey: MysteryTierKey,
+  slotIndex: MysterySlotKey,
+  locale: AppLocale = "pt-BR",
+): string | undefined {
+  const messages = locale === "en" ? rewardsEn : rewardsPtBr;
+  return messages.mysteryBox.tiers[tierKey]?.drops[slotIndex]?.description;
 }
 
 function normalizeUiCategory(
@@ -91,12 +105,13 @@ export function resolveOpenedMysteryBoxMetadata({
   prizeName,
   sourceBoxReward,
   storeRewards = [],
-  packageLevel,
+  locale = "pt-BR",
 }: {
   prizeName?: string;
   sourceBoxReward?: Reward;
   storeRewards?: Reward[];
   packageLevel?: PackageLevel;
+  locale?: AppLocale;
 }): { category: RewardCategory; description: string } {
   const normalizedName = (prizeName || "").trim().toLowerCase();
 
@@ -117,6 +132,14 @@ export function resolveOpenedMysteryBoxMetadata({
   const builtInMeta = normalizedName
     ? DEFAULT_LOOT_META_BY_NAME.get(normalizedName)
     : undefined;
+  const builtInDescription =
+    builtInMeta?.tierKey && builtInMeta?.slotIndex
+      ? resolveBuiltInTierDropDescription(
+          builtInMeta.tierKey,
+          builtInMeta.slotIndex,
+          locale,
+        )
+      : undefined;
 
   const boxCustomCategory =
     sourceBoxReward?.category &&
@@ -134,14 +157,12 @@ export function resolveOpenedMysteryBoxMetadata({
     boxCustomCategory ||
     (sourceBoxReward?.category && sourceBoxReward.category !== "Nenhum"
       ? sourceBoxReward.category
-      : packageLevel
-        ? "Sorte"
-        : "Sorte");
+      : "Sorte");
 
   const resolvedDescription =
     matchingSlot?.description?.trim() ||
     matchingStoreReward?.description?.trim() ||
-    builtInMeta?.description ||
+    builtInDescription ||
     sourceBoxReward?.description?.trim() ||
     "";
 
@@ -159,6 +180,7 @@ export function resolveOpenedMysteryBoxMetadata({
 export function mapAndGroupInventory(
   items: InventoryItemResponseDTO[],
   rewards: Reward[] = [],
+  locale: AppLocale = "pt-BR",
 ): InventoryItem[] {
   const grouped = new Map<string, InventoryItem>();
   const rewardById = new Map<string, Reward>(
@@ -204,6 +226,10 @@ export function mapAndGroupInventory(
             ...(existing.itemIds ?? [existing.id]),
             dto.inventoryItemId,
           ];
+          existing.itemOrderIndexes = [
+            ...(existing.itemOrderIndexes ?? [existing.orderIndex ?? 0]),
+            dto.orderIndex ?? 0,
+          ];
         }
       }
     } else {
@@ -223,7 +249,7 @@ export function mapAndGroupInventory(
 
       const iconName =
         dto.rewardIcon ||
-        (!isFromOpenedMysteryBox ? storeReward?.iconName : undefined) ||
+        (!isFromOpenedMysteryBox ? storeReward?.icon : undefined) ||
         (rawType === "MISTERY_BOX" ? "mystery_box" : "gamepad");
 
       const prizeName = dto.rewardName || storeReward?.title || "";
@@ -235,6 +261,7 @@ export function mapAndGroupInventory(
             sourceBoxReward: storeReward,
             storeRewards: rewards,
             packageLevel,
+            locale,
           })
         : null;
 
@@ -249,11 +276,9 @@ export function mapAndGroupInventory(
       grouped.set(groupKey, {
         id: primaryItemId,
         itemIds: [primaryItemId],
+        itemOrderIndexes: [dto.orderIndex ?? 0],
         inventoryItemId: dto.inventoryItemId,
         orderIndex: dto.orderIndex,
-        name: dto.rewardName || storeReward?.title || "",
-        description: resolvedDescription,
-        itemType: dto.rewardType || "Consumable",
         status: dto.status,
         quantity: 1,
         remainingSeconds: dto.remainingSeconds,
@@ -270,7 +295,6 @@ export function mapAndGroupInventory(
               : isFromOpenedMysteryBox
                 ? undefined
                 : storeReward?.baseDurationMinutes,
-          iconName,
           icon: iconName,
           packageLevel,
           lootItems: dto.lootItems ?? storeReward?.lootItems,

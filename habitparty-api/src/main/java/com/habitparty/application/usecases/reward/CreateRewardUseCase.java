@@ -2,9 +2,9 @@ package com.habitparty.application.usecases.reward;
 
 import java.util.List;
 import java.util.UUID;
-import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.RewardRepository;
 import com.habitparty.application.ports.UserRepository;
@@ -12,6 +12,7 @@ import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.reward.MysteryBoxLootItem;
 import com.habitparty.core.domain.entities.reward.MysteryBoxLootTable;
 import com.habitparty.core.domain.entities.reward.Reward;
+import com.habitparty.core.domain.entities.reward.RewardGrouping;
 import com.habitparty.core.domain.enums.RewardCategory;
 import com.habitparty.core.domain.enums.RewardPackageLevel;
 import com.habitparty.core.domain.enums.RewardType;
@@ -31,59 +32,81 @@ public class CreateRewardUseCase {
   }
 
   public Reward execute(CreateRewardCommand command, UUID userIdLogado) {
-    // Verificar se o user existe.
-    User user = userPort.findById(userIdLogado) // <-- Usa o ID confiável do Backend!
+    User user = userPort.findById(userIdLogado)
         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado!"));
 
-    // Limite de Rewards por User (25 Free / 100 Premium)
-    int maxRewards = user.isPremium() ? 100 : 25;
-    int currentCount = port.countByUserId(userIdLogado);
-    if (currentCount >= maxRewards) {
-      throw new LimitExceededException(user.isPremium()
-          ? "Limite de 100 recompensas por usuário atingido no plano premium."
-          : "Limite de 25 recompensas por usuário atingido no plano gratuito.");
-    }
-
-    // 1. Descobre qual é o maior índice atual desse quadro
-    int maxIndex = port.getMaxOrderIndex(user.getId());
-
-    // 2. Define o índice da nova coluna como o maior + 1
-    int newIndex = maxIndex + 1;
-
-    // 1. Regra de Preço e Categoria (Se vier null do comando, já vira NONE na variável)
+    // 1. Regra de Preço, Tipo e Categoria
     Reward.validatePrice(command.price());
     RewardCategory categoriaFinal = command.category() != null ? command.category() : RewardCategory.NONE;
     Reward.validateCategoryAndType(categoriaFinal, command.type());
 
-    // 2. Extrai os valores originais do comando para tratar
+    // 2. Limite por Cards na Vitrine (12 Free / 50 Premium) + até 4 pacotes por Card agrupado
+    List<Reward> existingRewards = port.findAllByUserId(userIdLogado);
+    int maxCards = RewardGrouping.getMaxRewardCards(user.isPremium());
+    boolean groupable = RewardGrouping.isGroupable(command.type(), categoriaFinal);
+    String candidateGroupKey = groupable
+        ? RewardGrouping.groupKey(null, command.name(), command.type(), categoriaFinal)
+        : null;
+    int existingVariantsInGroup = candidateGroupKey != null
+        ? RewardGrouping.countGroupVariants(existingRewards, candidateGroupKey)
+        : 0;
+
+    if (existingVariantsInGroup > 0) {
+      if (existingVariantsInGroup >= RewardGrouping.MAX_VARIANTS_PER_GROUP) {
+        throw new LimitExceededException(
+            "Este card já atingiu o limite máximo de "
+                + RewardGrouping.MAX_VARIANTS_PER_GROUP
+                + " pacotes.");
+      }
+    } else {
+      int currentCards = RewardGrouping.countDistinctGroups(existingRewards);
+      if (currentCards >= maxCards) {
+        throw new LimitExceededException(user.isPremium()
+            ? "Limite de " + RewardGrouping.PREMIUM_MAX_REWARD_CARDS
+                + " cards de recompensa por usuário atingido no plano premium."
+            : "Limite de " + RewardGrouping.FREE_MAX_REWARD_CARDS
+                + " cards de recompensa por usuário atingido no plano gratuito.");
+      }
+    }
+
+    int maxIndex = port.getMaxOrderIndex(user.getId());
+    int newIndex = maxIndex + 1;
+
     Integer durationFinal = command.baseDurationMinutes();
     RewardPackageLevel packageFinal = command.packageLevel();
     List<MysteryBoxLootItem> lootItemsFinal = null;
 
-    // 3. Aplica a Regra do Tipo (SINGLE_USE vs TIME_BASED vs MISTERY_BOX)
     if (command.type() == RewardType.SINGLE_USE) {
-        durationFinal = null;
-        if (categoriaFinal == RewardCategory.DEBT || packageFinal == null) {
-            packageFinal = RewardPackageLevel.NONE;
-        }
-        
+      durationFinal = null;
+      if (categoriaFinal == RewardCategory.DEBT || packageFinal == null) {
+        packageFinal = RewardPackageLevel.NONE;
+      }
     } else if (command.type() == RewardType.TIME_BASED) {
-        if (durationFinal == null || durationFinal <= 0) {
-            durationFinal = 30; // Tempo padrão
-        }
-        if (packageFinal == null) {
-            packageFinal = RewardPackageLevel.NONE;
-        }
+      if (durationFinal == null || durationFinal <= 0) {
+        durationFinal = 30;
+      }
+      if (packageFinal == null) {
+        packageFinal = RewardPackageLevel.NONE;
+      }
     } else if (command.type() == RewardType.MISTERY_BOX) {
-        durationFinal = null; // A caixa em si não tem tempo, o prêmio sorteado é que terá
-        
-        if (packageFinal == null || packageFinal == RewardPackageLevel.NONE) {
-            throw new DomainValidationException("Precisa ter um nível de pacote selecionado!");
-        }
-        lootItemsFinal = MysteryBoxLootTable.validateAndNormalizeLootItems(
-            packageFinal,
-            command.lootItems()
-        );
+      durationFinal = null;
+      if (packageFinal == null || packageFinal == RewardPackageLevel.NONE) {
+        throw new DomainValidationException("Precisa ter um nível de pacote selecionado!");
+      }
+      lootItemsFinal = MysteryBoxLootTable.validateAndNormalizeLootItems(
+          packageFinal,
+          command.lootItems());
+    }
+
+    if (candidateGroupKey != null
+        && existingVariantsInGroup > 0
+        && RewardGrouping.findConflictingPackageTier(
+                existingRewards, candidateGroupKey, packageFinal, null)
+            .isPresent()) {
+      throw new DomainValidationException(
+          "Este card já possui um pacote de nível "
+              + RewardGrouping.formatPackageLevelLabel(packageFinal)
+              + ". Escolha outro nível.");
     }
 
     Reward newReward = new Reward(

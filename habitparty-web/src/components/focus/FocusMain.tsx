@@ -68,7 +68,7 @@ interface FocusMainProps {
     minutes: number;
     sessionsCount: number;
   };
-  todayProductiveMinutes?: number;
+  todayRewardableMinutes?: number;
   isPremium?: boolean;
   selectedActivityId?: string | null;
   selectedBackpackItemId?: string | null;
@@ -93,7 +93,7 @@ export function FocusMain({
   backpackItems,
   focusableTasks = [],
   todaySummary,
-  todayProductiveMinutes,
+  todayRewardableMinutes,
   isPremium = false,
   selectedActivityId,
   selectedBackpackItemId,
@@ -294,7 +294,7 @@ export function FocusMain({
           activities={activities}
           backpackItems={backpackItems}
           focusableTasks={focusableTasks}
-          todayProductiveMinutes={todayProductiveMinutes}
+          todayRewardableMinutes={todayRewardableMinutes}
           onSelectActivity={onSelectActivity}
           onStartFocusActivity={onStartFocusActivity}
           onStartFocusItem={onStartFocusItem}

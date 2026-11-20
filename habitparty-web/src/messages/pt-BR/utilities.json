@@ -163,7 +163,9 @@
       "earnMoreCoins": "junte mais moedas",
       "earnMoreCredits": "acumule mais créditos",
       "showcaseLabel": "Na Vitrine",
-      "optionsCount": "{count} {count, plural, one {opção} other {opções}}"
+      "optionsCount": "{count} {count, plural, one {opção} other {opções}}",
+      "cardsCount": "{count} {count, plural, one {card} other {cards}}",
+      "packagesCount": "{count} {count, plural, one {pacote} other {pacotes}}"
     },
     "inventory": {
       "voucherCount": "{count} {count, plural, one {cupom} other {cupons}}",

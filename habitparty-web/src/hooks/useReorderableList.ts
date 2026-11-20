@@ -14,12 +14,20 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { ActionState } from "@/actions/types";
 
-interface UseReorderableListOptions<T extends { id: string }> {
+interface UseReorderableListOptions<
+  T extends { id: string; orderIndex?: number },
+> {
   initialItems: T[];
   onReorderServerAction: (
     updates: { id: string; newIndex: number }[],
+    context: { previousItems: T[]; nextItems: T[] },
   ) => Promise<ActionState>;
   isFiltering?: boolean;
+  /**
+   * Quando true, envia no payload apenas itens cujo `orderIndex` realmente divergiu
+   * do novo índice na lista, atualizando `orderIndex` otimisticamente.
+   */
+  onlyChangedOrderIndex?: boolean;
   /**
    * Limite máximo de itens destravados que podem ser arrastados ou receber drop.
    * Ex: no plano Free do Foco, apenas os 4 primeiros (índices 0..3) podem ser reordenados;
@@ -42,10 +50,13 @@ interface UseReorderableListOptions<T extends { id: string }> {
  * e suporte opcional a itens travados por limite de plano.
  * Compartilhado entre Loja (Rewards), Mochila (Inventory) e Atividades de Foco (Focus).
  */
-export function useReorderableList<T extends { id: string }>({
+export function useReorderableList<
+  T extends { id: string; orderIndex?: number },
+>({
   initialItems,
   onReorderServerAction,
   isFiltering = false,
+  onlyChangedOrderIndex = false,
   maxUnlockedCount,
   resolveDragReorder,
 }: UseReorderableListOptions<T>) {
@@ -109,15 +120,31 @@ export function useReorderableList<T extends { id: string }>({
       }
 
       const previousItems = [...currentItems];
-      setItems(newItems);
+      const updates: { id: string; newIndex: number }[] = [];
+      let nextItems = newItems;
 
-      const updates = newItems.map((item, index) => ({
-        id: item.id,
-        newIndex: index,
-      }));
+      if (onlyChangedOrderIndex) {
+        nextItems = newItems.map((item, index) => {
+          if (item.orderIndex !== index) {
+            updates.push({ id: item.id, newIndex: index });
+            return { ...item, orderIndex: index };
+          }
+          return item;
+        });
+        if (updates.length === 0) return;
+      } else {
+        for (let index = 0; index < newItems.length; index++) {
+          updates.push({ id: newItems[index].id, newIndex: index });
+        }
+      }
+
+      setItems(nextItems);
 
       try {
-        const result = await onReorderServerAction(updates);
+        const result = await onReorderServerAction(updates, {
+          previousItems,
+          nextItems,
+        });
         if (!result.success) {
           setItems(previousItems);
           toast.error(result.error || t("reorderError"));
@@ -127,7 +154,13 @@ export function useReorderableList<T extends { id: string }>({
         toast.error(t("communicationError"));
       }
     },
-    [isFiltering, maxUnlockedCount, onReorderServerAction, t],
+    [
+      isFiltering,
+      maxUnlockedCount,
+      onlyChangedOrderIndex,
+      onReorderServerAction,
+      t,
+    ],
   );
 
   return {

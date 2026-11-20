@@ -12,6 +12,7 @@ import type {
   CheckoutResponseDTO,
   FoundersQuotaDTO,
 } from "@/types/payment";
+import type { RewardResponseDTO, UpdateRewardGroupDTO } from "@/types/reward";
 import type {
   AchievementItemResponseDTO,
   ProfileHighlightResponseDTO,
@@ -461,6 +462,53 @@ export type ExtendedApiPaths = paths & {
         200: {
           content: {
             "application/json": UserResponseDTO;
+          };
+        };
+      };
+    };
+  };
+  "/rewards/group": {
+    put: {
+      requestBody: {
+        content: {
+          "application/json": UpdateRewardGroupDTO;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            "application/json": RewardResponseDTO[];
+          };
+        };
+      };
+    };
+    delete: {
+      parameters: {
+        query: {
+          ids: string;
+          deleteHistory?: boolean;
+        };
+      };
+      responses: {
+        204: {
+          content?: never;
+        };
+      };
+    };
+  };
+  "/rewards/group/has-history": {
+    get: {
+      parameters: {
+        query: {
+          ids: string;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            "application/json": {
+              hasHistory?: boolean;
+            };
           };
         };
       };

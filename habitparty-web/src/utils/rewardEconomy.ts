@@ -1,6 +1,11 @@
+import { SINGLE_USE_TIER_SUGGESTED_PRICES } from "@/constants/reward";
 import { DIFFICULTY_REWARDS } from "@/constants/task";
 import type { PackageLevel, RewardType } from "@/types/reward";
-import { getMysteryBoxTier } from "@/utils/rewardMapper";
+import {
+  getMysteryBoxTier,
+  toPackageMessageKey,
+  toRewardTypeMessageKey,
+} from "@/utils/rewardMapper";
 
 /** Ganho médio de referência de um dia produtivo completo (tarefas + ~2h-3h de foco). */
 export const DAILY_PRODUCTIVE_COINS_BENCHMARK = 15;
@@ -172,11 +177,15 @@ export function analyzeRewardPrice({
   const safePrice = Number.isFinite(price) ? price : 0;
   const effort = describeEffortEquivalence(safePrice);
 
+  const typeKey = toRewardTypeMessageKey(type);
   let suggestedPrice: number | null = null;
-  if (type === "TimeBased") {
+  if (typeKey === "TimeBased") {
     suggestedPrice = calculateSuggestedCouponPrice(durationMinutes);
-  } else if (type === "MysteryBox") {
+  } else if (typeKey === "MysteryBox") {
     suggestedPrice = getMysteryBoxTier(packageLevel).recommendedPrice;
+  } else if (typeKey === "SingleUse") {
+    const pkgKey = toPackageMessageKey(packageLevel);
+    suggestedPrice = SINGLE_USE_TIER_SUGGESTED_PRICES[pkgKey] ?? null;
   }
 
   if (safePrice <= 0) {

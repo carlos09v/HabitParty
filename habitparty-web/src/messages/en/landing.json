@@ -359,7 +359,7 @@
           "Up to 2 independent Workspaces",
           "Up to 4 Lists/Columns per board in each workspace",
           "Up to 4 custom Activities in Focus Mode",
-          "Up to 25 Rewards listed in your shop",
+          "Up to 12 Reward Cards in your shop (up to 4 packages each)",
           "Backpack capacity for up to 20 stored items",
           "Email reminders for to-dos (up to 5 active & 20 sends/month)",
           "Unlimited Pomodoro & Zen Mode",
@@ -390,7 +390,7 @@
           "Up to 4 independent Workspaces — double the free plan!",
           "Up to 6 Lists/Columns per board for complete workflows",
           "Up to 6 custom Activities in Focus Mode",
-          "Up to 100 Rewards listed in your shop",
+          "Up to 50 Reward Cards in your shop (up to 4 packages each)",
           "Expanded Backpack with capacity for up to 100 items",
           "Expanded Email Reminders (up to 30 active & 100 sends/month)"
         ]
@@ -412,7 +412,7 @@
           "Up to 4 independent Workspaces — double the free plan!",
           "Up to 6 Lists/Columns per board for complete workflows",
           "Up to 6 custom Activities in Focus Mode",
-          "Up to 100 Rewards listed in your shop",
+          "Up to 50 Reward Cards in your shop (up to 4 packages each)",
           "Expanded Backpack with capacity for up to 100 items",
           "VIP Cosmic Guardian emblem on profile and golden ring",
           "Early access to new features (such as Guild/Party)"
@@ -436,7 +436,7 @@
       },
       "freeVsPremium": {
         "question": "Is HabitParty free? What does the Premium plan offer?",
-        "answer": "HabitParty has a 100% free plan with everything you need: up to 2 independent workspaces, 4 columns per workspace, 4 Focus Mode activities, up to 25 rewards, a 20-item backpack, up to 5 active email reminders (20 monthly sends), and 4 visual themes (Cosmic Dark & Daylight plus 1 alternate Dark [Dark Knight] and 1 alternate Light [Solar Parchment]). For those managing multiple projects and seeking deep focus, the Cosmic Guardian plan adds 3 exclusive VIP atmospheric themes (Cyberpunk Neon, Forest Ranger, and the extra Light theme Royal Gold), expanded email reminders (up to 30 active & 100 monthly sends), scheduled events, animated profile frames, ambient sound generators (Rain, Cafe, Lofi, Campfire), VIP icon packs, and expansion to 4 workspaces, 6 columns, 6 focus activities, up to 100 rewards, and a 100-item backpack."
+        "answer": "HabitParty has a 100% free plan with everything you need: up to 2 independent workspaces, 4 columns per workspace, 4 Focus Mode activities, up to 12 reward cards (with up to 4 packages per card), a 20-item backpack, up to 5 active email reminders (20 monthly sends), and 4 visual themes (Cosmic Dark & Daylight plus 1 alternate Dark [Dark Knight] and 1 alternate Light [Solar Parchment]). For those managing multiple projects and seeking deep focus, the Cosmic Guardian plan adds 3 exclusive VIP atmospheric themes (Cyberpunk Neon, Forest Ranger, and the extra Light theme Royal Gold), expanded email reminders (up to 30 active & 100 monthly sends), scheduled events, animated profile frames, ambient sound generators (Rain, Cafe, Lofi, Campfire), VIP icon packs, and expansion to 4 workspaces, 6 columns, 6 focus activities, up to 50 reward cards, and a 100-item backpack."
       },
       "honestyShop": {
         "question": "How does the Shop work and why is it based on honesty?",

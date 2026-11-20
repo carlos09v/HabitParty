@@ -47,6 +47,7 @@ export function invalidateFocusDomainTags(
   }
   if (options.records) {
     updateTag("focus-records");
+    updateTag("transactions");
     updateTag("retrospective");
     updateTag("showcase");
   }

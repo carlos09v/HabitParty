@@ -1,10 +1,7 @@
-"use client";
-
 import { useLocale, useTranslations } from "next-intl";
 import type { CSSProperties, Ref } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { getMysteryBadgeTextClass } from "@/constants/reward";
-import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type { AppLocale } from "@/i18n/config";
 import type { MysteryBoxLootItem, MysteryBoxTier } from "@/types/reward";
 import { cn, formatCoins } from "@/utils";
@@ -13,6 +10,7 @@ import { getRewardIcon } from "@/utils/rewardMapper";
 
 interface MysteryBoxTierPopoverProps {
   tier: MysteryBoxTier;
+  isGamified?: boolean;
   alignClass?: string;
   customPrice?: number;
   customLootItems?: MysteryBoxLootItem[];
@@ -22,6 +20,7 @@ interface MysteryBoxTierPopoverProps {
 
 export function MysteryBoxTierPopover({
   tier,
+  isGamified = true,
   alignClass = "bottom-full mb-2.5 left-1/2 -translate-x-1/2",
   customPrice,
   customLootItems,
@@ -32,7 +31,6 @@ export function MysteryBoxTierPopover({
   const tMystery = useTranslations("rewards.mysteryBox");
   const tOptions = useTranslations("rewards.options");
   const locale = useLocale() as AppLocale;
-  const { isGamified } = useExperienceMode();
 
   const TierIcon = tier.icon;
   const displayPrice =

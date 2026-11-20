@@ -167,6 +167,7 @@ class CreateFocusRecordUseCaseTest {
     assertEquals(8, tx.getXpAmount());
     assertEquals(Optional.of(new BigDecimal("0.50")), tx.getGoldAmount());
     assertEquals("Estudos", tx.getNameSnapshot());
+    assertEquals(Optional.of("Estudo de Java"), tx.getDescriptionSnapshot());
     assertEquals(result.getEndTime(), tx.getCreatedAt());
   }
 
