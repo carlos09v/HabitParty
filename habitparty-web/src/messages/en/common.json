@@ -320,6 +320,7 @@
       "doubleClickEditHint": "Double-click the card to edit",
       "quickEditButtonTitle": "Edit (or double-click card)",
       "moreActionsAria": "More actions",
+      "pinnedDebtTitle": "Debt pinned at top (cannot be reordered)",
       "checkingDeleteAria": "Checking history...",
       "tierDetailsAria": "View mystery box odds",
       "packageVariantsAria": "Available reward packages",
@@ -354,11 +355,12 @@
         "mystery": "Contains a random surprise reward",
         "mysteryProductivity": "Break draw with a random reward",
         "singleUse": "Single-use with instant redemption",
-        "debt": "Flexible payback per selected unit"
+        "debt": "Direct settlement: removed from showcase once paid"
       },
       "durationTitle": "Voucher duration: {minutes} minutes",
       "couponDurationFallback": "Voucher",
       "instantUseDuration": "Instant Use",
+      "debtPayoffDuration": "Direct Payoff",
       "mysteryDrawDuration": "Random Draw",
       "missingCoinsHint": "Need {missing} more",
       "missingCreditsHint": "Need {missing} more",

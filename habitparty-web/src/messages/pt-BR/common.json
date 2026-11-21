@@ -320,6 +320,7 @@
       "doubleClickEditHint": "Duplo clique no card para editar",
       "quickEditButtonTitle": "Editar (ou dê duplo clique no card)",
       "moreActionsAria": "Mais ações",
+      "pinnedDebtTitle": "Dívida fixada no topo (não reordenável)",
       "checkingDeleteAria": "Verificando histórico...",
       "tierDetailsAria": "Ver probabilidades da caixa misteriosa",
       "packageVariantsAria": "Pacotes disponíveis desta recompensa",
@@ -354,11 +355,12 @@
         "mystery": "Contém uma recompensa surpresa aleatória",
         "mysteryProductivity": "Sorteio de pausa com benefício aleatório",
         "singleUse": "Uso único com resgate imediato",
-        "debt": "Quitação flexível por unidade selecionada"
+        "debt": "Quitação direta: sai da vitrine ao pagar"
       },
       "durationTitle": "Duração do cupom: {minutes} minutos",
       "couponDurationFallback": "Cupom",
       "instantUseDuration": "Uso Imediato",
+      "debtPayoffDuration": "Quitação Direta",
       "mysteryDrawDuration": "Sorteio",
       "missingCoinsHint": "Faltam {missing} moedas",
       "missingCreditsHint": "Faltam {missing} créditos",

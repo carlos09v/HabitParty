@@ -18,6 +18,7 @@ import type {
   RewardGroupContext,
 } from "@/types/reward";
 import type { ViewMode } from "@/types/ui";
+import { isDebtReward } from "@/utils/rewardGrouping";
 import { RewardCard, RewardItemRow } from "./RewardCard";
 
 interface RewardsCatalogViewProps {
@@ -62,8 +63,11 @@ export function RewardsCatalogView({
   const t = useTranslations("rewards.container");
   const { isGamified } = useExperienceMode();
 
-  const itemIds = useMemo(
-    () => entries.map((entry) => entry.groupId),
+  const sortableItemIds = useMemo(
+    () =>
+      entries
+        .filter((entry) => !isDebtReward(entry.primaryReward))
+        .map((entry) => entry.groupId),
     [entries],
   );
 
@@ -114,7 +118,7 @@ export function RewardsCatalogView({
   return (
     <CatalogGridListShell
       dndContextId="rewards-dnd-context"
-      itemIds={itemIds}
+      itemIds={sortableItemIds}
       viewMode={viewMode}
       headerMode="reward"
       sensors={sensors}
@@ -130,6 +134,7 @@ export function RewardsCatalogView({
             : entry.primaryReward;
         const isDeleteChecking = Boolean(deletingRewardIds?.has(reward.id));
         const isRedeeming = Boolean(redeemingRewardIds?.has(reward.id));
+        const isDebt = isDebtReward(reward);
 
         if (viewMode === "card") {
           return (
@@ -148,6 +153,7 @@ export function RewardsCatalogView({
               currentCoins={currentCoins}
               isDeleteChecking={isDeleteChecking}
               isRedeeming={isRedeeming}
+              isReorderDisabled={isDebt}
             />
           );
         }
@@ -172,6 +178,7 @@ export function RewardsCatalogView({
             canAfford={canAfford}
             isDeleteChecking={isDeleteChecking}
             isRedeeming={isRedeeming}
+            isReorderDisabled={isDebt}
           />
         );
       })}

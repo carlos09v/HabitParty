@@ -5,6 +5,7 @@ import {
   Coins,
   Flame,
   HelpCircle,
+  Receipt,
   ShoppingBag,
   Sparkles,
   Timer,
@@ -57,6 +58,12 @@ export const TRANSACTION_TYPE_CONFIG: Record<string, TransactionTypeStyle> = {
     borderClass: "border-l-indigo-500",
     badgeClass: "bg-indigo-500/15 text-indigo-300 border-indigo-500/30",
     icon: ShoppingBag,
+  },
+  DEBT_PAID: {
+    borderClass: "border-l-rose-500",
+    badgeClass:
+      "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/35",
+    icon: Receipt,
   },
   HABIT_COMPLETED: {
     borderClass: "border-l-amber-500",
@@ -130,6 +137,7 @@ export const TRANSACTION_CONTEXT_ROUTE_MAP: Partial<
   Record<string, { href: string; routeKey: TransactionContextRouteKey }>
 > = {
   REWARD_BOUGHT: { href: "/rewards", routeKey: "rewards" },
+  DEBT_PAID: { href: "/rewards", routeKey: "rewards" },
   ITEM_CONSUMED: { href: "/inventory", routeKey: "inventory" },
   ITEM_DISCARDED: { href: "/inventory", routeKey: "inventory" },
   FOCUS_COMPLETED: { href: "/focus", routeKey: "focus" },

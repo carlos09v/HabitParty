@@ -199,6 +199,7 @@ export interface RewardCardProps {
   currentCoins?: number;
   isDeleteChecking?: boolean;
   isRedeeming?: boolean;
+  isReorderDisabled?: boolean;
 }
 
 export interface RouletteItem {

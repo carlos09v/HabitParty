@@ -147,6 +147,7 @@
     "defaultTransactionLabel": "Transaction",
     "transactionTypes": {
       "REWARD_BOUGHT": "Store Redemption",
+      "DEBT_PAID": "Debt Paid",
       "HABIT_COMPLETED": "Habit Practiced",
       "DAILY_COMPLETED": "Daily Completed",
       "TODO_COMPLETED": "To-Do Completed",

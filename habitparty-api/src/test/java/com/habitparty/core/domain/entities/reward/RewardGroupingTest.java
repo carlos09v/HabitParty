@@ -83,4 +83,21 @@ class RewardGroupingTest {
     assertEquals(2, RewardGrouping.countRegularDistinctGroups(List.of(box1, box2, debt1, debt2)));
     assertEquals(2, RewardGrouping.countActiveDebts(List.of(box1, box2, debt1, debt2)));
   }
+
+  @Test
+  @DisplayName("sortWithDebtsFirst deve manter dívidas no topo em sua ordem relativa antes das recompensas regulares")
+  void shouldSortDebtsFirstPreservingRelativeOrder() {
+    Reward regular1 = new Reward(UUID.randomUUID(), UUID.randomUUID(), "Café", BigDecimal.TEN, List.of(),
+        RewardType.SINGLE_USE, 0, "coffee", null, RewardCategory.WELLNESS, null, null);
+    Reward regular2 = new Reward(UUID.randomUUID(), UUID.randomUUID(), "Jogo", BigDecimal.TEN, List.of(),
+        RewardType.TIME_BASED, 1, "gamepad", null, RewardCategory.ENTERTAINMENT, 30, RewardPackageLevel.BASIC);
+    Reward debt1 = new Reward(UUID.randomUUID(), UUID.randomUUID(), "Dívida A", BigDecimal.TEN, List.of(),
+        RewardType.SINGLE_USE, 2, "flame", null, RewardCategory.DEBT, null, null);
+    Reward debt2 = new Reward(UUID.randomUUID(), UUID.randomUUID(), "Dívida B", BigDecimal.TEN, List.of(),
+        RewardType.SINGLE_USE, 3, "flame", null, RewardCategory.DEBT, null, null);
+
+    List<Reward> sorted = RewardGrouping.sortWithDebtsFirst(List.of(regular1, regular2, debt1, debt2));
+
+    assertEquals(List.of(debt1, debt2, regular1, regular2), sorted);
+  }
 }

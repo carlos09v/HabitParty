@@ -101,6 +101,7 @@ interface CatalogItemPricePillProps {
   price: number;
   size?: "sm" | "md";
   canAfford?: boolean;
+  variant?: "default" | "debt";
   className?: string;
 }
 
@@ -111,6 +112,7 @@ export function CatalogItemPricePill({
   price,
   size = "md",
   canAfford = true,
+  variant = "default",
   className,
 }: CatalogItemPricePillProps) {
   const locale = useLocale() as AppLocale;
@@ -123,9 +125,11 @@ export function CatalogItemPricePill({
         size === "sm" ? "px-2 py-0.5" : "px-2.5 py-1",
         !canAfford
           ? "bg-surface/80 border-neutral-700/80 text-neutral-300 dark:bg-white/5 dark:border-white/10 dark:text-neutral-300"
-          : isGamified
-            ? "bg-amber-500/10 border-amber-500/25 text-neutral-50 dark:bg-gold/10 dark:border-gold/25 dark:text-neutral-100"
-            : "bg-sky-500/10 border-sky-500/25 text-sky-900 dark:bg-sky-500/15 dark:border-sky-400/30 dark:text-sky-100",
+          : variant === "debt"
+            ? "bg-rose-500/12 border-rose-500/35 text-rose-800 dark:bg-rose-500/15 dark:border-rose-400/35 dark:text-rose-100"
+            : isGamified
+              ? "bg-amber-500/10 border-amber-500/25 text-neutral-50 dark:bg-gold/10 dark:border-gold/25 dark:text-neutral-100"
+              : "bg-sky-500/10 border-sky-500/25 text-sky-900 dark:bg-sky-500/15 dark:border-sky-400/30 dark:text-sky-100",
         className,
       )}
     >

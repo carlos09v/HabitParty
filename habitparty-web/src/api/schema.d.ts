@@ -2028,6 +2028,7 @@ export interface components {
       /** @enum {string} */
       transactionType?:
         | "REWARD_BOUGHT"
+        | "DEBT_PAID"
         | "TASK_COMPLETED"
         | "TASK_FAILED"
         | "BAD_HABIT_PENALTY"

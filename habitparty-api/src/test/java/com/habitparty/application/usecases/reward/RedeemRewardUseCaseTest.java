@@ -100,7 +100,7 @@ class RedeemRewardUseCaseTest {
         "Precisei assistir durante a entrega urgente",
         RewardCategory.DEBT,
         null,
-        null);
+        RewardPackageLevel.NONE);
 
     when(rewardRepository.findById(rewardId)).thenReturn(Optional.of(debtReward));
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
@@ -117,7 +117,8 @@ class RedeemRewardUseCaseTest {
     ArgumentCaptor<TransactionHistory> txCaptor = ArgumentCaptor.forClass(TransactionHistory.class);
     verify(transactionHistoryRepository).save(txCaptor.capture());
     verify(rewardRepository).deleteById(rewardId);
-    assertEquals(TransactionType.REWARD_BOUGHT, txCaptor.getValue().getTransactionType());
+    assertEquals(TransactionType.DEBT_PAID, txCaptor.getValue().getTransactionType());
+    assertEquals(Optional.empty(), txCaptor.getValue().getPackageLevelSnapshot());
     assertEquals(Optional.of(new BigDecimal("-25.00")), txCaptor.getValue().getGoldAmount());
     assertEquals(Optional.of(rewardId), txCaptor.getValue().getReferenceId());
     assertEquals(Optional.of("Precisei assistir durante a entrega urgente"),
@@ -195,6 +196,7 @@ class RedeemRewardUseCaseTest {
     verify(inventoryItemRepository).save(any());
     ArgumentCaptor<TransactionHistory> txCaptor = ArgumentCaptor.forClass(TransactionHistory.class);
     verify(transactionHistoryRepository).save(txCaptor.capture());
+    assertEquals(TransactionType.REWARD_BOUGHT, txCaptor.getValue().getTransactionType());
     assertEquals(Optional.empty(), txCaptor.getValue().getDescriptionSnapshot());
   }
 

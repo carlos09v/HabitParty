@@ -57,7 +57,10 @@ export function EconomyWidget({
 
     for (const tx of optimisticTransactions) {
       const gold = tx.goldAmount ?? 0;
-      if (tx.transactionType === "REWARD_BOUGHT") {
+      if (
+        tx.transactionType === "REWARD_BOUGHT" ||
+        tx.transactionType === "DEBT_PAID"
+      ) {
         extraSpent += Math.abs(gold !== 0 ? gold : (tx.priceSnapshot ?? 0));
       } else if (tx.transactionType === "BAD_HABIT_PENALTY") {
         if (gold < 0) extraSpent += Math.abs(gold);

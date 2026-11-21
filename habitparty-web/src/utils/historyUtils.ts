@@ -124,19 +124,24 @@ export function resolveTransactionMetadata(
       : normalizedDiff
     : null;
 
-  const normalizedPkg = transaction.packageLevel?.trim().toUpperCase();
+  const rawPkg = transaction.packageLevel?.trim().toUpperCase();
+  const normalizedPkg =
+    resolvedType === "DEBT_PAID" && (!rawPkg || rawPkg === "NONE")
+      ? undefined
+      : rawPkg;
   const packageLabel = normalizedPkg
     ? labels
       ? labels.getPackageLabel(normalizedPkg)
       : normalizedPkg
     : null;
 
-  // Penalidades/falhas sempre usam o vermelho do tipo, sem herdar a cor da dificuldade
-  const borderClass = NEGATIVE_TRANSACTION_TYPES.has(resolvedType)
-    ? typeConfig.borderClass
-    : (normalizedDiff && DIFFICULTY_BORDER[normalizedDiff]) ||
-      (normalizedPkg && PACKAGE_BORDER_MAP[normalizedPkg]) ||
-      typeConfig.borderClass;
+  // Penalidades/falhas e dívidas pagas sempre usam a cor do tipo, sem herdar cor de dificuldade/raridade
+  const borderClass =
+    NEGATIVE_TRANSACTION_TYPES.has(resolvedType) || resolvedType === "DEBT_PAID"
+      ? typeConfig.borderClass
+      : (normalizedDiff && DIFFICULTY_BORDER[normalizedDiff]) ||
+        (normalizedPkg && PACKAGE_BORDER_MAP[normalizedPkg]) ||
+        typeConfig.borderClass;
 
   const secondaryBadgeClass =
     (normalizedDiff && TASK_DIFFICULTY_META[normalizedDiff]?.badgeColor) ||

@@ -89,6 +89,7 @@ function useRewardItemPresentation({
     : t("insufficientCreditsShort");
 
   return {
+    isDebt,
     effectivePrice,
     effectiveCanAfford,
     handleBuy,
@@ -116,8 +117,10 @@ export const RewardCard = memo(function RewardCard({
   currentCoins,
   isDeleteChecking = false,
   isRedeeming = false,
+  isReorderDisabled,
 }: RewardCardProps) {
   const {
+    isDebt,
     effectivePrice,
     effectiveCanAfford,
     handleBuy,
@@ -159,6 +162,7 @@ export const RewardCard = memo(function RewardCard({
       canAfford={effectiveCanAfford}
       isDeleteChecking={isDeleteChecking}
       isActionLoading={isRedeeming}
+      isDragDisabled={isReorderDisabled ?? isDebt}
       actionLabel={actionLabel}
       onAction={handleBuy}
       onDoubleClick={handleDoubleClick}
@@ -183,8 +187,10 @@ export const RewardItemRow = memo(function RewardItemRow({
   currentCoins,
   isDeleteChecking = false,
   isRedeeming = false,
+  isReorderDisabled,
 }: RewardCardProps) {
   const {
+    isDebt,
     effectivePrice,
     effectiveCanAfford,
     handleBuy,
@@ -230,6 +236,7 @@ export const RewardItemRow = memo(function RewardItemRow({
       onContextMenu={handleContextMenu}
       isDeleteChecking={isDeleteChecking}
       isActionLoading={isRedeeming}
+      isDragDisabled={isReorderDisabled ?? isDebt}
       dragData={dragData}
       lootItems={reward.lootItems}
     />

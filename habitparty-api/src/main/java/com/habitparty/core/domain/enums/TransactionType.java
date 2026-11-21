@@ -2,6 +2,7 @@ package com.habitparty.core.domain.enums;
 
 public enum TransactionType {
   REWARD_BOUGHT("Gasto da loja"), // Reward
+  DEBT_PAID("Dívida Paga"), // Quitação de Dívida (Reward category = DEBT)
   HABIT_COMPLETED("Hábito Praticado"), // Hábito
   DAILY_COMPLETED("Diária Concluída"), // Diária
   TODO_COMPLETED("Afazer Concluído"), // Afazer

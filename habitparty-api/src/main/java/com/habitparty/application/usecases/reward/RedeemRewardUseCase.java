@@ -156,18 +156,22 @@ public class RedeemRewardUseCase {
     // -> Transaction_History -> Cria o recibo da compra / quitação da dívida
     String rewardNameSnapshot =
         quantity > 1 ? reward.getName() + " (" + quantity + "x)" : reward.getName();
+    TransactionType transactionType =
+        isImmediateDebtSettlement ? TransactionType.DEBT_PAID : TransactionType.REWARD_BOUGHT;
+    RewardPackageLevel packageLevelSnapshot =
+        isImmediateDebtSettlement ? null : reward.getPackageLevel().orElse(null);
 
-   TransactionHistory transaction = new TransactionHistory(
+    TransactionHistory transaction = new TransactionHistory(
         null, // O Domínio gera o UUID
-        userIdLogado, 
+        userIdLogado,
         reward.getId(), // referenceId = ID da Reward comprada
         totalPrice.negate(), // goldAmount = Preço total negativado (saiu do bolso)
         0,
         reward.getPrice(),
-        TransactionType.REWARD_BOUGHT, 
-        rewardNameSnapshot, 
+        transactionType,
+        rewardNameSnapshot,
         reward.getIcon().orElse(null),
-        reward.getPackageLevel().orElse(null),
+        packageLevelSnapshot,
         null, // difficulty (não se aplica)
         reward.getTags(), // tagsSnapshot
         null, // columnNameSnapshot

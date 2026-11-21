@@ -52,6 +52,7 @@ export interface CatalogItemVisuals {
   typeMeta: RewardTypeMeta | undefined;
   RewardIcon: LucideIcon;
   isMystery: boolean;
+  isDebt: boolean;
   mysteryTier: MysteryBoxTier | null;
   hasValidPackage: boolean;
   hasValidCategory: boolean;
@@ -86,6 +87,7 @@ export function resolveCatalogItemVisuals({
 
   const packageMessageKey = toPackageMessageKey(packageLevel);
   const categoryMessageKey = toCategoryMessageKey(category);
+  const isDebt = categoryMessageKey === "DEBT";
 
   const hasValidPackage = packageMessageKey !== "NONE";
   const hasValidCategory = categoryMessageKey !== "NONE";
@@ -95,6 +97,7 @@ export function resolveCatalogItemVisuals({
     typeMeta,
     RewardIcon,
     isMystery,
+    isDebt,
     mysteryTier,
     hasValidPackage,
     hasValidCategory,
@@ -103,12 +106,17 @@ export function resolveCatalogItemVisuals({
     packageBadgeColor:
       PACKAGE_LEVEL_COLOR[packageMessageKey] ||
       "text-neutral-300 bg-white/10 border-white/15",
-    packageGlow: PACKAGE_LEVEL_GLOW[packageMessageKey],
-    packageIconTheme: PACKAGE_LEVEL_ICON_THEME[packageMessageKey],
-    topBarClass: RARITY_TOP_BAR[packageMessageKey],
-    leftAccentClass:
-      RARITY_LEFT_ACCENT[packageMessageKey] ||
-      "border-l-4 border-l-transparent",
+    packageGlow: isDebt ? undefined : PACKAGE_LEVEL_GLOW[packageMessageKey],
+    packageIconTheme: isDebt
+      ? "bg-rose-500/15 text-rose-600 border-rose-500/35 group-hover:border-rose-500/60 dark:bg-rose-500/15 dark:border-rose-400/35 dark:text-rose-300 dark:group-hover:border-rose-400/60"
+      : PACKAGE_LEVEL_ICON_THEME[packageMessageKey],
+    topBarClass: isDebt
+      ? "via-rose-500 opacity-95"
+      : RARITY_TOP_BAR[packageMessageKey],
+    leftAccentClass: isDebt
+      ? "border-l-4 border-l-rose-500"
+      : RARITY_LEFT_ACCENT[packageMessageKey] ||
+        "border-l-4 border-l-transparent",
     isFocusNavigate: Boolean(isActiveFocusSession),
   };
 }

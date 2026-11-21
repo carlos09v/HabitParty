@@ -2,7 +2,14 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, HelpCircle, Loader2, MoreVertical } from "lucide-react";
+import {
+  GripVertical,
+  HelpCircle,
+  Loader2,
+  MoreVertical,
+  Pin,
+  Receipt,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { memo, type default as React, useCallback } from "react";
 import {
@@ -59,6 +66,7 @@ export interface ItemRowProps {
   isActiveFocusSession?: boolean;
   isDeleteChecking?: boolean;
   isActionLoading?: boolean;
+  isDragDisabled?: boolean;
   lootItems?: MysteryBoxLootItem[];
 }
 
@@ -91,6 +99,7 @@ function ItemRowContent({
   inUse = false,
   isDeleteChecking = false,
   isActionLoading = false,
+  isDragDisabled = false,
   visuals,
   sortable,
   mysteryPopover,
@@ -140,15 +149,16 @@ function ItemRowContent({
 
   const isPrimaryDisabled =
     disabled || (inUse && !isFocusNavigate) || isActionLoading;
+  const isDebtCategory = visuals.isDebt;
 
   return (
     <li
       ref={setRowRefs}
       style={style}
-      {...attributes}
-      {...listeners}
+      {...(!isDragDisabled ? attributes : {})}
+      {...(!isDragDisabled ? listeners : {})}
       onKeyDown={(e) => {
-        if (e.target !== e.currentTarget) return;
+        if (isDragDisabled || e.target !== e.currentTarget) return;
         listeners?.onKeyDown?.(e);
       }}
       onDoubleClick={(e) => {
@@ -200,11 +210,13 @@ function ItemRowContent({
         "relative rounded-xl bg-card dark:bg-linear-to-r dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,transform] duration-150 select-none group overflow-hidden shadow-2xs dark:shadow-none",
         inUse
           ? "border-y-amber-500/45 border-r-amber-500/45 bg-card dark:border-y-amber-500/40 dark:border-r-amber-500/40 dark:bg-amber-500/5 border-l-4 border-l-amber-500"
-          : cn(
-              "border-neutral-700 dark:border-white/10 hover:border-y-gold/50 hover:border-r-gold/50 hover:shadow-card-deep hover:-translate-y-0.5",
-              !leftAccentClass && "hover:border-l-gold/50",
-              leftAccentClass,
-            ),
+          : isDebtCategory
+            ? "border-y-rose-500/40 border-r-rose-500/40 bg-rose-500/[0.04] dark:bg-linear-to-r dark:from-rose-950/30 dark:via-surface dark:to-popover/95 dark:border-y-rose-500/35 dark:border-r-rose-500/35 hover:border-y-rose-500/65 hover:border-r-rose-500/65 hover:shadow-card-deep hover:-translate-y-0.5 border-l-4 border-l-rose-500"
+            : cn(
+                "border-neutral-700 dark:border-white/10 hover:border-y-gold/50 hover:border-r-gold/50 hover:shadow-card-deep hover:-translate-y-0.5",
+                !leftAccentClass && "hover:border-l-gold/50",
+                leftAccentClass,
+              ),
         "flex flex-col gap-2.5 p-3 sm:p-3.5",
         "md:grid md:grid-cols-[minmax(0,3.4fr)_minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.9fr)_auto] xl:grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)_minmax(0,1.7fr)_minmax(0,1.1fr)_auto] md:items-center",
         "md:gap-2.5 xl:gap-4 md:px-3.5 xl:px-4 md:py-2.5",
@@ -213,15 +225,28 @@ function ItemRowContent({
         isDragging && "transition-none! opacity-50 ring-2 ring-gold z-50",
       )}
     >
-      {/* Coluna 1: Grip + Ícone + [Qtd] + Título/Descrição (+ Preço rápido no mobile) */}
+      {/* Coluna 1: Grip (ou Pin fixo para Dívida) + Ícone + [Qtd] + Título/Descrição (+ Preço rápido no mobile) */}
       <div className="flex items-center justify-between gap-2 min-w-0">
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
           <div className="w-4 flex items-center justify-center shrink-0">
-            <GripVertical
-              size={14}
-              className="text-neutral-500 group-hover:text-neutral-300 transition-colors cursor-grab active:cursor-grabbing"
-              aria-hidden="true"
-            />
+            {isDebtCategory || isDragDisabled ? (
+              <span
+                title={t("pinnedDebtTitle")}
+                className="inline-flex items-center justify-center"
+              >
+                <Pin
+                  size={13}
+                  className="text-rose-500/80 dark:text-rose-400/80"
+                  aria-hidden="true"
+                />
+              </span>
+            ) : (
+              <GripVertical
+                size={14}
+                className="text-neutral-500 group-hover:text-neutral-300 transition-colors cursor-grab active:cursor-grabbing"
+                aria-hidden="true"
+              />
+            )}
           </div>
 
           <div
@@ -249,7 +274,14 @@ function ItemRowContent({
           )}
 
           <div className="flex flex-col min-w-0 flex-1">
-            <h4 className="font-bold text-neutral-100 truncate group-hover:text-primary dark:group-hover:text-gold transition-colors leading-tight text-body-s">
+            <h4
+              className={cn(
+                "font-bold text-neutral-100 truncate transition-colors leading-tight text-body-s",
+                isDebtCategory
+                  ? "group-hover:text-rose-600 dark:group-hover:text-rose-300"
+                  : "group-hover:text-primary dark:group-hover:text-gold",
+              )}
+            >
               {title}
             </h4>
             {description && description.trim() !== "" && (
@@ -277,6 +309,7 @@ function ItemRowContent({
               price={price}
               size="sm"
               canAfford={!disabled}
+              variant={isDebtCategory ? "debt" : "default"}
             />
           </div>
         )}
@@ -284,7 +317,7 @@ function ItemRowContent({
 
       {/* Container de Metadados: No Mobile fica em linha única com wrap; no Desktop usa `md:contents` para ocupar as Colunas 2, 3 e 4 do Grid */}
       <div className="flex items-center gap-1.5 flex-wrap pl-0 min-[380px]:pl-6 md:pl-0 md:contents">
-        {/* Coluna 2: Badge de Status (Em Foco) + Tipo */}
+        {/* Coluna 2: Badge de Status (Em Foco) + Tipo (ou Dívida) */}
         <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
           {inUse && (
             <span className="text-label-m font-bold border truncate inline-flex items-center gap-1.5 leading-none shrink-0 border-amber-500/40 bg-amber-500/15 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-md">
@@ -292,32 +325,40 @@ function ItemRowContent({
               {t("inFocus")}
             </span>
           )}
-          <span
-            className={cn(
-              "text-label-m font-medium border truncate inline-flex items-center gap-1 leading-none shrink-0 px-2 py-0.5 rounded-md",
-              typeMeta?.color || "text-neutral-200 bg-white/10 border-white/20",
-            )}
-          >
-            {(() => {
-              const { TypeIcon, typeLabel } = resolveCatalogTypePresentation(
-                { isMystery, typeKey, typeMeta },
-                isGamified,
-                t,
-              );
-              return (
-                <>
-                  {TypeIcon && (
-                    <TypeIcon
-                      size={11}
-                      className="shrink-0"
-                      aria-hidden="true"
-                    />
-                  )}
-                  <span>{typeLabel}</span>
-                </>
-              );
-            })()}
-          </span>
+          {isDebtCategory ? (
+            <span className="text-label-m font-bold border truncate inline-flex items-center gap-1 leading-none shrink-0 px-2 py-0.5 rounded-md bg-rose-500/15 border-rose-500/40 text-rose-700 dark:text-rose-300">
+              <Receipt size={11} className="shrink-0" aria-hidden="true" />
+              <span>{t("categories.DEBT")}</span>
+            </span>
+          ) : (
+            <span
+              className={cn(
+                "text-label-m font-medium border truncate inline-flex items-center gap-1 leading-none shrink-0 px-2 py-0.5 rounded-md",
+                typeMeta?.color ||
+                  "text-neutral-200 bg-white/10 border-white/20",
+              )}
+            >
+              {(() => {
+                const { TypeIcon, typeLabel } = resolveCatalogTypePresentation(
+                  { isMystery, typeKey, typeMeta },
+                  isGamified,
+                  t,
+                );
+                return (
+                  <>
+                    {TypeIcon && (
+                      <TypeIcon
+                        size={11}
+                        className="shrink-0"
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span>{typeLabel}</span>
+                  </>
+                );
+              })()}
+            </span>
+          )}
         </div>
 
         {/* Coluna 3: Pacote (Raridade) & Categoria */}
@@ -332,17 +373,13 @@ function ItemRowContent({
               {t(`packages.${packageMessageKey}`)}
             </span>
           )}
-          {hasValidCategory && (
-            <span
-              className={cn(
-                "text-label-m font-medium border truncate rounded px-2 py-0.5",
-                categoryMessageKey === "DEBT"
-                  ? "bg-rose-500/15 border-rose-500/35 text-rose-700 dark:text-rose-300"
-                  : "bg-surface/80 border-neutral-700/80 dark:bg-white/10 dark:border-white/10 text-neutral-300",
-              )}
-            >
+          {hasValidCategory && !isDebtCategory && (
+            <span className="text-label-m font-medium border truncate rounded px-2 py-0.5 bg-surface/80 border-neutral-700/80 dark:bg-white/10 dark:border-white/10 text-neutral-300">
               {t(`categories.${categoryMessageKey}`)}
             </span>
+          )}
+          {isDebtCategory && (
+            <span className="hidden md:inline text-neutral-500 text-xs">−</span>
           )}
         </div>
 
@@ -364,6 +401,10 @@ function ItemRowContent({
                 {t("couponDurationFallback")}
               </span>
             )
+          ) : isDebtCategory ? (
+            <span className="text-rose-700/85 dark:text-rose-300/85 font-medium truncate text-label-g">
+              {t("debtPayoffDuration")}
+            </span>
           ) : (
             <span className="text-neutral-400 truncate text-label-g">
               {isMystery ? t("mysteryDrawDuration") : t("instantUseDuration")}
@@ -373,13 +414,21 @@ function ItemRowContent({
       </div>
 
       {/* Coluna 5: Preço (Desktop) & Botão de Ação */}
-      <div className="flex flex-wrap sm:flex-nowrap items-center justify-end gap-1.5 sm:gap-2 md:gap-2.5 lg:gap-3.5 pt-1 md:pt-0 border-t border-neutral-700 dark:border-white/5 md:border-t-0 shrink-0">
+      <div
+        className={cn(
+          "flex flex-wrap sm:flex-nowrap items-center justify-end gap-1.5 sm:gap-2 md:gap-2.5 lg:gap-3.5 pt-1 md:pt-0 border-t md:border-t-0 shrink-0",
+          isDebtCategory
+            ? "border-rose-500/20 dark:border-rose-400/15"
+            : "border-neutral-700 dark:border-white/5",
+        )}
+      >
         {typeof price === "number" && (
           <div className="hidden md:flex">
             <CatalogItemPricePill
               price={price}
               size="md"
               canAfford={!disabled}
+              variant={isDebtCategory ? "debt" : "default"}
             />
           </div>
         )}
@@ -406,7 +455,9 @@ function ItemRowContent({
           className={cn(
             "inline-flex items-center justify-center gap-1.5 rounded-md font-semibold dark:font-bold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs pointer-coarse:min-h-9 px-3 py-1.5 text-xs sm:py-1",
             !isActionLoading && (isFocusNavigate || (!disabled && !inUse))
-              ? "bg-gold hover:bg-gold-hover active:bg-gold-pressed text-on-gold border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1 focus-visible:ring-offset-card"
+              ? isDebtCategory
+                ? "bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white border border-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.25)] cursor-pointer active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-1 focus-visible:ring-offset-card"
+                : "bg-gold hover:bg-gold-hover active:bg-gold-pressed text-on-gold border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1 focus-visible:ring-offset-card"
               : "bg-neutral-700/70 dark:bg-white/10 text-neutral-400 border border-neutral-600 dark:border-white/10 cursor-not-allowed opacity-75 dark:opacity-60",
           )}
         >
@@ -501,15 +552,19 @@ export const ItemRow = memo(function ItemRow(props: ItemRowProps) {
     includeMysteryTier: true,
   });
 
+  const isDragDisabled = Boolean(props.isDragDisabled || visuals.isDebt);
+
   const sortable = useSortable({
     id: props.sortableId ?? props.id,
     data: props.dragData || { id: props.id },
+    disabled: isDragDisabled,
   });
 
   if (visuals.isMystery && visuals.mysteryTier) {
     return (
       <MysteryBoxItemRow
         {...props}
+        isDragDisabled={isDragDisabled}
         visuals={visuals}
         sortable={sortable}
         mysteryTier={visuals.mysteryTier}
@@ -517,7 +572,14 @@ export const ItemRow = memo(function ItemRow(props: ItemRowProps) {
     );
   }
 
-  return <ItemRowContent {...props} visuals={visuals} sortable={sortable} />;
+  return (
+    <ItemRowContent
+      {...props}
+      isDragDisabled={isDragDisabled}
+      visuals={visuals}
+      sortable={sortable}
+    />
+  );
 });
 
 export {

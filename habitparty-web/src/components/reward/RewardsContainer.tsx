@@ -38,6 +38,8 @@ import { calculateRewardWelcomeStats } from "@/utils/catalogMetrics";
 import {
   formatRewardVariantBadge,
   groupRewardsForShowcase,
+  isDebtReward,
+  sortRewardsWithDebtsFirst,
 } from "@/utils/rewardGrouping";
 import {
   toCategoryMessageKey,
@@ -114,19 +116,31 @@ function RewardsContainerContent({
     setOnlyAffordable(false);
   }, [handleClearFilters]);
 
+  const orderedInitialRewards = useMemo(
+    () => sortRewardsWithDebtsFirst(initialRewards),
+    [initialRewards],
+  );
+
   const resolveGroupedRewardOrder = useCallback(
     (activeId: string, overId: string) => {
       const currentEntries = displayedEntriesRef.current;
-      const oldIdx = currentEntries.findIndex(
+      const debtEntries = currentEntries.filter((entry) =>
+        isDebtReward(entry.primaryReward),
+      );
+      const regularEntries = currentEntries.filter(
+        (entry) => !isDebtReward(entry.primaryReward),
+      );
+      const oldIdx = regularEntries.findIndex(
         (entry) => entry.groupId === activeId,
       );
-      const newIdx = currentEntries.findIndex(
+      const newIdx = regularEntries.findIndex(
         (entry) => entry.groupId === overId,
       );
       if (oldIdx === -1 || newIdx === -1) return null;
-      return arrayMove(currentEntries, oldIdx, newIdx).flatMap(
-        (entry) => entry.variants,
-      );
+      return [
+        ...debtEntries,
+        ...arrayMove(regularEntries, oldIdx, newIdx),
+      ].flatMap((entry) => entry.variants);
     },
     [],
   );
@@ -137,7 +151,7 @@ function RewardsContainerContent({
     sensors,
     handleDragEnd,
   } = useReorderableList<Reward>({
-    initialItems: initialRewards,
+    initialItems: orderedInitialRewards,
     onReorderServerAction: reorderRewards,
     isFiltering: isFiltering || onlyAffordable,
     onlyChangedOrderIndex: true,
@@ -320,7 +334,7 @@ function RewardsContainerContent({
       );
     }
 
-    return result;
+    return sortRewardsWithDebtsFirst(result);
   }, [rewards, isFiltering, filters, coinFilterLimit, locale]);
 
   const displayedEntries = useMemo(

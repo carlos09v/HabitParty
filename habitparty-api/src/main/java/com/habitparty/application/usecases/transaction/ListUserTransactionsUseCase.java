@@ -89,7 +89,7 @@ public class ListUserTransactionsUseCase {
 
   private static List<TransactionType> getTypesForTab(String tab) {
     return switch (tab.toUpperCase()) {
-      case "SHOPPING" -> List.of(TransactionType.REWARD_BOUGHT);
+      case "SHOPPING" -> List.of(TransactionType.REWARD_BOUGHT, TransactionType.DEBT_PAID);
       case "BACKPACK" -> List.of(TransactionType.ITEM_CONSUMED, TransactionType.ITEM_DISCARDED);
       case "TASKS" -> List.of(
           TransactionType.HABIT_COMPLETED,

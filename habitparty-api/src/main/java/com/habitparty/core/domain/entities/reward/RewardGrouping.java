@@ -122,6 +122,21 @@ public final class RewardGrouping {
         && reward.getCategory().map(category -> category == RewardCategory.DEBT).orElse(false);
   }
 
+  /**
+   * Ordena a vitrine mantendo Dívidas sempre primeiro no topo e preservando a ordem relativa
+   * de cada segmento (Dívidas e Recompensas regulares) por {@code orderIndex}.
+   */
+  public static List<Reward> sortWithDebtsFirst(List<Reward> rewards) {
+    if (rewards == null || rewards.isEmpty()) {
+      return List.of();
+    }
+    return rewards.stream()
+        .sorted(java.util.Comparator
+            .comparing((Reward reward) -> !isDebt(reward))
+            .thenComparingInt(Reward::getOrder_index))
+        .toList();
+  }
+
   public static int countDistinctGroups(List<Reward> rewards) {
     if (rewards == null || rewards.isEmpty()) {
       return 0;

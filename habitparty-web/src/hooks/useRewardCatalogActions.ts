@@ -31,6 +31,7 @@ import type {
 import {
   extractRewardGroupBaseTitle,
   normalizeRewardTitleKey,
+  sortRewardsWithDebtsFirst,
 } from "@/utils/rewardGrouping";
 import {
   toCategoryMessageKey,
@@ -416,7 +417,7 @@ export function useRewardCatalogActions({
         const newRewards = savedList
           .filter((reward) => !existingIds.has(reward.id))
           .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
-        return [...next, ...newRewards];
+        return sortRewardsWithDebtsFirst([...next, ...newRewards]);
       });
     },
     [setRewards],
@@ -429,12 +430,12 @@ export function useRewardCatalogActions({
         const firstIdx = prev.findIndex((item) => sourceSet.has(item.id));
         const remaining = prev.filter((item) => !sourceSet.has(item.id));
         if (firstIdx === -1) {
-          return [...savedRewards, ...remaining];
+          return sortRewardsWithDebtsFirst([...savedRewards, ...remaining]);
         }
         const safeIdx = Math.min(firstIdx, remaining.length);
         const next = [...remaining];
         next.splice(safeIdx, 0, ...savedRewards);
-        return next;
+        return sortRewardsWithDebtsFirst(next);
       });
     },
     [setRewards],

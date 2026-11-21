@@ -147,6 +147,7 @@
     "defaultTransactionLabel": "Transação",
     "transactionTypes": {
       "REWARD_BOUGHT": "Resgate na Loja",
+      "DEBT_PAID": "Dívida Paga",
       "HABIT_COMPLETED": "Hábito Praticado",
       "DAILY_COMPLETED": "Diária Concluída",
       "TODO_COMPLETED": "Afazer Concluído",

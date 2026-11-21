@@ -68,4 +68,33 @@ class CsvTransactionExporterAdapterTest {
     TransactionHistoryResponseDTO dto = TransactionHistoryResponseDTO.fromDomain(tx, tokyoZone);
     assertEquals(OffsetDateTime.of(expectedTokyoTime, ZoneOffset.ofHours(9)), dto.createdAt());
   }
+
+  @Test
+  @DisplayName("CSV deve exportar transações DEBT_PAID com a descrição Dívida Paga e filtro SHOPPING deve incluí-las")
+  void exportsDebtPaidDescriptionInCsvAndIncludesInShoppingTab() {
+    CsvTransactionExporterAdapter adapter = new CsvTransactionExporterAdapter();
+    TransactionHistory debtTx = new TransactionHistory(
+        UUID.randomUUID(),
+        UUID.randomUUID(),
+        UUID.randomUUID(),
+        new BigDecimal("-12.00"),
+        0,
+        new BigDecimal("12.00"),
+        TransactionType.DEBT_PAID,
+        "Tocar violão",
+        "music",
+        null,
+        null,
+        List.of(),
+        LocalDateTime.of(2026, 11, 21, 10, 0, 0));
+
+    StringWriter writer = new StringWriter();
+    adapter.exportTransactions(page -> new PageImpl<>(List.of(debtTx)), writer, ZoneId.of("UTC"));
+
+    String csv = writer.toString();
+    assertTrue(csv.contains("Dívida Paga"), () -> "Esperado 'Dívida Paga' no CSV:\n" + csv);
+    assertTrue(com.habitparty.application.usecases.transaction.ListUserTransactionsUseCase
+        .resolveTypesForTab("SHOPPING")
+        .containsAll(List.of(TransactionType.REWARD_BOUGHT, TransactionType.DEBT_PAID)));
+  }
 }

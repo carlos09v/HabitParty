@@ -2,7 +2,14 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Check, HelpCircle, Loader2, MoreVertical } from "lucide-react";
+import {
+  Check,
+  HelpCircle,
+  Loader2,
+  MoreVertical,
+  Pin,
+  Receipt,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { memo, type default as React, useCallback } from "react";
 import {
@@ -62,6 +69,7 @@ export interface GamifiedItemCardProps {
   isActiveFocusSession?: boolean;
   isDeleteChecking?: boolean;
   isActionLoading?: boolean;
+  isDragDisabled?: boolean;
   lootItems?: MysteryBoxLootItem[];
 }
 
@@ -95,6 +103,7 @@ function GamifiedItemCardContent({
   inUse = false,
   isDeleteChecking = false,
   isActionLoading = false,
+  isDragDisabled = false,
   visuals,
   sortable,
   mysteryPopover,
@@ -174,7 +183,7 @@ function GamifiedItemCardContent({
     remainingSeconds === undefined &&
     !hasMultipleVariants;
 
-  const isDebtCategory = categoryMessageKey === "DEBT";
+  const isDebtCategory = visuals.isDebt;
   const showSubtleCategory = hasValidCategory && !isDebtCategory;
 
   const fallbackDescription =
@@ -196,10 +205,10 @@ function GamifiedItemCardContent({
     <article
       ref={setCardRefs}
       style={style}
-      {...attributes}
-      {...listeners}
+      {...(!isDragDisabled ? attributes : {})}
+      {...(!isDragDisabled ? listeners : {})}
       onKeyDown={(e) => {
-        if (e.target !== e.currentTarget) return;
+        if (isDragDisabled || e.target !== e.currentTarget) return;
         listeners?.onKeyDown?.(e);
       }}
       onDoubleClick={(e) => {
@@ -251,21 +260,25 @@ function GamifiedItemCardContent({
         "relative flex flex-col h-full rounded-xl bg-card dark:bg-linear-to-b dark:from-surface dark:via-surface dark:to-popover/95 border transition-[border-color,background-color,transform] duration-150 group select-none shadow-xs dark:shadow-sm hover:shadow-card-deep hover:-translate-y-0.5 overflow-hidden p-3 gap-2.5",
         inUse
           ? "border-amber-500/45 bg-card dark:border-amber-500/40 dark:bg-amber-500/5"
-          : packageGlow ||
+          : isDebtCategory
+            ? "border-rose-500/45 hover:border-rose-500/75 bg-rose-500/[0.045] dark:border-rose-500/45 dark:hover:border-rose-400/75 dark:bg-linear-to-b dark:from-rose-950/35 dark:via-surface dark:to-popover/95 dark:shadow-[0_0_14px_rgba(244,63,94,0.12)]"
+            : packageGlow ||
               "border-neutral-700 hover:border-amber-500/50 dark:border-white/15 dark:hover:border-gold/50",
         onDoubleClick && "cursor-pointer",
         isDeleteChecking && "opacity-75 pointer-events-none cursor-wait",
         isDragging && "transition-none! opacity-50 ring-2 ring-gold z-50",
       )}
     >
-      {/* Detalhe de Raridade / Status no Topo do Card */}
-      {(inUse || topBarClass) && (
+      {/* Detalhe de Raridade / Dívida / Status no Topo do Card */}
+      {(inUse || isDebtCategory || topBarClass) && (
         <div
           className={cn(
             "absolute top-0 inset-x-0 h-1 bg-linear-to-r pointer-events-none",
             inUse
               ? "from-amber-500 to-yellow-500 opacity-95"
-              : cn("from-transparent to-transparent", topBarClass),
+              : isDebtCategory
+                ? "from-rose-500/45 via-rose-500 to-rose-400/45 opacity-95"
+                : cn("from-transparent to-transparent", topBarClass),
           )}
         />
       )}
@@ -301,14 +314,32 @@ function GamifiedItemCardContent({
         <div className="flex flex-col flex-1 min-w-0 gap-1">
           <div className="flex items-start justify-between gap-1.5 w-full min-w-0">
             <h4
-              className="font-bold text-neutral-100 truncate min-w-0 flex-1 group-hover:text-primary dark:group-hover:text-gold transition-colors leading-snug pt-0.5 text-body-s"
+              className={cn(
+                "font-bold text-neutral-100 truncate min-w-0 flex-1 transition-colors leading-snug pt-0.5 text-body-s",
+                isDebtCategory
+                  ? "group-hover:text-rose-600 dark:group-hover:text-rose-300"
+                  : "group-hover:text-primary dark:group-hover:text-gold",
+              )}
               title={title}
             >
               {title}
             </h4>
 
-            {(mysteryPopover || onContextMenu || isDeleteChecking) && (
+            {(isDebtCategory ||
+              isDragDisabled ||
+              mysteryPopover ||
+              onContextMenu ||
+              isDeleteChecking) && (
               <div className="flex items-center gap-0.5 shrink-0 -mr-1 -mt-0.5">
+                {(isDebtCategory || isDragDisabled) && (
+                  <span
+                    className="inline-flex items-center justify-center min-w-5 min-h-7 text-rose-500/80 dark:text-rose-400/80"
+                    title={t("pinnedDebtTitle")}
+                  >
+                    <Pin size={13} aria-hidden="true" />
+                  </span>
+                )}
+
                 {mysteryPopover && (
                   <button
                     type="button"
@@ -377,38 +408,41 @@ function GamifiedItemCardContent({
               </span>
             )}
 
-            <span
-              className={cn(
-                "inline-flex items-center gap-1 border font-medium shrink-0 whitespace-nowrap text-tiny px-1.5 py-0.5 leading-none rounded-md",
-                typeMeta?.color ||
-                  "text-neutral-200 bg-white/10 border-white/20",
-              )}
-            >
-              {(() => {
-                const { TypeIcon, typeLabel } = resolveCatalogTypePresentation(
-                  { isMystery, typeKey, typeMeta },
-                  isGamified,
-                  t,
-                );
-                return (
-                  <>
-                    {TypeIcon && (
-                      <TypeIcon
-                        size={10}
-                        className="shrink-0"
-                        aria-hidden="true"
-                      />
-                    )}
-                    <span>
-                      {typeLabel}
-                      {showInlineDurationInType && baseDurationMinutes
-                        ? ` · ${formatFocusMinutes(baseDurationMinutes)}`
-                        : ""}
-                    </span>
-                  </>
-                );
-              })()}
-            </span>
+            {!isDebtCategory && (
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1 border font-medium shrink-0 whitespace-nowrap text-tiny px-1.5 py-0.5 leading-none rounded-md",
+                  typeMeta?.color ||
+                    "text-neutral-200 bg-white/10 border-white/20",
+                )}
+              >
+                {(() => {
+                  const { TypeIcon, typeLabel } =
+                    resolveCatalogTypePresentation(
+                      { isMystery, typeKey, typeMeta },
+                      isGamified,
+                      t,
+                    );
+                  return (
+                    <>
+                      {TypeIcon && (
+                        <TypeIcon
+                          size={10}
+                          className="shrink-0"
+                          aria-hidden="true"
+                        />
+                      )}
+                      <span>
+                        {typeLabel}
+                        {showInlineDurationInType && baseDurationMinutes
+                          ? ` · ${formatFocusMinutes(baseDurationMinutes)}`
+                          : ""}
+                      </span>
+                    </>
+                  );
+                })()}
+              </span>
+            )}
 
             {hasValidPackage && (
               <span
@@ -422,8 +456,9 @@ function GamifiedItemCardContent({
             )}
 
             {isDebtCategory && (
-              <span className="inline-flex items-center font-semibold rounded-md border text-tiny px-1.5 py-0.5 leading-none shrink-0 whitespace-nowrap bg-rose-500/15 border-rose-500/35 text-rose-700 dark:text-rose-300">
-                {t("categories.DEBT")}
+              <span className="inline-flex items-center gap-1 font-bold rounded-md border text-tiny px-1.5 py-0.5 leading-none shrink-0 whitespace-nowrap bg-rose-500/15 border-rose-500/40 text-rose-700 dark:text-rose-300">
+                <Receipt size={10} className="shrink-0" aria-hidden="true" />
+                <span>{t("categories.DEBT")}</span>
               </span>
             )}
 
@@ -466,7 +501,14 @@ function GamifiedItemCardContent({
       )}
 
       {/* ZONA 3: Rodapé (Progresso quando falta saldo + Preço + Ação única) */}
-      <footer className="mt-auto flex flex-col gap-1.5 pt-2 border-t border-neutral-700/80 dark:border-white/10 w-full">
+      <footer
+        className={cn(
+          "mt-auto flex flex-col gap-1.5 pt-2 border-t w-full",
+          isDebtCategory
+            ? "border-rose-500/20 dark:border-rose-400/15"
+            : "border-neutral-700/80 dark:border-white/10",
+        )}
+      >
         {showStoreProgress && (
           <div className="flex flex-col gap-1 w-full">
             <div
@@ -504,7 +546,9 @@ function GamifiedItemCardContent({
                   "h-full rounded-full transition-[width,background-color] duration-300",
                   isProgressComplete
                     ? "bg-emerald-500/80 dark:bg-emerald-400/80"
-                    : "bg-amber-500/80 dark:bg-gold/75",
+                    : isDebtCategory
+                      ? "bg-rose-500/80 dark:bg-rose-400/80"
+                      : "bg-amber-500/80 dark:bg-gold/75",
                 )}
                 style={{ width: `${progressPercent}%` }}
               />
@@ -515,7 +559,11 @@ function GamifiedItemCardContent({
         <div className="flex items-center justify-between gap-2 w-full">
           <div className="flex items-center min-w-0">
             {typeof price === "number" ? (
-              <CatalogItemPricePill price={price} canAfford={canAfford} />
+              <CatalogItemPricePill
+                price={price}
+                canAfford={canAfford}
+                variant={isDebtCategory ? "debt" : "default"}
+              />
             ) : remainingSeconds !== undefined && remainingSeconds !== null ? (
               <CatalogItemDurationBadge
                 remainingSeconds={remainingSeconds}
@@ -560,7 +608,9 @@ function GamifiedItemCardContent({
             className={cn(
               "inline-flex items-center justify-center gap-1.5 rounded-lg font-semibold dark:font-bold transition-[transform,background-color,border-color,color,opacity] duration-150 shadow-xs shrink-0 pointer-coarse:min-h-9 px-3 py-1 text-xs",
               !isActionLoading && (isFocusNavigate || (canAfford && !inUse))
-                ? "bg-gold hover:bg-gold-hover active:bg-gold-pressed text-on-gold border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1 focus-visible:ring-offset-card"
+                ? isDebtCategory
+                  ? "bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white border border-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.25)] cursor-pointer active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-1 focus-visible:ring-offset-card"
+                  : "bg-gold hover:bg-gold-hover active:bg-gold-pressed text-on-gold border border-gold shadow-glow-gold-xs cursor-pointer active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1 focus-visible:ring-offset-card"
                 : "bg-neutral-700/70 dark:bg-white/10 text-neutral-400 border border-neutral-600 dark:border-white/10 cursor-not-allowed opacity-75 dark:opacity-60",
             )}
           >
@@ -607,15 +657,19 @@ export const GamifiedItemCard = memo(function GamifiedItemCard(
     includeMysteryTier: true,
   });
 
+  const isDragDisabled = Boolean(props.isDragDisabled || visuals.isDebt);
+
   const sortable = useSortable({
     id: props.sortableId ?? props.id,
     data: props.dragData || { id: props.id },
+    disabled: isDragDisabled,
   });
 
   if (visuals.isMystery && visuals.mysteryTier) {
     return (
       <MysteryBoxGamifiedCard
         {...props}
+        isDragDisabled={isDragDisabled}
         visuals={visuals}
         sortable={sortable}
         mysteryTier={visuals.mysteryTier}
@@ -624,6 +678,11 @@ export const GamifiedItemCard = memo(function GamifiedItemCard(
   }
 
   return (
-    <GamifiedItemCardContent {...props} visuals={visuals} sortable={sortable} />
+    <GamifiedItemCardContent
+      {...props}
+      isDragDisabled={isDragDisabled}
+      visuals={visuals}
+      sortable={sortable}
+    />
   );
 });

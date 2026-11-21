@@ -175,6 +175,34 @@ function compareRewardVariants(a: Reward, b: Reward): number {
   return a.price - b.price;
 }
 
+export function isDebtReward(
+  reward: Pick<Reward, "category"> | null | undefined,
+): boolean {
+  return Boolean(reward && toCategoryMessageKey(reward.category) === "DEBT");
+}
+
+/**
+ * Ordena uma lista de recompensas colocando Dívidas sempre primeiro no topo,
+ * preservando a ordem relativa de cada segmento (Dívidas e Recompensas regulares).
+ */
+export function sortRewardsWithDebtsFirst<T extends Pick<Reward, "category">>(
+  rewards: readonly T[],
+): T[] {
+  if (rewards.length <= 1) {
+    return [...rewards];
+  }
+  const debts: T[] = [];
+  const regulars: T[] = [];
+  for (const reward of rewards) {
+    if (isDebtReward(reward)) {
+      debts.push(reward);
+    } else {
+      regulars.push(reward);
+    }
+  }
+  return [...debts, ...regulars];
+}
+
 /**
  * Verifica se dois ou mais itens formam um grupo legítimo de pacotes
  * (mesmo tipo/categoria/nome-base para TimeBased ou SingleUse comum, nunca Dívida ou Caixa).

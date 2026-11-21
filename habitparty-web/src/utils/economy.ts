@@ -136,7 +136,9 @@ export function calculateWeeklyTaskEarnings(
     if (weekIndex === -1) continue;
 
     const gold = tx.goldAmount ?? 0;
-    const isRewardBought = tx.transactionType === "REWARD_BOUGHT";
+    const isRewardBought =
+      tx.transactionType === "REWARD_BOUGHT" ||
+      tx.transactionType === "DEBT_PAID";
     const isPenalty = tx.transactionType === "BAD_HABIT_PENALTY";
 
     if (isRewardBought) {
