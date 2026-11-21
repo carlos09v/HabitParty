@@ -19,6 +19,12 @@ public interface TransactionHistoryRepository {
   // 1. Para salvar um novo registro (Usado silenciosamente por outros UseCases)
   void save(TransactionHistory transaction);
 
+  default void saveAll(Collection<TransactionHistory> transactions) {
+    if (transactions != null) {
+      transactions.forEach(this::save);
+    }
+  }
+
   // Busca paginada de todo o histórico do usuário
   Page<TransactionHistory> findAllByUserId(UUID userId, int page, int size);
 
@@ -134,5 +140,12 @@ public interface TransactionHistoryRepository {
   default int updateFocusDescriptionSnapshot(
       UUID referenceId, UUID userId, String descriptionSnapshot) {
     return 0;
+  }
+
+  record TaskCompletionTimestamp(UUID userId, LocalDateTime createdAt) {}
+
+  default List<TaskCompletionTimestamp> findTaskCompletionsByUserIdsSince(
+      Collection<UUID> userIds, LocalDateTime since) {
+    return List.of();
   }
 }

@@ -58,9 +58,12 @@ public class UpdateUserProfileUseCase {
       dailyResetUseCase.resetUserIfDue(userIdLogado);
     }
     User user = findUserOrThrow(userIdLogado);
+    String previousTimezone = user.getTimezone();
+    boolean timezoneChanged = false;
 
     if (command.timezone() != null && !command.timezone().isBlank()) {
       user.changeTimezone(command.timezone(), clock);
+      timezoneChanged = !User.areTimezonesEquivalent(previousTimezone, user.getTimezone());
     }
 
     user.updateProfile(
@@ -87,7 +90,12 @@ public class UpdateUserProfileUseCase {
         command.disciplineStyle()
     );
 
-    return port.save(user);
+    User saved = port.save(user);
+    if (dailyResetUseCase != null && timezoneChanged) {
+      dailyResetUseCase.resetUserIfDue(userIdLogado);
+      return port.findById(userIdLogado).orElse(saved);
+    }
+    return saved;
   }
 
   public UserWithEffectiveStreak executeWithEffectiveStreak(

@@ -1,7 +1,7 @@
 {
   "streakLost": {
     "title": "Ofensiva perdida!",
-    "description": "Você não completou nenhuma tarefa no dia anterior e sua sequência de {count} {count, plural, one {dia foi perdida} other {dias foi perdida}}. Recomece hoje com força total! 🔥"
+    "description": "Você não atingiu a meta mínima ontem (1 tarefa ou 30m de foco) e sua sequência de {count} {count, plural, one {dia foi perdida} other {dias foi perdida}}. Recomece hoje com força total! 🔥"
   },
   "nav": {
     "dashboard": "Painel",
@@ -87,7 +87,7 @@
     "todayDesc": "Mantenha o ritmo para conquistar XP e moedas.",
     "todayTimestamp": "Meta do dia",
     "streakTitle": "Ofensiva de {count} {count, plural, one {dia} other {dias}} ativa! 🔥",
-    "streakDesc": "Complete suas metas diárias hoje para manter sua sequência viva.",
+    "streakDesc": "Conclua 1 tarefa ou 30 min de foco hoje para manter sua sequência viva.",
     "streakTimestamp": "Ofensiva",
     "focusItemTitle": "Recompensa pronta: \"{name}\"",
     "focusItemDefaultName": "Item de Foco",

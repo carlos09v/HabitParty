@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -173,6 +174,12 @@ public class Daily extends Task {
 
   public void updateDailyDetails(LocalDate newStartDate, DailyRepeatType newRepeatType, int newRepeatEvery,
       List<DailyDaysOfWeek> newDaysOfWeek, DailyRepeatMonthlyOption newMonthlyOpt, LocalDate todayReference) {
+    LocalDate previousStartDate = this.startDate;
+    DailyRepeatType previousRepeatType = this.repeatType;
+    int previousRepeatEvery = this.repeatEvery;
+    List<DailyDaysOfWeek> previousDaysOfWeek = this.daysOfWeek != null ? List.copyOf(this.daysOfWeek) : List.of();
+    DailyRepeatMonthlyOption previousMonthlyOpt = this.monthlyOpt;
+
     // 1. Só atualiza a Data de Início se o Front-end mandar uma nova. Se não mandar, mantém a atual!
     if (newStartDate != null) {
       this.startDate = newStartDate;
@@ -210,15 +217,27 @@ public class Daily extends Task {
       }
     }
 
-    // Qual é a data base para calcular o novo vencimento?
     LocalDate today = todayReference != null ? todayReference : LocalDate.now();
     this.refreshStreakForDate(today);
 
-    // Se a tarefa começou no passado, calculamos do dia de hoje pra frente.
-    // Se ela vai começar no futuro, usamos a data de início dela.
-    LocalDate referenceDate = today.isAfter(this.startDate) ? today : this.startDate;
-    
-    this.dueDate = calculateNextOccurrence(referenceDate, true);
+    List<DailyDaysOfWeek> resolvedDays = this.daysOfWeek != null ? List.copyOf(this.daysOfWeek) : List.of();
+    boolean sameDays = resolvedDays.size() == previousDaysOfWeek.size()
+        && new java.util.HashSet<>(resolvedDays).equals(new java.util.HashSet<>(previousDaysOfWeek));
+    boolean scheduleChanged = !Objects.equals(this.startDate, previousStartDate)
+        || this.repeatType != previousRepeatType
+        || this.repeatEvery != previousRepeatEvery
+        || !sameDays
+        || this.monthlyOpt != previousMonthlyOpt;
+
+    if (!scheduleChanged && this.dueDate != null) {
+      return;
+    }
+
+    // Recalcula o dueDate mantendo a âncora de startDate para repetições com salto (DAILY > 1, MONTHLY, YEARLY)
+    this.dueDate = calculateNextOccurrence(this.startDate, true);
+    if (today.isAfter(this.dueDate)) {
+      advanceDueDateToAtLeast(today);
+    }
   }
 
   public void recalculateInitialDueDate(LocalDate todayReference) {

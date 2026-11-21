@@ -331,8 +331,48 @@ public class User {
     stats.incrementStreak();
   }
 
+  public boolean incrementStreakForDate(LocalDate streakDate) {
+    return stats.incrementStreakForDate(streakDate);
+  }
+
+  public boolean revertTodayStreakIncrement(LocalDate todayDate) {
+    return stats.revertTodayStreakIncrement(todayDate);
+  }
+
+  public LocalDate getLastStreakDate() {
+    return stats.getLastStreakDate();
+  }
+
+  public void setLastStreakDate(LocalDate lastStreakDate) {
+    stats.setLastStreakDate(lastStreakDate);
+  }
+
   public void resetStreak() {
     stats.resetStreak();
+  }
+
+  public SubscriptionStatus getEffectiveSubscriptionStatus() {
+    return subscription.getEffectiveSubscriptionStatus();
+  }
+
+  public boolean isCancelAtPeriodEnd() {
+    return subscription.isCancelAtPeriodEnd();
+  }
+
+  public LocalDateTime getPrepaidEndsAt() {
+    return subscription.getPrepaidEndsAt();
+  }
+
+  public void syncActiveSubscription(
+      String customerId,
+      String subscriptionId,
+      LocalDateTime endsAt,
+      boolean cancelAtPeriodEnd) {
+    subscription.syncActiveSubscription(customerId, subscriptionId, endsAt, cancelAtPeriodEnd);
+  }
+
+  public void revokeOnPaymentFailure(SubscriptionStatus targetStatus) {
+    subscription.revokeOnPaymentFailure(targetStatus);
   }
 
   public void addCoins(BigDecimal amount) {
@@ -929,6 +969,13 @@ public class User {
     this.timezoneUpdatedAt = now;
 
     LocalDate newToday = LocalDate.now(effectiveClock.withZone(newZone));
+    if (this.lastDailyResetDate != null && newToday.isAfter(this.lastDailyResetDate)) {
+      // Mantém lastDailyResetDate no ciclo anterior e marca vencimento imediato para que o rollover
+      // processe legitimamente a virada do dia sem pular multas Hardcore nem quebras de streak.
+      this.nextDailyResetAt = now;
+      return;
+    }
+
     LocalDate effectiveResetDate = (this.lastDailyResetDate != null && this.lastDailyResetDate.isAfter(newToday))
         ? this.lastDailyResetDate
         : newToday;

@@ -1,6 +1,8 @@
 package com.habitparty.adapters.in.web.dtos.response.showcase;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 import com.habitparty.application.usecases.achievement.GetUserShowcaseUseCase.AchievementProgressItem;
@@ -21,7 +23,7 @@ public record AchievementItemResponseDTO(
     int displayOrder,
     boolean isSecret,
     boolean unlocked,
-    LocalDateTime unlockedAt,
+    OffsetDateTime unlockedAt,
     boolean seen,
     int currentValue,
     int progressPercent,
@@ -29,6 +31,9 @@ public record AchievementItemResponseDTO(
 
   public static AchievementItemResponseDTO fromDomain(AchievementProgressItem item) {
     Achievement a = item.achievement();
+    OffsetDateTime unlockedAtUtc = item.unlockedAt() != null
+        ? item.unlockedAt().atZone(ZoneId.systemDefault()).withZoneSameInstant(ZoneOffset.UTC).toOffsetDateTime()
+        : null;
     return new AchievementItemResponseDTO(
         a.getId(),
         a.getCode(),
@@ -42,7 +47,7 @@ public record AchievementItemResponseDTO(
         a.getDisplayOrder(),
         a.isSecret(),
         item.unlocked(),
-        item.unlockedAt(),
+        unlockedAtUtc,
         item.seen(),
         item.currentValue(),
         item.progressPercent(),

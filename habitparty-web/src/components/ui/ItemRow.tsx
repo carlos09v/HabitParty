@@ -8,7 +8,6 @@ import { memo, type default as React, useCallback } from "react";
 import {
   CatalogItemDurationBadge,
   CatalogItemPricePill,
-  CatalogItemQuantityStepper,
   CatalogItemVariantChips,
 } from "@/components/ui/CatalogItemBadges";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
@@ -46,9 +45,6 @@ export interface ItemRowProps {
   remainingSeconds?: number | null;
   quantity?: number;
   price?: number;
-  unitQuantity?: number;
-  onUnitQuantityChange?: (nextQuantity: number) => void;
-  maxUnitQuantity?: number;
   variants?: CatalogItemVariant[];
   activeVariantId?: string;
   onSelectVariant?: (variantId: string) => void;
@@ -83,9 +79,6 @@ function ItemRowContent({
   remainingSeconds,
   quantity,
   price,
-  unitQuantity = 1,
-  onUnitQuantityChange,
-  maxUnitQuantity = 50,
   variants,
   activeVariantId,
   onSelectVariant,
@@ -379,16 +372,8 @@ function ItemRowContent({
         </div>
       </div>
 
-      {/* Coluna 5: Multiplicador Dívida + Preço (Desktop) & Botão de Ação */}
+      {/* Coluna 5: Preço (Desktop) & Botão de Ação */}
       <div className="flex flex-wrap sm:flex-nowrap items-center justify-end gap-1.5 sm:gap-2 md:gap-2.5 lg:gap-3.5 pt-1 md:pt-0 border-t border-neutral-700 dark:border-white/5 md:border-t-0 shrink-0">
-        {categoryMessageKey === "DEBT" && onUnitQuantityChange && (
-          <CatalogItemQuantityStepper
-            quantity={unitQuantity}
-            onChange={onUnitQuantityChange}
-            maxQuantity={maxUnitQuantity}
-            disabled={isActionLoading}
-          />
-        )}
         {typeof price === "number" && (
           <div className="hidden md:flex">
             <CatalogItemPricePill

@@ -30,6 +30,7 @@ import {
   parseTimeToMinutes,
   toLocalISOString,
 } from "@/utils/date";
+import { formatCoins } from "@/utils/economy";
 import { calculateRewardableMinutesForDate } from "@/utils/focusDailyYield";
 import {
   getItemRemainingMinutes,
@@ -463,6 +464,8 @@ export function useFocusManualRecordForm({
         const activeTz = useUserStore.getState().user?.timezone;
         let startTime: string;
         let endTime: string;
+        const todayDateKey = getTodayDateString(now, activeTz);
+        let isSessionToday = true;
 
         if (targetType === "ITEM") {
           endTime = toLocalISOString(now, activeTz);
@@ -471,7 +474,8 @@ export function useFocusManualRecordForm({
             activeTz,
           );
         } else {
-          const baseDateStr = sessionDate || getTodayDateString(now, activeTz);
+          const baseDateStr = sessionDate || todayDateKey;
+          isSessionToday = baseDateStr === todayDateKey;
           const [y, m, d] = baseDateStr.split("-").map(Number);
           const startMins = parseTimeToMinutes(startTimeStr);
           const endMins = parseTimeToMinutes(endTimeStr);
@@ -569,6 +573,15 @@ export function useFocusManualRecordForm({
 
           if (targetType === "ACTIVITY") {
             const rewardResult = awardUserRewards(xp, coins);
+            if (isSessionToday) {
+              const savedDuration = Math.max(
+                1,
+                Number(res.data?.durationMinutes ?? durationMinutes),
+              );
+              useUserStore
+                .getState()
+                .recordFocusMinutesToday(savedDuration, todayDateKey);
+            }
             if (xp > 0 || coins > 0) {
               useOptimisticDashboardStore.getState().addTransaction({
                 xpAmount: xp,
@@ -586,7 +599,7 @@ export function useFocusManualRecordForm({
                       : "toasts.recordSavedWithRewardsProductivity",
                     {
                       xp,
-                      coins: coins.toFixed(2),
+                      coins: formatCoins(coins, { locale }),
                     },
                   ),
                 );

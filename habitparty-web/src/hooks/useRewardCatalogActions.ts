@@ -43,7 +43,7 @@ export interface RewardPrefillDraft {
   title: string;
   description?: string;
   category: RewardCategory;
-  type: "TimeBased";
+  type: "TimeBased" | "SingleUse";
   icon: string;
   suggestedPackageLevel?: "Básico" | "Premium" | "Épico" | "Lendário";
 }
@@ -101,15 +101,11 @@ export function useRewardCatalogActions({
   };
 
   const handleBuy = useCallback(
-    async (reward: Reward, quantity = 1): Promise<boolean> => {
+    async (reward: Reward): Promise<boolean> => {
       if (isRewardRedeeming(reward.id)) return false;
 
       const isDebt = toCategoryMessageKey(reward.category) === "DEBT";
-      const safeQuantity =
-        isDebt && Number.isFinite(quantity) && quantity >= 1
-          ? Math.min(50, Math.floor(quantity))
-          : 1;
-      const totalCost = reward.price * safeQuantity;
+      const totalCost = reward.price;
 
       const latestCoins = useUserStore.getState().user?.currentCoins;
       if (typeof latestCoins === "number" && latestCoins < totalCost) {
@@ -123,7 +119,7 @@ export function useRewardCatalogActions({
 
       setRewardRedeeming(reward.id, true);
       try {
-        const res = await redeemReward(reward.id, safeQuantity);
+        const res = await redeemReward(reward.id, 1);
         if (!res.success) {
           toast.error(res.error || t("toasts.redeemError"));
           return false;
@@ -140,17 +136,20 @@ export function useRewardCatalogActions({
           });
         }
 
+        // Dívida é descartável: ao quitar, é removida automaticamente da vitrine
+        if (isDebt) {
+          setRewards((prev) => prev.filter((item) => item.id !== reward.id));
+        }
+
         soundEffects.playBuySound();
-        const displayTitle =
-          isDebt && safeQuantity > 1
-            ? `${reward.title} (${safeQuantity}x)`
-            : reward.title;
 
         toast.success(
           isDebt
             ? isGamified
-              ? t("toasts.debtPaidSuccessGamified", { title: displayTitle })
-              : t("toasts.debtPaidSuccessProductivity", { title: displayTitle })
+              ? t("toasts.debtPaidSuccessGamified", { title: reward.title })
+              : t("toasts.debtPaidSuccessProductivity", {
+                  title: reward.title,
+                })
             : isGamified
               ? t("toasts.buySuccessGamified", { title: reward.title })
               : t("toasts.buySuccessProductivity", { title: reward.title }),
@@ -163,13 +162,32 @@ export function useRewardCatalogActions({
         setRewardRedeeming(reward.id, false);
       }
     },
-    [isGamified, isRewardRedeeming, setRewardRedeeming, updateUserPartial, t],
+    [
+      isGamified,
+      isRewardRedeeming,
+      setRewardRedeeming,
+      setRewards,
+      updateUserPartial,
+      t,
+    ],
   );
 
   const handleAddProduct = useCallback(() => {
     setEditingReward(null);
     setEditingGroup(null);
     setPrefillDraft(null);
+    setIsFormModalOpen(true);
+  }, []);
+
+  const handleAddDebt = useCallback(() => {
+    setEditingReward(null);
+    setEditingGroup(null);
+    setPrefillDraft({
+      title: "",
+      category: "Dívida",
+      type: "SingleUse",
+      icon: "flame",
+    });
     setIsFormModalOpen(true);
   }, []);
 
@@ -448,6 +466,7 @@ export function useRewardCatalogActions({
     editingGroup,
     prefillDraft,
     handleAddProduct,
+    handleAddDebt,
     handleCloseFormModal,
     handleRewardSuccess,
     handleRewardGroupSuccess,

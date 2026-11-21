@@ -21,6 +21,7 @@ export function DashboardWidgetsList({
       <WeeklyCalendar
         transactions={transactions}
         tasks={tasks}
+        records={records}
         onSelectDay={onSelectDay}
       />
       <div className="h-px w-full bg-neutral-700/70 dark:bg-white/10 shrink-0" />

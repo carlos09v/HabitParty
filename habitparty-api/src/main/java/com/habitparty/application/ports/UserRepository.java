@@ -70,4 +70,8 @@ public interface UserRepository {
   default List<User> searchSocialUsers(String query, UUID excludeUserId, int limit) {
     return List.of();
   }
+
+  default Optional<String> findTimezoneById(UUID id) {
+    return Optional.empty();
+  }
 }

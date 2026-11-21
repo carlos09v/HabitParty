@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.BoardColumnRepository;
+import com.habitparty.application.ports.FocusRecordRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
@@ -41,6 +42,7 @@ public class RecordHabitScoreUseCase {
   private final ApplicationEventPublisher eventPublisher;
   private DailyResetUseCase dailyResetUseCase;
   private WorkspaceWriteGuard workspaceWriteGuard;
+  private FocusRecordRepository focusRecordPort;
 
   @Autowired
   public RecordHabitScoreUseCase(
@@ -75,6 +77,11 @@ public class RecordHabitScoreUseCase {
   @Autowired(required = false)
   public void setWorkspaceWriteGuard(WorkspaceWriteGuard workspaceWriteGuard) {
     this.workspaceWriteGuard = workspaceWriteGuard;
+  }
+
+  @Autowired(required = false)
+  public void setFocusRecordPort(FocusRecordRepository focusRecordPort) {
+    this.focusRecordPort = focusRecordPort;
   }
 
   public record HabitScoreResult(Task task, boolean rewardGranted) {
@@ -131,7 +138,8 @@ public class RecordHabitScoreUseCase {
       if (grantReward) {
         UserLevel levelBefore = user.getCurrentLevel();
         TaskGamificationHelper.awardTaskCompletion(
-            user, habit, TransactionType.HABIT_COMPLETED, userPort, transactionPort, columnName, today);
+            user, habit, TransactionType.HABIT_COMPLETED, userPort, transactionPort,
+            focusRecordPort, columnName, today, clock);
         UserLevel levelAfter = user.getCurrentLevel();
         reachedLevel = levelAfter.ordinal() > levelBefore.ordinal() ? levelAfter : null;
       }

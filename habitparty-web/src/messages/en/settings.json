@@ -155,8 +155,7 @@
     "defaultBadge": "Default",
     "statusGamified": "Adventure Mode (RPG Immersion) — Prominent rewards, Mystery Boxes, sword difficulty icons, and XP & Gold Coins economy.",
     "statusProductivity": "Essential Mode (Productivity) — Clean executive interface with Credits & Points (pts) economy and direct focus on deliverables.",
-    "activeLabel": "Active Experience Profile:",
-    "toastSuccess": "Experience profile changed to {mode}!"
+    "activeLabel": "Active Experience Profile:"
   },
   "languageCard": {
     "title": "Interface Language",
@@ -183,8 +182,7 @@
     "activeLabel": "Active format: ",
     "statusDdmmyyyy": "DD/MM/YYYY (Day / Month / Year) applied across the platform.",
     "statusMmddyyyy": "MM/DD/YYYY (Month / Day / Year) applied across the platform.",
-    "statusYyyymmdd": "YYYY-MM-DD (ISO Standard) applied across the platform.",
-    "toastSuccess": "Date format changed to {format}!"
+    "statusYyyymmdd": "YYYY-MM-DD (ISO Standard) applied across the platform."
   },
   "timeFormatCard": {
     "h24Label": "24-Hour (00:00 - 23:59)",
@@ -195,8 +193,7 @@
     "h12Example": "02:05 PM",
     "activeLabel": "Active format: ",
     "statusH24": "24-Hour (14:05) applied across the platform.",
-    "statusH12": "12-Hour (02:05 PM) applied across the platform.",
-    "toastSuccess": "Time format changed to {format}!"
+    "statusH12": "12-Hour (02:05 PM) applied across the platform."
   },
   "timezoneCard": {
     "activeLabel": "Active timezone: ",
@@ -220,8 +217,6 @@
     "allVisible": "All cards are visible",
     "restoreAll": "Restore all cards",
     "restoreAllSuccess": "All welcome cards have been restored!",
-    "cardReactivatedToast": "Card \"{title}\" reactivated! It will appear on screen again.",
-    "cardHiddenToast": "Card \"{title}\" has been hidden.",
     "ariaToggle": "Visibility for card {title}",
     "items": {
       "tasks": {
@@ -357,6 +352,8 @@
     "founderPlanTitle": "Founding Member (VIP Lifetime)",
     "renewsOn": "Renews on {date}",
     "expiresOn": "Valid until {date}",
+    "cancelScheduledUntil": "Cancellation scheduled — active until {date}",
+    "cancelScheduledBadge": "Ends at period end",
     "managePortal": "Manage Subscription (Stripe Portal)",
     "upgradeCta": "Upgrade to Cosmic Guardian",
     "redirectingPortal": "Redirecting to Stripe Subscription Portal...",
@@ -504,6 +501,7 @@
     "modalTitle": "Upgrade to Cosmic Guardian",
     "modalSubtitle": "Unlock the full power of gamified productivity with no barriers.",
     "alreadyAcquired": "Already Claimed 👑",
+    "founderRenewBadge": "Founder · Renew 👑",
     "remainingSlots": "{count} spots",
     "founderAnnual": "Founder",
     "founderPeriod": "/year + Badge",

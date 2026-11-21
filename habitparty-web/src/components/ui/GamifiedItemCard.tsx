@@ -8,7 +8,6 @@ import { memo, type default as React, useCallback } from "react";
 import {
   CatalogItemDurationBadge,
   CatalogItemPricePill,
-  CatalogItemQuantityStepper,
   CatalogItemVariantChips,
 } from "@/components/ui/CatalogItemBadges";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
@@ -49,10 +48,6 @@ export interface GamifiedItemCardProps {
   remainingSeconds?: number | null;
   quantity?: number;
   price?: number;
-  unitPrice?: number;
-  unitQuantity?: number;
-  onUnitQuantityChange?: (nextQuantity: number) => void;
-  maxUnitQuantity?: number;
   variants?: CatalogItemVariant[];
   activeVariantId?: string;
   onSelectVariant?: (variantId: string) => void;
@@ -88,10 +83,6 @@ function GamifiedItemCardContent({
   remainingSeconds,
   quantity,
   price,
-  unitPrice,
-  unitQuantity = 1,
-  onUnitQuantityChange,
-  maxUnitQuantity = 50,
   variants,
   activeVariantId,
   onSelectVariant,
@@ -377,10 +368,10 @@ function GamifiedItemCardContent({
             )}
           </div>
 
-          {/* Sub-linha fixa (1 linha): Status Em Foco + Tipo + Raridade/Dívida + Categoria truncada */}
-          <div className="flex items-center gap-1.5 flex-nowrap min-w-0 overflow-hidden h-5">
+          {/* Sub-linha de metadados sem clipping de borda: Status Em Foco + Tipo + Raridade/Dívida + Categoria */}
+          <div className="flex items-center gap-1.5 flex-wrap min-w-0 min-h-5 py-px">
             {inUse && (
-              <span className="inline-flex items-center gap-1 font-bold rounded-md border border-amber-500/40 bg-amber-500/15 text-amber-800 dark:text-amber-300 text-tiny px-1.5 py-0.5 leading-none">
+              <span className="inline-flex items-center gap-1 font-bold rounded-md border border-amber-500/40 bg-amber-500/15 text-amber-800 dark:text-amber-300 text-tiny px-1.5 py-0.5 leading-none shrink-0 whitespace-nowrap">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
                 {t("inFocus")}
               </span>
@@ -388,7 +379,7 @@ function GamifiedItemCardContent({
 
             <span
               className={cn(
-                "inline-flex items-center gap-1 border font-medium leading-none shrink-0 text-tiny px-1.5 py-0.5 rounded-md",
+                "inline-flex items-center gap-1 border font-medium shrink-0 whitespace-nowrap text-tiny px-1.5 py-0.5 leading-none rounded-md",
                 typeMeta?.color ||
                   "text-neutral-200 bg-white/10 border-white/20",
               )}
@@ -422,7 +413,7 @@ function GamifiedItemCardContent({
             {hasValidPackage && (
               <span
                 className={cn(
-                  "font-semibold rounded-md border text-tiny px-1.5 py-0.5 leading-none shrink-0",
+                  "inline-flex items-center font-semibold rounded-md border text-tiny px-1.5 py-0.5 leading-none shrink-0 whitespace-nowrap",
                   packageBadgeColor,
                 )}
               >
@@ -431,13 +422,13 @@ function GamifiedItemCardContent({
             )}
 
             {isDebtCategory && (
-              <span className="font-semibold rounded-md border text-tiny px-1.5 py-0.5 leading-none shrink-0 bg-rose-500/15 border-rose-500/35 text-rose-700 dark:text-rose-300">
+              <span className="inline-flex items-center font-semibold rounded-md border text-tiny px-1.5 py-0.5 leading-none shrink-0 whitespace-nowrap bg-rose-500/15 border-rose-500/35 text-rose-700 dark:text-rose-300">
                 {t("categories.DEBT")}
               </span>
             )}
 
             {showSubtleCategory && (
-              <span className="text-tiny text-neutral-400 font-medium min-w-0 truncate">
+              <span className="text-tiny leading-none text-neutral-400 font-medium min-w-0 truncate">
                 · {t(`categories.${categoryMessageKey}`)}
               </span>
             )}
@@ -474,26 +465,8 @@ function GamifiedItemCardContent({
         />
       )}
 
-      {/* ZONA 3: Rodapé (Progresso quando falta saldo + Preço/Multiplicador Dívida + Ação única) */}
+      {/* ZONA 3: Rodapé (Progresso quando falta saldo + Preço + Ação única) */}
       <footer className="mt-auto flex flex-col gap-1.5 pt-2 border-t border-neutral-700/80 dark:border-white/10 w-full">
-        {isDebtCategory && onUnitQuantityChange && (
-          <div className="flex items-center justify-between gap-2 text-[11px] text-neutral-300">
-            <span className="text-neutral-400 truncate">
-              {typeof unitPrice === "number"
-                ? t("unitPriceHint", {
-                    unit: formatCoins(unitPrice, { locale }),
-                  })
-                : t("unitMultiplierLabel")}
-            </span>
-
-            <CatalogItemQuantityStepper
-              quantity={unitQuantity}
-              onChange={onUnitQuantityChange}
-              maxQuantity={maxUnitQuantity}
-              disabled={isActionLoading}
-            />
-          </div>
-        )}
         {showStoreProgress && (
           <div className="flex flex-col gap-1 w-full">
             <div

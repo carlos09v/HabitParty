@@ -375,4 +375,58 @@ class CreateRewardUseCaseTest {
     assertEquals("Videogame (45m)", saved.getName());
     verify(rewardRepository).save(any());
   }
+
+  @Test
+  @DisplayName("Dívidas não consomem a cota de cards da vitrine e têm limite implícito próprio")
+  void shouldKeepDebtQuotaIndependentFromShowcaseCardsAndEnforceImplicitCap() {
+    java.util.List<Reward> existing = new java.util.ArrayList<>();
+    for (int i = 0; i < RewardGrouping.FREE_MAX_REWARD_CARDS; i++) {
+      existing.add(buildExistingReward(
+          "Card " + i, RewardType.SINGLE_USE, RewardCategory.ENTERTAINMENT, RewardPackageLevel.NONE, null));
+    }
+
+    when(userRepository.findById(userId)).thenReturn(Optional.of(freeUser));
+    when(rewardRepository.findAllByUserId(userId)).thenReturn(existing);
+    when(rewardRepository.getMaxOrderIndex(userId)).thenReturn(11);
+    when(rewardRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    // Mesmo com 12/12 cards regulares no Free, deve permitir criar Dívida
+    CreateRewardCommand debtCmd = new CreateRewardCommand(
+        "Dívida Netflix",
+        "tv",
+        null,
+        new BigDecimal("10"),
+        RewardCategory.DEBT,
+        List.of(),
+        RewardType.SINGLE_USE,
+        RewardPackageLevel.NONE,
+        null);
+
+    Reward savedDebt = useCase.execute(debtCmd, userId);
+    assertEquals(RewardCategory.DEBT, savedDebt.getCategory().orElse(null));
+
+    // Agora testa cota máxima implícita de Dívidas, sem impedir novos cards regulares quando abaixo de 12
+    java.util.List<Reward> maxDebts = new java.util.ArrayList<>();
+    for (int i = 0; i < RewardGrouping.MAX_ACTIVE_DEBTS; i++) {
+      maxDebts.add(buildExistingReward(
+          "Dívida " + i, RewardType.SINGLE_USE, RewardCategory.DEBT, RewardPackageLevel.NONE, null));
+    }
+    when(rewardRepository.findAllByUserId(userId)).thenReturn(maxDebts);
+
+    // Card regular deve continuar permitido (0/12 regulares usados)
+    CreateRewardCommand regularCmd = new CreateRewardCommand(
+        "Novo Card Regular",
+        "gift",
+        null,
+        new BigDecimal("10"),
+        RewardCategory.NONE,
+        List.of(),
+        RewardType.SINGLE_USE,
+        RewardPackageLevel.NONE,
+        null);
+    assertEquals("Novo Card Regular", useCase.execute(regularCmd, userId).getName());
+
+    // Nova Dívida deve ser bloqueada no limite implícito
+    assertThrows(LimitExceededException.class, () -> useCase.execute(debtCmd, userId));
+  }
 }

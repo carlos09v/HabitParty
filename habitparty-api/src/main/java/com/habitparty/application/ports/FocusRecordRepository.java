@@ -2,7 +2,9 @@ package com.habitparty.application.ports;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -81,6 +83,14 @@ public interface FocusRecordRepository {
     return java.util.Optional.empty();
   }
 
+  default java.util.Optional<java.time.LocalDateTime> findEarliestEndTimeByUserId(UUID userId) {
+    return findEarliestStartTimeByUserId(userId);
+  }
+
+  default List<UUID> findDistinctProductiveUserIds() {
+    return List.of();
+  }
+
   default int findMaxProductiveDurationMinutesExcludingRecord(UUID userId, UUID excludedRecordId) {
     return 0;
   }
@@ -106,5 +116,16 @@ public interface FocusRecordRepository {
 
   default int updateFocusRewards(UUID recordId, int xpEarned, BigDecimal coinsEarned) {
     return 0;
+  }
+
+  record FocusSessionSummary(UUID userId, LocalDateTime endTime, int durationMinutes) {}
+
+  default int sumProductiveFocusMinutesOnDate(UUID userId, LocalDate targetDate, ZoneId userZone) {
+    return 0;
+  }
+
+  default List<FocusSessionSummary> findProductiveFocusSessionsByUserIdsSince(
+      Collection<UUID> userIds, LocalDateTime since) {
+    return List.of();
   }
 }

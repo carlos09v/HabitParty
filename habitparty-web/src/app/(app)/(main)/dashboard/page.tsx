@@ -126,6 +126,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             initialAllColumns={initialAllColumns}
             initialVisibleColumnIds={initialVisibleColumnIds}
             transactions={transactions}
+            focusRecords={focusRecords}
             user={user}
           />
         </Suspense>

@@ -2,13 +2,14 @@
 
 import { cookies } from "next/headers";
 import { getLocale, getTranslations } from "next-intl/server";
+import { FOCUS_REWARD_RULES } from "@/constants/focus";
 import { REMINDER_OFFSET_DAYS } from "@/constants/task";
 import { DEFAULT_LOCALE, isValidLocale, toIntlLocale } from "@/i18n/config";
 import { getDashboardTransactions } from "@/services/dashboardService";
 import { getRawInventoryItems } from "@/services/inventoryService";
 import { getSocialNotifications } from "@/services/socialService";
 import { fetchWorkspaceBoardColumns } from "@/services/taskService";
-import { getCurrentUser } from "@/services/userService";
+import { getCurrentUser, getUserLayoutSummary } from "@/services/userService";
 import {
   getWorkspaces,
   resolveActiveWorkspace,
@@ -141,6 +142,7 @@ export async function getSidebarNotificationsAction(
     const [
       workspaces,
       user,
+      layoutSummary,
       inventoryItems,
       transactions,
       speculativeBoard,
@@ -148,6 +150,7 @@ export async function getSidebarNotificationsAction(
     ] = await Promise.all([
       getWorkspaces(),
       getCurrentUser(),
+      getUserLayoutSummary(),
       getRawInventoryItems(),
       getDashboardTransactions(),
       cookieWorkspaceId
@@ -253,7 +256,11 @@ export async function getSidebarNotificationsAction(
           ),
       ),
     );
-    const hasSecuredStreakToday = hasTaskCompletedToday || hasTransactionToday;
+    const hasFocusGoalToday =
+      (layoutSummary?.todayFocusMinutes ?? 0) >=
+      FOCUS_REWARD_RULES.MIN_DAILY_STREAK_FOCUS_MINUTES;
+    const hasSecuredStreakToday =
+      hasTaskCompletedToday || hasTransactionToday || hasFocusGoalToday;
 
     // 1. Alertas de Tarefas Atrasadas
     if (overdueCount > 0) {

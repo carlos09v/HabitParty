@@ -65,9 +65,7 @@ export function UpgradePremiumModal({
   const userEmail = useUserStore((s) => s.user?.email ?? "");
 
   const [quota, setQuota] = useState<FoundersQuotaDTO | null>(null);
-  const [selectedPlan, setSelectedPlan] = useState<PlanType>(
-    isFounder ? "ANNUAL" : "FOUNDER_ANNUAL",
-  );
+  const [selectedPlan, setSelectedPlan] = useState<PlanType>("FOUNDER_ANNUAL");
   const [selectedMethod, setSelectedMethod] =
     useState<PaymentMethodType>("CREDIT_CARD");
   const [isPending, startTransition] = useTransition();
@@ -88,7 +86,7 @@ export function UpgradePremiumModal({
       getFoundersQuotaAction().then((res) => {
         if (res.success && res.data) {
           setQuota(res.data);
-          if (!res.data.isAvailable || isFounder) {
+          if (!res.data.isAvailable && !isFounder) {
             setSelectedPlan("ANNUAL");
           }
         }
@@ -117,7 +115,8 @@ export function UpgradePremiumModal({
     });
   };
 
-  const isFounderAvailable = quota ? quota.isAvailable : true;
+  const isFounderAvailable =
+    Boolean(isFounder) || (quota ? quota.isAvailable : true);
   const remainingSlots = quota ? quota.remainingSlots : 30;
   const perksList: string[] = t.raw("perks") as string[];
 
@@ -134,7 +133,7 @@ export function UpgradePremiumModal({
       description={t("modalSubtitle")}
     >
       <div className="flex flex-col gap-6">
-        {/* SELEÇÃO DO PLANO: MEMBRO FUNDADOR (SE DISPONÍVEL), ANUAL OU MENSAL */}
+        {/* SELEÇÃO DO PLANO: MEMBRO FUNDADOR (SE DISPONÍVEL OU PARA RENOVAÇÃO DE FUNDADOR), ANUAL OU MENSAL */}
         <div
           className={cn(
             "grid gap-2.5 p-1.5 bg-surface dark:bg-surface/50 border border-neutral-700 dark:border-primary/20 rounded-2xl",
@@ -144,20 +143,17 @@ export function UpgradePremiumModal({
           {isFounderAvailable && (
             <button
               type="button"
-              disabled={isFounder}
               onClick={() => setSelectedPlan("FOUNDER_ANNUAL")}
               className={cn(
-                "flex flex-col items-center justify-center p-3 rounded-xl transition-colors relative",
-                isFounder
-                  ? "opacity-60 cursor-not-allowed bg-card dark:bg-white/5 border border-gold/30"
-                  : selectedPlan === "FOUNDER_ANNUAL"
-                    ? "bg-gold text-on-gold dark:text-neutral-950 font-bold shadow-glow-gold cursor-pointer"
-                    : "text-neutral-300 hover:text-neutral-50 hover:bg-card/80 dark:hover:bg-white/5 cursor-pointer",
+                "flex flex-col items-center justify-center p-3 rounded-xl transition-colors relative cursor-pointer",
+                selectedPlan === "FOUNDER_ANNUAL"
+                  ? "bg-gold text-on-gold dark:text-neutral-950 font-bold shadow-glow-gold"
+                  : "text-neutral-300 hover:text-neutral-50 hover:bg-card/80 dark:hover:bg-white/5",
               )}
             >
               <span className="absolute -top-2.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-gold text-on-gold dark:text-neutral-950 border border-neutral-950/20 shadow-xs flex items-center gap-1">
                 {isFounder ? (
-                  t("alreadyAcquired")
+                  t("founderRenewBadge")
                 ) : (
                   <>
                     <Flame className="w-2.5 h-2.5 fill-current" />

@@ -28,17 +28,14 @@ const FALLBACK_STORE_MESSAGES: Record<
       "🍅 Cycle {cycles} completed! Starting {breakLabel} break. Relax a little!",
     overtimeStartedToast:
       "🍅 Cycle goal reached! Counting overtime until you start your break or finish.",
-    breakStartedToast:
-      "☕ Cycle {cycles} saved! Starting {breakLabel} break. Relax a little!",
     selectTargetToStartToast:
-      "Select an activity or backpack item to start focusing.",
+      "Select an activity, task, or backpack item to start focusing.",
     selectTargetToStartToastProductivity:
       "Select an activity, task, or inventory item to start focusing.",
     itemAlreadyCompletedToast:
       "🎉 This item has already completed its time. Click the Complete (Check) button to redeem it.",
-    breakSkippedToast: "Break skipped. Ready to focus!",
     linkTargetBeforeSaveToast:
-      "Link your focus to an activity or backpack item before saving.",
+      "Link your focus to an activity, task, or backpack item before saving.",
     linkTargetBeforeSaveToastProductivity:
       "Link your focus to an activity, task, or inventory item before saving.",
     minDurationWarningToast: "Sessions under 1 minute are not recorded.",
@@ -55,10 +52,10 @@ const FALLBACK_STORE_MESSAGES: Record<
     couponAlreadyDepletedToast:
       "This coupon's time is already depleted! Click the Complete (Check) button to redeem it.",
     defaultItemName: "Focus Item",
-    targetTransferredToast:
-      'Target switched to "{name}". The timer keeps running!',
-    taskFocusStartedToast: 'Focusing on task "{name}"!',
-    taskLinkedToast: 'Task "{name}" linked to focus!',
+    defaultTaskName: "Task",
+    finishCouponBeforeTaskToast:
+      "Finish or save the coupon in progress before linking a task.",
+    levelUpLinkedTaskPrompt: 'Finish task "{name}" as well?',
     completeLinkedTaskAction: "Complete task",
     linkedTaskCompletedToast: 'Task "{name}" marked as completed!',
     linkedTaskCompletedRewardsToast:
@@ -76,15 +73,12 @@ const FALLBACK_STORE_MESSAGES: Record<
     shortBreakLabel: "curta (5 min)",
     overtimeStartedToast:
       "🍅 Meta do ciclo concluída! Contando o excedente até você iniciar a pausa ou encerrar.",
-    breakStartedToast:
-      "☕ Ciclo {cycles} salvo! Iniciando pausa {breakLabel}. Relaxe um pouco!",
     selectTargetToStartToast:
       "Selecione uma atividade, tarefa ou item da mochila para iniciar o foco.",
     selectTargetToStartToastProductivity:
       "Selecione uma atividade, tarefa ou item do inventário para iniciar o foco.",
     itemAlreadyCompletedToast:
       "🎉 Este item já concluiu seu tempo. Clique no botão de Concluir (Check) para resgatá-lo.",
-    breakSkippedToast: "Pausa pulada. Pronto para focar!",
     linkTargetBeforeSaveToast:
       "Vincule o foco a uma atividade, tarefa ou item da mochila antes de salvar.",
     linkTargetBeforeSaveToastProductivity:
@@ -105,10 +99,10 @@ const FALLBACK_STORE_MESSAGES: Record<
     couponAlreadyDepletedToast:
       "O tempo deste cupom já está esgotado! Clique no botão de Concluir (Check) para resgatá-lo.",
     defaultItemName: "Item de Foco",
-    targetTransferredToast:
-      'Vínculo alterado para "{name}". O tempo continua rodando!',
-    taskFocusStartedToast: 'Foco iniciado na tarefa "{name}"!',
-    taskLinkedToast: 'Tarefa "{name}" vinculada ao foco!',
+    defaultTaskName: "Tarefa",
+    finishCouponBeforeTaskToast:
+      "Finalize ou salve o cupom em andamento antes de vincular uma tarefa.",
+    levelUpLinkedTaskPrompt: 'Concluir a tarefa "{name}" também?',
     completeLinkedTaskAction: "Concluir tarefa",
     linkedTaskCompletedToast: 'Tarefa "{name}" marcada como concluída!',
     linkedTaskCompletedRewardsToast:

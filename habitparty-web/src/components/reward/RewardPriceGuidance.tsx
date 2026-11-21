@@ -7,7 +7,7 @@ import { CoinIcon } from "@/components/ui/CoinIcon";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { type AppLocale, toIntlLocale } from "@/i18n/config";
-import type { PackageLevel, RewardType } from "@/types/reward";
+import type { PackageLevel, RewardCategory, RewardType } from "@/types/reward";
 import { cn, formatCoins } from "@/utils";
 import {
   analyzeRewardPrice,
@@ -85,6 +85,7 @@ function formatWarningMessage(
 
 interface RewardPriceGuidanceProps {
   type: RewardType;
+  category?: RewardCategory;
   price: string;
   durationMinutes?: string;
   packageLevel?: PackageLevel;
@@ -100,6 +101,7 @@ interface RewardPriceGuidanceProps {
  */
 export function RewardPriceGuidance({
   type,
+  category,
   price,
   durationMinutes,
   packageLevel,
@@ -122,8 +124,16 @@ export function RewardPriceGuidance({
         price: numericPrice,
         durationMinutes: numericDuration,
         packageLevel,
+        category,
       }),
-    [providedAnalysis, type, numericPrice, numericDuration, packageLevel],
+    [
+      providedAnalysis,
+      type,
+      numericPrice,
+      numericDuration,
+      packageLevel,
+      category,
+    ],
   );
 
   const effortSummary = formatEffortSummary(analysis.effort, t, locale);
@@ -179,9 +189,26 @@ export function RewardPriceGuidance({
     );
   };
 
+  const categoryHintBadge =
+    analysis.categoryProfile === "discounted" ? (
+      <span
+        title={t("categoryDiscountHint")}
+        className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-500/12 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-[10px] font-semibold leading-none shrink-0"
+      >
+        {t("categoryDiscountBadge")}
+      </span>
+    ) : analysis.categoryProfile === "premium" ? (
+      <span
+        title={t("categoryPremiumHint")}
+        className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-500/12 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-[10px] font-semibold leading-none shrink-0"
+      >
+        {t("categoryPremiumBadge")}
+      </span>
+    ) : null;
+
   if (analysis.suggestedPrice === null) {
     return (
-      <div className="flex items-center justify-between gap-2 min-h-[24px] text-label-m">
+      <div className="flex flex-wrap items-center justify-between gap-2 min-h-[24px] text-label-m">
         <span className="inline-flex items-center gap-1.5 text-neutral-300 min-w-0">
           {isGamified ? (
             <Sparkles size={12} className="text-gold shrink-0" />
@@ -205,9 +232,10 @@ export function RewardPriceGuidance({
             )}
           </span>
         </span>
-        {isWarning && warningMessage && (
-          <div className="shrink-0">{renderWarningTooltip("right")}</div>
-        )}
+        <div className="inline-flex items-center gap-1.5 shrink-0">
+          {categoryHintBadge}
+          {isWarning && warningMessage && renderWarningTooltip("right")}
+        </div>
       </div>
     );
   }
@@ -215,27 +243,31 @@ export function RewardPriceGuidance({
   return (
     <div className="flex flex-col gap-1">
       {/* Linha 1: Equivalência em esforço (e equivalência em lazer no Modo Essencial) */}
-      <div className="flex items-center gap-1.5 min-h-[20px] text-label-m text-neutral-300">
-        {isGamified ? (
-          <Sparkles size={12} className="text-gold shrink-0" />
-        ) : (
-          <Clock
-            size={12}
-            className="text-sky-600 dark:text-sky-400 shrink-0"
-          />
-        )}
-        <span className="truncate">
-          <span className="text-neutral-400">{t("effortPrefix")}</span>{" "}
-          <strong className="font-semibold text-neutral-100">
-            {effortSummary}
-          </strong>
-          {leisureEquivalence && (
-            <span className="text-sky-700 dark:text-sky-300 font-medium">
-              {" "}
-              • {t("leisureEquivalenceHint", { duration: leisureEquivalence })}
-            </span>
+      <div className="flex items-center justify-between gap-2 min-h-[20px] text-label-m text-neutral-300">
+        <div className="flex items-center gap-1.5 min-w-0">
+          {isGamified ? (
+            <Sparkles size={12} className="text-gold shrink-0" />
+          ) : (
+            <Clock
+              size={12}
+              className="text-sky-600 dark:text-sky-400 shrink-0"
+            />
           )}
-        </span>
+          <span className="truncate">
+            <span className="text-neutral-400">{t("effortPrefix")}</span>{" "}
+            <strong className="font-semibold text-neutral-100">
+              {effortSummary}
+            </strong>
+            {leisureEquivalence && (
+              <span className="text-sky-700 dark:text-sky-300 font-medium">
+                {" "}
+                •{" "}
+                {t("leisureEquivalenceHint", { duration: leisureEquivalence })}
+              </span>
+            )}
+          </span>
+        </div>
+        {categoryHintBadge}
       </div>
 
       {/* Linha 2: Alerta em InfoTooltip + atalho de preço sugerido */}

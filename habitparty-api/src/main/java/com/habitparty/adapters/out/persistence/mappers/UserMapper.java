@@ -76,6 +76,7 @@ public class UserMapper {
     statsEntity.setTotalXp(domainStats != null ? domainStats.getTotalXp() : 0);
     statsEntity.setCurrentStreak(domainStats != null ? domainStats.getCurrentStreak() : 0);
     statsEntity.setHighestStreak(domainStats != null ? domainStats.getHighestStreak() : 0);
+    statsEntity.setLastStreakDate(domainStats != null ? domainStats.getLastStreakDate() : null);
     statsEntity.setTotalTasksCompleted(domainStats != null ? domainStats.getTotalTasksCompleted() : 0);
     statsEntity.setTotalHardTasksCompleted(domainStats != null ? domainStats.getTotalHardTasksCompleted() : 0);
     statsEntity.setTotalHardcoreTasksCompleted(domainStats != null ? domainStats.getTotalHardcoreTasksCompleted() : 0);
@@ -113,6 +114,8 @@ public class UserMapper {
         ? domainSub.getSubscriptionStatus()
         : SubscriptionStatus.FREE);
     subEntity.setSubscriptionEndsAt(domainSub != null ? domainSub.getSubscriptionEndsAt() : null);
+    subEntity.setPrepaidEndsAt(domainSub != null ? domainSub.getPrepaidEndsAt() : null);
+    subEntity.setCancelAtPeriodEnd(domainSub != null && domainSub.isCancelAtPeriodEnd());
     subEntity.setUpdatedAt(domainSub != null && domainSub.getUpdatedAt() != null
         ? domainSub.getUpdatedAt()
         : LocalDateTime.now());
@@ -141,6 +144,7 @@ public class UserMapper {
             s.getUpdatedAt())
         : UserStats.createInitial(entity.getId());
     if (s != null) {
+      domainStats.setLastStreakDate(s.getLastStreakDate());
       domainStats.setTotalNightFocusSessions(s.getTotalNightFocusSessions());
       domainStats.setTotalEarlyFocusSessions(s.getTotalEarlyFocusSessions());
       domainStats.setTotalCouponsDepleted(s.getTotalCouponsDepleted());
@@ -161,6 +165,8 @@ public class UserMapper {
             sub.getStripeSubscriptionId(),
             sub.getSubscriptionStatus(),
             sub.getSubscriptionEndsAt(),
+            sub.getPrepaidEndsAt(),
+            sub.isCancelAtPeriodEnd(),
             sub.getUpdatedAt())
         : UserSubscription.createInitial(entity.getId());
 

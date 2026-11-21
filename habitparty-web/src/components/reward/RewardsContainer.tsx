@@ -14,6 +14,7 @@ import { PrimaryActionButton } from "@/components/ui/PrimaryActionButton";
 import { WelcomeCard } from "@/components/ui/WelcomeCard";
 import {
   FREE_MAX_REWARD_CARDS,
+  MAX_ACTIVE_DEBT_CARDS,
   MAX_REWARD_PACKAGES_PER_CARD,
   PREMIUM_MAX_REWARD_CARDS,
   REWARD_CATEGORY_FILTER_VALUES,
@@ -97,9 +98,6 @@ function RewardsContainerContent({
   const [selectedVariantByGroup, setSelectedVariantByGroup] = useState<
     Record<string, string>
   >({});
-  const [debtQuantities, setDebtQuantities] = useState<Record<string, number>>(
-    {},
-  );
   const displayedEntriesRef = useRef<RewardDisplayEntry[]>([]);
 
   const {
@@ -172,6 +170,7 @@ function RewardsContainerContent({
     editingGroup,
     prefillDraft,
     handleAddProduct,
+    handleAddDebt,
     handleCloseFormModal,
     handleRewardSuccess,
     handleRewardGroupSuccess,
@@ -188,31 +187,6 @@ function RewardsContainerContent({
       }));
     },
     [],
-  );
-
-  const handleDebtQuantityChange = useCallback(
-    (rewardId: string, nextQuantity: number) => {
-      setDebtQuantities((prev) => ({
-        ...prev,
-        [rewardId]: nextQuantity,
-      }));
-    },
-    [],
-  );
-
-  const handleBuyWithReset = useCallback(
-    async (reward: Reward, quantity = 1) => {
-      const ok = await handleBuy(reward, quantity);
-      if (ok && toCategoryMessageKey(reward.category) === "DEBT") {
-        setDebtQuantities((prev) => {
-          if ((prev[reward.id] ?? 1) === 1) return prev;
-          const next = { ...prev };
-          delete next[reward.id];
-          return next;
-        });
-      }
-    },
-    [handleBuy],
   );
 
   const categoryOptions = useMemo(
@@ -267,7 +241,22 @@ function RewardsContainerContent({
     () => groupRewardsForShowcase(rewards),
     [rewards],
   );
-  const totalShowcaseCards = allGroupedEntries.length;
+  // Dívidas descartáveis possuem cota implícita independente e não consomem o limite regular de cards
+  const activeDebtsCount = useMemo(
+    () =>
+      rewards.filter(
+        (reward) => toCategoryMessageKey(reward.category) === "DEBT",
+      ).length,
+    [rewards],
+  );
+  const totalShowcaseCards = useMemo(
+    () =>
+      allGroupedEntries.filter(
+        (entry) =>
+          toCategoryMessageKey(entry.primaryReward.category) !== "DEBT",
+      ).length,
+    [allGroupedEntries],
+  );
   const maxRewardCards = isPremium
     ? PREMIUM_MAX_REWARD_CARDS
     : FREE_MAX_REWARD_CARDS;
@@ -473,34 +462,47 @@ function RewardsContainerContent({
               </div>
 
               {isCardLimitReached ? (
-                <button
-                  type="button"
-                  onClick={
-                    isPremium ? undefined : () => setIsUpgradeModalOpen(true)
-                  }
-                  disabled={isPremium}
-                  title={
-                    isPremium
-                      ? t("maxLimitReachedTitle", { max: maxRewardCards })
-                      : t("upgradeLimitTitle")
-                  }
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-lg border px-3.5 py-2.5 text-body-s font-bold transition-colors shrink-0 select-none",
-                    isPremium
-                      ? "border-neutral-700 bg-surface dark:bg-neutral-800/40 text-neutral-400 dark:text-neutral-500 cursor-not-allowed"
-                      : "border-amber-500/40 bg-amber-500/15 text-amber-800 hover:bg-amber-500/25 hover:border-amber-600 dark:border-gold/40 dark:bg-gold/15 dark:text-gold dark:hover:bg-gold/25 dark:hover:border-gold shadow-glow-gold-xs cursor-pointer",
+                <div className="flex items-center gap-2">
+                  {activeDebtsCount < MAX_ACTIVE_DEBT_CARDS && (
+                    <button
+                      type="button"
+                      onClick={handleAddDebt}
+                      title={t("addDebtTitle")}
+                      className="flex items-center gap-1 rounded-lg border border-rose-500/40 bg-rose-500/10 px-2.5 py-2.5 text-body-s font-semibold text-rose-700 hover:bg-rose-500/20 dark:border-rose-400/35 dark:bg-rose-500/15 dark:text-rose-200 dark:hover:bg-rose-500/25 transition-colors shrink-0 cursor-pointer select-none"
+                    >
+                      <Plus size={14} />
+                      <span>{t("addDebtButton")}</span>
+                    </button>
                   )}
-                >
-                  <Crown
-                    size={15}
-                    className={isPremium ? undefined : "fill-gold/20"}
-                  />
-                  <span>
-                    {isPremium
-                      ? t("limitReachedShort")
-                      : t("upgradeLimitButton")}
-                  </span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={
+                      isPremium ? undefined : () => setIsUpgradeModalOpen(true)
+                    }
+                    disabled={isPremium}
+                    title={
+                      isPremium
+                        ? t("maxLimitReachedTitle", { max: maxRewardCards })
+                        : t("upgradeLimitTitle")
+                    }
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-lg border px-3.5 py-2.5 text-body-s font-bold transition-colors shrink-0 select-none",
+                      isPremium
+                        ? "border-neutral-700 bg-surface dark:bg-neutral-800/40 text-neutral-400 dark:text-neutral-500 cursor-not-allowed"
+                        : "border-amber-500/40 bg-amber-500/15 text-amber-800 hover:bg-amber-500/25 hover:border-amber-600 dark:border-gold/40 dark:bg-gold/15 dark:text-gold dark:hover:bg-gold/25 dark:hover:border-gold shadow-glow-gold-xs cursor-pointer",
+                    )}
+                  >
+                    <Crown
+                      size={15}
+                      className={isPremium ? undefined : "fill-gold/20"}
+                    />
+                    <span>
+                      {isPremium
+                        ? t("limitReachedShort")
+                        : t("upgradeLimitButton")}
+                    </span>
+                  </button>
+                </div>
               ) : (
                 <PrimaryActionButton
                   label={
@@ -521,12 +523,10 @@ function RewardsContainerContent({
           deletingRewardIds={checkingDeleteRewardIds}
           redeemingRewardIds={redeemingRewardIds}
           selectedVariantByGroup={selectedVariantByGroup}
-          debtQuantities={debtQuantities}
-          onDebtQuantityChange={handleDebtQuantityChange}
           onSelectVariant={handleSelectVariant}
           sensors={sensors}
           onDragEnd={handleDragEnd}
-          onBuy={handleBuyWithReset}
+          onBuy={handleBuy}
           onEdit={handleEditReward}
           onContextMenu={handleContextMenu}
           onAddProduct={handleAddProduct}

@@ -156,4 +156,7 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
       @Param("exactCode") String exactCode,
       @Param("pattern") String pattern,
       Pageable pageable);
+
+  @Query("SELECT u.timezone FROM UserJpaEntity u WHERE u.id = :id")
+  Optional<String> findTimezoneById(@Param("id") UUID id);
 }

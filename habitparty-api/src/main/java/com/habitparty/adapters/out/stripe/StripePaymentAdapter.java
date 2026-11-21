@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,23 +18,29 @@ import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.enums.PaymentMethodType;
 import com.habitparty.core.domain.enums.PlanType;
 import com.habitparty.core.exceptions.PaymentProcessingException;
+import com.stripe.exception.InvalidRequestException;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
 import com.stripe.model.CustomerSearchResult;
 import com.stripe.model.Event;
 import com.stripe.model.EventDataObjectDeserializer;
+import com.stripe.model.Product;
+import com.stripe.model.ProductSearchResult;
 import com.stripe.model.StripeObject;
 import com.stripe.model.Subscription;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
 import com.stripe.param.CustomerCreateParams;
 import com.stripe.param.CustomerSearchParams;
+import com.stripe.param.ProductCreateParams;
+import com.stripe.param.ProductSearchParams;
 import com.stripe.param.checkout.SessionCreateParams;
 
 @Component
 public class StripePaymentAdapter implements PaymentGatewayPort {
   private static final Logger log = LoggerFactory.getLogger(StripePaymentAdapter.class);
+  private final ConcurrentHashMap<PlanType, String> cachedProductIds = new ConcurrentHashMap<>();
 
   @Value("${stripe.prices.monthly:}")
   private String monthlyPriceId;
@@ -43,6 +50,24 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
 
   @Value("${stripe.prices.founder-annual:}")
   private String founderAnnualPriceId;
+
+  @Value("${stripe.prices.usd.monthly:}")
+  private String usdMonthlyPriceId;
+
+  @Value("${stripe.prices.usd.annual:}")
+  private String usdAnnualPriceId;
+
+  @Value("${stripe.prices.usd.founder-annual:}")
+  private String usdFounderAnnualPriceId;
+
+  @Value("${stripe.products.monthly:}")
+  private String monthlyProductId;
+
+  @Value("${stripe.products.annual:}")
+  private String annualProductId;
+
+  @Value("${stripe.products.founder-annual:}")
+  private String founderAnnualProductId;
 
   @Value("${stripe.success.url:${APP_FRONTEND_URL:http://localhost:3000}/dashboard?payment=success&session_id={CHECKOUT_SESSION_ID}}")
   private String defaultSuccessUrl;
@@ -69,30 +94,53 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
         }
       }
 
+      return searchOrCreateStripeCustomer(user);
+    } catch (StripeException e) {
+      throw new PaymentProcessingException(
+          "Falha ao comunicar com o Stripe ao criar/buscar cliente: " + e.getMessage(), e);
+    }
+  }
+
+  private String searchOrCreateStripeCustomer(User user) throws StripeException {
+    if (user.getEmail() != null && !user.getEmail().isBlank()) {
       try {
         CustomerSearchResult searchResult = Customer.search(
             CustomerSearchParams.builder()
-                .setQuery("email:'" + user.getEmail() + "'")
+                .setQuery("email:'" + escapeStripeSearchValue(user.getEmail().trim()) + "'")
                 .build());
         if (searchResult.getData() != null && !searchResult.getData().isEmpty()) {
           return searchResult.getData().get(0).getId();
         }
       } catch (StripeException ignored) {
       }
-
-      CustomerCreateParams params = CustomerCreateParams.builder()
-          .setEmail(user.getEmail())
-          .setName(user.getFullName())
-          .putMetadata("userId", user.getId().toString())
-          .putMetadata("username", user.getUsername())
-          .build();
-
-      Customer customer = Customer.create(params);
-      return customer.getId();
-    } catch (StripeException e) {
-      throw new PaymentProcessingException(
-          "Falha ao comunicar com o Stripe ao criar/buscar cliente: " + e.getMessage(), e);
     }
+
+    CustomerCreateParams params = CustomerCreateParams.builder()
+        .setEmail(user.getEmail())
+        .setName(user.getFullName())
+        .putMetadata("userId", user.getId().toString())
+        .putMetadata("username", user.getUsername())
+        .build();
+
+    Customer customer = Customer.create(params);
+    return customer.getId();
+  }
+
+  private static String escapeStripeSearchValue(String value) {
+    if (value == null) {
+      return "";
+    }
+    return value.replace("\\", "\\\\").replace("'", "\\'");
+  }
+
+  private static boolean isMissingCustomerError(StripeException e) {
+    if (e instanceof InvalidRequestException ire) {
+      if ("resource_missing".equals(ire.getCode())) {
+        return true;
+      }
+    }
+    String msg = e.getMessage();
+    return msg != null && msg.toLowerCase().contains("no such customer");
   }
 
   @Override
@@ -182,6 +230,24 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
           piBuilder.putMetadata("isFounder", "true");
         }
 
+        SessionCreateParams.LineItem.PriceData.Builder pixPriceDataBuilder =
+            SessionCreateParams.LineItem.PriceData.builder()
+                .setCurrency("brl")
+                .setUnitAmount(amountInCents);
+        String pixDescription = plan == PlanType.FOUNDER_ANNUAL
+            ? "Acesso Premium Anual com Insígnia Vitalícia de Membro Fundador via Pix"
+            : "Acesso Premium avulso via Pix por " + days + " dias";
+        String pixProductId = resolveOrCreateProductId(plan, "HabitParty " + planTitle, pixDescription);
+        if (pixProductId != null) {
+          pixPriceDataBuilder.setProduct(pixProductId);
+        } else {
+          pixPriceDataBuilder.setProductData(
+              SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                  .setName("HabitParty " + planTitle)
+                  .setDescription(pixDescription)
+                  .build());
+        }
+
         sessionBuilder
             .setMode(SessionCreateParams.Mode.PAYMENT)
             .addPaymentMethodType(SessionCreateParams.PaymentMethodType.PIX)
@@ -190,18 +256,7 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
             .addLineItem(
                 SessionCreateParams.LineItem.builder()
                     .setQuantity(1L)
-                    .setPriceData(
-                        SessionCreateParams.LineItem.PriceData.builder()
-                            .setCurrency("brl")
-                            .setUnitAmount(amountInCents)
-                            .setProductData(
-                                SessionCreateParams.LineItem.PriceData.ProductData.builder()
-                                    .setName("HabitParty " + planTitle)
-                                    .setDescription(plan == PlanType.FOUNDER_ANNUAL
-                                        ? "Acesso Premium Anual com Insígnia Vitalícia de Membro Fundador via Pix"
-                                        : "Acesso Premium avulso via Pix por " + days + " dias")
-                                    .build())
-                            .build())
+                    .setPriceData(pixPriceDataBuilder.build())
                     .build());
       } else {
         com.stripe.param.checkout.SessionCreateParams.SubscriptionData.Builder subBuilder =
@@ -215,17 +270,13 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
 
         sessionBuilder
             .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
-            .setCurrency(currency)
             .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
             .setSubscriptionData(subBuilder.build());
 
-        String configuredPriceId = switch (plan) {
-          case FOUNDER_ANNUAL -> founderAnnualPriceId;
-          case ANNUAL -> annualPriceId;
-          case MONTHLY -> monthlyPriceId;
-        };
+        String configuredPriceId = resolveConfiguredPriceId(plan, isEnglish);
 
-        if (configuredPriceId != null && !configuredPriceId.isBlank() && configuredPriceId.startsWith("price_") && !configuredPriceId.contains("...")) {
+        if (isValidStripePriceId(configuredPriceId)) {
+          // O Stripe herda a moeda diretamente do Price ID configurado, evitando currency mismatch
           sessionBuilder.addLineItem(
               SessionCreateParams.LineItem.builder()
                   .setPrice(configuredPriceId)
@@ -267,39 +318,118 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
                   ? "Assinatura Anual Especial com Insígnia Vitalícia de Membro Fundador"
                   : "Assinatura recorrente com renovação automática");
 
-          sessionBuilder.addLineItem(
-              SessionCreateParams.LineItem.builder()
-                  .setQuantity(1L)
-                  .setPriceData(
-                      SessionCreateParams.LineItem.PriceData.builder()
-                          .setCurrency(currency)
-                          .setUnitAmount(amountInCents)
-                          .setRecurring(
-                              SessionCreateParams.LineItem.PriceData.Recurring.builder()
-                                  .setInterval(interval)
-                                  .build())
-                          .setProductData(
-                              SessionCreateParams.LineItem.PriceData.ProductData.builder()
-                                  .setName("HabitParty Premium (" + planTitle + ")")
-                                  .setDescription(planDescription)
-                                  .build())
-                          .build())
-                  .build());
+          SessionCreateParams.LineItem.PriceData.Builder subPriceDataBuilder =
+              SessionCreateParams.LineItem.PriceData.builder()
+                  .setCurrency(currency)
+                  .setUnitAmount(amountInCents)
+                  .setRecurring(
+                      SessionCreateParams.LineItem.PriceData.Recurring.builder()
+                          .setInterval(interval)
+                          .build());
+          String subProductId = resolveOrCreateProductId(
+              plan, "HabitParty Premium (" + planTitle + ")", planDescription);
+          if (subProductId != null) {
+            subPriceDataBuilder.setProduct(subProductId);
+          } else {
+            subPriceDataBuilder.setProductData(
+                SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                    .setName("HabitParty Premium (" + planTitle + ")")
+                    .setDescription(planDescription)
+                    .build());
+          }
+
+          sessionBuilder
+              .setCurrency(currency)
+              .addLineItem(
+                  SessionCreateParams.LineItem.builder()
+                      .setQuantity(1L)
+                      .setPriceData(subPriceDataBuilder.build())
+                      .build());
         }
       }
 
-      Session session = Session.create(sessionBuilder.build());
-      return session.getUrl();
+      try {
+        Session session = Session.create(sessionBuilder.build());
+        return session.getUrl();
+      } catch (StripeException e) {
+        if (isMissingCustomerError(e)) {
+          String freshCustomerId = searchOrCreateStripeCustomer(user);
+          sessionBuilder.setCustomer(freshCustomerId);
+          return Session.create(sessionBuilder.build()).getUrl();
+        }
+        throw e;
+      }
     } catch (StripeException e) {
       throw new PaymentProcessingException(
           "Falha ao criar sessão de checkout no Stripe: " + e.getMessage(), e);
     }
   }
 
+  private String resolveConfiguredPriceId(PlanType plan, boolean isEnglish) {
+    if (isEnglish) {
+      return switch (plan) {
+        case FOUNDER_ANNUAL -> usdFounderAnnualPriceId;
+        case ANNUAL -> usdAnnualPriceId;
+        case MONTHLY -> usdMonthlyPriceId;
+      };
+    }
+    return switch (plan) {
+      case FOUNDER_ANNUAL -> founderAnnualPriceId;
+      case ANNUAL -> annualPriceId;
+      case MONTHLY -> monthlyPriceId;
+    };
+  }
+
+  private static boolean isValidStripePriceId(String priceId) {
+    return priceId != null && !priceId.isBlank() && priceId.startsWith("price_") && !priceId.contains("...");
+  }
+
+  private String resolveOrCreateProductId(PlanType plan, String defaultName, String defaultDescription) {
+    String configuredProductId = switch (plan) {
+      case FOUNDER_ANNUAL -> founderAnnualProductId;
+      case ANNUAL -> annualProductId;
+      case MONTHLY -> monthlyProductId;
+    };
+    if (configuredProductId != null && !configuredProductId.isBlank() && configuredProductId.startsWith("prod_")) {
+      return configuredProductId;
+    }
+
+    String cached = cachedProductIds.get(plan);
+    if (cached != null) {
+      return cached;
+    }
+
+    try {
+      ProductSearchResult searchResult = Product.search(
+          ProductSearchParams.builder()
+              .setQuery("metadata['habitparty_plan']:'" + escapeStripeSearchValue(plan.name()) + "'")
+              .build());
+      if (searchResult.getData() != null && !searchResult.getData().isEmpty()) {
+        String existingId = searchResult.getData().get(0).getId();
+        cachedProductIds.putIfAbsent(plan, existingId);
+        return existingId;
+      }
+
+      Product created = Product.create(
+          ProductCreateParams.builder()
+              .setName(defaultName)
+              .setDescription(defaultDescription)
+              .putMetadata("habitparty_plan", plan.name())
+              .build());
+      cachedProductIds.putIfAbsent(plan, created.getId());
+      return created.getId();
+    } catch (StripeException e) {
+      log.debug("Fallback para ProductData inline no checkout ({}): {}", plan, e.getMessage());
+      return null;
+    }
+  }
+
   @Override
   public String createCustomerPortalSession(User user, String returnUrl) {
     try {
-      String customerId = createOrGetCustomer(user);
+      String customerId = (user.getStripeCustomerId() != null && !user.getStripeCustomerId().isBlank())
+          ? user.getStripeCustomerId()
+          : searchOrCreateStripeCustomer(user);
       String finalReturnUrl = (returnUrl != null && !returnUrl.isBlank())
           ? returnUrl
           : frontendUrl + "/settings?tab=profile";
@@ -310,9 +440,20 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
               .setReturnUrl(finalReturnUrl)
               .build();
 
-      com.stripe.model.billingportal.Session portalSession =
-          com.stripe.model.billingportal.Session.create(params);
-      return portalSession.getUrl();
+      try {
+        return com.stripe.model.billingportal.Session.create(params).getUrl();
+      } catch (StripeException e) {
+        if (isMissingCustomerError(e)) {
+          String freshCustomerId = searchOrCreateStripeCustomer(user);
+          com.stripe.param.billingportal.SessionCreateParams retryParams =
+              com.stripe.param.billingportal.SessionCreateParams.builder()
+                  .setCustomer(freshCustomerId)
+                  .setReturnUrl(finalReturnUrl)
+                  .build();
+          return com.stripe.model.billingportal.Session.create(retryParams).getUrl();
+        }
+        throw e;
+      }
     } catch (StripeException e) {
       throw new PaymentProcessingException(
           "Falha ao gerar sessão do portal de cliente Stripe: " + e.getMessage(), e);
@@ -425,6 +566,8 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
           Instant.ofEpochSecond(subscription.getCurrentPeriodEnd()),
           ZoneId.systemDefault());
     }
+    boolean cancelAtPeriodEnd = Boolean.TRUE.equals(subscription.getCancelAtPeriodEnd())
+        || subscription.getCancelAt() != null;
 
     return new PaymentWebhookEvent.SubscriptionUpdated(
         eventId,
@@ -433,7 +576,8 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
         userId,
         periodEnd,
         subscription.getStatus(),
-        subscription.getMetadata()
+        subscription.getMetadata(),
+        cancelAtPeriodEnd
     );
   }
 

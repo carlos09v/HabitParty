@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -145,6 +146,21 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
   @Override
   public void save(TransactionHistory transaction) {
     repository.save(mapper.toEntity(transaction));
+  }
+
+  @Override
+  public void saveAll(Collection<TransactionHistory> transactions) {
+    if (transactions == null || transactions.isEmpty()) {
+      return;
+    }
+    List<com.habitparty.adapters.out.persistence.entities.TransactionHistoryJpaEntity> entities =
+        transactions.stream()
+            .filter(java.util.Objects::nonNull)
+            .map(mapper::toEntity)
+            .toList();
+    if (!entities.isEmpty()) {
+      repository.saveAll(entities);
+    }
   }
 
   @Override
@@ -338,5 +354,17 @@ public class TransactionHistoryAdapter implements TransactionHistoryRepository {
         ? descriptionSnapshot.trim()
         : null;
     return repository.updateFocusDescriptionSnapshot(referenceId, userId, cleanDescription);
+  }
+
+  @Override
+  public List<TaskCompletionTimestamp> findTaskCompletionsByUserIdsSince(
+      Collection<UUID> userIds, LocalDateTime since) {
+    if (userIds == null || userIds.isEmpty() || since == null) {
+      return List.of();
+    }
+    return repository.findTaskCompletionsByUserIdsSince(userIds, COMPLETED_TASK_TYPES, since)
+        .stream()
+        .map(row -> new TaskCompletionTimestamp(row.getUserId(), row.getCreatedAt()))
+        .toList();
   }
 }

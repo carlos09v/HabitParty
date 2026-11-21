@@ -8,14 +8,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Relógio único da aplicação, alinhado ao fuso de negócio (mesmo fuso usado nos @Scheduled).
- * Evita o drift entre o fuso default da JVM (UTC em containers) e America/Sao_Paulo.
+ * Relógio único da aplicação, alinhado em UTC junto à JVM e às conversões de storage no Postgres.
+ * Datas civis de usuário continuam sendo derivadas por {@code clock.withZone(userZone)}.
  */
 @Configuration
 public class ClockConfig {
 
   @Bean
-  public Clock applicationClock(@Value("${app.timezone:America/Sao_Paulo}") String timezone) {
+  public Clock applicationClock(@Value("${app.timezone:UTC}") String timezone) {
     return Clock.system(ZoneId.of(timezone));
   }
 }

@@ -11,15 +11,20 @@ import {
 import type {
   PackageLevel,
   PackageMessageKey,
+  RewardCategory,
   RewardType,
 } from "@/types/reward";
 import { cn } from "@/utils";
 import { formatFocusMinutes } from "@/utils/focusFormatters";
-import type { RewardPriceAnalysis } from "@/utils/rewardEconomy";
+import {
+  adjustSuggestedPriceForCategory,
+  type RewardPriceAnalysis,
+} from "@/utils/rewardEconomy";
 import { toPackageMessageKey } from "@/utils/rewardMapper";
 
 interface RewardSingleUseSectionProps {
   isDebtCategory: boolean;
+  category: RewardCategory;
   isGamified: boolean;
   isPending: boolean;
   type: RewardType;
@@ -39,6 +44,7 @@ interface RewardSingleUseSectionProps {
 
 export function RewardSingleUseSection({
   isDebtCategory,
+  category,
   isGamified,
   isPending,
   type,
@@ -179,7 +185,10 @@ export function RewardSingleUseSection({
                       if (isTierUsedInCard) return;
                       onSingleUseTierSelect(
                         tier.packageLevel,
-                        tier.suggestedPrice,
+                        adjustSuggestedPriceForCategory(
+                          tier.suggestedPrice,
+                          category,
+                        ),
                       );
                     }}
                     className={cn(
@@ -225,6 +234,7 @@ export function RewardSingleUseSection({
             disabled={isPending}
             hasWarning={!isDebtCategory && hasPriceWarning}
             guidanceType={isDebtCategory ? undefined : type}
+            category={isDebtCategory ? undefined : category}
             packageLevel={isDebtCategory ? undefined : packageLevel}
             priceAnalysis={isDebtCategory ? undefined : priceAnalysis}
             onApplySuggestedPrice={

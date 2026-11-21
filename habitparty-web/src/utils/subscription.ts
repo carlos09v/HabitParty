@@ -18,6 +18,7 @@ export interface SubscriptionExpirationInfo {
   isLastDay: boolean; // <= 1 dia
   hasExpired: boolean;
   hasActiveRecurringSubscription: boolean;
+  cancelAtPeriodEnd: boolean;
   status: "FREE" | "ACTIVE" | "PAST_DUE" | "CANCELED";
   formattedRemaining: string;
   warningLevel: ExpirationWarningLevel;
@@ -41,6 +42,7 @@ export function getSubscriptionExpirationInfo(
       | "CANCELED"
       | undefined) ?? "FREE";
   const hasActiveRecurring = Boolean(user?.hasActiveRecurringSubscription);
+  const cancelAtPeriodEnd = Boolean(user?.cancelAtPeriodEnd);
 
   if (!user?.subscriptionEndsAt) {
     return {
@@ -54,6 +56,7 @@ export function getSubscriptionExpirationInfo(
       isLastDay: false,
       hasExpired: false,
       hasActiveRecurringSubscription: hasActiveRecurring,
+      cancelAtPeriodEnd,
       status,
       formattedRemaining: "",
       warningLevel: "none",
@@ -70,8 +73,9 @@ export function getSubscriptionExpirationInfo(
   const hasExpired = diffMs <= 0;
 
   // Se tem assinatura recorrente ativa e não está cancelada, não deve alarmar como expiração fatal,
-  // mas informa a data de renovação. Se for Pix ou cancelada, é expiração real.
-  const isCanceledOrPix = !hasActiveRecurring || status === "CANCELED";
+  // mas informa a data de renovação. Se for Pix ou cancelada (inclusive cancelamento agendado no Portal), é expiração real.
+  const isCanceledOrPix =
+    !hasActiveRecurring || status === "CANCELED" || cancelAtPeriodEnd;
 
   let formattedRemaining = "";
   let warningLevel: ExpirationWarningLevel = "none";
@@ -115,6 +119,7 @@ export function getSubscriptionExpirationInfo(
     isLastDay,
     hasExpired,
     hasActiveRecurringSubscription: hasActiveRecurring,
+    cancelAtPeriodEnd,
     status,
     formattedRemaining,
     warningLevel,

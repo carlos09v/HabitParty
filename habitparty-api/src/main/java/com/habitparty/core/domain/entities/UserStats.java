@@ -33,6 +33,7 @@ public class UserStats {
   private int totalOnTimeTodosCompleted;
   private int totalCleanHabitCycles;
   private int totalActivityGoalsMet;
+  private java.time.LocalDate lastStreakDate;
   private LocalDateTime updatedAt;
 
   /** Janela "Coruja da Meia-Noite": sessões que terminam entre 23:00 e 04:59 (horário local do usuário). */
@@ -191,9 +192,52 @@ public class UserStats {
     this.updatedAt = LocalDateTime.now();
   }
 
+  /**
+   * Incrementa o streak global de forma idempotente para a data civil {@code streakDate}.
+   * Se a ofensiva já foi contabilizada nesta mesma data ou em data posterior, não incrementa novamente.
+   */
+  public boolean incrementStreakForDate(java.time.LocalDate streakDate) {
+    if (streakDate == null) {
+      incrementStreak();
+      return true;
+    }
+    if (this.lastStreakDate != null && !streakDate.isAfter(this.lastStreakDate)) {
+      return false;
+    }
+    this.currentStreak += 1;
+    if (this.currentStreak > this.highestStreak) {
+      this.highestStreak = this.currentStreak;
+    }
+    this.lastStreakDate = streakDate;
+    this.updatedAt = LocalDateTime.now();
+    return true;
+  }
+
+  /**
+   * Reverte o incremento de +1 streak ganho hoje quando a única sessão produtiva do dia é excluída.
+   */
+  public boolean revertTodayStreakIncrement(java.time.LocalDate todayDate) {
+    if (todayDate == null || !todayDate.equals(this.lastStreakDate) || this.currentStreak <= 0) {
+      return false;
+    }
+    this.currentStreak -= 1;
+    this.lastStreakDate = this.currentStreak > 0 ? todayDate.minusDays(1) : null;
+    this.updatedAt = LocalDateTime.now();
+    return true;
+  }
+
   public void resetStreak() {
     this.currentStreak = 0;
+    this.lastStreakDate = null;
     this.updatedAt = LocalDateTime.now();
+  }
+
+  public java.time.LocalDate getLastStreakDate() {
+    return lastStreakDate;
+  }
+
+  public void setLastStreakDate(java.time.LocalDate lastStreakDate) {
+    this.lastStreakDate = lastStreakDate;
   }
 
   public void addCoins(BigDecimal amount) {

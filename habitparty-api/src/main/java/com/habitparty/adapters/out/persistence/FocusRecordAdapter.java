@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -147,8 +148,7 @@ public class FocusRecordAdapter implements FocusRecordRepository {
     return sumFocusMinutesOnDate(userId, today, effectiveZone);
   }
 
-  @Override
-  public int sumFocusMinutesOnDate(UUID userId, LocalDate targetDate, ZoneId userZone) {
+  private LocalDateTime[] resolveServerDayRange(LocalDate targetDate, ZoneId userZone) {
     ZoneId effectiveZone = userZone != null ? userZone : clock.getZone();
     LocalDate effectiveDate = targetDate != null ? targetDate : LocalDate.now(clock.withZone(effectiveZone));
     LocalDateTime startOfDay = effectiveDate.atTime(LocalTime.MIN)
@@ -159,7 +159,34 @@ public class FocusRecordAdapter implements FocusRecordRepository {
         .atZone(effectiveZone)
         .withZoneSameInstant(ZoneId.systemDefault())
         .toLocalDateTime();
-    return repository.sumTodayFocusMinutesByUserId(userId, startOfDay, endOfDay);
+    return new LocalDateTime[] {startOfDay, endOfDay};
+  }
+
+  @Override
+  public int sumFocusMinutesOnDate(UUID userId, LocalDate targetDate, ZoneId userZone) {
+    LocalDateTime[] range = resolveServerDayRange(targetDate, userZone);
+    return repository.sumTodayFocusMinutesByUserId(userId, range[0], range[1]);
+  }
+
+  @Override
+  public int sumProductiveFocusMinutesOnDate(UUID userId, LocalDate targetDate, ZoneId userZone) {
+    if (userId == null) {
+      return 0;
+    }
+    LocalDateTime[] range = resolveServerDayRange(targetDate, userZone);
+    return repository.sumProductiveFocusMinutesByUserId(userId, range[0], range[1]);
+  }
+
+  @Override
+  public List<FocusSessionSummary> findProductiveFocusSessionsByUserIdsSince(
+      Collection<UUID> userIds, LocalDateTime since) {
+    if (userIds == null || userIds.isEmpty() || since == null) {
+      return List.of();
+    }
+    return repository.findProductiveFocusSessionsByUserIdsSince(userIds, since)
+        .stream()
+        .map(row -> new FocusSessionSummary(row.getUserId(), row.getEndTime(), row.getDurationMinutes()))
+        .toList();
   }
 
   @Override
@@ -181,7 +208,7 @@ public class FocusRecordAdapter implements FocusRecordRepository {
     if (userId == null || startInclusive == null || endInclusive == null) {
       return List.of();
     }
-    return repository.findAllByUserIdAndStartTimeBetweenOrderByStartTimeAsc(userId, startInclusive, endInclusive)
+    return repository.findAllByUserIdAndEndTimeBetweenOrderByEndTimeAsc(userId, startInclusive, endInclusive)
         .stream()
         .map(mapper::toDomain)
         .toList();
@@ -189,10 +216,20 @@ public class FocusRecordAdapter implements FocusRecordRepository {
 
   @Override
   public java.util.Optional<LocalDateTime> findEarliestStartTimeByUserId(UUID userId) {
+    return findEarliestEndTimeByUserId(userId);
+  }
+
+  @Override
+  public java.util.Optional<LocalDateTime> findEarliestEndTimeByUserId(UUID userId) {
     if (userId == null) {
       return java.util.Optional.empty();
     }
-    return java.util.Optional.ofNullable(repository.findEarliestProductiveStartTimeByUserId(userId));
+    return java.util.Optional.ofNullable(repository.findEarliestProductiveEndTimeByUserId(userId));
+  }
+
+  @Override
+  public List<UUID> findDistinctProductiveUserIds() {
+    return repository.findDistinctProductiveUserIds();
   }
 
   @Override

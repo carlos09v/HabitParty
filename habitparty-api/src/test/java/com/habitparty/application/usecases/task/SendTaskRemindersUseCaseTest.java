@@ -64,11 +64,14 @@ class SendTaskRemindersUseCaseTest {
   }
 
   private Todo createTestTodo(UUID userId, boolean sendEmailReminder, boolean emailReminderSent) {
+    java.time.ZoneId userZone = java.time.ZoneId.of(User.DEFAULT_TIMEZONE);
+    LocalDate userToday = LocalDate.now(userZone);
+    LocalDateTime userNow = LocalDateTime.now(userZone);
     return new Todo(
         UUID.randomUUID(), UUID.randomUUID(), userId, "Estudar Clean Arch", "Revisar portas",
         0, TaskPriority.HIGH, List.of("estudo"), TaskDifficulty.MEDIUM, TaskStatus.PENDING,
-        TaskType.TODO, false, LocalDate.now().plusDays(1), LocalDateTime.now(), List.of(),
-        TodoReminderType.ONE_DAY_EARLY, LocalDateTime.now().minusMinutes(5), null, false,
+        TaskType.TODO, false, userToday.plusDays(1), userNow, List.of(),
+        TodoReminderType.ONE_DAY_EARLY, userNow.minusMinutes(5), null, false,
         sendEmailReminder, emailReminderSent
     );
   }

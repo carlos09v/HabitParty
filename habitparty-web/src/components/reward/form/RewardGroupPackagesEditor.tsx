@@ -14,11 +14,13 @@ import {
 import type {
   PackageLevel,
   PackageMessageKey,
+  RewardCategory,
   RewardType,
 } from "@/types/reward";
 import { cn } from "@/utils";
 import { formatFocusMinutes } from "@/utils/focusFormatters";
 import {
+  adjustSuggestedPriceForCategory,
   analyzeRewardPrice,
   calculateSuggestedCouponPrice,
 } from "@/utils/rewardEconomy";
@@ -40,6 +42,7 @@ export interface EditableGroupVariant {
 
 interface RewardGroupPackagesEditorProps {
   type: RewardType;
+  category: RewardCategory;
   isGamified: boolean;
   isPending: boolean;
   variants: EditableGroupVariant[];
@@ -54,6 +57,7 @@ interface RewardGroupPackagesEditorProps {
 
 export function RewardGroupPackagesEditor({
   type,
+  category,
   isGamified,
   isPending,
   variants,
@@ -127,6 +131,7 @@ export function RewardGroupPackagesEditor({
             price: numericPrice,
             durationMinutes: isTimeBased ? durationNum || 30 : undefined,
             packageLevel: variant.packageLevel,
+            category,
           });
           const hasPriceWarning = priceAnalysis.status !== "ok";
 
@@ -220,10 +225,10 @@ export function RewardGroupPackagesEditor({
                               packageLevel: nextLevel,
                               durationMinutes: String(preset.suggestedMinutes),
                               price: String(
-                                preset.suggestedPrice ??
-                                  calculateSuggestedCouponPrice(
-                                    preset.suggestedMinutes,
-                                  ),
+                                calculateSuggestedCouponPrice(
+                                  preset.suggestedMinutes,
+                                  category,
+                                ),
                               ),
                             });
                             return;
@@ -235,7 +240,12 @@ export function RewardGroupPackagesEditor({
                           if (singlePreset) {
                             onUpdateVariant(variant.localKey, {
                               packageLevel: nextLevel,
-                              price: String(singlePreset.suggestedPrice),
+                              price: String(
+                                adjustSuggestedPriceForCategory(
+                                  singlePreset.suggestedPrice,
+                                  category,
+                                ),
+                              ),
                             });
                             return;
                           }
@@ -335,6 +345,7 @@ export function RewardGroupPackagesEditor({
               <div className="pt-1 border-t border-neutral-700/35 dark:border-white/5">
                 <RewardPriceGuidance
                   type={type}
+                  category={category}
                   price={variant.price}
                   durationMinutes={
                     isTimeBased ? variant.durationMinutes : undefined

@@ -22,7 +22,6 @@ export function useFocusAudioControls({
   restoreAmbientOnMount = false,
 }: UseFocusAudioControlsOptions = {}) {
   const t = useTranslations("focus.audio.toasts");
-  const tWidget = useTranslations("focusWidget");
   const isPremium = useUserStore((s) => s.is_Premium);
   const uiSoundsEnabled = useSoundPreferencesStore((s) => s.uiSoundsEnabled);
   const timerSoundsEnabled = useSoundPreferencesStore(
@@ -154,20 +153,12 @@ export function useFocusAudioControls({
         soundEffects.stopAmbientSound();
         setAmbientSoundType("none");
         setIsAmbientPlaying(false);
-        toast.info(t("ambientOff"));
         return;
       }
 
       setAmbientSoundType(type);
       setIsAmbientPlaying(true);
       soundEffects.startAmbientSound(type, ambientVolume);
-
-      const soundLabel = tWidget.has(
-        `ambientSounds.${type}` as Parameters<typeof tWidget.has>[0],
-      )
-        ? tWidget(`ambientSounds.${type}` as Parameters<typeof tWidget>[0])
-        : type;
-      toast.success(t("ambientOn", { label: soundLabel }));
     },
     [
       isPremium,
@@ -176,7 +167,6 @@ export function useFocusAudioControls({
       setAmbientSoundType,
       setIsAmbientPlaying,
       t,
-      tWidget,
     ],
   );
 

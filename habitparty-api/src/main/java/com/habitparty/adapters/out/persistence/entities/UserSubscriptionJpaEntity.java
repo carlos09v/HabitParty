@@ -56,6 +56,12 @@ public class UserSubscriptionJpaEntity {
   @Column(name = "subscription_ends_at")
   private LocalDateTime subscriptionEndsAt;
 
+  @Column(name = "prepaid_ends_at")
+  private LocalDateTime prepaidEndsAt;
+
+  @Column(name = "cancel_at_period_end", nullable = false, columnDefinition = "boolean default false")
+  private boolean cancelAtPeriodEnd = false;
+
   @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt = LocalDateTime.now();
 }

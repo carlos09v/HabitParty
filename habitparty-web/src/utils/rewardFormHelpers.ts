@@ -16,6 +16,10 @@ import type {
 } from "@/types/reward";
 import { formatFocusMinutes } from "@/utils/focusFormatters";
 import {
+  adjustSuggestedPriceForCategory,
+  calculateSuggestedCouponPrice,
+} from "@/utils/rewardEconomy";
+import {
   buildRewardVariantTitle,
   extractRewardGroupBaseTitle,
 } from "@/utils/rewardGrouping";
@@ -234,7 +238,11 @@ export function buildBatchCouponPayloads(params: {
     mapRewardFormToCreatePayload({
       title: `${safeBase}${suffix}`,
       description: params.description.trim(),
-      price: opt.suggestedPrice ?? 8,
+      price: opt.suggestedMinutes
+        ? calculateSuggestedCouponPrice(opt.suggestedMinutes, params.category)
+        : opt.suggestedPrice
+          ? adjustSuggestedPriceForCategory(opt.suggestedPrice, params.category)
+          : calculateSuggestedCouponPrice(30, params.category),
       type: "TimeBased",
       category: params.category,
       packageLevel: opt.id,

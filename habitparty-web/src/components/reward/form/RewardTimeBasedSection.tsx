@@ -13,11 +13,16 @@ import {
 import type {
   PackageLevel,
   PackageMessageKey,
+  RewardCategory,
   RewardType,
 } from "@/types/reward";
 import { cn } from "@/utils";
 import { formatFocusMinutes } from "@/utils/focusFormatters";
-import type { RewardPriceAnalysis } from "@/utils/rewardEconomy";
+import {
+  adjustSuggestedPriceForCategory,
+  calculateSuggestedCouponPrice,
+  type RewardPriceAnalysis,
+} from "@/utils/rewardEconomy";
 import { toPackageMessageKey } from "@/utils/rewardMapper";
 
 interface RewardTimeBasedSectionProps {
@@ -25,6 +30,7 @@ interface RewardTimeBasedSectionProps {
   isPending: boolean;
   isGamified: boolean;
   type: RewardType;
+  category: RewardCategory;
   createMultiplePackages: boolean;
   onCreateMultiplePackagesChange: (checked: boolean) => void;
   selectedBatchPackages: PackageLevel[];
@@ -48,6 +54,7 @@ export function RewardTimeBasedSection({
   isPending,
   isGamified,
   type,
+  category,
   createMultiplePackages,
   onCreateMultiplePackagesChange,
   selectedBatchPackages,
@@ -147,9 +154,19 @@ export function RewardTimeBasedSection({
                   onSelectPackageLevel(pkg.id);
                   if (pkg.suggestedMinutes) {
                     onSetBaseDurationMinutes(String(pkg.suggestedMinutes));
-                  }
-                  if (typeof pkg.suggestedPrice === "number") {
-                    onApplySuggestedPrice(pkg.suggestedPrice);
+                    onApplySuggestedPrice(
+                      calculateSuggestedCouponPrice(
+                        pkg.suggestedMinutes,
+                        category,
+                      ),
+                    );
+                  } else if (typeof pkg.suggestedPrice === "number") {
+                    onApplySuggestedPrice(
+                      adjustSuggestedPriceForCategory(
+                        pkg.suggestedPrice,
+                        category,
+                      ),
+                    );
                   }
                 }}
                 className={cn(
@@ -174,7 +191,17 @@ export function RewardTimeBasedSection({
                   {tOptions(`couponPackages.${pkgKey}`)}
                   {createMultiplePackages &&
                   typeof pkg.suggestedPrice === "number"
-                    ? ` • ${pkg.suggestedPrice}`
+                    ? ` • ${
+                        pkg.suggestedMinutes
+                          ? calculateSuggestedCouponPrice(
+                              pkg.suggestedMinutes,
+                              category,
+                            )
+                          : adjustSuggestedPriceForCategory(
+                              pkg.suggestedPrice,
+                              category,
+                            )
+                      }`
                     : ""}
                 </span>
               </button>
@@ -203,18 +230,29 @@ export function RewardTimeBasedSection({
                 })}
               </span>
               <div className="flex flex-wrap gap-1.5">
-                {visibleBatchOptions.map((pkg) => (
-                  <span
-                    key={pkg.id}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface border border-neutral-700 dark:border-white/15 text-tiny text-neutral-200 tabular-nums"
-                  >
-                    {pkg.suggestedMinutes
-                      ? formatFocusMinutes(pkg.suggestedMinutes)
-                      : pkg.id}
-                    {" • "}
-                    {pkg.suggestedPrice ?? 8}
-                  </span>
-                ))}
+                {visibleBatchOptions.map((pkg) => {
+                  const chipPrice = pkg.suggestedMinutes
+                    ? calculateSuggestedCouponPrice(
+                        pkg.suggestedMinutes,
+                        category,
+                      )
+                    : adjustSuggestedPriceForCategory(
+                        pkg.suggestedPrice ?? 8,
+                        category,
+                      );
+                  return (
+                    <span
+                      key={pkg.id}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface border border-neutral-700 dark:border-white/15 text-tiny text-neutral-200 tabular-nums"
+                    >
+                      {pkg.suggestedMinutes
+                        ? formatFocusMinutes(pkg.suggestedMinutes)
+                        : pkg.id}
+                      {" • "}
+                      {chipPrice}
+                    </span>
+                  );
+                })}
               </div>
               <span className="text-tiny text-neutral-400">
                 {existingGroupCount > 0
@@ -289,6 +327,7 @@ export function RewardTimeBasedSection({
 
           <RewardPriceGuidance
             type={type}
+            category={category}
             price={price}
             durationMinutes={baseDurationMinutes}
             packageLevel={packageLevel}

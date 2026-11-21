@@ -19,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.habitparty.application.ports.FocusRecordRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
@@ -51,6 +52,9 @@ class RecordHabitScoreUseCaseTest {
   @Mock
   private UserRepository userPort;
 
+  @Mock
+  private FocusRecordRepository focusRecordPort;
+
   @InjectMocks
   private RecordHabitScoreUseCase recordHabitScoreUseCase;
 
@@ -61,6 +65,7 @@ class RecordHabitScoreUseCaseTest {
 
   @BeforeEach
   void setUp() {
+    recordHabitScoreUseCase.setFocusRecordPort(focusRecordPort);
     userId = UUID.randomUUID();
     taskId = UUID.randomUUID();
 
@@ -79,11 +84,12 @@ class RecordHabitScoreUseCaseTest {
   }
 
   @Test
-  @DisplayName("Deve registrar pontuação positiva: adiciona XP, Moedas, incrementa repetições e gera transação")
+  @DisplayName("Deve registrar pontuação positiva: adiciona XP, Moedas, incrementa repetições e incrementa ofensiva global quando foco < 30m")
   void testPositiveDeltaIncrementsScoreAndRewardsUser() {
     when(taskPort.findById(taskId)).thenReturn(Optional.of(habit));
     when(userPort.findById(userId)).thenReturn(Optional.of(user));
     when(transactionPort.countCompletedTasksToday(eq(userId), any())).thenReturn(0);
+    when(focusRecordPort.sumProductiveFocusMinutesOnDate(eq(userId), any(), any())).thenReturn(0);
     when(taskPort.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
     Task result = recordHabitScoreUseCase.execute(taskId, userId, 1);
@@ -93,6 +99,7 @@ class RecordHabitScoreUseCaseTest {
     assertEquals(1, updated.getPositiveCount());
     assertEquals(0, updated.getNegativeCount());
     assertEquals(1, updated.getCurrentStreak());
+    assertEquals(1, user.getCurrentStreak());
 
     assertTrue(user.getCurrentCoins().compareTo(new BigDecimal("10.00")) > 0);
     assertTrue(user.getTotalXp() > 100);

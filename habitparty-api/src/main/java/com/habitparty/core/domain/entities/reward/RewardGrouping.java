@@ -21,6 +21,7 @@ public final class RewardGrouping {
   public static final int FREE_MAX_REWARD_CARDS = 12;
   public static final int PREMIUM_MAX_REWARD_CARDS = 50;
   public static final int MAX_VARIANTS_PER_GROUP = 4;
+  public static final int MAX_ACTIVE_DEBTS = 15;
 
   private static final Pattern MULTI_SPACE = Pattern.compile("\\s+");
   private static final Pattern COMBINING_MARKS = Pattern.compile("\\p{M}+");
@@ -116,6 +117,11 @@ public final class RewardGrouping {
         reward.getCategory().orElse(RewardCategory.NONE));
   }
 
+  public static boolean isDebt(Reward reward) {
+    return reward != null
+        && reward.getCategory().map(category -> category == RewardCategory.DEBT).orElse(false);
+  }
+
   public static int countDistinctGroups(List<Reward> rewards) {
     if (rewards == null || rewards.isEmpty()) {
       return 0;
@@ -125,6 +131,38 @@ public final class RewardGrouping {
       keys.add(groupKey(reward));
     }
     return keys.size();
+  }
+
+  /**
+   * Conta apenas os cards regulares da Vitrine (excluindo Dívidas, que possuem cota independente).
+   */
+  public static int countRegularDistinctGroups(List<Reward> rewards) {
+    if (rewards == null || rewards.isEmpty()) {
+      return 0;
+    }
+    Set<String> keys = new HashSet<>();
+    for (Reward reward : rewards) {
+      if (!isDebt(reward)) {
+        keys.add(groupKey(reward));
+      }
+    }
+    return keys.size();
+  }
+
+  /**
+   * Conta quantas Dívidas descartáveis ativas o usuário possui atualmente.
+   */
+  public static int countActiveDebts(List<Reward> rewards) {
+    if (rewards == null || rewards.isEmpty()) {
+      return 0;
+    }
+    int count = 0;
+    for (Reward reward : rewards) {
+      if (isDebt(reward)) {
+        count++;
+      }
+    }
+    return count;
   }
 
   public static int countGroupVariants(List<Reward> rewards, String targetGroupKey) {

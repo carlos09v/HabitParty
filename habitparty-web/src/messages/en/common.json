@@ -325,10 +325,6 @@
       "packageVariantsAria": "Available reward packages",
       "packageOptionWithDurationAria": "{tier} package • Duration {duration} • {price}",
       "packageOptionWithPriceAria": "{tier} package • {price}",
-      "unitPriceHint": "Unit: {unit} (no discount)",
-      "unitMultiplierLabel": "Unit multiplier",
-      "decreaseQuantityAria": "Decrease quantity",
-      "increaseQuantityAria": "Increase quantity",
       "types": {
         "SingleUse": "Single-Use",
         "TimeBased": "Time Voucher",

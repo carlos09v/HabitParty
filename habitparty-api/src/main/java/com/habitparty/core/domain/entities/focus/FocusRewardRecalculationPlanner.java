@@ -54,8 +54,8 @@ public final class FocusRewardRecalculationPlanner {
         .filter(Objects::nonNull)
         .filter(r -> r.getInventoryItemId().isEmpty())
         .sorted(Comparator
-            .comparing(FocusRecord::getStartTime)
-            .thenComparing(FocusRecord::getEndTime)
+            .comparing(FocusRecord::getEndTime)
+            .thenComparing(FocusRecord::getStartTime)
             .thenComparing(r -> r.getId() != null ? r.getId().toString() : ""))
         .toList();
 
@@ -65,7 +65,7 @@ public final class FocusRewardRecalculationPlanner {
     BigDecimal totalCoinsDelta = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 
     for (FocusRecord record : sorted) {
-      LocalDate sessionDate = record.getStartTime()
+      LocalDate sessionDate = record.getEndTime()
           .atZone(effectiveStorageZone)
           .withZoneSameInstant(effectiveUserZone)
           .toLocalDate();

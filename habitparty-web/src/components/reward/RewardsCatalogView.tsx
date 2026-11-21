@@ -11,7 +11,6 @@ import { type MouseEvent, useMemo } from "react";
 import { CatalogEmptyState } from "@/components/ui/CatalogEmptyState";
 import { CatalogGridListShell } from "@/components/ui/CatalogGridListShell";
 import { ItemRowHeader } from "@/components/ui/ItemRow";
-import { DEBT_MAX_REDEEM_QUANTITY } from "@/constants/reward";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import type {
   Reward,
@@ -29,12 +28,10 @@ interface RewardsCatalogViewProps {
   deletingRewardIds?: Set<string>;
   redeemingRewardIds?: Set<string>;
   selectedVariantByGroup?: Record<string, string>;
-  debtQuantities?: Record<string, number>;
-  onDebtQuantityChange?: (rewardId: string, nextQuantity: number) => void;
   onSelectVariant?: (groupId: string, variantId: string) => void;
   sensors: SensorDescriptor<SensorOptions>[];
   onDragEnd: (event: DragEndEvent) => void;
-  onBuy: (reward: Reward, quantity?: number) => void;
+  onBuy: (reward: Reward) => void;
   onEdit: (reward: Reward, groupContext?: RewardGroupContext) => void;
   onContextMenu: (
     e: MouseEvent,
@@ -53,8 +50,6 @@ export function RewardsCatalogView({
   deletingRewardIds,
   redeemingRewardIds,
   selectedVariantByGroup,
-  debtQuantities,
-  onDebtQuantityChange,
   onSelectVariant,
   sensors,
   onDragEnd,
@@ -133,7 +128,6 @@ export function RewardsCatalogView({
             ? (entry.variants.find((v) => v.id === selectedVariantId) ??
               entry.primaryReward)
             : entry.primaryReward;
-        const unitQty = debtQuantities?.[reward.id] ?? 1;
         const isDeleteChecking = Boolean(deletingRewardIds?.has(reward.id));
         const isRedeeming = Boolean(redeemingRewardIds?.has(reward.id));
 
@@ -148,9 +142,6 @@ export function RewardsCatalogView({
               variants={hasVariants ? entry.variants : undefined}
               activeVariantId={reward.id}
               onSelectVariant={hasVariants ? onSelectVariant : undefined}
-              unitQuantity={unitQty}
-              onUnitQuantityChange={onDebtQuantityChange}
-              maxUnitQuantity={DEBT_MAX_REDEEM_QUANTITY}
               onBuy={onBuy}
               onEdit={onEdit}
               onContextMenu={onContextMenu}
@@ -163,7 +154,7 @@ export function RewardsCatalogView({
 
         const canAfford =
           typeof currentCoins === "number"
-            ? currentCoins >= reward.price * unitQty
+            ? currentCoins >= reward.price
             : true;
 
         return (
@@ -175,9 +166,6 @@ export function RewardsCatalogView({
             variants={hasVariants ? entry.variants : undefined}
             activeVariantId={reward.id}
             onSelectVariant={hasVariants ? onSelectVariant : undefined}
-            unitQuantity={unitQty}
-            onUnitQuantityChange={onDebtQuantityChange}
-            maxUnitQuantity={DEBT_MAX_REDEEM_QUANTITY}
             onBuy={onBuy}
             onEdit={onEdit}
             onContextMenu={onContextMenu}

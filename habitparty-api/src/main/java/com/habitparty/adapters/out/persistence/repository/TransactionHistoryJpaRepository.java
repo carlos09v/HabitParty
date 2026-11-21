@@ -158,4 +158,22 @@ public interface TransactionHistoryJpaRepository extends JpaRepository<Transacti
         @Param("referenceId") UUID referenceId,
         @Param("userId") UUID userId,
         @Param("descriptionSnapshot") String descriptionSnapshot);
+
+    interface TaskCompletionProjection {
+        UUID getUserId();
+
+        LocalDateTime getCreatedAt();
+    }
+
+    @Query("""
+        SELECT t.user.id AS userId, t.createdAt AS createdAt
+        FROM TransactionHistoryJpaEntity t
+        WHERE t.user.id IN :userIds
+          AND t.transactionType IN :types
+          AND t.createdAt >= :since
+    """)
+    List<TaskCompletionProjection> findTaskCompletionsByUserIdsSince(
+        @Param("userIds") Collection<UUID> userIds,
+        @Param("types") Collection<TransactionType> types,
+        @Param("since") LocalDateTime since);
 }

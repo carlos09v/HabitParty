@@ -91,22 +91,22 @@ public class ProcessStripeWebhookUseCase {
       case PaymentWebhookEvent.CheckoutCompleted checkout -> {
         resolvedUserId = handleCheckoutCompleted(checkout);
         if (resolvedUserId == null) {
-          status = PaymentEventStatus.FAILED;
-          errorMessage = "Usuário não encontrado para a sessão de checkout: " + checkout.sessionId();
+          throw new IllegalStateException(
+              "Usuário não encontrado para a sessão de checkout: " + checkout.sessionId());
         }
       }
       case PaymentWebhookEvent.SubscriptionUpdated subUpdated -> {
         resolvedUserId = handleSubscriptionUpdated(subUpdated);
         if (resolvedUserId == null) {
-          status = PaymentEventStatus.FAILED;
-          errorMessage = "Usuário não encontrado para assinatura: " + subUpdated.subscriptionId();
+          throw new IllegalStateException(
+              "Usuário não encontrado para assinatura: " + subUpdated.subscriptionId());
         }
       }
       case PaymentWebhookEvent.SubscriptionDeleted subDeleted -> {
         resolvedUserId = handleSubscriptionDeleted(subDeleted);
         if (resolvedUserId == null) {
-          status = PaymentEventStatus.FAILED;
-          errorMessage = "Usuário não encontrado para cancelamento: " + subDeleted.subscriptionId();
+          throw new IllegalStateException(
+              "Usuário não encontrado para cancelamento: " + subDeleted.subscriptionId());
         }
       }
       case PaymentWebhookEvent.IgnoredEvent ignored -> {
@@ -118,13 +118,17 @@ public class ProcessStripeWebhookUseCase {
     if (event instanceof PaymentWebhookEvent.CheckoutCompleted checkout
         && checkout.sessionId() != null
         && status == PaymentEventStatus.PROCESSED) {
-      paymentEventRepository.recordEvent(
-          "session_" + checkout.sessionId(),
-          "CheckoutSessionCompleted",
-          resolvedUserId,
-          PaymentEventStatus.PROCESSED,
-          null
-      );
+      if (paymentEventRepository.existsByEventId("session_" + checkout.sessionId())) {
+        log.info("Sessão de checkout {} já teve seus benefícios processados concorrentemente.", checkout.sessionId());
+      } else {
+        paymentEventRepository.recordEvent(
+            "session_" + checkout.sessionId(),
+            "CheckoutSessionCompleted",
+            resolvedUserId,
+            PaymentEventStatus.PROCESSED,
+            null
+        );
+      }
     }
 
     if (event.eventId() != null) {
@@ -144,10 +148,17 @@ public class ProcessStripeWebhookUseCase {
   private UUID handleCheckoutCompleted(PaymentWebhookEvent.CheckoutCompleted checkout) {
     log.info("Sessão de checkout concluída: id={}, mode={}", checkout.sessionId(), checkout.mode());
 
-    User user = findUser(checkout.userId(), checkout.customerId(), checkout.customerEmail()).orElse(null);
+    User user = findUserForUpdate(checkout.userId(), checkout.customerId(), checkout.customerEmail()).orElse(null);
     if (user == null) {
       log.error("Usuário não encontrado para a sessão de checkout: {}", checkout.sessionId());
       return null;
+    }
+
+    // Revalida idempotência após adquirir o lock exclusivo do usuário (evita crédito duplo Pix em corrida)
+    if (checkout.sessionId() != null && paymentEventRepository.existsByEventId("session_" + checkout.sessionId())) {
+      log.info("Sessão {} já foi aplicada ao usuário {} sob lock exclusivo. Pulando crédito duplicado.",
+          checkout.sessionId(), user.getId());
+      return user.getId();
     }
 
     if (checkout.customerId() != null && !checkout.customerId().isBlank()) {
@@ -207,7 +218,7 @@ public class ProcessStripeWebhookUseCase {
   private UUID handleSubscriptionUpdated(PaymentWebhookEvent.SubscriptionUpdated subUpdated) {
     log.info("Assinatura atualizada: id={}, status={}", subUpdated.subscriptionId(), subUpdated.status());
 
-    User user = findUser(subUpdated.userId(), subUpdated.customerId(), null).orElse(null);
+    User user = findUserForUpdate(subUpdated.userId(), subUpdated.customerId(), null).orElse(null);
     if (user == null) {
       log.warn("Usuário não encontrado para a assinatura atualizada: {}", subUpdated.subscriptionId());
       return null;
@@ -228,17 +239,18 @@ public class ProcessStripeWebhookUseCase {
       }
     }
 
-    if (subUpdated.periodEnd() != null) {
-      user.setSubscriptionEndsAt(subUpdated.periodEnd());
-    }
-
     String status = subUpdated.status();
     if ("active".equalsIgnoreCase(status) || "trialing".equalsIgnoreCase(status)) {
-      user.setSubscriptionStatus(SubscriptionStatus.ACTIVE);
-      user.setPremium(true);
+      user.syncActiveSubscription(
+          subUpdated.customerId(),
+          subUpdated.subscriptionId(),
+          subUpdated.periodEnd(),
+          subUpdated.cancelAtPeriodEnd());
     } else if ("past_due".equalsIgnoreCase(status)) {
-      user.markPastDue();
-    } else if ("canceled".equalsIgnoreCase(status) || "unpaid".equalsIgnoreCase(status)) {
+      user.revokeOnPaymentFailure(SubscriptionStatus.PAST_DUE);
+    } else if ("unpaid".equalsIgnoreCase(status)) {
+      user.revokeOnPaymentFailure(SubscriptionStatus.CANCELED);
+    } else if ("canceled".equalsIgnoreCase(status)) {
       user.cancelSubscription();
     }
 
@@ -260,31 +272,40 @@ public class ProcessStripeWebhookUseCase {
   private UUID handleSubscriptionDeleted(PaymentWebhookEvent.SubscriptionDeleted subDeleted) {
     log.info("Assinatura cancelada/deletada: id={}", subDeleted.subscriptionId());
 
-    User user = findUser(subDeleted.userId(), subDeleted.customerId(), null).orElse(null);
+    User user = findUserForUpdate(subDeleted.userId(), subDeleted.customerId(), null).orElse(null);
     if (user == null) {
       log.warn("Usuário não encontrado para a assinatura cancelada: {}", subDeleted.subscriptionId());
       return null;
     }
 
-    user.cancelSubscription();
+    user.revokeOnPaymentFailure(SubscriptionStatus.CANCELED);
     userRepository.save(user);
     log.info("Assinatura do usuário {} cancelada com sucesso.", user.getId());
     return user.getId();
   }
 
-  private Optional<User> findUser(UUID userId, String customerId, String email) {
+  private Optional<User> findUserForUpdate(UUID userId, String customerId, String email) {
     if (userId != null) {
-      Optional<User> userOpt = userRepository.findById(userId);
-      if (userOpt.isPresent()) return userOpt;
+      Optional<User> lockedOpt = userRepository.findByIdForUpdate(userId);
+      if (lockedOpt.isPresent()) {
+        return lockedOpt;
+      }
+      Optional<User> fallbackOpt = userRepository.findById(userId);
+      if (fallbackOpt.isPresent()) {
+        return fallbackOpt;
+      }
     }
 
+    Optional<User> foundOpt = Optional.empty();
     if (customerId != null && !customerId.isBlank()) {
-      Optional<User> userOpt = userRepository.findByStripeCustomerId(customerId);
-      if (userOpt.isPresent()) return userOpt;
+      foundOpt = userRepository.findByStripeCustomerId(customerId);
     }
-
-    if (email != null && !email.isBlank()) {
-      return userRepository.findByEmail(email.trim().toLowerCase());
+    if (foundOpt.isEmpty() && email != null && !email.isBlank()) {
+      foundOpt = userRepository.findByEmail(email.trim().toLowerCase());
+    }
+    if (foundOpt.isPresent() && foundOpt.get().getId() != null) {
+      Optional<User> locked = userRepository.findByIdForUpdate(foundOpt.get().getId());
+      return locked.isPresent() ? locked : foundOpt;
     }
 
     return Optional.empty();

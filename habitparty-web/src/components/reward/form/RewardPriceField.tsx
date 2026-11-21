@@ -2,7 +2,7 @@ import type { Ref } from "react";
 import { RewardPriceGuidance } from "@/components/reward/RewardPriceGuidance";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { Input } from "@/components/ui/Input";
-import type { PackageLevel, RewardType } from "@/types/reward";
+import type { PackageLevel, RewardCategory, RewardType } from "@/types/reward";
 import { cn } from "@/utils";
 import type { RewardPriceAnalysis } from "@/utils/rewardEconomy";
 
@@ -16,6 +16,7 @@ export interface RewardPriceFieldProps {
   disabled: boolean;
   hasWarning?: boolean;
   guidanceType?: RewardType;
+  category?: RewardCategory;
   packageLevel?: PackageLevel;
   priceAnalysis?: RewardPriceAnalysis;
   onApplySuggestedPrice?: (suggestedPrice: number) => void;
@@ -31,6 +32,7 @@ export function RewardPriceField({
   disabled,
   hasWarning = false,
   guidanceType,
+  category,
   packageLevel,
   priceAnalysis,
   onApplySuggestedPrice,
@@ -73,6 +75,7 @@ export function RewardPriceField({
       {guidanceType && (
         <RewardPriceGuidance
           type={guidanceType}
+          category={category}
           price={value}
           packageLevel={packageLevel}
           analysis={priceAnalysis}

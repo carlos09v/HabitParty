@@ -1,8 +1,9 @@
 import { SINGLE_USE_TIER_SUGGESTED_PRICES } from "@/constants/reward";
 import { DIFFICULTY_REWARDS } from "@/constants/task";
-import type { PackageLevel, RewardType } from "@/types/reward";
+import type { PackageLevel, RewardCategory, RewardType } from "@/types/reward";
 import {
   getMysteryBoxTier,
+  toCategoryMessageKey,
   toPackageMessageKey,
   toRewardTypeMessageKey,
 } from "@/utils/rewardMapper";
@@ -58,32 +59,88 @@ export function formatCreditsLeisureEquivalence(credits: number): string {
   return `~${formatLeisureDuration(minutes)}`;
 }
 
+export type RewardCategoryPriceProfile = "discounted" | "standard" | "premium";
+
+/**
+ * Classifica a categoria na calibragem de preço:
+ * - Hobbies / Desenvolvimento / Bem-estar exercitam habilidades ou descanso ativo (-35%).
+ * - Entretenimento puro tem dopamina rápida e custo elevado (+30%).
+ * - Demais categorias mantêm o benchmark base (1.0x).
+ */
+export function getCategoryPriceProfile(
+  category?: RewardCategory | string | null,
+): RewardCategoryPriceProfile {
+  const key = toCategoryMessageKey(category);
+  if (key === "HOBBIES" || key === "DEVELOPMENT" || key === "WELLNESS") {
+    return "discounted";
+  }
+  if (key === "ENTERTAINMENT") {
+    return "premium";
+  }
+  return "standard";
+}
+
+export function getCategoryPriceMultiplier(
+  category?: RewardCategory | string | null,
+): number {
+  const profile = getCategoryPriceProfile(category);
+  if (profile === "discounted") return 0.65;
+  if (profile === "premium") return 1.3;
+  return 1;
+}
+
+export function adjustSuggestedPriceForCategory(
+  basePrice: number,
+  category?: RewardCategory | string | null,
+): number {
+  return Math.max(
+    1,
+    Math.round(basePrice * getCategoryPriceMultiplier(category)),
+  );
+}
+
 /**
  * Calcula o preço sugerido calibrado para um cupom de tempo (TimeBased)
- * mantendo custo por minuto consistente e desconto progressivo leve para pacotes maiores.
+ * mantendo custo por minuto consistente, desconto progressivo leve para pacotes maiores
+ * e ajuste opcional pelo perfil da categoria.
  */
-export function calculateSuggestedCouponPrice(minutes: number): number {
+export function calculateSuggestedCouponPrice(
+  minutes: number,
+  category?: RewardCategory | string | null,
+): number {
   const safeMin = Math.max(5, Math.round(minutes || 30));
-  if (safeMin === 30) return 8;
-  if (safeMin === 60) return 15;
-  if (safeMin === 120) return 28;
-  if (safeMin === 180) return 40;
-  if (safeMin === 240) return 50;
-  if (safeMin === 480) return 95;
+  let basePrice: number;
+  if (safeMin === 30) basePrice = 8;
+  else if (safeMin === 60) basePrice = 15;
+  else if (safeMin === 120) basePrice = 28;
+  else if (safeMin === 180) basePrice = 40;
+  else if (safeMin === 240) basePrice = 50;
+  else if (safeMin === 480) basePrice = 95;
+  else if (safeMin < 30) {
+    basePrice = Math.max(1, Math.round(safeMin * (8 / 30)));
+  } else if (safeMin < 60) {
+    basePrice = Math.round(8 + ((safeMin - 30) / 30) * 7);
+  } else if (safeMin < 180) {
+    basePrice = Math.round(15 + ((safeMin - 60) / 120) * 25);
+  } else if (safeMin < 480) {
+    basePrice = Math.round(40 + ((safeMin - 180) / 300) * 55);
+  } else {
+    basePrice = Math.round(safeMin * 0.2);
+  }
 
-  if (safeMin < 30) {
-    return Math.max(1, Math.round(safeMin * (8 / 30)));
+  return adjustSuggestedPriceForCategory(basePrice, category);
+}
+
+export function calculateSuggestedSingleUsePrice(
+  packageLevel?: PackageLevel,
+  category?: RewardCategory | string | null,
+): number | null {
+  const pkgKey = toPackageMessageKey(packageLevel);
+  const basePrice = SINGLE_USE_TIER_SUGGESTED_PRICES[pkgKey];
+  if (typeof basePrice !== "number") {
+    return null;
   }
-  if (safeMin < 60) {
-    return Math.round(8 + ((safeMin - 30) / 30) * 7);
-  }
-  if (safeMin < 180) {
-    return Math.round(15 + ((safeMin - 60) / 120) * 25);
-  }
-  if (safeMin < 480) {
-    return Math.round(40 + ((safeMin - 180) / 300) * 55);
-  }
-  return Math.round(safeMin * 0.2);
+  return adjustSuggestedPriceForCategory(basePrice, category);
 }
 
 export type RewardEffortDescriptor =
@@ -105,6 +162,7 @@ export interface RewardPriceAnalysis {
   suggestedPrice: number | null;
   effort: RewardEffortDescriptor;
   status: "ok" | "too_low" | "too_high";
+  categoryProfile: RewardCategoryPriceProfile;
   warning?: RewardPriceWarningDescriptor;
 }
 
@@ -113,6 +171,7 @@ interface AnalyzeRewardPriceInput {
   price: number;
   durationMinutes?: number;
   packageLevel?: PackageLevel;
+  category?: RewardCategory | string | null;
 }
 
 /**
@@ -173,19 +232,22 @@ export function analyzeRewardPrice({
   price,
   durationMinutes = 30,
   packageLevel,
+  category,
 }: AnalyzeRewardPriceInput): RewardPriceAnalysis {
   const safePrice = Number.isFinite(price) ? price : 0;
   const effort = describeEffortEquivalence(safePrice);
 
   const typeKey = toRewardTypeMessageKey(type);
+  const categoryProfile: RewardCategoryPriceProfile =
+    typeKey === "MysteryBox" ? "standard" : getCategoryPriceProfile(category);
+
   let suggestedPrice: number | null = null;
   if (typeKey === "TimeBased") {
-    suggestedPrice = calculateSuggestedCouponPrice(durationMinutes);
+    suggestedPrice = calculateSuggestedCouponPrice(durationMinutes, category);
   } else if (typeKey === "MysteryBox") {
     suggestedPrice = getMysteryBoxTier(packageLevel).recommendedPrice;
   } else if (typeKey === "SingleUse") {
-    const pkgKey = toPackageMessageKey(packageLevel);
-    suggestedPrice = SINGLE_USE_TIER_SUGGESTED_PRICES[pkgKey] ?? null;
+    suggestedPrice = calculateSuggestedSingleUsePrice(packageLevel, category);
   }
 
   if (safePrice <= 0) {
@@ -193,6 +255,7 @@ export function analyzeRewardPrice({
       suggestedPrice,
       effort,
       status: "ok",
+      categoryProfile,
     };
   }
 
@@ -202,6 +265,7 @@ export function analyzeRewardPrice({
         suggestedPrice,
         effort,
         status: "too_low",
+        categoryProfile,
         warning: {
           key: "belowCalibrated",
           suggestedPrice,
@@ -214,6 +278,7 @@ export function analyzeRewardPrice({
         suggestedPrice,
         effort,
         status: "too_high",
+        categoryProfile,
         warning: {
           key: "aboveCalibrated",
           suggestedPrice,
@@ -225,6 +290,7 @@ export function analyzeRewardPrice({
       suggestedPrice,
       effort,
       status: "ok",
+      categoryProfile,
     };
   }
 
@@ -234,6 +300,7 @@ export function analyzeRewardPrice({
       suggestedPrice: null,
       effort,
       status: "too_low",
+      categoryProfile,
       warning: { key: "singleUseTooLow" },
     };
   }
@@ -243,6 +310,7 @@ export function analyzeRewardPrice({
       suggestedPrice: null,
       effort,
       status: "too_high",
+      categoryProfile,
       warning: { key: "singleUseTooHigh" },
     };
   }
@@ -251,5 +319,6 @@ export function analyzeRewardPrice({
     suggestedPrice: null,
     effort,
     status: "ok",
+    categoryProfile,
   };
 }

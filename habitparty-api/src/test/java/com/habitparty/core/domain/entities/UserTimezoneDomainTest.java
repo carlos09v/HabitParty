@@ -94,19 +94,21 @@ class UserTimezoneDomainTest {
   }
 
   @Test
-  @DisplayName("changeTimezone deve preservar max(lastDailyResetDate, newToday) evitando reset duplicado ou retroativo")
+  @DisplayName("changeTimezone deve preservar data máxima ao ir para oeste e marcar vencimento imediato ao avançar para leste")
   void changeTimezonePreservesMaxResetDate() {
     // 2026-11-14 02:00 UTC -> 2026-11-13 23:00 São Paulo / 2026-11-14 11:00 Tóquio
     Clock clock = Clock.fixed(Instant.parse("2026-11-14T02:00:00Z"), ZoneId.of("UTC"));
 
-    // Caso 1: Indo para o leste (2026-11-13 -> 2026-11-14) evita punição retroativa imediata
+    // Caso 1: Indo para o leste (2026-11-13 -> 2026-11-14) mantém lastDailyResetDate anterior
+    // e antecipa nextDailyResetAt para executar legitimamente o rollover do dia encerrado (evita burla Hardcore)
     User eastward = createUser();
     eastward.initializeTimezone("America/Sao_Paulo", clock);
     assertEquals(LocalDate.of(2026, 11, 13), eastward.getLastDailyResetDate());
 
     eastward.changeTimezone("Asia/Tokyo", clock);
-    assertEquals(LocalDate.of(2026, 11, 14), eastward.getLastDailyResetDate());
-    assertFalse(eastward.shouldRunDailyReset(LocalDate.of(2026, 11, 14)));
+    assertEquals(LocalDate.of(2026, 11, 13), eastward.getLastDailyResetDate());
+    assertTrue(eastward.shouldRunDailyReset(LocalDate.of(2026, 11, 14)));
+    assertFalse(eastward.getNextDailyResetAt().isAfter(clock.instant()));
 
     // Caso 2: Voltando para o oeste (2026-11-14 -> 2026-11-13) evita resetar o mesmo dia duas vezes
     User westward = createUser();

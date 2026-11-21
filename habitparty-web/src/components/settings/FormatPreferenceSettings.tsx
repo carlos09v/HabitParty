@@ -1,7 +1,6 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
 import { DATE_FORMAT_OPTIONS, TIME_FORMAT_OPTIONS } from "@/constants/settings";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
@@ -55,7 +54,6 @@ export function FormatPreferenceSettings({
     } else {
       setTimeFormat(nextValue as TimeFormat);
     }
-    toast.success(t("toastSuccess", { format: nextValue }));
   };
 
   return (

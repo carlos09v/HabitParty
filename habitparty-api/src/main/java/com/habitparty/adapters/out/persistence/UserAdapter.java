@@ -260,4 +260,12 @@ public class UserAdapter implements UserRepository {
         .map(userMapper::toDomain)
         .toList();
   }
+
+  @Override
+  public Optional<String> findTimezoneById(UUID id) {
+    if (id == null) {
+      return Optional.empty();
+    }
+    return userRepository.findTimezoneById(id);
+  }
 }

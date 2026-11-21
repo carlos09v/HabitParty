@@ -26,7 +26,11 @@ import type {
   RewardGroupContext,
   RewardType,
 } from "@/types/reward";
-import { calculateSuggestedCouponPrice } from "@/utils/rewardEconomy";
+import {
+  adjustSuggestedPriceForCategory,
+  calculateSuggestedCouponPrice,
+  calculateSuggestedSingleUsePrice,
+} from "@/utils/rewardEconomy";
 import {
   buildBatchCouponPayloads,
   buildGroupUpdateDto,
@@ -278,12 +282,28 @@ export function useRewardForm({
     if (prefillDraft) {
       hasManuallyEditedTitleRef.current = false;
       setGroupVariants([]);
+      const draftCat = prefillDraft.category || "Nenhum";
+      const draftIsDebt = toCategoryMessageKey(draftCat) === "DEBT";
+      if (draftIsDebt && prefillDraft.type === "SingleUse") {
+        setTitle(prefillDraft.title);
+        setDescription(prefillDraft.description || "");
+        setType("SingleUse");
+        setCategory("Dívida");
+        lastRegularCategoryRef.current = "Nenhum";
+        wasSingleUseDebtRef.current = true;
+        setPackageLevel("Nenhum");
+        setBaseDurationMinutes("30");
+        setPrice(String(DEBT_DEFAULT_UNIT_PRICE));
+        setSelectedIcon(prefillDraft.icon || "flame");
+        setLootItems(createDefaultLootTuple());
+        setHasCustomizedLoot(false);
+        return;
+      }
+
       const draftPkg =
         COUPON_PACKAGE_OPTIONS.find(
           (opt) => opt.id === (prefillDraft.suggestedPackageLevel || "Premium"),
         ) ?? COUPON_PACKAGE_OPTIONS[2];
-      const draftCat = prefillDraft.category || "Nenhum";
-      const draftIsDebt = toCategoryMessageKey(draftCat) === "DEBT";
       setTitle(
         buildPrefillPackageTitle(prefillDraft.title, draftPkg.suggestedMinutes),
       );
@@ -591,10 +611,11 @@ export function useRewardForm({
         if (packageLevel === "Nenhum" || packageLevel === "NONE") {
           setPackageLevel("Básico");
           setBaseDurationMinutes("30");
-          setPrice("8");
+          setPrice(String(calculateSuggestedCouponPrice(30, category)));
         } else {
           const suggested = calculateSuggestedCouponPrice(
             Number(baseDurationMinutes) || 30,
+            category,
           );
           setPrice(String(suggested));
         }
@@ -753,7 +774,7 @@ export function useRewardForm({
     if (type === "TimeBased" && !isEditing && !hasManuallyEditedPrice) {
       const parsed = Number.parseInt(newDuration, 10);
       if (Number.isFinite(parsed) && parsed >= 5) {
-        setPrice(String(calculateSuggestedCouponPrice(parsed)));
+        setPrice(String(calculateSuggestedCouponPrice(parsed, category)));
       }
     }
   };
@@ -764,6 +785,22 @@ export function useRewardForm({
     wasSingleUseDebtRef.current = isDebt;
     if (!isDebt) {
       lastRegularCategoryRef.current = nextCategory;
+      if (!isEditing && !hasManuallyEditedPrice) {
+        if (type === "TimeBased") {
+          const parsedDuration = Number.parseInt(baseDurationMinutes, 10) || 30;
+          setPrice(
+            String(calculateSuggestedCouponPrice(parsedDuration, nextCategory)),
+          );
+        } else if (type === "SingleUse") {
+          const suggestedSingle = calculateSuggestedSingleUsePrice(
+            packageLevel,
+            nextCategory,
+          );
+          if (suggestedSingle !== null) {
+            setPrice(String(suggestedSingle));
+          }
+        }
+      }
     }
   };
 
@@ -811,7 +848,12 @@ export function useRewardForm({
           localKey: `new-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           packageLevel: candidate.id,
           durationMinutes: String(candidate.suggestedMinutes ?? 60),
-          price: String(candidate.suggestedPrice ?? 15),
+          price: String(
+            calculateSuggestedCouponPrice(
+              candidate.suggestedMinutes ?? 60,
+              category,
+            ),
+          ),
           originalSuffix: "",
           originalPackageLevel: candidate.id,
           isOriginallySelected: false,
@@ -829,7 +871,12 @@ export function useRewardForm({
         localKey: `new-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         packageLevel: candidateSingle.packageLevel,
         durationMinutes: "30",
-        price: String(candidateSingle.suggestedPrice),
+        price: String(
+          adjustSuggestedPriceForCategory(
+            candidateSingle.suggestedPrice,
+            category,
+          ),
+        ),
         originalSuffix: "",
         originalPackageLevel: candidateSingle.packageLevel,
         isOriginallySelected: false,

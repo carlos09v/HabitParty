@@ -1,6 +1,10 @@
 package com.habitparty.application.usecases.focus;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+
+import com.habitparty.application.usecases.task.DailyResetUseCase;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -17,6 +21,7 @@ import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsUseCase;
+import com.habitparty.application.usecases.user.GlobalStreakSupport;
 import com.habitparty.core.domain.entities.InventoryItem;
 import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.entities.User;
@@ -42,6 +47,8 @@ public class CreateFocusRecordUseCase {
   private final UserRepository userPort;
   private TaskRepository taskPort;
   private EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
+  private Clock clock = Clock.systemUTC();
+  private DailyResetUseCase dailyResetUseCase;
 
   public CreateFocusRecordUseCase(
       FocusRecordRepository port,
@@ -57,6 +64,18 @@ public class CreateFocusRecordUseCase {
   }
 
   @Autowired(required = false)
+  public void setClock(Clock clock) {
+    if (clock != null) {
+      this.clock = clock;
+    }
+  }
+
+  @Autowired(required = false)
+  public void setDailyResetUseCase(DailyResetUseCase dailyResetUseCase) {
+    this.dailyResetUseCase = dailyResetUseCase;
+  }
+
+  @Autowired(required = false)
   public void setTaskPort(TaskRepository taskPort) {
     this.taskPort = taskPort;
   }
@@ -68,6 +87,10 @@ public class CreateFocusRecordUseCase {
 
   @Transactional
   public FocusRecord execute(UUID userIdLogado, CreateFocusRecordCommand command) {
+    if (dailyResetUseCase != null) {
+      dailyResetUseCase.resetUserIfDue(userIdLogado);
+    }
+
     Task loadedTask = null;
     String taskNameSnapshot = null;
 
@@ -138,7 +161,9 @@ public class CreateFocusRecordUseCase {
       if (loadedUser == null && userPort != null) {
         loadedUser = userPort.findById(userIdLogado).orElse(null);
       }
-      ZoneId itemUserZone = loadedUser != null ? loadedUser.resolveZoneId(ZoneId.systemDefault()) : ZoneId.systemDefault();
+      ZoneId itemUserZone = loadedUser != null
+          ? loadedUser.resolveZoneId(ZoneId.of(User.DEFAULT_TIMEZONE))
+          : ZoneId.of(User.DEFAULT_TIMEZONE);
       LocalDateTime serverStartTime = record.getStartTime()
           .atZone(itemUserZone)
           .withZoneSameInstant(ZoneId.systemDefault())
@@ -197,12 +222,20 @@ public class CreateFocusRecordUseCase {
     if (loadedUser == null && userPort != null) {
       loadedUser = userPort.findById(userIdLogado).orElse(null);
     }
-    ZoneId userZone = loadedUser != null ? loadedUser.resolveZoneId(ZoneId.systemDefault()) : ZoneId.systemDefault();
-    int priorMinutesOnTargetDate = port.sumFocusMinutesOnDate(userIdLogado, record.getStartTime().toLocalDate(), userZone);
-    FocusReward reward = FocusRewardCalculator.calculate(record, priorMinutesOnTargetDate);
-
+    ZoneId userZone = loadedUser != null
+        ? loadedUser.resolveZoneId(ZoneId.of(User.DEFAULT_TIMEZONE))
+        : ZoneId.of(User.DEFAULT_TIMEZONE);
     LocalDateTime userStartTime = record.getStartTime();
     LocalDateTime userEndTime = record.getEndTime();
+    LocalDate targetDate = userEndTime.toLocalDate();
+    int priorMinutesOnTargetDate = port.sumFocusMinutesOnDate(userIdLogado, targetDate, userZone);
+    FocusReward reward = FocusRewardCalculator.calculate(record, priorMinutesOnTargetDate);
+
+    LocalDate userToday = LocalDate.now(clock.withZone(userZone));
+    boolean isTodayFocus = targetDate.equals(userToday);
+    int priorProductiveMinutesToday = isTodayFocus
+        ? port.sumProductiveFocusMinutesOnDate(userIdLogado, userToday, userZone)
+        : 0;
     LocalDateTime serverStartTime = userStartTime
         .atZone(userZone)
         .withZoneSameInstant(ZoneId.systemDefault())
@@ -239,15 +272,24 @@ public class CreateFocusRecordUseCase {
       taskPort.save(loadedTask);
     }
 
-    // 4. Credita XP, moedas e estatísticas de foco (reutilizando loadedUser se já carregado).
+    // 4. Credita XP, moedas, estatísticas de foco e ofensiva global (reutilizando loadedUser se já carregado).
     // Sessões >= MIN_FOCUS_MINUTES_FOR_STATS mantêm estatísticas e conquistas mesmo após o soft cap diário de XP/moedas.
     long focusDurationMinutes = Math.max(
         0,
         java.time.Duration.between(userStartTime.atZone(userZone), userEndTime.atZone(userZone)).toMinutes());
     boolean hasCurrencyRewards = reward.xp() > 0 || reward.coins().compareTo(BigDecimal.ZERO) > 0;
     boolean qualifiesForFocusStats = focusDurationMinutes >= UserStats.MIN_FOCUS_MINUTES_FOR_STATS;
+    boolean alreadyEarnedStreakToday = userToday.equals(loadedUser.getLastStreakDate());
+    boolean justReachedStreakFocusTarget = isTodayFocus
+        && !alreadyEarnedStreakToday
+        && focusDurationMinutes > 0
+        && priorProductiveMinutesToday < FocusRewardCalculator.MIN_DAILY_STREAK_FOCUS_MINUTES
+        && priorProductiveMinutesToday + (int) focusDurationMinutes
+            >= FocusRewardCalculator.MIN_DAILY_STREAK_FOCUS_MINUTES
+        && (transactionHistoryPort == null
+            || transactionHistoryPort.countCompletedTasksToday(userIdLogado, userZone) == 0);
 
-    if (hasCurrencyRewards || qualifiesForFocusStats) {
+    if (hasCurrencyRewards || qualifiesForFocusStats || justReachedStreakFocusTarget) {
       User user = loadedUser != null
           ? loadedUser
           : userPort.findById(userIdLogado)
@@ -277,6 +319,10 @@ public class CreateFocusRecordUseCase {
             user.getStats().recordActivityGoalMet();
           }
         }
+      }
+      if (justReachedStreakFocusTarget) {
+        GlobalStreakSupport.incrementTodayStreakIfYesterdayVerified(
+            user, userZone, userToday, transactionHistoryPort, port);
       }
       userPort.save(user);
       if (evaluateUserAchievementsUseCase != null) {

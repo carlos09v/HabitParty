@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import type { components } from "@/api/schema";
 import { AVATAR_FRAMES, type AvatarFrameId } from "@/constants/avatarFrames";
+import { FOCUS_REWARD_RULES } from "@/constants/focus";
 import { resolveThemeSessionState } from "@/constants/themes";
 import { useAvatarFrameStore } from "@/store/avatarFrameStore";
 import {
@@ -40,20 +41,24 @@ interface StoreInitializerProps {
   activeWorkspaceId?: string | null;
   user?: User | null;
   lastTaskCompletionAt?: string | null;
+  todayFocusMinutes?: number;
 }
 
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-function resolveSecuredStreakDateToday(
+function hasTaskCompletionToday(
   lastTaskCompletionAt?: string | null,
   timeZone?: string | null,
-): string | null {
-  if (!lastTaskCompletionAt) return null;
-  const parsed = parseServerDate(lastTaskCompletionAt);
-  if (!parsed) return null;
+): { todayStr: string; completed: boolean } {
   const todayStr = getTodayDateString(new Date(), timeZone);
-  return getDateKeyInTimeZone(parsed, timeZone) === todayStr ? todayStr : null;
+  if (!lastTaskCompletionAt) return { todayStr, completed: false };
+  const parsed = parseServerDate(lastTaskCompletionAt);
+  if (!parsed) return { todayStr, completed: false };
+  return {
+    todayStr,
+    completed: getDateKeyInTimeZone(parsed, timeZone) === todayStr,
+  };
 }
 
 function buildHydratedStoreUser(user: User): User {
@@ -88,6 +93,7 @@ export function StoreInitializer({
   activeWorkspaceId = null,
   user = null,
   lastTaskCompletionAt = null,
+  todayFocusMinutes = 0,
 }: StoreInitializerProps) {
   const initializedUI = useRef(false);
   const initializedWorkspaces = useRef(false);
@@ -165,10 +171,15 @@ export function StoreInitializer({
     const currentState = useUserStore.getState();
     const currentStoreUser = currentState.user;
     const isDifferentUser = currentStoreUser?.id !== user.id;
-    const securedToday = resolveSecuredStreakDateToday(
+    const { todayStr, completed: taskCompletedToday } = hasTaskCompletionToday(
       lastTaskCompletionAt,
       user.timezone,
     );
+    const normalizedFocusMinutes = Math.max(0, Math.round(todayFocusMinutes));
+    const isStreakSecuredToday =
+      taskCompletedToday ||
+      normalizedFocusMinutes >=
+        FOCUS_REWARD_RULES.MIN_DAILY_STREAK_FOCUS_MINUTES;
 
     const shouldSyncUser =
       isDifferentUser ||
@@ -184,9 +195,16 @@ export function StoreInitializer({
       currentStoreUser?.emailVerified !== user.emailVerified ||
       currentStoreUser?.experienceMode !== user.experienceMode ||
       currentStoreUser?.isPremium !== user.isPremium ||
+      currentStoreUser?.isFounder !== user.isFounder ||
+      currentStoreUser?.subscriptionStatus !== user.subscriptionStatus ||
+      currentStoreUser?.subscriptionEndsAt !== user.subscriptionEndsAt ||
+      currentStoreUser?.hasActiveRecurringSubscription !==
+        user.hasActiveRecurringSubscription ||
+      currentStoreUser?.cancelAtPeriodEnd !== user.cancelAtPeriodEnd ||
       currentStoreUser?.totalXp !== user.totalXp ||
       currentStoreUser?.currentCoins !== user.currentCoins ||
       currentStoreUser?.currentStreak !== user.currentStreak ||
+      currentStoreUser?.highestStreak !== user.highestStreak ||
       currentStoreUser?.achievementPoints !== user.achievementPoints ||
       currentStoreUser?.timezone !== user.timezone ||
       currentStoreUser?.timezoneUpdatedAt !== user.timezoneUpdatedAt ||
@@ -260,13 +278,23 @@ export function StoreInitializer({
       );
     }
 
-    const nextSecuredDate =
-      securedToday !== null
-        ? securedToday
-        : isDifferentUser || (user.currentStreak ?? 0) === 0
-          ? null
-          : currentState.lastStreakSecuredDate;
-    const shouldSyncSecuredDate =
+    const nextSecuredDate = isStreakSecuredToday
+      ? todayStr
+      : isDifferentUser || (user.currentStreak ?? 0) === 0
+        ? null
+        : currentState.lastStreakSecuredDate;
+    const mergedFocusMinutes =
+      !isDifferentUser && currentState.todayMetricsDate === todayStr
+        ? Math.max(currentState.todayFocusMinutes, normalizedFocusMinutes)
+        : normalizedFocusMinutes;
+    const mergedTaskCompleted =
+      !isDifferentUser && currentState.todayMetricsDate === todayStr
+        ? currentState.todayTaskCompleted || taskCompletedToday
+        : taskCompletedToday;
+    const shouldSyncMetrics =
+      currentState.todayMetricsDate !== todayStr ||
+      currentState.todayTaskCompleted !== mergedTaskCompleted ||
+      currentState.todayFocusMinutes !== mergedFocusMinutes ||
       nextSecuredDate !== currentState.lastStreakSecuredDate;
 
     if (shouldSyncUser) {
@@ -282,12 +310,22 @@ export function StoreInitializer({
       useUserStore.setState({
         user: buildHydratedStoreUser(user),
         is_Premium: isPremium,
-        ...(shouldSyncSecuredDate
-          ? { lastStreakSecuredDate: nextSecuredDate }
+        ...(shouldSyncMetrics
+          ? {
+              todayMetricsDate: todayStr,
+              todayTaskCompleted: mergedTaskCompleted,
+              todayFocusMinutes: mergedFocusMinutes,
+              lastStreakSecuredDate: nextSecuredDate,
+            }
           : {}),
       });
-    } else if (shouldSyncSecuredDate) {
-      useUserStore.setState({ lastStreakSecuredDate: nextSecuredDate });
+    } else if (shouldSyncMetrics) {
+      useUserStore.setState({
+        todayMetricsDate: todayStr,
+        todayTaskCompleted: mergedTaskCompleted,
+        todayFocusMinutes: mergedFocusMinutes,
+        lastStreakSecuredDate: nextSecuredDate,
+      });
     }
   }, [
     theme,
@@ -296,6 +334,7 @@ export function StoreInitializer({
     resolvedExperienceMode,
     user,
     lastTaskCompletionAt,
+    todayFocusMinutes,
   ]);
 
   return null;

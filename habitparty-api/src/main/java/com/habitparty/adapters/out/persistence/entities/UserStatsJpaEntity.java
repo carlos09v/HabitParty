@@ -1,6 +1,7 @@
 package com.habitparty.adapters.out.persistence.entities;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -48,6 +49,9 @@ public class UserStatsJpaEntity {
 
   @Column(name = "highest_streak", nullable = false, columnDefinition = "int default 0")
   private int highestStreak = 0;
+
+  @Column(name = "last_streak_date")
+  private LocalDate lastStreakDate;
 
   @Column(name = "total_tasks_completed", nullable = false, columnDefinition = "int default 0")
   private int totalTasksCompleted = 0;

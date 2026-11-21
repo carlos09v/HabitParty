@@ -178,4 +178,41 @@ class UpdateRewardUseCaseTest {
     assertThrows(DomainValidationException.class, () -> useCase.execute(v2.getId(), duplicateTierCmd, userId));
     verify(rewardRepository, never()).save(any());
   }
+
+  @Test
+  @DisplayName("Deve validar cotas independentes ao converter card regular em dívida e vice-versa")
+  void shouldValidateIndependentQuotasWhenSwitchingBetweenRegularAndDebt() {
+    java.util.List<Reward> fullDebtsPlusOneRegular = new java.util.ArrayList<>();
+    for (int i = 0; i < RewardGrouping.MAX_ACTIVE_DEBTS; i++) {
+      fullDebtsPlusOneRegular.add(buildReward(
+          "Dívida " + i, RewardType.SINGLE_USE, RewardCategory.DEBT, RewardPackageLevel.NONE, null));
+    }
+    Reward regularTarget = buildReward(
+        "Regular", RewardType.SINGLE_USE, RewardCategory.NONE, RewardPackageLevel.NONE, null);
+    fullDebtsPlusOneRegular.add(regularTarget);
+
+    when(userRepository.findById(userId)).thenReturn(Optional.of(freeUser));
+    when(rewardRepository.findAllByUserId(userId)).thenReturn(fullDebtsPlusOneRegular);
+
+    UpdateRewardCommand toDebtCmd = new UpdateRewardCommand(
+        "Regular", "gift", null, new BigDecimal("10"), RewardCategory.DEBT,
+        List.of(), RewardType.SINGLE_USE, RewardPackageLevel.NONE, null);
+    assertThrows(LimitExceededException.class, () -> useCase.execute(regularTarget.getId(), toDebtCmd, userId));
+
+    java.util.List<Reward> fullRegularPlusOneDebt = new java.util.ArrayList<>();
+    for (int i = 0; i < RewardGrouping.FREE_MAX_REWARD_CARDS; i++) {
+      fullRegularPlusOneDebt.add(buildReward(
+          "Regular " + i, RewardType.SINGLE_USE, RewardCategory.NONE, RewardPackageLevel.NONE, null));
+    }
+    Reward debtTarget = buildReward(
+        "Dívida Extra", RewardType.SINGLE_USE, RewardCategory.DEBT, RewardPackageLevel.NONE, null);
+    fullRegularPlusOneDebt.add(debtTarget);
+
+    when(rewardRepository.findAllByUserId(userId)).thenReturn(fullRegularPlusOneDebt);
+
+    UpdateRewardCommand toRegularCmd = new UpdateRewardCommand(
+        "Dívida Extra", "gift", null, new BigDecimal("10"), RewardCategory.NONE,
+        List.of(), RewardType.SINGLE_USE, RewardPackageLevel.NONE, null);
+    assertThrows(LimitExceededException.class, () -> useCase.execute(debtTarget.getId(), toRegularCmd, userId));
+  }
 }

@@ -41,6 +41,7 @@ export function DashboardMain({
   initialAllColumns = [],
   initialVisibleColumnIds,
   transactions = [],
+  focusRecords = [],
   user = null,
 }: DashboardMainProps) {
   const t = useTranslations("dashboard.dailyBriefing");
@@ -48,8 +49,8 @@ export function DashboardMain({
   const [columns, setColumns] = useState(initialColumns);
   const isSwitchingWorkspace = useSyncWorkspaceSwitchReset(activeWorkspaceId);
   const storeUser = useUserStore((s) => s.user);
-  const setLastStreakSecuredDate = useUserStore(
-    (s) => s.setLastStreakSecuredDate,
+  const recordTaskCompletedToday = useUserStore(
+    (s) => s.recordTaskCompletedToday,
   );
   const userTimezone =
     storeUser?.id && user?.id && storeUser.id === user.id
@@ -57,7 +58,9 @@ export function DashboardMain({
       : (user?.timezone ?? storeUser?.timezone);
 
   useMidnightRollover(userTimezone, () => {
-    setTasks((prev) => prev.map(resetTaskOnMidnightRollover));
+    setTasks((prev) =>
+      prev.map((task) => resetTaskOnMidnightRollover(task, userTimezone)),
+    );
   });
 
   useEffect(() => {
@@ -97,9 +100,9 @@ export function DashboardMain({
         userTimezone,
       )
     ) {
-      setLastStreakSecuredDate(getTodayDateString(new Date(), userTimezone));
+      recordTaskCompletedToday(getTodayDateString(new Date(), userTimezone));
     }
-  }, [mergedTransactions, setLastStreakSecuredDate, userTimezone]);
+  }, [mergedTransactions, recordTaskCompletedToday, userTimezone]);
 
   const handleColumnDeleted = (deletedColumnId: string) => {
     setTasks((prev) =>
@@ -223,6 +226,7 @@ export function DashboardMain({
         streak={streak}
         tasks={briefingTasks}
         transactions={mergedTransactions}
+        focusRecords={focusRecords}
         timezone={userTimezone}
       />
 

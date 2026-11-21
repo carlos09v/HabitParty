@@ -469,4 +469,77 @@ class CreateFocusRecordUseCaseTest {
     assertEquals(0, BigDecimal.ZERO.compareTo(result.getCoinsEarned().orElse(BigDecimal.ZERO)));
     verify(port).sumFocusMinutesOnDate(eq(userId), eq(retroDate), any());
   }
+
+  @Test
+  @DisplayName("Deve incrementar ofensiva global ao atingir 30m de foco no dia mesmo sem tarefas concluídas")
+  void shouldIncrementGlobalStreakWhenReaching30FocusMinutesEvenWithoutTasks() {
+    java.time.Clock fixedClock = java.time.Clock.fixed(
+        java.time.Instant.parse("2026-10-16T15:00:00Z"),
+        ZoneOffset.UTC);
+    useCase.setClock(fixedClock);
+    LocalDate today = LocalDate.of(2026, 10, 16);
+
+    FocusActivity activity = new FocusActivity(
+        activityId, userId, "Estudos", "book", 0, FocusRecordType.POMO, 25, LocalDateTime.now());
+
+    when(focusActivityPort.findById(activityId)).thenReturn(Optional.of(activity));
+    when(userPort.findById(userId)).thenReturn(Optional.of(user));
+    when(port.sumFocusMinutesOnDate(eq(userId), eq(today), any())).thenReturn(20);
+    when(port.sumProductiveFocusMinutesOnDate(eq(userId), eq(today), any())).thenReturn(20);
+    when(transactionHistoryPort.countCompletedTasksToday(eq(userId), any())).thenReturn(0);
+    when(port.save(any(FocusRecord.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    CreateFocusRecordCommand secondSessionCmd = new CreateFocusRecordCommand(
+        activityId, null, null, null,
+        today.atTime(14, 0), today.atTime(14, 15),
+        FocusRecordType.POMO, 1);
+
+    useCase.execute(userId, secondSessionCmd);
+
+    assertEquals(1, user.getCurrentStreak());
+    verify(userPort).save(user);
+  }
+
+  @Test
+  @DisplayName("Não deve duplicar ofensiva no foco quando tarefa já garantiu hoje, foco já passava de 30m ou registro é retroativo")
+  void shouldNotIncrementStreakTwiceWhenTaskAlreadyCompletedOrAlreadyQualifiedOrRetroactive() {
+    java.time.Clock fixedClock = java.time.Clock.fixed(
+        java.time.Instant.parse("2026-10-16T15:00:00Z"),
+        ZoneOffset.UTC);
+    useCase.setClock(fixedClock);
+    LocalDate today = LocalDate.of(2026, 10, 16);
+
+    FocusActivity activity = new FocusActivity(
+        activityId, userId, "Estudos", "book", 0, FocusRecordType.POMO, 30, LocalDateTime.now());
+
+    when(focusActivityPort.findById(activityId)).thenReturn(Optional.of(activity));
+    when(userPort.findById(userId)).thenReturn(Optional.of(user));
+    when(port.save(any(FocusRecord.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    // Caso 1: tarefa já havia sido concluída hoje -> foco de 35m não incrementa novamente
+    user.incrementStreak(); // streak = 1
+    when(port.sumProductiveFocusMinutesOnDate(eq(userId), eq(today), any())).thenReturn(0);
+    when(transactionHistoryPort.countCompletedTasksToday(eq(userId), any())).thenReturn(1);
+    useCase.execute(userId, new CreateFocusRecordCommand(
+        activityId, null, null, null,
+        today.atTime(10, 0), today.atTime(10, 35),
+        FocusRecordType.POMO, 1));
+    assertEquals(1, user.getCurrentStreak());
+
+    // Caso 2: já possuía >= 30m antes desta sessão -> não duplica
+    when(port.sumProductiveFocusMinutesOnDate(eq(userId), eq(today), any())).thenReturn(35);
+    useCase.execute(userId, new CreateFocusRecordCommand(
+        activityId, null, null, null,
+        today.atTime(11, 0), today.atTime(11, 30),
+        FocusRecordType.POMO, 1));
+    assertEquals(1, user.getCurrentStreak());
+
+    // Caso 3: registro retroativo de ontem não mexe na ofensiva de hoje
+    LocalDate yesterday = today.minusDays(1);
+    useCase.execute(userId, new CreateFocusRecordCommand(
+        activityId, null, null, null,
+        yesterday.atTime(10, 0), yesterday.atTime(10, 40),
+        FocusRecordType.POMO, 1));
+    assertEquals(1, user.getCurrentStreak());
+  }
 }

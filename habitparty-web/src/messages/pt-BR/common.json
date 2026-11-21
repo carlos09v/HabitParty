@@ -325,10 +325,6 @@
       "packageVariantsAria": "Pacotes disponíveis desta recompensa",
       "packageOptionWithDurationAria": "Pacote {tier} • Duração {duration} • {price}",
       "packageOptionWithPriceAria": "Pacote {tier} • {price}",
-      "unitPriceHint": "Unitário: {unit} (sem desconto)",
-      "unitMultiplierLabel": "Multiplicador unitário",
-      "decreaseQuantityAria": "Diminuir quantidade",
-      "increaseQuantityAria": "Aumentar quantidade",
       "types": {
         "SingleUse": "Uso Único",
         "TimeBased": "Cupom de Tempo",

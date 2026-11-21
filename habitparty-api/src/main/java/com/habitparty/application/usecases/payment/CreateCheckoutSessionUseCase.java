@@ -52,16 +52,21 @@ public class CreateCheckoutSessionUseCase {
               : "Você já possui uma assinatura ativa via Cartão de Crédito! Para gerenciar seu plano ou forma de pagamento, utilize o Portal da sua conta.");
     }
 
-    // Impede novas adesões ao plano de Membro Fundador se o lote de 30 vagas já estiver esgotado
-    if (plan == PlanType.FOUNDER_ANNUAL && userRepository.countFounders() >= GetFoundersQuotaUseCase.MAX_FOUNDER_SLOTS) {
+    // Impede novas adesões ao plano de Membro Fundador se o lote de 30 vagas já estiver esgotado,
+    // mas permite que Membros Fundadores existentes renovem pelo plano Fundador sem ocupar vaga extra.
+    if (plan == PlanType.FOUNDER_ANNUAL
+        && !user.isFounder()
+        && userRepository.countFounders() >= GetFoundersQuotaUseCase.MAX_FOUNDER_SLOTS) {
       throw new DomainValidationException(
           isEnglish
               ? "The Founding Member promotional batch (30 slots) is sold out! Enjoy the regular Annual plan."
               : "O lote promocional de Membros Fundadores (30 vagas) já foi esgotado! Aproveite o plano Anual regular.");
     }
 
-    // Garante que o usuário possua Customer correspondente no gateway de pagamento
-    String customerId = paymentGatewayPort.createOrGetCustomer(user);
+    // Usa stripeCustomerId local sem round-trip remoto quando já persistido no banco
+    String customerId = (user.getStripeCustomerId() != null && !user.getStripeCustomerId().isBlank())
+        ? user.getStripeCustomerId()
+        : paymentGatewayPort.createOrGetCustomer(user);
     if (user.getStripeCustomerId() == null || !user.getStripeCustomerId().equals(customerId)) {
       user.setStripeCustomerId(customerId);
       userRepository.save(user);

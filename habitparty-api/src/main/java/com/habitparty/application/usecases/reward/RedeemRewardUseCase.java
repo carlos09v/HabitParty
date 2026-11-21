@@ -75,9 +75,9 @@ public class RedeemRewardUseCase {
     boolean isImmediateDebtSettlement =
         reward.getCategory().map(category -> category == RewardCategory.DEBT).orElse(false)
             && reward.getType() == RewardType.SINGLE_USE;
-    if (quantity > 1 && !isImmediateDebtSettlement) {
+    if (quantity > 1) {
       throw new DomainValidationException(
-          "Multiplicador de quantidade só é permitido para quitação de Dívidas.");
+          "O resgate deve ser unitário (quantidade igual a 1).");
     }
 
     BigDecimal totalPrice = reward.getPrice().multiply(BigDecimal.valueOf(quantity));
@@ -176,5 +176,10 @@ public class RedeemRewardUseCase {
     );
 
     transactionHistoryRepositoryPort.save(transaction);
+
+    // Dívida é descartável: uma vez quitada e salva no histórico, é removida da vitrine automaticamente
+    if (isImmediateDebtSettlement) {
+      port.deleteById(reward.getId());
+    }
   }
 }

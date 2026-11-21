@@ -13,11 +13,9 @@ function useRewardItemPresentation({
   groupId,
   displayTitle,
   variants,
-  unitQuantity = 1,
   canAfford = true,
   currentCoins,
   onSelectVariant,
-  onUnitQuantityChange,
   onBuy,
   onEdit,
   onContextMenu,
@@ -27,11 +25,9 @@ function useRewardItemPresentation({
   | "groupId"
   | "displayTitle"
   | "variants"
-  | "unitQuantity"
   | "canAfford"
   | "currentCoins"
   | "onSelectVariant"
-  | "onUnitQuantityChange"
   | "onBuy"
   | "onEdit"
   | "onContextMenu"
@@ -40,8 +36,7 @@ function useRewardItemPresentation({
   const { isGamified } = useExperienceMode();
 
   const isDebt = toCategoryMessageKey(reward.category) === "DEBT";
-  const safeQuantity = isDebt ? Math.max(1, unitQuantity) : 1;
-  const effectivePrice = reward.price * safeQuantity;
+  const effectivePrice = reward.price;
   const effectiveCanAfford =
     typeof currentCoins === "number"
       ? currentCoins >= effectivePrice
@@ -57,8 +52,8 @@ function useRewardItemPresentation({
   }, [variants, groupId, displayTitle, reward.id, reward.title]);
 
   const handleBuy = useCallback(() => {
-    onBuy?.(reward, safeQuantity);
-  }, [onBuy, reward, safeQuantity]);
+    onBuy?.(reward);
+  }, [onBuy, reward]);
 
   const handleDoubleClick = useCallback(() => {
     onEdit?.(reward, groupContext);
@@ -78,13 +73,6 @@ function useRewardItemPresentation({
     [onSelectVariant, groupId, reward.id],
   );
 
-  const handleUnitQuantityChange = useCallback(
-    (nextQuantity: number) => {
-      onUnitQuantityChange?.(reward.id, nextQuantity);
-    },
-    [onUnitQuantityChange, reward.id],
-  );
-
   const dragData = useMemo(
     () => ({ type: "Reward" as const, reward }),
     [reward],
@@ -101,16 +89,12 @@ function useRewardItemPresentation({
     : t("insufficientCreditsShort");
 
   return {
-    isDebt,
-    safeQuantity,
     effectivePrice,
     effectiveCanAfford,
     handleBuy,
     handleDoubleClick: onEdit ? handleDoubleClick : undefined,
     handleContextMenu,
     handleSelectVariant: onSelectVariant ? handleSelectVariant : undefined,
-    handleUnitQuantityChange:
-      isDebt && onUnitQuantityChange ? handleUnitQuantityChange : undefined,
     dragData,
     actionLabel,
     insufficientBalanceTitle,
@@ -125,9 +109,6 @@ export const RewardCard = memo(function RewardCard({
   variants,
   activeVariantId,
   onSelectVariant,
-  unitQuantity = 1,
-  onUnitQuantityChange,
-  maxUnitQuantity = 50,
   onBuy,
   onEdit,
   onContextMenu,
@@ -137,15 +118,12 @@ export const RewardCard = memo(function RewardCard({
   isRedeeming = false,
 }: RewardCardProps) {
   const {
-    isDebt,
-    safeQuantity,
     effectivePrice,
     effectiveCanAfford,
     handleBuy,
     handleDoubleClick,
     handleContextMenu,
     handleSelectVariant,
-    handleUnitQuantityChange,
     dragData,
     actionLabel,
   } = useRewardItemPresentation({
@@ -153,11 +131,9 @@ export const RewardCard = memo(function RewardCard({
     groupId,
     displayTitle,
     variants,
-    unitQuantity,
     canAfford,
     currentCoins,
     onSelectVariant,
-    onUnitQuantityChange,
     onBuy,
     onEdit,
     onContextMenu,
@@ -176,10 +152,6 @@ export const RewardCard = memo(function RewardCard({
       category={reward.category}
       baseDurationMinutes={reward.baseDurationMinutes}
       price={effectivePrice}
-      unitPrice={isDebt && safeQuantity > 1 ? reward.price : undefined}
-      unitQuantity={safeQuantity}
-      onUnitQuantityChange={handleUnitQuantityChange}
-      maxUnitQuantity={maxUnitQuantity}
       variants={variants}
       activeVariantId={activeVariantId}
       onSelectVariant={handleSelectVariant}
@@ -204,9 +176,6 @@ export const RewardItemRow = memo(function RewardItemRow({
   variants,
   activeVariantId,
   onSelectVariant,
-  unitQuantity = 1,
-  onUnitQuantityChange,
-  maxUnitQuantity = 50,
   onBuy,
   onEdit,
   onContextMenu,
@@ -216,14 +185,12 @@ export const RewardItemRow = memo(function RewardItemRow({
   isRedeeming = false,
 }: RewardCardProps) {
   const {
-    safeQuantity,
     effectivePrice,
     effectiveCanAfford,
     handleBuy,
     handleDoubleClick,
     handleContextMenu,
     handleSelectVariant,
-    handleUnitQuantityChange,
     dragData,
     actionLabel,
     insufficientBalanceTitle,
@@ -232,11 +199,9 @@ export const RewardItemRow = memo(function RewardItemRow({
     groupId,
     displayTitle,
     variants,
-    unitQuantity,
     canAfford,
     currentCoins,
     onSelectVariant,
-    onUnitQuantityChange,
     onBuy,
     onEdit,
     onContextMenu,
@@ -254,9 +219,6 @@ export const RewardItemRow = memo(function RewardItemRow({
       iconName={reward.icon}
       baseDurationMinutes={reward.baseDurationMinutes}
       price={effectivePrice}
-      unitQuantity={safeQuantity}
-      onUnitQuantityChange={handleUnitQuantityChange}
-      maxUnitQuantity={maxUnitQuantity}
       variants={variants}
       activeVariantId={activeVariantId}
       onSelectVariant={handleSelectVariant}

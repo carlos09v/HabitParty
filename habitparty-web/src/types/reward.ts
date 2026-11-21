@@ -188,10 +188,7 @@ export interface RewardCardProps {
   variants?: Reward[];
   activeVariantId?: string;
   onSelectVariant?: (groupId: string, variantId: string) => void;
-  unitQuantity?: number;
-  onUnitQuantityChange?: (rewardId: string, nextQuantity: number) => void;
-  maxUnitQuantity?: number;
-  onBuy?: (reward: Reward, quantity?: number) => void;
+  onBuy?: (reward: Reward) => void;
   onEdit?: (reward: Reward, groupContext?: RewardGroupContext) => void;
   onContextMenu?: (
     e: React.MouseEvent,

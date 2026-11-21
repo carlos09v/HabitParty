@@ -104,7 +104,7 @@ public class CreateUserUseCase {
         0,
         0,
         0,
-        LocalDateTime.now(clock)
+        LocalDateTime.now(clock.withZone(java.time.ZoneOffset.UTC))
     );
     newUser.initializeTimezone(userZone.getId(), clock);
 

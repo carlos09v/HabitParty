@@ -156,7 +156,7 @@ public interface TaskJpaRepository extends JpaRepository<TaskJpaEntity, UUID> {
                           (:filter = 'OVERDUE' AND t.dueDate < :today AND t.taskType = 'TODO') OR
                           (:filter = 'ALL')
                       )) OR
-                      (t.taskType = 'HABIT' AND (:filter = 'TODAY' OR :filter = 'ALL'))
+                      (t.taskType = 'HABIT' AND ((:filter = 'TODAY' AND t.status = 'PENDING') OR :filter = 'ALL'))
                   )
                 ORDER BY t.dueDate ASC NULLS LAST
             """,
@@ -172,7 +172,7 @@ public interface TaskJpaRepository extends JpaRepository<TaskJpaEntity, UUID> {
                           (:filter = 'OVERDUE' AND t.dueDate < :today AND t.taskType = 'TODO') OR
                           (:filter = 'ALL')
                       )) OR
-                      (t.taskType = 'HABIT' AND (:filter = 'TODAY' OR :filter = 'ALL'))
+                      (t.taskType = 'HABIT' AND ((:filter = 'TODAY' AND t.status = 'PENDING') OR :filter = 'ALL'))
                   )
             """)
     Page<Object[]> findDashboardTasks(

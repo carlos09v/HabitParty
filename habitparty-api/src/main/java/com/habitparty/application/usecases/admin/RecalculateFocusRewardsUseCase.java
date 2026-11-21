@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -69,7 +70,10 @@ public class RecalculateFocusRewardsUseCase {
     BigDecimal totalCoinsAdded = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 
     ZoneId storageZone = ZoneId.systemDefault();
-    List<User> users = userRepository.findAll();
+    List<UUID> productiveUserIds = focusRecordRepository.findDistinctProductiveUserIds();
+    List<User> users = (productiveUserIds != null && !productiveUserIds.isEmpty())
+        ? userRepository.findAllByIds(productiveUserIds)
+        : userRepository.findAll();
 
     for (User user : users) {
       if (user == null || user.getId() == null) {

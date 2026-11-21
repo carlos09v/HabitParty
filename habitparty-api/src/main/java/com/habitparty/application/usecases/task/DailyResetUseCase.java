@@ -22,16 +22,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionOperations;
 
 import com.habitparty.application.ports.BoardColumnRepository;
+import com.habitparty.application.ports.FocusRecordRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.application.usecases.achievement.EvaluateUserAchievementsUseCase;
+import com.habitparty.application.usecases.user.GlobalStreakSupport;
+import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.entities.User;
 import com.habitparty.core.domain.entities.task.Daily;
 import com.habitparty.core.domain.entities.task.Habit;
 import com.habitparty.core.domain.entities.task.Task;
 import com.habitparty.core.domain.entities.task.Todo;
 import com.habitparty.core.domain.enums.TransactionType;
+import com.habitparty.core.domain.enums.task.HabitResetCounter;
 import com.habitparty.core.domain.enums.task.HabitType;
 import com.habitparty.core.domain.enums.task.TaskStatus;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
@@ -48,6 +52,7 @@ public class DailyResetUseCase {
   private final TransactionOperations transactionOperations;
   private final BoardColumnRepository boardColumnPort;
   private EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase;
+  private FocusRecordRepository focusRecordPort;
 
   @Autowired
   public DailyResetUseCase(TaskRepository port, TransactionHistoryRepository transactionPort, UserRepository userPort,
@@ -69,6 +74,11 @@ public class DailyResetUseCase {
   public void setEvaluateUserAchievementsUseCase(
       EvaluateUserAchievementsUseCase evaluateUserAchievementsUseCase) {
     this.evaluateUserAchievementsUseCase = evaluateUserAchievementsUseCase;
+  }
+
+  @Autowired(required = false)
+  public void setFocusRecordPort(FocusRecordRepository focusRecordPort) {
+    this.focusRecordPort = focusRecordPort;
   }
 
   public record RolloverSummary(int processedUsers, int updatedTasks, int overdueHardcoreTodos, int expiredStreaks) {}
@@ -283,15 +293,16 @@ public class DailyResetUseCase {
     };
 
     if (isResetBoundary) {
+      boolean eligibleCleanCycle = isHabitEligibleForCleanCycle(habit, userToday);
       if (habit.getHabitType() == HabitType.NEGATIVE) {
-        if (habit.getNegativeCount() == 0) {
+        if (habit.getNegativeCount() == 0 && eligibleCleanCycle) {
           cleanHabitCycleUsers.add(habit.getUserId());
         }
         habit.resetCycleCounts();
         return new RolloverOutcome(true, false);
       }
       if (habit.getStatus() == TaskStatus.COMPLETED) {
-        if (habit.getHabitType() == HabitType.BOTH && habit.getNegativeCount() == 0) {
+        if (habit.getHabitType() == HabitType.BOTH && habit.getNegativeCount() == 0 && eligibleCleanCycle) {
           cleanHabitCycleUsers.add(habit.getUserId());
         }
         breakExpiredHabitStreakIfNeeded(habit, userToday);
@@ -300,6 +311,9 @@ public class DailyResetUseCase {
         return new RolloverOutcome(true, false);
       }
       if (habit.getStatus() == TaskStatus.PENDING) {
+        if (habit.getHabitType() == HabitType.BOTH && habit.getNegativeCount() == 0 && eligibleCleanCycle) {
+          cleanHabitCycleUsers.add(habit.getUserId());
+        }
         habit.breakStreak();
         habit.resetCycleCounts();
         return new RolloverOutcome(true, true);
@@ -343,6 +357,21 @@ public class DailyResetUseCase {
     return false;
   }
 
+  private boolean isHabitEligibleForCleanCycle(Habit habit, LocalDate userToday) {
+    if (habit == null || habit.getCreatedAt() == null || userToday == null) {
+      return true;
+    }
+    HabitResetCounter resetCounter = habit.getResetCounter() != null
+        ? habit.getResetCounter()
+        : HabitResetCounter.DAILY;
+    LocalDate cycleStart = switch (resetCounter) {
+      case DAILY -> userToday.minusDays(1);
+      case WEEKLY -> userToday.minusWeeks(1);
+      case MONTHLY -> userToday.minusMonths(1);
+    };
+    return habit.getCreatedAt().toLocalDate().isBefore(cycleStart);
+  }
+
   private RolloverOutcome processDailyRollover(Daily daily, LocalDate userToday) {
     boolean canResetCompleted = daily.getLastCompletedAt() == null
         || daily.getLastCompletedAt().toLocalDate().isBefore(userToday);
@@ -352,17 +381,8 @@ public class DailyResetUseCase {
         daily.breakStreak();
       }
       daily.changeStatus(TaskStatus.PENDING);
-      if (daily.getDueDate().isPresent()) {
-        LocalDate currentDue = daily.getDueDate().get();
-        LocalDate completedDate = daily.getLastCompletedAt() != null
-            ? daily.getLastCompletedAt().toLocalDate()
-            : userToday.minusDays(1);
-        if (currentDue.isBefore(userToday)) {
-          daily.advanceDueDateToAtLeast(userToday);
-        } else if (!completedDate.isBefore(currentDue.minusDays(Math.max(1, daily.getRepeatEvery())))) {
-          daily.shiftToNextOccurrence(currentDue);
-          daily.advanceDueDateToAtLeast(userToday);
-        }
+      if (daily.getDueDate().isPresent() && daily.getDueDate().get().isBefore(userToday)) {
+        daily.advanceDueDateToAtLeast(userToday);
       }
       return new RolloverOutcome(true, false);
     }
@@ -370,6 +390,13 @@ public class DailyResetUseCase {
     if (daily.getStatus() == TaskStatus.PENDING
         && daily.getDueDate().isPresent()
         && daily.getDueDate().get().isBefore(userToday)) {
+      LocalDate currentDue = daily.getDueDate().get();
+      boolean completedInClosingCycle = daily.getLastCompletedAt() != null
+          && !daily.getLastCompletedAt().toLocalDate().isBefore(currentDue);
+      if (completedInClosingCycle) {
+        daily.advanceDueDateToAtLeast(userToday);
+        return new RolloverOutcome(true, false);
+      }
       daily.breakStreak();
       daily.advanceDueDateToAtLeast(userToday);
       return new RolloverOutcome(true, true);
@@ -383,8 +410,8 @@ public class DailyResetUseCase {
       Map<UUID, ZoneId> dueZonesById,
       Map<UUID, User> usersById,
       Map<UUID, User> dirtyUsers) {
-    Map<UUID, LocalDateTime> yesterdayCutoffByUser = new LinkedHashMap<>();
-    LocalDateTime earliestCutoff = null;
+    Map<UUID, LocalDate> minDateByUser = new LinkedHashMap<>();
+    int expiredCount = 0;
 
     for (Map.Entry<UUID, LocalDate> entry : dueTodayById.entrySet()) {
       UUID userId = entry.getKey();
@@ -392,32 +419,28 @@ public class DailyResetUseCase {
       if (user == null || user.getStats() == null || user.getStats().getCurrentStreak() <= 0) {
         continue;
       }
-
-      LocalDateTime userYesterdayStart = entry.getValue().minusDays(1)
-          .atStartOfDay(dueZonesById.get(userId))
-          .withZoneSameInstant(ZoneId.systemDefault())
-          .toLocalDateTime();
-      yesterdayCutoffByUser.put(userId, userYesterdayStart);
-      if (earliestCutoff == null || userYesterdayStart.isBefore(earliestCutoff)) {
-        earliestCutoff = userYesterdayStart;
+      LocalDate lastStreakDate = user.getStats().getLastStreakDate();
+      LocalDate yesterday = entry.getValue().minusDays(1);
+      if (lastStreakDate != null) {
+        if (lastStreakDate.isBefore(yesterday)) {
+          user.resetStreak();
+          dirtyUsers.put(userId, user);
+          expiredCount++;
+        }
+        continue;
       }
+      minDateByUser.put(userId, yesterday);
     }
 
-    if (yesterdayCutoffByUser.isEmpty()) {
-      return 0;
+    if (minDateByUser.isEmpty()) {
+      return expiredCount;
     }
 
-    Map<UUID, LocalDateTime> lastCompletedByUser = transactionPort.findLastCompletedTaskAtByUserIds(
-        yesterdayCutoffByUser.keySet(), earliestCutoff);
-    if (lastCompletedByUser == null) {
-      lastCompletedByUser = Map.of();
-    }
+    Set<UUID> qualifiedUsers = GlobalStreakSupport.findQualifiedUsersSinceDates(
+        minDateByUser, dueZonesById, transactionPort, focusRecordPort, clock);
 
-    int expiredCount = 0;
-    for (Map.Entry<UUID, LocalDateTime> entry : yesterdayCutoffByUser.entrySet()) {
-      UUID userId = entry.getKey();
-      LocalDateTime lastCompletedAt = lastCompletedByUser.get(userId);
-      if (lastCompletedAt == null || lastCompletedAt.isBefore(entry.getValue())) {
+    for (UUID userId : minDateByUser.keySet()) {
+      if (!qualifiedUsers.contains(userId)) {
         User user = usersById.get(userId);
         user.resetStreak();
         dirtyUsers.put(userId, user);
@@ -438,6 +461,7 @@ public class DailyResetUseCase {
     }
 
     Map<UUID, String> columnNamesById = new HashMap<>();
+    List<TransactionHistory> penaltyTransactions = new ArrayList<>(failedTasks.size());
     for (Task task : failedTasks) {
       User user = usersById.get(task.getUserId());
       if (user == null) {
@@ -452,8 +476,13 @@ public class DailyResetUseCase {
       String columnName = task.getBoardColumnId() == null ? null
           : columnNamesById.computeIfAbsent(task.getBoardColumnId(),
               id -> TaskGamificationHelper.resolveColumnName(boardColumnPort, task));
-      transactionPort.save(TaskGamificationHelper.buildPenaltyTransaction(
+      penaltyTransactions.add(TaskGamificationHelper.buildPenaltyTransaction(
           task.getUserId(), task, penalty, TransactionType.TASK_FAILED, namePrefix, columnName));
+    }
+    if (penaltyTransactions.size() == 1) {
+      transactionPort.save(penaltyTransactions.get(0));
+    } else {
+      transactionPort.saveAll(penaltyTransactions);
     }
   }
 

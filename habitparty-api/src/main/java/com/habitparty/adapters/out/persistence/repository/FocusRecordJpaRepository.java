@@ -63,8 +63,8 @@ public interface FocusRecordJpaRepository extends JpaRepository<FocusRecordJpaEn
       FROM FocusRecordJpaEntity f
       WHERE f.userId = :userId
         AND f.inventoryItemId IS NULL
-        AND f.startTime >= :startOfDay
-        AND f.startTime <= :endOfDay
+        AND f.endTime >= :startOfDay
+        AND f.endTime <= :endOfDay
   """)
   int sumTodayFocusMinutesByUserId(
       @Param("userId") UUID userId,
@@ -151,4 +151,54 @@ public interface FocusRecordJpaRepository extends JpaRepository<FocusRecordJpaEn
       @Param("recordId") UUID recordId,
       @Param("xpEarned") int xpEarned,
       @Param("coinsEarned") BigDecimal coinsEarned);
+
+  @Query("""
+      SELECT COALESCE(SUM(f.durationMinutes), 0)
+      FROM FocusRecordJpaEntity f
+      WHERE f.userId = :userId
+        AND f.inventoryItemId IS NULL
+        AND f.endTime >= :startOfDay
+        AND f.endTime <= :endOfDay
+  """)
+  int sumProductiveFocusMinutesByUserId(
+      @Param("userId") UUID userId,
+      @Param("startOfDay") LocalDateTime startOfDay,
+      @Param("endOfDay") LocalDateTime endOfDay);
+
+  interface ProductiveFocusSessionProjection {
+    UUID getUserId();
+
+    LocalDateTime getEndTime();
+
+    int getDurationMinutes();
+  }
+
+  @Query("""
+      SELECT f.userId AS userId, f.endTime AS endTime, f.durationMinutes AS durationMinutes
+      FROM FocusRecordJpaEntity f
+      WHERE f.userId IN :userIds
+        AND f.inventoryItemId IS NULL
+        AND f.endTime >= :since
+  """)
+  List<ProductiveFocusSessionProjection> findProductiveFocusSessionsByUserIdsSince(
+      @Param("userIds") Collection<UUID> userIds,
+      @Param("since") LocalDateTime since);
+
+  @Query("""
+      SELECT DISTINCT f.userId
+      FROM FocusRecordJpaEntity f
+      WHERE f.inventoryItemId IS NULL
+  """)
+  List<UUID> findDistinctProductiveUserIds();
+
+  List<FocusRecordJpaEntity> findAllByUserIdAndEndTimeBetweenOrderByEndTimeAsc(
+      UUID userId, LocalDateTime startInclusive, LocalDateTime endInclusive);
+
+  @Query("""
+      SELECT MIN(f.endTime)
+      FROM FocusRecordJpaEntity f
+      WHERE f.userId = :userId
+        AND f.inventoryItemId IS NULL
+  """)
+  LocalDateTime findEarliestProductiveEndTimeByUserId(@Param("userId") UUID userId);
 }

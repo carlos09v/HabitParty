@@ -130,7 +130,9 @@ export function TasksBoardContainer({
     setColumns((prev) =>
       prev.map((col) => ({
         ...col,
-        tasks: col.tasks.map(resetTaskOnMidnightRollover),
+        tasks: col.tasks.map((task) =>
+          resetTaskOnMidnightRollover(task, userTimezone),
+        ),
       })),
     );
   });
@@ -261,15 +263,9 @@ export function TasksBoardContainer({
 
   const handleHideColumn = useCallback(
     (colId: string) => {
-      const col = columnsRef.current.find((c) => c.id === colId);
       toggleColumnVisibility(colId);
-      toast.success(
-        t("toastColumnHidden", {
-          title: col?.title || t("defaultColumnTitle"),
-        }),
-      );
     },
-    [toggleColumnVisibility, t],
+    [toggleColumnVisibility],
   );
 
   const handleLoadArchivedCompleted = useCallback(

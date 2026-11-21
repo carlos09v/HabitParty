@@ -368,8 +368,6 @@ export function useTaskMutations({
                 toast.success(completionLabel);
               }
             }
-          } else {
-            toast.info(t("markedPending"));
           }
         } finally {
           inFlightToggleTasksRef.current.delete(taskId);

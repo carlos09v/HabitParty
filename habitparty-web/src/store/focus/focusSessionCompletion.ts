@@ -17,7 +17,7 @@ import { useUIStore } from "@/store/uiStore";
 import { useUserStore } from "@/store/userStore";
 import type { FocusRecordType } from "@/types/focus";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
-import { toLocalISOString } from "@/utils/date";
+import { getTodayDateString, toLocalISOString } from "@/utils/date";
 import { formatCoins } from "@/utils/economy";
 import { formatDurationMinSec } from "@/utils/focusFormatters";
 import {
@@ -37,6 +37,7 @@ export function isFocusSessionCompleting(state: FocusTimerStoreState): boolean {
 interface CompleteSessionOptions {
   suppressCompleteSound?: boolean;
   suppressLinkedTaskAction?: boolean;
+  suppressSuccessToast?: boolean;
 }
 
 function notifyInventoryCompletion(
@@ -96,34 +97,41 @@ function notifyStandardCompletion(
     if (!options?.suppressCompleteSound) {
       soundEffects.playFocusSessionCompleteSound();
     }
-    if (xp > 0 || coins > 0) {
-      const isGamified = useUIStore.getState().experienceMode === "GAMIFIED";
-      toast.success(
-        tStoreMsg(
-          isGamified
-            ? "sessionCompletedRewardsToast"
-            : "sessionCompletedRewardsToastProductivity",
-          {
-            time: timeStr,
-            xp,
-            coins: formatCoins(Number(coins), {
-              locale: getBrowserDocumentLocale(),
-            }),
-          },
-        ),
-        taskAction ? { action: taskAction, duration: 8000 } : undefined,
-      );
-    } else {
-      toast.success(
-        tStoreMsg("sessionCompletedLoggedToast", { time: timeStr }),
-        taskAction ? { action: taskAction, duration: 8000 } : undefined,
-      );
+    if (!options?.suppressSuccessToast) {
+      if (xp > 0 || coins > 0) {
+        const isGamified = useUIStore.getState().experienceMode === "GAMIFIED";
+        toast.success(
+          tStoreMsg(
+            isGamified
+              ? "sessionCompletedRewardsToast"
+              : "sessionCompletedRewardsToastProductivity",
+            {
+              time: timeStr,
+              xp,
+              coins: formatCoins(Number(coins), {
+                locale: getBrowserDocumentLocale(),
+              }),
+            },
+          ),
+          taskAction ? { action: taskAction, duration: 8000 } : undefined,
+        );
+      } else {
+        toast.success(
+          tStoreMsg("sessionCompletedLoggedToast", { time: timeStr }),
+          taskAction ? { action: taskAction, duration: 8000 } : undefined,
+        );
+      }
     }
-  } else if (taskAction) {
-    toast.info(resolvedTaskName || "", {
-      action: taskAction,
-      duration: 8000,
-    });
+  } else if (taskAction && !options?.suppressSuccessToast) {
+    toast.info(
+      tStoreMsg("levelUpLinkedTaskPrompt", {
+        name: resolvedTaskName || tStoreMsg("defaultTaskName"),
+      }),
+      {
+        action: taskAction,
+        duration: 8000,
+      },
+    );
   }
 }
 
@@ -229,6 +237,18 @@ export async function executeCompleteSession(
       if (isInventory) {
         notifyInventoryCompletion(state, exactSeconds);
       } else {
+        const recordedDurationMinutes = Math.max(
+          0,
+          Math.floor(exactSeconds / 60),
+        );
+        if (recordedDurationMinutes > 0) {
+          useUserStore
+            .getState()
+            .recordFocusMinutesToday(
+              recordedDurationMinutes,
+              getTodayDateString(now, userTimeZone),
+            );
+        }
         notifyStandardCompletion(
           res.data,
           exactSeconds,

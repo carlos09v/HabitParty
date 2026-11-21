@@ -24,7 +24,6 @@ import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
 import { useUIStore } from "@/store/uiStore";
 import type { FocusActivity, FocusPhase, FocusRecordType } from "@/types/focus";
 import type { InventoryItemResponseDTO } from "@/types/inventory";
-import { triggerCelebrationConfetti } from "@/utils/confetti";
 import {
   createOptimizedFocusPersistStorage,
   registerFocusTimerWindowListeners,
@@ -223,7 +222,6 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           (state.target?.targetMinutes || DEFAULT_POMO_MINUTES) * 60;
         set(buildIdleTimerPatch(workDuration));
         updateDocumentTitle(get());
-        toast.info(tStoreMsg("breakSkippedToast"));
       },
 
       startBreak: async () => {
@@ -250,20 +248,10 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         const nextPhase: FocusPhase = isLongBreak
           ? "LONG_BREAK"
           : "SHORT_BREAK";
-        const breakLabel = isLongBreak
-          ? tStoreMsg("longBreakLabel")
-          : tStoreMsg("shortBreakLabel");
 
         if (useSoundPreferencesStore.getState().timerSoundsEnabled) {
           soundEffects.playBreakStartSound();
         }
-        triggerCelebrationConfetti();
-        toast.info(
-          tStoreMsg("breakStartedToast", {
-            cycles,
-            breakLabel,
-          }),
-        );
 
         set({
           phase: nextPhase,
@@ -389,7 +377,6 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         });
         updateDocumentTitle(get());
         startGlobalTicker(get().tick);
-        toast.success(tStoreMsg("taskFocusStartedToast", { name: task.title }));
       },
 
       startFocusItem: (item: InventoryItemResponseDTO) => {
@@ -553,9 +540,6 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
             }),
           };
         });
-        if (task) {
-          toast.success(tStoreMsg("taskLinkedToast", { name: task.title }));
-        }
         updateDocumentTitle(get());
       },
 
@@ -680,9 +664,6 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
         }));
         updateDocumentTitle(get());
         startGlobalTicker(get().tick);
-        toast.success(
-          tStoreMsg("targetTransferredToast", { name: activity.name }),
-        );
       },
 
       linkActivityToTask: (activity: FocusActivity) => {
@@ -714,12 +695,6 @@ export const useFocusTimerStore = create<FocusTimerStoreState>()(
           );
         }
         updateDocumentTitle(get());
-        toast.success(
-          tStoreMsg("activityLinkedToTaskToast", {
-            activity: activity.name,
-            task: nextTarget.taskName,
-          }),
-        );
       },
 
       syncTargetMetadata: (metadata) => {

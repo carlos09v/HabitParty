@@ -1,5 +1,6 @@
 package com.habitparty.application.usecases.focus;
 
+import java.time.Clock;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,12 +24,18 @@ public class DeleteFocusRecordUseCase {
     private final TransactionHistoryRepository transactionPort;
     private TaskRepository taskPort;
     private UserRepository userPort;
+    private Clock clock = Clock.systemUTC();
 
     public DeleteFocusRecordUseCase(FocusRecordRepository port, InventoryItemRepository inventoryItemPort,
             TransactionHistoryRepository transactionPort) {
         this.port = port;
         this.inventoryItemPort = inventoryItemPort;
         this.transactionPort = transactionPort;
+    }
+
+    @Autowired(required = false)
+    public void setClock(Clock clock) {
+        this.clock = clock != null ? clock : Clock.systemUTC();
     }
 
     @Autowired(required = false)
@@ -61,7 +68,9 @@ public class DeleteFocusRecordUseCase {
             port,
             userPort,
             inventoryItemPort,
-            taskPort);
+            taskPort,
+            transactionPort,
+            clock);
 
         if (deleteHistory) {
             transactionPort.deleteAllByReferenceIdAndUserId(recordId, userIdLogado);

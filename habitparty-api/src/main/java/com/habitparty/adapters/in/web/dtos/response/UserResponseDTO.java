@@ -4,6 +4,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,8 +24,9 @@ public record UserResponseDTO(
         boolean isFounder,
         boolean emailVerified,
         SubscriptionStatus subscriptionStatus,
-        LocalDateTime subscriptionEndsAt,
+        OffsetDateTime subscriptionEndsAt,
         boolean hasActiveRecurringSubscription,
+        boolean cancelAtPeriodEnd,
         UserRole role,
         String fullName,
         String username,
@@ -38,7 +42,7 @@ public record UserResponseDTO(
         String avatarPreset,
         String theme,
         LocalDate birthDate,
-        LocalDateTime createdAt,
+        OffsetDateTime createdAt,
 
         // Atributos Derivados (Calculados no Domínio)
         Integer age,
@@ -68,15 +72,22 @@ public record UserResponseDTO(
         return fromDomain(user, user.getCurrentStreak());
     }
 
+    private static OffsetDateTime toUtcOffsetDateTime(LocalDateTime raw) {
+        return raw != null
+                ? raw.atZone(ZoneId.systemDefault()).withZoneSameInstant(ZoneOffset.UTC).toOffsetDateTime()
+                : null;
+    }
+
     public static UserResponseDTO fromDomain(User user, int effectiveStreak) {
         return new UserResponseDTO(
                 user.getId(),
                 user.isPremium(),
                 user.isFounder(),
                 user.isEmailVerified(),
-                user.getSubscriptionStatus(),
-                user.getSubscriptionEndsAt(),
+                user.getEffectiveSubscriptionStatus(),
+                toUtcOffsetDateTime(user.getSubscriptionEndsAt()),
                 user.hasActiveRecurringSubscription(),
+                user.isCancelAtPeriodEnd(),
                 user.getRole(),
                 user.getFullName(),
                 user.getUsername(),
@@ -92,7 +103,7 @@ public record UserResponseDTO(
                 user.getAvatarPreset().orElse(null),
                 user.getEffectiveTheme(),
                 user.getBirthDate(),
-                user.getCreatedAt(),
+                toUtcOffsetDateTime(user.getCreatedAt()),
 
                 user.getAge(),
                 user.getCurrentLevel().getTitle(),

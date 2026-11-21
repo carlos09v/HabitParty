@@ -1510,6 +1510,7 @@ export interface components {
       /** Format: date-time */
       subscriptionEndsAt?: string | null;
       hasActiveRecurringSubscription?: boolean;
+      cancelAtPeriodEnd?: boolean;
       /** @enum {string} */
       role?: "USER" | "ADMIN";
       fullName?: string;
@@ -1882,6 +1883,8 @@ export interface components {
     UserLayoutSummaryResponseDTO: {
       /** Format: date-time */
       lastTaskCompletionAt?: string | null;
+      /** Format: int32 */
+      todayFocusMinutes: number;
     };
     CreateRewardDTO: {
       name: string;

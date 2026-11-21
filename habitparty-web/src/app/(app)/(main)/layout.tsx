@@ -52,6 +52,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   ]);
 
   const lastTaskCompletionAt = layoutSummary?.lastTaskCompletionAt ?? null;
+  const todayFocusMinutes = layoutSummary?.todayFocusMinutes ?? 0;
   const { activeWorkspaceId } = resolveActiveWorkspace(
     workspaces,
     cookieWorkspaceId,
@@ -100,6 +101,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           activeWorkspaceId={activeWorkspaceId}
           user={user || null}
           lastTaskCompletionAt={lastTaskCompletionAt}
+          todayFocusMinutes={todayFocusMinutes}
         />
         {/* 
         =========================================

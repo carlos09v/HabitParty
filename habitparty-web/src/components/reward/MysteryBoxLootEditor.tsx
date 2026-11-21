@@ -92,9 +92,6 @@ export function MysteryBoxLootEditor({
       { ...tierSlots[1], category: tierSlots[1].category ?? presetCategory },
       { ...tierSlots[2], category: tierSlots[2].category ?? presetCategory },
     ]);
-    toast.success(
-      t("presetAppliedToast", { preset: t(`presets.${presetId}`) }),
-    );
   };
 
   const handlePullFromStore = () => {

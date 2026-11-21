@@ -671,12 +671,33 @@ export function buildQuickCreateTaskPayload(
 
 /**
  * Reseta estados diários/hábitos locais durante a virada da meia-noite no cliente
- * para evitar exibição defasada enquanto a próxima sincronização SSR ocorre.
+ * respeitando {@code resetCounter} ({@code DAILY}, {@code WEEKLY} na segunda-feira e
+ * {@code MONTHLY} no dia 1º) para manter paridade com {@code DailyResetUseCase}.
  */
-export function resetTaskOnMidnightRollover(task: Task): Task {
+export function resetTaskOnMidnightRollover(
+  task: Task,
+  timeZone?: string | null,
+  referenceDate: Date = new Date(),
+): Task {
   const type = normalizeTaskType(task);
-  if (type === "daily" || type === "habit") {
+  if (type === "daily") {
     return { ...task, completed: false, hasClaimedReward: false };
+  }
+  if (type === "habit") {
+    const resetCounter = (task.resetCounter ?? "daily").toLowerCase();
+    if (resetCounter === "daily") {
+      return { ...task, completed: false, hasClaimedReward: false };
+    }
+    const parts = getDatePartsInTimeZone(referenceDate, timeZone);
+    const utcDayOfWeek = new Date(
+      Date.UTC(parts.year, parts.month - 1, parts.day),
+    ).getUTCDay();
+    const shouldReset =
+      (resetCounter === "weekly" && utcDayOfWeek === 1) ||
+      (resetCounter === "monthly" && parts.day === 1);
+    if (shouldReset) {
+      return { ...task, completed: false, hasClaimedReward: false };
+    }
   }
   return task;
 }

@@ -116,6 +116,7 @@ class RedeemRewardUseCaseTest {
 
     ArgumentCaptor<TransactionHistory> txCaptor = ArgumentCaptor.forClass(TransactionHistory.class);
     verify(transactionHistoryRepository).save(txCaptor.capture());
+    verify(rewardRepository).deleteById(rewardId);
     assertEquals(TransactionType.REWARD_BOUGHT, txCaptor.getValue().getTransactionType());
     assertEquals(Optional.of(new BigDecimal("-25.00")), txCaptor.getValue().getGoldAmount());
     assertEquals(Optional.of(rewardId), txCaptor.getValue().getReferenceId());
@@ -223,8 +224,8 @@ class RedeemRewardUseCaseTest {
   }
 
   @Test
-  @DisplayName("Quitação de Dívida com multiplicador deve cobrar preço unitário cheio sem desconto de pacote")
-  void shouldChargeFullUnitPriceMultipliedByQuantityForDebtWithoutDiscount() {
+  @DisplayName("Multiplicador maior que 1x deve ser rejeitado também para Dívidas (quitação única e descartável)")
+  void shouldRejectMultiplierGreaterThanOneForDebtReward() {
     Reward debtReward = new Reward(
         rewardId,
         userId,
@@ -242,15 +243,10 @@ class RedeemRewardUseCaseTest {
     when(rewardRepository.findById(rewardId)).thenReturn(Optional.of(debtReward));
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-    useCase.execute(rewardId, userId, 6);
-
-    assertEquals(new BigDecimal("52.00"), user.getCurrentCoins());
-    verify(inventoryItemRepository, never()).save(any());
-
-    ArgumentCaptor<TransactionHistory> txCaptor = ArgumentCaptor.forClass(TransactionHistory.class);
-    verify(transactionHistoryRepository).save(txCaptor.capture());
-    assertEquals(Optional.of(new BigDecimal("-48.00")), txCaptor.getValue().getGoldAmount());
-    assertEquals("Videogame (30m) (6x)", txCaptor.getValue().getNameSnapshot());
+    assertThrows(DomainValidationException.class, () -> useCase.execute(rewardId, userId, 2));
+    verify(userRepository, never()).save(any());
+    verify(transactionHistoryRepository, never()).save(any());
+    verify(rewardRepository, never()).deleteById(any());
   }
 
   @Test

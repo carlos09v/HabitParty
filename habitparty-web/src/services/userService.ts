@@ -33,6 +33,7 @@ export async function getUserLayoutSummary(): Promise<UserLayoutSummaryResponseD
   "use cache: private";
   cacheLife("private30");
   cacheTag("transactions");
+  cacheTag("focus-records");
 
   const { data, error } = await serverApi.GET("/users/me/layout-summary");
   if (error || !data) {

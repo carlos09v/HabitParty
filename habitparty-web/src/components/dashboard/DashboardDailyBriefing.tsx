@@ -4,8 +4,10 @@ import { Calendar, Flame, Sparkles, Target } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { FOCUS_REWARD_RULES } from "@/constants/focus";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { type AppLocale, toIntlLocale } from "@/i18n/config";
+import { useUserStore } from "@/store/userStore";
 import type { DashboardDailyBriefingProps } from "@/types/dashboard";
 import { cn } from "@/utils";
 import {
@@ -19,6 +21,7 @@ import {
   isTaskCompletedOnDate,
 } from "@/utils/dashboardMetrics";
 import { isValidIanaTimeZone } from "@/utils/date";
+import { calculateProductiveMinutesForDate } from "@/utils/focusDailyYield";
 
 /**
  * Painel de Resumo Diário do Jogador (Client Component).
@@ -30,11 +33,14 @@ export function DashboardDailyBriefing({
   streak,
   tasks,
   transactions,
+  focusRecords = [],
   timezone,
 }: DashboardDailyBriefingProps) {
   const t = useTranslations("dashboard.dailyBriefing");
   const { isGamified } = useExperienceMode();
   const locale = useLocale() as AppLocale;
+  const storeTodayFocusMinutes = useUserStore((s) => s.todayFocusMinutes);
+  const storeTodayMetricsDate = useUserStore((s) => s.todayMetricsDate);
   const [now, setNow] = useState<Date>(() => new Date());
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -95,11 +101,29 @@ export function DashboardDailyBriefing({
     hasCompletedTxToday ||
     hasAnyTaskCompletedOnDate(tasks, todayDateStr, resolvedTimeZone);
 
+  const minStreakFocus = FOCUS_REWARD_RULES.MIN_DAILY_STREAK_FOCUS_MINUTES;
+  const recordsFocusMinutesToday = useMemo(
+    () =>
+      calculateProductiveMinutesForDate(
+        focusRecords,
+        todayDateStr,
+        resolvedTimeZone,
+        "startTime",
+      ),
+    [focusRecords, todayDateStr, resolvedTimeZone],
+  );
+  const focusMinutesToday = Math.max(
+    recordsFocusMinutesToday,
+    storeTodayMetricsDate === todayDateStr ? storeTodayFocusMinutes : 0,
+  );
+  const hasMetFocusGoalToday = focusMinutesToday >= minStreakFocus;
+  const isStreakSecuredToday = hasCompletedAnyTaskToday || hasMetFocusGoalToday;
+
   let streakBadgeText: string;
   let streakBadgeClass =
     "text-xs font-semibold text-orange-700 dark:text-orange-400 truncate";
 
-  if (hasCompletedAnyTaskToday) {
+  if (isStreakSecuredToday) {
     streakBadgeText = t("streakSecuredBadge");
   } else if (isHydrated && isAfterNoon) {
     streakBadgeText = t("streakRemainingHours", { hours: hoursLeft });
@@ -110,8 +134,9 @@ export function DashboardDailyBriefing({
       streak > 0 ? t("streakActiveBadge") : t("streakStartBadge");
   }
 
-  const streakBadgeTitle =
-    isHydrated && isAfterNoon && !hasCompletedAnyTaskToday
+  const streakBadgeTitle = isStreakSecuredToday
+    ? t("streakSecuredBadge")
+    : isHydrated && isAfterNoon
       ? t("streakRemainingHours", { hours: hoursLeft })
       : streak > 0
         ? t("streakActiveTitle")

@@ -9,6 +9,7 @@ public final class FocusRewardCalculator {
 
   public static final int MIN_SESSION_MINUTES = 10;
   public static final int MAX_SESSION_MINUTES = 90;
+  public static final int MIN_DAILY_STREAK_FOCUS_MINUTES = 30;
   public static final int DAILY_TIER1_MINUTES = 240; // Primeiras 4 horas: 100% de rendimento
   public static final int DAILY_TIER2_MINUTES = 360; // 4h a 6h: 50% de rendimento
   public static final int DAILY_TIER3_MINUTES = 480; // 6h a 8h: 25% de rendimento. Acima de 8h: 0%

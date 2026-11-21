@@ -1,7 +1,7 @@
 {
   "streakLost": {
     "title": "Streak lost!",
-    "description": "You didn't complete any tasks yesterday and your streak of {count} {count, plural, one {day was lost} other {days was lost}}. Start fresh today! 🔥"
+    "description": "You didn't meet the daily minimum yesterday (1 task or 30m focus) and your streak of {count} {count, plural, one {day was lost} other {days was lost}}. Start fresh today! 🔥"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -87,7 +87,7 @@
     "todayDesc": "Keep up the pace to earn XP and coins.",
     "todayTimestamp": "Daily goal",
     "streakTitle": "{count}-{count, plural, one {day} other {day}} streak active! 🔥",
-    "streakDesc": "Complete your daily goals today to keep your streak alive.",
+    "streakDesc": "Complete 1 task or 30m of focus today to keep your streak alive.",
     "streakTimestamp": "Streak",
     "focusItemTitle": "Reward ready: \"{name}\"",
     "focusItemDefaultName": "Focus Item",

@@ -120,9 +120,7 @@ export function useBoardTaskActions({
               : col,
           ),
         );
-        const typeLabel = t(`typeLabels.${taskType}`);
         soundEffects.playCreateSound();
-        toast.success(t("quickCreateSuccess", { typeLabel, title }));
       } else {
         setColumns((prev) =>
           prev.map((col) =>

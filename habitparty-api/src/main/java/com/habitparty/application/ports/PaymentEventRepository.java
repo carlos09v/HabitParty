@@ -14,4 +14,18 @@ public interface PaymentEventRepository {
       PaymentEventStatus status,
       String errorMessage
   );
+
+  /**
+   * Garante inserção atômica da chave de idempotência dentro da transação atual:
+   * - Se já existir como PROCESSED ou IGNORED, retorna {@code false}.
+   * - Se existir como FAILED, atualiza para PROCESSED e retorna {@code true}.
+   * - Caso contrário insere via constraint real no banco (lançando DataIntegrityViolationException em corrida).
+   */
+  default boolean claimEvent(String stripeEventId, String eventType, UUID userId) {
+    if (existsByEventId(stripeEventId)) {
+      return false;
+    }
+    recordEvent(stripeEventId, eventType, userId, PaymentEventStatus.PROCESSED, null);
+    return true;
+  }
 }

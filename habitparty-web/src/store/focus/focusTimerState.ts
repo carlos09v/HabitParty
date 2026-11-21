@@ -38,6 +38,7 @@ export interface FocusTimerStoreState extends FocusTimerState {
     options?: {
       suppressCompleteSound?: boolean;
       suppressLinkedTaskAction?: boolean;
+      suppressSuccessToast?: boolean;
     },
   ) => Promise<boolean>;
   changeMode: (newMode: FocusRecordType) => void;

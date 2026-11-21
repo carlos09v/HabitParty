@@ -43,7 +43,8 @@ public class UpdateRewardUseCase {
           return other;
         });
 
-    int previousGroupCount = RewardGrouping.countDistinctGroups(userRewards);
+    int previousGroupCount = RewardGrouping.countRegularDistinctGroups(userRewards);
+    int previousDebtCount = RewardGrouping.countActiveDebts(userRewards);
     String previousGroupKey = RewardGrouping.groupKey(reward);
     RewardPackageLevel previousPackageLevel = reward.getPackageLevel().orElse(RewardPackageLevel.NONE);
 
@@ -53,7 +54,13 @@ public class UpdateRewardUseCase {
         command.packageLevel(), command.baseDurationMinutes(),
         command.lootItems());
 
-    int newGroupCount = RewardGrouping.countDistinctGroups(userRewards);
+    int newGroupCount = RewardGrouping.countRegularDistinctGroups(userRewards);
+    int newDebtCount = RewardGrouping.countActiveDebts(userRewards);
+    if (newDebtCount > previousDebtCount && newDebtCount > RewardGrouping.MAX_ACTIVE_DEBTS) {
+      throw new LimitExceededException(
+          "Limite máximo de " + RewardGrouping.MAX_ACTIVE_DEBTS
+              + " dívidas ativas atingido. Quite uma dívida antes de registrar outra.");
+    }
     int maxCards = RewardGrouping.getMaxRewardCards(user.isPremium());
     if (newGroupCount > previousGroupCount && newGroupCount > maxCards) {
       throw new LimitExceededException(user.isPremium()

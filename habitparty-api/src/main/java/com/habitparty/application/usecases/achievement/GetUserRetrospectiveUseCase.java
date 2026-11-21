@@ -325,10 +325,10 @@ public class GetUserRetrospectiveUseCase {
       ZoneId userZone) {
     Map<Integer, List<FocusRecord>> byYear = new HashMap<>();
     for (FocusRecord rec : records) {
-      if (rec.getInventoryItemId().isPresent() || rec.getStartTime() == null) {
+      if (rec.getInventoryItemId().isPresent() || rec.getEndTime() == null) {
         continue;
       }
-      int year = toUserDate(rec.getStartTime(), userZone).getYear();
+      int year = toUserDate(rec.getEndTime(), userZone).getYear();
       byYear.computeIfAbsent(year, k -> new ArrayList<>()).add(rec);
     }
     return byYear;
@@ -343,7 +343,7 @@ public class GetUserRetrospectiveUseCase {
     if (firstTx.isPresent()) {
       earliest = Math.min(earliest, toUserDate(firstTx.get(), userZone).getYear());
     }
-    Optional<LocalDateTime> firstFocus = focusRecordRepository.findEarliestStartTimeByUserId(user.getId());
+    Optional<LocalDateTime> firstFocus = focusRecordRepository.findEarliestEndTimeByUserId(user.getId());
     if (firstFocus.isPresent()) {
       earliest = Math.min(earliest, toUserDate(firstFocus.get(), userZone).getYear());
     }
@@ -391,7 +391,7 @@ public class GetUserRetrospectiveUseCase {
     int pomodorosCompleted = 0;
 
     for (FocusRecord rec : focusRecords) {
-      LocalDate focusDate = toUserDate(rec.getStartTime(), userZone);
+      LocalDate focusDate = toUserDate(rec.getEndTime(), userZone);
       int minutes = Math.max(0, rec.getDurationMinutes());
       focusMinutes += minutes;
       focusSessionsCount++;

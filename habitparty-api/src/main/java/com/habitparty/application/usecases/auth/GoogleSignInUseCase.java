@@ -114,7 +114,7 @@ public class GoogleSignInUseCase {
         ? profile.name().trim()
         : uniqueUsername;
 
-    LocalDateTime now = LocalDateTime.now(clock);
+    LocalDateTime now = LocalDateTime.now(clock.withZone(java.time.ZoneOffset.UTC));
 
     User newUser = new User(
         UUID.randomUUID(),

@@ -77,6 +77,7 @@ export interface DashboardMainProps {
   initialAllColumns?: DashboardColumnOption[];
   initialVisibleColumnIds?: string[];
   transactions?: TransactionHistoryDTO[];
+  focusRecords?: FocusRecord[];
   user?: UserResponseDTO | null;
 }
 
@@ -85,6 +86,7 @@ export interface DashboardDailyBriefingProps {
   streak: number;
   tasks: Task[];
   transactions: TransactionHistoryDTO[];
+  focusRecords?: FocusRecord[];
   timezone?: string | null;
 }
 
@@ -149,6 +151,7 @@ export interface DashboardMobileDrawerProps {
 export interface WeeklyCalendarProps {
   transactions?: TransactionHistoryDTO[];
   tasks?: WeeklyCalendarTaskSummary[];
+  records?: FocusRecord[];
   onSelectDay?: (isoString: string) => void;
 }
 

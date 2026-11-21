@@ -155,8 +155,7 @@
     "defaultBadge": "Padrão",
     "statusGamified": "Modo Aventura (Imersão RPG) — Recompensas em destaque, Caixas Misteriosas, ícones de espadas e economia em XP e Moedas de Ouro.",
     "statusProductivity": "Modo Essencial (Produtividade) — Interface executiva limpa com economia de Créditos e Pontos (pts) e foco direto nas entregas.",
-    "activeLabel": "Perfil de Experiência Ativo:",
-    "toastSuccess": "Perfil de experiência alterado para {mode}!"
+    "activeLabel": "Perfil de Experiência Ativo:"
   },
   "languageCard": {
     "title": "Idioma da Interface",
@@ -183,8 +182,7 @@
     "activeLabel": "Formato ativo: ",
     "statusDdmmyyyy": "DD/MM/AAAA (Dia / Mês / Ano) aplicado em toda a plataforma.",
     "statusMmddyyyy": "MM/DD/AAAA (Mês / Dia / Ano) aplicado em toda a plataforma.",
-    "statusYyyymmdd": "AAAA-MM-DD (Padrão ISO) aplicado em toda a plataforma.",
-    "toastSuccess": "Formato de data alterado para {format}!"
+    "statusYyyymmdd": "AAAA-MM-DD (Padrão ISO) aplicado em toda a plataforma."
   },
   "timeFormatCard": {
     "h24Label": "24 Horas (00:00 - 23:59)",
@@ -195,8 +193,7 @@
     "h12Example": "02:05 PM",
     "activeLabel": "Formato ativo: ",
     "statusH24": "24 Horas (14:05) aplicado em toda a plataforma.",
-    "statusH12": "12 Horas com AM/PM (02:05 PM) aplicado em toda a plataforma.",
-    "toastSuccess": "Formato de hora alterado para {format}!"
+    "statusH12": "12 Horas com AM/PM (02:05 PM) aplicado em toda a plataforma."
   },
   "timezoneCard": {
     "activeLabel": "Fuso ativo: ",
@@ -220,8 +217,6 @@
     "allVisible": "Todos os cards estão visíveis",
     "restoreAll": "Restaurar todos os cards",
     "restoreAllSuccess": "Todos os cards de boas-vindas foram restaurados!",
-    "cardReactivatedToast": "Card \"{title}\" reativado! Ele voltará a aparecer na tela.",
-    "cardHiddenToast": "Card \"{title}\" foi ocultado.",
     "ariaToggle": "Visibilidade do card {title}",
     "items": {
       "tasks": {
@@ -357,6 +352,8 @@
     "founderPlanTitle": "Membro Fundador (VIP Vitalício)",
     "renewsOn": "Renovação em {date}",
     "expiresOn": "Válido até {date}",
+    "cancelScheduledUntil": "Cancelamento agendado — ativo até {date}",
+    "cancelScheduledBadge": "Encerra no fim do ciclo",
     "managePortal": "Gerenciar Assinatura (Portal Stripe)",
     "upgradeCta": "Fazer Upgrade para Guardião Cósmico",
     "redirectingPortal": "Redirecionando para o Portal de Assinatura do Stripe...",
@@ -504,6 +501,7 @@
     "modalTitle": "Evoluir para Guardião Cósmico",
     "modalSubtitle": "Desbloqueie todo o poder da produtividade gamificada sem barreiras.",
     "alreadyAcquired": "Já Adquirido 👑",
+    "founderRenewBadge": "Fundador · Renovar 👑",
     "remainingSlots": "{count} vagas",
     "founderAnnual": "Fundador",
     "founderPeriod": "/ano + Insígnia",

@@ -163,8 +163,9 @@ public class UpdateRewardGroupUseCase {
       }
     }
 
-    // Simula a vitrine final para garantir limites de cards e teto de 4 variantes por card
-    int previousGroupCount = RewardGrouping.countDistinctGroups(userRewards);
+    // Simula a vitrine final para garantir limites de cards (sem dívidas) e teto de 4 variantes por card
+    int previousGroupCount = RewardGrouping.countRegularDistinctGroups(userRewards);
+    int previousDebtCount = RewardGrouping.countActiveDebts(userRewards);
     List<Reward> simulatedFinalRewards = new ArrayList<>();
     for (Reward existing : userRewards) {
       if (!sourceIdSet.contains(existing.getId())) {
@@ -173,7 +174,13 @@ public class UpdateRewardGroupUseCase {
     }
     simulatedFinalRewards.addAll(resultingGroupRewards);
 
-    int newGroupCount = RewardGrouping.countDistinctGroups(simulatedFinalRewards);
+    int newGroupCount = RewardGrouping.countRegularDistinctGroups(simulatedFinalRewards);
+    int newDebtCount = RewardGrouping.countActiveDebts(simulatedFinalRewards);
+    if (newDebtCount > previousDebtCount && newDebtCount > RewardGrouping.MAX_ACTIVE_DEBTS) {
+      throw new LimitExceededException(
+          "Limite máximo de " + RewardGrouping.MAX_ACTIVE_DEBTS
+              + " dívidas ativas atingido. Quite uma dívida antes de registrar outra.");
+    }
     int maxCards = RewardGrouping.getMaxRewardCards(user.isPremium());
     if (newGroupCount > previousGroupCount && newGroupCount > maxCards) {
       throw new LimitExceededException(user.isPremium()

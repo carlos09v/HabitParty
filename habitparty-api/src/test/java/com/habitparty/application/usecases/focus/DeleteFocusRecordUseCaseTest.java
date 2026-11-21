@@ -170,12 +170,20 @@ class DeleteFocusRecordUseCaseTest {
   @DisplayName("Deve recalcular longestFocusSessionMinutes e estornar contador noturno/madrugador ao excluir sessão")
   void shouldRecalculateLongestSessionAndRevertTimeOfDayCounters() {
     User user = createUser(200, new BigDecimal("5.00"), new BigDecimal("5.00"));
+    java.time.ZoneId userZone = user.resolveZoneId(java.time.ZoneId.of(User.DEFAULT_TIMEZONE));
     LocalDateTime start = LocalDateTime.of(2026, 10, 16, 23, 15);
     LocalDateTime end = LocalDateTime.of(2026, 10, 16, 23, 45);
     user.getStats().recordFocusCompleted(45, 1);
     user.getStats().recordFocusTimeOfDay(start, end, 45);
     assertEquals(1, user.getStats().getTotalNightFocusSessions());
     assertEquals(45, user.getStats().getLongestFocusSessionMinutes());
+
+    LocalDateTime serverStart = start.atZone(userZone)
+        .withZoneSameInstant(java.time.ZoneId.systemDefault())
+        .toLocalDateTime();
+    LocalDateTime serverEnd = end.plusMinutes(15).atZone(userZone)
+        .withZoneSameInstant(java.time.ZoneId.systemDefault())
+        .toLocalDateTime();
 
     FocusRecord record = new FocusRecord(
         recordId,
@@ -185,8 +193,8 @@ class DeleteFocusRecordUseCaseTest {
         null,
         null,
         null,
-        start,
-        end.plusMinutes(15),
+        serverStart,
+        serverEnd,
         FocusRecordType.POMO,
         1,
         8,

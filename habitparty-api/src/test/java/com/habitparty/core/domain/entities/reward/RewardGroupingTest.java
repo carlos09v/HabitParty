@@ -80,5 +80,7 @@ class RewardGroupingTest {
     assertNotEquals(RewardGrouping.groupKey(box1), RewardGrouping.groupKey(box2));
     assertNotEquals(RewardGrouping.groupKey(debt1), RewardGrouping.groupKey(debt2));
     assertEquals(4, RewardGrouping.countDistinctGroups(List.of(box1, box2, debt1, debt2)));
+    assertEquals(2, RewardGrouping.countRegularDistinctGroups(List.of(box1, box2, debt1, debt2)));
+    assertEquals(2, RewardGrouping.countActiveDebts(List.of(box1, box2, debt1, debt2)));
   }
 }

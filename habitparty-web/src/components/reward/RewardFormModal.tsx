@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Gift, Loader2, X } from "lucide-react";
+import { Check, Gift, Info, Loader2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { RewardGroupPackagesEditor } from "@/components/reward/form/RewardGroupPackagesEditor";
@@ -14,6 +14,7 @@ import { RewardTypeSelector } from "@/components/reward/form/RewardTypeSelector"
 import { BaseModal } from "@/components/ui/BaseModal";
 import { DescriptionCharCounter } from "@/components/ui/DescriptionCharCounter";
 import { IconPickerPopover } from "@/components/ui/IconPickerPopover";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
@@ -131,8 +132,9 @@ export function RewardFormModal({
       price: numericPrice,
       durationMinutes: numericDuration,
       packageLevel,
+      category,
     });
-  }, [type, price, baseDurationMinutes, packageLevel]);
+  }, [type, price, baseDurationMinutes, packageLevel, category]);
 
   const hasPriceWarning = priceAnalysis.status !== "ok";
   const resolvedTypeKey = toRewardTypeMessageKey(type);
@@ -298,9 +300,55 @@ export function RewardFormModal({
 
   const categoryField = (
     <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-1.5 min-h-5">
+        <label
+          htmlFor="rewardCategory"
+          className="font-medium text-neutral-100 select-none text-body-s"
+        >
+          {t("categoryLabel")}
+        </label>
+        <InfoTooltip
+          title={t("categoryTooltipTitle")}
+          icon={<Info size={14} className="text-gold shrink-0" />}
+          size={14}
+          align="left"
+          side="top"
+          ariaLabel={t("categoryTooltipAria")}
+        >
+          <p className="text-neutral-300 leading-relaxed text-label-g">
+            {t("categoryTooltipIntro")}
+          </p>
+          <ul className="flex flex-col gap-1.5 text-label-g text-neutral-200 leading-relaxed">
+            <li>
+              •{" "}
+              <strong className="text-emerald-700 dark:text-emerald-300">
+                {t("categoryTooltipConstructiveTitle")}
+              </strong>{" "}
+              {t("categoryTooltipConstructiveDesc")}
+            </li>
+            <li className="pl-2 text-neutral-300 italic">
+              {t("categoryTooltipHybridTip")}
+            </li>
+            <li>
+              •{" "}
+              <strong className="text-amber-700 dark:text-amber-300">
+                {t("categoryTooltipEntertainmentTitle")}
+              </strong>{" "}
+              {t("categoryTooltipEntertainmentDesc")}
+            </li>
+            <li>
+              •{" "}
+              <strong className="text-neutral-100">
+                {t("categoryTooltipStandardTitle")}
+              </strong>{" "}
+              {t("categoryTooltipStandardDesc")}
+            </li>
+          </ul>
+        </InfoTooltip>
+      </div>
       <Select
         id="rewardCategory"
-        label={t("categoryLabel")}
+        aria-label={t("categoryLabel")}
         value={category}
         onChange={(val) => handleCategoryChange(val as RewardCategory)}
         options={categoryOptions}
@@ -394,6 +442,7 @@ export function RewardFormModal({
               {isEditingGroup ? (
                 <RewardGroupPackagesEditor
                   type={type}
+                  category={category}
                   isGamified={isGamified}
                   isPending={isPending}
                   variants={groupVariants}
@@ -408,6 +457,7 @@ export function RewardFormModal({
                   isPending={isPending}
                   isGamified={isGamified}
                   type={type}
+                  category={category}
                   createMultiplePackages={createMultiplePackages}
                   onCreateMultiplePackagesChange={setCreateMultiplePackages}
                   selectedBatchPackages={selectedBatchPackages}
@@ -428,6 +478,7 @@ export function RewardFormModal({
               ) : (
                 <RewardSingleUseSection
                   isDebtCategory={isDebtCategory}
+                  category={category}
                   isGamified={isGamified}
                   isPending={isPending}
                   type={type}

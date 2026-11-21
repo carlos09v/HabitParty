@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.habitparty.application.ports.BoardColumnRepository;
+import com.habitparty.application.ports.FocusRecordRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
@@ -40,6 +41,7 @@ public class ChangeTaskStatusUseCase {
   private final ApplicationEventPublisher eventPublisher;
   private DailyResetUseCase dailyResetUseCase;
   private WorkspaceWriteGuard workspaceWriteGuard;
+  private FocusRecordRepository focusRecordPort;
 
   @Autowired
   public ChangeTaskStatusUseCase(
@@ -72,6 +74,11 @@ public class ChangeTaskStatusUseCase {
   @Autowired(required = false)
   public void setWorkspaceWriteGuard(WorkspaceWriteGuard workspaceWriteGuard) {
     this.workspaceWriteGuard = workspaceWriteGuard;
+  }
+
+  @Autowired(required = false)
+  public void setFocusRecordPort(FocusRecordRepository focusRecordPort) {
+    this.focusRecordPort = focusRecordPort;
   }
 
   public record ExecutionResult(Task task, boolean rewardGranted) {}
@@ -136,7 +143,7 @@ public class ChangeTaskStatusUseCase {
 
         UserLevel levelBefore = user.getCurrentLevel();
         TaskGamificationHelper.awardTaskCompletion(
-            user, task, txType, userPort, transactionPort, columnName, today);
+            user, task, txType, userPort, transactionPort, focusRecordPort, columnName, today, clock);
         UserLevel levelAfter = user.getCurrentLevel();
         if (levelAfter.ordinal() > levelBefore.ordinal()) {
           reachedLevel = levelAfter;

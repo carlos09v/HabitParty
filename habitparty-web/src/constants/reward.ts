@@ -286,8 +286,9 @@ export interface DebtUnitPricePreset {
 }
 
 /**
- * Tabela linear sem desconto para Dívidas (taxa base: 8 moedas / 30 min = 0.2667/min).
- * Regra explícita: Dívida sempre cobra valor unitário cheio (multiplicador aplicado no resgate).
+ * Tabela linear de atalhos rápidos de preço para criação/edição de Dívidas
+ * (taxa base: 8 moedas / 30 min = 0.2667/min).
+ * Dívidas são descartáveis e quitadas pelo valor unitário direto ao clicar em "Pagar Dívida".
  */
 export const DEBT_UNIT_PRICE_PRESETS: readonly DebtUnitPricePreset[] = [
   { id: "15m", minutes: 15, price: 4 },
@@ -297,7 +298,7 @@ export const DEBT_UNIT_PRICE_PRESETS: readonly DebtUnitPricePreset[] = [
 ] as const;
 
 export const DEBT_DEFAULT_UNIT_PRICE = 8;
-export const DEBT_MAX_REDEEM_QUANTITY = 50;
+export const MAX_ACTIVE_DEBT_CARDS = 15;
 
 export const SINGLE_USE_NONE_OPTION = {
   id: "NONE" as const,

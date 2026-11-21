@@ -48,13 +48,10 @@ export function WelcomeCardsSettings() {
     key: WelcomeCardStorageKey,
     currentlyHidden: boolean,
   ) => {
-    const cardTitle = getItemText(key, "title");
     if (currentlyHidden) {
       showCard(key);
-      toast.success(t("cardReactivatedToast", { title: cardTitle }));
     } else {
       hideCard(key);
-      toast.info(t("cardHiddenToast", { title: cardTitle }));
     }
   };
 

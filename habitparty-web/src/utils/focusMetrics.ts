@@ -196,6 +196,9 @@ export function calculateFocusMetrics(
   const uniqueDays = new Set<string>();
 
   for (const rec of records) {
+    // Regra: itens da mochila (lazer) não contam para foco produtivo, metas nem ofensiva de foco.
+    if (rec.inventoryItemId) continue;
+
     const recDate = toLocalDateKey(rec.endTime, timeZone);
     if (!recDate) continue;
 

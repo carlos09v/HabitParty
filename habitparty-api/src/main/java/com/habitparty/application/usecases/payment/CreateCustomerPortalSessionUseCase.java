@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import com.habitparty.application.ports.PaymentGatewayPort;
 import com.habitparty.application.ports.UserRepository;
 import com.habitparty.core.domain.entities.User;
+import com.habitparty.core.exceptions.DomainValidationException;
 import com.habitparty.core.exceptions.ResourceNotFoundException;
 
 @Service
@@ -24,6 +25,11 @@ public class CreateCustomerPortalSessionUseCase {
   public String execute(UUID userId, String returnUrl) {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+
+    if (user.getStripeCustomerId() == null || user.getStripeCustomerId().isBlank()) {
+      throw new DomainValidationException(
+          "Você ainda não possui assinatura ou histórico de faturamento no Stripe para gerenciar.");
+    }
 
     return paymentGatewayPort.createCustomerPortalSession(user, returnUrl);
   }

@@ -42,6 +42,7 @@ export function SubscriptionSettingsCard({
 
   const isPremium = Boolean(user?.isPremium);
   const isFounder = Boolean(user?.isFounder);
+  const isCancelScheduled = Boolean(user?.cancelAtPeriodEnd);
 
   // Formata data de expiração se disponível (formatShortDate converte UTC -> fuso local automaticamente)
   const endsAtFormatted = user?.subscriptionEndsAt
@@ -99,6 +100,11 @@ export function SubscriptionSettingsCard({
                     {t("vipActiveBadge")}
                   </span>
                 )}
+                {isCancelScheduled && (
+                  <span className="px-2 py-0.5 rounded-full text-tiny font-bold uppercase tracking-wider bg-warning/20 text-warning border border-warning/30">
+                    {t("cancelScheduledBadge")}
+                  </span>
+                )}
               </div>
 
               <p className="text-xs sm:text-sm text-neutral-300 mt-1">
@@ -112,7 +118,11 @@ export function SubscriptionSettingsCard({
               {endsAtFormatted && (
                 <div className="flex items-center gap-1.5 text-xs text-neutral-300 mt-2 font-medium">
                   <Calendar size={13} className="text-gold" />
-                  <span>{t("validUntil", { date: endsAtFormatted })}</span>
+                  <span>
+                    {isCancelScheduled
+                      ? t("cancelScheduledUntil", { date: endsAtFormatted })
+                      : t("validUntil", { date: endsAtFormatted })}
+                  </span>
                 </div>
               )}
             </div>

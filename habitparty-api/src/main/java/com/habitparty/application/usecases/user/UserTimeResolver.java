@@ -21,11 +21,11 @@ public class UserTimeResolver {
   @Autowired
   public UserTimeResolver(UserRepository userPort, Clock clock) {
     this.userPort = userPort;
-    this.clock = clock != null ? clock : Clock.system(ZoneId.of(User.DEFAULT_TIMEZONE));
+    this.clock = clock != null ? clock : Clock.systemUTC();
   }
 
   public UserTimeResolver(UserRepository userPort) {
-    this(userPort, Clock.system(ZoneId.of(User.DEFAULT_TIMEZONE)));
+    this(userPort, Clock.systemUTC());
   }
 
   public Clock clock() {
@@ -45,9 +45,17 @@ public class UserTimeResolver {
     if (userId == null || userPort == null) {
       return defaultZone();
     }
-    return userPort.findById(userId)
-        .map(this::resolveZone)
-        .orElseGet(this::defaultZone);
+    return userPort.findTimezoneById(userId)
+        .map(raw -> {
+          try {
+            return User.parseValidZoneId(raw);
+          } catch (Exception ignored) {
+            return defaultZone();
+          }
+        })
+        .orElseGet(() -> userPort.findById(userId)
+            .map(this::resolveZone)
+            .orElseGet(this::defaultZone));
   }
 
   public LocalDate resolveDate(User user) {
@@ -71,6 +79,6 @@ public class UserTimeResolver {
   }
 
   private ZoneId defaultZone() {
-    return clock.getZone() != null ? clock.getZone() : ZoneId.of(User.DEFAULT_TIMEZONE);
+    return ZoneId.of(User.DEFAULT_TIMEZONE);
   }
 }

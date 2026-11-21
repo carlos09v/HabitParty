@@ -11,7 +11,6 @@ import { useOptimisticDashboardStore } from "@/store/optimisticDashboardStore";
 import { useUIStore } from "@/store/uiStore";
 import { useUserStore } from "@/store/userStore";
 import { triggerCelebrationConfetti } from "@/utils/confetti";
-import { getTodayDateString } from "@/utils/date";
 import { formatCoins, getTaskRewardBreakdown } from "@/utils/economy";
 import {
   getBrowserDocumentLocale,
@@ -56,6 +55,7 @@ export async function executeCompleteLinkedTask(
       const sessionSaved = await get().completeSession(undefined, {
         suppressCompleteSound: true,
         suppressLinkedTaskAction: true,
+        suppressSuccessToast: true,
       });
       if (!sessionSaved) {
         return false;
@@ -71,9 +71,6 @@ export async function executeCompleteLinkedTask(
       const rewardGranted = taskData?.rewardGranted !== false;
 
       if (!rewardGranted) {
-        useUserStore
-          .getState()
-          .markStreakSecuredToday(getTodayDateString(new Date(), userTimeZone));
         soundEffects.playTaskCompleteSound();
         triggerCelebrationConfetti();
         toast.success(

@@ -238,9 +238,7 @@
       "notificationsGranted": "Notifications allowed! You'll be notified at the end of each Pomodoro.",
       "notificationsDenied": "Notification permission denied.",
       "notificationsRequestError": "Could not request notification permission.",
-      "ambientPremiumRequired": "Focus ambient sounds are exclusive to Premium subscribers! Upgrade to unlock.",
-      "ambientOff": "Ambient sound turned off.",
-      "ambientOn": "Ambient sound enabled: {label}"
+      "ambientPremiumRequired": "Focus ambient sounds are exclusive to Premium subscribers! Upgrade to unlock."
     }
   },
   "targetSelector": {
@@ -382,10 +380,8 @@
     "shortBreakLabel": "short (5 min)",
     "cycleCompletedToast": "🍅 Cycle {cycles} completed! Starting {breakLabel} break. Relax a little!",
     "overtimeStartedToast": "🍅 Cycle goal reached! Counting overtime until you start your break or finish.",
-    "breakStartedToast": "☕ Cycle {cycles} saved! Starting {breakLabel} break. Relax a little!",
     "selectTargetToStartToast": "Select an activity, task, or backpack item to start focusing.",
     "itemAlreadyCompletedToast": "🎉 This item has already completed its time. Click the Complete (Check) button to redeem it.",
-    "breakSkippedToast": "Break skipped. Ready to focus!",
     "linkTargetBeforeSaveToast": "Link your focus to an activity, task, or backpack item before saving.",
     "minDurationWarningToast": "Sessions under 1 minute are not recorded.",
     "couponTimeDepletedToast": "🎉 Coupon time depleted! Click the Complete (Check) button to redeem it.",
@@ -397,11 +393,9 @@
     "saveSessionServerErrorToast": "Error saving focus session on the server.",
     "couponAlreadyDepletedToast": "This coupon's time is already depleted! Click the Complete (Check) button to redeem it.",
     "defaultItemName": "Focus Item",
-    "targetTransferredToast": "Target switched to \"{name}\". The timer keeps running!",
-    "taskFocusStartedToast": "Focusing on task \"{name}\"!",
-    "taskLinkedToast": "Task \"{name}\" linked to focus!",
-    "activityLinkedToTaskToast": "Task \"{task}\" linked to activity \"{activity}\"!",
+    "defaultTaskName": "Task",
     "finishCouponBeforeTaskToast": "Finish or save the coupon in progress before linking a task.",
+    "levelUpLinkedTaskPrompt": "Finish task \"{name}\" as well?",
     "completeLinkedTaskAction": "Complete task",
     "linkedTaskCompletedToast": "Task \"{name}\" marked as completed!",
     "linkedTaskCompletedRewardsToast": "Task \"{name}\" completed! (+{xp} XP • +{coins} 🪙)",

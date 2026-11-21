@@ -1,7 +1,9 @@
+import { FOCUS_REWARD_RULES } from "@/constants/focus";
 import { ALL_WEEK_DAYS, normalizeTaskType } from "@/constants/task";
 import type { AppLocale } from "@/i18n/config";
 import { getUtilityTranslator } from "@/i18n/utilityTranslator";
 import type { WeeklyCalendarTaskSummary } from "@/types/dashboard";
+import type { FocusRecord } from "@/types/focus";
 import type { TransactionHistoryResponseDTO } from "@/types/history";
 import type { Task } from "@/types/task";
 import {
@@ -16,6 +18,7 @@ import {
   parseDateParts,
   parseServerDate,
 } from "./date";
+import { toLocalDateKey } from "./focusMetrics";
 
 export { getTodayDateString };
 
@@ -314,6 +317,8 @@ export function buildWeeklyCalendarData(
   baseDate: Date = new Date(),
   locale: AppLocale = "pt-BR",
   timeZone?: string | null,
+  focusRecords: FocusRecord[] = [],
+  todayFocusMinutesOverride = 0,
 ): {
   weekDays: WeeklyCalendarDayItem[];
   weekRangeLabel: string;
@@ -333,17 +338,21 @@ export function buildWeeklyCalendarData(
   const shortWeekDays = getShortWeekDays(locale);
   const shortMonths = getShortMonths(locale);
 
-  const activityDates = new Set<string>();
+  const taskCompletedDates = new Set<string>();
   for (const tx of transactions) {
-    if (tx.createdAt && (tx.xpAmount ?? 0) > 0) {
+    if (
+      tx.createdAt &&
+      tx.transactionType &&
+      TASK_COMPLETION_TRANSACTION_TYPES.has(tx.transactionType)
+    ) {
       const parsed = parseServerDate(tx.createdAt);
       if (parsed) {
-        activityDates.add(getDateKeyInTimeZone(parsed, timeZone));
+        taskCompletedDates.add(getDateKeyInTimeZone(parsed, timeZone));
       }
     }
   }
 
-  // Apenas tarefas efetivamente concluídas hoje garantem o marcador de hoje no calendário
+  // Tarefas concluídas hoje garantem imediatamente a parte de tarefas do dia no calendário
   if (
     tasks.some((t) => {
       if (!t.completed || !t.lastCompletedAt) return false;
@@ -352,7 +361,37 @@ export function buildWeeklyCalendarData(
       return getDateKeyInTimeZone(parsed, timeZone) === todayIso;
     })
   ) {
-    activityDates.add(todayIso);
+    taskCompletedDates.add(todayIso);
+  }
+
+  const focusMinutesByDate = new Map<string, number>();
+  for (const rec of focusRecords) {
+    if (rec.inventoryItemId) continue;
+    const rawDate = rec.startTime || rec.endTime;
+    if (!rawDate) continue;
+    const dateKey = toLocalDateKey(rawDate, timeZone);
+    if (!dateKey) continue;
+    focusMinutesByDate.set(
+      dateKey,
+      (focusMinutesByDate.get(dateKey) ?? 0) +
+        Math.max(0, rec.durationMinutes || 0),
+    );
+  }
+  if (todayFocusMinutesOverride > 0) {
+    focusMinutesByDate.set(
+      todayIso,
+      Math.max(
+        focusMinutesByDate.get(todayIso) ?? 0,
+        todayFocusMinutesOverride,
+      ),
+    );
+  }
+
+  const activityDates = new Set<string>(taskCompletedDates);
+  for (const [dateKey, minutes] of focusMinutesByDate.entries()) {
+    if (minutes >= FOCUS_REWARD_RULES.MIN_DAILY_STREAK_FOCUS_MINUTES) {
+      activityDates.add(dateKey);
+    }
   }
 
   let streakDaysInWeek = 0;

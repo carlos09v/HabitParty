@@ -25,6 +25,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.transaction.support.TransactionOperations;
 
+import com.habitparty.application.ports.FocusRecordRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
@@ -64,6 +65,9 @@ class DailyResetUseCaseTest {
   @Mock
   private UserRepository userPort;
 
+  @Mock
+  private FocusRecordRepository focusRecordPort;
+
   private DailyResetUseCase dailyResetUseCase;
 
   private UUID userId;
@@ -76,6 +80,7 @@ class DailyResetUseCaseTest {
         port, transactionPort, userPort,
         FIXED_CLOCK,
         TransactionOperations.withoutTransaction());
+    dailyResetUseCase.setFocusRecordPort(focusRecordPort);
 
     todaySp = LocalDate.now(FIXED_CLOCK);
     userId = UUID.randomUUID();
@@ -113,8 +118,12 @@ class DailyResetUseCaseTest {
         .atZone(zone)
         .withZoneSameInstant(ZoneId.systemDefault())
         .toLocalDateTime();
-    when(transactionPort.findLastCompletedTaskAtByUserIds(anyCollection(), any(LocalDateTime.class)))
-        .thenReturn(Map.of(targetUser.getId(), completedInSys));
+    lenient().when(transactionPort.findTaskCompletionsByUserIdsSince(anyCollection(), any(LocalDateTime.class)))
+        .thenReturn(List.of(
+            new TransactionHistoryRepository.TaskCompletionTimestamp(targetUser.getId(), completedInSys)));
+    lenient().when(focusRecordPort.findProductiveFocusSessionsByUserIdsSince(anyCollection(), any(LocalDateTime.class)))
+        .thenReturn(List.of(
+            new FocusRecordRepository.FocusSessionSummary(targetUser.getId(), completedInSys, 30)));
   }
 
   @Test
@@ -419,18 +428,48 @@ class DailyResetUseCaseTest {
   }
 
   @Test
-  @DisplayName("Deve zerar a ofensiva global do usuário se não completou nenhuma tarefa desde ontem no fuso dele")
+  @DisplayName("Deve zerar a ofensiva global do usuário se não completou nenhuma tarefa nem >= 30m de foco ontem")
   void testResetInactiveUserStreaksZerosStreak() {
     user.setCurrentStreak(7);
     stubSingleDueUser(user);
-    when(transactionPort.findLastCompletedTaskAtByUserIds(anyCollection(), any(LocalDateTime.class)))
-        .thenReturn(Map.of());
+    LocalDateTime completedYesterday = todaySp.minusDays(1).atTime(14, 0)
+        .atZone(SAO_PAULO)
+        .withZoneSameInstant(ZoneId.systemDefault())
+        .toLocalDateTime();
+    // Sem tarefas e apenas 20m de foco ontem (< 30m)
+    when(transactionPort.findTaskCompletionsByUserIdsSince(anyCollection(), any(LocalDateTime.class)))
+        .thenReturn(List.of());
+    when(focusRecordPort.findProductiveFocusSessionsByUserIdsSince(anyCollection(), any(LocalDateTime.class)))
+        .thenReturn(List.of(
+            new FocusRecordRepository.FocusSessionSummary(user.getId(), completedYesterday, 20)));
 
     RolloverSummary summary = dailyResetUseCase.executeDailyRolloverSummary();
 
     assertEquals(1, summary.expiredStreaks());
     assertEquals(0, user.getCurrentStreak());
     verify(userPort, times(1)).saveAll(argThat(users -> List.copyOf(users).equals(List.of(user))));
+  }
+
+  @Test
+  @DisplayName("Deve preservar a ofensiva global se o usuário atingiu 30m de foco ontem mesmo sem concluir tarefa")
+  void testRolloverPreservesStreakWith30MinutesFocusOnlyYesterday() {
+    user.setCurrentStreak(7);
+    stubSingleDueUser(user);
+    LocalDateTime focusYesterday = todaySp.minusDays(1).atTime(19, 0)
+        .atZone(SAO_PAULO)
+        .withZoneSameInstant(ZoneId.systemDefault())
+        .toLocalDateTime();
+    when(transactionPort.findTaskCompletionsByUserIdsSince(anyCollection(), any(LocalDateTime.class)))
+        .thenReturn(List.of());
+    when(focusRecordPort.findProductiveFocusSessionsByUserIdsSince(anyCollection(), any(LocalDateTime.class)))
+        .thenReturn(List.of(
+            new FocusRecordRepository.FocusSessionSummary(user.getId(), focusYesterday, 15),
+            new FocusRecordRepository.FocusSessionSummary(user.getId(), focusYesterday, 15)));
+
+    RolloverSummary summary = dailyResetUseCase.executeDailyRolloverSummary();
+
+    assertEquals(0, summary.expiredStreaks());
+    assertEquals(7, user.getCurrentStreak());
   }
 
   @Test

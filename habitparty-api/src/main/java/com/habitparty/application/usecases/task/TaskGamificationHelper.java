@@ -1,12 +1,15 @@
 package com.habitparty.application.usecases.task;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.UUID;
 
 import com.habitparty.application.ports.BoardColumnRepository;
+import com.habitparty.application.ports.FocusRecordRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
+import com.habitparty.application.usecases.user.GlobalStreakSupport;
 import com.habitparty.core.domain.entities.BoardColumn;
 import com.habitparty.core.domain.entities.TransactionHistory;
 import com.habitparty.core.domain.entities.User;
@@ -64,7 +67,23 @@ public final class TaskGamificationHelper {
       TransactionHistoryRepository transactionPort,
       String columnName,
       LocalDate referenceDate) {
-    LocalDate effectiveDate = referenceDate != null ? referenceDate : LocalDate.now();
+    awardTaskCompletion(
+        user, task, txType, userPort, transactionPort, null, columnName, referenceDate, Clock.systemDefaultZone());
+  }
+
+  public static void awardTaskCompletion(
+      User user,
+      Task task,
+      TransactionType txType,
+      UserRepository userPort,
+      TransactionHistoryRepository transactionPort,
+      FocusRecordRepository focusRecordPort,
+      String columnName,
+      LocalDate referenceDate,
+      Clock clock) {
+    Clock effectiveClock = clock != null ? clock : Clock.systemDefaultZone();
+    ZoneId userZone = user.resolveZoneId(effectiveClock.getZone());
+    LocalDate effectiveDate = referenceDate != null ? referenceDate : LocalDate.now(effectiveClock.withZone(userZone));
     TaskReward reward = task.calculateReward(effectiveDate);
     user.addXp(reward.xp());
     user.addCoins(reward.coins());
@@ -88,15 +107,11 @@ public final class TaskGamificationHelper {
       }
     }
 
-    ZoneId userZone = user.resolveZoneId(null);
     int tasksCompletedToday = transactionPort.countCompletedTasksToday(user.getId(), userZone);
-    if (tasksCompletedToday == 0) {
-      // Se o usuário possuía streak > 0 mas passou o dia anterior sem concluir tarefas,
-      // zera antes de iniciar a nova contagem em 1
-      if (user.getCurrentStreak() > 0 && !transactionPort.hasCompletedTasksYesterday(user.getId(), userZone)) {
-        user.resetStreak();
-      }
-      user.incrementStreak();
+    if (tasksCompletedToday == 0
+        && !GlobalStreakSupport.hasQualifiedFocusOnDate(user.getId(), effectiveDate, userZone, focusRecordPort)) {
+      GlobalStreakSupport.incrementTodayStreakIfYesterdayVerified(
+          user, userZone, effectiveDate, transactionPort, focusRecordPort);
     }
 
     userPort.save(user);

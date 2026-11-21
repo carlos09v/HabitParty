@@ -40,9 +40,8 @@ public class CreateRewardUseCase {
     RewardCategory categoriaFinal = command.category() != null ? command.category() : RewardCategory.NONE;
     Reward.validateCategoryAndType(categoriaFinal, command.type());
 
-    // 2. Limite por Cards na Vitrine (12 Free / 50 Premium) + até 4 pacotes por Card agrupado
+    // 2. Dívidas possuem cota implícita independente; cards regulares respeitam 12 Free / 50 Premium (+ até 4 pacotes)
     List<Reward> existingRewards = port.findAllByUserId(userIdLogado);
-    int maxCards = RewardGrouping.getMaxRewardCards(user.isPremium());
     boolean groupable = RewardGrouping.isGroupable(command.type(), categoriaFinal);
     String candidateGroupKey = groupable
         ? RewardGrouping.groupKey(null, command.name(), command.type(), categoriaFinal)
@@ -51,21 +50,31 @@ public class CreateRewardUseCase {
         ? RewardGrouping.countGroupVariants(existingRewards, candidateGroupKey)
         : 0;
 
-    if (existingVariantsInGroup > 0) {
-      if (existingVariantsInGroup >= RewardGrouping.MAX_VARIANTS_PER_GROUP) {
+    if (categoriaFinal == RewardCategory.DEBT) {
+      int activeDebts = RewardGrouping.countActiveDebts(existingRewards);
+      if (activeDebts >= RewardGrouping.MAX_ACTIVE_DEBTS) {
         throw new LimitExceededException(
-            "Este card já atingiu o limite máximo de "
-                + RewardGrouping.MAX_VARIANTS_PER_GROUP
-                + " pacotes.");
+            "Limite máximo de " + RewardGrouping.MAX_ACTIVE_DEBTS
+                + " dívidas ativas atingido. Quite uma dívida antes de registrar outra.");
       }
     } else {
-      int currentCards = RewardGrouping.countDistinctGroups(existingRewards);
-      if (currentCards >= maxCards) {
-        throw new LimitExceededException(user.isPremium()
-            ? "Limite de " + RewardGrouping.PREMIUM_MAX_REWARD_CARDS
-                + " cards de recompensa por usuário atingido no plano premium."
-            : "Limite de " + RewardGrouping.FREE_MAX_REWARD_CARDS
-                + " cards de recompensa por usuário atingido no plano gratuito.");
+      int maxCards = RewardGrouping.getMaxRewardCards(user.isPremium());
+      if (existingVariantsInGroup > 0) {
+        if (existingVariantsInGroup >= RewardGrouping.MAX_VARIANTS_PER_GROUP) {
+          throw new LimitExceededException(
+              "Este card já atingiu o limite máximo de "
+                  + RewardGrouping.MAX_VARIANTS_PER_GROUP
+                  + " pacotes.");
+        }
+      } else {
+        int currentCards = RewardGrouping.countRegularDistinctGroups(existingRewards);
+        if (currentCards >= maxCards) {
+          throw new LimitExceededException(user.isPremium()
+              ? "Limite de " + RewardGrouping.PREMIUM_MAX_REWARD_CARDS
+                  + " cards de recompensa por usuário atingido no plano premium."
+              : "Limite de " + RewardGrouping.FREE_MAX_REWARD_CARDS
+                  + " cards de recompensa por usuário atingido no plano gratuito.");
+        }
       }
     }
 

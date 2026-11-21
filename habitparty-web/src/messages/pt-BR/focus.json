@@ -238,9 +238,7 @@
       "notificationsGranted": "Notificações permitidas! Você será avisado ao fim de cada Pomodoro.",
       "notificationsDenied": "Permissão de notificação negada.",
       "notificationsRequestError": "Não foi possível solicitar permissão para notificações.",
-      "ambientPremiumRequired": "Sons de foco ambiente são exclusivos para assinantes Premium! Faça o upgrade para desbloquear.",
-      "ambientOff": "Som ambiente desligado.",
-      "ambientOn": "Som ambiente ativado: {label}"
+      "ambientPremiumRequired": "Sons de foco ambiente são exclusivos para assinantes Premium! Faça o upgrade para desbloquear."
     }
   },
   "targetSelector": {
@@ -382,10 +380,8 @@
     "shortBreakLabel": "curta (5 min)",
     "cycleCompletedToast": "🍅 Ciclo {cycles} concluído! Iniciando pausa {breakLabel}. Relaxe um pouco!",
     "overtimeStartedToast": "🍅 Meta do ciclo concluída! Contando o excedente até você iniciar a pausa ou encerrar.",
-    "breakStartedToast": "☕ Ciclo {cycles} salvo! Iniciando pausa {breakLabel}. Relaxe um pouco!",
     "selectTargetToStartToast": "Selecione uma atividade, tarefa ou item da mochila para iniciar o foco.",
     "itemAlreadyCompletedToast": "🎉 Este item já concluiu seu tempo. Clique no botão de Concluir (Check) para resgatá-lo.",
-    "breakSkippedToast": "Pausa pulada. Pronto para focar!",
     "linkTargetBeforeSaveToast": "Vincule o foco a uma atividade, tarefa ou item da mochila antes de salvar.",
     "minDurationWarningToast": "Sessões com menos de 1 minuto não são registradas.",
     "couponTimeDepletedToast": "🎉 Tempo do cupom esgotado! Clique no botão de Concluir (Check) para resgatá-lo.",
@@ -397,11 +393,9 @@
     "saveSessionServerErrorToast": "Erro ao salvar sessão de foco no servidor.",
     "couponAlreadyDepletedToast": "O tempo deste cupom já está esgotado! Clique no botão de Concluir (Check) para resgatá-lo.",
     "defaultItemName": "Item de Foco",
-    "targetTransferredToast": "Vínculo alterado para \"{name}\". O tempo continua rodando!",
-    "taskFocusStartedToast": "Foco iniciado na tarefa \"{name}\"!",
-    "taskLinkedToast": "Tarefa \"{name}\" vinculada ao foco!",
-    "activityLinkedToTaskToast": "Tarefa \"{task}\" vinculada à atividade \"{activity}\"!",
+    "defaultTaskName": "Tarefa",
     "finishCouponBeforeTaskToast": "Finalize ou salve o cupom em andamento antes de vincular uma tarefa.",
+    "levelUpLinkedTaskPrompt": "Concluir a tarefa \"{name}\" também?",
     "completeLinkedTaskAction": "Concluir tarefa",
     "linkedTaskCompletedToast": "Tarefa \"{name}\" marcada como concluída!",
     "linkedTaskCompletedRewardsToast": "Tarefa \"{name}\" concluída! (+{xp} XP • +{coins} 🪙)",

@@ -31,11 +31,14 @@ import { buildWeeklyCalendarData } from "@/utils/dashboardMetrics";
 export function WeeklyCalendar({
   transactions = [],
   tasks = [],
+  records = [],
   onSelectDay,
 }: WeeklyCalendarProps) {
   const t = useTranslations("dashboard.sidebarRight.weeklyCalendar");
   const locale = useLocale() as AppLocale;
   const userTimeZone = useUserStore((s) => s.user?.timezone);
+  const storeTodayFocusMinutes = useUserStore((s) => s.todayFocusMinutes);
+  const storeTodayMetricsDate = useUserStore((s) => s.todayMetricsDate);
 
   const activeFilter = useDashboardFilterStore((s) => s.activeFilter);
   const urlDate = useDashboardFilterStore((s) => s.selectedDate);
@@ -90,6 +93,9 @@ export function WeeklyCalendar({
     return nextTasks;
   }, [tasks, upsertedTasks, deletedTaskIds]);
 
+  const todayFocusMinutesOverride =
+    storeTodayMetricsDate === todayIso ? storeTodayFocusMinutes : 0;
+
   const { weekRangeLabel, weekDays } = useMemo(
     () =>
       buildWeeklyCalendarData(
@@ -100,6 +106,8 @@ export function WeeklyCalendar({
         baseDate,
         locale,
         userTimeZone,
+        records,
+        todayFocusMinutesOverride,
       ),
     [
       mergedTasks,
@@ -109,6 +117,8 @@ export function WeeklyCalendar({
       baseDate,
       locale,
       userTimeZone,
+      records,
+      todayFocusMinutesOverride,
     ],
   );
 

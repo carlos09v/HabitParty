@@ -20,6 +20,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.habitparty.application.ports.FocusRecordRepository;
 import com.habitparty.application.ports.TaskRepository;
 import com.habitparty.application.ports.TransactionHistoryRepository;
 import com.habitparty.application.ports.UserRepository;
@@ -49,6 +50,9 @@ class ChangeTaskStatusUseCaseTest {
   @Mock
   private UserRepository userPort;
 
+  @Mock
+  private FocusRecordRepository focusRecordPort;
+
   @InjectMocks
   private ChangeTaskStatusUseCase changeTaskStatusUseCase;
 
@@ -59,6 +63,7 @@ class ChangeTaskStatusUseCaseTest {
 
   @BeforeEach
   void setUp() {
+    changeTaskStatusUseCase.setFocusRecordPort(focusRecordPort);
     userId = UUID.randomUUID();
     taskId = UUID.randomUUID();
 
@@ -104,11 +109,12 @@ class ChangeTaskStatusUseCaseTest {
   }
 
   @Test
-  @DisplayName("Deve completar tarefa pela 1ª vez no dia e incrementar o streak do usuário")
+  @DisplayName("Deve completar tarefa pela 1ª vez no dia e incrementar o streak quando foco ainda não atingiu 30m")
   void testCompleteTaskFirstTimeTodayIncrementsStreak() {
     when(taskPort.findById(taskId)).thenReturn(Optional.of(todoTask));
     when(userPort.findById(userId)).thenReturn(Optional.of(user));
     when(transactionPort.countCompletedTasksToday(eq(userId), any())).thenReturn(0);
+    when(focusRecordPort.sumProductiveFocusMinutesOnDate(eq(userId), any(), any())).thenReturn(0);
     when(taskPort.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
     var updated = changeTaskStatusUseCase.execute(taskId, userId, TaskStatus.COMPLETED);
@@ -124,6 +130,24 @@ class ChangeTaskStatusUseCaseTest {
     verify(transactionPort).save(captor.capture());
     assertEquals(TransactionType.TODO_COMPLETED, captor.getValue().getTransactionType());
     assertEquals(taskId, captor.getValue().getReferenceId().orElse(null));
+  }
+
+  @Test
+  @DisplayName("Não deve incrementar ofensiva global duas vezes no dia se 30m de foco já garantiram hoje")
+  void testCompleteTaskAfter30MinutesFocusTodayDoesNotIncrementStreakTwice() {
+    user.incrementStreak(); // Já havia garantido +1 hoje via 30m de foco
+    when(taskPort.findById(taskId)).thenReturn(Optional.of(todoTask));
+    when(userPort.findById(userId)).thenReturn(Optional.of(user));
+    when(transactionPort.countCompletedTasksToday(eq(userId), any())).thenReturn(0);
+    when(focusRecordPort.sumProductiveFocusMinutesOnDate(eq(userId), any(), any())).thenReturn(30);
+    when(taskPort.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+    var updated = changeTaskStatusUseCase.execute(taskId, userId, TaskStatus.COMPLETED);
+
+    assertEquals(TaskStatus.COMPLETED, updated.getStatus());
+    assertEquals(1, user.getCurrentStreak());
+    verify(userPort).save(user);
+    verify(transactionPort).save(any(TransactionHistory.class));
   }
 
   @Test

@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Minus, Plus } from "lucide-react";
+import { Clock } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { TIER_CHIP_STYLES } from "@/constants/reward";
@@ -328,64 +328,5 @@ export function CatalogItemVariantChips({
         );
       })}
     </fieldset>
-  );
-}
-
-interface CatalogItemQuantityStepperProps {
-  quantity: number;
-  onChange: (nextQuantity: number) => void;
-  maxQuantity?: number;
-  disabled?: boolean;
-}
-
-/**
- * Controle unitário (− 1x +) sem descontos para quitação múltipla de Dívidas.
- */
-export function CatalogItemQuantityStepper({
-  quantity,
-  onChange,
-  maxQuantity = 50,
-  disabled = false,
-}: CatalogItemQuantityStepperProps) {
-  const t = useTranslations("ui.itemCatalog");
-
-  return (
-    <div
-      className="inline-flex items-center rounded-md border border-neutral-600/80 dark:border-white/15 bg-surface/80 dark:bg-white/5 overflow-hidden shrink-0"
-      {...STOP_DRAG_PROPAGATION_PROPS}
-    >
-      <button
-        type="button"
-        disabled={disabled || quantity <= 1}
-        onClick={(e) => {
-          e.stopPropagation();
-          onChange(Math.max(1, quantity - 1));
-        }}
-        onDoubleClick={(e) => e.stopPropagation()}
-        aria-label={t("decreaseQuantityAria")}
-        className="inline-flex items-center justify-center w-6 h-6 text-neutral-300 hover:text-neutral-50 hover:bg-white/10 disabled:opacity-35 disabled:cursor-not-allowed transition-colors cursor-pointer"
-      >
-        <Minus size={11} aria-hidden="true" />
-      </button>
-      <output
-        className="px-1.5 min-w-[2.1rem] text-center font-bold tabular-nums text-neutral-100 text-[11px]"
-        aria-live="polite"
-      >
-        {quantity}x
-      </output>
-      <button
-        type="button"
-        disabled={disabled || quantity >= maxQuantity}
-        onClick={(e) => {
-          e.stopPropagation();
-          onChange(Math.min(maxQuantity, quantity + 1));
-        }}
-        onDoubleClick={(e) => e.stopPropagation()}
-        aria-label={t("increaseQuantityAria")}
-        className="inline-flex items-center justify-center w-6 h-6 text-neutral-300 hover:text-neutral-50 hover:bg-white/10 disabled:opacity-35 disabled:cursor-not-allowed transition-colors cursor-pointer"
-      >
-        <Plus size={11} aria-hidden="true" />
-      </button>
-    </div>
   );
 }

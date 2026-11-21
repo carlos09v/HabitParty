@@ -26,8 +26,20 @@ public sealed interface PaymentWebhookEvent {
       UUID userId,
       LocalDateTime periodEnd,
       String status,
-      Map<String, String> metadata
-  ) implements PaymentWebhookEvent {}
+      Map<String, String> metadata,
+      boolean cancelAtPeriodEnd
+  ) implements PaymentWebhookEvent {
+    public SubscriptionUpdated(
+        String eventId,
+        String subscriptionId,
+        String customerId,
+        UUID userId,
+        LocalDateTime periodEnd,
+        String status,
+        Map<String, String> metadata) {
+      this(eventId, subscriptionId, customerId, userId, periodEnd, status, metadata, false);
+    }
+  }
 
   record SubscriptionDeleted(
       String eventId,

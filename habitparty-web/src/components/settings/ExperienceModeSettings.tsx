@@ -1,7 +1,6 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
 import { EXPERIENCE_MODE_OPTIONS } from "@/constants/settings";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 import { useSoundPreferencesStore } from "@/store/soundPreferencesStore";
@@ -48,9 +47,6 @@ export function ExperienceModeSettings({
     } else if (nextMode === "GAMIFIED" && timerSoundType === "zen") {
       setTimerSoundType("arcade");
     }
-    const modeLabel =
-      nextMode === "GAMIFIED" ? t("gamified") : t("productivity");
-    toast.success(t("toastSuccess", { mode: modeLabel }));
   };
 
   return (
